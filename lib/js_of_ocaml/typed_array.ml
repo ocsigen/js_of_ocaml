@@ -55,21 +55,21 @@ class type ['a, 'b] typedArray =
     method _content_type_ : 'b
   end
 
-type int8Array = (int, [`Int8]) typedArray
+type int8Array = (int, [ `Int8 ]) typedArray
 
-type uint8Array = (int, [`Uint8]) typedArray
+type uint8Array = (int, [ `Uint8 ]) typedArray
 
-type int16Array = (int, [`Int16]) typedArray
+type int16Array = (int, [ `Int16 ]) typedArray
 
-type uint16Array = (int, [`Uint16]) typedArray
+type uint16Array = (int, [ `Uint16 ]) typedArray
 
-type int32Array = (int, [`Int32]) typedArray
+type int32Array = (int, [ `Int32 ]) typedArray
 
-type uint32Array = (float, [`Uint32]) typedArray
+type uint32Array = (float, [ `Uint32 ]) typedArray
 
-type float32Array = (float, [`Float32]) typedArray
+type float32Array = (float, [ `Float32 ]) typedArray
 
-type float64Array = (float, [`Float64]) typedArray
+type float64Array = (float, [ `Float64 ]) typedArray
 
 let int8Array = Js.Unsafe.global##._Int8Array
 

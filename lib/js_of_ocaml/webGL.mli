@@ -239,8 +239,7 @@ class type renderingContext =
 
     method stencilFunc : depthFunction -> int -> uint -> unit meth
 
-    method stencilFuncSeparate :
-      cullFaceMode -> depthFunction -> int -> uint -> unit meth
+    method stencilFuncSeparate : cullFaceMode -> depthFunction -> int -> uint -> unit meth
 
     method stencilMask : uint -> unit meth
 
@@ -556,67 +555,67 @@ class type renderingContext =
 
     method uniform1iv : int uniformLocation t -> int js_array t -> unit meth
 
-    method uniform2f : [`vec2] uniformLocation t -> float -> float -> unit meth
+    method uniform2f : [ `vec2 ] uniformLocation t -> float -> float -> unit meth
 
     method uniform2fv_typed :
-      [`vec2] uniformLocation t -> Typed_array.float32Array t -> unit meth
+      [ `vec2 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-    method uniform2fv : [`vec2] uniformLocation t -> float js_array t -> unit meth
+    method uniform2fv : [ `vec2 ] uniformLocation t -> float js_array t -> unit meth
 
-    method uniform2i : [`ivec2] uniformLocation t -> int -> int -> unit meth
+    method uniform2i : [ `ivec2 ] uniformLocation t -> int -> int -> unit meth
 
-    method uniform2iv : [`ivec2] uniformLocation t -> int js_array t -> unit meth
+    method uniform2iv : [ `ivec2 ] uniformLocation t -> int js_array t -> unit meth
 
     method uniform2iv_typed :
-      [`ivec2] uniformLocation t -> Typed_array.int32Array t -> unit meth
+      [ `ivec2 ] uniformLocation t -> Typed_array.int32Array t -> unit meth
 
-    method uniform3f : [`vec3] uniformLocation t -> float -> float -> float -> unit meth
+    method uniform3f : [ `vec3 ] uniformLocation t -> float -> float -> float -> unit meth
 
     method uniform3fv_typed :
-      [`vec3] uniformLocation t -> Typed_array.float32Array t -> unit meth
+      [ `vec3 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-    method uniform3fv : [`vec3] uniformLocation t -> float js_array t -> unit meth
+    method uniform3fv : [ `vec3 ] uniformLocation t -> float js_array t -> unit meth
 
-    method uniform3i : [`ivec3] uniformLocation t -> int -> int -> int -> unit meth
+    method uniform3i : [ `ivec3 ] uniformLocation t -> int -> int -> int -> unit meth
 
-    method uniform3iv : [`ivec3] uniformLocation t -> int js_array t -> unit meth
+    method uniform3iv : [ `ivec3 ] uniformLocation t -> int js_array t -> unit meth
 
     method uniform3iv_typed :
-      [`ivec3] uniformLocation t -> Typed_array.int32Array t -> unit meth
+      [ `ivec3 ] uniformLocation t -> Typed_array.int32Array t -> unit meth
 
     method uniform4f :
-      [`vec4] uniformLocation t -> float -> float -> float -> float -> unit meth
+      [ `vec4 ] uniformLocation t -> float -> float -> float -> float -> unit meth
 
     method uniform4fv_typed :
-      [`vec4] uniformLocation t -> Typed_array.float32Array t -> unit meth
+      [ `vec4 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-    method uniform4fv : [`vec4] uniformLocation t -> float js_array t -> unit meth
+    method uniform4fv : [ `vec4 ] uniformLocation t -> float js_array t -> unit meth
 
     method uniform4i :
-      [`ivec4] uniformLocation t -> int -> int -> int -> int -> unit meth
+      [ `ivec4 ] uniformLocation t -> int -> int -> int -> int -> unit meth
 
-    method uniform4iv : [`ivec4] uniformLocation t -> int js_array t -> unit meth
+    method uniform4iv : [ `ivec4 ] uniformLocation t -> int js_array t -> unit meth
 
     method uniform4iv_typed :
-      [`ivec4] uniformLocation t -> Typed_array.int32Array t -> unit meth
+      [ `ivec4 ] uniformLocation t -> Typed_array.int32Array t -> unit meth
 
     method uniformMatrix2fv :
-      [`mat2] uniformLocation t -> bool t -> float js_array t -> unit meth
+      [ `mat2 ] uniformLocation t -> bool t -> float js_array t -> unit meth
 
     method uniformMatrix2fv_typed :
-      [`mat2] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
+      [ `mat2 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
     method uniformMatrix3fv :
-      [`mat3] uniformLocation t -> bool t -> float js_array t -> unit meth
+      [ `mat3 ] uniformLocation t -> bool t -> float js_array t -> unit meth
 
     method uniformMatrix3fv_typed :
-      [`mat3] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
+      [ `mat3 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
     method uniformMatrix4fv :
-      [`mat4] uniformLocation t -> bool t -> float js_array t -> unit meth
+      [ `mat4 ] uniformLocation t -> bool t -> float js_array t -> unit meth
 
     method uniformMatrix4fv_typed :
-      [`mat4] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
+      [ `mat4 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
     method vertexAttrib1f : uint -> float -> unit meth
 
@@ -830,11 +829,9 @@ class type renderingContext =
 
     method _LINE_WIDTH_ : float parameter readonly_prop
 
-    method _ALIASED_POINT_SIZE_RANGE_ :
-      Typed_array.float32Array t parameter readonly_prop
+    method _ALIASED_POINT_SIZE_RANGE_ : Typed_array.float32Array t parameter readonly_prop
 
-    method _ALIASED_LINE_WIDTH_RANGE_ :
-      Typed_array.float32Array t parameter readonly_prop
+    method _ALIASED_LINE_WIDTH_RANGE_ : Typed_array.float32Array t parameter readonly_prop
 
     method _CULL_FACE_MODE_ : cullFaceMode parameter readonly_prop
 

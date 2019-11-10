@@ -19,7 +19,4 @@
  *)
 
 val program :
-     Pretty_print.t
-  -> ?source_map:string option * Source_map.t
-  -> Javascript.program
-  -> unit
+  Pretty_print.t -> ?source_map:string option * Source_map.t -> Javascript.program -> unit

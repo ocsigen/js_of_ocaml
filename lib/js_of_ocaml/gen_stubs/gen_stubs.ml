@@ -21,7 +21,7 @@ let () =
     externals := List.fold_right String_set.add l !externals;
     desc
   in
-  let mapper = {Ast_mapper.default_mapper with value_description} in
+  let mapper = { Ast_mapper.default_mapper with value_description } in
   List.iter
     (fun ml ->
       let in_ = open_in ml in

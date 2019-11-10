@@ -80,9 +80,10 @@ while compiling the OCaml toplevel:
 
   type alloc =
     { mutable first_free : int
-    ; mutable used : BitSet.t }
+    ; mutable used : BitSet.t
+    }
 
-  let make_alloc_table () = {first_free = 0; used = BitSet.create ()}
+  let make_alloc_table () = { first_free = 0; used = BitSet.create () }
 
   let next_available a i = BitSet.next_free a.used (max i a.first_free)
 
@@ -106,11 +107,12 @@ while compiling the OCaml toplevel:
     ; (* Constraints on variables *)
       mutable parameters : Var.t list array
     ; (* Function parameters *)
-      mutable constraints : S.t list }
+      mutable constraints : S.t list
+    }
 
   (* For debugging *)
 
-  let create nv = {constr = Array.make nv []; parameters = [|[]|]; constraints = []}
+  let create nv = { constr = Array.make nv []; parameters = [| [] |]; constraints = [] }
 
   (* let output_debug_information t count =
    *
@@ -284,15 +286,16 @@ module Preserve : Strategy = struct
 
   type t =
     { size : int
-    ; mutable scopes : (S.t * Js_traverse.t) list }
+    ; mutable scopes : (S.t * Js_traverse.t) list
+    }
 
-  let create size = {size; scopes = []}
+  let create size = { size; scopes = [] }
 
   let record_block t scope ~catch param =
     let defs =
       match catch, param with
-      | true, [V x] -> S.singleton x
-      | true, [S _] -> S.empty
+      | true, [ V x ] -> S.singleton x
+      | true, [ S _ ] -> S.empty
       | true, _ -> assert false
       | false, _ -> scope.Js_traverse.def
     in
@@ -305,7 +308,7 @@ module Preserve : Strategy = struct
           List.fold_left
             ~f:StringSet.union
             ~init:StringSet.empty
-            [state.Js_traverse.def_name; state.Js_traverse.use_name; Reserved.keyword]
+            [ state.Js_traverse.def_name; state.Js_traverse.use_name; Reserved.keyword ]
         in
         let assigned =
           S.fold

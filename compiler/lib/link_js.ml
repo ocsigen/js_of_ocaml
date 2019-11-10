@@ -27,9 +27,9 @@ let kind ~resolve_sourcemap_url file line =
     match String.drop_prefix ~prefix:sourceMappingURL_base64 line with
     | Some base64 -> `Json_base64 base64
     | None -> (
-      match String.drop_prefix ~prefix:sourceMappingURL line with
-      | Some url -> `Url url
-      | None -> `Other)
+        match String.drop_prefix ~prefix:sourceMappingURL line with
+        | Some url -> `Url url
+        | None -> `Other)
   in
   match s with
   | `Other -> `Other
@@ -78,15 +78,15 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
   match source_map with
   | None -> ()
   | Some (file, init_sm) -> (
-    match Source_map.merge ((0, "", init_sm) :: List.rev !sm) with
-    | None -> ()
-    | Some sm -> (
-      match file with
-      | None ->
-          let data = Source_map_io.to_string sm in
-          let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
-          output_string output s
-      | Some file ->
-          Source_map_io.to_file sm file;
-          let s = sourceMappingURL ^ Filename.basename file in
-          output_string output s))
+      match Source_map.merge ((0, "", init_sm) :: List.rev !sm) with
+      | None -> ()
+      | Some sm -> (
+          match file with
+          | None ->
+              let data = Source_map_io.to_string sm in
+              let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
+              output_string output s
+          | Some file ->
+              Source_map_io.to_file sm file;
+              let s = sourceMappingURL ^ Filename.basename file in
+              output_string output s))

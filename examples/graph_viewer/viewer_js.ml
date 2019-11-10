@@ -24,7 +24,8 @@ type rect =
   { x : int
   ; y : int
   ; width : int
-  ; height : int }
+  ; height : int
+  }
 
 module Html = Dom_html
 
@@ -140,7 +141,8 @@ module Common = Viewer_common.F (struct
     { x : int
     ; y : int
     ; width : int
-    ; height : int }
+    ; height : int
+    }
 
   let compute_extents _ = assert false
 end)
@@ -151,7 +153,7 @@ let redraw st s h v (canvas : Html.canvasElement Js.t) =
   let width = canvas##.width in
   let height = canvas##.height in
   (*Firebug.console##time (Js.string "draw");*)
-  redraw st s h v canvas {x = 0; y = 0; width; height} 0 0 width height
+  redraw st s h v canvas { x = 0; y = 0; width; height } 0 0 width height
 
 (*
 ;Firebug.console##timeEnd (Js.string "draw")
@@ -163,7 +165,7 @@ let ( >>= ) = Lwt.bind
 
 let http_get url =
   XmlHttpRequest.get url
-  >>= fun {XmlHttpRequest.code = cod; content = msg; _} ->
+  >>= fun { XmlHttpRequest.code = cod; content = msg; _ } ->
   if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
 
 let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http_get f
@@ -299,11 +301,14 @@ let start () =
     ; st_y = y1
     ; st_width = x2 -. x1
     ; st_height = y2 -. y1
-    ; st_pixmap = Common.make_pixmap () }
+    ; st_pixmap = Common.make_pixmap ()
+    }
   in
   let canvas = create_canvas page##.clientWidth page##.clientHeight in
   Dom.appendChild doc##.body canvas;
-  let allocation () = {x = 0; y = 0; width = canvas##.width; height = canvas##.height} in
+  let allocation () =
+    { x = 0; y = 0; width = canvas##.width; height = canvas##.height }
+  in
   let hadj = new adjustment () in
   let vadj = new adjustment () in
   let sadj = new adjustment ~upper:20. ~step_incr:1. ~page_incr:0. ~page_size:0. () in
@@ -364,9 +369,7 @@ Firebug.console##log(Js.string "sleep");
 *)
   in
   let a = allocation () in
-  let zoom_factor =
-    max (st.st_width /. float a.width) (st.st_height /. float a.height)
-  in
+  let zoom_factor = max (st.st_width /. float a.width) (st.st_height /. float a.height) in
   set_zoom_factor zoom_factor;
   let prev_scale = ref (get_scale ()) in
   let rescale x y =

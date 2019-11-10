@@ -27,7 +27,8 @@ type ('a, 'b) result =
 
 type alphabet =
   { emap : int array
-  ; dmap : int array }
+  ; dmap : int array
+  }
 
 type sub = string * int * int
 
@@ -56,11 +57,11 @@ let make_alphabet alphabet =
   let emap = Array.init (String.length alphabet) ~f:(fun i -> Char.code alphabet.[i]) in
   let dmap = Array.make 256 none in
   String.iteri ~f:(fun idx chr -> dmap.(Char.code chr) <- idx) alphabet;
-  {emap; dmap}
+  { emap; dmap }
 
-let length_alphabet {emap; _} = Array.length emap
+let length_alphabet { emap; _ } = Array.length emap
 
-let alphabet {emap; _} = emap
+let alphabet { emap; _ } = emap
 
 let default_alphabet =
   make_alphabet "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
@@ -86,7 +87,7 @@ let padding = int_of_char '='
 
 let error_msgf fmt = Format.ksprintf (fun err -> Error (`Msg err)) fmt
 
-let encode_sub pad {emap; _} ?(off = 0) ?len input =
+let encode_sub pad { emap; _ } ?(off = 0) ?len input =
   let len =
     match len with
     | Some len -> len
@@ -117,11 +118,7 @@ let encode_sub pad {emap; _} ?(off = 0) ?len input =
       then emit (unsafe_get_uint8 input (off + i)) 0 0 j
       else if i = n - 2
       then
-        emit
-          (unsafe_get_uint8 input (off + i))
-          (unsafe_get_uint8 input (off + i + 1))
-          0
-          j
+        emit (unsafe_get_uint8 input (off + i)) (unsafe_get_uint8 input (off + i + 1)) 0 j
       else (
         emit
           (unsafe_get_uint8 input (off + i))
@@ -164,7 +161,7 @@ let encode_exn ?pad ?alphabet ?off ?len input =
   | Ok v -> v
   | Error (`Msg err) -> invalid_arg err
 
-let decode_sub ?(pad = true) {dmap; _} ?(off = 0) ?len input =
+let decode_sub ?(pad = true) { dmap; _ } ?(off = 0) ?len input =
   let len =
     match len with
     | Some len -> len

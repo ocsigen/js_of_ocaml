@@ -16,15 +16,17 @@ let document = Html.window##.document
 type config =
   { nbcols : int
   ; nbrows : int
-  ; nbmines : int }
+  ; nbmines : int
+  }
 
-let default_config = {nbcols = 10; nbrows = 10; nbmines = 15}
+let default_config = { nbcols = 10; nbrows = 10; nbmines = 15 }
 
 type cell =
   { mutable mined : bool
   ; mutable seen : bool
   ; mutable flag : bool
-  ; mutable nbm : int }
+  ; mutable nbm : int
+  }
 
 type board = cell array array
 
@@ -59,12 +61,13 @@ let neighbours cf (x, y) =
     ; x, y + 1
     ; x + 1, y - 1
     ; x + 1, y
-    ; x + 1, y + 1 ]
+    ; x + 1, y + 1
+    ]
   in
   List.filter (valid cf) ngb
 
 let initialize_board cf =
-  let cell_init () = {mined = false; seen = false; flag = false; nbm = 0} in
+  let cell_init () = { mined = false; seen = false; flag = false; nbm = 0 } in
   let copy_cell_init b (i, j) = b.(i).(j) <- cell_init () in
   let set_mined b n = b.(n / cf.nbrows).(n mod cf.nbrows).mined <- true in
   let count_mined_adj b (i, j) =
@@ -106,7 +109,7 @@ let cells_to_see bd cf (i, j) =
           (c :: l1) @ cells_to_see_rec (l2 @ l)
   in
   visited.(i).(j) <- true;
-  cells_to_see_rec [i, j]
+  cells_to_see_rec [ i, j ]
 
 let b0 = 3
 
@@ -138,7 +141,8 @@ type demin_cf =
   ; cf : config
   ; mutable nb_marked_cells : int
   ; mutable nb_hidden_cells : int
-  ; mutable flag_switch_on : bool }
+  ; mutable flag_switch_on : bool
+  }
 
 let draw_cell dom bd =
   dom##.src :=
@@ -164,7 +168,7 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      (d.dom.(y).(x))##.onclick
+      d.dom.(y).(x)##.onclick
       := Html.handler (fun _ ->
              Html.window##alert (js "GAME OVER");
              Js._false)
@@ -197,14 +201,15 @@ let reveal d i j =
 let create_demin nb_c nb_r nb_m =
   let nbc = max default_config.nbcols nb_c and nbr = max default_config.nbrows nb_r in
   let nbm = min (nbc * nbr) (max 1 nb_m) in
-  let cf = {nbcols = nbc; nbrows = nbr; nbmines = nbm} in
+  let cf = { nbcols = nbc; nbrows = nbr; nbmines = nbm } in
   generate_seed ();
   { cf
   ; bd = initialize_board cf
   ; dom = Array.make nbr [||]
   ; nb_marked_cells = 0
   ; nb_hidden_cells = (cf.nbrows * cf.nbcols) - cf.nbmines
-  ; flag_switch_on = false }
+  ; flag_switch_on = false
+  }
 
 type mode =
   | Normal

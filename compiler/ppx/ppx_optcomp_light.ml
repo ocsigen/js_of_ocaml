@@ -47,7 +47,7 @@ end = struct
     let len = String.length p in
     let rec split beg cur =
       if cur >= len
-      then if cur - beg > 0 then [String.sub p ~pos:beg ~len:(cur - beg)] else []
+      then if cur - beg > 0 then [ String.sub p ~pos:beg ~len:(cur - beg) ] else []
       else if p.[cur] = sep
       then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
@@ -65,14 +65,14 @@ end = struct
 
   let rec compare v v' =
     match v, v' with
-    | [x], [y] -> compint x y
+    | [ x ], [ y ] -> compint x y
     | [], [] -> 0
     | [], y :: _ -> compint 0 y
     | x :: _, [] -> compint x 0
     | x :: xs, y :: ys -> (
-      match compint x y with
-      | 0 -> compare xs ys
-      | n -> n)
+        match compint x y with
+        | 0 -> compare xs ys
+        | n -> n)
 end
 
 exception Invalid
@@ -81,45 +81,50 @@ let keep loc (attrs : attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
-          | {Location.txt = "if"; _}, attr_payload -> (
-            match attr_payload with
-            | PStr
-                [ { pstr_desc =
-                      Pstr_eval
-                        ( {pexp_desc = Pexp_apply (op, [(Nolabel, a); (Nolabel, b)]); _}
-                        , [] )
-                  ; _ } ] ->
-                let get_op = function
-                  | {pexp_desc = Pexp_ident {txt = Lident str; _}; _} -> (
-                    match str with
-                    | "<=" -> ( <=)
-                    | ">=" -> ( >=)
-                    | ">" -> ( >)
-                    | "<" -> ( <)
-                    | "<>" -> ( <>)
-                    | "=" -> ( =)
-                    | _ -> raise Invalid)
-                  | _ -> raise Invalid
-                in
-                let eval = function
-                  | {pexp_desc = Pexp_ident {txt = Lident "ocaml_version"; _}; _} ->
-                      Version.current
-                  | {pexp_desc = Pexp_tuple l; _} ->
-                      let l =
-                        List.map l ~f:(function
-                            | {pexp_desc = Pexp_constant (Pconst_integer (d, None)); _}
-                              ->
-                                int_of_string d
-                            | _ -> raise Invalid)
-                      in
-                      Version.of_list l
-                  | _ -> raise Invalid
-                in
-                let op = get_op op in
-                let a = eval a in
-                let b = eval b in
-                op (Version.compare a b) 0
-            | _ -> raise Invalid)
+          | { Location.txt = "if"; _ }, attr_payload -> (
+              match attr_payload with
+              | PStr
+                  [ { pstr_desc =
+                        Pstr_eval
+                          ( { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ])
+                            ; _
+                            }
+                          , [] )
+                    ; _
+                    }
+                  ] ->
+                  let get_op = function
+                    | { pexp_desc = Pexp_ident { txt = Lident str; _ }; _ } -> (
+                        match str with
+                        | "<=" -> ( <=)
+                        | ">=" -> ( >=)
+                        | ">" -> ( >)
+                        | "<" -> ( <)
+                        | "<>" -> ( <>)
+                        | "=" -> ( =)
+                        | _ -> raise Invalid)
+                    | _ -> raise Invalid
+                  in
+                  let eval = function
+                    | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
+                        Version.current
+                    | { pexp_desc = Pexp_tuple l; _ } ->
+                        let l =
+                          List.map l ~f:(function
+                              | { pexp_desc = Pexp_constant (Pconst_integer (d, None))
+                                ; _
+                                } ->
+                                  int_of_string d
+                              | _ -> raise Invalid)
+                        in
+                        Version.of_list l
+                    | _ -> raise Invalid
+                  in
+                  let op = get_op op in
+                  let a = eval a in
+                  let b = eval b in
+                  op (Version.compare a b) 0
+              | _ -> raise Invalid)
           | _ -> true)
     in
     if false && not keep
@@ -144,13 +149,13 @@ let filter_map ~f l =
   List.rev l
 
 let rec filter_pattern = function
-  | {ppat_desc = Ppat_or (p1, p2); _} as p -> (
-    match filter_pattern p1, filter_pattern p2 with
-    | None, None -> None
-    | Some p1, None -> Some p1
-    | None, Some p2 -> Some p2
-    | Some p1, Some p2 -> Some {p with ppat_desc = Ppat_or (p1, p2)})
-  | {ppat_attributes; ppat_loc; _} as p ->
+  | { ppat_desc = Ppat_or (p1, p2); _ } as p -> (
+      match filter_pattern p1, filter_pattern p2 with
+      | None, None -> None
+      | Some p1, None -> Some p1
+      | None, Some p2 -> Some p2
+      | Some p1, Some p2 -> Some { p with ppat_desc = Ppat_or (p1, p2) })
+  | { ppat_attributes; ppat_loc; _ } as p ->
       if keep ppat_loc ppat_attributes then Some p else None
 
 let mapper =
@@ -161,7 +166,7 @@ let mapper =
           filter_map cases ~f:(fun case ->
               match filter_pattern case.pc_lhs with
               | None -> None
-              | Some pattern -> Some {case with pc_lhs = pattern})
+              | Some pattern -> Some { case with pc_lhs = pattern })
         in
         Ast_mapper.default_mapper.cases mapper cases)
   ; structure =
@@ -169,10 +174,11 @@ let mapper =
         let items =
           List.filter items ~f:(fun item ->
               match item.pstr_desc with
-              | Pstr_module {pmb_attributes; pmb_loc; _} -> keep pmb_loc pmb_attributes
+              | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
               | _ -> true)
         in
-        Ast_mapper.default_mapper.structure mapper items) }
+        Ast_mapper.default_mapper.structure mapper items)
+  }
 
 let () =
   Driver.register

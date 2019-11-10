@@ -46,7 +46,7 @@ let test t v =
   else print_endline "Not equal"
 
 let%expect_test _ =
-  test json ([1; 2; 3], Some 1., str);
+  test json ([ 1; 2; 3 ], Some 1., str);
   [%expect {||}]
 
 type intseq =

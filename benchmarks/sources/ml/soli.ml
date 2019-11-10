@@ -18,15 +18,16 @@ type peg =
   | Peg
 
 let board =
-  [| [|Out; Out; Out; Out; Out; Out; Out; Out; Out|]
-   ; [|Out; Out; Out; Peg; Peg; Peg; Out; Out; Out|]
-   ; [|Out; Out; Out; Peg; Peg; Peg; Out; Out; Out|]
-   ; [|Out; Peg; Peg; Peg; Peg; Peg; Peg; Peg; Out|]
-   ; [|Out; Peg; Peg; Peg; Empty; Peg; Peg; Peg; Out|]
-   ; [|Out; Peg; Peg; Peg; Peg; Peg; Peg; Peg; Out|]
-   ; [|Out; Out; Out; Peg; Peg; Peg; Out; Out; Out|]
-   ; [|Out; Out; Out; Peg; Peg; Peg; Out; Out; Out|]
-   ; [|Out; Out; Out; Out; Out; Out; Out; Out; Out|] |]
+  [| [| Out; Out; Out; Out; Out; Out; Out; Out; Out |]
+   ; [| Out; Out; Out; Peg; Peg; Peg; Out; Out; Out |]
+   ; [| Out; Out; Out; Peg; Peg; Peg; Out; Out; Out |]
+   ; [| Out; Peg; Peg; Peg; Peg; Peg; Peg; Peg; Out |]
+   ; [| Out; Peg; Peg; Peg; Empty; Peg; Peg; Peg; Out |]
+   ; [| Out; Peg; Peg; Peg; Peg; Peg; Peg; Peg; Out |]
+   ; [| Out; Out; Out; Peg; Peg; Peg; Out; Out; Out |]
+   ; [| Out; Out; Out; Peg; Peg; Peg; Out; Out; Out |]
+   ; [| Out; Out; Out; Out; Out; Out; Out; Out; Out |]
+  |]
 
 (*
 let print_peg = function
@@ -46,17 +47,20 @@ let print_board board =
 
 type direction =
   { dx : int
-  ; dy : int }
+  ; dy : int
+  }
 
-let dir = [|{dx = 0; dy = 1}; {dx = 1; dy = 0}; {dx = 0; dy = -1}; {dx = -1; dy = 0}|]
+let dir =
+  [| { dx = 0; dy = 1 }; { dx = 1; dy = 0 }; { dx = 0; dy = -1 }; { dx = -1; dy = 0 } |]
 
 type move =
   { x1 : int
   ; y1 : int
   ; x2 : int
-  ; y2 : int }
+  ; y2 : int
+  }
 
-let moves = Array.make 31 {x1 = 0; y1 = 0; x2 = 0; y2 = 0}
+let moves = Array.make 31 { x1 = 0; y1 = 0; x2 = 0; y2 = 0 }
 
 let counter = ref 0
 
@@ -89,24 +93,24 @@ let rec solve m =
                 let j2 = j1 + d2 in
                 match board.(i1).(j1) with
                 | Peg -> (
-                  match board.(i2).(j2) with
-                  | Empty ->
-                      (*
+                    match board.(i2).(j2) with
+                    | Empty ->
+                        (*
                       print_int i; print_string ", ";
                       print_int j; print_string ") dir ";
                       print_int k; print_string "\n";
 *)
-                      board.(i).(j) <- Empty;
-                      board.(i1).(j1) <- Empty;
-                      board.(i2).(j2) <- Peg;
-                      if solve (m + 1)
-                      then (
-                        moves.(m) <- {x1 = i; y1 = j; x2 = i2; y2 = j2};
-                        raise Found);
-                      board.(i).(j) <- Peg;
-                      board.(i1).(j1) <- Peg;
-                      board.(i2).(j2) <- Empty
-                  | _ -> ())
+                        board.(i).(j) <- Empty;
+                        board.(i1).(j1) <- Empty;
+                        board.(i2).(j2) <- Peg;
+                        if solve (m + 1)
+                        then (
+                          moves.(m) <- { x1 = i; y1 = j; x2 = i2; y2 = j2 };
+                          raise Found);
+                        board.(i).(j) <- Peg;
+                        board.(i1).(j1) <- Peg;
+                        board.(i2).(j2) <- Empty
+                    | _ -> ())
                 | _ -> ()
               done
           | _ -> ()

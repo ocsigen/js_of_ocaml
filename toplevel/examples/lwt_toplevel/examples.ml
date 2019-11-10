@@ -53,7 +53,7 @@ module RList = ReactiveData.RList
 
 let rl, rhandle = RList.create []
 
-let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [txt x])) rl
+let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [ txt x ])) rl
 
 let ul_elt = Tyxml_js.R.Html.ul li_rl
 
@@ -89,8 +89,10 @@ let div_elt =
             [ txt "Uptime is "
             ; R.Html.txt
                 (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal)
-            ; txt " s" ]
-        ; ul_elt ]))
+            ; txt " s"
+            ]
+        ; ul_elt
+        ]))
 
 let _ = display div_elt
 
@@ -98,14 +100,15 @@ let _ = display div_elt
 
 open Graphics_js
 
-let () = loop [Mouse_motion] (function {mouse_x = x; mouse_y = y} -> fill_circle x y 5)
+let () =
+  loop [ Mouse_motion ] (function { mouse_x = x; mouse_y = y } -> fill_circle x y 5)
 
 (** Graphics: Draw chars*)
 
 open Graphics_js
 
 let () =
-  loop [Mouse_motion; Key_pressed] (function {mouse_x = x; mouse_y = y; key} ->
+  loop [ Mouse_motion; Key_pressed ] (function { mouse_x = x; mouse_y = y; key } ->
       moveto x y;
       draw_char key)
 

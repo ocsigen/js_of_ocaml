@@ -95,7 +95,8 @@ let iter_block_bound_vars f block =
 type st =
   { index : int
   ; mutable lowlink : int
-  ; mutable in_stack : bool }
+  ; mutable in_stack : bool
+  }
 
 let find_loops ((_, blocks, _) as prog) =
   let in_loop = ref Addr.Map.empty in
@@ -103,7 +104,7 @@ let find_loops ((_, blocks, _) as prog) =
   let state = ref Addr.Map.empty in
   let stack = Stack.create () in
   let rec traverse pc =
-    let st = {index = !index; lowlink = !index; in_stack = true} in
+    let st = { index = !index; lowlink = !index; in_stack = true } in
     state := Addr.Map.add pc st !state;
     incr index;
     Stack.push pc stack;

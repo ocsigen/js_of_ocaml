@@ -177,7 +177,8 @@ let named_colors =
     ; "white", (255, 255, 255)
     ; "whitesmoke", (245, 245, 245)
     ; "yellow", (255, 255, 0)
-    ; "yellowgreen", (154, 205, 50) ];
+    ; "yellowgreen", (154, 205, 50)
+    ];
   colors
 
 let rgb_of_hsv h s v =
@@ -370,7 +371,8 @@ let named_colors =
     ; "white", (255, 255, 255)
     ; "whitesmoke", (245, 245, 245)
     ; "yellow", (255, 255, 0)
-    ; "yellowgreen", (154, 205, 50) ];
+    ; "yellowgreen", (154, 205, 50)
+    ];
   colors
 
 (****)
@@ -385,13 +387,13 @@ let parse_float s = try float_of_string s with Failure _ -> raise Not_found
 
 let parse_rectangle s =
   match Str.split comma_re s with
-  | [x1; y1; x2; y2] ->
+  | [ x1; y1; x2; y2 ] ->
       parse_float x1, -.parse_float y2, parse_float x2, -.parse_float y1
   | _ -> raise Not_found
 
 let parse_point s =
   match Str.split comma_re s with
-  | [x; y] -> parse_float x, -.parse_float y
+  | [ x; y ] -> parse_float x, -.parse_float y
   | _ -> raise Not_found
 
 let start_point l =
@@ -401,7 +403,7 @@ let start_point l =
 
 let rec end_point l =
   match l with
-  | [x] -> x
+  | [ x ] -> x
   | _ :: r -> end_point r
   | _ -> raise Not_found
 
@@ -418,7 +420,7 @@ let add_arrow scene (px, py) (ux, uy) color arrow_size (*XXX pen_width*) =
   let vy = dx *. arrow_width in
   let qx = px +. dx in
   let qy = py +. dy in
-  let l = [|px, py; px -. vx, py -. vy; qx, qy; px +. vx, py +. vy|] in
+  let l = [| px, py; px -. vx, py -. vy; qx, qy; px +. vx, py +. vy |] in
   Scene.add scene (Scene.Polygon (l, color, color))
 
 let rec render_spline_rec l =
@@ -440,19 +442,19 @@ let parse_spline scene s color arrow_size =
       let l = List.map (fun s -> Str.split comma_re s) (Str.split wsp_re s) in
       let endp, l =
         match l with
-        | ["e"; x; y] :: r -> Some (parse_float x, -.parse_float y), r
+        | [ "e"; x; y ] :: r -> Some (parse_float x, -.parse_float y), r
         | _ -> None, l
       in
       let startp, l =
         match l with
-        | ["s"; x; y] :: r -> Some (parse_float x, -.parse_float y), r
+        | [ "s"; x; y ] :: r -> Some (parse_float x, -.parse_float y), r
         | _ -> None, l
       in
       let l =
         List.map
           (fun l ->
             match l with
-            | [x; y] -> parse_float x, -.parse_float y
+            | [ x; y ] -> parse_float x, -.parse_float y
             | _ -> raise Not_found)
           l
       in
@@ -482,8 +484,7 @@ let f g =
       let width = dpi *. parse_float (StringMap.find "width" n.G.node_attr) in
       let height = dpi *. parse_float (StringMap.find "height" n.G.node_attr) in
       let color =
-        parse_color
-          (try StringMap.find "color" n.G.node_attr with Not_found -> "black")
+        parse_color (try StringMap.find "color" n.G.node_attr with Not_found -> "black")
       in
       let shape =
         try StringMap.find "shape" n.G.node_attr with Not_found -> "ellipse"
@@ -509,8 +510,7 @@ let f g =
             scene
             (Scene.Ellipse (x, y, width /. 2., height /. 2., fillcolor, color)));
       let font_color =
-        parse_color
-          (try StringMap.find "color" n.G.node_attr with Not_found -> "black")
+        parse_color (try StringMap.find "color" n.G.node_attr with Not_found -> "black")
       in
       let font_size =
         try parse_float (StringMap.find "fontsize" n.G.node_attr) with Not_found -> 14.
@@ -530,8 +530,7 @@ let f g =
     (fun _ e ->
       (*      Format.eprintf "%s -> %s@." e.G.tail.G.name e.G.head.G.name;*)
       let color =
-        parse_color
-          (try StringMap.find "color" e.G.edge_attr with Not_found -> "black")
+        parse_color (try StringMap.find "color" e.G.edge_attr with Not_found -> "black")
       in
       let arrow_size =
         try parse_float (StringMap.find "arrowsize" e.G.edge_attr) with Not_found -> 1.

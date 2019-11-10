@@ -23,19 +23,21 @@ open Cmdliner
 
 type 'a on_off =
   { enable : 'a
-  ; disable : 'a }
+  ; disable : 'a
+  }
 
 type t =
   { debug : string list on_off
   ; optim : string list on_off
   ; quiet : bool
-  ; custom_header : string option }
+  ; custom_header : string option
+  }
 
 let debug =
   let doc = "enable debug [$(docv)]." in
   let all = List.map (Debug.available ()) ~f:(fun s -> s, s) in
   let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info ["debug"] ~docv:"SECTION" ~doc)
+    Arg.(value & opt_all (list (enum all)) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
   in
   Term.(pure List.flatten $ arg)
 
@@ -43,7 +45,7 @@ let enable =
   let doc = "Enable optimization [$(docv)]." in
   let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
   let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info ["enable"] ~docv:"OPT" ~doc)
+    Arg.(value & opt_all (list (enum all)) [] & info [ "enable" ] ~docv:"OPT" ~doc)
   in
   Term.(pure List.flatten $ arg)
 
@@ -51,32 +53,32 @@ let disable =
   let doc = "Disable optimization [$(docv)]." in
   let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
   let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info ["disable"] ~docv:"OPT" ~doc)
+    Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
   in
   Term.(pure List.flatten $ arg)
 
 let pretty =
   let doc = "Pretty print the output." in
-  Arg.(value & flag & info ["pretty"] ~doc)
+  Arg.(value & flag & info [ "pretty" ] ~doc)
 
 let debuginfo =
   let doc = "Output debug information." in
-  Arg.(value & flag & info ["debuginfo"; "debug-info"] ~doc)
+  Arg.(value & flag & info [ "debuginfo"; "debug-info" ] ~doc)
 
 let noinline =
   let doc = "Disable inlining." in
-  Arg.(value & flag & info ["noinline"; "no-inline"] ~doc)
+  Arg.(value & flag & info [ "noinline"; "no-inline" ] ~doc)
 
 let is_quiet =
   let doc = "suppress non-error messages." in
-  Arg.(value & flag & info ["quiet"; "q"] ~doc)
+  Arg.(value & flag & info [ "quiet"; "q" ] ~doc)
 
 let custom_header =
   let doc =
     "Provide a custom header for the generated JavaScript file, useful for making the \
      script an executable file with #!/usr/bin/env node"
   in
-  Arg.(value & opt (some string) None & info ["custom-header"] ~doc)
+  Arg.(value & opt (some string) None & info [ "custom-header" ] ~doc)
 
 let t =
   Term.(
@@ -89,10 +91,11 @@ let t =
         in
         let disable = disable_if_pretty "shortvar" disable in
         let disable = disable_if_pretty "share" disable in
-        { debug = {enable = debug; disable = []}
-        ; optim = {enable; disable}
+        { debug = { enable = debug; disable = [] }
+        ; optim = { enable; disable }
         ; quiet
-        ; custom_header = c_header })
+        ; custom_header = c_header
+        })
     $ debug
     $ enable
     $ disable

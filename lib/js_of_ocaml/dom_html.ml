@@ -1767,8 +1767,7 @@ and canvasRenderingContext2D =
     method createPattern_fromCanvas :
       canvasElement t -> js_string t -> canvasPattern t meth
 
-    method createPattern_fromVideo :
-      videoElement t -> js_string t -> canvasPattern t meth
+    method createPattern_fromVideo : videoElement t -> js_string t -> canvasPattern t meth
 
     method lineWidth : float prop
 
@@ -1802,8 +1801,7 @@ and canvasRenderingContext2D =
 
     method quadraticCurveTo : float -> float -> float -> float -> unit meth
 
-    method bezierCurveTo :
-      float -> float -> float -> float -> float -> float -> unit meth
+    method bezierCurveTo : float -> float -> float -> float -> float -> float -> unit meth
 
     method arcTo : float -> float -> float -> float -> float -> unit meth
 
@@ -3396,117 +3394,117 @@ let tagged (e : #element t) =
   else
     match String.unsafe_get tag 0 with
     | 'a' -> (
-      match tag with
-      | "a" -> A (Js.Unsafe.coerce e)
-      | "area" -> Area (Js.Unsafe.coerce e)
-      | "audio" -> Audio (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "a" -> A (Js.Unsafe.coerce e)
+        | "area" -> Area (Js.Unsafe.coerce e)
+        | "audio" -> Audio (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'b' -> (
-      match tag with
-      | "base" -> Base (Js.Unsafe.coerce e)
-      | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
-      | "body" -> Body (Js.Unsafe.coerce e)
-      | "br" -> Br (Js.Unsafe.coerce e)
-      | "button" -> Button (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "base" -> Base (Js.Unsafe.coerce e)
+        | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
+        | "body" -> Body (Js.Unsafe.coerce e)
+        | "br" -> Br (Js.Unsafe.coerce e)
+        | "button" -> Button (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'c' -> (
-      match tag with
-      | "canvas" -> Canvas (Js.Unsafe.coerce e)
-      | "caption" -> Caption (Js.Unsafe.coerce e)
-      | "col" -> Col (Js.Unsafe.coerce e)
-      | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "canvas" -> Canvas (Js.Unsafe.coerce e)
+        | "caption" -> Caption (Js.Unsafe.coerce e)
+        | "col" -> Col (Js.Unsafe.coerce e)
+        | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'd' -> (
-      match tag with
-      | "del" -> Del (Js.Unsafe.coerce e)
-      | "div" -> Div (Js.Unsafe.coerce e)
-      | "dl" -> Dl (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "del" -> Del (Js.Unsafe.coerce e)
+        | "div" -> Div (Js.Unsafe.coerce e)
+        | "dl" -> Dl (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'e' -> (
-      match tag with
-      | "embed" -> Embed (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "embed" -> Embed (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'f' -> (
-      match tag with
-      | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
-      | "form" -> Form (Js.Unsafe.coerce e)
-      | "frameset" -> Frameset (Js.Unsafe.coerce e)
-      | "frame" -> Frame (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
+        | "form" -> Form (Js.Unsafe.coerce e)
+        | "frameset" -> Frameset (Js.Unsafe.coerce e)
+        | "frame" -> Frame (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'h' -> (
-      match tag with
-      | "h1" -> H1 (Js.Unsafe.coerce e)
-      | "h2" -> H2 (Js.Unsafe.coerce e)
-      | "h3" -> H3 (Js.Unsafe.coerce e)
-      | "h4" -> H4 (Js.Unsafe.coerce e)
-      | "h5" -> H5 (Js.Unsafe.coerce e)
-      | "h6" -> H6 (Js.Unsafe.coerce e)
-      | "head" -> Head (Js.Unsafe.coerce e)
-      | "hr" -> Hr (Js.Unsafe.coerce e)
-      | "html" -> Html (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "h1" -> H1 (Js.Unsafe.coerce e)
+        | "h2" -> H2 (Js.Unsafe.coerce e)
+        | "h3" -> H3 (Js.Unsafe.coerce e)
+        | "h4" -> H4 (Js.Unsafe.coerce e)
+        | "h5" -> H5 (Js.Unsafe.coerce e)
+        | "h6" -> H6 (Js.Unsafe.coerce e)
+        | "head" -> Head (Js.Unsafe.coerce e)
+        | "hr" -> Hr (Js.Unsafe.coerce e)
+        | "html" -> Html (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'i' -> (
-      match tag with
-      | "iframe" -> Iframe (Js.Unsafe.coerce e)
-      | "img" -> Img (Js.Unsafe.coerce e)
-      | "input" -> Input (Js.Unsafe.coerce e)
-      | "ins" -> Ins (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "iframe" -> Iframe (Js.Unsafe.coerce e)
+        | "img" -> Img (Js.Unsafe.coerce e)
+        | "input" -> Input (Js.Unsafe.coerce e)
+        | "ins" -> Ins (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'l' -> (
-      match tag with
-      | "label" -> Label (Js.Unsafe.coerce e)
-      | "legend" -> Legend (Js.Unsafe.coerce e)
-      | "li" -> Li (Js.Unsafe.coerce e)
-      | "link" -> Link (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "label" -> Label (Js.Unsafe.coerce e)
+        | "legend" -> Legend (Js.Unsafe.coerce e)
+        | "li" -> Li (Js.Unsafe.coerce e)
+        | "link" -> Link (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'm' -> (
-      match tag with
-      | "map" -> Map (Js.Unsafe.coerce e)
-      | "meta" -> Meta (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "map" -> Map (Js.Unsafe.coerce e)
+        | "meta" -> Meta (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'o' -> (
-      match tag with
-      | "object" -> Object (Js.Unsafe.coerce e)
-      | "ol" -> Ol (Js.Unsafe.coerce e)
-      | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
-      | "option" -> Option (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "object" -> Object (Js.Unsafe.coerce e)
+        | "ol" -> Ol (Js.Unsafe.coerce e)
+        | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
+        | "option" -> Option (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'p' -> (
-      match tag with
-      | "p" -> P (Js.Unsafe.coerce e)
-      | "param" -> Param (Js.Unsafe.coerce e)
-      | "pre" -> Pre (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "p" -> P (Js.Unsafe.coerce e)
+        | "param" -> Param (Js.Unsafe.coerce e)
+        | "pre" -> Pre (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'q' -> (
-      match tag with
-      | "q" -> Q (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "q" -> Q (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 's' -> (
-      match tag with
-      | "script" -> Script (Js.Unsafe.coerce e)
-      | "select" -> Select (Js.Unsafe.coerce e)
-      | "style" -> Style (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "script" -> Script (Js.Unsafe.coerce e)
+        | "select" -> Select (Js.Unsafe.coerce e)
+        | "style" -> Style (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 't' -> (
-      match tag with
-      | "table" -> Table (Js.Unsafe.coerce e)
-      | "tbody" -> Tbody (Js.Unsafe.coerce e)
-      | "td" -> Td (Js.Unsafe.coerce e)
-      | "textarea" -> Textarea (Js.Unsafe.coerce e)
-      | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
-      | "th" -> Th (Js.Unsafe.coerce e)
-      | "thead" -> Thead (Js.Unsafe.coerce e)
-      | "title" -> Title (Js.Unsafe.coerce e)
-      | "tr" -> Tr (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "table" -> Table (Js.Unsafe.coerce e)
+        | "tbody" -> Tbody (Js.Unsafe.coerce e)
+        | "td" -> Td (Js.Unsafe.coerce e)
+        | "textarea" -> Textarea (Js.Unsafe.coerce e)
+        | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
+        | "th" -> Th (Js.Unsafe.coerce e)
+        | "thead" -> Thead (Js.Unsafe.coerce e)
+        | "title" -> Title (Js.Unsafe.coerce e)
+        | "tr" -> Tr (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'u' -> (
-      match tag with
-      | "ul" -> Ul (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "ul" -> Ul (Js.Unsafe.coerce e)
+        | _ -> other e)
     | 'v' -> (
-      match tag with
-      | "video" -> Video (Js.Unsafe.coerce e)
-      | _ -> other e)
+        match tag with
+        | "video" -> Video (Js.Unsafe.coerce e)
+        | _ -> other e)
     | _ -> other e
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
@@ -3558,11 +3556,12 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
         ; w##.mozRequestAnimationFrame
         ; w##.webkitRequestAnimationFrame
         ; w##.oRequestAnimationFrame
-        ; w##.msRequestAnimationFrame ]
+        ; w##.msRequestAnimationFrame
+        ]
       in
       try
         let req = List.find (fun c -> Js.Optdef.test c) l in
-        fun callback -> Js.Unsafe.fun_call req [|Js.Unsafe.inject callback|]
+        fun callback -> Js.Unsafe.fun_call req [| Js.Unsafe.inject callback |]
       with Not_found ->
         let now () = (new%js Js.date_now)##getTime in
         let last = ref (now ()) in
@@ -3610,6 +3609,6 @@ let clearTimeout (id : timeout_id_safe) =
       id := None;
       window##clearTimeout x
 
-let js_array_of_collection (c : #element collection Js.t) :
-    #element Js.t Js.js_array Js.t =
-  Js.Unsafe.(meth_call (js_expr "[].slice") "call" [|inject c|])
+let js_array_of_collection (c : #element collection Js.t) : #element Js.t Js.js_array Js.t
+    =
+  Js.Unsafe.(meth_call (js_expr "[].slice") "call" [| inject c |])

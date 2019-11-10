@@ -50,7 +50,8 @@ let f
     ; fs_output
     ; fs_external
     ; export_file
-    ; keep_unit_names } =
+    ; keep_unit_names
+    } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
   let global =
@@ -73,7 +74,7 @@ let f
             let pkg, d' =
               match String.split ~sep:Filename.dir_sep d with
               | [] -> assert false
-              | [d] -> "js_of_ocaml", d
+              | [ d ] -> "js_of_ocaml", d
               | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
             in
             Filename.concat (Findlib.find_pkg_dir pkg) d'
@@ -98,7 +99,7 @@ let f
   in
   Linker.load_files runtime_files;
   let paths =
-    try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
+    try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
     with Not_found -> include_dir
   in
   if times () then Format.eprintf "Start parsing...@.";
@@ -124,7 +125,7 @@ let f
   let env_instr () =
     List.map static_env ~f:(fun (k, v) ->
         Primitive.add_external "caml_set_static_env";
-        let args = [Code.Pc (IString k); Code.Pc (IString v)] in
+        let args = [ Code.Pc (IString k); Code.Pc (IString v) ] in
         Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
   let output (one : Parse_bytecode.one) ~standalone output_file =
@@ -135,8 +136,9 @@ let f
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
-            ; (if init_pseudo_fs then [PseudoFs.init ()] else [])
-            ; env_instr () ]
+            ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+            ; env_instr ()
+            ]
         in
         let code = Code.prepend one.code instr in
         let fmt = Pretty_print.to_out_channel stdout in
@@ -161,8 +163,9 @@ let f
             let instr =
               List.concat
                 [ fs_instr1
-                ; (if init_pseudo_fs then [PseudoFs.init ()] else [])
-                ; env_instr () ]
+                ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+                ; env_instr ()
+                ]
             in
             let code = Code.prepend one.code instr in
             let fmt = Pretty_print.to_out_channel chan in
@@ -197,7 +200,8 @@ let f
     let code : Parse_bytecode.one =
       { code = Parse_bytecode.predefined_exceptions ()
       ; cmis = StringSet.empty
-      ; debug = Parse_bytecode.Debug.create ~toplevel:false false }
+      ; debug = Parse_bytecode.Debug.create ~toplevel:false false
+      }
     in
     output code ~standalone:true (fst output_file)
   else
@@ -304,16 +308,16 @@ let _ =
         else "a newer"
       in
       Format.eprintf
-        "%s: Error: Your ocaml bytecode and the js_of_ocaml compiler have to be \
-         compiled with the same version of ocaml.@."
+        "%s: Error: Your ocaml bytecode and the js_of_ocaml compiler have to be compiled \
+         with the same version of ocaml.@."
         Sys.argv.(0);
       Format.eprintf
         "%s: Error: The Js_of_ocaml compiler has been compiled with ocaml version %s.@."
         Sys.argv.(0)
         Sys.ocaml_version;
       Format.eprintf
-        "%s: Error: Its seems that your ocaml bytecode has been compiled with %s \
-         version of ocaml.@."
+        "%s: Error: Its seems that your ocaml bytecode has been compiled with %s version \
+         of ocaml.@."
         Sys.argv.(0)
         comp;
       exit 1

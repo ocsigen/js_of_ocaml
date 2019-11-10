@@ -76,13 +76,13 @@ let draw_element ctx e =
       Cairo.restore ctx;
       perform_draw ctx fill stroke
   | Polygon (points, fill, stroke) -> (
-    match points with
-    | (x, y) :: rem ->
-        Cairo.move_to ctx x y;
-        List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
-        Cairo.close_path ctx;
-        perform_draw ctx fill stroke
-    | [] -> ())
+      match points with
+      | (x, y) :: rem ->
+          Cairo.move_to ctx x y;
+          List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
+          Cairo.close_path ctx;
+          perform_draw ctx fill stroke
+      | [] -> ())
   | Text (x, y, txt, font, font_size, fill, stroke) ->
       let ext = Cairo.text_extents ctx txt in
       Cairo.move_to ctx (x -. ext.Cairo.x_bearing -. (ext.Cairo.text_width /. 2.)) y;
@@ -113,13 +113,13 @@ let compute_extent ctx e =
       Cairo.restore ctx;
       path_extent ctx fill stroke
   | Polygon (points, fill, stroke) -> (
-    match points with
-    | (x, y) :: rem ->
-        Cairo.move_to ctx x y;
-        List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
-        Cairo.close_path ctx;
-        path_extent ctx fill stroke
-    | [] -> assert false)
+      match points with
+      | (x, y) :: rem ->
+          Cairo.move_to ctx x y;
+          List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
+          Cairo.close_path ctx;
+          path_extent ctx fill stroke
+      | [] -> assert false)
   | Text (x, y, txt, font, font_size, fill, stroke) ->
       let ext = Cairo.text_extents ctx txt in
       ( x -. (ext.Cairo.text_width /. 2.)
@@ -291,7 +291,8 @@ let named_colors =
     ; "white", (255, 255, 255)
     ; "whitesmoke", (245, 245, 245)
     ; "yellow", (255, 255, 0)
-    ; "yellowgreen", (154, 205, 50) ];
+    ; "yellowgreen", (154, 205, 50)
+    ];
   colors
 
 let svg_name nm = "http://www.w3.org/2000/svg", nm
@@ -367,7 +368,7 @@ let rec parse_cmds l =
       let args = List.map float_of_string (Str.split comma_wsp args) in
       let rem = parse_cmds rem in
       match cmd, args with
-      | "M", [x; y] -> Move_to (x, y) :: rem
+      | "M", [ x; y ] -> Move_to (x, y) :: rem
       | "C", (_ :: _ as args) -> parse_curve_to args rem
       | _ -> assert false)
   | [] -> []
@@ -446,9 +447,9 @@ let rec read_element nm attrs i =
   match Xmlm.input i with
   | `El_end -> ()
   | `Data d -> (
-    match Xmlm.input i with
-    | `El_end -> ()
-    | _ -> assert false)
+      match Xmlm.input i with
+      | `El_end -> ()
+      | _ -> assert false)
   | `El_start ((_, nm'), attrs') ->
       (*
       Format.eprintf "%s" nm';
@@ -487,7 +488,7 @@ let redraw w range ev =
   (*
   let t1 = Unix.gettimeofday () in
 *)
-  let ctx = Cairo_lablgtk.create (w#misc)#window in
+  let ctx = Cairo_lablgtk.create w#misc#window in
   Cairo.save ctx;
   if !bboxes = [] then bboxes := List.map (fun e -> compute_extent ctx e) l;
   Cairo.new_path ctx;
@@ -495,7 +496,7 @@ let redraw w range ev =
   let rect = Gdk.Rectangle.create 0 0 0 0 in
   Gdk.Region.get_clipbox (GdkEvent.Expose.region ev) rect;
   Cairo.clip ctx;
-  let scale = scale *. ((1. /. scale) ** (range#adjustment)#value) in
+  let scale = scale *. ((1. /. scale) ** range#adjustment#value) in
   Cairo.scale ctx scale scale;
   Cairo.translate ctx 364. 22443.;
   let bbox =
@@ -519,8 +520,8 @@ Format.eprintf "%f %f %f %f (%f)@." x1 y1 x2 y2 scale;
   true
 
 let slider_changed (area : GMisc.drawing_area) range () =
-  let scale = scale *. ((1. /. scale) ** (range#adjustment)#value) in
-  (area#misc)#set_size_request
+  let scale = scale *. ((1. /. scale) ** range#adjustment#value) in
+  area#misc#set_size_request
     ~width:(truncate (width *. scale))
     ~height:(truncate (height *. scale))
     ();
@@ -530,7 +531,7 @@ let _ =
   ignore (GMain.Main.init ());
   let initial_size = 600 in
   let w = GWindow.window () in
-  ignore ((w#connect)#destroy GMain.quit);
+  ignore (w#connect#destroy GMain.quit);
   let b = GPack.vbox ~spacing:6 ~border_width:12 ~packing:w#add () in
   (*
   let f = GBin.frame ~shadow_type:`IN
@@ -548,12 +549,12 @@ let _ =
       ~packing:f#add_with_viewport
       ()
   in
-  (area#misc)#set_size_request
+  area#misc#set_size_request
     ~width:(truncate (width *. scale))
     ~height:(truncate (height *. scale))
     ();
   let slider = GRange.scale `HORIZONTAL ~draw_value:false ~packing:b#pack () in
-  (slider#adjustment)#set_bounds ~lower:0. ~upper:1. ~step_incr:0.1 ();
+  slider#adjustment#set_bounds ~lower:0. ~upper:1. ~step_incr:0.1 ();
   (*
   let button = GButton.check_button ~label:"Animate"
       ~packing:b#pack () in
@@ -565,8 +566,8 @@ let _ =
   ignore (button#connect#toggled
             (animate_toggled button slider)) ;
 *)
-  ignore (((area#event)#connect)#expose (redraw area slider));
-  ignore ((slider#connect)#value_changed (slider_changed area slider));
+  ignore (area#event#connect#expose (redraw area slider));
+  ignore (slider#connect#value_changed (slider_changed area slider));
   w#show ();
   GMain.main ()
 

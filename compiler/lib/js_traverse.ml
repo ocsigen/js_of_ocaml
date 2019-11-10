@@ -146,10 +146,10 @@ class map : mapper =
       | EArr l -> EArr (List.map l ~f:(fun x -> m#expression_o x))
       | EObj l -> EObj (List.map l ~f:(fun (i, e) -> i, m#expression e))
       | (EStr _ as x)
-       |(EBool _ as x)
-       |(ENum _ as x)
-       |(EQuote _ as x)
-       |(ERegexp _ as x) ->
+      | (EBool _ as x)
+      | (ENum _ as x)
+      | (EQuote _ as x)
+      | (ERegexp _ as x) ->
           x
 
     method expression_o x =
@@ -199,7 +199,7 @@ class map_for_share_constant =
           EBin (op, EUn (Typeof, e1), super#expression e2)
       (* Some js bundler get confused when the argument
        of 'require' is not a literal *)
-      | ECall (EVar (S {var = None; name = "require"; _}), [EStr _], _) -> e
+      | ECall (EVar (S { var = None; name = "require"; _ }), [ EStr _ ], _) -> e
       | _ -> super#expression e
 
     (* do not replace constant in switch case *)
@@ -285,14 +285,16 @@ type t =
   ; def_name : StringSet.t
   ; def : S.t
   ; use : S.t
-  ; count : int Javascript.IdentMap.t }
+  ; count : int Javascript.IdentMap.t
+  }
 
 let empty =
   { def = S.empty
   ; use = S.empty
   ; use_name = StringSet.empty
   ; def_name = StringSet.empty
-  ; count = Javascript.IdentMap.empty }
+  ; count = Javascript.IdentMap.empty
+  }
 
 (* def/used/free variable *)
 
@@ -360,23 +362,24 @@ class free =
         { state_ with
           use_name = StringSet.union state_.use_name free_name
         ; use = S.union state_.use free
-        ; count }
+        ; count
+        }
 
     method use_var x =
       let n = try IdentMap.find x state_.count with Not_found -> 0 in
       let count = IdentMap.add x (succ n) state_.count in
       match x with
-      | S {name; _} ->
-          state_ <- {state_ with use_name = StringSet.add name state_.use_name; count}
-      | V v -> state_ <- {state_ with use = S.add v state_.use; count}
+      | S { name; _ } ->
+          state_ <- { state_ with use_name = StringSet.add name state_.use_name; count }
+      | V v -> state_ <- { state_ with use = S.add v state_.use; count }
 
     method def_var x =
       let n = try IdentMap.find x state_.count with Not_found -> 0 in
       let count = IdentMap.add x (succ n) state_.count in
       match x with
-      | S {name; _} ->
-          state_ <- {state_ with def_name = StringSet.add name state_.def_name; count}
-      | V v -> state_ <- {state_ with def = S.add v state_.def; count}
+      | S { name; _ } ->
+          state_ <- { state_ with def_name = StringSet.add name state_.def_name; count }
+      | V v -> state_ <- { state_ with def = S.add v state_.def; count }
 
     method expression x =
       match x with
@@ -390,7 +393,7 @@ class free =
           let ident =
             match ident with
             | Some (V v) when not (S.mem v tbody#state.use) -> None
-            | Some (S {name; _}) when not (StringSet.mem name tbody#state.use_name) ->
+            | Some (S { name; _ }) when not (StringSet.mem name tbody#state.use_name) ->
                 None
             | Some id ->
                 tbody#def_var id;
@@ -461,13 +464,13 @@ class free =
             | Some (id, block) ->
                 let block = tbody#statements block in
                 let () = tbody#def_var id in
-                tbody#block ~catch:true [id];
+                tbody#block ~catch:true [ id ];
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
                 (* .. except 'id' because its scope is limited to 'block' *)
                 let clean set sets =
                   match id with
-                  | S {name; _} -> set, StringSet.remove name sets
+                  | S { name; _ } -> set, StringSet.remove name sets
                   | V i -> S.remove i set, sets
                 in
                 let def, def_name = clean tbody#state.def tbody#state.def_name in
@@ -485,7 +488,8 @@ class free =
                   ; use_name = StringSet.union state_.use_name use_name
                   ; def = S.union state_.def def
                   ; def_name = StringSet.union state_.def_name def_name
-                  ; count };
+                  ; count
+                  };
                 Some (id, block)
           in
           let f =
@@ -517,7 +521,7 @@ class rename_variable keeps =
           from#state.def_name
       in
       let f = function
-        | S {name; _} when Hashtbl.mem h name -> V (Hashtbl.find h name)
+        | S { name; _ } when Hashtbl.mem h name -> V (Hashtbl.find h name)
         | s -> s
       in
       sub_ <- new subst f
@@ -535,10 +539,10 @@ class rename_variable keeps =
       | Try_statement (b, w, f) ->
           let w =
             match w with
-            | Some (S {name; _}, block) ->
+            | Some (S { name; _ }, block) ->
                 let v = Code.Var.fresh_n name in
                 let sub = function
-                  | S {name = name'; _} when String.equal name' name -> V v
+                  | S { name = name'; _ } when String.equal name' name -> V v
                   | x -> x
                 in
                 let s = new subst sub in
@@ -623,7 +627,7 @@ class compact_vardecl =
     method private split x =
       let rec loop = function
         | ESeq (e1, e2) -> loop e1 @ loop e2
-        | e -> [e]
+        | e -> [ e ]
       in
       loop x
 
@@ -746,12 +750,12 @@ class clean =
       let s = super#statement s in
       let b = function
         | Block [], loc -> Empty_statement, loc
-        | Block [x], _ -> x
+        | Block [ x ], _ -> x
         | b -> b
       in
       let bopt = function
         | Some (Block [], _) -> None
-        | Some (Block [x], _) -> Some x
+        | Some (Block [ x ], _) -> Some x
         | Some b -> Some b
         | None -> None
       in
@@ -807,22 +811,22 @@ let is_one = function
 
 let assign_op = function
   | exp, EBin (Plus, exp', exp'') -> (
-    match Poly.(exp = exp'), Poly.(exp = exp'') with
-    | false, false -> None
-    | true, false ->
-        if is_one exp''
-        then Some (EUn (IncrB, exp))
-        else Some (EBin (PlusEq, exp, exp''))
-    | false, true ->
-        if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
-    | true, true -> Some (EBin (StarEq, exp, ENum (Num.of_int32 2l))))
+      match Poly.(exp = exp'), Poly.(exp = exp'') with
+      | false, false -> None
+      | true, false ->
+          if is_one exp''
+          then Some (EUn (IncrB, exp))
+          else Some (EBin (PlusEq, exp, exp''))
+      | false, true ->
+          if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
+      | true, true -> Some (EBin (StarEq, exp, ENum (Num.of_int32 2l))))
   | exp, EBin (Minus, exp', y) when Poly.(exp = exp') ->
       if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
   | exp, EBin (Mul, exp', exp'') -> (
-    match Poly.(exp = exp'), Poly.(exp = exp'') with
-    | false, false -> None
-    | true, _ -> Some (EBin (StarEq, exp, exp''))
-    | _, true -> Some (EBin (StarEq, exp, exp')))
+      match Poly.(exp = exp'), Poly.(exp = exp'') with
+      | false, false -> None
+      | true, _ -> Some (EBin (StarEq, exp, exp''))
+      | _, true -> Some (EBin (StarEq, exp, exp')))
   | exp, EBin (((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor) as unop), exp', y)
     when Poly.(exp = exp') ->
       Some (EBin (translate_assign_op unop, exp, y))
@@ -841,23 +845,23 @@ class simpl =
       in
       match e with
       | EBin (Plus, e1, e2) -> (
-        match e2, e1 with
-        | ENum n, _ when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
-        | _, ENum n when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
-        | ENum zero, (ENum _ as x) when is_zero zero -> x
-        | (ENum _ as x), ENum zero when is_zero zero -> x
-        | _ -> e)
+          match e2, e1 with
+          | ENum n, _ when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
+          | _, ENum n when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
+          | ENum zero, (ENum _ as x) when is_zero zero -> x
+          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | _ -> e)
       | EBin (Minus, e1, e2) -> (
-        match e2, e1 with
-        | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
-        | (ENum _ as x), ENum zero when is_zero zero -> x
-        | _ -> e)
+          match e2, e1 with
+          | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
+          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | _ -> e)
       | _ -> e
 
     method statement s =
       let s = super#statement s in
       match s with
-      | Block [x] -> fst x
+      | Block [ x ] -> fst x
       | _ -> s
 
     method statements s =
@@ -865,9 +869,8 @@ class simpl =
       List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
           match st with
           | If_statement
-              ( cond
-              , (Return_statement (Some e1), _)
-              , Some (Return_statement (Some e2), _) ) ->
+              (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
+            ->
               (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
           | If_statement
               ( cond
@@ -878,11 +881,11 @@ class simpl =
           | Variable_statement l1 ->
               let x =
                 List.map l1 ~f:(function
-                    | ident, None -> Variable_statement [ident, None], loc
+                    | ident, None -> Variable_statement [ ident, None ], loc
                     | ident, Some (exp, pc) -> (
-                      match assign_op (EVar ident, exp) with
-                      | Some e -> Expression_statement e, loc
-                      | None -> Variable_statement [ident, Some (exp, pc)], loc))
+                        match assign_op (EVar ident, exp) with
+                        | Some e -> Expression_statement e, loc
+                        | None -> Variable_statement [ ident, Some (exp, pc) ], loc))
               in
               x @ rem
           | _ -> (st, loc) :: rem)
@@ -892,7 +895,8 @@ class simpl =
         let st = m#statements (List.rev st_rev) in
         let st =
           List.map st ~f:(function
-              | ( Variable_statement [(addr, Some (EFun (None, params, body, loc'), loc))]
+              | ( Variable_statement
+                    [ (addr, Some (EFun (None, params, body, loc'), loc)) ]
                 , _ ) ->
                   Function_declaration (addr, params, body, loc'), loc
               | s, loc -> Statement s, loc)

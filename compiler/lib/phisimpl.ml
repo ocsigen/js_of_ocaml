@@ -68,8 +68,7 @@ let program_deps (_, blocks, _) =
               add_var vars x;
               expr_deps blocks vars deps defs x e
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      Option.iter block.handler ~f:(fun (_, cont) ->
-          cont_deps blocks vars deps defs cont);
+      Option.iter block.handler ~f:(fun (_, cont) -> cont_deps blocks vars deps defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> cont_deps blocks vars deps defs cont
@@ -115,10 +114,10 @@ let propagate1 deps defs reprs st x =
     match Var.Set.cardinal s with
     | 1 -> replace deps reprs x (Var.Set.choose s)
     | 2 -> (
-      match Var.Set.elements s with
-      | [y; z] when Var.compare x y = 0 -> replace deps reprs x z
-      | [z; y] when Var.compare x y = 0 -> replace deps reprs x z
-      | _ -> false)
+        match Var.Set.elements s with
+        | [ y; z ] when Var.compare x y = 0 -> replace deps reprs x z
+        | [ z; y ] when Var.compare x y = 0 -> replace deps reprs x z
+        | _ -> false)
     | _ -> false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -137,7 +136,7 @@ let solver1 vars deps defs =
   let nv = Var.count () in
   let reprs = Array.make nv None in
   let g =
-    {G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x))}
+    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   ignore (Solver1.f () g (propagate1 deps defs reprs));
   Array.mapi reprs ~f:(fun idx y ->

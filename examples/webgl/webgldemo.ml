@@ -100,15 +100,15 @@ let int16array a =
 module Proj3D = struct
   type t = float array
 
-  let scale x y z = [|x; 0.; 0.; 0.; 0.; y; 0.; 0.; 0.; 0.; z; 0.; 0.; 0.; 0.; 1.|]
+  let scale x y z = [| x; 0.; 0.; 0.; 0.; y; 0.; 0.; 0.; 0.; z; 0.; 0.; 0.; 0.; 1. |]
 
-  let translate x y z = [|1.; 0.; 0.; 0.; 0.; 1.; 0.; 0.; 0.; 0.; 1.; 0.; x; y; z; 1.|]
+  let translate x y z = [| 1.; 0.; 0.; 0.; 0.; 1.; 0.; 0.; 0.; 0.; 1.; 0.; x; y; z; 1. |]
 
   let rotate_x t =
-    [|1.; 0.; 0.; 0.; 0.; cos t; sin t; 0.; 0.; -.sin t; cos t; 0.; 0.; 0.; 0.; 1.|]
+    [| 1.; 0.; 0.; 0.; 0.; cos t; sin t; 0.; 0.; -.sin t; cos t; 0.; 0.; 0.; 0.; 1. |]
 
   let rotate_y t =
-    [|cos t; 0.; -.sin t; 0.; 0.; 1.; 0.; 0.; sin t; 0.; cos t; 0.; 0.; 0.; 0.; 1.|]
+    [| cos t; 0.; -.sin t; 0.; 0.; 1.; 0.; 0.; sin t; 0.; cos t; 0.; 0.; 0.; 0.; 1. |]
 
   let c i j = (i * 4) + j
 
@@ -140,24 +140,24 @@ let read_coord_couple c =
   match Regexp.string_match couple_regexp c 0 with
   | None -> None
   | Some res -> (
-    match List.map (Regexp.matched_group res) [1; 2] with
-    | [Some v; Some vn] -> Some (int_of_string v, int_of_string vn)
-    | _ -> None)
+      match List.map (Regexp.matched_group res) [ 1; 2 ] with
+      | [ Some v; Some vn ] -> Some (int_of_string v, int_of_string vn)
+      | _ -> None)
 
 let read_line l =
   match Regexp.string_match line_regexp l 0 with
   | None -> None
   | Some res -> (
-    match List.map (Regexp.matched_group res) [1; 2; 3; 4] with
-    | [Some "v"; Some x; Some y; Some z] ->
-        Some (V (float_of_string x, float_of_string y, float_of_string z))
-    | [Some "vn"; Some x; Some y; Some z] ->
-        Some (VN (float_of_string x, float_of_string y, float_of_string z))
-    | [Some "f"; Some x; Some y; Some z] -> (
-      match List.map read_coord_couple [x; y; z] with
-      | [Some x; Some y; Some z] -> Some (F (x, y, z))
+      match List.map (Regexp.matched_group res) [ 1; 2; 3; 4 ] with
+      | [ Some "v"; Some x; Some y; Some z ] ->
+          Some (V (float_of_string x, float_of_string y, float_of_string z))
+      | [ Some "vn"; Some x; Some y; Some z ] ->
+          Some (VN (float_of_string x, float_of_string y, float_of_string z))
+      | [ Some "f"; Some x; Some y; Some z ] -> (
+          match List.map read_coord_couple [ x; y; z ] with
+          | [ Some x; Some y; Some z ] -> Some (F (x, y, z))
+          | _ -> None)
       | _ -> None)
-    | _ -> None)
 
 let concat a =
   let length = Array.fold_left (fun len l -> len + List.length l) 0 a in
@@ -185,7 +185,7 @@ let make_model vertex norm face =
         let a1, a2, a3 = vertex.(av - 1) in
         let b1, b2, b3 = vertex.(bv - 1) in
         let c1, c2, c3 = vertex.(cv - 1) in
-        [a1; a2; a3; b1; b2; b3; c1; c2; c3])
+        [ a1; a2; a3; b1; b2; b3; c1; c2; c3 ])
   in
   let norm' =
     Array.init (Array.length face) (fun i ->
@@ -193,7 +193,7 @@ let make_model vertex norm face =
         let a1, a2, a3 = norm.(an - 1) in
         let b1, b2, b3 = norm.(bn - 1) in
         let c1, c2, c3 = norm.(cn - 1) in
-        [a1; a2; a3; b1; b2; b3; c1; c2; c3])
+        [ a1; a2; a3; b1; b2; b3; c1; c2; c3 ])
   in
   let vertex = float32array (concat vertex') in
   let norm = float32array (concat norm') in
@@ -256,8 +256,8 @@ let start (pos, norm) =
   let proj_loc = gl##getUniformLocation prog (string "u_proj") in
   let lightPos_loc = gl##getUniformLocation prog (string "u_lightPos") in
   let ambientLight_loc = gl##getUniformLocation prog (string "u_ambientLight") in
-  let lightPos = float32array [|3.; 0.; -1.|] in
-  let ambientLight = float32array [|0.1; 0.1; 0.1|] in
+  let lightPos = float32array [| 3.; 0.; -1. |] in
+  let ambientLight = float32array [| 0.1; 0.1; 0.1 |] in
   gl##uniform3fv_typed lightPos_loc lightPos;
   gl##uniform3fv_typed ambientLight_loc ambientLight;
   let pos_attr = gl##getAttribLocation prog (string "a_position") in

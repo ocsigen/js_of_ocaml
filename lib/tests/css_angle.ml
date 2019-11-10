@@ -27,7 +27,8 @@ let%expect_test _ =
     ; CSS.Angle.Deg 5.4
     ; CSS.Angle.Turns 0.
     ; CSS.Angle.Grad 10.0
-    ; CSS.Angle.Grad 0.10 ]
+    ; CSS.Angle.Grad 0.10
+    ]
   in
   List.iter
     (fun c ->

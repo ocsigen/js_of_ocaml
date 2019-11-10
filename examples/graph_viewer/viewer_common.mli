@@ -91,7 +91,8 @@ module F (M : sig
     { x : int
     ; y : int
     ; width : int
-    ; height : int }
+    ; height : int
+    }
 
   val compute_extents :
        ctx
@@ -112,7 +113,8 @@ end) : sig
     ; st_y : float
     ; st_width : float
     ; st_height : float
-    ; st_pixmap : pixmap }
+    ; st_pixmap : pixmap
+    }
 
   val redraw :
        st

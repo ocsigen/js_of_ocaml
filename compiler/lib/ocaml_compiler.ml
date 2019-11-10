@@ -144,7 +144,8 @@ end
 module Symtable = struct
   type 'a numtable =
     { num_cnt : int
-    ; num_tbl : ('a, int) Tbl.t }
+    ; num_tbl : ('a, int) Tbl.t
+    }
 
   module GlobalMap = struct
     type t = Ident.t numtable
@@ -152,7 +153,7 @@ module Symtable = struct
     let filter_global_map (p : Ident.t -> bool) gmap =
       let newtbl = ref Tbl.empty in
       Tbl.iter (fun id num -> if p id then newtbl := Tbl.add id num !newtbl) gmap.num_tbl;
-      {num_cnt = gmap.num_cnt; num_tbl = !newtbl}
+      { num_cnt = gmap.num_cnt; num_tbl = !newtbl }
 
     let find nn t =
       Tbl.find (fun x1 x2 -> String.compare (Ident.name x1) (Ident.name x2)) nn t.num_tbl
@@ -164,7 +165,7 @@ module Symtable = struct
 
   let reloc_ident name =
     let buf = Bytes.create 4 in
-    Symtable.patch_object buf [Reloc_setglobal (Ident.create_persistent name), 0];
+    Symtable.patch_object buf [ Reloc_setglobal (Ident.create_persistent name), 0 ];
     let get i = Char.code (Bytes.get buf i) in
     get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24)
 end
@@ -178,9 +179,10 @@ module Symtable = struct
     type t =
       { cnt : int
       ; (* The next number *)
-        tbl : int M.t (* The table of already numbered objects *) }
+        tbl : int M.t (* The table of already numbered objects *)
+      }
 
-    let empty = {cnt = 0; tbl = M.empty}
+    let empty = { cnt = 0; tbl = M.empty }
 
     let find key nt = M.find key nt.tbl
 
@@ -190,12 +192,12 @@ module Symtable = struct
 
     let enter nt key =
       let n = !nt.cnt in
-      nt := {cnt = n + 1; tbl = M.add key n !nt.tbl};
+      nt := { cnt = n + 1; tbl = M.add key n !nt.tbl };
       n
 
     let incr nt =
       let n = !nt.cnt in
-      nt := {cnt = n + 1; tbl = !nt.tbl};
+      nt := { cnt = n + 1; tbl = !nt.tbl };
       n
   end
 
@@ -208,12 +210,12 @@ module Symtable = struct
       Ident.Map.iter
         (fun id num -> if p id then newtbl := Ident.Map.add id num !newtbl)
         gmap.tbl;
-      {cnt = gmap.cnt; tbl = !newtbl}
+      { cnt = gmap.cnt; tbl = !newtbl }
   end
 
   let reloc_ident name =
     let buf = Bytes.create 4 in
-    Symtable.patch_object [|buf|] [Reloc_setglobal (Ident.create_persistent name), 0];
+    Symtable.patch_object [| buf |] [ Reloc_setglobal (Ident.create_persistent name), 0 ];
     let get i = Char.code (Bytes.get buf i) in
     get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24)
 end
@@ -228,7 +230,8 @@ module Ident = struct
   and 'a data =
     { ident : Ident.t
     ; data : 'a
-    ; previous : 'a data option }
+    ; previous : 'a data option
+    }
 
   type 'a tbl = 'a Ident.tbl
 

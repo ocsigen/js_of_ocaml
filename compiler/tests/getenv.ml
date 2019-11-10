@@ -21,7 +21,7 @@ open Util
 
 let%expect_test _ =
   compile_and_run
-    ~flags:["--setenv"; "A=A"]
+    ~flags:[ "--setenv"; "A=A" ]
     {|
   (match Sys.getenv "A" with
   | "A" -> ()
@@ -30,7 +30,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   compile_and_run
-    ~flags:["--setenv"; "A=A"]
+    ~flags:[ "--setenv"; "A=A" ]
     {|
   (match Sys.getenv "B" with
   | exception Not_found -> ()
@@ -39,7 +39,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   compile_and_run
-    ~flags:["--setenv"; "A=A"]
+    ~flags:[ "--setenv"; "A=A" ]
     {|
   (* fallback for older version of the stdlib *)
   let getenv_opt a = try Some (Sys.getenv a) with Not_found -> None
@@ -51,7 +51,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   compile_and_run
-    ~flags:["--setenv"; "A=A"]
+    ~flags:[ "--setenv"; "A=A" ]
     {|
   (* fallback for older version of the stdlib *)
 
@@ -64,7 +64,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   compile_and_run
-    ~flags:["--setenv"; "D=±"]
+    ~flags:[ "--setenv"; "D=±" ]
     {|
   (if Sys.ocaml_version >= "4.07"
   then

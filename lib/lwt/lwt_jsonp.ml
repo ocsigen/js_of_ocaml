@@ -82,7 +82,7 @@ let call_custom_url ?timeout ?(prefix = "") make_uri =
               Lwt.cancel t;
               t)
         in
-        Lwt.choose [wait; t]
+        Lwt.choose [ wait; t ]
   in
   init ();
   new_t
@@ -101,15 +101,18 @@ let call ?timeout ?(param = "callback") ?(prefix = "") url =
           | Url.Http http ->
               Url.Http
                 { http with
-                  Url.hu_arguments = add_param param cbname http.Url.hu_arguments }
+                  Url.hu_arguments = add_param param cbname http.Url.hu_arguments
+                }
           | Url.Https http ->
               Url.Https
                 { http with
-                  Url.hu_arguments = add_param param cbname http.Url.hu_arguments }
+                  Url.hu_arguments = add_param param cbname http.Url.hu_arguments
+                }
           | Url.File file ->
               Url.File
                 { file with
-                  Url.fu_arguments = add_param param cbname file.Url.fu_arguments }
+                  Url.fu_arguments = add_param param cbname file.Url.fu_arguments
+                }
         in
         Url.string_of_url new_url
   in

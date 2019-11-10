@@ -27,7 +27,8 @@ type fragment =
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
-  ; code : Javascript.program }
+  ; code : Javascript.program
+  }
 
 val parse_file : string -> fragment list
 
@@ -41,11 +42,13 @@ type state
 
 type always_required =
   { filename : string
-  ; program : Javascript.program }
+  ; program : Javascript.program
+  }
 
 type output =
   { runtime_code : Javascript.program
-  ; always_required_codes : always_required list }
+  ; always_required_codes : always_required list
+  }
 
 val init : unit -> state
 

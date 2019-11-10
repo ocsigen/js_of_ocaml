@@ -67,7 +67,8 @@ let block s block =
   { params = block.params
   ; handler = Option.map block.handler ~f:(fun (x, cont) -> x, subst_cont s cont)
   ; body = instrs s block.body
-  ; branch = last s block.branch }
+  ; branch = last s block.branch
+  }
 
 let program s (pc, blocks, free_pc) =
   let blocks = Addr.Map.map (fun b -> block s b) blocks in

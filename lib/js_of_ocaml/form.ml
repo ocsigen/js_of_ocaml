@@ -35,18 +35,20 @@ let formData_form : (formElement t -> formData t) constr = Js.Unsafe.global##._F
 
 type form_elt =
   [ `String of js_string t
-  | `File of File.file t ]
+  | `File of File.file t
+  ]
 
 type form_contents =
   [ `Fields of (string * form_elt) list ref
-  | `FormData of formData t ]
+  | `FormData of formData t
+  ]
 
 let rec filter_map f = function
   | [] -> []
   | v :: q -> (
-    match f v with
-    | None -> filter_map f q
-    | Some v' -> v' :: filter_map f q)
+      match f v with
+      | None -> filter_map f q
+      | Some v' -> v' :: filter_map f q)
 
 class type submittableElement =
   object
@@ -64,7 +66,7 @@ let get_textarea_val (elt : textAreaElement t) =
   if have_content (elt :> submittableElement t)
   then
     let name = to_string elt##.name in
-    [name, `String elt##.value]
+    [ name, `String elt##.value ]
   else []
 
 let get_select_val (elt : selectElement t) =
@@ -74,9 +76,7 @@ let get_select_val (elt : selectElement t) =
     if to_bool elt##.multiple
     then
       let options =
-        Array.init
-          elt##.options##.length
-          (fun i -> Opt.to_option (elt##.options##item i))
+        Array.init elt##.options##.length (fun i -> Opt.to_option (elt##.options##item i))
       in
       filter_map
         (function
@@ -84,7 +84,7 @@ let get_select_val (elt : selectElement t) =
           | Some e ->
               if Js.to_bool e##.selected then Some (name, `String e##.value) else None)
         (Array.to_list options)
-    else [name, `String elt##.value]
+    else [ name, `String elt##.value ]
   else []
 
 class type file_input =
@@ -102,34 +102,34 @@ let get_input_val ?(get = false) (elt : inputElement t) =
     let name = to_string elt##.name in
     let value = elt##.value in
     match to_bytestring elt##._type##toLowerCase with
-    | "checkbox" | "radio" -> if to_bool elt##.checked then [name, `String value] else []
+    | "checkbox" | "radio" ->
+        if to_bool elt##.checked then [ name, `String value ] else []
     | "submit" | "reset" -> []
-    | "text" | "password" -> [name, `String value]
+    | "text" | "password" -> [ name, `String value ]
     | "file" -> (
         if get
-        then [name, `String value]
+        then [ name, `String value ]
         else
           let elt : file_input t = Unsafe.coerce elt in
           match Optdef.to_option elt##.files with
           | None -> []
           | Some list -> (
               if list##.length = 0
-              then [name, `String (Js.string "")]
+              then [ name, `String (Js.string "") ]
               else
                 match Optdef.to_option elt##.multiple with
                 | None | Some false -> (
-                  match Opt.to_option (list##item 0) with
-                  | None -> []
-                  | Some file -> [name, `File file])
+                    match Opt.to_option (list##item 0) with
+                    | None -> []
+                    | Some file -> [ name, `File file ])
                 | Some true ->
                     filter_map
                       (fun f ->
                         match Opt.to_option f with
                         | None -> None
                         | Some file -> Some (name, `File file))
-                      (Array.to_list (Array.init list##.length (fun i -> list##item i))))
-        )
-    | _ -> [name, `String value]
+                      (Array.to_list (Array.init list##.length (fun i -> list##item i)))))
+    | _ -> [ name, `String value ]
   else []
 
 let form_elements ?get (form : formElement t) =
@@ -143,11 +143,11 @@ let form_elements ?get (form : formElement t) =
          (function
            | None -> [] (* shouldn't happen *)
            | Some v -> (
-             match tagged v with
-             | Select v -> get_select_val v
-             | Input v -> get_input_val ?get v
-             | Textarea v -> get_textarea_val v
-             | _ -> []))
+               match tagged v with
+               | Select v -> get_select_val v
+               | Input v -> get_input_val ?get v
+               | Textarea v -> get_textarea_val v
+               | _ -> []))
          elements)
   in
   contents
@@ -156,9 +156,9 @@ let append (form_contents : form_contents) (form_elt : string * form_elt) =
   match form_contents with
   | `Fields list -> list := form_elt :: !list
   | `FormData f -> (
-    match form_elt with
-    | name, `String s -> f##append (string name) s
-    | name, `File file -> f##append_blob (string name) (file :> File.blob t))
+      match form_elt with
+      | name, `String s -> f##append (string name) s
+      | name, `File file -> f##append_blob (string name) (file :> File.blob t))
 
 let empty_form_contents () =
   match Optdef.to_option (Js.def formData) with

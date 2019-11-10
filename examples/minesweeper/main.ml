@@ -36,9 +36,7 @@ let button name callback =
   res
 
 let onload _ =
-  let main =
-    Js.Opt.get (document##getElementById (js "main")) (fun () -> assert false)
-  in
+  let main = Js.Opt.get (document##getElementById (js "main")) (fun () -> assert false) in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in
   Dom.appendChild main (int_input "Number of columns" nbr);
   Dom.appendChild main (Html.createBr document);

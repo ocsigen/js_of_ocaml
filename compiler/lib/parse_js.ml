@@ -75,18 +75,18 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
       let pi = Parse_info.t_of_lexbuf lines_info lexbuf in
       let pi =
         match prev with
-        | None -> {pi with Parse_info.fol = Some true}
+        | None -> { pi with Parse_info.fol = Some true }
         | Some prev ->
             let prev_pi = Js_token.info_of_tok prev in
             if prev_pi.Parse_info.line <> pi.Parse_info.line
-            then {pi with Parse_info.fol = Some true}
+            then { pi with Parse_info.fol = Some true }
             else pi
       in
       match extra with
       | None -> pi
       | Some (file, offset) ->
           let src = Parse_info.relative_path lines_info file in
-          {pi with Parse_info.src; name = Some file; line = pi.Parse_info.line - offset}
+          { pi with Parse_info.src; name = Some file; line = pi.Parse_info.line - offset }
     in
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
@@ -100,8 +100,7 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
                 let file, line = Js_lexer.pos lexbuf in
                 match extra with
                 | None -> Some (file, ii.Parse_info.line - (line - 2))
-                | Some (_, offset) ->
-                    Some (file, ii.Parse_info.line - (line - 2) + offset)
+                | Some (_, offset) -> Some (file, ii.Parse_info.line - (line - 2) + offset)
               with _ -> extra)
           | _ -> extra
         in
@@ -144,13 +143,15 @@ type st =
   { mutable rest : Js_token.token list
   ; mutable current : Js_token.token
   ; mutable passed : Js_token.token list
-  ; mutable eof : bool }
+  ; mutable eof : bool
+  }
 
 let parse_aux the_parser toks =
   let state =
     match toks with
-    | [] -> {rest = []; passed = []; current = Js_token.EOF Parse_info.zero; eof = false}
-    | hd :: _ -> {rest = toks; passed = []; current = hd; eof = false}
+    | [] ->
+        { rest = []; passed = []; current = Js_token.EOF Parse_info.zero; eof = false }
+    | hd :: _ -> { rest = toks; passed = []; current = hd; eof = false }
   in
   let lexer_fun _lb =
     match state.rest with

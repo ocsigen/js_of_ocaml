@@ -29,7 +29,8 @@ type 'response generic_http_frame =
   ; code : int
   ; headers : string -> string option
   ; content : 'response
-  ; content_xml : unit -> Dom.element Dom.document t option }
+  ; content_xml : unit -> Dom.element Dom.document t option
+  }
 (** The type for XHR results. The code field is the http status code of the
     answer. The headers field is a function associating values to any header
     name. *)
@@ -53,9 +54,10 @@ val perform_raw :
        [< `POST_form of (string * Form.form_elt) list
        | `Form_contents of Form.form_contents
        | `String of string
-       | `Blob of #File.blob Js.t ]
+       | `Blob of #File.blob Js.t
+       ]
   -> ?override_mime_type:string
-  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> ?with_credentials:bool
   -> response_type:'a response
   -> string
@@ -77,9 +79,10 @@ val perform_raw_url :
        [< `POST_form of (string * Form.form_elt) list
        | `Form_contents of Form.form_contents
        | `String of string
-       | `Blob of #File.blob Js.t ]
+       | `Blob of #File.blob Js.t
+       ]
   -> ?override_mime_type:string
-  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> ?with_credentials:bool
   -> string
   -> http_frame Lwt.t
@@ -106,9 +109,10 @@ val perform :
        [< `POST_form of (string * Form.form_elt) list
        | `Form_contents of Form.form_contents
        | `String of string
-       | `Blob of #File.blob Js.t ]
+       | `Blob of #File.blob Js.t
+       ]
   -> ?override_mime_type:string
-  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> ?with_credentials:bool
   -> Url.url
   -> http_frame Lwt.t

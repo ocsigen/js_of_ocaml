@@ -47,7 +47,8 @@ let kSplayTreePayloadDepth = 5
 
 type content_leaf =
   { array : int array
-  ; string : string }
+  ; string : string
+  }
 
 type content =
   | CLeaf of content_leaf
@@ -137,9 +138,9 @@ let remove key t =
   | Node (_, rk, _, _) when rk <> key -> raise Not_found
   | Node (Empty, _, _, right) -> right
   | Node (left, _, _, right) -> (
-    match splay left key with
-    | Node (lleft, lk, lv, Empty) -> Node (lleft, lk, lv, right)
-    | _ -> failwith "remove")
+      match splay left key with
+      | Node (lleft, lk, lv, Empty) -> Node (lleft, lk, lv, right)
+      | _ -> failwith "remove")
 
 let find key t =
   let t = splay t key in
@@ -178,8 +179,9 @@ let rec generatePayloadTree depth tag =
   if depth = 0
   then
     CLeaf
-      { array = [|0; 1; 2; 3; 4; 5; 6; 7; 8; 9|]
-      ; string = "String for key " ^ tag ^ " in leaf node" }
+      { array = [| 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 |]
+      ; string = "String for key " ^ tag ^ " in leaf node"
+      }
   else CNode (generatePayloadTree (depth - 1) tag, generatePayloadTree (depth - 1) tag)
 
 let random =

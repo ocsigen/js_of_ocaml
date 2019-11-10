@@ -37,7 +37,8 @@ let%expect_test _ =
     ; CSS.Length.Cm 10.1
     ; CSS.Length.In 0.1
     ; CSS.Length.Pt 10.2
-    ; CSS.Length.Pc 103.1 ]
+    ; CSS.Length.Pc 103.1
+    ]
   in
   List.iter
     (fun c ->

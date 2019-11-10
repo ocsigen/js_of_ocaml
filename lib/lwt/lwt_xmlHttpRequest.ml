@@ -39,7 +39,8 @@ type 'response generic_http_frame =
   ; code : int
   ; headers : string -> string option
   ; content : 'response
-  ; content_xml : unit -> Dom.element Dom.document t option }
+  ; content_xml : unit -> Dom.element Dom.document t option
+  }
 (** type of the http headers *)
 
 type http_frame = string generic_http_frame
@@ -55,42 +56,48 @@ let default_response url code headers req =
         match Js.Opt.to_option req##.responseXML with
         | None -> None
         | Some doc -> if Js.some doc##.documentElement == Js.null then None else Some doc)
-  ; headers }
+  ; headers
+  }
 
 let text_response url code headers req =
   { url
   ; code
   ; content = Js.Opt.case req##.responseText (fun () -> Js.string "") (fun x -> x)
   ; content_xml = (fun () -> assert false)
-  ; headers }
+  ; headers
+  }
 
 let document_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.document req##.response
   ; content_xml = (fun () -> assert false)
-  ; headers }
+  ; headers
+  }
 
 let json_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.json req##.response
   ; content_xml = (fun () -> assert false)
-  ; headers }
+  ; headers
+  }
 
 let blob_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.blob req##.response
   ; content_xml = (fun () -> assert false)
-  ; headers }
+  ; headers
+  }
 
 let arraybuffer_response url code headers req =
   { url
   ; code
   ; content = File.CoerceTo.arrayBuffer req##.response
   ; content_xml = (fun () -> assert false)
-  ; headers }
+  ; headers
+  }
 
 let has_get_args url =
   try
@@ -159,11 +166,11 @@ let perform_raw
     match contents with
     | None -> override_method "GET", content_type
     | Some (`Form_contents form) -> (
-      match form with
-      | `Fields _strings ->
-          ( override_method "POST"
-          , override_content_type "application/x-www-form-urlencoded" )
-      | `FormData _ -> override_method "POST", content_type)
+        match form with
+        | `Fields _strings ->
+            ( override_method "POST"
+            , override_content_type "application/x-www-form-urlencoded" )
+        | `FormData _ -> override_method "POST", content_type)
     | Some (`String _ | `Blob _) -> override_method "POST", content_type
   in
   let url =

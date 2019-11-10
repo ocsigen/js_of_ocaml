@@ -24,9 +24,10 @@ type t =
   ; col : int
   ; line : int
   ; idx : int
-  ; fol : bool option }
+  ; fol : bool option
+  }
 
-let zero = {src = None; name = None; col = 0; line = 0; idx = 0; fol = None}
+let zero = { src = None; name = None; col = 0; line = 0; idx = 0; fol = None }
 
 module Line_info = struct
   type t_above = t
@@ -37,7 +38,8 @@ module Line_info = struct
     ; offset : t_above option
     ; lines : int array
     ; name : string option
-    ; src : string option }
+    ; src : string option
+    }
 
   let rec compute lines acc line pos =
     if line >= Array.length lines
@@ -66,7 +68,13 @@ module Line_info = struct
      with End_of_file -> ());
     let lines = Array.of_list (List.rev !lines) in
     let t =
-      {acc_pos = 0; acc_line = 0; offset = None; lines; name = Some file; src = Some file}
+      { acc_pos = 0
+      ; acc_line = 0
+      ; offset = None
+      ; lines
+      ; name = Some file
+      ; src = Some file
+      }
     in
     close_in ic;
     t
@@ -81,7 +89,7 @@ module Line_info = struct
        done
      with Not_found -> lines := (String.length str - !pos) :: !lines);
     let lines = Array.of_list (List.rev !lines) in
-    {acc_pos = 0; acc_line = 0; offset; lines; name = None; src = None}
+    { acc_pos = 0; acc_line = 0; offset; lines; name = None; src = None }
 
   let from_channel ic =
     let buf = Buffer.create 1024 in
@@ -95,13 +103,15 @@ module Line_info = struct
        done
      with End_of_file -> ());
     let lines = Array.of_list (List.rev !lines) in
-    let t = {acc_pos = 0; acc_line = 0; offset = None; lines; name = None; src = None} in
+    let t =
+      { acc_pos = 0; acc_line = 0; offset = None; lines; name = None; src = None }
+    in
     t, Buffer.contents buf
 end
 
 type lineinfo = Line_info.t
 
-let relative_path {Line_info.src; _} file =
+let relative_path { Line_info.src; _ } file =
   match src with
   | None -> None
   | Some src -> Some Filename.(concat (dirname src) file)
@@ -118,17 +128,17 @@ let t_of_lexbuf line_info lexbuf : t =
   let line, col =
     match line_info.Line_info.offset with
     | None -> line, col
-    | Some {line = line_offset; col = col_offset; _} ->
+    | Some { line = line_offset; col = col_offset; _ } ->
         line + line_offset, col + col_offset
   in
   let name =
     match line_info.Line_info.offset with
-    | Some {name = Some _ as name; _} -> name
+    | Some { name = Some _ as name; _ } -> name
     | _ -> line_info.Line_info.name
   in
   let src =
     match line_info.Line_info.offset with
-    | Some {src = Some _ as src; _} -> src
+    | Some { src = Some _ as src; _ } -> src
     | _ -> line_info.Line_info.src
   in
-  {fol = None; idx; line; col; name; src}
+  { fol = None; idx; line; col; name; src }

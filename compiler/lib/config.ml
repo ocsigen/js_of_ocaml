@@ -138,11 +138,11 @@ module Param = struct
   let tc_default = TcTrampoline
 
   let _tc_all =
-    tc_default :: List.filter [TcNone; TcTrampoline] ~f:(Poly.( <> ) tc_default)
+    tc_default :: List.filter [ TcNone; TcTrampoline ] ~f:(Poly.( <> ) tc_default)
 
   let tailcall_optim =
     p
       ~name:"tc"
       ~desc:"Set tailcall optimisation"
-      (enum ["trampoline", TcTrampoline; (* default *) "none", TcNone])
+      (enum [ "trampoline", TcTrampoline; (* default *) "none", TcNone ])
 end

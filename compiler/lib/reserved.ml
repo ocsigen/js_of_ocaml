@@ -95,7 +95,8 @@ let keyword =
     ; "transient"
     ; "volatile"
     ; (* also reserved in ECMAScript 6 *)
-      "await" ]
+      "await"
+    ]
 
 let provided =
   List.fold_left
@@ -138,4 +139,5 @@ let provided =
     ; "parseFloat"
     ; "parseInt"
     ; "module"
-    ; "require" ]
+    ; "require"
+    ]

@@ -21,9 +21,9 @@ open Js_of_ocaml
 let%expect_test "poly equal" =
   let obj1 = Js.Unsafe.obj [||] in
   let obj2 = Js.Unsafe.obj [||] in
-  assert (List.mem obj1 [obj1]);
-  assert (List.mem obj1 [obj2; obj1]);
-  assert (not (List.mem obj1 [obj2]));
+  assert (List.mem obj1 [ obj1 ]);
+  assert (List.mem obj1 [ obj2; obj1 ]);
+  assert (not (List.mem obj1 [ obj2 ]));
   ()
 
 let%expect_test "poly equal neg" =
@@ -34,17 +34,17 @@ let%expect_test "poly equal neg" =
   ()
 
 let%expect_test "poly compare" =
-  let obj1 = Js.Unsafe.obj [|"a", Js.Unsafe.inject 0|] in
-  let obj2 = Js.Unsafe.obj [|"a", Js.Unsafe.inject 0|] in
-  (match List.sort compare [obj1; obj1] with
-  | [a; b] ->
+  let obj1 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
+  let obj2 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
+  (match List.sort compare [ obj1; obj1 ] with
+  | [ a; b ] ->
       if a == obj1 && b == obj2
       then print_endline "preserve"
       else print_endline "not preserve"
   | _ -> assert false);
   [%expect {| not preserve |}];
-  (match List.sort compare [obj2; obj1] with
-  | [a; b] ->
+  (match List.sort compare [ obj2; obj1 ] with
+  | [ a; b ] ->
       if a == obj2 && b == obj1
       then print_endline "preserve"
       else print_endline "not preserve"
@@ -99,8 +99,9 @@ let%expect_test "poly compare" =
     ; Pack 0
     ; Pack (Some "")
     ; Pack None
-    ; Pack (Js.Unsafe.obj [|"a", Js.Unsafe.inject 0|])
-    ; Pack (Js.Unsafe.obj [|"a", Js.Unsafe.inject 0|]) ]
+    ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
+    ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
+    ]
     |> List.mapi (fun i x -> i, x)
   in
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) l in

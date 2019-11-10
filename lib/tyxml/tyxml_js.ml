@@ -103,8 +103,7 @@ module Xml = struct
 
   let pcdata s = (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
-  let encodedpcdata s =
-    (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
+  let encodedpcdata s = (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
   let entity =
     let string_fold s ~pos ~init ~f =
@@ -425,8 +424,7 @@ module R = struct
 
     let uri_attrib name s = attr name (fun f -> Some (Js.string f)) s
 
-    let uris_attrib name s =
-      attr name (fun f -> Some (Js.string (String.concat " " f))) s
+    let uris_attrib name s = attr name (fun f -> Some (Js.string (String.concat " " f))) s
 
     type elt = Xml.elt
 

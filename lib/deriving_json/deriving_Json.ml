@@ -24,16 +24,17 @@ module Lexer = Deriving_Json_lexer
 
 type 'a t =
   { write : Buffer.t -> 'a -> unit
-  ; read : Lexer.lexbuf -> 'a }
+  ; read : Lexer.lexbuf -> 'a
+  }
 
-let make write read = {write; read}
+let make write read = { write; read }
 
 let read t = t.read
 
 let write t = t.write
 
 let convert t f1 f2 =
-  {write = (fun buf a -> t.write buf (f2 a)); read = (fun buf -> f1 (t.read buf))}
+  { write = (fun buf a -> t.write buf (f2 a)); read = (fun buf -> f1 (t.read buf)) }
 
 let to_string t v =
   let buf = Buffer.create 50 in
@@ -70,9 +71,9 @@ module type Json_min' = sig
 
   val read : Lexer.lexbuf -> a
 
-  val match_variant : [`Cst of int | `NCst of int] -> bool
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
 
-  val read_variant : Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant : Lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
 end
 
 module type Json_min'' = sig
@@ -108,15 +109,15 @@ module type Json = sig
   val from_string : string -> a
 
   (* val from_channel: in_channel -> a *)
-  val match_variant : [`Cst of int | `NCst of int] -> bool
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
 
-  val read_variant : Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant : Lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
 end
 
 module Defaults (J : Json_min) : Json with type a = J.a = struct
   include J
 
-  let t = {write; read}
+  let t = { write; read }
 
   let to_string v = to_string t v
 
@@ -132,7 +133,7 @@ end
 module Defaults' (J : Json_min') : Json with type a = J.a = struct
   include J
 
-  let t = {write; read}
+  let t = { write; read }
 
   let to_string v = to_string t v
 

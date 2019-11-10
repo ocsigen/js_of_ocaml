@@ -77,8 +77,8 @@ struct
     (if debug_enabled
     then
       match loc with
-      | Pi {Parse_info.name = Some file; line; col; _}
-       |Pi {Parse_info.src = Some file; line; col; _} ->
+      | Pi { Parse_info.name = Some file; line; col; _ }
+      | Pi { Parse_info.src = Some file; line; col; _ } ->
           PP.non_breaking_space f;
           PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
           PP.non_breaking_space f
@@ -91,7 +91,7 @@ struct
     then
       match loc with
       | N -> ()
-      | U | Pi {Parse_info.src = None; _} ->
+      | U | Pi { Parse_info.src = None; _ } ->
           push_mapping
             (PP.pos f)
             { Source_map.gen_line = -1
@@ -99,8 +99,9 @@ struct
             ; ori_source = -1
             ; ori_line = -1
             ; ori_col = -1
-            ; ori_name = None }
-      | Pi {Parse_info.src = Some file; line; col; _} ->
+            ; ori_name = None
+            }
+      | Pi { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
             { Source_map.gen_line = -1
@@ -108,14 +109,15 @@ struct
             ; ori_source = get_file_index file
             ; ori_line = line
             ; ori_col = col
-            ; ori_name = None }
+            ; ori_name = None
+            }
 
   let output_debug_info_ident f nm loc =
     if source_map_enabled
     then
       match loc with
       | None -> ()
-      | Some {Parse_info.src = Some file; line; col; _} ->
+      | Some { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
             { Source_map.gen_line = -1
@@ -123,17 +125,18 @@ struct
             ; ori_source = get_file_index file
             ; ori_line = line
             ; ori_col = col
-            ; ori_name = Some (get_name_index nm) }
+            ; ori_name = Some (get_name_index nm)
+            }
       | Some _ -> ()
 
   let ident f = function
-    | S {name; var = Some v; _} ->
+    | S { name; var = Some v; _ } ->
         output_debug_info_ident f name (Code.Var.get_loc v);
         PP.string f name
-    | S {name; var = None; loc = Pi pi} ->
+    | S { name; var = None; loc = Pi pi } ->
         output_debug_info_ident f name (Some pi);
         PP.string f name
-    | S {name; var = None; loc = U | N} -> PP.string f name
+    | S { name; var = None; loc = U | N } -> PP.string f name
     | V _v -> assert false
 
   let opt_identifier f i =
@@ -146,7 +149,7 @@ struct
   let rec formal_parameter_list f l =
     match l with
     | [] -> ()
-    | [i] -> ident f i
+    | [ i ] -> ident f i
     | i :: r ->
         ident f i;
         PP.string f ",";
@@ -180,7 +183,7 @@ struct
   let op_prec op =
     match op with
     | Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq | LslEq | AsrEq | LsrEq | BandEq
-     |BxorEq | BorEq ->
+    | BxorEq | BorEq ->
         1, 13, 1
     (*
       | Or -> 3, 3, 4
@@ -249,9 +252,9 @@ struct
   let rec ends_with_if_without_else st =
     match fst st with
     | If_statement (_, _, Some st)
-     |While_statement (_, st)
-     |For_statement (_, _, _, st)
-     |ForIn_statement (_, _, st) ->
+    | While_statement (_, st)
+    | For_statement (_, _, _, st)
+    | ForIn_statement (_, _, st) ->
         ends_with_if_without_else st
     | If_statement (_, _, None) -> true
     | _ -> false
@@ -641,7 +644,7 @@ struct
   and property_name_and_value_list f l =
     match l with
     | [] -> ()
-    | [(pn, e)] ->
+    | [ (pn, e) ] ->
         PP.start_group f 0;
         property_name f pn;
         PP.string f ":";
@@ -662,13 +665,13 @@ struct
   and element_list f el =
     match el with
     | [] -> ()
-    | [e] -> (
-      match e with
-      | None -> PP.string f ","
-      | Some e ->
-          PP.start_group f 0;
-          expression 1 f e;
-          PP.end_group f)
+    | [ e ] -> (
+        match e with
+        | None -> PP.string f ","
+        | Some e ->
+            PP.start_group f 0;
+            expression 1 f e;
+            PP.end_group f)
     | e :: r ->
         (match e with
         | None -> ()
@@ -685,7 +688,7 @@ struct
   and arguments f l =
     match l with
     | [] -> ()
-    | [e] ->
+    | [ e ] ->
         PP.start_group f 0;
         expression 1 f e;
         PP.end_group f
@@ -712,7 +715,7 @@ struct
   and variable_declaration_list_aux f l =
     match l with
     | [] -> assert false
-    | [d] -> variable_declaration f d
+    | [ d ] -> variable_declaration f d
     | d :: r ->
         variable_declaration f d;
         PP.string f ",";
@@ -721,14 +724,14 @@ struct
 
   and variable_declaration_list close f = function
     | [] -> ()
-    | [(i, None)] ->
+    | [ (i, None) ] ->
         PP.start_group f 1;
         PP.string f "var";
         PP.space f;
         ident f i;
         if close then PP.string f ";";
         PP.end_group f
-    | [(i, Some (e, pc))] ->
+    | [ (i, Some (e, pc)) ] ->
         PP.start_group f 1;
         output_debug_info f pc;
         PP.string f "var";
@@ -783,7 +786,7 @@ struct
           PP.end_group f)
     | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
         (* Dangling else issue... *)
-        statement ~last f (If_statement (e, (Block [s1], N), s2), N)
+        statement ~last f (If_statement (e, (Block [ s1 ], N), s2), N)
     | If_statement (e, s1, Some ((Block _, _) as s2)) ->
         PP.start_group f 0;
         PP.start_group f 1;
@@ -927,7 +930,7 @@ struct
         PP.string f "(";
         (match e1 with
         | Left e -> expression 0 f e
-        | Right v -> variable_declaration_list false f [v]);
+        | Right v -> variable_declaration_list false f [ v ]);
         PP.space f;
         PP.string f "in";
         PP.break f;
@@ -956,45 +959,45 @@ struct
         PP.string f (Javascript.Label.to_string s);
         last_semi ()
     | Return_statement e -> (
-      match e with
-      | None ->
-          PP.string f "return";
-          last_semi ()
-      | Some (EFun (i, l, b, pc)) ->
-          PP.start_group f 1;
-          PP.start_group f 0;
-          PP.start_group f 0;
-          PP.string f "return function";
-          opt_identifier f i;
-          PP.end_group f;
-          PP.break f;
-          PP.start_group f 1;
-          PP.string f "(";
-          formal_parameter_list f l;
-          PP.string f ")";
-          PP.end_group f;
-          PP.end_group f;
-          PP.break f;
-          PP.start_group f 1;
-          PP.string f "{";
-          function_body f b;
-          output_debug_info f pc;
-          PP.string f "}";
-          last_semi ();
-          PP.end_group f;
-          PP.end_group f
-      | Some e ->
-          PP.start_group f 7;
-          PP.string f "return";
-          PP.non_breaking_space f;
-          PP.start_group f 0;
-          expression 0 f e;
-          last_semi ();
-          PP.end_group f;
-          PP.end_group f
-          (* There MUST be a space between the return and its
+        match e with
+        | None ->
+            PP.string f "return";
+            last_semi ()
+        | Some (EFun (i, l, b, pc)) ->
+            PP.start_group f 1;
+            PP.start_group f 0;
+            PP.start_group f 0;
+            PP.string f "return function";
+            opt_identifier f i;
+            PP.end_group f;
+            PP.break f;
+            PP.start_group f 1;
+            PP.string f "(";
+            formal_parameter_list f l;
+            PP.string f ")";
+            PP.end_group f;
+            PP.end_group f;
+            PP.break f;
+            PP.start_group f 1;
+            PP.string f "{";
+            function_body f b;
+            output_debug_info f pc;
+            PP.string f "}";
+            last_semi ();
+            PP.end_group f;
+            PP.end_group f
+        | Some e ->
+            PP.start_group f 7;
+            PP.string f "return";
+            PP.non_breaking_space f;
+            PP.start_group f 0;
+            expression 0 f e;
+            last_semi ();
+            PP.end_group f;
+            PP.end_group f
+            (* There MUST be a space between the return and its
        argument. A line return will not work *)
-      )
+        )
     | Labelled_statement (i, s) ->
         PP.string f (Javascript.Label.to_string i);
         PP.string f ":";
@@ -1031,7 +1034,7 @@ struct
         in
         let rec loop last = function
           | [] -> ()
-          | [x] -> output_one last x
+          | [ x ] -> output_one last x
           | x :: xs ->
               output_one false x;
               loop last xs
@@ -1092,7 +1095,7 @@ struct
   and statement_list f ?skip_last_semi b =
     match b with
     | [] -> ()
-    | [s] -> statement f ?last:skip_last_semi s
+    | [ s ] -> statement f ?last:skip_last_semi s
     | s :: r ->
         statement f s;
         PP.break f;
@@ -1136,7 +1139,7 @@ struct
   and source_elements f ?skip_last_semi se =
     match se with
     | [] -> ()
-    | [s] -> source_element f ?skip_last_semi s
+    | [ s ] -> source_element f ?skip_last_semi s
     | s :: r ->
         source_element f s;
         PP.break f;
@@ -1163,8 +1166,8 @@ let need_space a b =
   match a, b with
   | '/', '/'
   (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
-   |'-', '-'
-   |'+', '+' ->
+  | '-', '-'
+  | '+', '+' ->
       true
   | _, _ -> false
 
@@ -1188,7 +1191,8 @@ let program f ?source_map p =
       let sm =
         { sm with
           Source_map.sources = List.rev sm.Source_map.sources
-        ; Source_map.names = List.rev sm.Source_map.names }
+        ; Source_map.names = List.rev sm.Source_map.names
+        }
       in
       let sources = sm.Source_map.sources in
       let sources_content =
@@ -1208,7 +1212,8 @@ let program f ?source_map p =
         List.map !O.temp_mappings ~f:(fun (pos, m) ->
             { m with
               Source_map.gen_line = pos.PP.p_line
-            ; Source_map.gen_col = pos.PP.p_col })
+            ; Source_map.gen_col = pos.PP.p_col
+            })
       in
       let sources =
         match sm.Source_map.sourceroot with
@@ -1231,7 +1236,7 @@ let program f ?source_map p =
               root;
             targets
       in
-      let sm = {sm with Source_map.sources; sources_content; mappings} in
+      let sm = { sm with Source_map.sources; sources_content; mappings } in
       let urlData =
         match out_file with
         | None ->

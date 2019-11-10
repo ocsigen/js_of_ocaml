@@ -43,14 +43,16 @@ type http_url =
   ; hu_arguments : (string * string) list
         (** Arguments as a field-value
                                              association list.*)
-  ; hu_fragment : string  (** The fragment part (after the ['#'] character). *) }
+  ; hu_fragment : string  (** The fragment part (after the ['#'] character). *)
+  }
 (** The type for HTTP(s) url. *)
 
 type file_url =
   { fu_path : string list
   ; fu_path_string : string
   ; fu_arguments : (string * string) list
-  ; fu_fragment : string }
+  ; fu_fragment : string
+  }
 (** The type for local file urls. *)
 
 (** The type for urls. *)

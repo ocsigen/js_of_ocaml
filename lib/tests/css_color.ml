@@ -31,7 +31,8 @@ let%expect_test _ =
     ; CSS.Color.RGB (CSS.Color.rgb_of_name CSS.Color.Dodgerblue)
     ; CSS.Color.RGB (CSS.Color.rgb_of_name CSS.Color.Pink)
     ; CSS.Color.Name CSS.Color.Hotpink
-    ; CSS.Color.Name CSS.Color.Cornsilk ]
+    ; CSS.Color.Name CSS.Color.Cornsilk
+    ]
   in
   List.iter
     (fun c ->

@@ -39,7 +39,7 @@ let%expect_test _ =
       if x = "ab" then () else print_endline ("Wrong match 1 2: " ^ x));
   [%expect {||}];
   (let l = Regexp.split re2 s2 in
-   if l = ["rr"; "ee"; "ab"; "a"; "b"; "bb"; "a"; "ee"; ""]
+   if l = [ "rr"; "ee"; "ab"; "a"; "b"; "bb"; "a"; "ee"; "" ]
    then ()
    else print_endline "Wrong split 2 2");
   [%expect {||}];

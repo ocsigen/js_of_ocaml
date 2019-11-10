@@ -98,7 +98,8 @@ module F (M : sig
     { x : int
     ; y : int
     ; width : int
-    ; height : int }
+    ; height : int
+    }
 
   val compute_extents :
        ctx
@@ -108,7 +109,7 @@ end) =
 struct
   open M
 
-  let empty_rectangle = {x = 0; y = 0; width = 0; height = 0}
+  let empty_rectangle = { x = 0; y = 0; width = 0; height = 0 }
 
   let rectangle_is_empty r = r.width = 0 || r.height = 0
 
@@ -118,10 +119,11 @@ struct
     { mutable pixmap : M.pixmap option
     ; mutable p_width : int
     ; mutable p_height : int
-    ; mutable valid_rect : rectangle }
+    ; mutable valid_rect : rectangle
+    }
 
   let make_pixmap () =
-    {pixmap = None; p_width = 0; p_height = 0; valid_rect = empty_rectangle}
+    { pixmap = None; p_width = 0; p_height = 0; valid_rect = empty_rectangle }
 
   let invalidate_pixmap p = p.valid_rect <- empty_rectangle
 
@@ -164,7 +166,8 @@ struct
     ; st_y : float
     ; st_width : float
     ; st_height : float
-    ; st_pixmap : pixmap }
+    ; st_pixmap : pixmap
+    }
 
   (****)
 
@@ -306,12 +309,12 @@ Format.eprintf "Translation: %d %d@." dx dy;
         assert (y = 0);
         if a.height > height
         then redraw st scale x0 y0 0 height a.width (a.height - height));
-      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height});
+      pm.valid_rect <- { x = x0; y = y0; width = a.width; height = a.height });
     let r = pm.valid_rect in
     if x < 0 || y < 0 || x + width > r.width || y + height > r.height
     then (
       redraw st scale x0 y0 0 0 a.width a.height;
-      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height});
+      pm.valid_rect <- { x = x0; y = y0; width = a.width; height = a.height });
     put_pixmap
       ~dst:(get_drawable window)
       ~x

@@ -119,70 +119,78 @@ let radio txt name checked action =
 type vertex =
   { x : float
   ; y : float
-  ; z : float }
+  ; z : float
+  }
 
-let vertex x y z = {x; y; z}
+let vertex x y z = { x; y; z }
 
 type matrix =
   { r1 : vertex
   ; r2 : vertex
-  ; r3 : vertex }
+  ; r3 : vertex
+  }
 
-let vect {x = x1; y = y1; z = z1} {x = x2; y = y2; z = z2} =
-  {x = x2 -. x1; y = y2 -. y1; z = z2 -. z1}
+let vect { x = x1; y = y1; z = z1 } { x = x2; y = y2; z = z2 } =
+  { x = x2 -. x1; y = y2 -. y1; z = z2 -. z1 }
 
-let cross_product {x = x1; y = y1; z = z1} {x = x2; y = y2; z = z2} =
+let cross_product { x = x1; y = y1; z = z1 } { x = x2; y = y2; z = z2 } =
   { x = (y1 *. z2) -. (y2 *. z1)
   ; y = (z1 *. x2) -. (z2 *. x1)
-  ; z = (x1 *. y2) -. (x2 *. y1) }
+  ; z = (x1 *. y2) -. (x2 *. y1)
+  }
 
-let dot_product {x = x1; y = y1; z = z1} {x = x2; y = y2; z = z2} =
+let dot_product { x = x1; y = y1; z = z1 } { x = x2; y = y2; z = z2 } =
   (x1 *. x2) +. (y1 *. y2) +. (z1 *. z2)
 
-let matrix_vect_mul m {x; y; z} =
-  let {r1; r2; r3} = m in
+let matrix_vect_mul m { x; y; z } =
+  let { r1; r2; r3 } = m in
   let x' = (x *. r1.x) +. (y *. r1.y) +. (z *. r1.z) in
   let y' = (x *. r2.x) +. (y *. r2.y) +. (z *. r2.z) in
   let z' = (x *. r3.x) +. (y *. r3.y) +. (z *. r3.z) in
-  {x = x'; y = y'; z = z'}
+  { x = x'; y = y'; z = z' }
 
 let matrix_transp m =
-  let {r1; r2; r3} = m in
-  { r1 = {x = r1.x; y = r2.x; z = r3.x}
-  ; r2 = {x = r1.y; y = r2.y; z = r3.y}
-  ; r3 = {x = r1.z; y = r2.z; z = r3.z} }
+  let { r1; r2; r3 } = m in
+  { r1 = { x = r1.x; y = r2.x; z = r3.x }
+  ; r2 = { x = r1.y; y = r2.y; z = r3.y }
+  ; r3 = { x = r1.z; y = r2.z; z = r3.z }
+  }
 
 let matrix_mul m m' =
   let m' = matrix_transp m' in
   { r1 = matrix_vect_mul m' m.r1
   ; r2 = matrix_vect_mul m' m.r2
-  ; r3 = matrix_vect_mul m' m.r3 }
+  ; r3 = matrix_vect_mul m' m.r3
+  }
 
 let normalize v =
-  let {x; y; z} = v in
+  let { x; y; z } = v in
   let r = sqrt ((x *. x) +. (y *. y) +. (z *. z)) in
-  {x = x /. r; y = y /. r; z = z /. r}
+  { x = x /. r; y = y /. r; z = z /. r }
 
 let xz_rotation phi =
   let cos_phi = cos phi in
   let sin_phi = sin phi in
   { r1 = vertex cos_phi 0. sin_phi
   ; r2 = vertex 0. 1. 0.
-  ; r3 = vertex (-.sin_phi) 0. cos_phi }
+  ; r3 = vertex (-.sin_phi) 0. cos_phi
+  }
 
 let xy_rotation phi =
   let cos_phi = cos phi in
   let sin_phi = sin phi in
   { r1 = vertex cos_phi sin_phi 0.
   ; r2 = vertex (-.sin_phi) cos_phi 0.
-  ; r3 = vertex 0. 0. 1. }
+  ; r3 = vertex 0. 0. 1.
+  }
 
 let yz_rotation phi =
   let cos_phi = cos phi in
   let sin_phi = sin phi in
   { r1 = vertex 1. 0. 0.
   ; r2 = vertex 0. cos_phi sin_phi
-  ; r3 = vertex 0. (-.sin_phi) cos_phi }
+  ; r3 = vertex 0. (-.sin_phi) cos_phi
+  }
 
 let matrix_identity = xz_rotation 0.
 
@@ -194,16 +202,18 @@ let rotate_normal m v = matrix_vect_mul (matrix_transp m) v
 type face =
   { v1 : int
   ; v2 : int
-  ; v3 : int }
+  ; v3 : int
+  }
 
-let face v1 v2 v3 = {v1; v2; v3}
+let face v1 v2 v3 = { v1; v2; v3 }
 
 type t =
   { vertices : vertex array
-  ; faces : face array }
+  ; faces : face array
+  }
 
 let rotate_object m o =
-  {o with vertices = Array.map (fun v -> matrix_vect_mul m v) o.vertices}
+  { o with vertices = Array.map (fun v -> matrix_vect_mul m v) o.vertices }
 
 let octahedron =
   { vertices =
@@ -212,7 +222,8 @@ let octahedron =
        ; vertex 0. 1. 0.
        ; vertex (-1.) 0. 0.
        ; vertex 0. (-1.) 0.
-       ; vertex 0. 0. (-1.) |]
+       ; vertex 0. 0. (-1.)
+      |]
   ; faces =
       [| face 0 1 2
        ; face 0 2 3
@@ -221,7 +232,9 @@ let octahedron =
        ; face 1 5 2
        ; face 1 4 5
        ; face 3 5 4
-       ; face 3 2 5 |] }
+       ; face 3 2 5
+      |]
+  }
 
 (****)
 
@@ -255,7 +268,7 @@ let tesselate_sphere p_div t_div =
         faces.((2 * k) + 1) <- face (k - 1) ((k + t_div) mod n) ((k + t_div - 1) mod n))
     done
   done;
-  {vertices; faces}
+  { vertices; faces }
 
 (****)
 
@@ -278,7 +291,7 @@ let divide all o =
       let v1 = o.vertices.(v1) in
       let v2 = o.vertices.(v2) in
       let v =
-        {x = (v1.x +. v2.x) /. 2.; y = (v1.y +. v2.y) /. 2.; z = (v1.z +. v2.z) /. 2.}
+        { x = (v1.x +. v2.x) /. 2.; y = (v1.y +. v2.y) /. 2.; z = (v1.z +. v2.z) /. 2. }
       in
       let v =
         if all || abs_float v1.y = 1. || abs_float v2.y = 1. then normalize v else v
@@ -292,7 +305,7 @@ let divide all o =
   in
   let k = ref 0 in
   for i = 0 to Array.length o.faces - 1 do
-    let {v1; v2; v3} = o.faces.(i) in
+    let { v1; v2; v3 } = o.faces.(i) in
     if all
        || abs_float o.vertices.(v1).y = 1.
        || abs_float o.vertices.(v2).y = 1.
@@ -301,10 +314,10 @@ let divide all o =
       let w1 = midpoint v1 v2 in
       let w2 = midpoint v2 v3 in
       let w3 = midpoint v3 v1 in
-      faces.(!k) <- {v1; v2 = w1; v3 = w3};
-      faces.(!k + 1) <- {v1 = w1; v2; v3 = w2};
-      faces.(!k + 2) <- {v1 = w3; v2 = w2; v3};
-      faces.(!k + 3) <- {v1 = w1; v2 = w2; v3 = w3};
+      faces.(!k) <- { v1; v2 = w1; v3 = w3 };
+      faces.(!k + 1) <- { v1 = w1; v2; v3 = w2 };
+      faces.(!k + 2) <- { v1 = w3; v2 = w2; v3 };
+      faces.(!k + 3) <- { v1 = w1; v2 = w2; v3 = w3 };
       k := !k + 4)
     else (
       faces.(!k) <- o.faces.(i);
@@ -312,7 +325,7 @@ let divide all o =
   done;
   assert (!j = Array.length vertices);
   assert (!k = Array.length faces);
-  {vertices; faces}
+  { vertices; faces }
 
 (****)
 
@@ -418,7 +431,7 @@ let shadow texture =
 
 (****)
 
-let to_uv tw th {x; y; z} =
+let to_uv tw th { x; y; z } =
   let cst1 = ((tw /. 2.) -. 0.99) /. pi in
   let cst2 = th /. 2. in
   let cst3 = (th -. 0.99) /. pi in
@@ -435,7 +448,7 @@ let min (u : float) v = if u < v then u else v
 let max (u : float) v = if u < v then v else u
 
 let precompute_mapping_info tw th uv f =
-  let {v1; v2; v3} = f in
+  let { v1; v2; v3 } = f in
   let u1, v1 = uv.(v1) in
   let u2, v2 = uv.(v2) in
   let u3, v3 = uv.(v3) in
@@ -473,10 +486,10 @@ let precompute_mapping_info tw th uv f =
 
 let draw ctx _img shd o _uv normals face_info dir =
   Array.iteri
-    (fun i {v1; v2; v3} ->
-      let {x = x1; y = y1; z = _z1} = o.vertices.(v1) in
-      let {x = x2; y = y2; z = _z2} = o.vertices.(v2) in
-      let {x = x3; y = y3; z = _z3} = o.vertices.(v3) in
+    (fun i { v1; v2; v3 } ->
+      let { x = x1; y = y1; z = _z1 } = o.vertices.(v1) in
+      let { x = x2; y = y2; z = _z2 } = o.vertices.(v2) in
+      let { x = x3; y = y3; z = _z3 } = o.vertices.(v3) in
       if dot_product normals.(i) dir >= 0.
       then (
         ctx##beginPath;
@@ -560,7 +573,7 @@ let o = tesselate_sphere 12 8
 (*
 let o = octahedron >> divide true >> divide true >> divide true
 *)
-let v = {x = 0.; y = 0.; z = 1.}
+let v = { x = 0.; y = 0.; z = 1. }
 
 let _texture = Js.string "black.jpg"
 
@@ -584,7 +597,7 @@ let start _ =
     let uv = Array.map (fun v -> to_uv tw th v) o.vertices in
     let normals =
       Array.map
-        (fun {v1; v2; v3} ->
+        (fun { v1; v2; v3 } ->
           let v1 = o.vertices.(v1) in
           let v2 = o.vertices.(v2) in
           let v3 = o.vertices.(v3) in
@@ -628,7 +641,7 @@ let start _ =
          let o = Html.createOption doc in
          add o (doc##createTextNode (Js.string txt));
          s##add o Js.null)
-       ["December solstice"; "Equinox"; "June solstice"];
+       [ "December solstice"; "Equinox"; "June solstice" ];
      s##.onchange :=
        Html.handler (fun _ ->
            let o =

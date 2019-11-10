@@ -24,15 +24,15 @@
 
 let js_opt = ref []
 
-let add_js_opt x = js_opt := !js_opt @ [x]
+let add_js_opt x = js_opt := !js_opt @ [ x ]
 
-let pkgs = ref ["stdlib"]
+let pkgs = ref [ "stdlib" ]
 
-let add_pkgs x = pkgs := !pkgs @ [x]
+let add_pkgs x = pkgs := !pkgs @ [ x ]
 
 let export = ref []
 
-let add_export x = export := !export @ [x]
+let add_export x = export := !export @ [ x ]
 
 let execute cmd =
   let s = String.concat " " cmd in
@@ -80,27 +80,27 @@ let rec scan_args acc = function
 
 let _ =
   try
-    let jsoo_top = ["-package"; "js_of_ocaml-toplevel"] in
-    let base_cmd = ["ocamlfind"; "ocamlc"; "-linkall"; "-linkpkg"] in
+    let jsoo_top = [ "-package"; "js_of_ocaml-toplevel" ] in
+    let base_cmd = [ "ocamlfind"; "ocamlc"; "-linkall"; "-linkpkg" ] in
     let args = List.tl (Array.to_list Sys.argv) in
     let args = scan_args [] args in
-    List.iter (fun pkg -> execute ["jsoo_mkcmis"; pkg]) !pkgs;
+    List.iter (fun pkg -> execute [ "jsoo_mkcmis"; pkg ]) !pkgs;
     let toplevel_unit =
       let dir = Findlib.package_directory "compiler-libs" in
       List.map
         (fun x -> Filename.concat dir x ^ ".cmi")
-        ["outcometree"; "topdirs"; "toploop"]
+        [ "outcometree"; "topdirs"; "toploop" ]
     in
-    execute (["jsoo_mkcmis"; "-o"; "exported-unit.cmis.js"] @ !export @ toplevel_unit);
+    execute ([ "jsoo_mkcmis"; "-o"; "exported-unit.cmis.js" ] @ !export @ toplevel_unit);
     let export_output = !output ^ ".export" in
-    let cmd = base_cmd @ jsoo_top @ args @ ["-o"; !output] in
+    let cmd = base_cmd @ jsoo_top @ args @ [ "-o"; !output ] in
     execute cmd;
-    execute (["jsoo_listunits"; "-o"; export_output] @ !pkgs @ !export);
+    execute ([ "jsoo_listunits"; "-o"; export_output ] @ !pkgs @ !export);
     clean export_output;
     execute
-      (["js_of_ocaml"; "--toplevel"; "--no-cmis"; "--export"; export_output]
+      ([ "js_of_ocaml"; "--toplevel"; "--no-cmis"; "--export"; export_output ]
       @ !js_opt
-      @ [!output]);
+      @ [ !output ]);
     do_clean ()
   with exn ->
     do_clean ();

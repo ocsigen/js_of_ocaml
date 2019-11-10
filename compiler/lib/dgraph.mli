@@ -24,7 +24,8 @@ end)
 (NMap : Map.S with type key = N.t) : sig
   type t =
     { domain : NSet.t
-    ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a }
+    ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a
+    }
 
   val invert : t -> t
 
@@ -78,7 +79,8 @@ end)
 (NTbl : Tbl with type key = N.t) : sig
   type t =
     { domain : NSet.t
-    ; iter_children : (N.t -> unit) -> N.t -> unit }
+    ; iter_children : (N.t -> unit) -> N.t -> unit
+    }
 
   val invert : NTbl.size -> t -> t
 

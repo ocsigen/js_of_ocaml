@@ -25,8 +25,7 @@ class type json =
     method parse : 'a. js_string t -> 'a meth
 
     method parse_ :
-      'a 'b 'c 'd.    js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback
-      -> 'a meth
+      'a 'b 'c 'd. js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
 
     method stringify : 'a. 'a -> js_string t meth
 

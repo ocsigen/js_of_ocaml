@@ -68,13 +68,13 @@ module Register : sig
       [head] and [body] can be reactive.
   *)
 
-  val body : ?keep:bool -> [< Html_types.body_content] Html.elt list -> unit
+  val body : ?keep:bool -> [< Html_types.body_content ] Html.elt list -> unit
   (** [Register.body elements] add [elements] as children of [body].
       If [keep] is false (default is true), the children of the body are
       removed before adding the new elements.
   *)
 
-  val head : ?keep:bool -> [< Html_types.head_content] Html.elt list -> unit
+  val head : ?keep:bool -> [< Html_types.head_content ] Html.elt list -> unit
   (** [Register.head elements] add [elements] as children of [body].
       If [keep] is false (default is true), the children of the head are
       removed before adding the new elements.

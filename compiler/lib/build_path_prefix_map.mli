@@ -36,7 +36,8 @@ val decode_prefix : string -> (path_prefix, error_message) result
 
 type pair =
   { target : path_prefix
-  ; source : path_prefix }
+  ; source : path_prefix
+  }
 
 val encode_pair : pair -> string
 

@@ -35,7 +35,7 @@ let () =
     else
       let file = Sys.argv.(i) in
       match split_on_char '-' file with
-      | [_; version] ->
+      | [ _; version ] ->
           if version_match version then dump_file file else select_first (succ i)
       | _ -> invalid_arg "select.exe"
   in

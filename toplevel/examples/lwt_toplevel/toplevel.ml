@@ -35,9 +35,7 @@ let do_by_id s f = try f (Dom_html.getElementById s) with Not_found -> ()
 
 (* load file using a synchronous XMLHttpRequest *)
 let load_resource_aux filename url =
-  Js_of_ocaml_lwt.XmlHttpRequest.perform_raw
-    ~response_type:XmlHttpRequest.ArrayBuffer
-    url
+  Js_of_ocaml_lwt.XmlHttpRequest.perform_raw ~response_type:XmlHttpRequest.ArrayBuffer url
   >|= fun frame ->
   if frame.Js_of_ocaml_lwt.XmlHttpRequest.code = 200
   then
@@ -70,7 +68,7 @@ module Version = struct
     let len = String.length p in
     let rec split beg cur =
       if cur >= len
-      then if cur - beg > 0 then [String.sub p beg (cur - beg)] else []
+      then if cur - beg > 0 then [ String.sub p beg (cur - beg) ] else []
       else if p.[cur] = sep
       then String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
@@ -90,20 +88,20 @@ module Version = struct
 
   let rec compare v v' =
     match v, v' with
-    | [x], [y] -> compint x y
+    | [ x ], [ y ] -> compint x y
     | [], [] -> 0
     | [], y :: _ -> compint 0 y
     | x :: _, [] -> compint x 0
     | x :: xs, y :: ys -> (
-      match compint x y with
-      | 0 -> compare xs ys
-      | n -> n)
+        match compint x y with
+        | 0 -> compare xs ys
+        | n -> n)
 end
 
 let setup_toplevel () =
   JsooTop.initialize ();
   Sys.interactive := false;
-  if Version.compare Version.current [4; 07] >= 0 then exec' "open Stdlib";
+  if Version.compare Version.current [ 4; 07 ] >= 0 then exec' "open Stdlib";
   exec'
     "module Lwt_main = struct\n\
     \             let run t = match Lwt.state t with\n\
@@ -138,8 +136,8 @@ let resize ~container ~textbox () =
 
 let setup_printers () =
   exec'
-    "let _print_error fmt e = Format.pp_print_string fmt \
-     (Js_of_ocaml.Js.string_of_error e)";
+    "let _print_error fmt e = Format.pp_print_string fmt (Js_of_ocaml.Js.string_of_error \
+     e)";
   Topdirs.dir_install_printer Format.std_formatter Longident.(Lident "_print_error");
   exec' "let _print_unit fmt (_ : 'a) : 'a = Format.pp_print_string fmt \"()\"";
   Topdirs.dir_install_printer Format.std_formatter Longident.(Lident "_print_unit")
@@ -174,7 +172,7 @@ let setup_examples ~container ~textbox =
               Tyxml_js.Html.(
                 a
                   ~a:
-                    [ a_class ["list-group-item"]
+                    [ a_class [ "list-group-item" ]
                     ; a_onclick (fun _ ->
                           textbox##.value := (Js.string acc)##trim;
                           Lwt.async (fun () ->
@@ -182,8 +180,9 @@ let setup_examples ~container ~textbox =
                               >>= fun () ->
                               textbox##focus;
                               Lwt.return_unit);
-                          true) ]
-                  [txt name])
+                          true)
+                    ]
+                  [ txt name ])
             in
             Dom.appendChild example_container (Tyxml_js.To_dom.of_a a);
             "")
@@ -220,20 +219,21 @@ let setup_share_button ~output =
             let code_encoded = B64.encode (String.concat "" (List.rev !code)) in
             let url, is_file =
               match Url.Current.get () with
-              | Some (Url.Http url) -> Url.Http {url with Url.hu_fragment = ""}, false
-              | Some (Url.Https url) -> Url.Https {url with Url.hu_fragment = ""}, false
-              | Some (Url.File url) -> Url.File {url with Url.fu_fragment = ""}, true
+              | Some (Url.Http url) -> Url.Http { url with Url.hu_fragment = "" }, false
+              | Some (Url.Https url) -> Url.Https { url with Url.hu_fragment = "" }, false
+              | Some (Url.File url) -> Url.File { url with Url.fu_fragment = "" }, true
               | _ -> assert false
             in
             let frag =
               let frags = parse_hash () in
-              let frags = List.remove_assoc "code" frags @ ["code", code_encoded] in
+              let frags = List.remove_assoc "code" frags @ [ "code", code_encoded ] in
               Url.encode_arguments frags
             in
             let uri = Url.string_of_url url ^ "#" ^ frag in
             let append_url str =
               let dom =
-                Tyxml_js.Html.(p [txt "Share this url : "; a ~a:[a_href str] [txt str]])
+                Tyxml_js.Html.(
+                  p [ txt "Share this url : "; a ~a:[ a_href str ] [ txt str ] ])
               in
               Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
             in
@@ -290,7 +290,7 @@ let append colorize output cl s =
   Dom.appendChild output (Tyxml_js.To_dom.of_element (colorize ~a_class:cl s))
 
 module History = struct
-  let data = ref [|""|]
+  let data = ref [| "" |]
 
   let idx = ref 0
 

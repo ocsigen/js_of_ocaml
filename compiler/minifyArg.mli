@@ -22,7 +22,8 @@ type t =
   ; (* minify option *)
     use_stdin : bool
   ; output_file : string option
-  ; files : string list }
+  ; files : string list
+  }
 
 val options : t Cmdliner.Term.t
 

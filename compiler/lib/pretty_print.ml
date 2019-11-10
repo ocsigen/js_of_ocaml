@@ -22,7 +22,8 @@ open! Stdlib
 
 type pos =
   { mutable p_line : int
-  ; mutable p_col : int }
+  ; mutable p_col : int
+  }
 
 type elt =
   | Text of string
@@ -47,7 +48,8 @@ type t =
   ; mutable line : int
   ; mutable col : int
   ; mutable total : int
-  ; output : string -> int -> int -> unit }
+  ; output : string -> int -> int -> unit
+  }
 
 let spaces = String.make 80 ' '
 
@@ -201,9 +203,9 @@ let total t = t.total
 
 let pos t =
   if t.compact
-  then {p_line = t.line; p_col = t.col}
+  then { p_line = t.line; p_col = t.col }
   else
-    let p = {p_line = -1; p_col = -1} in
+    let p = { p_line = -1; p_col = -1 } in
     push t (Set_pos p);
     p
 
@@ -233,7 +235,8 @@ let to_out_channel ch =
   ; pending_space = None
   ; last_char = None
   ; needed_space = None
-  ; output = output_substring ch }
+  ; output = output_substring ch
+  }
 
 let to_buffer b =
   { indent = 0
@@ -251,7 +254,8 @@ let to_buffer b =
   ; pending_space = None
   ; last_char = None
   ; needed_space = None
-  ; output = (fun s i l -> Buffer.add_substring b s i l) }
+  ; output = (fun s i l -> Buffer.add_substring b s i l)
+  }
 
 let set_compact st v = st.compact <- v
 

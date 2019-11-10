@@ -50,9 +50,9 @@ val read_number : lexbuf -> float
 
 val read_string : lexbuf -> string
 
-val read_case : lexbuf -> [`Cst of int | `NCst of int]
+val read_case : lexbuf -> [ `Cst of int | `NCst of int ]
 
-val read_vcase : lexbuf -> [`Cst of int | `NCst of int]
+val read_vcase : lexbuf -> [ `Cst of int | `NCst of int ]
 
 val read_comma : lexbuf -> unit
 
@@ -60,4 +60,4 @@ val read_lbracket : lexbuf -> unit
 
 val read_rbracket : lexbuf -> unit
 
-val read_comma_or_rbracket : lexbuf -> [`Comma | `RBracket]
+val read_comma_or_rbracket : lexbuf -> [ `Comma | `RBracket ]

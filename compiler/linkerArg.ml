@@ -25,28 +25,29 @@ type t =
   { source_map : (string option * Source_map.t) option
   ; js_files : string list
   ; output_file : string option
-  ; resolve_sourcemap_url : bool }
+  ; resolve_sourcemap_url : bool
+  }
 
 let options =
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
+    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let sourcemap =
     let doc = "Generate source map." in
-    Arg.(value & flag & info ["sourcemap"; "source-map"] ~doc)
+    Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
   in
   let sourcemap_inline_in_js =
     let doc = "Inline sourcemap in the generated JavaScript." in
-    Arg.(value & flag & info ["source-map-inline"] ~doc)
+    Arg.(value & flag & info [ "source-map-inline" ] ~doc)
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info ["source-map-root"] ~doc)
+    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
   in
   let resolve_sourcemap_url =
     let doc = "Resolve source map url." in
-    Arg.(value & opt bool false & info ["resolve-sourcemap-url"] ~doc)
+    Arg.(value & opt bool false & info [ "resolve-sourcemap-url" ] ~doc)
   in
   let js_files =
     let doc = "Link JavaScript files [$(docv)]." in
@@ -59,9 +60,7 @@ let options =
       output_file
       resolve_sourcemap_url
       js_files =
-    let chop_extension s =
-      try Filename.chop_extension s with Invalid_argument _ -> s
-    in
+    let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let source_map =
       if sourcemap || sourcemap_inline_in_js
       then
@@ -79,10 +78,11 @@ let options =
             ; sources = []
             ; sources_content = Some []
             ; names = []
-            ; mappings = [] } )
+            ; mappings = []
+            } )
       else None
     in
-    `Ok {output_file; js_files; source_map; resolve_sourcemap_url}
+    `Ok { output_file; js_files; source_map; resolve_sourcemap_url }
   in
   let t =
     Term.(
@@ -116,8 +116,9 @@ let info =
     ; `P
         "jsoo_link is free software, you can redistribute it and/or modify it under the \
          terms of the GNU Lesser General Public License as published by the Free \
-         Software Foundation, with linking exception; either version 2.1 of the \
-         License, or (at your option) any later version." ]
+         Software Foundation, with linking exception; either version 2.1 of the License, \
+         or (at your option) any later version."
+    ]
   in
   let version =
     match Compiler_version.git_version with

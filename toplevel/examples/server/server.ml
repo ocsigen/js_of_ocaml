@@ -9,7 +9,7 @@ let filesys = ref (Findlib.default_location ())
 
 let server () =
   let re_filesys =
-    compile (seq [str "/filesys/"; group (seq [str !filesys; rep any]); eos])
+    compile (seq [ str "/filesys/"; group (seq [ str !filesys; rep any ]); eos ])
   in
   let header typ =
     let h = Header.init () in

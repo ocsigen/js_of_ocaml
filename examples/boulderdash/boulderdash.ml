@@ -26,8 +26,8 @@ let replace_child p n =
 
 let box_style =
   js
-    "border: 1px black solid; background-color: white ; display: inline ; \
-     padding-right: .5em; padding-left: .5em;"
+    "border: 1px black solid; background-color: white ; display: inline ; padding-right: \
+     .5em; padding-left: .5em;"
 
 let loading_style =
   js
@@ -87,7 +87,8 @@ and state =
   ; mutable dead : bool
   ; mutable map_mutex : Lwt_mutex.t
   ; mutable events_mutex : bool
-  ; mutable pending_out_cb : (unit -> unit) option ref }
+  ; mutable pending_out_cb : (unit -> unit) option ref
+  }
 
 exception Death
 
@@ -105,7 +106,7 @@ let img_assoc v =
 
 let set_cell state x y v =
   state.map.(y).(x) <- v;
-  (state.imgs.(y).(x))##.src := img_assoc v
+  state.imgs.(y).(x)##.src := img_assoc v
 
 let walkable = function
   | Empty | Grass | Diamond | End -> true
@@ -151,9 +152,9 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
   >>= fun () ->
   for y = 0 to Array.length state.map - 1 do
     for x = 0 to Array.length state.map.(y) - 1 do
-      (state.imgs.(y).(x))##.onmouseover := Html.no_handler;
-      (state.imgs.(y).(x))##.onmouseout := Html.no_handler;
-      (state.imgs.(y).(x))##.onclick := Html.no_handler
+      state.imgs.(y).(x)##.onmouseover := Html.no_handler;
+      state.imgs.(y).(x)##.onmouseout := Html.no_handler;
+      state.imgs.(y).(x)##.onclick := Html.no_handler
     done
   done;
   let inhibit f _x =
@@ -184,12 +185,12 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
   let rec update (x, y) next img over_cont out_cont click_cont =
     if walkable state.map.(y).(x)
     then (
-      let cur_img = (state.imgs.(y).(x))##.src in
+      let cur_img = state.imgs.(y).(x)##.src in
       let over () =
-        (state.imgs.(y).(x))##.src := img;
+        state.imgs.(y).(x)##.src := img;
         over_cont ()
       and out () =
-        (state.imgs.(y).(x))##.src := cur_img;
+        state.imgs.(y).(x)##.src := cur_img;
         out_cont ()
       and click' () =
         click_cont ()
@@ -222,11 +223,11 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
             | _ -> Lwt.fail e)
         >>= fun () -> build_interaction state show_rem clock
       in
-      (state.imgs.(y).(x))##.onmouseover
+      state.imgs.(y).(x)##.onmouseover
       := Html.handler (inhibit (set_pending_out (with_pending_out over) out));
-      (state.imgs.(y).(x))##.onmouseout
+      state.imgs.(y).(x)##.onmouseout
       := Html.handler (inhibit (with_pending_out (fun () -> Lwt.return ())));
-      (state.imgs.(y).(x))##.onclick := Html.handler (inhibit (with_pending_out click));
+      state.imgs.(y).(x)##.onclick := Html.handler (inhibit (with_pending_out click));
       if state.map.(y).(x) <> End then update (next (x, y)) next img over out click')
   in
   let update_push ((x, y) as pos) next img img_guy =
@@ -236,13 +237,13 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
        with Invalid_argument _ -> false
     then (
       let over () =
-        (state.imgs.(y).(x))##.src := img_guy;
-        (state.imgs.(y').(x'))##.src := img;
+        state.imgs.(y).(x)##.src := img_guy;
+        state.imgs.(y').(x')##.src := img;
         Lwt.return ()
       in
       let out () =
-        (state.imgs.(y).(x))##.src := js "sprites/guy.png";
-        (state.imgs.(y').(x'))##.src := js "sprites/boulder.png"
+        state.imgs.(y).(x)##.src := js "sprites/guy.png";
+        state.imgs.(y').(x')##.src := js "sprites/boulder.png"
       in
       let click () =
         set_cell state x y Empty;
@@ -259,11 +260,11 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
             | e -> Lwt.fail e)
         >>= fun () -> build_interaction state show_rem clock
       in
-      (state.imgs.(y').(x'))##.onmouseover
+      state.imgs.(y').(x')##.onmouseover
       := Html.handler (inhibit (set_pending_out (with_pending_out over) out));
-      (state.imgs.(y').(x'))##.onmouseout
+      state.imgs.(y').(x')##.onmouseout
       := Html.handler (inhibit (with_pending_out (fun () -> Lwt.return ())));
-      (state.imgs.(y').(x'))##.onclick := Html.handler (inhibit (with_pending_out click)))
+      state.imgs.(y').(x')##.onclick := Html.handler (inhibit (with_pending_out click)))
   in
   if state.pos = state.endpos
   then (
@@ -277,7 +278,7 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
     if state.rem = 0
     then (
       let x, y = state.endpos in
-      (state.imgs.(y).(x))##.src := js "sprites/end.png";
+      state.imgs.(y).(x)##.src := js "sprites/end.png";
       state.map.(y).(x) <- End);
     let r (x, y) = succ x, y and l (x, y) = pred x, y in
     let u (x, y) = x, pred y and d (x, y) = x, succ y in
@@ -441,7 +442,8 @@ let start _ =
           ; events_mutex = false
           ; dead = false
           ; rem = !rem
-          ; pending_out_cb = ref None }
+          ; pending_out_cb = ref None
+          }
           show_rem
           clock
         >>= fun () ->

@@ -89,7 +89,8 @@ let icons =
   ; "info-38.png"
   ; "meeting-point-38.png"
   ; "globe-38.png"
-  ; "ocsigen-powered.png" ]
+  ; "ocsigen-powered.png"
+  ]
 
 let icon nm = Js.string ("icons/" ^ nm)
 
@@ -152,17 +153,18 @@ let opt_style v default = Js.Optdef.get v (fun () -> default)
 
 type c =
   { x : float
-  ; y : float }
+  ; y : float
+  }
 
-let one = {x = 1.; y = 0.}
+let one = { x = 1.; y = 0. }
 
-let zero = {x = 0.; y = 0.}
+let zero = { x = 0.; y = 0. }
 
 (* Scalar operations *)
 
-let sdiv z s = {x = z.x /. s; y = z.y /. s}
+let sdiv z s = { x = z.x /. s; y = z.y /. s }
 
-let smul s z = {x = s *. z.x; y = s *. z.y}
+let smul s z = { x = s *. z.x; y = s *. z.y }
 
 (* Norm *)
 
@@ -174,29 +176,29 @@ let normalize c = sdiv c (norm c)
 
 (* Conjugate and negation *)
 
-let conj z = {x = z.x; y = -.z.y}
+let conj z = { x = z.x; y = -.z.y }
 
-let neg z = {x = -.z.x; y = -.z.y}
+let neg z = { x = -.z.x; y = -.z.y }
 
 (* Addition, multiplication and division *)
 
-let add z t = {x = z.x +. t.x; y = z.y +. t.y}
+let add z t = { x = z.x +. t.x; y = z.y +. t.y }
 
-let sub z t = {x = z.x -. t.x; y = z.y -. t.y}
+let sub z t = { x = z.x -. t.x; y = z.y -. t.y }
 
 let sq_norm_sub z t =
   let x = z.x -. t.x in
   let y = z.y -. t.y in
   (x *. x) +. (y *. y)
 
-let mul z t = {x = (z.x *. t.x) -. (z.y *. t.y); y = (z.x *. t.y) +. (z.y *. t.x)}
+let mul z t = { x = (z.x *. t.x) -. (z.y *. t.y); y = (z.x *. t.y) +. (z.y *. t.x) }
 
 let add_mul a z b =
-  {x = (a.x *. z.x) -. (a.y *. z.y) +. b.x; y = (a.x *. z.y) +. (a.y *. z.x) +. b.y}
+  { x = (a.x *. z.x) -. (a.y *. z.y) +. b.x; y = (a.x *. z.y) +. (a.y *. z.x) +. b.y }
 
 let div z t =
   let n = sq_norm t in
-  {x = ((z.x *. t.x) +. (z.y *. t.y)) /. n; y = ((z.y *. t.x) -. (z.x *. t.y)) /. n}
+  { x = ((z.x *. t.x) +. (z.y *. t.y)) /. n; y = ((z.y *. t.x) -. (z.x *. t.y)) /. n }
 
 (* Möbius transformation, hyperbolic transformation *)
 
@@ -515,9 +517,8 @@ let default_language () =
   (Js.Optdef.get
      Dom_html.window##.navigator##.language
      (fun () ->
-       Js.Optdef.get
-         Dom_html.window##.navigator##.userLanguage
-         (fun () -> Js.string "en")))##substring
+       Js.Optdef.get Dom_html.window##.navigator##.userLanguage (fun () -> Js.string "en")))
+  ##substring
     0
     2
 
@@ -562,7 +563,7 @@ let to_screen z = ((z.x +. 1.) *. r, (z.y +. 1.) *. r)
 *)
 let from_screen canvas x y =
   let rx, ry, dx, dy = screen_transform canvas in
-  let z = {x = (float x -. dx) /. rx; y = (float y -. dy) /. ry} in
+  let z = { x = (float x -. dx) /. rx; y = (float y -. dy) /. ry } in
   let n = norm z in
   if n <= 1. -. eps then z else sdiv z (n /. (1. -. eps))
 
@@ -626,7 +627,7 @@ let segment c transf z1 z2 =
     let n1 = sq_norm z1 +. 1. in
     let n2 = sq_norm z2 +. 1. in
     let z0 =
-      {x = ((z2.y *. n1) -. (z1.y *. n2)) /. d; y = ((z1.x *. n2) -. (z2.x *. n1)) /. d}
+      { x = ((z2.y *. n1) -. (z1.y *. n2)) /. d; y = ((z1.x *. n2) -. (z2.x *. n1)) /. d }
     in
     arc c transf z0 z1 z2
 
@@ -634,7 +635,8 @@ type boxes =
   { bx : float array
   ; by : float array
   ; bw : float array
-  ; bh : float array }
+  ; bh : float array
+  }
 
 let shadow = false
 
@@ -882,7 +884,7 @@ let compute_text_nodes node_names nodes =
         let canvas =
           try Some (compute_text_node (Hashtbl.find names info)) with Not_found -> None
         in
-        nodes.(i) <- (neigh, `Txt (is_root, canvas, info))
+        nodes.(i) <- neigh, `Txt (is_root, canvas, info)
     | _ -> ()
   done
 
@@ -924,7 +926,7 @@ let compute_neighbors nodes tree =
     Array.iter compute_frontiers l;
     frontiers.(i) <-
       (if Array.length l = 0
-      then [|status i|], [|status i|]
+      then [| status i |], [| status i |]
       else
         fst frontiers.(node_info l.(0)), snd frontiers.(node_info l.(Array.length l - 1)))
     (*
@@ -937,7 +939,7 @@ let compute_neighbors nodes tree =
   let rec compute_neigh node parent lft rght =
     let (Node (i, ch)) = node in
     let children = Array.map (fun n -> status (node_info n)) ch in
-    neighboors.(i) <- Array.concat [parent; lft; rght; children];
+    neighboors.(i) <- Array.concat [ parent; lft; rght; children ];
     let is_root = Array.length parent = 0 in
     let n = Array.length ch in
     for j = 0 to n - 1 do
@@ -955,13 +957,13 @@ let compute_neighbors nodes tree =
         then fst frontiers.(node_info ch.(0))
         else rght
       in
-      compute_neigh ch.(j) [|status i|] lft rght
+      compute_neigh ch.(j) [| status i |] lft rght
     done
   in
   compute_neigh tree [||] [||] [||];
   for i = 0 to Array.length nodes - 1 do
     let _l, info = nodes.(i) in
-    nodes.(i) <- (neighboors.(i), info)
+    nodes.(i) <- neighboors.(i), info
   done
 
 let weight_sum l =
@@ -1032,37 +1034,39 @@ let tree_layout node_names root =
             let min_angle = pi /. 3. in
             let a =
               { x = (cos angle -. cos min_angle) /. (1. -. cos (min_angle +. angle))
-              ; y = 0. }
+              ; y = 0.
+              }
             in
-            let dir = {x = cos min_angle; y = sin min_angle} in
+            let dir = { x = cos min_angle; y = sin min_angle } in
             let a, dir =
               if a.x > 0.25
               then a, dir
               else
-                let a = {x = 0.25; y = 0.} in
-                a, transl (neg a) {x = cos angle; y = sin angle}
+                let a = { x = 0.25; y = 0. } in
+                a, transl (neg a) { x = cos angle; y = sin angle }
             in
-            let u = compose (a, one) (zero, {x = cos th; y = sin th}) in
+            let u = compose (a, one) (zero, { x = cos th; y = sin th }) in
             let (Node (i', _) as ch) =
               layout_rec node weights false (compose u transf) (lineWidth *. 0.94) dir
             in
             let k = !ei in
             incr ei;
-            edges.(k) <- (i, i', lineWidth);
+            edges.(k) <- i, i', lineWidth;
             ch)
           ch
           ch_weights
     in
-    nodes.(i) <- ([||], info);
+    nodes.(i) <- [||], info;
     Node (i, ch')
   in
-  let tree = layout_rec root weights true (zero, one) 6. {x = -1.; y = 0.} in
+  let tree = layout_rec root weights true (zero, one) 6. { x = -1.; y = 0. } in
   compute_neighbors nodes tree;
   let boxes =
     { bx = Array.make node_count 0.
     ; by = Array.make node_count 0.
     ; bw = Array.make node_count 0.
-    ; bh = Array.make node_count 0. }
+    ; bh = Array.make node_count 0.
+    }
   in
   compute_text_nodes node_names nodes;
   vertices, edges, nodes, boxes
@@ -1101,7 +1105,8 @@ type info =
   ; width : int
   ; height : int
   ; links : (Js.js_string Js.t * Js.js_string Js.t * Js.js_string Js.t) array
-  ; img_url : Js.js_string Js.t option }
+  ; img_url : Js.js_string Js.t option
+  }
 
 let load_image_info () : info array Lwt.t =
   getfile "image_info.json" >>= fun s -> Lwt.return (json##parse (Js.string s))
@@ -1707,8 +1712,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
       match ev##.keyCode with
       | 37 ->
           (* left *)
-          let z0 = {x = 0.; y = 0.} in
-          let z1 = {x = 0.1; y = 0.} in
+          let z0 = { x = 0.; y = 0. } in
+          let z1 = { x = 0.1; y = 0. } in
           let p, _ = !tr in
           let z0' = transl (neg p) z0 in
           let p' = compute_translation z0' z1 in
@@ -1718,8 +1723,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
           Js._false
       | 38 ->
           (* up *)
-          let z0 = {x = 0.; y = 0.} in
-          let z1 = {x = 0.; y = 0.1} in
+          let z0 = { x = 0.; y = 0. } in
+          let z1 = { x = 0.; y = 0.1 } in
           let p, _ = !tr in
           let z0' = transl (neg p) z0 in
           let p' = compute_translation z0' z1 in
@@ -1729,8 +1734,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
           Js._false
       | 39 ->
           (* right *)
-          let z0 = {x = 0.; y = 0.} in
-          let z1 = {x = -0.1; y = 0.} in
+          let z0 = { x = 0.; y = 0. } in
+          let z1 = { x = -0.1; y = 0. } in
           let p, _ = !tr in
           let z0' = transl (neg p) z0 in
           let p' = compute_translation z0' z1 in
@@ -1740,8 +1745,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
           Js._false
       | 40 ->
           (* down *)
-          let z0 = {x = 0.; y = 0.} in
-          let z1 = {x = 0.; y = -0.1} in
+          let z0 = { x = 0.; y = 0. } in
+          let z1 = { x = 0.; y = -0.1 } in
           let p, _ = !tr in
           let z0' = transl (neg p) z0 in
           let p' = compute_translation z0' z1 in
@@ -1786,7 +1791,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
       lang##.style##.bottom := Js.string "2px";
       lang##.style##.right := Js.string "48px";
       lang##.style##.cursor := Js.string "pointer";
-      let languages = ["Français", "fr"; "English", "en"] in
+      let languages = [ "Français", "fr"; "English", "en" ] in
       let txt = Html.createDiv doc in
       let dl = Html.createDl doc in
       let ul = Html.createUl doc in

@@ -73,7 +73,7 @@ val decode_sub :
   -> ?off:int
   -> ?len:int
   -> string
-  -> (sub, [`Msg of string]) result
+  -> (sub, [ `Msg of string ]) result
 (** Same as {!decode_exn} but it returns a result type instead to raise an
     exception. Then, it returns a {!sub} string. Decoded input [(str, off, len)]
     will starting to [off] and will have [len] bytes - by this way, we ensure to
@@ -85,7 +85,7 @@ val decode :
   -> ?off:int
   -> ?len:int
   -> string
-  -> (string, [`Msg of string]) result
+  -> (string, [ `Msg of string ]) result
 (** Same as {!decode_exn}, but returns an explicit error message {!result} if it fails. *)
 
 val encode :
@@ -94,7 +94,7 @@ val encode :
   -> ?off:int
   -> ?len:int
   -> string
-  -> (string, [`Msg of string]) result
+  -> (string, [ `Msg of string ]) result
 (** [encode s] encodes the string [s] into base64. If [pad] is false, no
     trailing padding is added. [pad] defaults to [true], and [alphabet] to
     {!default_alphabet}.
@@ -112,7 +112,7 @@ val encode_sub :
   -> ?off:int
   -> ?len:int
   -> string
-  -> (sub, [`Msg of string]) result
+  -> (sub, [ `Msg of string ]) result
 (** Same as {!encode} but return a {!sub}-string instead a plain result. By this
     way, we ensure to allocate only one time result. *)
 

@@ -55,9 +55,9 @@ module type Json = sig
 
   (**/**)
 
-  val match_variant : [`Cst of int | `NCst of int] -> bool
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
 
-  val read_variant : Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant : Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
 end
 
 (**/**)
@@ -82,8 +82,8 @@ module type Json_converter = sig
   val to_ : b -> a
 end
 
-module Convert (J : Json_converter) : Json with type a = J.b
 (** Generate a JSON class from a Converter *)
+module Convert (J : Json_converter) : Json with type a = J.b
 
 (** {3 Examples } *)
 
@@ -137,9 +137,9 @@ module type Json_min' = sig
 
   val read : Deriving_Json_lexer.lexbuf -> a
 
-  val match_variant : [`Cst of int | `NCst of int] -> bool
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
 
-  val read_variant : Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant : Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
 end
 
 module type Json_min'' = sig

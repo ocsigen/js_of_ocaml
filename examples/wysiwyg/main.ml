@@ -64,9 +64,9 @@ let rec html2wiki body =
             let inner = html2wiki node in
             add_str inner ~surr:"//"
         | "#text" -> (
-          match Js.Opt.to_option node##.nodeValue with
-          | Some x -> Buffer.add_string ans (Js.to_string x)
-          | None -> ())
+            match Js.Opt.to_option node##.nodeValue with
+            | Some x -> Buffer.add_string ans (Js.to_string x)
+            | None -> ())
         | "P" ->
             let inner = html2wiki node in
             add_str (inner ^ "\n\n")
@@ -83,16 +83,16 @@ let rec html2wiki body =
               (fun () -> Buffer.add_string ans "^error_in_anchor^")
               (fun s ->
                 let url =
-                  Js.Opt.get
-                    (el##getAttribute (Js.string "href"))
-                    (fun _ -> assert false)
+                  Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false)
                   |> Js.to_string
                 in
                 match Js.to_string s with
                 | "global" ->
                     let desc = html2wiki node in
-                    Buffer.add_string ans (String.concat "" ["[["; url; "|"; desc; "]]"])
-                | "wiki" -> String.concat "" ["[["; url; "]]"] |> Buffer.add_string ans
+                    Buffer.add_string
+                      ans
+                      (String.concat "" [ "[["; url; "|"; desc; "]]" ])
+                | "wiki" -> String.concat "" [ "[["; url; "]]" ] |> Buffer.add_string ans
                 | _ -> Buffer.add_string ans "^error2_in_anchor^")
         | ("H1" | "H2" | "H3") as hh ->
             let n = int_of_char hh.[1] - int_of_char '0' + 1 in
@@ -162,7 +162,7 @@ let onload _ =
              let link =
                String.concat
                  ""
-                 ["<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>"]
+                 [ "<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>" ]
              in
              iWin##alert (Js.string link);
              iDoc##execCommand
@@ -174,7 +174,7 @@ let onload _ =
       := Html.handler (fun _ ->
              let link = prompt "Enter a wikipage" "lololo" in
              let link =
-               ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"]
+               [ "<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>" ]
                |> String.concat ""
              in
              iWin##alert (Js.string link);

@@ -30,14 +30,14 @@ let ( >>= ) = Lwt.bind
 
 let get_context () = Js.Unsafe.(fun_call (variable "caml_gr_state_get") [||])
 
-let set_context ctx = Js.Unsafe.(fun_call (variable "caml_gr_state_set") [|inject ctx|])
+let set_context ctx = Js.Unsafe.(fun_call (variable "caml_gr_state_set") [| inject ctx |])
 
 let create_context canvas w h =
   Js.Unsafe.(
-    fun_call (variable "caml_gr_state_create") [|inject canvas; inject w; inject h|])
+    fun_call (variable "caml_gr_state_create") [| inject canvas; inject w; inject h |])
 
 let document_of_context ctx =
-  Js.Unsafe.(fun_call (variable "caml_gr_doc_of_state") [|inject ctx|])
+  Js.Unsafe.(fun_call (variable "caml_gr_doc_of_state") [| inject ctx |])
 
 let open_canvas x =
   let ctx = create_context x x##.width x##.height in
@@ -88,7 +88,7 @@ let loop elist f : unit =
       Dom_html.handler (fun _ev ->
           let mouse_x, mouse_y = get_pos_mouse () in
           button := true;
-          let s = {mouse_x; mouse_y; button = true; keypressed = false; key = null} in
+          let s = { mouse_x; mouse_y; button = true; keypressed = false; key = null } in
           f s;
           Js._true);
   if List.mem Button_up elist
@@ -97,7 +97,7 @@ let loop elist f : unit =
       Dom_html.handler (fun _ev ->
           let mouse_x, mouse_y = get_pos_mouse () in
           button := false;
-          let s = {mouse_x; mouse_y; button = false; keypressed = false; key = null} in
+          let s = { mouse_x; mouse_y; button = false; keypressed = false; key = null } in
           f s;
           Js._true);
   elt##.onmousemove :=
@@ -108,7 +108,9 @@ let loop elist f : unit =
         (if List.mem Mouse_motion elist
         then
           let mouse_x, mouse_y = get_pos_mouse () in
-          let s = {mouse_x; mouse_y; button = !button; keypressed = false; key = null} in
+          let s =
+            { mouse_x; mouse_y; button = !button; keypressed = false; key = null }
+          in
           f s);
         Js._true);
   (* EventListener sur le doc car pas de moyen simple de le faire
@@ -123,7 +125,7 @@ let loop elist f : unit =
             with Invalid_argument _ -> null
           in
           let mouse_x, mouse_y = get_pos_mouse () in
-          let s = {mouse_x; mouse_y; button = !button; keypressed = true; key} in
+          let s = { mouse_x; mouse_y; button = !button; keypressed = true; key } in
           f s;
           Js._true)
 

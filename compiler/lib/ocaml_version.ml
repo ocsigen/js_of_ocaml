@@ -31,26 +31,26 @@ let compint (a : int) b = compare a b
 
 let rec compare v v' =
   match v, v' with
-  | [x], [y] -> compint x y
+  | [ x ], [ y ] -> compint x y
   | [], [] -> 0
   | [], y :: _ -> compint 0 y
   | x :: _, [] -> compint x 0
   | x :: xs, y :: ys -> (
-    match compint x y with
-    | 0 -> compare xs ys
-    | n -> n)
+      match compint x y with
+      | 0 -> compare xs ys
+      | n -> n)
 
 let v =
-  if compare current [4; 3] < 0
+  if compare current [ 4; 3 ] < 0
   then `V4_02
-  else if compare current [4; 4] < 0
+  else if compare current [ 4; 4 ] < 0
   then `V4_03
-  else if compare current [4; 6] < 0
+  else if compare current [ 4; 6 ] < 0
   then `V4_04
-  else if compare current [4; 7] < 0
+  else if compare current [ 4; 7 ] < 0
   then `V4_06
-  else if compare current [4; 8] < 0
+  else if compare current [ 4; 8 ] < 0
   then `V4_07
-  else if compare current [4; 9] < 0
+  else if compare current [ 4; 9 ] < 0
   then `V4_08
   else `V4_09

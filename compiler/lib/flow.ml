@@ -38,9 +38,10 @@ type info =
   { info_defs : def array
   ; info_known_origins : Code.Var.Set.t Code.Var.Tbl.t
   ; info_maybe_unknown : bool Code.Var.Tbl.t
-  ; info_possibly_mutable : bool array }
+  ; info_possibly_mutable : bool array
+  }
 
-let update_def {info_defs; _} x exp =
+let update_def { info_defs; _ } x exp =
   let idx = Code.Var.idx x in
   info_defs.(idx) <- Expr exp
 
@@ -132,19 +133,19 @@ let propagate1 deps defs st x =
   | Param -> Var.Set.singleton x
   | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
-    match e with
-    | Const _ | Constant _ | Apply _ | Prim _ | Closure _ | Block _ ->
-        Var.Set.singleton x
-    | Field (y, n) ->
-        var_set_lift
-          (fun z ->
-            match defs.(Var.idx z) with
-            | Expr (Block (_, a, _)) when n < Array.length a ->
-                let t = a.(n) in
-                add_dep deps x t;
-                Var.Tbl.get st t
-            | Phi _ | Param | Expr _ -> Var.Set.empty)
-          (Var.Tbl.get st y))
+      match e with
+      | Const _ | Constant _ | Apply _ | Prim _ | Closure _ | Block _ ->
+          Var.Set.singleton x
+      | Field (y, n) ->
+          var_set_lift
+            (fun z ->
+              match defs.(Var.idx z) with
+              | Expr (Block (_, a, _)) when n < Array.length a ->
+                  let t = a.(n) in
+                  add_dep deps x t;
+                  Var.Tbl.get st t
+              | Phi _ | Param | Expr _ -> Var.Set.empty)
+            (Var.Tbl.get st y))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -160,7 +161,7 @@ module Solver1 = G.Solver (Domain1)
 
 let solver1 vars deps defs =
   let g =
-    {G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x))}
+    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   Solver1.f () g (propagate1 deps defs)
 
@@ -170,7 +171,8 @@ type mutability_state =
   { defs : def array
   ; known_origins : Code.Var.Set.t Code.Var.Tbl.t
   ; may_escape : bool array
-  ; possibly_mutable : bool array }
+  ; possibly_mutable : bool array
+  }
 
 let rec block_escape st x =
   Var.Set.iter
@@ -195,9 +197,9 @@ let expr_escape st _x e =
         match Primitive.kind_args name with
         | Some l -> l
         | None -> (
-          match Primitive.kind name with
-          | `Mutable | `Mutator -> []
-          | `Pure -> List.map l ~f:(fun _ -> `Const))
+            match Primitive.kind name with
+            | `Mutable | `Mutator -> []
+            | `Pure -> List.map l ~f:(fun _ -> `Const))
       in
       let rec loop args ka =
         match args, ka with
@@ -210,17 +212,17 @@ let expr_escape st _x e =
             (match a, k with
             | _, `Const | Pc _, _ -> ()
             | Pv v, `Shallow_const -> (
-              match st.defs.(Var.idx v) with
-              | Expr (Block (_, a, _)) -> Array.iter a ~f:(fun x -> block_escape st x)
-              | _ -> block_escape st v)
+                match st.defs.(Var.idx v) with
+                | Expr (Block (_, a, _)) -> Array.iter a ~f:(fun x -> block_escape st x)
+                | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
-              match st.defs.(Var.idx v) with
-              | Expr (Block (_, a, _)) ->
-                  Array.iter a ~f:(fun x ->
-                      match st.defs.(Var.idx x) with
-                      | Expr (Block (_, [|_k; v|], _)) -> block_escape st v
-                      | _ -> block_escape st x)
-              | _ -> block_escape st v)
+                match st.defs.(Var.idx v) with
+                | Expr (Block (_, a, _)) ->
+                    Array.iter a ~f:(fun x ->
+                        match st.defs.(Var.idx x) with
+                        | Expr (Block (_, [| _k; v |], _)) -> block_escape st v
+                        | _ -> block_escape st x)
+                | _ -> block_escape st v)
             | Pv v, `Mutable -> block_escape st v);
             loop ax kx
       in
@@ -230,7 +232,7 @@ let program_escape defs known_origins (_, blocks, _) =
   let nv = Var.count () in
   let may_escape = Array.make nv false in
   let possibly_mutable = Array.make nv false in
-  let st = {defs; known_origins; may_escape; possibly_mutable} in
+  let st = { defs; known_origins; may_escape; possibly_mutable } in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -258,19 +260,19 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
   | Param -> skip_param
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
-    match e with
-    | Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
-    | Field (y, n) ->
-        Var.Tbl.get st y
-        || Var.Set.exists
-             (fun z ->
-               match defs.(Var.idx z) with
-               | Expr (Block (_, a, _)) ->
-                   n >= Array.length a
-                   || possibly_mutable.(Var.idx z)
-                   || Var.Tbl.get st a.(n)
-               | Phi _ | Param | Expr _ -> true)
-             (Var.Tbl.get known_origins y))
+      match e with
+      | Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
+      | Field (y, n) ->
+          Var.Tbl.get st y
+          || Var.Set.exists
+               (fun z ->
+                 match defs.(Var.idx z) with
+                 | Expr (Block (_, a, _)) ->
+                     n >= Array.length a
+                     || possibly_mutable.(Var.idx z)
+                     || Var.Tbl.get st a.(n)
+                 | Phi _ | Param | Expr _ -> true)
+               (Var.Tbl.get known_origins y))
 
 module Domain2 = struct
   type t = bool
@@ -284,11 +286,11 @@ module Solver2 = G.Solver (Domain2)
 
 let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   let g =
-    {G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x))}
+    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
-let get_approx {info_defs = _; info_known_origins; info_maybe_unknown; _} f top join x =
+let get_approx { info_defs = _; info_known_origins; info_maybe_unknown; _ } f top join x =
   let s = Var.Tbl.get info_known_origins x in
   if Var.Tbl.get info_maybe_unknown x
   then top
@@ -399,9 +401,7 @@ let f ?skip_param p =
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
-  let maybe_unknown =
-    solver2 ?skip_param vars deps defs known_origins possibly_mutable
-  in
+  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
   if debug ()
   then
@@ -423,7 +423,8 @@ let f ?skip_param p =
     { info_defs = defs
     ; info_known_origins = known_origins
     ; info_maybe_unknown = maybe_unknown
-    ; info_possibly_mutable = possibly_mutable }
+    ; info_possibly_mutable = possibly_mutable
+    }
   in
   let s = build_subst info vars in
   let p = Subst.program (Subst.from_array s) p in

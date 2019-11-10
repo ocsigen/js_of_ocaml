@@ -28,19 +28,22 @@ let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 type kind =
   [ `Pure
   | `Mutable
-  | `Mutator ]
+  | `Mutator
+  ]
 
 type kind_arg =
   [ `Shallow_const
   | `Object_literal
   | `Const
-  | `Mutable ]
+  | `Mutable
+  ]
 
 type t =
   [ `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
-  | `Weakdef of Parse_info.t option ]
+  | `Weakdef of Parse_info.t option
+  ]
 
 let kinds = Hashtbl.create 37
 

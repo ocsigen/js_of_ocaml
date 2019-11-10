@@ -27,12 +27,13 @@ type fragment =
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
-  ; code : Javascript.program }
+  ; code : Javascript.program
+  }
 
 let loc pi =
   match pi with
-  | Some {Parse_info.src = Some src; line; _} | Some {Parse_info.name = Some src; line; _}
-    ->
+  | Some { Parse_info.src = Some src; line; _ }
+  | Some { Parse_info.name = Some src; line; _ } ->
       Printf.sprintf "%s:%d" src line
   | None | Some _ -> "unknown location"
 
@@ -65,16 +66,16 @@ let parse_from_lex ~filename lex =
       (fun (status, lexs) t ->
         match t with
         | Js_token.TComment (_info, str) when is_file_directive str -> (
-          match status with
-          | `Annot _ -> `Annot [], lexs
-          | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
-        | Js_token.TComment (info, str) -> (
-          match parse_annot info str with
-          | None -> status, lexs
-          | Some a -> (
             match status with
-            | `Annot annot -> `Annot (a :: annot), lexs
-            | `Code (an, co) -> `Annot [a], (List.rev an, List.rev co) :: lexs))
+            | `Annot _ -> `Annot [], lexs
+            | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
+        | Js_token.TComment (info, str) -> (
+            match parse_annot info str with
+            | None -> status, lexs
+            | Some a -> (
+                match status with
+                | `Annot annot -> `Annot (a :: annot), lexs
+                | `Code (an, co) -> `Annot [ a ], (List.rev an, List.rev co) :: lexs))
         | _ when Js_token.is_comment t -> status, lexs
         | Js_token.TUnknown (info, _) ->
             Format.eprintf
@@ -84,9 +85,9 @@ let parse_from_lex ~filename lex =
             then Format.eprintf "%S doesn't look like a JavaScript file@." filename;
             failwith "Error while parsing JavaScript"
         | c -> (
-          match status with
-          | `Code (annot, code) -> `Code (annot, c :: code), lexs
-          | `Annot annot -> `Code (annot, [c]), lexs))
+            match status with
+            | `Code (annot, code) -> `Code (annot, c :: code), lexs
+            | `Annot annot -> `Code (annot, [ c ]), lexs))
       (`Annot [], [])
       lex
   in
@@ -105,20 +106,21 @@ let parse_from_lex ~filename lex =
             ; requires = []
             ; version_constraint = []
             ; weakdef = false
-            ; code }
+            ; code
+            }
           in
           List.fold_left annot ~init:fragment ~f:(fun fragment a ->
               match a with
               | `Provides (pi, name, kind, ka) ->
-                  {fragment with provides = Some (pi, name, kind, ka)}
-              | `Requires (_, mn) -> {fragment with requires = mn @ fragment.requires}
+                  { fragment with provides = Some (pi, name, kind, ka) }
+              | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
               | `Version (_, l) ->
-                  {fragment with version_constraint = l :: fragment.version_constraint}
-              | `Weakdef _ -> {fragment with weakdef = true})
+                  { fragment with version_constraint = l :: fragment.version_constraint }
+              | `Weakdef _ -> { fragment with weakdef = true })
         with Parse_js.Parsing_error pi ->
           let name =
             match pi with
-            | {Parse_info.src = Some x; _} | {Parse_info.name = Some x; _} -> x
+            | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
             | _ -> "??"
           in
           error
@@ -142,7 +144,7 @@ let parse_file f =
           let pkg, f' =
             match String.split ~sep:Filename.dir_sep f with
             | [] -> assert false
-            | [f] -> "js_of_ocaml-compiler", f
+            | [ f ] -> "js_of_ocaml-compiler", f
             | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
           in
           Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
@@ -248,16 +250,19 @@ let version_match =
 
 type always_required =
   { filename : string
-  ; program : Javascript.program }
+  ; program : Javascript.program
+  }
 
 type state =
   { ids : IntSet.t
   ; always_required_codes : always_required list
-  ; codes : Javascript.program list }
+  ; codes : Javascript.program list
+  }
 
 type output =
   { runtime_code : Javascript.program
-  ; always_required_codes : always_required list }
+  ; always_required_codes : always_required list
+  }
 
 let last_code_id = ref 0
 
@@ -276,7 +281,7 @@ class traverse_and_find_named_values all =
     method expression x =
       let open Javascript in
       (match x with
-      | ECall (EVar (S {name = "caml_named_value"; _}), [EStr (v, _)], _) ->
+      | ECall (EVar (S { name = "caml_named_value"; _ }), [ EStr (v, _) ], _) ->
           all := StringSet.add v !all
       | _ -> ());
       self#expression x
@@ -288,7 +293,7 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let load_fragment ~filename {provides; requires; version_constraint; weakdef; code} =
+let load_fragment ~filename { provides; requires; version_constraint; weakdef; code } =
   let vmatch =
     match version_constraint with
     | [] -> true
@@ -299,13 +304,13 @@ let load_fragment ~filename {provides; requires; version_constraint; weakdef; co
     incr last_code_id;
     let id = !last_code_id in
     match provides with
-    | None -> always_included := {filename; program = code} :: !always_included
+    | None -> always_included := { filename; program = code } :: !always_included
     | Some (pi, name, kind, ka) ->
         let code = Macro.f code in
         let module J = Javascript in
         let rec find = function
           | [] -> None
-          | (J.Function_declaration (J.S {J.name = n; _}, l, _, _), _) :: _
+          | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
             when String.equal name n ->
               Some (List.length l)
           | _ :: rem -> find rem
@@ -387,16 +392,16 @@ and resolve_dep_id_rev visited path id =
   else
     let path = id :: path in
     let code, req = Hashtbl.find code_pieces id in
-    let visited = {visited with ids = IntSet.add id visited.ids} in
+    let visited = { visited with ids = IntSet.add id visited.ids } in
     let visited =
       List.fold_left req ~init:visited ~f:(fun visited nm ->
           resolve_dep_name_rev visited path nm)
     in
-    let visited = {visited with codes = code :: visited.codes} in
+    let visited = { visited with codes = code :: visited.codes } in
     visited
 
 let init () =
-  {ids = IntSet.empty; always_required_codes = List.rev !always_included; codes = []}
+  { ids = IntSet.empty; always_required_codes = List.rev !always_included; codes = [] }
 
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
@@ -428,7 +433,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
 let link program state =
   let runtime = List.flatten (List.rev (program :: state.codes)) in
   let always_required = state.always_required_codes in
-  {runtime_code = runtime; always_required_codes = always_required}
+  { runtime_code = runtime; always_required_codes = always_required }
 
 let all state =
   IntSet.fold

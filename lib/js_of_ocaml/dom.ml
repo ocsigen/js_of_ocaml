@@ -337,7 +337,7 @@ let full_handler f =
            res))
 
 let invoke_handler (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
-  Js.Unsafe.call f this [|Js.Unsafe.inject event|]
+  Js.Unsafe.call f this [| Js.Unsafe.inject event |]
 
 let eventTarget (e : (< .. > as 'a) #event t) : 'a t =
   let target =

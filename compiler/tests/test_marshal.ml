@@ -70,9 +70,9 @@ let%expect_test _ =
 
 let%expect_test _ =
   let module M = struct
-    type loop = {mutable pointer : loop option}
+    type loop = { mutable pointer : loop option }
 
-    let l = {pointer = None}
+    let l = { pointer = None }
 
     let () = l.pointer <- Some l
 

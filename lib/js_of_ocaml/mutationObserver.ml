@@ -72,8 +72,7 @@ let mutationObserver = Js.Unsafe.global##._MutationObserver
 let is_supported () = Js.Optdef.test mutationObserver
 
 let mutationObserver :
-    (   (mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
-        Js.callback
+    (   (mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit) Js.callback
      -> mutationObserver Js.t)
     Js.constr =
   mutationObserver

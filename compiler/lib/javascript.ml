@@ -129,7 +129,8 @@ type identifier = string
 type ident_string =
   { name : identifier
   ; var : Code.Var.t option
-  ; loc : location }
+  ; loc : location
+  }
 
 type ident =
   | S of ident_string
@@ -210,7 +211,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression
-  | EStr of string * [`Bytes | `Utf8]
+  | EStr of string * [ `Bytes | `Utf8 ]
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
@@ -283,13 +284,13 @@ and source_element =
 let compare_ident t1 t2 =
   match t1, t2 with
   | V v1, V v2 -> Code.Var.compare v1 v2
-  | S {name = s1; var = v1; loc = l1}, S {name = s2; var = v2; loc = l2} -> (
-    match String.compare s1 s2 with
-    | 0 -> (
-      match Option.compare Code.Var.compare v1 v2 with
-      | 0 -> Poly.compare l1 l2
+  | S { name = s1; var = v1; loc = l1 }, S { name = s2; var = v2; loc = l2 } -> (
+      match String.compare s1 s2 with
+      | 0 -> (
+          match Option.compare Code.Var.compare v1 v2 with
+          | 0 -> Poly.compare l1 l2
+          | n -> n)
       | n -> n)
-    | n -> n)
   | S _, V _ -> -1
   | V _, S _ -> 1
 
@@ -318,7 +319,7 @@ let is_ident =
       true
     with Not_an_ident -> false
 
-let ident ?(loc = N) ?var name = S {name; var; loc}
+let ident ?(loc = N) ?var name = S { name; var; loc }
 
 module IdentSet = Set.Make (struct
   type t = ident

@@ -34,7 +34,8 @@ type t =
   ; live : int array
   ; defs : def list array
   ; mutable reachable_blocks : Addr.Set.t
-  ; pure_funs : Var.Set.t }
+  ; pure_funs : Var.Set.t
+  }
 
 (****)
 
@@ -205,7 +206,7 @@ let f ((pc, blocks, free_pc) as program) =
       | Pushtrap (cont, _, _, _) -> add_cont_dep blocks defs cont
       | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
     blocks;
-  let st = {live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs} in
+  let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
   mark_reachable st pc;
   if debug () then print_program (fun pc xi -> annot st pc xi) (pc, blocks, free_pc);
   let all_blocks = blocks in
@@ -225,7 +226,8 @@ let f ((pc, blocks, free_pc) as program) =
                 List.map
                   (List.filter block.body ~f:(fun i -> live_instr st i))
                   ~f:(fun i -> filter_closure all_blocks st i)
-            ; branch = filter_live_last all_blocks st block.branch }
+            ; branch = filter_live_last all_blocks st block.branch
+            }
             blocks)
       blocks
       Addr.Map.empty

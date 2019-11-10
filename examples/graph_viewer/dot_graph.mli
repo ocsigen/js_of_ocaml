@@ -25,18 +25,21 @@ type id
 type 'a sequence =
   { mutable count : int
   ; mutable seq : 'a IntMap.t
-  ; id : (id, 'a) Hashtbl.t }
+  ; id : (id, 'a) Hashtbl.t
+  }
 
 type node =
   { name : string
   ; id : id
-  ; mutable node_attr : string StringMap.t }
+  ; mutable node_attr : string StringMap.t
+  }
 
 type edge =
   { head : node
   ; tail : node
   ; edge_id : id
-  ; mutable edge_attr : string StringMap.t }
+  ; mutable edge_attr : string StringMap.t
+  }
 
 type graph =
   { graph_id : id
@@ -45,11 +48,13 @@ type graph =
   ; subgraphs : graph sequence
   ; nodes : node sequence
   ; edges : edge sequence
-  ; parents : (id, graph) Hashtbl.t }
+  ; parents : (id, graph) Hashtbl.t
+  }
 
 type info =
-  { kind : [`Graph | `Digraph]
-  ; strict : bool }
+  { kind : [ `Graph | `Digraph ]
+  ; strict : bool
+  }
 
 val of_file_spec : Dot_file.t -> info * graph
 

@@ -27,7 +27,8 @@ end)
 struct
   type t =
     { domain : NSet.t
-    ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a }
+    ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a
+    }
 
   let successors g x = try NMap.find x g with Not_found -> NSet.empty
 
@@ -42,7 +43,7 @@ struct
         g.domain
         NMap.empty
     in
-    {domain = g.domain; fold_children = (fun f x a -> NSet.fold f (successors h x) a)}
+    { domain = g.domain; fold_children = (fun f x a -> NSet.fold f (successors h x) a) }
 
   module type DOMAIN = sig
     type t
@@ -59,7 +60,8 @@ struct
 
     type stack =
       { stack : N.t Stack.t
-      ; mutable set : NSet.t }
+      ; mutable set : NSet.t
+      }
 
     let is_empty st = Stack.is_empty st.stack
 
@@ -126,7 +128,7 @@ let t1 = Timer.make () in
 let t1 = Timer.get t1 in
 let t2 = Timer.make () in
 *)
-      let w = {set = g.domain; stack = traverse_all g} in
+      let w = { set = g.domain; stack = traverse_all g } in
       (*
 let t2 = Timer.get t2 in
 let t3 = Timer.make () in
@@ -179,7 +181,8 @@ end)
 struct
   type t =
     { domain : NSet.t
-    ; iter_children : (N.t -> unit) -> N.t -> unit }
+    ; iter_children : (N.t -> unit) -> N.t -> unit
+    }
 
   let successors g x = NTbl.get g x
 
@@ -188,7 +191,7 @@ struct
   let invert size g =
     let h = NTbl.make size [] in
     NSet.iter (fun x -> g.iter_children (fun y -> add_edge h y x) x) g.domain;
-    {domain = g.domain; iter_children = (fun f x -> List.iter ~f (successors h x))}
+    { domain = g.domain; iter_children = (fun f x -> List.iter ~f (successors h x)) }
 
   module type DOMAIN = sig
     type t
@@ -205,7 +208,8 @@ struct
 
     type stack =
       { stack : N.t Stack.t
-      ; mutable set : NSet.t }
+      ; mutable set : NSet.t
+      }
 
     let is_empty st = Stack.is_empty st.stack
 
@@ -247,7 +251,7 @@ struct
       let stack = Stack.create () in
       let to_visit = NSet.copy g.domain in
       NSet.iter (fun x -> traverse g to_visit stack x) g.domain;
-      {stack; set = to_visit}
+      { stack; set = to_visit }
 
     let f size g f =
       n := 0;

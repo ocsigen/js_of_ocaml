@@ -35,7 +35,8 @@ end
 type one =
   { code : Code.program
   ; cmis : StringSet.t
-  ; debug : Debug.t }
+  ; debug : Debug.t
+  }
 
 val from_exe :
      ?includes:string list
@@ -63,7 +64,8 @@ val from_cma :
   -> one
 
 val from_channel :
-  in_channel -> [`Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe]
+     in_channel
+  -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
 val from_string : string array -> string -> Code.program * Debug.t
 

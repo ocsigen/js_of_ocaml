@@ -25,7 +25,8 @@ end)
 module Kosaraju : sig
   type component_graph =
     { sorted_connected_components : int list array
-    ; component_edges : int list array }
+    ; component_edges : int list array
+    }
 
   val component_graph : int list array -> component_graph
 end = struct
@@ -86,7 +87,8 @@ end = struct
 
   type component_graph =
     { sorted_connected_components : int list array
-    ; component_edges : int list array }
+    ; component_edges : int list array
+    }
 
   let component_graph graph =
     let ncomponents, components = kosaraju graph in
@@ -105,7 +107,8 @@ end = struct
         component_graph.(component) <- add_component_dep node component_graph.(component))
       components;
     { sorted_connected_components = id_scc
-    ; component_edges = Array.map ~f:IntSet.elements component_graph }
+    ; component_edges = Array.map ~f:IntSet.elements component_graph
+    }
 end
 
 module type S = sig
@@ -146,7 +149,8 @@ struct
 
   type numbering =
     { back : int Id.Map.t
-    ; forth : Id.t array }
+    ; forth : Id.t array
+    }
 
   let number graph =
     let size = Id.Map.cardinal graph in
@@ -170,20 +174,20 @@ struct
             dests
             [])
     in
-    {back; forth}, integer_graph
+    { back; forth }, integer_graph
 
   let component_graph graph =
     let numbering, integer_graph = number graph in
-    let {Kosaraju.sorted_connected_components; component_edges} =
+    let { Kosaraju.sorted_connected_components; component_edges } =
       Kosaraju.component_graph integer_graph
     in
     Array.mapi
       ~f:(fun component nodes ->
         match nodes with
         | [] -> assert false
-        | [node] ->
+        | [ node ] ->
             ( (if List.mem node ~set:integer_graph.(node)
-              then Has_loop [numbering.forth.(node)]
+              then Has_loop [ numbering.forth.(node) ]
               else No_loop numbering.forth.(node))
             , component_edges.(component) )
         | _ :: _ ->

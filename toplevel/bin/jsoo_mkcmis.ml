@@ -68,13 +68,11 @@ let args =
         Js_of_ocaml_compiler.PseudoFs.embed_file ~name ~filename)
       all
   in
-  let program =
-    Js_of_ocaml_compiler.Code.prepend Js_of_ocaml_compiler.Code.empty instr
-  in
+  let program = Js_of_ocaml_compiler.Code.prepend Js_of_ocaml_compiler.Code.empty instr in
   let oc =
     match !output, args with
     | Some x, _ -> open_out x
-    | None, [x] -> open_out (x ^ ".cmis.js")
+    | None, [ x ] -> open_out (x ^ ".cmis.js")
     | None, _ -> failwith "-o <name> needed"
   in
   Js_of_ocaml_compiler.Linker.load_files js;

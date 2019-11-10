@@ -19,13 +19,15 @@
 
 type 'a on_off =
   { enable : 'a
-  ; disable : 'a }
+  ; disable : 'a
+  }
 
 type t =
   { debug : string list on_off
   ; optim : string list on_off
   ; quiet : bool
-  ; custom_header : string option }
+  ; custom_header : string option
+  }
 
 val t : t Cmdliner.Term.t
 

@@ -104,8 +104,8 @@ let%expect_test _ =
       let filename = tmp in
       let chan = open_out filename in
       output_binary_int chan 8900;
-      marshal_out_segment filename chan ["output"; "data"];
-      marshal_out_segment filename chan ["more"; "stuff"]
+      marshal_out_segment filename chan [ "output"; "data" ];
+      marshal_out_segment filename chan [ "more"; "stuff" ]
   end in
   [%expect {|
     start=4

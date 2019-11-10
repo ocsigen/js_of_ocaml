@@ -28,7 +28,7 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; runtime_only : bool
-  ; output_file : [`Name of string | `Stdout] * bool
+  ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option
   ; params : (string * string) list
   ; static_env : (string * string) list
@@ -44,7 +44,8 @@ type t =
   ; fs_files : string list
   ; fs_output : string option
   ; fs_external : bool
-  ; keep_unit_names : bool }
+  ; keep_unit_names : bool
+  }
 
 let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
@@ -59,7 +60,7 @@ let options =
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
+    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let input_file =
     let doc =
@@ -70,49 +71,49 @@ let options =
   in
   let keep_unit_names =
     let doc = "Keep unit name" in
-    Arg.(value & flag & info ["keep-unit-names"] ~doc)
+    Arg.(value & flag & info [ "keep-unit-names" ] ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
     let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
-    Arg.(value & opt (some (enum profile)) None & info ["opt"] ~docv:"NUM" ~doc)
+    Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let noruntime =
     let doc = "Do not include the standard runtime." in
-    Arg.(value & flag & info ["noruntime"; "no-runtime"] ~doc)
+    Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
   let runtime_only =
     let doc = "Generate a JavaScript file containing/exporting the runtime only." in
-    Arg.(value & flag & info ["runtime-only"] ~doc)
+    Arg.(value & flag & info [ "runtime-only" ] ~doc)
   in
   let no_sourcemap =
     let doc =
       "Don't generate source map. All other source map related flags will be be ignored."
     in
-    Arg.(value & flag & info ["no-sourcemap"; "no-source-map"] ~doc)
+    Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in
   let sourcemap =
     let doc = "Generate source map." in
-    Arg.(value & flag & info ["sourcemap"; "source-map"] ~doc)
+    Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
   in
   let sourcemap_inline_in_js =
     let doc = "Inline sourcemap in the generated JavaScript." in
-    Arg.(value & flag & info ["source-map-inline"] ~doc)
+    Arg.(value & flag & info [ "source-map-inline" ] ~doc)
   in
   let sourcemap_don't_inline_content =
     let doc = "Do not inline sources in source map." in
-    Arg.(value & flag & info ["source-map-no-source"] ~doc)
+    Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info ["source-map-root"] ~doc)
+    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
   in
   let wrap_with_function =
     let doc =
       "Wrap the generated JavaScript code inside a function that needs to be applied \
        with the global object."
     in
-    Arg.(value & opt (some string) None & info ["wrap-with-fun"] ~doc)
+    Arg.(value & opt (some string) None & info [ "wrap-with-fun" ] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in
@@ -120,46 +121,46 @@ let options =
     Arg.(
       value
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
-      & info ["set"] ~docv:"PARAM=VALUE" ~doc)
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let set_env =
     let doc = "Set environment variable statically." in
     Arg.(
       value
       & opt_all (list (pair ~sep:'=' string string)) []
-      & info ["setenv"] ~docv:"PARAM=VALUE" ~doc)
+      & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let toplevel =
     let doc = "Compile a toplevel." in
-    Arg.(value & flag & info ["toplevel"] ~docs:toplevel_section ~doc)
+    Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
   in
   let export_file =
     let doc = "File containing the list of unit to export in a toplevel." in
-    Arg.(value & opt (some string) None & info ["export"] ~docs:toplevel_section ~doc)
+    Arg.(value & opt (some string) None & info [ "export" ] ~docs:toplevel_section ~doc)
   in
   let linkall =
     let doc = "Link all primitives." in
-    Arg.(value & flag & info ["linkall"] ~doc)
+    Arg.(value & flag & info [ "linkall" ] ~doc)
   in
   let dynlink =
     let doc = "Enable dynlink." in
-    Arg.(value & flag & info ["dynlink"] ~doc)
+    Arg.(value & flag & info [ "dynlink" ] ~doc)
   in
   let nocmis =
     let doc = "Do not include cmis when compiling toplevel." in
-    Arg.(value & flag & info ["nocmis"; "no-cmis"] ~docs:toplevel_section ~doc)
+    Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
   in
   let include_dir =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(
-      value & opt_all string [] & info ["I"] ~docs:filesystem_section ~docv:"DIR" ~doc)
+      value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
   in
   let fs_files =
     let doc = "Register [$(docv)] to the pseudo filesystem." in
     Arg.(
       value
       & opt_all string []
-      & info ["file"] ~docs:filesystem_section ~docv:"FILE" ~doc)
+      & info [ "file" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =
     Arg.(
@@ -168,25 +169,26 @@ let options =
           true
           [ ( true
             , info
-                ["extern-fs"]
+                [ "extern-fs" ]
                 ~docs:filesystem_section
                 ~doc:
                   "Configure pseudo-filesystem to allow registering files from outside. \
                    (default)" )
           ; ( false
             , info
-                ["no-extern-fs"]
+                [ "no-extern-fs" ]
                 ~docs:filesystem_section
                 ~doc:
                   "Configure pseudo-filesystem to NOT allow registering files from \
-                   outside." ) ])
+                   outside." )
+          ])
   in
   let fs_output =
     let doc = "Output the filesystem to [$(docv)]." in
     Arg.(
       value
       & opt (some string) None
-      & info ["ofs"] ~docs:filesystem_section ~docv:"FILE" ~doc)
+      & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let build_t
       common
@@ -214,16 +216,14 @@ let options =
       input_file
       js_files
       keep_unit_names =
-    let chop_extension s =
-      try Filename.chop_extension s with Invalid_argument _ -> s
-    in
+    let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let runtime_files =
       if noruntime then runtime_files else "+runtime.js" :: runtime_files
     in
     let runtime_files =
       if runtime_only && Filename.check_suffix input_file ".js"
-      then runtime_files @ [input_file]
+      then runtime_files @ [ input_file ]
       else runtime_files
     in
     let linkall = linkall || toplevel || runtime_only in
@@ -238,9 +238,9 @@ let options =
       | Some "-" -> `Stdout, true
       | Some s -> `Name s, true
       | None -> (
-        match input_file with
-        | Some s -> `Name (chop_extension s ^ ".js"), false
-        | None -> `Stdout, false)
+          match input_file with
+          | Some s -> `Name (chop_extension s ^ ".js"), false
+          | None -> `Stdout, false)
     in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -257,18 +257,18 @@ let options =
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []
-            ; sources_content =
-                (if sourcemap_don't_inline_content then None else Some [])
+            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
             ; names = []
-            ; mappings = [] } )
+            ; mappings = []
+            } )
       else None
     in
     let source_map =
       if Option.is_some source_map && not Source_map_io.enabled
       then (
         warn
-          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled \
-           without sourcemap support (install yojson to enable support)\n\
+          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
+           sourcemap support (install yojson to enable support)\n\
            %!";
         None)
       else source_map
@@ -295,7 +295,8 @@ let options =
       ; output_file
       ; input_file
       ; source_map
-      ; keep_unit_names }
+      ; keep_unit_names
+      }
   in
   let t =
     Term.(
@@ -349,8 +350,9 @@ let info =
     ; `P
         "js_of_ocaml is free software, you can redistribute it and/or modify it under \
          the terms of the GNU Lesser General Public License as published by the Free \
-         Software Foundation, with linking exception; either version 2.1 of the \
-         License, or (at your option) any later version." ]
+         Software Foundation, with linking exception; either version 2.1 of the License, \
+         or (at your option) any later version."
+    ]
   in
   let version =
     match Compiler_version.git_version with

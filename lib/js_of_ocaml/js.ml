@@ -678,22 +678,22 @@ class type json =
 let _JSON : json t = Unsafe.global##._JSON
 
 let decodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.decodeURI [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.decodeURI [| Unsafe.inject s |]
 
 let decodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.decodeURIComponent [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.decodeURIComponent [| Unsafe.inject s |]
 
 let encodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.encodeURI [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.encodeURI [| Unsafe.inject s |]
 
 let encodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.encodeURIComponent [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.encodeURIComponent [| Unsafe.inject s |]
 
 let escape (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.escape [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.escape [| Unsafe.inject s |]
 
 let unescape (s : js_string t) : js_string t =
-  Unsafe.fun_call Unsafe.global##.unescape [|Unsafe.inject s|]
+  Unsafe.fun_call Unsafe.global##.unescape [| Unsafe.inject s |]
 
 external bool : bool -> bool t = "caml_js_from_bool"
 
@@ -716,14 +716,14 @@ external typeof : _ t -> js_string t = "caml_js_typeof"
 external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
 
 let isNaN (i : 'a) : bool =
-  to_bool (Unsafe.fun_call Unsafe.global##.isNaN [|Unsafe.inject i|])
+  to_bool (Unsafe.fun_call Unsafe.global##.isNaN [| Unsafe.inject i |])
 
 let parseInt (s : js_string t) : int =
-  let s = Unsafe.fun_call Unsafe.global##.parseInt [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call Unsafe.global##.parseInt [| Unsafe.inject s |] in
   if isNaN s then failwith "parseInt" else s
 
 let parseFloat (s : js_string t) : float =
-  let s = Unsafe.fun_call Unsafe.global##.parseFloat [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call Unsafe.global##.parseFloat [| Unsafe.inject s |] in
   if isNaN s then failwith "parseFloat" else s
 
 let _ =

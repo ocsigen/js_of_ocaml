@@ -24,9 +24,10 @@ module Alphabet = struct
     { c1 : string
     ; c1_len : int
     ; cn : string
-    ; cn_len : int }
+    ; cn_len : int
+    }
 
-  let create ~c1 ~cn = {c1; c1_len = String.length c1; cn; cn_len = String.length cn}
+  let create ~c1 ~cn = { c1; c1_len = String.length c1; cn; cn_len = String.length cn }
 
   let javascript =
     create
@@ -60,7 +61,8 @@ type t =
   ; alphabet : Alphabet.t
   ; mutable last : int
   ; mutable pretty : bool
-  ; mutable stable : bool }
+  ; mutable stable : bool
+  }
 
 let name_raw t v nm = Hashtbl.add t.names v nm
 
@@ -182,6 +184,7 @@ let create ?(pretty = false) ?(stable = false) alphabet =
     ; alphabet
     ; last = -1
     ; pretty
-    ; stable }
+    ; stable
+    }
   in
   t

@@ -24,7 +24,7 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 
 let _ = Sys.catch_break true
 
-let f {MinifyArg.common; output_file; use_stdin; files} =
+let f { MinifyArg.common; output_file; use_stdin; files } =
   CommonArg.eval common;
   let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
   let with_output f =
@@ -48,10 +48,10 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
     Code.Var.set_pretty pretty;
     let error_of_pi pi =
       match pi with
-      | {Parse_info.name = Some src; line; col; _}
-       |{Parse_info.src = Some src; line; col; _} ->
+      | { Parse_info.name = Some src; line; col; _ }
+      | { Parse_info.src = Some src; line; col; _ } ->
           error "error at file:%S l:%d col:%d" src line col
-      | {Parse_info.line; col; _} -> error "error at l:%d col:%d" line col
+      | { Parse_info.line; col; _ } -> error "error at l:%d col:%d" line col
     in
     let p =
       List.flatten
@@ -77,7 +77,8 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
         , fun () -> (new Js_traverse.rename_variable toplevel_def :> Js_traverse.mapper)
         )
       ; (true_, fun () -> new Js_traverse.simpl)
-      ; (true_, fun () -> new Js_traverse.clean) ]
+      ; (true_, fun () -> new Js_traverse.clean)
+      ]
     in
     let p =
       List.fold_left passes ~init:p ~f:(fun p (t, m) ->

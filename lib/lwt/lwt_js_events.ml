@@ -565,11 +565,12 @@ let transition_evn =
        snd
          (List.find
             (fun (propname, _evname) -> Js.Unsafe.get e##.style propname != Js.undefined)
-            [ "WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]
-            ; "MozTransition", [Dom.Event.make "transitionend"]
+            [ "WebkitTransition", [ Dom.Event.make "webkitTransitionEnd" ]
+            ; "MozTransition", [ Dom.Event.make "transitionend" ]
             ; ( "OTransition"
-              , [Dom.Event.make "oTransitionEnd"; Dom.Event.make "otransitionend"] )
-            ; "transition", [Dom.Event.make "transitionend"] ])
+              , [ Dom.Event.make "oTransitionEnd"; Dom.Event.make "otransitionend" ] )
+            ; "transition", [ Dom.Event.make "transitionend" ]
+            ])
      with Not_found -> [])
 
 let transitionend elt =
@@ -635,7 +636,7 @@ let onpopstate () = make_event Dom_html.Event.popstate Dom_html.window
 
 let onhashchange () = make_event Dom_html.Event.hashchange Dom_html.window
 
-let onorientationchange_or_onresize () = Lwt.pick [onresize (); onorientationchange ()]
+let onorientationchange_or_onresize () = Lwt.pick [ onresize (); onorientationchange () ]
 
 let onresizes t = seq_loop (fun ?use_capture:_ ?passive:_ () -> onresize ()) () t
 

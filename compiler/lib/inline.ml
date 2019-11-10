@@ -30,7 +30,8 @@ let optimizable blocks pc _ =
       else
         let b = Addr.Map.find pc blocks in
         match b with
-        | {handler = Some _; _} | {branch = Pushtrap _; _} | {branch = Poptrap _; _} ->
+        | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
+          ->
             false
         | _ ->
             List.for_all b.body ~f:(function
@@ -54,7 +55,7 @@ let rec follow_branch_rec seen blocks = function
       let seen = Addr.Set.add pc seen in
       try
         match Addr.Map.find pc blocks with
-        | {body = []; branch = Branch (pc, []); _} when not (Addr.Set.mem pc seen) ->
+        | { body = []; branch = Branch (pc, []); _ } when not (Addr.Set.mem pc seen) ->
             follow_branch_rec seen blocks (pc, [])
         | _ -> k
       with Not_found -> k)
@@ -82,10 +83,10 @@ let get_closures (_, blocks, _) =
 let rewrite_block (pc', handler) pc blocks =
   let block = Addr.Map.find pc blocks in
   assert (Option.is_none block.handler);
-  let block = {block with handler} in
+  let block = { block with handler } in
   let block =
     match block.branch, pc' with
-    | Return y, Some pc' -> {block with branch = Branch (pc', [y])}
+    | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
     | _ -> block
   in
   Addr.Map.add pc block blocks
@@ -134,32 +135,31 @@ let simple blocks cont mapping =
     | Pc c -> Pc c
     | Pv x -> Pv (map_var mapping x)
   in
-  let rec follow (pc, args) (instr : [`Empty | `Ok of 'a]) mapping =
+  let rec follow (pc, args) (instr : [ `Empty | `Ok of 'a ]) mapping =
     let b = Addr.Map.find pc blocks in
     let mapping = (b.params, args) :: mapping in
-    let instr : [`Empty | `Ok of 'a | `Fail] =
+    let instr : [ `Empty | `Ok of 'a | `Fail ] =
       match b.body, instr with
-      | [], _ -> (instr :> [`Empty | `Ok of 'a | `Fail])
-      | [Let (y, exp)], `Empty -> `Ok (y, exp)
+      | [], _ -> (instr :> [ `Empty | `Ok of 'a | `Fail ])
+      | [ Let (y, exp) ], `Empty -> `Ok (y, exp)
       | _, _ -> `Fail
     in
     match instr, b.branch with
     | `Fail, _ -> `Fail
     | `Empty, Return ret -> `Alias (map_var mapping ret)
-    | `Ok (x, exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0
-      -> (
-      match exp with
-      | Const _ -> `Exp exp
-      | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
-      | Apply (f, args, true) ->
-          `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
-      | Prim (prim, args) -> `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
-      | Block (tag, args, aon) ->
-          `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
-      | Field (x, i) -> `Exp (Field (map_var mapping x, i))
-      | Closure _ -> `Fail
-      | Constant _ -> `Fail
-      | Apply _ -> `Fail)
+    | `Ok (x, exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0 -> (
+        match exp with
+        | Const _ -> `Exp exp
+        | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+        | Apply (f, args, true) ->
+            `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
+        | Prim (prim, args) -> `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
+        | Block (tag, args, aon) ->
+            `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
+        | Field (x, i) -> `Exp (Field (map_var mapping x, i))
+        | Closure _ -> `Fail
+        | Constant _ -> `Fail
+        | Apply _ -> `Fail)
     | ((`Empty | `Ok _) as instr), Branch cont -> follow cont instr mapping
     | (`Empty | `Ok _), _ -> `Fail
   in
@@ -182,22 +182,22 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
         | Let (x, Apply (f, args, true)) when Var.Map.mem f closures -> (
             let branch, blocks, free_pc = state in
             let params, clos_cont, f_optimizable = Var.Map.find f closures in
-            match simple blocks clos_cont [params, args] with
+            match simple blocks clos_cont [ params, args ] with
             | `Alias arg -> (
-              match rem, branch with
-              | [], Return y when Var.compare x y = 0 -> [], (Return arg, blocks, free_pc)
-              | _ ->
-                  let blocks =
-                    Addr.Map.add
-                      free_pc
-                      {params = [x]; handler = block.handler; body = rem; branch}
-                      blocks
-                  in
-                  [], (Branch (free_pc, [arg]), blocks, free_pc + 1))
+                match rem, branch with
+                | [], Return y when Var.compare x y = 0 ->
+                    [], (Return arg, blocks, free_pc)
+                | _ ->
+                    let blocks =
+                      Addr.Map.add
+                        free_pc
+                        { params = [ x ]; handler = block.handler; body = rem; branch }
+                        blocks
+                    in
+                    [], (Branch (free_pc, [ arg ]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
-                if live_vars.(Var.idx f) = 1
-                   && Bool.equal outer_optimizable f_optimizable
+                if live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
                    (* inlining the code of an optimizable function could make
                  this code unoptimized. (wrt to Jit compilers)
                  At the moment, V8 doesn't optimize function containing try..catch.
@@ -212,7 +212,11 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                     | _ ->
                         ( Addr.Map.add
                             free_pc
-                            {params = [x]; handler = block.handler; body = rem; branch}
+                            { params = [ x ]
+                            ; handler = block.handler
+                            ; body = rem
+                            ; branch
+                            }
                             blocks
                         , Some free_pc )
                   in
@@ -228,7 +232,8 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                       { params
                       ; handler = block.handler
                       ; body = []
-                      ; branch = Branch clos_cont }
+                      ; branch = Branch clos_cont
+                      }
                       blocks
                   in
                   [], (Branch (free_pc + 1, args), blocks, free_pc + 2)
@@ -238,20 +243,22 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
         | Let (x, Closure (l, (pc, []))) -> (
             let block = Addr.Map.find pc blocks in
             match block with
-            | { body = [Let (y, Prim (Extern prim, args))]
+            | { body = [ Let (y, Prim (Extern prim, args)) ]
               ; branch = Return y'
               ; handler = None
-              ; params = [] } ->
+              ; params = []
+              } ->
                 let len = List.length l in
                 if Code.Var.compare y y' = 0
                    && Primitive.has_arity prim len
                    && args_equal l args
-                then Let (x, Prim (Extern "%closure", [Pc (IString prim)])) :: rem, state
+                then
+                  Let (x, Prim (Extern "%closure", [ Pc (IString prim) ])) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)
   in
-  Addr.Map.add pc {block with body; branch} blocks, free_pc
+  Addr.Map.add pc { block with body; branch } blocks, free_pc
 
 (****)
 

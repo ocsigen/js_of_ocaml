@@ -143,9 +143,9 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
            (match highlight_location with
            | None -> ()
            | Some f -> (
-             match JsooTopError.loc x with
-             | None -> ()
-             | Some loc -> f loc));
+               match JsooTopError.loc x with
+               | None -> ()
+               | Some loc -> f loc));
            Errors.report_error Format.err_formatter x
      done
    with End_of_file -> ());

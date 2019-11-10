@@ -191,7 +191,8 @@ type desc =
   { code : t
   ; kind : kind
   ; name : string
-  ; opcode : int }
+  ; opcode : int
+  }
 
 let ops =
   let if_v407 =
@@ -349,10 +350,11 @@ let ops =
      ; RERAISE, KStop 0, "RERAISE"
      ; RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE"
      ; GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR"
-     ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP" |]
+     ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
+    |]
   in
   let ops =
-    Array.mapi ~f:(fun i (c, k, n) -> {code = c; kind = k; name = n; opcode = i}) instrs
+    Array.mapi ~f:(fun i (c, k, n) -> { code = c; kind = k; name = n; opcode = i }) instrs
   in
   ops
 

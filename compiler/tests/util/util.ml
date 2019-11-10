@@ -123,7 +123,7 @@ let channel_to_string c_in =
   Buffer.contents buffer
 
 let exec_to_string_exn ~env ~cmd =
-  let env = Array.concat [Unix.environment (); Array.of_list env] in
+  let env = Array.concat [ Unix.environment (); Array.of_list env ] in
   let proc_result_ok std_out =
     let open Unix in
     function
@@ -148,7 +148,7 @@ let exec_to_string_exn ~env ~cmd =
           (function
             | "" -> false
             | _ -> true)
-          [results'; results]))
+          [ results'; results ]))
     (Unix.close_process_full proc_full)
 
 let run_javascript file =
@@ -164,16 +164,17 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
-      [ (if pretty then ["--pretty"] else [])
-      ; (if sourcemap then ["--sourcemap"] else [])
-      ; ["--no-runtime"]
-      ; [Filename.concat js_of_ocaml_root "runtime/runtime.js"]
-      ; flags ]
+      [ (if pretty then [ "--pretty" ] else [])
+      ; (if sourcemap then [ "--sourcemap" ] else [])
+      ; [ "--no-runtime" ]
+      ; [ Filename.concat js_of_ocaml_root "runtime/runtime.js" ]
+      ; flags
+      ]
   in
   let extra_args = String.concat " " extra_args in
   let compiler_location = Filename.concat js_of_ocaml_root "compiler/js_of_ocaml.exe" in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
-  let env = [Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext] in
+  let env = [ Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext ] in
   let stdout = exec_to_string_exn ~env ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if
@@ -239,7 +240,7 @@ let program_to_string ?(compact = false) p =
 
 let expression_to_string ?(compact = false) e =
   let module J = Jsoo.Javascript in
-  let p = [J.Statement (J.Expression_statement e), J.N] in
+  let p = [ J.Statement (J.Expression_statement e), J.N ] in
   program_to_string ~compact p
 
 class find_variable_declaration r n =
@@ -248,7 +249,7 @@ class find_variable_declaration r n =
 
     method! variable_declaration v =
       (match v with
-      | Jsoo.Javascript.S {name; _}, _ when name = n -> r := v :: !r
+      | Jsoo.Javascript.S { name; _ }, _ when name = n -> r := v :: !r
       | _ -> ());
       super#variable_declaration v
   end
@@ -259,7 +260,7 @@ let print_var_decl program n =
   ignore (o#program program);
   print_string (Format.sprintf "var %s = " n);
   match !r with
-  | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
+  | [ (_, Some (expression, _)) ] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
 class find_function_declaration r n =
@@ -272,7 +273,7 @@ class find_function_declaration r n =
           let record =
             match fd, n with
             | _, None -> true
-            | (Jsoo.Javascript.S {name; _}, _, _, _), Some n -> name = n
+            | (Jsoo.Javascript.S { name; _ }, _, _, _), Some n -> name = n
             | _ -> false
           in
           if record then r := fd :: !r
@@ -286,7 +287,7 @@ let print_fun_decl program n =
   ignore (o#program program);
   let module J = Jsoo.Javascript in
   match !r with
-  | [fd] -> print_string (program_to_string [J.Function_declaration fd, J.N])
+  | [ fd ] -> print_string (program_to_string [ J.Function_declaration fd, J.N ])
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 

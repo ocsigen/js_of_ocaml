@@ -850,7 +850,8 @@ module Color = struct
               ; "white"
               ; "whitesmoke"
               ; "yellow"
-              ; "yellowgreen" ]
+              ; "yellowgreen"
+              ]
     then s
     else raise (Invalid_argument (Js.to_string s ^ " is not a valid color"))
 
@@ -879,9 +880,9 @@ module Color = struct
       let i_of_s_o = function
         | None -> fail ()
         | Some i -> (
-          try int_of_string i
-          with Invalid_argument s | Failure s ->
-            raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)))
+            try int_of_string i
+            with Invalid_argument s | Failure s ->
+              raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)))
       in
       let f_of_s f =
         try float_of_string f
@@ -896,50 +897,52 @@ module Color = struct
           let alpha = Regexp.matched_group r 5 in
           match Regexp.matched_group r 1 with
           | Some "rgb" -> (
-            match alpha with
-            | Some _ -> fail ()
-            | None -> RGB (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
-          | Some "rgba" -> (
-            match alpha with
-            | None -> fail ()
-            | Some a -> RGBA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
-          | Some _ | None -> fail ())
-      | None -> (
-        match Regexp.string_match re_rgb_pct s 0 with
-        | Some r -> (
-            let red = Regexp.matched_group r 2 in
-            let green = Regexp.matched_group r 3 in
-            let blue = Regexp.matched_group r 4 in
-            let alpha = Regexp.matched_group r 5 in
-            match Regexp.matched_group r 1 with
-            | Some "rgb" -> (
               match alpha with
               | Some _ -> fail ()
-              | None -> RGB_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
-            | Some "rgba" -> (
+              | None -> RGB (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
+          | Some "rgba" -> (
               match alpha with
               | None -> fail ()
-              | Some a ->
-                  RGBA_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
-            | Some _ | None -> fail ())
-        | None -> (
-          match Regexp.string_match re_hsl s 0 with
+              | Some a -> RGBA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+          | Some _ | None -> fail ())
+      | None -> (
+          match Regexp.string_match re_rgb_pct s 0 with
           | Some r -> (
               let red = Regexp.matched_group r 2 in
               let green = Regexp.matched_group r 3 in
               let blue = Regexp.matched_group r 4 in
               let alpha = Regexp.matched_group r 5 in
               match Regexp.matched_group r 1 with
-              | Some "hsl" -> (
-                match alpha with
-                | Some _ -> fail ()
-                | None -> HSL (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
-              | Some "hsla" -> (
-                match alpha with
-                | None -> fail ()
-                | Some a -> HSLA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+              | Some "rgb" -> (
+                  match alpha with
+                  | Some _ -> fail ()
+                  | None -> RGB_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
+              | Some "rgba" -> (
+                  match alpha with
+                  | None -> fail ()
+                  | Some a ->
+                      RGBA_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a)
+                  )
               | Some _ | None -> fail ())
-          | None -> fail ())))
+          | None -> (
+              match Regexp.string_match re_hsl s 0 with
+              | Some r -> (
+                  let red = Regexp.matched_group r 2 in
+                  let green = Regexp.matched_group r 3 in
+                  let blue = Regexp.matched_group r 4 in
+                  let alpha = Regexp.matched_group r 5 in
+                  match Regexp.matched_group r 1 with
+                  | Some "hsl" -> (
+                      match alpha with
+                      | Some _ -> fail ()
+                      | None -> HSL (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
+                  | Some "hsla" -> (
+                      match alpha with
+                      | None -> fail ()
+                      | Some a ->
+                          HSLA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+                  | Some _ | None -> fail ())
+              | None -> fail ())))
 end
 
 module Length = struct
@@ -1006,9 +1009,9 @@ module Length = struct
             match Regexp.matched_group r 1 with
             | None -> fail ()
             | Some f -> (
-              try float_of_string f
-              with Invalid_argument s ->
-                raise (Invalid_argument ("length conversion error: " ^ s)))
+                try float_of_string f
+                with Invalid_argument s ->
+                  raise (Invalid_argument ("length conversion error: " ^ s)))
           in
           match Regexp.matched_group r 2 with
           | None -> fail ()
@@ -1057,9 +1060,9 @@ module Angle = struct
           match Regexp.matched_group r 1 with
           | None -> fail ()
           | Some f -> (
-            try float_of_string f
-            with Invalid_argument s ->
-              raise (Invalid_argument ("length conversion error: " ^ s)))
+              try float_of_string f
+              with Invalid_argument s ->
+                raise (Invalid_argument ("length conversion error: " ^ s)))
         in
         match Regexp.matched_group r 2 with
         | Some "deg" -> Deg f

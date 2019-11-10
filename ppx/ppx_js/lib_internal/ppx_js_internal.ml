@@ -27,7 +27,7 @@ let nolabel = Nolabel
 
 let may_tuple ?loc tup = function
   | [] -> None
-  | [x] -> Some x
+  | [ x ] -> Some x
   | l -> Some (tup ?loc ?attrs:None l)
 
 let lid ?(loc = !default_loc) s = Location.mkloc (Longident.parse s) loc
@@ -39,7 +39,7 @@ let unit ?loc ?attrs () = constr ?loc ?attrs "()" []
 
 let tuple ?loc ?attrs = function
   | [] -> unit ?loc ?attrs ()
-  | [x] -> x
+  | [ x ] -> x
   | xs -> Exp.tuple ?loc ?attrs xs
 
 let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
@@ -48,11 +48,11 @@ let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
     Raise a Location.error if it's not.
 *)
 let exp_to_string = function
-  | {pexp_desc = Pexp_ident {txt = Longident.Lident s; _}; _} -> s
-  | {pexp_desc = Pexp_construct ({txt = Longident.Lident s; _}, None); _}
+  | { pexp_desc = Pexp_ident { txt = Longident.Lident s; _ }; _ } -> s
+  | { pexp_desc = Pexp_construct ({ txt = Longident.Lident s; _ }, None); _ }
     when String.length s > 0 && s.[0] >= 'A' && s.[0] <= 'Z' ->
       "_" ^ s
-  | {pexp_loc; _} ->
+  | { pexp_loc; _ } ->
       Location.raise_errorf
         ~loc:pexp_loc
         "Javascript methods or attributes can only be simple identifiers."
@@ -84,9 +84,10 @@ let inside_Js =
    ast node.
 *)
 let merlin_noloc =
-  { attr_name = {txt = "merlin.loc"; loc = Location.none}
+  { attr_name = { txt = "merlin.loc"; loc = Location.none }
   ; attr_payload = PStr []
-  ; attr_loc = Location.none }
+  ; attr_loc = Location.none
+  }
 
 module Js : sig
   val type_ :
@@ -134,9 +135,9 @@ let unescape lab =
 
 let app_arg e = nolabel, e
 
-let inject_arg e = Js.unsafe "inject" [e]
+let inject_arg e = Js.unsafe "inject" [ e ]
 
-let inject_args args = Exp.array (List.map ~f:(fun e -> Js.unsafe "inject" [e]) args)
+let inject_args args = Exp.array (List.map ~f:(fun e -> Js.unsafe "inject" [ e ]) args)
 
 module Arg : sig
   type t
@@ -153,7 +154,8 @@ module Arg : sig
 end = struct
   type arg =
     { label : arg_label
-    ; name : string }
+    ; name : string
+    }
 
   type t = arg
 
@@ -162,7 +164,7 @@ end = struct
   let make ?(label = nolabel) () =
     let c = !count in
     incr count;
-    {label; name = "t" ^ string_of_int c}
+    { label; name = "t" ^ string_of_int c }
 
   let label arg = arg.label
 
@@ -176,7 +178,7 @@ end
 let js_dot_t_the_first_arg args =
   match args with
   | [] -> assert false
-  | x :: xs -> (Arg.label x, Js.type_ "t" [Arg.typ x]) :: Arg.args xs
+  | x :: xs -> (Arg.label x, Js.type_ "t" [ Arg.typ x ]) :: Arg.args xs
 
 (* uplift    : type of the unused value - ties all types together
    downlift  : types of individual components (arguments and result)
@@ -221,14 +223,13 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
   *)
   let local_types =
-    make_str res
-    :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
+    make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
   let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype in
   default_loc := default_loc';
   result
 
-let open_t loc = Js.type_ ~loc "t" [Typ.object_ ~loc [] Open]
+let open_t loc = Js.type_ ~loc "t" [ Typ.object_ ~loc [] Open ]
 
 (* {[ obj##meth x y ]} generates
    {[
@@ -249,18 +250,18 @@ let open_t loc = Js.type_ ~loc "t" [Typ.object_ ~loc [] Open]
        (fun x  -> x#meth)
    ]} *)
 let method_call ~loc obj meth args =
-  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
+  let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
-      (fun args tres -> arrows (Arg.args args) (Js.type_ "meth" [tres]))
+      (fun args tres -> arrows (Arg.args args) (Js.type_ "meth" [ tres ]))
       (fun args tres -> js_dot_t_the_first_arg args, tres)
       (fun eargs ->
         match eargs with
         | [] -> assert false
         | eobj :: eargs ->
             let eargs = inject_args eargs in
-            Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
+            Js.unsafe "meth_call" [ eobj; str (unescape meth); eargs ])
       (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
   in
   Exp.apply
@@ -269,15 +270,16 @@ let method_call ~loc obj meth args =
     @ [ app_arg
           (Exp.fun_
              ~loc
-             ~attrs:[merlin_noloc]
+             ~attrs:[ merlin_noloc ]
              nolabel
              None
-             (Pat.var ~loc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
+             (Pat.var ~loc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
              (Exp.send
                 ~loc
-                ~attrs:[merlin_noloc]
+                ~attrs:[ merlin_noloc ]
                 (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-                (make_str ~loc meth))) ])
+                (make_str ~loc meth)))
+      ])
 
 (* {[ obj##.prop ]} generates
    {[
@@ -291,18 +293,20 @@ let method_call ~loc obj meth args =
        (fun x -> x#prop)
    ]} *)
 let prop_get ~loc:_ ~prop_loc obj prop =
-  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
+  let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
       (fun args tres ->
-        arrows (Arg.args args) (Js.type_ "gen_prop" [[%type: < get : [%t tres] ; .. > ]]))
+        arrows
+          (Arg.args args)
+          (Js.type_ "gen_prop" [ [%type: < get : [%t tres] ; .. > ] ]))
       (fun args tres -> js_dot_t_the_first_arg args, tres)
       (fun eargs ->
         match eargs with
         | [] | _ :: _ :: _ -> assert false
-        | [only_arg] -> Js.unsafe "get" [only_arg; str (unescape prop)])
-      [Arg.make ()]
+        | [ only_arg ] -> Js.unsafe "get" [ only_arg; str (unescape prop) ])
+      [ Arg.make () ]
   in
   Exp.apply
     invoker
@@ -312,12 +316,13 @@ let prop_get ~loc:_ ~prop_loc obj prop =
            ~loc:gloc
            nolabel
            None
-           (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
+           (Pat.var ~loc:gloc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
            (Exp.send
               ~loc:prop_loc
-              ~attrs:[merlin_noloc]
+              ~attrs:[ merlin_noloc ]
               (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-              (make_str ~loc:prop_loc prop))) ]
+              (make_str ~loc:prop_loc prop)))
+    ]
 
 (* {[ obj##.prop := expr ]} generates
    {[
@@ -333,24 +338,24 @@ let prop_get ~loc:_ ~prop_loc obj prop =
        (fun x -> x#prop)
    ]} *)
 let prop_set ~loc ~prop_loc obj prop value =
-  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
+  let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
       (fun args _tres ->
         match args with
-        | [obj; arg] ->
+        | [ obj; arg ] ->
             assert (Arg.label obj = nolabel);
             assert (Arg.label arg = nolabel);
             arrows
-              [nolabel, Arg.typ obj]
-              (Js.type_ "gen_prop" [[%type: < set : [%t Arg.typ arg] -> unit ; .. > ]])
+              [ nolabel, Arg.typ obj ]
+              (Js.type_ "gen_prop" [ [%type: < set : [%t Arg.typ arg] -> unit ; .. > ] ])
         | _ -> assert false)
       (fun args _tres -> js_dot_t_the_first_arg args, [%type: unit])
       (function
-        | [obj; arg] -> Js.unsafe "set" [obj; str (unescape prop); inject_arg arg]
+        | [ obj; arg ] -> Js.unsafe "set" [ obj; str (unescape prop); inject_arg arg ]
         | _ -> assert false)
-      [Arg.make (); Arg.make ()]
+      [ Arg.make (); Arg.make () ]
   in
   Exp.apply
     invoker
@@ -361,12 +366,13 @@ let prop_set ~loc ~prop_loc obj prop value =
            ~loc
            nolabel
            None
-           (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
+           (Pat.var ~loc:gloc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
            (Exp.send
               ~loc:prop_loc
-              ~attrs:[merlin_noloc]
+              ~attrs:[ merlin_noloc ]
               (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-              (make_str ~loc:prop_loc prop))) ]
+              (make_str ~loc:prop_loc prop)))
+    ]
 
 (* {[ new%js constr x y ]} generates
    {[
@@ -391,22 +397,22 @@ let new_object constr args =
     invoker
       (fun _args _tres -> [%type: unit])
       (fun args tres ->
-        let tres = Js.type_ "t" [tres] in
+        let tres = Js.type_ "t" [ tres ] in
         match args with
         | [] -> assert false
         | unit :: args ->
             assert (Arg.label unit = nolabel);
             let args = Arg.args args in
-            (nolabel, Js.type_ "constr" [arrows args tres]) :: args, tres)
+            (nolabel, Js.type_ "constr" [ arrows args tres ]) :: args, tres)
       (function
-        | constr :: args -> Js.unsafe "new_obj" [constr; inject_args args]
+        | constr :: args -> Js.unsafe "new_obj" [ constr; inject_args args ]
         | _ -> assert false)
       (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
   in
   Exp.apply
     invoker
     ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
-    @ [app_arg (Exp.construct ~loc:constr.loc (lid ~loc:constr.loc "()") None)])
+    @ [ app_arg (Exp.construct ~loc:constr.loc (lid ~loc:constr.loc "()") None) ])
 
 module S = Map.Make (String)
 
@@ -427,7 +433,8 @@ module Prop_kind = struct
     [ `Readonly
     | `Writeonly
     | `Readwrite
-    | `Optdef ]
+    | `Optdef
+    ]
 
   let prop_type constr ty =
     let constr =
@@ -437,12 +444,12 @@ module Prop_kind = struct
       | `Readwrite -> "prop"
       | `Optdef -> "optdef_prop"
     in
-    Js.type_ constr [ty]
+    Js.type_ constr [ ty ]
 
   let wrap_arg_type constr ty =
     match constr with
     | `Readonly | `Writeonly | `Readwrite -> ty
-    | `Optdef -> Js.type_ "optdef" [ty]
+    | `Optdef -> Js.type_ "optdef" [ ty ]
 end
 
 type field_desc =
@@ -464,8 +471,8 @@ let filter_map f l =
   in
   List.rev l
 
-let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Error of _]
-    =
+let preprocess_literal_object mappper fields :
+    [ `Fields of field_desc list | `Error of _ ] =
   let check_name id names =
     let txt = unescape id.txt in
     if S.mem txt names
@@ -476,7 +483,7 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
         if id.txt <> txt then Printf.sprintf " (normalized to %S)" txt else ""
       in
       let sub =
-        [id'.loc, Printf.sprintf "Duplicated val or method %S%s." id'.txt (details id')]
+        [ id'.loc, Printf.sprintf "Duplicated val or method %S%s." id'.txt (details id') ]
       in
       Ast_mapper.make_error_of_message
         ~loc:id.loc
@@ -501,7 +508,7 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
     | true, _ -> Some (`Unkown x)
   in
   let jsoo_attributes =
-    filter_map (fun {attr_name = {txt; _}; attr_payload = _; attr_loc = _} ->
+    filter_map (fun { attr_name = { txt; _ }; attr_payload = _; attr_loc = _ } ->
         parse_attribute txt)
   in
   let f (names, fields) exp =
@@ -513,19 +520,14 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
           match mut, jsoo_attributes exp.pcf_attributes with
           | Immutable, [] -> `Readonly
           | Mutable, [] -> `Readwrite
-          | Immutable, [`Readonly] -> `Readonly
-          | (Immutable | Mutable), [`Optdef] -> `Optdef
-          | (Immutable | Mutable), [`Writeonly] -> `Writeonly
-          | (Immutable | Mutable), [`Readwrite] -> `Readwrite
-          | (Immutable | Mutable), [`Unkown s] ->
-              Location.raise_errorf
-                ~loc:exp.pcf_loc
-                "Unkown jsoo attribute ([@@@@%s])."
-                s
-          | Mutable, [`Readonly] ->
-              Location.raise_errorf
-                ~loc:exp.pcf_loc
-                "A mutable field cannot be readonly."
+          | Immutable, [ `Readonly ] -> `Readonly
+          | (Immutable | Mutable), [ `Optdef ] -> `Optdef
+          | (Immutable | Mutable), [ `Writeonly ] -> `Writeonly
+          | (Immutable | Mutable), [ `Readwrite ] -> `Readwrite
+          | (Immutable | Mutable), [ `Unkown s ] ->
+              Location.raise_errorf ~loc:exp.pcf_loc "Unkown jsoo attribute ([@@@@%s])." s
+          | Mutable, [ `Readonly ] ->
+              Location.raise_errorf ~loc:exp.pcf_loc "A mutable field cannot be readonly."
           | _, _ :: _ :: _ ->
               Location.raise_errorf ~loc:exp.pcf_loc "Too many attributes."
         in
@@ -611,10 +613,10 @@ let literal_object self_id (fields : field_desc list) =
               | Meth (_, _, _, _, args) ->
                   ( label
                   , arrows
-                      ((nolabel, Js.type_ "t" [tres]) :: Arg.args args)
-                      (Js.type_ "meth" [ret_ty]) ))
+                      ((nolabel, Js.type_ "t" [ tres ]) :: Arg.args args)
+                      (Js.type_ "meth" [ ret_ty ]) ))
         in
-        arrows ((nolabel, Js.type_ "t" [tres]) :: args) tres)
+        arrows ((nolabel, Js.type_ "t" [ tres ]) :: args) tres)
       (fun args tres ->
         let args =
           List.map2 fields args ~f:(fun f desc ->
@@ -623,9 +625,9 @@ let literal_object self_id (fields : field_desc list) =
               match f with
               | Val (_, constr, _, _) -> label, Prop_kind.wrap_arg_type constr ret_ty
               | Meth (_, _, _, _, args) ->
-                  label, arrows ((nolabel, Js.type_ "t" [tres]) :: Arg.args args) ret_ty)
+                  label, arrows ((nolabel, Js.type_ "t" [ tres ]) :: Arg.args args) ret_ty)
         in
-        args, Js.type_ "t" [tres])
+        args, Js.type_ "t" [ tres ])
       (fun args ->
         Js.unsafe
           "obj"
@@ -636,13 +638,15 @@ let literal_object self_id (fields : field_desc list) =
                      ; inject_arg
                          (match f with
                          | Val _ -> arg
-                         | Meth _ -> Js.fun_ "wrap_meth_callback" [arg]) ])) ])
+                         | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ])
+                     ]))
+          ])
       (List.map fields ~f:(function
           | Val _ -> Arg.make ()
           | Meth (_, _, _, _, _fun_ty) -> Arg.make ()))
   in
   let self = "self" in
-  let gloc = {!default_loc with Location.loc_ghost = true} in
+  let gloc = { !default_loc with Location.loc_ghost = true } in
   let fake_object =
     Exp.object_
       { pcstr_self = Pat.any ~loc:gloc ()
@@ -652,7 +656,8 @@ let literal_object self_id (fields : field_desc list) =
               let apply e =
                 match f with
                 | Val _ -> e
-                | Meth _ -> Exp.apply e [nolabel, Exp.ident (lid ~loc:Location.none self)]
+                | Meth _ ->
+                    Exp.apply e [ nolabel, Exp.ident (lid ~loc:Location.none self) ]
               in
               { pcf_loc = loc
               ; pcf_attributes = []
@@ -663,7 +668,9 @@ let literal_object self_id (fields : field_desc list) =
                     , Cfk_concrete
                         ( Fresh
                         , apply (Exp.ident ~loc (lid ~loc:Location.none (name f).txt)) )
-                    ) }) }
+                    )
+              })
+      }
   in
   Exp.apply
     invoker
@@ -678,7 +685,8 @@ let literal_object self_id (fields : field_desc list) =
                  nolabel
                  None
                  (Pat.var ~loc:gloc (Location.mknoloc name))
-                 fun_)) ])
+                 fun_))
+      ])
 
 let mapper =
   { Ast_mapper.default_mapper with
@@ -686,7 +694,7 @@ let mapper =
       (fun mapper expr ->
         let prev_default_loc = !default_loc in
         default_loc := expr.pexp_loc;
-        let {pexp_attributes; _} = expr in
+        let { pexp_attributes; _ } = expr in
         let new_expr =
           match expr with
           (* obj##.var *)
@@ -696,7 +704,7 @@ let mapper =
               let new_expr =
                 prop_get ~loc:meth.pexp_loc ~prop_loc:expr.pexp_loc obj prop
               in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##.var := value *)
           | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as prop] := [%e? value]] ->
               let obj = mapper.expr mapper obj in
@@ -704,41 +712,43 @@ let mapper =
               let prop_loc = prop.pexp_loc in
               let prop = exp_to_string meth in
               let new_expr = prop_set ~loc:meth.pexp_loc ~prop_loc obj prop value in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##(meth arg1 arg2) .. *)
-          | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply (meth, args); _}]] ->
+          | [%expr [%e? obj] ## [%e? { pexp_desc = Pexp_apply (meth, args); _ }]] ->
               let meth_str = exp_to_string meth in
               let obj = mapper.expr mapper obj in
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
               let new_expr = method_call ~loc:meth.pexp_loc obj meth_str args in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##meth arg1 arg2 .. *)
-          | {pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args); _}
-            ->
+          | { pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args)
+            ; _
+            } ->
               let meth_str = exp_to_string meth in
               let obj = mapper.expr mapper obj in
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
               let new_expr = method_call ~loc:prop.pexp_loc obj meth_str args in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##meth *)
           | [%expr [%e? obj] ## [%e? meth]] as expr ->
               let obj = mapper.expr mapper obj in
               let meth = exp_to_string meth in
               let new_expr = method_call ~loc:expr.pexp_loc obj meth [] in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* new%js constr] *)
-          | [%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]] ->
+          | [%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]] ->
               let new_expr = new_object constr [] in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* new%js constr arg1 arg2 ..)] *)
           | { pexp_desc =
-                Pexp_apply ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]], args)
-            ; _ } ->
+                Pexp_apply ([%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]], args)
+            ; _
+            } ->
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
               let new_expr = new_object constr args in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           (* object%js ... end *)
-          | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _}]]] ->
+          | [%expr [%js [%e? { pexp_desc = Pexp_object class_struct; _ }]]] ->
               let fields =
                 preprocess_literal_object (mapper.expr mapper) class_struct.pcstr_fields
               in
@@ -747,11 +757,12 @@ let mapper =
                 | `Fields fields -> literal_object class_struct.pcstr_self fields
                 | `Error e -> Exp.extension e
               in
-              mapper.expr mapper {new_expr with pexp_attributes}
+              mapper.expr mapper { new_expr with pexp_attributes }
           | _ -> Ast_mapper.default_mapper.expr mapper expr
         in
         default_loc := prev_default_loc;
-        new_expr) }
+        new_expr)
+  }
 
 let () =
   Driver.register

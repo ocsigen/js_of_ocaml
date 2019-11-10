@@ -23,7 +23,8 @@ type map =
   ; ori_source : int
   ; ori_line : int
   ; ori_col : int
-  ; ori_name : int option }
+  ; ori_name : int option
+  }
 
 type mapping = map list
 
@@ -34,7 +35,8 @@ type t =
   ; mutable sources : string list
   ; mutable sources_content : string option list option
   ; mutable names : string list
-  ; mutable mappings : mapping }
+  ; mutable mappings : mapping
+  }
 
 val merge : (int * string * t) list -> t option
 

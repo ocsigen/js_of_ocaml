@@ -27,9 +27,9 @@ let%expect_test _ =
   (match Url.url_of_string url with
   | None -> print_endline "can't parse current url2"
   | Some u -> (
-    match url_string_url u with
-    | None -> print_endline "can't parse pretty-printed url"
-    | Some v -> if u = v then () else print_endline "no fixpoint"));
+      match url_string_url u with
+      | None -> print_endline "can't parse pretty-printed url"
+      | Some v -> if u = v then () else print_endline "no fixpoint"));
   [%expect {||}]
 
 let%expect_test _ =

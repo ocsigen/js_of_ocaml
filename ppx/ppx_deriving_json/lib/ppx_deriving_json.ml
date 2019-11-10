@@ -30,8 +30,7 @@ let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
 
 let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
-let pint ?loc ?attrs x =
-  Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
+let pint ?loc ?attrs x = Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
 let lid ?(loc = !default_loc) s = Location.mkloc (Longident.parse s) loc
 
@@ -54,7 +53,7 @@ let mangle ?(fixpoint = "t") affix name =
   | false, `Prefix x -> x ^ "_" ^ name
   | false, `Suffix x -> name ^ "_" ^ x
 
-let mangle_type_decl ?fixpoint affix {ptype_name = {txt = name; _}; _} =
+let mangle_type_decl ?fixpoint affix { ptype_name = { txt = name; _ }; _ } =
   mangle ?fixpoint affix name
 
 let mangle_lid ?fixpoint affix lid : Longident.t =
@@ -65,7 +64,9 @@ let mangle_lid ?fixpoint affix lid : Longident.t =
 
 let var_name_of_int i =
   let letter = "abcdefghijklmnopqrstuvwxyz" in
-  let rec loop i = if i < 26 then [letter.[i]] else letter.[i mod 26] :: loop (i / 26) in
+  let rec loop i =
+    if i < 26 then [ letter.[i] ] else letter.[i mod 26] :: loop (i / 26)
+  in
   String.concat ~sep:"" (List.map ~f:(String.make 1) (loop i))
 
 let fresh_var bound =
@@ -78,11 +79,11 @@ let fresh_var bound =
 module To_current = Migrate_parsetree.Convert (OCaml_407) (OCaml_current)
 
 let string_of_core_type typ : string =
-  let typ = {typ with ptyp_attributes = []} in
+  let typ = { typ with ptyp_attributes = [] } in
   let typ = To_current.copy_core_type typ in
   Format.asprintf "%a" Pprintast.core_type typ
 
-let core_type_of_type_decl {ptype_name = name; ptype_params; _} =
+let core_type_of_type_decl { ptype_name = name; ptype_params; _ } =
   let name = Location.mkloc (Longident.Lident name.txt) name.loc in
   Typ.constr name (List.map ~f:fst ptype_params)
 
@@ -90,30 +91,30 @@ let fold_right_type_params fn params accum =
   List.fold_right
     ~f:(fun (param, _) accum ->
       match param with
-      | {ptyp_desc = Ptyp_any; _} -> accum
-      | {ptyp_desc = Ptyp_var name; _} ->
+      | { ptyp_desc = Ptyp_any; _ } -> accum
+      | { ptyp_desc = Ptyp_var name; _ } ->
           let name = Location.mkloc name param.ptyp_loc in
           fn name accum
       | _ -> assert false)
     params
     ~init:accum
 
-let fold_right_type_decl fn {ptype_params; _} accum =
+let fold_right_type_decl fn { ptype_params; _ } accum =
   fold_right_type_params fn ptype_params accum
 
 let fold_left_type_params fn accum params =
   List.fold_left
     ~f:(fun accum (param, _) ->
       match param with
-      | {ptyp_desc = Ptyp_any; _} -> accum
-      | {ptyp_desc = Ptyp_var name; _} ->
+      | { ptyp_desc = Ptyp_any; _ } -> accum
+      | { ptyp_desc = Ptyp_var name; _ } ->
           let name = Location.mkloc name param.ptyp_loc in
           fn accum name
       | _ -> assert false)
     ~init:accum
     params
 
-let fold_left_type_decl fn accum {ptype_params; _} =
+let fold_left_type_decl fn accum { ptype_params; _ } =
   fold_left_type_params fn accum ptype_params
 
 let poly_arrow_of_type_decl fn type_decl typ =
@@ -148,7 +149,7 @@ let runtimename = "Deriving_Json"
 
 let rt name = evar (Printf.sprintf "%s.%s" runtimename name)
 
-let rt_t arg = tconstr (Printf.sprintf "%s.t" runtimename) [arg]
+let rt_t arg = tconstr (Printf.sprintf "%s.t" runtimename) [ arg ]
 
 let lexer_ident name = Printf.sprintf "%s_lexer.%s" runtimename name
 
@@ -158,18 +159,18 @@ let lexer name = evar (lexer_ident name)
 
 let var_ptuple l = List.map ~f:pvar l |> Ast_helper.Pat.tuple
 
-let map_loc f {Location.txt; loc} = {Location.txt = f txt; loc}
+let map_loc f { Location.txt; loc } = { Location.txt = f txt; loc }
 
-let suffix_lid {Location.txt; loc} ~suffix =
+let suffix_lid { Location.txt; loc } ~suffix =
   let txt = mangle_lid (`Suffix suffix) txt in
-  Ast_helper.Exp.ident {txt; loc} ~loc
+  Ast_helper.Exp.ident { txt; loc } ~loc
 
-let suffix_decl ({Parsetree.ptype_loc = loc; _} as d) ~suffix =
+let suffix_decl ({ Parsetree.ptype_loc = loc; _ } as d) ~suffix =
   (let s = mangle_type_decl (`Suffix suffix) d |> Longident.parse in
    Location.mkloc s loc)
   |> Ast_helper.Exp.ident ~loc
 
-let suffix_decl_p ({Parsetree.ptype_loc = loc; _} as d) ~suffix =
+let suffix_decl_p ({ Parsetree.ptype_loc = loc; _ } as d) ~suffix =
   (let s = mangle_type_decl (`Suffix suffix) d in
    Location.mkloc s loc)
   |> Ast_helper.Pat.var ~loc
@@ -199,19 +200,19 @@ let seqlist = function
 
 let check_record_fields =
   List.iter ~f:(function
-      | {Parsetree.pld_mutable = Mutable; _} ->
+      | { Parsetree.pld_mutable = Mutable; _ } ->
           Location.raise_errorf "%s cannot be derived for mutable records" deriver
-      | {pld_type = {ptyp_desc = Ptyp_poly _; _}; _} ->
+      | { pld_type = { ptyp_desc = Ptyp_poly _; _ }; _ } ->
           Location.raise_errorf "%s cannot be derived for polymorphic records" deriver
       | _ -> ())
 
 let maybe_tuple_type = function
-  | [y] -> y
+  | [ y ] -> y
   | l -> Ast_helper.Typ.tuple l
 
 let pattern_of_record l =
   let l =
-    let f {Parsetree.pld_name; _} =
+    let f { Parsetree.pld_name; _ } =
       label_of_constructor pld_name, Ast_helper.Pat.var pld_name
     in
     List.map ~f l
@@ -243,7 +244,7 @@ and write_body_of_tuple_type l ~arg ~poly ~tag =
 
 and write_poly_case r ~arg ~poly =
   match r with
-  | Parsetree.Rtag ({txt = label; _}, _, _, l) ->
+  | Parsetree.Rtag ({ txt = label; _ }, _, _, l) ->
       let i = hash_variant label and n = List.length l in
       let v = fresh_var [] in
       let lhs = (if n = 0 then None else Some (pvar v)) |> Ast_helper.Pat.variant label
@@ -253,16 +254,16 @@ and write_poly_case r ~arg ~poly =
             let e = int i in
             [%expr [%e rt "Json_int.write"] buf [%e e]]
         | _ ->
-            let l = [[%type: int]; maybe_tuple_type l]
-            and arg = Ast_helper.Exp.tuple [int i; evar v] in
+            let l = [ [%type: int]; maybe_tuple_type l ]
+            and arg = Ast_helper.Exp.tuple [ int i; evar v ] in
             write_body_of_tuple_type l ~arg ~poly ~tag:0
       in
       Ast_helper.Exp.case lhs rhs
-  | Rinherit ({ptyp_desc = Ptyp_constr (lid, _); ptyp_loc; _} as y) ->
+  | Rinherit ({ ptyp_desc = Ptyp_constr (lid, _); ptyp_loc; _ } as y) ->
       Ast_helper.Exp.case
         (Ast_helper.Pat.(alias (type_ lid)) (Location.mkloc arg ptyp_loc))
         (write_body_of_type y ~arg ~poly)
-  | Rinherit {ptyp_loc; _} ->
+  | Rinherit { ptyp_loc; _ } ->
       Location.raise_errorf ~loc:ptyp_loc "%s write case cannot be derived" deriver
 
 and write_body_of_type y ~(arg : string) ~poly =
@@ -291,17 +292,17 @@ and write_body_of_type y ~(arg : string) ~poly =
   | [%type: [%t? y] array] ->
       let e = write_of_type y ~poly in
       [%expr [%e rt "write_array"] [%e e] buf [%e arg]]
-  | {Parsetree.ptyp_desc = Ptyp_var v; _} when poly ->
+  | { Parsetree.ptyp_desc = Ptyp_var v; _ } when poly ->
       [%expr [%e evar ("poly_" ^ v)] buf [%e arg]]
-  | {Parsetree.ptyp_desc = Ptyp_tuple l; _} ->
+  | { Parsetree.ptyp_desc = Ptyp_tuple l; _ } ->
       write_body_of_tuple_type l ~arg ~poly ~tag:0
-  | {Parsetree.ptyp_desc = Ptyp_variant (l, _, _); _} ->
+  | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); _ } ->
       Ast_helper.Exp.match_ arg (List.map ~f:(write_poly_case ~arg:arg' ~poly) l)
-  | {Parsetree.ptyp_desc = Ptyp_constr (lid, l); _} ->
+  | { Parsetree.ptyp_desc = Ptyp_constr (lid, l); _ } ->
       let e = suffix_lid lid ~suffix:"to_json"
       and l = List.map ~f:(write_of_type ~poly) l in
       [%expr [%e app e l] buf [%e arg]]
-  | {Parsetree.ptyp_loc; _} ->
+  | { Parsetree.ptyp_loc; _ } ->
       Location.raise_errorf
         ~loc:ptyp_loc
         "%s_write cannot be derived for %s"
@@ -315,10 +316,10 @@ and write_of_type y ~poly =
 
 and write_body_of_record ~tag l =
   let l =
-    let f {Parsetree.pld_name = {txt; _}; _} = txt in
+    let f { Parsetree.pld_name = { txt; _ }; _ } = txt in
     List.map ~f l
   and ly =
-    let f {Parsetree.pld_type; _} = pld_type in
+    let f { Parsetree.pld_type; _ } = pld_type in
     List.map ~f l
   in
   write_tuple_contents l ly ~tag ~poly:true
@@ -339,15 +340,15 @@ let recognize_body_of_poly_variant l ~loc =
   let l =
     let f x =
       match x with
-      | Parsetree.Rtag ({txt = label; _}, _, _, l) ->
+      | Parsetree.Rtag ({ txt = label; _ }, _, _, l) ->
           let i = hash_variant label in
           recognize_case_of_constructor i l
-      | Rinherit {ptyp_desc = Ptyp_constr (lid, _); _} ->
+      | Rinherit { ptyp_desc = Ptyp_constr (lid, _); _ } ->
           let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x] in
           Ast_helper.Exp.case ~guard [%pat? x] [%expr true]
       | _ -> Location.raise_errorf ~loc "%s_recognize cannot be derived" deriver
     and default = Ast_helper.Exp.case [%pat? _] [%expr false] in
-    List.map ~f l @ [default]
+    List.map ~f l @ [ default ]
   in
   Ast_helper.Exp.function_ l
 
@@ -356,12 +357,12 @@ let tag_error_case ?(typename = "") () =
   Ast_helper.Exp.case [%pat? _] [%expr [%e lexer "tag_error"] ~typename:[%e y] buf]
 
 let maybe_tuple_type = function
-  | [y] -> y
+  | [ y ] -> y
   | l -> Ast_helper.Typ.tuple l
 
 let rec read_poly_case ?decl y x =
   match x with
-  | Parsetree.Rtag ({txt = label; _}, _, _, l) -> (
+  | Parsetree.Rtag ({ txt = label; _ }, _, _, l) -> (
       let i = hash_variant label |> pint in
       match l with
       | [] -> Ast_helper.Exp.case [%pat? `Cst [%p i]] (Ast_helper.Exp.variant label None)
@@ -373,7 +374,7 @@ let rec read_poly_case ?decl y x =
               let v = [%e read_body_of_type ?decl (maybe_tuple_type l)] in
               [%e lexer "read_rbracket"] buf;
               [%e Ast_helper.Exp.variant label (Some [%expr v])]])
-  | Rinherit {ptyp_desc = Ptyp_constr (lid, l); _} ->
+  | Rinherit { ptyp_desc = Ptyp_constr (lid, l); _ } ->
       let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
       and e =
         let e = suffix_lid lid ~suffix:"of_json_with_tag"
@@ -381,11 +382,11 @@ let rec read_poly_case ?decl y x =
         [%expr ([%e app e l] buf x :> [%t y])]
       in
       Ast_helper.Exp.case ~guard [%pat? x] e
-  | Rinherit {ptyp_loc; _} ->
+  | Rinherit { ptyp_loc; _ } ->
       Location.raise_errorf ~loc:ptyp_loc "%s read case cannot be derived" deriver
 
 and read_of_poly_variant ?decl l y ~loc:_ =
-  List.map ~f:(read_poly_case ?decl y) l @ [tag_error_case ()]
+  List.map ~f:(read_poly_case ?decl y) l @ [ tag_error_case () ]
   |> Ast_helper.Exp.function_
   |> buf_expand
 
@@ -414,10 +415,10 @@ and read_body_of_tuple_type ?decl l =
 
 and read_of_record_raw ?decl ?(return = fun x -> x) l =
   let f =
-    let f {Parsetree.pld_name; _} e = label_of_constructor pld_name, e in
+    let f { Parsetree.pld_name; _ } e = label_of_constructor pld_name, e in
     fun l' -> return (Ast_helper.Exp.record (List.map2 ~f l l') None)
   and l =
-    let f {Parsetree.pld_type; _} = pld_type in
+    let f { Parsetree.pld_type; _ } = pld_type in
     List.map ~f l
   in
   read_tuple_contents l ?decl ~f
@@ -441,8 +442,7 @@ and read_body_of_type ?decl y =
   | [%type: int] -> [%expr [%e rt "Json_int.read"] buf]
   | [%type: int32] | [%type: Int32.t] -> [%expr [%e rt "Json_int32.read"] buf]
   | [%type: int64] | [%type: Int64.t] -> [%expr [%e rt "Json_int64.read"] buf]
-  | [%type: nativeint] | [%type: Nativeint.t] ->
-      [%expr [%e rt "Json_nativeint.read"] buf]
+  | [%type: nativeint] | [%type: Nativeint.t] -> [%expr [%e rt "Json_nativeint.read"] buf]
   | [%type: float] -> [%expr [%e rt "Json_float.read"] buf]
   | [%type: bool] -> [%expr [%e rt "Json_bool.read"] buf]
   | [%type: char] -> [%expr [%e rt "Json_char.read"] buf]
@@ -450,17 +450,16 @@ and read_body_of_type ?decl y =
   | [%type: bytes] -> [%expr [%e rt "Json_bytes.read"] buf]
   | [%type: [%t? y] list] -> [%expr [%e rt "read_list"] [%e read_of_type ?decl y] buf]
   | [%type: [%t? y] ref] -> [%expr [%e rt "read_ref"] [%e read_of_type ?decl y] buf]
-  | [%type: [%t? y] option] ->
-      [%expr [%e rt "read_option"] [%e read_of_type ?decl y] buf]
+  | [%type: [%t? y] option] -> [%expr [%e rt "read_option"] [%e read_of_type ?decl y] buf]
   | [%type: [%t? y] array] -> [%expr [%e rt "read_array"] [%e read_of_type ?decl y] buf]
-  | {Parsetree.ptyp_desc = Ptyp_tuple l; _} -> read_body_of_tuple_type l ?decl
-  | {Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _} ->
+  | { Parsetree.ptyp_desc = Ptyp_tuple l; _ } -> read_body_of_tuple_type l ?decl
+  | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _ } ->
       let e =
         match decl with
         | Some decl ->
             let e = suffix_decl decl ~suffix:"of_json_with_tag"
             and l =
-              let {Parsetree.ptype_params = l; _} = decl
+              let { Parsetree.ptype_params = l; _ } = decl
               and f (y, _) = read_of_type y ~decl in
               List.map ~f l
             in
@@ -468,13 +467,13 @@ and read_body_of_type ?decl y =
         | None -> read_of_poly_variant l y ~loc
       and tag = [%expr [%e lexer "read_vcase"] buf] in
       [%expr [%e e] buf [%e tag]]
-  | {Parsetree.ptyp_desc = Ptyp_var v; _} when poly ->
+  | { Parsetree.ptyp_desc = Ptyp_var v; _ } when poly ->
       [%expr [%e evar ("poly_" ^ v)] buf]
-  | {Parsetree.ptyp_desc = Ptyp_constr (lid, l); _} ->
+  | { Parsetree.ptyp_desc = Ptyp_constr (lid, l); _ } ->
       let e = suffix_lid lid ~suffix:"of_json"
       and l = List.map ~f:(read_of_type ?decl) l in
       [%expr [%e app e l] buf]
-  | {Parsetree.ptyp_loc; _} ->
+  | { Parsetree.ptyp_loc; _ } ->
       Location.raise_errorf
         ~loc:ptyp_loc
         "%s_read cannot be derived for %s"
@@ -511,7 +510,7 @@ let read_tag_str_wrap d e =
   and suffix = "of_json_with_tag"
   and y =
     let y = core_type_of_type_decl d in
-    [%type: [%t lexbuf_t] -> [`NCst of int | `Cst of int] -> [%t y]]
+    [%type: [%t lexbuf_t] -> [ `NCst of int | `Cst of int ] -> [%t y]]
   in
   fun_str_wrap d e y ~f ~suffix
 
@@ -520,8 +519,8 @@ let write_str_wrap d e =
   let y =
     let y = core_type_of_type_decl d in
     (match d with
-    | {ptype_manifest = Some {ptyp_desc = Parsetree.Ptyp_variant (_, _, _); _}; _} ->
-        [%type: [> [%t y]]]
+    | { ptype_manifest = Some { ptyp_desc = Parsetree.Ptyp_variant (_, _, _); _ }; _ } ->
+        [%type: [> [%t y] ]]
     | _ -> y)
     |> f
   in
@@ -529,7 +528,7 @@ let write_str_wrap d e =
 
 let recognize_str_wrap d e =
   let v = suffix_decl_p d ~suffix:"recognize"
-  and y = [%type: [`NCst of int | `Cst of int] -> bool] in
+  and y = [%type: [ `NCst of int | `Cst of int ] -> bool] in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
 
 let json_poly_type d =
@@ -572,21 +571,21 @@ let read_decl_of_type decl y =
 let json_decls_of_type decl y =
   let recognize, read_tag =
     match y with
-    | {Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _} ->
+    | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _ } ->
         ( Some (recognize_body_of_poly_variant l ~loc |> recognize_str_wrap decl)
         , Some (read_of_poly_variant l y ~decl ~loc |> read_tag_str_wrap decl) )
     | _ -> None, None
   in
   write_decl_of_type decl y, read_decl_of_type decl y, json_str decl, recognize, read_tag
 
-let write_case (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
+let write_case (i, i', l) { Parsetree.pcd_name; pcd_args; _ } =
   let i, i', lhs, rhs =
     match pcd_args with
     | Pcstr_tuple [] | Pcstr_record [] ->
         i + 1, i', None, [%expr [%e rt "Json_int.write"] buf [%e int i]]
-    | Pcstr_tuple ([_] as args) ->
+    | Pcstr_tuple ([ _ ] as args) ->
         let v = fresh_var [] in
-        i, i' + 1, Some (pvar v), write_tuple_contents [v] args ~tag:i' ~poly:true
+        i, i' + 1, Some (pvar v), write_tuple_contents [ v ] args ~tag:i' ~poly:true
     | Pcstr_tuple args ->
         let vars = fresh_vars (List.length args) in
         ( i
@@ -606,13 +605,13 @@ let write_decl_of_variant d l =
   |> buf_expand
   |> write_str_wrap d
 
-let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
+let read_case ?decl (i, i', l) { Parsetree.pcd_name; pcd_args; _ } =
   let f l =
     Ast_helper.Exp.construct
       (label_of_constructor pcd_name)
       (match l with
       | [] -> None
-      | [e] -> Some e
+      | [ e ] -> Some e
       | l -> Some (Ast_helper.Exp.tuple l))
   in
   match pcd_args with
@@ -640,7 +639,7 @@ let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
 let read_decl_of_variant decl l =
   (let _, _, l = List.fold_left ~f:(read_case ~decl) ~init:(0, 0, []) l
    and e = [%expr [%e lexer "read_case"] buf] in
-   Ast_helper.Exp.match_ e (l @ [tag_error_case ()]))
+   Ast_helper.Exp.match_ e (l @ [ tag_error_case () ]))
   |> buf_expand
   |> read_str_wrap decl
 
@@ -655,20 +654,20 @@ let json_decls_of_record d l =
   check_record_fields l;
   write_decl_of_record d l, read_decl_of_record d l, json_str d, None, None
 
-let json_str_of_decl ({Parsetree.ptype_loc; _} as d) =
+let json_str_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   Ast_helper.with_default_loc ptype_loc
   @@ fun () ->
   match d with
-  | {Parsetree.ptype_kind = Ptype_variant l; _} -> json_decls_of_variant d l
-  | {ptype_kind = Ptype_record l; _} -> json_decls_of_record d l
-  | {ptype_manifest = Some y; _} -> json_decls_of_type d y
+  | { Parsetree.ptype_kind = Ptype_variant l; _ } -> json_decls_of_variant d l
+  | { ptype_kind = Ptype_record l; _ } -> json_decls_of_record d l
+  | { ptype_manifest = Some y; _ } -> json_decls_of_type d y
   | _ ->
       Location.raise_errorf
         "%s cannot be derived for %s"
         deriver
         (mangle_type_decl (`Suffix "") d)
 
-let read_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
+let read_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "of_json") d in
      Location.mkloc s ptype_loc
@@ -680,15 +679,15 @@ let read_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
 
-let recognize_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
+let recognize_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "recognize") d in
      Location.mkloc s ptype_loc
-   and y = [%type: [`NCst of int | `Cst of int] -> bool] in
+   and y = [%type: [ `NCst of int | `Cst of int ] -> bool] in
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
 
-let read_with_tag_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
+let read_with_tag_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "of_json_with_tag") d in
      Location.mkloc s ptype_loc
@@ -696,14 +695,14 @@ let read_with_tag_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
      let f y = [%type: [%t lexbuf_t] -> [%t y]] in
      let y =
        let y = core_type_of_type_decl d in
-       f [%type: [`NCst of int | `Cst of int] -> [%t y]]
+       f [%type: [ `NCst of int | `Cst of int ] -> [%t y]]
      in
      poly_arrow_of_type_decl f d y
    in
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
 
-let write_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
+let write_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "to_json") d in
      Location.mkloc s ptype_loc
@@ -715,7 +714,7 @@ let write_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
 
-let json_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
+let json_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "json") d in
      Location.mkloc s ptype_loc
@@ -727,17 +726,19 @@ let json_sig_of_decl ({Parsetree.ptype_loc; _} as d) =
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
 
-let sigs_of_decl ({Parsetree.ptype_loc; _} as d) =
+let sigs_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   Ast_helper.with_default_loc ptype_loc
   @@ fun () ->
-  let l = [read_sig_of_decl d; write_sig_of_decl d; json_sig_of_decl d] in
+  let l = [ read_sig_of_decl d; write_sig_of_decl d; json_sig_of_decl d ] in
   match d with
-  | { Parsetree.ptype_manifest = Some {Parsetree.ptyp_desc = Parsetree.Ptyp_variant _; _}
-    ; _ } ->
+  | { Parsetree.ptype_manifest =
+        Some { Parsetree.ptyp_desc = Parsetree.Ptyp_variant _; _ }
+    ; _
+    } ->
       read_with_tag_sig_of_decl d :: recognize_sig_of_decl d :: l
   | _ -> l
 
-let core_type_exp ({Parsetree.ptyp_loc; _} as y) =
+let core_type_exp ({ Parsetree.ptyp_loc; _ } as y) =
   let f () = json_of_type y in
   Ast_helper.with_default_loc ptyp_loc f
 
@@ -758,7 +759,7 @@ let type_decl_str ~loc:_ ~path:_ (_, l) =
     List.fold_right ~f l ~init:acc
   and f = Ast_helper.Str.value Asttypes.Recursive
   and f' = Ast_helper.Str.value Asttypes.Nonrecursive in
-  let l = [f (lrv @ lr); f lw; f' lj] in
+  let l = [ f (lrv @ lr); f lw; f' lj ] in
   match lp with
   | [] -> l
   | _ -> f lp :: l

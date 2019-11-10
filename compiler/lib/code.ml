@@ -294,7 +294,7 @@ type cond =
 
 type last =
   | Return of Var.t
-  | Raise of Var.t * [`Normal | `Notrace | `Reraise]
+  | Raise of Var.t * [ `Normal | `Notrace | `Reraise ]
   | Stop
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
@@ -306,7 +306,8 @@ type block =
   { params : Var.t list
   ; handler : (Var.t * cont) option
   ; body : instr list
-  ; branch : last }
+  ; branch : last
+  }
 
 type program = Addr.t * block Addr.Map.t * Addr.t
 
@@ -315,7 +316,7 @@ type program = Addr.t * block Addr.Map.t * Addr.t
 let rec print_list pr f l =
   match l with
   | [] -> ()
-  | [x] -> pr f x
+  | [ x ] -> pr f x
   | x :: r -> Format.fprintf f "%a, %a" pr x (print_list pr) r
 
 let print_var_list = print_list Var.print
@@ -380,22 +381,22 @@ let unop s =
 
 let print_prim f p l =
   match p, l with
-  | Vectlength, [x] -> Format.fprintf f "%a.length" print_arg x
-  | Array_get, [x; y] -> Format.fprintf f "%a[%a]" print_arg x print_arg y
-  | Extern s, [x; y] -> (
-    try Format.fprintf f "%a %s %a" print_arg x (binop s) print_arg y
-    with Not_found -> Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l)
-  | Extern s, [x] -> (
-    try Format.fprintf f "%s %a" (unop s) print_arg x
-    with Not_found -> Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l)
+  | Vectlength, [ x ] -> Format.fprintf f "%a.length" print_arg x
+  | Array_get, [ x; y ] -> Format.fprintf f "%a[%a]" print_arg x print_arg y
+  | Extern s, [ x; y ] -> (
+      try Format.fprintf f "%a %s %a" print_arg x (binop s) print_arg y
+      with Not_found -> Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l)
+  | Extern s, [ x ] -> (
+      try Format.fprintf f "%s %a" (unop s) print_arg x
+      with Not_found -> Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l)
   | Extern s, _ -> Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
-  | Not, [x] -> Format.fprintf f "!%a" print_arg x
-  | IsInt, [x] -> Format.fprintf f "is_int(%a)" print_arg x
-  | Eq, [x; y] -> Format.fprintf f "%a === %a" print_arg x print_arg y
-  | Neq, [x; y] -> Format.fprintf f "!(%a === %a)" print_arg x print_arg y
-  | Lt, [x; y] -> Format.fprintf f "%a < %a" print_arg x print_arg y
-  | Le, [x; y] -> Format.fprintf f "%a <= %a" print_arg x print_arg y
-  | Ult, [x; y] -> Format.fprintf f "%a <= %a" print_arg x print_arg y
+  | Not, [ x ] -> Format.fprintf f "!%a" print_arg x
+  | IsInt, [ x ] -> Format.fprintf f "is_int(%a)" print_arg x
+  | Eq, [ x; y ] -> Format.fprintf f "%a === %a" print_arg x print_arg y
+  | Neq, [ x; y ] -> Format.fprintf f "!(%a === %a)" print_arg x print_arg y
+  | Lt, [ x; y ] -> Format.fprintf f "%a < %a" print_arg x print_arg y
+  | Le, [ x; y ] -> Format.fprintf f "%a <= %a" print_arg x print_arg y
+  | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" print_arg x print_arg y
   | _ -> assert false
 
 let print_expr f e =
@@ -509,7 +510,7 @@ let prepend ((start, blocks, free_pc) as p) body =
       let new_start = free_pc in
       let branch = if Addr.Map.mem start blocks then Branch (start, []) else Stop in
       let blocks =
-        Addr.Map.add new_start {params = []; handler = None; body; branch} blocks
+        Addr.Map.add new_start { params = []; handler = None; body; branch } blocks
       in
       let free_pc = free_pc + 1 in
       new_start, blocks, free_pc
@@ -518,7 +519,7 @@ let empty =
   let start = 0 in
   let free = 1 in
   let blocks =
-    Addr.Map.singleton start {params = []; handler = None; body = []; branch = Stop}
+    Addr.Map.singleton start { params = []; handler = None; body = []; branch = Stop }
   in
   start, blocks, free
 

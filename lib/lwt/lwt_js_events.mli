@@ -1076,8 +1076,7 @@ val onorientationchange_or_onresize : unit -> Dom_html.event Js.t Lwt.t
 
 val onresizes : (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
-val onorientationchanges :
-  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val onorientationchanges : (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val onpopstates : (Dom_html.popStateEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 

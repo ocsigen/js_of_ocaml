@@ -46,7 +46,7 @@ let list_builder d tag c =
          <| c
             @
             match l with
-            | Some v -> [v]
+            | Some v -> [ v ]
             | None -> [])
        c
 
@@ -108,7 +108,8 @@ let builder =
             rows
         in
         d##createElement (Js.string "table")
-        <| [d##createElement (Js.string "tbody") <| rows])
-  ; W.inline = (fun x -> x) }
+        <| [ d##createElement (Js.string "tbody") <| rows ])
+  ; W.inline = (fun x -> x)
+  }
 
 let xml_of_wiki s = Html.createDiv Html.document <| W.from_string builder s

@@ -37,11 +37,13 @@ val formData_form : (Dom_html.formElement t -> formData t) constr
 
 type form_elt =
   [ `String of js_string t
-  | `File of File.file t ]
+  | `File of File.file t
+  ]
 
 type form_contents =
   [ `Fields of (string * form_elt) list ref
-  | `FormData of formData t ]
+  | `FormData of formData t
+  ]
 
 val append : form_contents -> string * form_elt -> unit
 

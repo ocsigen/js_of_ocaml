@@ -27,20 +27,22 @@ module Param = struct
     ; min_measures : int
     ; max_confidence : float
     ; max_duration : float
-    ; verbose : bool }
+    ; verbose : bool
+    }
 
   let default =
     { warm_up_time = 1.0
     ; min_measures = 10
     ; max_confidence = 0.03
     ; max_duration = 5.
-    ; verbose = false }
+    ; verbose = false
+    }
 
-  let fast x = {x with min_measures = 5; max_confidence = 0.15}
+  let fast x = { x with min_measures = 5; max_confidence = 0.15 }
 
-  let ffast x = {x with min_measures = 2; max_confidence = 42.}
+  let ffast x = { x with min_measures = 2; max_confidence = 42. }
 
-  let verbose x = {x with verbose = true}
+  let verbose x = { x with verbose = true }
 end
 
 let run_command ~verbose cmd =
@@ -75,13 +77,12 @@ let compile_gen
         let cmd = prog ~src ~dst in
         try
           if comptime
-          then write_measures compiletimes dst_spec nm [time ~verbose:param.verbose cmd]
+          then write_measures compiletimes dst_spec nm [ time ~verbose:param.verbose cmd ]
           else run_command ~verbose:param.verbose cmd
         with Failure s -> Format.eprintf "Failure: %s@." s)
 
 let compile param ~comptime prog =
-  compile_gen param ~comptime (fun ~src ~dst ->
-      Printf.sprintf "%s %s -o %s" prog src dst)
+  compile_gen param ~comptime (fun ~src ~dst -> Printf.sprintf "%s %s -o %s" prog src dst)
 
 (****)
 
@@ -180,7 +181,7 @@ let read_config file =
              (split_on_char line ~sep:' ')
          with
          | "interpreter" :: nm :: rem -> i := (String.concat ~sep:" " rem, nm) :: !i
-         | ["interpreter"] ->
+         | [ "interpreter" ] ->
              Format.eprintf "Malformed config option '%s'@." line;
              exit 1
          | kind :: _ ->
@@ -214,7 +215,8 @@ let _ =
     ; "-noocamljs", Arg.Clear do_ocamljs, " do not run ocamljs"
     ; ( "-nobyteopt"
       , Arg.Set nobyteopt
-      , " do not run benchs on bytecode and native programs" ) ]
+      , " do not run benchs on bytecode and native programs" )
+    ]
   in
   Arg.parse
     (Arg.align options)
@@ -276,12 +278,13 @@ let _ =
         ; Some Spec.js_of_ocaml_compact
         ; Some Spec.js_of_ocaml_call
         ; (if run_ocamljs then Some Spec.ocamljs else None)
-        ; (if run_ocamljs then Some Spec.ocamljs_unsafe else None) ] )
+        ; (if run_ocamljs then Some Spec.ocamljs_unsafe else None)
+        ] )
     else
       ( (match interpreters with
-        | i :: _ -> [i]
+        | i :: _ -> [ i ]
         | [] -> [])
-      , [Some Spec.js_of_ocaml] )
+      , [ Some Spec.js_of_ocaml ] )
   in
   List.iter compilers ~f:(fun (comp, dir) ->
       measure param src (Filename.concat times dir) Spec.js comp;

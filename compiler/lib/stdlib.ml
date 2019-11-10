@@ -110,16 +110,16 @@ module List = struct
 
   let rec last = function
     | [] -> None
-    | [x] -> Some x
+    | [ x ] -> Some x
     | _ :: xs -> last xs
 
   let sort_uniq ~compare l =
     let l = List.sort compare l in
     match l with
-    | ([] | [_]) as l -> l
+    | ([] | [ _ ]) as l -> l
     | x :: xs ->
         let rec loop prev = function
-          | [] -> [prev]
+          | [] -> [ prev ]
           | x :: rest when compare x prev = 0 -> loop prev rest
           | x :: rest -> prev :: loop x rest
         in
@@ -332,7 +332,7 @@ module String = struct
     let len = String.length p in
     let rec split beg cur =
       if cur >= len
-      then if cur - beg > 0 then [String.sub p beg (cur - beg)] else []
+      then if cur - beg > 0 then [ String.sub p beg (cur - beg) ] else []
       else if Char.equal p.[cur] sep
       then String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
@@ -351,7 +351,7 @@ module String = struct
       else
         let s_max = String.length s - 1 in
         if s_max < 0
-        then [""]
+        then [ "" ]
         else
           let acc = ref [] in
           let sub_start = ref 0 in
@@ -403,8 +403,7 @@ module String = struct
   let lsplit2 line ~on:delim =
     try
       let pos = index line delim in
-      Some
-        (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
+      Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
     with Not_found -> None
 
   let capitalize_ascii s = apply1 Char.uppercase_ascii s
@@ -448,13 +447,13 @@ module BitSet : sig
 
   val next_mem : t -> int -> int
 end = struct
-  type t = {mutable arr : int array}
+  type t = { mutable arr : int array }
 
-  let create () = {arr = Array.make 1 0}
+  let create () = { arr = Array.make 1 0 }
 
   let size t = Array.length t.arr * int_num_bits
 
-  let mem {arr} i =
+  let mem { arr } i =
     let idx = i / int_num_bits in
     let off = i mod int_num_bits in
     idx < Array.length arr && Array.unsafe_get arr idx land (1 lsl off) <> 0
@@ -496,7 +495,7 @@ end = struct
     done;
     !x
 
-  let copy t = {arr = Array.copy t.arr}
+  let copy t = { arr = Array.copy t.arr }
 
   let iter ~f t =
     for i = 0 to size t do

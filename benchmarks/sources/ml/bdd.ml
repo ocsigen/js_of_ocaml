@@ -52,12 +52,12 @@ let resize newSize =
     match bucket with
     | [] -> ()
     | n :: ns -> (
-      match n with
-      | Node (l, v, _, h) ->
-          let ind = hashVal (getId l) (getId h) v land newSz_1 in
-          newArr.(ind) <- n :: newArr.(ind);
-          copyBucket ns
-      | _ -> assert false)
+        match n with
+        | Node (l, v, _, h) ->
+            let ind = hashVal (getId l) (getId h) v land newSz_1 in
+            newArr.(ind) <- n :: newArr.(ind);
+            copyBucket ns
+        | _ -> assert false)
   in
   for n = 0 to !sz_1 do
     copyBucket arr.(n)
@@ -103,10 +103,10 @@ let mkNode low v high =
           insert (getId low) (getId high) v ind bucket n;
           n
       | n :: ns -> (
-        match n with
-        | Node (l, v', _id, h) ->
-            if v = v' && idl = getId l && idh = getId h then n else lookup ns
-        | _ -> assert false)
+          match n with
+          | Node (l, v', _id, h) ->
+              if v = v' && idl = getId l && idh = getId h then n else lookup ns
+          | _ -> assert false)
     in
     lookup bucket
 
@@ -160,48 +160,48 @@ let rec not n =
 let rec and2 n1 n2 =
   match n1 with
   | Node (l1, v1, i1, r1) -> (
-    match n2 with
-    | Node (l2, v2, i2, r2) ->
-        let h = hash i1 i2 in
-        if i1 = andslot1.(h) && i2 = andslot2.(h)
-        then andslot3.(h)
-        else
-          let f =
-            match cmpVar v1 v2 with
-            | EQUAL -> mkNode (and2 l1 l2) v1 (and2 r1 r2)
-            | LESS -> mkNode (and2 l1 n2) v1 (and2 r1 n2)
-            | GREATER -> mkNode (and2 n1 l2) v2 (and2 n1 r2)
-          in
-          andslot1.(h) <- i1;
-          andslot2.(h) <- i2;
-          andslot3.(h) <- f;
-          f
-    | Zero -> Zero
-    | One -> n1)
+      match n2 with
+      | Node (l2, v2, i2, r2) ->
+          let h = hash i1 i2 in
+          if i1 = andslot1.(h) && i2 = andslot2.(h)
+          then andslot3.(h)
+          else
+            let f =
+              match cmpVar v1 v2 with
+              | EQUAL -> mkNode (and2 l1 l2) v1 (and2 r1 r2)
+              | LESS -> mkNode (and2 l1 n2) v1 (and2 r1 n2)
+              | GREATER -> mkNode (and2 n1 l2) v2 (and2 n1 r2)
+            in
+            andslot1.(h) <- i1;
+            andslot2.(h) <- i2;
+            andslot3.(h) <- f;
+            f
+      | Zero -> Zero
+      | One -> n1)
   | Zero -> Zero
   | One -> n2
 
 let rec xor n1 n2 =
   match n1 with
   | Node (l1, v1, i1, r1) -> (
-    match n2 with
-    | Node (l2, v2, i2, r2) ->
-        let h = hash i1 i2 in
-        if i1 = andslot1.(h) && i2 = andslot2.(h)
-        then andslot3.(h)
-        else
-          let f =
-            match cmpVar v1 v2 with
-            | EQUAL -> mkNode (xor l1 l2) v1 (xor r1 r2)
-            | LESS -> mkNode (xor l1 n2) v1 (xor r1 n2)
-            | GREATER -> mkNode (xor n1 l2) v2 (xor n1 r2)
-          in
-          andslot1.(h) <- i1;
-          andslot2.(h) <- i2;
-          andslot3.(h) <- f;
-          f
-    | Zero -> n1
-    | One -> not n1)
+      match n2 with
+      | Node (l2, v2, i2, r2) ->
+          let h = hash i1 i2 in
+          if i1 = andslot1.(h) && i2 = andslot2.(h)
+          then andslot3.(h)
+          else
+            let f =
+              match cmpVar v1 v2 with
+              | EQUAL -> mkNode (xor l1 l2) v1 (xor r1 r2)
+              | LESS -> mkNode (xor l1 n2) v1 (xor r1 n2)
+              | GREATER -> mkNode (xor n1 l2) v2 (xor n1 r2)
+            in
+            andslot1.(h) <- i1;
+            andslot2.(h) <- i2;
+            andslot3.(h) <- f;
+            f
+      | Zero -> n1
+      | One -> not n1)
   | Zero -> n2
   | One -> not n2
 

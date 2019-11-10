@@ -67,18 +67,19 @@ let decode_prefix str =
 
 type pair =
   { target : path_prefix
-  ; source : path_prefix }
+  ; source : path_prefix
+  }
 
-let encode_pair {target; source} =
-  String.concat ~sep:"=" [encode_prefix target; encode_prefix source]
+let encode_pair { target; source } =
+  String.concat ~sep:"=" [ encode_prefix target; encode_prefix source ]
 
 let decode_pair str =
   match String.lsplit2 str ~on:'=' with
   | None -> errorf "invalid key/value pair %S, no '=' separator" str
   | Some (encoded_target, encoded_source) -> (
-    match decode_prefix encoded_target, decode_prefix encoded_source with
-    | Ok target, Ok source -> Ok {target; source}
-    | (Error _ as err), _ | _, (Error _ as err) -> err)
+      match decode_prefix encoded_target, decode_prefix encoded_source with
+      | Ok target, Ok source -> Ok { target; source }
+      | (Error _ as err), _ | _, (Error _ as err) -> err)
 
 type map = pair option list
 
@@ -95,9 +96,9 @@ let decode_map str =
   let decode_or_empty = function
     | "" -> None
     | pair -> (
-      match decode_pair pair with
-      | Ok str -> Some str
-      | Error err -> raise (Shortcut err))
+        match decode_pair pair with
+        | Ok str -> Some str
+        | Error err -> raise (Shortcut err))
   in
   let pairs = Stdlib.String.split_char ~sep:':' str in
   match List.map ~f:decode_or_empty pairs with
@@ -107,7 +108,7 @@ let decode_map str =
 let rewrite_opt prefix_map path =
   let is_prefix = function
     | None -> false
-    | Some {target = _; source} -> String.is_prefix path ~prefix:source
+    | Some { target = _; source } -> String.is_prefix path ~prefix:source
   in
   match
     List.find
@@ -117,7 +118,7 @@ let rewrite_opt prefix_map path =
   with
   | exception Not_found -> None
   | None -> None
-  | Some {source; target} ->
+  | Some { source; target } ->
       Some
         (target
         ^ String.sub

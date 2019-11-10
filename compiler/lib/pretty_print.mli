@@ -22,7 +22,8 @@ type t
 
 type pos =
   { mutable p_line : int
-  ; mutable p_col : int }
+  ; mutable p_col : int
+  }
 
 val string : t -> string -> unit
 

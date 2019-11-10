@@ -2,9 +2,10 @@ module Color = struct
   type t =
     { red : float
     ; green : float
-    ; blue : float }
+    ; blue : float
+    }
 
-  let make r g b = {red = r; green = g; blue = b}
+  let make r g b = { red = r; green = g; blue = b }
 
   (*
   let print ch c =
@@ -23,24 +24,26 @@ module Color = struct
          if green <= 0. then 0. else if green > 1.0 then 1.0 else green)
     ; blue =
         (let blue = c.blue in
-         if blue <= 0. then 0. else if blue > 1.0 then 1.0 else blue) }
+         if blue <= 0. then 0. else if blue > 1.0 then 1.0 else blue)
+    }
 
   let add c1 c2 =
-    {red = c1.red +. c2.red; green = c1.green +. c2.green; blue = c1.blue +. c2.blue}
+    { red = c1.red +. c2.red; green = c1.green +. c2.green; blue = c1.blue +. c2.blue }
 
   let add_scalar c1 s =
-    limit {red = c1.red +. s; green = c1.green +. s; blue = c1.blue +. s}
+    limit { red = c1.red +. s; green = c1.green +. s; blue = c1.blue +. s }
 
   let subtract c1 c2 =
-    {red = c1.red -. c2.red; green = c1.green -. c2.green; blue = c1.blue -. c2.blue}
+    { red = c1.red -. c2.red; green = c1.green -. c2.green; blue = c1.blue -. c2.blue }
 
   let multiply c1 c2 =
-    {red = c1.red *. c2.red; green = c1.green *. c2.green; blue = c1.blue *. c2.blue}
+    { red = c1.red *. c2.red; green = c1.green *. c2.green; blue = c1.blue *. c2.blue }
 
   let multiply_scalar c1 s =
-    {red = c1.red *. s; green = c1.green *. s; blue = c1.blue *. s}
+    { red = c1.red *. s; green = c1.green *. s; blue = c1.blue *. s }
 
-  let divide_factor c1 f = {red = c1.red /. f; green = c1.green /. f; blue = c1.blue /. f}
+  let divide_factor c1 f =
+    { red = c1.red /. f; green = c1.green /. f; blue = c1.blue /. f }
 
   let distance c1 c2 =
     abs_float (c1.red -. c2.red)
@@ -60,9 +63,10 @@ module Vector = struct
   type t =
     { x : float
     ; mutable y : float
-    ; z : float }
+    ; z : float
+    }
 
-  let make x y z = {x; y; z}
+  let make x y z = { x; y; z }
 
   (*
   let print ch v = Format.fprintf ch "%f %f %f" v.x v.y v.z
@@ -72,39 +76,42 @@ module Vector = struct
 
   let normalize v =
     let m = magnitude v in
-    {x = v.x /. m; y = v.y /. m; z = v.z /. m}
+    { x = v.x /. m; y = v.y /. m; z = v.z /. m }
 
   let cross v w =
     { x = (v.y *. w.z) -. (v.z *. w.y)
     ; y = (v.z *. w.x) -. (v.x *. w.z)
-    ; z = (v.x *. w.y) -. (v.y *. w.x) }
+    ; z = (v.x *. w.y) -. (v.y *. w.x)
+    }
 
   let dot v w = (v.x *. w.x) +. (v.y *. w.y) +. (v.z *. w.z)
 
-  let add v w = {x = v.x +. w.x; y = v.y +. w.y; z = v.z +. w.z}
+  let add v w = { x = v.x +. w.x; y = v.y +. w.y; z = v.z +. w.z }
 
-  let subtract v w = {x = v.x -. w.x; y = v.y -. w.y; z = v.z -. w.z}
+  let subtract v w = { x = v.x -. w.x; y = v.y -. w.y; z = v.z -. w.z }
 
-  let multiply_vector v w = {x = v.x *. w.x; y = v.y *. w.y; z = v.z *. w.z}
+  let multiply_vector v w = { x = v.x *. w.x; y = v.y *. w.y; z = v.z *. w.z }
 
-  let multiply_scalar v w = {x = v.x *. w; y = v.y *. w; z = v.z *. w}
+  let multiply_scalar v w = { x = v.x *. w; y = v.y *. w; z = v.z *. w }
 end
 
 module Light = struct
   type t =
     { position : Vector.t
     ; color : Color.t
-    ; intensity : float }
+    ; intensity : float
+    }
 
-  let make p c i = {position = p; color = c; intensity = i}
+  let make p c i = { position = p; color = c; intensity = i }
 end
 
 module Ray = struct
   type t =
     { position : Vector.t
-    ; direction : Vector.t }
+    ; direction : Vector.t
+    }
 
-  let make p d = {position = p; direction = d}
+  let make p d = { position = p; direction = d }
 end
 
 module Intersection_info = struct
@@ -113,7 +120,8 @@ module Intersection_info = struct
     ; distance : float
     ; position : Vector.t
     ; normal : Vector.t
-    ; color : Color.t }
+    ; color : Color.t
+    }
 end
 
 module Camera = struct
@@ -122,14 +130,16 @@ module Camera = struct
     ; look_at : Vector.t
     ; equator : Vector.t
     ; up : Vector.t
-    ; screen : Vector.t }
+    ; screen : Vector.t
+    }
 
   let make pos look_at up =
     { position = pos
     ; look_at
     ; up
     ; equator = Vector.cross (Vector.normalize look_at) up
-    ; screen = Vector.add pos look_at }
+    ; screen = Vector.add pos look_at
+    }
 
   let get_ray c vx vy =
     let pos =
@@ -147,9 +157,10 @@ end
 module Background = struct
   type t =
     { color : Color.t
-    ; ambience : float }
+    ; ambience : float
+    }
 
-  let make c a = {color = c; ambience = a}
+  let make c a = { color = c; ambience = a }
 end
 
 module Material = struct
@@ -158,14 +169,20 @@ module Material = struct
     ; transparency : float
     ; gloss : float
     ; has_texture : bool
-    ; get_color : float -> float -> Color.t }
+    ; get_color : float -> float -> Color.t
+    }
 
   let wrap_up t =
     let t = mod_float t 2.0 in
     if t < -1. then t +. 2.0 else if t >= 1. then t -. 2.0 else t
 
   let solid color reflection transparency gloss =
-    {reflection; transparency; gloss; has_texture = false; get_color = (fun _ _ -> color)}
+    { reflection
+    ; transparency
+    ; gloss
+    ; has_texture = false
+    ; get_color = (fun _ _ -> color)
+    }
 
   let chessboard color_even color_odd reflection transparency gloss density =
     { reflection
@@ -175,7 +192,8 @@ module Material = struct
     ; get_color =
         (fun u v ->
           let t = wrap_up (u *. density) *. wrap_up (v *. density) in
-          if t < 0. then color_even else color_odd) }
+          if t < 0. then color_even else color_odd)
+    }
 end
 
 module Shape = struct
@@ -185,9 +203,10 @@ module Shape = struct
 
   type t =
     { shape : shape
-    ; material : Material.t }
+    ; material : Material.t
+    }
 
-  let make shape material = {shape; material}
+  let make shape material = { shape; material }
 
   let dummy =
     make
@@ -217,7 +236,8 @@ module Shape = struct
             ; distance = dist
             ; position = pos
             ; normal = Vector.normalize (Vector.subtract pos position)
-            ; color = s.material.Material.get_color 0. 0. }
+            ; color = s.material.Material.get_color 0. 0.
+            }
         else None
     | Plane (position, d) ->
         let vd = Vector.dot position ray.Ray.direction in
@@ -249,7 +269,8 @@ module Shape = struct
                     let u = Vector.dot pos vu in
                     let v = Vector.dot pos vv in
                     s.material.Material.get_color u v
-                  else s.material.Material.get_color 0. 0.) }
+                  else s.material.Material.get_color 0. 0.)
+              }
 end
 
 module Scene = struct
@@ -257,9 +278,10 @@ module Scene = struct
     { camera : Camera.t
     ; shapes : Shape.t array
     ; lights : Light.t array
-    ; background : Background.t }
+    ; background : Background.t
+    }
 
-  let make c s l b = {camera = c; shapes = s; lights = l; background = b}
+  let make c s l b = { camera = c; shapes = s; lights = l; background = b }
 end
 
 module Engine = struct
@@ -272,7 +294,8 @@ module Engine = struct
     ; render_shadows : bool
     ; render_highlights : bool
     ; render_reflections : bool
-    ; ray_depth : int }
+    ; ray_depth : int
+    }
 
   let check_number = ref 0
 
@@ -321,10 +344,8 @@ module Engine = struct
               ray.Ray.direction
           in
           let col =
-            match
-              test_intersection reflection_ray scene info.Intersection_info.shape
-            with
-            | Some ({Intersection_info.distance = d; _} as info) when d > 0. ->
+            match test_intersection reflection_ray scene info.Intersection_info.shape with
+            | Some ({ Intersection_info.distance = d; _ } as info) when d > 0. ->
                 ray_trace options info reflection_ray scene (depth + 1)
             | _ -> scene.Scene.background.Background.color
           in
@@ -344,8 +365,7 @@ module Engine = struct
             let va = Color.multiply_scalar !color 0.5 in
             let db =
               0.5
-              *. (info.Intersection_info.shape.Shape.material.Material.transparency
-                 ** 0.5)
+              *. (info.Intersection_info.shape.Shape.material.Material.transparency ** 0.5)
             in
             color := Color.add_scalar va db
         | None -> ());
@@ -355,9 +375,7 @@ module Engine = struct
       then
         (*XXX This looks wrong! *)
         let shape_position = Shape.position info.Intersection_info.shape in
-        let lv =
-          Vector.normalize (Vector.subtract shape_position light.Light.position)
-        in
+        let lv = Vector.normalize (Vector.subtract shape_position light.Light.position) in
         let e =
           Vector.normalize
             (Vector.subtract scene.Scene.camera.Camera.position shape_position)
@@ -379,7 +397,7 @@ module Engine = struct
       if shape != exclude
       then
         match Shape.intersect shape ray with
-        | Some {Intersection_info.distance = d; _} as v when d >= 0. && d < !dist ->
+        | Some { Intersection_info.distance = d; _ } as v when d >= 0. && d < !dist ->
             best := v;
             dist := d
         | _ -> ()
@@ -433,7 +451,8 @@ module Engine = struct
     ; render_shadows
     ; render_highlights
     ; render_reflections
-    ; ray_depth }
+    ; ray_depth
+    }
 end
 
 let render_scene () =
@@ -462,7 +481,7 @@ let render_scene () =
   let light = Light.make (Vector.make 5. 10. (-1.)) (Color.make 0.8 0.8 0.8) 10. in
   let light1 = Light.make (Vector.make (-3.) 5. (-15.)) (Color.make 0.8 0.8 0.8) 100. in
   let scene =
-    Scene.make camera [|plane; sphere; sphere1|] [|light; light1|] background
+    Scene.make camera [| plane; sphere; sphere1 |] [| light; light1 |] background
   in
   let image_width = 100 in
   let image_height = 100 in

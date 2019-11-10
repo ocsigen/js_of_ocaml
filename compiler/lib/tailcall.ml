@@ -29,13 +29,13 @@ open Code
 let rec remove_last l =
   match l with
   | [] -> assert false
-  | [_] -> []
+  | [ _ ] -> []
   | x :: r -> x :: remove_last r
 
 let rec tail_call x f l =
   match l with
   | [] -> None
-  | [Let (y, Apply (g, args, _))] when Var.compare x y = 0 && Var.compare f g = 0 ->
+  | [ Let (y, Apply (g, args, _)) ] when Var.compare x y = 0 && Var.compare f g = 0 ->
       Some args
   | _ :: rem -> tail_call x f rem
 
@@ -44,18 +44,19 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return x -> (
-    match tail_call x f block.body with
-    | Some f_args when List.length f_params = List.length f_args ->
-        let m = Subst.build_mapping f_params f_args in
-        List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
-        Addr.Map.add
-          pc
-          { params = block.params
-          ; handler = block.handler
-          ; body = remove_last block.body
-          ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m)) }
-          blocks
-    | _ -> blocks)
+      match tail_call x f block.body with
+      | Some f_args when List.length f_params = List.length f_args ->
+          let m = Subst.build_mapping f_params f_args in
+          List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
+          Addr.Map.add
+            pc
+            { params = block.params
+            ; handler = block.handler
+            ; body = remove_last block.body
+            ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m))
+            }
+            blocks
+      | _ -> blocks)
   | _ -> blocks
 
 let ( >> ) x f = f x

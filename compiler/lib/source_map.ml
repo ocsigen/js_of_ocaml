@@ -25,7 +25,8 @@ type map =
   ; ori_source : int
   ; ori_line : int
   ; ori_col : int
-  ; ori_name : int option }
+  ; ori_name : int option
+  }
 
 type mapping = map list
 
@@ -36,7 +37,8 @@ type t =
   ; mutable sources : string list
   ; mutable sources_content : string option list option
   ; mutable names : string list
-  ; mutable mappings : mapping }
+  ; mutable mappings : mapping
+  }
 
 let string_of_mapping mapping =
   let a = Array.of_list mapping in
@@ -95,7 +97,7 @@ let string_of_mapping mapping =
             | Some n ->
                 let n' = !ori_name in
                 ori_name := n;
-                [n - n']))
+                [ n - n' ]))
         in
         gen_col := c.gen_col;
         if c.ori_source <> -1
@@ -132,15 +134,16 @@ let mapping_of_string str =
     | v ->
         let v =
           match v with
-          | [g] ->
+          | [ g ] ->
               gen_col := !gen_col + g;
               { gen_line = line
               ; gen_col = !gen_col
               ; ori_source = -1
               ; ori_line = -1
               ; ori_col = -1
-              ; ori_name = None }
-          | [g; os; ol; oc] ->
+              ; ori_name = None
+              }
+          | [ g; os; ol; oc ] ->
               gen_col := !gen_col + g;
               ori_source := !ori_source + os;
               ori_line := !ori_line + ol;
@@ -150,8 +153,9 @@ let mapping_of_string str =
               ; ori_source = !ori_source
               ; ori_line = !ori_line
               ; ori_col = !ori_col
-              ; ori_name = None }
-          | [g; os; ol; oc; on] ->
+              ; ori_name = None
+              }
+          | [ g; os; ol; oc; on ] ->
               gen_col := !gen_col + g;
               ori_source := !ori_source + os;
               ori_line := !ori_line + ol;
@@ -162,7 +166,8 @@ let mapping_of_string str =
               ; ori_source = !ori_source
               ; ori_line = !ori_line
               ; ori_col = !ori_col
-              ; ori_name = Some !ori_name }
+              ; ori_name = Some !ori_name
+              }
           | _ -> invalid_arg "Source_map.mapping_of_string"
         in
         let acc = v :: acc in
@@ -190,7 +195,7 @@ let maps ~gen_line_offset ~sources_offset ~names_offset x =
     | None -> None
     | Some ori_name -> Some (ori_name + names_offset)
   in
-  {x with gen_line; ori_source; ori_name}
+  { x with gen_line; ori_source; ori_name }
 
 let merge = function
   | [] -> None
@@ -209,7 +214,8 @@ let merge = function
                   acc.mappings
                   @ List.map
                       ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
-                      sm.mappings }
+                      sm.mappings
+              }
             in
             loop
               acc
@@ -222,7 +228,8 @@ let merge = function
           mappings =
             List.map
               ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
-              x.mappings }
+              x.mappings
+        }
       in
       Some
         (loop

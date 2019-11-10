@@ -27,8 +27,8 @@ let rec function_cardinality info x acc =
     (fun x ->
       match info.info_defs.(Var.idx x) with
       | Expr (Closure (l, _)) -> Some (List.length l)
-      | Expr (Prim (Extern "%closure", [Pc (IString prim)])) -> (
-        try Some (Primitive.arity prim) with Not_found -> None)
+      | Expr (Prim (Extern "%closure", [ Pc (IString prim) ])) -> (
+          try Some (Primitive.arity prim) with Not_found -> None)
       | Expr (Apply (f, l, _)) -> (
           if List.mem f ~set:acc
           then None
@@ -67,9 +67,10 @@ let specialize_instr info (acc, free_pc, extra) i =
             let params' = Array.to_list params' in
             let return' = Code.Var.fresh () in
             { params = params'
-            ; body = [Let (return', Apply (f, l @ params', true))]
+            ; body = [ Let (return', Apply (f, l @ params', true)) ]
             ; branch = Return return'
-            ; handler = None }
+            ; handler = None
+            }
           in
           ( Let (x, Closure (missing, (free_pc, missing))) :: acc
           , free_pc + 1
@@ -89,7 +90,7 @@ let specialize_instrs info (pc, blocks, free_pc) =
           List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
               Addr.Map.add pc b blocks)
         in
-        Addr.Map.add pc {block with Code.body} blocks, free_pc)
+        Addr.Map.add pc { block with Code.body } blocks, free_pc)
       blocks
       (Addr.Map.empty, free_pc)
   in

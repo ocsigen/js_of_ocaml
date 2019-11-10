@@ -24,7 +24,8 @@ open Cmdliner
 type options =
   { files : string list
   ; output_file : string
-  ; include_dirs : string list }
+  ; include_dirs : string list
+  }
 
 let options =
   let files =
@@ -33,14 +34,14 @@ let options =
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(required & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
+    Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
-    Arg.(value & opt_all string [] & info ["I"] ~docv:"DIR" ~doc)
+    Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
   Term.(
-    pure (fun files output_file include_dirs -> {files; output_file; include_dirs})
+    pure (fun files output_file include_dirs -> { files; output_file; include_dirs })
     $ files
     $ output_file
     $ include_dirs)
@@ -61,8 +62,9 @@ let info =
     ; `P
         "jsoo_fs is free software, you can redistribute it and/or modify it under the \
          terms of the GNU Lesser General Public License as published by the Free \
-         Software Foundation, with linking exception; either version 2.1 of the \
-         License, or (at your option) any later version." ]
+         Software Foundation, with linking exception; either version 2.1 of the License, \
+         or (at your option) any later version."
+    ]
   in
   let version =
     match Compiler_version.git_version with
@@ -71,7 +73,7 @@ let info =
   in
   Term.info "jsoo_fs" ~doc ~man ~version
 
-let f {files; output_file; include_dirs} =
+let f { files; output_file; include_dirs } =
   let code =
     {|
 //Provides: caml_create_file_extern

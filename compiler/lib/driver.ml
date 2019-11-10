@@ -99,11 +99,11 @@ let o1 : 'a -> 'a =
   >> tailcall
   >> flow_simple
   >> (* flow simple to keep information for future tailcall opt *)
-     specialize'
+  specialize'
   >> eval
   >> inline
   >> (* inlining may reveal new tailcall opt *)
-     deadcode
+  deadcode
   >> tailcall
   >> phi
   >> flow
@@ -133,11 +133,11 @@ let round1 : 'a -> 'a =
   >> tailcall
   >> inline
   >> (* inlining may reveal new tailcall opt *)
-     deadcode
+  deadcode
   >> (* deadcode required before flow simple -> provided by constant *)
-     flow_simple
+  flow_simple
   >> (* flow simple to keep information for future tailcall opt *)
-     specialize'
+  specialize'
   >> eval
   >> identity
 
@@ -172,7 +172,7 @@ let extra_js_files =
              List.fold_left
                (Linker.parse_file file)
                ~init:StringSet.empty
-               ~f:(fun ss {Linker.provides; _} ->
+               ~f:(fun ss { Linker.provides; _ } ->
                  match provides with
                  | Some (_, name, _, _) -> StringSet.add name ss
                  | _ -> ss)
@@ -223,9 +223,11 @@ let gen_missing js missing =
                                   , [ EBin
                                         ( Plus
                                         , EStr (prim, `Utf8)
-                                        , EStr (" not implemented", `Utf8) ) ]
+                                        , EStr (" not implemented", `Utf8) )
+                                    ]
                                   , N )))
-                        , N ) ]
+                        , N )
+                      ]
                     , N ) )
             , N ) )
         :: acc)
@@ -245,7 +247,7 @@ let gen_missing js missing =
 let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) :
     Linker.output =
   if not standalone
-  then {runtime_code = js; always_required_codes = []}
+  then { runtime_code = js; always_required_codes = [] }
   else
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
@@ -331,7 +333,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Timer.print t
 
-let pack ~global {Linker.runtime_code = js; always_required_codes} =
+let pack ~global { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Flagizing js...@.";
@@ -361,12 +363,14 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
     else js
   in
   let wrap_in_iifa ~can_use_strict js =
-    let f = J.EFun (None, [J.ident global_object], use_strict js ~can_use_strict, J.U) in
+    let f =
+      J.EFun (None, [ J.ident global_object ], use_strict js ~can_use_strict, J.U)
+    in
     let expr =
       match global with
       | `Function -> f
       | `Bind_to _ -> f
-      | `Custom name -> J.ECall (f, [J.EVar (J.ident name)], J.N)
+      | `Custom name -> J.ECall (f, [ J.EVar (J.ident name) ], J.N)
       | `Auto ->
           let global =
             J.ECall
@@ -374,17 +378,18 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
                   ( None
                   , []
                   , [ ( J.Statement (J.Return_statement (Some (J.EVar (J.ident "this"))))
-                      , J.N ) ]
+                      , J.N )
+                    ]
                   , J.N )
               , []
               , J.N )
           in
-          J.ECall (f, [global], J.N)
+          J.ECall (f, [ global ], J.N)
     in
     match global with
     | `Bind_to name ->
-        [J.Statement (J.Variable_statement [J.ident name, Some (expr, J.N)]), J.N]
-    | _ -> [J.Statement (J.Expression_statement expr), J.N]
+        [ J.Statement (J.Variable_statement [ J.ident name, Some (expr, J.N) ]), J.N ]
+    | _ -> [ J.Statement (J.Expression_statement expr), J.N ]
   in
   let always_required_js =
     (* CR-someday hheuzard: consider adding a comments in the generated file with original
@@ -393,7 +398,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
           //# 1 polyfill/classlist.js
        v}
     *)
-    List.map always_required_codes ~f:(fun {Linker.program; filename = _} ->
+    List.map always_required_codes ~f:(fun { Linker.program; filename = _ } ->
         wrap_in_iifa ~can_use_strict:false program)
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
@@ -455,6 +460,6 @@ let from_string prims s formatter =
   let p, d = Parse_bytecode.from_string prims s in
   f ~standalone:false ~global:`Function formatter d p
 
-let profiles = [1, o1; 2, o2; 3, o3]
+let profiles = [ 1, o1; 2, o2; 3, o3 ]
 
 let profile i = try Some (List.assoc i profiles) with Not_found -> None

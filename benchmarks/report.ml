@@ -73,7 +73,7 @@ let read_column ?title ?color meas spec refe =
         let l = read_measures meas spec nm in
         let a = Array.of_list l in
         let m, i = mean_with_confidence a in
-        nm, [m, i])
+        nm, [ m, i ])
   in
   let nm =
     match title with
@@ -81,7 +81,7 @@ let read_column ?title ?color meas spec refe =
     | None -> Spec.dir ~root:meas (Spec.no_ext spec)
   in
   if refe then reference := Some l;
-  Some ([Some (nm, color)], l)
+  Some ([ Some (nm, color) ], l)
 
 let read_blank_column () = None
 
@@ -89,8 +89,8 @@ let rec list_create n a = if n = 0 then [] else a :: list_create (n - 1) a
 
 let merge_columns l old_table =
   let rec aux = function
-    | [] | [None] -> [], []
-    | [Some c] -> c
+    | [] | [ None ] -> [], []
+    | [ Some c ] -> c
     | Some (h, c) :: r ->
         let h', t = aux r in
         h @ h', merge (fun v1 v2 -> v1 @ v2) c t
@@ -122,7 +122,7 @@ let merge_columns l old_table =
     | _, None -> l
     | Some (h, c) :: ll, Some o -> Some (h, merge (fun v1 _v2 -> v1) c o) :: ll
     | None :: ll, Some o ->
-        Some ([None], List.map o ~f:(fun (nm, _) -> nm, [0.0, 0.0])) :: ll
+        Some ([ None ], List.map o ~f:(fun (nm, _) -> nm, [ 0.0, 0.0 ])) :: ll
   in
   let nb_blanks, l = remove_head_blank (List.rev l) in
   let l = List.rev l in
@@ -365,10 +365,12 @@ let _ =
           [ Arg.Set svg
           ; Arg.Set_int svgfontsize
           ; Arg.Set_int svgwidth
-          ; Arg.Set_int svgheight ]
+          ; Arg.Set_int svgheight
+          ]
       , "<fontsize> <width> <height> svg output" )
     ; "-edgecaption", Arg.Set edgecaption, " display caption outside the diagram"
-    ; "-ylabel", Arg.Set_string ylabel, " Y axis label" ]
+    ; "-ylabel", Arg.Set_string ylabel, " Y axis label"
+    ]
   in
   Arg.parse
     (Arg.align options)

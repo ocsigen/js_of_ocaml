@@ -35,7 +35,7 @@ class type blob =
   end
 
 type 'a make_blob =
-  ?contentType:string -> ?endings:[`Transparent | `Native] -> 'a -> blob t
+  ?contentType:string -> ?endings:[ `Transparent | `Native ] -> 'a -> blob t
 
 val blob_from_string : string make_blob
 
@@ -44,7 +44,8 @@ val blob_from_any :
   | `arrayBuffer of Typed_array.arrayBuffer t
   | `arrayBufferView of Typed_array.arrayBufferView t
   | `string of string
-  | `js_string of js_string t ]
+  | `js_string of js_string t
+  ]
   list
   make_blob
 

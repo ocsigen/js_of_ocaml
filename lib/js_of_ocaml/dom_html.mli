@@ -1613,8 +1613,7 @@ and canvasRenderingContext2D =
     method createPattern_fromCanvas :
       canvasElement t -> js_string t -> canvasPattern t meth
 
-    method createPattern_fromVideo :
-      videoElement t -> js_string t -> canvasPattern t meth
+    method createPattern_fromVideo : videoElement t -> js_string t -> canvasPattern t meth
 
     method lineWidth : float prop
 
@@ -1648,8 +1647,7 @@ and canvasRenderingContext2D =
 
     method quadraticCurveTo : float -> float -> float -> float -> unit meth
 
-    method bezierCurveTo :
-      float -> float -> float -> float -> float -> float -> unit meth
+    method bezierCurveTo : float -> float -> float -> float -> float -> float -> unit meth
 
     method arcTo : float -> float -> float -> float -> float -> unit meth
 

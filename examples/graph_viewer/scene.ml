@@ -32,7 +32,7 @@ type ('color, 'font, 'text) element =
 (****)
 
 let rectangle (x1, y1, x2, y2) fill stroke =
-  Polygon ([|x1, y1; x2, y1; x2, y2; x1, y2|], fill, stroke)
+  Polygon ([| x1, y1; x2, y1; x2, y2; x1, y2 |], fill, stroke)
 
 (****)
 

@@ -190,7 +190,8 @@ type desc =
   { code : t
   ; kind : kind
   ; name : string
-  ; opcode : int }
+  ; opcode : int
+  }
 
 val get_instr_exn : string -> int -> desc
 

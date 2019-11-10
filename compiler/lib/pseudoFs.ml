@@ -47,8 +47,7 @@ let list_files name paths =
     match String.lsplit2 name ~on:':' with
     | Some (src, dest) ->
         if String.length dest > 0 && not (Char.equal dest.[0] '/')
-        then
-          failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);
+        then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);
         let virtname =
           if Char.equal dest.[String.length dest - 1] '/'
           then dest ^ Filename.basename src
@@ -86,7 +85,7 @@ let find_cmi paths base =
 
 let instr_of_name_content prim ~name ~content =
   let open Code in
-  Let (Var.fresh (), Prim (Extern prim, [Pc (IString name); Pc (IString content)]))
+  Let (Var.fresh (), Prim (Extern prim, [ Pc (IString name); Pc (IString content) ]))
 
 let embed_file ~name ~filename =
   instr_of_name_content "caml_create_file_extern" ~name ~content:(Fs.read_file filename)

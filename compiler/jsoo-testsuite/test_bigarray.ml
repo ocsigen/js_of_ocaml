@@ -5,21 +5,25 @@ open Bigarray
 module Complex = struct
   type t = Complex.t =
     { re : float
-    ; im : float }
+    ; im : float
+    }
 
-  let to_string {re; im} = Printf.sprintf "%g+%gi" re im
+  let to_string { re; im } = Printf.sprintf "%g+%gi" re im
 
   let of_string s =
     match String.split_on_char ~sep:'+' s with
-    | [x] ->
+    | [ x ] ->
         if x.[String.length x - 2] = 'i'
         then
-          {re = 0.; im = Float.of_string (String.sub x ~pos:0 ~len:(String.length x - 1))}
-        else {re = Float.of_string x; im = 0.}
-    | [x; y] ->
+          { re = 0.
+          ; im = Float.of_string (String.sub x ~pos:0 ~len:(String.length x - 1))
+          }
+        else { re = Float.of_string x; im = 0. }
+    | [ x; y ] ->
         assert (y.[String.length y - 2] = 'i');
         { re = Float.of_string x
-        ; im = Float.of_string (String.sub y ~pos:0 ~len:(String.length y - 1)) }
+        ; im = Float.of_string (String.sub y ~pos:0 ~len:(String.length y - 1))
+        }
     | _ -> assert false
 end
 
@@ -48,7 +52,7 @@ let%expect_test "compare elt" =
       if c = 0 then "=" else if c < 0 then "<" else if c > 0 then ">" else "??"
     in
     let c = compare a b in
-    let c' = compare (from_list kind [a]) (from_list kind [b]) in
+    let c' = compare (from_list kind [ a ]) (from_list kind [ b ]) in
     if c' = c
     then
       Printf.printf
@@ -76,9 +80,9 @@ let%expect_test "compare elt" =
   [%expect {| 69632 < 1048832: Bigarray compare the same |}];
   test int32 Int32.to_string 0xffff0000l 0x0000ffffl;
   [%expect {| -65536 < 65535: Bigarray compare the same |}];
-  test complex32 Complex.to_string {re = 1.0; im = 0.0} {re = 0.0; im = 1.0};
+  test complex32 Complex.to_string { re = 1.0; im = 0.0 } { re = 0.0; im = 1.0 };
   [%expect {| 1+0i > 0+1i: Bigarray compare the same |}];
-  test complex64 Complex.to_string {re = 1.0; im = 0.0} {re = 0.0; im = 1.0};
+  test complex64 Complex.to_string { re = 1.0; im = 0.0 } { re = 0.0; im = 1.0 };
   [%expect {| 1+0i > 0+1i: Bigarray compare the same |}];
   test float32 Float.to_string 1.0 0.0;
   [%expect {| 1. > 0.: Bigarray compare the same |}];

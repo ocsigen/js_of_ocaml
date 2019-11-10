@@ -75,7 +75,8 @@ type identifier = string
 type ident_string =
   { name : identifier
   ; var : Code.Var.t option
-  ; loc : location }
+  ; loc : location
+  }
 
 type ident =
   | S of ident_string
@@ -155,7 +156,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression
-  | EStr of string * [`Bytes | `Utf8]
+  | EStr of string * [ `Bytes | `Utf8 ]
   (* A string can either be composed of a sequence of bytes, or be
          UTF-8 encoded. In the second case, the string may contain
          escape sequences. *)
