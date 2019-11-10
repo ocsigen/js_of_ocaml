@@ -15,6 +15,7 @@
 * Runtime: complete rewrite of bigarray
 * Runtime: complete num implementation
 * Runtime: add caml_ba_hash
+* Runtime: rewrite polymorphic compare
 * Ppx: switch ppx rewriter to the OCaml 4.08 ast
 * Misc: Improve CI speed
 * Misc: remove ppx_deriving dependency
