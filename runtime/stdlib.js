@@ -275,20 +275,9 @@ function caml_obj_make_forward (b,v) {
 function caml_lazy_make_forward (v) { return [250, v]; }
 
 //Provides: caml_mul const
-if (!Math.imul)
-  Math.imul =
-  function (x,y) {
-    y |= 0;
-    return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
-  };
-var caml_mul = Math.imul;
-
-//slightly slower
-// function mul32(x,y) {
-//   var xlo = x & 0xffff;
-//   var xhi = x - xlo;
-//   return (((xhi * y) |0) + xlo * y)|0;
-// }
+function caml_mul(a,b){
+  return Math.imul(a,b);
+}
 
 //Provides: caml_div
 //Requires: caml_raise_zero_divide
