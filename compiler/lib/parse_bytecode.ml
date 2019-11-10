@@ -2063,46 +2063,6 @@ let override_global =
           :: Let (init_mod, jsmodule "CamlinternalMod" "init_mod")
           :: Let (update_mod, jsmodule "CamlinternalMod" "update_mod")
           :: instrs ) )
-  ; ( "Int_misc" (* Until https://github.com/ocaml/num/pull/16 is merged and released *)
-    , fun orig instrs ->
-        let x = Var.fresh_n "int_misc" in
-        let a0 = Var.fresh () in
-        let a1 = Var.fresh () in
-        let a2 = Var.fresh () in
-        let a3 = Var.fresh () in
-        let a_length_of_int = Var.fresh () in
-        let a_biggest_int = Var.fresh () in
-        let a_least_int = Var.fresh () in
-        let a_monster_int = Var.fresh () in
-        let length_of_int = 31 in
-        let monster_int = Int32.shift_left 1l length_of_int in
-        let biggest_int = Int32.sub monster_int 1l in
-        let least_int = Int32.neg biggest_int in
-        let map x i = Let (x, Field (orig, i)) in
-        ( x
-        , Let
-            ( x
-            , Block
-                ( 0
-                , [| a0
-                   ; a1
-                   ; a2
-                   ; a3
-                   ; a_length_of_int
-                   ; a_biggest_int
-                   ; a_least_int
-                   ; a_monster_int
-                  |]
-                , NotArray ) )
-          :: Let (a_monster_int, Const monster_int)
-          :: Let (a_least_int, Const least_int)
-          :: Let (a_biggest_int, Const biggest_int)
-          :: Let (a_length_of_int, Const (Int32.of_int length_of_int))
-          :: map a3 3
-          :: map a2 2
-          :: map a1 1
-          :: map a0 0
-          :: instrs ) )
   ]
 
 (* HACK END *)
