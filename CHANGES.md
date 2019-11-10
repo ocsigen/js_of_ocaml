@@ -1,4 +1,4 @@
-# dev (2019-10-??) - Hong Kong
+# 3.5.0 (2019-11-10) - Hong Kong
 ## Features/Changes
 * Compiler: Improve testing of the compiler (Ty Overby)
 * Compiler: Add several macros for making the runtime easier to maintain (#771) (Ty Overby)
@@ -22,7 +22,7 @@
 * Misc: remove cppo dependency
 * Misc: remove ppx_tools_versioned dependency in ppx_deriving_json
 * Misc: support for ocaml 4.09
-* Misc: switch to ocamlformat.0.11
+* Misc: switch to ocamlformat.0.12
 * Misc: many more tests
 * Misc: new jsoo_fs tool to embed files in a jsoo pseudo fs.
 * Lib: Use expect tests
