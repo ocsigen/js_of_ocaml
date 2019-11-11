@@ -392,10 +392,10 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
     | _ -> [ J.Statement (J.Expression_statement expr), J.N ]
   in
   let always_required_js =
-    (* CR-someday hheuzard: consider adding a comments in the generated file with original
+    (* consider adding a comments in the generated file with original
        location. e.g.
        {v
-          //# 1 polyfill/classlist.js
+          //# 1 myfile.js
        v}
     *)
     List.map always_required_codes ~f:(fun { Linker.program; filename = _ } ->
