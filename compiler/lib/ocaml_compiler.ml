@@ -68,8 +68,11 @@ let rec find_loc_in_summary ident' = function
   | (Env.Env_open (summary, _)        [@if ocaml_version <  (4,7,0)])
   | Env.Env_functor_arg (summary, _)
   | (Env.Env_constraints (summary, _) [@if ocaml_version >= (4,4,0)])
-  | (Env.Env_copy_types (summary, _)  [@if ocaml_version >= (4,6,0)])
+  | (Env.Env_copy_types (summary, _)  [@if ocaml_version >= (4,6,0)] [@if ocaml_version <  (4,10,0)])
+  | (Env.Env_copy_types (summary)     [@if ocaml_version >= (4,10,0)])
   | (Env.Env_persistent (summary, _)  [@if ocaml_version >= (4,8,0)])
+  | (Env.Env_value_unbound (summary, _, _)  [@if ocaml_version >= (4,10,0)])
+  | (Env.Env_module_unbound (summary, _, _) [@if ocaml_version >= (4,10,0)])
     -> find_loc_in_summary ident' summary
 [@@ocamlformat "disable"]
 
