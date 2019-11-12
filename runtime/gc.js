@@ -28,3 +28,8 @@ function caml_gc_set(_control) {
 function caml_gc_get(){
   return [0,0,0,0,0,0,0,0,0]
 }
+
+//Provides: caml_memprof_set
+function caml_memprof_set(_control) {
+  return 0;
+}
