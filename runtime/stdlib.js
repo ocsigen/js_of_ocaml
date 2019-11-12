@@ -319,6 +319,14 @@ function caml_array_get (array, index) {
   return array[index+1];
 }
 
+//Provides: caml_array_fill
+function caml_array_fill(array, ofs, len, v){
+  for(var i = 0; i < len; i++){
+    array[ofs+i+1] = v;
+  }
+  return 0;
+}
+
 //Provides: caml_check_bound (const, const)
 //Requires: caml_array_bound_error
 function caml_check_bound (array, index) {
