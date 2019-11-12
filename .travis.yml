@@ -23,7 +23,7 @@ matrix:
     - os: linux
       env: OCAML_VERSION=4.08 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.08 MODE=opam
+      env: OCAML_VERSION=4.09 MODE=opam
     - os: linux
       env: OCAML_VERSION=4.09 MODE=build
       name: "4.09 all targets"
