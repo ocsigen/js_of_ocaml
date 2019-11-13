@@ -27,7 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *)
 {
-open! Import
+open! Deriving_Json_import
 module Lexing =
     (*
       We override Lexing.engine in order to avoid creating a new position
