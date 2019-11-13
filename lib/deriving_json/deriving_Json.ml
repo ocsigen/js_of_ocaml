@@ -19,7 +19,7 @@
 
 (** Json **)
 
-open! Import
+open! Deriving_Json_import
 module Lexer = Deriving_Json_lexer
 
 type 'a t =
