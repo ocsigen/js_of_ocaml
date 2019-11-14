@@ -373,8 +373,8 @@ function caml_compare_val_tag(a){
   else if (a instanceof String) return 1252; // javascript string, like string_tag (252)
   else if (typeof a == "string") return 1252; // javascript string, like string_tag (252)
   else if (a instanceof Number) return 1000; // int_tag (we use it for all numbers)
-  else if (a.caml_custom) return 1255; // like custom_tag (255)
-  else if (a.compare) return 1256; // like custom_tag (255)
+  else if (a && a.caml_custom) return 1255; // like custom_tag (255)
+  else if (a && a.compare) return 1256; // like custom_tag (255)
   else if (typeof a == "function") return 1247; // like closure_tag (247)
   else if (typeof a == "symbol") return 1251;
   return 1001; //out_of_heap_tag

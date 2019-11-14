@@ -101,6 +101,8 @@ let%expect_test "poly compare" =
     ; Pack None
     ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
     ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
+    ; Pack (Js.undefined)
+    ; Pack (Js.null)
     ]
     |> List.mapi (fun i x -> i, x)
   in
@@ -112,6 +114,8 @@ let%expect_test "poly compare" =
     3
     2
     0
+    6
+    7
     5
     4 |}];
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l) in
@@ -124,7 +128,9 @@ let%expect_test "poly compare" =
     2
     0
     4
-    5 |}];
+    5
+    7
+    6 |}];
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l'';
   print_endline "";
   [%expect {|
@@ -133,4 +139,6 @@ let%expect_test "poly compare" =
     2
     0
     4
-    5 |}]
+    5
+    6
+    7 |}]
