@@ -520,3 +520,82 @@ val json :
   'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t =
   <fun>
 |}]
+
+
+type t = A | B [@@deriving json]
+[%%expect {|
+
+type t =
+  | A
+  | B [@@deriving json] let _ = fun (_ : t) -> ()
+let rec (of_json : Deriving_Json_lexer.lexbuf -> t) =
+  fun buf ->
+    match Deriving_Json_lexer.read_case buf with
+    | `Cst 1 -> B
+    | `Cst 0 -> A
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf let _ = of_json
+let rec (to_json : Buffer.t -> t -> unit) =
+  fun buf ->
+    function
+    | B -> Deriving_Json.Json_int.write buf 1
+    | A -> Deriving_Json.Json_int.write buf 0 let _ = to_json
+let (json : t Deriving_Json.t) = Deriving_Json.make to_json of_json
+let _ = json;;
+type t = A | B
+val of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
+val to_json : Buffer.t -> t -> unit = <fun>
+val json : t Deriving_Json.t = <abstr>
+|}];;
+
+let x = [%json: t option]
+[%%expect {|
+
+let x =
+  Deriving_Json.make
+    (fun buf ->
+       fun a ->
+         Deriving_Json.write_option (fun buf -> fun a -> to_json buf a) buf a)
+    (fun buf -> Deriving_Json.read_option (fun buf -> of_json buf) buf);;
+val x : t option Deriving_Json.t = <abstr>
+|}];;
+
+let y = [%to_json: t list]
+[%%expect {|
+
+let y x =
+  let buf = Buffer.create 50 in
+  ((fun buf ->
+      fun a ->
+        Deriving_Json.write_list (fun buf -> fun a -> to_json buf a) buf a))
+    buf x;
+  Buffer.contents buf;;
+val y : t list -> string = <fun>
+|}];;
+
+let z = [%json_of: t array]
+[%%expect {|
+
+let z x =
+  let buf = Buffer.create 50 in
+  ((fun buf ->
+      fun a ->
+        Deriving_Json.write_array (fun buf -> fun a -> to_json buf a) buf a))
+    buf x;
+  Buffer.contents buf;;
+val z : t array -> string = <fun>
+|}];;
+
+let t = [%of_json: t * t]
+[%%expect {|
+
+let t s =
+  (fun buf ->
+     Deriving_Json_lexer.read_lbracket buf;
+     ignore (Deriving_Json_lexer.read_tag_1 0 buf);
+     Deriving_Json_lexer.read_comma buf;
+     (let a = of_json buf in
+      Deriving_Json_lexer.read_comma buf;
+      (let b = of_json buf in Deriving_Json_lexer.read_rbracket buf; (a, b))))
+    (Deriving_Json_lexer.init_lexer (Lexing.from_string s));;
+val t : string -> t * t = <fun>
+|}]

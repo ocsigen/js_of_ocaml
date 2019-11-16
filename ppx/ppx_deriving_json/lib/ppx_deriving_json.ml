@@ -789,6 +789,19 @@ module Json_of = struct
   let deriver = Ppxlib.Deriving.add name ~extension
 end
 
+module To_json = struct
+  let name = "to_json"
+
+  let extension ~loc ~path:_ ctyp =
+    [%expr
+      fun x ->
+        let buf = Buffer.create 50 in
+        [%e write_of_type ctyp ~poly:false] buf x;
+        Buffer.contents buf]
+
+  let deriver = Ppxlib.Deriving.add name ~extension
+end
+
 module Json = struct
   let name = "json"
 
@@ -802,6 +815,8 @@ module Json = struct
 end
 
 let json_of = Json_of.deriver
+
+let to_json = To_json.deriver
 
 let of_json = Of_json.deriver
 
