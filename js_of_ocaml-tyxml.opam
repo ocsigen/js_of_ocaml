@@ -15,12 +15,9 @@ build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
   "ocaml" {>= "4.02.0"}
-  "dune" {build & >= "1.11.1"}
+  "dune" {>= "1.11.1"}
   "tyxml" {>= "4.3"}
   "reactiveData" {>= "0.2"}
   "js_of_ocaml" {>= "3.0"}
   "js_of_ocaml-ppx"
-]
-conflicts: [
-  "js_of_ocaml"             {<"3.0"}
 ]
