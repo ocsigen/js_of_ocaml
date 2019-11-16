@@ -1,3 +1,12 @@
+# 3.5.1 (2019-11-16) - Hong Kong
+## Features/Changes
+
+## Bug fixes
+* Runtime: fix poly compare with null and undefined (#920)
+* Lib: Deriving Json does not export an [import] unit
+* Dynlink/toplevel: export all units when no export file is specified (#921)
+* Ppx: ppx_deriving_json should allow [%to_json: t] syntax
+
 # 3.5.0 (2019-11-10) - Hong Kong
 ## Features/Changes
 * Compiler: Improve testing of the compiler (Ty Overby)
