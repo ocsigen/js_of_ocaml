@@ -101,8 +101,8 @@ let%expect_test "poly compare" =
     ; Pack None
     ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
     ; Pack (Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |])
-    ; Pack (Js.undefined)
-    ; Pack (Js.null)
+    ; Pack Js.undefined
+    ; Pack Js.null
     ]
     |> List.mapi (fun i x -> i, x)
   in
