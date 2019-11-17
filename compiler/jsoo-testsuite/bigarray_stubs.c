@@ -15,6 +15,15 @@ CAMLprim value caml_bigstring_blit_string_to_ba(
   return Val_unit;
 }
 
+CAMLprim value caml_bigstring_blit_bytes_to_ba(
+  value v_str, value v_src_pos, value v_bstr, value v_dst_pos, value v_len)
+{
+  unsigned char *str = Bytes_val(v_str) + Long_val(v_src_pos);
+  char *bstr = get_bstr(v_bstr, v_dst_pos);
+  memcpy(bstr, str, Long_val(v_len));
+  return Val_unit;
+}
+
 CAMLprim value caml_bigstring_blit_ba_to_bytes(
   value v_bstr, value v_src_pos, value v_str, value v_dst_pos, value v_len)
 {

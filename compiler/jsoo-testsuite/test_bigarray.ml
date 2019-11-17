@@ -179,6 +179,9 @@ external blit_ba_to_bytes : (_, _, _) Array1.t -> int -> Bytes.t -> int -> int -
   = "caml_bigstring_blit_ba_to_bytes"
 
 external blit_bytes_to_ba : Bytes.t -> int -> (_, _, _) Array1.t -> int -> int -> unit
+  = "caml_bigstring_blit_bytes_to_ba"
+
+external blit_string_to_ba : string -> int -> (_, _, _) Array1.t -> int -> int -> unit
   = "caml_bigstring_blit_string_to_ba"
 
 let print_ba a =
