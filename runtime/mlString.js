@@ -438,6 +438,13 @@ function caml_array_of_string (s) {
   return s.c;
 }
 
+//Provides: caml_array_of_bytes mutable
+//Requires: caml_convert_string_to_array
+function caml_array_of_bytes (s) {
+  if (s.t != 4 /* ARRAY */) caml_convert_string_to_array(s);
+  return s.c;
+}
+
 //Provides: caml_jsbytes_of_string mutable
 //Requires: caml_convert_string_to_bytes
 function caml_jsbytes_of_string (s) {
