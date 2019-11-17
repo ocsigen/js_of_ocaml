@@ -475,6 +475,10 @@ function caml_new_string (s) { return new MlBytes(0,s,s.length); }
 //Requires: MlBytes
 function caml_string_of_array (a) { return new MlBytes(4,a,a.length); }
 
+//Provides: caml_bytes_of_array
+//Requires: MlBytes
+function caml_bytes_of_array (a) { return new MlBytes(4,a,a.length); }
+
 //Provides: caml_string_compare mutable
 //Requires: caml_convert_string_to_bytes
 function caml_string_compare(s1, s2) {

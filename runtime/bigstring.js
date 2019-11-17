@@ -65,12 +65,13 @@ function caml_bigstring_blit_ba_to_ba(ba1, pos1, ba2, pos2, len){
 
 //Provides: caml_bigstring_blit_string_to_ba
 //Requires: caml_invalid_argument, caml_array_bound_error, caml_array_of_string
+//Requires: caml_ml_string_length
 function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len){
   if(12 != ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
   if(len == 0) return 0;
   var ofs2 = ba2.offset(pos2);
-  if(pos1 + len > str1.l) {
+  if(pos1 + len > caml_ml_string_length(str1)) {
     caml_array_bound_error();
   }
   if(ofs2 + len > ba2.data.length) {
@@ -83,7 +84,8 @@ function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len){
 
 //Provides: caml_bigstring_blit_ba_to_bytes
 //Requires: caml_invalid_argument, caml_array_bound_error
-//Requires: caml_blit_bytes, caml_string_of_array
+//Requires: caml_blit_bytes, caml_bytes_of_array
+//Requires: caml_ml_bytes_length
 function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len){
   if(12 != ba1.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
@@ -92,10 +94,10 @@ function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len){
   if(ofs1 + len > ba1.data.length){
     caml_array_bound_error();
   }
-  if(pos2 + len > bytes2.l){
+  if(pos2 + len > caml_ml_bytes_length(bytes2)){
     caml_array_bound_error();
   }
   var slice = ba1.data.slice(ofs1, ofs1+len);
-  caml_blit_bytes(caml_string_of_array(slice), 0, bytes2, pos2, len);
+  caml_blit_bytes(caml_bytes_of_array(slice), 0, bytes2, pos2, len);
   return 0
 }
