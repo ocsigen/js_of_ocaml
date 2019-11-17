@@ -59,8 +59,8 @@ let setup =
        Array.length (split_primitives (Symtable.data_primitive_names ()))
      in
      (* this needs to stay synchronized with toplevel.js *)
-     let compile (s : string array) =
-       let s = String.concat ~sep:"" (Array.to_list s) in
+     let compile (s : bytes array) =
+       let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
        let prims = split_primitives (Symtable.data_primitive_names ()) in
        let unbound_primitive p =
          try
@@ -84,12 +84,12 @@ let setup =
        flush stderr;
        let res = Buffer.contents b in
        let res = String.concat ~sep:"" !stubs ^ res in
-       let res : unit -> _ = Js.Unsafe.global##toplevelEval res in
+       let res : unit -> _ = Js.Unsafe.global##toplevelEval (res : string) in
        res
      in
      Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
      (Js.Unsafe.global##.toplevelEval
-     := fun x ->
+     := fun (x : string) ->
      let f : < .. > Js.t -> < .. > Js.t = Js.Unsafe.eval_string x in
      fun () ->
        let res = f Js.Unsafe.global in
