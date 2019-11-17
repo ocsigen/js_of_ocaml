@@ -19,6 +19,8 @@
 
 val json_of : Ppxlib.Deriving.t
 
+val to_json : Ppxlib.Deriving.t
+
 val of_json : Ppxlib.Deriving.t
 
 val json : Ppxlib.Deriving.t

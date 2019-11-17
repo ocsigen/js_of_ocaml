@@ -21,6 +21,3 @@ depends: [
   "js_of_ocaml" {>= "3.0"}
   "js_of_ocaml-ppx"
 ]
-conflicts: [
-  "js_of_ocaml"             {<"3.0"}
-]

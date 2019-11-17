@@ -12,6 +12,7 @@
 =Syntaxes
 ==[[ppx|Ppx syntax extension]]
 ==[[camlp4|Camlp4 syntax extension]]
+==[[ppx-deriving|Ppx deriving json]]
 
 =Compiler
 ==[[options|Command line options]]

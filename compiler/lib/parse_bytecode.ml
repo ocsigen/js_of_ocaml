@@ -2166,7 +2166,7 @@ let from_exe
     with Not_found -> (
       match exported_unit with
       | Some l -> List.mem s ~set:l
-      | None -> false)
+      | None -> true)
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
   let symbols =
