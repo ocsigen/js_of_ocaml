@@ -879,6 +879,7 @@ function caml_format_float (fmt, x) {
 //Provides: caml_hash_univ_param mutable
 //Requires: MlBytes, caml_convert_string_to_bytes
 //Requires: caml_int64_to_bytes, caml_int64_bits_of_float, caml_custom_ops
+//Requires: caml_ml_bytes_length
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
@@ -910,11 +911,11 @@ function caml_hash_univ_param (count, limit, obj) {
       default: /* PARTIAL */
         caml_convert_string_to_bytes(obj);
       case 0: /* BYTES */
-        for (var b = obj.c, l = obj.l, i = 0; i < l; i++)
+        for (var b = obj.c, l = caml_ml_bytes_length(obj), i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
         break;
       case 2: /* ARRAY */
-        for (var a = obj.c, l = obj.l, i = 0; i < l; i++)
+        for (var a = obj.c, l = caml_ml_bytes_length(obj), i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (obj === (obj|0)) {
