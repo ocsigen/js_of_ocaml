@@ -145,7 +145,7 @@ function caml_js_wrap_meth_callback(f) {
   }
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
-//Requires: caml_call_gen,raw_array_cons
+//Requires: caml_call_gen
 function caml_js_wrap_meth_callback_arguments(f) {
   return function () {
     return caml_call_gen(f,[this,arguments]);
