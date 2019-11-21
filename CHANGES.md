@@ -3,6 +3,7 @@
 * Misc: support for ocaml 4.10
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
 * Runtime: remove many old polyfill
+* Runtime: add unix_isatty
 
 ## Bug fixes
 
