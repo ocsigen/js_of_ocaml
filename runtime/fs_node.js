@@ -108,7 +108,6 @@ MlNodeDevice.prototype.constructor = MlNodeDevice
 function MlNodeFile(fd){
   this.fs = require('fs');
   this.fd = fd;
-  caml_raise_sys_error = caml_raise_sys_error;
 }
 MlNodeFile.prototype = new MlFile ();
 
