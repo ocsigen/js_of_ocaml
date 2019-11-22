@@ -2281,9 +2281,9 @@ module Event : sig
 
   val scroll : event t typ
 
-  val focus : event t typ
+  val focus : focusEvent t typ
 
-  val blur : event t typ
+  val blur : focusEvent t typ
 
   val load : event t typ
 
