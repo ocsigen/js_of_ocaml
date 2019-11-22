@@ -308,13 +308,13 @@ val focus :
      ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> Dom_html.event Js.t Lwt.t
+  -> Dom_html.focusEvent Js.t Lwt.t
 
 val blur :
      ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> Dom_html.event Js.t Lwt.t
+  -> Dom_html.focusEvent Js.t Lwt.t
 
 val scroll :
      ?use_capture:bool
@@ -768,7 +768,7 @@ val focuses :
   -> ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> (Dom_html.focusEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
 val blurs :
@@ -776,7 +776,7 @@ val blurs :
   -> ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> (Dom_html.focusEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
 val scrolls :
