@@ -643,6 +643,8 @@ and element =
 
     method classList : tokenList t readonly_prop
 
+    method closest : js_string t -> element t opt meth
+
     method style : cssStyleDeclaration t prop
 
     method innerHTML : js_string t prop
