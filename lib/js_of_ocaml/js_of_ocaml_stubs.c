@@ -168,10 +168,6 @@ void caml_jsbytes_of_string () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_jsbytes_of_string!\n");
   exit(1);
 }
-void caml_json () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_json!\n");
-  exit(1);
-}
 void caml_list_mount_point () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_list_mount_point!\n");
   exit(1);

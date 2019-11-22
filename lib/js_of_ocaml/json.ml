@@ -34,9 +34,7 @@ class type json =
     method stringify_ : 'a 'b 'c 'd. 'a -> (js_string t -> 'c -> 'd) -> js_string t meth
   end
 
-external get_json : unit -> json t = "caml_json"
-
-let json = get_json ()
+let json : json Js.t = Unsafe.global##._JSON
 
 external unsafe_equals : 'a -> 'b -> bool = "caml_js_equals"
 
