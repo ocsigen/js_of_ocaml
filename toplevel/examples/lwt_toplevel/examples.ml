@@ -108,9 +108,11 @@ let () =
 open Graphics_js
 
 let () =
-  loop [ Mouse_motion; Key_pressed ] (function { mouse_x = x; mouse_y = y; key } ->
-      moveto x y;
-      draw_char key)
+  loop [ Mouse_motion; Key_pressed ] (function
+      | { key = '\000'; _ } -> ()
+      | { mouse_x = x; mouse_y = y; key } ->
+          moveto x y;
+          draw_char key)
 
 (** Graphics: PingPong *)
 
