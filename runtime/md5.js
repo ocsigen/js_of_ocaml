@@ -20,7 +20,7 @@
 
 //Provides: caml_md5_chan
 //Requires: caml_md5_string, caml_string_of_array,caml_ml_channels
-//Requires: caml_raise_end_of_file, caml_create_bytes
+//Requires: caml_raise_end_of_file, caml_create_bytes, caml_string_of_bytes
 function caml_md5_chan(chanid,len){
   var chan = caml_ml_channels[chanid];
   var chan_len = chan.file.length();
@@ -28,7 +28,7 @@ function caml_md5_chan(chanid,len){
   if(chan.offset + len > chan_len) caml_raise_end_of_file();
   var buf = caml_create_bytes(len);
   chan.file.read(chan.offset,buf,0,len);
-  return caml_md5_string(buf,0,len);
+  return caml_md5_string(caml_string_of_bytes(buf),0,len);
 }
 
 //Provides: caml_md5_string
