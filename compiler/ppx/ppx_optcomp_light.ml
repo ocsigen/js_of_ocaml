@@ -175,6 +175,8 @@ let mapper =
           List.filter items ~f:(fun item ->
               match item.pstr_desc with
               | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
+              | Pstr_primitive { pval_attributes; pval_loc; _ } ->
+                  keep pval_loc pval_attributes
               | _ -> true)
         in
         Ast_mapper.default_mapper.structure mapper items)
