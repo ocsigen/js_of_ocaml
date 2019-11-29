@@ -89,15 +89,15 @@ function caml_call_gen(f, args) {
       case 5: return function (a, b, c, d, e) {
         return f.apply(null, args.concat([a, b, c, d, e]));
       }
-      case 6: return function (a, b, c, d, e, f) {
-        return f.apply(null, args.concat([a, b, c, d, e, f]));
+      case 6: return function (a, b, c, d, e, f_) {
+        return f.apply(null, args.concat([a, b, c, d, e, f_]));
       }
-      case 7: return function (a, b, c, d, e, f, g) {
-        return f.apply(null, args.concat([a, b, c, d, e, f, g]));
+      case 7: return function (a, b, c, d, e, f_, g) {
+        return f.apply(null, args.concat([a, b, c, d, e, f_, g]));
       }
       default:
-        return function (a, b, c, d, e, f, g, h) {
-          return caml_call_gen(f, args.concat([a, b, c, d, e, f, g, h]));
+        return function (a, b, c, d, e, f_, g, h) {
+          return caml_call_gen(f, args.concat([a, b, c, d, e, f_, g, h]));
         };
       }
     }
