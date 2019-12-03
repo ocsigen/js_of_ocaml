@@ -90,15 +90,6 @@ let%expect_test "generated code" =
 end
 
 module M2 = struct
-   (* XCR toverby for hheuzard: I can't get this to reproduce.  Even
-      though 'f' is not inlined, calls to 'f_prime' and 'f_prime_prime'
-      know the arity.  My intuition for what causes arity information to
-      be lost appears to be misguided.
-
-      hheuzard: I updated the test to make f unknown. It seems to reproduce the issue
-      correctly. I'll let you update the GPR.
-   *)
-
   let code = {|
   let f _ a b c d e (_f: int -> int -> int -> int -> int -> unit -> unit) =
       print_int (a + b + c + d + e);
