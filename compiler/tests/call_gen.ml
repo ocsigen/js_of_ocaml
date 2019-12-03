@@ -19,8 +19,9 @@
 
 open Util
 
-let code =
-  {|
+module M1 = struct
+  let code =
+    {|
   let f_prime g = g 1 2
   let f g = f_prime g 3 4
   (* [g] will be unknown as long as [f] is not inlined. *)
@@ -38,35 +39,35 @@ let code =
   let () = m 8 10; print_newline ()
 |}
 
-let%expect_test "executed code" =
-  compile_and_run code;
-  [%expect {|
+  let%expect_test "executed code" =
+    compile_and_run code;
+    [%expect {|
     10
     10
     14
     25 |}]
 
-let%expect_test "generated code" =
-  let generated =
-    code
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
-  print_fun_decl generated (Some "f");
-  print_fun_decl generated (Some "f_prime");
-  print_fun_decl generated (Some "g");
-  print_fun_decl generated (Some "h");
-  print_fun_decl generated (Some "k");
-  print_fun_decl generated (Some "l");
-  print_fun_decl generated (Some "m");
-  print_fun_decl generated (Some "caml_call1");
-  print_fun_decl generated (Some "caml_call2");
-  [%expect
-    {|
+  let%expect_test "generated code" =
+    let generated =
+      code
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml
+      |> compile_ocaml_to_cmo
+      |> compile_cmo_to_javascript ~pretty:true
+      |> fst
+      |> parse_js
+    in
+    print_fun_decl generated (Some "f");
+    print_fun_decl generated (Some "f_prime");
+    print_fun_decl generated (Some "g");
+    print_fun_decl generated (Some "h");
+    print_fun_decl generated (Some "k");
+    print_fun_decl generated (Some "l");
+    print_fun_decl generated (Some "m");
+    print_fun_decl generated (Some "caml_call1");
+    print_fun_decl generated (Some "caml_call2");
+    [%expect
+      {|
     function f(g){return caml_call2(f_prime(g),3,4)}
     function f_prime(g){return caml_call2(g,1,2)}
     function g(param)
@@ -86,3 +87,51 @@ let%expect_test "generated code" =
     function caml_call2(f,a0,a1)
      {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
     |}]
+end
+
+module M2 = struct
+  let code =
+    {|
+  let f _ a b c d e (_f: int -> int -> int -> int -> int -> unit -> unit) =
+      print_int (a + b + c + d + e);
+      print_newline ();;
+  let f_prime f = f true ;;
+  let f_prime_prime f = f false;;
+  let g _a _b _c _d _e _f = failwith "printed g!" ;;
+  let () = f_prime f 1 2 3 4 5 g ;;
+  let () = f_prime f 2 3 4 5 6 g ;;
+  let () = f_prime_prime f 1 2 3 4 5 g ;;
+  let () = f_prime_prime f 2 3 4 5 6 g ;;
+  |}
+
+  let%expect_test "generated code" =
+    let generated =
+      code
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml
+      |> compile_ocaml_to_cmo
+      |> compile_cmo_to_javascript ~pretty:true
+      |> fst
+      |> parse_js
+    in
+    print_fun_decl generated (Some "f");
+    print_fun_decl generated (Some "f_prime");
+    print_fun_decl generated (Some "f_prime_prime");
+    print_fun_decl generated (Some "g");
+    [%expect
+      {|
+      function f(param,a,b,c,d,e,f)
+       {caml_call1(Stdlib[44],(((a + b | 0) + c | 0) + d | 0) + e | 0);
+        return caml_call1(Stdlib[47],0)}
+      function f_prime(f){return caml_call1(f,1)}
+      function f_prime_prime(f){return caml_call1(f,0)}
+      function g(a,b,c,d,e,f){return caml_call1(Stdlib[2],cst_printed_g)} |}]
+
+  let%expect_test _ =
+    compile_and_run code;
+    [%expect {|
+      15
+      20
+      15
+      20 |}]
+end

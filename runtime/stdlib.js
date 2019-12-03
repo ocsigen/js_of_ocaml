@@ -74,30 +74,30 @@ function caml_call_gen(f, args) {
     }
     else {
       switch (d) {
-      case 1: return function (a) {
-        return f.apply(null, args.concat([a]));
+      case 1: return function (a1) {
+        return f.apply(null, args.concat([a1]));
       }
-      case 2: return function (a, b) {
-        return f.apply(null, args.concat([a, b]));
+      case 2: return function (a1, a2) {
+        return f.apply(null, args.concat([a1, a2]));
       }
-      case 3: return function (a, b, c) {
-        return f.apply(null, args.concat([a, b, c]));
+      case 3: return function (a1, a2, a3) {
+        return f.apply(null, args.concat([a1, a2, a3]));
       }
-      case 4: return function (a, b, c, d) {
-        return f.apply(null, args.concat([a, b, c, d]));
+      case 4: return function (a1, a2, a3, a4) {
+        return f.apply(null, args.concat([a1, a2, a3, a4]));
       }
-      case 5: return function (a, b, c, d, e) {
-        return f.apply(null, args.concat([a, b, c, d, e]));
+      case 5: return function (a1, a2, a3, a4, a5) {
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5]));
       }
-      case 6: return function (a, b, c, d, e, f) {
-        return f.apply(null, args.concat([a, b, c, d, e, f]));
+      case 6: return function (a1, a2, a3, a4, a5, a6) {
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6]));
       }
-      case 7: return function (a, b, c, d, e, f, g) {
-        return f.apply(null, args.concat([a, b, c, d, e, f, g]));
+      case 7: return function (a1, a2, a3, a4, a5, a6, a7) {
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6, a7]));
       }
       default:
-        return function (a, b, c, d, e, f, g, h) {
-          return caml_call_gen(f, args.concat([a, b, c, d, e, f, g, h]));
+        return function (a1, a2, a3, a4, a5, a6, a7, a8) {
+          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
         };
       }
     }
