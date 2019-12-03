@@ -129,10 +129,8 @@ module M2 = struct
   let%expect_test _ =
     compile_and_run code;
     [%expect {|
-      process exited with error code 1
-       /j/office/app/nodejs/prod/v10.16.3/bin/node /usr/local/home/hheuzard/workspaces/jane/js-of-ocaml/callgen-repro/+share+/.jenga.tmp/jsoo_test5379f7.js
-      /usr/local/home/hheuzard/workspaces/jane/js-of-ocaml/callgen-repro/+share+/.jenga.tmp/jsoo_test5379f7.js:2273
-          function failwith(s){throw [0,Failure,s]}
-                               ^
-      0,248,Failure,-3,printed g! |}]
+      15
+      20
+      15
+      20 |}]
 end
