@@ -19,6 +19,7 @@
 
 open Util
 
+module M1 = struct
 let code =
   {|
   let f_prime g = g 1 2
@@ -86,3 +87,61 @@ let%expect_test "generated code" =
     function caml_call2(f,a0,a1)
      {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
     |}]
+end
+
+module M2 = struct
+   (* XCR toverby for hheuzard: I can't get this to reproduce.  Even
+      though 'f' is not inlined, calls to 'f_prime' and 'f_prime_prime'
+      know the arity.  My intuition for what causes arity information to
+      be lost appears to be misguided.
+
+      hheuzard: I updated the test to make f unknown. It seems to reproduce the issue
+      correctly. I'll let you update the GPR.
+   *)
+
+  let code = {|
+  let f _ a b c d e (_f: int -> int -> int -> int -> int -> unit -> unit) =
+      print_int (a + b + c + d + e);
+      print_newline ();;
+  let f_prime f = f true ;;
+  let f_prime_prime f = f false;;
+  let g _a _b _c _d _e _f = failwith "printed g!" ;;
+  let () = f_prime f 1 2 3 4 5 g ;;
+  let () = f_prime f 2 3 4 5 6 g ;;
+  let () = f_prime_prime f 1 2 3 4 5 g ;;
+  let () = f_prime_prime f 2 3 4 5 6 g ;;
+  |}
+
+  let%expect_test "generated code" =
+    let generated =
+      code
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml
+      |> compile_ocaml_to_cmo
+      |> compile_cmo_to_javascript ~pretty:true
+      |> fst
+      |> parse_js
+    in
+    print_fun_decl generated (Some "f");
+    print_fun_decl generated (Some "f_prime");
+    print_fun_decl generated (Some "f_prime_prime");
+    print_fun_decl generated (Some "g");
+    [%expect {|
+      function f(param,a,b,c,d,e,f)
+       {caml_call1(Stdlib[44],(((a + b | 0) + c | 0) + d | 0) + e | 0);
+        return caml_call1(Stdlib[47],0)}
+      function f_prime(f){return caml_call1(f,1)}
+      function f_prime_prime(f){return caml_call1(f,0)}
+      function g(a,b,c,d,e,f){return caml_call1(Stdlib[2],cst_printed_g)} |}]
+  ;;
+
+  let%expect_test _ =
+    compile_and_run code;
+    [%expect {|
+      process exited with error code 1
+       /j/office/app/nodejs/prod/v10.16.3/bin/node /usr/local/home/hheuzard/workspaces/jane/js-of-ocaml/callgen-repro/+share+/.jenga.tmp/jsoo_test5379f7.js
+      /usr/local/home/hheuzard/workspaces/jane/js-of-ocaml/callgen-repro/+share+/.jenga.tmp/jsoo_test5379f7.js:2273
+          function failwith(s){throw [0,Failure,s]}
+                               ^
+      0,248,Failure,-3,printed g! |}]
+end
