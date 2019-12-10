@@ -19,7 +19,7 @@
 
 open StdLabels
 open Migrate_parsetree
-open OCaml_407.Ast
+open OCaml_408.Ast
 open Ast_helper
 open Asttypes
 open Parsetree
@@ -76,7 +76,7 @@ let fresh_var bound =
   in
   loop 0
 
-module To_current = Migrate_parsetree.Convert (OCaml_407) (OCaml_current)
+module To_current = Migrate_parsetree.Convert (OCaml_408) (OCaml_current)
 
 let string_of_core_type typ : string =
   let typ = { typ with ptyp_attributes = [] } in
@@ -243,8 +243,8 @@ and write_body_of_tuple_type l ~arg ~poly ~tag =
     [%e e]]
 
 and write_poly_case r ~arg ~poly =
-  match r with
-  | Parsetree.Rtag ({ txt = label; _ }, _, _, l) ->
+  match r.prf_desc with
+  | Parsetree.Rtag ({ txt = label; _ }, _, l) ->
       let i = hash_variant label and n = List.length l in
       let v = fresh_var [] in
       let lhs = (if n = 0 then None else Some (pvar v)) |> Ast_helper.Pat.variant label
@@ -339,8 +339,8 @@ let recognize_case_of_constructor i l =
 let recognize_body_of_poly_variant l ~loc =
   let l =
     let f x =
-      match x with
-      | Parsetree.Rtag ({ txt = label; _ }, _, _, l) ->
+      match x.prf_desc with
+      | Parsetree.Rtag ({ txt = label; _ }, _, l) ->
           let i = hash_variant label in
           recognize_case_of_constructor i l
       | Rinherit { ptyp_desc = Ptyp_constr (lid, _); _ } ->
@@ -361,8 +361,8 @@ let maybe_tuple_type = function
   | l -> Ast_helper.Typ.tuple l
 
 let rec read_poly_case ?decl y x =
-  match x with
-  | Parsetree.Rtag ({ txt = label; _ }, _, _, l) -> (
+  match x.prf_desc with
+  | Parsetree.Rtag ({ txt = label; _ }, _, l) -> (
       let i = hash_variant label |> pint in
       match l with
       | [] -> Ast_helper.Exp.case [%pat? `Cst [%p i]] (Ast_helper.Exp.variant label None)
