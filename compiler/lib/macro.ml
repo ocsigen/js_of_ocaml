@@ -28,18 +28,22 @@ class macro_mapper =
       match x with
       | J.ECall (J.EVar (J.S { name; _ }), args, _) -> (
           match name, args with
-          | "BLOCK", J.ENum tag :: (_ :: _ as args) ->
+          | "BLOCK", (J.ENum tag, `Not_spread) :: (_ :: _ as args)
+            when List.for_all args ~f:(function
+              | (_, `Not_spread) -> true
+              | _ -> false)
+            ->
               let tag = Int32.to_int (J.Num.to_int32 tag) in
-              let args = List.map args ~f:m#expression in
+              let args = List.map args ~f:(fun (e,_) -> m#expression e) in
               Mlvalue.Block.make ~tag ~args
-          | "TAG", [ e ] -> Mlvalue.Block.tag (m#expression e)
-          | "LENGTH", [ e ] -> Mlvalue.Array.length (m#expression e)
-          | "FIELD", [ e; J.ENum n ] ->
+          | "TAG", [ e, `Not_spread ] -> Mlvalue.Block.tag (m#expression e)
+          | "LENGTH", [ e, `Not_spread ] -> Mlvalue.Array.length (m#expression e)
+          | "FIELD", [ e, `Not_spread; (J.ENum n, `Not_spread) ] ->
               let idx = Int32.to_int (J.Num.to_int32 n) in
               Mlvalue.Block.field (m#expression e) idx
-          | "FIELD", [ _; J.EUn (J.Neg, _) ] ->
+          | "FIELD", [ _; J.EUn (J.Neg, _), `Not_spread] ->
               failwith "Negative field indexes are not allowed"
-          | "ISBLOCK", [ e ] -> Mlvalue.is_block (m#expression e)
+          | "ISBLOCK", [ e, `Not_spread ] -> Mlvalue.is_block (m#expression e)
           | ("BLOCK" | "TAG" | "LENGTH" | "FIELD" | "ISBLOCK"), _ ->
               failwith
                 (Format.sprintf "macro %s called with inappropriate arguments" name)

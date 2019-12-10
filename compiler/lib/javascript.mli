@@ -136,7 +136,9 @@ and unop =
   | IncrB
   | DecrB
 
-and arguments = expression list
+and spread = [`Spread | `Not_spread]
+
+and arguments = (expression * spread) list
 
 and property_name_and_value_list = (property_name * expression) list
 

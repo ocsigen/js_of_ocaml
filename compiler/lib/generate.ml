@@ -309,7 +309,7 @@ let rec constant_rec ~ctx x level instrs =
   | String s ->
       let e = Share.get_string str_js s ctx.Ctx.share in
       let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
-      J.ECall (p, [ e ], J.N), instrs
+      J.ECall (p, [ e, `Not_spread ], J.N), instrs
   | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
@@ -324,7 +324,7 @@ let rec constant_rec ~ctx x level instrs =
       let lo = int (Int64.to_int i land 0xffffff)
       and mi = int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
       and hi = int (Int64.to_int (Int64.shift_right i 48) land 0xffff) in
-      J.ECall (p, [ lo; mi; hi ], J.N), instrs
+      J.ECall (p, [ lo, `Not_spread; mi, `Not_spread; hi,`Not_spread ], J.N), instrs
   | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
@@ -342,7 +342,7 @@ let rec constant_rec ~ctx x level instrs =
           let p =
             Share.get_prim (runtime_fun ctx) "caml_list_of_js_array" ctx.Ctx.share
           in
-          J.ECall (p, [ J.EArr arr ], J.N), instrs
+          J.ECall (p, [ J.EArr arr, `Not_spread ], J.N), instrs
       | None ->
           let split = level = constant_max_depth in
           let level = if split then 0 else level + 1 in
@@ -683,13 +683,14 @@ let parallel_renaming params args continuation queue =
 (****)
 
 let apply_fun_raw ctx f params =
+  let args = List.map params ~f:(fun e -> e, `Not_spread) in
   let n = List.length params in
   J.ECond
     ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
-    , J.ECall (f, params, J.N)
+    , J.ECall (f, args, J.N)
     , J.ECall
         ( runtime_fun ctx "caml_call_gen"
-        , [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
+        , [ f, `Not_spread; J.EArr (List.map params ~f:(fun x -> Some x)), `Not_spread ]
         , J.N ) )
 
 let generate_apply_fun ctx n =
@@ -714,7 +715,7 @@ let apply_fun ctx f params loc =
   then apply_fun_raw ctx f params
   else
     let y = Share.get_apply (generate_apply_fun ctx) (List.length params) ctx.Ctx.share in
-    J.ECall (y, f :: params, loc)
+    J.ECall (y, (List.map ~f:(fun x -> x, `Not_spread) (f :: params)), loc)
 
 (****)
 
@@ -837,16 +838,16 @@ let register_tern_prim name f =
 
 let register_un_math_prim name prim =
   register_un_prim name `Pure (fun cx loc ->
-      J.ECall (J.EDot (s_var "Math", prim), [ cx ], loc))
+      J.ECall (J.EDot (s_var "Math", prim), [ cx, `Not_spread ], loc))
 
 let register_bin_math_prim name prim =
   register_bin_prim name `Pure (fun cx cy loc ->
-      J.ECall (J.EDot (s_var "Math", prim), [ cx; cy ], loc))
+      J.ECall (J.EDot (s_var "Math", prim), [ cx, `Not_spread; cy, `Not_spread ], loc))
 
 let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
       let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
-      J.ECall (p, [ J.EBin (J.Plus, str_js "", cx) ], loc));
+      J.ECall (p, [ J.EBin (J.Plus, str_js "", cx), `Not_spread ], loc));
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
@@ -938,13 +939,13 @@ let throw_statement ctx cx k loc =
   | `Normal ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx; bool (int 1) ], loc))
+               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx, `Not_spread; bool (int 1), `Not_spread ], loc))
         , loc )
       ]
   | `Reraise ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx; bool (int 0) ], loc))
+               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx, `Not_spread; bool (int 0), `Not_spread ], loc))
         , loc )
       ]
 
@@ -957,7 +958,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
-            cx :: args, or_p prop prop', queue)
+            (cx, `Not_spread) :: args, or_p prop prop', queue)
           l
           ~init:([], or_p px mutator_p, queue)
       in
@@ -1060,10 +1061,11 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
               List.fold_right
                 ~f:(fun x (args, prop, queue) ->
                   let (prop', cx), queue = access_queue' ~ctx queue x in
-                  cx :: args, or_p prop prop', queue)
+                  (cx, `Not_spread) :: args, or_p prop prop', queue)
                 l
                 ~init:([], mutator_p, queue)
             in
+            let co = co, `Not_spread in
             J.ECall (J.EDot (cf, "call"), co :: args, loc), or_p (or_p pf po) prop, queue
         | Extern "%caml_js_opt_fun_call", f :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
@@ -1071,7 +1073,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
               List.fold_right
                 ~f:(fun x (args, prop, queue) ->
                   let (prop', cx), queue = access_queue' ~ctx queue x in
-                  cx :: args, or_p prop prop', queue)
+                  (cx, `Not_spread) :: args, or_p prop prop', queue)
                 l
                 ~init:([], mutator_p, queue)
             in
@@ -1082,7 +1084,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
               List.fold_right
                 ~f:(fun x (args, prop, queue) ->
                   let (prop', cx), queue = access_queue' ~ctx queue x in
-                  cx :: args, or_p prop prop', queue)
+                  (cx, `Not_spread) :: args, or_p prop prop', queue)
                 l
                 ~init:([], mutator_p, queue)
             in
@@ -1093,7 +1095,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
               List.fold_right
                 ~f:(fun x (args, prop, queue) ->
                   let (prop', cx), queue = access_queue' ~ctx queue x in
-                  cx :: args, or_p prop prop', queue)
+                  (cx, `Not_spread) :: args, or_p prop prop', queue)
                 l
                 ~init:([], mutator_p, queue)
             in
@@ -1138,7 +1140,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let args = Array.to_list (Array.init i ~f:(fun _ -> J.V (Var.fresh ()))) in
             let f = J.V (Var.fresh ()) in
             let call =
-              J.ECall (J.EDot (J.EVar f, "fun"), List.map args ~f:(fun v -> J.EVar v), loc)
+              J.ECall (J.EDot (J.EVar f, "fun"), List.map args ~f:(fun v -> J.EVar v, `Not_spread), loc)
             in
             let e =
               J.EFun
@@ -1159,7 +1161,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                   List.fold_right
                     ~f:(fun x (args, prop, queue) ->
                       let (prop', cx), queue = access_queue' ~ctx queue x in
-                      cx :: args, or_p prop prop', queue)
+                      (cx, `Not_spread) :: args, or_p prop prop', queue)
                     l
                     ~init:([], prim_kind, queue)
                 in
@@ -1402,7 +1404,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                              (runtime_fun st.ctx)
                              "caml_wrap_exception"
                              st.ctx.Ctx.share
-                         , [ J.EVar (J.V x) ]
+                         , [ J.EVar (J.V x), `Not_spread ]
                          , J.N ) ))
               , J.N )
               :: handler

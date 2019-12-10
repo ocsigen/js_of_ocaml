@@ -281,7 +281,7 @@ class traverse_and_find_named_values all =
     method expression x =
       let open Javascript in
       (match x with
-      | ECall (EVar (S { name = "caml_named_value"; _ }), [ EStr (v, _) ], _) ->
+      | ECall (EVar (S { name = "caml_named_value"; _ }), [ EStr (v, _), `Not_spread ], _) ->
           all := StringSet.add v !all
       | _ -> ());
       self#expression x

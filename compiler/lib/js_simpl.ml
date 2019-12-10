@@ -183,7 +183,9 @@ let rec get_variable acc = function
   | J.ECond (e1, e2, e3) -> get_variable (get_variable (get_variable acc e1) e2) e3
   | J.EUn (_, e1) | J.EDot (e1, _) | J.ENew (e1, None) -> get_variable acc e1
   | J.ECall (e1, el, _) | J.ENew (e1, Some el) ->
-      List.fold_left ~f:get_variable ~init:acc (e1 :: el)
+      ((e1, `Not_spread) :: el)  
+      |> List.map ~f:(fun (a, _) -> a) 
+      |> List.fold_left ~init:acc ~f:get_variable
   | J.EVar (J.V v) -> Code.Var.Set.add v acc
   | J.EVar (J.S _) -> acc
   | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc

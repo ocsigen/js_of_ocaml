@@ -50,6 +50,7 @@ type token =
   | T_NULL of Parse_info.t
   | T_NOT_EQUAL of Parse_info.t
   | T_NOT of Parse_info.t
+  | T_SPREAD of Parse_info.t
   | T_NEW of Parse_info.t
   | T_MULT_ASSIGN of Parse_info.t
   | T_MULT of Parse_info.t
