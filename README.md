@@ -72,8 +72,8 @@ Most of the OCaml standard library is supported. However,
 Extra libraries distributed with OCaml (such as Thread or Str) are not
 supported in general. However,
   * Bigarray: bigarrays are supported using Typed Arrays
-  * Num: supported using `+nat.js` option
-  * Graphics: partially supported using canvas (see js_of_ocaml.graphics)
+  * Num: supported
+  * Graphics: partially supported using canvas (see js_of_ocaml-lwt.graphics)
   * Unix: time related functions are supported
 
 Tail call is not optimized in general. However, mutually recursive
