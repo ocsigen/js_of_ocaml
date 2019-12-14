@@ -1,3 +1,11 @@
+# 3.5.2 (2019-12-14) - Hong Kong
+## Features/Changes
+* Misc: support for ocaml 4.10
+* Misc: ppx_deriving_json uses ppxlib >= 0.9
+
+## Bug fixes
+* Runtime: fix pseudo fs initialization (#931)
+
 # 3.5.1 (2019-11-16) - Hong Kong
 ## Features/Changes
 
