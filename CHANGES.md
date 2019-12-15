@@ -1,10 +1,15 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
+* Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
+* Runtime: optimize caml_call_gen
+* Lib: add closest method to element (#930)
 
 ## Bug fixes
+* Runtime: Catch nodejs errors and re-raise them as Sys_error
+* Lib: Fix the type of blur and focus event to be focusEvent (#929)
 
 # 3.5.2 (2019-12-14) - Hong Kong
 ## Features/Changes
