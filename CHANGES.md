@@ -1,12 +1,18 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
-* Misc: support for ocaml 4.10
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
 
 ## Bug fixes
 
+# 3.5.2 (2019-12-14) - Hong Kong
+## Features/Changes
+* Misc: support for ocaml 4.10
+* Misc: ppx_deriving_json uses ppxlib >= 0.9
+
+## Bug fixes
+* Runtime: fix pseudo fs initialization (#931)
 
 # 3.5.1 (2019-11-16) - Hong Kong
 ## Features/Changes
