@@ -38,15 +38,26 @@ let json : json Js.t = Unsafe.global##._JSON
 
 external unsafe_equals : 'a -> 'b -> bool = "caml_js_equals"
 
-external to_byte_MlBytes : js_string t -> 'a t = "caml_js_to_byte_string"
+external to_byte_MlBytes : js_string t -> string = "caml_js_to_byte_string"
 
 external to_byte_jsstring : 'a t -> js_string t = "caml_jsbytes_of_string"
+
+external create_int64_lo_mi_hi : int -> int -> int -> Int64.t = "caml_int64_create_lo_mi_hi"
 
 let input_reviver =
   let reviver _this _key value =
     if unsafe_equals (typeof value) (typeof (string "foo"))
-    then to_byte_MlBytes (Unsafe.coerce value)
-    else value
+    then Obj.repr (to_byte_MlBytes (Unsafe.coerce value))
+    else if unsafe_equals (typeof value) (string "object")
+            && value##.length == 4
+            && Unsafe.get value 0 == 255
+    then
+      Obj.repr (
+          create_int64_lo_mi_hi
+            (Unsafe.get value 1)
+            (Unsafe.get value 2)
+            (Unsafe.get value 3))
+    else Obj.repr value
   in
   wrap_meth_callback reviver
 
@@ -62,9 +73,16 @@ let mlString_constr =
   let dummy_obj : obj t = Obj.magic dummy_string in
   dummy_obj##.constructor
 
+  let mlInt64_constr =
+  let dummy_int64 = 1L in
+  let dummy_obj : obj t = Obj.magic dummy_int64 in
+  dummy_obj##.constructor
+
 let output_reviver _key value =
   if instanceof value mlString_constr
-  then to_byte_jsstring (Unsafe.coerce value)
-  else value
+  then Obj.repr (to_byte_jsstring (Unsafe.coerce value))
+  else if instanceof value mlInt64_constr
+  then Obj.repr (array [|255; value##.lo;value##.mi;value##.hi |])
+  else Obj.repr value
 
 let output obj = json##stringify_ obj output_reviver
