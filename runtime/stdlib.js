@@ -429,7 +429,7 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
 }
 
 //Provides: caml_compare_val (const, const, const)
-//Requires: caml_int64_compare, caml_int_compare, caml_string_compare
+//Requires: caml_int_compare, caml_string_compare
 //Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
 //Requires: caml_compare_val_number_custom
 function caml_compare_val (a, b, total) {
@@ -495,12 +495,8 @@ function caml_compare_val (a, b, total) {
         // Cannot happen, handled above
         caml_invalid_argument("equal: got Double_array_tag, should not happen");
         break
-      case 255: // Int64
-        // Int64 is the only custom block implemented this way,
-        // TODO: We should rewrite the implementation and follow
-        // what we do for other custom blocks: zarith, bigint, bigarray, ...
-        var x = caml_int64_compare(a, b);
-        if (x != 0) return (x | 0);
+      case 255: // Custom_tag
+        caml_invalid_argument("equal: got Custom_tag, should not happen");
         break;
       case 1247: // Function
         caml_invalid_argument("compare: functional value");
