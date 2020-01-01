@@ -1,13 +1,16 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
+* Compiler: fix vardecl optim (#946)
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
 * Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
 * Runtime: optimize caml_call_gen
+* Runtime: change representation of int64  (#905)
 * Lib: add closest method to element (#930)
 
 ## Bug fixes
+* Compiler: restore optimization when generating if statements
 * Runtime: Catch nodejs errors and re-raise them as Sys_error
 * Lib: Fix the type of blur and focus event to be focusEvent (#929)
 
