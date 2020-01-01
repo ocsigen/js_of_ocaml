@@ -1336,19 +1336,20 @@ and compile_block st queue (pc : Addr.t) frontier interm =
           in
           let grey = Addr.Set.union pc2s pc3s in
           Addr.Set.iter (incr_preds st) grey;
-          let grey', new_interm = colapse_frontier st grey interm in
+          let prefix, grey', new_interm = colapse_frontier st grey interm in
           assert (Addr.Set.cardinal grey' <= 1);
           let inner_frontier = Addr.Set.union new_frontier grey' in
           if debug () then Format.eprintf "@[<2>try {@,";
           let body =
-            compile_branch
-              st
-              []
-              (pc1, args1)
-              None
-              Addr.Set.empty
-              inner_frontier
-              new_interm
+            prefix
+            @ compile_branch
+                st
+                []
+                (pc1, args1)
+                None
+                Addr.Set.empty
+                inner_frontier
+                new_interm
           in
           if debug () then Format.eprintf "} catch {@,";
           let x =
@@ -1418,7 +1419,9 @@ and compile_block st queue (pc : Addr.t) frontier interm =
              , source_location st.ctx pc )
             :: after)
       | _ ->
-          let new_frontier, new_interm = colapse_frontier st new_frontier interm in
+          let prefix, new_frontier, new_interm =
+            colapse_frontier st new_frontier interm
+          in
           assert (Addr.Set.cardinal new_frontier <= 1);
           (* Beware evaluation order! *)
           let cond =
@@ -1433,7 +1436,8 @@ and compile_block st queue (pc : Addr.t) frontier interm =
               new_interm
               succs
           in
-          cond
+          prefix
+          @ cond
           @
           if Addr.Set.cardinal new_frontier = 0
           then []
@@ -1483,11 +1487,11 @@ and colapse_frontier st new_frontier interm =
         st.interm_idx
         (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
-    let a = Array.of_list (Addr.Set.elements new_frontier) in
+    let a = Addr.Set.elements new_frontier in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
     let idx = st.interm_idx in
     st.interm_idx <- idx - 1;
-    let cases = Array.map a ~f:(fun pc -> pc, []) in
+    let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
     let switch =
       if Array.length cases > 2
       then Code.Switch (x, cases, [||])
@@ -1498,6 +1502,18 @@ and colapse_frontier st new_frontier interm =
         idx
         { params = []; handler = None; body = []; branch = switch }
         st.blocks;
+    let pc_i = List.mapi ~f:(fun i pc -> pc, i) a in
+    let default = 0 in
+    (*
+     TODO: Choose better default:
+     {[
+       pc_i
+       |> List.map ~f:(fun (pc, i) -> pc, i, get_preds st pc)
+       |> List.sort ~cmp:(fun (_, _, (c1 : int)) (_, _, (c2 : int)) -> compare c2 c1)
+       |> List.hd
+       |> fun (_, default, _) -> default
+     ]}
+    *)
     (* There is a branch from this switch to the members
        of the frontier. *)
     Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;
@@ -1507,12 +1523,11 @@ and colapse_frontier st new_frontier interm =
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
     Hashtbl.add st.backs idx Addr.Set.empty;
-    ( Addr.Set.singleton idx
-    , Array.fold_right
-        (Array.mapi ~f:(fun i pc -> pc, i) a)
-        ~init:interm
-        ~f:(fun (pc, i) interm -> Addr.Map.add pc (idx, (x, i)) interm) ))
-  else new_frontier, interm
+    ( [ J.Variable_statement [ J.V x, Some (int default, J.N) ], J.N ]
+    , Addr.Set.singleton idx
+    , List.fold_right pc_i ~init:interm ~f:(fun (pc, i) interm ->
+          Addr.Map.add pc (idx, (x, i, default = i)) interm) ))
+  else [], new_frontier, interm
 
 and compile_decision_tree st _queue handler backs frontier interm succs loc cx dtree =
   (* Some changes here may require corresponding changes
@@ -1799,10 +1814,12 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
 
 and compile_branch_selection pc interm =
   try
-    let pc, (x, i) = Addr.Map.find pc interm in
+    let pc, (x, i, default) = Addr.Map.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
-    (J.Variable_statement [ J.V x, Some (int i, J.N) ], J.N)
-    :: compile_branch_selection pc interm
+    let branch = compile_branch_selection pc interm in
+    if default
+    then branch
+    else (J.Expression_statement (EBin (Eq, EVar (J.V x), int i)), J.N) :: branch
   with Not_found -> []
 
 and compile_closure ctx at_toplevel (pc, args) =
