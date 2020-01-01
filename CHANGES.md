@@ -1,6 +1,7 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
 * Compiler: fix vardecl optim (#946)
+* Compiler: Compiler: change compilation scheme for branches (#948)
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
 * Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
