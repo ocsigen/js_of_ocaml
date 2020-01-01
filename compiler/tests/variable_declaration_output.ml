@@ -73,25 +73,46 @@ let%expect_test _ =
       {|
     let match_expr = function
       | [] | [None] | _ :: None :: _ -> 1
-      | _ -> 2
+      | [ Some None ] -> 2
+      | [ Some (Some 2) ] -> 3
+      | _ -> 4
     |}
   in
   print_fun_decl (program ~enable:true) (Some "match_expr");
   [%expect
     {|
     function match_expr(param)
-     {var switch$1,switch$0,_a_;
+     {var switch$1,switch$0,_c_,_b_,_a_;
       if(param)
-       {switch$0 = param[1]?0:param[2]?0:1;
+       {_a_ = param[1];
+        if(_a_)
+         {_b_ = _a_[1];
+          if(_b_)
+           if(2 === _b_[1]){if(! param[2])return 3;switch$0 = 0}else switch$0 = 0;
+          else
+           {if(! param[2])return 2;switch$0 = 0}}
+        else
+         switch$0 = param[2]?0:1;
         if(! switch$0)
-         {_a_ = param[2];switch$1 = _a_?_a_[1]?0:1:0;if(! switch$1)return 2}}
+         {_c_ = param[2];switch$1 = _c_?_c_[1]?0:1:0;if(! switch$1)return 4}}
       return 1} |}];
   print_fun_decl (program ~enable:false) (Some "match_expr");
   [%expect
     {|
     function match_expr(param)
      {if(param)
-       {var switch$0=param[1]?0:param[2]?0:1;
+       {var _a_=param[1];
+        if(_a_)
+         {var _b_=_a_[1];
+          if(_b_)
+           if(2 === _b_[1])
+            {if(! param[2])return 3;var switch$0=0}
+           else
+            var switch$0=0;
+          else
+           {if(! param[2])return 2;var switch$0=0}}
+        else
+         var switch$0=param[2]?0:1;
         if(! switch$0)
-         {var _a_=param[2],switch$1=_a_?_a_[1]?0:1:0;if(! switch$1)return 2}}
+         {var _c_=param[2],switch$1=_c_?_c_[1]?0:1:0;if(! switch$1)return 4}}
       return 1} |}]
