@@ -206,10 +206,10 @@ MlInt64.prototype.toArray = function () {
           this.lo & 0xff];
 }
 MlInt64.prototype.lo32 = function () {
-  return this.lo | (this.mi << 24);
+  return this.lo | ((this.mi & 0xff) << 24);
 }
 MlInt64.prototype.hi32 = function () {
-  return (this.mi >>> 8) | (this.hi << 16);
+  return ((this.mi >>> 8) & 0xffff) | (this.hi << 16);
 }
 
 //Provides: caml_int64_ult const
@@ -358,13 +358,10 @@ function caml_int64_create_lo_hi(lo, hi){
     (hi >>> 16) & 0xffff);
 }
 //Provides: caml_int64_lo32 const
-function caml_int64_lo32(v){
-  return v.lo | ((v.mi & 0xff) << 24);
-}
+function caml_int64_lo32(v){ return v.lo32() }
+
 //Provides: caml_int64_hi32 const
-function caml_int64_hi32(v){
-  return ((v.mi >>> 8) & 0xffff) | (v.hi << 16);
-}
+function caml_int64_hi32(v){ return v.hi32() }
 
 //Provides: caml_int64_of_bytes const
 //Requires: MlInt64
