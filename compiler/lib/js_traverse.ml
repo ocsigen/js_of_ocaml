@@ -702,6 +702,13 @@ class compact_vardecl =
             | _ -> (x, loc) :: acc)
       in
       List.rev l
+
+    method program p =
+      let p = super#program p in
+      m#merge_info m;
+      let all = IdentSet.diff insert_ exc_ in
+      let body = m#pack all p in
+      body
   end
 
 class clean =
