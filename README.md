@@ -33,18 +33,8 @@ like browsers and Node.js.
 
 ### Opam
 ```
-opam install js_of_ocaml js_of_ocaml-ppx
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
 ```
-
-### Manual
-  * edit `Makefile.conf` to change the default configuration
-  * run `make all` to compile
-  * run `make install` as root to install the compiler
-    and its libraries
-  * run `make uninstall` as root to uninstall them
-
-You can run `make toplevel-examples` if you want to build a Web-based OCaml
-toplevel as well. [Try the toplevel](http://ocsigen.github.io/js_of_ocaml/)
 
 ## Usage
 
