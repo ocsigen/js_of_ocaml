@@ -1487,12 +1487,17 @@ and colapse_frontier st new_frontier interm =
         st.interm_idx
         (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
-    let a = Addr.Set.elements new_frontier in
+    let a =
+      Addr.Set.elements new_frontier
+      |> List.map ~f:(fun pc -> pc, get_preds st pc)
+      |> List.sort ~cmp:(fun (_, (c1 : int)) (_, (c2 : int)) -> compare c2 c1)
+      |> List.map ~f:fst
+    in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
     let idx = st.interm_idx in
     st.interm_idx <- idx - 1;
-    let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
     let switch =
+      let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
       then Code.Switch (x, cases, [||])
       else Code.Cond (IsTrue, x, cases.(1), cases.(0))
@@ -1504,16 +1509,6 @@ and colapse_frontier st new_frontier interm =
         st.blocks;
     let pc_i = List.mapi ~f:(fun i pc -> pc, i) a in
     let default = 0 in
-    (*
-     TODO: Choose better default:
-     {[
-       pc_i
-       |> List.map ~f:(fun (pc, i) -> pc, i, get_preds st pc)
-       |> List.sort ~cmp:(fun (_, _, (c1 : int)) (_, _, (c2 : int)) -> compare c2 c1)
-       |> List.hd
-       |> fun (_, default, _) -> default
-     ]}
-    *)
     (* There is a branch from this switch to the members
        of the frontier. *)
     Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;

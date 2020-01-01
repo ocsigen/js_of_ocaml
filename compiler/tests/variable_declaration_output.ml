@@ -97,8 +97,8 @@ let%expect_test _ =
         if(! switch$0)
          {_c_ = param[2];
           switch$1 = 0;
-          if(_c_ && ! _c_[1])switch$1 = 1;
-          if(! switch$1)return 4}}
+          if(! _c_ || _c_[1])switch$1 = 1;
+          if(switch$1)return 4}}
       return 1} |}];
   print_fun_decl (program ~enable:false) (Some "match_expr");
   [%expect
@@ -116,6 +116,6 @@ let%expect_test _ =
          if(! param[2])switch$0 = 1;
         if(! switch$0)
          {var _c_=param[2],switch$1=0;
-          if(_c_ && ! _c_[1])switch$1 = 1;
-          if(! switch$1)return 4}}
+          if(! _c_ || _c_[1])switch$1 = 1;
+          if(switch$1)return 4}}
       return 1} |}]
