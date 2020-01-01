@@ -55,3 +55,43 @@ let%expect_test _ =
     var bx = [254,1.,2.,3.,4.];
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
     var symbol_op = [0,symbol_bind,symbol_map,symbol]; |}]
+
+let%expect_test _ =
+  let compile ~enable s =
+    let enable_disable = if enable then "--enable" else "--disable" in
+    s
+    |> Filetype.ocaml_text_of_string
+    |> Filetype.write_ocaml
+    |> compile_ocaml_to_cmo
+    |> compile_cmo_to_javascript ~pretty:true ~flags:[ enable_disable; "vardecl" ]
+    |> fst
+    |> parse_js
+  in
+  let program ~enable =
+    compile
+      ~enable
+      {|
+    let match_expr = function
+      | [] | [None] | _ :: None :: _ -> 1
+      | _ -> 2
+    |}
+  in
+  print_fun_decl (program ~enable:true) (Some "match_expr");
+  [%expect
+    {|
+    function match_expr(param)
+     {var switch$1,switch$0,_a_;
+      if(param)
+       {switch$0 = param[1]?0:param[2]?0:1;
+        if(! switch$0)
+         {_a_ = param[2];switch$1 = _a_?_a_[1]?0:1:0;if(! switch$1)return 2}}
+      return 1} |}];
+  print_fun_decl (program ~enable:false) (Some "match_expr");
+  [%expect
+    {|
+    function match_expr(param)
+     {if(param)
+       {var switch$0=param[1]?0:param[2]?0:1;
+        if(! switch$0)
+         {var _a_=param[2],switch$1=_a_?_a_[1]?0:1:0;if(! switch$1)return 2}}
+      return 1} |}]

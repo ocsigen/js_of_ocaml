@@ -30,7 +30,8 @@ val compile_ocaml_to_bc : Filetype.ocaml_file -> Filetype.bc_file
 val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
 val compile_cmo_to_javascript :
-     ?pretty:bool
+     ?flags:string list
+  -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.cmo_file
   -> Filetype.js_file * Filetype.sourcemap_file option
