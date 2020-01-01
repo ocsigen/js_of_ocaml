@@ -1457,16 +1457,15 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             ( J.Left None
             , None
             , None
-            , ( J.Block
-                  (if Addr.Set.cardinal frontier > 0
-                  then (
-                    if debug ()
-                    then Format.eprintf "@ break (%d); }@]" (Addr.Set.choose new_frontier);
-                    body @ [ J.Break_statement None, J.N ])
-                  else (
-                    if debug () then Format.eprintf "}@]";
-                    body))
-              , J.N ) )
+            , Js_simpl.block
+                (if Addr.Set.cardinal frontier > 0
+                then (
+                  if debug ()
+                  then Format.eprintf "@ break (%d); }@]" (Addr.Set.choose new_frontier);
+                  body @ [ J.Break_statement None, J.N ])
+                else (
+                  if debug () then Format.eprintf "}@]";
+                  body)) )
         , source_location st.ctx pc )
       in
       match label with
@@ -1547,9 +1546,9 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
         , Js_simpl.if_statement
             e'
             loc
-            (J.Block iftrue, J.N)
+            (Js_simpl.block iftrue)
             never1
-            (J.Block iffalse, J.N)
+            (Js_simpl.block iffalse)
             never2 )
     | DTree.Switch a ->
         let all_never = ref true in
