@@ -68,3 +68,9 @@ type w = int seq [@@deriving json]
 let%expect_test _ =
   test w_json (SS (1, SS (2, SS (3, ZZ))));
   [%expect {||}]
+
+type i64 = int64 [@@deriving json]
+
+let%expect_test _ =
+  test i64_json 100000000000000000L;
+  [%expect {||}]

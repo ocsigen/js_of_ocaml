@@ -512,9 +512,9 @@ var caml_output_val = function (){
     }
 
     function extern_rec (v) {
-      if (v.caml_custom || (v instanceof Array && v[0] === 255)) {
+      if (v.caml_custom) {
         if (memo(v)) return;
-        var name = v.caml_custom || "_j";
+        var name = v.caml_custom;
         var ops = caml_custom_ops[name];
         var sz_32_64 = [0,0];
         if(!ops.serialize)

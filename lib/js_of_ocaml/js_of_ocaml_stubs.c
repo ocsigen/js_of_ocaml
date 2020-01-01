@@ -20,6 +20,10 @@ void caml_create_file () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_create_file!\n");
   exit(1);
 }
+void caml_int64_create_lo_mi_hi () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_int64_create_lo_mi_hi!\n");
+  exit(1);
+}
 void caml_js_call () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_call!\n");
   exit(1);

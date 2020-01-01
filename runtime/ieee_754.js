@@ -126,9 +126,9 @@ function caml_hexstring_of_float (x, prec, style) {
 
 //Provides: caml_int64_float_of_bits const
 function caml_int64_float_of_bits (x) {
-  var lo = x[1];
-  var mi = x[2];
-  var hi = x[3];
+  var lo = x.lo;
+  var mi = x.mi;
+  var hi = x.hi;
   var exp = (hi & 0x7fff) >> 4;
   if (exp == 2047) {
     if ((lo|mi|(hi&0xf)) == 0)
