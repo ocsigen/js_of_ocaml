@@ -449,9 +449,7 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 (****)
 
 type state =
-  { all_succs : (int, Addr.Set.t) Hashtbl.t
-  ; (* not used *)
-    succs : (int, int list) Hashtbl.t
+  { succs : (int, int list) Hashtbl.t
   ; backs : (int, Addr.Set.t) Hashtbl.t
   ; preds : (int, int) Hashtbl.t
   ; mutable loops : Addr.Set.t
@@ -594,7 +592,6 @@ let rec build_graph st pc anc =
     st.visited_blocks <- Addr.Set.add pc st.visited_blocks;
     let anc = Addr.Set.add pc anc in
     let s = Code.fold_children st.blocks pc Addr.Set.add Addr.Set.empty in
-    Hashtbl.add st.all_succs pc s;
     let backs = Addr.Set.inter s anc in
     Hashtbl.add st.backs pc backs;
     let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
@@ -1510,7 +1507,6 @@ and colapse_frontier st new_frontier interm =
        but they should remain in the frontier. *)
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
-    Hashtbl.add st.all_succs idx new_frontier;
     Hashtbl.add st.backs idx Addr.Set.empty;
     ( Addr.Set.singleton idx
     , Array.fold_right
@@ -1815,7 +1811,6 @@ and compile_closure ctx at_toplevel (pc, args) =
     { visited_blocks = Addr.Set.empty
     ; loops = Addr.Set.empty
     ; loop_stack = []
-    ; all_succs = Hashtbl.create 17
     ; succs = Hashtbl.create 17
     ; backs = Hashtbl.create 17
     ; preds = Hashtbl.create 17
