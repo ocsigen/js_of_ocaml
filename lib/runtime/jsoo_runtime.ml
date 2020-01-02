@@ -57,6 +57,8 @@ module Js = struct
 
   external obj : (string * t) array -> t = "caml_js_object"
 
+  external nullable_of_option : 'a option -> t = "caml_js_nullable"
+
   external equals : t -> t -> bool = "caml_js_equals"
 
   external strict_equals : t -> t -> bool = "caml_js_strict_equals"

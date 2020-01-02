@@ -16,6 +16,10 @@ void caml_js_html_escape () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_html_escape!\n");
   exit(1);
 }
+void caml_js_nullable () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_nullable!\n");
+  exit(1);
+}
 void caml_js_on_ie () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
   exit(1);

@@ -57,6 +57,39 @@ let specialize_instr info i =
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
+  | Let (x, Prim (Extern "caml_js_nullable", [ a ])) -> (
+      let the_option_of info x =
+        match x with
+        | Pv x ->
+            get_approx
+              info
+              (fun x ->
+                match info.info_defs.(Var.idx x) with
+                | Expr (Constant (Int i)) -> `CConst (Int32.to_int i)
+                | Expr (Block (0, _, _)) ->
+                    if info.info_possibly_mutable.(Var.idx x) then `Unknown else `Block
+                | Expr (Constant (Tuple (0, [| a |], _))) -> `CBlock a
+                | _ -> `Unknown)
+              `Unknown
+              (fun u v ->
+                match u, v with
+                | `Block, `Block -> u
+                | `CBlock a, `CBlock b -> if Poly.equal a b then u else `Unknown
+                | `CConst i, `CConst j when i = j -> u
+                | `Unknown, _
+                | `Block, (`Unknown | `CBlock _ | `CConst _)
+                | `CBlock _, (`Unknown | `Block | `CConst _)
+                | `CConst _, (`Unknown | `Block | `CBlock _ | `CConst _) -> `Unknown)
+              x
+        | Pc (Int i) -> `CConst (Int32.to_int i)
+        | Pc (Tuple (0, [| a |], _)) -> `CBlock a
+        | _ -> `Unknown
+      in
+      match the_option_of info a, a with
+      | `Block, Pv a -> Let (x, Field (a, 0))
+      | `CBlock a, _ -> Let (x, Constant a)
+      | `CConst 0, _ -> Let (x, Constant Null)
+      | `Block, Pc _ | `CConst _, _ | `Unknown, _ -> i)
   | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])) -> (
       match the_def_of info a with
       | Some (Block (_, a, _)) ->
