@@ -511,6 +511,7 @@ end = struct
     | String _ | NativeString _ -> false
     | Float _ -> true
     | Float_array _ -> false
+    | Null -> true
     | Int64 _ -> false
     | Tuple _ -> false
     | Int _ -> true

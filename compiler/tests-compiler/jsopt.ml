@@ -80,6 +80,8 @@ module Js = struct
 
   external obj : (string * t) array -> t = "caml_js_object"
 
+  external nullable_of_option : 'a option -> t = "caml_js_nullable"
+
   external equals : t -> t -> bool = "caml_js_equals"
 
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
@@ -562,4 +564,25 @@ let%expect_test "string sharing" =
        return;
       }
       (globalThis));
+    //end |}]
+
+let%expect_test "nullable_of_option" =
+  let program =
+    compile_and_parse
+      {|
+      let none = Js.nullable_of_option None
+      let some = Js.nullable_of_option (Some (Js.string "a"))
+      let fff x = Js.nullable_of_option x
+      |}
+  in
+  print_var_decl program "some";
+  print_var_decl program "none";
+  print_var_decl program "fff";
+  [%expect
+    {|
+    var some = "a";
+    //end
+    var none = null;
+    //end
+    var fff = runtime.caml_js_nullable;
     //end |}]
