@@ -108,6 +108,10 @@ void caml_js_new () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_new!");
 }
 
+void caml_js_nullable () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_nullable!");
+}
+
 void caml_js_object () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_object!");
 }

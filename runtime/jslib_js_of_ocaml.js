@@ -53,6 +53,9 @@ function caml_js_html_entities(s) {
   }
 }
 
+//Provides: caml_js_nullable const
+function caml_js_nullable(a) { return (a===0)?null:a[1]; }
+
 //Provides: caml_js_get_console const
 function caml_js_get_console () {
   var c = console;

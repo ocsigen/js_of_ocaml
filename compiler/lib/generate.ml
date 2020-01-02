@@ -422,6 +422,7 @@ let ocaml_string ~ctx ~loc s =
 
 let rec constant_rec ~ctx x level instrs =
   match x with
+  | Null -> s_var "null", instrs
   | String s ->
       let e =
         if String.is_ascii s

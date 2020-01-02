@@ -160,6 +160,7 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
   | Int of int32
+  | Null
 
 val constant_equal : constant -> constant -> bool option
 
