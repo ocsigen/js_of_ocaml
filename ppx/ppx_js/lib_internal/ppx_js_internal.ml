@@ -77,14 +77,10 @@ let inside_Js =
     (try Filename.basename (Filename.chop_extension !Location.input_name) = "js"
      with Invalid_argument _ -> false)
 
-(* -- FIXME --
-   [merlin_noloc] is an attempt to hide some ast node from merlin
-   when using merlin-type-enclosing-go-{up,down}.
-   It turns out not to be working properly, just hiding location instead of the all
-   ast node.
-*)
-let merlin_noloc =
-  { attr_name = { txt = "merlin.loc"; loc = Location.none }
+(* [merlin_hide] tells merlin to not look at a node, or at any of its
+   descendants.  *)
+let merlin_hide =
+  { attr_name = { txt = "merlin.hide"; loc = Location.none }
   ; attr_payload = PStr []
   ; attr_loc = Location.none
   }
@@ -109,7 +105,7 @@ end = struct
 
   let js_unsafe_dot name = js_dot ("Unsafe." ^ name)
 
-  let type_ ?loc s args = Typ.constr ?loc (lid (js_dot s)) args
+  let type_ ?loc s args = Typ.constr ?loc (lid ?loc (js_dot s)) args
 
   let apply_ ~where ?loc s args =
     let args = List.map ~f:(fun x -> nolabel, x) args in
@@ -249,9 +245,12 @@ let open_t loc = Js.type_ ~loc "t" [ Typ.object_ ~loc [] Open ]
        y
        (fun x  -> x#meth)
    ]} *)
-let method_call ~loc obj meth args =
-  let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
-  let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
+let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
+  let gloc = { loc with Location.loc_ghost = true } in
+  let obj =
+    let gloc = { obj.pexp_loc with loc_ghost = true } in
+    Exp.constraint_ ~attrs:[ merlin_hide ] ~loc:gloc obj (open_t gloc)
+  in
   let invoker =
     invoker
       (fun args tres -> arrows (Arg.args args) (Js.type_ "meth" [ tres ]))
@@ -265,20 +264,19 @@ let method_call ~loc obj meth args =
       (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
   in
   Exp.apply
-    invoker
+    ~loc:apply_loc
+    { invoker with pexp_attributes = [ merlin_hide ] }
     ((app_arg obj :: args)
     @ [ app_arg
           (Exp.fun_
-             ~loc
-             ~attrs:[ merlin_noloc ]
+             ~loc:gloc
              nolabel
              None
-             (Pat.var ~loc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
+             (Pat.var ~loc:gloc (Location.mknoloc "x"))
              (Exp.send
                 ~loc
-                ~attrs:[ merlin_noloc ]
-                (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-                (make_str ~loc meth)))
+                (Exp.ident ~loc:obj.pexp_loc (lid ~loc:obj.pexp_loc "x"))
+                (make_str ~loc:meth_loc meth)))
       ])
 
 (* {[ obj##.prop ]} generates
@@ -292,7 +290,7 @@ let method_call ~loc obj meth args =
        (obj : < .. > Js.t)
        (fun x -> x#prop)
    ]} *)
-let prop_get ~loc:_ ~prop_loc obj prop =
+let prop_get ~loc obj prop =
   let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
@@ -316,12 +314,8 @@ let prop_get ~loc:_ ~prop_loc obj prop =
            ~loc:gloc
            nolabel
            None
-           (Pat.var ~loc:gloc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
-           (Exp.send
-              ~loc:prop_loc
-              ~attrs:[ merlin_noloc ]
-              (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-              (make_str ~loc:prop_loc prop)))
+           (Pat.var ~loc:gloc (Location.mknoloc "x"))
+           (Exp.send ~loc (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc prop)))
     ]
 
 (* {[ obj##.prop := expr ]} generates
@@ -339,7 +333,11 @@ let prop_get ~loc:_ ~prop_loc obj prop =
    ]} *)
 let prop_set ~loc ~prop_loc obj prop value =
   let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
-  let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
+  let obj =
+    { (Exp.constraint_ ~loc:gloc obj (open_t gloc)) with
+      pexp_attributes = [ merlin_hide ]
+    }
+  in
   let invoker =
     invoker
       (fun args _tres ->
@@ -363,15 +361,14 @@ let prop_set ~loc ~prop_loc obj prop value =
     ; app_arg value
     ; app_arg
         (Exp.fun_
-           ~loc
+           ~loc:{ loc with loc_ghost = true }
            nolabel
            None
-           (Pat.var ~loc:gloc ~attrs:[ merlin_noloc ] (Location.mknoloc "x"))
+           (Pat.var ~loc:gloc (Location.mknoloc "x"))
            (Exp.send
               ~loc:prop_loc
-              ~attrs:[ merlin_noloc ]
-              (Exp.ident ~loc:gloc (lid ~loc:gloc "x"))
-              (make_str ~loc:prop_loc prop)))
+              (Exp.ident ~loc:obj.pexp_loc (lid ~loc:gloc "x"))
+              (make_str ~loc prop)))
     ]
 
 (* {[ new%js constr x y ]} generates
@@ -409,10 +406,11 @@ let new_object constr args =
         | _ -> assert false)
       (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
   in
+  let gloc = { constr.loc with loc_ghost = true } in
   Exp.apply
     invoker
     ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
-    @ [ app_arg (Exp.construct ~loc:constr.loc (lid ~loc:constr.loc "()") None) ])
+    @ [ app_arg (Exp.construct ~loc:gloc (lid ~loc:gloc "()") None) ])
 
 module S = Map.Make (String)
 
@@ -592,7 +590,8 @@ let literal_object self_id (fields : field_desc list) =
   in
   let body = function
     | Val (_, _, _, body) -> body
-    | Meth (_, _, _, body, _) -> [%expr fun [%p self_id] -> [%e body]]
+    | Meth (_, _, _, body, _) ->
+        Exp.fun_ ~loc:{ body.pexp_loc with loc_ghost = true } Nolabel None self_id body
   in
   let extra_types =
     List.concat
@@ -676,16 +675,19 @@ let literal_object self_id (fields : field_desc list) =
     invoker
     (List.map fields ~f:(fun f -> app_arg (body f))
     @ [ app_arg
-          (List.fold_right
-             (self :: List.map fields ~f:(fun f -> (name f).txt))
-             ~init:fake_object
-             ~f:(fun name fun_ ->
-               Exp.fun_
-                 ~loc:gloc
-                 nolabel
-                 None
-                 (Pat.var ~loc:gloc (Location.mknoloc name))
-                 fun_))
+          { (List.fold_right
+               (self :: List.map fields ~f:(fun f -> (name f).txt))
+               ~init:fake_object
+               ~f:(fun name fun_ ->
+                 Exp.fun_
+                   ~loc:gloc
+                   nolabel
+                   None
+                   (Pat.var ~loc:gloc (Location.mknoloc name))
+                   fun_))
+            with
+            pexp_attributes = [ merlin_hide ]
+          }
       ])
 
 let mapper =
@@ -701,9 +703,7 @@ let mapper =
           | [%expr [%e? obj] ##. [%e? meth]] ->
               let obj = mapper.expr mapper obj in
               let prop = exp_to_string meth in
-              let new_expr =
-                prop_get ~loc:meth.pexp_loc ~prop_loc:expr.pexp_loc obj prop
-              in
+              let new_expr = prop_get ~loc:meth.pexp_loc obj prop in
               mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##.var := value *)
           | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as prop] := [%e? value]] ->
@@ -718,22 +718,49 @@ let mapper =
               let meth_str = exp_to_string meth in
               let obj = mapper.expr mapper obj in
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
-              let new_expr = method_call ~loc:meth.pexp_loc obj meth_str args in
+              let new_expr =
+                let loc =
+                  (* The method call "obj ## meth" node doesn't really exist. *)
+                  { expr.pexp_loc with loc_ghost = true }
+                in
+
+                method_call
+                  ~loc
+                  ~apply_loc:expr.pexp_loc
+                  obj
+                  (meth_str, meth.pexp_loc)
+                  args
+              in
               mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##meth arg1 arg2 .. *)
           | { pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args)
+            ; pexp_loc
             ; _
             } ->
               let meth_str = exp_to_string meth in
               let obj = mapper.expr mapper obj in
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
-              let new_expr = method_call ~loc:prop.pexp_loc obj meth_str args in
+              let new_expr =
+                method_call
+                  ~loc:prop.pexp_loc
+                  ~apply_loc:pexp_loc
+                  obj
+                  (meth_str, meth.pexp_loc)
+                  args
+              in
               mapper.expr mapper { new_expr with pexp_attributes }
           (* obj##meth *)
           | [%expr [%e? obj] ## [%e? meth]] as expr ->
               let obj = mapper.expr mapper obj in
-              let meth = exp_to_string meth in
-              let new_expr = method_call ~loc:expr.pexp_loc obj meth [] in
+              let meth_str = exp_to_string meth in
+              let new_expr =
+                method_call
+                  ~loc:expr.pexp_loc
+                  ~apply_loc:expr.pexp_loc
+                  obj
+                  (meth_str, meth.pexp_loc)
+                  []
+              in
               mapper.expr mapper { new_expr with pexp_attributes }
           (* new%js constr] *)
           | [%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]] ->
