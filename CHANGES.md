@@ -9,6 +9,7 @@
 * Runtime: optimize caml_call_gen
 * Runtime: change representation of int64  (#905)
 * Lib: add closest method to element (#930)
+* Ppx: ppx_js behave better with merlin (#933)
 
 ## Bug fixes
 * Compiler: restore optimization when generating if statements
