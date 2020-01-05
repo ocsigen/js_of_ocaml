@@ -40,7 +40,6 @@ let rec tail_call x f l =
   | _ :: rem -> tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
-  (*Format.eprintf "%d@." pc;*)
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return x -> (

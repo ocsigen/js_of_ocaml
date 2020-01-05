@@ -147,13 +147,7 @@ let mark_variables in_loop (pc, blocks, free_pc) =
       let block = Addr.Map.find pc blocks in
       (try
          let pc' = Addr.Map.find pc in_loop in
-         iter_block_bound_vars
-           (fun x ->
-             (*
-Format.eprintf "!%a: %d@." Var.print x pc';
-*)
-             Var.Tbl.set vars x pc')
-           block
+         iter_block_bound_vars (fun x -> Var.Tbl.set vars x pc') block
        with Not_found -> ());
       List.iter block.body ~f:(fun i ->
           match i with
@@ -176,9 +170,6 @@ let free_variables vars in_loop (pc, blocks, free_pc) =
       iter_block_free_vars
         (fun x ->
           let pc' = Var.Tbl.get vars x in
-          (*
-Format.eprintf "%a: %d@." Var.print x pc';
-*)
           if pc' <> -1
           then
             let fv =
@@ -207,12 +198,6 @@ Format.eprintf "%a: %d@." Var.print x pc';
       Code.fold_children blocks pc (fun pc' () -> traverse pc') ())
   in
   traverse pc;
-  (*
-Addr.Map.iter
-(fun pc fv -> if Var.Set.cardinal fv > 0 then
-Format.eprintf ">> %d: %d@." pc (Var.Set.cardinal fv))
-!freevars;
-*)
   !freevars
 
 let f p =
