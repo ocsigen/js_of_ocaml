@@ -786,7 +786,7 @@ and compile infos pc state instrs =
     else (
       State.name_vars state infos.debug pc;
       let stack = State.stack_vars state in
-      if debug_parser () then Format.eprintf "Branch %d (%a) @." pc print_var_list stack;
+      if debug_parser () then Format.eprintf "Branch %d (%a) @." pc Print.var_list stack;
       instrs, Branch (pc, stack), state)
   else (
     if debug_parser () then Format.eprintf "%4d " pc;

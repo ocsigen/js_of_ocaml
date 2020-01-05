@@ -191,32 +191,35 @@ type program =
   ; free_pc : Addr.t
   }
 
-type xinstr =
-  | Instr of instr
-  | Last of last
+module Print : sig
+  type xinstr =
+    | Instr of instr
+    | Last of last
 
-val print_var_list : Format.formatter -> Var.t list -> unit
+  val var_list : Format.formatter -> Var.t list -> unit
 
-val print_instr : Format.formatter -> instr -> unit
+  val instr : Format.formatter -> instr -> unit
 
-val print_block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
+  val block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
 
-val print_program : (Addr.Map.key -> xinstr -> string) -> program -> unit
+  val program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 
-val print_last : Format.formatter -> last -> unit
+  val last : Format.formatter -> last -> unit
 
-val print_cont : Format.formatter -> cont -> unit
+  val cont : Format.formatter -> cont -> unit
+end
+
+type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+
+type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 
-type 'c fold = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c [@@unbox]
+val fold_children : 'c fold_blocs
 
-val fold_children : 'c fold
-
-type fold_poly = { fold : 'a. 'a fold } [@@unboxed]
-
-val traverse : fold_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+val traverse :
+  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
 val prepend : program -> instr list -> program
 
