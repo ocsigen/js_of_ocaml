@@ -193,6 +193,7 @@ let is_int info x =
 
 let rec constant_equal a b =
   match a, b with
+  | Null, Null -> Some true
   | String a, String b -> Some (String.equal a b)
   | IString a, IString b -> Some (String.equal a b)
   | Tuple (ta, a, _), Tuple (tb, b, _) ->
@@ -215,17 +216,21 @@ let rec constant_equal a b =
   | Int _, Float _ | Float _, Int _ -> None
   | Tuple ((0 | 254), _, _), Float_array _ -> None
   | Float_array _, Tuple ((0 | 254), _, _) -> None
-  | Tuple _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
+  | Tuple _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Float_array _ | Null) ->
       Some false
-  | Float_array _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
+  | Float_array _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Tuple _ | Null) ->
       Some false
-  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | IString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | Int64 _, (String _ | IString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
+  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _ | Null) -> Some false
+  | IString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _ | Null) -> Some false
+  | Int64 _, (String _ | IString _ | Int _ | Float _ | Tuple _ | Float_array _ | Null) ->
       Some false
-  | Float _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+  | Float _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _) | Null) ->
       Some false
-  | Int _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+  | Int _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _) | Null) ->
+      Some false
+  | ( Null
+    , (Int _ | Float _ | String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _))
+    ) ->
       Some false
 
 let eval_instr info i =

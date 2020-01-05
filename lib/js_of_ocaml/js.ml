@@ -95,7 +95,9 @@ type 'a optdef = 'a
 
 external debugger : unit -> unit = "debugger"
 
-let null : 'a opt = Unsafe.pure_js_expr "null"
+external nullable_of_option : 'a option -> 'a opt = "caml_js_nullable"
+
+let null = nullable_of_option None
 
 external some : 'a -> 'a opt = "%identity"
 
@@ -146,10 +148,7 @@ module Opt : OPT with type 'a t = 'a opt = struct
 
   let get x f = if Unsafe.equals x null then f () else x
 
-  let option x =
-    match x with
-    | None -> empty
-    | Some x -> return x
+  let option x = nullable_of_option x
 
   let to_option x = case x (fun () -> None) (fun x -> Some x)
 end

@@ -265,6 +265,7 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
   | Int of int32
+  | Null
 
 type prim_arg =
   | Pv of Var.t
@@ -325,6 +326,7 @@ let print_cont f (pc, args) = Format.fprintf f "%d (%a)" pc print_var_list args
 
 let rec print_constant f x =
   match x with
+  | Null -> Format.fprintf f "Null"
   | String s -> Format.fprintf f "%S" s
   | IString s -> Format.fprintf f "%S" s
   | Float fl -> Format.fprintf f "%.12g" fl

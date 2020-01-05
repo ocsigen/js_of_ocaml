@@ -37,6 +37,9 @@ function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
 //Requires: raw_array_cons
 function caml_js_to_array(a) { return raw_array_cons(a,0); }
 
+//Provides: caml_js_nullable const
+function caml_js_nullable(a) { return (a===0)?null:a[1]; }
+
 //Provides: caml_js_var mutable (const)
 //Requires: js_print_stderr
 //Requires: MlBytes
