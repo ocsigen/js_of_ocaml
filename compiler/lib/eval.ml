@@ -330,24 +330,10 @@ let the_case_of info x =
   | _ -> Unknown
 
 let eval_branch info = function
-  | Cond (cond, x, ftrue, ffalse) as b -> (
+  | Cond (x, ftrue, ffalse) as b -> (
       match the_int info (Pv x) with
-      | Some j -> (
-          let res =
-            match cond with
-            | IsTrue -> (
-                match j with
-                | 0l -> false
-                (* https://github.com/ocaml/ocaml/blob/trunk/byterun/interp.c#L798 *)
-                | _ -> true)
-            | CEq i -> Int32.(i = j)
-            | CLt i -> Int32.(i < j)
-            | CLe i -> Int32.(i <= j)
-            | CUlt i -> Int32.(j < 0l) || Int32.(i < j)
-          in
-          match res with
-          | true -> Branch ftrue
-          | false -> Branch ffalse)
+      | Some 0l -> Branch ffalse
+      | Some _ -> Branch ftrue
       | _ -> b)
   | Switch (x, const, tags) as b -> (
       (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
@@ -381,7 +367,7 @@ let rec do_not_raise pc visited blocks =
     | Raise _ -> raise May_raise
     | Stop | Return _ | Poptrap _ -> visited
     | Branch (pc, _) -> do_not_raise pc visited blocks
-    | Cond (_, _, (pc1, _), (pc2, _)) ->
+    | Cond (_, (pc1, _), (pc2, _)) ->
         let visited = do_not_raise pc1 visited blocks in
         let visited = do_not_raise pc2 visited blocks in
         visited

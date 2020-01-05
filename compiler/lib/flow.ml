@@ -116,7 +116,7 @@ let program_deps { blocks; _ } =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont
-      | Cond (_, _, cont1, cont2) ->
+      | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2
       | Switch (_, a1, a2) ->

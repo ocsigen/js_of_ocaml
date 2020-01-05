@@ -168,20 +168,12 @@ type instr =
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
-(*XXX REMOVE *)
-type cond =
-  | IsTrue
-  | CEq of int32
-  | CLt of int32
-  | CLe of int32
-  | CUlt of int32
-
 type last =
   | Return of Var.t
   | Raise of Var.t * [ `Normal | `Notrace | `Reraise ]
   | Stop
   | Branch of cont
-  | Cond of cond * Var.t * cont * cont
+  | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * Addr.Set.t
   | Poptrap of cont * Addr.t
