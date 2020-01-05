@@ -1667,10 +1667,8 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         in
         flush_all queue code
     | Switch (x, a1, a2) ->
-        (* The variable x is accessed several times,
-         so we can directly refer to it *)
-        (* We do not want to share the string "number".
-         See comment for IsInt *)
+        (* The variable x is accessed several times, so we can directly
+           refer to it *)
         let b1 =
           compile_decision_tree
             st
