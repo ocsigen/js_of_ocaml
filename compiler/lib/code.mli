@@ -133,7 +133,6 @@ type prim =
   | Neq
   | Lt
   | Le
-  | Ult
 
 type array_or_not =
   | Array

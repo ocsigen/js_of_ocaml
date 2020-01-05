@@ -80,11 +80,11 @@ let eval_prim x =
   | Le, [ Int i; Int j ] -> bool Int32.(i <= j)
   | Eq, [ Int i; Int j ] -> bool Int32.(i = j)
   | Neq, [ Int i; Int j ] -> bool Int32.(i <> j)
-  | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
       match name, l with
       (* int *)
+      | "%unsigned", [ Int i ] -> if Int32.(i >= 0l) then Some (Int i) else None
       | "%int_add", _ -> int_binop l Int.add
       | "%int_sub", _ -> int_binop l Int.sub
       | "%direct_int_mul", _ -> int_binop l Int.mul

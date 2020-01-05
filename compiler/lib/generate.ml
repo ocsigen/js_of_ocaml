@@ -870,6 +870,7 @@ let _ =
   register_bin_prim "%int_xor" `Pure (fun cx cy _ -> J.EBin (J.Bxor, cx, cy));
   register_bin_prim "%int_lsl" `Pure (fun cx cy _ -> J.EBin (J.Lsl, cx, cy));
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
+  register_un_prim "%unsigned" `Pure (fun cx _ -> unsigned cx);
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
   register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
@@ -1186,12 +1187,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | IsInt, [ x ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             bool (Mlvalue.is_immediate cx), px, queue
-        | Ult, [ x; y ] ->
-            let (px, cx), queue = access_queue' ~ctx queue x in
-            let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Lt, unsigned cx, unsigned cy)), or_p px py, queue
-        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
-            assert false
+        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le), _ -> assert false
       in
       res, []
 
