@@ -80,7 +80,7 @@ let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   p
 
-let ( >> ) f g x = g (f x)
+let ( +> ) f g x = g (f x)
 
 let rec loop max name round i (p : 'a) : 'a =
   let p' = round p in
@@ -96,54 +96,49 @@ let identity x = x
 
 let o1 : 'a -> 'a =
   print
-  >> tailcall
-  >> flow_simple
-  >> (* flow simple to keep information for future tailcall opt *)
-  specialize'
-  >> eval
-  >> inline
-  >> (* inlining may reveal new tailcall opt *)
-  deadcode
-  >> tailcall
-  >> phi
-  >> flow
-  >> specialize'
-  >> eval
-  >> inline
-  >> deadcode
-  >> print
-  >> flow
-  >> specialize'
-  >> eval
-  >> inline
-  >> deadcode
-  >> phi
-  >> flow
-  >> specialize
-  >> identity
+  +> tailcall
+  +> flow_simple (* flow simple to keep information for future tailcall opt *)
+  +> specialize'
+  +> eval
+  +> inline (* inlining may reveal new tailcall opt *)
+  +> deadcode
+  +> tailcall
+  +> phi
+  +> flow
+  +> specialize'
+  +> eval
+  +> inline
+  +> deadcode
+  +> print
+  +> flow
+  +> specialize'
+  +> eval
+  +> inline
+  +> deadcode
+  +> phi
+  +> flow
+  +> specialize
+  +> identity
 
 (* o2 *)
 
-let o2 : 'a -> 'a = loop 10 "o1" o1 1 >> print
+let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
 
 (* o3 *)
 
 let round1 : 'a -> 'a =
   print
-  >> tailcall
-  >> inline
-  >> (* inlining may reveal new tailcall opt *)
-  deadcode
-  >> (* deadcode required before flow simple -> provided by constant *)
-  flow_simple
-  >> (* flow simple to keep information for future tailcall opt *)
-  specialize'
-  >> eval
-  >> identity
+  +> tailcall
+  +> inline (* inlining may reveal new tailcall opt *)
+  +> deadcode (* deadcode required before flow simple -> provided by constant *)
+  +> flow_simple (* flow simple to keep information for future tailcall opt *)
+  +> specialize'
+  +> eval
+  +> identity
 
-let round2 = flow >> specialize' >> eval >> deadcode >> o1
+let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
-let o3 = loop 10 "tailcall+inline" round1 1 >> loop 10 "flow" round2 1 >> print
+let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
 let generate d ~exported_runtime (p, live_vars) =
   if times () then Format.eprintf "Start Generation...@.";
@@ -445,16 +440,16 @@ let f
   let exported_runtime = not standalone in
   let linkall = linkall || dynlink in
   configure formatter
-  >> specialize_js_once
-  >> profile
-  >> Generate_closure.f
-  >> deadcode'
-  >> generate d ~exported_runtime
-  >> link ~standalone ~linkall ~export_runtime:dynlink
-  >> pack ~global
-  >> coloring
-  >> check_js
-  >> output formatter ~standalone ~custom_header ?source_map ()
+  +> specialize_js_once
+  +> profile
+  +> Generate_closure.f
+  +> deadcode'
+  +> generate d ~exported_runtime
+  +> link ~standalone ~linkall ~export_runtime:dynlink
+  +> pack ~global
+  +> coloring
+  +> check_js
+  +> output formatter ~standalone ~custom_header ?source_map ()
 
 let from_string prims s formatter =
   let p, d = Parse_bytecode.from_string prims s in
