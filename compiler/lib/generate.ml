@@ -232,6 +232,8 @@ let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
 
 let int32 n = J.ENum (J.Num.of_int32 n)
 
+let to_int cx = J.EBin (J.Bor, cx, int 0)
+
 let unsigned' x = J.EBin (J.Lsr, x, int 0)
 
 let unsigned x =
@@ -255,12 +257,6 @@ let plus_int x y =
 
 let bool e = J.ECond (e, one, zero)
 
-(*let boolnot e = J.ECond (e, zero, one)*)
-let val_float f = f
-
-(*J.EArr [Some (J.ENum 253.); Some f]*)
-let float_val e = e
-
 (****)
 
 let source_location ctx ?after pc =
@@ -270,7 +266,7 @@ let source_location ctx ?after pc =
 
 (****)
 
-let float_const f = val_float (J.ENum (J.Num.of_float f))
+let float_const f = J.ENum (J.Num.of_float f)
 
 let s_var name = J.EVar (J.ident name)
 
@@ -305,7 +301,6 @@ let or_p p q = max p q
 
 let is_mutable p = p >= mutable_p
 
-(*let is_mutator p = p >= mutator_p*)
 let kind k =
   match k with
   | `Pure -> const_p
@@ -480,10 +475,10 @@ let unprotect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 10000
 
 let ( >> ) x f = f x
 
-(* This as to be kept in sync with the way we build conditionals
+module DTree = struct
+  (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 
-module DTree = struct
   type cond =
     | IsTrue
     | CEq of int32
@@ -727,10 +722,6 @@ let apply_fun ctx f params loc =
 
 (****)
 
-let to_int cx = J.EBin (J.Bor, cx, int 0)
-
-(* 32 bit ints *)
-
 let _ =
   List.iter
     ~f:(fun (nm, nm') -> Primitive.alias nm nm')
@@ -873,30 +864,19 @@ let _ =
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
-  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
+  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
   register_bin_prim "caml_neq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.NotEq, float_val cx, float_val cy)));
-  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Le, float_val cy, float_val cx)));
-  register_bin_prim "caml_le_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Le, float_val cx, float_val cy)));
-  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Lt, float_val cy, float_val cx)));
-  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Lt, float_val cx, float_val cy)));
-  register_bin_prim "caml_add_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Plus, float_val cx, float_val cy)));
-  register_bin_prim "caml_sub_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Minus, float_val cx, float_val cy)));
-  register_bin_prim "caml_mul_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Mul, float_val cx, float_val cy)));
-  register_bin_prim "caml_div_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Div, float_val cx, float_val cy)));
-  register_un_prim "caml_neg_float" `Pure (fun cx _ ->
-      val_float (J.EUn (J.Neg, float_val cx)));
-  register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
+      bool (J.EBin (J.NotEq, cx, cy)));
+  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
+  register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
+  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
+  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
+  register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
+  register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
+  register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
+  register_bin_prim "caml_div_float" `Pure (fun cx cy _ -> J.EBin (J.Div, cx, cy));
+  register_un_prim "caml_neg_float" `Pure (fun cx _ -> J.EUn (J.Neg, cx));
+  register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ -> J.EBin (J.Mod, cx, cy));
   register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
