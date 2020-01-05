@@ -29,7 +29,7 @@ let iter_cont_free_vars f (_, l) = List.iter ~f l
 
 let iter_expr_free_vars f e =
   match e with
-  | Const _ | Constant _ -> ()
+  | Constant _ -> ()
   | Apply (x, l, _) ->
       f x;
       List.iter ~f l

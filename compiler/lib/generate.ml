@@ -947,7 +947,6 @@ let throw_statement ctx cx k loc =
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
-  | Const i -> (int32 i, const_p, queue), []
   | Apply (x, l, true) ->
       let (px, cx), queue = access_queue queue x in
       let args, prop, queue =
@@ -1215,8 +1214,7 @@ and translate_instr ctx expr_queue loc instr =
          num : number of occurrence
          size_c * n < size_v * n + size_v + 1 + size_c
       *)
-      | n, (Const _ | Constant (Int _ | Float _)) ->
-          enqueue expr_queue prop x ce loc n instrs
+      | n, Constant (Int _ | Float _) -> enqueue expr_queue prop x ce loc n instrs
       | _ ->
           flush_queue
             expr_queue
