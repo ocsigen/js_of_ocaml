@@ -141,12 +141,6 @@ IMPROVEMENTS
 
 - explicit conversion from int to boolean
 
-- simplify conditional definition
-  should be:
-     Cond of Var.t * cont * cont
-  (we need to eliminate unnecessary conversions from bool to integer
-   for that)
-
 NEW FEATURES
 ============
 
