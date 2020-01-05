@@ -215,7 +215,7 @@ end
 
 module Ctx = struct
   type t =
-    { mutable blocks : block Addr.Map.t
+    { blocks : block Addr.Map.t
     ; live : int array
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
