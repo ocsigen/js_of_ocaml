@@ -309,7 +309,11 @@ type block =
   ; branch : last
   }
 
-type program = Addr.t * block Addr.Map.t * Addr.t
+type program =
+  { start : Addr.t
+  ; blocks : block Addr.Map.t
+  ; free_pc : Addr.t
+  }
 
 (****)
 
@@ -485,25 +489,25 @@ let print_block annot pc block =
   Format.eprintf " %s %a@." (annot pc (Last block.branch)) print_last block.branch;
   Format.eprintf "@."
 
-let print_program annot (pc, blocks, _) =
-  Format.eprintf "Entry point: %d@.@." pc;
+let print_program annot { start; blocks; _ } =
+  Format.eprintf "Entry point: %d@.@." start;
   Addr.Map.iter (print_block annot) blocks
 
 (****)
 
-let fold_closures (pc, blocks, _) f accu =
+let fold_closures p f accu =
   Addr.Map.fold
     (fun _ block accu ->
       List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
           | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
           | _ -> accu))
-    blocks
-    (f None [] (pc, []) accu)
+    p.blocks
+    (f None [] (p.start, []) accu)
 
 (****)
 
-let prepend ((start, blocks, free_pc) as p) body =
+let prepend ({ start; blocks; free_pc } as p) body =
   match body with
   | [] -> p
   | _ ->
@@ -513,15 +517,15 @@ let prepend ((start, blocks, free_pc) as p) body =
         Addr.Map.add new_start { params = []; handler = None; body; branch } blocks
       in
       let free_pc = free_pc + 1 in
-      new_start, blocks, free_pc
+      { start = new_start; blocks; free_pc }
 
 let empty =
   let start = 0 in
-  let free = 1 in
+  let free_pc = 1 in
   let blocks =
     Addr.Map.singleton start { params = []; handler = None; body = []; branch = Stop }
   in
-  start, blocks, free
+  { start; blocks; free_pc }
 
 let ( >> ) x f = f x
 
@@ -560,27 +564,27 @@ let rec traverse' fold f pc visited blocks acc =
 
 let traverse fold f pc blocks acc = snd (traverse' fold f pc Addr.Set.empty blocks acc)
 
-let eq (pc1, blocks1, _) (pc2, blocks2, _) =
-  pc1 = pc2
-  && Addr.Map.cardinal blocks1 = Addr.Map.cardinal blocks2
+let eq p1 p2 =
+  p1.start = p2.start
+  && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks
   && Addr.Map.fold
        (fun pc block1 b ->
          b
          &&
          try
-           let block2 = Addr.Map.find pc blocks2 in
+           let block2 = Addr.Map.find pc p2.blocks in
            Poly.(block1.params = block2.params)
            && Poly.(block1.branch = block2.branch)
            && Poly.(block1.body = block2.body)
          with Not_found -> false)
-       blocks1
+       p1.blocks
        true
 
 let with_invariant = Debug.find "invariant"
 
 let check_defs = false
 
-let invariant (_, blocks, _) =
+let invariant { blocks; _ } =
   if with_invariant ()
   then
     let defs = Array.make (Var.count ()) false in

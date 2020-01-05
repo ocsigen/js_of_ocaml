@@ -2045,7 +2045,7 @@ let parse_bytecode code globals debug_data =
   tagged_blocks := Addr.Set.empty;
   let free_pc = String.length code / 4 in
   let blocks = match_exn_traps blocks in
-  0, blocks, free_pc
+  { start = 0; blocks; free_pc }
 
 (* HACK - override module *)
 
@@ -2504,4 +2504,4 @@ let predefined_exceptions () =
     |> List.concat
   in
   let block = { params = []; handler = None; body; branch = Stop } in
-  0, Addr.Map.singleton 0 block, 1
+  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }

@@ -70,9 +70,9 @@ let block s block =
   ; branch = last s block.branch
   }
 
-let program s (pc, blocks, free_pc) =
-  let blocks = Addr.Map.map (fun b -> block s b) blocks in
-  pc, blocks, free_pc
+let program s p =
+  let blocks = Addr.Map.map (fun b -> block s b) p.blocks in
+  { p with blocks }
 
 let rec cont' s pc blocks visited =
   if Addr.Set.mem pc visited
@@ -94,9 +94,9 @@ let rec cont' s pc blocks visited =
       (fun pc (blocks, visited) -> cont' s pc blocks visited)
       (blocks, visited)
 
-let cont s addr (pc, blocks, free_pc) =
-  let blocks, _ = cont' s addr blocks Addr.Set.empty in
-  pc, blocks, free_pc
+let cont s addr p =
+  let blocks, _ = cont' s addr p.blocks Addr.Set.empty in
+  { p with blocks }
 
 (****)
 

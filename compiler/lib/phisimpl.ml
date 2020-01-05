@@ -55,7 +55,7 @@ let expr_deps blocks vars deps defs x e =
   | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
-let program_deps (_, blocks, _) =
+let program_deps { blocks; _ } =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in

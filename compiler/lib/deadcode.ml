@@ -181,12 +181,12 @@ let add_cont_dep blocks defs (pc, args) =
 
 (* Dead continuation *)
 
-let f ((pc, blocks, free_pc) as program) =
+let f ({ blocks; _ } as p : Code.program) =
   let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
-  let pure_funs = Pure_fun.f program in
+  let pure_funs = Pure_fun.f p in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -207,8 +207,8 @@ let f ((pc, blocks, free_pc) as program) =
       | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
     blocks;
   let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
-  mark_reachable st pc;
-  if debug () then print_program (fun pc xi -> annot st pc xi) (pc, blocks, free_pc);
+  mark_reachable st p.start;
+  if debug () then print_program (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
   let blocks =
     Addr.Map.fold
@@ -233,4 +233,4 @@ let f ((pc, blocks, free_pc) as program) =
       Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
-  (pc, blocks, free_pc), st.live
+  { p with blocks }, st.live

@@ -197,19 +197,19 @@ let rec specialize_instrs info checks l =
             :: specialize_instrs info ((y, idx) :: checks) r
       | _ -> specialize_instr info i (specialize_instrs info checks r))
 
-let specialize_all_instrs info (pc, blocks, free_pc) =
+let specialize_all_instrs info p =
   let blocks =
     Addr.Map.map
       (fun block -> { block with Code.body = specialize_instrs info [] block.body })
-      blocks
+      p.blocks
   in
-  pc, blocks, free_pc
+  { p with blocks }
 
 (****)
 
 let f info p = specialize_all_instrs info p
 
-let f_once (pc, blocks, free_pc) =
+let f_once p =
   let rec loop l =
     match l with
     | [] -> []
@@ -228,6 +228,6 @@ let f_once (pc, blocks, free_pc) =
         | _ -> i :: loop r)
   in
   let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop block.body }) blocks
+    Addr.Map.map (fun block -> { block with Code.body = loop block.body }) p.blocks
   in
-  pc, blocks, free_pc
+  { p with blocks }

@@ -197,7 +197,11 @@ type block =
   ; branch : last
   }
 
-type program = Addr.t * block Addr.Map.t * Addr.t
+type program =
+  { start : Addr.t
+  ; blocks : block Addr.Map.t
+  ; free_pc : Addr.t
+  }
 
 type xinstr =
   | Instr of instr

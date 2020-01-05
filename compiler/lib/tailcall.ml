@@ -91,7 +91,7 @@ let rec traverse f pc visited blocks =
     visited, blocks
   else visited, blocks
 
-let f ((pc, blocks, free_pc) as p) =
+let f p =
   let t = Timer.make () in
   let blocks =
     fold_closures
@@ -102,7 +102,7 @@ let f ((pc, blocks, free_pc) as p) =
             let _, blocks = traverse (f, params, pc, args) pc Addr.Set.empty blocks in
             blocks
         | _ -> blocks)
-      blocks
+      p.blocks
   in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
-  pc, blocks, free_pc
+  { p with blocks }
