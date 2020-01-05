@@ -23,7 +23,7 @@ open Code
 
 let optimizable blocks pc _ =
   Code.traverse
-    Code.fold_children
+    { fold = Code.fold_children }
     (fun pc acc ->
       if not acc
       then acc
@@ -107,7 +107,12 @@ let fold_children blocks pc f accu =
       accu
 
 let rewrite_closure blocks cont_pc clos_pc handler =
-  Code.traverse fold_children (rewrite_block (cont_pc, handler)) clos_pc blocks blocks
+  Code.traverse
+    { fold = fold_children }
+    (rewrite_block (cont_pc, handler))
+    clos_pc
+    blocks
+    blocks
 
 (****)
 
@@ -272,7 +277,7 @@ let f p live_vars =
               b
         in
         Code.traverse
-          Code.fold_children
+          { fold = Code.fold_children }
           (inline closures live_vars outer_optimizable)
           pc
           blocks

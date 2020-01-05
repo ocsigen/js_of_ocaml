@@ -528,7 +528,11 @@ let fold_children blocks pc f accu =
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
       accu
 
-let rec traverse' fold f pc visited blocks acc =
+type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+
+type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
+
+let rec traverse' { fold } f pc visited blocks acc =
   if not (Addr.Set.mem pc visited)
   then
     let visited = Addr.Set.add pc visited in
@@ -537,7 +541,7 @@ let rec traverse' fold f pc visited blocks acc =
         blocks
         pc
         (fun pc (visited, acc) ->
-          let visited, acc = traverse' fold f pc visited blocks acc in
+          let visited, acc = traverse' { fold } f pc visited blocks acc in
           visited, acc)
         (visited, acc)
     in

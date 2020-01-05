@@ -210,19 +210,13 @@ val print_cont : Format.formatter -> cont -> unit
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 
-val fold_children : block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+type 'c fold = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c [@@unbox]
 
-val traverse :
-     (   block Addr.Map.t
-      -> Addr.t
-      -> (Addr.t -> Addr.Set.t * 'c -> Addr.Set.t * 'c)
-      -> Addr.Set.t * 'c
-      -> Addr.Set.t * 'c)
-  -> (Addr.t -> 'c -> 'c)
-  -> Addr.t
-  -> block Addr.Map.t
-  -> 'c
-  -> 'c
+val fold_children : 'c fold
+
+type fold_poly = { fold : 'a. 'a fold } [@@unboxed]
+
+val traverse : fold_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
 val prepend : program -> instr list -> program
 

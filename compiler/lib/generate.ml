@@ -1368,7 +1368,12 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                   Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
                 in
                 let blocks =
-                  Code.traverse Code.fold_children subst_block pc st.blocks st.blocks
+                  Code.traverse
+                    { fold = Code.fold_children }
+                    subst_block
+                    pc
+                    st.blocks
+                    st.blocks
                 in
                 if !found then st.blocks <- blocks;
                 if !found then Some x' else None
