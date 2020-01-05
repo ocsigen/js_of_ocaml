@@ -77,7 +77,7 @@ let phi p =
   Phisimpl.f p
 
 let print p =
-  if debug () then Code.print_program (fun _ _ -> "") p;
+  if debug () then Code.Print.program (fun _ _ -> "") p;
   p
 
 let ( >> ) f g x = g (f x)

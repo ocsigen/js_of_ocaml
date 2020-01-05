@@ -155,7 +155,7 @@ let annot st pc xi =
   if not (Addr.Set.mem pc st.reachable_blocks)
   then "x"
   else
-    match xi with
+    match (xi : Code.Print.xinstr) with
     | Last _ -> " "
     | Instr i ->
         let c = ref_count st i in
@@ -208,7 +208,7 @@ let f ({ blocks; _ } as p : Code.program) =
     blocks;
   let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
   mark_reachable st p.start;
-  if debug () then print_program (fun pc xi -> annot st pc xi) p;
+  if debug () then Print.program (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
   let blocks =
     Addr.Map.fold

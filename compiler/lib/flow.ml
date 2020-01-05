@@ -411,7 +411,7 @@ let f ?skip_param p =
             "%a: {%a} / %s@."
             Var.print
             x
-            Code.print_var_list
+            Code.Print.var_list
             (Var.Set.elements s)
             (if Var.Tbl.get maybe_unknown x then "any" else "known"))
       vars;
