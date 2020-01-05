@@ -473,8 +473,6 @@ let protect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1000000
 
 let unprotect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1000000)
 
-let ( >> ) x f = f x
-
 module DTree = struct
   (* This as to be kept in sync with the way we build conditionals
    and switches! *)
@@ -493,13 +491,13 @@ module DTree = struct
 
   let normalize a =
     a
-    >> Array.to_list
-    >> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
-    >> list_group fst snd
-    >> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
-    >> List.stable_sort ~cmp:(fun (_, l1) (_, l2) ->
+    |> Array.to_list
+    |> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
+    |> list_group fst snd
+    |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
+    |> List.stable_sort ~cmp:(fun (_, l1) (_, l2) ->
            compare (List.length l1) (List.length l2))
-    >> Array.of_list
+    |> Array.of_list
 
   let build_if b1 b2 = If (IsTrue, Branch b1, Branch b2)
 
@@ -561,7 +559,10 @@ module DTree = struct
 
   let rec fold_cont f b acc =
     match b with
-    | If (_, b1, b2) -> acc >> fold_cont f b1 >> fold_cont f b2
+    | If (_, b1, b2) ->
+        let acc = fold_cont f b1 acc in
+        let acc = fold_cont f b2 acc in
+        acc
     | Switch a -> Array.fold_left a ~init:acc ~f:(fun acc (_, b) -> fold_cont f b acc)
     | Branch (pc, _) -> f pc acc
     | Empty -> acc
@@ -587,11 +588,16 @@ let fold_children blocks pc f accu =
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
-  | Pushtrap ((pc1, _), _, (pc2, _), _) -> accu >> f pc1 >> f pc2
+  | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+      let accu = f pc1 accu in
+      let accu = f pc2 accu in
+      accu
   | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
       let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
-      accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
+      let accu = DTree.fold_cont f a1 accu in
+      let accu = DTree.fold_cont f a2 accu in
+      accu
 
 let rec build_graph st pc anc =
   if not (Addr.Set.mem pc st.visited_blocks)
