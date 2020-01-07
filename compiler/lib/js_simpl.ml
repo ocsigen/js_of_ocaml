@@ -44,10 +44,10 @@ let rec enot_rec e =
         | J.NotEq -> J.EBin (J.EqEq, e1, e2), 0
         | J.EqEqEq -> J.EBin (J.NotEqEq, e1, e2), 0
         | J.NotEqEq -> J.EBin (J.EqEqEq, e1, e2), 0
-        | J.Lt true -> J.EBin (J.Le true, e2, e1), 0
-        | J.Le true -> J.EBin (J.Lt true, e2, e1), 0
-        | J.Gt true -> J.EBin (J.Ge true, e2, e1), 0
-        | J.Ge true -> J.EBin (J.Gt true, e2, e1), 0
+        | J.Lt true -> J.EBin (J.Ge true, e1, e2), 0
+        | J.Le true -> J.EBin (J.Gt true, e1, e2), 0
+        | J.Gt true -> J.EBin (J.Le true, e1, e2), 0
+        | J.Ge true -> J.EBin (J.Lt true, e1, e2), 0
         (* Disabled: this is not correct!
            {[ !(x < 0) ]} and {[ x >= 0 ]} give different result when x = nan
            {[
