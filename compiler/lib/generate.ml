@@ -870,7 +870,13 @@ let _ =
   register_bin_prim "%int_xor" `Pure (fun cx cy _ -> J.EBin (J.Bxor, cx, cy));
   register_bin_prim "%int_lsl" `Pure (fun cx cy _ -> J.EBin (J.Lsl, cx, cy));
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
-  register_un_prim "%unsigned" `Pure (fun cx _ -> unsigned cx);
+  register_un_prim "%unsigned" `Pure (fun cx _ ->
+      let cx =
+        match cx with
+        | J.EBin (J.Bor, cx, J.ENum x) when J.Num.is_zero x -> cx
+        | _ -> cx
+      in
+      unsigned cx);
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
   register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
