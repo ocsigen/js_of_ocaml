@@ -219,7 +219,7 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                     rewrite_closure blocks cont_pc (fst clos_cont) block.handler
                   in
                   (* We do not really need this intermediate block.
-                     It just avoid the need to find which function
+                     It just avoids the need to find which function
                      parameters are used in the function body. *)
                   let blocks =
                     Addr.Map.add
