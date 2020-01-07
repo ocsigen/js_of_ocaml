@@ -5493,7 +5493,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression = let op =
           let op = 
 # 657 "js_parser.mly"
-                        ( J.Le         )
+                        ( J.Le false   )
 # 5498 "js_parser.ml"
            in
           
@@ -5529,7 +5529,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression = let op =
           let op = 
 # 655 "js_parser.mly"
-                        ( J.Lt         )
+                        ( J.Lt false   )
 # 5534 "js_parser.ml"
            in
           
@@ -5630,7 +5630,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression = let op =
           let op = 
 # 658 "js_parser.mly"
-                        ( J.Ge         )
+                        ( J.Ge false   )
 # 5635 "js_parser.ml"
            in
           
@@ -5666,7 +5666,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression = let op =
           let op = 
 # 656 "js_parser.mly"
-                        ( J.Gt         )
+                        ( J.Gt false   )
 # 5671 "js_parser.ml"
            in
           
@@ -6505,7 +6505,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
 # 657 "js_parser.mly"
-                        ( J.Le         )
+                        ( J.Le false   )
 # 6510 "js_parser.ml"
          in
         
@@ -6534,7 +6534,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
 # 655 "js_parser.mly"
-                        ( J.Lt         )
+                        ( J.Lt false   )
 # 6539 "js_parser.ml"
          in
         
@@ -6592,7 +6592,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
 # 658 "js_parser.mly"
-                        ( J.Ge         )
+                        ( J.Ge false   )
 # 6597 "js_parser.ml"
          in
         
@@ -6621,7 +6621,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
 # 656 "js_parser.mly"
-                        ( J.Gt         )
+                        ( J.Gt false   )
 # 6626 "js_parser.ml"
          in
         
@@ -7243,7 +7243,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
 # 657 "js_parser.mly"
-                        ( J.Le         )
+                        ( J.Le false   )
 # 7248 "js_parser.ml"
            in
           
@@ -7279,7 +7279,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
 # 655 "js_parser.mly"
-                        ( J.Lt         )
+                        ( J.Lt false   )
 # 7284 "js_parser.ml"
            in
           
@@ -7380,7 +7380,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
 # 658 "js_parser.mly"
-                        ( J.Ge         )
+                        ( J.Ge false   )
 # 7385 "js_parser.ml"
            in
           
@@ -7416,7 +7416,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
 # 656 "js_parser.mly"
-                        ( J.Gt         )
+                        ( J.Gt false   )
 # 7421 "js_parser.ml"
            in
           
