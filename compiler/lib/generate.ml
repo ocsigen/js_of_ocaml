@@ -498,7 +498,7 @@ module DTree = struct
            compare (List.length l1) (List.length l2))
     >> Array.of_list
 
-  let build_if cond b1 b2 = If (cond, Branch b1, Branch b2)
+  let build_if b1 b2 = If (IsTrue, Branch b1, Branch b2)
 
   let build_switch (a : cont array) : 'a t =
     let m = Config.Param.switch_max_case () in
@@ -585,7 +585,7 @@ let fold_children blocks pc f accu =
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
   | Pushtrap ((pc1, _), _, (pc2, _), _) -> accu >> f pc1 >> f pc2
-  | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if IsTrue cont1 cont2) accu
+  | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
       let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
       accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
@@ -1630,7 +1630,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             succs
             loc
             cx
-            (DTree.build_if IsTrue c1 c2)
+            (DTree.build_if c1 c2)
         in
         flush_all queue b
     | Switch (x, [||], a2) ->
