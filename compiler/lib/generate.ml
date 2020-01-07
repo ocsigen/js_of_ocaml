@@ -1876,7 +1876,7 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@.@.";
   res
 
-let f (p : Code.program) ~exported_runtime live_vars debug =
+let f (p : Code.program) ~exported_runtime ~live_vars debug =
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =

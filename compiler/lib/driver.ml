@@ -142,7 +142,7 @@ let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
 let generate d ~exported_runtime (p, live_vars) =
   if times () then Format.eprintf "Start Generation...@.";
-  Generate.f p ~exported_runtime live_vars d
+  Generate.f p ~exported_runtime ~live_vars d
 
 let header formatter ~custom_header =
   (match custom_header with
