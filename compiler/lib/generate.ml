@@ -232,7 +232,15 @@ let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
 
 let int32 n = J.ENum (J.Num.of_int32 n)
 
-let unsigned x = J.EBin (J.Lsr, x, int 0)
+let unsigned' x = J.EBin (J.Lsr, x, int 0)
+
+let unsigned x =
+  let pos_int32 =
+    match x with
+    | J.ENum num -> ( try Int32.(J.Num.to_int32 num >= 0l) with _ -> false)
+    | _ -> false
+  in
+  if pos_int32 then x else unsigned' x
 
 let one = int 1
 
