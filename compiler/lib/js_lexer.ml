@@ -766,7 +766,7 @@ let
       let info = tokinfo lexbuf in
       try
         let f = Hashtbl.find keyword_table s in
-        f info (* need case insensitive ? *)
+        f info
       with
         | Not_found -> T_IDENTIFIER (s, info)
     )
@@ -845,26 +845,24 @@ let
           | _ -> assert false
         end
       | _ ->
-          (* raise (Token t); *)
           let buf = Buffer.create 127 in
           Buffer.add_string buf s;
           regexp buf lexbuf;
           T_REGEX (Buffer.contents buf, info)
     )
-# 855 "compiler/lib/js_lexer.ml"
+# 854 "compiler/lib/js_lexer.ml"
 
   | 57 ->
-# 258 "compiler/lib/js_lexer.mll"
+# 257 "compiler/lib/js_lexer.mll"
         ( EOF (tokinfo lexbuf) )
-# 860 "compiler/lib/js_lexer.ml"
+# 859 "compiler/lib/js_lexer.ml"
 
   | 58 ->
-# 260 "compiler/lib/js_lexer.mll"
+# 259 "compiler/lib/js_lexer.mll"
       (
-      (* Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf); *)
       TUnknown (tokinfo lexbuf, tok lexbuf)
     )
-# 868 "compiler/lib/js_lexer.ml"
+# 866 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_initial_rec tokinfo prev lexbuf __ocaml_lex_state
@@ -874,32 +872,32 @@ and string_escape quote buf lexbuf =
 and __ocaml_lex_string_escape_rec quote buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 267 "compiler/lib/js_lexer.mll"
+# 265 "compiler/lib/js_lexer.mll"
         ( Buffer.add_string buf "\\\\" )
-# 880 "compiler/lib/js_lexer.ml"
+# 878 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 269 "compiler/lib/js_lexer.mll"
+# 267 "compiler/lib/js_lexer.mll"
                             (
       Buffer.add_char buf '\\';
       Buffer.add_string buf (Lexing.lexeme lexbuf) )
-# 887 "compiler/lib/js_lexer.ml"
+# 885 "compiler/lib/js_lexer.ml"
 
   | 2 ->
 let
-# 272 "compiler/lib/js_lexer.mll"
+# 270 "compiler/lib/js_lexer.mll"
           c
-# 893 "compiler/lib/js_lexer.ml"
+# 891 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 273 "compiler/lib/js_lexer.mll"
+# 271 "compiler/lib/js_lexer.mll"
     ( if c <> '\'' && c <> '\"' then Buffer.add_char buf '\\';
       Buffer.add_char buf c )
-# 898 "compiler/lib/js_lexer.ml"
+# 896 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 275 "compiler/lib/js_lexer.mll"
+# 273 "compiler/lib/js_lexer.mll"
         ( Format.eprintf  "LEXER: WEIRD end of file in string_escape@."; ())
-# 903 "compiler/lib/js_lexer.ml"
+# 901 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_string_escape_rec quote buf lexbuf __ocaml_lex_state
@@ -910,44 +908,44 @@ and __ocaml_lex_string_quote_rec q buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 278 "compiler/lib/js_lexer.mll"
+# 276 "compiler/lib/js_lexer.mll"
                  q'
-# 916 "compiler/lib/js_lexer.ml"
+# 914 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 278 "compiler/lib/js_lexer.mll"
+# 276 "compiler/lib/js_lexer.mll"
                     (
     if q = q'
     then ()
     else (Buffer.add_char buf q'; string_quote q buf lexbuf) )
-# 923 "compiler/lib/js_lexer.ml"
+# 921 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 282 "compiler/lib/js_lexer.mll"
+# 280 "compiler/lib/js_lexer.mll"
            ( string_quote q buf lexbuf )
-# 928 "compiler/lib/js_lexer.ml"
+# 926 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 283 "compiler/lib/js_lexer.mll"
+# 281 "compiler/lib/js_lexer.mll"
          (
       string_escape q buf lexbuf;
       string_quote q buf lexbuf
     )
-# 936 "compiler/lib/js_lexer.ml"
+# 934 "compiler/lib/js_lexer.ml"
 
   | 3 ->
 let
-# 287 "compiler/lib/js_lexer.mll"
+# 285 "compiler/lib/js_lexer.mll"
           x
-# 942 "compiler/lib/js_lexer.ml"
+# 940 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 287 "compiler/lib/js_lexer.mll"
+# 285 "compiler/lib/js_lexer.mll"
                    ( Buffer.add_char buf x; string_quote q buf lexbuf )
-# 946 "compiler/lib/js_lexer.ml"
+# 944 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 288 "compiler/lib/js_lexer.mll"
+# 286 "compiler/lib/js_lexer.mll"
         ( Format.eprintf  "LEXER: WEIRD end of file in quoted string@."; ())
-# 951 "compiler/lib/js_lexer.ml"
+# 949 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_string_quote_rec q buf lexbuf __ocaml_lex_state
@@ -958,40 +956,40 @@ and __ocaml_lex_regexp_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 292 "compiler/lib/js_lexer.mll"
+# 290 "compiler/lib/js_lexer.mll"
                x
-# 964 "compiler/lib/js_lexer.ml"
+# 962 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1) in
-# 292 "compiler/lib/js_lexer.mll"
+# 290 "compiler/lib/js_lexer.mll"
                   ( Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
                     regexp buf lexbuf )
-# 970 "compiler/lib/js_lexer.ml"
+# 968 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 295 "compiler/lib/js_lexer.mll"
+# 293 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf )
-# 975 "compiler/lib/js_lexer.ml"
+# 973 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 296 "compiler/lib/js_lexer.mll"
+# 294 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf '['; regexp_class buf lexbuf )
-# 980 "compiler/lib/js_lexer.ml"
+# 978 "compiler/lib/js_lexer.ml"
 
   | 3 ->
 let
-# 297 "compiler/lib/js_lexer.mll"
+# 295 "compiler/lib/js_lexer.mll"
           x
-# 986 "compiler/lib/js_lexer.ml"
+# 984 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 297 "compiler/lib/js_lexer.mll"
+# 295 "compiler/lib/js_lexer.mll"
                    ( Buffer.add_char buf x; regexp buf lexbuf )
-# 990 "compiler/lib/js_lexer.ml"
+# 988 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 298 "compiler/lib/js_lexer.mll"
+# 296 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: WEIRD end of file in regexp@."; ())
-# 995 "compiler/lib/js_lexer.ml"
+# 993 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_rec buf lexbuf __ocaml_lex_state
@@ -1001,37 +999,37 @@ and regexp_class buf lexbuf =
 and __ocaml_lex_regexp_class_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 301 "compiler/lib/js_lexer.mll"
+# 299 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf ']';
              regexp buf lexbuf )
-# 1008 "compiler/lib/js_lexer.ml"
+# 1006 "compiler/lib/js_lexer.ml"
 
   | 1 ->
 let
-# 303 "compiler/lib/js_lexer.mll"
+# 301 "compiler/lib/js_lexer.mll"
                x
-# 1014 "compiler/lib/js_lexer.ml"
+# 1012 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1) in
-# 303 "compiler/lib/js_lexer.mll"
+# 301 "compiler/lib/js_lexer.mll"
                   ( Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf )
-# 1020 "compiler/lib/js_lexer.ml"
+# 1018 "compiler/lib/js_lexer.ml"
 
   | 2 ->
 let
-# 306 "compiler/lib/js_lexer.mll"
+# 304 "compiler/lib/js_lexer.mll"
           x
-# 1026 "compiler/lib/js_lexer.ml"
+# 1024 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 306 "compiler/lib/js_lexer.mll"
+# 304 "compiler/lib/js_lexer.mll"
              ( Buffer.add_char buf x; regexp_class buf lexbuf )
-# 1030 "compiler/lib/js_lexer.ml"
+# 1028 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 307 "compiler/lib/js_lexer.mll"
+# 305 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ())
-# 1035 "compiler/lib/js_lexer.ml"
+# 1033 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_class_rec buf lexbuf __ocaml_lex_state
@@ -1041,9 +1039,9 @@ and regexp_maybe_ident buf lexbuf =
 and __ocaml_lex_regexp_maybe_ident_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 310 "compiler/lib/js_lexer.mll"
+# 308 "compiler/lib/js_lexer.mll"
                       ( Buffer.add_string buf (tok lexbuf) )
-# 1047 "compiler/lib/js_lexer.ml"
+# 1045 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_maybe_ident_rec buf lexbuf __ocaml_lex_state
@@ -1053,41 +1051,41 @@ and st_comment buf nl lexbuf =
 and __ocaml_lex_st_comment_rec buf nl lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 315 "compiler/lib/js_lexer.mll"
+# 313 "compiler/lib/js_lexer.mll"
          ( Buffer.add_string buf (tok lexbuf) )
-# 1059 "compiler/lib/js_lexer.ml"
+# 1057 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 318 "compiler/lib/js_lexer.mll"
+# 314 "compiler/lib/js_lexer.mll"
             ( Buffer.add_string buf (tok lexbuf);
               nl := true;
               st_comment buf nl lexbuf )
-# 1066 "compiler/lib/js_lexer.ml"
+# 1064 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 321 "compiler/lib/js_lexer.mll"
+# 317 "compiler/lib/js_lexer.mll"
                        ( Buffer.add_string buf (tok lexbuf);st_comment buf nl lexbuf )
-# 1071 "compiler/lib/js_lexer.ml"
+# 1069 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 322 "compiler/lib/js_lexer.mll"
+# 318 "compiler/lib/js_lexer.mll"
             ( Buffer.add_char buf '*';st_comment buf nl lexbuf )
-# 1076 "compiler/lib/js_lexer.ml"
+# 1074 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 324 "compiler/lib/js_lexer.mll"
+# 320 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/")
-# 1081 "compiler/lib/js_lexer.ml"
+# 1079 "compiler/lib/js_lexer.ml"
 
   | 5 ->
-# 325 "compiler/lib/js_lexer.mll"
+# 321 "compiler/lib/js_lexer.mll"
        (
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
       st_comment buf nl lexbuf
     )
-# 1091 "compiler/lib/js_lexer.ml"
+# 1089 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_st_comment_rec buf nl lexbuf __ocaml_lex_state
@@ -1098,21 +1096,21 @@ and __ocaml_lex_pos_rec lexbuf __ocaml_lex_state =
   match Lexing.new_engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 333 "compiler/lib/js_lexer.mll"
+# 329 "compiler/lib/js_lexer.mll"
                                     line
-# 1104 "compiler/lib/js_lexer.ml"
+# 1102 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_mem.(1)
 and
-# 333 "compiler/lib/js_lexer.mll"
+# 329 "compiler/lib/js_lexer.mll"
                                                                      quote
-# 1109 "compiler/lib/js_lexer.ml"
+# 1107 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_curr_pos + -1) in
-# 333 "compiler/lib/js_lexer.mll"
+# 329 "compiler/lib/js_lexer.mll"
                                                                             (
       let buf = Buffer.create 127 in
       string_quote quote buf lexbuf;
       Buffer.contents buf, int_of_string line )
-# 1116 "compiler/lib/js_lexer.ml"
+# 1114 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_pos_rec lexbuf __ocaml_lex_state

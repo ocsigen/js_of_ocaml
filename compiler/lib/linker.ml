@@ -47,9 +47,7 @@ let parse_annot loc s =
     | `Weakdef _ -> Some (`Weakdef (Some loc))
   with
   | Not_found -> None
-  | _exc ->
-      (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
-      None
+  | _ -> None
 
 let error s = Format.ksprintf (fun s -> failwith s) s
 
@@ -239,11 +237,6 @@ let check_primitive ~name pi ~code ~requires =
   then (
     warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
     warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
-
-(* ; *)
-(* return checks disabled *)
-(* if false && not (all_return code) *)
-(* then Format.eprintf "warning: returns may be missing for primitive code %S (%s)@." name (loc pi) *)
 
 let version_match =
   List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)

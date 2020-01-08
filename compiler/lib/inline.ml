@@ -42,7 +42,7 @@ let optimizable blocks pc _ =
                     , Prim
                         (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
                     ) ->
-                    (* TODO: we should smarter here and look the generated js *)
+                    (* TODO: we should be smarter here and look the generated js *)
                     (* let's consider it this opmiziable *)
                     true
                 | _ -> true))
@@ -110,13 +110,6 @@ let rewrite_closure blocks cont_pc clos_pc handler =
   Code.traverse fold_children (rewrite_block (cont_pc, handler)) clos_pc blocks blocks
 
 (****)
-
-(*
-get new location
-put continuation at new location
-update closure body to return to this location
-make current block continuation jump to closure body
-*)
 
 let rec find_mapping mapping x =
   match mapping with
@@ -197,11 +190,13 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
                 if live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
-                   (* inlining the code of an optimizable function could make
-                 this code unoptimized. (wrt to Jit compilers)
-                 At the moment, V8 doesn't optimize function containing try..catch.
-                 We disable inlining if the inner and outer functions don't have
-                 the same "contain_try_catch" property *)
+                   (* Inlining the code of an optimizable function could
+                   make this code unoptimized. (wrt to Jit compilers)
+
+                   At the moment, V8 doesn't optimize function
+                   containing try..catch.  We disable inlining if the
+                   inner and outer functions don't have the same
+                   "contain_try_catch" property *)
                 then
                   let blocks, cont_pc =
                     match rem, branch with
@@ -222,9 +217,9 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                   let blocks =
                     rewrite_closure blocks cont_pc (fst clos_cont) block.handler
                   in
-                  (* We do not really need this intermediate block.  It
-                   just avoid the need to find which function parameters
-                   are used in the function body. *)
+                  (* We do not really need this intermediate block.
+                     It just avoids the need to find which function
+                     parameters are used in the function body. *)
                   let blocks =
                     Addr.Map.add
                       (free_pc + 1)
@@ -236,9 +231,7 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                       blocks
                   in
                   [], (Branch (free_pc + 1, args), blocks, free_pc + 2)
-                else
-                  (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
-                  i :: rem, state)
+                else i :: rem, state)
         | Let (x, Closure (l, (pc, []))) -> (
             let block = Addr.Map.find pc blocks in
             match block with
