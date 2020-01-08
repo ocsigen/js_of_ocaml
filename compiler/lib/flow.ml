@@ -96,7 +96,7 @@ let expr_deps blocks vars deps defs x e =
   | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
-let program_deps (_, blocks, _) =
+let program_deps { blocks; _ } =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
@@ -227,7 +227,7 @@ let expr_escape st _x e =
       in
       loop l ka
 
-let program_escape defs known_origins (_, blocks, _) =
+let program_escape defs known_origins { blocks; _ } =
   let nv = Var.count () in
   let may_escape = Array.make nv false in
   let possibly_mutable = Array.make nv false in

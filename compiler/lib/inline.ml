@@ -63,7 +63,7 @@ let rec follow_branch_rec seen blocks = function
 
 let follow_branch = follow_branch_rec Addr.Set.empty
 
-let get_closures (_, blocks, _) =
+let get_closures { blocks; _ } =
   Addr.Map.fold
     (fun _ block closures ->
       List.fold_left block.body ~init:closures ~f:(fun closures i ->
@@ -256,7 +256,7 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
 
 let times = Debug.find "times"
 
-let f ((pc, blocks, free_pc) as p) live_vars =
+let f p live_vars =
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
@@ -277,9 +277,9 @@ let f ((pc, blocks, free_pc) as p) live_vars =
           pc
           blocks
           (blocks, free_pc))
-      (blocks, free_pc)
+      (p.blocks, p.free_pc)
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
-  let p = pc, blocks, free_pc in
+  let p = { p with blocks; free_pc } in
   Code.invariant p;
   p

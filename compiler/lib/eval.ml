@@ -440,7 +440,7 @@ let eval info blocks =
       { block with Code.body; Code.branch })
     blocks
 
-let f info (pc, blocks, free_pc) =
-  let blocks = eval info blocks in
+let f info p =
+  let blocks = eval info p.blocks in
   let blocks = drop_exception_handler blocks in
-  pc, blocks, free_pc
+  { p with blocks }

@@ -71,6 +71,6 @@ and block blocks pc pure visited funs =
       in
       pure && pure_instr funs i, visited, funs)
 
-let f (pc, blocks, _) =
-  let _, _, funs = traverse blocks pc Addr.Map.empty Var.Set.empty in
+let f p =
+  let _, _, funs = traverse p.blocks p.start Addr.Map.empty Var.Set.empty in
   funs

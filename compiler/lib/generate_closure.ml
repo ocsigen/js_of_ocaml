@@ -385,7 +385,7 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _
       free_pc, blocks, i :: rem
   | [] -> free_pc, blocks, []
 
-let f ((pc, blocks, free_pc) as p) : Code.program =
+let f p : Code.program =
   Code.invariant p;
   let mutated_vars = Freevars.f p in
   let rewrite_list = ref [] in
@@ -398,15 +398,14 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
           rewrite_closures mutated_vars rewrite_list free_pc blocks block.body
         in
         Addr.Map.add pc { block with body } blocks, free_pc)
-      blocks
-      (blocks, free_pc)
+      p.blocks
+      (p.blocks, p.free_pc)
   in
   (* Code.invariant (pc, blocks, free_pc); *)
+  let p = { p with blocks; free_pc } in
   let p =
-    List.fold_left
-      !rewrite_list
-      ~init:(pc, blocks, free_pc)
-      ~f:(fun program (mapping, pc) -> Subst.cont mapping pc program)
+    List.fold_left !rewrite_list ~init:p ~f:(fun program (mapping, pc) ->
+        Subst.cont mapping pc program)
   in
   Code.invariant p;
   p

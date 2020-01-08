@@ -98,7 +98,7 @@ type st =
   ; mutable in_stack : bool
   }
 
-let find_loops ((_, blocks, _) as prog) =
+let find_loops p =
   let in_loop = ref Addr.Map.empty in
   let index = ref 0 in
   let state = ref Addr.Map.empty in
@@ -109,7 +109,7 @@ let find_loops ((_, blocks, _) as prog) =
     incr index;
     Stack.push pc stack;
     Code.fold_children
-      blocks
+      p.blocks
       pc
       (fun pc' () ->
         try
@@ -134,17 +134,17 @@ let find_loops ((_, blocks, _) as prog) =
       if List.length !l > 1
       then List.iter !l ~f:(fun pc' -> in_loop := Addr.Map.add pc' pc !in_loop))
   in
-  Code.fold_closures prog (fun _ _ (pc, _) () -> traverse pc) ();
+  Code.fold_closures p (fun _ _ (pc, _) () -> traverse pc) ();
   !in_loop
 
-let mark_variables in_loop (pc, blocks, free_pc) =
+let mark_variables in_loop p =
   let vars = Var.Tbl.make () (-1) in
-  let visited = Array.make free_pc false in
+  let visited = Array.make p.free_pc false in
   let rec traverse pc =
     if not visited.(pc)
     then (
       visited.(pc) <- true;
-      let block = Addr.Map.find pc blocks in
+      let block = Addr.Map.find pc p.blocks in
       (try
          let pc' = Addr.Map.find pc in_loop in
          iter_block_bound_vars (fun x -> Var.Tbl.set vars x pc') block
@@ -153,20 +153,20 @@ let mark_variables in_loop (pc, blocks, free_pc) =
           match i with
           | Let (_, Closure (_, (pc', _))) -> traverse pc'
           | _ -> ());
-      Code.fold_children blocks pc (fun pc' () -> traverse pc') ())
+      Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
   in
-  traverse pc;
+  traverse p.start;
   vars
 
-let free_variables vars in_loop (pc, blocks, free_pc) =
+let free_variables vars in_loop p =
   let all_freevars = ref Addr.Map.empty in
   let freevars = ref Addr.Map.empty in
-  let visited = Array.make free_pc false in
+  let visited = Array.make p.free_pc false in
   let rec traverse pc =
     if not visited.(pc)
     then (
       visited.(pc) <- true;
-      let block = Addr.Map.find pc blocks in
+      let block = Addr.Map.find pc p.blocks in
       iter_block_free_vars
         (fun x ->
           let pc' = Var.Tbl.get vars x in
@@ -195,9 +195,9 @@ let free_variables vars in_loop (pc, blocks, free_pc) =
                 all_freevars := Addr.Map.remove pc'' !all_freevars
               with Not_found -> freevars := Addr.Map.add pc' Var.Set.empty !freevars)
           | _ -> ());
-      Code.fold_children blocks pc (fun pc' () -> traverse pc') ())
+      Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
   in
-  traverse pc;
+  traverse p.start;
   !freevars
 
 let f p =

@@ -78,7 +78,7 @@ let specialize_instr info (acc, free_pc, extra) i =
       | _ -> i :: acc, free_pc, extra)
   | _ -> i :: acc, free_pc, extra
 
-let specialize_instrs info (pc, blocks, free_pc) =
+let specialize_instrs info p =
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
@@ -91,9 +91,9 @@ let specialize_instrs info (pc, blocks, free_pc) =
               Addr.Map.add pc b blocks)
         in
         Addr.Map.add pc { block with Code.body } blocks, free_pc)
-      blocks
-      (Addr.Map.empty, free_pc)
+      p.blocks
+      (Addr.Map.empty, p.free_pc)
   in
-  pc, blocks, free_pc
+  { p with blocks; free_pc }
 
 let f info p = specialize_instrs info p
