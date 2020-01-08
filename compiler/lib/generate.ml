@@ -215,7 +215,7 @@ end
 
 module Ctx = struct
   type t =
-    { mutable blocks : block Addr.Map.t
+    { blocks : block Addr.Map.t
     ; live : int array
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
@@ -458,7 +458,6 @@ type state =
   ; mutable interm_idx : int
   ; ctx : Ctx.t
   ; mutable blocks : Code.block Addr.Map.t
-  ; at_toplevel : bool
   }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
@@ -947,7 +946,6 @@ let throw_statement ctx cx k loc =
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
-  | Const i -> (int32 i, const_p, queue), []
   | Apply (x, l, true) ->
       let (px, cx), queue = access_queue queue x in
       let args, prop, queue =
@@ -992,7 +990,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~after:true pc in
-      let clo = compile_closure ctx false cont in
+      let clo = compile_closure ctx cont in
       let clo =
         match clo with
         | (st, J.N) :: rem -> (st, J.U) :: rem
@@ -1215,8 +1213,7 @@ and translate_instr ctx expr_queue loc instr =
          num : number of occurrence
          size_c * n < size_v * n + size_v + 1 + size_c
       *)
-      | n, (Const _ | Constant (Int _ | Float _)) ->
-          enqueue expr_queue prop x ce loc n instrs
+      | n, Constant (Int _ | Float _) -> enqueue expr_queue prop x ce loc n instrs
       | _ ->
           flush_queue
             expr_queue
@@ -1667,10 +1664,8 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         in
         flush_all queue code
     | Switch (x, a1, a2) ->
-        (* The variable x is accessed several times,
-         so we can directly refer to it *)
-        (* We do not want to share the string "number".
-         See comment for IsInt *)
+        (* The variable x is accessed several times, so we can directly
+           refer to it *)
         let b1 =
           compile_decision_tree
             st
@@ -1817,7 +1812,7 @@ and compile_branch_selection pc interm =
     else (J.Expression_statement (EBin (Eq, EVar (J.V x), int i)), J.N) :: branch
   with Not_found -> []
 
-and compile_closure ctx at_toplevel (pc, args) =
+and compile_closure ctx (pc, args) =
   let st =
     { visited_blocks = Addr.Set.empty
     ; loops = Addr.Set.empty
@@ -1828,7 +1823,6 @@ and compile_closure ctx at_toplevel (pc, args) =
     ; interm_idx = -1
     ; ctx
     ; blocks = ctx.Ctx.blocks
-    ; at_toplevel
     }
   in
   build_graph st pc Addr.Set.empty;
@@ -1876,7 +1870,7 @@ let generate_shared_value ctx =
   else [ strings ]
 
 let compile_program ctx pc =
-  let res = compile_closure ctx true (pc, []) in
+  let res = compile_closure ctx (pc, []) in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
   res

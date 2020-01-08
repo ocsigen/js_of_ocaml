@@ -55,7 +55,7 @@ and mark_def st d =
 
 and mark_expr st e =
   match e with
-  | Const _ | Constant _ -> ()
+  | Constant _ -> ()
   | Apply (f, l, _) ->
       mark_var st f;
       List.iter l ~f:(fun x -> mark_var st x)
