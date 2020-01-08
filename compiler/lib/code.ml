@@ -271,7 +271,6 @@ type prim_arg =
   | Pc of constant
 
 type expr =
-  | Const of int32
   | Apply of Var.t * Var.t list * bool
   | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
@@ -401,7 +400,6 @@ let print_prim f p l =
 
 let print_expr f e =
   match e with
-  | Const i -> Format.fprintf f "%ld" i
   | Apply (g, l, exact) ->
       if exact
       then Format.fprintf f "%a!(%a)" Var.print g print_var_list l
@@ -595,7 +593,6 @@ let invariant (_, blocks, _) =
         defs.(Var.idx x) <- true)
     in
     let check_expr = function
-      | Const _ -> ()
       | Apply (_, _, _) -> ()
       | Block (_, _, _) -> ()
       | Field (_, _) -> ()

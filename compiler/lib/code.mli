@@ -154,17 +154,13 @@ type prim_arg =
   | Pc of constant
 
 type expr =
-  | Const of int32
   | Apply of Var.t * Var.t list * bool
   (* if true, then # of arguments = # of parameters *)
   | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
-  (*XXX REMOVE *)
   | Prim of prim * prim_arg list
-
-(*XXX prim * Var.t list * constant list *)
 
 type instr =
   | Let of Var.t * expr

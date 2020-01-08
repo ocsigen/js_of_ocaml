@@ -89,7 +89,7 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-  | Const _ | Constant _ | Apply _ | Prim _ -> ()
+  | Constant _ | Apply _ | Prim _ -> ()
   | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
@@ -134,8 +134,7 @@ let propagate1 deps defs st x =
   | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
-      | Const _ | Constant _ | Apply _ | Prim _ | Closure _ | Block _ ->
-          Var.Set.singleton x
+      | Constant _ | Apply _ | Prim _ | Closure _ | Block _ -> Var.Set.singleton x
       | Field (y, n) ->
           var_set_lift
             (fun z ->
@@ -189,7 +188,7 @@ let rec block_escape st x =
 
 let expr_escape st _x e =
   match e with
-  | Const _ | Constant _ | Closure _ | Block _ | Field _ -> ()
+  | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply (_, l, _) -> List.iter l ~f:(fun x -> block_escape st x)
   | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
   | Prim (Extern name, l) ->
@@ -261,7 +260,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
-      | Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
+      | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
       | Field (y, n) ->
           Var.Tbl.get st y
           || Var.Set.exists
@@ -307,7 +306,6 @@ let the_def_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Const _ as e) -> Some e
           | Expr (Constant (Float _ | Int _ | IString _) as e) -> Some e
           | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if info.info_possibly_mutable.(Var.idx x) then None else Some e
@@ -324,7 +322,6 @@ let the_const_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Const i) -> Some (Int i)
           | Expr (Constant ((Float _ | Int _ | IString _) as c)) -> Some c
           | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
           | Expr (Constant c) ->
