@@ -205,7 +205,7 @@ module Trampoline = struct
                         in
                         let direct = Code.Var.fresh () in
                         let branch =
-                          Cond (IsTrue, direct, (direct_call_pc, []), (bounce_call_pc, []))
+                          Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
                         in
                         let last =
                           Let

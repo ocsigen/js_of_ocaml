@@ -232,7 +232,15 @@ let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
 
 let int32 n = J.ENum (J.Num.of_int32 n)
 
-let unsigned x = J.EBin (J.Lsr, x, int 0)
+let unsigned' x = J.EBin (J.Lsr, x, int 0)
+
+let unsigned x =
+  let pos_int32 =
+    match x with
+    | J.ENum num -> ( try Int32.(J.Num.to_int32 num >= 0l) with _ -> false)
+    | _ -> false
+  in
+  if pos_int32 then x else unsigned' x
 
 let one = int 1
 
@@ -476,8 +484,14 @@ let ( >> ) x f = f x
    and switches! *)
 
 module DTree = struct
+  type cond =
+    | IsTrue
+    | CEq of int32
+    | CLt of int32
+    | CLe of int32
+
   type 'a t =
-    | If of Code.cond * 'a t * 'a t
+    | If of cond * 'a t * 'a t
     | Switch of (int list * 'a t) array
     | Branch of 'a
     | Empty
@@ -492,7 +506,7 @@ module DTree = struct
            compare (List.length l1) (List.length l2))
     >> Array.of_list
 
-  let build_if cond b1 b2 = If (cond, Branch b1, Branch b2)
+  let build_if b1 b2 = If (IsTrue, Branch b1, Branch b2)
 
   let build_switch (a : cont array) : 'a t =
     let m = Config.Param.switch_max_case () in
@@ -545,7 +559,7 @@ module DTree = struct
             let range1 = snd ai.(h) and range2 = snd ai.(succ h) in
             match range1, range2 with
             | [], _ | _, [] -> assert false
-            | _, lower_bound2 :: _ -> If (Code.CLe (Int32.of_int lower_bound2), b2, b1))
+            | _, lower_bound2 :: _ -> If (CLe (Int32.of_int lower_bound2), b2, b1))
     in
     let len = Array.length ai in
     if len = 0 then Empty else loop 0 (len - 1)
@@ -579,8 +593,7 @@ let fold_children blocks pc f accu =
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
   | Pushtrap ((pc1, _), _, (pc2, _), _) -> accu >> f pc1 >> f pc2
-  | Cond (cond, _, cont1, cont2) ->
-      DTree.fold_cont f (DTree.build_if cond cont1 cont2) accu
+  | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
       let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
       accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
@@ -1497,7 +1510,7 @@ and colapse_frontier st new_frontier interm =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
       then Code.Switch (x, cases, [||])
-      else Code.Cond (IsTrue, x, cases.(1), cases.(0))
+      else Code.Cond (x, cases.(1), cases.(0))
     in
     st.blocks <-
       Addr.Map.add
@@ -1544,9 +1557,6 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
           | IsTrue -> cx
           | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
           | CLt n -> J.EBin (J.Lt, int32 n, cx)
-          | CUlt n ->
-              let n' = if Int32.(n < 0l) then unsigned (int32 n) else int32 n in
-              J.EBin (J.Lt, n', unsigned cx)
           | CLe n -> J.EBin (J.Le, int32 n, cx)
         in
         ( never1 && never2
@@ -1615,7 +1625,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
     | Pushtrap _ -> assert false
     | Poptrap (cont, _) ->
         flush_all queue (compile_branch st [] cont None backs frontier interm)
-    | Cond (cond, x, c1, c2) ->
+    | Cond (x, c1, c2) ->
         let (_px, cx), queue = access_queue queue x in
         let b =
           compile_decision_tree
@@ -1628,7 +1638,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             succs
             loc
             cx
-            (DTree.build_if cond c1 c2)
+            (DTree.build_if c1 c2)
         in
         flush_all queue b
     | Switch (x, [||], a2) ->

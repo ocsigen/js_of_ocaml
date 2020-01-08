@@ -90,7 +90,7 @@ and mark_reachable st pc =
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
     | Branch cont | Poptrap (cont, _) -> mark_cont_reachable st cont
-    | Cond (_, x, cont1, cont2) ->
+    | Cond (x, cont1, cont2) ->
         mark_var st x;
         mark_cont_reachable st cont1;
         mark_cont_reachable st cont2
@@ -129,8 +129,8 @@ let filter_live_last blocks st l =
   match l with
   | Return _ | Raise _ | Stop -> l
   | Branch cont -> Branch (filter_cont blocks st cont)
-  | Cond (c, x, cont1, cont2) ->
-      Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2)
+  | Cond (x, cont1, cont2) ->
+      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
   | Switch (x, a1, a2) ->
       Switch
         ( x
@@ -197,7 +197,7 @@ let f ({ blocks; _ } as p : Code.program) =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
-      | Cond (_, _, cont1, cont2) ->
+      | Cond (_, cont1, cont2) ->
           add_cont_dep blocks defs cont1;
           add_cont_dep blocks defs cont2
       | Switch (_, a1, a2) ->

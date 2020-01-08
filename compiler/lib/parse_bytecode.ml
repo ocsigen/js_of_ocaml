@@ -765,7 +765,7 @@ let rec compile_block blocks debug_data code pc state =
     match last with
     | Branch (pc', _) | Poptrap ((pc', _), _) ->
         compile_block blocks debug_data code pc' state'
-    | Cond (_, _, (pc1, _), (pc2, _)) ->
+    | Cond (_, (pc1, _), (pc2, _)) ->
         compile_block blocks debug_data code pc1 state';
         compile_block blocks debug_data code pc2 state'
     | Switch (_, l1, l2) ->
@@ -1394,12 +1394,12 @@ and compile infos pc state instrs =
         let offset = gets code (pc + 1) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (IsTrue, x, (pc + offset + 1, args), (pc + 2, args)), state
+        instrs, Cond (x, (pc + offset + 1, args), (pc + 2, args)), state
     | BRANCHIFNOT ->
         let offset = gets code (pc + 1) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (IsTrue, x, (pc + 2, args), (pc + offset + 1, args)), state
+        instrs, Cond (x, (pc + 2, args), (pc + offset + 1, args)), state
     | SWITCH ->
         if debug_parser () then Format.printf "switch ...@.";
         let sz = getu code (pc + 1) in
@@ -1845,49 +1845,73 @@ and compile infos pc state instrs =
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CEq n, x, (pc + offset + 2, args), (pc + 3, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Eq, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, args), (pc + 3, args))
+        , state )
     | BNEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CEq n, x, (pc + 3, args), (pc + offset + 2, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Eq, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, args), (pc + offset + 2, args))
+        , state )
     | BLTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CLt n, x, (pc + offset + 2, args), (pc + 3, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Lt, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, args), (pc + 3, args))
+        , state )
     | BLEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CLe n, x, (pc + offset + 2, args), (pc + 3, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Le, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, args), (pc + 3, args))
+        , state )
     | BGTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CLe n, x, (pc + 3, args), (pc + offset + 2, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Le, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, args), (pc + offset + 2, args))
+        , state )
     | BGEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CLt n, x, (pc + 3, args), (pc + offset + 2, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Lt, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, args), (pc + offset + 2, args))
+        , state )
     | BULTINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CUlt n, x, (pc + offset + 2, args), (pc + 3, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Ult, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, args), (pc + 3, args))
+        , state )
     | BUGEINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        instrs, Cond (CUlt n, x, (pc + 3, args), (pc + offset + 2, args)), state
+        let y = Var.fresh () in
+        ( Let (y, Prim (Ult, [ Pc (Int n); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, args), (pc + offset + 2, args))
+        , state )
     | ULTINT ->
         let y = State.accu state in
         let z = State.peek 0 state in

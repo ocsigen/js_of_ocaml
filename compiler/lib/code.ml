@@ -284,19 +284,12 @@ type instr =
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
-type cond =
-  | IsTrue
-  | CEq of int32
-  | CLt of int32
-  | CLe of int32
-  | CUlt of int32
-
 type last =
   | Return of Var.t
   | Raise of Var.t * [ `Normal | `Notrace | `Reraise ]
   | Stop
   | Branch of cont
-  | Cond of cond * Var.t * cont * cont
+  | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * Addr.Set.t
   | Poptrap of cont * Addr.t
@@ -427,14 +420,6 @@ let print_instr f i =
   | Array_set (x, y, z) ->
       Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
 
-let print_cond f (c, x) =
-  match c with
-  | IsTrue -> Var.print f x
-  | CEq n -> Format.fprintf f "%ld = %a" n Var.print x
-  | CLt n -> Format.fprintf f "%ld < %a" n Var.print x
-  | CLe n -> Format.fprintf f "%ld <= %a" n Var.print x
-  | CUlt n -> Format.fprintf f "%ld < %a" n Var.print x
-
 let print_last f l =
   match l with
   | Return x -> Format.fprintf f "return %a" Var.print x
@@ -443,12 +428,12 @@ let print_last f l =
   | Raise (x, `Notrace) -> Format.fprintf f "raise_notrace %a" Var.print x
   | Stop -> Format.fprintf f "stop"
   | Branch cont -> Format.fprintf f "branch %a" print_cont cont
-  | Cond (cond, x, cont1, cont2) ->
+  | Cond (x, cont1, cont2) ->
       Format.fprintf
         f
         "if %a then %a else %a"
-        print_cond
-        (cond, x)
+        Var.print
+        x
         print_cont
         cont1
         print_cont
@@ -537,7 +522,7 @@ let fold_children blocks pc f accu =
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap ((pc', _), _) | Pushtrap ((pc', _), _, _, _) -> f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) -> f pc1 accu >> f pc1 >> f pc2
+  | Cond (_, (pc1, _), (pc2, _)) -> f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
@@ -619,7 +604,7 @@ let invariant { blocks; _ } =
       | Raise _ -> ()
       | Stop -> ()
       | Branch cont -> check_cont cont
-      | Cond (_cond, _x, cont1, cont2) ->
+      | Cond (_x, cont1, cont2) ->
           check_cont cont1;
           check_cont cont2
       | Switch (_x, a1, a2) ->
