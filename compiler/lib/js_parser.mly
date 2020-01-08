@@ -159,10 +159,6 @@ statement_no_semi:
  | block=curly_block(statement*)
    { let statements, pi_start, _pi_end = block in
      J.Block statements, J.Pi pi_start }
- (* this is not allowed but some browsers accept it *)
- (* | function_declaration { *)
- (*  let var,params,body,_ = $1 in *)
- (*  J.Variable_statement [var,Some (J.EFun((None,params,body),None))]} *)
  | s=if_statement
  | s=while_statement
  | s=for_statement
@@ -418,7 +414,6 @@ primary_expression_no_statement:
  | b=boolean_literal { b }
  | numeric_literal   { let (start, n) = $1 in (start, J.ENum (J.Num.of_string_unsafe n)) }
  | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
-   (* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)
  | r=regex_literal                { r }
  | a=array_literal                { a }
  | pi=T_LPAREN e=expression T_RPAREN { (pi, e) }
@@ -536,7 +531,6 @@ regex_literal:
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
    (pi, J.ERegexp (regexp, option)) }
-   (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 (*----------------------------*)
 (* 2 array                    *)

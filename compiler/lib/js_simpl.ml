@@ -44,14 +44,15 @@ let rec enot_rec e =
         | J.NotEq -> J.EBin (J.EqEq, e1, e2), 0
         | J.EqEqEq -> J.EBin (J.NotEqEq, e1, e2), 0
         | J.NotEqEq -> J.EBin (J.EqEqEq, e1, e2), 0
-        (*Disabled: this is not correct!
-  var x = 0/0;
-  !(x < 0) and x >= 0 give different result
-        | J.Lt ->
-            (J.EBin (J.Le, e2, e1), 0)
-        | J.Le ->
-            (J.EBin (J.Lt, e2, e1), 0)
-*)
+        (* Disabled: this is not correct!
+           {[ !(x < 0) ]} and {[ x >= 0 ]} give different result when x = nan
+           {[
+             | J.Lt ->
+                 (J.EBin (J.Le, e2, e1), 0)
+             | J.Le ->
+                 (J.EBin (J.Lt, e2, e1), 0)
+           ]}
+         *)
         | _ -> J.EUn (J.Not, e), 1)
     | J.EUn (J.Not, e) -> e, 0
     | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot), _) ->
@@ -107,7 +108,6 @@ let assignment_of_statement st =
   | _ -> raise Not_assignment
 
 let simplify_condition = function
-  (* | J.ECond _  -> J.ENum 1. *)
   | J.ECond (e, J.ENum one, J.ENum zero) when J.Num.is_one one && J.Num.is_zero zero -> e
   | J.ECond (e, J.ENum zero, J.ENum one) when J.Num.is_one one && J.Num.is_zero zero ->
       J.EUn (J.Not, e)
@@ -183,8 +183,8 @@ let rec get_variable acc = function
   | J.ECond (e1, e2, e3) -> get_variable (get_variable (get_variable acc e1) e2) e3
   | J.EUn (_, e1) | J.EDot (e1, _) | J.ENew (e1, None) -> get_variable acc e1
   | J.ECall (e1, el, _) | J.ENew (e1, Some el) ->
-      ((e1, `Not_spread) :: el)  
-      |> List.map ~f:(fun (a, _) -> a) 
+      (e1, `Not_spread) :: el
+      |> List.map ~f:(fun (a, _) -> a)
       |> List.fold_left ~init:acc ~f:get_variable
   | J.EVar (J.V v) -> Code.Var.Set.add v acc
   | J.EVar (J.S _) -> acc

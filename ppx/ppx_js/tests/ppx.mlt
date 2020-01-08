@@ -201,7 +201,7 @@ fun (obj : < p : float Js.writeonly_prop > Js.t) -> obj##.p + 1
 
 [%%expect
 {|
-Line _, characters 52-59:
+Line _, characters 58-59:
 Error: This expression has type
          float Js_of_ocaml.Js.writeonly_prop =
            < set : float -> unit > Js_of_ocaml.Js.gen_prop

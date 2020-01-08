@@ -25,7 +25,7 @@ let subst_cont s (pc, arg) = pc, List.map arg ~f:(fun x -> s x)
 
 let expr s e =
   match e with
-  | Const _ | Constant _ -> e
+  | Constant _ -> e
   | Apply (f, l, n) -> Apply (s f, List.map l ~f:(fun x -> s x), n)
   | Block (n, a, k) -> Block (n, Array.map a ~f:(fun x -> s x), k)
   | Field (x, n) -> Field (s x, n)
@@ -55,7 +55,7 @@ let last s l =
       Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
   | Return x -> Return (s x)
   | Raise (x, k) -> Raise (s x, k)
-  | Cond (c, x, cont1, cont2) -> Cond (c, s x, subst_cont s cont1, subst_cont s cont2)
+  | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
   | Switch (x, a1, a2) ->
       Switch
         ( s x
@@ -70,9 +70,9 @@ let block s block =
   ; branch = last s block.branch
   }
 
-let program s (pc, blocks, free_pc) =
-  let blocks = Addr.Map.map (fun b -> block s b) blocks in
-  pc, blocks, free_pc
+let program s p =
+  let blocks = Addr.Map.map (fun b -> block s b) p.blocks in
+  { p with blocks }
 
 let rec cont' s pc blocks visited =
   if Addr.Set.mem pc visited
@@ -94,9 +94,9 @@ let rec cont' s pc blocks visited =
       (fun pc (blocks, visited) -> cont' s pc blocks visited)
       (blocks, visited)
 
-let cont s addr (pc, blocks, free_pc) =
-  let blocks, _ = cont' s addr blocks Addr.Set.empty in
-  pc, blocks, free_pc
+let cont s addr p =
+  let blocks, _ = cont' s addr p.blocks Addr.Set.empty in
+  { p with blocks }
 
 (****)
 

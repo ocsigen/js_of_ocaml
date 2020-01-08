@@ -136,7 +136,10 @@ and unop =
   | IncrB
   | DecrB
 
-and spread = [`Spread | `Not_spread]
+and spread =
+  [ `Spread
+  | `Not_spread
+  ]
 
 and arguments = (expression * spread) list
 

@@ -154,17 +154,13 @@ type prim_arg =
   | Pc of constant
 
 type expr =
-  | Const of int32
   | Apply of Var.t * Var.t list * bool
   (* if true, then # of arguments = # of parameters *)
   | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
-  (*XXX REMOVE *)
   | Prim of prim * prim_arg list
-
-(*XXX prim * Var.t list * constant list *)
 
 type instr =
   | Let of Var.t * expr
@@ -172,20 +168,12 @@ type instr =
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
-(*XXX REMOVE *)
-type cond =
-  | IsTrue
-  | CEq of int32
-  | CLt of int32
-  | CLe of int32
-  | CUlt of int32
-
 type last =
   | Return of Var.t
   | Raise of Var.t * [ `Normal | `Notrace | `Reraise ]
   | Stop
   | Branch of cont
-  | Cond of cond * Var.t * cont * cont
+  | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * Addr.Set.t
   | Poptrap of cont * Addr.t
@@ -197,40 +185,41 @@ type block =
   ; branch : last
   }
 
-type program = Addr.t * block Addr.Map.t * Addr.t
+type program =
+  { start : Addr.t
+  ; blocks : block Addr.Map.t
+  ; free_pc : Addr.t
+  }
 
-type xinstr =
-  | Instr of instr
-  | Last of last
+module Print : sig
+  type xinstr =
+    | Instr of instr
+    | Last of last
 
-val print_var_list : Format.formatter -> Var.t list -> unit
+  val var_list : Format.formatter -> Var.t list -> unit
 
-val print_instr : Format.formatter -> instr -> unit
+  val instr : Format.formatter -> instr -> unit
 
-val print_block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
+  val block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
 
-val print_program : (Addr.Map.key -> xinstr -> string) -> program -> unit
+  val program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 
-val print_last : Format.formatter -> last -> unit
+  val last : Format.formatter -> last -> unit
 
-val print_cont : Format.formatter -> cont -> unit
+  val cont : Format.formatter -> cont -> unit
+end
+
+type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+
+type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 
-val fold_children : block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+val fold_children : 'c fold_blocs
 
 val traverse :
-     (   block Addr.Map.t
-      -> Addr.t
-      -> (Addr.t -> Addr.Set.t * 'c -> Addr.Set.t * 'c)
-      -> Addr.Set.t * 'c
-      -> Addr.Set.t * 'c)
-  -> (Addr.t -> 'c -> 'c)
-  -> Addr.t
-  -> block Addr.Map.t
-  -> 'c
-  -> 'c
+  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
 val prepend : program -> instr list -> program
 

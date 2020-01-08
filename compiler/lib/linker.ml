@@ -47,9 +47,7 @@ let parse_annot loc s =
     | `Weakdef _ -> Some (`Weakdef (Some loc))
   with
   | Not_found -> None
-  | _exc ->
-      (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
-      None
+  | _ -> None
 
 let error s = Format.ksprintf (fun s -> failwith s) s
 
@@ -240,11 +238,6 @@ let check_primitive ~name pi ~code ~requires =
     warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
     warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
 
-(* ; *)
-(* return checks disabled *)
-(* if false && not (all_return code) *)
-(* then Format.eprintf "warning: returns may be missing for primitive code %S (%s)@." name (loc pi) *)
-
 let version_match =
   List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
@@ -281,7 +274,9 @@ class traverse_and_find_named_values all =
     method expression x =
       let open Javascript in
       (match x with
-      | ECall (EVar (S { name = "caml_named_value"; _ }), [ EStr (v, _), `Not_spread ], _) ->
+      | ECall
+          (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
+        ->
           all := StringSet.add v !all
       | _ -> ());
       self#expression x

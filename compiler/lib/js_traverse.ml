@@ -129,13 +129,17 @@ class map : mapper =
       | ECond (e1, e2, e3) -> ECond (m#expression e1, m#expression e2, m#expression e3)
       | EBin (b, e1, e2) -> EBin (b, m#expression e1, m#expression e2)
       | EUn (b, e1) -> EUn (b, m#expression e1)
-      | ECall (e1, e2, loc) -> ECall (m#expression e1, List.map e2 ~f:(
-        fun (e, spread)-> m#expression e, spread), loc)
+      | ECall (e1, e2, loc) ->
+          ECall
+            ( m#expression e1
+            , List.map e2 ~f:(fun (e, spread) -> m#expression e, spread)
+            , loc )
       | EAccess (e1, e2) -> EAccess (m#expression e1, m#expression e2)
       | EDot (e1, id) -> EDot (m#expression e1, id)
       | ENew (e1, Some args) ->
-          ENew (m#expression e1, Some (List.map args ~f:(
-            fun (e, spread) -> m#expression e, spread)))
+          ENew
+            ( m#expression e1
+            , Some (List.map args ~f:(fun (e, spread) -> m#expression e, spread)) )
       | ENew (e1, None) -> ENew (m#expression e1, None)
       | EVar v -> EVar (m#ident v)
       | EFun (idopt, params, body, nid) ->
@@ -201,7 +205,9 @@ class map_for_share_constant =
           EBin (op, EUn (Typeof, e1), super#expression e2)
       (* Some js bundler get confused when the argument
        of 'require' is not a literal *)
-      | ECall (EVar (S { var = None; name = "require"; _ }), [ EStr _, `Not_spread ], _) -> e
+      | ECall (EVar (S { var = None; name = "require"; _ }), [ (EStr _, `Not_spread) ], _)
+        ->
+          e
       | _ -> super#expression e
 
     (* do not replace constant in switch case *)
@@ -704,6 +710,13 @@ class compact_vardecl =
             | _ -> (x, loc) :: acc)
       in
       List.rev l
+
+    method program p =
+      let p = super#program p in
+      m#merge_info m;
+      let all = IdentSet.diff insert_ exc_ in
+      let body = m#pack all p in
+      body
   end
 
 class clean =

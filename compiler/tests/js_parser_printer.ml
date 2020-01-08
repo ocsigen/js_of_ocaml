@@ -28,7 +28,7 @@ let print ~compact source =
   Js_output.program pp parsed;
   print_endline (Buffer.contents buffer)
 
-let%expect_test "spread operator survives round-trip" = 
+let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
   [%expect {| f(...[1,2,3]); |}]
 

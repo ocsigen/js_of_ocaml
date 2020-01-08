@@ -70,12 +70,6 @@ let propagate_name t v v' =
   try
     let name = Hashtbl.find t.names v in
     name_raw t v' name
-    (* ;
-     * (try
-     *    let n = Hashtbl.find t.names v' in
-     *    if n <> name
-     *    then Printf.eprintf "erasing name %s by %s\n%!" n name
-     *  with _ -> ()) *)
   with Not_found -> ()
 
 let name t v nm_orig =
@@ -126,9 +120,6 @@ let add_reserved s =
   reserved := List.fold_left s ~init:!reserved ~f:(fun acc x -> StringSet.add x acc)
 
 let _ = reserved := StringSet.union !reserved Reserved.keyword
-
-(* ; *)
-(* add_reserved Reserved.provided *)
 
 let get_reserved () = !reserved
 

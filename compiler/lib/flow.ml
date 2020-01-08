@@ -89,14 +89,14 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-  | Const _ | Constant _ | Apply _ | Prim _ -> ()
+  | Constant _ | Apply _ | Prim _ -> ()
   | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
   | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
-let program_deps (_, blocks, _) =
+let program_deps { blocks; _ } =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
@@ -116,7 +116,7 @@ let program_deps (_, blocks, _) =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont
-      | Cond (_, _, cont1, cont2) ->
+      | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2
       | Switch (_, a1, a2) ->
@@ -134,8 +134,7 @@ let propagate1 deps defs st x =
   | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
-      | Const _ | Constant _ | Apply _ | Prim _ | Closure _ | Block _ ->
-          Var.Set.singleton x
+      | Constant _ | Apply _ | Prim _ | Closure _ | Block _ -> Var.Set.singleton x
       | Field (y, n) ->
           var_set_lift
             (fun z ->
@@ -189,7 +188,7 @@ let rec block_escape st x =
 
 let expr_escape st _x e =
   match e with
-  | Const _ | Constant _ | Closure _ | Block _ | Field _ -> ()
+  | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply (_, l, _) -> List.iter l ~f:(fun x -> block_escape st x)
   | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
   | Prim (Extern name, l) ->
@@ -228,7 +227,7 @@ let expr_escape st _x e =
       in
       loop l ka
 
-let program_escape defs known_origins (_, blocks, _) =
+let program_escape defs known_origins { blocks; _ } =
   let nv = Var.count () in
   let may_escape = Array.make nv false in
   let possibly_mutable = Array.make nv false in
@@ -261,7 +260,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
-      | Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
+      | Constant _ | Closure _ | Apply _ | Prim _ | Block _ -> false
       | Field (y, n) ->
           Var.Tbl.get st y
           || Var.Set.exists
@@ -307,7 +306,6 @@ let the_def_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Const _ as e) -> Some e
           | Expr (Constant (Float _ | Int _ | IString _) as e) -> Some e
           | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if info.info_possibly_mutable.(Var.idx x) then None else Some e
@@ -324,7 +322,6 @@ let the_const_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Const i) -> Some (Int i)
           | Expr (Constant ((Float _ | Int _ | IString _) as c)) -> Some c
           | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
           | Expr (Constant c) ->
@@ -414,7 +411,7 @@ let f ?skip_param p =
             "%a: {%a} / %s@."
             Var.print
             x
-            Code.print_var_list
+            Code.Print.var_list
             (Var.Set.elements s)
             (if Var.Tbl.get maybe_unknown x then "any" else "known"))
       vars;

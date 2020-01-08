@@ -166,7 +166,7 @@ rule initial tokinfo prev = parse
       let info = tokinfo lexbuf in
       try
         let f = Hashtbl.find keyword_table s in
-        f info (* need case insensitive ? *)
+        f info
       with
         | Not_found -> T_IDENTIFIER (s, info)
     }
@@ -245,7 +245,6 @@ rule initial tokinfo prev = parse
           | _ -> assert false
         end
       | _ ->
-          (* raise (Token t); *)
           let buf = Buffer.create 127 in
           Buffer.add_string buf s;
           regexp buf lexbuf;
@@ -259,7 +258,6 @@ rule initial tokinfo prev = parse
   | eof { EOF (tokinfo lexbuf) }
 
   | _ {
-      (* Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf); *)
       TUnknown (tokinfo lexbuf, tok lexbuf)
     }
 (*****************************************************************************)
@@ -314,8 +312,6 @@ and regexp_maybe_ident buf = parse
 
 and st_comment buf nl = parse
   | "*/" { Buffer.add_string buf (tok lexbuf) }
-
-  (* noteopti: *)
   | NEWLINE { Buffer.add_string buf (tok lexbuf);
               nl := true;
               st_comment buf nl lexbuf }

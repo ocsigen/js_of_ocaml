@@ -128,7 +128,7 @@ module Share = struct
       ?(alias_strings = false)
       ?(alias_prims = false)
       ?(alias_apply = true)
-      (_, blocks, _) : t =
+      { blocks; _ } : t =
     let count =
       Addr.Map.fold
         (fun _ block share ->
@@ -215,7 +215,7 @@ end
 
 module Ctx = struct
   type t =
-    { mutable blocks : block Addr.Map.t
+    { blocks : block Addr.Map.t
     ; live : int array
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
@@ -232,7 +232,17 @@ let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
 
 let int32 n = J.ENum (J.Num.of_int32 n)
 
-let unsigned x = J.EBin (J.Lsr, x, int 0)
+let to_int cx = J.EBin (J.Bor, cx, int 0)
+
+let unsigned' x = J.EBin (J.Lsr, x, int 0)
+
+let unsigned x =
+  let pos_int32 =
+    match x with
+    | J.ENum num -> ( try Int32.(J.Num.to_int32 num >= 0l) with _ -> false)
+    | _ -> false
+  in
+  if pos_int32 then x else unsigned' x
 
 let one = int 1
 
@@ -247,12 +257,6 @@ let plus_int x y =
 
 let bool e = J.ECond (e, one, zero)
 
-(*let boolnot e = J.ECond (e, zero, one)*)
-let val_float f = f
-
-(*J.EArr [Some (J.ENum 253.); Some f]*)
-let float_val e = e
-
 (****)
 
 let source_location ctx ?after pc =
@@ -262,7 +266,7 @@ let source_location ctx ?after pc =
 
 (****)
 
-let float_const f = val_float (J.ENum (J.Num.of_float f))
+let float_const f = J.ENum (J.Num.of_float f)
 
 let s_var name = J.EVar (J.ident name)
 
@@ -297,7 +301,6 @@ let or_p p q = max p q
 
 let is_mutable p = p >= mutable_p
 
-(*let is_mutator p = p >= mutator_p*)
 let kind k =
   match k with
   | `Pure -> const_p
@@ -324,7 +327,7 @@ let rec constant_rec ~ctx x level instrs =
       let lo = int (Int64.to_int i land 0xffffff)
       and mi = int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
       and hi = int (Int64.to_int (Int64.shift_right i 48) land 0xffff) in
-      J.ECall (p, [ lo, `Not_spread; mi, `Not_spread; hi,`Not_spread ], J.N), instrs
+      J.ECall (p, [ lo, `Not_spread; mi, `Not_spread; hi, `Not_spread ], J.N), instrs
   | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
@@ -449,9 +452,7 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 (****)
 
 type state =
-  { all_succs : (int, Addr.Set.t) Hashtbl.t
-  ; (* not used *)
-    succs : (int, int list) Hashtbl.t
+  { succs : (int, int list) Hashtbl.t
   ; backs : (int, Addr.Set.t) Hashtbl.t
   ; preds : (int, int) Hashtbl.t
   ; mutable loops : Addr.Set.t
@@ -460,7 +461,6 @@ type state =
   ; mutable interm_idx : int
   ; ctx : Ctx.t
   ; mutable blocks : Code.block Addr.Map.t
-  ; at_toplevel : bool
   }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
@@ -473,29 +473,33 @@ let protect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1000000
 
 let unprotect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1000000)
 
-let ( >> ) x f = f x
-
-(* This as to be kept in sync with the way we build conditionals
+module DTree = struct
+  (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 
-module DTree = struct
+  type cond =
+    | IsTrue
+    | CEq of int32
+    | CLt of int32
+    | CLe of int32
+
   type 'a t =
-    | If of Code.cond * 'a t * 'a t
+    | If of cond * 'a t * 'a t
     | Switch of (int list * 'a t) array
     | Branch of 'a
     | Empty
 
   let normalize a =
     a
-    >> Array.to_list
-    >> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
-    >> list_group fst snd
-    >> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
-    >> List.stable_sort ~cmp:(fun (_, l1) (_, l2) ->
+    |> Array.to_list
+    |> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
+    |> list_group fst snd
+    |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
+    |> List.stable_sort ~cmp:(fun (_, l1) (_, l2) ->
            compare (List.length l1) (List.length l2))
-    >> Array.of_list
+    |> Array.of_list
 
-  let build_if cond b1 b2 = If (cond, Branch b1, Branch b2)
+  let build_if b1 b2 = If (IsTrue, Branch b1, Branch b2)
 
   let build_switch (a : cont array) : 'a t =
     let m = Config.Param.switch_max_case () in
@@ -548,14 +552,17 @@ module DTree = struct
             let range1 = snd ai.(h) and range2 = snd ai.(succ h) in
             match range1, range2 with
             | [], _ | _, [] -> assert false
-            | _, lower_bound2 :: _ -> If (Code.CLe (Int32.of_int lower_bound2), b2, b1))
+            | _, lower_bound2 :: _ -> If (CLe (Int32.of_int lower_bound2), b2, b1))
     in
     let len = Array.length ai in
     if len = 0 then Empty else loop 0 (len - 1)
 
   let rec fold_cont f b acc =
     match b with
-    | If (_, b1, b2) -> acc >> fold_cont f b1 >> fold_cont f b2
+    | If (_, b1, b2) ->
+        let acc = fold_cont f b1 acc in
+        let acc = fold_cont f b2 acc in
+        acc
     | Switch a -> Array.fold_left a ~init:acc ~f:(fun acc (_, b) -> fold_cont f b acc)
     | Branch (pc, _) -> f pc acc
     | Empty -> acc
@@ -581,12 +588,16 @@ let fold_children blocks pc f accu =
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
-  | Pushtrap ((pc1, _), _, (pc2, _), _) -> accu >> f pc1 >> f pc2
-  | Cond (cond, _, cont1, cont2) ->
-      DTree.fold_cont f (DTree.build_if cond cont1 cont2) accu
+  | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+      let accu = f pc1 accu in
+      let accu = f pc2 accu in
+      accu
+  | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
       let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
-      accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
+      let accu = DTree.fold_cont f a1 accu in
+      let accu = DTree.fold_cont f a2 accu in
+      accu
 
 let rec build_graph st pc anc =
   if not (Addr.Set.mem pc st.visited_blocks)
@@ -594,7 +605,6 @@ let rec build_graph st pc anc =
     st.visited_blocks <- Addr.Set.add pc st.visited_blocks;
     let anc = Addr.Set.add pc anc in
     let s = Code.fold_children st.blocks pc Addr.Set.add Addr.Set.empty in
-    Hashtbl.add st.all_succs pc s;
     let backs = Addr.Set.inter s anc in
     Hashtbl.add st.backs pc backs;
     let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
@@ -715,13 +725,9 @@ let apply_fun ctx f params loc =
   then apply_fun_raw ctx f params
   else
     let y = Share.get_apply (generate_apply_fun ctx) (List.length params) ctx.Ctx.share in
-    J.ECall (y, (List.map ~f:(fun x -> x, `Not_spread) (f :: params)), loc)
+    J.ECall (y, List.map ~f:(fun x -> x, `Not_spread) (f :: params), loc)
 
 (****)
-
-let to_int cx = J.EBin (J.Bor, cx, int 0)
-
-(* 32 bit ints *)
 
 let _ =
   List.iter
@@ -865,30 +871,19 @@ let _ =
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
-  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
+  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
   register_bin_prim "caml_neq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.NotEq, float_val cx, float_val cy)));
-  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Le, float_val cy, float_val cx)));
-  register_bin_prim "caml_le_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Le, float_val cx, float_val cy)));
-  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Lt, float_val cy, float_val cx)));
-  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.Lt, float_val cx, float_val cy)));
-  register_bin_prim "caml_add_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Plus, float_val cx, float_val cy)));
-  register_bin_prim "caml_sub_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Minus, float_val cx, float_val cy)));
-  register_bin_prim "caml_mul_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Mul, float_val cx, float_val cy)));
-  register_bin_prim "caml_div_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Div, float_val cx, float_val cy)));
-  register_un_prim "caml_neg_float" `Pure (fun cx _ ->
-      val_float (J.EUn (J.Neg, float_val cx)));
-  register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ ->
-      val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
+      bool (J.EBin (J.NotEq, cx, cy)));
+  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
+  register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
+  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
+  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
+  register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
+  register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
+  register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
+  register_bin_prim "caml_div_float" `Pure (fun cx cy _ -> J.EBin (J.Div, cx, cy));
+  register_un_prim "caml_neg_float" `Pure (fun cx _ -> J.EUn (J.Neg, cx));
+  register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ -> J.EBin (J.Mod, cx, cy));
   register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
@@ -939,19 +934,22 @@ let throw_statement ctx cx k loc =
   | `Normal ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx, `Not_spread; bool (int 1), `Not_spread ], loc))
+               ( runtime_fun ctx "caml_exn_with_js_backtrace"
+               , [ cx, `Not_spread; bool (int 1), `Not_spread ]
+               , loc ))
         , loc )
       ]
   | `Reraise ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [ cx, `Not_spread; bool (int 0), `Not_spread ], loc))
+               ( runtime_fun ctx "caml_exn_with_js_backtrace"
+               , [ cx, `Not_spread; bool (int 0), `Not_spread ]
+               , loc ))
         , loc )
       ]
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
-  | Const i -> (int32 i, const_p, queue), []
   | Apply (x, l, true) ->
       let (px, cx), queue = access_queue queue x in
       let args, prop, queue =
@@ -996,7 +994,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~after:true pc in
-      let clo = compile_closure ctx false cont in
+      let clo = compile_closure ctx cont in
       let clo =
         match clo with
         | (st, J.N) :: rem -> (st, J.U) :: rem
@@ -1140,7 +1138,10 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let args = Array.to_list (Array.init i ~f:(fun _ -> J.V (Var.fresh ()))) in
             let f = J.V (Var.fresh ()) in
             let call =
-              J.ECall (J.EDot (J.EVar f, "fun"), List.map args ~f:(fun v -> J.EVar v, `Not_spread), loc)
+              J.ECall
+                ( J.EDot (J.EVar f, "fun")
+                , List.map args ~f:(fun v -> J.EVar v, `Not_spread)
+                , loc )
             in
             let e =
               J.EFun
@@ -1220,8 +1221,7 @@ and translate_instr ctx expr_queue loc instr =
          num : number of occurrence
          size_c * n < size_v * n + size_v + 1 + size_c
       *)
-      | n, (Const _ | Constant (Int _ | Float _)) ->
-          enqueue expr_queue prop x ce loc n instrs
+      | n, Constant (Int _ | Float _) -> enqueue expr_queue prop x ce loc n instrs
       | _ ->
           flush_queue
             expr_queue
@@ -1341,19 +1341,20 @@ and compile_block st queue (pc : Addr.t) frontier interm =
           in
           let grey = Addr.Set.union pc2s pc3s in
           Addr.Set.iter (incr_preds st) grey;
-          let grey', new_interm = colapse_frontier st grey interm in
+          let prefix, grey', new_interm = colapse_frontier st grey interm in
           assert (Addr.Set.cardinal grey' <= 1);
           let inner_frontier = Addr.Set.union new_frontier grey' in
           if debug () then Format.eprintf "@[<2>try {@,";
           let body =
-            compile_branch
-              st
-              []
-              (pc1, args1)
-              None
-              Addr.Set.empty
-              inner_frontier
-              new_interm
+            prefix
+            @ compile_branch
+                st
+                []
+                (pc1, args1)
+                None
+                Addr.Set.empty
+                inner_frontier
+                new_interm
           in
           if debug () then Format.eprintf "} catch {@,";
           let x =
@@ -1382,7 +1383,12 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                   Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
                 in
                 let blocks =
-                  Code.traverse Code.fold_children subst_block pc st.blocks st.blocks
+                  Code.traverse
+                    { fold = Code.fold_children }
+                    subst_block
+                    pc
+                    st.blocks
+                    st.blocks
                 in
                 if !found then st.blocks <- blocks;
                 if !found then Some x' else None
@@ -1423,7 +1429,9 @@ and compile_block st queue (pc : Addr.t) frontier interm =
              , source_location st.ctx pc )
             :: after)
       | _ ->
-          let new_frontier, new_interm = colapse_frontier st new_frontier interm in
+          let prefix, new_frontier, new_interm =
+            colapse_frontier st new_frontier interm
+          in
           assert (Addr.Set.cardinal new_frontier <= 1);
           (* Beware evaluation order! *)
           let cond =
@@ -1438,7 +1446,8 @@ and compile_block st queue (pc : Addr.t) frontier interm =
               new_interm
               succs
           in
-          cond
+          prefix
+          @ cond
           @
           if Addr.Set.cardinal new_frontier = 0
           then []
@@ -1462,16 +1471,15 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             ( J.Left None
             , None
             , None
-            , ( J.Block
-                  (if Addr.Set.cardinal frontier > 0
-                  then (
-                    if debug ()
-                    then Format.eprintf "@ break (%d); }@]" (Addr.Set.choose new_frontier);
-                    body @ [ J.Break_statement None, J.N ])
-                  else (
-                    if debug () then Format.eprintf "}@]";
-                    body))
-              , J.N ) )
+            , Js_simpl.block
+                (if Addr.Set.cardinal frontier > 0
+                then (
+                  if debug ()
+                  then Format.eprintf "@ break (%d); }@]" (Addr.Set.choose new_frontier);
+                  body @ [ J.Break_statement None, J.N ])
+                else (
+                  if debug () then Format.eprintf "}@]";
+                  body)) )
         , source_location st.ctx pc )
       in
       match label with
@@ -1489,21 +1497,28 @@ and colapse_frontier st new_frontier interm =
         st.interm_idx
         (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
-    let a = Array.of_list (Addr.Set.elements new_frontier) in
+    let a =
+      Addr.Set.elements new_frontier
+      |> List.map ~f:(fun pc -> pc, get_preds st pc)
+      |> List.sort ~cmp:(fun (_, (c1 : int)) (_, (c2 : int)) -> compare c2 c1)
+      |> List.map ~f:fst
+    in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
     let idx = st.interm_idx in
     st.interm_idx <- idx - 1;
-    let cases = Array.map a ~f:(fun pc -> pc, []) in
     let switch =
+      let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
       then Code.Switch (x, cases, [||])
-      else Code.Cond (IsTrue, x, cases.(1), cases.(0))
+      else Code.Cond (x, cases.(1), cases.(0))
     in
     st.blocks <-
       Addr.Map.add
         idx
         { params = []; handler = None; body = []; branch = switch }
         st.blocks;
+    let pc_i = List.mapi ~f:(fun i pc -> pc, i) a in
+    let default = 0 in
     (* There is a branch from this switch to the members
        of the frontier. *)
     Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;
@@ -1512,14 +1527,12 @@ and colapse_frontier st new_frontier interm =
        but they should remain in the frontier. *)
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
-    Hashtbl.add st.all_succs idx new_frontier;
     Hashtbl.add st.backs idx Addr.Set.empty;
-    ( Addr.Set.singleton idx
-    , Array.fold_right
-        (Array.mapi ~f:(fun i pc -> pc, i) a)
-        ~init:interm
-        ~f:(fun (pc, i) interm -> Addr.Map.add pc (idx, (x, i)) interm) ))
-  else new_frontier, interm
+    ( [ J.Variable_statement [ J.V x, Some (int default, J.N) ], J.N ]
+    , Addr.Set.singleton idx
+    , List.fold_right pc_i ~init:interm ~f:(fun (pc, i) interm ->
+          Addr.Map.add pc (idx, (x, i, default = i)) interm) ))
+  else [], new_frontier, interm
 
 and compile_decision_tree st _queue handler backs frontier interm succs loc cx dtree =
   (* Some changes here may require corresponding changes
@@ -1544,18 +1557,15 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
           | IsTrue -> cx
           | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
           | CLt n -> J.EBin (J.Lt, int32 n, cx)
-          | CUlt n ->
-              let n' = if Int32.(n < 0l) then unsigned (int32 n) else int32 n in
-              J.EBin (J.Lt, n', unsigned cx)
           | CLe n -> J.EBin (J.Le, int32 n, cx)
         in
         ( never1 && never2
         , Js_simpl.if_statement
             e'
             loc
-            (J.Block iftrue, J.N)
+            (Js_simpl.block iftrue)
             never1
-            (J.Block iffalse, J.N)
+            (Js_simpl.block iffalse)
             never2 )
     | DTree.Switch a ->
         let all_never = ref true in
@@ -1615,7 +1625,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
     | Pushtrap _ -> assert false
     | Poptrap (cont, _) ->
         flush_all queue (compile_branch st [] cont None backs frontier interm)
-    | Cond (cond, x, c1, c2) ->
+    | Cond (x, c1, c2) ->
         let (_px, cx), queue = access_queue queue x in
         let b =
           compile_decision_tree
@@ -1628,7 +1638,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             succs
             loc
             cx
-            (DTree.build_if cond c1 c2)
+            (DTree.build_if c1 c2)
         in
         flush_all queue b
     | Switch (x, [||], a2) ->
@@ -1664,10 +1674,8 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         in
         flush_all queue code
     | Switch (x, a1, a2) ->
-        (* The variable x is accessed several times,
-         so we can directly refer to it *)
-        (* We do not want to share the string "number".
-         See comment for IsInt *)
+        (* The variable x is accessed several times, so we can directly
+           refer to it *)
         let b1 =
           compile_decision_tree
             st
@@ -1806,25 +1814,25 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
 
 and compile_branch_selection pc interm =
   try
-    let pc, (x, i) = Addr.Map.find pc interm in
+    let pc, (x, i, default) = Addr.Map.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
-    (J.Variable_statement [ J.V x, Some (int i, J.N) ], J.N)
-    :: compile_branch_selection pc interm
+    let branch = compile_branch_selection pc interm in
+    if default
+    then branch
+    else (J.Expression_statement (EBin (Eq, EVar (J.V x), int i)), J.N) :: branch
   with Not_found -> []
 
-and compile_closure ctx at_toplevel (pc, args) =
+and compile_closure ctx (pc, args) =
   let st =
     { visited_blocks = Addr.Set.empty
     ; loops = Addr.Set.empty
     ; loop_stack = []
-    ; all_succs = Hashtbl.create 17
     ; succs = Hashtbl.create 17
     ; backs = Hashtbl.create 17
     ; preds = Hashtbl.create 17
     ; interm_idx = -1
     ; ctx
     ; blocks = ctx.Ctx.blocks
-    ; at_toplevel
     }
   in
   build_graph st pc Addr.Set.empty;
@@ -1872,18 +1880,18 @@ let generate_shared_value ctx =
   else [ strings ]
 
 let compile_program ctx pc =
-  let res = compile_closure ctx true (pc, []) in
+  let res = compile_closure ctx (pc, []) in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
   res
 
-let f ((pc, blocks, _) as p) ~exported_runtime live_vars debug =
+let f (p : Code.program) ~exported_runtime ~live_vars debug =
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime") else None
   in
-  let ctx = Ctx.initial ~exported_runtime blocks live_vars share debug in
-  let p = compile_program ctx pc in
+  let ctx = Ctx.initial ~exported_runtime p.blocks live_vars share debug in
+  let p = compile_program ctx p.start in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p

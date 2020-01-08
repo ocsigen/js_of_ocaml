@@ -55,7 +55,7 @@ and mark_def st d =
 
 and mark_expr st e =
   match e with
-  | Const _ | Constant _ -> ()
+  | Constant _ -> ()
   | Apply (f, l, _) ->
       mark_var st f;
       List.iter l ~f:(fun x -> mark_var st x)
@@ -90,7 +90,7 @@ and mark_reachable st pc =
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
     | Branch cont | Poptrap (cont, _) -> mark_cont_reachable st cont
-    | Cond (_, x, cont1, cont2) ->
+    | Cond (x, cont1, cont2) ->
         mark_var st x;
         mark_cont_reachable st cont1;
         mark_cont_reachable st cont2
@@ -129,8 +129,8 @@ let filter_live_last blocks st l =
   match l with
   | Return _ | Raise _ | Stop -> l
   | Branch cont -> Branch (filter_cont blocks st cont)
-  | Cond (c, x, cont1, cont2) ->
-      Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2)
+  | Cond (x, cont1, cont2) ->
+      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
   | Switch (x, a1, a2) ->
       Switch
         ( x
@@ -155,7 +155,7 @@ let annot st pc xi =
   if not (Addr.Set.mem pc st.reachable_blocks)
   then "x"
   else
-    match xi with
+    match (xi : Code.Print.xinstr) with
     | Last _ -> " "
     | Instr i ->
         let c = ref_count st i in
@@ -181,12 +181,12 @@ let add_cont_dep blocks defs (pc, args) =
 
 (* Dead continuation *)
 
-let f ((pc, blocks, free_pc) as program) =
+let f ({ blocks; _ } as p : Code.program) =
   let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
-  let pure_funs = Pure_fun.f program in
+  let pure_funs = Pure_fun.f p in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -197,7 +197,7 @@ let f ((pc, blocks, free_pc) as program) =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
-      | Cond (_, _, cont1, cont2) ->
+      | Cond (_, cont1, cont2) ->
           add_cont_dep blocks defs cont1;
           add_cont_dep blocks defs cont2
       | Switch (_, a1, a2) ->
@@ -207,8 +207,8 @@ let f ((pc, blocks, free_pc) as program) =
       | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
     blocks;
   let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
-  mark_reachable st pc;
-  if debug () then print_program (fun pc xi -> annot st pc xi) (pc, blocks, free_pc);
+  mark_reachable st p.start;
+  if debug () then Print.program (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
   let blocks =
     Addr.Map.fold
@@ -233,4 +233,4 @@ let f ((pc, blocks, free_pc) as program) =
       Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
-  (pc, blocks, free_pc), st.live
+  { p with blocks }, st.live

@@ -1,12 +1,28 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
-* Misc: support for ocaml 4.10
+* Compiler: fix vardecl optim (#946)
+* Compiler: Compiler: change compilation scheme for branches (#948)
 * Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
+* Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
+* Runtime: optimize caml_call_gen
+* Runtime: change representation of int64  (#905)
+* Lib: add closest method to element (#930)
+* Ppx: ppx_js behave better with merlin (#933)
 
 ## Bug fixes
+* Compiler: restore optimization when generating if statements
+* Runtime: Catch nodejs errors and re-raise them as Sys_error
+* Lib: Fix the type of blur and focus event to be focusEvent (#929)
 
+# 3.5.2 (2019-12-14) - Hong Kong
+## Features/Changes
+* Misc: support for ocaml 4.10
+* Misc: ppx_deriving_json uses ppxlib >= 0.9
+
+## Bug fixes
+* Runtime: fix pseudo fs initialization (#931)
 
 # 3.5.1 (2019-11-16) - Hong Kong
 ## Features/Changes

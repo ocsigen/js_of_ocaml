@@ -50,12 +50,12 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-  | Const _ | Constant _ | Apply _ | Prim _ -> ()
+  | Constant _ | Apply _ | Prim _ -> ()
   | Closure (_, cont) -> cont_deps blocks vars deps defs cont
   | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
-let program_deps (_, blocks, _) =
+let program_deps { blocks; _ } =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
@@ -72,7 +72,7 @@ let program_deps (_, blocks, _) =
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> cont_deps blocks vars deps defs cont
-      | Cond (_, _, cont1, cont2) ->
+      | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2
       | Switch (_, a1, a2) ->

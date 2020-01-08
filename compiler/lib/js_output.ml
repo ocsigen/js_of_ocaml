@@ -18,15 +18,26 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-XXX Beware automatic semi-colon insertion...
-         a=b
-         ++c
-      is not the same as
-         a=b ++c
-===> see so-called "restricted productions":
-     the space cannot be replaced by a newline in the following expressions:
-       e ++, e --, continue e, break e, return e, throw e
+(* Beware automatic semi-colon insertion...
+   {v
+     a=b
+     ++c
+   v}
+   is not the same as
+   {v
+     a=b ++c
+   v}
+
+   see so-called "restricted productions":
+   the space cannot be replaced by a newline in the following expressions:
+   {v
+     e ++
+     e --
+     continue e
+     break e
+     return e
+     throw
+   v}
 *)
 open! Stdlib
 
@@ -248,16 +259,19 @@ struct
     | Bnot -> "~"
     | IncrA | IncrB | DecrA | DecrB | Typeof | Void | Delete -> assert false
 
-  (*XXX May need to be updated... *)
   let rec ends_with_if_without_else st =
     match fst st with
+    | Labelled_statement (_, st)
     | If_statement (_, _, Some st)
     | While_statement (_, st)
     | For_statement (_, _, _, st)
     | ForIn_statement (_, _, st) ->
         ends_with_if_without_else st
     | If_statement (_, _, None) -> true
-    | _ -> false
+    | Block _ | Variable_statement _ | Empty_statement | Expression_statement _
+    | Continue_statement _ | Break_statement _ | Return_statement _ | Throw_statement _
+    | Do_while_statement _ | Switch_statement _ | Try_statement _ | Debugger_statement ->
+        false
 
   let rec need_paren l e =
     match e with
@@ -688,16 +702,16 @@ struct
   and arguments f l =
     match l with
     | [] -> ()
-    | [ e, s ] ->
+    | [ (e, s) ] ->
         PP.start_group f 0;
-        (match s with 
+        (match s with
         | `Spread -> PP.string f "..."
         | `Not_spread -> ());
         expression 1 f e;
         PP.end_group f
     | (e, s) :: r ->
         PP.start_group f 0;
-        (match s with 
+        (match s with
         | `Spread -> PP.string f "..."
         | `Not_spread -> ());
         expression 1 f e;
