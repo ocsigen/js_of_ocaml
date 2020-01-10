@@ -21,17 +21,12 @@
 
 //Provides: raw_array_sub
 function raw_array_sub (a,i,l) {
-  var b = new Array(l);
-  for(var j = 0; j < l; j++) b[j] = a[i+j];
-  return b
+  return a.slice(i, i + l);
 }
 
 //Provides: raw_array_copy
 function raw_array_copy (a) {
-  var l = a.length;
-  var b = new Array(l);
-  for(var i = 0; i < l; i++ ) b[i] = a[i];
-  return b
+  return a.slice();
 }
 
 //Provides: raw_array_cons
@@ -44,6 +39,7 @@ function raw_array_cons (a,x) {
 }
 
 //Provides: caml_call_gen (const, shallow)
+//Weakdef
 function caml_call_gen(f, args) {
   var args_copied = false
 
