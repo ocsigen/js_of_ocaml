@@ -702,12 +702,18 @@ struct
   and arguments f l =
     match l with
     | [] -> ()
-    | [ e ] ->
+    | [ (e, s) ] ->
         PP.start_group f 0;
+        (match s with
+        | `Spread -> PP.string f "..."
+        | `Not_spread -> ());
         expression 1 f e;
         PP.end_group f
-    | e :: r ->
+    | (e, s) :: r ->
         PP.start_group f 0;
+        (match s with
+        | `Spread -> PP.string f "..."
+        | `Not_spread -> ());
         expression 1 f e;
         PP.end_group f;
         PP.string f ",";

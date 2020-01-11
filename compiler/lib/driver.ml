@@ -215,10 +215,11 @@ let gen_missing js missing =
                             (Expression_statement
                                (ECall
                                   ( EVar (ident "caml_failwith")
-                                  , [ EBin
-                                        ( Plus
-                                        , EStr (prim, `Utf8)
-                                        , EStr (" not implemented", `Utf8) )
+                                  , [ ( EBin
+                                          ( Plus
+                                          , EStr (prim, `Utf8)
+                                          , EStr (" not implemented", `Utf8) )
+                                      , `Not_spread )
                                     ]
                                   , N )))
                         , N )
@@ -365,7 +366,7 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
       match global with
       | `Function -> f
       | `Bind_to _ -> f
-      | `Custom name -> J.ECall (f, [ J.EVar (J.ident name) ], J.N)
+      | `Custom name -> J.ECall (f, [ J.EVar (J.ident name), `Not_spread ], J.N)
       | `Auto ->
           let global =
             J.ECall
@@ -379,7 +380,7 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
               , []
               , J.N )
           in
-          J.ECall (f, [ global ], J.N)
+          J.ECall (f, [ global, `Not_spread ], J.N)
     in
     match global with
     | `Bind_to name ->

@@ -133,6 +133,7 @@ rule initial tokinfo prev = parse
   | "<<" { T_LSHIFT (tokinfo lexbuf); }
   | ">>=" { T_RSHIFT_ASSIGN (tokinfo lexbuf); }
   | ">>>=" { T_RSHIFT3_ASSIGN (tokinfo lexbuf); }
+  | "..." { T_SPREAD (tokinfo lexbuf); }
   | ">>>" { T_RSHIFT3 (tokinfo lexbuf); }
   | ">>" { T_RSHIFT (tokinfo lexbuf); }
   | "+=" { T_PLUS_ASSIGN (tokinfo lexbuf); }

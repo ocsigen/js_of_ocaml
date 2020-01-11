@@ -53,6 +53,7 @@ type token =
   | T_NULL of Parse_info.t
   | T_NOT_EQUAL of Parse_info.t
   | T_NOT of Parse_info.t
+  | T_SPREAD of Parse_info.t
   | T_NEW of Parse_info.t
   | T_MULT_ASSIGN of Parse_info.t
   | T_MULT of Parse_info.t
@@ -192,6 +193,7 @@ let info_of_tok = function
   | T_DIV ii -> ii
   | T_MULT ii -> ii
   | T_MOD ii -> ii
+  | T_SPREAD ii -> ii
   | T_NOT ii -> ii
   | T_BIT_NOT ii -> ii
   | T_INCR ii -> ii
@@ -284,6 +286,7 @@ let string_of_tok = function
   | T_DIV _ -> "T_DIV"
   | T_MULT _ -> "T_MULT"
   | T_MOD _ -> "T_MOD"
+  | T_SPREAD _ -> "T_SPREAD"
   | T_NOT _ -> "T_NOT"
   | T_BIT_NOT _ -> "T_BIT"
   | T_INCR _ -> "T_INCR"

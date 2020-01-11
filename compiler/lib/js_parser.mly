@@ -71,6 +71,7 @@ T_LPAREN T_RPAREN
 T_LBRACKET T_RBRACKET
 T_SEMICOLON
 T_COMMA
+T_SPREAD
 T_PERIOD
 
 (* Operators *)
@@ -570,8 +571,12 @@ object_key_value:
 (* 2 function call            *)
 (*----------------------------*)
 
+arg:
+ | T_SPREAD arg=assignment_expression { arg, `Spread }
+ | arg=assignment_expression { arg, `Not_spread }
+
 arguments:
- | args=parenthesised(separated_list(T_COMMA, assignment_expression)) { args }
+ | args=parenthesised(separated_list(T_COMMA, arg)) { args }
 
 (*----------------------------*)
 (* 2 auxiliary bis            *)
