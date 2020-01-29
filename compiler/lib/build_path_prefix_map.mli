@@ -56,3 +56,7 @@ val rewrite_opt : map -> path -> path option
     If it fails, it just returns [None]. *)
 
 val rewrite : map -> path -> path
+
+val flip : map -> map
+
+val get_build_path_prefix_map : unit -> map option
