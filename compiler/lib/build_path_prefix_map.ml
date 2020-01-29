@@ -130,3 +130,26 @@ let rewrite prefix_map path =
   match rewrite_opt prefix_map path with
   | None -> path
   | Some path -> path
+
+let flip l =
+  List.map l ~f:(Option.map ~f:(fun x -> { source = x.target; target = x.source }))
+
+(* copied from ocaml/utils/misc.ml *)
+let get_build_path_prefix_map =
+  let init = ref false in
+  let map_cache = ref None in
+  fun () ->
+    if not !init
+    then (
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map -> (
+          match decode_map encoded_map with
+          | Error err ->
+              failwith
+              @@ Printf.sprintf
+                   "Invalid value for the environment variable BUILD_PATH_PREFIX_MAP: %s"
+                   err
+          | Ok map -> map_cache := Some map));
+    !map_cache

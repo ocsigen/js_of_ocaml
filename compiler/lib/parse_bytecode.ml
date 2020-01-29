@@ -135,7 +135,15 @@ end = struct
       try Some (Fs.find_in_path paths (name ^ ".ml")) with Not_found -> None)
 
   let read_event_list =
-    let read_paths ic : string list = input_value ic in
+    let rewrite_path path =
+      if Filename.is_relative path
+      then path
+      else
+        match Build_path_prefix_map.get_build_path_prefix_map () with
+        | Some map -> Build_path_prefix_map.rewrite (Build_path_prefix_map.flip map) path
+        | None -> path
+    in
+    let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
     fun { events_by_pc; units; pos_fname_to_source; toplevel = _; names; enabled }
         ~crcs
         ~includes
