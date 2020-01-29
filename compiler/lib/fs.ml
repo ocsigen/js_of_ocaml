@@ -33,8 +33,12 @@ let find_in_path paths name =
   then name
   else raise Not_found
 
-let absolute_path f =
-  if Filename.is_relative f then Filename.concat (Sys.getcwd ()) f else f
+let rec concat dir filename =
+  match String.drop_prefix ~prefix:"../" filename with
+  | None -> Filename.concat dir filename
+  | Some filename -> concat (Filename.dirname dir) filename
+
+let absolute_path f = if Filename.is_relative f then concat (Sys.getcwd ()) f else f
 
 let read_file f =
   try

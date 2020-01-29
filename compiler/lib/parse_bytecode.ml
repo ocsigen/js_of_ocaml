@@ -173,6 +173,11 @@ end = struct
                   try Some (Fs.find_in_path paths (Filename.basename pos_fname))
                   with Not_found -> find_ml_in_paths paths ev_module)
               in
+              let source =
+                match source with
+                | None -> None
+                | Some source -> Some (Fs.absolute_path source)
+              in
               if debug_sourcemap ()
               then
                 Format.eprintf
