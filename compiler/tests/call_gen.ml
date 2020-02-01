@@ -48,15 +48,7 @@ module M1 = struct
     25 |}]
 
   let%expect_test "generated code" =
-    let generated =
-      code
-      |> Filetype.ocaml_text_of_string
-      |> Filetype.write_ocaml
-      |> compile_ocaml_to_cmo
-      |> compile_cmo_to_javascript ~pretty:true
-      |> fst
-      |> parse_js
-    in
+    let generated = compile_and_parse code in
     print_fun_decl generated (Some "f");
     print_fun_decl generated (Some "f_prime");
     print_fun_decl generated (Some "g");
@@ -105,15 +97,7 @@ module M2 = struct
   |}
 
   let%expect_test "generated code" =
-    let generated =
-      code
-      |> Filetype.ocaml_text_of_string
-      |> Filetype.write_ocaml
-      |> compile_ocaml_to_cmo
-      |> compile_cmo_to_javascript ~pretty:true
-      |> fst
-      |> parse_js
-    in
+    let generated = compile_and_parse code in
     print_fun_decl generated (Some "f");
     print_fun_decl generated (Some "f_prime");
     print_fun_decl generated (Some "f_prime_prime");

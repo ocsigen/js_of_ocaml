@@ -21,17 +21,8 @@ open Util
 (* https://github.com/ocsigen/js_of_ocaml/issues/829 *)
 
 let%expect_test _ =
-  let compile ~debug s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo ~debug
-    |> compile_cmo_to_javascript ~pretty:true ~sourcemap:debug
-    |> fst
-    |> parse_js
-  in
   let program ~debug =
-    compile
+    compile_and_parse
       ~debug
       {|
 let some_name () = raise (try try raise Not_found with x -> x with i -> i)

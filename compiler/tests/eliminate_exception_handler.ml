@@ -21,17 +21,8 @@ open Util
 (* https://github.com/ocsigen/js_of_ocaml/issues/827 *)
 
 let%expect_test _ =
-  let compile s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
   let program =
-    compile
+    compile_and_parse
       {|
 [@@@ocaml.warning "-26-27"]
 let some_name () =

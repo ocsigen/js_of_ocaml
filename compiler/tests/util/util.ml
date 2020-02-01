@@ -30,6 +30,42 @@ let js_of_ocaml_root =
     let left = Sys.getcwd () |> Str.split regex |> List.hd in
     Filename.concat left regex_text
 
+let prng = lazy (Random.State.make_self_init ())
+
+let temp_file_name temp_dir prefix suffix =
+  let rnd = Random.State.bits (Stdlib.Lazy.force prng) land 0xFFFFFF in
+  Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
+let remove_dir =
+  let rec loop_files dir handle =
+    match Unix.readdir handle with
+    | ".." | "." -> loop_files dir handle
+    | f ->
+        let dir_or_file = Filename.concat dir f in
+        if Sys.is_directory dir_or_file
+        then remove_dir dir_or_file
+        else Sys.remove dir_or_file;
+        loop_files dir handle
+    | exception End_of_file -> ()
+  and remove_dir dir =
+    let handle = Unix.opendir dir in
+    loop_files dir handle;
+    Unix.closedir handle;
+    Unix.rmdir dir
+  in
+  remove_dir
+
+let with_temp_dir ~f =
+  let old_cwd = Sys.getcwd () in
+  let temp = Filename.get_temp_dir_name () in
+  let dir = temp_file_name temp "jsoo-test" "" in
+  Unix.mkdir dir 0o700;
+  Sys.chdir dir;
+  let x = f () in
+  Sys.chdir old_cwd;
+  remove_dir dir;
+  x
+
 module Filetype : Filetype_intf.S = struct
   type ocaml_text = string
 
@@ -55,12 +91,10 @@ module Filetype : Filetype_intf.S = struct
     close_in ic;
     Bytes.unsafe_to_string s
 
-  let write_file ~suffix contents =
-    let temp_file = Filename.temp_file "jsoo_test" suffix in
-    let channel = open_out temp_file in
+  let write_file name contents =
+    let channel = open_out name in
     Printf.fprintf channel "%s" contents;
-    close_out channel;
-    temp_file
+    close_out channel
 
   let read_js = read_file
 
@@ -68,9 +102,13 @@ module Filetype : Filetype_intf.S = struct
 
   let read_ocaml = read_file
 
-  let write_js = write_file ~suffix:".js"
+  let write_js ~name content =
+    write_file name content;
+    name
 
-  let write_ocaml = write_file ~suffix:".ml"
+  let write_ocaml ~name content =
+    write_file name content;
+    name
 
   let id x = x
 
@@ -122,7 +160,8 @@ let channel_to_string c_in =
   (try loop () with End_of_file -> ());
   Buffer.contents buffer
 
-let exec_to_string_exn ~env ~cmd =
+let exec_to_string_exn ~cmd =
+  let env = [ Format.sprintf "BUILD_PATH_PREFIX_MAP=/dune-root=%s" (Sys.getcwd ()) ] in
   let env = Array.concat [ Unix.environment (); Array.of_list env ] in
   let proc_result_ok std_out =
     let open Unix in
@@ -152,15 +191,12 @@ let exec_to_string_exn ~env ~cmd =
     (Unix.close_process_full proc_full)
 
 let run_javascript file =
-  exec_to_string_exn
-    ~env:[]
-    ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
+  exec_to_string_exn ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
 
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
 
 let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
-  let file_no_ext = Filename.chop_extension file in
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
@@ -174,8 +210,8 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   let extra_args = String.concat " " extra_args in
   let compiler_location = Filename.concat js_of_ocaml_root "compiler/js_of_ocaml.exe" in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
-  let env = [ Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext ] in
-  let stdout = exec_to_string_exn ~env ~cmd in
+
+  let stdout = exec_to_string_exn ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
@@ -193,7 +229,6 @@ let compile_ocaml_to_cmo ?(debug = true) file =
   let out_file = swap_extention file ~ext:"cmo" in
   let (stdout : string) =
     exec_to_string_exn
-      ~env:[]
       ~cmd:
         (Format.sprintf
            "%s -c %s %s -o %s"
@@ -210,7 +245,6 @@ let compile_ocaml_to_bc file =
   let out_file = swap_extention file ~ext:"bc" in
   let (stdout : string) =
     exec_to_string_exn
-      ~env:[]
       ~cmd:(Format.sprintf "%s -g unix.cma %s -o %s" ocamlc file out_file)
   in
   print_string stdout;
@@ -220,7 +254,6 @@ let compile_lib list name =
   let out_file = swap_extention name ~ext:"cma" in
   let (stdout : string) =
     exec_to_string_exn
-      ~env:[]
       ~cmd:
         (Format.sprintf
            "%s -g -a %s -o %s"
@@ -292,11 +325,22 @@ let print_fun_decl program n =
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 
 let compile_and_run ?flags s =
-  s
-  |> Filetype.ocaml_text_of_string
-  |> Filetype.write_ocaml
-  |> compile_ocaml_to_bc
-  |> compile_bc_to_javascript ?flags
-  |> fst
-  |> run_javascript
-  |> print_endline
+  with_temp_dir ~f:(fun () ->
+      s
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml ~name:"test.ml"
+      |> compile_ocaml_to_bc
+      |> compile_bc_to_javascript ?flags
+      |> fst
+      |> run_javascript
+      |> print_endline)
+
+let compile_and_parse ?(debug = true) ?flags s =
+  with_temp_dir ~f:(fun () ->
+      s
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml ~name:"test.ml"
+      |> compile_ocaml_to_cmo ~debug
+      |> compile_cmo_to_javascript ?flags ~pretty:true ~sourcemap:debug
+      |> fst
+      |> parse_js)
