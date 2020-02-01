@@ -20,17 +20,8 @@
 open Util
 
 let%expect_test "static eval of string get" =
-  let compile s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
   let program =
-    compile
+    compile_and_parse
       {|
       let lz = lazy ( List.map (fun x -> x * x) [8;9] )
 

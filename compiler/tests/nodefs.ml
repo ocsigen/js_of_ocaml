@@ -20,14 +20,22 @@
 let%expect_test _ =
   Util.compile_and_run
     {|
-  let ic = open_in "nodefs.ml"
-  let l = ref []
   let () =
-    try
+    let oc = open_out "file.txt" in
+    for i = 0 to 32 do
+      output_string oc (string_of_int i);
+      output_string oc "\n"
+    done;
+    close_out oc
+  let () =
+    let ic = open_in "file.txt" in
+    let l = ref [] in
+    (try
       while true do
         l := input_line ic :: !l
       done
-    with End_of_file -> ()
-  let () = print_int (List.length !l)
+    with End_of_file -> ());
+    print_int (List.length !l)
   |};
-  [%expect {| 33 |}]
+  [%expect {|
+    33 |}]

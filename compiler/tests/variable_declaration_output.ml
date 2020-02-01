@@ -20,17 +20,8 @@
 open Util
 
 let%expect_test _ =
-  let compile s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
   let program =
-    compile
+    compile_and_parse
       {|
     type r = {x: int; y: string}
     let ex = {x = 5; y = "hello"} ;;
@@ -48,8 +39,7 @@ let%expect_test _ =
   print_var_decl program "bx";
   print_var_decl program "cx";
   print_var_decl program "symbol_op";
-  [%expect
-    {|
+  [%expect{|
     var ex = [0,5,runtime.caml_new_string("hello")];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];
@@ -59,13 +49,8 @@ let%expect_test _ =
 let%expect_test _ =
   let compile ~enable s =
     let enable_disable = if enable then "--enable" else "--disable" in
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true ~flags:[ enable_disable; "vardecl" ]
-    |> fst
-    |> parse_js
+    let flags = [ enable_disable; "vardecl" ] in
+    compile_and_parse ~flags s
   in
   let program ~enable =
     compile
@@ -78,9 +63,8 @@ let%expect_test _ =
       | _ -> 4
     |}
   in
-  print_fun_decl (program ~enable:true) (Some "match_expr");
-  [%expect
-    {|
+  with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:true) (Some "match_expr"));
+  [%expect{|
     function match_expr(param)
      {var switch$1,switch$0,_c_,_b_,_a_;
       if(param)
@@ -100,9 +84,8 @@ let%expect_test _ =
           if(! _c_ || _c_[1])switch$1 = 1;
           if(switch$1)return 4}}
       return 1} |}];
-  print_fun_decl (program ~enable:false) (Some "match_expr");
-  [%expect
-    {|
+  with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
+  [%expect{|
     function match_expr(param)
      {if(param)
        {var _a_=param[1],switch$0=0;

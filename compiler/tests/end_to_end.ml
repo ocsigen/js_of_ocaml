@@ -20,11 +20,12 @@
 open Util
 
 let%expect_test _ =
-  {| console.log("hello world") |}
-  |> Filetype.js_text_of_string
-  |> Filetype.write_js
-  |> run_javascript
-  |> print_endline;
+  with_temp_dir ~f:(fun () ->
+      {| console.log("hello world") |}
+      |> Filetype.js_text_of_string
+      |> Filetype.write_js ~name:"test.js"
+      |> run_javascript
+      |> print_endline);
   [%expect {| hello world |}]
 
 let%expect_test _ =

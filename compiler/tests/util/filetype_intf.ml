@@ -21,9 +21,11 @@ module type S = sig
 
   val read_ocaml : ocaml_file -> ocaml_text
 
-  val write_js : js_text -> js_file
+  val write_file : string -> string -> unit
 
-  val write_ocaml : ocaml_text -> ocaml_file
+  val write_js : name:string -> js_text -> js_file
+
+  val write_ocaml : name:string -> ocaml_text -> ocaml_file
 
   val js_text_of_string : string -> js_text
 

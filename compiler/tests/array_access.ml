@@ -29,16 +29,7 @@ let array_set =
    |}
 
 let%expect_test "array_set" =
-  let compile s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
-  let program = compile array_set in
+  let program = compile_and_parse array_set in
   print_fun_decl program (Some "some_name");
   [%expect
     {|
