@@ -23,7 +23,9 @@ let ocamlc = try Sys.getenv "OCAMLC" with Not_found -> "ocamlc"
 let node = try Sys.getenv "NODE" with Not_found -> "node"
 
 let js_of_ocaml_root =
-  try Sys.getenv "PROJECT_ROOT"
+  try
+    let dir = Sys.getenv "PROJECT_ROOT" in
+    if Filename.is_relative dir then Filename.concat (Sys.getcwd ()) dir else dir
   with Not_found ->
     let regex_text = "_build/default" in
     let regex = Str.regexp regex_text in
