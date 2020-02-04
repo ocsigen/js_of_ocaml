@@ -31,6 +31,11 @@
     %{dep:weak.js}
 )))
 
+(alias 
+  (name runtest)
+  (deps stdlib_modern.js)
+  (action (run %{bin:jsoo_minify} %{dep:stdlib_modern.js})))
+
 (install
   (section lib)
   (package js_of_ocaml-compiler)
