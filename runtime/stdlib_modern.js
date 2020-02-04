@@ -9,7 +9,7 @@
 
 //Provides: caml_call_gen (const, shallow)
 function caml_call_gen(f, args) {
-  var args_copied = false
+  var args_copied = false;
 
   while (true) {
     if (f.fun) {
@@ -17,11 +17,11 @@ function caml_call_gen(f, args) {
       continue;
     }
 
-    var n = f.length;
-    var argsLen = args.length;
-    var d = n - argsLen;
+    var n = f.length | 0;
+    var argsLen = args.length | 0;
+    var d = (n - argsLen) | 0;
 
-    if (d == 0) {
+    if (d === 0) {
       return f(...args);
     }
     else if (d < 0) {
@@ -39,7 +39,7 @@ function caml_call_gen(f, args) {
     else {
       switch (d) {
       case 1: return function (a1) {
-        return f(...args, a1)
+        return f(...args, a1);
       }
       case 2: return function (a1, a2) {
         return f(...args, a1, a2);
