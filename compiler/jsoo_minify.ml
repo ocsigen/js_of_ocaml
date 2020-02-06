@@ -50,8 +50,8 @@ let f { MinifyArg.common; output_file; use_stdin; files } =
       match pi with
       | { Parse_info.name = Some src; line; col; _ }
       | { Parse_info.src = Some src; line; col; _ } ->
-          error "error at file:%S l:%d col:%d" src line col
-      | { Parse_info.line; col; _ } -> error "error at l:%d col:%d" line col
+          error "error at file:%S l:%d col:%d" src (line + 1) col
+      | { Parse_info.line; col; _ } -> error "error at l:%d col:%d" (line + 1) col
     in
     let p =
       List.flatten

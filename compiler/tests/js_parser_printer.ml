@@ -100,3 +100,18 @@ let%expect_test "preserve number literals in property_name" =
     var number_as_key = { 100000000000000000000 : 2 }; |};
   [%expect {|
     var number_as_key={100000000000000000000:2}; |}]
+
+let%expect_test "error reporting" =
+  (try print ~compact:false {|
+    var x = 2;
+    {
+    var = 5;
+    }
+    |}
+   with Js_of_ocaml_compiler.Parse_js.Parsing_error pi ->
+     Printf.printf
+       "cannot parse js (from l:%d, c:%d)@."
+       (pi.Parse_info.line + 1)
+       pi.Parse_info.col);
+  [%expect {|
+    cannot parse js (from l:4, c:8)@. |}]
