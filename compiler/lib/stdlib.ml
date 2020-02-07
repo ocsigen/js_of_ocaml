@@ -186,6 +186,10 @@ module Option = struct
   let is_some = function
     | None -> false
     | Some _ -> true
+
+  let value ~default = function
+    | None -> default
+    | Some s -> s
 end
 
 module Float = struct

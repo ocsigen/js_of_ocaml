@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Js_of_ocaml_compiler.Stdlib
 open Util
 
 let%expect_test _ =
@@ -27,14 +27,18 @@ let%expect_test _ =
       file
       |> compile_ocaml_to_cmo
       |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
-      |> snd
-      |> (function
-           | Some x -> x
-           | None -> failwith "no sourcemap generated!")
-      |> Filetype.read_map
-      |> Filetype.string_of_map_text
-      |> print_endline);
+      |> extract_sourcemap
+      |> function
+      | Some (sm : Js_of_ocaml_compiler.Source_map.t) ->
+          Printf.printf "file: %s\n" sm.file;
+          Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
+          Printf.printf "sources:\n";
+          List.iter sm.sources ~f:(fun source -> Printf.printf "- %s\n" source)
+      | None -> failwith "no sourcemap generated!");
   [%expect
     {|
-      {"version":3.0,"file":"test.js","sourceRoot":"","names":["a"],"sources":["/dune-root/test.ml"],"mappings":"0B;sDAAOA,GAAI,MAAJA,EAAK,iB","sourcesContent":["let id x = x"]}
+      file: test.js
+      sourceRoot:
+      sources:
+      - /dune-root/test.ml
     |}]
