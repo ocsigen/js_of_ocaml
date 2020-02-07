@@ -7,7 +7,7 @@ let input_lines file =
     | exception End_of_file -> List.rev acc
   in
   let ic = open_in file in
-  let lines = List.rev (loop [] ic) in
+  let lines = loop [] ic in
   close_in ic;
   lines
 

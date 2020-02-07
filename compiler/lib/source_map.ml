@@ -120,7 +120,7 @@ let mapping_of_string str =
   let ori_name = ref 0 in
   let rec readline line pos acc =
     if pos >= total_len
-    then acc
+    then List.rev acc
     else
       let last = try String.index_from str pos ';' with Not_found -> total_len in
       gen_col := 0;

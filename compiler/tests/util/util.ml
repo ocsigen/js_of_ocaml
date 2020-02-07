@@ -198,6 +198,39 @@ let run_javascript file =
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
 
+let input_lines file =
+  let rec loop acc ic =
+    match input_line ic with
+    | line -> loop (line :: acc) ic
+    | exception End_of_file -> List.rev acc
+  in
+  let ic = open_in file in
+  let lines = loop [] ic in
+  close_in ic;
+  lines
+
+let print_file file =
+  let open Js_of_ocaml_compiler.Stdlib in
+  let all = input_lines file in
+  Printf.printf "$ cat %S\n" file;
+  List.iteri all ~f:(fun i line -> Printf.printf "%3d: %s\n" (i + 1) line)
+
+let extract_sourcemap file =
+  let open Js_of_ocaml_compiler.Stdlib in
+  let lines =
+    input_lines (Filetype.path_of_js_file file)
+    |> List.filter_map ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
+  in
+  match lines with
+  | [ line ] ->
+      let content =
+        match String.drop_prefix ~prefix:"data:application/json;base64," line with
+        | None -> String.concat ~sep:"\n" (input_lines line)
+        | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64
+      in
+      Some (Js_of_ocaml_compiler.Source_map_io.of_string content)
+  | _ -> None
+
 let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
@@ -217,8 +250,7 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
-  let sourcemap_file = swap_extention file ~ext:"map" |> Filetype.map_file_of_path in
-  Filetype.js_file_of_path out_file, if sourcemap then Some sourcemap_file else None
+  Filetype.js_file_of_path out_file
 
 let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
   Filetype.path_of_bc_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
@@ -333,7 +365,6 @@ let compile_and_run ?flags s =
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_bc
       |> compile_bc_to_javascript ?flags
-      |> fst
       |> run_javascript
       |> print_endline)
 
@@ -344,5 +375,4 @@ let compile_and_parse ?(debug = true) ?flags s =
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
       |> compile_cmo_to_javascript ?flags ~pretty:true ~sourcemap:debug
-      |> fst
       |> parse_js)

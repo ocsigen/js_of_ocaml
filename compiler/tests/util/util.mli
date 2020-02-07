@@ -36,18 +36,22 @@ val compile_cmo_to_javascript :
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.cmo_file
-  -> Filetype.js_file * Filetype.sourcemap_file option
+  -> Filetype.js_file
 
 val compile_bc_to_javascript :
      ?flags:string list
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.bc_file
-  -> Filetype.js_file * Filetype.sourcemap_file option
+  -> Filetype.js_file
+
+val extract_sourcemap : Filetype.js_file -> Js_of_ocaml_compiler.Source_map.t option
 
 val run_javascript : Filetype.js_file -> string
 
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
+
+val print_file : string -> unit
 
 val print_var_decl : Javascript.program -> string -> unit
 
