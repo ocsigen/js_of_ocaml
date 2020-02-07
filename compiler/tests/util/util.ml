@@ -252,6 +252,20 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
      something weird happens, we'll get the results here *)
   Filetype.js_file_of_path out_file
 
+let jsoo_minify ?(flags = []) ~pretty file =
+  let file = Filetype.path_of_js_file file in
+  let out_file = swap_extention file ~ext:"min.js" in
+  let extra_args = List.flatten [ (if pretty then [ "--pretty" ] else []); flags ] in
+  let extra_args = String.concat " " extra_args in
+  let compiler_location = Filename.concat js_of_ocaml_root "compiler/jsoo_minify.exe" in
+  let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
+
+  let stdout = exec_to_string_exn ~cmd in
+  print_string stdout;
+  (* this print shouldn't do anything, so if
+     something weird happens, we'll get the results here *)
+  Filetype.js_file_of_path out_file
+
 let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
   Filetype.path_of_bc_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
 

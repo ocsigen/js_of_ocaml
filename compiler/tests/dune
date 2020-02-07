@@ -5,6 +5,7 @@
   (flags -allow-output-patterns)
   (deps
     (file ../../compiler/js_of_ocaml.exe)
+    (file ../../compiler/jsoo_minify.exe)
     (file ../../runtime/runtime.js)))
  (preprocess (pps ppx_expect)))
 
