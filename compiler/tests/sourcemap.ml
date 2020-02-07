@@ -60,3 +60,28 @@ let%expect_test _ =
       /dune-root/test.ml:0:4 -> 4:16
       null:-1:-1 -> 6:10
     |}]
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = {|
+function x (a, b) {
+  return a + b;
+}
+|} in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.ml"
+      in
+      let js_min_file = js_file |> jsoo_minify ~flags:[ "--debug-info" ] ~pretty:true in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file));
+  [%expect
+    {|
+    $ cat "test.ml"
+      1:
+      2: function x (a, b) {
+      3:   return a + b;
+      4: }
+    $ cat "test.min.js"
+      1:  /*<<test.ml 2 0>>*/ function x(a,b)
+      2:  { /*<<test.ml 3 2>>*/ return a + b /*<<test.ml 4 0>>*/ }
+ |}]

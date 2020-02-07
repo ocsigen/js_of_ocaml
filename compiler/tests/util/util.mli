@@ -45,6 +45,9 @@ val compile_bc_to_javascript :
   -> Filetype.bc_file
   -> Filetype.js_file
 
+val jsoo_minify :
+  ?flags:string list -> pretty:bool -> Filetype.js_file -> Filetype.js_file
+
 val extract_sourcemap : Filetype.js_file -> Js_of_ocaml_compiler.Source_map.t option
 
 val run_javascript : Filetype.js_file -> string
