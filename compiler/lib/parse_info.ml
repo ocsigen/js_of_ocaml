@@ -56,7 +56,7 @@ module Line_info = struct
     in
     t.acc_pos <- acc;
     t.acc_line <- line;
-    line, pos
+    line + 1, pos
 
   let from_file file =
     let ic = open_in file in
@@ -142,3 +142,12 @@ let t_of_lexbuf line_info lexbuf : t =
     | _ -> line_info.Line_info.src
   in
   { fol = None; idx; line; col; name; src }
+
+let t_of_position ~src pos =
+  { name = Some pos.Lexing.pos_fname
+  ; src
+  ; line = pos.Lexing.pos_lnum
+  ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
+  ; idx = 0
+  ; fol = None
+  }

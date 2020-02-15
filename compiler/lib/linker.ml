@@ -125,7 +125,7 @@ let parse_from_lex ~filename lex =
             "cannot parse file %S (orig:%S from l:%d, c:%d)@."
             filename
             name
-            (pi.Parse_info.line + 1)
+            pi.Parse_info.line
             pi.Parse_info.col)
   in
   res

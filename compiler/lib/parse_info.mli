@@ -39,3 +39,5 @@ val make_lineinfo_from_channel : in_channel -> lineinfo * string
 val relative_path : lineinfo -> string -> string option
 
 val t_of_lexbuf : lineinfo -> Lexing.lexbuf -> t
+
+val t_of_position : src:string option -> Lexing.position -> t

@@ -43,3 +43,5 @@ val merge : (int * string * t) list -> t option
 val mapping_of_string : string -> mapping
 
 val string_of_mapping : mapping -> string
+
+val empty : t
