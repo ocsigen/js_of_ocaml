@@ -220,8 +220,8 @@ class map_for_share_constant =
       match l with
       | [] -> []
       | ((Statement (Expression_statement (EStr _)), _) as prolog) :: rest ->
-          prolog :: List.map_tc rest ~f:(fun (x, loc) -> m#source x, loc)
-      | rest -> List.map_tc rest ~f:(fun (x, loc) -> m#source x, loc)
+          prolog :: List.map rest ~f:(fun (x, loc) -> m#source x, loc)
+      | rest -> List.map rest ~f:(fun (x, loc) -> m#source x, loc)
   end
 
 class replace_expr f =
