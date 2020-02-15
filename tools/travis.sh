@@ -1,7 +1,7 @@
 set -x
 
 # Install system packages.
-wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.travis-ocaml.sh
+wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-ocaml.sh
 bash -ex .travis-ocaml.sh
 
 eval $(opam env)
