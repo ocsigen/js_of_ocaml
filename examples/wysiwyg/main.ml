@@ -122,8 +122,8 @@ let onload _ =
       let iWin = iframe##.contentWindow in
       Dom.appendChild body (Html.createBr d);
       (* see http://www.quirksmode.org/dom/execCommand.html
-     * http://www.mozilla.org/editor/midas-spec.html
-     *)
+       * http://www.mozilla.org/editor/midas-spec.html
+       *)
       let createButton ?(show = Js._false) ?(value = None) title action =
         let but = Html.createInput ?_type:(Some (Js.string "submit")) d in
         but##.value := Js.string title;

@@ -52,7 +52,7 @@ let rec enot_rec e =
              | J.Le ->
                  (J.EBin (J.Lt, e2, e1), 0)
            ]}
-         *)
+        *)
         | _ -> J.EUn (J.Not, e), 1)
     | J.EUn (J.Not, e) -> e, 0
     | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot), _) ->

@@ -420,10 +420,12 @@ let create ?(full_screen = false) (x1, y1, x2, y2) scene =
        ());
 
   (*XXX Tooltips
-area#misc#set_has_tooltip true;
-ignore (area#misc#connect#query_tooltip (fun ~x ~y ~kbd tooltip ->
-Format.eprintf "%d %d %b@." x y kbd; false));
-*)
+    {[
+      area#misc#set_has_tooltip true;
+      ignore (area#misc#connect#query_tooltip (fun ~x ~y ~kbd tooltip ->
+      Format.eprintf "%d %d %b@." x y kbd; false));
+    ]}
+  *)
 
   (* Full screen mode *)
   let fullscreen = ref false in

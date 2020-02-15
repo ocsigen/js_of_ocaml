@@ -275,7 +275,7 @@ module Json_string = Defaults (struct
      just a sequence of byte we need to "embed" byte string in an
      UTF-8 sequence. Each byte af an OCaml string is considered as
      Unicode code point (< 256) and then encoded in UTF-8. Hence,
-     bytes greater than 127 are "wrapped" in two bytes.  *)
+     bytes greater than 127 are "wrapped" in two bytes. *)
   type a = string
 
   let write buffer s =

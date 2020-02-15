@@ -209,19 +209,19 @@ let decode_sub ?(pad = true) { dmap; _ } ?(off = 0) ?len input =
     in
     let only_padding pad idx =
       (* because we round length of [res] to the upper bound of how many
-       characters we should have from [input], we got at this stage only padding
-       characters and we need to delete them, so for each [====], we delete 3
-       bytes. *)
+         characters we should have from [input], we got at this stage only padding
+         characters and we need to delete them, so for each [====], we delete 3
+         bytes. *)
       let pad = ref (pad + 3) in
       let idx = ref idx in
       while !idx + 4 < len do
         (* use [unsafe_get_uint16] instead [unsafe_get_uint32] to avoid allocation
-         of [int32]. Of course, [3d3d3d3d] is [====]. *)
+           of [int32]. Of course, [3d3d3d3d] is [====]. *)
         if unsafe_get_uint16 input (off + !idx) <> 0x3d3d
            || unsafe_get_uint16 input (off + !idx + 2) <> 0x3d3d
         then raise Not_found;
         (* We got something bad, should be a valid character according to
-         [alphabet] but outside the scope. *)
+           [alphabet] but outside the scope. *)
         idx := !idx + 4;
         pad := !pad + 3
       done;
@@ -262,15 +262,15 @@ let decode_sub ?(pad = true) { dmap; _ } ?(off = 0) ?len input =
           | 0 -> 0
           | 4 -> 3
           (* [get_uint8] lies and if we get [4], that mean we got one or more (at
-         most 4) padding character. In this situation, because we round length
-         of [res] (see [n // 4]), we need to delete 3 bytes. *)
+             most 4) padding character. In this situation, because we round length
+             of [res] (see [n // 4]), we need to delete 3 bytes. *)
           | pad -> pad
         else
           match pad with
           | 0 -> dec (j + 3) (i + 4)
           | 4 -> only_padding 3 (i + 4)
           (* Same situation than above but we should get only more padding
-         characters then. *)
+             characters then. *)
           | pad -> only_padding pad (i + 4)
     in
     match dec 0 0 with

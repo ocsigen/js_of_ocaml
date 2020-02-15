@@ -21,7 +21,7 @@
 open! Import
 
 module Color = struct
-  (*The type of CSS colors. First by name and then by constructor.*)
+  (* The type of CSS colors. First by name and then by constructor. *)
   type name =
     | Aliceblue
     | Antiquewhite
@@ -622,23 +622,23 @@ module Color = struct
   type t =
     | Name of name
     | RGB of (int * int * int)
-        (**Red, Green and Blue values. Clipped to [[0..255]] by most (All?)
-       browsers.*)
+        (** Red, Green and Blue values. Clipped to [[0..255]] by most (All?)
+            browsers. *)
     | RGB_percent of (int * int * int)
-        (**RGB channels are specified as a percentage of their maximal value.*)
+        (** RGB channels are specified as a percentage of their maximal value. *)
     | RGBA of (int * int * int * float)
-        (**Same as RGB with additional transparency argument. Opacity should be in
-       [0.] (completely transparent) and [1.] (completely opaque).*)
+        (** Same as RGB with additional transparency argument. Opacity should be in
+            [0.] (completely transparent) and [1.] (completely opaque). *)
     | RGBA_percent of (int * int * int * float)
-        (**RGB channels specified as percentage of their maximal value. Alpha
-        channel (opacity) is still a [0.] to [1.] float.*)
+        (** RGB channels specified as percentage of their maximal value. Alpha
+            channel (opacity) is still a [0.] to [1.] float. *)
     | HSL of (int * int * int)
-        (**Hue, Saturation and Lightness values. Hue is an angle in degree (in
-       interval [[0..360[]). Saturation is a percentage ([[0..100]]) with [0]
-       being colorless. Lightness is also a percentage ([[0..100]]) with [0]
-       being black.*)
+        (** Hue, Saturation and Lightness values. Hue is an angle in degree (in
+            interval [[0..360[]). Saturation is a percentage ([[0..100]]) with [0]
+            being colorless. Lightness is also a percentage ([[0..100]]) with [0]
+            being black. *)
     | HSLA of (int * int * int * float)
-        (**Same as HSL with an opacity argument between [0.] and [1.].*)
+        (** Same as HSL with an opacity argument between [0.] and [1.]. *)
 
   let rgb ?a r g b =
     match a with
@@ -669,10 +669,10 @@ module Color = struct
     in_range blue;
     Printf.sprintf "#%02X%02X%02X" red green blue
 
-  (*Ocaml <-> JS representation*)
+  (* Ocaml <-> JS representation *)
   type js_t = Js.js_string Js.t
 
-  (*TODO? be more restrictive, clip values into standard range*)
+  (* TODO? be more restrictive, clip values into standard range *)
   let js_t_of_js_string s =
     let rgb_re =
       new%js Js.regExp (Js.bytestring "^rgb\\(\\s*\\d*,\\s*\\d*,\\s*\\d*\\)$")
@@ -857,7 +857,7 @@ module Color = struct
 
   let name cn = Js.string (string_of_name cn)
 
-  (*TODO? inline function calls*)
+  (* TODO? inline function calls *)
   let js = function
     | Name n -> name n
     | (RGB _ | RGB_percent _ | RGBA _ | RGBA_percent _ | HSL _ | HSLA _) as c ->
@@ -948,16 +948,18 @@ end
 module Length = struct
   (* http://www.w3.org/TR/css3-values/#lengths *)
 
-  (*TODO:
-  type js_t = private Js.string Js.t
-  val js_t_of_t
-  val t_of_js_t
-  val t_of_string
+  (* TODO:
+     {[
+       type js_t = private Js.string Js.t
+       val js_t_of_t
+       val t_of_js_t
+       val t_of_string
+     ]}
   *)
 
   type t =
     | Zero
-    (*relative*)
+    (* relative *)
     | Em of float
     | Ex of float
     | Px of float
@@ -967,7 +969,7 @@ module Length = struct
     | Vh of float
     | Vm of float
     | Ch of float
-    (*absolute*)
+    (* absolute *)
     | Mm of float
     | Cm of float
     | In of float

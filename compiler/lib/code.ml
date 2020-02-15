@@ -161,7 +161,7 @@ end = struct
   (*;
     Format.eprintf "loc for %d : %d-%d\n%!"
                    i pi.Parse_info.line pi.Parse_info.col
-                               *)
+  *)
   let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
 
   let fresh () =

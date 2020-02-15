@@ -790,7 +790,7 @@ struct
     | Expression_statement (EVar _) -> last_semi ()
     | Expression_statement e ->
         (* Parentheses are required when the expression
-         starts syntactically with "{" or "function" *)
+           starts syntactically with "{" or "function" *)
         if need_paren 0 e
         then (
           PP.start_group f 1;
@@ -1016,8 +1016,7 @@ struct
             PP.end_group f;
             PP.end_group f
             (* There MUST be a space between the return and its
-       argument. A line return will not work *)
-        )
+               argument. A line return will not work *))
     | Labelled_statement (i, s) ->
         PP.string f (Javascript.Label.to_string i);
         PP.string f ":";

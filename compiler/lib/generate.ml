@@ -477,7 +477,7 @@ let unprotect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 10000
 
 module DTree = struct
   (* This as to be kept in sync with the way we build conditionals
-   and switches! *)
+     and switches! *)
 
   type cond =
     | IsTrue
@@ -1314,11 +1314,11 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             Addr.Set.fold
               (fun pc3 acc ->
                 (* We need to make sure that pc3 is live (indeed, the
-               continuation may have been optimized away by inlining) *)
+                   continuation may have been optimized away by inlining) *)
                 if Hashtbl.mem st.succs pc3
                 then
                   (* no need to limit body for simple flow with no instruction.
-                 eg return and branch *)
+                     eg return and branch *)
                   let rec limit pc =
                     if Addr.Set.mem pc pc2s
                     then false
@@ -1538,7 +1538,7 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
     | DTree.Empty -> assert false
     | DTree.Branch ((pc, _) as cont) ->
         (* Block of code that never continues (either returns, throws an exception
-         or loops back) *)
+           or loops back) *)
         (* If not found in successors, this is a backward edge *)
         let never =
           let d = try List.assoc pc succs with Not_found -> Addr.Set.empty in
@@ -1743,7 +1743,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
           | None -> []
         in
         (* When an extra block is inserted during code generation,
-         args is [] *)
+           args is [] *)
         let m =
           Subst.build_mapping (if List.is_empty args then [] else block.params) args
         in

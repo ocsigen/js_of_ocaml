@@ -476,13 +476,14 @@ let rec get_rule n = function
 let kb_completion greater =
   let rec kbrec j rules =
     let rec process failures (k, l) eqs =
-      (****
-     print_string "***kb_completion "; print_int j; print_newline();
-     pretty_rules rules;
-     List.iter non_orientable failures;
-     print_int k; print_string " "; print_int l; print_newline();
-     List.iter non_orientable eqs;
-***)
+      (* {[
+            print_string "***kb_completion "; print_int j; print_newline();
+            pretty_rules rules;
+            List.iter non_orientable failures;
+            print_int k; print_string " "; print_int l; print_newline();
+            List.iter non_orientable eqs;
+         ]}
+      *)
       match eqs with
       | [] -> (
           if k < l
@@ -513,9 +514,10 @@ let kb_completion greater =
             let eqs' = List.map (fun rule -> rule.lhs, rule.rhs) redl in
             kbrec (j + 1) (new_rule :: irreds) [] (k, l) (eqs @ eqs' @ failures)
           in
-          (***
-        print_string "--- Considering "; non_orientable (m', n');
-***)
+          (* {[
+                print_string "--- Considering "; non_orientable (m', n');
+             ]}
+          *)
           if m' = n'
           then process failures (k, l) eqs
           else if greater (m', n')
@@ -524,10 +526,12 @@ let kb_completion greater =
           then enter_rule (n', m')
           else process ((m', n') :: failures) (k, l) eqs
     and next_criticals failures (k, l) =
-      (****
-    print_string "***next_criticals ";
-    print_int k; print_string " "; print_int l ; print_newline();
-****)
+      (*
+         {[
+            print_string "***next_criticals ";
+            print_int k; print_string " "; print_int l ; print_newline();
+         ]}
+       *)
       try
         let rl = get_rule l rules in
         let el = rl.lhs, rl.rhs in
@@ -570,17 +574,19 @@ let kb_complete greater complete_rules rules =
 
 (* $Id: kbmain.ml 7017 2005-08-12 09:22:04Z xleroy $ *)
 
-(****
-let group_rules = [
-  { number = 1; numvars = 1;
-    lhs = Term("*", [Term("U",[]); Var 1]); rhs = Var 1 };
-  { number = 2; numvars = 1;
-    lhs = Term("*", [Term("I",[Var 1]); Var 1]); rhs = Term("U",[]) };
-  { number = 3; numvars = 3;
-    lhs = Term("*", [Term("*", [Var 1; Var 2]); Var 3]);
-    rhs = Term("*", [Var 1; Term("*", [Var 2; Var 3])]) }
-]
-****)
+(*
+  {[
+      let group_rules = [
+        { number = 1; numvars = 1;
+          lhs = Term("*", [Term("U",[]); Var 1]); rhs = Var 1 };
+        { number = 2; numvars = 1;
+          lhs = Term("*", [Term("I",[Var 1]); Var 1]); rhs = Term("U",[]) };
+        { number = 3; numvars = 3;
+          lhs = Term("*", [Term("*", [Var 1; Var 2]); Var 3]);
+          rhs = Term("*", [Var 1; Term("*", [Var 2; Var 3])]) }
+      ]
+  ]}
+*)
 
 let geom_rules =
   [ { number = 1; numvars = 1; lhs = Term ("*", [ Term ("U", []); Var 1 ]); rhs = Var 1 }

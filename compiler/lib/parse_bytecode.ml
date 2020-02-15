@@ -840,7 +840,7 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         (* We switch to a different block as this may have
-         changed the exception handler continuation *)
+           changed the exception handler continuation *)
         compile_block infos.blocks infos.debug code (pc + 2) state;
         Let (x, const 0l) :: instrs, Branch (pc + 2, State.stack_vars state), state
     | ENVACC1 -> compile infos (pc + 1) (State.env_acc 1 state) instrs

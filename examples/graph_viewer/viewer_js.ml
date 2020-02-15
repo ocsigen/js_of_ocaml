@@ -257,8 +257,8 @@ let handle_drag element f =
                     Js._true))
                Js._true);
         (* We do not want to disable the default action on mouse down
-          (here, keyboard focus)
-          in this example. *)
+           (here, keyboard focus)
+           in this example. *)
         Js._true)
 
 let start () =

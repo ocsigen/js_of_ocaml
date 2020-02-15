@@ -197,14 +197,14 @@ class map_for_share_constant =
     method expression e =
       match e with
       (* JavaScript engines recognize the pattern
-       'typeof x==="number"'; if the string is shared,
-       less efficient code is generated. *)
+         'typeof x==="number"'; if the string is shared,
+         less efficient code is generated. *)
       | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
           EBin (op, EUn (Typeof, super#expression e1), e2)
       | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
           EBin (op, EUn (Typeof, e1), super#expression e2)
       (* Some js bundler get confused when the argument
-       of 'require' is not a literal *)
+         of 'require' is not a literal *)
       | ECall (EVar (S { var = None; name = "require"; _ }), [ (EStr _, `Not_spread) ], _)
         ->
           e

@@ -119,8 +119,8 @@ let splay t key =
   | Node n -> Node (splay_ n key)
 
 let insert key value t =
-  (*  Splay on the key to move the last node on the search path for
-      the key to the root of the tree.*)
+  (* Splay on the key to move the last node on the search path for
+     the key to the root of the tree. *)
   let t = splay t key in
   match t with
   | Empty -> Node (Empty, key, value, Empty)

@@ -2629,7 +2629,7 @@ module CoerceTo = struct
     if def html_element == undefined
     then
       (* ie < 9 does not have HTMLElement: we have to cheat to check
-        that something is an html element *)
+         that something is an html element *)
       fun e ->
       if def (Js.Unsafe.coerce e)##.innerHTML == undefined
       then Js.null
