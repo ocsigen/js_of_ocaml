@@ -232,8 +232,8 @@ let merge = function
         { x with
           mappings =
             List.map
-              ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
               x.mappings
+              ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
         }
       in
       Some
