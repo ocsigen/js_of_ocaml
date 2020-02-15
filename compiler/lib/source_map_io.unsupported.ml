@@ -20,7 +20,9 @@
 let fail () = failwith "Sourcemap support not available"
 
 let to_string _ = fail ()
+
 let of_string _ = fail ()
+
 let to_file _ _ = fail ()
 
 let enabled = false
