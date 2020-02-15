@@ -40,7 +40,16 @@ type t =
   ; mutable mappings : mapping
   }
 
+let map_line_number ~f =
+  let f i = if i < 0 then i else f i in
+  fun m -> { m with ori_line = f m.ori_line; gen_line = f m.gen_line }
+
 let string_of_mapping mapping =
+  let mapping =
+    (* The binary format encodes lines starting at zero, but
+       [ori_line] and [gen_line] are 1 based. *)
+    List.map mapping ~f:(map_line_number ~f:pred)
+  in
   let a = Array.of_list mapping in
   let len = Array.length a in
   Array.stable_sort
@@ -120,7 +129,10 @@ let mapping_of_string str =
   let ori_name = ref 0 in
   let rec readline line pos acc =
     if pos >= total_len
-    then List.rev acc
+    then
+      (* The binary format encodes lines starting at zero, but
+         [ori_line] and [gen_line] are 1 based. *)
+      List.rev_map acc ~f:(map_line_number ~f:succ)
     else
       let last = try String.index_from str pos ';' with Not_found -> total_len in
       gen_col := 0;
@@ -174,13 +186,6 @@ let mapping_of_string str =
         if last = stop then last + 1, acc else read_tokens line (last + 1) stop acc
   in
   readline 0 0 []
-
-let () =
-  let map_str = ";;;;EAEE,EAAE,EAAC,CAAE;ECQY,UACC" in
-  let map = mapping_of_string map_str in
-  let map_str' = string_of_mapping map in
-  (* let map' = mapping_of_string map_str' in *)
-  assert (String.equal map_str map_str')
 
 let merge_sources_content a b =
   match a, b with
@@ -238,51 +243,12 @@ let merge = function
            ~names_offset:(List.length x.names)
            rest)
 
-(*
-let empty = {
-  version = 3;
-  file = "file";
-  sourceroot = None;
-  sources = [];
-  sources_content = None;
-  names = [];
-  mappings = []
-}
-
-let gen (gen_line, gen_col) (ori_line, ori_col) ori_source =
-  { gen_line;
-    gen_col;
-    ori_source;
-    ori_line;
-    ori_col;
-    ori_name = None;
+let empty =
+  { version = 3
+  ; file = "file"
+  ; sourceroot = None
+  ; sources = []
+  ; sources_content = None
+  ; names = []
+  ; mappings = []
   }
-
-let s1 =
-  { empty with
-    names = ["na";"nb";"nc"];
-    sources = ["sa";"sb"];
-    mappings = [
-      gen (1,1) (10,10) 1;
-      gen (3,3) (20,20) 2;
-    ]
-  }
-
-let s2 =
-  { empty with
-    names = ["na2";"nb2"];
-    sources = ["sa2"];
-    mappings = [
-      gen (3,3) (5,5) 1;
-    ]
-  }
-
-let () =
-  let m = merge [(0,"",s1);(20,"",s2)] in
-  begin
-    match m with
-    | None -> ()
-    | Some sm ->
-      assert (string_of_mapping sm.mappings = ";CCUU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff")
-  end;
-  *)

@@ -111,7 +111,7 @@ let%expect_test "error reporting" =
    with Js_of_ocaml_compiler.Parse_js.Parsing_error pi ->
      Printf.printf
        "cannot parse js (from l:%d, c:%d)@."
-       (pi.Parse_info.line + 1)
+       pi.Parse_info.line
        pi.Parse_info.col);
   [%expect {|
     cannot parse js (from l:4, c:8)@. |}]

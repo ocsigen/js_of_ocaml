@@ -91,7 +91,7 @@ struct
       | Pi { Parse_info.name = Some file; line; col; _ }
       | Pi { Parse_info.src = Some file; line; col; _ } ->
           PP.non_breaking_space f;
-          PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
+          PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file line col);
           PP.non_breaking_space f
       | N -> ()
       | U | Pi _ ->
@@ -1230,7 +1230,8 @@ let program f ?source_map p =
       let mappings =
         List.map !O.temp_mappings ~f:(fun (pos, m) ->
             { m with
-              Source_map.gen_line = pos.PP.p_line
+              (* [p_line] starts at zero, [gen_line] at 1 *)
+              Source_map.gen_line = pos.PP.p_line + 1
             ; Source_map.gen_col = pos.PP.p_col
             })
       in

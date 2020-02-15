@@ -1038,7 +1038,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                 (Printf.sprintf
                    "Parsing error %S at l:%d col:%d"
                    nm
-                   (pi.Parse_info.line + 1)
+                   pi.Parse_info.line
                    pi.Parse_info.col))
         | Extern "%js_array", l ->
             let args, prop, queue =

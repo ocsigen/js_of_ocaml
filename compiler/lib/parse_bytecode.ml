@@ -248,14 +248,7 @@ end = struct
             | _ -> loc.Location.loc_start
         in
         let src = unit.source in
-        Some
-          { Parse_info.name = Some pos.Lexing.pos_fname
-          ; src
-          ; line = pos.Lexing.pos_lnum - 1
-          ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
-          ; idx = 0
-          ; fol = None
-          }
+        Some (Parse_info.t_of_position ~src pos)
     with Not_found -> None
 
   let rec propagate l1 l2 =
@@ -643,13 +636,7 @@ module State = struct
   let pi_of_loc debug location =
     let pos = location.Location.loc_start in
     let src = Debug.find_source debug pos.Lexing.pos_fname in
-    { Parse_info.name = Some pos.Lexing.pos_fname
-    ; src
-    ; line = pos.Lexing.pos_lnum - 1
-    ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
-    ; idx = 0
-    ; fol = None
-    }
+    Parse_info.t_of_position ~src pos
 
   let rec name_rec debug i l s summary =
     match l, s with

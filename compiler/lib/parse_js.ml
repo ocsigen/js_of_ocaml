@@ -99,8 +99,8 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
               try
                 let file, line = Js_lexer.pos lexbuf in
                 match extra with
-                | None -> Some (file, ii.Parse_info.line - (line - 2))
-                | Some (_, offset) -> Some (file, ii.Parse_info.line - (line - 2) + offset)
+                | None -> Some (file, ii.Parse_info.line - (line - 1))
+                | Some (_, offset) -> Some (file, ii.Parse_info.line - (line - 1) + offset)
               with _ -> extra)
           | _ -> extra
         in
