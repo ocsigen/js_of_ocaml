@@ -7,6 +7,7 @@
     js_of_ocaml.deriving
     js_of_ocaml-ppx_deriving_json
   )
+  (modes byte)
   (link_flags (-linkall))
   )
 
@@ -22,12 +23,12 @@
            ../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/deriving_Json_lexer.cmi)
   (action  (run %{exe:main.bc} %{dep:gen.mlt})))
 
-(alias
-   (name   runtest)
+(rule
+   (alias   runtest)
 ;; (package js_of_ocaml-ppx)
    (action (diff ppx.mlt ppx.mlt.corrected)))
 
-(alias
-   (name   runtest)
+(rule
+   (alias   runtest)
 ;; (package js_of_ocaml-ppx)
    (action (diff gen.mlt gen.mlt.corrected)))

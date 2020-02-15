@@ -4,8 +4,8 @@
   (synopsis "Js_of_ocaml compiler library")
   (libraries compiler-libs.common compiler-libs.bytecomp bytes
    (select source_map_io.ml from
-    (yojson -> source_map_yojson.ml.in)
-    (       -> source_map_unsupported.ml.in))
+    (yojson -> source_map_io.yojson.ml)
+    (       -> source_map_io.unsupported.ml))
   )
   (flags (:standard -w -7-37 -safe-string))
   (preprocess (pps ppx_optcomp_light))

@@ -26,7 +26,7 @@ let server () =
     let path = Uri.path uri in
     try
       (* send binary file *)
-      let fname = get (exec re_filesys path) 1 in
+      let fname = Group.get (exec re_filesys path) 1 in
       Lwt_io.eprintf "filesys: %s\n" fname
       >>= fun () -> Server.respond_file ~headers:header_plain_user_charset ~fname ()
     with _ ->

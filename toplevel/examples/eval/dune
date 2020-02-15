@@ -4,6 +4,7 @@
     js_of_ocaml-compiler
     js_of_ocaml-toplevel)
   (link_flags (:standard -linkall))
+  (modes byte)
   (preprocess (pps js_of_ocaml-ppx)))
 
 (rule

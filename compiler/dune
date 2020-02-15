@@ -6,10 +6,10 @@
     js_of_ocaml-compiler
     cmdliner
     compiler-libs.common
-    (select empty-findlib.ml from
+    (select findlib_support.ml from
      ;; Only link js_of_ocaml-compiler.findlib-support if it exists
-     (js_of_ocaml-compiler.findlib-support -> empty-findlib.ml.in)
-     (                                     -> empty-findlib.ml.in))
+     (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
+     (                                     -> findlib_support.empty.ml))
     )
   (flags (:standard -safe-string))
   )

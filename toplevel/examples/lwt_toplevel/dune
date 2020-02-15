@@ -12,20 +12,21 @@
     bigarray
     react reactiveData
    (select ocp_indent.ml from
-    (ocp-indent.lib -> ocp_indent.ml.in)
-    (               -> ocp_indent_fake.ml.in))
+    (ocp-indent.lib -> ocp_indent.ok.ml)
+    (               -> ocp_indent.fake.ml))
    (select colorize.ml from
-    (higlo higlo.ocaml   -> colorize_higlo.ml.in)
-    (!higlo              -> colorize_fake.ml.in))
+    (higlo higlo.ocaml   -> colorize.higlo.ml)
+    (!higlo              -> colorize.fake.ml))
    (select graphics_support.ml from
-    (js_of_ocaml-lwt.graphics -> graphics_enabled.ml.in)
-    (                         -> graphics_disabled.ml.in))
+    (js_of_ocaml-lwt.graphics -> graphics_support.enabled.ml)
+    (                         -> graphics_support.disabled.ml))
    (select ppx_support.ml from
-    (js_of_ocaml-ppx -> ppx_enabled.ml.in)
-    (                -> ppx_disabled.ml.in))
+    (js_of_ocaml-ppx -> ppx_support.enabled.ml)
+    (                -> ppx_support.disabled.ml))
     )
   (flags (:standard -rectypes -linkall))
-  (modules (:standard \ test_dynlink))
+  (modes byte)
+  (modules (:standard \ test_dynlink examples))
   (preprocess (pps js_of_ocaml-ppx)))
 
 (rule
