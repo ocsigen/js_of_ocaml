@@ -25,6 +25,10 @@ open Js
 class type arrayBuffer =
   object
     method byteLength : int readonly_prop
+
+    method slice : int -> int -> arrayBuffer t meth
+
+    method slice_toEnd : int -> arrayBuffer t meth
   end
 
 val arrayBuffer : (int -> arrayBuffer t) constr
@@ -53,6 +57,10 @@ class type ['a, 'b] typedArray =
     method subarray : int -> int -> ('a, 'b) typedArray t meth
 
     method subarray_toEnd : int -> ('a, 'b) typedArray t meth
+
+    method slice : int -> int -> ('a, 'b) typedArray t meth
+
+    method slice_toEnd : int -> ('a, 'b) typedArray t meth
 
     method _content_type_ : 'b
   end
@@ -166,6 +174,8 @@ class type dataView =
     method getInt8 : int -> int meth
 
     method getUint8 : int -> int meth
+
+    method getInt16 : int -> int meth
 
     method getInt16_ : int -> bool t -> int meth
 
