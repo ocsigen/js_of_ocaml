@@ -16,6 +16,38 @@ void bigstring_to_typed_array () {
   fprintf(stderr, "Unimplemented Javascript primitive bigstring_to_typed_array!\n");
   exit(1);
 }
+void caml_ba_float32_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_float32_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_float64_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_float64_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_int16_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_int16_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_int32_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_int32_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_int8_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_int8_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_to_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_to_typed_array!\n");
+  exit(1);
+}
+void caml_ba_uint16_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_uint16_of_typed_array!\n");
+  exit(1);
+}
+void caml_ba_uint8_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_ba_uint8_of_typed_array!\n");
+  exit(1);
+}
 void caml_create_file () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_create_file!\n");
   exit(1);

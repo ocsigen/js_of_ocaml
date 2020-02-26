@@ -91,6 +91,12 @@ val int8Array_fromBuffer : (arrayBuffer t -> int8Array t) constr
 
 val int8Array_inBuffer : (arrayBuffer t -> int -> int -> int8Array t) constr
 
+val int8Array_fromGenarray :
+  (int, Bigarray.int8_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int8Array t
+
+val int8Array_toGenarray :
+  int8Array t -> (int, Bigarray.int8_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t
+
 val uint8Array : (int -> uint8Array t) constr
 
 val uint8Array_fromArray : (int js_array t -> uint8Array t) constr
@@ -100,6 +106,12 @@ val uint8Array_fromTypedArray : (uint8Array t -> uint8Array t) constr
 val uint8Array_fromBuffer : (arrayBuffer t -> uint8Array t) constr
 
 val uint8Array_inBuffer : (arrayBuffer t -> int -> int -> uint8Array t) constr
+
+val uint8Array_fromGenarray :
+  (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t -> uint8Array t
+
+val uint8Array_toGenarray :
+  uint8Array t -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t
 
 val int16Array : (int -> int16Array t) constr
 
@@ -111,6 +123,12 @@ val int16Array_fromBuffer : (arrayBuffer t -> int16Array t) constr
 
 val int16Array_inBuffer : (arrayBuffer t -> int -> int -> int16Array t) constr
 
+val int16Array_fromGenarray :
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int16Array t
+
+val int16Array_toGenarray :
+  int16Array t -> (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t
+
 val uint16Array : (int -> uint16Array t) constr
 
 val uint16Array_fromArray : (int js_array t -> uint16Array t) constr
@@ -121,6 +139,12 @@ val uint16Array_fromBuffer : (arrayBuffer t -> uint16Array t) constr
 
 val uint16Array_inBuffer : (arrayBuffer t -> int -> int -> uint16Array t) constr
 
+val uint16Array_fromGenarray :
+  (int, Bigarray.int16_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t -> uint16Array t
+
+val uint16Array_toGenarray :
+  uint16Array t -> (int, Bigarray.int16_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t
+
 val int32Array : (int -> int32Array t) constr
 
 val int32Array_fromArray : (int js_array t -> int32Array t) constr
@@ -130,6 +154,12 @@ val int32Array_fromTypedArray : (int32Array t -> int32Array t) constr
 val int32Array_fromBuffer : (arrayBuffer t -> int32Array t) constr
 
 val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
+
+val int32Array_fromGenarray :
+  (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
+
+val int32Array_toGenarray :
+  int32Array t -> (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
 
 val uint32Array : (int -> uint32Array t) constr
 
@@ -151,6 +181,12 @@ val float32Array_fromBuffer : (arrayBuffer t -> float32Array t) constr
 
 val float32Array_inBuffer : (arrayBuffer t -> int -> int -> float32Array t) constr
 
+val float32Array_fromGenarray :
+  (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> float32Array t
+
+val float32Array_toGenarray :
+  float32Array t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Genarray.t
+
 val float64Array : (int -> float64Array t) constr
 
 val float64Array_fromArray : (float js_array t -> float64Array t) constr
@@ -160,6 +196,12 @@ val float64Array_fromTypedArray : (float64Array t -> float64Array t) constr
 val float64Array_fromBuffer : (arrayBuffer t -> float64Array t) constr
 
 val float64Array_inBuffer : (arrayBuffer t -> int -> int -> float64Array t) constr
+
+val float64Array_fromGenarray :
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Genarray.t -> float64Array t
+
+val float64Array_toGenarray :
+  float64Array t -> (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Genarray.t
 
 val set : ('a, 'b) typedArray t -> int -> 'a -> unit
 

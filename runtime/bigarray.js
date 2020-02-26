@@ -836,3 +836,50 @@ function caml_ba_hash(ba){
   }
   return h;
 }
+
+//Provides: caml_ba_to_typed_array mutable
+function caml_ba_to_typed_array(ba){
+  return ba.data;
+}
+
+//Provides: caml_ba_int8_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_int8_of_typed_array(ta){
+  return caml_ba_create_unsafe(2, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_uint8_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_uint8_of_typed_array(ta){
+  return caml_ba_create_unsafe(3, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_int16_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_int16_of_typed_array(ta){
+  return caml_ba_create_unsafe(4, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_uint16_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_uint16_of_typed_array(ta){
+  return caml_ba_create_unsafe(5, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_int32_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_int32_of_typed_array(ta){
+  return caml_ba_create_unsafe(6, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_float32_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_float32_of_typed_array(ta){
+  return caml_ba_create_unsafe(0, 0, [ta.length], ta);
+}
+
+//Provides: caml_ba_float64_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+function caml_ba_float64_of_typed_array(ta){
+  return caml_ba_create_unsafe(1, 0, [ta.length], ta);
+}

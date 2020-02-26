@@ -89,6 +89,14 @@ let int8Array_fromBuffer = int8Array
 
 let int8Array_inBuffer = int8Array
 
+external int8Array_fromGenarray :
+  (int, Bigarray.int8_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int8Array t
+  = "caml_ba_to_typed_array"
+
+external int8Array_toGenarray :
+  int8Array t -> (int, Bigarray.int8_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_int8_of_typed_array"
+
 let uint8Array = Js.Unsafe.global##._Uint8Array
 
 let uint8Array_fromArray = uint8Array
@@ -98,6 +106,14 @@ let uint8Array_fromTypedArray = uint8Array
 let uint8Array_fromBuffer = uint8Array
 
 let uint8Array_inBuffer = uint8Array
+
+external uint8Array_fromGenarray :
+  (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t -> uint8Array t
+  = "caml_ba_to_typed_array"
+
+external uint8Array_toGenarray :
+  uint8Array t -> (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_uint8_of_typed_array"
 
 let int16Array = Js.Unsafe.global##._Int16Array
 
@@ -109,6 +125,14 @@ let int16Array_fromBuffer = int16Array
 
 let int16Array_inBuffer = int16Array
 
+external int16Array_fromGenarray :
+  (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int16Array t
+  = "caml_ba_to_typed_array"
+
+external int16Array_toGenarray :
+  int16Array t -> (int, Bigarray.int16_signed_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_int16_of_typed_array"
+
 let uint16Array = Js.Unsafe.global##._Uint16Array
 
 let uint16Array_fromArray = uint16Array
@@ -119,6 +143,14 @@ let uint16Array_fromBuffer = uint16Array
 
 let uint16Array_inBuffer = uint16Array
 
+external uint16Array_fromGenarray :
+  (int, Bigarray.int16_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t -> uint16Array t
+  = "caml_ba_to_typed_array"
+
+external uint16Array_toGenarray :
+  uint16Array t -> (int, Bigarray.int16_unsigned_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_uint16_of_typed_array"
+
 let int32Array = Js.Unsafe.global##._Int32Array
 
 let int32Array_fromArray = int32Array
@@ -128,6 +160,14 @@ let int32Array_fromTypedArray = int32Array
 let int32Array_fromBuffer = int32Array
 
 let int32Array_inBuffer = int32Array
+
+external int32Array_fromGenarray :
+  (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
+  = "caml_ba_to_typed_array"
+
+external int32Array_toGenarray :
+  int32Array t -> (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_int32_of_typed_array"
 
 let uint32Array = Js.Unsafe.global##._Uint32Array
 
@@ -149,6 +189,14 @@ let float32Array_fromBuffer = float32Array
 
 let float32Array_inBuffer = float32Array
 
+external float32Array_fromGenarray :
+  (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> float32Array t
+  = "caml_ba_to_typed_array"
+
+external float32Array_toGenarray :
+  float32Array t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_float32_of_typed_array"
+
 let float64Array = Js.Unsafe.global##._Float64Array
 
 let float64Array_fromArray = float64Array
@@ -158,6 +206,14 @@ let float64Array_fromTypedArray = float64Array
 let float64Array_fromBuffer = float64Array
 
 let float64Array_inBuffer = float64Array
+
+external float64Array_fromGenarray :
+  (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Genarray.t -> float64Array t
+  = "caml_ba_to_typed_array"
+
+external float64Array_toGenarray :
+  float64Array t -> (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  = "caml_ba_float64_of_typed_array"
 
 let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
  fun a i v -> array_set (Unsafe.coerce a) i v
