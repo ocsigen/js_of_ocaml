@@ -156,10 +156,10 @@ val int32Array_fromBuffer : (arrayBuffer t -> int32Array t) constr
 val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
 
 val int32Array_fromGenarray :
-  (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
+  (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
 
 val int32Array_toGenarray :
-  int32Array t -> (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  int32Array t -> (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
 
 val uint32Array : (int -> uint32Array t) constr
 

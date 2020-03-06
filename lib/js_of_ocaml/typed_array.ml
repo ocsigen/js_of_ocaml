@@ -162,11 +162,11 @@ let int32Array_fromBuffer = int32Array
 let int32Array_inBuffer = int32Array
 
 external int32Array_fromGenarray :
-  (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
+  (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t -> int32Array t
   = "caml_ba_to_typed_array"
 
 external int32Array_toGenarray :
-  int32Array t -> (int, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
+  int32Array t -> (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Genarray.t
   = "caml_ba_int32_of_typed_array"
 
 let uint32Array = Js.Unsafe.global##._Uint32Array
