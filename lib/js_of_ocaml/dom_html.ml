@@ -3145,6 +3145,139 @@ module Keyboard_code = struct
     | "Pause" -> Pause
     | _ -> Unidentified
 
+  let try_key location v =
+    match Js.to_string v with
+    | "a" | "A" -> KeyA
+    | "b" | "B" -> KeyB
+    | "c" | "C" -> KeyC
+    | "d" | "D" -> KeyD
+    | "e" | "E" -> KeyE
+    | "f" | "F" -> KeyF
+    | "g" | "G" -> KeyG
+    | "h" | "H" -> KeyH
+    | "i" | "I" -> KeyI
+    | "j" | "J" -> KeyJ
+    | "k" | "K" -> KeyK
+    | "l" | "L" -> KeyL
+    | "m" | "M" -> KeyM
+    | "n" | "N" -> KeyN
+    | "o" | "O" -> KeyO
+    | "p" | "P" -> KeyP
+    | "q" | "Q" -> KeyQ
+    | "r" | "R" -> KeyR
+    | "s" | "S" -> KeyS
+    | "t" | "T" -> KeyT
+    | "u" | "U" -> KeyU
+    | "v" | "V" -> KeyV
+    | "w" | "W" -> KeyW
+    | "x" | "X" -> KeyX
+    | "y" | "Y" -> KeyY
+    | "z" | "Z" -> KeyZ
+    | "0" -> Digit0
+    | "1" -> Digit1
+    | "2" -> Digit2
+    | "3" -> Digit3
+    | "4" -> Digit4
+    | "5" -> Digit5
+    | "6" -> Digit6
+    | "7" -> Digit7
+    | "8" -> Digit8
+    | "9" -> Digit9
+    | "-" -> Minus
+    | "=" -> Equal
+    (* Whitespace *)
+    | "Tab" -> Tab
+    | "Enter" -> (
+        match location with
+        | `Numpad -> NumpadEnter
+        | _ -> Enter)
+    | " " -> Space
+    (* Editing *)
+    | "Escape" -> Escape
+    | "Backspace" -> Backspace
+    | "Insert" -> Insert
+    | "Delete" -> Delete
+    | "CapsLock" -> CapsLock
+    (* Misc Printable *)
+    | "[" -> BracketLeft
+    | "]" -> BracketRight
+    | ";" -> Semicolon
+    | "\"" -> Quote
+    | "`" -> Backquote
+    | "\\" -> Backslash
+    | "," -> Comma
+    | "." -> Period
+    | "/" -> Slash
+    (* Function keys *)
+    | "F1" -> F1
+    | "F2" -> F2
+    | "F3" -> F3
+    | "F4" -> F4
+    | "F5" -> F5
+    | "F6" -> F6
+    | "F7" -> F7
+    | "F8" -> F8
+    | "F9" -> F9
+    | "F10" -> F10
+    | "F11" -> F11
+    | "F12" -> F12
+    (* Numpad keys *)
+    | "NumLock" -> NumLock
+    (* Modifier keys *)
+    | "Control" -> (
+        match location with
+        | `Left -> ControlLeft
+        | `Right | _ -> ControlRight)
+    | "Meta" -> (
+        match location with
+        | `Left -> MetaLeft
+        | `Right | _ -> MetaRight)
+    | "Shift" -> (
+        match location with
+        | `Left -> ShiftLeft
+        | `Right | _ -> ShiftRight)
+    | "Alt" -> (
+        match location with
+        | `Left -> AltLeft
+        | `Right | _ -> AltRight)
+    (* Arrow keys *)
+    | "ArrowLeft" -> ArrowLeft
+    | "ArrowRight" -> ArrowRight
+    | "ArrowUp" -> ArrowUp
+    | "ArrowDown" -> ArrowDown
+    (* Navigation *)
+    | "PageUp" -> PageUp
+    | "PageDown" -> PageDown
+    | "Home" -> Home
+    | "End" -> End
+    (* Sound *)
+    | "AudioVolumeMute" -> VolumeMute
+    | "AudioVolumeDown" -> VolumeDown
+    | "AudioVolumeUp" -> VolumeUp
+    (* Media *)
+    | "MediaTrackPrevious" -> MediaTrackPrevious
+    | "MediaTrackNext" -> MediaTrackNext
+    | "MediaPlayPause" -> MediaPlayPause
+    | "MediaStop" -> MediaStop
+    (* Browser special *)
+    | "ContextMenu" -> ContextMenu
+    | "BrowserSearch" -> BrowserSearch
+    | "BrowserHome" -> BrowserHome
+    | "BrowserFavorites" -> BrowserFavorites
+    | "BrowserRefresh" -> BrowserRefresh
+    | "BrowserStop" -> BrowserStop
+    | "BrowserForward" -> BrowserForward
+    | "BrowserBack" -> BrowserBack
+    (* Misc *)
+    | "OSLeft" -> OSLeft
+    | "OSRight" -> OSRight
+    | "ScrollLock" -> ScrollLock
+    | "PrintScreen" -> PrintScreen
+    | "IntlBackslash" -> IntlBackslash
+    | "IntlYen" -> IntlYen
+    | "Pause" -> Pause
+    | _ -> Unidentified
+
   let try_key_code_left = function
     | 16 -> ShiftLeft
     | 17 -> ControlLeft
@@ -3283,19 +3416,33 @@ module Keyboard_code = struct
 
   let get_key_code evt = evt##.keyCode
 
-  let try_key_location evt =
-    match evt##.location with
-    | 1 -> run_next (get_key_code evt) try_key_code_left
-    | 2 -> run_next (get_key_code evt) try_key_code_right
-    | 3 -> run_next (get_key_code evt) try_key_code_numpad
-    | _ -> make_unidentified
+  let try_key_location location evt =
+    match location with
+    | `Left -> run_next (get_key_code evt) try_key_code_left
+    | `Right -> run_next (get_key_code evt) try_key_code_right
+    | `Numpad -> run_next (get_key_code evt) try_key_code_numpad
+    | `Other -> fun x -> x
 
   let ( |> ) x f = f x
 
+  (* On the event, we have access to both `key` and `code` which are strings representing
+     which key was pressed.  `key` is for the "intended" key; that is to say, it takes
+     into account keyboard locale and software defined keyboard remappings (like QWERTY ->
+     Dvorak).  `code` is for the physical key that was pressed.  We almost always want to
+     use `key` over `code`. *)
   let of_event evt =
+    (* https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/location *)
+    let location =
+      match evt##.location with
+      | 1 -> `Left
+      | 2 -> `Right
+      | 3 -> `Numpad
+      | _ -> `Other
+    in
     Unidentified
+    |> try_next evt##.key (try_key location)
     |> try_next evt##.code try_code
-    |> try_key_location evt
+    |> try_key_location location evt
     |> run_next (get_key_code evt) try_key_code_normal
 
   let of_key_code = try_key_code_normal
