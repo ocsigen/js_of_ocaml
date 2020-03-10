@@ -1,6 +1,7 @@
 (executables
   (names main)
   (libraries js_of_ocaml-lwt)
+  (modes byte)
   (preprocess (pps js_of_ocaml-ppx)))
 
 (ocamllex wikicreole)

@@ -31,8 +31,8 @@
     %{dep:weak.js}
 )))
 
-(alias 
-  (name runtest)
+(rule
+  (alias runtest)
   (deps stdlib_modern.js)
   (action (run %{bin:jsoo_minify} %{dep:stdlib_modern.js})))
 

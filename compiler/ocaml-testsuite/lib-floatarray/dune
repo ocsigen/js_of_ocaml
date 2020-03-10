@@ -1,7 +1,7 @@
 (executables
   (names floatarray)
   (libraries)
-  (js_of_ocaml)
+  (modes js)
 )
 
 (rule

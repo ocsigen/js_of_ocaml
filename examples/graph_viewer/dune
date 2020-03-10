@@ -1,6 +1,10 @@
 (executables
   (names viewer_js) ;; add converter & viewer
   (libraries js_of_ocaml-lwt)
+  (modes byte)
+  (modules (:standard
+            \ scene_extents svg main viewer converter
+            dot_lexer dot_graph dot_render))
   (preprocess (pps js_of_ocaml-ppx)))
 
 (ocamllex dot_lexer)

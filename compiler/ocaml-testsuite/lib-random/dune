@@ -1,7 +1,7 @@
 (executables
   (names rand)
   (libraries)
-  (js_of_ocaml)
+  (modes js)
 )
 
 (rule
@@ -9,7 +9,7 @@
   (deps rand.bc.js)
   (action (with-stdout-to %{target} (run node ./rand.bc.js))))
 
-(alias
-  (name runtest)
+(rule
+  (alias runtest)
   (deps rand.reference rand.referencejs)
   (action (diff rand.reference rand.referencejs)))

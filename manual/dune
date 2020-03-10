@@ -1,5 +1,5 @@
-(alias
-  (name ocsigen-doc)
+(rule
+  (alias ocsigen-doc)
   (deps
     (alias_rec ../examples/default)
     (alias ../toplevel/examples/lwt_toplevel/default)

@@ -1,7 +1,7 @@
 (executables
   (names bswap)
   (libraries)
-  (js_of_ocaml)
+  (modes js)
 )
 
 (rule
@@ -9,7 +9,7 @@
   (deps bswap.bc.js)
   (action (with-stdout-to %{target} (run node ./bswap.bc.js))))
 
-(alias
-  (name runtest)
+(rule
+  (alias runtest)
   (deps bswap.reference bswap.referencejs)
   (action (diff bswap.reference bswap.referencejs)))
