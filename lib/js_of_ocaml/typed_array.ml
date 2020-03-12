@@ -48,9 +48,7 @@ class type ['a, 'b] typedArray =
 
     method length : int readonly_prop
 
-    method set_fromIntArray : int js_array t -> int -> unit meth
-
-    method set_fromFloatArray : float js_array t -> int -> unit meth
+    method set_fromArray : 'a js_array t -> int -> unit meth
 
     method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
 
@@ -170,60 +168,12 @@ let float64Array_fromBuffer = float64Array
 
 let float64Array_inBuffer = float64Array
 
-let set_float : ('a, 'b) typedArray t -> int -> float -> unit =
+let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
  fun a i v -> array_set (Unsafe.coerce a) i v
 
-let get_float : ('a, 'b) typedArray t -> int -> float optdef =
- fun a i -> Js.Unsafe.get a i
+let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
 
-let unsafe_get_float : ('a, 'b) typedArray t -> int -> float =
- fun a i -> Js.Unsafe.get a i
-
-let set_int : ('a, 'b) typedArray t -> int -> int -> unit =
- fun a i v -> array_set (Unsafe.coerce a) i v
-
-let get_int : ('a, 'b) typedArray t -> int -> int optdef = fun a i -> Js.Unsafe.get a i
-
-let unsafe_get_int : ('a, 'b) typedArray t -> int -> int = fun a i -> Js.Unsafe.get a i
-
-let set : type a b. (a, b) typedArray t -> int -> a -> unit =
- fun a i v ->
-  let kind : (a, b) Bigarray.kind = kind a in
-  match kind with
-  | Bigarray.Int8_signed -> set_int a i v
-  | Bigarray.Int8_unsigned -> set_int a i v
-  | Bigarray.Int16_signed -> set_int a i v
-  | Bigarray.Int16_unsigned -> set_int a i v
-  | Bigarray.Int32 -> set_float a i (Int32.to_float v)
-  | Bigarray.Float32 -> set_float a i v
-  | Bigarray.Float64 -> set_float a i v
-  | _ -> failwith "unreachable"
-
-let get : type a b. (a, b) typedArray t -> int -> a optdef =
- fun a i ->
-  let kind : (a, b) Bigarray.kind = kind a in
-  match kind with
-  | Bigarray.Int8_signed -> get_int a i
-  | Bigarray.Int8_unsigned -> get_int a i
-  | Bigarray.Int16_signed -> get_int a i
-  | Bigarray.Int16_unsigned -> get_int a i
-  | Bigarray.Int32 -> Js.Optdef.map (get_float a i) Int32.of_float
-  | Bigarray.Float32 -> get_float a i
-  | Bigarray.Float64 -> get_float a i
-  | _ -> failwith "unreachable"
-
-let unsafe_get : type a b. (a, b) typedArray t -> int -> a =
- fun a i ->
-  let kind : (a, b) Bigarray.kind = kind a in
-  match kind with
-  | Bigarray.Int8_signed -> unsafe_get_int a i
-  | Bigarray.Int8_unsigned -> unsafe_get_int a i
-  | Bigarray.Int16_signed -> unsafe_get_int a i
-  | Bigarray.Int16_unsigned -> unsafe_get_int a i
-  | Bigarray.Int32 -> unsafe_get_float a i |> Int32.of_float
-  | Bigarray.Float32 -> unsafe_get_float a i
-  | Bigarray.Float64 -> unsafe_get_float a i
-  | _ -> failwith "unreachable"
+let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
 
 class type dataView =
   object

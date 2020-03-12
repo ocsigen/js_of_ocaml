@@ -50,9 +50,7 @@ class type ['a, 'b] typedArray =
 
     method length : int readonly_prop
 
-    method set_fromIntArray : int js_array t -> int -> unit meth
-
-    method set_fromFloatArray : float js_array t -> int -> unit meth
+    method set_fromArray : 'a js_array t -> int -> unit meth
 
     method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
 
@@ -167,18 +165,6 @@ val float64Array_fromTypedArray : (float64Array t -> float64Array t) constr
 val float64Array_fromBuffer : (arrayBuffer t -> float64Array t) constr
 
 val float64Array_inBuffer : (arrayBuffer t -> int -> int -> float64Array t) constr
-
-val set_float : ('a, 'b) typedArray t -> int -> float -> unit
-
-val get_float : ('a, 'b) typedArray t -> int -> float optdef
-
-val unsafe_get_float : ('a, 'b) typedArray t -> int -> float
-
-val set_int : ('a, 'b) typedArray t -> int -> int -> unit
-
-val get_int : ('a, 'b) typedArray t -> int -> int optdef
-
-val unsafe_get_int : ('a, 'b) typedArray t -> int -> int
 
 val set : ('a, 'b) typedArray t -> int -> 'a -> unit
 
