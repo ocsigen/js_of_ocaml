@@ -842,44 +842,27 @@ function caml_ba_to_typed_array(ba){
   return ba.data;
 }
 
-//Provides: caml_ba_int8_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_int8_of_typed_array(ta){
-  return caml_ba_create_unsafe(2, 0, [ta.length], ta);
+//Provides: caml_ba_kind_of_typed_array mutable
+//Requires: caml_invalid_argument
+function caml_ba_kind_of_typed_array(ta){
+  var g = joo_global_object;
+  var kind;
+  if (ta instanceof g.Float32Array) kind = 0;
+  else if (ta instanceof g.Float64Array) kind = 1;
+  else if (ta instanceof g.Int8Array) kind = 2;
+  else if (ta instanceof g.Uint8Array) kind = 3;
+  else if (ta instanceof g.Int16Array) kind = 4;
+  else if (ta instanceof g.Uint16Array) kind = 5;
+  else if (ta instanceof g.Int32Array) kind = 6;
+  else if (ta instanceof g.Uint32Array) kind = 6;
+  else caml_invalid_argument("caml_ba_kind_of_typed_array: unsupported kind");
+  return kind;
 }
 
-//Provides: caml_ba_uint8_of_typed_array mutable
+//Provides: caml_ba_from_typed_array mutable
+//Requires: caml_ba_kind_of_typed_array
 //Requires: caml_ba_create_unsafe
-function caml_ba_uint8_of_typed_array(ta){
-  return caml_ba_create_unsafe(3, 0, [ta.length], ta);
-}
-
-//Provides: caml_ba_int16_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_int16_of_typed_array(ta){
-  return caml_ba_create_unsafe(4, 0, [ta.length], ta);
-}
-
-//Provides: caml_ba_uint16_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_uint16_of_typed_array(ta){
-  return caml_ba_create_unsafe(5, 0, [ta.length], ta);
-}
-
-//Provides: caml_ba_int32_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_int32_of_typed_array(ta){
-  return caml_ba_create_unsafe(6, 0, [ta.length], ta);
-}
-
-//Provides: caml_ba_float32_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_float32_of_typed_array(ta){
-  return caml_ba_create_unsafe(0, 0, [ta.length], ta);
-}
-
-//Provides: caml_ba_float64_of_typed_array mutable
-//Requires: caml_ba_create_unsafe
-function caml_ba_float64_of_typed_array(ta){
-  return caml_ba_create_unsafe(1, 0, [ta.length], ta);
+function caml_ba_from_typed_array(ta){
+  var kind = caml_ba_kind_of_typed_array(ta);
+  return caml_ba_create_unsafe(kind, 0, [ta.length], ta);
 }
