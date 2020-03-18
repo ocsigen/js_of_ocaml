@@ -59,6 +59,10 @@ class type ['a, 'b] typedArray =
     method slice : int -> int -> ('a, 'b) typedArray t meth
 
     method slice_toEnd : int -> ('a, 'b) typedArray t meth
+
+    (* This fake method is needed for typing purposes.
+       Without it, ['b] would not be constrained. *)
+    method _content_type_ : 'b optdef readonly_prop
   end
 
 type int8Array = (int, Bigarray.int8_signed_elt) typedArray
