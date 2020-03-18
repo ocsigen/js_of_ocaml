@@ -25,6 +25,10 @@ open Js
 class type arrayBuffer =
   object
     method byteLength : int readonly_prop
+
+    method slice : int -> int -> arrayBuffer t meth
+
+    method slice_toEnd : int -> arrayBuffer t meth
   end
 
 val arrayBuffer : (int -> arrayBuffer t) constr
@@ -54,24 +58,35 @@ class type ['a, 'b] typedArray =
 
     method subarray_toEnd : int -> ('a, 'b) typedArray t meth
 
-    method _content_type_ : 'b
+    method slice : int -> int -> ('a, 'b) typedArray t meth
+
+    method slice_toEnd : int -> ('a, 'b) typedArray t meth
+
+    method _content_type_ : 'b optdef readonly_prop
   end
 
-type int8Array = (int, [ `Int8 ]) typedArray
+type int8Array = (int, Bigarray.int8_signed_elt) typedArray
 
-type uint8Array = (int, [ `Uint8 ]) typedArray
+type uint8Array = (int, Bigarray.int8_unsigned_elt) typedArray
 
-type int16Array = (int, [ `Int16 ]) typedArray
+type int16Array = (int, Bigarray.int16_signed_elt) typedArray
 
-type uint16Array = (int, [ `Uint16 ]) typedArray
+type uint16Array = (int, Bigarray.int16_unsigned_elt) typedArray
 
-type int32Array = (int, [ `Int32 ]) typedArray
+type int32Array = (int32, Bigarray.int32_elt) typedArray
 
-type uint32Array = (float, [ `Uint32 ]) typedArray
+type uint32Array = (int32, Bigarray.int32_elt) typedArray
 
-type float32Array = (float, [ `Float32 ]) typedArray
+type float32Array = (float, Bigarray.float32_elt) typedArray
 
-type float64Array = (float, [ `Float64 ]) typedArray
+type float64Array = (float, Bigarray.float64_elt) typedArray
+
+val kind : ('a, 'b) typedArray t -> ('a, 'b) Bigarray.kind
+
+val from_genarray :
+  ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t -> ('a, 'b) typedArray t
+
+val to_genarray : ('a, 'b) typedArray t -> ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t
 
 val int8Array : (int -> int8Array t) constr
 
@@ -166,6 +181,8 @@ class type dataView =
     method getInt8 : int -> int meth
 
     method getUint8 : int -> int meth
+
+    method getInt16 : int -> int meth
 
     method getInt16_ : int -> bool t -> int meth
 
