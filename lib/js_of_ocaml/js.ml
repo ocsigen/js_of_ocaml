@@ -699,9 +699,9 @@ external bool : bool -> bool t = "caml_js_from_bool"
 
 external to_bool : bool t -> bool = "caml_js_to_bool"
 
-external string : string -> js_string t = "caml_js_from_string"
+external string : string -> js_string t = "caml_jsstring_of_string"
 
-external to_string : js_string t -> string = "caml_js_to_string"
+external to_string : js_string t -> string = "caml_string_of_jsstring"
 
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
 
@@ -709,7 +709,7 @@ external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 
 external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 
-external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
+external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 
 external typeof : _ t -> js_string t = "caml_js_typeof"
 

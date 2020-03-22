@@ -145,9 +145,9 @@ function caml_return_exn_constant (tag) { return tag; }
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
 //Provides: caml_raise_with_string (const, const)
-//Requires: caml_raise_with_arg,caml_new_string
+//Requires: caml_raise_with_arg, caml_string_of_jsbytes
 function caml_raise_with_string (tag, msg) {
-  caml_raise_with_arg (tag, caml_new_string (msg));
+  caml_raise_with_arg (tag, caml_string_of_jsbytes(msg));
 }
 
 //Provides: caml_raise_sys_error (const)
@@ -163,7 +163,7 @@ function caml_failwith (msg) {
 }
 
 //Provides: caml_wrap_exception const (const)
-//Requires: caml_global_data,caml_js_to_string,caml_named_value
+//Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 //Requires: caml_return_exn_constant
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
@@ -183,7 +183,7 @@ function caml_wrap_exception(e) {
   if(e instanceof joo_global_object.Error && caml_named_value("jsError"))
     return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
-  return [0,caml_global_data.Failure,caml_js_to_string (String(e))];
+  return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
 }
 
 // Experimental
@@ -242,11 +242,13 @@ function caml_obj_is_block (x) { return +(x instanceof Array); }
 
 
 //Provides: caml_obj_tag
-//Requires: MlBytes
+//Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag (x) {
   if ((x instanceof Array) && x[0] == (x[0] >>> 0))
     return x[0]
-  else if (x instanceof MlBytes)
+  else if (caml_is_ml_bytes(x))
+    return 252
+  else if (caml_is_ml_string(x))
     return 252
   else if ((x instanceof Function) || typeof x == "function")
     return 247
@@ -384,10 +386,11 @@ function caml_floatarray_create(len){
 }
 
 //Provides: caml_compare_val_tag
-//Requires: MlBytes
+//Requires: caml_is_ml_string, caml_is_ml_bytes
 function caml_compare_val_tag(a){
   if (typeof a === "number") return 1000; // int_tag (we use it for all numbers)
-  else if (a instanceof MlBytes) return 252; // string_tag
+  else if (caml_is_ml_bytes(a)) return 252; // string_tag
+  else if (caml_is_ml_string(a)) return 1252; // ocaml string (if different from bytes)
   else if (a instanceof Array && a[0] === (a[0]>>>0) && a[0] <= 255) {
     // Look like an ocaml block
     var tag = a[0] | 0;
@@ -395,8 +398,8 @@ function caml_compare_val_tag(a){
     // this tag when we create an array of float.
     return (tag == 254)?0:tag
   }
-  else if (a instanceof String) return 1252; // javascript string, like string_tag (252)
-  else if (typeof a == "string") return 1252; // javascript string, like string_tag (252)
+  else if (a instanceof String) return 12520; // javascript string, like string_tag (252)
+  else if (typeof a == "string") return 12520; // javascript string, like string_tag (252)
   else if (a instanceof Number) return 1000; // int_tag (we use it for all numbers)
   else if (a && a.caml_custom) return 1255; // like custom_tag (255)
   else if (a && a.compare) return 1256; // like custom_tag (255)
@@ -425,9 +428,10 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
 }
 
 //Provides: caml_compare_val (const, const, const)
-//Requires: caml_int_compare, caml_string_compare
+//Requires: caml_int_compare, caml_string_compare, caml_bytes_compare
 //Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
 //Requires: caml_compare_val_number_custom
+//Requires: caml_jsbytes_of_string
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
@@ -477,9 +481,9 @@ function caml_compare_val (a, b, total) {
       case 251: //Abstract
         caml_invalid_argument("equal: abstract value");
         break;
-      case 252: // OCaml string
+      case 252: // OCaml bytes
         if (a !== b) {
-          var x = caml_string_compare(a, b);
+          var x = caml_bytes_compare(a, b);
           if (x != 0) return (x | 0);
         };
         break;
@@ -562,7 +566,15 @@ function caml_compare_val (a, b, total) {
           return 1;
         }
         break;
-      case 1252: // javascript strings
+      case 1252: // ocaml strings
+        var a = caml_jsbytes_of_string(a);
+        var b = caml_jsbytes_of_string(b);
+        if(a !== b) {
+          if(a < b) return -1;
+          if(a > b) return 1;
+        }
+        break;
+      case 12520: // javascript strings
         var a = a.toString();
         var b = b.toString();
         if(a !== b) {
@@ -676,7 +688,7 @@ function caml_int_of_string (s) {
 //Requires: caml_failwith, caml_jsbytes_of_string
 function caml_float_of_string(s) {
   var res;
-  s = caml_jsbytes_of_string (s);
+  s = caml_jsbytes_of_string(s)
   res = +s;
   if ((s.length > 0) && (res === res)) return res;
   s = s.replace(/_/g,"");
@@ -757,7 +769,7 @@ function caml_parse_format (fmt) {
 }
 
 //Provides: caml_finish_formatting
-//Requires: caml_new_string
+//Requires: caml_string_of_jsbytes
 function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
   var len = rawbuffer.length;
@@ -782,14 +794,14 @@ function caml_finish_formatting(f, rawbuffer) {
   buffer += rawbuffer;
   if (f.justify == '-')
     for (var i = len; i < f.width; i++) buffer += ' ';
-  return caml_new_string (buffer);
+  return caml_string_of_jsbytes(buffer);
 }
 
 //Provides: caml_format_int const (const, const)
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
-//Requires: caml_new_string, caml_jsbytes_of_string
+//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_format_int(fmt, i) {
-  if (caml_jsbytes_of_string(fmt) == "%d") return caml_new_string(""+i);
+  if (caml_jsbytes_of_string(fmt) == "%d") return caml_string_of_jsbytes(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
@@ -869,9 +881,10 @@ function caml_format_float (fmt, x) {
 
 ///////////// Hashtbl
 //Provides: caml_hash_univ_param mutable
-//Requires: MlBytes, caml_convert_string_to_bytes
+//Requires: caml_is_ml_string, caml_is_ml_bytes
+//Requires: caml_convert_string_to_bytes
 //Requires: caml_int64_to_bytes, caml_int64_bits_of_float, caml_custom_ops
-//Requires: caml_ml_bytes_length
+//Requires: caml_ml_bytes_length, caml_jsbytes_of_string
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
@@ -892,7 +905,7 @@ function caml_hash_univ_param (count, limit, obj) {
         hash_accu = (hash_accu * 19 + obj[0]) | 0;
         for (var i = obj.length - 1; i > 0; i--) hash_aux (obj[i]);
       }
-    } else if (obj instanceof MlBytes) {
+    } else if (caml_is_ml_bytes(obj)) {
       count --;
       switch (obj.t & 6) {
       default: /* PARTIAL */
@@ -905,6 +918,13 @@ function caml_hash_univ_param (count, limit, obj) {
         for (var a = obj.c, l = caml_ml_bytes_length(obj), i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
+    } else if (caml_is_ml_string(obj)) {
+        var jsbytes = caml_jsbytes_of_string(obj);
+        for (var b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
+          hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
+    } else if (typeof obj === "string") {
+        for (var b = obj, l = obj.length, i = 0; i < l; i++)
+          hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (obj === (obj|0)) {
       // Integer
       count --;
@@ -962,9 +982,9 @@ function caml_hash_mix_int64 (h, v) {
   return h;
 }
 
-//Provides: caml_hash_mix_string_str
+//Provides: caml_hash_mix_jsbytes
 //Requires: caml_hash_mix_int
-function caml_hash_mix_string_str(h, s) {
+function caml_hash_mix_jsbytes(h, s) {
   var len = s.length, i, w;
   for (i = 0; i + 4 <= len; i += 4) {
     w = s.charCodeAt(i)
@@ -986,9 +1006,9 @@ function caml_hash_mix_string_str(h, s) {
   return h;
 }
 
-//Provides: caml_hash_mix_string_arr
+//Provides: caml_hash_mix_bytes_arr
 //Requires: caml_hash_mix_int
-function caml_hash_mix_string_arr(h, s) {
+function caml_hash_mix_bytes_arr(h, s) {
   var len = s.length, i, w;
   for (i = 0; i + 4 <= len; i += 4) {
     w = s[i]
@@ -1009,28 +1029,35 @@ function caml_hash_mix_string_arr(h, s) {
   return h;
 }
 
-//Provides: caml_hash_mix_string
+//Provides: caml_hash_mix_bytes
 //Requires: caml_convert_string_to_bytes
-//Requires: caml_hash_mix_string_str
-//Requires: caml_hash_mix_string_arr
-function caml_hash_mix_string(h, v) {
+//Requires: caml_hash_mix_jsbytes
+//Requires: caml_hash_mix_bytes_arr
+function caml_hash_mix_bytes(h, v) {
   switch (v.t & 6) {
   default:
     caml_convert_string_to_bytes (v);
   case 0: /* BYTES */
-    h = caml_hash_mix_string_str(h, v.c);
+    h = caml_hash_mix_jsbytes(h, v.c);
     break;
   case 2: /* ARRAY */
-    h = caml_hash_mix_string_arr(h, v.c);
+    h = caml_hash_mix_bytes_arr(h, v.c);
   }
   return h
 }
 
+//Provides: caml_hash_mix_string
+//Requires: caml_hash_mix_jsbytes, caml_jsbytes_of_string
+function caml_hash_mix_string(h, v) {
+  return caml_hash_mix_jsbytes(h, caml_jsbytes_of_string(v));
+}
+
 
 //Provides: caml_hash mutable
-//Requires: MlBytes
+//Requires: caml_is_ml_string, caml_is_ml_bytes
 //Requires: caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
+//Requires: caml_hash_mix_float, caml_hash_mix_string, caml_hash_mix_bytes, caml_custom_ops
+//Requires: caml_hash_mix_jsbytes
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
   sz = limit;
@@ -1067,8 +1094,14 @@ function caml_hash (count, limit, seed, obj) {
         }
         break;
       }
-    } else if (v instanceof MlBytes) {
+    } else if (caml_is_ml_bytes(v)) {
+      h = caml_hash_mix_bytes(h,v)
+      num--;
+    } else if (caml_is_ml_string(v)) {
       h = caml_hash_mix_string(h,v)
+      num--;
+    } else if (typeof v === "string") {
+      h = caml_hash_mix_jsbytes(h,v)
       num--;
     } else if (v === (v|0)) {
       // Integer
@@ -1093,15 +1126,15 @@ function caml_sys_time () {
 }
 
 //Provides: caml_sys_get_config const
-//Requires: caml_new_string
+//Requires: caml_string_of_jsbytes
 function caml_sys_get_config () {
-  return [0, caml_new_string("Unix"), 32, 0];
+  return [0, caml_string_of_jsbytes("Unix"), 32, 0];
 }
 
 //Provides: caml_sys_const_backend_type const
-//Requires: caml_new_string
+//Requires: caml_string_of_jsbytes
 function caml_sys_const_backend_type () {
-  return [0, caml_new_string("js_of_ocaml")];
+  return [0, caml_string_of_jsbytes("js_of_ocaml")];
 }
 
 //Provides: caml_sys_random_seed mutable
@@ -1134,8 +1167,9 @@ function caml_sys_const_ostype_unix () { return 1; }
 function caml_sys_const_ostype_win32 () { return 0; }
 
 //Provides: caml_sys_system_command
+//Requires: caml_jsstring_of_string
 function caml_sys_system_command(cmd){
-  var cmd = cmd.toString();
+  var cmd = caml_jsstring_of_string(cmd);
   if (typeof require != "undefined"
       && require('child_process')
       && require('child_process').execSync) {
@@ -1252,18 +1286,19 @@ function caml_set_static_env(k,v){
 }
 //Provides: caml_sys_getenv (const)
 //Requires: caml_raise_not_found
-//Requires: caml_js_to_string
+//Requires: caml_string_of_jsstring
+//Requires: caml_jsstring_of_string
 function caml_sys_getenv (name) {
   var g = joo_global_object;
-  var n = name.toString();
+  var n = caml_jsstring_of_string(name);
   //nodejs env
   if(g.process
      && g.process.env
      && g.process.env[n] != undefined)
-    return caml_js_to_string(g.process.env[n]);
+    return caml_string_of_jsstring(g.process.env[n]);
   if(joo_global_object.jsoo_static_env
      && joo_global_object.jsoo_static_env[n])
-    return caml_js_to_string(joo_global_object.jsoo_static_env[n])
+    return caml_string_of_jsstring(joo_global_object.jsoo_static_env[n])
   caml_raise_not_found ();
 }
 //Provides: caml_sys_exit
@@ -1278,7 +1313,7 @@ function caml_sys_exit (code) {
 }
 
 //Provides: caml_argv
-//Requires: caml_js_to_string
+//Requires: caml_string_of_jsstring
 //Requires: raw_array_sub
 var caml_argv = ((function () {
   var g = joo_global_object;
@@ -1294,10 +1329,10 @@ var caml_argv = ((function () {
     args = raw_array_sub(argv,2,argv.length - 2);
   }
 
-  var p = caml_js_to_string(main);
+  var p = caml_string_of_jsstring(main);
   var args2 = [0, p];
   for(var i = 0; i < args.length; i++)
-    args2.push(caml_js_to_string(args[i]));
+    args2.push(caml_string_of_jsstring(args[i]));
   return args2;
 })())
 
@@ -1414,14 +1449,14 @@ function caml_ml_runtime_warnings_enabled (_unit) {
 }
 
 //Provides: caml_runtime_variant
-//Requires: caml_new_string
+//Requires: caml_string_of_jsbytes
 function caml_runtime_variant(_unit) {
-  return caml_new_string("");
+  return caml_string_of_jsbytes("");
 }
 //Provides: caml_runtime_parameters
-//Requires: caml_new_string
+//Requires: caml_string_of_jsbytes
 function caml_runtime_parameters(_unit) {
-  return caml_new_string("");
+  return caml_string_of_jsbytes("");
 }
 
 

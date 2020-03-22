@@ -293,7 +293,8 @@ let eval_instr info i =
                 ( prim
                 , List.map2 prim_args prim_args' ~f:(fun arg c ->
                       match c with
-                      | Some ((Int _ | Float _) as c) -> Pc c
+                      | Some ((Int _ | Float _ | IString _) as c) -> Pc c
+                      | Some (String _ as c) when Config.Flag.use_js_string () -> Pc c
                       | Some _
                       (* do not be duplicated other constant as
                           they're not represented with constant in javascript. *)

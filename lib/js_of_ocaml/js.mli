@@ -743,12 +743,12 @@ external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
 (** Conversion of booleans from Javascript to OCaml. *)
 
-external string : string -> js_string t = "caml_js_from_string"
+external string : string -> js_string t = "caml_jsstring_of_string"
 (** Conversion of strings from OCaml to Javascript.  (The OCaml
       string is considered to be encoded in UTF-8 and is converted to
       UTF-16.) *)
 
-external to_string : js_string t -> string = "caml_js_to_string"
+external to_string : js_string t -> string = "caml_string_of_jsstring"
 (** Conversion of strings from Javascript to OCaml. *)
 
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
@@ -761,7 +761,7 @@ external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 (** Conversion of strings of bytes from OCaml to Javascript.
       (Each byte will be converted in an UTF-16 code point.) *)
 
-external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
+external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 (** Conversion of strings of bytes from Javascript to OCaml.  (The
       Javascript string should only contain UTF-16 code points below
       255.) *)

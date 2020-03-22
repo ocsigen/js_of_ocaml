@@ -38,9 +38,9 @@ let json : json Js.t = Unsafe.global##._JSON
 
 external unsafe_equals : 'a -> 'b -> bool = "caml_js_equals"
 
-external to_byte_MlBytes : js_string t -> string = "caml_js_to_byte_string"
+external of_jsbytes : js_string t -> string = "caml_string_of_jsbytes"
 
-external to_byte_jsstring : 'a t -> js_string t = "caml_jsbytes_of_string"
+external to_jsbytes : 'a t -> js_string t = "caml_jsbytes_of_string"
 
 external create_int64_lo_mi_hi : int -> int -> int -> Int64.t
   = "caml_int64_create_lo_mi_hi"
@@ -48,7 +48,7 @@ external create_int64_lo_mi_hi : int -> int -> int -> Int64.t
 let input_reviver =
   let reviver _this _key (value : Unsafe.any) : Obj.t =
     if unsafe_equals (typeof value) (typeof (string "foo"))
-    then Obj.repr (to_byte_MlBytes (Unsafe.coerce value))
+    then Obj.repr (of_jsbytes (Unsafe.coerce value))
     else if instanceof value Js.array_empty
             && (Unsafe.coerce value)##.length == 4
             && Unsafe.get value 0 == 255
@@ -81,7 +81,7 @@ let mlInt64_constr =
 
 let output_reviver _key (value : Unsafe.any) : Obj.t =
   if instanceof value mlString_constr
-  then Obj.repr (to_byte_jsstring (Unsafe.coerce value))
+  then Obj.repr (to_jsbytes (Unsafe.coerce value))
   else if instanceof value mlInt64_constr
   then
     let value = Unsafe.coerce value in

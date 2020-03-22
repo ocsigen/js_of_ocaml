@@ -310,7 +310,7 @@ function caml_int64_format (fmt, x) {
 }
 
 //Provides: caml_int64_of_string
-//Requires: caml_parse_sign_and_base, caml_failwith, caml_parse_digit, MlBytes
+//Requires: caml_parse_sign_and_base, caml_failwith, caml_parse_digit
 //Requires: caml_int64_of_int32, caml_int64_ult
 //Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
 //Requires: caml_ml_string_length,caml_string_unsafe_get, MlInt64

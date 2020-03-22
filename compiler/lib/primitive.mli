@@ -36,11 +36,17 @@ type kind_arg =
   | `Mutable
   ]
 
+type condition =
+  [ `If of Parse_info.t option * string
+  | `Ifnot of Parse_info.t option * string
+  ]
+
 type t =
   [ `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
   | `Weakdef of Parse_info.t option
+  | condition
   ]
 
 val kind : string -> kind

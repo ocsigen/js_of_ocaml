@@ -23,6 +23,7 @@
 
 let%expect_test _ =
   Util.compile_and_run
+    ~flags:[ "--enable"; "use-js-string" ]
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -30,7 +31,17 @@ let%expect_test _ =
       let s' : string = Obj.obj (Obj.dup (Obj.repr s)) in
       print_bool (s = s');
       print_bool (s != s')
+  |};
+  [%expect {|
+    true
+    false
+  |}]
 
+let%expect_test _ =
+  Util.compile_and_run
+    ~flags:[ "--enable"; "use-js-string" ]
+    {|
+    let print_bool b = print_endline (string_of_bool b)
     let () =
       let s = Bytes.of_string "Hello" in
       let s' : bytes = Obj.obj (Obj.dup (Obj.repr s)) in
@@ -39,9 +50,44 @@ let%expect_test _ =
       Bytes.set s' 1 'a';
       print_bool (s <> s')
   |};
+  [%expect
+    {|
+    true
+    true
+    true
+  |}]
+
+let%expect_test _ =
+  Util.compile_and_run
+    ~flags:[ "--disable"; "use-js-string" ]
+    {|
+    let print_bool b = print_endline (string_of_bool b)
+    let () =
+      let s = "Hello" in
+      let s' : string = Obj.obj (Obj.dup (Obj.repr s)) in
+      print_bool (s = s');
+      print_bool (s != s')
+  |};
   [%expect {|
     true
     true
+  |}]
+
+let%expect_test _ =
+  Util.compile_and_run
+    ~flags:[ "--disable"; "use-js-string" ]
+    {|
+    let print_bool b = print_endline (string_of_bool b)
+    let () =
+      let s = Bytes.of_string "Hello" in
+      let s' : bytes = Obj.obj (Obj.dup (Obj.repr s)) in
+      print_bool (s = s');
+      print_bool (s != s');
+      Bytes.set s' 1 'a';
+      print_bool (s <> s')
+  |};
+  [%expect
+    {|
     true
     true
     true

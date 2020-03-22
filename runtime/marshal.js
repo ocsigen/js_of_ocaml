@@ -47,10 +47,10 @@ var caml_marshal_constants = {
 }
 
 
-//Provides: MlBytesReader
-//Requires: caml_new_string, caml_jsbytes_of_string
-function MlBytesReader (s, i) { this.s = caml_jsbytes_of_string(s); this.i = i; }
-MlBytesReader.prototype = {
+//Provides: MlStringReader
+//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
+function MlStringReader (s, i) { this.s = caml_jsbytes_of_string(s); this.i = i; }
+MlStringReader.prototype = {
   read8u:function () { return this.s.charCodeAt(this.i++); },
   read8s:function () { return this.s.charCodeAt(this.i++) << 24 >> 24; },
   read16u:function () {
@@ -78,7 +78,7 @@ MlBytesReader.prototype = {
   readstr:function (len) {
     var i = this.i;
     this.i = i + len;
-    return caml_new_string(this.s.substring(i, i + len));
+    return caml_string_of_jsbytes(this.s.substring(i, i + len));
   }
 }
 
@@ -130,16 +130,16 @@ function caml_float_of_bytes (a) {
 }
 
 //Provides: caml_input_value_from_string mutable
-//Requires: MlBytesReader, caml_input_value_from_reader
+//Requires: MlStringReader, caml_input_value_from_reader
 function caml_input_value_from_string(s,ofs) {
-  var reader = new MlBytesReader (s, typeof ofs=="number"?ofs:ofs[0]);
+  var reader = new MlStringReader (s, typeof ofs=="number"?ofs:ofs[0]);
   return caml_input_value_from_reader(reader, ofs)
 }
 
 //Provides: caml_input_value_from_bytes mutable
-//Requires: MlBytesReader, caml_input_value_from_reader
+//Requires: MlStringReader, caml_input_value_from_reader, caml_string_of_bytes
 function caml_input_value_from_bytes(s,ofs) {
-  var reader = new MlBytesReader (s, typeof ofs=="number"?ofs:ofs[0]);
+  var reader = new MlStringReader (caml_string_of_bytes(s), typeof ofs=="number"?ofs:ofs[0]);
   return caml_input_value_from_reader(reader, ofs)
 }
 
@@ -452,9 +452,10 @@ var caml_legacy_custom_code = true
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
-//Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
+//Requires: caml_is_ml_bytes, caml_ml_bytes_length, caml_bytes_unsafe_get
+//Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
 //Requires: MlObjectTable, caml_list_to_js_array, caml_legacy_custom_code, caml_custom_ops
-//Requires: caml_invalid_argument
+//Requires: caml_invalid_argument,caml_string_of_jsbytes
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -563,8 +564,23 @@ var caml_output_val = function (){
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
-      } else if (v instanceof MlBytes) {
+      } else if (caml_is_ml_bytes(v)) {
+        if(!(caml_is_ml_bytes(caml_string_of_jsbytes("")))) {
+          caml_failwith("output_value: [Bytes.t] cannot safely be marshaled with [--enable use-js-string]");
+        }
         if (memo(v)) return;
+        var len = caml_ml_bytes_length(v);
+        if (len < 0x20)
+          writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
+        else if (len < 0x100)
+          writer.write_code (8, 0x09/*cst.CODE_STRING8*/, len);
+        else
+          writer.write_code (32, 0x0A /*cst.CODE_STRING32*/, len);
+        for (var i = 0;i < len;i++)
+          writer.write (8, caml_bytes_unsafe_get(v,i));
+        writer.size_32 += 1 + (((len + 4) / 4)|0);
+        writer.size_64 += 1 + (((len + 8) / 8)|0);
+      } else if (caml_is_ml_string(v)) {
         var len = caml_ml_string_length(v);
         if (len < 0x20)
           writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
@@ -624,9 +640,9 @@ function caml_output_value_to_string (v, flags) {
 }
 
 //Provides: caml_output_value_to_bytes mutable
-//Requires: caml_output_val, caml_string_of_array
+//Requires: caml_output_val, caml_bytes_of_array
 function caml_output_value_to_bytes (v, flags) {
-  return caml_string_of_array (caml_output_val (v, flags));
+  return caml_bytes_of_array (caml_output_val (v, flags));
 }
 
 //Provides: caml_output_value_to_buffer

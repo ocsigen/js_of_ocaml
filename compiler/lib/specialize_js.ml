@@ -125,7 +125,7 @@ let specialize_instr info i rem =
       | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (String s) ]))
       | _ -> i)
       :: rem
-  | Let (x, Prim (Extern "caml_js_from_string", [ y ])) ->
+  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) ->
       (match the_string_of info y with
       | Some s when String.is_ascii s -> Let (x, Constant (IString s))
       | _ -> i)

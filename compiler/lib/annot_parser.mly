@@ -17,11 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-%token TProvides TRequires TVersion TWeakdef
+%token TProvides TRequires TVersion TWeakdef TIf
 %token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
 %token<string> TIdent TVNum
 %token TComma TSemi EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
+%token TBang
 
 %start annot
 %type <Primitive.t> annot
@@ -38,7 +39,10 @@ annot:
   | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
     { `Version (None,l) }
   | TWeakdef { `Weakdef None }
-
+  | TIf TSemi name=TIdent endline
+    { `If (None,name) }
+  | TIf TSemi TBang name=TIdent endline
+                           { `Ifnot (None,name) }
 prim_annot:
   | TA_Pure {`Pure}
   | TA_Const {`Pure}

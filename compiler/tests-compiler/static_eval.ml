@@ -22,6 +22,36 @@ open Util
 let%expect_test "static eval of string get" =
   let program =
     compile_and_parse
+      ~flags:[ "--enable"; "use-js-string" ]
+      {|
+    let lr = ref []
+    let black_box v = lr := (Obj.repr v) :: !lr
+
+    let constant = "abcdefghijklmnopqrstuvwxyz"
+
+    let call_with_char c = black_box c
+
+    let ex = call_with_char constant.[-10] ;;
+    black_box ex
+    let ax = call_with_char constant.[6]  ;;
+    black_box ax
+    let bx = call_with_char constant.[30] ;;
+    black_box bx ;;
+  |}
+  in
+  print_var_decl program "ex";
+  print_var_decl program "ax";
+  print_var_decl program "bx";
+  [%expect
+    {|
+    var ex = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,- 10));
+    var ax = call_with_char(103);
+    var bx = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,30)); |}]
+
+let%expect_test "static eval of string get" =
+  let program =
+    compile_and_parse
+      ~flags:[ "--disable"; "use-js-string" ]
       {|
     let lr = ref []
     let black_box v = lr := (Obj.repr v) :: !lr

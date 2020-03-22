@@ -27,9 +27,7 @@ function caml_js_to_bool(x) { return +x; }
 function caml_js_from_float(x) { return x; }
 //Provides: caml_js_to_float const (const)
 function caml_js_to_float(x) { return x; }
-//Provides: caml_js_from_string mutable (const)
-//Requires: MlBytes
-function caml_js_from_string(s) { return s.toString(); }
+
 //Provides: caml_js_from_array mutable (shallow)
 //Requires: raw_array_sub
 function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
@@ -37,11 +35,12 @@ function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
 //Requires: raw_array_cons
 function caml_js_to_array(a) { return raw_array_cons(a,0); }
 
+
 //Provides: caml_js_var mutable (const)
 //Requires: js_print_stderr
-//Requires: MlBytes
+//Requires: caml_jsstring_of_string
 function caml_js_var(x) {
-  var x = x.toString();
+  var x = caml_jsstring_of_string(x);
   //Checks that x has the form ident[.ident]*
   if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
     js_print_stderr("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
@@ -68,10 +67,10 @@ function caml_js_fun_call(f, a) {
   return f.apply(null, caml_js_from_array(a));
 }
 //Provides: caml_js_meth_call (mutable, const, shallow)
-//Requires: MlBytes
+//Requires: caml_jsstring_of_string
 //Requires: caml_js_from_array
 function caml_js_meth_call(o, f, args) {
-  return o[f.toString()].apply(o, caml_js_from_array(args));
+  return o[caml_jsstring_of_string(f)].apply(o, caml_js_from_array(args));
 }
 //Provides: caml_js_new (const, shallow)
 //Requires: caml_js_from_array
@@ -170,35 +169,32 @@ function caml_js_wrap_meth_callback_unsafe(f) {
 }
 //Provides: caml_js_equals mutable (const, const)
 function caml_js_equals (x, y) { return +(x == y); }
-//Provides: caml_js_to_byte_string const
-//Requires: caml_new_string
-function caml_js_to_byte_string (s) {return caml_new_string (s);}
 
 //Provides: caml_js_eval_string (const)
-//Requires: MlBytes
-function caml_js_eval_string (s) {return eval(s.toString());}
+//Requires: caml_jsstring_of_string
+function caml_js_eval_string (s) {return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_expr (const)
 //Requires: js_print_stderr
-//Requires: MlBytes
+//Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
   js_print_stderr("caml_js_expr: fallback to runtime evaluation");
-  return eval(s.toString());}
+  return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_pure_js_expr const (const)
 //Requires: js_print_stderr
-//Requires: MlBytes
+//Requires: caml_jsstring_of_string
 function caml_pure_js_expr (s){
   js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
-  return eval(s.toString());}
+  return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_object (object_literal)
-//Requires: MlBytes
+//Requires: caml_jsstring_of_string
 function caml_js_object (a) {
   var o = {};
   for (var i = 1; i < a.length; i++) {
     var p = a[i];
-    o[p[1].toString()] = p[2];
+    o[caml_jsstring_of_string(p[1])] = p[2];
   }
   return o;
 }

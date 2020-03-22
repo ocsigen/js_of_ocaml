@@ -22,6 +22,7 @@ open Util
 let%expect_test _ =
   let program =
     compile_and_parse
+      ~flags:[ "--enable"; "use-js-string" ]
       {|
     type r = {x: int; y: string}
     let ex = {x = 5; y = "hello"} ;;
@@ -41,7 +42,36 @@ let%expect_test _ =
   print_var_decl program "symbol_op";
   [%expect
     {|
-    var ex = [0,5,runtime.caml_new_string("hello")];
+    var ex = [0,5,"hello"];
+    var ax = [0,1,2,3,4];
+    var bx = [254,1.,2.,3.,4.];
+    var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
+    var symbol_op = [0,symbol_bind,symbol_map,symbol]; |}]
+
+let%expect_test _ =
+  let program =
+    compile_and_parse
+      ~flags:[ "--disable"; "use-js-string" ]
+      {|
+    type r = {x: int; y: string}
+    let ex = {x = 5; y = "hello"} ;;
+    let ax = [|1;2;3;4|] ;;
+    let bx = [|1.0;2.0;3.0;4.0|] ;;
+    let cx = [|0./.0.;-0./.0.;1./.0.;-1./.0.;0.;-0.|] ;;
+    let (>>=) a b = a * b
+    let (>>|) a b = a + b
+    let (>>?=) a b = a / b
+    let symbol_op = (>>=), (>>|), (>>?=);;
+    |}
+  in
+  print_var_decl program "ex";
+  print_var_decl program "ax";
+  print_var_decl program "bx";
+  print_var_decl program "cx";
+  print_var_decl program "symbol_op";
+  [%expect
+    {|
+    var ex = [0,5,runtime.caml_string_of_jsbytes("hello")];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];

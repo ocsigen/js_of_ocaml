@@ -1,9 +1,9 @@
 ///////// BIGSTRING
 
 //Provides: caml_hash_mix_bigstring
-//Requires: caml_hash_mix_string_arr
+//Requires: caml_hash_mix_bytes_arr
 function caml_hash_mix_bigstring(h, bs) {
-  return caml_hash_mix_string_arr(h,bs.data);
+  return caml_hash_mix_bytes_arr(h,bs.data);
 }
 
 //Provides: bigstring_to_array_buffer mutable
