@@ -23,12 +23,12 @@
            ../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/deriving_Json_lexer.cmi)
   (action  (run %{exe:main.bc} %{dep:gen.mlt})))
 
-(rule
-   (alias   runtest)
+(alias
+   (name   runtest)
 ;; (package js_of_ocaml-ppx)
    (action (diff ppx.mlt ppx.mlt.corrected)))
 
-(rule
-   (alias   runtest)
+(alias
+   (name   runtest)
 ;; (package js_of_ocaml-ppx)
    (action (diff gen.mlt gen.mlt.corrected)))

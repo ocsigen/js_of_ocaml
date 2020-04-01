@@ -8,7 +8,7 @@
   (targets ppx.mlt.corrected)
   (action  (run %{exe:main.bc} %{dep:ppx.mlt})))
 
-(rule
-   (alias   runtest)
+(alias
+   (name   runtest)
    (package js_of_ocaml-ppx)
    (action (diff ppx.mlt ppx.mlt.corrected)))

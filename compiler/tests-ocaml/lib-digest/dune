@@ -9,7 +9,7 @@
   (deps md5.bc.js)
   (action (with-stdout-to %{target} (run node ./md5.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps md5.reference md5.referencejs)
   (action (diff md5.reference md5.referencejs)))

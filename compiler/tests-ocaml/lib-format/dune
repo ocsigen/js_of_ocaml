@@ -9,8 +9,8 @@
   (deps pr6824.bc.js)
   (action (with-stdout-to %{target} (run node ./pr6824.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps pr6824.reference pr6824.referencejs)
   (action (diff pr6824.reference pr6824.referencejs)))
 
@@ -19,8 +19,8 @@
   (deps print_if_newline.bc.js)
   (action (with-stdout-to %{target} (run node ./print_if_newline.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps print_if_newline.reference print_if_newline.referencejs)
   (action (diff print_if_newline.reference print_if_newline.referencejs)))
 
@@ -29,7 +29,7 @@
   (deps pp_print_custom_break.bc.js)
   (action (with-stdout-to %{target} (run node ./pp_print_custom_break.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps pp_print_custom_break.reference pp_print_custom_break.referencejs)
   (action (diff pp_print_custom_break.reference pp_print_custom_break.referencejs)))

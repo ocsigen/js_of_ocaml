@@ -9,8 +9,8 @@
   (deps testmap.bc.js)
   (action (with-stdout-to %{target} (run node ./testmap.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps testmap.reference testmap.referencejs)
   (action (diff testmap.reference testmap.referencejs)))
 
@@ -19,7 +19,7 @@
   (deps testset.bc.js)
   (action (with-stdout-to %{target} (run node ./testset.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps testset.reference testset.referencejs)
   (action (diff testset.reference testset.referencejs)))

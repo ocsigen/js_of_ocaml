@@ -9,8 +9,8 @@
   (deps suffix.bc.js)
   (action (with-stdout-to %{target} (run node ./suffix.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps suffix.reference suffix.referencejs)
   (action (diff suffix.reference suffix.referencejs)))
 
@@ -19,7 +19,7 @@
   (deps extension.bc.js)
   (action (with-stdout-to %{target} (run node ./extension.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps extension.reference extension.referencejs)
   (action (diff extension.reference extension.referencejs)))

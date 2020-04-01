@@ -4,7 +4,7 @@
   (modes js)
 )
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps test_str.bc.js)
   (action (run node ./test_str.bc.js)))

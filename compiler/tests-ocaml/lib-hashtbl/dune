@@ -9,8 +9,8 @@
   (deps hfun.bc.js ../../../LICENSE)
   (action (with-stdout-to %{target} (run node ./hfun.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps hfun.referencejs hfun.reference)
   (action (diff hfun.referencejs hfun.reference)))
 
@@ -19,7 +19,7 @@
   (deps htbl.bc.js ../../../LICENSE)
   (action (with-stdout-to %{target} (run node ./htbl.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps htbl.reference htbl.referencejs)
   (action (diff htbl.reference htbl.referencejs)))
