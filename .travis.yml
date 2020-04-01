@@ -1,12 +1,11 @@
 language: c
-sudo: false
 
 cache:
     directories:
       - $HOME/.opam
       - $HOME/Library/Caches/Homebrew
 
-matrix:
+jobs:
   include:
     - os: linux
       env: OCAML_VERSION=4.02 MODE=opam
