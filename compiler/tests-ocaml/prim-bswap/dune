@@ -9,7 +9,7 @@
   (deps bswap.bc.js)
   (action (with-stdout-to %{target} (run node ./bswap.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps bswap.reference bswap.referencejs)
   (action (diff bswap.reference bswap.referencejs)))

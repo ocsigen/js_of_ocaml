@@ -1,7 +1,8 @@
 (library
  (name jsoo_testsuite)
  (libraries unix)
- (foreign_stubs (language c)(names bigarray_stubs))
+;; (foreign_stubs (language c)(names bigarray_stubs))
+ (c_names bigarray_stubs)
  (inline_tests
   (flags -allow-output-patterns)
   (modes js native))

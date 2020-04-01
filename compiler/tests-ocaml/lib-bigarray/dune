@@ -10,8 +10,8 @@
   (deps bigarrays.bc.js)
   (action (with-stdout-to %{target} (run node ./bigarrays.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps bigarrays.reference bigarrays.referencejs)
   (action (diff bigarrays.reference bigarrays.referencejs)))
 
@@ -20,8 +20,8 @@
   (deps change_layout.bc.js)
   (action (with-stdout-to %{target} (run node ./change_layout.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps change_layout.reference change_layout.referencejs)
   (action (diff change_layout.reference change_layout.referencejs)))
 
@@ -30,8 +30,8 @@
   (deps fftba.bc.js)
   (action (with-stdout-to %{target} (run node ./fftba.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps fftba.reference fftba.referencejs)
   (action (diff fftba.reference fftba.referencejs)))
 
@@ -40,8 +40,8 @@
   (deps pr5115.bc.js)
   (action (with-stdout-to %{target} (run node ./pr5115.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps pr5115.reference pr5115.referencejs)
   (action (diff pr5115.reference pr5115.referencejs)))
 
@@ -50,7 +50,7 @@
   (deps weak_bigarray.bc.js)
   (action (with-stdout-to %{target} (run node ./weak_bigarray.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps weak_bigarray.reference weak_bigarray.referencejs)
   (action (diff weak_bigarray.reference weak_bigarray.referencejs)))

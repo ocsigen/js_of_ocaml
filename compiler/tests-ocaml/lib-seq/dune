@@ -9,7 +9,7 @@
   (deps test.bc.js)
   (action (with-stdout-to %{target} (run node ./test.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps test.reference test.referencejs)
   (action (diff test.reference test.referencejs)))

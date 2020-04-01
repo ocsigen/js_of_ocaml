@@ -9,7 +9,7 @@
   (deps rand.bc.js)
   (action (with-stdout-to %{target} (run node ./rand.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps rand.reference rand.referencejs)
   (action (diff rand.reference rand.referencejs)))

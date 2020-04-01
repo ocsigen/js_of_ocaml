@@ -9,8 +9,8 @@
   (deps apply.bc.js)
   (action (with-stdout-to %{target} (run node ./apply.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps apply.reference apply.referencejs)
   (action (diff apply.reference apply.referencejs)))
 
@@ -19,7 +19,7 @@
   (deps revapply.bc.js)
   (action (with-stdout-to %{target} (run node ./revapply.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps revapply.reference revapply.referencejs)
   (action (diff revapply.reference revapply.referencejs)))

@@ -9,7 +9,7 @@
   (deps test_string.bc.js)
   (action (with-stdout-to %{target} (run node ./test_string.bc.js))))
 
-(rule
-  (alias runtest)
+(alias
+  (name runtest)
   (deps test_string.reference test_string.referencejs)
   (action (diff test_string.reference test_string.referencejs)))
