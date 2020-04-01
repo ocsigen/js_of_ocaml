@@ -56,7 +56,7 @@ case $MODE in
         opam install -y cohttp-lwt-unix menhir ppx_expect yojson sexplib graphics odoc
         opam upgrade --yes
         dune build @runtest @default @ocsigen-doc -j 8
-        opam install -y ocamlformat.0.12
+        opam install -y ocamlformat.0.13.0
         make fmt
         ;;
 esac
