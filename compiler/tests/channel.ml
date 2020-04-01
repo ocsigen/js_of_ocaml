@@ -107,6 +107,7 @@ let%expect_test _ =
       marshal_out_segment filename chan [ "output"; "data" ];
       marshal_out_segment filename chan [ "more"; "stuff" ]
   end in
+  let open! M in
   [%expect {|
     start=4
     start=59 |}]

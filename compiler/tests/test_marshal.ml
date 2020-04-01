@@ -80,6 +80,7 @@ let%expect_test _ =
       let s = Marshal.to_string l [] in
       Format.printf "%d\n%S\n%!" (String.length s) s
   end in
+  let open! M in
   [%expect
     {|
     24
