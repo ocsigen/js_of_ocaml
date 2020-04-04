@@ -313,7 +313,6 @@
     cst_true$0 = "true",
     caml_atomic_cas = runtime.caml_atomic_cas,
     caml_atomic_load = runtime.caml_atomic_load,
-    caml_blit_string = runtime.caml_blit_string,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_float_of_string = runtime.caml_float_of_string,
     caml_int64_float_of_bits = runtime.caml_int64_float_of_bits,
@@ -334,6 +333,7 @@
     caml_ml_set_binary_mode = runtime.caml_ml_set_binary_mode,
     caml_ml_set_channel_name = runtime.caml_ml_set_channel_name,
     caml_ml_string_length = runtime.caml_ml_string_length,
+    caml_string_concat = runtime.caml_string_concat,
     caml_string_of_bytes = runtime.caml_string_of_bytes,
     caml_sys_open = runtime.caml_sys_open,
     caml_wrap_exception = runtime.caml_wrap_exception;
@@ -349,8 +349,6 @@
    }
    var
     global_data = runtime.caml_get_global_data(),
-    cst$0 = "%,",
-    cst = ".",
     CamlinternalFormatBasics = global_data.CamlinternalFormatBasics,
     Invalid_argument = global_data.Invalid_argument,
     Failure = global_data.Failure,
@@ -411,24 +409,13 @@
      /*<<stdlib.ml:190:2>>*/ epsilon_float =
        /*<<stdlib.ml:190:2>>*/ caml_int64_float_of_bits
        (runtime.caml_int64_create_lo_mi_hi(0, 0, 15536)),
+    symbol_concat = caml_string_concat,
     cst_char_of_int = "char_of_int",
     cst_true = cst_true$0,
     cst_false = cst_false$0,
     cst_bool_of_string = "bool_of_string",
     _a_ = [0, 1],
     _b_ = [0, 0];
-   function symbol(s1, s2){
-     /*<<stdlib.ml:213:2>>*/ var
-     l1 = caml_ml_string_length(s1),
-     l2 = caml_ml_string_length(s2),
-      /*<<stdlib.ml:214:10>>*/ s =
-        /*<<stdlib.ml:214:10>>*/ caml_create_bytes(l1 + l2 | 0);
-     /*<<stdlib.ml:215:2>>*/  /*<<stdlib.ml:215:2>>*/ caml_blit_string
-     (s1, 0, s, 0, l1);
-     /*<<stdlib.ml:216:2>>*/  /*<<stdlib.ml:216:2>>*/ caml_blit_string
-     (s2, 0, s, l1, l2);
-    return caml_string_of_bytes(s);
-    /*<<stdlib.ml:217:26>>*/ }
    function char_of_int(n){
      /*<<stdlib.ml:224:2>>*/ if(0 <= n && 255 >= n)
       /*<<stdlib.ml:224:58>>*/ return n;
@@ -453,19 +440,19 @@
    function int_of_string_opt(s){
      /*<<stdlib.ml:272:2>>*/ try{
       /*<<stdlib.ml:272:6>>*/  /*<<stdlib.ml:272:6>>*/ var
-      _x_ = [0,  /*<<stdlib.ml:272:11>>*/ caml_int_of_string(s)];
-      /*<<stdlib.ml:272:6>>*/ return _x_;
+      _w_ = [0,  /*<<stdlib.ml:272:11>>*/ caml_int_of_string(s)];
+      /*<<stdlib.ml:272:6>>*/ return _w_;
     }
-    catch(_y_){
-     var _w_ = caml_wrap_exception(_y_);
-     if(_w_[1] === Failure)  /*<<stdlib.ml:273:20>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_w_, 0);
+    catch(_x_){
+     var _v_ = caml_wrap_exception(_x_);
+     if(_v_[1] === Failure)  /*<<stdlib.ml:273:20>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_v_, 0);
     }
     /*<<stdlib.ml:273:24>>*/ }
    function valid_float_lexem(s){
      /*<<stdlib.ml:278:2>>*/ var l = caml_ml_string_length(s), i = 0;
      /*<<stdlib.ml:280:4>>*/ for(;;){
-     if(l <= i)  /*<<stdlib.ml:280:19>>*/ return symbol(s, cst);
+     if(l <= i)  /*<<stdlib.ml:280:19>>*/ return s + ".";
       /*<<stdlib.ml:281:10>>*/  /*<<stdlib.ml:281:10>>*/ var
       match =  /*<<stdlib.ml:281:10>>*/ runtime.caml_string_get(s, i);
      a:
@@ -484,20 +471,20 @@
    function float_of_string_opt(s){
      /*<<stdlib.ml:293:2>>*/ try{
       /*<<stdlib.ml:293:6>>*/  /*<<stdlib.ml:293:6>>*/ var
-      _u_ = [0,  /*<<stdlib.ml:293:11>>*/ caml_float_of_string(s)];
-      /*<<stdlib.ml:293:6>>*/ return _u_;
+      _t_ = [0,  /*<<stdlib.ml:293:11>>*/ caml_float_of_string(s)];
+      /*<<stdlib.ml:293:6>>*/ return _t_;
     }
-    catch(_v_){
-     var _t_ = caml_wrap_exception(_v_);
-     if(_t_[1] === Failure)  /*<<stdlib.ml:294:20>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_t_, 0);
+    catch(_u_){
+     var _s_ = caml_wrap_exception(_u_);
+     if(_s_[1] === Failure)  /*<<stdlib.ml:294:20>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_s_, 0);
     }
     /*<<stdlib.ml:294:24>>*/ }
-   function symbol$0(l1, l2){
+   function symbol(l1, l2){
      /*<<stdlib.ml:299:2>>*/ if(! l1)  /*<<stdlib.ml:300:10>>*/ return l2;
-    var _r_ = l1[2], h1 = l1[1];
-    if(! _r_)  /*<<stdlib.ml:301:16>>*/ return [0, h1, l2];
-    var match = _r_[2], h2 = _r_[1];
+    var _q_ = l1[2], h1 = l1[1];
+    if(! _q_)  /*<<stdlib.ml:301:16>>*/ return [0, h1, l2];
+    var match = _q_[2], h2 = _q_[1];
     if(! match)  /*<<stdlib.ml:302:22>>*/ return [0, h1, [0, h2, l2]];
      /*<<stdlib.ml:303:40>>*/ var
      tl = match[2],
@@ -508,9 +495,9 @@
      l1$0 = tl;
      /*<<stdlib.ml:299:2>>*/ for(;;){
      if(l1$0){
-      var _s_ = l1$0[2], h1$0 = l1$0[1];
-      if(_s_){
-       var match$0 = _s_[2], h2$0 = _s_[1];
+      var _r_ = l1$0[2], h1$0 = l1$0[1];
+      if(_r_){
+       var match$0 = _r_[2], h2$0 = _r_[1];
        if(match$0){
          /*<<stdlib.ml:303:40>>*/ var
          tl$0 = match$0[2],
@@ -571,9 +558,9 @@
       /*<<stdlib.ml:350:8>>*/ try{
        /*<<stdlib.ml:351:12>>*/  /*<<stdlib.ml:351:12>>*/ caml_ml_flush(a);
      }
-     catch(_q_){
-      var _p_ = caml_wrap_exception(_q_);
-      if(_p_[1] !== Sys_error) throw caml_maybe_attach_backtrace(_p_, 0);
+     catch(_p_){
+      var _o_ = caml_wrap_exception(_p_);
+      if(_o_[1] !== Sys_error) throw caml_maybe_attach_backtrace(_o_, 0);
      }
      param$0 = l;
     }
@@ -613,13 +600,13 @@
      /*<<stdlib.ml:394:2>>*/ try{
       /*<<stdlib.ml:394:7>>*/  /*<<stdlib.ml:394:7>>*/ caml_ml_flush(oc);
     }
-    catch(_o_){}
+    catch(_n_){}
      /*<<stdlib.ml:395:2>>*/ try{
       /*<<stdlib.ml:395:7>>*/  /*<<stdlib.ml:395:7>>*/ var
-      _m_ =  /*<<stdlib.ml:395:7>>*/ caml_ml_close_channel(oc);
-      /*<<stdlib.ml:395:7>>*/ return _m_;
+      _l_ =  /*<<stdlib.ml:395:7>>*/ caml_ml_close_channel(oc);
+      /*<<stdlib.ml:395:7>>*/ return _l_;
     }
-    catch(_n_){ /*<<stdlib.ml:395:38>>*/ return 0;}
+    catch(_m_){ /*<<stdlib.ml:395:38>>*/ return 0;}
     /*<<stdlib.ml:395:41>>*/ }
    function open_in_gen(mode, perm, name){
      /*<<stdlib.ml:405:2>>*/  /*<<stdlib.ml:405:10>>*/ var
@@ -695,7 +682,7 @@
         /*<<stdlib.ml:456:14>>*/ throw  /*<<stdlib.ml:456:14>>*/ caml_maybe_attach_backtrace
               (End_of_file, 1);
       var
-       _l_ =
+       _k_ =
          build_result
           ( /*<<stdlib.ml:457:27>>*/ caml_create_bytes(len), len, accu);
      }
@@ -721,25 +708,25 @@
       if(accu)
        var
         len$0 = (len + n | 0) - 1 | 0,
-        _l_ =
+        _k_ =
           build_result
            ( /*<<stdlib.ml:465:27>>*/ caml_create_bytes(len$0),
             len$0,
             [0, res, accu]);
       else
-       var _l_ = res;
+       var _k_ = res;
      }
       /*<<stdlib.ml:471:28>>*/ return  /*<<stdlib.ml:471:28>>*/ caml_string_of_bytes
-             (_l_);
+             (_k_);
     }
     /*<<stdlib.ml:471:39>>*/ }
    function close_in_noerr(ic){
      /*<<stdlib.ml:480:24>>*/ try{
       /*<<stdlib.ml:480:29>>*/  /*<<stdlib.ml:480:29>>*/ var
-      _j_ =  /*<<stdlib.ml:480:29>>*/ caml_ml_close_channel(ic);
-      /*<<stdlib.ml:480:29>>*/ return _j_;
+      _i_ =  /*<<stdlib.ml:480:29>>*/ caml_ml_close_channel(ic);
+      /*<<stdlib.ml:480:29>>*/ return _i_;
     }
-    catch(_k_){ /*<<stdlib.ml:480:51>>*/ return 0;}
+    catch(_j_){ /*<<stdlib.ml:480:51>>*/ return 0;}
     /*<<stdlib.ml:480:54>>*/ }
    function print_char(c){
      /*<<stdlib.ml:486:19>>*/ return  /*<<stdlib.ml:486:19>>*/ caml_ml_output_char
@@ -821,17 +808,12 @@
     var str = param[2];
      /*<<stdlib.ml:538:44>>*/ return str;
    }
-   function symbol$1(param, _h_){
-     /*<<stdlib.ml:546:10>>*/ var
-     str2 = _h_[2],
-     fmt2 = _h_[1],
-     str1 = param[2],
-     fmt1 = param[1],
-      /*<<stdlib.ml:546:10>>*/ _i_ = symbol(str1, symbol(cst$0, str2));
+   function symbol$0(param, _h_){
+    var str2 = _h_[2], fmt2 = _h_[1], str1 = param[2], fmt1 = param[1];
      /*<<stdlib.ml:545:2>>*/ return [0,
              /*<<stdlib.ml:545:10>>*/ caml_call2
              (CamlinternalFormatBasics[3], fmt1, fmt2),
-            _i_];
+            str1 + "%," + str2];
    }
     /*<<stdlib.ml:559:20>>*/  /*<<stdlib.ml:559:20>>*/ var
     exit_function = [0, flush_all];
@@ -904,7 +886,7 @@
        max_float,
        min_float,
        epsilon_float,
-       symbol,
+       symbol_concat,
        char_of_int,
        string_of_bool,
        bool_of_string_opt,
@@ -913,7 +895,7 @@
        int_of_string_opt,
        string_of_float,
        float_of_string_opt,
-       symbol$0,
+       symbol,
        stdin,
        stdout,
        stderr,
@@ -980,7 +962,7 @@
         runtime.caml_ml_pos_in_64,
         caml_ml_channel_size_64],
        string_of_format,
-       symbol$1,
+       symbol$0,
        exit,
        at_exit,
        valid_float_lexem,

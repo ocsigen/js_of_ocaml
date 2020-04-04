@@ -1278,6 +1278,16 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (py, cy), queue = access_queue' ~ctx queue b in
             let prop = or_p px py in
             bool (J.EBin (J.EqEq, cx, cy)), prop, queue
+        | Extern "caml_string_concat", [ a; b ] when Config.Flag.use_js_string () ->
+            let (pa, ca), queue = access_queue' ~ctx queue a in
+            let (pb, cb), queue = access_queue' ~ctx queue b in
+            let prop = or_p pa pb in
+            let rec add ca cb =
+              match cb with
+              | J.EBin (J.Plus, cb1, cb2) -> J.EBin (J.Plus, add ca cb1, cb2)
+              | _ -> J.EBin (J.Plus, ca, cb)
+            in
+            add ca cb, prop, queue
         | Extern name, l -> (
             let name = Primitive.resolve name in
             match internal_prim name with
