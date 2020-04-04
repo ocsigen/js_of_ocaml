@@ -438,6 +438,14 @@ MlBytes.prototype.slice = function (){
   return new MlBytes(this.t,content,this.l);
 }
 
+//Provides: caml_bytes_concat
+//Requires: caml_convert_string_to_bytes, MlBytes
+function caml_bytes_concat(s1,s2){
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return new MlBytes(s1.t,s1.c+s2.c,s1.l+s2.l)
+}
+
 //Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_subarray_to_jsbytes
 function caml_convert_string_to_bytes (s) {
@@ -644,6 +652,15 @@ function caml_blit_string(a,b,c,d,e) {
 
 //Provides: caml_ml_bytes_length const
 function caml_ml_bytes_length(s) { return s.l }
+
+//Provides: caml_string_concat
+//If: js-string
+function caml_string_concat(a,b) { return a + b }
+
+//Provides: caml_string_concat
+//Requires: caml_bytes_concat
+//If: !js-string
+function caml_string_concat(a,b) { return caml_bytes_concat(a,b) }
 
 //Provides: caml_string_unsafe_get const
 //If: js-string

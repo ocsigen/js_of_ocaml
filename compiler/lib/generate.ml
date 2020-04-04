@@ -1440,6 +1440,11 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             let prim_kind = kind (Primitive.kind name) in
             ecall prim [] loc, prim_kind, queue
+        | Extern "%string_concat", [ a; b ] when Config.Flag.use_js_string () ->
+            let (_pa, ca), queue = access_queue' ~ctx queue a in
+            let (_pb, cb), queue = access_queue' ~ctx queue b in
+            let e = J.EBin (J.Plus, ca, cb) in
+            e, const_p, queue
         | Extern name, l -> (
             let name = Primitive.resolve name in
             match internal_prim name with
@@ -2129,6 +2134,7 @@ let init () =
     [ "%int_mul", "caml_mul"
     ; "%int_div", "caml_div"
     ; "%int_mod", "caml_mod"
+    ; "%string_concat", "caml_string_concat"
     ; "caml_int32_neg", "%int_neg"
     ; "caml_int32_add", "%int_add"
     ; "caml_int32_sub", "%int_sub"

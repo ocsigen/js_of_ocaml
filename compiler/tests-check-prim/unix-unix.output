@@ -271,8 +271,10 @@ caml_marshal_constants
 From +mlBytes.js:
 caml_array_of_bytes
 caml_array_of_string
+caml_bytes_concat
 caml_bytes_of_utf16_jsstring
 caml_new_string
+caml_string_concat
 caml_string_set16
 caml_string_set32
 caml_string_set64
