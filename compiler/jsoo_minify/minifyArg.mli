@@ -17,32 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_compiler
-
 type t =
-  { common : CommonArg.t
-  ; (* compile option *)
-    profile : Driver.profile option
-  ; source_map : (string option * Source_map.t) option
-  ; runtime_files : string list
-  ; runtime_only : bool
-  ; output_file : [ `Name of string | `Stdout ] * bool
-  ; input_file : string option
-  ; params : (string * string) list
-  ; static_env : (string * string) list
-  ; wrap_with_fun : string option
-  ; (* toplevel *)
-    dynlink : bool
-  ; linkall : bool
-  ; toplevel : bool
-  ; export_file : string option
-  ; nocmis : bool
-  ; (* filesystem *)
-    include_dir : string list
-  ; fs_files : string list
-  ; fs_output : string option
-  ; fs_external : bool
-  ; keep_unit_names : bool
+  { common : Jsoo_compiler_util.CommonArg.t
+  ; (* minify option *)
+    use_stdin : bool
+  ; output_file : string option
+  ; files : string list
   }
 
 val options : t Cmdliner.Term.t

@@ -25,7 +25,7 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 let _ = Sys.catch_break true
 
 let f { MinifyArg.common; output_file; use_stdin; files } =
-  CommonArg.eval common;
+  Jsoo_compiler_util.CommonArg.eval common;
   let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
   let with_output f =
     match output_file with
@@ -40,7 +40,7 @@ let f { MinifyArg.common; output_file; use_stdin; files } =
               then chop_extension (List.hd files) ^ ".min.js"
               else "a.min.js"
         in
-        Util.gen_file file f
+        Jsoo_compiler_util.Util.gen_file file f
   in
   let gen pp =
     let pretty = Config.Flag.pretty () in
@@ -97,7 +97,10 @@ let main = Cmdliner.Term.(pure f $ MinifyArg.options), MinifyArg.info
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main
+    Cmdliner.Term.eval
+      ~catch:false
+      ~argv:(Jsoo_compiler_util.Util.normalize_argv ~warn_:true Sys.argv)
+      main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

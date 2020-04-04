@@ -35,6 +35,7 @@ let f
     ; profile
     ; source_map
     ; runtime_files
+    ; no_runtime
     ; input_file
     ; output_file
     ; params
@@ -53,13 +54,13 @@ let f
     ; keep_unit_names
     } =
   let dynlink = dynlink || toplevel || runtime_only in
-  let custom_header = common.CommonArg.custom_header in
+  let custom_header = common.Jsoo_compiler_util.CommonArg.custom_header in
   let global =
     match wrap_with_fun with
     | Some fun_name -> `Bind_to fun_name
     | None -> `Auto
   in
-  CommonArg.eval common;
+  Jsoo_compiler_util.CommonArg.eval common;
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
@@ -97,6 +98,10 @@ let f
         close_in ic;
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
+  (if not no_runtime
+  then
+    let runtimes = Linker.parse_string Jsoo_runtime.runtime in
+    List.iter runtimes ~f:(Linker.load_fragment ~filename:"<runtime.js>"));
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
@@ -159,7 +164,7 @@ let f
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
-        Util.gen_file file (fun chan ->
+        Jsoo_compiler_util.Util.gen_file file (fun chan ->
             let instr =
               List.concat
                 [ fs_instr1
@@ -181,7 +186,7 @@ let f
               one.debug
               code);
         Option.iter fs_output ~f:(fun file ->
-            Util.gen_file file (fun chan ->
+            Jsoo_compiler_util.Util.gen_file file (fun chan ->
                 let instr = fs_instr2 in
                 let code = Code.prepend Code.empty instr in
                 let pfs_fmt = Pretty_print.to_out_channel chan in
@@ -280,7 +285,10 @@ let main = Cmdliner.Term.(pure f $ CompileArg.options), CompileArg.info
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main
+    Cmdliner.Term.eval
+      ~catch:false
+      ~argv:(Jsoo_compiler_util.Util.normalize_argv ~warn_:true Sys.argv)
+      main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

@@ -28,8 +28,6 @@ let prefix = ref "/static/cmis"
 
 let output = ref None
 
-let runtime = ref true
-
 let usage () =
   Format.eprintf "Usage: jsoo_mkcmis [options] [find packages] @.";
   Format.eprintf " -verbose@.";
@@ -48,9 +46,7 @@ let rec scan_args acc = function
   | "-o" :: name :: xs ->
       output := Some name;
       scan_args acc xs
-  | ("--no-runtime" | "--noruntime") :: xs ->
-      runtime := false;
-      scan_args acc xs
+  | ("--no-runtime" | "--noruntime") :: xs -> scan_args acc xs
   | ("--help" | "-help" | "-h") :: _ -> usage ()
   | x :: xs -> scan_args (x :: acc) xs
   | [] -> List.rev acc
@@ -59,7 +55,6 @@ let args =
   let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let js, args = List.partition (fun s -> Filename.check_suffix s ".js") args in
-  let js = if !runtime then "+runtime.js" :: js else js in
   let all = Jsoo_common.cmis args in
   let instr =
     List.map

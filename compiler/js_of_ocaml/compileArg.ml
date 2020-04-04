@@ -22,11 +22,12 @@ open Js_of_ocaml_compiler
 open Cmdliner
 
 type t =
-  { common : CommonArg.t
+  { common : Jsoo_compiler_util.CommonArg.t
   ; (* compile option *)
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
+  ; no_runtime : bool
   ; runtime_only : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option
@@ -79,7 +80,7 @@ let options =
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let noruntime =
-    let doc = "Do not include the standard runtime." in
+    let doc = "[DEPRECATED] Do not include the standard runtime." in
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
   let runtime_only =
@@ -205,7 +206,7 @@ let options =
       fs_external
       nocmis
       profile
-      noruntime
+      no_runtime
       runtime_only
       no_sourcemap
       sourcemap
@@ -218,9 +219,6 @@ let options =
       keep_unit_names =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
-    let runtime_files =
-      if noruntime then runtime_files else "+runtime.js" :: runtime_files
-    in
     let runtime_files =
       if runtime_only && Filename.check_suffix input_file ".js"
       then runtime_files @ [ input_file ]
@@ -287,6 +285,7 @@ let options =
       ; export_file
       ; include_dir
       ; runtime_files
+      ; no_runtime
       ; runtime_only
       ; fs_files
       ; fs_output
@@ -301,7 +300,7 @@ let options =
   let t =
     Term.(
       pure build_t
-      $ CommonArg.t
+      $ Jsoo_compiler_util.CommonArg.t
       $ set_param
       $ set_env
       $ dynlink
