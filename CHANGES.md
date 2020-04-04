@@ -8,6 +8,7 @@
   edges with es6.
 * Compiler: codegen: specialize string equality
 * Compiler: codegen: more specialization for %int_add, %int_sub
+* Compiler: recognize and optimize String.concat
 
 ## Bug fixes
 

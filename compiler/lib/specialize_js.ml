@@ -147,10 +147,48 @@ let specialize_instr info i =
       | _ -> i)
   | _ -> i
 
+let equal2 a b = Code.Var.equal a b
+
+let equal3 a b c = Code.Var.equal a b && Code.Var.equal b c
+
+let equal4 a b c d = Code.Var.equal a b && Code.Var.equal b c && Code.Var.equal c d
+
 let specialize_instrs info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
+    | [ ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
+      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
+      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
+      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
+      ; ( Let
+            ( u1
+            , Prim
+                ( Extern "caml_blit_string"
+                , [ Pv a'; Pc (Int 0l); Pv bytes'; Pc (Int 0l); Pv alen'' ] ) )
+        , _ )
+      ; ( Let
+            ( u2
+            , Prim
+                ( Extern "caml_blit_string"
+                , [ Pv b'; Pc (Int 0l); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+        , _ )
+      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
+      ]
+      when equal2 a a'
+           && equal2 b b'
+           && equal2 len len'
+           && equal4 alen alen' alen'' alen'''
+           && equal3 blen blen' blen''
+           && equal4 bytes bytes' bytes'' bytes''' ->
+        [ len1
+        ; len2
+        ; len3
+        ; Let (u1, Constant (Int 0l)), No
+        ; Let (u2, Constant (Int 0l)), No
+        ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
+        ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ])), No
+        ]
     | (i, loc) :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
