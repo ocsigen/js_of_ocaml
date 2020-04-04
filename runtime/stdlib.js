@@ -1136,7 +1136,6 @@ function caml_sys_const_ostype_win32 () { return 0; }
 //Provides: caml_sys_system_command
 function caml_sys_system_command(cmd){
   var cmd = cmd.toString();
-  joo_global_object.console.log(cmd);
   if (typeof require != "undefined"
       && require('child_process')
       && require('child_process').execSync) {
