@@ -1,5 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2014 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,8 +17,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val normalize_argv : ?warn_:bool -> string array -> string array
-(** [normalize_argv argv] returns a new array of arguments where
-   '-long-option' are replaced by '--long-option' *)
+type t =
+  { common : Jsoo_cmdline.Arg.t
+  ; (* minify option *)
+    use_stdin : bool
+  ; output_file : string option
+  ; files : string list
+  }
 
-val gen_file : string -> (out_channel -> unit) -> unit
+val options : t Cmdliner.Term.t
+
+val info : Cmdliner.Term.info

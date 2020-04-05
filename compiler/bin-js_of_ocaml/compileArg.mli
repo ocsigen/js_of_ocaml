@@ -20,7 +20,7 @@
 open Js_of_ocaml_compiler
 
 type t =
-  { common : Jsoo_compiler_util.CommonArg.t
+  { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option

@@ -98,7 +98,7 @@ function caml_create_file_extern(name,content){
       ~paths:include_dirs
   in
   let code = Code.prepend Code.empty instr in
-  Jsoo_compiler_util.Util.gen_file output_file (fun chan ->
+  Filename.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
       Driver.f
         ~standalone:true
@@ -114,7 +114,7 @@ let _ =
   try
     Cmdliner.Term.eval
       ~catch:false
-      ~argv:(Jsoo_compiler_util.Util.normalize_argv ~warn_:true Sys.argv)
+      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
       main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->

@@ -3,7 +3,7 @@
   (public_name js_of_ocaml)
   (package js_of_ocaml-compiler)
   (libraries
-    jsoo_compiler_util
+    jsoo_cmdline
     js_of_ocaml-compiler
     cmdliner
     compiler-libs.common

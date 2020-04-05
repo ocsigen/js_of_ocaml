@@ -553,3 +553,32 @@ module Array = struct
     done;
     !r
 end
+
+module Filename = struct
+  include Filename
+
+  let temp_file_name =
+    (* Inlined unavailable Filename.temp_file_name. Filename.temp_file gives
+       us incorrect permissions. https://github.com/ocsigen/js_of_ocaml/issues/182 *)
+    let prng = lazy (Random.State.make_self_init ()) in
+    fun ~temp_dir prefix suffix ->
+      let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
+      Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
+  let gen_file file f =
+    let f_tmp =
+      temp_file_name ~temp_dir:(Filename.dirname file) (Filename.basename file) ".tmp"
+    in
+    try
+      let ch = open_out_bin f_tmp in
+      (try f ch
+       with e ->
+         close_out ch;
+         raise e);
+      close_out ch;
+      (try Sys.remove file with Sys_error _ -> ());
+      Sys.rename f_tmp file
+    with exc ->
+      Sys.remove f_tmp;
+      raise exc
+end

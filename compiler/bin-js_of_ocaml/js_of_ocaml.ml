@@ -54,13 +54,13 @@ let f
     ; keep_unit_names
     } =
   let dynlink = dynlink || toplevel || runtime_only in
-  let custom_header = common.Jsoo_compiler_util.CommonArg.custom_header in
+  let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   let global =
     match wrap_with_fun with
     | Some fun_name -> `Bind_to fun_name
     | None -> `Auto
   in
-  Jsoo_compiler_util.CommonArg.eval common;
+  Jsoo_cmdline.Arg.eval common;
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
@@ -164,7 +164,7 @@ let f
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
-        Jsoo_compiler_util.Util.gen_file file (fun chan ->
+        Filename.gen_file file (fun chan ->
             let instr =
               List.concat
                 [ fs_instr1
@@ -186,7 +186,7 @@ let f
               one.debug
               code);
         Option.iter fs_output ~f:(fun file ->
-            Jsoo_compiler_util.Util.gen_file file (fun chan ->
+            Filename.gen_file file (fun chan ->
                 let instr = fs_instr2 in
                 let code = Code.prepend Code.empty instr in
                 let pfs_fmt = Pretty_print.to_out_channel chan in
@@ -287,7 +287,7 @@ let _ =
   try
     Cmdliner.Term.eval
       ~catch:false
-      ~argv:(Jsoo_compiler_util.Util.normalize_argv ~warn_:true Sys.argv)
+      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
       main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
