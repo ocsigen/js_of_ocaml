@@ -137,7 +137,7 @@ end = struct
 
   include T
 
-  let printer = VarPrinter.create VarPrinter.Alphabet.javascript
+  let printer = Var_printer.create Var_printer.Alphabet.javascript
 
   let locations = Hashtbl.create 17
 
@@ -146,15 +146,15 @@ end = struct
   let reset () =
     last_var := 0;
     Hashtbl.clear locations;
-    VarPrinter.reset printer
+    Var_printer.reset printer
 
-  let to_string ?origin i = VarPrinter.to_string printer ?origin i
+  let to_string ?origin i = Var_printer.to_string printer ?origin i
 
   let print f x = Format.fprintf f "v%d" x
 
   (* Format.fprintf f "%s" (to_string x) *)
 
-  let name i nm = VarPrinter.name printer i nm
+  let name i nm = Var_printer.name printer i nm
 
   let loc i pi = Hashtbl.add locations i pi
 
@@ -179,17 +179,17 @@ end = struct
 
   let of_idx v = v
 
-  let get_name i = VarPrinter.get_name printer i
+  let get_name i = Var_printer.get_name printer i
 
   let propagate_name i j =
-    VarPrinter.propagate_name printer i j;
+    Var_printer.propagate_name printer i j;
     match get_loc i with
     | None -> ()
     | Some l -> loc j l
 
-  let set_pretty b = VarPrinter.set_pretty printer b
+  let set_pretty b = Var_printer.set_pretty printer b
 
-  let set_stable b = VarPrinter.set_stable printer b
+  let set_stable b = Var_printer.set_stable printer b
 
   let fork o =
     let n = fresh () in

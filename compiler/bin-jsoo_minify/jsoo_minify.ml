@@ -24,7 +24,7 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 
 let _ = Sys.catch_break true
 
-let f { MinifyArg.common; output_file; use_stdin; files } =
+let f { Arg.common; output_file; use_stdin; files } =
   Jsoo_cmdline.Arg.eval common;
   let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
   let with_output f =
@@ -70,7 +70,7 @@ let f { MinifyArg.common; output_file; use_stdin; files } =
     let free = new Js_traverse.free in
     let _pfree = free#program p in
     let toplevel_def = free#get_def_name in
-    let () = VarPrinter.add_reserved (StringSet.elements toplevel_def) in
+    let () = Var_printer.add_reserved (StringSet.elements toplevel_def) in
     let true_ () = true in
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
@@ -92,7 +92,7 @@ let f { MinifyArg.common; output_file; use_stdin; files } =
       let pp = Pretty_print.to_out_channel out_channel in
       gen pp)
 
-let main = Cmdliner.Term.(pure f $ MinifyArg.options), MinifyArg.info
+let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
 
 let _ =
   Timer.init Sys.time;

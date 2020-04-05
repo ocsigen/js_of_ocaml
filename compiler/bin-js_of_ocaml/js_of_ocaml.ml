@@ -31,7 +31,7 @@ let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
 
 let f
-    { CompileArg.common
+    { Arg.common
     ; profile
     ; source_map
     ; runtime_files
@@ -98,10 +98,18 @@ let f
         close_in ic;
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
-  (if not no_runtime
-  then
-    let runtimes = Linker.parse_string Jsoo_runtime.runtime in
-    List.iter runtimes ~f:(Linker.load_fragment ~filename:"<runtime.js>"));
+  let runtime_files =
+    if not no_runtime then "+runtime.js" :: runtime_files else runtime_files
+  in
+  let runtime_files, builtin =
+    List.partition_map runtime_files ~f:(fun name ->
+        match Jsoo_runtime.find name with
+        | Some content -> `Snd (name, content)
+        | None -> `Fst name)
+  in
+  List.iter builtin ~f:(fun (name, content) ->
+      let runtimes = Linker.parse_string content in
+      List.iter runtimes ~f:(Linker.load_fragment ~filename:(Printf.sprintf "<%s>" name)));
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
@@ -125,7 +133,7 @@ let f
     let paths =
       paths @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
     in
-    PseudoFs.f ~prim ~cmis ~files:fs_files ~paths
+    Pseudo_fs.f ~prim ~cmis ~files:fs_files ~paths
   in
   let env_instr () =
     List.map static_env ~f:(fun (k, v) ->
@@ -141,7 +149,7 @@ let f
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
-            ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+            ; (if init_pseudo_fs then [ Pseudo_fs.init () ] else [])
             ; env_instr ()
             ]
         in
@@ -168,7 +176,7 @@ let f
             let instr =
               List.concat
                 [ fs_instr1
-                ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+                ; (if init_pseudo_fs then [ Pseudo_fs.init () ] else [])
                 ; env_instr ()
                 ]
             in
@@ -280,7 +288,7 @@ let f
     close_ic ());
   Debug.stop_profiling ()
 
-let main = Cmdliner.Term.(pure f $ CompileArg.options), CompileArg.info
+let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
 
 let _ =
   Timer.init Sys.time;

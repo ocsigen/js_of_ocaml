@@ -1,4 +1,4 @@
-module Arg = CommonArg
+module Arg = Arg
 open StdLabels
 
 module List = struct

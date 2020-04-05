@@ -20,7 +20,7 @@
 open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
-let f { LinkerArg.output_file; source_map; resolve_sourcemap_url; js_files } =
+let f { Arg.output_file; source_map; resolve_sourcemap_url; js_files } =
   let with_output f =
     match output_file with
     | None -> f stdout
@@ -29,7 +29,7 @@ let f { LinkerArg.output_file; source_map; resolve_sourcemap_url; js_files } =
   with_output (fun output ->
       Link_js.link ~output ~files:js_files ~source_map ~resolve_sourcemap_url)
 
-let main = Cmdliner.Term.(pure f $ LinkerArg.options), LinkerArg.info
+let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
 
 let _ =
   Timer.init Sys.time;

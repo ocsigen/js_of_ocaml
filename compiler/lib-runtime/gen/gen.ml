@@ -15,7 +15,11 @@ let () =
   | _ :: rest ->
       List.iter
         (fun f ->
-          let name = Filename.chop_extension (Filename.basename f) in
+          let name = Filename.basename f in
           let content = read_file f in
-          Printf.printf "let %s = \"%s\"\n" name (String.escaped content))
+          Printf.printf
+            "let %s = Store.register \"%s\" \"%s\"\n"
+            (Filename.chop_extension name)
+            (String.escaped name)
+            (String.escaped content))
         rest

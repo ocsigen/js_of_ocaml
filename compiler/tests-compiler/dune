@@ -4,8 +4,8 @@
  (inline_tests
   (flags -allow-output-patterns)
   (deps
-    (file ../../compiler/js_of_ocaml/js_of_ocaml.exe)
-    (file ../../compiler/jsoo_minify/jsoo_minify.exe)
+    (file ../../compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+    (file ../../compiler/bin-jsoo_minify/jsoo_minify.exe)
   ))
  (preprocess (pps ppx_expect)))
 
