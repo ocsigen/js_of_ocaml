@@ -74,20 +74,25 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
     let tokinfo lexbuf =
       let pi = Parse_info.t_of_lexbuf lines_info lexbuf in
       let pi =
-        match prev with
-        | None -> { pi with Parse_info.fol = Some true }
-        | Some prev ->
-            let prev_pi = Js_token.info_of_tok prev in
-            if prev_pi.Parse_info.line <> pi.Parse_info.line
-            then { pi with Parse_info.fol = Some true }
-            else pi
+        match extra with
+        | None -> pi
+        | Some (file, offset) ->
+            let src = Parse_info.relative_path lines_info file in
+            { pi with
+              Parse_info.src
+            ; name = Some file
+            ; line = pi.Parse_info.line - offset
+            }
       in
-      match extra with
-      | None -> pi
-      | Some (file, offset) ->
-          let src = Parse_info.relative_path lines_info file in
-          { pi with Parse_info.src; name = Some file; line = pi.Parse_info.line - offset }
+      match prev with
+      | None -> { pi with Parse_info.fol = Some true }
+      | Some prev ->
+          let prev_pi = Js_token.info_of_tok prev in
+          if prev_pi.Parse_info.line <> pi.Parse_info.line
+          then { pi with Parse_info.fol = Some true }
+          else pi
     in
+
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
     | Js_token.EOF _ -> List.rev acc

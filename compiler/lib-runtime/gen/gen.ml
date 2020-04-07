@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler.Stdlib
+
 let read_file f =
   try
     let ic = open_in_bin f in
@@ -32,8 +34,14 @@ let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
   | _ :: rest ->
-      List.iter
-        (fun f ->
+      Js_of_ocaml_compiler.Linker.load_files rest;
+      let linkinfos = Js_of_ocaml_compiler.Linker.init () in
+      let prov = Js_of_ocaml_compiler.Linker.get_provided () in
+      let _linkinfos, missing =
+        Js_of_ocaml_compiler.Linker.resolve_deps ~linkall:true linkinfos prov
+      in
+      assert (StringSet.is_empty missing);
+      List.iter rest ~f:(fun f ->
           let name = Filename.basename f in
           let content = read_file f in
           Printf.printf
@@ -41,4 +49,3 @@ let () =
             (Filename.chop_extension name)
             (String.escaped name)
             (String.escaped content))
-        rest

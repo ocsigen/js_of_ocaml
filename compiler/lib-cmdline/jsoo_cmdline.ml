@@ -17,16 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler.Stdlib
 module Arg = Arg
-open StdLabels
-
-module List = struct
-  include List
-
-  let is_empty = function
-    | [] -> true
-    | _ -> false
-end
 
 let normalize_argv ?(warn = fun _ -> ()) a =
   let bad = ref [] in

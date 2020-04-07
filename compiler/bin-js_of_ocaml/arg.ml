@@ -80,7 +80,7 @@ let options =
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let noruntime =
-    let doc = "[DEPRECATED] Do not include the standard runtime." in
+    let doc = "Do not include the standard runtime." in
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
   let runtime_only =

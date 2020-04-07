@@ -1,1 +1,2 @@
-(executable (name gen))
+(executable (name gen)
+  (libraries js_of_ocaml-compiler))
