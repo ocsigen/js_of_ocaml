@@ -104,7 +104,7 @@ module Label = struct
     | L of int
     | S of string
 
-  let printer = VarPrinter.create VarPrinter.Alphabet.javascript
+  let printer = Var_printer.create Var_printer.Alphabet.javascript
 
   let zero = L 0
 
@@ -113,7 +113,7 @@ module Label = struct
     | S _ -> assert false
 
   let to_string = function
-    | L t -> VarPrinter.to_string printer t
+    | L t -> Var_printer.to_string printer t
     | S s -> s
 
   let of_string s = S s

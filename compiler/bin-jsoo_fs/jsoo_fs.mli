@@ -1,4 +1,4 @@
-(* Js_of_ocaml library
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2020 Hugo Heuzard
  *
@@ -16,7 +16,3 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
-open Migrate_parsetree
-
-let () = Driver.run_main ()

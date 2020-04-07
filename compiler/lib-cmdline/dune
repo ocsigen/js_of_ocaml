@@ -1,0 +1,4 @@
+(library
+  (name jsoo_cmdline)
+  (libraries cmdliner js_of_ocaml-compiler)
+)

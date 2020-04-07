@@ -91,14 +91,14 @@ function caml_create_file_extern(name,content){
   let fragments = Linker.parse_string code in
   List.iter fragments ~f:(fun fr -> Linker.load_fragment ~filename:"<dummy>" fr);
   let instr =
-    PseudoFs.f
+    Pseudo_fs.f
       ~prim:`caml_create_file_extern
       ~cmis:StringSet.empty
       ~files
       ~paths:include_dirs
   in
   let code = Code.prepend Code.empty instr in
-  Util.gen_file output_file (fun chan ->
+  Filename.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
       Driver.f
         ~standalone:true
@@ -112,7 +112,10 @@ let main = Cmdliner.Term.(pure f $ options), info
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main
+    Cmdliner.Term.eval
+      ~catch:false
+      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
+      main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

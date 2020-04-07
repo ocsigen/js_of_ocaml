@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2020 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,14 +17,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t =
-  { common : CommonArg.t
-  ; (* minify option *)
-    use_stdin : bool
-  ; output_file : string option
-  ; files : string list
-  }
+open Js_of_ocaml_compiler.Stdlib
+module Arg = Arg
 
-val options : t Cmdliner.Term.t
-
-val info : Cmdliner.Term.info
+let normalize_argv ?(warn = fun _ -> ()) a =
+  let bad = ref [] in
+  let a =
+    Array.map
+      ~f:(fun s ->
+        let size = String.length s in
+        if size <= 2
+        then s
+        else if Char.equal s.[0] '-'
+                && (not (Char.equal s.[1] '-'))
+                && not (Char.equal s.[2] '=')
+        then (
+          bad := s :: !bad;
+          (* long option with one dash lets double the dash *)
+          "-" ^ s)
+        else s)
+      a
+  in
+  if not (List.is_empty !bad)
+  then
+    warn
+      (Format.sprintf
+         "[Warning] long options with a single '-' are now deprecated. Please use '--' \
+          for the following options: %s@."
+         (String.concat ~sep:", " !bad));
+  a

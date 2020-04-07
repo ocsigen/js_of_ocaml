@@ -206,9 +206,9 @@ let info_of_tok = function
   | T_VIRTUAL_SEMICOLON ii -> ii
 
 let string_of_tok = function
-  | TUnknown (_, _) -> "COMMENT"
-  | TCommentSpace (_, _) -> "COMMENT"
-  | TCommentNewline (_, _) -> "COMMENT"
+  | TUnknown (_, _) -> "TUNKNOWN"
+  | TCommentSpace (_, _) -> "SPACE"
+  | TCommentNewline (_, _) -> "NEWLINE"
   | TComment (_, _) -> "COMMENT"
   | TCommentML (_, _) -> "COMMENT"
   | EOF _ -> "EOF"

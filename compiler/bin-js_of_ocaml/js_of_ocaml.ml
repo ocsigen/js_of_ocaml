@@ -31,7 +31,7 @@ let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
 
 let f
-    { CompileArg.common
+    { Arg.common
     ; profile
     ; source_map
     ; runtime_files
@@ -53,13 +53,13 @@ let f
     ; keep_unit_names
     } =
   let dynlink = dynlink || toplevel || runtime_only in
-  let custom_header = common.CommonArg.custom_header in
+  let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   let global =
     match wrap_with_fun with
     | Some fun_name -> `Bind_to fun_name
     | None -> `Auto
   in
-  CommonArg.eval common;
+  Jsoo_cmdline.Arg.eval common;
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
@@ -120,7 +120,7 @@ let f
     let paths =
       paths @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
     in
-    PseudoFs.f ~prim ~cmis ~files:fs_files ~paths
+    Pseudo_fs.f ~prim ~cmis ~files:fs_files ~paths
   in
   let env_instr () =
     List.map static_env ~f:(fun (k, v) ->
@@ -136,7 +136,7 @@ let f
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
-            ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+            ; (if init_pseudo_fs then [ Pseudo_fs.init () ] else [])
             ; env_instr ()
             ]
         in
@@ -159,11 +159,11 @@ let f
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
-        Util.gen_file file (fun chan ->
+        Filename.gen_file file (fun chan ->
             let instr =
               List.concat
                 [ fs_instr1
-                ; (if init_pseudo_fs then [ PseudoFs.init () ] else [])
+                ; (if init_pseudo_fs then [ Pseudo_fs.init () ] else [])
                 ; env_instr ()
                 ]
             in
@@ -181,7 +181,7 @@ let f
               one.debug
               code);
         Option.iter fs_output ~f:(fun file ->
-            Util.gen_file file (fun chan ->
+            Filename.gen_file file (fun chan ->
                 let instr = fs_instr2 in
                 let code = Code.prepend Code.empty instr in
                 let pfs_fmt = Pretty_print.to_out_channel chan in
@@ -275,12 +275,15 @@ let f
     close_ic ());
   Debug.stop_profiling ()
 
-let main = Cmdliner.Term.(pure f $ CompileArg.options), CompileArg.info
+let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
 
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main
+    Cmdliner.Term.eval
+      ~catch:false
+      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
+      main
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
