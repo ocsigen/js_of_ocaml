@@ -1139,7 +1139,7 @@ function caml_sys_system_command(cmd){
   if (typeof require != "undefined"
       && require('child_process')
       && require('child_process').execSync) {
-    try {require('child_process').execSync(cmd); return 0}
+    try {require('child_process').execSync(cmd,{stdio: 'inherit'}); return 0}
     catch (e) {return 1}
   }
   else return 127;
