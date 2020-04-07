@@ -35,6 +35,8 @@ val parse_file : string -> fragment list
 
 val parse_string : string -> fragment list
 
+val parse_builtin : Builtins.File.t -> fragment list
+
 val load_files : string list -> unit
 
 val load_fragment : filename:string -> fragment -> unit

@@ -130,8 +130,8 @@ let lexer_from_channel ?rm_comment ci : lexer =
   let lexbuf = Lexing.from_string str in
   lexer_aux ?rm_comment lines_info lexbuf
 
-let lexer_from_string ?rm_comment ?offset str : lexer =
-  let lines_info = Parse_info.make_lineinfo_from_string ?offset str in
+let lexer_from_string ?rm_comment ?name ?src ?offset str : lexer =
+  let lines_info = Parse_info.make_lineinfo_from_string ?name ?src ?offset str in
   let lexbuf = Lexing.from_string str in
   lexer_aux ?rm_comment lines_info lexbuf
 

@@ -8,7 +8,7 @@
 (rule
   (targets planet.js)
   (action
-    (run %{bin:js_of_ocaml} --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
+    (run %{bin:js_of_ocaml}
          --source-map %{dep:planet.bc} -o %{targets} --pretty)))
 
 (alias

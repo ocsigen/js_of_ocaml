@@ -24,6 +24,8 @@
 (* #require "js_of_ocaml.compiler" *)
 (* #require "compiler-libs.common" *)
 
+open Js_of_ocaml_compiler.Stdlib
+
 let prefix = ref "/static/cmis"
 
 let output = ref None
@@ -58,15 +60,27 @@ let rec scan_args acc = function
 let args =
   let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
-  let js, args = List.partition (fun s -> Filename.check_suffix s ".js") args in
-  let js = if !runtime then "+runtime.js" :: js else js in
+  let runtime_files, args =
+    List.partition ~f:(fun s -> Filename.check_suffix s ".js") args
+  in
+  let runtime_files, builtin =
+    List.partition_map runtime_files ~f:(fun name ->
+        match Js_of_ocaml_compiler.Builtins.find name with
+        | Some t -> `Snd t
+        | None -> `Fst name)
+  in
+  let builtin = if !runtime then Jsoo_runtime.runtime @ builtin else builtin in
+
+  List.iter builtin ~f:(fun t ->
+      let filename = Js_of_ocaml_compiler.Builtins.File.name t in
+      let runtimes = Js_of_ocaml_compiler.Linker.parse_builtin t in
+      List.iter runtimes ~f:(Js_of_ocaml_compiler.Linker.load_fragment ~filename));
+  Js_of_ocaml_compiler.Linker.load_files runtime_files;
   let all = Jsoo_common.cmis args in
   let instr =
-    List.map
-      (fun filename ->
+    List.map all ~f:(fun filename ->
         let name = Filename.(concat !prefix (basename filename)) in
         Js_of_ocaml_compiler.Pseudo_fs.embed_file ~name ~filename)
-      all
   in
   let program = Js_of_ocaml_compiler.Code.prepend Js_of_ocaml_compiler.Code.empty instr in
   let oc =
@@ -75,7 +89,6 @@ let args =
     | None, [ x ] -> open_out (x ^ ".cmis.js")
     | None, _ -> failwith "-o <name> needed"
   in
-  Js_of_ocaml_compiler.Linker.load_files js;
   let pfs_fmt = Js_of_ocaml_compiler.Pretty_print.to_out_channel oc in
   Js_of_ocaml_compiler.Config.Flag.enable "pretty";
   Js_of_ocaml_compiler.Driver.f

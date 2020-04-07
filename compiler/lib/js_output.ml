@@ -1220,12 +1220,21 @@ let program f ?source_map p =
         | Some [] ->
             Some
               (List.map sources ~f:(fun file ->
-                   if Sys.file_exists file
-                   then
-                     let content = Fs.read_file file in
-                     Some content
-                   else None))
+                   match Builtins.find file with
+                   | Some f -> Some (Builtins.File.content f)
+                   | None ->
+                       if Sys.file_exists file
+                       then
+                         let content = Fs.read_file file in
+                         Some content
+                       else None))
         | Some _ -> assert false
+      in
+      let sources =
+        List.map sources ~f:(fun filename ->
+            match Builtins.find filename with
+            | None -> filename
+            | Some _ -> Filename.concat "/builtin" filename)
       in
       let mappings =
         List.map !O.temp_mappings ~f:(fun (pos, m) ->

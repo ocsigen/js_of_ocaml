@@ -1,0 +1,7 @@
+(library
+ (name jsoo_lib_runtime_test)
+ (libraries jsoo_runtime)
+ (inline_tests
+  (flags -allow-output-patterns)
+  (modes native))
+ (preprocess (pps ppx_expect)))

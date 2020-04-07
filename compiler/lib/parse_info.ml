@@ -79,7 +79,7 @@ module Line_info = struct
     close_in ic;
     t
 
-  let from_string ?offset str =
+  let from_string ?name ?src ?offset str =
     let pos = ref 0 and lines = ref [] in
     (try
        while true do
@@ -89,7 +89,7 @@ module Line_info = struct
        done
      with Not_found -> lines := (String.length str - !pos) :: !lines);
     let lines = Array.of_list (List.rev !lines) in
-    { acc_pos = 0; acc_line = 0; offset; lines; name = None; src = None }
+    { acc_pos = 0; acc_line = 0; offset; lines; name; src }
 
   let from_channel ic =
     let buf = Buffer.create 1024 in
@@ -118,7 +118,8 @@ let relative_path { Line_info.src; _ } file =
 
 let make_lineinfo_from_file file = Line_info.from_file file
 
-let make_lineinfo_from_string ?offset str = Line_info.from_string ?offset str
+let make_lineinfo_from_string ?name ?src ?offset str =
+  Line_info.from_string ?name ?src ?offset str
 
 let make_lineinfo_from_channel c = Line_info.from_channel c
 
