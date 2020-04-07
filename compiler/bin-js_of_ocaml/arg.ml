@@ -329,6 +329,207 @@ let options =
   in
   Term.ret t
 
+let options_runtime_only =
+  let filesystem_section = "OPTIONS (FILESYSTEM)" in
+  let js_files =
+    let doc =
+      "Link JavaScript files [$(docv)]. "
+      ^ "One can refer to path relative to Findlib packages with "
+      ^ "the syntax '+pkg_name/file.js'"
+    in
+    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES" ~doc)
+  in
+  let output_file =
+    let doc = "Set output file name to [$(docv)]." in
+    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+  in
+  let noruntime =
+    let doc = "Do not include the standard runtime." in
+    Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
+  in
+  let no_sourcemap =
+    let doc =
+      "Don't generate source map. All other source map related flags will be be ignored."
+    in
+    Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
+  in
+  let sourcemap =
+    let doc = "Generate source map." in
+    Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
+  in
+  let sourcemap_inline_in_js =
+    let doc = "Inline sourcemap in the generated JavaScript." in
+    Arg.(value & flag & info [ "source-map-inline" ] ~doc)
+  in
+  let sourcemap_don't_inline_content =
+    let doc = "Do not inline sources in source map." in
+    Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
+  in
+  let sourcemap_root =
+    let doc = "root dir for source map." in
+    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+  in
+  let wrap_with_function =
+    let doc =
+      "Wrap the generated JavaScript code inside a function that needs to be applied \
+       with the global object."
+    in
+    Arg.(value & opt (some string) None & info [ "wrap-with-fun" ] ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+  in
+  let set_env =
+    let doc = "Set environment variable statically." in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' string string)) []
+      & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
+  in
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(
+      value
+      & opt_all string []
+      & info [ "file" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
+  in
+  let fs_external =
+    Arg.(
+      value
+      & vflag
+          true
+          [ ( true
+            , info
+                [ "extern-fs" ]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to allow registering files from outside. \
+                   (default)" )
+          ; ( false
+            , info
+                [ "no-extern-fs" ]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to NOT allow registering files from \
+                   outside." )
+          ])
+  in
+  let fs_output =
+    let doc = "Output the filesystem to [$(docv)]." in
+    Arg.(
+      value
+      & opt (some string) None
+      & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
+  in
+  let build_t
+      common
+      set_param
+      set_env
+      wrap_with_fun
+      fs_files
+      fs_output
+      fs_external
+      noruntime
+      no_sourcemap
+      sourcemap
+      sourcemap_inline_in_js
+      sourcemap_don't_inline_content
+      sourcemap_root
+      output_file
+      js_files =
+    let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
+    let runtime_files = js_files in
+    let runtime_files =
+      if noruntime then runtime_files else "+runtime.js" :: runtime_files
+    in
+    let output_file =
+      match output_file with
+      | Some "-" -> `Stdout, true
+      | Some s -> `Name s, true
+      | None -> `Name "runtime-only.js", false
+    in
+    let source_map =
+      if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
+      then
+        let file, sm_output_file =
+          match output_file with
+          | `Name file, _ when sourcemap_inline_in_js -> file, None
+          | `Name file, _ -> file, Some (chop_extension file ^ ".map")
+          | `Stdout, _ -> "STDIN", None
+        in
+        Some
+          ( sm_output_file
+          , { Source_map.version = 3
+            ; file
+            ; sourceroot = sourcemap_root
+            ; sources = []
+            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
+            ; names = []
+            ; mappings = []
+            } )
+      else None
+    in
+    let source_map =
+      if Option.is_some source_map && not Source_map_io.enabled
+      then (
+        warn
+          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
+           sourcemap support (install yojson to enable support)\n\
+           %!";
+        None)
+      else source_map
+    in
+    let params : (string * string) list = List.flatten set_param in
+    let static_env : (string * string) list = List.flatten set_env in
+    `Ok
+      { common
+      ; params
+      ; profile = None
+      ; static_env
+      ; wrap_with_fun
+      ; dynlink = false
+      ; linkall = false
+      ; toplevel = false
+      ; export_file = None
+      ; include_dir = []
+      ; runtime_files
+      ; runtime_only = true
+      ; fs_files
+      ; fs_output
+      ; fs_external
+      ; nocmis = true
+      ; output_file
+      ; input_file = None
+      ; source_map
+      ; keep_unit_names = false
+      }
+  in
+  let t =
+    Term.(
+      pure build_t
+      $ Jsoo_cmdline.Arg.t
+      $ set_param
+      $ set_env
+      $ wrap_with_function
+      $ fs_files
+      $ fs_output
+      $ fs_external
+      $ noruntime
+      $ no_sourcemap
+      $ sourcemap
+      $ sourcemap_inline_in_js
+      $ sourcemap_don't_inline_content
+      $ sourcemap_root
+      $ output_file
+      $ js_files)
+  in
+  Term.ret t
+
 let info =
   let doc = "Js_of_ocaml compiler" in
   let man =

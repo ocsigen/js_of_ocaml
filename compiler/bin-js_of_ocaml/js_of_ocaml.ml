@@ -277,13 +277,17 @@ let f
 
 let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
 
+let runtime_only =
+  Cmdliner.Term.(pure f $ Arg.options_runtime_only), Cmdliner.Term.info "runtime-only"
+
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval
+    Cmdliner.Term.eval_choice
       ~catch:false
       ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
       main
+      [ runtime_only ]
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
