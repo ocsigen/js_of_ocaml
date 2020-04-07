@@ -9,19 +9,20 @@
 
 (rule
   (targets module1.js)
-  (action (run %{bin:js_of_ocaml} --pretty --source-map %{dep:module1.cmo} -o %{targets})))
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{dep:module1.cmo} -o %{targets})))
 
 (rule
   (targets module2.js)
-  (action (run %{bin:js_of_ocaml} --pretty --source-map %{dep:module2.cmo} -o %{targets})))
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{dep:module2.cmo} -o %{targets})))
 
 (rule
   (targets stdlib.js)
-  (action (run %{bin:js_of_ocaml} --pretty --source-map %{lib:stdlib:stdlib.cma} -o %{targets})))
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{lib:stdlib:stdlib.cma} -o %{targets})))
 
 (rule
   (targets myruntime.js)
-  (action (run %{bin:js_of_ocaml} --pretty --source-map --runtime-only empty
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map --runtime-only
+           %{lib:js_of_ocaml-compiler:runtime.js}
            -o %{targets})))
 
 (rule

@@ -25,7 +25,6 @@ type t =
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
-  ; no_runtime : bool
   ; runtime_only : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option

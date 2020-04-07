@@ -35,7 +35,6 @@ let f
     ; profile
     ; source_map
     ; runtime_files
-    ; no_runtime
     ; input_file
     ; output_file
     ; params
@@ -98,18 +97,6 @@ let f
         close_in ic;
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
-  let runtime_files =
-    if not no_runtime then "+runtime.js" :: runtime_files else runtime_files
-  in
-  let runtime_files, builtin =
-    List.partition_map runtime_files ~f:(fun name ->
-        match Jsoo_runtime.find name with
-        | Some content -> `Snd (name, content)
-        | None -> `Fst name)
-  in
-  List.iter builtin ~f:(fun (name, content) ->
-      let runtimes = Linker.parse_string content in
-      List.iter runtimes ~f:(Linker.load_fragment ~filename:(Printf.sprintf "<%s>" name)));
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]

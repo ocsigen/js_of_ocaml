@@ -7,7 +7,6 @@
     js_of_ocaml-compiler
     cmdliner
     compiler-libs.common
-    js_of_ocaml-compiler.runtime
     (select findlib_support.ml from
      ;; Only link js_of_ocaml-compiler.findlib-support if it exists
      (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)

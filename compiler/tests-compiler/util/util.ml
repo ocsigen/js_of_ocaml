@@ -237,6 +237,8 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
     List.flatten
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
+      ; [ "--no-runtime" ]
+      ; [ Filename.concat js_of_ocaml_root "runtime/runtime.js" ]
       ; flags
       ]
   in

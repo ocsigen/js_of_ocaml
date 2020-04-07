@@ -6,6 +6,7 @@
   (deps
     (file ../../compiler/bin-js_of_ocaml/js_of_ocaml.exe)
     (file ../../compiler/bin-jsoo_minify/jsoo_minify.exe)
+    (file ../../runtime/runtime.js)
   ))
  (preprocess (pps ppx_expect)))
 

@@ -27,7 +27,6 @@ type t =
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
-  ; no_runtime : bool
   ; runtime_only : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option
@@ -206,7 +205,7 @@ let options =
       fs_external
       nocmis
       profile
-      no_runtime
+      noruntime
       runtime_only
       no_sourcemap
       sourcemap
@@ -219,6 +218,9 @@ let options =
       keep_unit_names =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
+    let runtime_files =
+      if noruntime then runtime_files else "+runtime.js" :: runtime_files
+    in
     let runtime_files =
       if runtime_only && Filename.check_suffix input_file ".js"
       then runtime_files @ [ input_file ]
@@ -285,7 +287,6 @@ let options =
       ; export_file
       ; include_dir
       ; runtime_files
-      ; no_runtime
       ; runtime_only
       ; fs_files
       ; fs_output
