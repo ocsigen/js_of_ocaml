@@ -89,6 +89,7 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
       | Some prev ->
           let prev_pi = Js_token.info_of_tok prev in
           if prev_pi.Parse_info.line <> pi.Parse_info.line
+             && Option.equal String.equal prev_pi.Parse_info.name pi.Parse_info.name
           then { pi with Parse_info.fol = Some true }
           else pi
     in
