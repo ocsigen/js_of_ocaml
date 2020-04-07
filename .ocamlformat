@@ -6,9 +6,11 @@ parens-tuple=multi-line-only
 type-decl=sparse
 wrap-comments=false
 wrap-fun-args=false
+doc-comments-val=after
+doc-comments=after
 indicate-multiline-delimiters=no
 break-infix-before-func
 break-separators=before
 dock-collection-brackets=false
 margin=90
-version=0.13.0
+version=0.14.0

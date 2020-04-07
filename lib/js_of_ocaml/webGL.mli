@@ -22,8 +22,9 @@
 
 open Js
 
-type sizei = int
 (** 5.1 Types *)
+
+type sizei = int
 
 type sizeiptr = int
 
@@ -175,7 +176,9 @@ class type shaderPrecisionFormat =
 
 class type renderingContext =
   object
+
     (** 5.13.1 Attributes *)
+
     method canvas : Dom_html.canvasElement t readonly_prop
 
     method drawingBufferWidth : sizei readonly_prop
@@ -183,9 +186,11 @@ class type renderingContext =
     method drawingBufferHeight : sizei readonly_prop
 
     (** 5.13.2 Getting information about the context *)
+
     method getContextAttributes : contextAttributes t meth
 
     (** 5.13.3 Setting and getting state *)
+
     method activeTexture : textureUnit -> unit meth
 
     method blendColor : clampf -> clampf -> clampf -> clampf -> unit meth
@@ -251,11 +256,13 @@ class type renderingContext =
       cullFaceMode -> stencilOp -> stencilOp -> stencilOp -> unit meth
 
     (** 5.13.4 Viewing and clipping *)
+
     method scissor : int -> int -> sizei -> sizei -> unit meth
 
     method viewport : int -> int -> sizei -> sizei -> unit meth
 
     (** 5.13.5 Buffer objects *)
+
     method bindBuffer : bufferTarget -> buffer t -> unit meth
 
     method bindBuffer_ : bufferTarget -> buffer t opt -> unit meth
@@ -283,6 +290,7 @@ class type renderingContext =
     method isBuffer : buffer t -> bool t meth
 
     (** 5.13.6 Framebuffer objects *)
+
     method bindFramebuffer : fbTarget -> framebuffer t -> unit meth
 
     method bindFramebuffer_ : fbTarget -> framebuffer t opt -> unit meth
@@ -305,6 +313,7 @@ class type renderingContext =
     method isFramebuffer : framebuffer t -> bool t meth
 
     (** 5.13.7 Renderbuffer objects *)
+
     method bindRenderbuffer : rbTarget -> renderbuffer t -> unit meth
 
     method bindRenderbuffer_ : rbTarget -> renderbuffer t opt -> unit meth
@@ -320,6 +329,7 @@ class type renderingContext =
     method renderbufferStorage : rbTarget -> format -> sizei -> sizei -> unit meth
 
     (** 5.13.8 Texture objects *)
+
     method bindTexture : texTarget -> texture t -> unit meth
 
     method bindTexture_ : texTarget -> texture t opt -> unit meth
@@ -421,9 +431,10 @@ class type renderingContext =
       -> Dom_html.videoElement t
       -> unit meth
 
-    (*
-  method texParameterf : texTarget -> texParam -> float -> unit meth
-*)
+    (* {[
+         method texParameterf : texTarget -> texParam -> float -> unit meth
+       ]}
+    *)
     method texParameteri : texTarget -> 'a texParam -> 'a -> unit meth
 
     method texSubImage2D_fromView :
@@ -479,6 +490,7 @@ class type renderingContext =
       -> unit meth
 
     (** 5.13.9 Programs and Shaders *)
+
     method attachShader : program t -> shader t -> unit meth
 
     method bindAttribLocation : program t -> uint -> js_string t -> unit meth
@@ -523,6 +535,7 @@ class type renderingContext =
     method validateProgram : program t -> unit meth
 
     (** 5.13.10 Uniforms and attributes *)
+
     method disableVertexAttribArray : uint -> unit meth
 
     method enableVertexAttribArray : uint -> unit meth
@@ -645,6 +658,7 @@ class type renderingContext =
       uint -> int -> dataType -> bool t -> sizei -> intptr -> unit meth
 
     (** 5.13.11 Writing to the drawing buffer *)
+
     method clear : clearBufferMask -> unit meth
 
     method drawArrays : beginMode -> int -> sizei -> unit meth
@@ -656,6 +670,7 @@ class type renderingContext =
     method flush : unit meth
 
     (** 5.13.12 Reading back pixels *)
+
     method readPixels :
          int
       -> int
@@ -667,9 +682,11 @@ class type renderingContext =
       -> unit meth
 
     (** 5.13.13 Detecting context lost events *)
+
     method isContextLost : bool t meth
 
     (** 5.13.14 Detecting and enabling extensions *)
+
     method getSupportedExtensions : js_string t js_array t meth
 
     method getExtension : 'a. js_string t -> 'a t opt meth
