@@ -295,7 +295,7 @@ let check_js js =
   let missing = StringSet.inter free all_external in
   let missing = StringSet.diff missing Reserved.provided in
   let other = StringSet.diff free missing in
-  let res = VarPrinter.get_reserved () in
+  let res = Var_printer.get_reserved () in
   let other = StringSet.diff other res in
   if not (StringSet.is_empty missing) then report_missing_primitives missing;
   let probably_prov = StringSet.inter other Reserved.provided in
@@ -317,7 +317,7 @@ let coloring js =
   let traverse = new Js_traverse.free in
   let js = traverse#program js in
   let free = traverse#get_free_name in
-  VarPrinter.add_reserved (StringSet.elements free);
+  Var_printer.add_reserved (StringSet.elements free);
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js

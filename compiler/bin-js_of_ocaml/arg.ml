@@ -22,7 +22,7 @@ open Js_of_ocaml_compiler
 open Cmdliner
 
 type t =
-  { common : CommonArg.t
+  { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option
@@ -301,7 +301,7 @@ let options =
   let t =
     Term.(
       pure build_t
-      $ CommonArg.t
+      $ Jsoo_cmdline.Arg.t
       $ set_param
       $ set_env
       $ dynlink

@@ -12,9 +12,11 @@
 * Ppx: ppx_js behave better with merlin (#933)
 * Lib: add several methods and functions to Typed_array (#970)
 * Runtime: improve node.js backend for Sys.command (#979)
+* Misc: switch to ocamlformat.0.14
 
 ## Bug fixes
 * Compiler: restore optimization when generating if statements
+* Compiler: fix javascript parser in the presence of line directives (#980)
 * Runtime: Catch nodejs errors and re-raise them as Sys_error
 * Lib: Fix the type of blur and focus event to be focusEvent (#929)
 

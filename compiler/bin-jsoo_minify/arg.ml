@@ -22,7 +22,7 @@ open Js_of_ocaml_compiler
 open Cmdliner
 
 type t =
-  { common : CommonArg.t
+  { common : Jsoo_cmdline.Arg.t
   ; (* minify option *)
     use_stdin : bool
   ; output_file : string option
@@ -42,7 +42,7 @@ let options =
   let build_t common files output_file use_stdin =
     `Ok { common; use_stdin; output_file; files }
   in
-  let t = Term.(pure build_t $ CommonArg.t $ files $ output_file $ use_stdin) in
+  let t = Term.(pure build_t $ Jsoo_cmdline.Arg.t $ files $ output_file $ use_stdin) in
   Term.ret t
 
 let info =
