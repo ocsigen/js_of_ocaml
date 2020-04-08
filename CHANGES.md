@@ -11,6 +11,7 @@
 * Lib: add closest method to element (#930)
 * Ppx: ppx_js behave better with merlin (#933)
 * Lib: add several methods and functions to Typed_array (#970)
+* Runtime: improve node.js backend for Sys.command (#979)
 
 ## Bug fixes
 * Compiler: restore optimization when generating if statements
