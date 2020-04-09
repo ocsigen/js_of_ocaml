@@ -217,8 +217,10 @@ let print_bytes a =
 
 let%expect_test "blit ba-ba" =
   let a = Array1.create char c_layout 10 in
+  Array1.fill a '\000';
   let a' = Array1.sub a 2 6 in
   let b = Array1.create char c_layout 10 in
+  Array1.fill b '\001';
   let b' = Array1.sub b 4 6 in
   for i = 0 to 10 - 1 do
     a.{i} <- Char.chr i
@@ -229,12 +231,13 @@ let%expect_test "blit ba-ba" =
   [%expect
     {|
     \000\001\002\003\004\005\006\007\008\009
-    \000\000\000\000\000\000\003\004\005\000 |}]
+    \001\001\001\001\001\001\003\004\005\001 |}]
 
 let%expect_test "blit ba-bytes" =
   let a = Array1.create char c_layout 10 in
   let a' = Array1.sub a 2 6 in
   let b = Bytes.create 10 in
+  Bytes.fill b ~pos:0 ~len:10 '\000';
   for i = 0 to 10 - 1 do
     a.{i} <- Char.chr i
   done;
@@ -248,7 +251,9 @@ let%expect_test "blit ba-bytes" =
 
 let%expect_test "blit bytes-ba" =
   let a = Bytes.create 10 in
+  Bytes.fill a ~pos:0 ~len:10 '\000';
   let b = Array1.create char c_layout 10 in
+  Array1.fill b '\255';
   let b' = Array1.sub b 4 6 in
   for i = 0 to 10 - 1 do
     Bytes.set a i (Char.chr i)
@@ -259,4 +264,4 @@ let%expect_test "blit bytes-ba" =
   [%expect
     {|
     \000\001\002\003\004\005\006\007\008\009
-    \000\000\000\000\000\000\003\004\005\000 |}]
+    \255\255\255\255\255\255\003\004\005\255 |}]
