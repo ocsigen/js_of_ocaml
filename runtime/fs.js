@@ -280,10 +280,10 @@ function caml_ba_map_file_bytecode(argv,argn){
   return caml_ba_map_file(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
 }
 
-//Provides: caml_create_file_extern
-function caml_create_file_extern(name,content){
-  if(joo_global_object.caml_create_file)
-    joo_global_object.caml_create_file(name,content);
+//Provides: jsoo_create_file_extern
+function jsoo_create_file_extern(name,content){
+  if(joo_global_object.jsoo_create_file)
+    joo_global_object.jsoo_create_file(name,content);
   else {
     if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
     joo_global_object.caml_fs_tmp.push({name:name,content:content});
@@ -292,15 +292,15 @@ function caml_create_file_extern(name,content){
 }
 
 //Provides: caml_fs_init
-//Requires: caml_create_file
+//Requires: jsoo_create_file
 function caml_fs_init (){
   var tmp=joo_global_object.caml_fs_tmp
   if(tmp){
     for(var i = 0; i < tmp.length; i++){
-      caml_create_file(tmp[i].name,tmp[i].content);
+      jsoo_create_file(tmp[i].name,tmp[i].content);
     }
   }
-  joo_global_object.caml_create_file = caml_create_file;
+  joo_global_object.jsoo_create_file = jsoo_create_file;
   joo_global_object.caml_fs_tmp = [];
   return 0;
 }
@@ -308,13 +308,21 @@ function caml_fs_init (){
 //Provides: caml_create_file
 //Requires: caml_failwith, resolve_fs_device, caml_string_of_jsbytes
 function caml_create_file(name,content) {
-  var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
-  var content = (typeof content == "string")?caml_string_of_jsbytes(content):content;
   var root = resolve_fs_device(name);
   if(! root.device.register) caml_failwith("cannot register file");
   root.device.register(root.rest,content);
   return 0;
 }
+
+
+//Provides: jsoo_create_file
+//Requires: caml_create_file, caml_string_of_jsbytes
+function jsoo_create_file(name,content) {
+  var name = caml_string_of_jsbytes(name);
+  var content = caml_string_of_jsbytes(content);
+  return caml_create_file(name, content);
+}
+
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes

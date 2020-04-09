@@ -85,19 +85,21 @@ let find_cmi paths base =
 
 let instr_of_name_content prim ~name ~content =
   let open Code in
-  Let (Var.fresh (), Prim (Extern prim, [ Pc (IString name); Pc (IString content) ]))
+  let prim =
+    match prim with
+    | `create_file -> "jsoo_create_file"
+    | `create_file_extern -> "jsoo_create_file_extern"
+  in
+  Let
+    ( Var.fresh ()
+    , Prim (Extern prim, [ Pc (NativeString name); Pc (NativeString content) ]) )
 
 let embed_file ~name ~filename =
-  instr_of_name_content "caml_create_file_extern" ~name ~content:(Fs.read_file filename)
+  instr_of_name_content `create_file_extern ~name ~content:(Fs.read_file filename)
 
 let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))
 
 let f ~prim ~cmis ~files ~paths =
-  let prim =
-    match prim with
-    | `caml_create_file -> "caml_create_file"
-    | `caml_create_file_extern -> "caml_create_file_extern"
-  in
   let cmi_files, missing_cmis =
     StringSet.fold
       (fun s (acc, missing) ->

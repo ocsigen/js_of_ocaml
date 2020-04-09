@@ -129,8 +129,7 @@ let eval_prim x =
       | "caml_sin_float", _ -> float_unop l sin
       | "caml_sqrt_float", _ -> float_unop l sqrt
       | "caml_tan_float", _ -> float_unop l tan
-      | ( ("caml_string_get" | "caml_string_unsafe_get")
-        , [ (String s | IString s); Int pos ] ) ->
+      | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
           let pos = Int.to_int pos in
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
           then Some (Int (Int.of_int (Char.code s.[pos])))
@@ -153,8 +152,7 @@ let the_length_of info x =
     info
     (fun x ->
       match info.info_defs.(Var.idx x) with
-      | Expr (Constant (String s)) | Expr (Constant (IString s)) ->
-          Some (Int32.of_int (String.length s))
+      | Expr (Constant (String s)) -> Some (Int32.of_int (String.length s))
       | Expr (Prim (Extern "caml_create_string", [ arg ]))
       | Expr (Prim (Extern "caml_create_bytes", [ arg ])) ->
           the_int info arg
@@ -207,7 +205,7 @@ let eval_instr info i =
   | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
       let c =
         match s with
-        | Pc (String s) | Pc (IString s) -> Some (Int32.of_int (String.length s))
+        | Pc (String s) -> Some (Int32.of_int (String.length s))
         | Pv v -> the_length_of info v
         | _ -> None
       in
@@ -261,7 +259,7 @@ let eval_instr info i =
                   ( prim
                   , List.map2 prim_args prim_args' ~f:(fun arg c ->
                         match c with
-                        | Some ((Int _ | Float _ | IString _) as c) -> Pc c
+                        | Some ((Int _ | Float _ | NativeString _) as c) -> Pc c
                         | Some (String _ as c) when Config.Flag.use_js_string () -> Pc c
                         | Some _
                         (* do not be duplicated other constant as
@@ -312,8 +310,8 @@ let the_cond_of info x =
       | Expr (Constant (Int 0l)) -> Zero
       | Expr
           (Constant
-            (Int _ | Float _ | Tuple _ | String _ | IString _ | Float_array _ | Int64 _))
-        ->
+            ( Int _ | Float _ | Tuple _ | String _ | NativeString _ | Float_array _
+            | Int64 _ )) ->
           Non_zero
       | Expr (Block (_, _, _)) -> Non_zero
       | Expr (Field _ | Closure _ | Prim _ | Apply _) -> Unknown
