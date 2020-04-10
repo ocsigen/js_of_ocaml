@@ -48,5 +48,3 @@ type t =
 val options : t Cmdliner.Term.t
 
 val options_runtime_only : t Cmdliner.Term.t
-
-val info : Cmdliner.Term.info

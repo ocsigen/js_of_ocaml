@@ -529,35 +529,3 @@ let options_runtime_only =
       $ js_files)
   in
   Term.ret t
-
-let info =
-  let doc = "Js_of_ocaml compiler" in
-  let man =
-    [ `S "DESCRIPTION"
-    ; `P
-        "Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes it \
-         possible to run pure OCaml programs in JavaScript environments like web \
-         browsers and Node.js."
-    ; `S "BUGS"
-    ; `P
-        "Bugs are tracked on github at \
-         $(i,https://github.com/ocsigen/js_of_ocaml/issues)."
-    ; `S "SEE ALSO"
-    ; `P "ocaml(1)"
-    ; `S "AUTHORS"
-    ; `P "Jerome Vouillon, Hugo Heuzard."
-    ; `S "LICENSE"
-    ; `P "Copyright (C) 2010-2019."
-    ; `P
-        "js_of_ocaml is free software, you can redistribute it and/or modify it under \
-         the terms of the GNU Lesser General Public License as published by the Free \
-         Software Foundation, with linking exception; either version 2.1 of the License, \
-         or (at your option) any later version."
-    ]
-  in
-  let version =
-    match Compiler_version.git_version with
-    | "" -> Compiler_version.s
-    | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
-  in
-  Term.info "js_of_ocaml" ~version ~doc ~man
