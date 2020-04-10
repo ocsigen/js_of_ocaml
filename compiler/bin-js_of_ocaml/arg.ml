@@ -83,7 +83,10 @@ let options =
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
   let runtime_only =
-    let doc = "Generate a JavaScript file containing/exporting the runtime only." in
+    let doc =
+      "[DEPRECATED: use js_of_ocaml build-runtime instead]. Generate a JavaScript file \
+       containing/exporting the runtime only."
+    in
     Arg.(value & flag & info [ "runtime-only" ] ~doc)
   in
   let no_sourcemap =
