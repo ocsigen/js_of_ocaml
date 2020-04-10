@@ -23,7 +23,8 @@ let print ~compact source =
   let buffer = Buffer.create (String.length source) in
   let pp = Pretty_print.to_buffer buffer in
   Pretty_print.set_compact pp compact;
-  let lexed = Parse_js.lexer_from_string source in
+  let lexbuf = Lexing.from_string source in
+  let lexed = Parse_js.Lexer.of_lexbuf lexbuf in
   let parsed = Parse_js.parse lexed in
   Js_output.program pp parsed;
   print_endline (Buffer.contents buffer)

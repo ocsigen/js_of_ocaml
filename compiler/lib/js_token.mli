@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type token =
+type t =
   | T_WITH of Parse_info.t
   | T_WHILE of Parse_info.t
   | T_VOID of Parse_info.t
@@ -102,15 +102,15 @@ type token =
   | T_ASSIGN of Parse_info.t
   | T_AND of Parse_info.t
   | T_DEBUGGER of Parse_info.t
-  | TUnknown of (Parse_info.t * string)
-  | TCommentSpace of (Parse_info.t * string)
-  | TCommentNewline of (Parse_info.t * string)
-  | TCommentML of (Parse_info.t * string)
-  | TComment of (Parse_info.t * string)
+  | TUnknown of (string * Parse_info.t)
+  | TComment of (string * Parse_info.t)
+  | TCommentLineDirective of (string * Parse_info.t)
   | EOF of Parse_info.t
 
-val info_of_tok : token -> Parse_info.t
+type token = t
 
-val string_of_tok : token -> string
+val info : t -> Parse_info.t
 
-val is_comment : token -> bool
+val to_string : t -> string
+
+val is_comment : t -> bool

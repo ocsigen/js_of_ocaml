@@ -208,10 +208,11 @@ statement:
     match _tok with
       | EOF _ | T_RCURLY _ -> statement
       | token ->
-        let info = Js_token.info_of_tok token in
+        let info = Js_token.info token in
         match info.Parse_info.fol with
-          | Some true -> statement
-          | _ -> $syntaxerror
+          | Yes -> statement
+          | No -> $syntaxerror
+          | Unknown -> assert false
   }
 
 labeled_statement:

@@ -19,13 +19,14 @@
  * license.txt for more details.
  *)
 
+open Stdlib
 open Js_token
 
 let tok lexbuf = Lexing.lexeme lexbuf
 
 let keyword_table =
   let h = Hashtbl.create 17 in
-  List.iter (fun (s,f) -> Hashtbl.add h s f ) [
+  List.iter ~f:(fun (s,f) -> Hashtbl.add h s f ) [
     "break",      (fun ii -> T_BREAK ii);
     "case",       (fun ii -> T_CASE ii);
     "catch",      (fun ii -> T_CATCH ii);
@@ -59,6 +60,31 @@ let keyword_table =
   ];
   h
 
+(* Update the current location with file name and line number. *)
+
+let update_loc lexbuf ?file ~line ~absolute chars =
+  let pos = lexbuf.Lexing.lex_curr_p in
+  let new_file = match file with
+                 | None -> pos.pos_fname
+                 | Some s -> s
+  in
+  lexbuf.Lexing.lex_curr_p <- { pos with
+    pos_fname = new_file;
+    pos_lnum = if absolute then line else pos.pos_lnum + line;
+    pos_bol = pos.pos_cnum - chars;
+                              }
+
+let tokinfo prev lexbuf =
+  let pi = Parse_info.t_of_lexbuf lexbuf in
+  match prev with
+  | None -> { pi with Parse_info.fol = Yes }
+  | Some prev ->
+    let prev_pi = Js_token.info prev in
+    if prev_pi.Parse_info.line <> pi.Parse_info.line
+    && Option.equal String.equal prev_pi.Parse_info.name pi.Parse_info.name
+    then { pi with Parse_info.fol = Yes }
+    else { pi with Parse_info.fol = No }
+
 }
 
 (*****************************************************************************)
@@ -68,102 +94,111 @@ let hexa = ['0'-'9''a'-'f''A'-'F']
 let inputCharacter = [^ '\r' '\n' ]
 (*****************************************************************************)
 
-rule initial tokinfo prev = parse
+rule main prev = parse
 
   (* ----------------------------------------------------------------------- *)
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
   | "/*" {
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       let buf = Buffer.create 127 in
-      let nl = ref false in
-      st_comment buf nl lexbuf;
+      Buffer.add_string buf (tok lexbuf);
+      st_comment buf lexbuf;
       let content = Buffer.contents buf in
-      if !nl
-      then TCommentML(info,content)
-      else TComment(info,content)
+      TComment(content, info)
     }
-  (* don't keep the trailing \n; it will be in another token *)
-  | "//" (inputCharacter* as cmt) { TComment(tokinfo lexbuf,cmt) }
+  | ("//#" [' ' '\t' ]*
+     (['0'-'9']+ as line) [' ' '\t' ]*
+     '"' ([^ '"' '\n']* as file) '"' [' ' '\t' ]*
+    ) as raw NEWLINE {
+      let info = tokinfo prev lexbuf in
+      let line = int_of_string line in
+      update_loc lexbuf ~file ~line ~absolute:true 0;
+      TCommentLineDirective (raw, info)
+    }
+  (* don't keep the trailing \n; it will be handled later *)
+  | ("//" inputCharacter*) as cmt { TComment(cmt, tokinfo prev lexbuf) }
 
-  | ([' ' '\t' ]+ as cmt)         { TCommentSpace(tokinfo lexbuf,cmt) }
+  | [' ' '\t' ]+ {
+      main prev lexbuf
+    }
   | NEWLINE {
-      lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
-                                      Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
-      TCommentNewline(tokinfo lexbuf,"") }
+      update_loc lexbuf ~line:1 ~absolute:false 0;
+      main prev lexbuf
+    }
 
   (* ----------------------------------------------------------------------- *)
   (* symbols *)
   (* ----------------------------------------------------------------------- *)
 
-  | "{" { T_LCURLY (tokinfo lexbuf); }
-  | "}" { T_RCURLY (tokinfo lexbuf); }
+  | "{" { T_LCURLY (tokinfo prev lexbuf); }
+  | "}" { T_RCURLY (tokinfo prev lexbuf); }
 
-  | "(" { T_LPAREN (tokinfo lexbuf); }
-  | ")" { T_RPAREN (tokinfo lexbuf); }
+  | "(" { T_LPAREN (tokinfo prev lexbuf); }
+  | ")" { T_RPAREN (tokinfo prev lexbuf); }
 
-  | "[" { T_LBRACKET (tokinfo lexbuf); }
-  | "]" { T_RBRACKET (tokinfo lexbuf); }
-  | "." { T_PERIOD (tokinfo lexbuf); }
-  | ";" { T_SEMICOLON (tokinfo lexbuf); }
-  | "," { T_COMMA (tokinfo lexbuf); }
-  | ":" { T_COLON (tokinfo lexbuf); }
-  | "?" { T_PLING (tokinfo lexbuf); }
-  | "&&" { T_AND (tokinfo lexbuf); }
-  | "||" { T_OR (tokinfo lexbuf); }
-  | "===" { T_STRICT_EQUAL (tokinfo lexbuf); }
-  | "!==" { T_STRICT_NOT_EQUAL (tokinfo lexbuf); }
-  | "<=" { T_LESS_THAN_EQUAL (tokinfo lexbuf); }
-  | ">=" { T_GREATER_THAN_EQUAL (tokinfo lexbuf); }
-  | "==" { T_EQUAL (tokinfo lexbuf); }
-  | "!=" { T_NOT_EQUAL (tokinfo lexbuf); }
+  | "[" { T_LBRACKET (tokinfo prev lexbuf); }
+  | "]" { T_RBRACKET (tokinfo prev lexbuf); }
+  | "." { T_PERIOD (tokinfo prev lexbuf); }
+  | ";" { T_SEMICOLON (tokinfo prev lexbuf); }
+  | "," { T_COMMA (tokinfo prev lexbuf); }
+  | ":" { T_COLON (tokinfo prev lexbuf); }
+  | "?" { T_PLING (tokinfo prev lexbuf); }
+  | "&&" { T_AND (tokinfo prev lexbuf); }
+  | "||" { T_OR (tokinfo prev lexbuf); }
+  | "===" { T_STRICT_EQUAL (tokinfo prev lexbuf); }
+  | "!==" { T_STRICT_NOT_EQUAL (tokinfo prev lexbuf); }
+  | "<=" { T_LESS_THAN_EQUAL (tokinfo prev lexbuf); }
+  | ">=" { T_GREATER_THAN_EQUAL (tokinfo prev lexbuf); }
+  | "==" { T_EQUAL (tokinfo prev lexbuf); }
+  | "!=" { T_NOT_EQUAL (tokinfo prev lexbuf); }
   | "++" {
-      let cpi = tokinfo lexbuf in
+      let cpi = tokinfo prev lexbuf in
       match prev with
-        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
           T_INCR_NB(cpi)
         | _ -> T_INCR(cpi) }
   | "--" {
-      let cpi = tokinfo lexbuf in
+      let cpi = tokinfo prev lexbuf in
       match prev with
-        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
           T_DECR_NB(cpi)
         | _ -> T_DECR(cpi) }
-  | "<<=" { T_LSHIFT_ASSIGN (tokinfo lexbuf); }
-  | "<<" { T_LSHIFT (tokinfo lexbuf); }
-  | ">>=" { T_RSHIFT_ASSIGN (tokinfo lexbuf); }
-  | ">>>=" { T_RSHIFT3_ASSIGN (tokinfo lexbuf); }
-  | "..." { T_SPREAD (tokinfo lexbuf); }
-  | ">>>" { T_RSHIFT3 (tokinfo lexbuf); }
-  | ">>" { T_RSHIFT (tokinfo lexbuf); }
-  | "+=" { T_PLUS_ASSIGN (tokinfo lexbuf); }
-  | "-=" { T_MINUS_ASSIGN (tokinfo lexbuf); }
+  | "<<=" { T_LSHIFT_ASSIGN (tokinfo prev lexbuf); }
+  | "<<" { T_LSHIFT (tokinfo prev lexbuf); }
+  | ">>=" { T_RSHIFT_ASSIGN (tokinfo prev lexbuf); }
+  | ">>>=" { T_RSHIFT3_ASSIGN (tokinfo prev lexbuf); }
+  | "..." { T_SPREAD (tokinfo prev lexbuf); }
+  | ">>>" { T_RSHIFT3 (tokinfo prev lexbuf); }
+  | ">>" { T_RSHIFT (tokinfo prev lexbuf); }
+  | "+=" { T_PLUS_ASSIGN (tokinfo prev lexbuf); }
+  | "-=" { T_MINUS_ASSIGN (tokinfo prev lexbuf); }
 
-  | "*=" { T_MULT_ASSIGN (tokinfo lexbuf); }
-  | "%=" { T_MOD_ASSIGN (tokinfo lexbuf); }
-  | "&=" { T_BIT_AND_ASSIGN (tokinfo lexbuf); }
-  | "|=" { T_BIT_OR_ASSIGN (tokinfo lexbuf); }
-  | "^=" { T_BIT_XOR_ASSIGN (tokinfo lexbuf); }
-  | "<" { T_LESS_THAN (tokinfo lexbuf); }
-  | ">" { T_GREATER_THAN (tokinfo lexbuf); }
-  | "+" { T_PLUS (tokinfo lexbuf); }
-  | "-" { T_MINUS (tokinfo lexbuf); }
-  | "*" { T_MULT (tokinfo lexbuf); }
+  | "*=" { T_MULT_ASSIGN (tokinfo prev lexbuf); }
+  | "%=" { T_MOD_ASSIGN (tokinfo prev lexbuf); }
+  | "&=" { T_BIT_AND_ASSIGN (tokinfo prev lexbuf); }
+  | "|=" { T_BIT_OR_ASSIGN (tokinfo prev lexbuf); }
+  | "^=" { T_BIT_XOR_ASSIGN (tokinfo prev lexbuf); }
+  | "<" { T_LESS_THAN (tokinfo prev lexbuf); }
+  | ">" { T_GREATER_THAN (tokinfo prev lexbuf); }
+  | "+" { T_PLUS (tokinfo prev lexbuf); }
+  | "-" { T_MINUS (tokinfo prev lexbuf); }
+  | "*" { T_MULT (tokinfo prev lexbuf); }
   (* for '/' see below the regexp handling *)
-  | "%" { T_MOD (tokinfo lexbuf); }
-  | "|" { T_BIT_OR (tokinfo lexbuf); }
-  | "&" { T_BIT_AND (tokinfo lexbuf); }
-  | "^" { T_BIT_XOR (tokinfo lexbuf); }
-  | "!" { T_NOT (tokinfo lexbuf); }
-  | "~" { T_BIT_NOT (tokinfo lexbuf); }
-  | "=" { T_ASSIGN (tokinfo lexbuf); }
+  | "%" { T_MOD (tokinfo prev lexbuf); }
+  | "|" { T_BIT_OR (tokinfo prev lexbuf); }
+  | "&" { T_BIT_AND (tokinfo prev lexbuf); }
+  | "^" { T_BIT_XOR (tokinfo prev lexbuf); }
+  | "!" { T_NOT (tokinfo prev lexbuf); }
+  | "~" { T_BIT_NOT (tokinfo prev lexbuf); }
+  | "=" { T_ASSIGN (tokinfo prev lexbuf); }
 
   (* ----------------------------------------------------------------------- *)
   (* Keywords and ident *)
   (* ----------------------------------------------------------------------- *)
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       try
         let f = Hashtbl.find keyword_table s in
         f info
@@ -177,25 +212,24 @@ rule initial tokinfo prev = parse
 
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       T_NUMBER (s, info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       T_NUMBER (s, info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       T_NUMBER (s, info)
     }
-
   | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       T_NUMBER (s, info)
     }
 
@@ -203,7 +237,7 @@ rule initial tokinfo prev = parse
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
   | ("'"|'"') as quote {
-      let info = tokinfo lexbuf in
+      let info = tokinfo prev lexbuf in
       let buf = Buffer.create 127 in
       string_quote quote buf lexbuf;
       let s = Buffer.contents buf in
@@ -228,8 +262,8 @@ rule initial tokinfo prev = parse
    *)
 
   | "/" | "/=" {
-    let s = tok lexbuf in
-      let info = tokinfo lexbuf in
+      let s = tok lexbuf in
+      let info = tokinfo prev lexbuf in
 
       match prev with
       | Some (
@@ -255,10 +289,10 @@ rule initial tokinfo prev = parse
   (* eof *)
   (* ----------------------------------------------------------------------- *)
 
-  | eof { EOF (tokinfo lexbuf) }
+  | eof { EOF (tokinfo prev lexbuf) }
 
   | _ {
-      TUnknown (tokinfo lexbuf, tok lexbuf)
+      TUnknown (tok lexbuf, tokinfo prev lexbuf)
     }
 (*****************************************************************************)
 
@@ -267,18 +301,24 @@ and string_escape quote buf = parse
   | 'x' hexa hexa
   | 'u' hexa hexa hexa hexa {
       Buffer.add_char buf '\\';
-      Buffer.add_string buf (Lexing.lexeme lexbuf) }
+      Buffer.add_string buf (tok lexbuf) }
   | (_ as c)
-    { if c <> '\'' && c <> '\"' then Buffer.add_char buf '\\';
+    { if Char.(c <> '\'') && Char.(c <> '\"') then Buffer.add_char buf '\\';
       Buffer.add_char buf c }
   | eof { Format.eprintf  "LEXER: WEIRD end of file in string_escape@."; ()}
 
 and string_quote q buf = parse
   | ("'"|'"') as q' {
-    if q = q'
+    if Char.(q = q')
     then ()
     else (Buffer.add_char buf q'; string_quote q buf lexbuf) }
-  | "\\\n" { string_quote q buf lexbuf }
+  | "\\\n" {
+    update_loc lexbuf ~line:1 ~absolute:false 0;
+    string_quote q buf lexbuf }
+  | NEWLINE {
+    update_loc lexbuf ~line:1 ~absolute:false 0;
+    Buffer.add_string buf (tok lexbuf);
+    string_quote q buf lexbuf }
   | '\\' {
       string_escape q buf lexbuf;
       string_quote q buf lexbuf
@@ -293,7 +333,8 @@ and regexp buf = parse
                     regexp buf lexbuf }
   | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
   | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
-  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf }
+  | ([^ '\n'] as x)       { Buffer.add_char buf x; regexp buf lexbuf }
+  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@."; ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp@."; ()}
 
 and regexp_class buf = parse
@@ -302,7 +343,8 @@ and regexp_class buf = parse
   | '\\' (_ as x) { Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf }
-  | (_ as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
+  | ([^ '\n'] as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
+  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@."; ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ()}
 
 and regexp_maybe_ident buf = parse
@@ -310,24 +352,19 @@ and regexp_maybe_ident buf = parse
 
 (*****************************************************************************)
 
-and st_comment buf nl = parse
+and st_comment buf = parse
   | "*/" { Buffer.add_string buf (tok lexbuf) }
-  | NEWLINE { Buffer.add_string buf (tok lexbuf);
-              nl := true;
-              st_comment buf nl lexbuf }
-  | [^'*' '\n' '\r' ]+ { Buffer.add_string buf (tok lexbuf);st_comment buf nl lexbuf }
-  | '*'     { Buffer.add_char buf '*';st_comment buf nl lexbuf }
+  | NEWLINE {
+      update_loc lexbuf ~line:1 ~absolute:false 0;
+      Buffer.add_string buf (tok lexbuf);
+      st_comment buf lexbuf }
+  | [^'*' '\n' '\r' ]+ { Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf }
+  | '*'     { Buffer.add_char buf '*';st_comment buf lexbuf }
 
   | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/"}
   | _  {
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
-      st_comment buf nl lexbuf
+      st_comment buf lexbuf
     }
-
-and pos = parse
-  | '#' [' ' '\t' ]+ (['0'-'9']+ as line) [' ' '\t' ]+ (("'"|'"') as quote) {
-      let buf = Buffer.create 127 in
-      string_quote quote buf lexbuf;
-      Buffer.contents buf, int_of_string line }

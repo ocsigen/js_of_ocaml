@@ -20,20 +20,18 @@
 open Annot_parser
 }
 
-let identifier = ['a'-'z''A'-'Z''_']+
-
-rule initial = parse
-  | "Provides" {TProvides}
-  | "Requires" {TRequires}
+rule main = parse
+  | "//Provides" {TProvides}
+  | "//Requires" {TRequires}
+  | "//Version" {TVersion}
+  | "//Weakdef" {TWeakdef}
+  | "//If" {TIf}
   | "pure" {TA_Pure }
   | "const" {TA_Const }
   | "mutable" {TA_Mutable }
   | "mutator" {TA_Mutator }
   | "shallow" {TA_Shallow}
   | "object_literal" {TA_Object_literal}
-  | "Version" {TVersion}
-  | "Weakdef" {TWeakdef}
-  | "If" {TIf}
   | "!" {TBang}
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''-''0'-'9']* {
       let x = Lexing.lexeme lexbuf in
@@ -50,7 +48,7 @@ rule initial = parse
   | ">"  {GT}
   | ">=" {GE}
   | "="  {EQ}
-  | [' ''\t']+ { initial lexbuf }
+  | [' ''\t']+ { main lexbuf }
   | eof { EOF }
   | ['\n'] {EOL}
   | _ { TOTHER(Lexing.lexeme lexbuf) }

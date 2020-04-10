@@ -1045,19 +1045,37 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | Extern ("caml_js_expr" | "caml_pure_js_expr"), [ Pc (String nm | IString nm) ]
           -> (
             try
-              let offset =
+              let lexbuf = Lexing.from_string nm in
+              let lexbuf =
                 match loc with
-                | J.N | J.U -> None
-                | J.Pi pi -> Some pi
+                | J.N | J.U -> lexbuf
+                | J.Pi pi -> (
+                    (* [pi] is the position of the call, not the
+                       string.  We don't have enough information to
+                       recover the start column *)
+                    match pi.src with
+                    | Some pos_fname ->
+                        { lexbuf with
+                          lex_curr_p =
+                            { pos_fname
+                            ; pos_lnum = pi.line
+                            ; pos_cnum = pi.idx
+                            ; pos_bol = pi.idx
+                            }
+                        }
+                    | None -> lexbuf)
               in
-              let lex = Parse_js.lexer_from_string ?offset nm in
+              let lex = Parse_js.Lexer.of_lexbuf lexbuf in
               let e = Parse_js.parse_expr lex in
               e, const_p, queue
             with Parse_js.Parsing_error pi ->
               failwith
                 (Printf.sprintf
-                   "Parsing error %S at l:%d col:%d"
+                   "Parsing error %S%s at l:%d col:%d"
                    nm
+                   (match pi.Parse_info.src with
+                   | None -> ""
+                   | Some s -> Printf.sprintf ", file %S" s)
                    pi.Parse_info.line
                    pi.Parse_info.col))
         | Extern "%js_array", l ->

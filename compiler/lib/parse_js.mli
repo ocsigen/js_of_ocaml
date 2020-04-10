@@ -17,32 +17,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type lexer
+module Lexer : sig
+  type t
+
+  val of_file : ?rm_comment:bool -> string -> t
+
+  val of_lexbuf : ?rm_comment:bool -> Lexing.lexbuf -> t
+
+  val of_channel : ?rm_comment:bool -> in_channel -> t
+
+  val fold : ('a -> Js_token.t -> 'a) -> 'a -> t -> 'a
+
+  val of_list : Js_token.t list -> t
+end
 
 exception Parsing_error of Parse_info.t
 
-val strip_comment : lexer -> lexer
+val parse : Lexer.t -> Javascript.program
 
-val lexer_from_file : ?rm_comment:bool -> string -> lexer
-
-val lexer_from_string :
-     ?rm_comment:bool
-  -> ?name:string
-  -> ?src:string
-  -> ?offset:Parse_info.t
-  -> string
-  -> lexer
-
-val lexer_from_channel : ?rm_comment:bool -> in_channel -> lexer
-
-val lexer_map : (Js_token.token -> Js_token.token) -> lexer -> lexer
-
-val lexer_fold : ('a -> Js_token.token -> 'a) -> 'a -> lexer -> 'a
-
-val lexer_filter : (Js_token.token -> bool) -> lexer -> lexer
-
-val lexer_from_list : Js_token.token list -> lexer
-
-val parse : lexer -> Javascript.program
-
-val parse_expr : lexer -> Javascript.expression
+val parse_expr : Lexer.t -> Javascript.expression
