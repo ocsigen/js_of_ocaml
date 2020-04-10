@@ -21,13 +21,13 @@
 
 (rule
   (targets myruntime.js)
-  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map --runtime-only
-           %{lib:js_of_ocaml-compiler:runtime.js}
-           -o %{targets})))
+  (action (run %{bin:js_of_ocaml} build-runtime --pretty --source-map -o %{targets}
+           --noruntime  %{lib:js_of_ocaml-compiler:runtime.js}
+           )))
 
 (rule
   (targets bin.js)
-  (action (run %{bin:jsoo_link} %{dep:myruntime.js} %{dep:stdlib.js} %{dep:module1.js} %{dep:module2.js} -o %{targets})))
+  (action (run %{bin:js_of_ocaml} link %{dep:myruntime.js} %{dep:stdlib.js} %{dep:module1.js} %{dep:module2.js} -o %{targets})))
 
 (alias
   (name default)

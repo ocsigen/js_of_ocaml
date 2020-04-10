@@ -337,11 +337,11 @@ let options_runtime_only =
       ^ "One can refer to path relative to Findlib packages with "
       ^ "the syntax '+pkg_name/file.js'"
     in
-    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES" ~doc)
+    Arg.(value & pos_all string [] & info [] ~docv:"JS_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let noruntime =
     let doc = "Do not include the standard runtime." in
@@ -449,9 +449,8 @@ let options_runtime_only =
     in
     let output_file =
       match output_file with
-      | Some "-" -> `Stdout, true
-      | Some s -> `Name s, true
-      | None -> `Name "runtime-only.js", false
+      | "-" -> `Stdout, true
+      | s -> `Name s, true
     in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)

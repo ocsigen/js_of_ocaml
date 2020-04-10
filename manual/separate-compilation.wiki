@@ -31,7 +31,7 @@ the order induced by dependencies, into a single JavaScript file.
 
 To build a standalone runtime:
 {{{
-js_of_ocaml --runtime-only -o my-runtime.js dummy
+js_of_ocaml build-runtime -o my-runtime.js
 }}}
 
 Additional runtime files are sometime needed and can be passed on the
@@ -85,13 +85,12 @@ js_of_ocaml libname.cma --keep-unit-names -o libname/
 === 3. Link
 
 The final step is to link all individual JavaScript files into a
-single one.  The js_of_ocaml-compiler provides a separate tool called
-{{{jsoo_link}}} to do that.  {{{jsoo_link}}} takes a list of
-JavaScript filename as input and concatenates them all (merging
-source-maps together if needed).
+single one.  The {{{link}}} command of the js_of_ocaml-compiler takes
+a list of JavaScript filename as input and concatenates them all
+(merging source-maps together if needed).
 
 {{{
-jsoo_link my-runtime.js stdlib.js libname.js modname.js -o myexe.js
+js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js -o myexe.js
 }}}
 
 Note that, unlike the ocaml compiler, the ocaml stdlib need to be
@@ -111,8 +110,8 @@ See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
 
 Separate compilation can be used together with source-map.  The
 recommended way is to build all individual javascript files with
-inlined source-map by passing {{{--source-map-inline}}} to both
-{{{js_of_ocaml}}} and {{{jsoo_link}}}.
+inlined source-map by passing {{{--source-map-inline}}} to
+{{{js_of_ocaml}}}.
 
 Note that other configurations have not been well tested and might
 require additional tuning.
