@@ -1,52 +1,8 @@
-Libraries
-=========
-- object literals
-    {:m = 1; n = "abcd":} : [> `m of int; `n of string] Js.record Js.t
-  ==> usual rule for mapping field names; check for no duplicate.
-- array literals
-  in particular, heterogeneous arrays...
-        ('a, 'b, 'c) t ???
-
-    module Tuple : sig
-      type 'a tuple
-      val e : unit tuple
-      val a : 'a tuple -> 'b -> ('a * 'b) tuple
-
-      type ('a, 'b) acc
-      val first : ('a * 'b, 'b) acc
-      val next : ('a, 'b) acc -> ('c * 'a, 'b) acc
-      val get : 'a tuple -> ('a, 'b) acc -> 'b
-      val set : 'a tuple -> ('a, 'b) acc -> 'b -> unit
-    end = struct
-      type 'a tuple = 'a
-      let e = ()
-      let a x y = (x, y)
-    end
-
-   <_0: t0; _1: t1; _n: tn> t
-
-Benchmarks/examples
-===================
-- polishing
-- check canvas availability in examples
-- finish planet (no cpu when not moving / not visible)
-- take examples from http://shootout.alioth.debian.org/?
-- planets (+satellites?) ===> Runge-Kutta
-- 3D effects: http://gyu.que.jp/jscloth/
-              http://stackoverflow.com/questions/1584854/how-to-draw-3d-sphere
-
 Compiler optimizations
 ======================
-- "unsafe" option: no check for division by zero / array access
-- per module options: we could apply "unsafe" and "inline" options
-  selectively
-
-- syntactic sugar for Javascript literal strings
-  + optimization to avoid going through Caml strings
-
 - Can we avoid spurious conversions from boolean to integers???
-  ===> explicit conversion to boolean; specialized "if" that operates
-       on booleans directly
+  explicit conversion to boolean; specialized "if" that operates
+  on booleans directly
 
 - constant hoisting (including functions, out of loops and functions)
 - inline also partially applied functions
@@ -54,74 +10,12 @@ Compiler optimizations
 - we should check stack compatibility when parsing:
   when jumping somewhere, the stack should keep the same shape
 
-- Improved optimizations
-  ==> cross-function optimizations
-  ==> deadcode elimination inside blocks
+- cross-function optimizations
+
+- deadcode elimination inside blocks
   (for instance, elimination of function which are defined in a
    functor but are not used)
 
-==========================
-==========================
-
-Special case for shortcut boolean operations...
-
-     1
-     |\
-     | \2
-     | /\
-     |/  \
-     3    4
-
-==========================
-
-MD5
-===
-http://www.myersdaily.org/joseph/javascript/md5-speed-test.html
-http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
-http://bitwiseshiftleft.github.com/sjcl/
-
-Float <-> hex
-=============
-http://babbage.cs.qc.edu/IEEE-754/js/IEEE-754.js
-http://snippets.dzone.com/posts/show/685
-http://jsfromhell.com/classes/binary-parser
-
-Filling a string
-================
-  function stringFill3(x, n) {
-    var s = '';
-    for (;;) {
-      if (n & 1) s += x;
-      n >>= 1;
-      if (n) x += x;
-      else break;
-    }
-    return s;
-  }
-
-Conversion string <-> array
-===========================
-  http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
-
-
-Byte array ==> string
-=====================
-int array --map--> string array --join--> string
-   b[i] = toString[a[i]]  where toString is a precomputed array of strings
-
-Bigint
-======
-http://www.leemon.com/crypto/BigInt.js
-
-==========================
-
-BUGS
-====
-- ISINT is compiled to "not a block"; document this deviation
-  (or document that we should not rely on the Obj module)
-
-PERFORMANCE
-===========
 - should we rebind variables from a deeper level ?
   (only if used more than once...)
 
@@ -131,30 +25,8 @@ PERFORMANCE
         ... y .... y ... y ....
      }
 
-IMPROVEMENTS
-============
-
-- be more cautious regarding how we print floats...
-  (is it accurate?)
-  ==> gdtoa
-    http://caml.inria.fr/pub/ml-archives/caml-list/2002/12/2813f8e8be115b0bad1bc16b1e41b744.en.html
-
-- explicit conversion from int to boolean
-
-NEW FEATURES
-============
-
 - Can we use the debugger information to generate specialized code?
   (Use objects rather than arrays for tuples, ...)
-
-DATA REPRESENTATION
-===================
-- should wrap Ocaml exceptions (more robust code)...
-  ==> use Error object as base object, special "message" method
-
-DATA ANALYSIS
-=============
-- interprocedural analysis
 
 COMPRESSION OPTIMIZATION
 ========================
@@ -163,58 +35,39 @@ COMPRESSION OPTIMIZATION
   ==> order functions by similarity
   ==> 7-zip is better at compressing than gzip, with the same algorithm...
 
-DOCUMENTATION
-=============
-document as much as we can:
-* the representation of datas, closures, ...
-* the assumption we make regarding the bytecode
-  ==> ISINT
-
-================================
+DOCS
+====
+- ISINT is compiled to "not a block"; document this deviation
+  (or document that we should not rely on the Obj module)
 
 REFERENCES
 ==========
 
-http://blog.higher-order.net/2009/09/08/understanding-clojures-persistenthashmap-deftwice/
+Inlining
+Serrano, M. -- Inline expansion:
+when and how -- 9th Int'l Symposium on Programming Language Implementation and Logic Programming (PLILP),
+Southampton, UK, Sep, 1997, pp. 143--147.
 
-http://code.google.com/closure/compiler/
-
-http://code.google.com/p/ocamljs/source/browse/#svn/trunk/src
-
-Inlining: see Manuel Serrano's paper
+Serrano, M. -- A Fresh Look to Inlining Decision -- 4th International Computer Symposium (invited paper),
+Mexico city, Mexico, Nov, 1995, pp. 40--52.
 
 Resolving and Exploiting the k-CFA Paradox
 Illuminating Functional vs. Object-Oriented Program Analysis
 Matthew Might               Yannis Smaragdakis             David Van Horn
 
-==================================
+http://blog.higher-order.net/2009/09/08/understanding-clojures-persistenthashmap-deftwice
 
-Use window.postMessage instead of setTimeout for yield (setTimeout
-always waits a bit!)
-==> but window.postMessage is synchronous in IE8
-    + does not cooperate well with other users of message events
+http://code.google.com/closure/compiler/
 
-==================================
-
-Could we generate ocaml bytecode as well? (bytecode optimizer)
-LLVM code?
-
-Targeting JAVA / .net seem harder: not type information...
-
-==================================
-
-http://www.pps.jussieu.fr/~montela/ocamil/
-Note that the OCamIL compilers and tools are currently based on OCaml
-v3.06. An upgrade to the latest OCaml version is scheduled for the
-next release.
-[Never happened...]
+ocamljs (https://github.com/jaked/ocamljs)
 
 ocamldefun (on ocaml_beginners)
-I'd really like to play around ocamldefun, but it seems to only work
-with ocaml 3.06. Has anyone had luck setting this up in more recent
-versions of ocaml?
 
 OCamlexc (on caml list)
-So I was wondering if there is any current or recent projects (or interests)
-to resume OCamlExc development and complete the set of handled constructs,
-as I'm afraid I'll have neither the time nor the skills to do the job.
+
+Float <-> hex
+http://jsfromhell.com/classes/binary-parser
+
+MD5
+http://www.myersdaily.org/joseph/javascript/md5-speed-test.html
+http://bitwiseshiftleft.github.com/sjcl/
