@@ -1,0 +1,149 @@
+.\" Pipe this output to groff -Tutf8 | less
+.\"
+.mso an.tmac
+.TH "JS_OF_OCAML" 1 "" "Js_of_ocaml 3.5.2+git-fb9dd20f6" "Js_of_ocaml Manual"
+.\" Disable hyphenation and ragged-right
+.nh
+.ad l
+.SH NAME
+.P
+js_of_ocaml \N'45' Js_of_ocaml compiler
+.SH SYNOPSIS
+.P
+\fBjs_of_ocaml\fR \fICOMMAND\fR \N'46'\N'46'\N'46'
+.SH DESCRIPTION
+.P
+Js_of_ocaml is a compiler from OCaml bytecode to Javascript\N'46' It makes it possible to run pure OCaml programs in JavaScript environments like web browsers and Node\N'46'js\N'46'
+.SH OPTIONS (TOPLEVEL)
+.TP 4
+\fB\N'45'\N'45'export\fR=\fIVAL\fR
+File containing the list of unit to export in a toplevel\N'46'
+.TP 4
+\fB\N'45'\N'45'nocmis\fR, \fB\N'45'\N'45'no\N'45'cmis\fR
+Do not include cmis when compiling toplevel\N'46'
+.TP 4
+\fB\N'45'\N'45'toplevel\fR
+Compile a toplevel\N'46'
+.SH OPTIONS (FILESYSTEM)
+.TP 4
+\fB\N'45'\N'45'extern\N'45'fs\fR
+Configure pseudo\N'45'filesystem to allow registering files from outside\N'46' (default)
+.TP 4
+\fB\N'45'\N'45'file\fR=\fIFILE\fR
+Register [\fIFILE\fR] to the pseudo filesystem\N'46'
+.TP 4
+\fB\N'45'I\fR \fIDIR\fR
+Add [\fIDIR\fR] to the list of include directories\N'46'
+.TP 4
+\fB\N'45'\N'45'no\N'45'extern\N'45'fs\fR
+Configure pseudo\N'45'filesystem to NOT allow registering files from outside\N'46'
+.TP 4
+\fB\N'45'\N'45'ofs\fR=\fIFILE\fR
+Output the filesystem to [\fIFILE\fR]\N'46'
+.SH COMMANDS
+.TP 4
+\fBbuild\N'45'fs\fR
+Js_of_ocaml pseudo filesystem utility
+.TP 4
+\fBbuild\N'45'runtime\fR
+Build standalone runtime\N'46' Used for separate compilation\N'46'
+.TP 4
+\fBlink\fR
+Js_of_ocaml linker
+.SH ARGUMENTS
+.TP 4
+\fIJS_FILES\fR
+Link JavaScript files [\fIJS_FILES\fR]\N'46' One can refer to path relative to Findlib packages with the syntax \N'39'+pkg_name/file\N'46'js\N'39'
+.TP 4
+\fIPROGRAM\fR (required)
+Compile the bytecode program [\fIPROGRAM\fR]\N'46' Use \N'39'\N'45'\N'39' to read from the standard input instead\N'46'
+.SH OPTIONS
+.TP 4
+\fB\N'45'\N'45'custom\N'45'header\fR=\fIVAL\fR
+Provide a custom header for the generated JavaScript file, useful for making the script an executable file with #!/usr/bin/env node
+.TP 4
+\fB\N'45'\N'45'debug\fR=\fISECTION\fR
+enable debug [\fISECTION\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'debuginfo\fR, \fB\N'45'\N'45'debug\N'45'info\fR
+Output debug information\N'46'
+.TP 4
+\fB\N'45'\N'45'disable\fR=\fIOPT\fR
+Disable optimization [\fIOPT\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'dynlink\fR
+Enable dynlink\N'46'
+.TP 4
+\fB\N'45'\N'45'enable\fR=\fIOPT\fR
+Enable optimization [\fIOPT\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'help\fR[=\fIFMT\fR] (default=auto)
+Show this help in format \fIFMT\fR\N'46' The value \fIFMT\fR must be one of `auto\N'39', `pager\N'39', `groff\N'39' or `plain\N'39'\N'46' With `auto\N'39', the format is `pager` or `plain\N'39' whenever the \fBTERM\fR env var is `dumb\N'39' or undefined\N'46'
+.TP 4
+\fB\N'45'\N'45'keep\N'45'unit\N'45'names\fR
+Keep unit name
+.TP 4
+\fB\N'45'\N'45'linkall\fR
+Link all primitives\N'46'
+.TP 4
+\fB\N'45'\N'45'no\N'45'sourcemap\fR, \fB\N'45'\N'45'no\N'45'source\N'45'map\fR
+Don\N'39't generate source map\N'46' All other source map related flags will be be ignored\N'46'
+.TP 4
+\fB\N'45'\N'45'noinline\fR, \fB\N'45'\N'45'no\N'45'inline\fR
+Disable inlining\N'46'
+.TP 4
+\fB\N'45'\N'45'noruntime\fR, \fB\N'45'\N'45'no\N'45'runtime\fR
+Do not include the standard runtime\N'46'
+.TP 4
+\fB\N'45'o\fR \fIFILE\fR
+Set output file name to [\fIFILE\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'opt\fR=\fINUM\fR
+Set optimization profile : [\fINUM\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'pretty\fR
+Pretty print the output\N'46'
+.TP 4
+\fB\N'45'q\fR, \fB\N'45'\N'45'quiet\fR
+suppress non\N'45'error messages\N'46'
+.TP 4
+\fB\N'45'\N'45'runtime\N'45'only\fR
+[DEPRECATED: use js_of_ocaml build\N'45'runtime instead]\N'46' Generate a JavaScript file containing/exporting the runtime only\N'46'
+.TP 4
+\fB\N'45'\N'45'set\fR=\fIPARAM=VALUE\fR
+Set compiler options\N'46'
+.TP 4
+\fB\N'45'\N'45'setenv\fR=\fIPARAM=VALUE\fR
+Set environment variable statically\N'46'
+.TP 4
+\fB\N'45'\N'45'source\N'45'map\N'45'inline\fR
+Inline sourcemap in the generated JavaScript\N'46'
+.TP 4
+\fB\N'45'\N'45'source\N'45'map\N'45'no\N'45'source\fR
+Do not inline sources in source map\N'46'
+.TP 4
+\fB\N'45'\N'45'source\N'45'map\N'45'root\fR=\fIVAL\fR
+root dir for source map\N'46'
+.TP 4
+\fB\N'45'\N'45'sourcemap\fR, \fB\N'45'\N'45'source\N'45'map\fR
+Generate source map\N'46'
+.TP 4
+\fB\N'45'\N'45'version\fR
+Show version information\N'46'
+.TP 4
+\fB\N'45'\N'45'wrap\N'45'with\N'45'fun\fR=\fIVAL\fR
+Wrap the generated JavaScript code inside a function that needs to be applied with the global object\N'46'
+.SH BUGS
+.P
+Bugs are tracked on github at \fIhttps://github\N'46'com/ocsigen/js_of_ocaml/issues\fR\N'46'
+.SH SEE ALSO
+.P
+ocaml(1)
+.SH AUTHORS
+.P
+Jerome Vouillon, Hugo Heuzard\N'46'
+.SH LICENSE
+.P
+Copyright (C) 2010\N'45'2020\N'46'
+.P
+js_of_ocaml is free software, you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, with linking exception; either version 2\N'46'1 of the License, or (at your option) any later version\N'46'

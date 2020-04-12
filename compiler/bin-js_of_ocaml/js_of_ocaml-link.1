@@ -1,0 +1,56 @@
+.\" Pipe this output to groff -Tutf8 | less
+.\"
+.mso an.tmac
+.TH "JS_OF_OCAML-LINK" 1 "" "Js_of_ocaml 3.5.2+git-fb9dd20f6" "Js_of_ocaml Manual"
+.\" Disable hyphenation and ragged-right
+.nh
+.ad l
+.SH NAME
+.P
+js_of_ocaml\N'45'link \N'45' Js_of_ocaml linker
+.SH SYNOPSIS
+.P
+\fBjs_of_ocaml link\fR [\fIOPTION\fR]\N'46'\N'46'\N'46' [\fIJS_FILES\fR]\N'46'\N'46'\N'46'
+.SH DESCRIPTION
+.P
+js_of_ocaml\N'45'link is a JavaScript linker\N'46' It can concatenate multiple JavaScript files keeping sourcemap information\N'46'
+.SH ARGUMENTS
+.TP 4
+\fIJS_FILES\fR
+Link JavaScript files [\fIJS_FILES\fR]\N'46'
+.SH OPTIONS
+.TP 4
+\fB\N'45'\N'45'help\fR[=\fIFMT\fR] (default=auto)
+Show this help in format \fIFMT\fR\N'46' The value \fIFMT\fR must be one of `auto\N'39', `pager\N'39', `groff\N'39' or `plain\N'39'\N'46' With `auto\N'39', the format is `pager` or `plain\N'39' whenever the \fBTERM\fR env var is `dumb\N'39' or undefined\N'46'
+.TP 4
+\fB\N'45'o\fR \fIFILE\fR
+Set output file name to [\fIFILE\fR]\N'46'
+.TP 4
+\fB\N'45'\N'45'resolve\N'45'sourcemap\N'45'url\fR=\fIVAL\fR (absent=false)
+Resolve source map url\N'46'
+.TP 4
+\fB\N'45'\N'45'source\N'45'map\N'45'inline\fR
+Inline sourcemap in the generated JavaScript\N'46'
+.TP 4
+\fB\N'45'\N'45'source\N'45'map\N'45'root\fR=\fIVAL\fR
+root dir for source map\N'46'
+.TP 4
+\fB\N'45'\N'45'sourcemap\fR, \fB\N'45'\N'45'source\N'45'map\fR
+Generate source map\N'46'
+.TP 4
+\fB\N'45'\N'45'version\fR
+Show version information\N'46'
+.SH BUGS
+.P
+Bugs are tracked on github at \fIhttps://github\N'46'com/ocsigen/js_of_ocaml/issues\fR\N'46'
+.SH SEE ALSO
+.P
+ocaml(1)
+.SH AUTHORS
+.P
+Jerome Vouillon, Hugo Heuzard\N'46'
+.SH LICENSE
+.P
+Copyright (C) 2010\N'45'2020\N'46'
+.P
+js_of_ocaml is free software, you can redistribute it and/or modify it under the terms of the GNU Lesser General Public License as published by the Free Software Foundation, with linking exception; either version 2\N'46'1 of the License, or (at your option) any later version\N'46'
