@@ -60,3 +60,39 @@ let%expect_test _ =
   [0-9]+      (regexp)
   true\|false (regexp)
   |}]
+
+let now = 1377134255.469
+
+(* check gmtime *)
+let tmg = Unix.gmtime now
+
+let failure_tm name tmg =
+  let open Unix in
+  Printf.printf
+    "%s: s:%d; m:%d; h:%d; D:%d; M:%d; Y:%d; WD:%d; YD:%d; dst:%b"
+    name
+    tmg.tm_sec
+    tmg.tm_min
+    tmg.tm_hour
+    tmg.tm_mday
+    tmg.tm_mon
+    tmg.tm_year
+    tmg.tm_wday
+    tmg.tm_yday
+    tmg.tm_isdst
+
+let%expect_test _ =
+  (match tmg with
+  | { Unix.tm_sec = 35
+    ; Unix.tm_min = 17
+    ; Unix.tm_hour = 1
+    ; Unix.tm_mday = 22
+    ; Unix.tm_mon = 7
+    ; Unix.tm_year = 113
+    ; Unix.tm_wday = 4
+    ; Unix.tm_yday = 233
+    ; Unix.tm_isdst = false
+    } ->
+      ()
+  | _ -> failure_tm "Unix.gmtime" tmg);
+  [%expect {||}]
