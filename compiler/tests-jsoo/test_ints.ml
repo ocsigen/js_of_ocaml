@@ -17,15 +17,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+let printl l = print_endline (String.concat ", " (List.map string_of_int l))
 
 let%expect_test _ =
-  compile_and_run
-    {| Scanf.sscanf "0.97.0" "%u.%u.%u" (fun major minor patch -> [major; minor; patch]) |};
-  [%expect {| |}]
+  Scanf.sscanf "0.97.0" "%u.%u.%u" (fun major minor patch ->
+      printl [ major; minor; patch ]);
+  [%expect {| 0, 97, 0 |}];
+  (try
+     Scanf.sscanf "0.-97.0" "%u.%u.%u" (fun major minor patch ->
+         printl [ major; minor; patch ])
+   with Scanf.Scan_failure s -> print_endline s);
+  [%expect {| scanf: bad input at char number 2: character '-' is not a decimal digit |}];
+  Scanf.sscanf "0.-97.0" "%u.-%u.%u" (fun major minor patch ->
+      printl [ major; minor; patch ]);
+  [%expect {| 0, 97, 0 |}];
+  Scanf.sscanf "0.-97.0" "%d.%d.%d" (fun major minor patch ->
+      printl [ major; minor; patch ]);
+  [%expect {| 0, -97, 0 |}]
 
 let%expect_test _ =
   Printf.printf "%d\n" (int_of_string "0u123");
   [%expect {| 123 |}];
   Printf.printf "%d\n" (int_of_string "0U123");
   [%expect {| 123 |}]
+
+let%expect_test _ =
+  Printf.printf "%d\n" (int_of_string "-0u123");
+  [%expect {| -123 |}];
+  Printf.printf "%d\n" (int_of_string "-0U123");
+  [%expect {| -123 |}]
