@@ -17,9 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+let%expect_test "unicode" =
+  let () = print_endline "the • and › characters" in
+  [%expect {| the • and › characters |}]
+
 let%expect_test _ =
-  Util.compile_and_run
-    {|
   let () =
     let oc = open_out "file.txt" in
     for i = 0 to 32 do
@@ -27,15 +29,16 @@ let%expect_test _ =
       output_string oc "\n"
     done;
     close_out oc
+  in
   let () =
     let ic = open_in "file.txt" in
     let l = ref [] in
     (try
-      while true do
-        l := input_line ic :: !l
-      done
-    with End_of_file -> ());
+       while true do
+         l := input_line ic :: !l
+       done
+     with End_of_file -> ());
     print_int (List.length !l)
-  |};
+  in
   [%expect {|
     33 |}]
