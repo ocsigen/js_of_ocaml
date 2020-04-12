@@ -1,6 +1,5 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2017 Hugo Heuzard
  * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,25 +17,46 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* https://github.com/ocsigen/js_of_ocaml/issues/739 *)
+let%expect_test _ =
+  print_float (Unix.time ());
+  [%expect {| [0-9]+\. (regexp) |}]
 
 let%expect_test _ =
-  Util.compile_and_run
-    {|
-     let r = ref false
-     let f x =
-       match Obj.is_int x with
-       | true -> r := true; true
-       | false -> r := false; false
+  print_float (Unix.gettimeofday ());
+  [%expect {| [0-9]+\.[0-9]* (regexp) |}]
 
-     let print_bool b = print_endline (string_of_bool b)
-     let () =
-       print_string "[not (is_int 1)]: ";
-       print_bool (not (f (Obj.repr 1)));
-       print_string "[is_int (1,2,3)]: ";
-       print_bool (f (Obj.repr (1, 2, 3)))
-  |};
-  [%expect {|
-    [not (is_int 1)]: false
-    [is_int (1,2,3)]: false
+let%expect_test _ =
+  let open Unix in
+  let { tm_sec; tm_min; tm_hour; tm_mday; tm_mon; tm_year; tm_wday; tm_yday; tm_isdst } =
+    gmtime (time ())
+  in
+  let gap () = print_char '\n' in
+  print_int tm_sec;
+  gap ();
+  print_int tm_min;
+  gap ();
+  print_int tm_hour;
+  gap ();
+  print_int tm_mday;
+  gap ();
+  print_int tm_mon;
+  gap ();
+  print_int tm_year;
+  gap ();
+  print_int tm_wday;
+  gap ();
+  print_int tm_yday;
+  gap ();
+  print_endline (if tm_isdst then "true" else "false");
+  [%expect
+    {|
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  [0-9]+      (regexp)
+  true\|false (regexp)
   |}]
