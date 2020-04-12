@@ -18,6 +18,7 @@
 * Compiler: restore optimization when generating if statements
 * Compiler: fix javascript parser in the presence of line directives (#980)
 * Runtime: Catch nodejs errors and re-raise them as Sys_error
+* Runtime: fix caml_parse_sign_and_base and unsigned syntax
 * Lib: Fix the type of blur and focus event to be focusEvent (#929)
 
 # 3.5.2 (2019-12-14) - Hong Kong
@@ -84,7 +85,7 @@
 * Lib: Fix Dom_svg.createForeignObject (#756)
 * Runtime: Fix caml_obj_tag, causing miscompilation with lazy value (#772)
 * Runtime: Fix caml_ml_seek_out, caml_ml_pos_out (#779) (Shachar Itzhaky)
-* Runtime: caml_parse_sign_and_base to support unsigned syntax (#792) (Shachar Itzhaky)
+* Runtime: caml_parse_sign_and_base to support unsigned syntax (#791) (Shachar Itzhaky)
 * Runtime: fix encoding when printing to stdout (#800)
 * Runtime: Handle browserfs in fs_node detection logic (#831)
 * Runtime: fix Obj.tag (#832)
