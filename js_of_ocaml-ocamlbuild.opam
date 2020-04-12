@@ -15,6 +15,6 @@ build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
   "ocaml" {>= "4.03.0"}
-  "dune" {>= "2.2"}
+  "dune" {>= "2.5"}
   "ocamlbuild"
 ]
