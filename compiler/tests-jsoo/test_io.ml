@@ -38,7 +38,9 @@ let%expect_test _ =
          l := input_line ic :: !l
        done
      with End_of_file -> ());
-    print_int (List.length !l)
+    close_in ic;
+    print_int (List.length !l);
+    Sys.remove "file.txt"
   in
   [%expect {|
     33 |}]
