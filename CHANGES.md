@@ -2,16 +2,17 @@
 ## Features/Changes
 * Compiler: fix vardecl optim (#946)
 * Compiler: Compiler: change compilation scheme for branches (#948)
-* Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
+* Compiler: Introduce sub-command: link, build-runtime, build-fs (#987)
 * Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
 * Runtime: optimize caml_call_gen
 * Runtime: change representation of int64  (#905)
-* Lib: add closest method to element (#930)
-* Ppx: ppx_js behave better with merlin (#933)
-* Lib: add several methods and functions to Typed_array (#970)
 * Runtime: improve node.js backend for Sys.command (#979)
+* Lib: add closest method to element (#930)
+* Lib: add several methods and functions to Typed_array (#970)
+* Ppx: ppx_js behave better with merlin (#933)
+* Misc: Cleanup Meta files (e.g. `js_of_ocaml.tyxml` is no longer valid library name)
 * Misc: switch to ocamlformat.0.14
 
 ## Bug fixes
