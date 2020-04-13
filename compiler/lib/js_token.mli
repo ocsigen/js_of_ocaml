@@ -116,3 +116,5 @@ val to_string : t -> string
 val to_string_extra : t -> string
 
 val is_comment : t -> bool
+
+val div_or_regexp : t list -> [ `Div | `Regexp | `Unknown of [ `Div | `Regexp ] | `NA ]

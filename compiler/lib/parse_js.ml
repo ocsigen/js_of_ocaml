@@ -71,15 +71,15 @@ module Lexer = struct
         aux first (first :: past) rest
 
   let lexer_aux ?(rm_comment = true) lexbuf =
-    let rec loop lexbuf prev acc =
+    let rec loop lexbuf ~prev acc =
       let t = Js_lexer.main prev lexbuf in
       match t with
       | Js_token.EOF _ -> List.rev acc
       | _ ->
-          let prev = if Js_token.is_comment t then prev else Some t in
-          loop lexbuf prev (t :: acc)
+          let prev = if Js_token.is_comment t then prev else t :: prev in
+          loop lexbuf ~prev (t :: acc)
     in
-    let toks = loop lexbuf None [] in
+    let toks = loop lexbuf ~prev:[] [] in
     (* hack: adjust tokens *)
     adjust_tokens ~keep_comment:(not rm_comment) toks
 

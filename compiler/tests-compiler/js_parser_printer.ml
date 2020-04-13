@@ -46,6 +46,11 @@ let%expect_test "no postfix subtraction coalesce" =
     a-
     -b; |}]
 
+let%expect_test "parsing regexp" =
+  print ~compact:true "for(;;) /a/.test('a')";
+  [%expect {|
+    for(;;)/a/.test("a"); |}]
+
 let%expect_test "reserved words as fields" =
   print
     ~compact:false
@@ -208,8 +213,7 @@ let%expect_test "multiline string" =
     "
     42
 |};
-  [%expect
-    {|
+  [%expect {|
     2: 4:42,
     3: 4:"    ",
     5: 4:42, |}];
@@ -281,22 +285,22 @@ let%expect_test "div_or_regexp" =
     1 / 2
     1 + /regexp/
     if(a) { e } /regexp/
-    +{ e } / denominator
-    +{ e } / denominator[a
+    +{ e } / denominator /* incorrect */
+    +{ e } / denominator[a /* incorrect */]
     if(b) /regexp/
     (b) / denominator
 |};
   [%expect
     {|
     LEXER: WEIRD newline in regexp
-    LEXER: WEIRD newline in regexp_class
+    LEXER: WEIRD newline in regexp
 
      2: 4:1, 6:/, 8:2,
      3: 4:1, 6:+, 8:/regexp/,
      4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 14:}, 16:/regexp/,
-     5: 4:+, 5:{, 7:e, 9:}, 11:/ denominator,
-     6: 4:+, 5:{, 7:e, 9:}, 11:/ denominator[a,
-     7: 4:if, 6:(, 7:b, 8:), 10:/, 11:regexp, 17:/,
+     5: 4:+, 5:{, 7:e, 9:}, 11:/ denominator /, 26:*, 28:incorrect, 38:*, 39:/,
+     6: 4:+, 5:{, 7:e, 9:}, 11:/ denominator[a /* incorrect */],
+     7: 4:if, 6:(, 7:b, 8:), 10:/regexp/,
      8: 4:(, 5:b, 6:), 8:/, 10:denominator, |}]
 
 let%expect_test "virtual semicolon" =

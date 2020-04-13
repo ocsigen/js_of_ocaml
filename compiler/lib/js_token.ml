@@ -310,3 +310,51 @@ let is_comment = function
   | TComment _ -> true
   | TCommentLineDirective _ -> true
   | _ -> false
+
+let div_or_regexp prev =
+  match prev with
+  | ( T_IDENTIFIER _ | T_NUMBER _ | T_STRING _ | T_REGEX _ | T_FALSE _ | T_TRUE _
+    | T_NULL _ | T_THIS _ | T_INCR _ | T_DECR _ | T_RBRACKET _ )
+    :: _ ->
+      `Div
+  | ((T_RPAREN _ | T_RCURLY _) as t) :: rest -> (
+      let rec pop level stack =
+        match t, stack with
+        | T_RCURLY _, T_LCURLY _ :: rest ->
+            if level = 0 then stack else pop (level - 1) rest
+        | T_RCURLY _, T_RCURLY _ :: rest -> pop (level + 1) rest
+        | T_RPAREN _, T_LPAREN _ :: rest ->
+            if level = 0 then stack else pop (level - 1) rest
+        | T_RPAREN _, T_RPAREN _ :: rest -> pop (level + 1) rest
+        | _, _ :: rest -> pop level rest
+        | _, [] -> rest
+      in
+      let rest = pop 0 rest in
+      match t, rest with
+      | T_RCURLY _, T_LCURLY _ :: x -> (
+          match x with
+          | (T_CATCH _ | T_FINALLY _ | T_FUNCTION _) :: _ -> `Regexp
+          | _ -> `Unknown `Regexp)
+      | T_RPAREN _, T_LPAREN _ :: x -> (
+          match x with
+          | (T_IF _ | T_FOR _ | T_WHILE _ | T_TRY _ | T_SWITCH _) :: _ -> `Regexp
+          | _ -> `Unknown `Div)
+      | (T_RCURLY _ | T_RPAREN _), [] -> `NA
+      | _ -> assert false)
+  | T_INCR_NB _ :: _ | T_DECR_NB _ :: _ -> `Unknown `Regexp
+  | ( T_WITH _ | T_WHILE _ | T_VOID _ | T_VAR _ | T_TYPEOF _ | T_TRY _ | T_THROW _
+    | T_SWITCH _ | T_STRICT_NOT_EQUAL _ | T_STRICT_EQUAL _ | T_SEMICOLON _
+    | T_RSHIFT_ASSIGN _ | T_RSHIFT3_ASSIGN _ | T_RSHIFT3 _ | T_RSHIFT _ | T_RETURN _
+    | T_PLUS_ASSIGN _ | T_PLUS _ | T_PLING _ | T_PERIOD _ | T_OR _ | T_NOT_EQUAL _
+    | T_NOT _ | T_SPREAD _ | T_NEW _ | T_MULT_ASSIGN _ | T_MULT _ | T_MOD_ASSIGN _
+    | T_MOD _ | T_MINUS_ASSIGN _ | T_MINUS _ | T_LSHIFT_ASSIGN _ | T_LSHIFT _ | T_LPAREN _
+    | T_LESS_THAN_EQUAL _ | T_LESS_THAN _ | T_LCURLY _ | T_LBRACKET _ | T_INSTANCEOF _
+    | T_IN _ | T_IF _ | T_GREATER_THAN_EQUAL _ | T_GREATER_THAN _ | T_FUNCTION _ | T_FOR _
+    | T_FINALLY _ | T_EQUAL _ | T_ELSE _ | T_DO _ | T_DIV_ASSIGN _ | T_DIV _ | T_DELETE _
+    | T_DEFAULT _ | T_CONTINUE _ | T_COMMA _ | T_COLON _ | T_CATCH _ | T_CASE _
+    | T_BREAK _ | T_BIT_XOR_ASSIGN _ | T_BIT_XOR _ | T_BIT_OR_ASSIGN _ | T_BIT_OR _
+    | T_BIT_NOT _ | T_BIT_AND_ASSIGN _ | T_BIT_AND _ | T_ASSIGN _ | T_AND _ | T_DEBUGGER _
+    | T_VIRTUAL_SEMICOLON _ )
+    :: _ ->
+      `Regexp
+  | (TUnknown _ | TComment _ | TCommentLineDirective _ | EOF _) :: _ | [] -> `NA

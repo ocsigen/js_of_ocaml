@@ -77,8 +77,8 @@ let update_loc lexbuf ?file ~line ~absolute chars =
 let tokinfo prev lexbuf =
   let pi = Parse_info.t_of_lexbuf lexbuf in
   match prev with
-  | None -> { pi with Parse_info.fol = Yes }
-  | Some prev ->
+  | [] -> { pi with Parse_info.fol = Yes }
+  | prev :: _ ->
     let prev_pi = Js_token.info prev in
     if prev_pi.Parse_info.line <> pi.Parse_info.line
     && Option.equal String.equal prev_pi.Parse_info.name pi.Parse_info.name
@@ -155,13 +155,13 @@ rule main prev = parse
   | "++" {
       let cpi = tokinfo prev lexbuf in
       match prev with
-        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
+        | p :: _ when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
           T_INCR_NB(cpi)
         | _ -> T_INCR(cpi) }
   | "--" {
       let cpi = tokinfo prev lexbuf in
       match prev with
-        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
+        | p :: _ when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
           T_DECR_NB(cpi)
         | _ -> T_DECR(cpi) }
   | "<<=" { T_LSHIFT_ASSIGN (tokinfo prev lexbuf); }
@@ -264,27 +264,19 @@ rule main prev = parse
    *)
 
   | "/" | "/=" {
-      let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
-
-      match prev with
-      | Some (
-            T_IDENTIFIER _
-          | T_NUMBER _ | T_STRING _ | T_REGEX _
-          | T_FALSE _ | T_TRUE _ | T_NULL _
-          | T_THIS _
-          | T_INCR _ | T_DECR _
-          | T_RBRACKET _ | T_RPAREN _
-        ) -> begin match s with
-          | "/" -> T_DIV (info);
-          | "/=" -> T_DIV_ASSIGN info
-          | _ -> assert false
-        end
-      | _ ->
-          let buf = Buffer.create 127 in
-          Buffer.add_string buf s;
-          regexp buf lexbuf;
-          T_REGEX (Buffer.contents buf, info)
+    let s = tok lexbuf in
+    let info = tokinfo prev lexbuf in
+    match Js_token.div_or_regexp prev with
+    | `Div | `Unknown `Div ->
+      (match s with
+       | "/" -> T_DIV (info);
+       | "/=" -> T_DIV_ASSIGN info
+       | _ -> assert false)
+    |  `Regexp | `Unknown `Regexp | `NA   ->
+      let buf = Buffer.create 127 in
+      Buffer.add_string buf s;
+      regexp buf lexbuf;
+      T_REGEX (Buffer.contents buf, info)
     }
 
   (* ----------------------------------------------------------------------- *)

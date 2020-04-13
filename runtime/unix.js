@@ -54,7 +54,7 @@ function win_cleanup() {}
 //Provides: win_handle_fd const
 function win_handle_fd(x) {return x;}
 
-//Provides: unix_isatty 
+//Provides: unix_isatty
 //Requires: fs_node_supported
 function unix_isatty(fileDescriptor) {
   if(fs_node_supported()) {

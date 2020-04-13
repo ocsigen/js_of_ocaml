@@ -17,4 +17,4 @@
  * license.txt for more details.
  *)
 
-val main : Js_token.t option -> Lexing.lexbuf -> Js_token.t
+val main : Js_token.t list -> Lexing.lexbuf -> Js_token.t
