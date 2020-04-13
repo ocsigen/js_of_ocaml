@@ -17,22 +17,18 @@
 
 (rule
   (targets js_of_ocaml.1)
-  (mode promote)
   (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} --help=groff))))
 
 (rule
   (targets js_of_ocaml-link.1)
-  (mode promote)
   (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} link --help=groff))))
 
 (rule
   (targets js_of_ocaml-build-fs.1)
-  (mode promote)
   (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} build-fs --help=groff))))
 
 (rule
   (targets js_of_ocaml-build-runtime.1)
-  (mode promote)
   (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} build-runtime --help=groff))))
 
 (install
