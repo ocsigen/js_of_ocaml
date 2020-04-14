@@ -34,6 +34,14 @@ let () =
     (fun ml -> if not (Filename.check_suffix ml ".pp.ml") then mls := ml :: !mls)
     "generate dummy js stubs";
   let externals = ref String_set.empty in
+  (* Add primitives for compatibility reasons. Existing users might
+     depend on it (e.g. gen_js_api), we dont want the ocaml compiler
+     to complain about theses missing primitives. *)
+  externals :=
+    List.fold_right
+      String_set.add
+      [ "caml_js_from_string"; "caml_js_to_byte_string"; "caml_js_to_string" ]
+      !externals;
   let value_description _mapper desc =
     let l = List.filter (fun x -> x.[0] <> '%') desc.Parsetree.pval_prim in
     externals := List.fold_right String_set.add l !externals;

@@ -72,6 +72,10 @@ void caml_js_from_float () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_float!\n");
   exit(1);
 }
+void caml_js_from_string () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_string!\n");
+  exit(1);
+}
 void caml_js_fun_call () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_fun_call!\n");
   exit(1);
@@ -128,8 +132,16 @@ void caml_js_to_bool () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_bool!\n");
   exit(1);
 }
+void caml_js_to_byte_string () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_byte_string!\n");
+  exit(1);
+}
 void caml_js_to_float () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_float!\n");
+  exit(1);
+}
+void caml_js_to_string () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_string!\n");
   exit(1);
 }
 void caml_js_typeof () {
