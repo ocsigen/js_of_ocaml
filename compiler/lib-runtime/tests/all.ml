@@ -31,7 +31,7 @@ let%expect_test _ =
     +lexing.js
     +marshal.js
     +md5.js
-    +mlString.js
+    +mlBytes.js
     +nat.js
     +parsing.js
     +stdlib.js
@@ -59,7 +59,7 @@ let%expect_test _ =
     +lexing.js
     +marshal.js
     +md5.js
-    +mlString.js
+    +mlBytes.js
     +nat.js
     +parsing.js
     +stdlib.js

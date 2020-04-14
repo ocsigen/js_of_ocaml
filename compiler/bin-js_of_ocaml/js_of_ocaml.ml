@@ -29,7 +29,7 @@ let _ =
       ~catch:false
       ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
       Compile.command
-      [ Link.command; Build_fs.command; Build_runtime.command ]
+      [ Link.command; Build_fs.command; Build_runtime.command; Print_runtime.command ]
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

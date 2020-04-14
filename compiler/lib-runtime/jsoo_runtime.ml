@@ -36,7 +36,7 @@ let runtime =
     ; lexing
     ; marshal
     ; md5
-    ; mlString
+    ; mlBytes
     ; nat
     ; parsing
     ; stdlib
