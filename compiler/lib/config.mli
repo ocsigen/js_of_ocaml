@@ -59,6 +59,8 @@ module Flag : sig
 
   val safe_string : unit -> bool
 
+  val use_js_string : unit -> bool
+
   val check_magic : unit -> bool
 
   val enable : string -> unit

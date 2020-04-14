@@ -28,6 +28,7 @@ type fragment =
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
   ; code : Javascript.program
+  ; ignore : [ `No | `Because of Primitive.condition ]
   }
 
 val parse_file : string -> fragment list

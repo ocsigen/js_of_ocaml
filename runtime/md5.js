@@ -32,8 +32,14 @@ function caml_md5_chan(chanid,len){
 }
 
 //Provides: caml_md5_string
+//Requires: caml_bytes_of_string, caml_md5_bytes
+function caml_md5_string(s, ofs, len) {
+  return caml_md5_bytes(caml_bytes_of_string(s),ofs,len);
+}
+
+//Provides: caml_md5_bytes
 //Requires: caml_string_of_array, caml_convert_string_to_bytes
-var caml_md5_string = function () {
+var caml_md5_bytes = function () {
   function add (x, y) { return (x + y) | 0; }
   function xx(q,a,b,x,s,t) {
     a = add(add(a, q), add(x, t));

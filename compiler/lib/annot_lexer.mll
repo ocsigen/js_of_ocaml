@@ -33,7 +33,9 @@ rule initial = parse
   | "object_literal" {TA_Object_literal}
   | "Version" {TVersion}
   | "Weakdef" {TWeakdef}
-  | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
+  | "If" {TIf}
+  | "!" {TBang}
+  | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''-''0'-'9']* {
       let x = Lexing.lexeme lexbuf in
       TIdent x}
   | ['0'-'9']+ ('.' (['0'-'9']+)) * {

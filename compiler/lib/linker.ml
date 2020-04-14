@@ -28,6 +28,7 @@ type fragment =
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
   ; code : Javascript.program
+  ; ignore : [ `No | `Because of Primitive.condition ]
   }
 
 let loc pi =
@@ -45,6 +46,8 @@ let parse_annot loc s =
     | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
     | `Version (_, l) -> Some (`Version (Some loc, l))
     | `Weakdef _ -> Some (`Weakdef (Some loc))
+    | `If (_, name) -> Some (`If (Some loc, name))
+    | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
   with
   | Not_found -> None
   | _ -> None
@@ -105,6 +108,7 @@ let parse_from_lex ~filename lex =
             ; version_constraint = []
             ; weakdef = false
             ; code
+            ; ignore = `No
             }
           in
           List.fold_left annot ~init:fragment ~f:(fun fragment a ->
@@ -114,7 +118,31 @@ let parse_from_lex ~filename lex =
               | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
               | `Version (_, l) ->
                   { fragment with version_constraint = l :: fragment.version_constraint }
-              | `Weakdef _ -> { fragment with weakdef = true })
+              | `Weakdef _ -> { fragment with weakdef = true }
+              | `If (_, "js-string") as reason ->
+                  if not (Config.Flag.use_js_string ())
+                  then { fragment with ignore = `Because reason }
+                  else fragment
+              | `Ifnot (_, "js-string") as reason ->
+                  if Config.Flag.use_js_string ()
+                  then { fragment with ignore = `Because reason }
+                  else fragment
+              | `If (pi, name) | `Ifnot (pi, name) ->
+                  let loc =
+                    match pi with
+                    | None -> ""
+                    | Some loc ->
+                        Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
+                  in
+                  let filename =
+                    match pi with
+                    | Some { Parse_info.src = Some x; _ }
+                    | Some { Parse_info.name = Some x; _ } ->
+                        x
+                    | _ -> "??"
+                  in
+                  Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
+                  fragment)
         with Parse_js.Parsing_error pi ->
           let name =
             match pi with
@@ -288,46 +316,51 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let load_fragment ~filename { provides; requires; version_constraint; weakdef; code } =
-  let vmatch =
-    match version_constraint with
-    | [] -> true
-    | l -> List.exists l ~f:version_match
-  in
-  if vmatch
-  then (
-    incr last_code_id;
-    let id = !last_code_id in
-    match provides with
-    | None -> always_included := { filename; program = code } :: !always_included
-    | Some (pi, name, kind, ka) ->
-        let code = Macro.f code in
-        let module J = Javascript in
-        let rec find = function
-          | [] -> None
-          | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
-            when String.equal name n ->
-              Some (List.length l)
-          | _ :: rem -> find rem
-        in
-        let arity = find code in
-        let named_values = find_named_value code in
-        Primitive.register name kind ka arity;
-        StringSet.iter Primitive.register_named_value named_values;
-        (if Hashtbl.mem provided name
-        then
-          let _, ploc, weakdef = Hashtbl.find provided name in
-          if not weakdef
-          then
-            warn
-              "warning: overriding primitive %S\n  old: %s\n  new: %s@."
-              name
-              (loc ploc)
-              (loc pi));
-        Hashtbl.add provided name (id, pi, weakdef);
-        Hashtbl.add provided_rev id (name, pi);
-        check_primitive ~name pi ~code ~requires;
-        Hashtbl.add code_pieces id (code, requires))
+let load_fragment
+    ~filename
+    { provides; requires; version_constraint; weakdef; code; ignore } =
+  match ignore with
+  | `Because _ -> ()
+  | `No ->
+      let vmatch =
+        match version_constraint with
+        | [] -> true
+        | l -> List.exists l ~f:version_match
+      in
+      if vmatch
+      then (
+        incr last_code_id;
+        let id = !last_code_id in
+        match provides with
+        | None -> always_included := { filename; program = code } :: !always_included
+        | Some (pi, name, kind, ka) ->
+            let code = Macro.f code in
+            let module J = Javascript in
+            let rec find = function
+              | [] -> None
+              | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
+                when String.equal name n ->
+                  Some (List.length l)
+              | _ :: rem -> find rem
+            in
+            let arity = find code in
+            let named_values = find_named_value code in
+            Primitive.register name kind ka arity;
+            StringSet.iter Primitive.register_named_value named_values;
+            (if Hashtbl.mem provided name
+            then
+              let _, ploc, weakdef = Hashtbl.find provided name in
+              if not weakdef
+              then
+                warn
+                  "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+                  name
+                  (loc ploc)
+                  (loc pi));
+            Hashtbl.add provided name (id, pi, weakdef);
+            Hashtbl.add provided_rev id (name, pi);
+            check_primitive ~name pi ~code ~requires;
+            Hashtbl.add code_pieces id (code, requires))
 
 let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
 

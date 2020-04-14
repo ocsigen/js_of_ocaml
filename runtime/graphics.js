@@ -21,12 +21,12 @@ var caml_gr_state;
 
 //Provides: caml_gr_state_get
 //Requires: caml_gr_state
-//Requires: caml_named_value, caml_new_string
+//Requires: caml_named_value, caml_string_of_jsbytes
 function caml_gr_state_get() {
   if(caml_gr_state) {
     return caml_gr_state;
   }
-  throw [0,caml_named_value("Graphics.Graphic_failure"), caml_new_string("Not initialized")]
+  throw [0,caml_named_value("Graphics.Graphic_failure"), caml_string_of_jsbytes("Not initialized")]
 }
 //Provides: caml_gr_state_set
 //Requires: caml_gr_state,caml_gr_state_init
@@ -40,9 +40,10 @@ function caml_gr_state_set(ctx) {
 //Requires: caml_gr_state_create
 //Requires: caml_gr_state_set
 //Requires: caml_failwith
+//Requires: caml_jsstring_of_string
 function caml_gr_open_graph(info){
   var g = joo_global_object;
-  var info = info.toString();
+  var info = caml_jsstring_of_string(info);
   function get(name){
     var res = info.match("(^|,) *"+name+" *= *([a-zA-Z0-9_]+) *(,|$)");
     if(res) return res[2];
@@ -97,6 +98,7 @@ function caml_gr_state_init(){
 }
 
 //Provides: caml_gr_state_create
+//Requires: caml_string_of_jsbytes
 function caml_gr_state_create(canvas,w,h){
   var context = canvas.getContext("2d");
   return {
@@ -107,10 +109,10 @@ function caml_gr_state_create(canvas,w,h){
     width : w,
     height : h,
     line_width : 1,
-    font : "fixed",
+    font : caml_string_of_jsbytes("fixed"),
     text_size : 26,
     color : 0x000000,
-    title : ""
+    title : caml_string_of_jsbytes("")
   };
 }
 
@@ -131,11 +133,12 @@ function caml_gr_close_graph(){
 
 //Provides: caml_gr_set_window_title
 //Requires: caml_gr_state_get
+//Requires: caml_jsstring_of_string
 function caml_gr_set_window_title(name){
   var s = caml_gr_state_get();
-  name = name.toString?name.toString():name;
   s.title = name;
-  if(s.set_title) s.set_title(name);
+  var jsname = caml_jsstring_of_string(name);
+  if(s.set_title) s.set_title(jsname);
   return 0;
 }
 
@@ -356,34 +359,38 @@ function caml_gr_draw_char(c){
 
 //Provides: caml_gr_draw_string
 //Requires: caml_gr_draw_str
+//Requires: caml_jsstring_of_string
 function caml_gr_draw_string(str){
-  caml_gr_draw_str(str.toString());
+  caml_gr_draw_str(caml_jsstring_of_string(str));
   return 0;
 }
 
 //Provides: caml_gr_set_font
 //Requires: caml_gr_state_get
+//Requires: caml_jsstring_of_string
 function caml_gr_set_font(f){
   var s = caml_gr_state_get();
   s.font = f;
-  s.context.font = s.text_size + "px " + s.font.toString();
+  s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
   return 0;
 }
 
 //Provides: caml_gr_set_text_size
 //Requires: caml_gr_state_get
+//Requires: caml_jsstring_of_string
 function caml_gr_set_text_size(size){
   var s = caml_gr_state_get();
   s.text_size = size;
-  s.context.font = s.text_size + "px " + s.font.toString();
+  s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
   return 0;
 }
 
 //Provides: caml_gr_text_size
 //Requires: caml_gr_state_get
+//Requires: caml_jsstring_of_string
 function caml_gr_text_size(txt){
   var s = caml_gr_state_get();
-  var w = s.context.measureText(txt.toString()).width;
+  var w = s.context.measureText(caml_jsstring_of_string(txt)).width;
   return [0,w,s.text_size];
 }
 

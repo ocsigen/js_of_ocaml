@@ -107,7 +107,9 @@ module Share = struct
 
   let add_code_string s share =
     let share = add_string s share in
-    add_prim "caml_new_string" share
+    if Config.Flag.use_js_string ()
+    then share
+    else add_prim "caml_string_of_jsbytes" share
 
   let add_code_istring s share = add_string s share
 
@@ -124,11 +126,12 @@ module Share = struct
         | Pc c -> get_constant c t
         | _ -> t)
 
-  let get
-      ?(alias_strings = false)
-      ?(alias_prims = false)
-      ?(alias_apply = true)
-      { blocks; _ } : t =
+  let get ?alias_strings ?(alias_prims = false) ?(alias_apply = true) { blocks; _ } : t =
+    let alias_strings =
+      match alias_strings with
+      | None -> Config.Flag.use_js_string ()
+      | Some x -> x
+    in
     let count =
       Addr.Map.fold
         (fun _ block share ->
@@ -176,7 +179,7 @@ module Share = struct
         then (
           try J.EVar (StringMap.find s t.vars.strings)
           with Not_found ->
-            let x = Var.fresh_n "str" in
+            let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
             let v = J.V x in
             t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
             J.EVar v)
@@ -309,12 +312,19 @@ let kind k =
   | `Mutable -> mutable_p
   | `Mutator -> mutator_p
 
+let ocaml_string ~ctx ~loc s =
+  if Config.Flag.use_js_string ()
+  then s
+  else
+    let p = Share.get_prim (runtime_fun ctx) "caml_string_of_jsbytes" ctx.Ctx.share in
+    ecall p [ s ] loc
+
 let rec constant_rec ~ctx x level instrs =
   match x with
   | String s ->
       let e = Share.get_string str_js s ctx.Ctx.share in
-      let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
-      ecall p [ e ] J.N, instrs
+      let e = ocaml_string ~ctx ~loc:J.N e in
+      e, instrs
   | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
@@ -853,8 +863,8 @@ let register_bin_math_prim name prim =
 
 let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
-      let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
-      ecall p [ J.EBin (J.Plus, str_js "", cx) ] loc);
+      let s = J.EBin (J.Plus, str_js "", cx) in
+      ocaml_string ~ctx ~loc s);
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
@@ -908,8 +918,7 @@ let _ =
   register_un_prim "caml_js_from_bool" `Pure (fun cx _ ->
       J.EUn (J.Not, J.EUn (J.Not, cx)));
   register_un_prim "caml_js_to_bool" `Pure (fun cx _ -> to_int cx);
-  register_un_prim "caml_js_from_string" `Mutable (fun cx loc ->
-      J.ECall (J.EDot (cx, "toString"), [], loc));
+
   register_tern_prim "caml_js_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable (fun cx cy _ -> J.EAccess (cx, cy));
@@ -920,6 +929,17 @@ let _ =
   register_bin_prim "caml_js_instanceof" `Pure (fun cx cy _ ->
       bool (J.EBin (J.InstanceOf, cx, cy)));
   register_un_prim "caml_js_typeof" `Pure (fun cx _ -> J.EUn (J.Typeof, cx))
+
+(* This is not correct when switching the js-string flag *)
+(* {[
+    register_un_prim "caml_jsstring_of_string" `Mutable (fun cx loc ->
+      J.ECall (J.EDot (cx, "toString"), [], loc));
+    register_bin_prim "caml_string_notequal" `Pure (fun cx cy _ ->
+      J.EBin (J.NotEqEq, cx, cy));
+    register_bin_prim "caml_string_equal" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.EqEq, cx, cy)))
+     ]}
+   *)
 
 (****)
 (* when raising ocaml exception and [improved_stacktrace] is enabled,

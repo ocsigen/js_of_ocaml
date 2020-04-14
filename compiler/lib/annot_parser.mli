@@ -9,8 +9,10 @@ type token =
   | TRequires
   | TProvides
   | TOTHER of (string)
+  | TIf
   | TIdent of (string)
   | TComma
+  | TBang
   | TA_Shallow
   | TA_Pure
   | TA_Object_literal

@@ -23,7 +23,7 @@
     %{dep:lexing.js}
     %{dep:marshal.js}
     %{dep:md5.js}
-    %{dep:mlString.js}
+    %{dep:mlBytes.js}
     %{dep:nat.js}
     %{dep:parsing.js}
     %{dep:stdlib.js}
@@ -60,7 +60,7 @@
     lexing.js
     marshal.js
     md5.js
-    mlString.js
+    mlBytes.js
     nat.js
     parsing.js
     runtime.js
