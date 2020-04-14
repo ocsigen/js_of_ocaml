@@ -12,7 +12,7 @@
 (rule
   (targets viewer_js.js)
   (action
-    (run %{bin:js_of_ocaml} --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
+    (run %{bin:js_of_ocaml}
          --source-map %{dep:viewer_js.bc} -o %{targets} --pretty
          -I ./ --file %{dep:scene.json} )))
 

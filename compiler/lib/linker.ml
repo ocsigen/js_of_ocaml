@@ -158,6 +158,14 @@ let parse_from_lex ~filename lex =
   in
   res
 
+let parse_builtin builtin =
+  let filename = Builtins.File.name builtin in
+  let content = Builtins.File.content builtin in
+  let lex =
+    Parse_js.lexer_from_string ~name:filename ~src:filename ~rm_comment:false content
+  in
+  parse_from_lex ~filename lex
+
 let parse_string string =
   let lex = Parse_js.lexer_from_string ~rm_comment:false string in
   parse_from_lex ~filename:"<dummy>" lex
@@ -170,7 +178,6 @@ let parse_file f =
           let pkg, f' =
             match String.split ~sep:Filename.dir_sep f with
             | [] -> assert false
-            | [ f ] -> "js_of_ocaml-compiler", f
             | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
           in
           Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')

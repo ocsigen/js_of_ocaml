@@ -33,6 +33,7 @@ let run
     ; profile
     ; source_map
     ; runtime_files
+    ; no_runtime
     ; input_file
     ; output_file
     ; params
@@ -95,6 +96,17 @@ let run
         close_in ic;
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
+  let runtime_files, builtin =
+    List.partition_map runtime_files ~f:(fun name ->
+        match Builtins.find name with
+        | Some t -> `Snd t
+        | None -> `Fst name)
+  in
+  let builtin = if no_runtime then builtin else Jsoo_runtime.runtime @ builtin in
+  List.iter builtin ~f:(fun t ->
+      let filename = Builtins.File.name t in
+      let runtimes = Linker.parse_builtin t in
+      List.iter runtimes ~f:(Linker.load_fragment ~filename));
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]

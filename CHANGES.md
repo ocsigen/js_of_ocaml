@@ -3,6 +3,7 @@
 * Compiler: fix vardecl optim (#946)
 * Compiler: Compiler: change compilation scheme for branches (#948)
 * Compiler: Introduce sub-command: link, build-runtime, build-fs (#987)
+* Compiler: embed javascript runtime in the compiler (#978)
 * Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty

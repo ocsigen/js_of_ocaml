@@ -25,7 +25,13 @@ val strip_comment : lexer -> lexer
 
 val lexer_from_file : ?rm_comment:bool -> string -> lexer
 
-val lexer_from_string : ?rm_comment:bool -> ?offset:Parse_info.t -> string -> lexer
+val lexer_from_string :
+     ?rm_comment:bool
+  -> ?name:string
+  -> ?src:string
+  -> ?offset:Parse_info.t
+  -> string
+  -> lexer
 
 val lexer_from_channel : ?rm_comment:bool -> in_channel -> lexer
 

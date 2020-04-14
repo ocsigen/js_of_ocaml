@@ -27,6 +27,7 @@ type t =
     profile : Driver.profile option
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
+  ; no_runtime : bool
   ; runtime_only : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option
@@ -208,7 +209,7 @@ let options =
       fs_external
       nocmis
       profile
-      noruntime
+      no_runtime
       runtime_only
       no_sourcemap
       sourcemap
@@ -221,9 +222,6 @@ let options =
       keep_unit_names =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
-    let runtime_files =
-      if noruntime then runtime_files else "+runtime.js" :: runtime_files
-    in
     let runtime_files =
       if runtime_only && Filename.check_suffix input_file ".js"
       then runtime_files @ [ input_file ]
@@ -290,6 +288,7 @@ let options =
       ; export_file
       ; include_dir
       ; runtime_files
+      ; no_runtime
       ; runtime_only
       ; fs_files
       ; fs_output
@@ -443,7 +442,7 @@ let options_runtime_only =
       fs_output
       fs_external
       include_dir
-      noruntime
+      no_runtime
       no_sourcemap
       sourcemap
       sourcemap_inline_in_js
@@ -453,9 +452,6 @@ let options_runtime_only =
       js_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
-    let runtime_files =
-      if noruntime then runtime_files else "+runtime.js" :: runtime_files
-    in
     let output_file =
       match output_file with
       | "-" -> `Stdout, true
@@ -506,6 +502,7 @@ let options_runtime_only =
       ; export_file = None
       ; include_dir
       ; runtime_files
+      ; no_runtime
       ; runtime_only = true
       ; fs_files
       ; fs_output

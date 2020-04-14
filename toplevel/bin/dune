@@ -6,5 +6,6 @@
     bytes
     js_of_ocaml-compiler
     js_of_ocaml-compiler.findlib-support
+    js_of_ocaml-compiler.runtime
     )
   )

@@ -7,6 +7,7 @@
     js_of_ocaml-compiler
     cmdliner
     compiler-libs.common
+    js_of_ocaml-compiler.runtime
     (select findlib_support.ml from
      ;; Only link js_of_ocaml-compiler.findlib-support if it exists
      (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
@@ -40,3 +41,16 @@
      js_of_ocaml-build-fs.1
      js_of_ocaml-build-runtime.1
   ))
+
+
+;; Generate and install runtime.js for compatibility reasons
+
+(rule
+  (target runtime.js)
+  (action
+   (with-stdout-to %{target} (run %{bin:js_of_ocaml} print-standard-runtime))))
+
+(install
+  (section lib)
+  (package js_of_ocaml-compiler)
+  (files runtime.js))

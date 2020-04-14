@@ -39,7 +39,6 @@
           -I ./
           --pretty
           --toplevel
-          --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
           %{dep:test_dynlink.cmo})))
 
 (rule
@@ -72,21 +71,18 @@
  (targets toplevel.js)
  (action
     (run %{bin:js_of_ocaml}
-          -I %{lib:reactiveData:.}
-          -I .
-          --file %{dep:examples.ml}
-          --file %{dep:test_dynlink.cmo}
-          --file %{dep:test_dynlink.js}
-	  --export %{dep:export.txt}
-          --toplevel
-	  --disable shortvar
-          --noruntime
-	  %{lib:js_of_ocaml-compiler:runtime.js}
-	  %{lib:js_of_ocaml-compiler:toplevel.js}
-          %{lib:js_of_ocaml-compiler:dynlink.js}
-	  %{dep:toplevel.bc}
-	  -o %{targets}
-          )))
+         -I %{lib:reactiveData:.}
+         -I .
+         --file %{dep:examples.ml}
+         --file %{dep:test_dynlink.cmo}
+         --file %{dep:test_dynlink.js}
+         --export %{dep:export.txt}
+         --toplevel
+         --disable shortvar
+         +toplevel.js +dynlink.js
+         %{dep:toplevel.bc}
+         -o %{targets}
+    )))
 
 (alias
   (name default)
