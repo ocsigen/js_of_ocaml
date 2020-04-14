@@ -394,6 +394,11 @@ let options_runtime_only =
       & opt_all (list (pair ~sep:'=' string string)) []
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let include_dir =
+    let doc = "Add [$(docv)] to the list of include directories." in
+    Arg.(
+      value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
+  in
   let fs_files =
     let doc = "Register [$(docv)] to the pseudo filesystem." in
     Arg.(
@@ -437,6 +442,7 @@ let options_runtime_only =
       fs_files
       fs_output
       fs_external
+      include_dir
       noruntime
       no_sourcemap
       sourcemap
@@ -498,7 +504,7 @@ let options_runtime_only =
       ; linkall = false
       ; toplevel = false
       ; export_file = None
-      ; include_dir = []
+      ; include_dir
       ; runtime_files
       ; runtime_only = true
       ; fs_files
@@ -521,6 +527,7 @@ let options_runtime_only =
       $ fs_files
       $ fs_output
       $ fs_external
+      $ include_dir
       $ noruntime
       $ no_sourcemap
       $ sourcemap
