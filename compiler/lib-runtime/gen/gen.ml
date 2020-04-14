@@ -41,13 +41,6 @@ let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
   | _ :: rest ->
-      (* runtime.js is generated for compatibility purpose only, ignore it *)
-      let rest =
-        List.filter
-          ~f:(fun x -> not (String.equal (Filename.basename x) "runtime.js"))
-          rest
-      in
-
       (* load all files to make sure they are valid *)
       Js_of_ocaml_compiler.Linker.load_files rest;
       let linkinfos = Js_of_ocaml_compiler.Linker.init () in

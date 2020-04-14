@@ -1,41 +1,3 @@
-(alias
-  (name default)
-  (deps runtime.js))
-
-(rule
-  (targets runtime.js)
-  (action
-   (run %{bin:jsoo_link} -o %{targets}
-    %{dep:bigarray.js}
-    %{dep:bigstring-cstruct.js}
-    %{dep:bigstring.js}
-    %{dep:fs.js}
-    %{dep:fs_fake.js}
-    %{dep:fs_node.js}
-    %{dep:gc.js}
-    %{dep:graphics.js}
-    %{dep:ieee_754.js}
-    %{dep:int64.js}
-    %{dep:internalMod.js}
-    %{dep:io.js}
-    %{dep:jslib.js}
-    %{dep:jslib_js_of_ocaml.js}
-    %{dep:lexing.js}
-    %{dep:marshal.js}
-    %{dep:md5.js}
-    %{dep:mlBytes.js}
-    %{dep:nat.js}
-    %{dep:parsing.js}
-    %{dep:stdlib.js}
-    %{dep:unix.js}
-    %{dep:weak.js}
-)))
-
-(rule
-  (alias runtest)
-  (deps stdlib_modern.js)
-  (action (run %{bin:jsoo_minify} %{dep:stdlib_modern.js})))
-
 (install
   (section lib)
   (package js_of_ocaml-compiler)
@@ -63,7 +25,6 @@
     mlBytes.js
     nat.js
     parsing.js
-    runtime.js
     stdlib.js
     toplevel.js
     unix.js
