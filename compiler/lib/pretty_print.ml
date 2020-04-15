@@ -109,9 +109,9 @@ let rec push st e =
         st.indent <- st.indent + n;
         st.box_indent <- st.indent
     | End_group ->
-        st.box_indent <- fst (List.hd st.prev_indents);
-        st.indent <- snd (List.hd st.prev_indents);
-        st.prev_indents <- List.tl st.prev_indents)
+        st.box_indent <- fst (List.hd_exn st.prev_indents);
+        st.indent <- snd (List.hd_exn st.prev_indents);
+        st.prev_indents <- List.tl_exn st.prev_indents)
   else (
     (* Fits? *)
     st.l <- e :: st.l;
@@ -132,9 +132,9 @@ let rec push st e =
         if st.n = 0
         then (
           flat_render st (List.rev st.l);
-          st.box_indent <- fst (List.hd st.prev_indents);
-          st.indent <- snd (List.hd st.prev_indents);
-          st.prev_indents <- List.tl st.prev_indents;
+          st.box_indent <- fst (List.hd_exn st.prev_indents);
+          st.indent <- snd (List.hd_exn st.prev_indents);
+          st.prev_indents <- List.tl_exn st.prev_indents;
           st.cur <- st.cur + st.w;
           st.l <- []))
 

@@ -88,7 +88,7 @@ function caml_create_file_extern(name,content){
 }
 |}
   in
-  let fragments = Linker.parse_string code in
+  let fragments = Linker.Fragment.parse_string code in
   List.iter fragments ~f:(fun fr -> Linker.load_fragment ~filename:"<dummy>" fr);
   let instr =
     Pseudo_fs.f

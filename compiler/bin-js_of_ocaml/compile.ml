@@ -105,9 +105,10 @@ let run
   let builtin = if no_runtime then builtin else Jsoo_runtime.runtime @ builtin in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
-      let runtimes = Linker.parse_builtin t in
+      let runtimes = Linker.Fragment.parse_builtin t in
       List.iter runtimes ~f:(Linker.load_fragment ~filename));
-  Linker.load_files runtime_files;
+  Linker.load_files ~filenames:runtime_files;
+  Linker.check_deps ();
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
     with Not_found -> include_dir

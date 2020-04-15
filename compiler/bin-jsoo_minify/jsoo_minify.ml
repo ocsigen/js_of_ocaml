@@ -35,10 +35,10 @@ let f { Arg.common; output_file; use_stdin; files } =
         let file =
           match output_file with
           | Some f -> f
-          | None ->
-              if List.length files = 1
-              then chop_extension (List.hd files) ^ ".min.js"
-              else "a.min.js"
+          | None -> (
+              match files with
+              | [ file ] -> chop_extension file ^ ".min.js"
+              | _ -> "a.min.js")
         in
         Filename.gen_file file f
   in

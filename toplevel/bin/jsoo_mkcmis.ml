@@ -58,7 +58,7 @@ let rec scan_args acc = function
   | [] -> List.rev acc
 
 let args =
-  let args = List.tl (Array.to_list Sys.argv) in
+  let args = List.tl_exn (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let runtime_files, args =
     List.partition ~f:(fun s -> Filename.check_suffix s ".js") args
@@ -73,9 +73,10 @@ let args =
 
   List.iter builtin ~f:(fun t ->
       let filename = Js_of_ocaml_compiler.Builtins.File.name t in
-      let runtimes = Js_of_ocaml_compiler.Linker.parse_builtin t in
+      let runtimes = Js_of_ocaml_compiler.Linker.Fragment.parse_builtin t in
       List.iter runtimes ~f:(Js_of_ocaml_compiler.Linker.load_fragment ~filename));
-  Js_of_ocaml_compiler.Linker.load_files runtime_files;
+  Js_of_ocaml_compiler.Linker.load_files ~filenames:runtime_files;
+  Js_of_ocaml_compiler.Linker.check_deps ();
   let all = Jsoo_common.cmis args in
   let instr =
     List.map all ~f:(fun filename ->

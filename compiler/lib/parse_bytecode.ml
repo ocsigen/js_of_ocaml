@@ -583,7 +583,7 @@ module State = struct
         :: state.handlers
     }
 
-  let pop_handler state = { state with handlers = List.tl state.handlers }
+  let pop_handler state = { state with handlers = List.tl_exn state.handlers }
 
   let addr_of_current_handler state =
     match state.handlers with

@@ -144,6 +144,18 @@ module List = struct
     let x, xs = take' [] n l in
     rev x, xs
 
+  let hd_exn = hd
+
+  let tl_exn = tl
+
+  let tl = function
+    | [] -> None
+    | _ :: tail -> Some tail
+
+  let hd = function
+    | [] -> None
+    | x :: _ -> Some x
+
   let rec last = function
     | [] -> None
     | [ x ] -> Some x

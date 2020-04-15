@@ -20,17 +20,6 @@
 
 open! Stdlib
 
-type fragment =
-  { provides :
-      (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
-      option
-  ; requires : string list
-  ; version_constraint : ((int -> int -> bool) * string) list list
-  ; weakdef : bool
-  ; code : Javascript.program
-  ; ignore : [ `No | `Because of Primitive.condition ]
-  }
-
 let loc pi =
   match pi with
   | Some { Parse_info.src = Some src; line; _ }
@@ -38,176 +27,300 @@ let loc pi =
       Printf.sprintf "%s:%d" src line
   | None | Some _ -> "unknown location"
 
-let parse_annot loc s =
-  let buf = Lexing.from_string s in
-  try
-    match Annot_parser.annot Annot_lexer.initial buf with
-    | `Requires (_, l) -> Some (`Requires (Some loc, l))
-    | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
-    | `Version (_, l) -> Some (`Version (Some loc, l))
-    | `Weakdef _ -> Some (`Weakdef (Some loc))
-    | `If (_, name) -> Some (`If (Some loc, name))
-    | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
-  with
-  | Not_found -> None
-  | _ -> None
-
 let error s = Format.ksprintf (fun s -> failwith s) s
 
-let is_file_directive cmt =
-  let lexbuf = Lexing.from_string cmt in
-  try
-    let _file, _line = Js_lexer.pos lexbuf in
-    true
-  with _ -> false
+module Arity : sig
+  val find : Javascript.program -> name:string -> int option
+end = struct
+  let rec find p ~name =
+    match p with
+    | [] -> None
+    | ( Javascript.Function_declaration (Javascript.S { Javascript.name = n; _ }, l, _, _)
+      , _ )
+      :: _
+      when String.equal name n ->
+        Some (List.length l)
+    | _ :: rem -> find rem ~name
+end
 
-let parse_from_lex ~filename lex =
-  let status, lexs =
-    Parse_js.lexer_fold
-      (fun (status, lexs) t ->
-        match t with
-        | Js_token.TComment (_info, str) when is_file_directive str -> (
-            match status with
-            | `Annot _ -> `Annot [], lexs
-            | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
-        | Js_token.TComment (info, str) -> (
-            match parse_annot info str with
-            | None -> status, lexs
-            | Some a -> (
-                match status with
-                | `Annot annot -> `Annot (a :: annot), lexs
-                | `Code (an, co) -> `Annot [ a ], (List.rev an, List.rev co) :: lexs))
-        | _ when Js_token.is_comment t -> status, lexs
-        | Js_token.TUnknown (info, _) ->
-            Format.eprintf
-              "Unknown token while parsing JavaScript at %s@."
-              (loc (Some info));
-            if not (Filename.check_suffix filename ".js")
-            then Format.eprintf "%S doesn't look like a JavaScript file@." filename;
-            failwith "Error while parsing JavaScript"
-        | c -> (
-            match status with
-            | `Code (annot, code) -> `Code (annot, c :: code), lexs
-            | `Annot annot -> `Code (annot, [ c ]), lexs))
-      (`Annot [], [])
-      lex
-  in
-  let lexs =
-    match status with
-    | `Annot _ -> lexs
-    | `Code (annot, code) -> (List.rev annot, List.rev code) :: lexs
-  in
-  let res =
-    List.rev_map lexs ~f:(fun (annot, code) ->
-        let lex = Parse_js.lexer_from_list code in
-        try
-          let code = Parse_js.parse lex in
-          let fragment =
-            { provides = None
-            ; requires = []
-            ; version_constraint = []
-            ; weakdef = false
-            ; code
-            ; ignore = `No
-            }
-          in
-          List.fold_left annot ~init:fragment ~f:(fun fragment a ->
-              match a with
-              | `Provides (pi, name, kind, ka) ->
-                  { fragment with provides = Some (pi, name, kind, ka) }
-              | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
-              | `Version (_, l) ->
-                  { fragment with version_constraint = l :: fragment.version_constraint }
-              | `Weakdef _ -> { fragment with weakdef = true }
-              | `If (_, "js-string") as reason ->
-                  if not (Config.Flag.use_js_string ())
-                  then { fragment with ignore = `Because reason }
-                  else fragment
-              | `Ifnot (_, "js-string") as reason ->
-                  if Config.Flag.use_js_string ()
-                  then { fragment with ignore = `Because reason }
-                  else fragment
-              | `If (pi, name) | `Ifnot (pi, name) ->
-                  let loc =
-                    match pi with
-                    | None -> ""
-                    | Some loc ->
-                        Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
-                  in
-                  let filename =
-                    match pi with
-                    | Some { Parse_info.src = Some x; _ }
-                    | Some { Parse_info.name = Some x; _ } ->
-                        x
-                    | _ -> "??"
-                  in
-                  Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
-                  fragment)
-        with Parse_js.Parsing_error pi ->
-          let name =
-            match pi with
-            | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
-            | _ -> "??"
-          in
-          error
-            "cannot parse file %S (orig:%S from l:%d, c:%d)@."
-            filename
+module Named_value : sig
+  val find_all : Javascript.program -> StringSet.t
+end = struct
+  class traverse_and_find_named_values all =
+    object
+      inherit Js_traverse.map as self
+
+      method expression x =
+        let open Javascript in
+        (match x with
+        | ECall
+            (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
+          ->
+            all := StringSet.add v !all
+        | _ -> ());
+        self#expression x
+    end
+
+  let find_all code =
+    let all = ref StringSet.empty in
+    let p = new traverse_and_find_named_values all in
+    ignore (p#program code);
+    !all
+end
+
+module Check = struct
+  class check_and_warn name pi =
+    object
+      inherit Js_traverse.free as super
+
+      method merge_info from =
+        let def = from#get_def_name in
+        let use = from#get_use_name in
+        let diff = StringSet.diff def use in
+        let diff = StringSet.remove name diff in
+        let diff =
+          StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff
+        in
+        if not (StringSet.is_empty diff)
+        then
+          warn
+            "WARN unused for primitive %s at %s:@. %s@."
             name
-            pi.Parse_info.line
-            pi.Parse_info.col)
-  in
-  res
+            (loc pi)
+            (String.concat ~sep:", " (StringSet.elements diff));
+        super#merge_info from
+    end
 
-let parse_builtin builtin =
-  let filename = Builtins.File.name builtin in
-  let content = Builtins.File.content builtin in
-  let lex =
-    Parse_js.lexer_from_string ~name:filename ~src:filename ~rm_comment:false content
-  in
-  parse_from_lex ~filename lex
+  let primitive ~name pi ~code ~requires =
+    let free =
+      if Config.Flag.warn_unused ()
+      then new check_and_warn name pi
+      else new Js_traverse.free
+    in
+    let _code = free#program code in
+    let freename = free#get_free_name in
+    let freename =
+      List.fold_left requires ~init:freename ~f:(fun freename x ->
+          StringSet.remove x freename)
+    in
+    let freename = StringSet.diff freename Reserved.keyword in
+    let freename = StringSet.diff freename Reserved.provided in
+    let freename = StringSet.remove Constant.global_object freename in
+    if not (StringSet.mem name free#get_def_name)
+    then
+      warn
+        "warning: primitive code does not define value with the expected name: %s (%s)@."
+        name
+        (loc pi);
+    if not (StringSet.is_empty freename)
+    then (
+      warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
+      warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
+end
 
-let parse_string string =
-  let lex = Parse_js.lexer_from_string ~rm_comment:false string in
-  parse_from_lex ~filename:"<dummy>" lex
+module Fragment = struct
+  type provides =
+    { parse_info : Parse_info.t option
+    ; name : string
+    ; kind : Primitive.kind
+    ; kind_args : Primitive.kind_arg list option
+    ; arity : int option
+    ; named_values : StringSet.t
+    }
 
-let parse_file f =
-  let file =
+  type t =
+    { provides : provides option
+    ; locations : Parse_info.t * Parse_info.t
+    ; requires : string list
+    ; version_constraint : ((int -> int -> bool) * string) list list
+    ; weakdef : bool
+    ; code : Javascript.program
+    ; ignore : [ `No | `Because of Primitive.condition ]
+    }
+
+  let parse_annot loc s =
+    let buf = Lexing.from_string s in
     try
-      match Findlib.path_require_findlib f with
-      | Some f ->
-          let pkg, f' =
-            match String.split ~sep:Filename.dir_sep f with
-            | [] -> assert false
-            | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
-          in
-          Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
-      | None -> Fs.absolute_path f
+      match Annot_parser.annot Annot_lexer.initial buf with
+      | `Requires (_, l) -> Some (`Requires (Some loc, l))
+      | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
+      | `Version (_, l) -> Some (`Version (Some loc, l))
+      | `Weakdef _ -> Some (`Weakdef (Some loc))
+      | `If (_, name) -> Some (`If (Some loc, name))
+      | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
     with
-    | Not_found -> error "cannot find file '%s'. @." f
-    | Sys_error s -> error "%s@." s
-  in
-  let lex = Parse_js.lexer_from_file ~rm_comment:false file in
-  parse_from_lex ~filename:file lex
+    | Not_found -> None
+    | _ -> None
 
-class check_and_warn name pi =
-  object
-    inherit Js_traverse.free as super
+  let is_file_directive cmt =
+    let lexbuf = Lexing.from_string cmt in
+    try
+      let _file, _line = Js_lexer.pos lexbuf in
+      true
+    with _ -> false
 
-    method merge_info from =
-      let def = from#get_def_name in
-      let use = from#get_use_name in
-      let diff = StringSet.diff def use in
-      let diff = StringSet.remove name diff in
-      let diff = StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff in
-      if not (StringSet.is_empty diff)
-      then
-        warn
-          "WARN unused for primitive %s at %s:@. %s@."
-          name
-          (loc pi)
-          (String.concat ~sep:", " (StringSet.elements diff));
-      super#merge_info from
-  end
+  let analyze fragment =
+    match fragment.provides with
+    | None -> fragment
+    | Some
+        ({ parse_info = pi; name; kind = _; kind_args = _; arity = _; named_values = _ }
+        as provides) ->
+        let code = Macro.f fragment.code in
+        let named_values = Named_value.find_all code in
+        let arity = Arity.find code ~name in
+        Check.primitive ~name pi ~code ~requires:fragment.requires;
+        { fragment with code; provides = Some { provides with named_values; arity } }
+
+  let parse_from_lex ~filename lex =
+    let status, lexs =
+      Parse_js.lexer_fold
+        (fun (status, lexs) t ->
+          match t with
+          | Js_token.TComment (_info, str) when is_file_directive str -> (
+              match status with
+              | `Annot _ -> `Annot [], lexs
+              | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
+          | Js_token.TComment (info, str) -> (
+              match parse_annot info str with
+              | None -> status, lexs
+              | Some a -> (
+                  match status with
+                  | `Annot annot -> `Annot (a :: annot), lexs
+                  | `Code (an, co) -> `Annot [ a ], (List.rev an, List.rev co) :: lexs))
+          | _ when Js_token.is_comment t -> status, lexs
+          | Js_token.TUnknown (info, _) ->
+              Format.eprintf
+                "Unknown token while parsing JavaScript at %s@."
+                (loc (Some info));
+              if not (Filename.check_suffix filename ".js")
+              then Format.eprintf "%S doesn't look like a JavaScript file@." filename;
+              failwith "Error while parsing JavaScript"
+          | c -> (
+              match status with
+              | `Code (annot, code) -> `Code (annot, c :: code), lexs
+              | `Annot annot -> `Code (annot, [ c ]), lexs))
+        (`Annot [], [])
+        lex
+    in
+    let lexs =
+      match status with
+      | `Annot _ -> lexs
+      | `Code (annot, code) -> (List.rev annot, List.rev code) :: lexs
+    in
+    let res =
+      List.rev_map lexs ~f:(fun (annot, (code : Js_token.token list)) ->
+          let locations =
+            match List.hd code, List.last code with
+            | Some first, Some last ->
+                let first = Js_token.info_of_tok first in
+                let last = Js_token.info_of_tok last in
+                first, last
+            | None, Some _ | Some _, None -> assert false
+            | None, None -> assert false
+          in
+          let lex = Parse_js.lexer_from_list code in
+          try
+            let code = Parse_js.parse lex in
+            let fragment =
+              { provides = None
+              ; locations
+              ; requires = []
+              ; version_constraint = []
+              ; weakdef = false
+              ; code
+              ; ignore = `No
+              }
+            in
+            List.fold_left annot ~init:fragment ~f:(fun fragment a ->
+                match a with
+                | `Provides (pi, name, kind, ka) ->
+                    { fragment with
+                      provides =
+                        Some
+                          { parse_info = pi
+                          ; name
+                          ; kind
+                          ; kind_args = ka
+                          ; arity = None
+                          ; named_values = StringSet.empty
+                          }
+                    }
+                | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
+                | `Version (_, l) ->
+                    { fragment with
+                      version_constraint = l :: fragment.version_constraint
+                    }
+                | `Weakdef _ -> { fragment with weakdef = true }
+                | `If (_, "js-string") as reason ->
+                    if not (Config.Flag.use_js_string ())
+                    then { fragment with ignore = `Because reason }
+                    else fragment
+                | `Ifnot (_, "js-string") as reason ->
+                    if Config.Flag.use_js_string ()
+                    then { fragment with ignore = `Because reason }
+                    else fragment
+                | `If (pi, name) | `Ifnot (pi, name) ->
+                    let loc =
+                      match pi with
+                      | None -> ""
+                      | Some loc ->
+                          Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
+                    in
+                    let filename =
+                      match pi with
+                      | Some { Parse_info.src = Some x; _ }
+                      | Some { Parse_info.name = Some x; _ } ->
+                          x
+                      | _ -> "??"
+                    in
+                    Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
+                    fragment)
+          with Parse_js.Parsing_error pi ->
+            let name =
+              match pi with
+              | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
+              | _ -> "??"
+            in
+            error
+              "cannot parse file %S (orig:%S from l:%d, c:%d)@."
+              filename
+              name
+              pi.Parse_info.line
+              pi.Parse_info.col)
+    in
+    List.map ~f:analyze res
+
+  let parse_builtin builtin =
+    let filename = Builtins.File.name builtin in
+    let content = Builtins.File.content builtin in
+    let lex =
+      Parse_js.lexer_from_string ~name:filename ~src:filename ~rm_comment:false content
+    in
+    parse_from_lex ~filename lex
+
+  let parse_string string =
+    let lex = Parse_js.lexer_from_string ~rm_comment:false string in
+    parse_from_lex ~filename:"<dummy>" lex
+
+  let parse_file f =
+    let file =
+      try
+        match Findlib.path_require_findlib f with
+        | Some f ->
+            let pkg, f' =
+              match String.split ~sep:Filename.dir_sep f with
+              | [] -> assert false
+              | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
+            in
+            Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
+        | None -> Fs.absolute_path f
+      with
+      | Not_found -> error "cannot find file '%s'. @." f
+      | Sys_error s -> error "%s@." s
+    in
+    let lex = Parse_js.lexer_from_file ~rm_comment:false file in
+    parse_from_lex ~filename:file lex
+end
 
 (*
 exception May_not_return
@@ -247,32 +360,6 @@ let all_return p =
   try loop_all_sources p; true with May_not_return -> false
 *)
 
-let check_primitive ~name pi ~code ~requires =
-  let free =
-    if Config.Flag.warn_unused ()
-    then new check_and_warn name pi
-    else new Js_traverse.free
-  in
-  let _code = free#program code in
-  let freename = free#get_free_name in
-  let freename =
-    List.fold_left requires ~init:freename ~f:(fun freename x ->
-        StringSet.remove x freename)
-  in
-  let freename = StringSet.diff freename Reserved.keyword in
-  let freename = StringSet.diff freename Reserved.provided in
-  let freename = StringSet.remove Constant.global_object freename in
-  if not (StringSet.mem name free#get_def_name)
-  then
-    warn
-      "warning: primitive code does not define value with the expected name: %s (%s)@."
-      name
-      (loc pi);
-  if not (StringSet.is_empty freename)
-  then (
-    warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
-
 let version_match =
   List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
@@ -302,30 +389,16 @@ let code_pieces = Hashtbl.create 31
 
 let always_included = ref []
 
-class traverse_and_find_named_values all =
-  object
-    inherit Js_traverse.map as self
-
-    method expression x =
-      let open Javascript in
-      (match x with
-      | ECall
-          (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
-        ->
-          all := StringSet.add v !all
-      | _ -> ());
-      self#expression x
-  end
-
-let find_named_value code =
-  let all = ref StringSet.empty in
-  let p = new traverse_and_find_named_values all in
-  ignore (p#program code);
-  !all
-
 let load_fragment
     ~filename
-    { provides; requires; version_constraint; weakdef; code; ignore } =
+    { Fragment.provides
+    ; requires
+    ; version_constraint
+    ; weakdef
+    ; code
+    ; locations = _
+    ; ignore
+    } =
   match ignore with
   | `Because _ -> ()
   | `No ->
@@ -340,18 +413,7 @@ let load_fragment
         let id = !last_code_id in
         match provides with
         | None -> always_included := { filename; program = code } :: !always_included
-        | Some (pi, name, kind, ka) ->
-            let code = Macro.f code in
-            let module J = Javascript in
-            let rec find = function
-              | [] -> None
-              | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
-                when String.equal name n ->
-                  Some (List.length l)
-              | _ :: rem -> find rem
-            in
-            let arity = find code in
-            let named_values = find_named_value code in
+        | Some { parse_info = pi; name; kind; kind_args = ka; arity; named_values } ->
             Primitive.register name kind ka arity;
             StringSet.iter Primitive.register_named_value named_values;
             (if Hashtbl.mem provided name
@@ -366,10 +428,10 @@ let load_fragment
                   (loc pi));
             Hashtbl.add provided name (id, pi, weakdef);
             Hashtbl.add provided_rev id (name, pi);
-            check_primitive ~name pi ~code ~requires;
             Hashtbl.add code_pieces id (code, requires))
 
-let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
+let add_file filename =
+  List.iter (Fragment.parse_file filename) ~f:(load_fragment ~filename)
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -399,9 +461,7 @@ let check_deps () =
           ())
     code_pieces
 
-let load_files l =
-  List.iter l ~f:add_file;
-  check_deps ()
+let load_files ~filenames = List.iter filenames ~f:add_file
 
 (* resolve *)
 let rec resolve_dep_name_rev visited path nm =

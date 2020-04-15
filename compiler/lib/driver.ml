@@ -165,11 +165,11 @@ let extra_js_files =
          try
            let ss =
              List.fold_left
-               (Linker.parse_file file)
+               (Linker.Fragment.parse_file file)
                ~init:StringSet.empty
-               ~f:(fun ss { Linker.provides; _ } ->
+               ~f:(fun ss { Linker.Fragment.provides; _ } ->
                  match provides with
-                 | Some (_, name, _, _) -> StringSet.add name ss
+                 | Some { name; _ } -> StringSet.add name ss
                  | _ -> ss)
            in
            (file, ss) :: acc

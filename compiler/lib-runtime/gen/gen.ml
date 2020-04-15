@@ -42,7 +42,13 @@ let () =
   | [] -> assert false
   | _ :: rest ->
       (* load all files to make sure they are valid *)
-      Js_of_ocaml_compiler.Linker.load_files rest;
+      let all =
+        List.map rest ~f:(fun filename ->
+            let fragments = Js_of_ocaml_compiler.Linker.Fragment.parse_file filename in
+            List.iter fragments ~f:(Js_of_ocaml_compiler.Linker.load_fragment ~filename);
+            filename, fragments)
+      in
+      Js_of_ocaml_compiler.Linker.check_deps ();
       let linkinfos = Js_of_ocaml_compiler.Linker.init () in
       let prov = Js_of_ocaml_compiler.Linker.get_provided () in
       let _linkinfos, missing =
@@ -51,8 +57,9 @@ let () =
       assert (StringSet.is_empty missing);
 
       (* generation *)
-      let rest = List.sort_uniq ~compare:String.compare rest in
-      List.iter rest ~f:(fun f ->
+      let filenames = List.map all ~f:fst in
+      let sorted_filenames = List.sort_uniq ~compare:String.compare filenames in
+      List.iter sorted_filenames ~f:(fun f ->
           let name = Filename.basename f in
           let content = read_file f in
           Printf.printf

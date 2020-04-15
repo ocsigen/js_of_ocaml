@@ -20,26 +20,38 @@
 
 open Stdlib
 
-type fragment =
-  { provides :
-      (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
-      option
-  ; requires : string list
-  ; version_constraint : ((int -> int -> bool) * string) list list
-  ; weakdef : bool
-  ; code : Javascript.program
-  ; ignore : [ `No | `Because of Primitive.condition ]
-  }
+module Fragment : sig
+  type provides =
+    { parse_info : Parse_info.t option
+    ; name : string
+    ; kind : Primitive.kind
+    ; kind_args : Primitive.kind_arg list option
+    ; arity : int option
+    ; named_values : StringSet.t
+    }
 
-val parse_file : string -> fragment list
+  type t =
+    { provides : provides option
+    ; locations : Parse_info.t * Parse_info.t
+    ; requires : string list
+    ; version_constraint : ((int -> int -> bool) * string) list list
+    ; weakdef : bool
+    ; code : Javascript.program
+    ; ignore : [ `No | `Because of Primitive.condition ]
+    }
 
-val parse_string : string -> fragment list
+  val parse_file : string -> t list
 
-val parse_builtin : Builtins.File.t -> fragment list
+  val parse_string : string -> t list
 
-val load_files : string list -> unit
+  val parse_builtin : Builtins.File.t -> t list
+end
 
-val load_fragment : filename:string -> fragment -> unit
+val load_files : filenames:string list -> unit
+
+val load_fragment : filename:string -> Fragment.t -> unit
+
+val check_deps : unit -> unit
 
 type state
 
