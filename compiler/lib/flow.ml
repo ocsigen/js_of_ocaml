@@ -190,7 +190,7 @@ let expr_escape st _x e =
   match e with
   | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply (_, l, _) -> List.iter l ~f:(fun x -> block_escape st x)
-  | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
+  | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le), _) -> ()
   | Prim (Extern name, l) ->
       let ka =
         match Primitive.kind_args name with

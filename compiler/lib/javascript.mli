@@ -108,10 +108,10 @@ and binop =
   | NotEq
   | EqEqEq
   | NotEqEq
-  | Lt
-  | Le
-  | Gt
-  | Ge
+  | Lt of bool
+  | Le of bool
+  | Gt of bool
+  | Ge of bool
   | InstanceOf
   | In
   | Lsl

@@ -80,11 +80,11 @@ let eval_prim x =
   | Le, [ Int i; Int j ] -> bool Int32.(i <= j)
   | Eq, [ Int i; Int j ] -> bool Int32.(i = j)
   | Neq, [ Int i; Int j ] -> bool Int32.(i <> j)
-  | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
       match name, l with
       (* int *)
+      | "%unsigned", [ Int i ] -> if Int32.(i >= 0l) then Some (Int i) else None
       | "%int_add", _ -> int_binop l Int.add
       | "%int_sub", _ -> int_binop l Int.sub
       | "%direct_int_mul", _ -> int_binop l Int.mul
@@ -330,12 +330,39 @@ let the_case_of info x =
   | Pc (Tuple (j, _, _)) -> CTag j
   | _ -> Unknown
 
+type cond_of =
+  | Zero
+  | Non_zero
+  | Unknown
+
+let the_cond_of info x =
+  get_approx
+    info
+    (fun x ->
+      match info.info_defs.(Var.idx x) with
+      | Expr (Constant (Int 0l | Float 0.)) -> Zero
+      | Expr
+          (Constant
+            (Int _ | Float _ | Tuple _ | String _ | IString _ | Float_array _ | Int64 _))
+        ->
+          Non_zero
+      | Expr (Block (_, _, _)) -> Non_zero
+      | Expr (Field _ | Closure _ | Prim _ | Apply _) -> Unknown
+      | Param | Phi _ -> Unknown)
+    Unknown
+    (fun u v ->
+      match u, v with
+      | Zero, Zero -> Zero
+      | Non_zero, Non_zero -> Non_zero
+      | _ -> Unknown)
+    x
+
 let eval_branch info = function
   | Cond (x, ftrue, ffalse) as b -> (
-      match the_int info (Pv x) with
-      | Some 0l -> Branch ffalse
-      | Some _ -> Branch ftrue
-      | _ -> b)
+      match the_cond_of info x with
+      | Zero -> Branch ffalse
+      | Non_zero -> Branch ftrue
+      | Unknown -> b)
   | Switch (x, const, tags) as b -> (
       (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
          The proper fix would be to remove the deadcode entirely.

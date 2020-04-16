@@ -1898,23 +1898,31 @@ and compile infos pc state instrs =
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
+        let ux = Var.fresh () in
         let args = State.stack_vars state in
         let y = Var.fresh () in
-        ( Let (y, Prim (Ult, [ Pc (Int n); Pv x ])) :: instrs
+        ( Let (y, Prim (Lt, [ Pc (Int n); Pv ux ]))
+          :: Let (ux, Prim (Extern "%unsigned", [ Pv x ]))
+          :: instrs
         , Cond (y, (pc + offset + 2, args), (pc + 3, args))
         , state )
     | BUGEINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
+        let ux = Var.fresh () in
         let args = State.stack_vars state in
         let y = Var.fresh () in
-        ( Let (y, Prim (Ult, [ Pc (Int n); Pv x ])) :: instrs
+        ( Let (y, Prim (Lt, [ Pc (Int n); Pv ux ]))
+          :: Let (ux, Prim (Extern "%unsigned", [ Pv x ]))
+          :: instrs
         , Cond (y, (pc + 3, args), (pc + offset + 2, args))
         , state )
     | ULTINT ->
         let y = State.accu state in
+        let uy = Var.fresh () in
         let z = State.peek 0 state in
+        let uz = Var.fresh () in
         let x, state = State.fresh_var state in
         if debug_parser ()
         then
@@ -1930,10 +1938,15 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Ult, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (Lt, [ Pv uy; Pv uz ]))
+          :: Let (uy, Prim (Extern "%unsigned", [ Pv y ]))
+          :: Let (uz, Prim (Extern "%unsigned", [ Pv z ]))
+          :: instrs)
     | UGEINT ->
         let y = State.accu state in
+        let uy = Var.fresh () in
         let z = State.peek 0 state in
+        let uz = Var.fresh () in
         let x, state = State.fresh_var state in
         if debug_parser ()
         then Format.printf "%a = mk_bool(%a >= %a)@." Var.print x Var.print y Var.print z;
@@ -1941,7 +1954,10 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Ult, [ Pv z; Pv y ])) :: instrs)
+          (Let (x, Prim (Lt, [ Pv uz; Pv uy ]))
+          :: Let (uy, Prim (Extern "%unsigned", [ Pv y ]))
+          :: Let (uz, Prim (Extern "%unsigned", [ Pv z ]))
+          :: instrs)
     | GETPUBMET ->
         let n = gets32 code (pc + 1) in
         let cache = !method_cache_id in

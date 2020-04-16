@@ -880,15 +880,26 @@ let _ =
   register_bin_prim "%int_xor" `Pure (fun cx cy _ -> J.EBin (J.Bxor, cx, cy));
   register_bin_prim "%int_lsl" `Pure (fun cx cy _ -> J.EBin (J.Lsl, cx, cy));
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
+  register_un_prim "%unsigned" `Pure (fun cx _ ->
+      let cx =
+        match cx with
+        | J.EBin (J.Bor, cx, J.ENum x) when J.Num.is_zero x -> cx
+        | _ -> cx
+      in
+      unsigned cx);
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
   register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
   register_bin_prim "caml_neq_float" `Pure (fun cx cy _ ->
       bool (J.EBin (J.NotEq, cx, cy)));
-  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
-  register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
-  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
-  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
+  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.Ge false, cx, cy)));
+  register_bin_prim "caml_le_float" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.Le false, cx, cy)));
+  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.Gt false, cx, cy)));
+  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.Lt false, cx, cy)));
   register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
   register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
   register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
@@ -1190,11 +1201,11 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | Lt, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue
+            bool (J.EBin (J.Lt true, cx, cy)), or_p px py, queue
         | Le, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Le, cx, cy)), or_p px py, queue
+            bool (J.EBin (J.Le true, cx, cy)), or_p px py, queue
         | Eq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
@@ -1206,12 +1217,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | IsInt, [ x ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             bool (Mlvalue.is_immediate cx), px, queue
-        | Ult, [ x; y ] ->
-            let (px, cx), queue = access_queue' ~ctx queue x in
-            let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Lt, unsigned cx, unsigned cy)), or_p px py, queue
-        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
-            assert false
+        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le), _ -> assert false
       in
       res, []
 
@@ -1222,6 +1228,7 @@ and translate_instr ctx expr_queue loc instr =
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
+        | Some "switcher" -> false
         | Some s -> not (String.is_prefix s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
@@ -1573,8 +1580,8 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
           match cond with
           | IsTrue -> cx
           | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
-          | CLt n -> J.EBin (J.Lt, int32 n, cx)
-          | CLe n -> J.EBin (J.Le, int32 n, cx)
+          | CLt n -> J.EBin (J.Lt true, int32 n, cx)
+          | CLe n -> J.EBin (J.Le true, int32 n, cx)
         in
         ( never1 && never2
         , Js_simpl.if_statement

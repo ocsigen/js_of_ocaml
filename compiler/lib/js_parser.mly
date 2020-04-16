@@ -652,10 +652,10 @@ curly_block(X):
 (*----------------------------*)
 
 %inline comparison_or_logical_or_bit_operator_except_in:
- | T_LESS_THAN          { J.Lt         }
- | T_GREATER_THAN       { J.Gt         }
- | T_LESS_THAN_EQUAL    { J.Le         }
- | T_GREATER_THAN_EQUAL { J.Ge         }
+ | T_LESS_THAN          { J.Lt false   }
+ | T_GREATER_THAN       { J.Gt false   }
+ | T_LESS_THAN_EQUAL    { J.Le false   }
+ | T_GREATER_THAN_EQUAL { J.Ge false   }
  | T_INSTANCEOF         { J.InstanceOf }
  | T_EQUAL              { J.EqEq       }
  | T_NOT_EQUAL          { J.NotEq      }

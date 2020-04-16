@@ -250,7 +250,6 @@ type prim =
   | Neq
   | Lt
   | Le
-  | Ult
 
 type array_or_not =
   | Array
@@ -393,7 +392,6 @@ module Print = struct
     | Neq, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y
     | Le, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
-    | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | _ -> assert false
 
   let expr f e =
