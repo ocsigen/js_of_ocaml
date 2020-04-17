@@ -31,7 +31,7 @@ type t =
   | T_THROW of Parse_info.t
   | T_THIS of Parse_info.t
   | T_SWITCH of Parse_info.t
-  | T_STRING of (string * Parse_info.t)
+  | T_STRING of (string * Parse_info.t * int)
   | T_STRICT_NOT_EQUAL of Parse_info.t
   | T_STRICT_EQUAL of Parse_info.t
   | T_SEMICOLON of Parse_info.t
@@ -120,7 +120,7 @@ let info = function
   | T_DEBUGGER ii -> ii
   | T_NUMBER (_, ii) -> ii
   | T_IDENTIFIER (_, ii) -> ii
-  | T_STRING (_, ii) -> ii
+  | T_STRING (_, ii, _) -> ii
   | T_REGEX (_, ii) -> ii
   | T_FUNCTION ii -> ii
   | T_IF ii -> ii
@@ -209,7 +209,7 @@ let to_string = function
   | TCommentLineDirective (s, _) -> s
   | T_NUMBER (s, _) -> s
   | T_IDENTIFIER (s, _) -> s
-  | T_STRING (s, _) -> Printf.sprintf "%S" s
+  | T_STRING (s, _, _) -> Printf.sprintf "%S" s
   | T_REGEX (s, _) -> s
   | EOF _ -> ""
   | T_DEBUGGER _ -> "debugger"

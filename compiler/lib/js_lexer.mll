@@ -237,12 +237,14 @@ rule main prev = parse
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
   | ("'"|'"') as quote {
+      let from = lexbuf.Lexing.lex_start_p.pos_cnum in
       let info = tokinfo prev lexbuf in
       let buf = Buffer.create 127 in
       string_quote quote buf lexbuf;
       let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
-      T_STRING (s, info)
+      let to_ = lexbuf.Lexing.lex_curr_p.pos_cnum in
+      T_STRING (s, info, to_ - 1 - from)
     }
 
   (* ----------------------------------------------------------------------- *)

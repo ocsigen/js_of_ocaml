@@ -50,7 +50,7 @@ let _tok = EOF Parse_info.zero
 (* Tokens with a value *)
 %token<string * Parse_info.t> T_NUMBER
 %token<string * Parse_info.t> T_IDENTIFIER
-%token<string * Parse_info.t> T_STRING
+%token<string * Parse_info.t * int> T_STRING
 %token<string * Parse_info.t> T_REGEX
 
 (* Keywords tokens *)
@@ -414,7 +414,7 @@ primary_expression_no_statement:
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let (start, n) = $1 in (start, J.ENum (J.Num.of_string_unsafe n)) }
- | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
+ | T_STRING          { let (s, start, _len) = $1 in (start, J.EStr (s, `Utf8)) }
  | r=regex_literal                { r }
  | a=array_literal                { a }
  | pi=T_LPAREN e=expression T_RPAREN { (pi, e) }
@@ -631,7 +631,8 @@ label:
 
 property_name:
  | i=identifier_or_kw { J.PNI i }
- | s=T_STRING         { J.PNS (fst s) }
+ | s=T_STRING         {
+    let s, _info, _len = s in J.PNS s }
  | n=numeric_literal  { J.PNN (J.Num.of_string_unsafe (snd n)) }
 
 (*************************************************************************)

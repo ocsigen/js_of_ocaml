@@ -118,9 +118,58 @@ let%expect_test "error reporting" =
   [%expect {|
     cannot parse js (from l:4, c:8)@. |}]
 
+(* check that the locations are correct and that the lexer is captures all the token *)
+let check_vs_string s toks =
+  let rec space a b =
+    if a >= b
+    then ()
+    else
+      match s.[a] with
+      | ' ' | '\n' | '\t' -> space (succ a) b
+      | c -> Printf.printf "pos:%d, expecting space, found %C\n" a c
+  in
+  let text pos str =
+    let strlen = String.length str in
+    if strlen + pos > String.length s
+    then
+      Printf.printf
+        "pos: %d, expecting %S, found %S\n"
+        pos
+        str
+        (String.sub s ~pos ~len:(String.length s - pos))
+    else
+      let sub = String.sub s ~pos ~len:strlen in
+      if String.equal str sub
+      then ()
+      else Printf.printf "pos: %d, expecting %S, found %S\n" pos str sub
+  in
+  let rec loop pos = function
+    | [] -> space pos (String.length s)
+    | Js_token.T_VIRTUAL_SEMICOLON _ :: rest -> loop pos rest
+    | (Js_token.T_STRING (_, _, len) as x) :: rest ->
+        let { Parse_info.idx; _ } = Js_token.info x in
+        let _str = Js_token.to_string x in
+        space pos idx;
+        let quote_start = s.[idx] in
+        let quote_end = s.[idx + len] in
+        (match quote_start, quote_end with
+        | '"', '"' | '\'', '\'' -> ()
+        | a, b ->
+            Printf.printf "pos:%d+%d, expecting quotes, found %C+%C\n" idx (idx + len) a b);
+        loop (idx + len + 1) rest
+    | x :: rest ->
+        let { Parse_info.idx; _ } = Js_token.info x in
+        let str = Js_token.to_string x in
+        space pos idx;
+        text idx str;
+        loop (idx + String.length str) rest
+  in
+  loop 0 toks
+
 let parse_print_token ?(extra = false) s =
   let lex = Parse_js.Lexer.of_lexbuf ~rm_comment:false (Lexing.from_string s) in
   let tokens = List.rev (Parse_js.Lexer.fold ~f:(fun l t -> t :: l) ~init:[] lex) in
+  check_vs_string s tokens;
   let prev = ref 0 in
   List.iter tokens ~f:(fun tok ->
       let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
@@ -159,7 +208,8 @@ let%expect_test "multiline string" =
     "
     42
 |};
-  [%expect {|
+  [%expect
+    {|
     2: 4:42,
     3: 4:"    ",
     5: 4:42, |}];

@@ -28,7 +28,7 @@ type t =
   | T_THROW of Parse_info.t
   | T_THIS of Parse_info.t
   | T_SWITCH of Parse_info.t
-  | T_STRING of (string * Parse_info.t)
+  | T_STRING of (string * Parse_info.t * int)
   | T_STRICT_NOT_EQUAL of Parse_info.t
   | T_STRICT_EQUAL of Parse_info.t
   | T_SEMICOLON of Parse_info.t
