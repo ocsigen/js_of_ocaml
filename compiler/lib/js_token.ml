@@ -294,6 +294,18 @@ let to_string = function
   | T_VOID _ -> "void"
   | T_VIRTUAL_SEMICOLON _ -> ";"
 
+let to_string_extra x =
+  to_string x
+  ^
+  match x with
+  | T_IDENTIFIER _ -> " (identifier)"
+  | T_INCR_NB _ -> " (INCR_NB)"
+  | T_INCR _ -> " (INCR)"
+  | T_DECR_NB _ -> " (DECR_NB)"
+  | T_DECR _ -> " (DECR)"
+  | T_VIRTUAL_SEMICOLON _ -> " (virtual)"
+  | _ -> ""
+
 let is_comment = function
   | TComment _ -> true
   | TCommentLineDirective _ -> true

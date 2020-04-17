@@ -312,10 +312,11 @@ and string_quote q buf = parse
     if Char.(q = q')
     then ()
     else (Buffer.add_char buf q'; string_quote q buf lexbuf) }
-  | "\\\n" {
+  | "\\" NEWLINE {
     update_loc lexbuf ~line:1 ~absolute:false 0;
     string_quote q buf lexbuf }
   | NEWLINE {
+    Format.eprintf  "LEXER: WEIRD newline in quoted string@.";
     update_loc lexbuf ~line:1 ~absolute:false 0;
     Buffer.add_string buf (tok lexbuf);
     string_quote q buf lexbuf }
@@ -334,7 +335,9 @@ and regexp buf = parse
   | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
   | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
   | ([^ '\n'] as x)       { Buffer.add_char buf x; regexp buf lexbuf }
-  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@."; ()}
+  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@.";
+           update_loc lexbuf ~line:1 ~absolute:false 0;
+           ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp@."; ()}
 
 and regexp_class buf = parse
@@ -344,7 +347,9 @@ and regexp_class buf = parse
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf }
   | ([^ '\n'] as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
-  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@."; ()}
+  | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp_class@.";
+           update_loc lexbuf ~line:1 ~absolute:false 0;
+           ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ()}
 
 and regexp_maybe_ident buf = parse

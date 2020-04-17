@@ -113,4 +113,6 @@ val info : t -> Parse_info.t
 
 val to_string : t -> string
 
+val to_string_extra : t -> string
+
 val is_comment : t -> bool

@@ -99,7 +99,7 @@ module Lexer = struct
 
   let of_lexbuf ?rm_comment lexbuf : t = lexer_aux ?rm_comment lexbuf
 
-  let fold f acc l = List.fold_left ~f ~init:acc l
+  let fold ~f ~init l = List.fold_left ~f ~init l
 
   let of_list l = adjust_tokens l
 end

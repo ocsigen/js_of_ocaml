@@ -60,7 +60,9 @@ let error s = Format.ksprintf (fun s -> failwith s) s
 let parse_from_lex ~filename lex =
   let status, lexs =
     Parse_js.Lexer.fold
-      (fun (status, lexs) t ->
+      lex
+      ~init:(`Annot [], [])
+      ~f:(fun (status, lexs) t ->
         match t with
         | Js_token.TCommentLineDirective (_, _) -> (
             match status with
@@ -84,8 +86,6 @@ let parse_from_lex ~filename lex =
             match status with
             | `Code (annot, code) -> `Code (annot, c :: code), lexs
             | `Annot annot -> `Code (annot, [ c ]), lexs))
-      (`Annot [], [])
-      lex
   in
   let lexs =
     match status with

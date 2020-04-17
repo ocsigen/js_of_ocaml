@@ -26,7 +26,7 @@ module Lexer : sig
 
   val of_channel : ?rm_comment:bool -> in_channel -> t
 
-  val fold : ('a -> Js_token.t -> 'a) -> 'a -> t -> 'a
+  val fold : f:('a -> Js_token.t -> 'a) -> init:'a -> t -> 'a
 
   val of_list : Js_token.t list -> t
 end
