@@ -39,18 +39,21 @@ let loc pi =
   | None | Some _ -> "unknown location"
 
 let parse_annot loc s =
-  let buf = Lexing.from_string s in
-  try
-    match Annot_parser.annot Annot_lexer.main buf with
-    | `Requires (_, l) -> Some (`Requires (Some loc, l))
-    | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
-    | `Version (_, l) -> Some (`Version (Some loc, l))
-    | `Weakdef _ -> Some (`Weakdef (Some loc))
-    | `If (_, name) -> Some (`If (Some loc, name))
-    | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
-  with
-  | Not_found -> None
-  | _ -> None
+  match String.drop_prefix ~prefix:"//" s with
+  | None -> None
+  | Some s -> (
+      let buf = Lexing.from_string s in
+      try
+        match Annot_parser.annot Annot_lexer.main buf with
+        | `Requires (_, l) -> Some (`Requires (Some loc, l))
+        | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
+        | `Version (_, l) -> Some (`Version (Some loc, l))
+        | `Weakdef _ -> Some (`Weakdef (Some loc))
+        | `If (_, name) -> Some (`If (Some loc, name))
+        | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
+      with
+      | Not_found -> None
+      | _ -> None)
 
 let error s = Format.ksprintf (fun s -> failwith s) s
 

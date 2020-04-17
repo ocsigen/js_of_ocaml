@@ -21,11 +21,11 @@ open Annot_parser
 }
 
 rule main = parse
-  | "//Provides" {TProvides}
-  | "//Requires" {TRequires}
-  | "//Version" {TVersion}
-  | "//Weakdef" {TWeakdef}
-  | "//If" {TIf}
+  | "Provides" {TProvides}
+  | "Requires" {TRequires}
+  | "Version" {TVersion}
+  | "Weakdef" {TWeakdef}
+  | "If" {TIf}
   | "pure" {TA_Pure }
   | "const" {TA_Const }
   | "mutable" {TA_Mutable }
