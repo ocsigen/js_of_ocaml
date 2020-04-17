@@ -24,11 +24,15 @@ let%expect_test _ =
     compile_and_parse
       ~flags:[ "--enable"; "use-js-string" ]
       {|
-    type r = {x: int; y: string}
-    let ex = {x = 5; y = "hello"} ;;
+    type js_string
+    external js_string : string -> js_string = "caml_jsstring_of_string"
+    type r = {x: int; y: string; z : string}
+    let ex = {x = 5; y = "hello"; z = "the • and › characters"} ;;
+    let sx = js_string "hello2", js_string "the • and › characters (2)"
     let ax = [|1;2;3;4|] ;;
     let bx = [|1.0;2.0;3.0;4.0|] ;;
     let cx = [|0./.0.;-0./.0.;1./.0.;-1./.0.;0.;-0.|] ;;
+
     let (>>=) a b = a * b
     let (>>|) a b = a + b
     let (>>?=) a b = a / b
@@ -36,13 +40,18 @@ let%expect_test _ =
     |}
   in
   print_var_decl program "ex";
+  print_var_decl program "sx";
   print_var_decl program "ax";
   print_var_decl program "bx";
   print_var_decl program "cx";
   print_var_decl program "symbol_op";
   [%expect
     {|
-    var ex = [0,5,"hello"];
+    var ex = [0,5,"hello","the \xe2\x80\xa2 and \xe2\x80\xba characters"];
+    var sx = [0,
+     "hello2",
+     runtime.caml_jsstring_of_string
+      ("the \xe2\x80\xa2 and \xe2\x80\xba characters (2)")];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
@@ -53,8 +62,11 @@ let%expect_test _ =
     compile_and_parse
       ~flags:[ "--disable"; "use-js-string" ]
       {|
-    type r = {x: int; y: string}
-    let ex = {x = 5; y = "hello"} ;;
+    type js_string
+    external js_string : string -> js_string = "caml_jsstring_of_string"
+    type r = {x: int; y: string; z : string}
+    let ex = {x = 5; y = "hello"; z = "the • and › characters"} ;;
+    let sx = "hello2", js_string "the • and › characters (2)"
     let ax = [|1;2;3;4|] ;;
     let bx = [|1.0;2.0;3.0;4.0|] ;;
     let cx = [|0./.0.;-0./.0.;1./.0.;-1./.0.;0.;-0.|] ;;
@@ -65,13 +77,18 @@ let%expect_test _ =
     |}
   in
   print_var_decl program "ex";
+  print_var_decl program "sx";
   print_var_decl program "ax";
   print_var_decl program "bx";
   print_var_decl program "cx";
   print_var_decl program "symbol_op";
   [%expect
     {|
-    var ex = [0,5,runtime.caml_string_of_jsbytes("hello")];
+    var ex = [0,
+     5,
+     caml_string_of_jsbytes("hello"),
+     caml_string_of_jsbytes("the \xe2\x80\xa2 and \xe2\x80\xba characters")];
+    var sx = [0,cst_hello2,runtime.caml_jsstring_of_string(cst_the_and_characters_2)];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
