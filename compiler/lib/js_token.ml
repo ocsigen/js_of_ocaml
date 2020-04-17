@@ -19,7 +19,7 @@
 
 open! Stdlib
 
-type token =
+type t =
   | T_WITH of Parse_info.t
   | T_WHILE of Parse_info.t
   | T_VOID of Parse_info.t
@@ -31,7 +31,7 @@ type token =
   | T_THROW of Parse_info.t
   | T_THIS of Parse_info.t
   | T_SWITCH of Parse_info.t
-  | T_STRING of (string * Parse_info.t)
+  | T_STRING of (string * Parse_info.t * int)
   | T_STRICT_NOT_EQUAL of Parse_info.t
   | T_STRICT_EQUAL of Parse_info.t
   | T_SEMICOLON of Parse_info.t
@@ -105,24 +105,22 @@ type token =
   | T_ASSIGN of Parse_info.t
   | T_AND of Parse_info.t
   | T_DEBUGGER of Parse_info.t
-  | TUnknown of (Parse_info.t * string)
-  | TCommentSpace of (Parse_info.t * string)
-  | TCommentNewline of (Parse_info.t * string)
-  | TCommentML of (Parse_info.t * string)
-  | TComment of (Parse_info.t * string)
+  | TUnknown of (string * Parse_info.t)
+  | TComment of (string * Parse_info.t)
+  | TCommentLineDirective of (string * Parse_info.t)
   | EOF of Parse_info.t
 
-let info_of_tok = function
-  | TUnknown (ii, _) -> ii
-  | TCommentSpace (ii, _) -> ii
-  | TCommentNewline (ii, _) -> ii
-  | TComment (ii, _) -> ii
-  | TCommentML (ii, _) -> ii
+type token = t
+
+let info = function
+  | TUnknown (_, ii) -> ii
+  | TComment (_, ii) -> ii
+  | TCommentLineDirective (_, ii) -> ii
   | EOF ii -> ii
   | T_DEBUGGER ii -> ii
   | T_NUMBER (_, ii) -> ii
   | T_IDENTIFIER (_, ii) -> ii
-  | T_STRING (_, ii) -> ii
+  | T_STRING (_, ii, _) -> ii
   | T_REGEX (_, ii) -> ii
   | T_FUNCTION ii -> ii
   | T_IF ii -> ii
@@ -205,99 +203,110 @@ let info_of_tok = function
   | T_VOID ii -> ii
   | T_VIRTUAL_SEMICOLON ii -> ii
 
-let string_of_tok = function
-  | TUnknown (_, _) -> "TUNKNOWN"
-  | TCommentSpace (_, _) -> "SPACE"
-  | TCommentNewline (_, _) -> "NEWLINE"
-  | TComment (_, _) -> "COMMENT"
-  | TCommentML (_, _) -> "COMMENT"
-  | EOF _ -> "EOF"
-  | T_DEBUGGER _ -> "DEBUGGER"
-  | T_NUMBER (_, _) -> "T_NUMBER"
-  | T_IDENTIFIER (_, _) -> "T_IDENTIFIER"
-  | T_STRING (_, _) -> "T_STRING"
-  | T_REGEX (_, _) -> "T_REGEX"
-  | T_FUNCTION _ -> " T_FUNCTION"
-  | T_IF _ -> "T_IF"
-  | T_IN _ -> "T_IN"
-  | T_INSTANCEOF _ -> "T_INSTANCEOF"
-  | T_RETURN _ -> "T_RETURN"
-  | T_SWITCH _ -> "T_SWITCH"
-  | T_THIS _ -> "T_THIS"
-  | T_THROW _ -> "T_THROW"
-  | T_TRY _ -> "T_TRY"
-  | T_VAR _ -> "T_VAR"
-  | T_WHILE _ -> "T_WHILE"
-  | T_WITH _ -> "T_WITH"
-  | T_NULL _ -> "T_NULL"
-  | T_FALSE _ -> "T_FALSE"
-  | T_TRUE _ -> "T_TRUE"
-  | T_BREAK _ -> "T_BREAK"
-  | T_CASE _ -> "T_CASE"
-  | T_CATCH _ -> "T_CATCH"
-  | T_CONTINUE _ -> "T_CONTINUE"
-  | T_DEFAULT _ -> "T_DEFAULT"
-  | T_DO _ -> "T_DO"
-  | T_FINALLY _ -> "T_FINALLY"
-  | T_FOR _ -> "T_FOR"
-  | T_ELSE _ -> "T_ELSE"
-  | T_NEW _ -> "T_NEW"
-  | T_LCURLY _ -> "T_LCURLY"
-  | T_RCURLY _ -> "T_RCURLY"
-  | T_LPAREN _ -> "T_LPAREN"
-  | T_RPAREN _ -> "T_RPAREN"
-  | T_LBRACKET _ -> "T_LBRACKET"
-  | T_RBRACKET _ -> "T_RBRACKET"
-  | T_SEMICOLON _ -> "T_SEMICOLON"
-  | T_COMMA _ -> "T_COMMA"
-  | T_PERIOD _ -> "T_PERIOD"
-  | T_RSHIFT3_ASSIGN _ -> "T_RSHIFT3"
-  | T_RSHIFT_ASSIGN _ -> "T_RSHIFT"
-  | T_LSHIFT_ASSIGN _ -> "T_LSHIFT"
-  | T_BIT_XOR_ASSIGN _ -> "T_BIT"
-  | T_BIT_OR_ASSIGN _ -> "T_BIT"
-  | T_BIT_AND_ASSIGN _ -> "T_BIT"
-  | T_MOD_ASSIGN _ -> "T_MOD"
-  | T_DIV_ASSIGN _ -> "T_DIV"
-  | T_MULT_ASSIGN _ -> "T_MULT"
-  | T_MINUS_ASSIGN _ -> "T_MINUS"
-  | T_PLUS_ASSIGN _ -> "T_PLUS"
-  | T_ASSIGN _ -> "T_ASSIGN"
-  | T_PLING _ -> "T_PLING"
-  | T_COLON _ -> "T_COLON"
-  | T_OR _ -> "T_OR"
-  | T_AND _ -> "T_AND"
-  | T_BIT_OR _ -> "T_BIT"
-  | T_BIT_XOR _ -> "T_BIT"
-  | T_BIT_AND _ -> "T_BIT"
-  | T_EQUAL _ -> "T_EQUAL"
-  | T_NOT_EQUAL _ -> "T_NOT"
-  | T_STRICT_EQUAL _ -> "T_STRICT"
-  | T_STRICT_NOT_EQUAL _ -> "T_STRICT"
-  | T_LESS_THAN_EQUAL _ -> "T_LESS"
-  | T_GREATER_THAN_EQUAL _ -> "T_GREATER"
-  | T_LESS_THAN _ -> "T_LESS"
-  | T_GREATER_THAN _ -> "T_GREATER"
-  | T_LSHIFT _ -> "T_LSHIFT"
-  | T_RSHIFT _ -> "T_RSHIFT"
-  | T_RSHIFT3 _ -> "T_RSHIFT3"
-  | T_PLUS _ -> "T_PLUS"
-  | T_MINUS _ -> "T_MINUS"
-  | T_DIV _ -> "T_DIV"
-  | T_MULT _ -> "T_MULT"
-  | T_MOD _ -> "T_MOD"
-  | T_SPREAD _ -> "T_SPREAD"
-  | T_NOT _ -> "T_NOT"
-  | T_BIT_NOT _ -> "T_BIT"
-  | T_INCR _ -> "T_INCR"
-  | T_DECR _ -> "T_DECR"
-  | T_INCR_NB _ -> "T_INCR"
-  | T_DECR_NB _ -> "T_DECR"
-  | T_DELETE _ -> "T_DELETE"
-  | T_TYPEOF _ -> "T_TYPEOF"
-  | T_VOID _ -> "T_VOID"
-  | T_VIRTUAL_SEMICOLON _ -> "T_VIRTUAL"
+let to_string = function
+  | TUnknown (s, _) -> s
+  | TComment (s, _) -> s
+  | TCommentLineDirective (s, _) -> s
+  | T_NUMBER (s, _) -> s
+  | T_IDENTIFIER (s, _) -> s
+  | T_STRING (s, _, _) -> Printf.sprintf "%S" s
+  | T_REGEX (s, _) -> s
+  | EOF _ -> ""
+  | T_DEBUGGER _ -> "debugger"
+  | T_FUNCTION _ -> "function"
+  | T_IF _ -> "if"
+  | T_IN _ -> "in"
+  | T_INSTANCEOF _ -> "instanceof"
+  | T_RETURN _ -> "return"
+  | T_SWITCH _ -> "switch"
+  | T_THIS _ -> "this"
+  | T_THROW _ -> "throw"
+  | T_TRY _ -> "try"
+  | T_VAR _ -> "var"
+  | T_WHILE _ -> "while"
+  | T_WITH _ -> "with"
+  | T_NULL _ -> "null"
+  | T_FALSE _ -> "false"
+  | T_TRUE _ -> "true"
+  | T_BREAK _ -> "break"
+  | T_CASE _ -> "case"
+  | T_CATCH _ -> "catch"
+  | T_CONTINUE _ -> "continue"
+  | T_DEFAULT _ -> "default"
+  | T_DO _ -> "do"
+  | T_FINALLY _ -> "finally"
+  | T_FOR _ -> "for"
+  | T_ELSE _ -> "else"
+  | T_NEW _ -> "new"
+  | T_LCURLY _ -> "{"
+  | T_RCURLY _ -> "}"
+  | T_LPAREN _ -> "("
+  | T_RPAREN _ -> ")"
+  | T_LBRACKET _ -> "["
+  | T_RBRACKET _ -> "]"
+  | T_SEMICOLON _ -> ";"
+  | T_COMMA _ -> ","
+  | T_PERIOD _ -> "."
+  | T_RSHIFT3_ASSIGN _ -> ">>>="
+  | T_RSHIFT_ASSIGN _ -> ">>="
+  | T_LSHIFT_ASSIGN _ -> "<<="
+  | T_BIT_XOR_ASSIGN _ -> "^="
+  | T_BIT_OR_ASSIGN _ -> "|="
+  | T_BIT_AND_ASSIGN _ -> "&="
+  | T_MOD_ASSIGN _ -> "%="
+  | T_DIV_ASSIGN _ -> "/="
+  | T_MULT_ASSIGN _ -> "*="
+  | T_MINUS_ASSIGN _ -> "-="
+  | T_PLUS_ASSIGN _ -> "+="
+  | T_ASSIGN _ -> "="
+  | T_PLING _ -> "?"
+  | T_COLON _ -> ":"
+  | T_OR _ -> "||"
+  | T_AND _ -> "&&"
+  | T_BIT_OR _ -> "|"
+  | T_BIT_XOR _ -> "^"
+  | T_BIT_AND _ -> "&"
+  | T_EQUAL _ -> "=="
+  | T_NOT_EQUAL _ -> "!="
+  | T_STRICT_EQUAL _ -> "==="
+  | T_STRICT_NOT_EQUAL _ -> "!=="
+  | T_LESS_THAN_EQUAL _ -> "<="
+  | T_GREATER_THAN_EQUAL _ -> ">="
+  | T_LESS_THAN _ -> "<"
+  | T_GREATER_THAN _ -> ">"
+  | T_LSHIFT _ -> "<<"
+  | T_RSHIFT _ -> ">>"
+  | T_RSHIFT3 _ -> ">>>"
+  | T_PLUS _ -> "+"
+  | T_MINUS _ -> "-"
+  | T_DIV _ -> "/"
+  | T_MULT _ -> "*"
+  | T_MOD _ -> "%"
+  | T_SPREAD _ -> ".."
+  | T_NOT _ -> "!"
+  | T_BIT_NOT _ -> "~"
+  | T_INCR _ -> "++"
+  | T_DECR _ -> "--"
+  | T_INCR_NB _ -> "++"
+  | T_DECR_NB _ -> "--"
+  | T_DELETE _ -> "delete"
+  | T_TYPEOF _ -> "typeof"
+  | T_VOID _ -> "void"
+  | T_VIRTUAL_SEMICOLON _ -> ";"
+
+let to_string_extra x =
+  to_string x
+  ^
+  match x with
+  | T_IDENTIFIER _ -> " (identifier)"
+  | T_INCR_NB _ -> " (INCR_NB)"
+  | T_INCR _ -> " (INCR)"
+  | T_DECR_NB _ -> " (DECR_NB)"
+  | T_DECR _ -> " (DECR)"
+  | T_VIRTUAL_SEMICOLON _ -> " (virtual)"
+  | _ -> ""
 
 let is_comment = function
-  | TCommentSpace _ | TCommentNewline _ | TComment _ | TCommentML _ -> true
+  | TComment _ -> true
+  | TCommentLineDirective _ -> true
   | _ -> false

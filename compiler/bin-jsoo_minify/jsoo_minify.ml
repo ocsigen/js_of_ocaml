@@ -57,13 +57,13 @@ let f { Arg.common; output_file; use_stdin; files } =
     let p =
       List.flatten
         (List.map files ~f:(fun file ->
-             let lex = Parse_js.lexer_from_file file in
+             let lex = Parse_js.Lexer.of_file file in
              try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
     in
     let p =
       if use_stdin
       then
-        let lex = Parse_js.lexer_from_channel stdin in
+        let lex = Parse_js.Lexer.of_channel stdin in
         try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
       else p
     in

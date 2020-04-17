@@ -17,4 +17,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val initial : Lexing.lexbuf -> Annot_parser.token
+val main : Lexing.lexbuf -> Annot_parser.token

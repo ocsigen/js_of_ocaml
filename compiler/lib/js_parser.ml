@@ -523,7 +523,7 @@ and _menhir_goto_separated_or_terminated_list_T_COMMA_object_key_value_ : _menhi
 # 524 "js_parser.ml"
             ))), _, (x : 'tv_separated_or_terminated_list_T_COMMA_object_key_value_)) = _menhir_stack in
             let _v : 'tv_curly_block_separated_or_terminated_list_T_COMMA_object_key_value__ = 
-# 648 "js_parser.mly"
+# 650 "js_parser.mly"
                                  ( (x, pi1, pi2) )
 # 529 "js_parser.ml"
              in
@@ -540,7 +540,7 @@ and _menhir_goto_separated_or_terminated_list_T_COMMA_object_key_value_ : _menhi
             let (_menhir_s : _menhir_state) = _menhir_s in
             let ((block : 'tv_curly_block_separated_or_terminated_list_T_COMMA_object_key_value__) : 'tv_curly_block_separated_or_terminated_list_T_COMMA_object_key_value__) = _v in
             ((let _v : 'tv_object_literal = 
-# 561 "js_parser.mly"
+# 562 "js_parser.mly"
    ( let pairs, pi_start, _pi_end = block in pi_start, J.EObj pairs )
 # 546 "js_parser.ml"
              in
@@ -575,7 +575,7 @@ and _menhir_goto_separated_or_terminated_list_T_COMMA_object_key_value_ : _menhi
 # 576 "js_parser.ml"
         ))), _, (xs : 'tv_separated_or_terminated_list_T_COMMA_object_key_value_)) = _menhir_stack in
         let _v : 'tv_separated_or_terminated_list_T_COMMA_object_key_value_ = 
-# 726 "js_parser.mly"
+# 728 "js_parser.mly"
                                                                ( x :: xs )
 # 581 "js_parser.ml"
          in
@@ -602,7 +602,7 @@ and _menhir_goto_element_list_rev : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let (_menhir_stack : 'freshtv2103 * _menhir_state * 'tv_element_list_rev) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_element_list_rev)) = _menhir_stack in
         let _v : 'tv_element_list = 
-# 550 "js_parser.mly"
+# 551 "js_parser.mly"
                     ( List.rev _1 )
 # 608 "js_parser.ml"
          in
@@ -654,7 +654,7 @@ and _menhir_goto_element_list_rev : _menhir_env -> 'ttv_tail -> _menhir_state ->
 # 655 "js_parser.ml"
             ))), _, (_2 : 'tv_element_list)) = _menhir_stack in
             let _v : 'tv_array_literal = 
-# 545 "js_parser.mly"
+# 546 "js_parser.mly"
      ( (pi, J.EArr _2) )
 # 660 "js_parser.ml"
              in
@@ -817,7 +817,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 818 "js_parser.ml"
             ))), _, (_3 : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_call_expression = 
-# 387 "js_parser.mly"
+# 388 "js_parser.mly"
      ( let (start, e) = _1 in (start, J.EAccess (e, _3)) )
 # 823 "js_parser.ml"
              in
@@ -879,7 +879,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 880 "js_parser.ml"
             ))), _, (e2 : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_member_expression = 
-# 399 "js_parser.mly"
+# 400 "js_parser.mly"
      ( let (start, e1) = _1 in (start, J.EAccess (e1,e2)) )
 # 885 "js_parser.ml"
              in
@@ -1049,7 +1049,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 1050 "js_parser.ml"
             ))), _, (_2 : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_throw_statement = 
-# 299 "js_parser.mly"
+# 300 "js_parser.mly"
                          ( (J.Throw_statement _2, J.Pi pi) )
 # 1055 "js_parser.ml"
              in
@@ -1690,13 +1690,13 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
             let _v : 'tv_do_while_statement = let condition =
               let _3 = _3_inlined1 in
               
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 1696 "js_parser.ml"
               
             in
             
-# 248 "js_parser.mly"
+# 249 "js_parser.mly"
     ( (J.Do_while_statement (body, condition), J.Pi pi) )
 # 1702 "js_parser.ml"
              in
@@ -1783,7 +1783,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 1784 "js_parser.ml"
             ))), _, (e2 : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_member_expression_no_statement = 
-# 502 "js_parser.mly"
+# 503 "js_parser.mly"
    ( let (start, e1) = _1 in (start, J.EAccess(e1, e2)) )
 # 1789 "js_parser.ml"
              in
@@ -1845,7 +1845,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 1846 "js_parser.ml"
             ))), _, (_3 : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_call_expression_no_statement = 
-# 494 "js_parser.mly"
+# 495 "js_parser.mly"
    ( let (start, e) = _1 in (start, J.EAccess(e, _3)) )
 # 1851 "js_parser.ml"
              in
@@ -2048,7 +2048,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 2049 "js_parser.ml"
             ))), _, (e : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_primary_expression_no_statement = 
-# 419 "js_parser.mly"
+# 420 "js_parser.mly"
                                      ( (pi, e) )
 # 2054 "js_parser.ml"
              in
@@ -2346,7 +2346,7 @@ and _menhir_goto_expression_no_statement : _menhir_env -> 'ttv_tail -> _menhir_s
         let (_menhir_stack : 'freshtv1947 * _menhir_state * 'tv_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_expression_statement = 
-# 238 "js_parser.mly"
+# 239 "js_parser.mly"
                            ( J.Expression_statement _1, J.N )
 # 2352 "js_parser.ml"
          in
@@ -2387,7 +2387,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
         let (_menhir_stack : (('freshtv1901 * _menhir_state * 'tv_left_hand_side_expression) * _menhir_state * 'tv_assignment_operator) * _menhir_state * 'tv_assignment_expression_no_in) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, (_1 : 'tv_left_hand_side_expression)), _, (_2 : 'tv_assignment_operator)), _, (_3 : 'tv_assignment_expression_no_in)) = _menhir_stack in
         let _v : 'tv_assignment_expression_no_in = 
-# 432 "js_parser.mly"
+# 433 "js_parser.mly"
      ( J.EBin(_2,_1,_3) )
 # 2393 "js_parser.ml"
          in
@@ -2512,7 +2512,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
 # 2513 "js_parser.ml"
         ))), _, (alternative : 'tv_assignment_expression_no_in)) = _menhir_stack in
         let _v : 'tv_ternary_post_in_expression_no_in_assignment_expression_no_in_ = 
-# 361 "js_parser.mly"
+# 362 "js_parser.mly"
    ( J.ECond (condition, consequence, alternative) )
 # 2518 "js_parser.ml"
          in
@@ -2529,7 +2529,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_ternary_post_in_expression_no_in_assignment_expression_no_in_) : 'tv_ternary_post_in_expression_no_in_assignment_expression_no_in_) = _v in
         ((let _v : 'tv_conditional_expression_no_in = 
-# 436 "js_parser.mly"
+# 437 "js_parser.mly"
                                                                   ( _1 )
 # 2535 "js_parser.ml"
          in
@@ -2553,7 +2553,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
 # 2554 "js_parser.ml"
         ))), _, (_2 : 'tv_assignment_expression_no_in)) = _menhir_stack in
         let _v : 'tv_initializer_no_in = 
-# 274 "js_parser.mly"
+# 275 "js_parser.mly"
                                         ( _2, J.Pi _1 )
 # 2559 "js_parser.ml"
          in
@@ -2594,7 +2594,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
 # 2595 "js_parser.ml"
         ))), _, (_3 : 'tv_assignment_expression_no_in)) = _menhir_stack in
         let _v : 'tv_expression_no_in = 
-# 427 "js_parser.mly"
+# 428 "js_parser.mly"
                                                         ( J.ESeq (_1, _3) )
 # 2600 "js_parser.ml"
          in
@@ -2606,7 +2606,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
         let (_menhir_stack : 'freshtv1935 * _menhir_state * 'tv_assignment_expression_no_in) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_assignment_expression_no_in)) = _menhir_stack in
         let _v : 'tv_expression_no_in = 
-# 426 "js_parser.mly"
+# 427 "js_parser.mly"
                                ( _1 )
 # 2612 "js_parser.ml"
          in
@@ -2625,7 +2625,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : (('freshtv1803 * _menhir_state * 'tv_left_hand_side_expression) * _menhir_state * 'tv_assignment_operator) * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, (_1 : 'tv_left_hand_side_expression)), _, (_2 : 'tv_assignment_operator)), _, (_3 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_assignment_expression = 
-# 348 "js_parser.mly"
+# 349 "js_parser.mly"
    ( J.EBin (_2, _1, _3) )
 # 2631 "js_parser.ml"
          in
@@ -2750,7 +2750,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 2751 "js_parser.ml"
         ))), _, (alternative : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_ternary_post_in_expression_assignment_expression_ = 
-# 361 "js_parser.mly"
+# 362 "js_parser.mly"
    ( J.ECond (condition, consequence, alternative) )
 # 2756 "js_parser.ml"
          in
@@ -2767,7 +2767,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_ternary_post_in_expression_assignment_expression_) : 'tv_ternary_post_in_expression_assignment_expression_) = _v in
         ((let _v : 'tv_conditional_expression = 
-# 356 "js_parser.mly"
+# 357 "js_parser.mly"
                                                       ( _1 )
 # 2773 "js_parser.ml"
          in
@@ -2791,7 +2791,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 2792 "js_parser.ml"
         ))), _, (_3 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_expression = 
-# 343 "js_parser.mly"
+# 344 "js_parser.mly"
                                             ( J.ESeq (_1, _3) )
 # 2797 "js_parser.ml"
          in
@@ -2803,7 +2803,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : 'freshtv1827 * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_expression = 
-# 342 "js_parser.mly"
+# 343 "js_parser.mly"
                          ( _1 )
 # 2809 "js_parser.ml"
          in
@@ -2827,7 +2827,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 2828 "js_parser.ml"
         ))), _, (arg : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_arg = 
-# 575 "js_parser.mly"
+# 576 "js_parser.mly"
                                       ( arg, `Spread )
 # 2833 "js_parser.ml"
          in
@@ -2839,7 +2839,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : 'freshtv1835 * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (arg : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_arg = 
-# 576 "js_parser.mly"
+# 577 "js_parser.mly"
                              ( arg, `Not_spread )
 # 2845 "js_parser.ml"
          in
@@ -2863,7 +2863,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 2864 "js_parser.ml"
         ))), _, (e : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_initializer_ = 
-# 229 "js_parser.mly"
+# 230 "js_parser.mly"
                                        ( e, J.Pi pi )
 # 2869 "js_parser.ml"
          in
@@ -3002,7 +3002,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 3003 "js_parser.ml"
         ))), _, (alternative : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_ternary_post_in_expression_no_statement_assignment_expression_ = 
-# 361 "js_parser.mly"
+# 362 "js_parser.mly"
    ( J.ECond (condition, consequence, alternative) )
 # 3008 "js_parser.ml"
          in
@@ -3019,7 +3019,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_ternary_post_in_expression_no_statement_assignment_expression_) : 'tv_ternary_post_in_expression_no_statement_assignment_expression_) = _v in
         ((let _v : 'tv_conditional_expression_no_statement = 
-# 460 "js_parser.mly"
+# 461 "js_parser.mly"
                                                                    ( _1 )
 # 3025 "js_parser.ml"
          in
@@ -3031,7 +3031,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : (('freshtv1865 * _menhir_state * 'tv_left_hand_side_expression_no_statement) * _menhir_state * 'tv_assignment_operator) * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, (_1 : 'tv_left_hand_side_expression_no_statement)), _, (_2 : 'tv_assignment_operator)), _, (_3 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_assignment_expression_no_statement = 
-# 456 "js_parser.mly"
+# 457 "js_parser.mly"
    ( J.EBin (_2,_1,_3) )
 # 3037 "js_parser.ml"
          in
@@ -3055,7 +3055,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 3056 "js_parser.ml"
         ))), _, (_3 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_expression_no_statement = 
-# 451 "js_parser.mly"
+# 452 "js_parser.mly"
                                                          ( J.ESeq(_1,_3) )
 # 3061 "js_parser.ml"
          in
@@ -3067,7 +3067,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : ('freshtv1873 * _menhir_state * 'tv_elison_rev) * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, (_1 : 'tv_elison_rev)), _, (_2 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_element_list_rev = 
-# 553 "js_parser.mly"
+# 554 "js_parser.mly"
                                     ( (Some _2)::_1 )
 # 3073 "js_parser.ml"
          in
@@ -3079,7 +3079,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : (('freshtv1877 * _menhir_state * 'tv_element_list_rev) * _menhir_state * 'tv_elison) * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, (_1 : 'tv_element_list_rev)), _, (_2 : 'tv_elison)), _, (_3 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_element_list_rev = 
-# 555 "js_parser.mly"
+# 556 "js_parser.mly"
                                                  ( (Some _3) :: (List.rev_append _2 _1) )
 # 3085 "js_parser.ml"
          in
@@ -3091,7 +3091,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : 'freshtv1881 * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_element_list_rev = 
-# 554 "js_parser.mly"
+# 555 "js_parser.mly"
                                     ( [Some _1] )
 # 3097 "js_parser.ml"
          in
@@ -3120,7 +3120,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 3121 "js_parser.ml"
          in
         
-# 564 "js_parser.mly"
+# 565 "js_parser.mly"
                                                                       ( pair )
 # 3126 "js_parser.ml"
          in
@@ -3223,7 +3223,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 3224 "js_parser.ml"
                 ))) = _menhir_stack in
                 let _v : 'tv_separated_or_terminated_list_T_COMMA_object_key_value_ = 
-# 725 "js_parser.mly"
+# 727 "js_parser.mly"
                  ( [x] )
 # 3229 "js_parser.ml"
                  in
@@ -3237,7 +3237,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
             let (_menhir_stack : 'freshtv1889 * _menhir_state * 'tv_object_key_value) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_object_key_value)) = _menhir_stack in
             let _v : 'tv_separated_or_terminated_list_T_COMMA_object_key_value_ = 
-# 724 "js_parser.mly"
+# 726 "js_parser.mly"
        ( [x] )
 # 3243 "js_parser.ml"
              in
@@ -3263,7 +3263,7 @@ and _menhir_goto_assignment_expression_no_statement : _menhir_env -> 'ttv_tail -
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : 'tv_assignment_expression_no_statement) : 'tv_assignment_expression_no_statement) = _v in
     ((let _v : 'tv_expression_no_statement = 
-# 450 "js_parser.mly"
+# 451 "js_parser.mly"
                                       ( _1 )
 # 3269 "js_parser.ml"
      in
@@ -3280,7 +3280,7 @@ and _menhir_goto_conditional_expression_no_in : _menhir_env -> 'ttv_tail -> _men
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : 'tv_conditional_expression_no_in) : 'tv_conditional_expression_no_in) = _v in
     ((let _v : 'tv_assignment_expression_no_in = 
-# 430 "js_parser.mly"
+# 431 "js_parser.mly"
                                 ( _1 )
 # 3286 "js_parser.ml"
      in
@@ -3297,7 +3297,7 @@ and _menhir_goto_conditional_expression : _menhir_env -> 'ttv_tail -> _menhir_st
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : 'tv_conditional_expression) : 'tv_conditional_expression) = _v in
     ((let _v : 'tv_assignment_expression = 
-# 346 "js_parser.mly"
+# 347 "js_parser.mly"
                           ( _1 )
 # 3303 "js_parser.ml"
      in
@@ -4196,7 +4196,7 @@ and _menhir_goto_conditional_expression_no_statement : _menhir_env -> 'ttv_tail 
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : 'tv_conditional_expression_no_statement) : 'tv_conditional_expression_no_statement) = _v in
     ((let _v : 'tv_assignment_expression_no_statement = 
-# 454 "js_parser.mly"
+# 455 "js_parser.mly"
                                        ( _1 )
 # 4202 "js_parser.ml"
      in
@@ -4216,7 +4216,7 @@ and _menhir_goto_postfix_operator : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let ((op : 'tv_postfix_operator) : 'tv_postfix_operator) = _v in
         ((let (_menhir_stack, _menhir_s, (e : 'tv_pre_in_expression)) = _menhir_stack in
         let _v : 'tv_pre_in_expression = 
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 4222 "js_parser.ml"
          in
@@ -4232,7 +4232,7 @@ and _menhir_goto_postfix_operator : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let ((op : 'tv_postfix_operator) : 'tv_postfix_operator) = _v in
         ((let (_menhir_stack, _menhir_s, (e : 'tv_pre_in_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_pre_in_expression_no_statement = 
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 4238 "js_parser.ml"
          in
@@ -5213,7 +5213,7 @@ and _menhir_goto_post_in_expression_no_in : _menhir_env -> 'ttv_tail -> _menhir_
         let (_menhir_stack : 'freshtv1773 * _menhir_state * 'tv_post_in_expression_no_in) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_post_in_expression_no_in)) = _menhir_stack in
         let _v : 'tv_conditional_expression_no_in = 
-# 435 "js_parser.mly"
+# 436 "js_parser.mly"
                             ( _1 )
 # 5219 "js_parser.ml"
          in
@@ -5397,7 +5397,7 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             let (_menhir_stack : 'freshtv1507 * _menhir_state * 'tv_post_in_expression) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_conditional_expression = 
-# 355 "js_parser.mly"
+# 356 "js_parser.mly"
                       ( _1 )
 # 5403 "js_parser.ml"
              in
@@ -5445,18 +5445,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 663 "js_parser.mly"
+# 665 "js_parser.mly"
                         ( J.NotEqEq    )
 # 5451 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5456 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5462 "js_parser.ml"
              in
@@ -5492,18 +5492,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op =
           let op = 
-# 657 "js_parser.mly"
+# 659 "js_parser.mly"
                         ( J.Le         )
 # 5498 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5503 "js_parser.ml"
           
         in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5509 "js_parser.ml"
          in
@@ -5528,18 +5528,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op =
           let op = 
-# 655 "js_parser.mly"
+# 657 "js_parser.mly"
                         ( J.Lt         )
 # 5534 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5539 "js_parser.ml"
           
         in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5545 "js_parser.ml"
          in
@@ -5564,18 +5564,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op =
           let op = 
-# 659 "js_parser.mly"
+# 661 "js_parser.mly"
                         ( J.InstanceOf )
 # 5570 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5575 "js_parser.ml"
           
         in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5581 "js_parser.ml"
          in
@@ -5599,12 +5599,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 5600 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op = 
-# 672 "js_parser.mly"
+# 674 "js_parser.mly"
         ( J.In )
 # 5605 "js_parser.ml"
          in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5610 "js_parser.ml"
          in
@@ -5629,18 +5629,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op =
           let op = 
-# 658 "js_parser.mly"
+# 660 "js_parser.mly"
                         ( J.Ge         )
 # 5635 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5640 "js_parser.ml"
           
         in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5646 "js_parser.ml"
          in
@@ -5665,18 +5665,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression = let op =
           let op = 
-# 656 "js_parser.mly"
+# 658 "js_parser.mly"
                         ( J.Gt         )
 # 5671 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5676 "js_parser.ml"
           
         in
         
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5682 "js_parser.ml"
          in
@@ -5717,18 +5717,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 662 "js_parser.mly"
+# 664 "js_parser.mly"
                         ( J.EqEqEq     )
 # 5723 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5728 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5734 "js_parser.ml"
              in
@@ -5796,18 +5796,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 668 "js_parser.mly"
+# 670 "js_parser.mly"
                         ( J.Or         )
 # 5802 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5807 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5813 "js_parser.ml"
              in
@@ -5859,18 +5859,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 661 "js_parser.mly"
+# 663 "js_parser.mly"
                         ( J.NotEq      )
 # 5865 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5870 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5876 "js_parser.ml"
              in
@@ -5922,18 +5922,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 660 "js_parser.mly"
+# 662 "js_parser.mly"
                         ( J.EqEq       )
 # 5928 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 5933 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 5939 "js_parser.ml"
              in
@@ -5995,18 +5995,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 665 "js_parser.mly"
+# 667 "js_parser.mly"
                         ( J.Bxor       )
 # 6001 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 6006 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6012 "js_parser.ml"
              in
@@ -6066,18 +6066,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 664 "js_parser.mly"
+# 666 "js_parser.mly"
                         ( J.Band       )
 # 6072 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 6077 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6083 "js_parser.ml"
              in
@@ -6141,18 +6141,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 666 "js_parser.mly"
+# 668 "js_parser.mly"
                         ( J.Bor        )
 # 6147 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 6152 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6158 "js_parser.ml"
              in
@@ -6218,18 +6218,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = let op =
               let op = 
-# 667 "js_parser.mly"
+# 669 "js_parser.mly"
                         ( J.And        )
 # 6224 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 6229 "js_parser.ml"
               
             in
             
-# 368 "js_parser.mly"
+# 369 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6235 "js_parser.ml"
              in
@@ -6280,12 +6280,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6281 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 663 "js_parser.mly"
+# 665 "js_parser.mly"
                         ( J.NotEqEq    )
 # 6286 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6291 "js_parser.ml"
              in
@@ -6336,12 +6336,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6337 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 662 "js_parser.mly"
+# 664 "js_parser.mly"
                         ( J.EqEqEq     )
 # 6342 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6347 "js_parser.ml"
              in
@@ -6408,12 +6408,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6409 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 668 "js_parser.mly"
+# 670 "js_parser.mly"
                         ( J.Or         )
 # 6414 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6419 "js_parser.ml"
              in
@@ -6464,12 +6464,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6465 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 661 "js_parser.mly"
+# 663 "js_parser.mly"
                         ( J.NotEq      )
 # 6470 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6475 "js_parser.ml"
              in
@@ -6504,12 +6504,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6505 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
-# 657 "js_parser.mly"
+# 659 "js_parser.mly"
                         ( J.Le         )
 # 6510 "js_parser.ml"
          in
         
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6515 "js_parser.ml"
          in
@@ -6533,12 +6533,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6534 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
-# 655 "js_parser.mly"
+# 657 "js_parser.mly"
                         ( J.Lt         )
 # 6539 "js_parser.ml"
          in
         
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6544 "js_parser.ml"
          in
@@ -6562,12 +6562,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6563 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
-# 659 "js_parser.mly"
+# 661 "js_parser.mly"
                         ( J.InstanceOf )
 # 6568 "js_parser.ml"
          in
         
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6573 "js_parser.ml"
          in
@@ -6591,12 +6591,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6592 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
-# 658 "js_parser.mly"
+# 660 "js_parser.mly"
                         ( J.Ge         )
 # 6597 "js_parser.ml"
          in
         
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6602 "js_parser.ml"
          in
@@ -6620,12 +6620,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6621 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_in = let op = 
-# 656 "js_parser.mly"
+# 658 "js_parser.mly"
                         ( J.Gt         )
 # 6626 "js_parser.ml"
          in
         
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6631 "js_parser.ml"
          in
@@ -6665,12 +6665,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6666 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 660 "js_parser.mly"
+# 662 "js_parser.mly"
                         ( J.EqEq       )
 # 6671 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6676 "js_parser.ml"
              in
@@ -6731,12 +6731,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6732 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 665 "js_parser.mly"
+# 667 "js_parser.mly"
                         ( J.Bxor       )
 # 6737 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6742 "js_parser.ml"
              in
@@ -6799,12 +6799,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6800 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 666 "js_parser.mly"
+# 668 "js_parser.mly"
                         ( J.Bor        )
 # 6805 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6810 "js_parser.ml"
              in
@@ -6863,12 +6863,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6864 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 664 "js_parser.mly"
+# 666 "js_parser.mly"
                         ( J.Band       )
 # 6869 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6874 "js_parser.ml"
              in
@@ -6933,12 +6933,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 6934 "js_parser.ml"
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = let op = 
-# 667 "js_parser.mly"
+# 669 "js_parser.mly"
                         ( J.And        )
 # 6939 "js_parser.ml"
              in
             
-# 443 "js_parser.mly"
+# 444 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 6944 "js_parser.ml"
              in
@@ -6990,18 +6990,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 663 "js_parser.mly"
+# 665 "js_parser.mly"
                         ( J.NotEqEq    )
 # 6996 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7001 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7007 "js_parser.ml"
              in
@@ -7053,18 +7053,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 662 "js_parser.mly"
+# 664 "js_parser.mly"
                         ( J.EqEqEq     )
 # 7059 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7064 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7070 "js_parser.ml"
              in
@@ -7132,18 +7132,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 668 "js_parser.mly"
+# 670 "js_parser.mly"
                         ( J.Or         )
 # 7138 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7143 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7149 "js_parser.ml"
              in
@@ -7195,18 +7195,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 661 "js_parser.mly"
+# 663 "js_parser.mly"
                         ( J.NotEq      )
 # 7201 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7206 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7212 "js_parser.ml"
              in
@@ -7242,18 +7242,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
-# 657 "js_parser.mly"
+# 659 "js_parser.mly"
                         ( J.Le         )
 # 7248 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7253 "js_parser.ml"
           
         in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7259 "js_parser.ml"
          in
@@ -7278,18 +7278,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
-# 655 "js_parser.mly"
+# 657 "js_parser.mly"
                         ( J.Lt         )
 # 7284 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7289 "js_parser.ml"
           
         in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7295 "js_parser.ml"
          in
@@ -7314,18 +7314,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
-# 659 "js_parser.mly"
+# 661 "js_parser.mly"
                         ( J.InstanceOf )
 # 7320 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7325 "js_parser.ml"
           
         in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7331 "js_parser.ml"
          in
@@ -7349,12 +7349,12 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 7350 "js_parser.ml"
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op = 
-# 672 "js_parser.mly"
+# 674 "js_parser.mly"
         ( J.In )
 # 7355 "js_parser.ml"
          in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7360 "js_parser.ml"
          in
@@ -7379,18 +7379,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
-# 658 "js_parser.mly"
+# 660 "js_parser.mly"
                         ( J.Ge         )
 # 7385 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7390 "js_parser.ml"
           
         in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7396 "js_parser.ml"
          in
@@ -7415,18 +7415,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
         ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = let op =
           let op = 
-# 656 "js_parser.mly"
+# 658 "js_parser.mly"
                         ( J.Gt         )
 # 7421 "js_parser.ml"
            in
           
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7426 "js_parser.ml"
           
         in
         
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7432 "js_parser.ml"
          in
@@ -7467,18 +7467,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 660 "js_parser.mly"
+# 662 "js_parser.mly"
                         ( J.EqEq       )
 # 7473 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7478 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7484 "js_parser.ml"
              in
@@ -7540,18 +7540,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 665 "js_parser.mly"
+# 667 "js_parser.mly"
                         ( J.Bxor       )
 # 7546 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7551 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7557 "js_parser.ml"
              in
@@ -7615,18 +7615,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 666 "js_parser.mly"
+# 668 "js_parser.mly"
                         ( J.Bor        )
 # 7621 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7626 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7632 "js_parser.ml"
              in
@@ -7686,18 +7686,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 664 "js_parser.mly"
+# 666 "js_parser.mly"
                         ( J.Band       )
 # 7692 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7697 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7703 "js_parser.ml"
              in
@@ -7763,18 +7763,18 @@ and _menhir_goto_post_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
             ))), _, (right : 'tv_post_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_statement = let op =
               let op = 
-# 667 "js_parser.mly"
+# 669 "js_parser.mly"
                         ( J.And        )
 # 7769 "js_parser.ml"
                in
               
-# 671 "js_parser.mly"
+# 673 "js_parser.mly"
                                                       ( op )
 # 7774 "js_parser.ml"
               
             in
             
-# 467 "js_parser.mly"
+# 468 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 7780 "js_parser.ml"
              in
@@ -9334,7 +9334,7 @@ and _menhir_goto_post_in_expression_no_statement : _menhir_env -> 'ttv_tail -> _
         let (_menhir_stack : 'freshtv1497 * _menhir_state * 'tv_post_in_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_post_in_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_conditional_expression_no_statement = 
-# 459 "js_parser.mly"
+# 460 "js_parser.mly"
                                    ( _1 )
 # 9340 "js_parser.ml"
          in
@@ -9367,7 +9367,7 @@ and _menhir_run81 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 9368 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_postfix_operator = 
-# 698 "js_parser.mly"
+# 700 "js_parser.mly"
              ( J.IncrA )
 # 9373 "js_parser.ml"
      in
@@ -9393,7 +9393,7 @@ and _menhir_run82 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 9394 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_postfix_operator = 
-# 699 "js_parser.mly"
+# 701 "js_parser.mly"
              ( J.DecrA )
 # 9399 "js_parser.ml"
      in
@@ -9611,12 +9611,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9612 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 694 "js_parser.mly"
+# 696 "js_parser.mly"
              ( J.Bnot   )
 # 9617 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 9622 "js_parser.ml"
              in
@@ -9656,7 +9656,7 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
             let (_menhir_stack : 'freshtv1299 * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression = 
-# 364 "js_parser.mly"
+# 365 "js_parser.mly"
                      ( _1 )
 # 9662 "js_parser.ml"
              in
@@ -9702,12 +9702,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9703 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 682 "js_parser.mly"
+# 684 "js_parser.mly"
              ( J.Lsr   )
 # 9708 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9713 "js_parser.ml"
              in
@@ -9749,12 +9749,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9750 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 678 "js_parser.mly"
+# 680 "js_parser.mly"
              ( J.Plus  )
 # 9755 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9760 "js_parser.ml"
              in
@@ -9790,12 +9790,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9791 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 675 "js_parser.mly"
+# 677 "js_parser.mly"
              ( J.Mul   )
 # 9796 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9801 "js_parser.ml"
              in
@@ -9831,12 +9831,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9832 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 677 "js_parser.mly"
+# 679 "js_parser.mly"
              ( J.Mod   )
 # 9837 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9842 "js_parser.ml"
              in
@@ -9872,12 +9872,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9873 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 676 "js_parser.mly"
+# 678 "js_parser.mly"
              ( J.Div   )
 # 9878 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9883 "js_parser.ml"
              in
@@ -9919,12 +9919,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9920 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 679 "js_parser.mly"
+# 681 "js_parser.mly"
              ( J.Minus )
 # 9925 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9930 "js_parser.ml"
              in
@@ -9970,12 +9970,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 9971 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 681 "js_parser.mly"
+# 683 "js_parser.mly"
              ( J.Asr   )
 # 9976 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 9981 "js_parser.ml"
              in
@@ -10021,12 +10021,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10022 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 680 "js_parser.mly"
+# 682 "js_parser.mly"
              ( J.Lsl   )
 # 10027 "js_parser.ml"
              in
             
-# 379 "js_parser.mly"
+# 380 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10032 "js_parser.ml"
              in
@@ -10062,12 +10062,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10063 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 690 "js_parser.mly"
+# 692 "js_parser.mly"
              ( J.DecrB  )
 # 10068 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10073 "js_parser.ml"
              in
@@ -10103,12 +10103,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10104 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 691 "js_parser.mly"
+# 693 "js_parser.mly"
              ( J.DecrB  )
 # 10109 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10114 "js_parser.ml"
              in
@@ -10144,12 +10144,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10145 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 685 "js_parser.mly"
+# 687 "js_parser.mly"
              ( J.Delete )
 # 10150 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10155 "js_parser.ml"
              in
@@ -10185,12 +10185,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10186 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 686 "js_parser.mly"
+# 688 "js_parser.mly"
              ( J.Void   )
 # 10191 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10196 "js_parser.ml"
              in
@@ -10226,12 +10226,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10227 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 687 "js_parser.mly"
+# 689 "js_parser.mly"
              ( J.Typeof )
 # 10232 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10237 "js_parser.ml"
              in
@@ -10273,12 +10273,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10274 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 692 "js_parser.mly"
+# 694 "js_parser.mly"
              ( J.Pl     )
 # 10279 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10284 "js_parser.ml"
              in
@@ -10314,12 +10314,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10315 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 695 "js_parser.mly"
+# 697 "js_parser.mly"
              ( J.Not    )
 # 10320 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10325 "js_parser.ml"
              in
@@ -10361,12 +10361,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10362 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 693 "js_parser.mly"
+# 695 "js_parser.mly"
              ( J.Neg    )
 # 10367 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10372 "js_parser.ml"
              in
@@ -10402,12 +10402,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10403 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 689 "js_parser.mly"
+# 691 "js_parser.mly"
              ( J.IncrB  )
 # 10408 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10413 "js_parser.ml"
              in
@@ -10443,12 +10443,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10444 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 688 "js_parser.mly"
+# 690 "js_parser.mly"
              ( J.IncrB  )
 # 10449 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10454 "js_parser.ml"
              in
@@ -10488,7 +10488,7 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
             let (_menhir_stack : 'freshtv1375 * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_post_in_expression_no_in = 
-# 439 "js_parser.mly"
+# 440 "js_parser.mly"
                      ( _1 )
 # 10494 "js_parser.ml"
              in
@@ -10524,12 +10524,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10525 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 685 "js_parser.mly"
+# 687 "js_parser.mly"
              ( J.Delete )
 # 10530 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10535 "js_parser.ml"
              in
@@ -10565,12 +10565,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10566 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 691 "js_parser.mly"
+# 693 "js_parser.mly"
              ( J.DecrB  )
 # 10571 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10576 "js_parser.ml"
              in
@@ -10606,12 +10606,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10607 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 690 "js_parser.mly"
+# 692 "js_parser.mly"
              ( J.DecrB  )
 # 10612 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10617 "js_parser.ml"
              in
@@ -10647,12 +10647,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10648 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 694 "js_parser.mly"
+# 696 "js_parser.mly"
              ( J.Bnot   )
 # 10653 "js_parser.ml"
              in
             
-# 474 "js_parser.mly"
+# 475 "js_parser.mly"
    ( J.EUn (op, e) )
 # 10658 "js_parser.ml"
              in
@@ -10698,12 +10698,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10699 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 682 "js_parser.mly"
+# 684 "js_parser.mly"
              ( J.Lsr   )
 # 10704 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10709 "js_parser.ml"
              in
@@ -10749,12 +10749,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10750 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 681 "js_parser.mly"
+# 683 "js_parser.mly"
              ( J.Asr   )
 # 10755 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10760 "js_parser.ml"
              in
@@ -10796,12 +10796,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10797 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 678 "js_parser.mly"
+# 680 "js_parser.mly"
              ( J.Plus  )
 # 10802 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10807 "js_parser.ml"
              in
@@ -10837,12 +10837,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10838 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 675 "js_parser.mly"
+# 677 "js_parser.mly"
              ( J.Mul   )
 # 10843 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10848 "js_parser.ml"
              in
@@ -10878,12 +10878,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10879 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 677 "js_parser.mly"
+# 679 "js_parser.mly"
              ( J.Mod   )
 # 10884 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10889 "js_parser.ml"
              in
@@ -10925,12 +10925,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10926 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 679 "js_parser.mly"
+# 681 "js_parser.mly"
              ( J.Minus )
 # 10931 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10936 "js_parser.ml"
              in
@@ -10976,12 +10976,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 10977 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 680 "js_parser.mly"
+# 682 "js_parser.mly"
              ( J.Lsl   )
 # 10982 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 10987 "js_parser.ml"
              in
@@ -11017,12 +11017,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11018 "js_parser.ml"
             ))), _, (right : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression_no_statement = let op = 
-# 676 "js_parser.mly"
+# 678 "js_parser.mly"
              ( J.Div   )
 # 11023 "js_parser.ml"
              in
             
-# 478 "js_parser.mly"
+# 479 "js_parser.mly"
    ( J.EBin (op, left, right) )
 # 11028 "js_parser.ml"
              in
@@ -11058,12 +11058,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11059 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 688 "js_parser.mly"
+# 690 "js_parser.mly"
              ( J.IncrB  )
 # 11064 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11069 "js_parser.ml"
              in
@@ -11099,12 +11099,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11100 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 689 "js_parser.mly"
+# 691 "js_parser.mly"
              ( J.IncrB  )
 # 11105 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11110 "js_parser.ml"
              in
@@ -11146,12 +11146,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11147 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 693 "js_parser.mly"
+# 695 "js_parser.mly"
              ( J.Neg    )
 # 11152 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11157 "js_parser.ml"
              in
@@ -11187,12 +11187,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11188 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 695 "js_parser.mly"
+# 697 "js_parser.mly"
              ( J.Not    )
 # 11193 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11198 "js_parser.ml"
              in
@@ -11234,12 +11234,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11235 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 692 "js_parser.mly"
+# 694 "js_parser.mly"
              ( J.Pl     )
 # 11240 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11245 "js_parser.ml"
              in
@@ -11275,12 +11275,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11276 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 687 "js_parser.mly"
+# 689 "js_parser.mly"
              ( J.Typeof )
 # 11281 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11286 "js_parser.ml"
              in
@@ -11316,12 +11316,12 @@ and _menhir_goto_pre_in_expression : _menhir_env -> 'ttv_tail -> _menhir_state -
 # 11317 "js_parser.ml"
             ))), _, (e : 'tv_pre_in_expression)) = _menhir_stack in
             let _v : 'tv_pre_in_expression = let op = 
-# 686 "js_parser.mly"
+# 688 "js_parser.mly"
              ( J.Void   )
 # 11322 "js_parser.ml"
              in
             
-# 375 "js_parser.mly"
+# 376 "js_parser.mly"
    ( J.EUn (op, e) )
 # 11327 "js_parser.ml"
              in
@@ -11434,13 +11434,13 @@ and _menhir_goto_option_pair_default_clause_list_case_clause___ : _menhir_env ->
         let subject =
           let _3 = _3_inlined1 in
           
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 11440 "js_parser.ml"
           
         in
         
-# 291 "js_parser.mly"
+# 292 "js_parser.mly"
    ( let switch = match pair with
        | cases, None ->
          J.Switch_statement (subject, cases, None, [])
@@ -12028,7 +12028,7 @@ and _menhir_goto_pre_in_expression_no_statement : _menhir_env -> 'ttv_tail -> _m
         let (_menhir_stack : 'freshtv1277 * _menhir_state * 'tv_pre_in_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_pre_in_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_post_in_expression_no_statement = 
-# 463 "js_parser.mly"
+# 464 "js_parser.mly"
                                   ( _1 )
 # 12034 "js_parser.ml"
          in
@@ -12058,7 +12058,7 @@ and _menhir_run130 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12059 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 709 "js_parser.mly"
+# 711 "js_parser.mly"
                     ( J.AsrEq )
 # 12064 "js_parser.ml"
      in
@@ -12084,7 +12084,7 @@ and _menhir_run131 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12085 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 710 "js_parser.mly"
+# 712 "js_parser.mly"
                     ( J.LsrEq )
 # 12090 "js_parser.ml"
      in
@@ -12110,7 +12110,7 @@ and _menhir_run132 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12111 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 706 "js_parser.mly"
+# 708 "js_parser.mly"
                     ( J.PlusEq )
 # 12116 "js_parser.ml"
      in
@@ -12136,7 +12136,7 @@ and _menhir_run133 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12137 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 703 "js_parser.mly"
+# 705 "js_parser.mly"
                     ( J.StarEq )
 # 12142 "js_parser.ml"
      in
@@ -12162,7 +12162,7 @@ and _menhir_run134 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12163 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 705 "js_parser.mly"
+# 707 "js_parser.mly"
                     ( J.ModEq )
 # 12168 "js_parser.ml"
      in
@@ -12188,7 +12188,7 @@ and _menhir_run135 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12189 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 707 "js_parser.mly"
+# 709 "js_parser.mly"
                     ( J.MinusEq )
 # 12194 "js_parser.ml"
      in
@@ -12214,7 +12214,7 @@ and _menhir_run136 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12215 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 708 "js_parser.mly"
+# 710 "js_parser.mly"
                     ( J.LslEq )
 # 12220 "js_parser.ml"
      in
@@ -12240,7 +12240,7 @@ and _menhir_run137 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12241 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 704 "js_parser.mly"
+# 706 "js_parser.mly"
                     ( J.SlashEq )
 # 12246 "js_parser.ml"
      in
@@ -12266,7 +12266,7 @@ and _menhir_run138 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12267 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 712 "js_parser.mly"
+# 714 "js_parser.mly"
                     ( J.BxorEq )
 # 12272 "js_parser.ml"
      in
@@ -12292,7 +12292,7 @@ and _menhir_run139 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12293 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 713 "js_parser.mly"
+# 715 "js_parser.mly"
                     ( J.BorEq )
 # 12298 "js_parser.ml"
      in
@@ -12318,7 +12318,7 @@ and _menhir_run140 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12319 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 711 "js_parser.mly"
+# 713 "js_parser.mly"
                     ( J.BandEq )
 # 12324 "js_parser.ml"
      in
@@ -12344,7 +12344,7 @@ and _menhir_run141 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 12345 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_assignment_operator = 
-# 702 "js_parser.mly"
+# 704 "js_parser.mly"
                     ( J.Eq )
 # 12350 "js_parser.ml"
      in
@@ -12354,7 +12354,7 @@ and _menhir_reduce213 : _menhir_env -> 'ttv_tail * _menhir_state * 'tv_left_hand
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, (_1 : 'tv_left_hand_side_expression)) = _menhir_stack in
     let _v : 'tv_pre_in_expression = 
-# 372 "js_parser.mly"
+# 373 "js_parser.mly"
    ( _1 )
 # 12360 "js_parser.ml"
      in
@@ -12373,7 +12373,7 @@ and _menhir_goto_new_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> '
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_new_expression) : 'tv_new_expression) = _v in
         ((let _v : 'tv_left_hand_side_expression = 
-# 351 "js_parser.mly"
+# 352 "js_parser.mly"
                    ( snd _1 )
 # 12379 "js_parser.ml"
          in
@@ -12401,7 +12401,7 @@ and _menhir_goto_new_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> '
 # 12402 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_new_expression_no_statement = 
-# 486 "js_parser.mly"
+# 487 "js_parser.mly"
                            ( (pi, J.ENew (snd _2,None)) )
 # 12407 "js_parser.ml"
          in
@@ -12429,7 +12429,7 @@ and _menhir_goto_new_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> '
 # 12430 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_new_expression = 
-# 393 "js_parser.mly"
+# 394 "js_parser.mly"
                            ( (pi, J.ENew (snd _2,None)) )
 # 12435 "js_parser.ml"
          in
@@ -12848,13 +12848,13 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
 # 12849 "js_parser.ml"
            in
           
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 12854 "js_parser.ml"
           
         in
         
-# 579 "js_parser.mly"
+# 580 "js_parser.mly"
                                                     ( args )
 # 12860 "js_parser.ml"
          in
@@ -12874,7 +12874,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
             let ((_2 : 'tv_arguments) : 'tv_arguments) = _v in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_call_expression)) = _menhir_stack in
             let _v : 'tv_call_expression = 
-# 385 "js_parser.mly"
+# 386 "js_parser.mly"
      ( let (start, e) = _1 in (start, J.ECall(e, _2, J.Pi start)) )
 # 12880 "js_parser.ml"
              in
@@ -12890,7 +12890,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
             let ((_2 : 'tv_arguments) : 'tv_arguments) = _v in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_member_expression)) = _menhir_stack in
             let _v : 'tv_call_expression = 
-# 383 "js_parser.mly"
+# 384 "js_parser.mly"
      ( let (start, e) = _1 in (start, J.ECall(e, _2, J.Pi start)) )
 # 12896 "js_parser.ml"
              in
@@ -12918,7 +12918,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
 # 12919 "js_parser.ml"
             ))), _, (e : 'tv_member_expression)) = _menhir_stack in
             let _v : 'tv_member_expression_no_statement = 
-# 506 "js_parser.mly"
+# 507 "js_parser.mly"
    ( (pi, J.ENew(snd e,Some a)) )
 # 12924 "js_parser.ml"
              in
@@ -12934,7 +12934,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
             let ((_2 : 'tv_arguments) : 'tv_arguments) = _v in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_member_expression_no_statement)) = _menhir_stack in
             let _v : 'tv_call_expression_no_statement = 
-# 490 "js_parser.mly"
+# 491 "js_parser.mly"
    ( let (start, e) = _1 in (start, J.ECall(e, _2, J.Pi start)) )
 # 12940 "js_parser.ml"
              in
@@ -12950,7 +12950,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
             let ((_2 : 'tv_arguments) : 'tv_arguments) = _v in
             ((let (_menhir_stack, _menhir_s, (_1 : 'tv_call_expression_no_statement)) = _menhir_stack in
             let _v : 'tv_call_expression_no_statement = 
-# 492 "js_parser.mly"
+# 493 "js_parser.mly"
    ( let (start, e) = _1 in (start, J.ECall(e, _2, J.Pi start)) )
 # 12956 "js_parser.ml"
              in
@@ -12978,7 +12978,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_arg__ : _menhir_env -> 
 # 12979 "js_parser.ml"
             ))), _, (e1 : 'tv_member_expression)) = _menhir_stack in
             let _v : 'tv_member_expression = 
-# 403 "js_parser.mly"
+# 404 "js_parser.mly"
      ( (pi, J.ENew(snd e1, Some a)) )
 # 12984 "js_parser.ml"
              in
@@ -13097,7 +13097,7 @@ and _menhir_goto_left_hand_side_expression_no_statement : _menhir_env -> 'ttv_ta
         let (_menhir_stack : 'freshtv1157 * _menhir_state * 'tv_left_hand_side_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_left_hand_side_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_pre_in_expression_no_statement = 
-# 471 "js_parser.mly"
+# 472 "js_parser.mly"
    ( _1 )
 # 13103 "js_parser.ml"
          in
@@ -13311,7 +13311,7 @@ and _menhir_reduce139 : _menhir_env -> 'ttv_tail * _menhir_state * 'tv_member_ex
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, (_1 : 'tv_member_expression)) = _menhir_stack in
     let _v : 'tv_new_expression = 
-# 392 "js_parser.mly"
+# 393 "js_parser.mly"
                         ( _1 )
 # 13317 "js_parser.ml"
      in
@@ -13476,7 +13476,7 @@ and _menhir_run498 : _menhir_env -> 'ttv_tail * _menhir_state * 'tv_elison -> _m
     )) = _v in
     ((let (_menhir_stack, _menhir_s, (_1 : 'tv_elison)) = _menhir_stack in
     let _v : 'tv_elison_rev = 
-# 642 "js_parser.mly"
+# 644 "js_parser.mly"
                   ( None :: _1 )
 # 13482 "js_parser.ml"
      in
@@ -13631,7 +13631,7 @@ and _menhir_goto_option_finally_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 13632 "js_parser.ml"
     ))), _, (_2 : 'tv_block)), _, (_3 : 'tv_catch)) = _menhir_stack in
     let _v : 'tv_try_statement = 
-# 302 "js_parser.mly"
+# 303 "js_parser.mly"
                                  ( (J.Try_statement (_2, Some _3, _4), J.Pi pi) )
 # 13637 "js_parser.ml"
      in
@@ -13805,7 +13805,7 @@ and _menhir_goto_new_expression_no_statement : _menhir_env -> 'ttv_tail -> _menh
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : 'tv_new_expression_no_statement) : 'tv_new_expression_no_statement) = _v in
     ((let _v : 'tv_left_hand_side_expression_no_statement = 
-# 481 "js_parser.mly"
+# 482 "js_parser.mly"
                                ( snd _1 )
 # 13811 "js_parser.ml"
      in
@@ -14043,7 +14043,7 @@ and _menhir_goto_call_expression_no_statement : _menhir_env -> 'ttv_tail -> _men
         let (_menhir_stack : 'freshtv1115 * _menhir_state * 'tv_call_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_call_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_left_hand_side_expression_no_statement = 
-# 482 "js_parser.mly"
+# 483 "js_parser.mly"
                                 ( snd _1 )
 # 14049 "js_parser.ml"
          in
@@ -14210,7 +14210,7 @@ and _menhir_goto_call_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 
         let (_menhir_stack : 'freshtv1107 * _menhir_state * 'tv_call_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_call_expression)) = _menhir_stack in
         let _v : 'tv_left_hand_side_expression = 
-# 352 "js_parser.mly"
+# 353 "js_parser.mly"
                    ( snd _1 )
 # 14216 "js_parser.ml"
          in
@@ -14293,7 +14293,7 @@ and _menhir_reduce61 : _menhir_env -> 'ttv_tail * _menhir_state * 'tv_elison_rev
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, (_1 : 'tv_elison_rev)) = _menhir_stack in
     let _v : 'tv_elison = 
-# 644 "js_parser.mly"
+# 646 "js_parser.mly"
                    (_1)
 # 14299 "js_parser.ml"
      in
@@ -14351,7 +14351,7 @@ and _menhir_reduce61 : _menhir_env -> 'ttv_tail * _menhir_state * 'tv_elison_rev
 # 14352 "js_parser.ml"
             ))), _, (_2 : 'tv_elison)) = _menhir_stack in
             let _v : 'tv_array_literal = 
-# 541 "js_parser.mly"
+# 542 "js_parser.mly"
      ( (pi, J.EArr _2) )
 # 14357 "js_parser.ml"
              in
@@ -14623,7 +14623,7 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_pair_variable_option_initialize
 # 14624 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_variable_statement = 
-# 226 "js_parser.mly"
+# 227 "js_parser.mly"
    ( J.Variable_statement list, J.Pi pi )
 # 14629 "js_parser.ml"
          in
@@ -14879,7 +14879,7 @@ and _menhir_goto_option_expression_ : _menhir_env -> 'ttv_tail -> _menhir_state 
 # 14880 "js_parser.ml"
         ))), _, (_2 : 'tv_option_expression_)) = _menhir_stack in
         let _v : 'tv_return_statement = 
-# 283 "js_parser.mly"
+# 284 "js_parser.mly"
                            ( (J.Return_statement _2, J.Pi pi) )
 # 14885 "js_parser.ml"
          in
@@ -15512,7 +15512,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15513 "js_parser.ml"
          in
         
-# 316 "js_parser.mly"
+# 317 "js_parser.mly"
                                                                ( pair )
 # 15518 "js_parser.ml"
          in
@@ -15565,7 +15565,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15566 "js_parser.ml"
         ))), _, (list : 'tv_list_statement_)) = _menhir_stack in
         let _v : 'tv_default_clause = 
-# 319 "js_parser.mly"
+# 320 "js_parser.mly"
                                      ( list )
 # 15571 "js_parser.ml"
          in
@@ -15630,7 +15630,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15631 "js_parser.ml"
             ))), _, (x : 'tv_list_statement_)) = _menhir_stack in
             let _v : 'tv_curly_block_list_statement__ = 
-# 648 "js_parser.mly"
+# 650 "js_parser.mly"
                                  ( (x, pi1, pi2) )
 # 15636 "js_parser.ml"
              in
@@ -15665,7 +15665,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
                 let (_menhir_s : _menhir_state) = _menhir_s in
                 let ((block : 'tv_curly_block_list_statement__) : 'tv_curly_block_list_statement__) = _v in
                 ((let _v : 'tv_block = 
-# 222 "js_parser.mly"
+# 223 "js_parser.mly"
    ( let statements, _, _ = block in statements )
 # 15671 "js_parser.ml"
                  in
@@ -15756,7 +15756,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15757 "js_parser.ml"
                     ))), _, (_2 : 'tv_block)) = _menhir_stack in
                     let _v : 'tv_finally = 
-# 309 "js_parser.mly"
+# 310 "js_parser.mly"
                    ( _2 )
 # 15762 "js_parser.ml"
                      in
@@ -15788,7 +15788,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15789 "js_parser.ml"
                         ))), _, (_2 : 'tv_block)) = _menhir_stack in
                         let _v : 'tv_try_statement = 
-# 303 "js_parser.mly"
+# 304 "js_parser.mly"
                                 ( (J.Try_statement (_2, None, Some _3), J.Pi pi) )
 # 15794 "js_parser.ml"
                          in
@@ -15855,7 +15855,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
                     let _v : 'tv_catch = let pair =
                       let _1 = _1_inlined1 in
                       let x = 
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 15861 "js_parser.ml"
                        in
@@ -15866,7 +15866,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
                       
                     in
                     
-# 306 "js_parser.mly"
+# 307 "js_parser.mly"
                                                      ( pair )
 # 15872 "js_parser.ml"
                      in
@@ -16065,7 +16065,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16066 "js_parser.ml"
         ))), _, (s : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_labeled_statement = 
-# 218 "js_parser.mly"
+# 219 "js_parser.mly"
                               ( J.Labelled_statement (l, s), J.N )
 # 16071 "js_parser.ml"
          in
@@ -16159,7 +16159,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16160 "js_parser.ml"
          in
         
-# 271 "js_parser.mly"
+# 272 "js_parser.mly"
    ( J.ForIn_statement (J.Right left, right, body), J.Pi pi )
 # 16165 "js_parser.ml"
          in
@@ -16243,7 +16243,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16244 "js_parser.ml"
         ))), _, (statement : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_for_statement = 
-# 263 "js_parser.mly"
+# 264 "js_parser.mly"
    ( J.For_statement (J.Right initial, condition, increment, statement), J.Pi pi )
 # 16249 "js_parser.ml"
          in
@@ -16315,7 +16315,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16316 "js_parser.ml"
         ))), _, (statement : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_for_statement = 
-# 258 "js_parser.mly"
+# 259 "js_parser.mly"
    ( J.For_statement (J.Left initial, condition, increment, statement), J.Pi pi )
 # 16321 "js_parser.ml"
          in
@@ -16375,7 +16375,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16376 "js_parser.ml"
         ))), _, (body : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_for_in_statement = 
-# 268 "js_parser.mly"
+# 269 "js_parser.mly"
    ( J.ForIn_statement (J.Left left, right, body), J.Pi pi )
 # 16381 "js_parser.ml"
          in
@@ -16529,12 +16529,12 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16530 "js_parser.ml"
             ))), _, (t : 'tv_statement)) = _menhir_stack in
             let _v : 'tv_if_statement = let condition = 
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 16535 "js_parser.ml"
              in
             
-# 244 "js_parser.mly"
+# 245 "js_parser.mly"
      ( (J.If_statement (condition, t, None), J.Pi pi) )
 # 16540 "js_parser.ml"
              in
@@ -16613,12 +16613,12 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16614 "js_parser.ml"
         ))), _, (e : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_if_statement = let condition = 
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 16619 "js_parser.ml"
          in
         
-# 242 "js_parser.mly"
+# 243 "js_parser.mly"
      ( (J.If_statement (condition, t, Some e), J.Pi pi) )
 # 16624 "js_parser.ml"
          in
@@ -16752,12 +16752,12 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16753 "js_parser.ml"
         ))), _, (body : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_while_statement = let condition = 
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 16758 "js_parser.ml"
          in
         
-# 252 "js_parser.mly"
+# 253 "js_parser.mly"
      ( (J.While_statement (condition, body), J.Pi pi) )
 # 16763 "js_parser.ml"
          in
@@ -16836,13 +16836,13 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
         let _v : 'tv_with_statement = let _2 =
           let (_3, _1) = (_3_inlined1, _1_inlined1) in
           
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 16842 "js_parser.ml"
           
         in
         
-# 286 "js_parser.mly"
+# 287 "js_parser.mly"
                                               ( assert false )
 # 16848 "js_parser.ml"
          in
@@ -16909,7 +16909,7 @@ and _menhir_goto_option_label_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 't
 # 16910 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_continue_statement = 
-# 277 "js_parser.mly"
+# 278 "js_parser.mly"
                         ( (J.Continue_statement _2,J.Pi pi) )
 # 16915 "js_parser.ml"
          in
@@ -16954,7 +16954,7 @@ and _menhir_goto_option_label_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 't
 # 16955 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_break_statement = 
-# 280 "js_parser.mly"
+# 281 "js_parser.mly"
                      ( (J.Break_statement _2, J.Pi pi) )
 # 16960 "js_parser.ml"
          in
@@ -17136,7 +17136,7 @@ and _menhir_goto_member_expression_no_statement : _menhir_env -> 'ttv_tail -> _m
         let (_menhir_stack : 'freshtv841 * _menhir_state * 'tv_member_expression_no_statement) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (_1 : 'tv_member_expression_no_statement)) = _menhir_stack in
         let _v : 'tv_new_expression_no_statement = 
-# 485 "js_parser.mly"
+# 486 "js_parser.mly"
                                   ( _1 )
 # 17142 "js_parser.ml"
          in
@@ -17157,7 +17157,7 @@ and _menhir_goto_primary_expression : _menhir_env -> 'ttv_tail -> _menhir_state 
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((e : 'tv_primary_expression) : 'tv_primary_expression) = _v in
     ((let _v : 'tv_member_expression = 
-# 397 "js_parser.mly"
+# 398 "js_parser.mly"
      ( e )
 # 17163 "js_parser.ml"
      in
@@ -17189,7 +17189,7 @@ and _menhir_goto_identifier_or_kw : _menhir_env -> 'ttv_tail -> _menhir_state ->
 # 17190 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_member_expression = 
-# 401 "js_parser.mly"
+# 402 "js_parser.mly"
      ( let (start, e1) = _1 in (start, J.EDot(e1,i)) )
 # 17195 "js_parser.ml"
          in
@@ -17217,7 +17217,7 @@ and _menhir_goto_identifier_or_kw : _menhir_env -> 'ttv_tail -> _menhir_state ->
 # 17218 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_call_expression = 
-# 389 "js_parser.mly"
+# 390 "js_parser.mly"
      ( let (start, e) = _1 in (start, J.EDot (e, _3)) )
 # 17223 "js_parser.ml"
          in
@@ -17245,7 +17245,7 @@ and _menhir_goto_identifier_or_kw : _menhir_env -> 'ttv_tail -> _menhir_state ->
 # 17246 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_member_expression_no_statement = 
-# 504 "js_parser.mly"
+# 505 "js_parser.mly"
    ( let (start, e1) = _1 in (start, J.EDot(e1,i)) )
 # 17251 "js_parser.ml"
          in
@@ -17273,7 +17273,7 @@ and _menhir_goto_identifier_or_kw : _menhir_env -> 'ttv_tail -> _menhir_state ->
 # 17274 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_call_expression_no_statement = 
-# 496 "js_parser.mly"
+# 497 "js_parser.mly"
    ( let (start, e) = _1 in (start, J.EDot(e,_3)) )
 # 17279 "js_parser.ml"
          in
@@ -17288,7 +17288,7 @@ and _menhir_goto_identifier_or_kw : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((i : 'tv_identifier_or_kw) : 'tv_identifier_or_kw) = _v in
         ((let _v : 'tv_property_name = 
-# 632 "js_parser.mly"
+# 633 "js_parser.mly"
                       ( J.PNI i )
 # 17294 "js_parser.ml"
          in
@@ -17404,7 +17404,7 @@ and _menhir_goto_elison_rev : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 # 17405 "js_parser.ml"
             ))), _, (_2 : 'tv_element_list_rev)), _, (_3 : 'tv_elison_rev)) = _menhir_stack in
             let _v : 'tv_array_literal = 
-# 547 "js_parser.mly"
+# 548 "js_parser.mly"
      ( (pi, J.EArr (List.rev_append _2 (List.rev _3))) )
 # 17410 "js_parser.ml"
              in
@@ -17664,7 +17664,7 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
 # 17665 "js_parser.ml"
             ))), _, (x : 'tv_list_source_element_)) = _menhir_stack in
             let _v : 'tv_curly_block_list_source_element__ = 
-# 648 "js_parser.mly"
+# 650 "js_parser.mly"
                                  ( (x, pi1, pi2) )
 # 17670 "js_parser.ml"
              in
@@ -17726,13 +17726,13 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
 # 17727 "js_parser.ml"
                    in
                   
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 17732 "js_parser.ml"
                   
                 in
                 
-# 328 "js_parser.mly"
+# 329 "js_parser.mly"
    ( let elements, _pi_start, pi_end = block in
      (name, args, elements, J.Pi pi_end), J.Pi pi )
 # 17739 "js_parser.ml"
@@ -17808,13 +17808,13 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
 # 17809 "js_parser.ml"
                    in
                   
-# 721 "js_parser.mly"
+# 723 "js_parser.mly"
                                                          ( item )
 # 17814 "js_parser.ml"
                   
                 in
                 
-# 334 "js_parser.mly"
+# 335 "js_parser.mly"
    ( let elements, _pi_start, _pi_end = block in
      pi, J.EFun (name, args, elements, J.Pi pi) )
 # 17821 "js_parser.ml"
@@ -17832,7 +17832,7 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
                 let (_menhir_s : _menhir_state) = _menhir_s in
                 let ((e : 'tv_function_expression) : 'tv_function_expression) = _v in
                 ((let _v : 'tv_primary_expression = 
-# 408 "js_parser.mly"
+# 409 "js_parser.mly"
                          ( e )
 # 17838 "js_parser.ml"
                  in
@@ -17971,7 +17971,7 @@ and _menhir_reduce115 : _menhir_env -> 'ttv_tail * _menhir_state * (
 # 17972 "js_parser.ml"
     ))) = _menhir_stack in
     let _v : 'tv_label = 
-# 629 "js_parser.mly"
+# 630 "js_parser.mly"
                 ( J.Label.of_string (fst _1) )
 # 17977 "js_parser.ml"
      in
@@ -18234,7 +18234,7 @@ and _menhir_goto_statement_need_semi : _menhir_env -> 'ttv_tail -> _menhir_state
 # 18235 "js_parser.ml"
         )) = _v in
         ((let _v : 'tv_either_T_SEMICOLON_T_VIRTUAL_SEMICOLON_ = 
-# 717 "js_parser.mly"
+# 719 "js_parser.mly"
                 ( _1 )
 # 18240 "js_parser.ml"
          in
@@ -18260,7 +18260,7 @@ and _menhir_goto_statement_need_semi : _menhir_env -> 'ttv_tail -> _menhir_state
 # 18261 "js_parser.ml"
         )) = _v in
         ((let _v : 'tv_either_T_SEMICOLON_T_VIRTUAL_SEMICOLON_ = 
-# 717 "js_parser.mly"
+# 719 "js_parser.mly"
                            ( _1 )
 # 18266 "js_parser.ml"
          in
@@ -18298,12 +18298,13 @@ and _menhir_goto_statement_need_semi : _menhir_env -> 'ttv_tail -> _menhir_state
     match _tok with
       | EOF _ | T_RCURLY _ -> statement
       | token ->
-        let info = Js_token.info_of_tok token in
+        let info = Js_token.info token in
         match info.Parse_info.fol with
-          | Some true -> statement
-          | _ -> (raise _eRR)
+          | Yes -> statement
+          | No -> (raise _eRR)
+          | Unknown -> assert false
   )
-# 18307 "js_parser.ml"
+# 18308 "js_parser.ml"
            : 'tv_statement)
         with
         | Error ->
@@ -18326,14 +18327,14 @@ and _menhir_reduce158 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
     let _v : 'tv_option_label_ = 
 # 114 "<standard.mly>"
     ( None )
-# 18330 "js_parser.ml"
+# 18331 "js_parser.ml"
      in
     _menhir_goto_option_label_ _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run301 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 18337 "js_parser.ml"
+# 18338 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -18359,7 +18360,7 @@ and _menhir_goto_property_name : _menhir_env -> 'ttv_tail -> _menhir_state -> 't
         let (_v : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18363 "js_parser.ml"
+# 18364 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -18438,9 +18439,9 @@ and _menhir_goto_primary_expression_no_statement : _menhir_env -> 'ttv_tail -> _
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((e : 'tv_primary_expression_no_statement) : 'tv_primary_expression_no_statement) = _v in
         ((let _v : 'tv_primary_expression = 
-# 408 "js_parser.mly"
+# 409 "js_parser.mly"
                          ( e )
-# 18444 "js_parser.ml"
+# 18445 "js_parser.ml"
          in
         _menhir_goto_primary_expression _menhir_env _menhir_stack _menhir_s _v) : 'freshtv690)) : 'freshtv692)
     | MenhirState0 | MenhirState526 | MenhirState68 | MenhirState485 | MenhirState194 | MenhirState209 | MenhirState454 | MenhirState219 | MenhirState449 | MenhirState241 | MenhirState447 | MenhirState440 | MenhirState435 | MenhirState428 | MenhirState291 | MenhirState393 | MenhirState292 ->
@@ -18453,9 +18454,9 @@ and _menhir_goto_primary_expression_no_statement : _menhir_env -> 'ttv_tail -> _
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((e : 'tv_primary_expression_no_statement) : 'tv_primary_expression_no_statement) = _v in
         ((let _v : 'tv_member_expression_no_statement = 
-# 500 "js_parser.mly"
+# 501 "js_parser.mly"
    ( e )
-# 18459 "js_parser.ml"
+# 18460 "js_parser.ml"
          in
         _menhir_goto_member_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv694)) : 'freshtv696)
     | _ ->
@@ -18472,16 +18473,16 @@ and _menhir_goto_object_literal : _menhir_env -> 'ttv_tail -> _menhir_state -> '
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((e : 'tv_object_literal) : 'tv_object_literal) = _v in
     ((let _v : 'tv_primary_expression = 
-# 408 "js_parser.mly"
+# 409 "js_parser.mly"
                          ( e )
-# 18478 "js_parser.ml"
+# 18479 "js_parser.ml"
      in
     _menhir_goto_primary_expression _menhir_env _menhir_stack _menhir_s _v) : 'freshtv686)) : 'freshtv688)
 
 and _menhir_run17 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18485 "js_parser.ml"
+# 18486 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18491,23 +18492,23 @@ and _menhir_run17 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18495 "js_parser.ml"
+# 18496 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18499 "js_parser.ml"
+# 18500 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 616 "js_parser.mly"
+# 617 "js_parser.mly"
             ( "with" )
-# 18504 "js_parser.ml"
+# 18505 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv684)
 
 and _menhir_run18 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18511 "js_parser.ml"
+# 18512 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18517,23 +18518,23 @@ and _menhir_run18 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18521 "js_parser.ml"
+# 18522 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18525 "js_parser.ml"
+# 18526 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 596 "js_parser.mly"
+# 597 "js_parser.mly"
              ( "while" )
-# 18530 "js_parser.ml"
+# 18531 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv682)
 
 and _menhir_run19 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18537 "js_parser.ml"
+# 18538 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18543,23 +18544,23 @@ and _menhir_run19 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18547 "js_parser.ml"
+# 18548 "js_parser.ml"
     )) : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18551 "js_parser.ml"
+# 18552 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 614 "js_parser.mly"
+# 615 "js_parser.mly"
             ( "void" )
-# 18556 "js_parser.ml"
+# 18557 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv680)
 
 and _menhir_run20 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18563 "js_parser.ml"
+# 18564 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18569,23 +18570,23 @@ and _menhir_run20 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18573 "js_parser.ml"
+# 18574 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18577 "js_parser.ml"
+# 18578 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 613 "js_parser.mly"
+# 614 "js_parser.mly"
            ( "var" )
-# 18582 "js_parser.ml"
+# 18583 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv678)
 
 and _menhir_run21 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18589 "js_parser.ml"
+# 18590 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18595,23 +18596,23 @@ and _menhir_run21 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18599 "js_parser.ml"
+# 18600 "js_parser.ml"
     )) : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18603 "js_parser.ml"
+# 18604 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 612 "js_parser.mly"
+# 613 "js_parser.mly"
               ( "typeof" )
-# 18608 "js_parser.ml"
+# 18609 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv676)
 
 and _menhir_run22 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18615 "js_parser.ml"
+# 18616 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18621,23 +18622,23 @@ and _menhir_run22 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18625 "js_parser.ml"
+# 18626 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18629 "js_parser.ml"
+# 18630 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 611 "js_parser.mly"
+# 612 "js_parser.mly"
            ( "try" )
-# 18634 "js_parser.ml"
+# 18635 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv674)
 
 and _menhir_run23 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18641 "js_parser.ml"
+# 18642 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18647,23 +18648,23 @@ and _menhir_run23 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18651 "js_parser.ml"
+# 18652 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18655 "js_parser.ml"
+# 18656 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 619 "js_parser.mly"
+# 620 "js_parser.mly"
             ( "true" )
-# 18660 "js_parser.ml"
+# 18661 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv672)
 
 and _menhir_run24 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18667 "js_parser.ml"
+# 18668 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18673,23 +18674,23 @@ and _menhir_run24 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18677 "js_parser.ml"
+# 18678 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18681 "js_parser.ml"
+# 18682 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 610 "js_parser.mly"
+# 611 "js_parser.mly"
              ( "throw" )
-# 18686 "js_parser.ml"
+# 18687 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv670)
 
 and _menhir_run25 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18693 "js_parser.ml"
+# 18694 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18699,23 +18700,23 @@ and _menhir_run25 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18703 "js_parser.ml"
+# 18704 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18707 "js_parser.ml"
+# 18708 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 609 "js_parser.mly"
+# 610 "js_parser.mly"
             ( "this" )
-# 18712 "js_parser.ml"
+# 18713 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv668)
 
 and _menhir_run26 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18719 "js_parser.ml"
+# 18720 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18725,23 +18726,23 @@ and _menhir_run26 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18729 "js_parser.ml"
+# 18730 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18733 "js_parser.ml"
+# 18734 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 608 "js_parser.mly"
+# 609 "js_parser.mly"
               ( "switch" )
-# 18738 "js_parser.ml"
+# 18739 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv666)
 
 and _menhir_run27 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 18745 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 18746 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18750,24 +18751,25 @@ and _menhir_run27 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((s : (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 18755 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 18756 "js_parser.ml"
     )) : (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 18759 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 18760 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_property_name = 
-# 633 "js_parser.mly"
-                      ( J.PNS (fst s) )
-# 18764 "js_parser.ml"
+# 634 "js_parser.mly"
+                      (
+    let s, _info, _len = s in J.PNS s )
+# 18766 "js_parser.ml"
      in
     _menhir_goto_property_name _menhir_env _menhir_stack _menhir_s _v) : 'freshtv664)
 
 and _menhir_run28 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18771 "js_parser.ml"
+# 18773 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18777,23 +18779,23 @@ and _menhir_run28 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18781 "js_parser.ml"
+# 18783 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18785 "js_parser.ml"
+# 18787 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 607 "js_parser.mly"
+# 608 "js_parser.mly"
               ( "return" )
-# 18790 "js_parser.ml"
+# 18792 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv662)
 
 and _menhir_run29 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18797 "js_parser.ml"
+# 18799 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18803,23 +18805,23 @@ and _menhir_run29 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18807 "js_parser.ml"
+# 18809 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18811 "js_parser.ml"
+# 18813 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 617 "js_parser.mly"
+# 618 "js_parser.mly"
             ( "null" )
-# 18816 "js_parser.ml"
+# 18818 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv660)
 
 and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 18823 "js_parser.ml"
+# 18825 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18829,23 +18831,23 @@ and _menhir_run30 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 18833 "js_parser.ml"
+# 18835 "js_parser.ml"
     )) : (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 18837 "js_parser.ml"
+# 18839 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 606 "js_parser.mly"
+# 607 "js_parser.mly"
            ( "new" )
-# 18842 "js_parser.ml"
+# 18844 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv658)
 
 and _menhir_run31 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18849 "js_parser.ml"
+# 18851 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18855,23 +18857,23 @@ and _menhir_run31 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18859 "js_parser.ml"
+# 18861 "js_parser.ml"
     )) : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18863 "js_parser.ml"
+# 18865 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 594 "js_parser.mly"
+# 595 "js_parser.mly"
                   ( "instanceof" )
-# 18868 "js_parser.ml"
+# 18870 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv656)
 
 and _menhir_run32 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18875 "js_parser.ml"
+# 18877 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18881,23 +18883,23 @@ and _menhir_run32 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18885 "js_parser.ml"
+# 18887 "js_parser.ml"
     )) : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 18889 "js_parser.ml"
+# 18891 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 593 "js_parser.mly"
+# 594 "js_parser.mly"
           ( "in" )
-# 18894 "js_parser.ml"
+# 18896 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv654)
 
 and _menhir_run33 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18901 "js_parser.ml"
+# 18903 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18907,23 +18909,23 @@ and _menhir_run33 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18911 "js_parser.ml"
+# 18913 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18915 "js_parser.ml"
+# 18917 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 605 "js_parser.mly"
+# 606 "js_parser.mly"
           ( "if" )
-# 18920 "js_parser.ml"
+# 18922 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv652)
 
 and _menhir_run34 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 18927 "js_parser.ml"
+# 18929 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18933,23 +18935,23 @@ and _menhir_run34 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 18937 "js_parser.ml"
+# 18939 "js_parser.ml"
     )) : (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 18941 "js_parser.ml"
+# 18943 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 590 "js_parser.mly"
+# 591 "js_parser.mly"
                   ( fst _1 )
-# 18946 "js_parser.ml"
+# 18948 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv650)
 
 and _menhir_run35 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18953 "js_parser.ml"
+# 18955 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18959,23 +18961,23 @@ and _menhir_run35 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18963 "js_parser.ml"
+# 18965 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18967 "js_parser.ml"
+# 18969 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 604 "js_parser.mly"
+# 605 "js_parser.mly"
                 ( "function" )
-# 18972 "js_parser.ml"
+# 18974 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv648)
 
 and _menhir_run36 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18979 "js_parser.ml"
+# 18981 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -18985,23 +18987,23 @@ and _menhir_run36 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18989 "js_parser.ml"
+# 18991 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 18993 "js_parser.ml"
+# 18995 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 603 "js_parser.mly"
+# 604 "js_parser.mly"
            ( "for" )
-# 18998 "js_parser.ml"
+# 19000 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv646)
 
 and _menhir_run37 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19005 "js_parser.ml"
+# 19007 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19011,23 +19013,23 @@ and _menhir_run37 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19015 "js_parser.ml"
+# 19017 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19019 "js_parser.ml"
+# 19021 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 592 "js_parser.mly"
+# 593 "js_parser.mly"
                ( "finally" )
-# 19024 "js_parser.ml"
+# 19026 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv644)
 
 and _menhir_run38 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19031 "js_parser.ml"
+# 19033 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19037,23 +19039,23 @@ and _menhir_run38 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19041 "js_parser.ml"
+# 19043 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19045 "js_parser.ml"
+# 19047 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 618 "js_parser.mly"
+# 619 "js_parser.mly"
              ( "false" )
-# 19050 "js_parser.ml"
+# 19052 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv642)
 
 and _menhir_run39 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 63 "js_parser.mly"
        (Parse_info.t)
-# 19057 "js_parser.ml"
+# 19059 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19063,23 +19065,23 @@ and _menhir_run39 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 63 "js_parser.mly"
        (Parse_info.t)
-# 19067 "js_parser.ml"
+# 19069 "js_parser.ml"
     )) : (
 # 63 "js_parser.mly"
        (Parse_info.t)
-# 19071 "js_parser.ml"
+# 19073 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 595 "js_parser.mly"
+# 596 "js_parser.mly"
             ( "else" )
-# 19076 "js_parser.ml"
+# 19078 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv640)
 
 and _menhir_run40 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19083 "js_parser.ml"
+# 19085 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19089,23 +19091,23 @@ and _menhir_run40 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19093 "js_parser.ml"
+# 19095 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19097 "js_parser.ml"
+# 19099 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 602 "js_parser.mly"
+# 603 "js_parser.mly"
           ( "do" )
-# 19102 "js_parser.ml"
+# 19104 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv638)
 
 and _menhir_run41 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 19109 "js_parser.ml"
+# 19111 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19115,23 +19117,23 @@ and _menhir_run41 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 19119 "js_parser.ml"
+# 19121 "js_parser.ml"
     )) : (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 19123 "js_parser.ml"
+# 19125 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 601 "js_parser.mly"
+# 602 "js_parser.mly"
               ( "delete" )
-# 19128 "js_parser.ml"
+# 19130 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv636)
 
 and _menhir_run42 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19135 "js_parser.ml"
+# 19137 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19141,23 +19143,23 @@ and _menhir_run42 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19145 "js_parser.ml"
+# 19147 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19149 "js_parser.ml"
+# 19151 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 600 "js_parser.mly"
+# 601 "js_parser.mly"
                ( "default" )
-# 19154 "js_parser.ml"
+# 19156 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv634)
 
 and _menhir_run43 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19161 "js_parser.ml"
+# 19163 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19167,23 +19169,23 @@ and _menhir_run43 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19171 "js_parser.ml"
+# 19173 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19175 "js_parser.ml"
+# 19177 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 620 "js_parser.mly"
+# 621 "js_parser.mly"
                 ( "debugger" )
-# 19180 "js_parser.ml"
+# 19182 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv632)
 
 and _menhir_run44 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19187 "js_parser.ml"
+# 19189 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19193,23 +19195,23 @@ and _menhir_run44 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19197 "js_parser.ml"
+# 19199 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19201 "js_parser.ml"
+# 19203 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 599 "js_parser.mly"
+# 600 "js_parser.mly"
                 ( "continue" )
-# 19206 "js_parser.ml"
+# 19208 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv630)
 
 and _menhir_run45 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19213 "js_parser.ml"
+# 19215 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19219,23 +19221,23 @@ and _menhir_run45 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19223 "js_parser.ml"
+# 19225 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19227 "js_parser.ml"
+# 19229 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 591 "js_parser.mly"
+# 592 "js_parser.mly"
              ( "catch" )
-# 19232 "js_parser.ml"
+# 19234 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv628)
 
 and _menhir_run46 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19239 "js_parser.ml"
+# 19241 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19245,23 +19247,23 @@ and _menhir_run46 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19249 "js_parser.ml"
+# 19251 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19253 "js_parser.ml"
+# 19255 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 598 "js_parser.mly"
+# 599 "js_parser.mly"
             ( "case" )
-# 19258 "js_parser.ml"
+# 19260 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv626)
 
 and _menhir_run47 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19265 "js_parser.ml"
+# 19267 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19271,16 +19273,16 @@ and _menhir_run47 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19275 "js_parser.ml"
+# 19277 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19279 "js_parser.ml"
+# 19281 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_identifier_or_kw = 
-# 597 "js_parser.mly"
+# 598 "js_parser.mly"
              ( "break" )
-# 19284 "js_parser.ml"
+# 19286 "js_parser.ml"
      in
     _menhir_goto_identifier_or_kw _menhir_env _menhir_stack _menhir_s _v) : 'freshtv624)
 
@@ -19295,16 +19297,16 @@ and _menhir_goto_array_literal : _menhir_env -> 'ttv_tail -> _menhir_state -> 't
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((a : 'tv_array_literal) : 'tv_array_literal) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 418 "js_parser.mly"
+# 419 "js_parser.mly"
                                   ( a )
-# 19301 "js_parser.ml"
+# 19303 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv620)) : 'freshtv622)
 
 and _menhir_run493 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19308 "js_parser.ml"
+# 19310 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -19314,34 +19316,34 @@ and _menhir_run493 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19318 "js_parser.ml"
+# 19320 "js_parser.ml"
     )) : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19322 "js_parser.ml"
+# 19324 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_elison_rev = 
-# 641 "js_parser.mly"
+# 643 "js_parser.mly"
            ( [] )
-# 19327 "js_parser.ml"
+# 19329 "js_parser.ml"
      in
     _menhir_goto_elison_rev _menhir_env _menhir_stack _menhir_s _v) : 'freshtv618)
 
 and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 19334 "js_parser.ml"
+# 19336 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack ->
     let (_menhir_stack, _menhir_s, (i : (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 19340 "js_parser.ml"
+# 19342 "js_parser.ml"
     ))) = _menhir_stack in
     let _v : 'tv_variable_with_loc = 
-# 626 "js_parser.mly"
+# 627 "js_parser.mly"
                   ( let name, pi = i in var pi name, pi )
-# 19345 "js_parser.ml"
+# 19347 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv615) = _menhir_stack in
@@ -19358,9 +19360,9 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((i : 'tv_variable_with_loc) : 'tv_variable_with_loc) = _v in
         ((let _v : 'tv_variable = 
-# 623 "js_parser.mly"
+# 624 "js_parser.mly"
                        ( fst i )
-# 19364 "js_parser.ml"
+# 19366 "js_parser.ml"
          in
         let (_menhir_env : _menhir_env) = _menhir_env in
         let (_menhir_stack : 'freshtv605) = _menhir_stack in
@@ -19377,7 +19379,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let _v : 'tv_option_variable_ = 
 # 116 "<standard.mly>"
     ( Some x )
-# 19381 "js_parser.ml"
+# 19383 "js_parser.ml"
              in
             _menhir_goto_option_variable_ _menhir_env _menhir_stack _menhir_s _v) : 'freshtv570)) : 'freshtv572)
         | MenhirState480 | MenhirState63 | MenhirState61 ->
@@ -19392,7 +19394,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19396 "js_parser.ml"
+# 19398 "js_parser.ml"
                 )) = _v in
                 ((let _menhir_stack = (_menhir_stack, _v) in
                 let _menhir_env = _menhir_discard _menhir_env in
@@ -19411,7 +19413,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let _v : 'tv_separated_nonempty_list_T_COMMA_variable_ = 
 # 241 "<standard.mly>"
     ( [ x ] )
-# 19415 "js_parser.ml"
+# 19417 "js_parser.ml"
                  in
                 _menhir_goto_separated_nonempty_list_T_COMMA_variable_ _menhir_env _menhir_stack _menhir_s _v) : 'freshtv576)
             | _ ->
@@ -19433,7 +19435,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_v : (
 # 78 "js_parser.mly"
        (Parse_info.t)
-# 19437 "js_parser.ml"
+# 19439 "js_parser.ml"
                 )) = _v in
                 ((let _menhir_stack = (_menhir_stack, _v) in
                 let _menhir_env = _menhir_discard _menhir_env in
@@ -19497,7 +19499,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 ((let _v : 'tv_option_initializer__ = 
 # 114 "<standard.mly>"
     ( None )
-# 19501 "js_parser.ml"
+# 19503 "js_parser.ml"
                  in
                 _menhir_goto_option_initializer__ _menhir_env _menhir_stack _v) : 'freshtv584)
             | _ ->
@@ -19512,15 +19514,15 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let (_menhir_stack : ((('freshtv589 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19516 "js_parser.ml"
+# 19518 "js_parser.ml"
             )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19520 "js_parser.ml"
+# 19522 "js_parser.ml"
             )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19524 "js_parser.ml"
+# 19526 "js_parser.ml"
             )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
             ((assert (not _menhir_env._menhir_error);
             let _tok = _menhir_env._menhir_token in
@@ -19552,11 +19554,11 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let (_menhir_stack : (('freshtv597 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19556 "js_parser.ml"
+# 19558 "js_parser.ml"
             )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19560 "js_parser.ml"
+# 19562 "js_parser.ml"
             )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
             ((assert (not _menhir_env._menhir_error);
             let _tok = _menhir_env._menhir_token in
@@ -19566,16 +19568,16 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_stack : (('freshtv593 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19570 "js_parser.ml"
+# 19572 "js_parser.ml"
                 )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19574 "js_parser.ml"
+# 19576 "js_parser.ml"
                 )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
                 let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19579 "js_parser.ml"
+# 19581 "js_parser.ml"
                 )) = _v in
                 ((let _menhir_stack = (_menhir_stack, _v) in
                 let _menhir_env = _menhir_discard _menhir_env in
@@ -19594,11 +19596,11 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_stack : (('freshtv595 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19598 "js_parser.ml"
+# 19600 "js_parser.ml"
                 )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19602 "js_parser.ml"
+# 19604 "js_parser.ml"
                 )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
                 ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
                 _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv596)) : 'freshtv598)
@@ -19607,7 +19609,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let (_menhir_stack : ('freshtv603 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19611 "js_parser.ml"
+# 19613 "js_parser.ml"
             )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
             ((assert (not _menhir_env._menhir_error);
             let _tok = _menhir_env._menhir_token in
@@ -19617,12 +19619,12 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_stack : ('freshtv599 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19621 "js_parser.ml"
+# 19623 "js_parser.ml"
                 )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
                 let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19626 "js_parser.ml"
+# 19628 "js_parser.ml"
                 )) = _v in
                 ((let _menhir_stack = (_menhir_stack, _v) in
                 let _menhir_env = _menhir_discard _menhir_env in
@@ -19643,7 +19645,7 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_stack : ('freshtv601 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19647 "js_parser.ml"
+# 19649 "js_parser.ml"
                 )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
                 ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
                 _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv602)) : 'freshtv604)
@@ -19659,9 +19661,9 @@ and _menhir_reduce317 : _menhir_env -> 'ttv_tail * _menhir_state * (
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_variable_with_loc) : 'tv_variable_with_loc) = _v in
         ((let _v : 'tv_primary_expression_no_statement = 
-# 412 "js_parser.mly"
+# 413 "js_parser.mly"
                      ( let (i, pi) = _1 in (pi, J.EVar i) )
-# 19665 "js_parser.ml"
+# 19667 "js_parser.ml"
          in
         _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv612)) : 'freshtv614)
     | _ ->
@@ -19674,7 +19676,7 @@ and _menhir_goto_option_variable_ : _menhir_env -> 'ttv_tail -> _menhir_state ->
     let (_menhir_stack : ('freshtv567 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19678 "js_parser.ml"
+# 19680 "js_parser.ml"
     )) * _menhir_state * 'tv_option_variable_) = Obj.magic _menhir_stack in
     ((assert (not _menhir_env._menhir_error);
     let _tok = _menhir_env._menhir_token in
@@ -19684,12 +19686,12 @@ and _menhir_goto_option_variable_ : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let (_menhir_stack : ('freshtv563 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19688 "js_parser.ml"
+# 19690 "js_parser.ml"
         )) * _menhir_state * 'tv_option_variable_) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19693 "js_parser.ml"
+# 19695 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -19710,7 +19712,7 @@ and _menhir_goto_option_variable_ : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let (_menhir_stack : ('freshtv565 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19714 "js_parser.ml"
+# 19716 "js_parser.ml"
         )) * _menhir_state * 'tv_option_variable_) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv566)) : 'freshtv568)
@@ -19726,9 +19728,9 @@ and _menhir_goto_boolean_literal : _menhir_env -> 'ttv_tail -> _menhir_state -> 
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((b : 'tv_boolean_literal) : 'tv_boolean_literal) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 414 "js_parser.mly"
+# 415 "js_parser.mly"
                      ( b )
-# 19732 "js_parser.ml"
+# 19734 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv560)) : 'freshtv562)
 
@@ -19737,14 +19739,14 @@ and _menhir_reduce123 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
     let _v : 'tv_list_source_element_ = 
 # 211 "<standard.mly>"
     ( [] )
-# 19741 "js_parser.ml"
+# 19743 "js_parser.ml"
      in
     _menhir_goto_list_source_element_ _menhir_env _menhir_stack _menhir_s _v
 
 and _menhir_run1 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19748 "js_parser.ml"
+# 19750 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -19756,12 +19758,12 @@ and _menhir_run1 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv555 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19760 "js_parser.ml"
+# 19762 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19765 "js_parser.ml"
+# 19767 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -19826,7 +19828,7 @@ and _menhir_run1 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv557 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19830 "js_parser.ml"
+# 19832 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv558)
@@ -19834,7 +19836,7 @@ and _menhir_run1 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run69 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19838 "js_parser.ml"
+# 19840 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -19846,12 +19848,12 @@ and _menhir_run69 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv551 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19850 "js_parser.ml"
+# 19852 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 19855 "js_parser.ml"
+# 19857 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -19916,7 +19918,7 @@ and _menhir_run69 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv553 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19920 "js_parser.ml"
+# 19922 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv554)
@@ -19924,7 +19926,7 @@ and _menhir_run69 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run195 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 19928 "js_parser.ml"
+# 19930 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -19987,7 +19989,7 @@ and _menhir_run195 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run197 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 19991 "js_parser.ml"
+# 19993 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20004,7 +20006,7 @@ and _menhir_run197 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run206 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20008 "js_parser.ml"
+# 20010 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20067,7 +20069,7 @@ and _menhir_run206 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run208 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20071 "js_parser.ml"
+# 20073 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20084,7 +20086,7 @@ and _menhir_run208 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run210 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20088 "js_parser.ml"
+# 20090 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20147,7 +20149,7 @@ and _menhir_run210 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run212 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20151 "js_parser.ml"
+# 20153 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20159,12 +20161,12 @@ and _menhir_run212 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv547 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20163 "js_parser.ml"
+# 20165 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20168 "js_parser.ml"
+# 20170 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -20229,7 +20231,7 @@ and _menhir_run212 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv549 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20233 "js_parser.ml"
+# 20235 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv550)
@@ -20237,7 +20239,7 @@ and _menhir_run212 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run220 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20241 "js_parser.ml"
+# 20243 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -20247,16 +20249,16 @@ and _menhir_run220 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20251 "js_parser.ml"
+# 20253 "js_parser.ml"
     )) : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20255 "js_parser.ml"
+# 20257 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_empty_statement = 
-# 232 "js_parser.mly"
+# 233 "js_parser.mly"
                   ( J.Empty_statement, J.Pi pi )
-# 20260 "js_parser.ml"
+# 20262 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv543) = _menhir_stack in
@@ -20273,14 +20275,14 @@ and _menhir_run220 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     ((let _v : 'tv_statement_no_semi = 
 # 170 "js_parser.mly"
                      ( s )
-# 20277 "js_parser.ml"
+# 20279 "js_parser.ml"
      in
     _menhir_goto_statement_no_semi _menhir_env _menhir_stack _menhir_s _v) : 'freshtv540)) : 'freshtv542)) : 'freshtv544)) : 'freshtv546)
 
 and _menhir_run221 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20284 "js_parser.ml"
+# 20286 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20345,7 +20347,7 @@ and _menhir_run221 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run224 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20349 "js_parser.ml"
+# 20351 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20408,7 +20410,7 @@ and _menhir_run224 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run226 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20412 "js_parser.ml"
+# 20414 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20471,7 +20473,7 @@ and _menhir_run226 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run228 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 20475 "js_parser.ml"
+# 20477 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20512,7 +20514,7 @@ and _menhir_run228 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run232 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20516 "js_parser.ml"
+# 20518 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20575,7 +20577,7 @@ and _menhir_run232 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run209 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20579 "js_parser.ml"
+# 20581 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20666,7 +20668,7 @@ and _menhir_run209 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run234 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20670 "js_parser.ml"
+# 20672 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20729,7 +20731,7 @@ and _menhir_run234 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run236 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 20733 "js_parser.ml"
+# 20735 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20792,7 +20794,7 @@ and _menhir_run236 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run238 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20796 "js_parser.ml"
+# 20798 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20804,12 +20806,12 @@ and _menhir_run238 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv535 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20808 "js_parser.ml"
+# 20810 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20813 "js_parser.ml"
+# 20815 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -20874,7 +20876,7 @@ and _menhir_run238 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv537 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20878 "js_parser.ml"
+# 20880 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv538)
@@ -20882,7 +20884,7 @@ and _menhir_run238 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run242 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 20886 "js_parser.ml"
+# 20888 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20900,7 +20902,7 @@ and _menhir_run242 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv533 * _menhir_state * (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 20904 "js_parser.ml"
+# 20906 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv534)
@@ -20908,7 +20910,7 @@ and _menhir_run242 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run478 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20912 "js_parser.ml"
+# 20914 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20925,7 +20927,7 @@ and _menhir_run478 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20929 "js_parser.ml"
+# 20931 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -20937,12 +20939,12 @@ and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv529 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 20941 "js_parser.ml"
+# 20943 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 20946 "js_parser.ml"
+# 20948 "js_parser.ml"
         )) = _v in
         ((let _menhir_stack = (_menhir_stack, _v) in
         let _menhir_env = _menhir_discard _menhir_env in
@@ -20999,17 +21001,17 @@ and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let (_menhir_stack : ('freshtv525 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21003 "js_parser.ml"
+# 21005 "js_parser.ml"
             )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21007 "js_parser.ml"
+# 21009 "js_parser.ml"
             )) = Obj.magic _menhir_stack in
             let (_menhir_s : _menhir_state) = MenhirState244 in
             let (_v : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21013 "js_parser.ml"
+# 21015 "js_parser.ml"
             )) = _v in
             ((let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
             let _menhir_env = _menhir_discard _menhir_env in
@@ -21030,7 +21032,7 @@ and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             ((let _v : 'tv_option_expression_no_in_ = 
 # 114 "<standard.mly>"
     ( None )
-# 21034 "js_parser.ml"
+# 21036 "js_parser.ml"
              in
             _menhir_goto_option_expression_no_in_ _menhir_env _menhir_stack _menhir_s _v) : 'freshtv528)
         | _ ->
@@ -21044,7 +21046,7 @@ and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv531 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21048 "js_parser.ml"
+# 21050 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv532)
@@ -21052,7 +21054,7 @@ and _menhir_run243 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run292 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21056 "js_parser.ml"
+# 21058 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21141,7 +21143,7 @@ and _menhir_run292 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run293 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21145 "js_parser.ml"
+# 21147 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21204,7 +21206,7 @@ and _menhir_run293 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run295 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21208 "js_parser.ml"
+# 21210 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21267,7 +21269,7 @@ and _menhir_run295 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run297 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21271 "js_parser.ml"
+# 21273 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21330,7 +21332,7 @@ and _menhir_run297 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run299 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21334 "js_parser.ml"
+# 21336 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -21340,16 +21342,16 @@ and _menhir_run299 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21344 "js_parser.ml"
+# 21346 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21348 "js_parser.ml"
+# 21350 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_debugger_statement = 
-# 235 "js_parser.mly"
+# 236 "js_parser.mly"
                  ( J.Debugger_statement, J.Pi pi )
-# 21353 "js_parser.ml"
+# 21355 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv521) = _menhir_stack in
@@ -21366,14 +21368,14 @@ and _menhir_run299 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     ((let _v : 'tv_statement_need_semi = 
 # 180 "js_parser.mly"
                         ( s )
-# 21370 "js_parser.ml"
+# 21372 "js_parser.ml"
      in
     _menhir_goto_statement_need_semi _menhir_env _menhir_stack _menhir_s _v) : 'freshtv518)) : 'freshtv520)) : 'freshtv522)) : 'freshtv524)
 
 and _menhir_run300 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21377 "js_parser.ml"
+# 21379 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21392,7 +21394,7 @@ and _menhir_run300 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run304 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21396 "js_parser.ml"
+# 21398 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21411,7 +21413,7 @@ and _menhir_run304 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run306 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21415 "js_parser.ml"
+# 21417 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -21483,15 +21485,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv67 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21487 "js_parser.ml"
+# 21489 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21491 "js_parser.ml"
+# 21493 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21495 "js_parser.ml"
+# 21497 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv68)
@@ -21500,7 +21502,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv69 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21504 "js_parser.ml"
+# 21506 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv70)
@@ -21509,7 +21511,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv71 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21513 "js_parser.ml"
+# 21515 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv72)
@@ -21518,7 +21520,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv73 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21522 "js_parser.ml"
+# 21524 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv74)
@@ -21527,7 +21529,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv75 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21531 "js_parser.ml"
+# 21533 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv76)
@@ -21536,7 +21538,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv77 * _menhir_state * (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 21540 "js_parser.ml"
+# 21542 "js_parser.ml"
         )) * _menhir_state * 'tv_member_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv78)
@@ -21545,7 +21547,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv79 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21549 "js_parser.ml"
+# 21551 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv80)
@@ -21554,7 +21556,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv81 * _menhir_state * 'tv_object_key_value) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21558 "js_parser.ml"
+# 21560 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv82)
@@ -21568,7 +21570,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv85 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21572 "js_parser.ml"
+# 21574 "js_parser.ml"
         )) * _menhir_state * 'tv_element_list_rev) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv86)
@@ -21577,7 +21579,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv87 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21581 "js_parser.ml"
+# 21583 "js_parser.ml"
         )) * _menhir_state * 'tv_elison) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv88)
@@ -21591,7 +21593,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv91 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21595 "js_parser.ml"
+# 21597 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv92)
@@ -21600,7 +21602,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv93 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21604 "js_parser.ml"
+# 21606 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv94)
@@ -21614,15 +21616,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((('freshtv97 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21618 "js_parser.ml"
+# 21620 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21622 "js_parser.ml"
+# 21624 "js_parser.ml"
         )) * _menhir_state * 'tv_loption_separated_nonempty_list_T_COMMA_variable__) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21626 "js_parser.ml"
+# 21628 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv98)
@@ -21631,11 +21633,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv99 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21635 "js_parser.ml"
+# 21637 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21639 "js_parser.ml"
+# 21641 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv100)
@@ -21644,7 +21646,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv101 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21648 "js_parser.ml"
+# 21650 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv102)
@@ -21653,7 +21655,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv103 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21657 "js_parser.ml"
+# 21659 "js_parser.ml"
         )) * _menhir_state * 'tv_block) * _menhir_state * 'tv_catch) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv104)
@@ -21662,15 +21664,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv105 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21666 "js_parser.ml"
+# 21668 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21670 "js_parser.ml"
+# 21672 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21674 "js_parser.ml"
+# 21676 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv106)
@@ -21679,11 +21681,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv107 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21683 "js_parser.ml"
+# 21685 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21687 "js_parser.ml"
+# 21689 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv108)
@@ -21692,7 +21694,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv109 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21696 "js_parser.ml"
+# 21698 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv110)
@@ -21701,7 +21703,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv111 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21705 "js_parser.ml"
+# 21707 "js_parser.ml"
         )) * _menhir_state * 'tv_block) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv112)
@@ -21719,11 +21721,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv117 * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21723 "js_parser.ml"
+# 21725 "js_parser.ml"
         )) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21727 "js_parser.ml"
+# 21729 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         (raise _eRR : 'freshtv118)
     | MenhirState449 ->
@@ -21736,19 +21738,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((('freshtv121 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21740 "js_parser.ml"
+# 21742 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21744 "js_parser.ml"
+# 21746 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21748 "js_parser.ml"
+# 21750 "js_parser.ml"
         )) * _menhir_state * 'tv_statement) * (
 # 63 "js_parser.mly"
        (Parse_info.t)
-# 21752 "js_parser.ml"
+# 21754 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv122)
@@ -21757,7 +21759,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv123 * _menhir_state * 'tv_expression_no_in) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21761 "js_parser.ml"
+# 21763 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv124)
@@ -21766,19 +21768,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((('freshtv125 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21770 "js_parser.ml"
+# 21772 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21774 "js_parser.ml"
+# 21776 "js_parser.ml"
         )) * _menhir_state * 'tv_left_hand_side_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21778 "js_parser.ml"
+# 21780 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21782 "js_parser.ml"
+# 21784 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv126)
@@ -21787,15 +21789,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv127 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21791 "js_parser.ml"
+# 21793 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21795 "js_parser.ml"
+# 21797 "js_parser.ml"
         )) * _menhir_state * 'tv_left_hand_side_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 21799 "js_parser.ml"
+# 21801 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv128)
@@ -21804,11 +21806,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv129 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21808 "js_parser.ml"
+# 21810 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21812 "js_parser.ml"
+# 21814 "js_parser.ml"
         )) * _menhir_state * 'tv_left_hand_side_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv130)
@@ -21817,23 +21819,23 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((((('freshtv131 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21821 "js_parser.ml"
+# 21823 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21825 "js_parser.ml"
+# 21827 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_no_in_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21829 "js_parser.ml"
+# 21831 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21833 "js_parser.ml"
+# 21835 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21837 "js_parser.ml"
+# 21839 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv132)
@@ -21842,19 +21844,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((('freshtv133 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21846 "js_parser.ml"
+# 21848 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21850 "js_parser.ml"
+# 21852 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_no_in_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21854 "js_parser.ml"
+# 21856 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21858 "js_parser.ml"
+# 21860 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv134)
@@ -21863,15 +21865,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv135 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21867 "js_parser.ml"
+# 21869 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21871 "js_parser.ml"
+# 21873 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_no_in_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21875 "js_parser.ml"
+# 21877 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv136)
@@ -21880,27 +21882,27 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((((((('freshtv137 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21884 "js_parser.ml"
+# 21886 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21888 "js_parser.ml"
+# 21890 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21892 "js_parser.ml"
+# 21894 "js_parser.ml"
         )) * _menhir_state * 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21896 "js_parser.ml"
+# 21898 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21900 "js_parser.ml"
+# 21902 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21904 "js_parser.ml"
+# 21906 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv138)
@@ -21909,23 +21911,23 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((((('freshtv139 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21913 "js_parser.ml"
+# 21915 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21917 "js_parser.ml"
+# 21919 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21921 "js_parser.ml"
+# 21923 "js_parser.ml"
         )) * _menhir_state * 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21925 "js_parser.ml"
+# 21927 "js_parser.ml"
         )) * _menhir_state * 'tv_option_expression_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21929 "js_parser.ml"
+# 21931 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv140)
@@ -21934,19 +21936,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((('freshtv141 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21938 "js_parser.ml"
+# 21940 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21942 "js_parser.ml"
+# 21944 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 21946 "js_parser.ml"
+# 21948 "js_parser.ml"
         )) * _menhir_state * 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21950 "js_parser.ml"
+# 21952 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv142)
@@ -21960,7 +21962,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv145 * _menhir_state * 'tv_variable) * _menhir_state * 'tv_option_initializer_no_in_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21964 "js_parser.ml"
+# 21966 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv146)
@@ -21969,7 +21971,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv147 * _menhir_state * 'tv_call_expression_no_statement) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21973 "js_parser.ml"
+# 21975 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv148)
@@ -21978,7 +21980,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv149 * _menhir_state * 'tv_call_expression_no_statement) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21982 "js_parser.ml"
+# 21984 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv150)
@@ -21992,7 +21994,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv153 * _menhir_state * 'tv_expression_no_statement) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 21996 "js_parser.ml"
+# 21998 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv154)
@@ -22001,7 +22003,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv155 * _menhir_state * 'tv_label) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22005 "js_parser.ml"
+# 22007 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv156)
@@ -22020,7 +22022,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv161 * _menhir_state * 'tv_member_expression_no_statement) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22024 "js_parser.ml"
+# 22026 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv162)
@@ -22029,7 +22031,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv163 * _menhir_state * 'tv_member_expression_no_statement) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22033 "js_parser.ml"
+# 22035 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv164)
@@ -22043,7 +22045,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv167 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22047 "js_parser.ml"
+# 22049 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv168)
@@ -22052,7 +22054,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv169 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22056 "js_parser.ml"
+# 22058 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv170)
@@ -22061,7 +22063,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv171 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22065 "js_parser.ml"
+# 22067 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv172)
@@ -22070,7 +22072,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv173 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22074 "js_parser.ml"
+# 22076 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv174)
@@ -22079,7 +22081,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv175 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22083 "js_parser.ml"
+# 22085 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv176)
@@ -22088,7 +22090,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv177 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22092 "js_parser.ml"
+# 22094 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv178)
@@ -22097,7 +22099,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv179 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22101 "js_parser.ml"
+# 22103 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv180)
@@ -22106,7 +22108,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv181 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22110 "js_parser.ml"
+# 22112 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv182)
@@ -22115,7 +22117,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv183 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22119 "js_parser.ml"
+# 22121 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv184)
@@ -22124,7 +22126,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv185 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22128 "js_parser.ml"
+# 22130 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv186)
@@ -22133,7 +22135,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv187 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22137 "js_parser.ml"
+# 22139 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv188)
@@ -22142,7 +22144,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv189 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22146 "js_parser.ml"
+# 22148 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv190)
@@ -22151,7 +22153,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv191 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22155 "js_parser.ml"
+# 22157 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv192)
@@ -22160,11 +22162,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv193 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22164 "js_parser.ml"
+# 22166 "js_parser.ml"
         )) * _menhir_state * 'tv_assignment_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22168 "js_parser.ml"
+# 22170 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv194)
@@ -22173,7 +22175,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv195 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22177 "js_parser.ml"
+# 22179 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv196)
@@ -22182,7 +22184,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv197 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22186 "js_parser.ml"
+# 22188 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv198)
@@ -22191,7 +22193,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv199 * _menhir_state * 'tv_post_in_expression_no_statement) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22195 "js_parser.ml"
+# 22197 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv200)
@@ -22200,7 +22202,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv201 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22204 "js_parser.ml"
+# 22206 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv202)
@@ -22209,7 +22211,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv203 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22213 "js_parser.ml"
+# 22215 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv204)
@@ -22218,7 +22220,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv205 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22222 "js_parser.ml"
+# 22224 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv206)
@@ -22227,7 +22229,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv207 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22231 "js_parser.ml"
+# 22233 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv208)
@@ -22236,7 +22238,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv209 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22240 "js_parser.ml"
+# 22242 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv210)
@@ -22245,7 +22247,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv211 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22249 "js_parser.ml"
+# 22251 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv212)
@@ -22254,7 +22256,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv213 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22258 "js_parser.ml"
+# 22260 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv214)
@@ -22263,7 +22265,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv215 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22267 "js_parser.ml"
+# 22269 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv216)
@@ -22272,7 +22274,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv217 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22276 "js_parser.ml"
+# 22278 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv218)
@@ -22281,7 +22283,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv219 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22285 "js_parser.ml"
+# 22287 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv220)
@@ -22290,7 +22292,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv221 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22294 "js_parser.ml"
+# 22296 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv222)
@@ -22299,7 +22301,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv223 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22303 "js_parser.ml"
+# 22305 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv224)
@@ -22308,7 +22310,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv225 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22312 "js_parser.ml"
+# 22314 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv226)
@@ -22317,7 +22319,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv227 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22321 "js_parser.ml"
+# 22323 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv228)
@@ -22326,7 +22328,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv229 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22330 "js_parser.ml"
+# 22332 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv230)
@@ -22335,7 +22337,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv231 * _menhir_state * 'tv_pre_in_expression_no_statement) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22339 "js_parser.ml"
+# 22341 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv232)
@@ -22349,15 +22351,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv235 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22353 "js_parser.ml"
+# 22355 "js_parser.ml"
         )) * _menhir_state * 'tv_statement) * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22357 "js_parser.ml"
+# 22359 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22361 "js_parser.ml"
+# 22363 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, _), _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv236)
@@ -22366,7 +22368,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv237 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22370 "js_parser.ml"
+# 22372 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv238)
@@ -22375,7 +22377,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv239 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22379 "js_parser.ml"
+# 22381 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv240)
@@ -22384,7 +22386,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv241 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22388 "js_parser.ml"
+# 22390 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv242)
@@ -22393,7 +22395,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv243 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22397 "js_parser.ml"
+# 22399 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv244)
@@ -22402,7 +22404,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv245 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22406 "js_parser.ml"
+# 22408 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv246)
@@ -22411,7 +22413,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv247 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22415 "js_parser.ml"
+# 22417 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv248)
@@ -22420,7 +22422,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv249 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22424 "js_parser.ml"
+# 22426 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv250)
@@ -22429,7 +22431,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv251 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22433 "js_parser.ml"
+# 22435 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv252)
@@ -22438,7 +22440,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv253 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22442 "js_parser.ml"
+# 22444 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv254)
@@ -22447,7 +22449,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv255 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22451 "js_parser.ml"
+# 22453 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv256)
@@ -22456,7 +22458,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv257 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22460 "js_parser.ml"
+# 22462 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv258)
@@ -22465,23 +22467,23 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((((('freshtv259 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22469 "js_parser.ml"
+# 22471 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22473 "js_parser.ml"
+# 22475 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22477 "js_parser.ml"
+# 22479 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) * _menhir_state * 'tv_option_initializer_no_in_) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22481 "js_parser.ml"
+# 22483 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22485 "js_parser.ml"
+# 22487 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv260)
@@ -22490,19 +22492,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((((('freshtv261 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22494 "js_parser.ml"
+# 22496 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22498 "js_parser.ml"
+# 22500 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22502 "js_parser.ml"
+# 22504 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) * _menhir_state * 'tv_option_initializer_no_in_) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22506 "js_parser.ml"
+# 22508 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv262)
@@ -22511,7 +22513,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv263 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22515 "js_parser.ml"
+# 22517 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv264)
@@ -22520,7 +22522,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv265 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22524 "js_parser.ml"
+# 22526 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv266)
@@ -22529,7 +22531,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv267 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22533 "js_parser.ml"
+# 22535 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv268)
@@ -22538,7 +22540,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv269 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22542 "js_parser.ml"
+# 22544 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv270)
@@ -22547,7 +22549,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv271 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22551 "js_parser.ml"
+# 22553 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv272)
@@ -22556,7 +22558,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv273 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22560 "js_parser.ml"
+# 22562 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv274)
@@ -22565,7 +22567,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv275 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22569 "js_parser.ml"
+# 22571 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv276)
@@ -22574,7 +22576,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv277 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22578 "js_parser.ml"
+# 22580 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv278)
@@ -22583,7 +22585,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv279 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22587 "js_parser.ml"
+# 22589 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv280)
@@ -22592,7 +22594,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv281 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22596 "js_parser.ml"
+# 22598 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv282)
@@ -22601,7 +22603,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv283 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22605 "js_parser.ml"
+# 22607 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv284)
@@ -22610,7 +22612,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv285 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22614 "js_parser.ml"
+# 22616 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv286)
@@ -22619,11 +22621,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv287 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22623 "js_parser.ml"
+# 22625 "js_parser.ml"
         )) * _menhir_state * 'tv_assignment_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22627 "js_parser.ml"
+# 22629 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv288)
@@ -22642,7 +22644,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv293 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22646 "js_parser.ml"
+# 22648 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv294)
@@ -22651,7 +22653,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv295 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22655 "js_parser.ml"
+# 22657 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv296)
@@ -22660,7 +22662,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv297 * _menhir_state * 'tv_post_in_expression_no_in) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22664 "js_parser.ml"
+# 22666 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv298)
@@ -22674,7 +22676,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv301 * _menhir_state * (
 # 78 "js_parser.mly"
        (Parse_info.t)
-# 22678 "js_parser.ml"
+# 22680 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv302)
@@ -22683,15 +22685,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv303 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22687 "js_parser.ml"
+# 22689 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22691 "js_parser.ml"
+# 22693 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22695 "js_parser.ml"
+# 22697 "js_parser.ml"
         )) * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv304)
@@ -22700,15 +22702,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv305 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22704 "js_parser.ml"
+# 22706 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22708 "js_parser.ml"
+# 22710 "js_parser.ml"
         )) * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22712 "js_parser.ml"
+# 22714 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv306)
@@ -22717,11 +22719,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv307 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22721 "js_parser.ml"
+# 22723 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22725 "js_parser.ml"
+# 22727 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv308)
@@ -22730,15 +22732,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv309 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22734 "js_parser.ml"
+# 22736 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22738 "js_parser.ml"
+# 22740 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22742 "js_parser.ml"
+# 22744 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv310)
@@ -22747,11 +22749,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv311 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22751 "js_parser.ml"
+# 22753 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22755 "js_parser.ml"
+# 22757 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv312)
@@ -22760,7 +22762,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv313 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22764 "js_parser.ml"
+# 22766 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv314)
@@ -22769,7 +22771,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv315 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22773 "js_parser.ml"
+# 22775 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv316)
@@ -22778,7 +22780,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv317 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22782 "js_parser.ml"
+# 22784 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv318)
@@ -22787,7 +22789,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv319 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22791 "js_parser.ml"
+# 22793 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv320)
@@ -22796,7 +22798,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv321 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22800 "js_parser.ml"
+# 22802 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv322)
@@ -22805,7 +22807,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv323 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22809 "js_parser.ml"
+# 22811 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv324)
@@ -22814,7 +22816,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv325 * _menhir_state * (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 22818 "js_parser.ml"
+# 22820 "js_parser.ml"
         )) * _menhir_state * 'tv_member_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv326)
@@ -22823,7 +22825,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv327 * _menhir_state * (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 22827 "js_parser.ml"
+# 22829 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv328)
@@ -22832,7 +22834,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv329 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22836 "js_parser.ml"
+# 22838 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv330)
@@ -22841,7 +22843,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv331 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22845 "js_parser.ml"
+# 22847 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv332)
@@ -22850,7 +22852,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv333 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22854 "js_parser.ml"
+# 22856 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv334)
@@ -22859,7 +22861,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv335 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22863 "js_parser.ml"
+# 22865 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv336)
@@ -22868,7 +22870,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv337 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22872 "js_parser.ml"
+# 22874 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv338)
@@ -22877,11 +22879,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv339 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22881 "js_parser.ml"
+# 22883 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22885 "js_parser.ml"
+# 22887 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv340)
@@ -22890,7 +22892,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv341 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22894 "js_parser.ml"
+# 22896 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv342)
@@ -22899,19 +22901,19 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((('freshtv343 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22903 "js_parser.ml"
+# 22905 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22907 "js_parser.ml"
+# 22909 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22911 "js_parser.ml"
+# 22913 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22915 "js_parser.ml"
+# 22917 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, _), _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv344)
@@ -22920,11 +22922,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv345 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22924 "js_parser.ml"
+# 22926 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22928 "js_parser.ml"
+# 22930 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv346)
@@ -22933,7 +22935,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv347 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22937 "js_parser.ml"
+# 22939 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv348)
@@ -22942,7 +22944,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv349 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22946 "js_parser.ml"
+# 22948 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv350)
@@ -22951,7 +22953,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv351 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22955 "js_parser.ml"
+# 22957 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv352)
@@ -22960,7 +22962,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv353 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22964 "js_parser.ml"
+# 22966 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv354)
@@ -22969,7 +22971,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv355 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 22973 "js_parser.ml"
+# 22975 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv356)
@@ -22978,7 +22980,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv357 * _menhir_state * 'tv_variable) * 'tv_option_initializer__) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 22982 "js_parser.ml"
+# 22984 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (((_menhir_stack, _menhir_s, _), _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv358)
@@ -22987,7 +22989,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv359 * (
 # 78 "js_parser.mly"
        (Parse_info.t)
-# 22991 "js_parser.ml"
+# 22993 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         (raise _eRR : 'freshtv360)
     | MenhirState197 ->
@@ -22995,7 +22997,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv361 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 22999 "js_parser.ml"
+# 23001 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv362)
@@ -23004,7 +23006,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv363 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23008 "js_parser.ml"
+# 23010 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv364)
@@ -23013,7 +23015,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv365 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23017 "js_parser.ml"
+# 23019 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv366)
@@ -23022,15 +23024,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv367 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23026 "js_parser.ml"
+# 23028 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23030 "js_parser.ml"
+# 23032 "js_parser.ml"
         )) * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23034 "js_parser.ml"
+# 23036 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv368)
@@ -23039,7 +23041,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv369 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23043 "js_parser.ml"
+# 23045 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv370)
@@ -23048,7 +23050,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv371 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23052 "js_parser.ml"
+# 23054 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv372)
@@ -23057,7 +23059,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv373 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23061 "js_parser.ml"
+# 23063 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv374)
@@ -23066,7 +23068,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv375 * _menhir_state * 'tv_member_expression) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23070 "js_parser.ml"
+# 23072 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv376)
@@ -23075,7 +23077,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv377 * _menhir_state * 'tv_arg) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23079 "js_parser.ml"
+# 23081 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv378)
@@ -23084,7 +23086,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv379 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23088 "js_parser.ml"
+# 23090 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv380)
@@ -23093,7 +23095,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv381 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23097 "js_parser.ml"
+# 23099 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv382)
@@ -23102,7 +23104,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv383 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23106 "js_parser.ml"
+# 23108 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv384)
@@ -23111,7 +23113,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv385 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23115 "js_parser.ml"
+# 23117 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv386)
@@ -23120,7 +23122,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv387 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23124 "js_parser.ml"
+# 23126 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv388)
@@ -23129,7 +23131,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv389 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23133 "js_parser.ml"
+# 23135 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv390)
@@ -23138,7 +23140,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv391 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23142 "js_parser.ml"
+# 23144 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv392)
@@ -23147,7 +23149,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv393 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23151 "js_parser.ml"
+# 23153 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv394)
@@ -23156,7 +23158,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv395 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23160 "js_parser.ml"
+# 23162 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv396)
@@ -23165,7 +23167,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv397 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23169 "js_parser.ml"
+# 23171 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv398)
@@ -23174,7 +23176,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv399 * _menhir_state * 'tv_expression) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23178 "js_parser.ml"
+# 23180 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv400)
@@ -23183,7 +23185,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv401 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23187 "js_parser.ml"
+# 23189 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv402)
@@ -23192,7 +23194,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv403 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23196 "js_parser.ml"
+# 23198 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv404)
@@ -23201,7 +23203,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv405 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23205 "js_parser.ml"
+# 23207 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv406)
@@ -23210,7 +23212,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv407 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23214 "js_parser.ml"
+# 23216 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv408)
@@ -23219,7 +23221,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv409 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23223 "js_parser.ml"
+# 23225 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv410)
@@ -23228,7 +23230,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv411 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23232 "js_parser.ml"
+# 23234 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv412)
@@ -23237,7 +23239,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv413 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23241 "js_parser.ml"
+# 23243 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv414)
@@ -23246,11 +23248,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ((('freshtv415 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23250 "js_parser.ml"
+# 23252 "js_parser.ml"
         )) * _menhir_state * 'tv_assignment_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23254 "js_parser.ml"
+# 23256 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv416)
@@ -23269,7 +23271,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv421 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23273 "js_parser.ml"
+# 23275 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv422)
@@ -23278,7 +23280,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv423 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23282 "js_parser.ml"
+# 23284 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv424)
@@ -23287,7 +23289,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv425 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23291 "js_parser.ml"
+# 23293 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv426)
@@ -23296,7 +23298,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv427 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23300 "js_parser.ml"
+# 23302 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv428)
@@ -23305,7 +23307,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv429 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23309 "js_parser.ml"
+# 23311 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv430)
@@ -23314,7 +23316,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv431 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23318 "js_parser.ml"
+# 23320 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv432)
@@ -23323,7 +23325,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv433 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23327 "js_parser.ml"
+# 23329 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv434)
@@ -23332,7 +23334,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv435 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23336 "js_parser.ml"
+# 23338 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv436)
@@ -23341,7 +23343,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv437 * _menhir_state * 'tv_post_in_expression) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23345 "js_parser.ml"
+# 23347 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv438)
@@ -23350,7 +23352,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv439 * _menhir_state * 'tv_call_expression) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23354 "js_parser.ml"
+# 23356 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv440)
@@ -23359,7 +23361,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv441 * _menhir_state * 'tv_call_expression) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23363 "js_parser.ml"
+# 23365 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv442)
@@ -23373,7 +23375,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv445 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23377 "js_parser.ml"
+# 23379 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv446)
@@ -23382,7 +23384,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv447 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23386 "js_parser.ml"
+# 23388 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv448)
@@ -23391,7 +23393,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv449 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23395 "js_parser.ml"
+# 23397 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv450)
@@ -23400,7 +23402,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv451 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23404 "js_parser.ml"
+# 23406 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv452)
@@ -23409,7 +23411,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv453 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23413 "js_parser.ml"
+# 23415 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv454)
@@ -23418,7 +23420,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv455 * _menhir_state * 'tv_pre_in_expression) * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23422 "js_parser.ml"
+# 23424 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv456)
@@ -23432,7 +23434,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv459 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23436 "js_parser.ml"
+# 23438 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv460)
@@ -23441,7 +23443,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv461 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23445 "js_parser.ml"
+# 23447 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv462)
@@ -23450,7 +23452,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv463 * _menhir_state * 'tv_member_expression) * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23454 "js_parser.ml"
+# 23456 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv464)
@@ -23464,7 +23466,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv467 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23468 "js_parser.ml"
+# 23470 "js_parser.ml"
         )) * _menhir_state * 'tv_pre_in_expression) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv468)
@@ -23473,7 +23475,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv469 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23477 "js_parser.ml"
+# 23479 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv470)
@@ -23482,7 +23484,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv471 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23486 "js_parser.ml"
+# 23488 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv472)
@@ -23491,7 +23493,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv473 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23495 "js_parser.ml"
+# 23497 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv474)
@@ -23500,7 +23502,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv475 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23504 "js_parser.ml"
+# 23506 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv476)
@@ -23509,11 +23511,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv477 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23513 "js_parser.ml"
+# 23515 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23517 "js_parser.ml"
+# 23519 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv478)
@@ -23522,7 +23524,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv479 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23526 "js_parser.ml"
+# 23528 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv480)
@@ -23531,15 +23533,15 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (((('freshtv481 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23535 "js_parser.ml"
+# 23537 "js_parser.ml"
         )) * _menhir_state * 'tv_option_variable_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23539 "js_parser.ml"
+# 23541 "js_parser.ml"
         )) * _menhir_state * 'tv_loption_separated_nonempty_list_T_COMMA_variable__) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23543 "js_parser.ml"
+# 23545 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv482)
@@ -23548,7 +23550,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv483 * _menhir_state * 'tv_variable) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23552 "js_parser.ml"
+# 23554 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv484)
@@ -23557,11 +23559,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : (('freshtv485 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23561 "js_parser.ml"
+# 23563 "js_parser.ml"
         )) * _menhir_state * 'tv_option_variable_) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23565 "js_parser.ml"
+# 23567 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv486)
@@ -23570,7 +23572,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv487 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23574 "js_parser.ml"
+# 23576 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv488)
@@ -23579,7 +23581,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv489 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23583 "js_parser.ml"
+# 23585 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv490)
@@ -23588,7 +23590,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv491 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23592 "js_parser.ml"
+# 23594 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv492)
@@ -23597,7 +23599,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv493 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23601 "js_parser.ml"
+# 23603 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv494)
@@ -23606,7 +23608,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv495 * _menhir_state * 'tv_property_name) * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23610 "js_parser.ml"
+# 23612 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv496)
@@ -23615,7 +23617,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv497 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23619 "js_parser.ml"
+# 23621 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv498)
@@ -23624,7 +23626,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv499 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23628 "js_parser.ml"
+# 23630 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv500)
@@ -23633,7 +23635,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv501 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23637 "js_parser.ml"
+# 23639 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv502)
@@ -23642,7 +23644,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv503 * _menhir_state * (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 23646 "js_parser.ml"
+# 23648 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv504)
@@ -23651,7 +23653,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv505 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23655 "js_parser.ml"
+# 23657 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv506)
@@ -23660,7 +23662,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv507 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23664 "js_parser.ml"
+# 23666 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv508)
@@ -23669,7 +23671,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv509 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23673 "js_parser.ml"
+# 23675 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv510)
@@ -23678,7 +23680,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : 'freshtv511 * _menhir_state * (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23682 "js_parser.ml"
+# 23684 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv512)
@@ -23687,11 +23689,11 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
         let (_menhir_stack : ('freshtv513 * _menhir_state * (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23691 "js_parser.ml"
+# 23693 "js_parser.ml"
         )) * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 23695 "js_parser.ml"
+# 23697 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, _), _) = _menhir_stack in
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv514)
@@ -23703,7 +23705,7 @@ and _menhir_errorcase : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
 and _menhir_run3 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23707 "js_parser.ml"
+# 23709 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -23766,7 +23768,7 @@ and _menhir_run3 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run4 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23770 "js_parser.ml"
+# 23772 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -23829,7 +23831,7 @@ and _menhir_run4 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run5 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23833 "js_parser.ml"
+# 23835 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -23839,23 +23841,23 @@ and _menhir_run5 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23843 "js_parser.ml"
+# 23845 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23847 "js_parser.ml"
+# 23849 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_boolean_literal = 
-# 516 "js_parser.mly"
+# 517 "js_parser.mly"
               ( (pi, J.EBool true) )
-# 23852 "js_parser.ml"
+# 23854 "js_parser.ml"
      in
     _menhir_goto_boolean_literal _menhir_env _menhir_stack _menhir_s _v) : 'freshtv64)
 
 and _menhir_run6 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23859 "js_parser.ml"
+# 23861 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -23865,23 +23867,23 @@ and _menhir_run6 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23869 "js_parser.ml"
+# 23871 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 23873 "js_parser.ml"
+# 23875 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 411 "js_parser.mly"
+# 412 "js_parser.mly"
                      ( (pi, J.EVar (var pi "this")) )
-# 23878 "js_parser.ml"
+# 23880 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv62)
 
 and _menhir_run7 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 23885 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 23887 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -23890,24 +23892,24 @@ and _menhir_run7 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 23895 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 23897 "js_parser.ml"
     )) : (
 # 53 "js_parser.mly"
-      (string * Parse_info.t)
-# 23899 "js_parser.ml"
+      (string * Parse_info.t * int)
+# 23901 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 416 "js_parser.mly"
-                     ( let (s, start) = _1 in (start, J.EStr (s, `Utf8)) )
-# 23904 "js_parser.ml"
+# 417 "js_parser.mly"
+                     ( let (s, start, _len) = _1 in (start, J.EStr (s, `Utf8)) )
+# 23906 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv60)
 
 and _menhir_run8 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 54 "js_parser.mly"
       (string * Parse_info.t)
-# 23911 "js_parser.ml"
+# 23913 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -23917,14 +23919,14 @@ and _menhir_run8 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 54 "js_parser.mly"
       (string * Parse_info.t)
-# 23921 "js_parser.ml"
+# 23923 "js_parser.ml"
     )) : (
 # 54 "js_parser.mly"
       (string * Parse_info.t)
-# 23925 "js_parser.ml"
+# 23927 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_regex_literal = 
-# 523 "js_parser.mly"
+# 524 "js_parser.mly"
            (
    let (s, pi) = _1 in
    let len = String.length s in
@@ -23936,7 +23938,7 @@ and _menhir_run8 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
    (pi, J.ERegexp (regexp, option)) )
-# 23940 "js_parser.ml"
+# 23942 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv55) = _menhir_stack in
@@ -23951,16 +23953,16 @@ and _menhir_run8 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((r : 'tv_regex_literal) : 'tv_regex_literal) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 417 "js_parser.mly"
+# 418 "js_parser.mly"
                                   ( r )
-# 23957 "js_parser.ml"
+# 23959 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv52)) : 'freshtv54)) : 'freshtv56)) : 'freshtv58)
 
 and _menhir_run9 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 23964 "js_parser.ml"
+# 23966 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24023,7 +24025,7 @@ and _menhir_run9 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 51 "js_parser.mly"
       (string * Parse_info.t)
-# 24027 "js_parser.ml"
+# 24029 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -24033,16 +24035,16 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((_1 : (
 # 51 "js_parser.mly"
       (string * Parse_info.t)
-# 24037 "js_parser.ml"
+# 24039 "js_parser.ml"
     )) : (
 # 51 "js_parser.mly"
       (string * Parse_info.t)
-# 24041 "js_parser.ml"
+# 24043 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_numeric_literal = 
-# 520 "js_parser.mly"
+# 521 "js_parser.mly"
             ( let (f, pi) = _1 in (pi, f) )
-# 24046 "js_parser.ml"
+# 24048 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv47) = _menhir_stack in
@@ -24059,9 +24061,9 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((_1 : 'tv_numeric_literal) : 'tv_numeric_literal) = _v in
         ((let _v : 'tv_primary_expression_no_statement = 
-# 415 "js_parser.mly"
+# 416 "js_parser.mly"
                      ( let (start, n) = _1 in (start, J.ENum (J.Num.of_string_unsafe n)) )
-# 24065 "js_parser.ml"
+# 24067 "js_parser.ml"
          in
         _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv40)) : 'freshtv42)
     | MenhirState16 | MenhirState509 ->
@@ -24074,9 +24076,9 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((n : 'tv_numeric_literal) : 'tv_numeric_literal) = _v in
         ((let _v : 'tv_property_name = 
-# 634 "js_parser.mly"
+# 636 "js_parser.mly"
                       ( J.PNN (J.Num.of_string_unsafe (snd n)) )
-# 24080 "js_parser.ml"
+# 24082 "js_parser.ml"
          in
         _menhir_goto_property_name _menhir_env _menhir_stack _menhir_s _v) : 'freshtv44)) : 'freshtv46)
     | _ ->
@@ -24085,7 +24087,7 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run11 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24089 "js_parser.ml"
+# 24091 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -24095,16 +24097,16 @@ and _menhir_run11 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24099 "js_parser.ml"
+# 24101 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24103 "js_parser.ml"
+# 24105 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_null_literal = 
-# 513 "js_parser.mly"
+# 514 "js_parser.mly"
              ( (pi, J.EVar (var pi "null")) )
-# 24108 "js_parser.ml"
+# 24110 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
     let (_menhir_stack : 'freshtv35) = _menhir_stack in
@@ -24119,16 +24121,16 @@ and _menhir_run11 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((n : 'tv_null_literal) : 'tv_null_literal) = _v in
     ((let _v : 'tv_primary_expression_no_statement = 
-# 413 "js_parser.mly"
+# 414 "js_parser.mly"
                      ( n )
-# 24125 "js_parser.ml"
+# 24127 "js_parser.ml"
      in
     _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv32)) : 'freshtv34)) : 'freshtv36)) : 'freshtv38)
 
 and _menhir_run12 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24132 "js_parser.ml"
+# 24134 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24191,7 +24193,7 @@ and _menhir_run12 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run13 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 65 "js_parser.mly"
        (Parse_info.t)
-# 24195 "js_parser.ml"
+# 24197 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24232,7 +24234,7 @@ and _menhir_run13 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run15 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24236 "js_parser.ml"
+# 24238 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24295,7 +24297,7 @@ and _menhir_run15 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run14 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24299 "js_parser.ml"
+# 24301 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24358,7 +24360,7 @@ and _menhir_run14 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24362 "js_parser.ml"
+# 24364 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24434,9 +24436,9 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv29) = Obj.magic _menhir_stack in
         let (_menhir_s : _menhir_state) = MenhirState16 in
         ((let _v : 'tv_empty = 
-# 719 "js_parser.mly"
+# 721 "js_parser.mly"
        ()
-# 24440 "js_parser.ml"
+# 24442 "js_parser.ml"
          in
         let (_menhir_env : _menhir_env) = _menhir_env in
         let (_menhir_stack : 'freshtv27) = _menhir_stack in
@@ -24447,7 +24449,7 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : ('freshtv25 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24451 "js_parser.ml"
+# 24453 "js_parser.ml"
         )) * _menhir_state * 'tv_empty) = Obj.magic _menhir_stack in
         ((assert (not _menhir_env._menhir_error);
         let _tok = _menhir_env._menhir_token in
@@ -24457,38 +24459,38 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let (_menhir_stack : ('freshtv21 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24461 "js_parser.ml"
+# 24463 "js_parser.ml"
             )) * _menhir_state * 'tv_empty) = Obj.magic _menhir_stack in
             let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24466 "js_parser.ml"
+# 24468 "js_parser.ml"
             )) = _v in
             ((let _menhir_env = _menhir_discard _menhir_env in
             let (_menhir_env : _menhir_env) = _menhir_env in
             let (_menhir_stack : ('freshtv19 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24473 "js_parser.ml"
+# 24475 "js_parser.ml"
             )) * _menhir_state * 'tv_empty) = Obj.magic _menhir_stack in
             let ((pi2 : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24478 "js_parser.ml"
+# 24480 "js_parser.ml"
             )) : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24482 "js_parser.ml"
+# 24484 "js_parser.ml"
             )) = _v in
             ((let ((_menhir_stack, _menhir_s, (pi1 : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24487 "js_parser.ml"
+# 24489 "js_parser.ml"
             ))), _, (x : 'tv_empty)) = _menhir_stack in
             let _v : 'tv_curly_block_empty_ = 
-# 648 "js_parser.mly"
+# 650 "js_parser.mly"
                                  ( (x, pi1, pi2) )
-# 24492 "js_parser.ml"
+# 24494 "js_parser.ml"
              in
             let (_menhir_env : _menhir_env) = _menhir_env in
             let (_menhir_stack : 'freshtv17) = _menhir_stack in
@@ -24503,9 +24505,9 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let (_menhir_s : _menhir_state) = _menhir_s in
             let ((block : 'tv_curly_block_empty_) : 'tv_curly_block_empty_) = _v in
             ((let _v : 'tv_object_literal = 
-# 559 "js_parser.mly"
+# 560 "js_parser.mly"
    ( let _pairs, pi_start, _pi_end = block in pi_start, J.EObj [] )
-# 24509 "js_parser.ml"
+# 24511 "js_parser.ml"
              in
             _menhir_goto_object_literal _menhir_env _menhir_stack _menhir_s _v) : 'freshtv14)) : 'freshtv16)) : 'freshtv18)) : 'freshtv20)) : 'freshtv22)
         | _ ->
@@ -24515,7 +24517,7 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let (_menhir_stack : ('freshtv23 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24519 "js_parser.ml"
+# 24521 "js_parser.ml"
             )) * _menhir_state * 'tv_empty) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, _) = _menhir_stack in
             _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) _menhir_s) : 'freshtv24)) : 'freshtv26)) : 'freshtv28)) : 'freshtv30)
@@ -24527,7 +24529,7 @@ and _menhir_run16 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run52 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24531 "js_parser.ml"
+# 24533 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24577,40 +24579,40 @@ and _menhir_run52 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv11 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24581 "js_parser.ml"
+# 24583 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_menhir_s : _menhir_state) = MenhirState52 in
         let (_v : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24587 "js_parser.ml"
+# 24589 "js_parser.ml"
         )) = _v in
         ((let _menhir_env = _menhir_discard _menhir_env in
         let (_menhir_env : _menhir_env) = _menhir_env in
         let (_menhir_stack : 'freshtv9 * _menhir_state * (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24594 "js_parser.ml"
+# 24596 "js_parser.ml"
         )) = Obj.magic _menhir_stack in
         let (_ : _menhir_state) = _menhir_s in
         let ((_2 : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24600 "js_parser.ml"
+# 24602 "js_parser.ml"
         )) : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24604 "js_parser.ml"
+# 24606 "js_parser.ml"
         )) = _v in
         ((let (_menhir_stack, _menhir_s, (pi : (
 # 68 "js_parser.mly"
        (Parse_info.t)
-# 24609 "js_parser.ml"
+# 24611 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_array_literal = 
-# 543 "js_parser.mly"
+# 544 "js_parser.mly"
      ( (pi, J.EArr []) )
-# 24614 "js_parser.ml"
+# 24616 "js_parser.ml"
          in
         _menhir_goto_array_literal _menhir_env _menhir_stack _menhir_s _v) : 'freshtv10)) : 'freshtv12)
     | Js_token.T_REGEX _v ->
@@ -24633,7 +24635,7 @@ and _menhir_run52 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run54 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24637 "js_parser.ml"
+# 24639 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24696,7 +24698,7 @@ and _menhir_run54 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run55 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24700 "js_parser.ml"
+# 24702 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24759,7 +24761,7 @@ and _menhir_run55 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run56 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 52 "js_parser.mly"
       (string * Parse_info.t)
-# 24763 "js_parser.ml"
+# 24765 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24769,7 +24771,7 @@ and _menhir_run56 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run57 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24773 "js_parser.ml"
+# 24775 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24785,7 +24787,7 @@ and _menhir_run57 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         ((let _v : 'tv_option_variable_ = 
 # 114 "<standard.mly>"
     ( None )
-# 24789 "js_parser.ml"
+# 24791 "js_parser.ml"
          in
         _menhir_goto_option_variable_ _menhir_env _menhir_stack _menhir_s _v) : 'freshtv8)
     | _ ->
@@ -24796,7 +24798,7 @@ and _menhir_run57 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run71 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24800 "js_parser.ml"
+# 24802 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_env = _menhir_discard _menhir_env in
@@ -24806,23 +24808,23 @@ and _menhir_run71 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let ((pi : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24810 "js_parser.ml"
+# 24812 "js_parser.ml"
     )) : (
 # 57 "js_parser.mly"
        (Parse_info.t)
-# 24814 "js_parser.ml"
+# 24816 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_boolean_literal = 
-# 517 "js_parser.mly"
+# 518 "js_parser.mly"
               ( (pi, J.EBool false) )
-# 24819 "js_parser.ml"
+# 24821 "js_parser.ml"
      in
     _menhir_goto_boolean_literal _menhir_env _menhir_stack _menhir_s _v) : 'freshtv6)
 
 and _menhir_run72 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24826 "js_parser.ml"
+# 24828 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24885,7 +24887,7 @@ and _menhir_run72 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run73 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24889 "js_parser.ml"
+# 24891 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -24948,7 +24950,7 @@ and _menhir_run73 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run74 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 24952 "js_parser.ml"
+# 24954 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -25011,7 +25013,7 @@ and _menhir_run74 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_run75 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 83 "js_parser.mly"
        (Parse_info.t)
-# 25015 "js_parser.ml"
+# 25017 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
     let _menhir_stack = (_menhir_stack, _menhir_s, _v) in
@@ -25096,7 +25098,7 @@ and _menhir_init : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> _menhir_env =
 and program : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
 # 133 "js_parser.mly"
        (Javascript.program)
-# 25100 "js_parser.ml"
+# 25102 "js_parser.ml"
 ) =
   fun lexer lexbuf ->
     let _menhir_env = _menhir_init lexer lexbuf in
@@ -25191,7 +25193,7 @@ and program : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
 and standalone_expression : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
 # 134 "js_parser.mly"
        (Javascript.expression)
-# 25195 "js_parser.ml"
+# 25197 "js_parser.ml"
 ) =
   fun lexer lexbuf ->
     let _menhir_env = _menhir_init lexer lexbuf in
@@ -25256,4 +25258,4 @@ and standalone_expression : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
 # 269 "<standard.mly>"
   
 
-# 25260 "js_parser.ml"
+# 25262 "js_parser.ml"
