@@ -28,6 +28,6 @@ let%expect_test _ =
   let () =
     Js.Unsafe.fun_call
       (Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |])
-      [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |]
+      [||]
   in
   [%expect {| done |}]

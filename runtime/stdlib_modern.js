@@ -17,6 +17,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_call_gen (const, shallow)
+//Requires: caml_failwith
 function caml_call_gen(f, args) {
   var args_copied = false;
 
@@ -25,13 +26,8 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-    if(typeof f !== "function") {
-      // This can happen when over applying functions
-      // TODO, fail instead of silently absobing arguments
-      return function (a1) {
-        return caml_call_gen(f, args);
-      }
-    }
+    // TODO: This can happen with over-application. Should we fail here ?
+    if (typeof f !== "function") return f;
     var n = f.length | 0;
     var argsLen = args.length | 0;
     var d = (n - argsLen) | 0;

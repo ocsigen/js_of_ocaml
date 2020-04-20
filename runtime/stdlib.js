@@ -34,6 +34,7 @@ function raw_array_cons (a,x) {
 }
 
 //Provides: caml_call_gen (const, shallow)
+//Requires: caml_failwith
 //Weakdef
 function caml_call_gen(f, args) {
   var args_copied = false
@@ -43,12 +44,9 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-    if(typeof f !== "function") {
-      // TODO, fail instead of silently absobing arguments
-      return function (a1) {
-        return caml_call_gen(f, args);
-      }
-    }
+    // WHAT TO DO HERE
+    if (typeof f !== "function") return f;
+
     var n = f.length | 0;
     var argsLen = args.length | 0;
     var d = n - argsLen | 0;
