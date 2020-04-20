@@ -53,6 +53,9 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
+        if(!args.slice)
+          args = Array.prototype.slice.call(args);
+        else
           args = args.slice();
         args_copied = true;
       }
@@ -64,6 +67,8 @@ function caml_call_gen(f, args) {
       args = after;
     }
     else {
+      if(!args.concat)
+        args = Array.prototype.slice.call(args);
       switch (d) {
       case 1: return function (a1) {
         return f.apply(null, args.concat([a1]));

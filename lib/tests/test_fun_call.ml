@@ -21,8 +21,7 @@ open Js_of_ocaml
 let%expect_test _ =
   let f = Js.wrap_callback (fun _ -> print_endline "done") in
   let () = Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |] in
-  [%expect.unreachable]
-[@@expect.uncaught_exn {| ("TypeError: args.slice is not a function") |}]
+  [%expect{| done |}]
 
 let%expect_test _ =
   let f = Js.wrap_callback (fun _ _ _ -> print_endline "done") in
@@ -31,5 +30,4 @@ let%expect_test _ =
       (Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |])
       [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |]
   in
-  [%expect.unreachable]
-[@@expect.uncaught_exn {| ("TypeError: args.concat is not a function") |}]
+  [%expect{| done |}]
