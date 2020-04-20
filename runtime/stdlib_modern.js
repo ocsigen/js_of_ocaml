@@ -16,6 +16,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//TODO: fix the implementation below
 //Provides: caml_call_gen (const, shallow)
 function caml_call_gen(f, args) {
   var args_copied = false;
@@ -25,7 +26,8 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-
+    // TODO: This can happen with over-application. Should we fail here ?
+    if (typeof f !== "function") return f;
     var n = f.length | 0;
     var argsLen = args.length | 0;
     var d = (n - argsLen) | 0;
@@ -35,17 +37,18 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
-        args = args.slice();
+        args = Array.prototype.slice.call(args);
         args_copied = true;
       }
 
       var before = args;
       var after = before.splice(n);
-
       f = f(...before);
       args = after;
     }
     else {
+      if(!args.concat)
+        args = Array.prototype.slice.call(args);
       switch (d) {
       case 1: return function (a1) {
         return f(...args, a1);
