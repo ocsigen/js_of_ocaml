@@ -40,7 +40,6 @@ let runtime =
     ; nat
     ; parsing
     ; stdlib
-    ; stdlib_modern
     ; unix
     ; weak
     ]

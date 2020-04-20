@@ -41,7 +41,8 @@ let%expect_test _ =
   in
   Printf.printf "%d" sum1;
   [%expect {|
-    function(a1){return f(...args,a1)} |}];
+    function(a1)
+                  {return f.apply(null,Array.prototype.concat.call(args,[a1]))} |}];
   Printf.printf "%d" sum2;
   [%expect {| 3 |}];
   Printf.printf "%d" sum3;
