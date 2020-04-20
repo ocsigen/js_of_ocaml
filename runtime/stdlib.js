@@ -21,12 +21,17 @@
 
 //Provides: raw_array_sub
 function raw_array_sub (a,i,l) {
-  return a.slice(i, i + l);
+  var b = new Array(l);
+  for(var j = 0; j < l; j++) b[j] = a[i+j];
+  return b
 }
 
 //Provides: raw_array_copy
 function raw_array_copy (a) {
-  return a.slice();
+  var l = a.length;
+  var b = new Array(l);
+  for(var i = 0; i < l; i++ ) b[i] = a[i];
+  return b
 }
 
 //Provides: raw_array_cons
@@ -38,64 +43,35 @@ function raw_array_cons (a,x) {
   return b
 }
 
+//Provides: raw_array_append_one
+function raw_array_append_one(a,x) {
+  var l = a.length;
+  var b = new Array(l+1);
+  var i = 0;
+  for(; i < l; i++ ) b[i] = a[i];
+  b[i]=x;
+  return b
+}
+
 //Provides: caml_call_gen (const, shallow)
+//Requires: raw_array_sub, raw_array_append_one
 //Weakdef
 function caml_call_gen(f, args) {
-  var args_copied = false
-
-  while (true) {
-    if (f.fun) {
-      f = f.fun;
-      continue;
-    }
-
-    var n = f.length;
-    var argsLen = args.length;
-    var d = n - argsLen;
-
-    if (d == 0) {
-      return f.apply(null, args);
-    }
-    else if (d < 0) {
-      if (!args_copied) {
-        args = args.slice();
-        args_copied = true;
-      }
-
-      var before = args;
-      var after = before.splice(n);
-
-      f = f.apply(null, before);
-      args = after;
-    }
-    else {
-      switch (d) {
-      case 1: return function (a1) {
-        return f.apply(null, args.concat([a1]));
-      }
-      case 2: return function (a1, a2) {
-        return f.apply(null, args.concat([a1, a2]));
-      }
-      case 3: return function (a1, a2, a3) {
-        return f.apply(null, args.concat([a1, a2, a3]));
-      }
-      case 4: return function (a1, a2, a3, a4) {
-        return f.apply(null, args.concat([a1, a2, a3, a4]));
-      }
-      case 5: return function (a1, a2, a3, a4, a5) {
-        return f.apply(null, args.concat([a1, a2, a3, a4, a5]));
-      }
-      case 6: return function (a1, a2, a3, a4, a5, a6) {
-        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6]));
-      }
-      case 7: return function (a1, a2, a3, a4, a5, a6, a7) {
-        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6, a7]));
-      }
-      default:
-        return function (a1, a2, a3, a4, a5, a6, a7, a8) {
-          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
-        };
-      }
+  if(f.fun)
+    return caml_call_gen(f.fun, args);
+  var n = f.length;
+  var argsLen = args.length;
+  var d = n - argsLen;
+  if (d == 0)
+    return f.apply(null, args);
+  else if (d < 0) {
+    return caml_call_gen(f.apply(null,
+                                 raw_array_sub(args,0,n)),
+                         raw_array_sub(args,n,argsLen - n));
+  }
+  else {
+    return function (x){
+      return caml_call_gen(f, raw_array_append_one(args,x))
     }
   }
 }

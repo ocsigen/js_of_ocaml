@@ -178,14 +178,14 @@ function caml_js_eval_string (s) {return eval(caml_jsstring_of_string(s));}
 //Requires: js_print_stderr
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
-  js_print_stderr("caml_js_expr: fallback to runtime evaluation");
+  js_print_stderr("caml_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_pure_js_expr const (const)
 //Requires: js_print_stderr
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr (s){
-  js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
+  js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_object (object_literal)
