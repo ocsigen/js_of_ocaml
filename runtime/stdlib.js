@@ -24,11 +24,6 @@ function raw_array_sub (a,i,l) {
   return a.slice(i, i + l);
 }
 
-//Provides: raw_array_copy
-function raw_array_copy (a) {
-  return a.slice();
-}
-
 //Provides: raw_array_cons
 function raw_array_cons (a,x) {
   var l = a.length;
@@ -1485,4 +1480,11 @@ function caml_spacetime_only_works_for_native_code() {
 //Provides: caml_is_js
 function caml_is_js() {
   return 1;
+}
+
+//Deprecated
+
+//Provides: raw_array_copy
+function raw_array_copy (a) {
+  return a.slice();
 }
