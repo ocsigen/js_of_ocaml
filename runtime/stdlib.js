@@ -34,7 +34,6 @@ function raw_array_cons (a,x) {
 }
 
 //Provides: caml_call_gen (const, shallow)
-//Requires: caml_failwith
 //Weakdef
 function caml_call_gen(f, args) {
   var args_copied = false
@@ -44,7 +43,7 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-    // WHAT TO DO HERE
+    // TODO: This can happen with over-application. Should we fail here ?
     if (typeof f !== "function") return f;
 
     var n = f.length | 0;

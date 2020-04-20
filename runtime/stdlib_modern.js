@@ -17,7 +17,6 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_call_gen (const, shallow)
-//Requires: caml_failwith
 function caml_call_gen(f, args) {
   var args_copied = false;
 
