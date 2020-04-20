@@ -34,12 +34,13 @@ let%expect_test _ =
 
 let%expect_test _ =
   let f = Js.wrap_callback (fun a b -> a + b) in
-  let sum2 =
-    Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2; Js.Unsafe.inject 3 |]
-  in
+  let sum1 = Js.Unsafe.fun_call f [| Js.Unsafe.inject 1 |] in
+  let sum2 = Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2 |] in
   let sum3 =
     Js.Unsafe.fun_call f [| Js.Unsafe.inject 1; Js.Unsafe.inject 2; Js.Unsafe.inject 3 |]
   in
+  Printf.printf "%d" sum1;
+  [%expect {| function(a1){return f.apply(null,args.concat([a1]))} |}];
   Printf.printf "%d" sum2;
   [%expect {| 3 |}];
   Printf.printf "%d" sum3;
