@@ -36,10 +36,7 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
-        if(!args.slice)
-          args = Array.prototype.slice.call(args);
-        else
-          args = args.slice();
+        args = Array.prototype.slice.call(args);
         args_copied = true;
       }
 
@@ -73,7 +70,7 @@ function caml_call_gen(f, args) {
       }
       default:
         return function (a1, a2, a3, a4, a5, a6, a7, a8) {
-          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
+          return caml_call_gen(f, Array.prototype.concat.call(args, [a1, a2, a3, a4, a5, a6, a7, a8]));
         };
       }
     }
