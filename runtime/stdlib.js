@@ -43,10 +43,15 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-
-    var n = f.length;
-    var argsLen = args.length;
-    var d = n - argsLen;
+    if(typeof f !== "function") {
+      // TODO, fail instead of silently absobing arguments
+      return function (a1) {
+        return caml_call_gen(f, args);
+      }
+    }
+    var n = f.length | 0;
+    var argsLen = args.length | 0;
+    var d = n - argsLen | 0;
 
     if (d == 0) {
       return f.apply(null, args);

@@ -25,7 +25,13 @@ function caml_call_gen(f, args) {
       f = f.fun;
       continue;
     }
-
+    if(typeof f !== "function") {
+      // This can happen when over applying functions
+      // TODO, fail instead of silently absobing arguments
+      return function (a1) {
+        return caml_call_gen(f, args);
+      }
+    }
     var n = f.length | 0;
     var argsLen = args.length | 0;
     var d = (n - argsLen) | 0;
@@ -35,13 +41,15 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
-        args = args.slice();
+        if(!args.slice)
+          args = Array.prototype.slice.call(args);
+        else
+          args = args.slice();
         args_copied = true;
       }
 
       var before = args;
       var after = before.splice(n);
-
       f = f(...before);
       args = after;
     }
