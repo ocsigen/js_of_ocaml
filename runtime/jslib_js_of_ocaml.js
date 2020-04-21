@@ -118,9 +118,9 @@ function caml_js_wrap_callback(f) {
     if(len > 0){
       var args = new Array(len);
       INLINE_BLIT(arguments, 0, args, 0, len);
-      return caml_call_gen(f, args);
+      return caml_call_gen(f, args, true);
     } else {
-      return caml_call_gen(f, [undefined]);
+      return caml_call_gen(f, [undefined], false);
     }
   }
 }
@@ -132,7 +132,7 @@ function caml_js_wrap_callback_arguments(f) {
     var len = arguments.length
     var args = new Array(len);
     INLINE_BLIT(arguments, 0, args, 0, len);
-    return caml_call_gen(f,[args]);
+    return caml_call_gen(f,[args], false);
   }
 }
 //Provides: caml_js_wrap_callback_strict const
@@ -142,7 +142,7 @@ function caml_js_wrap_callback_strict(arity, f) {
     var args = new Array(arity);
     var len = Math.min(arguments.length, arity);
     INLINE_BLIT(arguments, 0, args, 0, len)
-    return caml_call_gen(f, args);
+    return caml_call_gen(f, args, false);
   };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
@@ -153,7 +153,7 @@ function caml_js_wrap_meth_callback(f) {
     var args = new Array(len + 1);
     args[0] = this;
     INLINE_BLIT(arguments, 0, args, 1, len);
-    return caml_call_gen(f,args);
+    return caml_call_gen(f,args, true);
   }
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
@@ -163,7 +163,7 @@ function caml_js_wrap_meth_callback_arguments(f) {
     var len = arguments.length
     var args = new Array(len);
     INLINE_BLIT(arguments, 0, args, 0, len);
-    return caml_call_gen(f,[this,args]);
+    return caml_call_gen(f,[this,args], false);
   }
 }
 //Provides: caml_js_wrap_meth_callback_strict const
@@ -175,11 +175,10 @@ function caml_js_wrap_meth_callback_strict(arity, f) {
     var args = new Array(args_len);
     args[0] = this;
     INLINE_BLIT(arguments, 0, args, 1, len)
-    return caml_call_gen(f, args);
+    return caml_call_gen(f, args, false);
   };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
-//Requires: caml_call_gen
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function () {
     var len = arguments.length;

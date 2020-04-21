@@ -24,35 +24,32 @@ function raw_array_sub (a,i,l) {
   return a.slice(i, i + l);
 }
 
-//Provides: caml_call_gen (const, shallow)
+//Provides: caml_call_gen (const, mutable, const)
+//Requires: caml_invalid_argument
 //Weakdef
-function caml_call_gen(f, args) {
-  var args_copied = false
-
+function caml_call_gen(f, args, silently_ignore_extra) {
   while (true) {
     if (f.fun) {
       f = f.fun;
       continue;
     }
-    // TODO: This can happen with over-application. Should we fail here ?
-    if (typeof f !== "function") return f;
+
+    // This can happen with over-application.
+    if (typeof f !== "function") {
+      if(silently_ignore_extra) return f;
+      caml_invalid_argument("caml_call_gen: too many arguments");
+    };
 
     var n = f.length | 0;
     var argsLen = args.length | 0;
-    var d = n - argsLen | 0;
+    var d = (n - argsLen) | 0;
 
-    if (d == 0) {
+    if (d === 0) {
       return f.apply(null, args);
     }
     else if (d < 0) {
-      if (!args_copied) {
-        args = args.slice();
-        args_copied = true;
-      }
-
       var before = args;
       var after = before.splice(n);
-
       f = f.apply(null, before);
       args = after;
     }
@@ -81,7 +78,7 @@ function caml_call_gen(f, args) {
       }
       default:
         return function (a1, a2, a3, a4, a5, a6, a7, a8) {
-          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
+          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8], silently_ignore_extra));
         };
       }
     }

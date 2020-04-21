@@ -711,7 +711,7 @@ let apply_fun_raw ctx f params =
     , ecall f params J.N
     , ecall
         (runtime_fun ctx "caml_call_gen")
-        [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
+        [ f; J.EArr (List.map params ~f:(fun x -> Some x)); J.EBool false ]
         J.N )
 
 let generate_apply_fun ctx n =
