@@ -258,10 +258,10 @@ function caml_obj_block (tag, size) {
 
 //Provides: caml_obj_with_tag
 function caml_obj_with_tag(tag,x) {
-  var l = x.length;
-  var a = new Array(l);
+  var len = x.length;
+  var a = new Array(len);
+  INLINE_BLIT(x,0,a,0,len);
   a[0] = tag;
-  for(var i = 1; i < l; i++ ) a[i] = x[i];
   return a;
 }
 
@@ -269,7 +269,7 @@ function caml_obj_with_tag(tag,x) {
 function caml_obj_dup (x) {
   var l = x.length;
   var a = new Array(l);
-  for(var i = 0; i < l; i++ ) a[i] = x[i];
+  INLINE_BLIT(x,0,a,0,l);
   return a;
 }
 
@@ -1172,21 +1172,20 @@ function caml_sys_system_command(cmd){
 function caml_array_sub (a, i, len) {
   var a2 = new Array(len+1);
   a2[0]=0;
-  for(var i2 = 1, i1= i+1; i2 <= len; i2++,i1++ ){
-    a2[i2]=a[i1];
-  }
+  var from = i + 1;
+  INLINE_BLIT(a,from,a2,1,len)
   return a2;
 }
 
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
-  var l1 = a1.length, l2 = a2.length;
-  var l = l1+l2-1
+  var l1 = a1.length - 1, l2 = a2.length -1;
+  var l = l1+l2+1
   var a = new Array(l);
   a[0] = 0;
-  var i = 1,j = 1;
-  for(;i<l1;i++) a[i]=a1[i];
-  for(;i<l;i++,j++) a[i]=a2[j];
+  INLINE_BLIT(a1,1,a,1,l1);
+  var a_pos = l1 + 1;
+  INLINE_BLIT(a2,1,a,a_pos,l2);
   return a;
 }
 
