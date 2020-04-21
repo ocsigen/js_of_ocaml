@@ -140,7 +140,7 @@ function caml_js_wrap_callback_arguments(f) {
 function caml_js_wrap_callback_strict(arity, f) {
   return function () {
     var args = new Array(arity);
-    var len = Math.max(arguments.length, arity);
+    var len = Math.min(arguments.length, arity);
     INLINE_BLIT(arguments, 0, args, 0, len)
     return caml_call_gen(f, args);
   };
@@ -171,7 +171,7 @@ function caml_js_wrap_meth_callback_arguments(f) {
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function () {
     var args_len = arity + 1;
-    var len = Math.max(arguments.length, arity);
+    var len = Math.min(arguments.length, arity);
     var args = new Array(args_len);
     args[0] = this;
     INLINE_BLIT(arguments, 0, args, 1, len)
