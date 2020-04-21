@@ -24,15 +24,6 @@ function raw_array_sub (a,i,l) {
   return a.slice(i, i + l);
 }
 
-//Provides: raw_array_cons
-function raw_array_cons (a,x) {
-  var l = a.length;
-  var b = new Array(l+1);
-  b[0]=x;
-  for(var i = 1; i <= l; i++ ) b[i] = a[i-1];
-  return b
-}
-
 //Provides: caml_call_gen (const, shallow)
 //Weakdef
 function caml_call_gen(f, args) {
@@ -55,7 +46,7 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
-        args = Array.prototype.slice.call(args);
+        args = args.slice();
         args_copied = true;
       }
 
@@ -68,29 +59,29 @@ function caml_call_gen(f, args) {
     else {
       switch (d) {
       case 1: return function (a1) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1]));
+        return f.apply(null, args.concat([a1]));
       }
       case 2: return function (a1, a2) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2]));
+        return f.apply(null, args.concat([a1, a2]));
       }
       case 3: return function (a1, a2, a3) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2, a3]));
+        return f.apply(null, args.concat([a1, a2, a3]));
       }
       case 4: return function (a1, a2, a3, a4) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2, a3, a4]));
+        return f.apply(null, args.concat([a1, a2, a3, a4]));
       }
       case 5: return function (a1, a2, a3, a4, a5) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2, a3, a4, a5]));
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5]));
       }
       case 6: return function (a1, a2, a3, a4, a5, a6) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2, a3, a4, a5, a6]));
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6]));
       }
       case 7: return function (a1, a2, a3, a4, a5, a6, a7) {
-        return f.apply(null, Array.prototype.concat.call(args, [a1, a2, a3, a4, a5, a6, a7]));
+        return f.apply(null, args.concat([a1, a2, a3, a4, a5, a6, a7]));
       }
       default:
         return function (a1, a2, a3, a4, a5, a6, a7, a8) {
-          return caml_call_gen(f, Array.prototype.concat.call(args,[a1, a2, a3, a4, a5, a6, a7, a8]));
+          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
         };
       }
     }
@@ -1489,4 +1480,13 @@ function caml_is_js() {
 //Provides: raw_array_copy
 function raw_array_copy (a) {
   return a.slice();
+}
+
+//Provides: raw_array_cons
+function raw_array_cons (a,x) {
+  var l = a.length;
+  var b = new Array(l+1);
+  b[0]=x;
+  for(var i = 1; i <= l; i++ ) b[i] = a[i-1];
+  return b
 }

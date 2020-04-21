@@ -42,7 +42,8 @@ let%expect_test _ =
   [%expect {| Success! |}];
   let program = Util.compile_and_parse prog in
   Util.print_fun_decl program (Some "fun1");
-  [%expect {|
+  [%expect
+    {|
     function fun1(param)
      {function odd$0(counter,x)
        {if(0 === x)return 0;

@@ -48,6 +48,40 @@ class macro_mapper =
                 (Format.sprintf "macro %s called with inappropriate arguments" name)
           | _ -> super#expression x)
       | _ -> super#expression x
+
+    method statement (s : Javascript.statement) =
+      let module J = Javascript in
+      let plus e1 e2 =
+        match e1 with
+        | J.ENum n when J.Num.is_zero n -> e2
+        | _ -> J.EBin (J.Plus, e2, e1)
+      in
+      match s with
+      | J.Expression_statement
+          (J.ECall (J.EVar (J.S { name = "INLINE_BLIT" as name; _ }), args, _)) -> (
+          match args with
+          | [ (from, `Not_spread)
+            ; (from_pos, `Not_spread)
+            ; (to_, `Not_spread)
+            ; (to_pos, `Not_spread)
+            ; (len, `Not_spread)
+            ] ->
+              let i_ident = J.S { name = "$i"; var = None; loc = N } in
+              let i = J.EVar i_ident in
+              J.For_statement
+                ( Right [ i_ident, Some (ENum (J.Num.of_string_unsafe "0"), J.N) ]
+                , Some (EBin (J.Lt, i, len))
+                , Some (EUn (IncrA, i))
+                , ( J.Expression_statement
+                      (EBin
+                         ( J.Eq
+                         , J.EAccess (to_, plus to_pos i)
+                         , J.EAccess (from, plus from_pos i) ))
+                  , J.N ) )
+          | _ ->
+              failwith
+                (Format.sprintf "macro %s called with inappropriate arguments" name))
+      | _ -> super#statement s
   end
 
 let f js =

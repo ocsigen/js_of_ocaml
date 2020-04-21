@@ -208,8 +208,7 @@ let%expect_test "multiline string" =
     "
     42
 |};
-  [%expect
-    {|
+  [%expect {|
     2: 4:42,
     3: 4:"    ",
     5: 4:42, |}];
