@@ -36,7 +36,7 @@ function caml_call_gen(f, args) {
     }
     else if (d < 0) {
       if (!args_copied) {
-        args = Array.prototype.slice.call(args);
+        args = args.slice();
         args_copied = true;
       }
 
