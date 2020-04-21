@@ -112,3 +112,19 @@ let%expect_test "FIELD(a, -1)" =
 let%expect_test "ISBLOCK(a)" =
   print_macro_transformed "ISBLOCK(a)";
   [%expect {| typeof a !== "number"; |}]
+
+let%expect_test "INLINE_BLIT(from, from_pos, to, to_pos, len)" =
+  print_macro_transformed "INLINE_BLIT(from, from_pos, to, to_pos, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i + to_pos] = from[$i + from_pos]; |}]
+
+let%expect_test "INLINE_BLIT(from, from_pos, to, to_pos, len)" =
+  print_macro_transformed "INLINE_BLIT(from, from_pos, to, to_pos, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i + to_pos] = from[$i + from_pos]; |}];
+  print_macro_transformed "INLINE_BLIT(from, 0, to, to_pos, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i + to_pos] = from[$i]; |}];
+  print_macro_transformed "INLINE_BLIT(from, from_pos, to, 0, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i] = from[$i + from_pos]; |}];
+  print_macro_transformed "INLINE_BLIT(from, 1, to, 1, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i + 1] = from[$i + 1]; |}];
+  print_macro_transformed "INLINE_BLIT(from, 0, to, 0, len)";
+  [%expect {| for(var $i=0;$i < len;$i++)to[$i] = from[$i]; |}]
