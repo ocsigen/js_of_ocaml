@@ -24,13 +24,13 @@ function caml_call_gen(f, args) {
   //FIXME, can happen with too many arguments
   if(typeof f !== "function") return f;
   var n = f.length | 0;
-  if(n === 0) return f.apply(null,args);
+  if(n === 0) return f(...args);
   var argsLen = args.length | 0;
   var d = n - argsLen | 0;
   if (d == 0)
-    return f.apply(null, args);
+    return f(...args);
   else if (d < 0) {
-    return caml_call_gen(f.apply(null,args.slice(0,n)),args.slice(n));
+    return caml_call_gen(f(...args.slice(0,n)),args.slice(n));
   }
   else {
     return function (){
