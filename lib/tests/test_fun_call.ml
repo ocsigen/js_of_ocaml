@@ -276,16 +276,14 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 3 cb4)
     {| (function(f){ return f.apply("this",[1,2,3,4]) }) |};
-  (* FIXME *)
   [%expect {|
-    got this, 2, 3, 4, done
+    got this, 1, 2, 3, done
     Result: 0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 3 cb4)
     {| (function(f){ return f.apply("this",[1,2]) }) |};
-  (* FIXME *)
   [%expect {|
-    got this, 2, undefined, undefined, done
+    got this, 1, 2, undefined, done
     Result: 0 |}]
 
 let%expect_test "wrap_meth_callback_strict" =
@@ -297,9 +295,8 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2,3])(4) }) |};
-  (* FIXME *)
   [%expect {|
-    got this, 2, 3, 4, done
+    got this, 1, 2, 4, done
     Result: 0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
@@ -316,20 +313,20 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2,3]) }) |};
-  (* FIXME *)
+  (* FIXME, why does this return a function *)
   [%expect {|
-    got this, 2, 3, undefined, done
+    got this, 1, 2, 3, done
     Result: function#1 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2,3,4]) }) |};
+  (* Should not return a function *)
   [%expect {|
     got this, 1, 2, 3, done
     Result: function#1 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2]) }) |};
-  (* FIXME *)
   [%expect {|
-    got this, 2, undefined, undefined, done
+    got this, 1, 2, undefined, done
     Result: function#1 |}]

@@ -154,11 +154,10 @@ function caml_js_wrap_meth_callback_arguments(f) {
 //Requires: caml_call_gen, raw_array_cons
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function () {
-    var n = arguments.length;
-    if(n == arity) return caml_call_gen(f, raw_array_cons(arguments,this));
     var args = new Array(arity + 1);
+    var len = Math.min(arguments.length, arity)
     args[0] = this;
-    for (var i = 1; i < n && i <= arity; i++) args[i] = arguments[i];
+    for (var i = 0; i < len; i++) args[i+1] = arguments[i];
     return caml_call_gen(f, args);
   };
 }
