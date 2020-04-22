@@ -59,9 +59,11 @@ function raw_array_append_one(a,x) {
 function caml_call_gen(f, args) {
   if(f.fun)
     return caml_call_gen(f.fun, args);
-  var n = f.length;
-  var argsLen = args.length;
-  var d = n - argsLen;
+  //FIXME, can happen with too many arguments
+  if(typeof f !== "function") return f;
+  var n = f.length | 0;
+  var argsLen = args.length | 0;
+  var d = n - argsLen | 0;
   if (d == 0)
     return f.apply(null, args);
   else if (d < 0) {
