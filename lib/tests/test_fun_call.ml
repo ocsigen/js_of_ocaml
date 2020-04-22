@@ -327,3 +327,22 @@ let%expect_test "wrap_meth_callback_strict" =
   [%expect {|
     got this, 1, 2, undefined, done
     Result: 0 |}]
+
+(* Wrap meth callback unsafe *)
+let%expect_test "over application, extra arguments are dropped" =
+  call_and_log
+    (Js.Unsafe.meth_callback cb4)
+    {| (function(f){ return f.apply("this",[1,2,3,4]) }) |};
+  (* FIXME: should not return undefined *)
+  [%expect {|
+    got this, 1, 2, 3, done
+    Result: undefined |}]
+
+let%expect_test "partial application, extra arguments set to undefined" =
+  call_and_log
+    (Js.Unsafe.meth_callback cb4)
+    {| (function(f){ return f.apply("this",[1,2]) }) |};
+  (* FIXME: should not return undefined *)
+  [%expect {|
+    got this, 1, 2, undefined, done
+    Result: undefined |}]
