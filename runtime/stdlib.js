@@ -52,6 +52,7 @@ function caml_call_gen(f, args) {
   //FIXME, can happen with too many arguments
   if(typeof f !== "function") return f;
   var n = f.length | 0;
+  if(n === 0) return f.apply(null,args);
   var argsLen = args.length | 0;
   var d = n - argsLen | 0;
   if (d == 0)
@@ -60,18 +61,12 @@ function caml_call_gen(f, args) {
     return caml_call_gen(f.apply(null,args.slice(0,n)),args.slice(n));
   }
   else {
-    return function (x){
-      if(arguments.length <= 1) {
-        var nargs = new Array(args.length+1);
-        for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
-        nargs[args.length] = x;
-        return caml_call_gen(f, nargs)
-      } else {
-        var nargs = new Array(args.length+arguments.length);
-        for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
-        for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
-        return caml_call_gen(f, nargs)
-      }
+    return function (){
+      var extra_args = (arguments.length == 0)?1:arguments.length;
+      var nargs = new Array(args.length+extra_args);
+      for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
+      for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
+      return caml_call_gen(f, nargs)
     }
   }
 }
