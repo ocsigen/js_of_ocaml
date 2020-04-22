@@ -164,7 +164,7 @@ function caml_js_wrap_meth_callback_strict(arity, f) {
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
 //Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback_unsafe(f) {
-  return function () { f.apply(null, raw_array_cons(arguments,this)); }
+  return function () { return f.apply(null, raw_array_cons(arguments,this)); }
 }
 //Provides: caml_js_equals mutable (const, const)
 function caml_js_equals (x, y) { return +(x == y); }
