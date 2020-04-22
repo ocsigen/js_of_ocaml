@@ -57,10 +57,9 @@ let cb5 a b c d e =
 
 let%expect_test "over application, extra arguments are dropped" =
   call_and_log (Js.wrap_callback cb3) {| (function(f){ return f(1,2,3,4) }) |};
-  (* FIXME, this should not return a function *)
   [%expect {|
     got 1, 2, 3, done
-    Result: function#1 |}]
+    Result: 0 |}]
 
 let%expect_test "over application, extra arguments are dropped" =
   call_and_log (Js.wrap_callback cb3) {| (function(f){ return f(1,2)(3,4) }) |};
@@ -102,8 +101,7 @@ let%expect_test _ =
   call_and_log plus {| (function(f){ return f(1,2) }) |};
   [%expect {| Result: 3 |}];
   call_and_log plus {| (function(f){ return f(1,2,3) }) |};
-  (* FIXME *)
-  [%expect {| Result: function#1 |}]
+  [%expect {| Result: 3 |}]
 
 (* Wrap callback with argument *)
 
@@ -171,17 +169,17 @@ let%expect_test "wrap_callback_strict" =
     {| (function(f){ return f(1,2,3) }) |};
   [%expect {|
     got 1, 2, 3, done
-    Result: function#1 |}];
+    Result: 0 |}];
   call_and_log
     (Js.Unsafe.callback_with_arity 4 cb3)
     {| (function(f){ return f(1,2,3,4) }) |};
   [%expect {|
     got 1, 2, 3, done
-    Result: function#1 |}];
+    Result: 0 |}];
   call_and_log (Js.Unsafe.callback_with_arity 4 cb3) {| (function(f){ return f(1,2) }) |};
   [%expect {|
     got 1, 2, undefined, done
-    Result: function#1 |}]
+    Result: 0 |}]
 
 (* Wrap meth callback *)
 
@@ -189,10 +187,9 @@ let%expect_test "over application, extra arguments are dropped" =
   call_and_log
     (Js.wrap_meth_callback cb4)
     {| (function(f){ return f.apply("this",[1,2,3,4]) }) |};
-  (* FIXME, this should not return a function *)
   [%expect {|
     got this, 1, 2, 3, done
-    Result: function#1 |}]
+    Result: 0 |}]
 
 let%expect_test "over application, extra arguments are dropped" =
   call_and_log
@@ -243,8 +240,7 @@ let%expect_test _ =
   call_and_log plus {| (function(f){ return f(1,2) }) |};
   [%expect {| Result: 3 |}];
   call_and_log plus {| (function(f){ return f(1,2,3) }) |};
-  (* FIXME *)
-  [%expect {| Result: function#1 |}]
+  [%expect {| Result: 3 |}]
 
 (* Wrap callback with argument *)
 
@@ -313,20 +309,19 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2,3]) }) |};
-  (* FIXME, why does this return a function *)
   [%expect {|
     got this, 1, 2, 3, done
-    Result: function#1 |}];
+    Result: 0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2,3,4]) }) |};
   (* Should not return a function *)
   [%expect {|
     got this, 1, 2, 3, done
-    Result: function#1 |}];
+    Result: 0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 4 cb4)
     {| (function(f){ return f.apply("this",[1,2]) }) |};
   [%expect {|
     got this, 1, 2, undefined, done
-    Result: function#1 |}]
+    Result: 0 |}]
