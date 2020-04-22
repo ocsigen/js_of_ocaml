@@ -119,10 +119,10 @@ function caml_js_wrap_callback(f) {
 }
 
 //Provides: caml_js_wrap_callback_arguments
-//Requires: caml_js_wrap_callback
+//Requires: caml_call_gen
 function caml_js_wrap_callback_arguments(f) {
   return function() {
-    return caml_js_wrap_callback(f)(arguments);
+    return caml_call_gen(f, [arguments]);
   }
 }
 //Provides: caml_js_wrap_callback_strict const
@@ -130,9 +130,10 @@ function caml_js_wrap_callback_arguments(f) {
 function caml_js_wrap_callback_strict(arity, f) {
   return function () {
     var n = arguments.length;
-    if(n == arity) return caml_call_gen(f, arguments);
+    if(n == arity && f.length == arity) return f.apply(null, arguments);
     var args = new Array(arity);
-    for (var i = 0; i < n && i < arity; i++) args[i] = arguments[i];
+    var len = Math.min(arguments.length, arity)
+    for (var i = 0; i < len; i++) args[i] = arguments[i];
     return caml_call_gen(f, args);
   };
 }
