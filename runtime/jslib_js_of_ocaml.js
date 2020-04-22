@@ -110,8 +110,11 @@ function caml_ojs_new_arr(c, a) {
 //Requires: caml_call_gen
 function caml_js_wrap_callback(f) {
   return function () {
-    if(arguments.length > 0){
-      return caml_call_gen(f, arguments);
+    var len = arguments.length;
+    if(len > 0){
+      var args = new Array(len);
+      for (var i = 0; i < len; i++) args[i] = arguments[i];
+      return caml_call_gen(f, args);
     } else {
       return caml_call_gen(f, [undefined]);
     }
@@ -122,7 +125,10 @@ function caml_js_wrap_callback(f) {
 //Requires: caml_call_gen
 function caml_js_wrap_callback_arguments(f) {
   return function() {
-    return caml_call_gen(f, [arguments]);
+    var len = arguments.length;
+    var args = new Array(len);
+    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    return caml_call_gen(f, [args]);
   }
 }
 //Provides: caml_js_wrap_callback_strict const
@@ -152,7 +158,10 @@ function caml_js_wrap_meth_callback(f) {
 //Requires: caml_call_gen
 function caml_js_wrap_meth_callback_arguments(f) {
   return function () {
-    return caml_call_gen(f,[this,arguments]);
+    var len = arguments.length;
+    var args = new Array(len);
+    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    return caml_call_gen(f,[this,args]);
   }
 }
 //Provides: caml_js_wrap_meth_callback_strict const

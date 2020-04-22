@@ -57,9 +57,7 @@ function caml_call_gen(f, args) {
   if (d == 0)
     return f.apply(null, args);
   else if (d < 0) {
-    return caml_call_gen(f.apply(null,
-                                 raw_array_sub(args,0,n)),
-                         raw_array_sub(args,n,argsLen - n));
+    return caml_call_gen(f.apply(null,args.slice(0,n)),args.slice(n));
   }
   else {
     return function (x){

@@ -111,7 +111,7 @@ let%expect_test "wrap_callback_arguments" =
     (Js.Unsafe.callback_with_arguments (Obj.magic cb1))
     {| (function(f){ return f(1,2,3,4,5) }) |};
   [%expect {|
-    got (Arguments: 1,2,3,4,5), done
+    got 1,2,3,4,5, done
     Result: 0 |}]
 
 let%expect_test "wrap_callback_arguments" =
@@ -119,7 +119,7 @@ let%expect_test "wrap_callback_arguments" =
     (Js.Unsafe.callback_with_arguments (Obj.magic cb1))
     {| (function(f){ return f() }) |};
   [%expect {|
-    got (Arguments: ), done
+    got , done
     Result: 0 |}]
 
 (* Wrap with arity *)
@@ -251,7 +251,7 @@ let%expect_test "wrap_meth_callback_arguments" =
     (Js.Unsafe.meth_callback_with_arguments (Obj.magic cb2))
     {| (function(f){ return f.apply("this",[1,2,3,4,5]) }) |};
   [%expect {|
-    got this, (Arguments: 1,2,3,4,5), done
+    got this, 1,2,3,4,5, done
     Result: 0 |}]
 
 let%expect_test "wrap_meth_callback_arguments" =
@@ -259,7 +259,7 @@ let%expect_test "wrap_meth_callback_arguments" =
     (Js.Unsafe.meth_callback_with_arguments (Obj.magic cb2))
     {| (function(f){ return f.apply("this", []) }) |};
   [%expect {|
-    got this, (Arguments: ), done
+    got this, , done
     Result: 0 |}]
 
 (* Wrap with arity *)
