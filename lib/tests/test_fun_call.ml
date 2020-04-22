@@ -96,7 +96,7 @@ let%expect_test "partial application, 0 argument call is treated like 1 argument
 let%expect_test _ =
   let plus = Js.wrap_callback (fun a b -> a + b) in
   call_and_log plus {| (function(f){ return f(1) }) |};
-  [%expect {| Result: function#1 |}];
+  [%expect {| Result: function#0 |}];
   call_and_log plus {| (function(f){ return f(1)(2) }) |};
   [%expect {| Result: 3 |}];
   call_and_log plus {| (function(f){ return f(1,2) }) |};
@@ -147,7 +147,7 @@ let%expect_test "wrap_callback_strict" =
     (Js.Unsafe.callback_with_arity 2 cb3)
     {| (function(f){ return f(1,2,3) }) |};
   [%expect {|
-    Result: function#1 |}];
+    Result: function#0 |}];
   call_and_log
     (Js.Unsafe.callback_with_arity 2 cb3)
     {| (function(f){ return f(1,2,3)(4) }) |};
@@ -162,7 +162,7 @@ let%expect_test "wrap_callback_strict" =
     Result: 0 |}];
   call_and_log (Js.Unsafe.callback_with_arity 2 cb3) {| (function(f){ return f(1,2) }) |};
   [%expect {|
-    Result: function#1 |}]
+    Result: function#0 |}]
 
 let%expect_test "wrap_callback_strict" =
   call_and_log
@@ -236,7 +236,7 @@ let%expect_test "partial application, 0 argument call is treated 1 argument (und
 let%expect_test _ =
   let plus = Js.wrap_meth_callback (fun _ a b -> a + b) in
   call_and_log plus {| (function(f){ return f(1) }) |};
-  [%expect {| Result: function#1 |}];
+  [%expect {| Result: function#0 |}];
   call_and_log plus {| (function(f){ return f(1)(2) }) |};
   [%expect {| Result: 3 |}];
   call_and_log plus {| (function(f){ return f(1,2) }) |};
@@ -289,7 +289,7 @@ let%expect_test "wrap_meth_callback_strict" =
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2,3]) }) |};
   [%expect {|
-    Result: function#1 |}];
+    Result: function#0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2,3])(4) }) |};
@@ -305,7 +305,7 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2]) }) |};
-  [%expect {| Result: function#1 |}]
+  [%expect {| Result: function#0 |}]
 
 let%expect_test "wrap_meth_callback_strict" =
   call_and_log
