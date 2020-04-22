@@ -69,8 +69,9 @@ let%expect_test "over application, extra arguments are dropped" =
 
 let%expect_test "partial application 1 + 2" =
   call_and_log (Js.wrap_callback cb3) {| (function(f){ return f(1)(2,3) }) |};
-  (* FIXME, this should not return a function *)
-  [%expect {| Result: function#1 |}]
+  [%expect {|
+    got 1, 2, 3, done
+    Result: 0 |}]
 
 let%expect_test "partial application 2 + 1" =
   call_and_log (Js.wrap_callback cb3) {| (function(f){ return f(1,2)(3) }) |};
@@ -203,8 +204,9 @@ let%expect_test "partial application 1 + 2" =
   call_and_log
     (Js.wrap_meth_callback cb4)
     {| (function(f){ return f.apply("this", [1])(2,3) }) |};
-  (* FIXME ..  *)
-  [%expect {| Result: function#1 |}]
+  [%expect {|
+    got this, 1, 2, 3, done
+    Result: 0 |}]
 
 let%expect_test "partial application 2 + 1" =
   call_and_log

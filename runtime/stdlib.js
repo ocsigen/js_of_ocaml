@@ -43,18 +43,8 @@ function raw_array_cons (a,x) {
   return b
 }
 
-//Provides: raw_array_append_one
-function raw_array_append_one(a,x) {
-  var l = a.length;
-  var b = new Array(l+1);
-  var i = 0;
-  for(; i < l; i++ ) b[i] = a[i];
-  b[i]=x;
-  return b
-}
-
 //Provides: caml_call_gen (const, shallow)
-//Requires: raw_array_sub, raw_array_append_one
+//Requires: raw_array_sub
 //Weakdef
 function caml_call_gen(f, args) {
   if(f.fun)
@@ -73,7 +63,17 @@ function caml_call_gen(f, args) {
   }
   else {
     return function (x){
-      return caml_call_gen(f, raw_array_append_one(args,x))
+      if(arguments.length <= 1) {
+        var nargs = new Array(args.length+1);
+        for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
+        nargs[args.length] = x;
+        return caml_call_gen(f, nargs)
+      } else {
+        var nargs = new Array(args.length+arguments.length);
+        for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
+        for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
+        return caml_call_gen(f, nargs)
+      }
     }
   }
 }
