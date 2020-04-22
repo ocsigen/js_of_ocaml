@@ -1292,7 +1292,6 @@ function caml_sys_exit (code) {
 
 //Provides: caml_argv
 //Requires: caml_string_of_jsstring
-//Requires: raw_array_sub
 var caml_argv = ((function () {
   var g = joo_global_object;
   var main = "a.out";
@@ -1304,7 +1303,7 @@ var caml_argv = ((function () {
     var argv = g.process.argv
     //nodejs
     main = argv[1];
-    args = raw_array_sub(argv,2,argv.length - 2);
+    args = argv.slice(2);
   }
 
   var p = caml_string_of_jsstring(main);
