@@ -29,11 +29,17 @@ function caml_js_from_float(x) { return x; }
 function caml_js_to_float(x) { return x; }
 
 //Provides: caml_js_from_array mutable (shallow)
-//Requires: raw_array_sub
-function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
+function caml_js_from_array(a) {
+  return a.slice(1);
+}
 //Provides: caml_js_to_array mutable (shallow)
-//Requires: raw_array_cons
-function caml_js_to_array(a) { return raw_array_cons(a,0); }
+function caml_js_to_array(a) {
+  var len = a.length;
+  var b = new Array(len+1);
+  b[0] = 0;
+  for(var i=0;i<len;i++) b[i+1] = a[i];
+  return b;
+}
 
 
 //Provides: caml_js_var mutable (const)
