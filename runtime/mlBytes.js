@@ -66,7 +66,6 @@ function caml_str_repeat(n, s) {
 }
 
 //Provides: caml_subarray_to_jsbytes
-//Requires: raw_array_sub
 //Weakdef
 // Pre ECMAScript 5, [apply] would not support array-like object.
 // In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
@@ -76,7 +75,7 @@ function caml_subarray_to_jsbytes (a, i, len) {
   if (i == 0 && len <= 4096 && len == a.length) return f.apply (null, a);
   var s = "";
   for (; 0 < len; i += 1024,len-=1024)
-    s += f.apply (null, raw_array_sub(a,i, Math.min(len, 1024)));
+    s += f.apply (null, a.slice(i,i + Math.min(len, 1024)));
   return s;
 }
 

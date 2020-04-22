@@ -17,32 +17,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-///////////// Core
-
-//Provides: raw_array_sub
-function raw_array_sub (a,i,l) {
-  var b = new Array(l);
-  for(var j = 0; j < l; j++) b[j] = a[i+j];
-  return b
-}
-
-//Provides: raw_array_copy
-function raw_array_copy (a) {
-  var l = a.length;
-  var b = new Array(l);
-  for(var i = 0; i < l; i++ ) b[i] = a[i];
-  return b
-}
-
-//Provides: raw_array_cons
-function raw_array_cons (a,x) {
-  var l = a.length;
-  var b = new Array(l+1);
-  b[0]=x;
-  for(var i = 1; i <= l; i++ ) b[i] = a[i-1];
-  return b
-}
-
 //Provides: caml_call_gen (const, shallow)
 //Weakdef
 function caml_call_gen(f, args) {
