@@ -19,63 +19,26 @@
 //TODO: fix the implementation below
 //Provides: caml_call_gen (const, shallow)
 function caml_call_gen(f, args) {
-  var args_copied = false;
-
-  while (true) {
-    if (f.fun) {
-      f = f.fun;
-      continue;
-    }
-    // TODO: This can happen with over-application. Should we fail here ?
-    if (typeof f !== "function") return f;
-    var n = f.length | 0;
-    var argsLen = args.length | 0;
-    var d = (n - argsLen) | 0;
-
-    if (d === 0) {
-      return f(...args);
-    }
-    else if (d < 0) {
-      if (!args_copied) {
-        args = Array.prototype.slice.call(args);
-        args_copied = true;
-      }
-
-      var before = args;
-      var after = before.splice(n);
-      f = f(...before);
-      args = after;
-    }
-    else {
-      if(!args.concat)
-        args = Array.prototype.slice.call(args);
-      switch (d) {
-      case 1: return function (a1) {
-        return f(...args, a1);
-      }
-      case 2: return function (a1, a2) {
-        return f(...args, a1, a2);
-      }
-      case 3: return function (a1, a2, a3) {
-        return f(...args, a1, a2, a3);
-      }
-      case 4: return function (a1, a2, a3, a4) {
-        return f(...args, a1, a2, a3, a4);
-      }
-      case 5: return function (a1, a2, a3, a4, a5) {
-        return f(...args, a1, a2, a3, a4, a5);
-      }
-      case 6: return function (a1, a2, a3, a4, a5, a6) {
-        return f(...args, a1, a2, a3, a4, a5, a6);
-      }
-      case 7: return function (a1, a2, a3, a4, a5, a6, a7) {
-        return f(...args, a1, a2, a3, a4, a5, a6, a7);
-      }
-      default:
-        return function (a1, a2, a3, a4, a5, a6, a7, a8) {
-          return caml_call_gen(f, args.concat([a1, a2, a3, a4, a5, a6, a7, a8]));
-        };
-      }
+  if(f.fun)
+    return caml_call_gen(f.fun, args);
+  //FIXME, can happen with too many arguments
+  if(typeof f !== "function") return f;
+  var n = f.length | 0;
+  if(n === 0) return f.apply(null,args);
+  var argsLen = args.length | 0;
+  var d = n - argsLen | 0;
+  if (d == 0)
+    return f.apply(null, args);
+  else if (d < 0) {
+    return caml_call_gen(f.apply(null,args.slice(0,n)),args.slice(n));
+  }
+  else {
+    return function (){
+      var extra_args = (arguments.length == 0)?1:arguments.length;
+      var nargs = new Array(args.length+extra_args);
+      for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
+      for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
+      return caml_call_gen(f, nargs)
     }
   }
 }

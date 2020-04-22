@@ -44,7 +44,6 @@ function raw_array_cons (a,x) {
 }
 
 //Provides: caml_call_gen (const, shallow)
-//Requires: raw_array_sub
 //Weakdef
 function caml_call_gen(f, args) {
   if(f.fun)
