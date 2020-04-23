@@ -36,6 +36,7 @@ let%expect_test _ =
     +parsing.js
     +stdlib.js
     +stdlib_modern.js
+    +sys.js
     +toplevel.js
     +unix.js
     +weak.js |}];
@@ -63,6 +64,7 @@ let%expect_test _ =
     +nat.js
     +parsing.js
     +stdlib.js
+    +sys.js
     +unix.js
     +weak.js |}];
   printl extra;
