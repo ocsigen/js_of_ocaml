@@ -11,6 +11,7 @@ let%expect_test _ =
   printl all;
   [%expect
     {|
+    +array.js
     +bigarray.js
     +bigstring-base_bigstring.js
     +bigstring-core_kernel.js
@@ -44,6 +45,7 @@ let%expect_test _ =
   printl runtime;
   [%expect
     {|
+    +array.js
     +bigarray.js
     +bigstring-cstruct.js
     +bigstring.js

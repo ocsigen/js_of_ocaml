@@ -19,7 +19,8 @@
 
 let runtime =
   Files.
-    [ bigarray
+    [ array
+    ; bigarray
     ; bigstring
     ; bigstring_cstruct
     ; fs
