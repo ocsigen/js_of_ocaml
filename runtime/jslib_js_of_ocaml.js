@@ -41,6 +41,24 @@ function caml_js_to_array(a) {
   return b;
 }
 
+//Provides: caml_list_of_js_array const (const)
+function caml_list_of_js_array(a){
+  var l = 0;
+  for(var i=a.length - 1; i>=0; i--){
+    var e = a[i];
+    l = [0,e,l];
+  }
+  return l
+}
+
+//Provides: caml_list_to_js_array const (const)
+function caml_list_to_js_array(l){
+  var a = [];
+  for(; l !== 0; l = l[2]) {
+    a.push(l[1]);
+  }
+  return a;
+}
 
 //Provides: caml_js_var mutable (const)
 //Requires: js_print_stderr

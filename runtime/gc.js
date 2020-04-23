@@ -33,3 +33,10 @@ function caml_gc_get(){
 function caml_memprof_set(_control) {
   return 0;
 }
+
+//Provides: caml_final_register const
+function caml_final_register () { return 0; }
+//Provides: caml_final_register_called_without_value const
+function caml_final_register_called_without_value () { return 0; }
+//Provides: caml_final_release const
+function caml_final_release () { return 0; }

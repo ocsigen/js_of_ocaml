@@ -12,6 +12,7 @@ let%expect_test _ =
   [%expect
     {|
     +array.js
+    +backtrace.js
     +bigarray.js
     +bigstring-base_bigstring.js
     +bigstring-core_kernel.js
@@ -19,6 +20,8 @@ let%expect_test _ =
     +bigstring.js
     +compare.js
     +dynlink.js
+    +fail.js
+    +format.js
     +fs.js
     +fs_fake.js
     +fs_node.js
@@ -49,10 +52,13 @@ let%expect_test _ =
   [%expect
     {|
     +array.js
+    +backtrace.js
     +bigarray.js
     +bigstring-cstruct.js
     +bigstring.js
     +compare.js
+    +fail.js
+    +format.js
     +fs.js
     +fs_fake.js
     +fs_node.js

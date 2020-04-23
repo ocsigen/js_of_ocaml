@@ -187,3 +187,44 @@ function caml_runtime_variant(_unit) {
 function caml_runtime_parameters(_unit) {
   return caml_string_of_jsbytes("");
 }
+
+//Provides: caml_install_signal_handler const
+function caml_install_signal_handler(){return 0}
+
+//Provides: unix_inet_addr_of_string
+function unix_inet_addr_of_string () {return 0;}
+
+
+
+//Provides: caml_runtime_warnings
+var caml_runtime_warnings = 0;
+
+//Provides: caml_ml_enable_runtime_warnings
+//Requires: caml_runtime_warnings
+function caml_ml_enable_runtime_warnings (bool) {
+  caml_runtime_warnings = bool;
+  return 0;
+}
+
+//Provides: caml_ml_runtime_warnings_enabled
+//Requires: caml_runtime_warnings
+function caml_ml_runtime_warnings_enabled (_unit) {
+  return caml_runtime_warnings;
+}
+
+
+//Provides: caml_spacetime_enabled const (const)
+function caml_spacetime_enabled(_unit) {
+  return 0;
+}
+
+//Provides: caml_register_channel_for_spacetime const (const)
+function caml_register_channel_for_spacetime(_channel) {
+  return 0;
+}
+
+//Provides: caml_spacetime_only_works_for_native_code
+//Requires: caml_failwith
+function caml_spacetime_only_works_for_native_code() {
+  caml_failwith("Spacetime profiling only works for native code");
+}
