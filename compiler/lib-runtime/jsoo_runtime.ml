@@ -27,6 +27,7 @@ let runtime =
     ; fs_node
     ; gc
     ; graphics
+    ; hash
     ; ieee_754
     ; int64
     ; internalMod

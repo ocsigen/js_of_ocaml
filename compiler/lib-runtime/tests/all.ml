@@ -22,6 +22,7 @@ let%expect_test _ =
     +fs_node.js
     +gc.js
     +graphics.js
+    +hash.js
     +ieee_754.js
     +int64.js
     +internalMod.js
@@ -51,6 +52,7 @@ let%expect_test _ =
     +fs_node.js
     +gc.js
     +graphics.js
+    +hash.js
     +ieee_754.js
     +int64.js
     +internalMod.js
