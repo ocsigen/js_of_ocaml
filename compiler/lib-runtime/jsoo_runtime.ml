@@ -23,6 +23,7 @@ let runtime =
     ; bigarray
     ; bigstring
     ; bigstring_cstruct
+    ; compare
     ; fs
     ; fs_fake
     ; fs_node
@@ -32,6 +33,7 @@ let runtime =
     ; ieee_754
     ; int64
     ; internalMod
+    ; ints
     ; io
     ; jslib
     ; jslib_js_of_ocaml
@@ -40,6 +42,7 @@ let runtime =
     ; md5
     ; mlBytes
     ; nat
+    ; obj
     ; parsing
     ; stdlib
     ; sys
