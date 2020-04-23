@@ -20,10 +20,13 @@
 let runtime =
   Files.
     [ array
+    ; backtrace
     ; bigarray
     ; bigstring
     ; bigstring_cstruct
     ; compare
+    ; fail
+    ; format
     ; fs
     ; fs_fake
     ; fs_node

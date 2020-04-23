@@ -126,3 +126,50 @@ function js_print_stderr(s) {
     v && v.error && v.error(s);
   }
 }
+
+
+//Provides: caml_is_js
+function caml_is_js() {
+  return 1;
+}
+
+
+
+//Provides: caml_wrap_exception const (const)
+//Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
+//Requires: caml_return_exn_constant
+function caml_wrap_exception(e) {
+  if(e instanceof Array) return e;
+  //Stack_overflow: chrome, safari
+  if(joo_global_object.RangeError
+     && e instanceof joo_global_object.RangeError
+     && e.message
+     && e.message.match(/maximum call stack/i))
+    return caml_return_exn_constant(caml_global_data.Stack_overflow);
+  //Stack_overflow: firefox
+  if(joo_global_object.InternalError
+     && e instanceof joo_global_object.InternalError
+     && e.message
+     && e.message.match(/too much recursion/i))
+    return caml_return_exn_constant(caml_global_data.Stack_overflow);
+  //Wrap Error in Js.Error exception
+  if(e instanceof joo_global_object.Error && caml_named_value("jsError"))
+    return [0,caml_named_value("jsError"),e];
+  //fallback: wrapped in Failure
+  return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
+}
+
+// Experimental
+//Provides: caml_exn_with_js_backtrace
+//Requires: caml_global_data
+function caml_exn_with_js_backtrace(exn, force) {
+  //never reraise for constant exn
+  if(!exn.js_error || force || exn[0] == 248) exn.js_error = new joo_global_object.Error("Js exception containing backtrace");
+  return exn;
+}
+
+//Provides: caml_js_error_of_exception
+function caml_js_error_of_exception(exn) {
+  if(exn.js_error) { return exn.js_error; }
+  return null;
+}
