@@ -131,32 +131,32 @@ function caml_ojs_new_arr(c, a) {
   return new F;
 }
 //Provides: caml_js_wrap_callback const (const)
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_callback(f) {
   return function () {
     var len = arguments.length;
     if(len > 0){
       var args = new Array(len);
       for (var i = 0; i < len; i++) args[i] = arguments[i];
-      return caml_call_gen(f, args);
+      return caml_call_gen_cb(f, args);
     } else {
-      return caml_call_gen(f, [undefined]);
+      return caml_call_gen_cb(f, [undefined]);
     }
   }
 }
 
 //Provides: caml_js_wrap_callback_arguments
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_callback_arguments(f) {
   return function() {
     var len = arguments.length;
     var args = new Array(len);
     for (var i = 0; i < len; i++) args[i] = arguments[i];
-    return caml_call_gen(f, [args]);
+    return caml_call_gen_cb(f, [args]);
   }
 }
 //Provides: caml_js_wrap_callback_strict const
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_callback_strict(arity, f) {
   return function () {
     var n = arguments.length;
@@ -164,43 +164,43 @@ function caml_js_wrap_callback_strict(arity, f) {
     var args = new Array(arity);
     var len = Math.min(arguments.length, arity)
     for (var i = 0; i < len; i++) args[i] = arguments[i];
-    return caml_call_gen(f, args);
+    return caml_call_gen_cb(f, args);
   };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_meth_callback(f) {
   return function () {
     var len = arguments.length;
     var args = new Array(len + 1);
     args[0] = this;
     for (var i = 0; i < len; i++) args[i+1] = arguments[i];
-    return caml_call_gen(f,args);
+    return caml_call_gen_cb(f,args);
   }
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_meth_callback_arguments(f) {
   return function () {
     var len = arguments.length;
     var args = new Array(len);
     for (var i = 0; i < len; i++) args[i] = arguments[i];
-    return caml_call_gen(f,[this,args]);
+    return caml_call_gen_cb(f,[this,args]);
   }
 }
 //Provides: caml_js_wrap_meth_callback_strict const
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function () {
     var args = new Array(arity + 1);
     var len = Math.min(arguments.length, arity)
     args[0] = this;
     for (var i = 0; i < len; i++) args[i+1] = arguments[i];
-    return caml_call_gen(f, args);
+    return caml_call_gen_cb(f, args);
   };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
-//Requires: caml_call_gen
+//Requires: caml_call_gen_cb
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function () {
     var len = arguments.length;
