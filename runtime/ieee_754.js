@@ -297,3 +297,93 @@ function caml_tanh_float (x) {
 
 //Provides: caml_round_float
 function caml_round_float (x) { return Math.round(x); }
+
+//Provides: caml_format_float const
+//Requires: caml_parse_format, caml_finish_formatting
+function caml_format_float (fmt, x) {
+  function toFixed(x,dp) {
+    if (Math.abs(x) < 1.0) {
+      return x.toFixed(dp);
+    } else {
+      var e = parseInt(x.toString().split('+')[1]);
+      if (e > 20) {
+        e -= 20;
+        x /= Math.pow(10,e);
+        x += (new Array(e+1)).join('0');
+        if(dp > 0) {
+          x = x + '.' + (new Array(dp+1)).join('0');
+        }
+        return x;
+      }
+      else return x.toFixed(dp)
+    }
+  }
+  var s, f = caml_parse_format(fmt);
+  var prec = (f.prec < 0)?6:f.prec;
+  if (x < 0 || (x == 0 && 1/x == -Infinity)) { f.sign = -1; x = -x; }
+  if (isNaN(x)) { s = "nan"; f.filler = ' '; }
+  else if (!isFinite(x)) { s = "inf"; f.filler = ' '; }
+  else
+    switch (f.conv) {
+    case 'e':
+      var s = x.toExponential(prec);
+      // exponent should be at least two digits
+      var i = s.length;
+      if (s.charAt(i - 3) == 'e')
+        s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
+      break;
+    case 'f':
+      s = toFixed(x, prec); break;
+    case 'g':
+      prec = prec?prec:1;
+      s = x.toExponential(prec - 1);
+      var j = s.indexOf('e');
+      var exp = +s.slice(j + 1);
+      if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
+        // remove trailing zeroes
+        var i = j - 1; while (s.charAt(i) == '0') i--;
+        if (s.charAt(i) == '.') i--;
+        s = s.slice(0, i + 1) + s.slice(j);
+        i = s.length;
+        if (s.charAt(i - 3) == 'e')
+          s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
+        break;
+      } else {
+        var p = prec;
+        if (exp < 0) { p -= exp + 1; s = x.toFixed(p); }
+        else while (s = x.toFixed(p), s.length > prec + 1) p--;
+        if (p) {
+          // remove trailing zeroes
+          var i = s.length - 1; while (s.charAt(i) == '0') i--;
+          if (s.charAt(i) == '.') i--;
+          s = s.slice(0, i + 1);
+        }
+      }
+      break;
+    }
+  return caml_finish_formatting(f, s);
+}
+
+//Provides: caml_float_of_string (const)
+//Requires: caml_failwith, caml_jsbytes_of_string
+function caml_float_of_string(s) {
+  var res;
+  s = caml_jsbytes_of_string(s)
+  res = +s;
+  if ((s.length > 0) && (res === res)) return res;
+  s = s.replace(/_/g,"");
+  res = +s;
+  if (((s.length > 0) && (res === res)) || /^[+-]?nan$/i.test(s)) return res;
+  var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)p([+-]?[0-9]+)/i.exec(s);
+  //          1        2             3           4
+  if(m){
+    var m3 = m[3].replace(/0+$/,'');
+    var mantissa = parseInt(m[1] + m[2] + m3, 16);
+    var exponent = (m[4]|0) - 4*m3.length;
+    res = mantissa * Math.pow(2, exponent);
+    return res;
+  }
+  if(/^\+?inf(inity)?$/i.test(s)) return Infinity;
+  if(/^-inf(inity)?$/i.test(s)) return -Infinity;
+  caml_failwith("float_of_string");
+}

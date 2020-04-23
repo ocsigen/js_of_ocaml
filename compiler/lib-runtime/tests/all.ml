@@ -17,6 +17,7 @@ let%expect_test _ =
     +bigstring-core_kernel.js
     +bigstring-cstruct.js
     +bigstring.js
+    +compare.js
     +dynlink.js
     +fs.js
     +fs_fake.js
@@ -27,6 +28,7 @@ let%expect_test _ =
     +ieee_754.js
     +int64.js
     +internalMod.js
+    +ints.js
     +io.js
     +jslib.js
     +jslib_js_of_ocaml.js
@@ -35,6 +37,7 @@ let%expect_test _ =
     +md5.js
     +mlBytes.js
     +nat.js
+    +obj.js
     +parsing.js
     +stdlib.js
     +stdlib_modern.js
@@ -49,6 +52,7 @@ let%expect_test _ =
     +bigarray.js
     +bigstring-cstruct.js
     +bigstring.js
+    +compare.js
     +fs.js
     +fs_fake.js
     +fs_node.js
@@ -58,6 +62,7 @@ let%expect_test _ =
     +ieee_754.js
     +int64.js
     +internalMod.js
+    +ints.js
     +io.js
     +jslib.js
     +jslib_js_of_ocaml.js
@@ -66,6 +71,7 @@ let%expect_test _ =
     +md5.js
     +mlBytes.js
     +nat.js
+    +obj.js
     +parsing.js
     +stdlib.js
     +sys.js
