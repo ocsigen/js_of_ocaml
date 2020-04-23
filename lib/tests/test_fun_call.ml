@@ -344,3 +344,59 @@ let%expect_test "partial application, extra arguments set to undefined" =
   [%expect {|
     got this, 1, 2, undefined, done
     Result: 0 |}]
+
+(* caml_call_gen *)
+
+let%expect_test _ =
+  call_and_log cb3 {| (function(f){ return f(1) }) |};
+  [%expect {|
+    got 1, undefined, undefined, done
+    Result: 0 |}]
+
+let%expect_test _ =
+  call_and_log cb3 {| (function(f){ return f(1,2,3,4) }) |};
+  [%expect {|
+    got 1, 2, 3, done
+    Result: 0 |}]
+
+let%expect_test _ =
+  let f cb =
+    try call_and_log (cb 1) {| (function(f){ return f(1,2,3) }) |} with
+    | Invalid_argument s | Failure s -> Printf.printf "Error: %s" s
+    | _ -> Printf.printf "Error: unknown"
+  in
+  f cb5;
+  [%expect {| Result: function#0 |}];
+  f cb4;
+  [%expect {|
+    got 1, 1, 2, 3, done
+    Result: 0 |}];
+  f cb3;
+  [%expect {|
+    got 1, 1, 2, done
+    Result: 0 |}]
+
+let%expect_test _ =
+  let f cb =
+    try call_and_log (cb 1 2 3) {| (function(f){ return f }) |} with
+    | Invalid_argument s | Failure s -> Printf.printf "Error: %s" s
+    | _ -> Printf.printf "Error: unknown"
+  in
+  f (Obj.magic cb1);
+  [%expect {|
+    got 1, done
+    Result: 0 |}];
+  f (Obj.magic cb2);
+  [%expect {|
+    got 1, 2, done
+    Result: 0 |}];
+  f (Obj.magic cb3);
+  [%expect {|
+    got 1, 2, 3, done
+    Result: 0 |}];
+  f (Obj.magic cb4);
+  [%expect {|
+    Result: function#0 |}];
+  f (Obj.magic cb5);
+  [%expect {|
+    Result: function#0 |}]
