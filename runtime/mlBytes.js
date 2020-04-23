@@ -425,9 +425,14 @@ MlBytes.prototype.toString = function(){
     }
     this.t = 8; /*BYTES | NOT_ASCII*/
   case 8: /*BYTES | NOT_ASCII*/
-    return caml_utf16_of_utf8(this.c);
+    return this.c;
   }
 };
+MlBytes.prototype.toUtf16 = function (){
+  var r = this.toString();
+  if(this.t == 9) return r
+  return caml_utf16_of_utf8(r);
+}
 MlBytes.prototype.slice = function (){
   var content = this.t == 4 ? this.c.slice() : this.c;
   return new MlBytes(this.t,content,this.l);
@@ -807,7 +812,7 @@ function caml_jsbytes_of_string(s) {
 //Provides: caml_jsstring_of_string mutable (const)
 //If: !js-string
 function caml_jsstring_of_string(s){
-  return s.toString()
+  return s.toUtf16()
 }
 
 //Provides: caml_string_of_jsstring
