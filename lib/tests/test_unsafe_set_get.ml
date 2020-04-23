@@ -50,7 +50,7 @@ let%expect_test _ =
   Js.Unsafe.set o "a•›" 1;
   Js.Unsafe.set o (Js.string "b•›") 2;
   print_endline (s o);
-  [%expect {| (Object: a•›,b•›) |}];
+  [%expect {| (Object: aâ¢âº,b•›) |}];
   let o = object%js end in
   let prefix = "prefix:" in
   let f s g t = Js.Unsafe.set o (g (prefix ^ s)) t in
@@ -58,4 +58,4 @@ let%expect_test _ =
   f "b•›" Js.string 2;
   f "c•›" Js.bytestring 2;
   print_endline (s o);
-  [%expect {| (Object: prefix:a•›,prefix:b•›,prefix:câ¢âº) |}]
+  [%expect {| (Object: prefix:aâ¢âº,prefix:b•›,prefix:câ¢âº) |}]
