@@ -21,7 +21,7 @@
 // Copied from https://github.com/jscoq/jscoq/blob/v8.11/coq-js/js_stub/str.js
 
 //Provides: re_match
-//Requires: caml_jsbytes_of_string
+//Requires: caml_jsbytes_of_string, caml_js_from_array, caml_array_of_bytes
 //Requires: caml_string_get
 
 var re_match = function(){
@@ -36,12 +36,6 @@ var re_match = function(){
     0xFF, 0xFF, 0x7F, 0xFF        /* 0xE0-0xFF: Latin-1 accented lowercase */
   ];
 
-
-  function is_word_letter(c) {
-    var res = (re_word_letters[c>>3] >> (c & 7)) & 1;
-    return res
-  }
-
   var opcodes = {
     CHAR: 0, CHARNORM: 1, STRING: 2, STRINGNORM: 3, CHARCLASS: 4,
     BOL: 5, EOL: 6, WORDBOUNDARY: 7,
@@ -52,37 +46,43 @@ var re_match = function(){
     CHECKPROGRESS: 18
   };
 
+  function is_word_letter(c) {
+    return (re_word_letters[  (c >> 3)] >> (c & 7)) & 1;
+  }
+
   function in_bitset(s,i) {
     return (caml_string_get(s,(i >> 3)) >> (i & 7)) & 1;
   }
 
   function re_match_impl(re, s, pos, partial) {
 
-    var prog          = re[1].slice(1),
-        cpool         = re[2].slice(1),
+    var prog          = caml_js_from_array(re[1]),
+        cpool         = caml_js_from_array(re[2]),
         normtable     = caml_jsbytes_of_string(re[3]),
-        numgroups     = re[4],
-        numregisters  = re[5],
-        startchars    = re[6];
+        numgroups     = re[4] | 0,
+        numregisters  = re[5] | 0,
+        startchars    = re[6] | 0;
 
-    var pc = 0, quit = false, txt = caml_jsbytes_of_string(s),
+    var s = caml_array_of_bytes(s);
+
+    var pc = 0,
+        quit = false,
         stack = [],
         groups = new Array(numgroups),
         re_register = new Array(numregisters);
 
-    for(var ng = 0; ng < groups.length; ng++){
-      groups[ng] = {start: -1, end:-1}
+    for(var i = 0; i < groups.length; i++){
+      groups[i] = {start: -1, end:-1}
     }
     groups[0].start = pos;
 
     var backtrack = function () {
       while (stack.length) {
-        var item = stack.pop(), obj, prop;
+        var item = stack.pop();
         if (item.undo) {
-          [obj, prop] = item.undo.loc;
-          obj[prop] = item.undo.value;
+          item.undo.obj[item.undo.prop] = item.undo.value;
         }
-        else {
+        else if(item.pos) {
           pc = item.pos.pc;
           pos = item.pos.txt;
           return;
@@ -90,19 +90,20 @@ var re_match = function(){
       }
       quit = true;
     };
+
     var push = function(item) { stack.push(item); };
 
     var accept = function () {
       groups[0].end = pos;
       var result = new Array(1 + groups.length*2);
-      result[0] = 0;
-      for(var ng = 0; ng < groups.length; ng++){
-        var g = groups[ng];
+      result[0] = 0; // tag
+      for(var i = 0; i < groups.length; i++){
+        var g = groups[i];
         if(g.start < 0 || g.end < 0) {
-          g.start = -1; g.end = -1;
+          g.start = g.end = -1;
         }
-        result[2* ng + 1 ] = g.start;
-        result[2* ng + 1 + 1 ] = g.end;
+        result[2*i + 1 ] = g.start;
+        result[2*i + 1 + 1 ] = g.end;
       };
       return result
     };
@@ -117,73 +118,75 @@ var re_match = function(){
       var op = prog[pc] & 0xff,
           sarg = prog[pc] >> 8,
           uarg = sarg & 0xff,
-          c = txt.charCodeAt(pos),
+          c = s[pos],
           group;
 
       pc++;
 
       switch (op) {
       case opcodes.CHAR:
-        if(pos === txt.length) {prefix_match (); break};
+        if(pos === s.length) {prefix_match (); break};
         if (c === uarg) pos++;
         else backtrack();
         break;
       case opcodes.CHARNORM:
-        if(pos === txt.length) {prefix_match (); break};
+        if(pos === s.length) {prefix_match (); break};
         if (normtable.charCodeAt(c) === uarg) pos++;
         else backtrack();
         break;
       case opcodes.STRING:
         for (var arg = caml_jsbytes_of_string(cpool[uarg]), i = 0; i < arg.length; i++) {
-          if(pos === txt.length) {prefix_match (); break};
+          if(pos === s.length) {prefix_match (); break};
           if (c === arg.charCodeAt(i))
-            c = txt.charCodeAt(++pos);
+            c = s[++pos];
           else { backtrack(); break; }
         }
         break;
       case opcodes.STRINGNORM:
         for (var arg = caml_jsbytes_of_string(cpool[uarg]), i = 0; i < arg.length; i++) {
-          if(pos === txt.length) {prefix_match (); break};
+          if(pos === s.length) {prefix_match (); break};
           if (normtable.charCodeAt(c) === arg.charCodeAt(i))
-            c = txt.charCodeAt(++pos);
+            c = s[++pos];
           else { backtrack(); break; }
         }
         break;
       case opcodes.CHARCLASS:
-      if(pos === txt.length) {prefix_match (); break};
+      if(pos === s.length) {prefix_match (); break};
         if (in_bitset(cpool[uarg], c)) pos++;
         else backtrack();
         break;
       case opcodes.BOL:
-        if(pos > 0 && txt.charCodeAt(pos - 1) != 10) {backtrack()}
+        if(pos > 0 && s[pos - 1] != 10 /* \n */) {backtrack()}
         break;
       case opcodes.EOL:
-        if(pos < txt.length && txt.charCodeAt(pos) != 10) {backtrack()}
+        if(pos < s.length && s[pos] != 10 /* \n */) {backtrack()}
         break;
       case opcodes.WORDBOUNDARY:
         if(pos == 0) {
-          if(pos === txt.length) {prefix_match (); break};
-          if(is_word_letter(txt.charCodeAt(0))) break;
+          if(pos === s.length) {prefix_match (); break};
+          if(is_word_letter(s[0])) break;
           backtrack();
         }
-        else if (pos === txt.length) {
-          if(is_word_letter(txt.charCodeAt(txt.length - 1))) break;
+        else if (pos === s.length) {
+          if(is_word_letter(s[pos - 1])) break;
           backtrack ();
         }
         else {
-          if(is_word_letter(txt.charCodeAt(pos - 1)) != is_word_letter(txt.charCodeAt(pos))) break;
+          if(is_word_letter(s[pos - 1]) != is_word_letter(s[pos])) break;
           backtrack ();
         }
         break;
       case opcodes.BEGGROUP:
         group = groups[uarg];
-        push({undo: {loc: [group, 'start'],
+        push({undo: {obj:group,
+                     prop:'start',
                      value: group.start}});
         group.start = pos;
         break;
       case opcodes.ENDGROUP:
         group = groups[uarg];
-        push({undo: {loc: [group, 'end'],
+        push({undo: {obj: group,
+                     prop:'end',
                      value: group.end}});
         group.end = pos;
         break;
@@ -191,9 +194,8 @@ var re_match = function(){
         group = groups[uarg];
         if(group.start < 0 || group.end < 0) {backtrack (); break}
         for (var i = group.start; i < group.end; i++){
-
-          if(pos === txt.length) {prefix_match (); break};
-          if(txt.charCodeAt(i) != txt.charCodeAt(pos)) {backtrack (); break}
+          if(pos === s.length) {prefix_match (); break};
+          if(s[i] != s[pos]) {backtrack (); break}
           pos++;
         }
         break;
@@ -202,13 +204,13 @@ var re_match = function(){
         break;
       case opcodes.SIMPLESTAR:
         while (in_bitset(cpool[uarg], c))
-          c = txt.charCodeAt(++pos);
+          c = s[++pos];
         break;
       case opcodes.SIMPLEPLUS:
-        if(pos === txt.length) {prefix_match (); break};
+        if(pos === s.length) {prefix_match (); break};
         if (in_bitset(cpool[uarg], c)) {
           do {
-            c = txt.charCodeAt(++pos);
+            c = s[++pos];
           } while (in_bitset(cpool[uarg], c));
         }
         else backtrack();
@@ -222,7 +224,9 @@ var re_match = function(){
         push({pos: {pc: pc + sarg, txt: pos}});
         break;
       case opcodes.SETMARK:
-        push({undo: {loc: [re_register, uarg], value: re_register[uarg]}});
+        push({undo: {obj:re_register,
+                     prop: uarg,
+                     value: re_register[uarg]}});
         re_register[uarg] = pos;
         break;
       case opcodes.CHECKPROGRESS:
@@ -231,7 +235,6 @@ var re_match = function(){
       default: throw new Error("Invalid bytecode");
       }
     }
-
     return 0;
   }
 
@@ -295,37 +298,37 @@ function re_partial_match(re,s,pos){
 // external re_replacement_text: string -> int array -> string -> string
 function re_replacement_text(repl,groups,orig) {
   var repl = caml_jsbytes_of_string(repl);
+  var len = repl.length;
   var orig = caml_jsbytes_of_string(orig);
-  var res = "";
-  var n = 0;
-  while(n < repl.length){
-    if(repl.charAt(n) != '\\'){
-      res += repl.charAt(n);
-      n++;
+  var res = ""; //result
+  var n = 0; // current position
+  var cur; //current char
+  var start, end, c;
+  while(n < len){
+    cur = repl.charAt(n++);
+    if(cur != '\\'){
+      res += cur;
     }
     else {
-      n++;
-      if(n == repl.length) caml_failwith("Str.replace: illegal backslash sequence");
-      switch(repl.charAt(n)){
+      if(n == len) caml_failwith("Str.replace: illegal backslash sequence");
+      cur = repl.charAt(n++);
+      switch(cur){
       case '\\':
-        res += '\\';
-        n++;
+        res += cur;
         break;
       case '0': case '1': case '2': case '3': case '4':
       case '5': case '6': case '7': case '8': case '9':
-        var c = repl.charCodeAt(n) - ('0').charCodeAt(0);
+        c = +cur;
         if (c*2 >= groups.length - 1 )
           caml_failwith("Str.replace: reference to unmatched group" );
-        var start = caml_array_get(groups,c*2);
-        var end = caml_array_get(groups, c*2 +1);
+        start = caml_array_get(groups,c*2);
+        end = caml_array_get(groups, c*2 +1);
         if (start == -1)
           caml_failwith("Str.replace: reference to unmatched group");
         res+=orig.slice(start,end);
-        n++;
         break;
       default:
-        res += ('\\'  + repl.charAt(n));
-        n++
+        res += ('\\'  + cur);
       }
     }
   }
