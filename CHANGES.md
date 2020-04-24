@@ -1,7 +1,6 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
-* Compiler: fix vardecl optim (#946)
-* Compiler: Compiler: change compilation scheme for branches (#948)
+* Compiler: change compilation scheme for branches (#948)
 * Compiler: Introduce sub-command: link, build-runtime, build-fs (#987)
 * Compiler: embed javascript runtime in the compiler (#978)
 * Compiler: refactor javascript lexer/parser, add tests (#986)
@@ -18,6 +17,7 @@
 * Misc: switch to ocamlformat.0.14
 
 ## Bug fixes
+* Compiler: fix vardecl optim (#946)
 * Compiler: restore optimization when generating if statements
 * Compiler: fix javascript parser in the presence of line directives (#980)
 * Runtime: Catch nodejs errors and re-raise them as Sys_error
