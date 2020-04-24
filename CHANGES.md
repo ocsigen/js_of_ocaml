@@ -8,7 +8,7 @@
 * Runtime: clean runtime for string vs bytes
 * Runtime: remove many old polyfill
 * Runtime: add unix_isatty
-* Runtime: optimize caml_call_gen
+* Runtime: optimize caml_call_gen (#996)
 * Runtime: change representation of int64  (#905)
 * Runtime: improve node.js backend for Sys.command (#979)
 * Lib: add closest method to element (#930)
@@ -22,6 +22,10 @@
 * Compiler: fix javascript parser in the presence of line directives (#980)
 * Runtime: Catch nodejs errors and re-raise them as Sys_error
 * Runtime: fix caml_parse_sign_and_base and unsigned syntax
+* Runtime: fix caml_js_wrap_meth_callback_strict (#996)
+* Runtime: fix over-application of javascript callback (#996)
+* Runtime: fix partial-application of javascript callback (#996)
+* Runtime: fic caml_js_wrap_meth_callback_unsafe (#996)
 * Lib: Fix the type of blur and focus event to be focusEvent (#929)
 
 # 3.5.2 (2019-12-14) - Hong Kong
