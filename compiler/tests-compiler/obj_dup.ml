@@ -50,8 +50,7 @@ let%expect_test _ =
       Bytes.set s' 1 'a';
       print_bool (s <> s')
   |};
-  [%expect
-    {|
+  [%expect {|
     true
     true
     true
@@ -86,8 +85,7 @@ let%expect_test _ =
       Bytes.set s' 1 'a';
       print_bool (s <> s')
   |};
-  [%expect
-    {|
+  [%expect {|
     true
     true
     true
