@@ -19,13 +19,3 @@
 open! Stdlib
 
 let global_object = "joo_global_object"
-
-let extra_js_files =
-  [ "+graphics.js"
-  ; "+toplevel.js"
-  ; "+nat.js"
-  ; "+dynlink.js"
-  ; "+bigstring-core_kernel.js"
-  ; "+bigstring-base_bigstring.js"
-  ; "+bigstring-ctruct.js"
-  ]

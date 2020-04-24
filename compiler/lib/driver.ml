@@ -161,18 +161,19 @@ let global_object = Constant.global_object
 
 let extra_js_files =
   lazy
-    (List.fold_left Constant.extra_js_files ~init:[] ~f:(fun acc file ->
+    (List.fold_left (Builtins.all ()) ~init:[] ~f:(fun acc file ->
          try
+           let name = Builtins.File.name file in
            let ss =
              List.fold_left
-               (Linker.parse_file file)
+               (Linker.parse_builtin file)
                ~init:StringSet.empty
                ~f:(fun ss { Linker.provides; _ } ->
                  match provides with
                  | Some (_, name, _, _) -> StringSet.add name ss
                  | _ -> ss)
            in
-           (file, ss) :: acc
+           (name, ss) :: acc
          with _ -> acc))
 
 let report_missing_primitives missing =
