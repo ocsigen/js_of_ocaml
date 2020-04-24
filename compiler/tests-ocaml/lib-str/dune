@@ -1,7 +1,6 @@
 (executables
   (names t01)
   (libraries str)
-  (js_of_ocaml (flags --pretty +str.js))
   (modes js)
 )
 

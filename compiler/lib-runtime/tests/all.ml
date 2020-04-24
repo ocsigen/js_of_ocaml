@@ -44,6 +44,7 @@ let%expect_test _ =
     +parsing.js
     +stdlib.js
     +stdlib_modern.js
+    +str.js
     +sys.js
     +toplevel.js
     +unix.js
@@ -80,6 +81,7 @@ let%expect_test _ =
     +obj.js
     +parsing.js
     +stdlib.js
+    +str.js
     +sys.js
     +unix.js
     +weak.js |}];
