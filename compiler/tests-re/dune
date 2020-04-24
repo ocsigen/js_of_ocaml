@@ -1,0 +1,10 @@
+(executables
+  (names test_str)
+  (libraries str re)
+  (modes js)
+)
+
+(rule
+  (alias runtest)
+  (deps test_str.bc.js)
+  (action (run node ./test_str.bc.js)))
