@@ -56,7 +56,8 @@ function caml_CamlinternalMod_update_mod(shape,real,x) {
   if(typeof shape === "number")
     switch(shape){
     case 0://function
-      real.fun = x
+      if(x.fun) real.fun = x.fun
+      else real.fun = x
       break;
     case 1://lazy
     default://case 2://class
