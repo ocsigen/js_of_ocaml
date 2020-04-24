@@ -35,4 +35,4 @@ let%expect_test _ =
      ignore (IdSet.mem { id = 1 } basic_set : bool)
      (* diverge here *)
    with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| Stack overflow |}]
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 28, characters 2-8: Undefined recursive module |}]
