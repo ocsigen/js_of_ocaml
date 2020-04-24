@@ -366,7 +366,9 @@ let%expect_test _ =
     | _ -> Printf.printf "Error: unknown"
   in
   f cb5;
-  [%expect {| Result: function#0 |}];
+  [%expect {|
+    got 1, 1, 2, 3, undefined, done
+    Result: 0 |}];
   f cb4;
   [%expect {|
     got 1, 1, 2, 3, done
@@ -385,18 +387,18 @@ let%expect_test _ =
   f (Obj.magic cb1);
   [%expect {|
     got 1, done
-    Result: 0 |}];
+    Error: caml_call_gen: too many arguments |}];
   f (Obj.magic cb2);
   [%expect {|
     got 1, 2, done
-    Result: 0 |}];
+    Error: caml_call_gen: too many arguments |}];
   f (Obj.magic cb3);
   [%expect {|
     got 1, 2, 3, done
     Result: 0 |}];
   f (Obj.magic cb4);
   [%expect {|
-    Result: function#0 |}];
+    Result: function#1 |}];
   f (Obj.magic cb5);
   [%expect {|
-    Result: function#0 |}]
+    Result: function#2 |}]
