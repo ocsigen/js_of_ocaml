@@ -36,3 +36,55 @@ let%expect_test _ =
      (* diverge here *)
    with e -> print_endline @@ Printexc.to_string e);
   [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 28, characters 2-8: Undefined recursive module |}]
+
+(* Looping version *)
+module rec M1 : sig
+  val f : unit -> unit
+
+  val g : unit -> unit
+end = struct
+  let f = M1.g
+
+  let g () = M1.f ()
+end
+
+let%expect_test _ =
+  (try M1.f () with e -> print_endline @@ Printexc.to_string e);
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 45, characters 6-12: Undefined recursive module |}];
+  (try M1.g () with e -> print_endline @@ Printexc.to_string e);
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 45, characters 6-12: Undefined recursive module |}]
+
+(* Alias chain *)
+module rec M2 : sig
+  val f : unit -> unit
+
+  val g : unit -> unit
+end = struct
+  let f = M2.g
+
+  let g = M2.f
+end
+
+let%expect_test _ =
+  (try M2.f () with e -> print_endline @@ Printexc.to_string e);
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 62, characters 6-12: Undefined recursive module |}];
+  (try M2.g () with e -> print_endline @@ Printexc.to_string e);
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 62, characters 6-12: Undefined recursive module |}]
+
+module rec Odd : sig
+  val odd : int -> bool
+end = struct
+  let odd x = if x = 0 then false else Even.even (pred x)
+end
+
+and Even : sig
+  val even : int -> bool
+end = struct
+  let even x = if x = 0 then true else Odd.odd (pred x)
+end
+
+let%expect_test _ =
+  Printf.printf "%b" (Even.even 1000);
+  [%expect {| true |}];
+  Printf.printf "%b" (Odd.odd 1000);
+  [%expect {| false |}]
