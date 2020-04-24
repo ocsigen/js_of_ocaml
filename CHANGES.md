@@ -10,6 +10,7 @@
 * Runtime: optimize caml_call_gen (#996)
 * Runtime: change representation of int64  (#905)
 * Runtime: improve node.js backend for Sys.command (#979)
+* Runtime: add javascript runtime for Str (#998)
 * Lib: add closest method to element (#930)
 * Lib: add several methods and functions to Typed_array (#970)
 * Ppx: ppx_js behave better with merlin (#933)

@@ -59,10 +59,11 @@ Most of the OCaml standard library is supported. However,
     A dummy implementation is provided.
   * Most of the Sys module is not supported.
 
-Extra libraries distributed with OCaml (such as Thread or Str) are not
+Extra libraries distributed with OCaml (such as Thread) are not
 supported in general. However,
   * Bigarray: bigarrays are supported using Typed Arrays
   * Num: supported
+  * Str: supported
   * Graphics: partially supported using canvas (see js_of_ocaml-lwt.graphics)
   * Unix: time related functions are supported
 
