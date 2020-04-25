@@ -11,6 +11,7 @@
     js_of_ocaml.deriving
     bigarray
     react reactiveData
+    str
    (select ocp_indent.ml from
     (ocp-indent.lib -> ocp_indent.ok.ml)
     (               -> ocp_indent.fake.ml))
@@ -54,6 +55,7 @@
     jsoo_listunits -o %{targets}
       stdlib
       graphics
+      str
       js_of_ocaml-lwt.graphics
       js_of_ocaml-ppx.as-lib
       js_of_ocaml.deriving

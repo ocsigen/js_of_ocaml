@@ -49,6 +49,7 @@ let runtime =
     ; parsing
     ; stdlib
     ; sys
+    ; str
     ; unix
     ; weak
     ]
