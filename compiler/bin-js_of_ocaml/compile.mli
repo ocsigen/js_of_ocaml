@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val run : Arg.t -> unit
+val run : Cmd_arg.t -> unit
 
 val command : unit Cmdliner.Term.t * Cmdliner.Term.info
 

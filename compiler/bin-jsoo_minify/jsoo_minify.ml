@@ -24,7 +24,7 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 
 let _ = Sys.catch_break true
 
-let f { Arg.common; output_file; use_stdin; files } =
+let f { Cmd_arg.common; output_file; use_stdin; files } =
   Jsoo_cmdline.Arg.eval common;
   let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
   let with_output f =
@@ -92,7 +92,7 @@ let f { Arg.common; output_file; use_stdin; files } =
       let pp = Pretty_print.to_out_channel out_channel in
       gen pp)
 
-let main = Cmdliner.Term.(pure f $ Arg.options), Arg.info
+let main = Cmdliner.Term.(pure f $ Cmd_arg.options), Cmd_arg.info
 
 let _ =
   Timer.init Sys.time;
