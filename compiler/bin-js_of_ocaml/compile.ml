@@ -29,7 +29,7 @@ let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
 
 let run
-    { Arg.common
+    { Cmd_arg.common
     ; profile
     ; source_map
     ; runtime_files
@@ -294,6 +294,6 @@ let info name =
        to run pure OCaml programs in JavaScript environments like web browsers and \
        Node.js."
 
-let command_main = Cmdliner.Term.(pure run $ Arg.options), info "js_of_ocaml"
+let command_main = Cmdliner.Term.(pure run $ Cmd_arg.options), info "js_of_ocaml"
 
-let command = Cmdliner.Term.(pure run $ Arg.options), info "compile"
+let command = Cmdliner.Term.(pure run $ Cmd_arg.options), info "compile"
