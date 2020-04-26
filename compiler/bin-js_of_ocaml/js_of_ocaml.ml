@@ -24,12 +24,37 @@ open Js_of_ocaml_compiler
 let _ =
   Sys.catch_break true;
   Timer.init Sys.time;
+  let argv = Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv in
+  let argv =
+    let like_arg x = String.length x > 0 && Char.equal x.[0] '-' in
+    let like_command x =
+      String.length x > 0
+      && (not (Char.equal x.[0] '-'))
+      && String.for_all x ~f:(function
+             | 'a' .. 'z' | 'A' .. 'Z' | '-' -> true
+             | _ -> false)
+    in
+    match Array.to_list argv with
+    | exe :: maybe_command :: rest ->
+        if like_command maybe_command || like_arg maybe_command
+        then argv
+        else
+          (* Keep compatibility with js_of_ocaml < 3.6.0 *)
+          Array.of_list
+            (exe :: Cmdliner.Term.name (snd Compile.command) :: maybe_command :: rest)
+    | _ -> argv
+  in
   try
     Cmdliner.Term.eval_choice
       ~catch:false
-      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
-      Compile.command
-      [ Link.command; Build_fs.command; Build_runtime.command; Print_runtime.command ]
+      ~argv
+      Compile.command_main
+      [ Link.command
+      ; Build_fs.command
+      ; Build_runtime.command
+      ; Print_runtime.command
+      ; Compile.command
+      ]
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

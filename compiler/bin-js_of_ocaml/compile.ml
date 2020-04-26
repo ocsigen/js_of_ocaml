@@ -285,13 +285,15 @@ let run
     close_ic ());
   Debug.stop_profiling ()
 
-let info =
+let info name =
   Info.make
-    ~name:"js_of_ocaml"
+    ~name
     ~doc:"Js_of_ocaml compiler"
     ~description:
       "Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes it possible \
        to run pure OCaml programs in JavaScript environments like web browsers and \
        Node.js."
 
-let command = Cmdliner.Term.(pure run $ Arg.options), info
+let command_main = Cmdliner.Term.(pure run $ Arg.options), info "js_of_ocaml"
+
+let command = Cmdliner.Term.(pure run $ Arg.options), info "compile"
