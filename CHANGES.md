@@ -1,6 +1,7 @@
 # dev (????-??-??) - Somewhere
 
 # 3.6.0 (2020-04-26) - Lille
+## Features/Changes
 * Compiler: change compilation scheme for branches (#948)
 * Compiler: Introduce sub-command: link, build-runtime, build-fs (#987)
 * Compiler: embed javascript runtime in the compiler (#978)
