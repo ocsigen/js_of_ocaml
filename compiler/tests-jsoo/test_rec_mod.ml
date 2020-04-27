@@ -35,7 +35,8 @@ let%expect_test _ =
      ignore (IdSet.mem { id = 1 } basic_set : bool)
      (* diverge here *)
    with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 28, characters 2-8: Undefined recursive module |}]
+  [%expect
+    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
 
 (* Looping version *)
 module rec M1 : sig
@@ -50,9 +51,11 @@ end
 
 let%expect_test _ =
   (try M1.f () with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 45, characters 6-12: Undefined recursive module |}];
+  [%expect
+    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
   (try M1.g () with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 45, characters 6-12: Undefined recursive module |}]
+  [%expect
+    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
 
 (* Alias chain *)
 module rec M2 : sig
@@ -67,9 +70,11 @@ end
 
 let%expect_test _ =
   (try M2.f () with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 62, characters 6-12: Undefined recursive module |}];
+  [%expect
+    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
   (try M2.g () with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 62, characters 6-12: Undefined recursive module |}]
+  [%expect
+    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
 
 module rec Odd : sig
   val odd : int -> bool
