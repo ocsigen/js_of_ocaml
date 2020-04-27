@@ -26,14 +26,14 @@ jobs:
     - os: linux
       env: OCAML_VERSION=4.10 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.09 MODE=build
-      name: "4.09 all targets"
+      env: OCAML_VERSION=4.10 MODE=build
+      name: "4.10 all targets"
     - os: osx
-      env: OCAML_VERSION=4.07 MODE=opam
+      env: OCAML_VERSION=4.10 MODE=opam
 
   allow_failures:
     - os: osx
-      env: OCAML_VERSION=4.07 MODE=opam
+      env: OCAML_VERSION=4.10 MODE=opam
 
   fast_finish: true
 
