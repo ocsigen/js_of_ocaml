@@ -377,7 +377,29 @@ module Constants : sig
 
   val inlined : Code.constant -> bool
 end = struct
-  let same_custom x y = Obj.field x 0 == Obj.field (Obj.repr y) 0
+  (* In order to check that two custom objects share the same kind, we
+     compare their identifier.  The identifier is currently extracted
+     from the marshaled value. *)
+  let ident_of_custom x =
+    (* Make sure tags are equal to custom_tag.
+       Note that in javascript [0l] and [0n] are not encoded as custom blocks. *)
+    if Obj.tag x <> Obj.custom_tag
+    then None
+    else
+      try
+        let bin = Marshal.to_string x [] in
+        match Char.code bin.[20] with
+        | 0x12 | 0x18 | 0x19 ->
+            let last = String.index_from bin 21 '\000' in
+            let name = String.sub bin ~pos:21 ~len:(last - 21) in
+            Some name
+        | _ -> assert false
+      with _ -> assert false
+
+  let same_ident x y =
+    match y with
+    | Some y -> String.equal x y
+    | None -> false
 
   let warn_overflow i i32 =
     warn
@@ -386,6 +408,12 @@ end = struct
       i
       i32
       i32
+
+  let ident_32 = ident_of_custom (Obj.repr 0l)
+
+  let ident_64 = ident_of_custom (Obj.repr 0L)
+
+  let ident_native = ident_of_custom (Obj.repr 0n)
 
   let rec parse x =
     if Obj.is_block x
@@ -397,17 +425,23 @@ end = struct
       then Float (Obj.magic x : float)
       else if tag = Obj.double_array_tag
       then Float_array (Obj.magic x : float array)
-      else if tag = Obj.custom_tag && same_custom x 0l
-      then Int (Obj.magic x : int32)
-      else if tag = Obj.custom_tag && same_custom x 0n
-      then (
-        let i : nativeint = Obj.magic x in
-        let i32 = Nativeint.to_int32 i in
-        let i' = Nativeint.of_int32 i32 in
-        if Poly.(i' <> i) then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
-        Int i32)
-      else if tag = Obj.custom_tag && same_custom x 0L
-      then Int64 (Obj.magic x : int64)
+      else if tag = Obj.custom_tag
+      then
+        match ident_of_custom x with
+        | Some name when same_ident name ident_32 -> Int (Obj.magic x : int32)
+        | Some name when same_ident name ident_native ->
+            let i : nativeint = Obj.magic x in
+            let i32 = Nativeint.to_int32 i in
+            let i' = Nativeint.of_int32 i32 in
+            if Poly.(i' <> i) then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
+            Int i32
+        | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
+        | Some name ->
+            failwith
+              (Printf.sprintf
+                 "parse_bytecode: Don't know what to do with custom block (%s)"
+                 name)
+        | None -> assert false
       else if tag < Obj.no_scan_tag
       then
         Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
