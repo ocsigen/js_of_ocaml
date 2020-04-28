@@ -13,6 +13,7 @@
      (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
      (                                     -> findlib_support.empty.ml))
     )
+  (modes byte native)
   (flags (:standard -safe-string))
   )
 
