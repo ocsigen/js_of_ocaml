@@ -31,7 +31,7 @@ let _ =
       val zero = 0.
      end)
 # ocamlfind ocamlc -verbose \
-  -package js_of_ocaml -package js_of_ocaml.ppx \
+  -package js_of_ocaml -package js_of_ocaml-ppx \
   -linkpkg math.ml -o math.byte
 # js_of_ocaml math.byte
 # node

@@ -43,7 +43,7 @@ Your program must first be compiled using the OCaml bytecode compiler
 The syntax extension is provided by `js_of_ocaml.syntax` package.
 
 ```
-ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg -o cubes.byte cubes.ml
+ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx -linkpkg -o cubes.byte cubes.ml
 ```
 
 Then, run the `js_of_ocaml` compiler to produce JavaScript code:
