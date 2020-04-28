@@ -102,12 +102,14 @@ let run
         | Some t -> `Snd t
         | None -> `Fst name)
   in
+  let t1 = Timer.make () in
   let builtin = if no_runtime then builtin else Jsoo_runtime.runtime @ builtin in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.parse_builtin t in
       List.iter runtimes ~f:(Linker.load_fragment ~filename));
   Linker.load_files runtime_files;
+  if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
     with Not_found -> include_dir
