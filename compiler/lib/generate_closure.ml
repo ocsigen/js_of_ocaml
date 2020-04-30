@@ -27,6 +27,7 @@ type closure_info =
   ; args : Code.Var.t list
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
+  ; ntc : Code.Addr.Set.t Code.Var.Map.t
   }
 
 type 'a int_ext =
@@ -40,9 +41,9 @@ let add_multi k v map =
   let set = try Var.Map.find k map with Not_found -> Addr.Set.empty in
   Var.Map.add k (Addr.Set.add v set) map
 
-let rec tailcall pc blocks visited tc =
+let rec collect_apply pc blocks visited tc ntc =
   if Addr.Set.mem pc visited
-  then visited, tc
+  then visited, tc, ntc
   else
     let visited = Addr.Set.add pc visited in
     let block = Addr.Map.find pc blocks in
@@ -56,39 +57,53 @@ let rec tailcall pc blocks visited tc =
           | Some _ -> None)
       | _ -> None
     in
+    let ntc =
+      List.fold_left block.body ~init:ntc ~f:(fun acc x ->
+          match x with
+          | Let (_, Apply (z, _, _)) -> add_multi z pc acc
+          | _ -> acc)
+    in
     match tc_opt with
-    | Some tc -> visited, tc
+    | Some tc -> visited, tc, ntc
     | None ->
         Code.fold_children
           blocks
           pc
-          (fun pc (visited, tc) -> tailcall pc blocks visited tc)
-          (visited, tc)
+          (fun pc (visited, tc, ntc) -> collect_apply pc blocks visited tc ntc)
+          (visited, tc, ntc)
 
 let rec collect_closures blocks l =
   match l with
   | Let (f_name, Closure (args, ((pc, _) as cont))) :: rem ->
-      let tc = snd (tailcall pc blocks Addr.Set.empty Var.Map.empty) in
+      let _, tc, ntc =
+        collect_apply pc blocks Addr.Set.empty Var.Map.empty Var.Map.empty
+      in
       let l, rem = collect_closures blocks rem in
-      { f_name; args; cont; tc } :: l, rem
+      { f_name; args; cont; tc; ntc } :: l, rem
   | rem -> [], rem
 
-let group_closures closures =
+let group_closures ~tc_only closures_map =
   let names =
-    List.fold_left closures ~init:Var.Set.empty ~f:(fun names x ->
-        Var.Set.add x.f_name names)
-  in
-  let closures_map =
-    List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
-        Var.Map.add x.f_name x closures_map)
+    Var.Map.fold (fun _ x names -> Var.Set.add x.f_name names) closures_map Var.Set.empty
   in
   let graph =
-    List.fold_left closures ~init:Var.Map.empty ~f:(fun graph x ->
-        let tc = Var.Map.fold (fun x _ tc -> Var.Set.add x tc) x.tc Var.Set.empty in
-        let tc = Var.Set.inter names tc in
-        Var.Map.add x.f_name tc graph)
+    Var.Map.fold
+      (fun _ x graph ->
+        let calls = Var.Map.fold (fun x _ tc -> Var.Set.add x tc) x.tc Var.Set.empty in
+        let calls =
+          if tc_only
+          then calls
+          else
+            Var.Set.union
+              calls
+              (Var.Map.fold (fun x _ ntc -> Var.Set.add x ntc) x.ntc Var.Set.empty)
+        in
+        Var.Map.add x.f_name (Var.Set.inter names calls) graph)
+      closures_map
+      Var.Map.empty
   in
-  closures_map, SCC.connected_components_sorted_from_roots_to_leaf graph
+
+  SCC.connected_components_sorted_from_roots_to_leaf graph
 
 module Trampoline = struct
   let direct_call_block block ~counter ~x ~f ~args =
@@ -360,14 +375,41 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _
   match body with
   | Let (_, Closure _) :: _ ->
       let closures, rem = collect_closures blocks body in
-      let closures_map, components = group_closures closures in
+      let closures_map =
+        List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
+            Var.Map.add x.f_name x closures_map)
+      in
+      let components = group_closures ~tc_only:false closures_map in
       let free_pc, blocks, closures =
         List.fold_left
           (Array.to_list components)
           ~init:(free_pc, blocks, [])
           ~f:(fun (free_pc, blocks, acc) component ->
             let free_pc, blocks, closures =
-              rewrite_tc free_pc blocks closures_map component
+              let components =
+                match component with
+                | SCC.No_loop _ as one -> [ one ]
+                | SCC.Has_loop all ->
+                    group_closures
+                      ~tc_only:true
+                      (Var.Map.filter
+                         (fun v _ -> List.exists all ~f:(Var.equal v))
+                         closures_map)
+                    |> Array.to_list
+              in
+              List.fold_left
+                ~init:(free_pc, blocks, { int = []; ext = [] })
+                components
+                ~f:(fun (free_pc, blocks, acc) component ->
+                  let free_pc, blocks, ie =
+                    rewrite_tc free_pc blocks closures_map component
+                  in
+                  free_pc, blocks, { int = ie.int :: acc.int; ext = ie.ext :: acc.ext })
+            in
+            let closures =
+              { int = List.concat (List.rev closures.int)
+              ; ext = List.concat (List.rev closures.ext)
+              }
             in
             let free_pc, blocks, intrs =
               rewrite_mutable free_pc blocks mutated_vars rewrite_list closures
