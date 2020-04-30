@@ -103,5 +103,4 @@ let rec f x =
 
 let%expect_test _ =
   f (Node Empty);
-  [%expect.unreachable]
-[@@expect.uncaught_exn {| (Failure "TypeError: rev_sort is not a function") |}]
+  [%expect{||}]
