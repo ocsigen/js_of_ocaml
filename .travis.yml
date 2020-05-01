@@ -30,6 +30,8 @@ jobs:
       name: "4.10 all targets"
     - os: osx
       env: OCAML_VERSION=4.10 MODE=opam
+    - os: linux
+      env: OCAML_VERSION=4.11.0+trunk OCAML_BETA=enable MODE=opam
 
   allow_failures:
     - os: osx
