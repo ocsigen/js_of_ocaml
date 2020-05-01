@@ -1,4 +1,8 @@
 # dev (????-??-??) - Somewhere
+## Features/Changes
+
+## Bug fixes
+* Compiler: fix code generation for recursive function under for-loops (#1009)
 
 # 3.6.0 (2020-04-26) - Lille
 ## Features/Changes
