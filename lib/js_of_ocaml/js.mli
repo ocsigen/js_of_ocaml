@@ -137,7 +137,7 @@ type +'a constr
 (** A value of type [(t1 -> ... -> tn -> t Js.t) Js.constr] is a
       Javascript constructor expecting {i n} arguments of types [t1]
       to [tn] and returning a Javascript object of type [t Js.t].  Use
-      the syntax extension [jsnew c (e1, ..., en)] to build an object
+      the syntax extension [new%js c (e1, ..., en)] to build an object
       using constructor [c] and arguments [e1] to [en]. *)
 
 (** {2 Callbacks to OCaml} *)
@@ -287,17 +287,17 @@ val string_constr : string_constr t
 (** The string constructor, as an object. *)
 
 val regExp : (js_string t -> regExp t) constr
-(** Constructor of [RegExp] objects.  The expression [jsnew regExp (s)]
+(** Constructor of [RegExp] objects.  The expression [new%js regExp (s)]
       builds the regular expression specified by string [s]. *)
 
 val regExp_withFlags : (js_string t -> js_string t -> regExp t) constr
 (** Constructor of [RegExp] objects.  The expression
-      [jsnew regExp (s, f)] builds the regular expression specified by
+      [new%js regExp (s, f)] builds the regular expression specified by
       string [s] using flags [f]. *)
 
 val regExp_copy : (regExp t -> regExp t) constr
 (** Constructor of [RegExp] objects.  The expression
-      [jsnew regExp (r)] builds a copy of regular expression [r]. *)
+      [new%js regExp (r)] builds a copy of regular expression [r]. *)
 
 (** Specification of Javascript regular arrays.
     Use [Js.array_get] and [Js.array_set] to access and set array elements. *)
@@ -379,11 +379,11 @@ val object_keys : 'a t -> js_string t js_array t
 
 val array_empty : 'a js_array t constr
 (** Constructor of [Array] objects.  The expression
-      [jsnew array_empty ()] returns an empty array. *)
+      [new%js array_empty ()] returns an empty array. *)
 
 val array_length : (int -> 'a js_array t) constr
 (** Constructor of [Array] objects.  The expression
-      [jsnew array_length (l)] returns an array of length [l]. *)
+      [new%js array_length (l)] returns an array of length [l]. *)
 
 val array_get : 'a #js_array t -> int -> 'a optdef
 (** Array access: [array_get a i] returns the element at index [i]
@@ -539,38 +539,38 @@ class type date =
   end
 
 val date_now : date t constr
-(** Constructor of [Date] objects: [jsnew date_now ()] returns a
+(** Constructor of [Date] objects: [new%js date_now ()] returns a
       [Date] object initialized with the current date. *)
 
 val date_fromTimeValue : (float -> date t) constr
-(** Constructor of [Date] objects: [jsnew date_fromTimeValue (t)] returns a
+(** Constructor of [Date] objects: [new%js date_fromTimeValue (t)] returns a
       [Date] object initialized with the time value [t]. *)
 
 val date_month : (int -> int -> date t) constr
-(** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m)]
+(** Constructor of [Date] objects: [new%js date_fromTimeValue (y, m)]
       returns a [Date] object corresponding to year [y] and month [m]. *)
 
 val date_day : (int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d)]
+(** Constructor of [Date] objects: [new%js date_fromTimeValue (y, m, d)]
       returns a [Date] object corresponding to year [y], month [m] and
       day [d]. *)
 
 val date_hour : (int -> int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d, h)]
+(** Constructor of [Date] objects: [new%js date_fromTimeValue (y, m, d, h)]
       returns a [Date] object corresponding to year [y] to hour [h]. *)
 
 val date_min : (int -> int -> int -> int -> int -> date t) constr
-(** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d, h, m')]
+(** Constructor of [Date] objects: [new%js date_fromTimeValue (y, m, d, h, m')]
       returns a [Date] object corresponding to year [y] to minute [m']. *)
 
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
 (** Constructor of [Date] objects:
-      [jsnew date_fromTimeValue (y, m, d, h, m', s)]
+      [new%js date_fromTimeValue (y, m, d, h, m', s)]
       returns a [Date] object corresponding to year [y] to second [s]. *)
 
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 (** Constructor of [Date] objects:
-      [jsnew date_fromTimeValue (y, m, d, h, m', s, ms)]
+      [new%js date_fromTimeValue (y, m, d, h, m', s, ms)]
       returns a [Date] object corresponding to year [y]
       to millisecond [ms]. *)
 
@@ -678,7 +678,7 @@ class type error =
 
 val error_constr : (js_string t -> error t) constr
 (** Constructor of [Error] objects:
-      [jsnew error_constr (msg)]
+      [new%js error_constr (msg)]
       returns an [Error] object with the message [msg]. *)
 
 val string_of_error : error t -> string
