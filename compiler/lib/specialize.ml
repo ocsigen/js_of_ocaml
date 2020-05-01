@@ -46,7 +46,7 @@ let rec function_cardinality info x acc =
       | _ -> None)
     x
 
-let specialize_instr info (acc, free_pc, extra) i =
+let specialize_instr info dummy_funs (acc, free_pc, extra) i =
   match i with
   | Let (x, Apply (f, l, _)) when Config.Flag.optcall () -> (
       let n' = List.length l in
@@ -76,15 +76,47 @@ let specialize_instr info (acc, free_pc, extra) i =
           , free_pc + 1
           , (free_pc, block) :: extra )
       | _ -> i :: acc, free_pc, extra)
+  (* Some [caml_alloc_dummy_function + caml_update_dummy] can be eliminated *)
+  | Let (x, Prim (Extern "caml_alloc_dummy_function", [ _; _ ])) as i ->
+      let acc =
+        if Var.Map.exists (fun _ x' -> Var.equal x x') dummy_funs then acc else i :: acc
+      in
+      acc, free_pc, extra
+  | Let (_, Prim (Extern "caml_update_dummy", [ Pv _; Pv clo ])) as i ->
+      let acc = if Var.Map.mem clo dummy_funs then acc else i :: acc in
+      acc, free_pc, extra
+  | Let (x, e) when Var.Map.mem x dummy_funs ->
+      let acc =
+        let new_x = Var.Map.find x dummy_funs in
+        Let (new_x, e) :: acc
+      in
+      acc, free_pc, extra
   | _ -> i :: acc, free_pc, extra
 
+let buid_dummy_functions_map p =
+  let dummy_alloc, update =
+    Addr.Map.fold
+      (fun _ block acc ->
+        List.fold_left block.body ~init:acc ~f:(fun ((alloc, update) as acc) i ->
+            match i with
+            | Let (dummy, Prim (Extern "caml_alloc_dummy_function", [ _; _ ])) ->
+                Var.Set.add dummy alloc, update
+            | Let (_, Prim (Extern "caml_update_dummy", [ Pv dummy; Pv clo_var ])) ->
+                alloc, Var.Map.add clo_var dummy update
+            | _ -> acc))
+      p
+      (Var.Set.empty, Var.Map.empty)
+  in
+  Var.Map.filter (fun _clo dummy -> Var.Set.mem dummy dummy_alloc) update
+
 let specialize_instrs info p =
+  let dummy_funs = buid_dummy_functions_map p.blocks in
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
         let body, free_pc, extra =
           List.fold_right block.body ~init:([], free_pc, []) ~f:(fun i acc ->
-              specialize_instr info acc i)
+              specialize_instr info dummy_funs acc i)
         in
         let blocks =
           List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->

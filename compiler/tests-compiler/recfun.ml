@@ -100,18 +100,11 @@ let myfun x =
   |}
   in
   print_fun_decl program (Some "myfun");
-  [%expect
-    {|
-    function myfun(x)
-     {var
-       hash_fold_t=function _f_(_d_,_e_){return _f_.fun(_d_,_e_)},
-       hash=function _c_(_b_){return _c_.fun(_b_)};
-      caml_update_dummy
-       (hash_fold_t,
-        function(hsv,arg)
-         {if(0 === arg[0])
-           {var a0=arg[1],hsv$0=hsv | 0;return hash_fold_string(hsv$0,a0)}
-          var a0$0=arg[1],hsv$1=hsv + 1 | 0;
-          return hash_fold_list(hash_fold_t,hsv$1,a0$0)});
-      caml_update_dummy(hash,function(x){return caml_call2(hash_fold_t,42,x)});
-      return caml_call1(hash,_a_)} |}]
+  [%expect{|
+    function myfun(x$0)
+     {function hash_fold_t(hsv,arg)
+       {if(0 === arg[0])
+         {var a0=arg[1],hsv$0=hsv | 0;return hash_fold_string(hsv$0,a0)}
+        var a0$0=arg[1],hsv$1=hsv + 1 | 0;
+        return hash_fold_list(hash_fold_t,hsv$1,a0$0)}
+      return hash_fold_t(42,x)} |}]
