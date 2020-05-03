@@ -312,7 +312,7 @@ end = struct
     in even i
 
  let run () =
-   for i = 0 to 10 do
+   for i = 0 to 4 do
      ignore (even (i) : bool)
    done
 end
@@ -346,5 +346,211 @@ let ()  = M.run ()
               default:return 1 - (1 - even(1))}};
         even(i);
         var _a_=i + 1 | 0;
-        if(10 !== i){var i=_a_;continue}
+        if(4 !== i){var i=_a_;continue}
         return 0}} |}]
+
+let%expect_test _ =
+  let prog =
+    {|
+module M : sig
+  val run : unit -> unit
+end = struct
+  let delayed = ref []
+  let even i =
+    let rec odd = function
+     | 0 ->
+       let f () = Printf.printf "in odd, called with %d\n" i in
+       delayed := f :: !delayed;
+       f ();
+       false
+     | 1 -> not (not (even 0))
+     | 2 -> not (not (even 1))
+     | n -> not (not (even (n - 1)))
+    and even = function
+     | 0 ->
+       let f () = Printf.printf "in even, called with %d\n" i in
+       delayed := f :: !delayed;
+       f ();
+       true
+     | 1 -> not (not (odd 0))
+     | 2 -> not (not (odd 1))
+     | n -> not (not (odd (n - 1)))
+    in even i
+
+ let run () =
+   for i = 0 to 4 do
+     ignore (even (i) : bool)
+   done;
+   List.iter (fun f -> f ()) (List.rev !delayed)
+end
+
+let ()  = M.run ()
+|}
+  in
+  Util.compile_and_run prog;
+  [%expect
+    {|
+    in even, called with 0
+    in odd, called with 1
+    in even, called with 2
+    in odd, called with 3
+    in even, called with 4
+    in even, called with 0
+    in odd, called with 1
+    in even, called with 2
+    in odd, called with 3
+    in even, called with 4 |}];
+  let program = Util.compile_and_parse prog in
+  Util.print_fun_decl program (Some "run");
+  [%expect
+    {|
+    function run(param)
+     {var i=0;
+      for(;;)
+       {var
+         closures=
+          function(i)
+           {function even(n)
+             {if(2 < n >>> 0)return 1 - (1 - odd(n - 1 | 0));
+              switch(n)
+               {case 0:
+                 var f=function(param){return caml_call2(Stdlib_printf[2],_b_,i)};
+                 delayed[1] = [0,f,delayed[1]];
+                 f(0);
+                 return 1;
+                case 1:return 1 - (1 - odd(0));
+                default:return 1 - (1 - odd(1))}}
+            function odd(n)
+             {if(2 < n >>> 0)return 1 - (1 - even(n - 1 | 0));
+              switch(n)
+               {case 0:
+                 var f=function(param){return caml_call2(Stdlib_printf[2],_a_,i)};
+                 delayed[1] = [0,f,delayed[1]];
+                 f(0);
+                 return 0;
+                case 1:return 1 - (1 - even(0));
+                default:return 1 - (1 - even(1))}}
+            var block=[0,even,odd];
+            return block},
+         closures$0=closures(i),
+         even=closures$0[1];
+        even(i);
+        var _e_=i + 1 | 0;
+        if(4 !== i){var i=_e_;continue}
+        var
+         _c_=caml_call1(Stdlib_list[9],delayed[1]),
+         _d_=function(f){return caml_call1(f,0)};
+        return caml_call2(Stdlib_list[15],_d_,_c_)}} |}]
+
+let%expect_test _ =
+  let prog =
+    {|
+module M : sig
+  val run : unit -> unit
+end = struct
+  let delayed = ref []
+  let even i =
+    let rec odd = function
+     | 0 -> `Cont (fun () ->
+       let f () = Printf.printf "in odd, called with %d\n" i in
+       delayed := f :: !delayed;
+       f ();
+       `Done false)
+     | 1 -> `Cont (fun () -> even 0)
+     | 2 -> `Cont (fun () -> even 1)
+     | n -> `Cont (fun () -> even (n - 1))
+    and even = function
+     | 0 -> `Cont (fun () ->
+       let f () = Printf.printf "in even, called with %d\n" i in
+       delayed := f :: !delayed;
+       f ();
+       `Done true)
+     | 1 -> `Cont (fun () -> odd 0)
+     | 2 -> `Cont (fun () -> odd 1)
+     | n -> `Cont (fun () -> odd (n - 1))
+    in even i
+
+ let run () =
+   for i = 0 to 4 do
+      let rec r = function
+        | `Done x -> x
+        | `Cont f -> r (f ())
+      in
+      ignore (r  (even (i)) : bool)
+   done;
+   List.iter (fun f -> f ()) (List.rev !delayed)
+end
+
+let ()  = M.run ()
+|}
+  in
+  Util.compile_and_run prog;
+  [%expect
+    {|
+    in even, called with 0
+    in odd, called with 1
+    in even, called with 2
+    in odd, called with 3
+    in even, called with 4
+    in even, called with 0
+    in odd, called with 1
+    in even, called with 2
+    in odd, called with 3
+    in even, called with 4 |}];
+  let program = Util.compile_and_parse prog in
+  Util.print_fun_decl program (Some "run");
+  [%expect
+    {|
+    function run(param$0)
+     {var i=0;
+      a:
+      for(;;)
+       {var
+         closures=
+          function(i)
+           {function even(n)
+             {if(2 < n >>> 0)
+               return [0,748545554,function(param){return odd(n - 1 | 0)}];
+              switch(n)
+               {case 0:
+                 return [0,
+                         748545554,
+                         function(param)
+                          {function f(param)
+                            {return caml_call2(Stdlib_printf[2],_c_,i)}
+                           delayed[1] = [0,f,delayed[1]];
+                           f(0);
+                           return _d_}];
+                case 1:return [0,748545554,function(param){return odd(0)}];
+                default:return [0,748545554,function(param){return odd(1)}]}}
+            function odd(n)
+             {if(2 < n >>> 0)
+               return [0,748545554,function(param){return even(n - 1 | 0)}];
+              switch(n)
+               {case 0:
+                 return [0,
+                         748545554,
+                         function(param)
+                          {function f(param)
+                            {return caml_call2(Stdlib_printf[2],_a_,i)}
+                           delayed[1] = [0,f,delayed[1]];
+                           f(0);
+                           return _b_}];
+                case 1:return [0,748545554,function(param){return even(0)}];
+                default:return [0,748545554,function(param){return even(1)}]}}
+            var block=[0,even,odd];
+            return block},
+         closures$0=closures(i),
+         even=closures$0[1],
+         param=even(i),
+         param$1=param;
+        for(;;)
+         {if(759635106 <= param$1[1])
+           {var _g_=i + 1 | 0;
+            if(4 !== i){var i=_g_;continue a}
+            var
+             _e_=caml_call1(Stdlib_list[9],delayed[1]),
+             _f_=function(f){return caml_call1(f,0)};
+            return caml_call2(Stdlib_list[15],_f_,_e_)}
+          var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2;
+          continue}}} |}]
