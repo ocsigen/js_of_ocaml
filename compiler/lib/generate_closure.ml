@@ -57,11 +57,14 @@ let rec collect_apply pc blocks visited tc ntc =
           | Some _ -> None)
       | _ -> None
     in
-    let ntc =
-      List.fold_left block.body ~init:ntc ~f:(fun acc x ->
+    let visited, ntc =
+      List.fold_left block.body ~init:(visited, ntc) ~f:(fun (visited, acc) x ->
           match x with
-          | Let (_, Apply (z, _, _)) -> add_multi z pc acc
-          | _ -> acc)
+          | Let (_, Apply (z, _, _)) -> visited, add_multi z pc acc
+          | Let (_, Closure (_, (pc, _))) ->
+              let visited, _tc, ntc = collect_apply pc blocks visited tc ntc in
+              visited, ntc
+          | _ -> visited, acc)
     in
     match tc_opt with
     | Some tc -> visited, tc, ntc
