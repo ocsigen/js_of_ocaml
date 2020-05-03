@@ -58,7 +58,7 @@ let parse_aux the_parser lexbuf =
         loop_error prev checkpoint
     | I.Shifting _ | I.AboutToReduce _ -> loop_error prev (I.resume checkpoint)
     | I.Accepted _ -> assert false
-    | I.Rejected -> Error prev
+    | I.Rejected -> `Error prev
     | I.HandlingError _ -> loop_error prev (I.resume checkpoint)
   in
   let rec loop prev comments (inputneeded, checkpoint) =
@@ -119,8 +119,8 @@ let parse_aux the_parser lexbuf =
         loop (token :: prev) comments (inputneeded, checkpoint)
     | I.Shifting _ | I.AboutToReduce _ ->
         loop prev comments (inputneeded, I.resume checkpoint)
-    | I.Accepted v -> Ok (v, prev, List.rev comments)
-    | I.Rejected -> Error prev
+    | I.Accepted v -> `Ok (v, prev, List.rev comments)
+    | I.Rejected -> `Error prev
     | I.HandlingError _ -> (
         (* 7.9.1 - 1 *)
         (* When, as the program is parsed from left to right, a token (called the offending token)
@@ -162,8 +162,8 @@ let parse_aux the_parser lexbuf =
             else loop_error prev (I.resume checkpoint))
   in
   match loop [] [] (init, init) with
-  | Ok x -> x
-  | Error tok ->
+  | `Ok x -> x
+  | `Error tok ->
       let tok =
         match tok with
         | [] -> Js_token.EOF Parse_info.zero
