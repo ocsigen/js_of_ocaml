@@ -232,6 +232,10 @@ void caml_unmount () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_unmount!\n");
   exit(1);
 }
+void caml_xmlhttprequest_create () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_xmlhttprequest_create!\n");
+  exit(1);
+}
 void debugger () {
   fprintf(stderr, "Unimplemented Javascript primitive debugger!\n");
   exit(1);

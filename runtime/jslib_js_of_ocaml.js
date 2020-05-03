@@ -249,3 +249,20 @@ function caml_js_export_var (){
   else
     return joo_global_object;
 }
+
+
+//Provides: caml_xmlhttprequest_create
+//Requires: caml_failwith
+//Weakdef
+function caml_xmlhttprequest_create(unit){
+  var g = joo_global_object;
+  if(typeof g.XMLHttpRequest !== 'undefined') {
+    try { return new g.XMLHttpRequest } catch (e) { };
+  }
+  if(typeof g.activeXObject !== 'undefined') {
+    try { return new g.activeXObject("Msxml2.XMLHTTP") } catch(e){ };
+    try { return new g.activeXObject("Msxml3.XMLHTTP") } catch(e){ };
+    try { return new g.activeXObject("Microsoft.XMLHTTP") } catch(e){ };
+  }
+  caml_failwith("Cannot create a XMLHttpRequest");
+}
