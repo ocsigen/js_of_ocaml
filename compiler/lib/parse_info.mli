@@ -16,10 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-type fol =
-  | Yes
-  | No
-  | Unknown
 
 type t =
   { src : string option
@@ -27,11 +23,12 @@ type t =
   ; col : int
   ; line : int
   ; idx : int
-  ; fol : fol
   }
 
 val zero : t
 
 val t_of_lexbuf : Lexing.lexbuf -> t
+
+val start_position : t -> Lexing.position
 
 val t_of_position : src:string option -> Lexing.position -> t

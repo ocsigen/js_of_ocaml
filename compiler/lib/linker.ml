@@ -58,45 +58,57 @@ let parse_annot loc s =
 let error s = Format.ksprintf (fun s -> failwith s) s
 
 let parse_from_lex ~filename lex =
-  let status, lexs =
-    Parse_js.Lexer.fold
-      lex
-      ~init:(`Annot [], [])
-      ~f:(fun (status, lexs) t ->
-        match t with
-        | Js_token.TCommentLineDirective (_, _) -> (
-            match status with
-            | `Annot _ -> `Annot [], lexs
-            | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
-        | Js_token.TComment (str, info) -> (
-            match parse_annot info str with
-            | None -> status, lexs
-            | Some a -> (
-                match status with
-                | `Annot annot -> `Annot (a :: annot), lexs
-                | `Code (an, co) -> `Annot [ a ], (List.rev an, List.rev co) :: lexs))
-        | Js_token.TUnknown (_, info) ->
-            Format.eprintf
-              "Unknown token while parsing JavaScript at %s@."
-              (loc (Some info));
-            if not (Filename.check_suffix filename ".js")
-            then Format.eprintf "%S doesn't look like a JavaScript file@." filename;
-            failwith "Error while parsing JavaScript"
-        | c -> (
-            match status with
-            | `Code (annot, code) -> `Code (annot, c :: code), lexs
-            | `Annot annot -> `Code (annot, [ c ]), lexs))
+  let program, _prev, comments = Parse_js.parse' lex in
+  let rec take_annot_before loc acc = function
+    | [] -> acc, []
+    | x :: l ->
+        if (Js_token.info x).Parse_info.idx <= loc.Parse_info.idx
+        then
+          let acc =
+            match x with
+            | Js_token.TComment (str, info) -> (
+                match parse_annot info str with
+                | None -> acc
+                | Some a -> a :: acc)
+            | Js_token.TCommentLineDirective (_, _) -> []
+            | _ -> acc
+          in
+          take_annot_before loc acc l
+        else acc, x :: l
   in
-  let lexs =
+  let status, blocks, _comments =
+    List.fold_left
+      program
+      ~init:(`Annot [], [], comments)
+      ~f:(fun (status, blocks, comments) t ->
+        match t with
+        | _, Javascript.Pi loc ->
+            let a, rest = take_annot_before loc [] comments in
+            let status, blocks =
+              match a, status with
+              | [], `Code (annot, code) -> `Code (annot, t :: code), blocks
+              | annot1, `Annot annot2 -> `Code (annot1 @ annot2, [ t ]), blocks
+              | annot1, `Code (annot2, code2) ->
+                  `Code (annot1, [ t ]), (List.rev annot2, List.rev code2) :: blocks
+            in
+            status, blocks, rest
+        | _, Javascript.N ->
+            let status, blocks =
+              match status with
+              | `Code (annot, code) -> `Code (annot, t :: code), blocks
+              | `Annot annot -> `Code (annot, [ t ]), blocks
+            in
+            status, blocks, comments
+        | _, Javascript.U -> assert false)
+  in
+  let blocks =
     match status with
-    | `Annot _ -> lexs
-    | `Code (annot, code) -> (List.rev annot, List.rev code) :: lexs
+    | `Annot _ -> blocks
+    | `Code (annot, code) -> (List.rev annot, List.rev code) :: blocks
   in
   let res =
-    List.rev_map lexs ~f:(fun (annot, code) ->
-        let lex = Parse_js.Lexer.of_list code in
+    List.rev_map blocks ~f:(fun (annot, code) ->
         try
-          let code = Parse_js.parse lex in
           let fragment =
             { provides = None
             ; requires = []
@@ -160,12 +172,12 @@ let parse_builtin builtin =
   let lexbuf =
     { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = filename } }
   in
-  let lex = Parse_js.Lexer.of_lexbuf ~rm_comment:false lexbuf in
+  let lex = Parse_js.Lexer.of_lexbuf lexbuf in
   parse_from_lex ~filename lex
 
 let parse_string string =
   let lexbuf = Lexing.from_string string in
-  let lex = Parse_js.Lexer.of_lexbuf ~rm_comment:false lexbuf in
+  let lex = Parse_js.Lexer.of_lexbuf lexbuf in
   parse_from_lex ~filename:"<dummy>" lex
 
 let parse_file f =
@@ -184,7 +196,7 @@ let parse_file f =
     | Not_found -> error "cannot find file '%s'. @." f
     | Sys_error s -> error "%s@." s
   in
-  let lex = Parse_js.Lexer.of_file ~rm_comment:false file in
+  let lex = Parse_js.Lexer.of_file file in
   parse_from_lex ~filename:file lex
 
 class check_and_warn name pi =
