@@ -2,6 +2,7 @@
 ## Features/Changes
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
 * Compiler: initial support for OCaml 4.11
+* Compiler: improve the javascript parser by relying on menhir incremental api.
 
 ## Bug fixes
 * Compiler: fix code generation for recursive function under for-loops (#1009)
