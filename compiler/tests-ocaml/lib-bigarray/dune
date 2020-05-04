@@ -10,6 +10,12 @@
   (deps bigarrays.bc.js)
   (action (with-stdout-to %{target} (run node ./bigarrays.bc.js))))
 
+;; (rule
+;;   (target bigarrays.reference)
+;;   (deps bigarrays.exe)
+;;   (mode promote)
+;;   (action (with-stdout-to %{target} (run ./bigarrays.exe))))
+
 (rule
   (alias runtest)
   (deps bigarrays.reference bigarrays.referencejs)
