@@ -40,3 +40,13 @@ function caml_final_register () { return 0; }
 function caml_final_register_called_without_value () { return 0; }
 //Provides: caml_final_release const
 function caml_final_release () { return 0; }
+
+//Provides: caml_memprof_start
+function caml_memprof_start(rate,stack_size,tracker){
+  return 0;
+}
+
+//Provides: caml_memprof_stop
+function caml_memprof_stop(unit) {
+  return 0;
+}
