@@ -26,13 +26,60 @@ open Parsetree
 
 let nolabel = Nolabel
 
+let unflatten l =
+  match l with
+  | [] -> None
+  | hd :: tl ->
+      Some
+        (List.fold_left
+           ~f:(fun p s -> Longident.Ldot (p, s))
+           ~init:(Longident.Lident hd)
+           tl)
+
+let rec split_at_dots s pos =
+  try
+    let dot = String.index_from s pos '.' in
+    String.sub s ~pos ~len:(dot - pos) :: split_at_dots s (dot + 1)
+  with Not_found -> [ String.sub s ~pos ~len:(String.length s - pos) ]
+
+let parse_lid s =
+  let components = split_at_dots s 0 in
+  let assert_lid =
+    String.iteri ~f:(fun i c ->
+        match i, c with
+        | 0, ('a' .. 'z' | '_') -> ()
+        | 0, _ -> assert false
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _ -> assert false)
+  in
+  let assert_uid =
+    String.iteri ~f:(fun i c ->
+        match i, c with
+        | 0, 'A' .. 'Z' -> ()
+        | 0, _ -> assert false
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _ -> assert false)
+  in
+  let rec check = function
+    | [] -> assert false
+    | "" :: _ -> assert false
+    | [ s ] -> assert_lid s
+    | modul :: rest ->
+        assert_uid modul;
+        check rest
+  in
+  check components;
+  match unflatten components with
+  | None -> assert false
+  | Some v -> v
+
 let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
 
 let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
 let pint ?loc ?attrs x = Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
-let lid ?(loc = !default_loc) s = Location.mkloc (Longident.parse s) loc
+let lid ?(loc = !default_loc) s = Location.mkloc (parse_lid s) loc
 
 let pvar ?(loc = !default_loc) ?attrs s = Pat.var ~loc ?attrs (Location.mkloc s loc)
 
@@ -166,7 +213,7 @@ let suffix_lid { Location.txt; loc } ~suffix =
   Ast_helper.Exp.ident { txt; loc } ~loc
 
 let suffix_decl ({ Parsetree.ptype_loc = loc; _ } as d) ~suffix =
-  (let s = mangle_type_decl (`Suffix suffix) d |> Longident.parse in
+  (let s = mangle_type_decl (`Suffix suffix) d |> parse_lid in
    Location.mkloc s loc)
   |> Ast_helper.Exp.ident ~loc
 

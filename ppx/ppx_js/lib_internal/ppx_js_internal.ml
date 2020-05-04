@@ -25,17 +25,59 @@ open Parsetree
 
 let nolabel = Nolabel
 
-let may_tuple ?loc tup = function
+let unflatten l =
+  match l with
   | [] -> None
-  | [ x ] -> Some x
-  | l -> Some (tup ?loc ?attrs:None l)
+  | hd :: tl ->
+      Some
+        (List.fold_left
+           ~f:(fun p s -> Longident.Ldot (p, s))
+           ~init:(Longident.Lident hd)
+           tl)
 
-let lid ?(loc = !default_loc) s = Location.mkloc (Longident.parse s) loc
+let rec split_at_dots s pos =
+  try
+    let dot = String.index_from s pos '.' in
+    String.sub s ~pos ~len:(dot - pos) :: split_at_dots s (dot + 1)
+  with Not_found -> [ String.sub s ~pos ~len:(String.length s - pos) ]
 
-let constr ?loc ?attrs s args =
-  Exp.construct ?loc ?attrs (lid ?loc s) (may_tuple ?loc Exp.tuple args)
+let parse_lid s =
+  let components = split_at_dots s 0 in
+  let assert_lid =
+    String.iteri ~f:(fun i c ->
+        match i, c with
+        | 0, ('a' .. 'z' | '_') -> ()
+        | 0, _ -> assert false
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _ -> assert false)
+  in
+  let assert_uid =
+    String.iteri ~f:(fun i c ->
+        match i, c with
+        | 0, 'A' .. 'Z' -> ()
+        | 0, _ -> assert false
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _ -> assert false)
+  in
+  let rec check = function
+    | [] -> assert false
+    | "" :: _ -> assert false
+    | [ s ] -> assert_lid s
+    | modul :: rest ->
+        assert_uid modul;
+        check rest
+  in
+  check components;
+  match unflatten components with
+  | None -> assert false
+  | Some v -> v
 
-let unit ?loc ?attrs () = constr ?loc ?attrs "()" []
+let lid ?(loc = !default_loc) s = Location.mkloc (parse_lid s) loc
+
+let mkloc_opt ?(loc = !default_loc) x = Location.mkloc x loc
+
+let unit ?loc ?attrs () =
+  Exp.construct ?loc ?attrs (mkloc_opt ?loc (Longident.Lident "()")) None
 
 let tuple ?loc ?attrs = function
   | [] -> unit ?loc ?attrs ()
@@ -56,8 +98,6 @@ let exp_to_string = function
       Location.raise_errorf
         ~loc:pexp_loc
         "Javascript methods or attributes can only be simple identifiers."
-
-let lid ?(loc = !default_loc) str = Location.mkloc (Longident.parse str) loc
 
 let typ s = Typ.constr (lid s) []
 
@@ -410,7 +450,7 @@ let new_object constr args =
   Exp.apply
     invoker
     ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
-    @ [ app_arg (Exp.construct ~loc:gloc (lid ~loc:gloc "()") None) ])
+    @ [ app_arg (unit ~loc:gloc ()) ])
 
 module S = Map.Make (String)
 
