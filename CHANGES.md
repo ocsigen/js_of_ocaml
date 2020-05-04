@@ -1,6 +1,7 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
+* Compiler: initial support for OCaml 4.11
 
 ## Bug fixes
 * Compiler: fix code generation for recursive function under for-loops (#1009)
