@@ -200,7 +200,13 @@ var caml_custom_ops =
        fixed_length : 4,
      },
      "_bigarray":{
-       deserialize : caml_ba_deserialize,
+       deserialize : (function (reader, sz) {return caml_ba_deserialize (reader,sz,"_bigarray")}),
+       serialize : caml_ba_serialize,
+       compare : caml_ba_compare,
+       hash: caml_ba_hash,
+     },
+     "_bigarr02":{
+       deserialize : (function (reader, sz) {return caml_ba_deserialize (reader,sz,"_bigarr02")}),
        serialize : caml_ba_serialize,
        compare : caml_ba_compare,
        hash: caml_ba_hash,

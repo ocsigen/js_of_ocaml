@@ -76,8 +76,16 @@ function caml_ba_create_buffer(kind, size){
   return data;
 }
 
+//Provides: caml_ba_custom_name
+//Version: < 4.11
+var caml_ba_custom_name = "_bigarray"
+
+//Provides: caml_ba_custom_name
+//Version: >= 4.11
+var caml_ba_custom_name = "_bigarr02"
+
 //Provides: Ml_Bigarray
-//Requires: caml_array_bound_error, caml_invalid_argument
+//Requires: caml_array_bound_error, caml_invalid_argument, caml_ba_custom_name
 //Requires: caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32
 function Ml_Bigarray (kind, layout, dims, buffer) {
 
@@ -87,7 +95,7 @@ function Ml_Bigarray (kind, layout, dims, buffer) {
   this.data = buffer;
 }
 
-Ml_Bigarray.prototype.caml_custom = "_bigarray";
+Ml_Bigarray.prototype.caml_custom = caml_ba_custom_name;
 
 Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
@@ -598,7 +606,18 @@ function caml_ba_reshape(ba, vind) {
 function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, ba.dims.length);
   writer.write(32, (ba.kind | (ba.layout << 8)));
-  for(var i = 0; i < ba.dims.length; i++) writer.write(32,ba.dims[i]);
+  if(ba.caml_custom == "_bigarr02")
+    for(var i = 0; i < ba.dims.length; i++) {
+      if(ba.dims[i] < 0xffff)
+        writer.write(16, ba.dims[i]);
+      else {
+        writer.write(16, 0xffff);
+        writer.write(32, 0);
+        writer.write(32, ba.dims[i]);
+      }
+    }
+  else
+    for(var i = 0; i < ba.dims.length; i++) writer.write(32,ba.dims[i])
   switch(ba.kind){
   case 2:  //Int8Array
   case 3:  //Uint8Array
@@ -670,7 +689,7 @@ function caml_ba_serialize(writer, ba, sz) {
 //Requires: caml_int64_of_bytes, caml_int64_float_of_bits
 //Requires: caml_int32_float_of_bits
 //Requires: caml_ba_create_buffer
-function caml_ba_deserialize(reader, sz){
+function caml_ba_deserialize(reader, sz, name){
   var num_dims = reader.read32s();
   if (num_dims < 0 || num_dims > 16)
     caml_failwith("input_value: wrong number of bigarray dimensions");
@@ -678,7 +697,20 @@ function caml_ba_deserialize(reader, sz){
   var kind = tag & 0xff
   var layout = (tag >> 8) & 1;
   var dims = []
-  for (var i = 0; i < num_dims; i++) dims.push(reader.read32u());
+  if(name == "_bigarr02")
+    for (var i = 0; i < num_dims; i++) {
+      var size_dim = reader.read16u();
+      if(size_dim == 0xffff){
+        var size_dim_hi = reader.read32u();
+        var size_dim_lo = reader.read32u();
+        if(size_dim_hi != 0)
+          caml_failwith("input_value: bigarray dimension overflow in 32bit");
+        size_dim = size_dim_lo;
+      }
+      dims.push(size_dim);
+    }
+  else
+    for (var i = 0; i < num_dims; i++) dims.push(reader.read32u());
   var size = caml_ba_get_size(dims);
   var data = caml_ba_create_buffer(kind, size);
   var ba = caml_ba_create_unsafe(kind, layout, dims, data);
