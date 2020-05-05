@@ -192,7 +192,7 @@ let parse_print_token ?(extra = false) s =
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
         | true -> Printf.printf "\n%2d: " pos.Parse_info.line
         | false -> ());
-        prev := pos.Parse_info.line;
+        if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
         Printf.printf "%d:%s, " pos.Parse_info.col s;
         loop xs
   in
@@ -262,8 +262,7 @@ let%expect_test "multiline comments" =
 /* test */ 42 /* test */
 |};
   [%expect {|
-    2: 0:/* test */, 11:42, 0:;,
-    2: 14:/* test */, |}];
+    2: 0:/* test */, 11:42, 0:;, 14:/* test */, |}];
   parse_print_token {|
     42
     /*
@@ -309,8 +308,7 @@ let%expect_test "div_or_regexp" =
     {|
     2: 4:1, 6:/, 8:2, 0:;,
     3: 4:1, 6:+, 8:/regexp/, 0:;,
-    4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 0:;,
-    4: 14:}, 16:/regexp/,
+    4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 0:;, 14:}, 16:/regexp/,
     5: 4:+, 5:{, 7:}, 9:/, 11:denominator,
     6: 4:+, 5:{, 7:}, 9:/, 11:denominator, 22:[, 23:a, 24:], 0:;,
     7: 4:if, 6:(, 7:b, 8:), 10:/regexp/,
@@ -337,6 +335,16 @@ let%expect_test "virtual semicolon" =
 
     throw 2;
     throw 2
+
+    { 1
+    2 } 3
+
+    a = b
+    ++c
+
+    a = b + c
+    (d + e).print()
+
 |};
   [%expect
     {|
@@ -353,4 +361,10 @@ let%expect_test "virtual semicolon" =
     14: 4:break, 0:; (virtual),
     15: 4:a (identifier), 0:; (virtual),
     17: 4:throw, 10:2, 11:;,
-    18: 4:throw, 10:2, 0:; (virtual), |}]
+    18: 4:throw, 10:2, 0:; (virtual),
+    20: 4:{, 6:1, 0:; (virtual),
+    21: 4:2, 0:; (virtual), 6:}, 8:3, 0:; (virtual),
+    23: 4:a (identifier), 6:=, 8:b (identifier), 0:; (virtual),
+    24: 4:++ (INCR), 6:c (identifier), 0:; (virtual),
+    26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
+    27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual), |}]
