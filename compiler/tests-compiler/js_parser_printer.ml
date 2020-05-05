@@ -178,7 +178,7 @@ let parse_print_token ?(extra = false) s =
     List.merge
       ~cmp:(fun a b ->
         compare (Js_token.info a).Parse_info.idx (Js_token.info b).Parse_info.idx)
-      (List.rev tokens)
+      tokens
       comments
   in
   check_vs_string s tokens;

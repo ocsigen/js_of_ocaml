@@ -119,7 +119,7 @@ let parse_aux the_parser lexbuf =
         loop (token :: prev) comments (inputneeded, checkpoint)
     | I.Shifting _ | I.AboutToReduce _ ->
         loop prev comments (inputneeded, I.resume checkpoint)
-    | I.Accepted v -> `Ok (v, prev, List.rev comments)
+    | I.Accepted v -> `Ok (v, prev, comments)
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> (
         (* 7.9.1 - 1 *)
@@ -172,7 +172,9 @@ let parse_aux the_parser lexbuf =
       let pi = Js_token.info tok in
       raise (Parsing_error pi)
 
-let parse' lex = parse_aux Js_parser.Incremental.program lex
+let parse' lex =
+  let p, t_rev, comment_rev = parse_aux Js_parser.Incremental.program lex in
+  p, List.rev t_rev, List.rev comment_rev
 
 let parse lex =
   let p, _, _ = parse_aux Js_parser.Incremental.program lex in
