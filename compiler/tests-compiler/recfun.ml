@@ -95,18 +95,20 @@ let myfun x =
   end
   in
   M.hash_fold_t (create ()) (List [ Atom "asd"]),
-  M.hash (List [ Atom "asd"])
+  M.hash (List [ Atom "asd"]),
+  M.hash (List [ ])
 
   |}
   in
   print_fun_decl program (Some "myfun");
   [%expect
     {|
-    function myfun(x$0)
+    function myfun(x)
      {function hash_fold_t(hsv,arg)
        {if(0 === arg[0])
          {var a0=arg[1],hsv$0=hsv | 0;return hash_fold_string(hsv$0,a0)}
         var a0$0=arg[1],hsv$1=hsv + 1 | 0;
         return hash_fold_list(hash_fold_t,hsv$1,a0$0)}
-      var _b_=hash_fold_t(42,x);
-      return [0,hash_fold_t(42,_a_),_b_]} |}]
+      function hash(x){return hash_fold_t(42,x)}
+      var _d_=hash(_a_),_e_=hash(_b_);
+      return [0,hash_fold_t(42,_c_),_e_,_d_]} |}]
