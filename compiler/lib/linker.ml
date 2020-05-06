@@ -58,7 +58,21 @@ let parse_annot loc s =
 let error s = Format.ksprintf (fun s -> failwith s) s
 
 let parse_from_lex ~filename lex =
-  let program, _prev, comments = Parse_js.parse' lex in
+  let program, _prev, comments =
+    try Parse_js.parse' lex
+    with Parse_js.Parsing_error pi ->
+      let name =
+        match pi with
+        | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
+        | _ -> "??"
+      in
+      error
+        "cannot parse file %S (orig:%S from l:%d, c:%d)@."
+        filename
+        name
+        pi.Parse_info.line
+        pi.Parse_info.col
+  in
   let rec take_annot_before loc acc = function
     | [] -> acc, []
     | x :: l ->
@@ -108,60 +122,47 @@ let parse_from_lex ~filename lex =
   in
   let res =
     List.rev_map blocks ~f:(fun (annot, code) ->
-        try
-          let fragment =
-            { provides = None
-            ; requires = []
-            ; version_constraint = []
-            ; weakdef = false
-            ; code
-            ; ignore = `No
-            }
-          in
-          List.fold_left annot ~init:fragment ~f:(fun fragment a ->
-              match a with
-              | `Provides (pi, name, kind, ka) ->
-                  { fragment with provides = Some (pi, name, kind, ka) }
-              | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
-              | `Version (_, l) ->
-                  { fragment with version_constraint = l :: fragment.version_constraint }
-              | `Weakdef _ -> { fragment with weakdef = true }
-              | `If (_, "js-string") as reason ->
-                  if not (Config.Flag.use_js_string ())
-                  then { fragment with ignore = `Because reason }
-                  else fragment
-              | `Ifnot (_, "js-string") as reason ->
-                  if Config.Flag.use_js_string ()
-                  then { fragment with ignore = `Because reason }
-                  else fragment
-              | `If (pi, name) | `Ifnot (pi, name) ->
-                  let loc =
-                    match pi with
-                    | None -> ""
-                    | Some loc ->
-                        Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
-                  in
-                  let filename =
-                    match pi with
-                    | Some { Parse_info.src = Some x; _ }
-                    | Some { Parse_info.name = Some x; _ } ->
-                        x
-                    | _ -> "??"
-                  in
-                  Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
-                  fragment)
-        with Parse_js.Parsing_error pi ->
-          let name =
-            match pi with
-            | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
-            | _ -> "??"
-          in
-          error
-            "cannot parse file %S (orig:%S from l:%d, c:%d)@."
-            filename
-            name
-            pi.Parse_info.line
-            pi.Parse_info.col)
+        let fragment =
+          { provides = None
+          ; requires = []
+          ; version_constraint = []
+          ; weakdef = false
+          ; code
+          ; ignore = `No
+          }
+        in
+        List.fold_left annot ~init:fragment ~f:(fun fragment a ->
+            match a with
+            | `Provides (pi, name, kind, ka) ->
+                { fragment with provides = Some (pi, name, kind, ka) }
+            | `Requires (_, mn) -> { fragment with requires = mn @ fragment.requires }
+            | `Version (_, l) ->
+                { fragment with version_constraint = l :: fragment.version_constraint }
+            | `Weakdef _ -> { fragment with weakdef = true }
+            | `If (_, "js-string") as reason ->
+                if not (Config.Flag.use_js_string ())
+                then { fragment with ignore = `Because reason }
+                else fragment
+            | `Ifnot (_, "js-string") as reason ->
+                if Config.Flag.use_js_string ()
+                then { fragment with ignore = `Because reason }
+                else fragment
+            | `If (pi, name) | `Ifnot (pi, name) ->
+                let loc =
+                  match pi with
+                  | None -> ""
+                  | Some loc ->
+                      Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
+                in
+                let filename =
+                  match pi with
+                  | Some { Parse_info.src = Some x; _ }
+                  | Some { Parse_info.name = Some x; _ } ->
+                      x
+                  | _ -> "??"
+                in
+                Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
+                fragment))
   in
   res
 

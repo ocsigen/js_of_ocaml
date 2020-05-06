@@ -368,3 +368,37 @@ let%expect_test "virtual semicolon" =
     24: 4:++ (INCR), 6:c (identifier), 0:; (virtual),
     26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
     27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual), |}]
+
+let%expect_test _ =
+  parse_print_token
+    ~extra:true
+    {|
+function UnexpectedVirtualElement(data) {
+    var err = new Error();
+
+    err.type = 'virtual-hyperscript.unexpected.virtual-element';
+    err.message =
+        'The parent vnode is:\n' +
+        errorString(data.parentVnode)
+        '\n' +
+        'Suggested fix: change your `h(..., [ ... ])` callsite.';
+    err.foreignObject = data.foreignObject;
+    err.parentVnode = data.parentVnode;
+
+    return err;
+}
+|};
+  [%expect
+    {|
+     2: 0:function, 9:UnexpectedVirtualElement (identifier), 33:(, 34:data (identifier), 38:), 40:{,
+     3: 4:var, 8:err (identifier), 12:=, 14:new, 18:Error (identifier), 23:(, 24:), 25:;,
+     5: 4:err (identifier), 7:., 8:type (identifier), 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
+     6: 4:err (identifier), 7:., 8:message (identifier), 16:=,
+     7: 8:"The parent vnode is:\\n", 33:+,
+     8: 8:errorString (identifier), 19:(, 20:data (identifier), 24:., 25:parentVnode (identifier), 36:), 0:; (virtual),
+     9: 8:"\\n", 13:+,
+    10: 8:"Suggested fix: change your `h(..., [ ... ])` callsite.", 64:;,
+    11: 4:err (identifier), 7:., 8:foreignObject (identifier), 22:=, 24:data (identifier), 28:., 29:foreignObject (identifier), 42:;,
+    12: 4:err (identifier), 7:., 8:parentVnode (identifier), 20:=, 22:data (identifier), 26:., 27:parentVnode (identifier), 38:;,
+    14: 4:return, 11:err (identifier), 14:;,
+    15: 0:}, |}]

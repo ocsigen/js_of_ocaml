@@ -76,6 +76,13 @@ let update_loc lexbuf ?file ~line ~absolute chars =
 
 let tokinfo lexbuf = Parse_info.t_of_lexbuf lexbuf
 
+let with_pos lexbuf f =
+  let p = lexbuf.Lexing.lex_start_p in
+  let pos = lexbuf.Lexing.lex_start_pos in
+  let r = f () in
+  lexbuf.Lexing.lex_start_p <- p;
+  lexbuf.Lexing.lex_start_pos <- pos;
+  r
 }
 
 (*****************************************************************************)
@@ -91,12 +98,13 @@ rule main = parse
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
   | "/*" {
+      with_pos lexbuf (fun () ->
       let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       Buffer.add_string buf (tok lexbuf);
       st_comment buf lexbuf;
       let content = Buffer.contents buf in
-      TComment(content, info)
+      TComment(content, info))
     }
   | ("//#" [' ' '\t' ]*
      (['0'-'9']+ as line) [' ' '\t' ]*
@@ -218,6 +226,7 @@ rule main = parse
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
   | ("'"|'"') as quote {
+      with_pos lexbuf (fun () ->
       let from = lexbuf.Lexing.lex_start_p.pos_cnum in
       let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
@@ -225,25 +234,8 @@ rule main = parse
       let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       let to_ = lexbuf.Lexing.lex_curr_p.pos_cnum in
-      T_STRING (s, info, to_ - 1 - from)
+      T_STRING (s, info, to_ - 1 - from))
     }
-
-  (* ----------------------------------------------------------------------- *)
-  (* Regexp *)
-  (* ----------------------------------------------------------------------- *)
-  (* take care of ambiguity with start of comment //, and with
-   * '/' as a divisor operator
-   *
-   * it can not be '/' [^ '/']* '/' because then
-   * comments will not be recognized as lex tries
-   * to find the longest match.
-   *
-   * It can not be
-   * '/' [^'*''/'] ([^'/''\n'])* '/' ['A'-'Z''a'-'z']*
-   * because a / (b/c)  will be recognized as a regexp.
-   *
-   *)
-
   | "/" { T_DIV (tokinfo lexbuf) }
   | "/=" { T_DIV_ASSIGN (tokinfo lexbuf) }
   (* ----------------------------------------------------------------------- *)
@@ -291,11 +283,12 @@ and string_quote q buf = parse
 (*****************************************************************************)
 and main_regexp = parse
   | '/' {
+      with_pos lexbuf (fun () ->
       let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       Buffer.add_string buf (Lexing.lexeme lexbuf);
       regexp buf lexbuf;
-      T_REGEX (Buffer.contents buf, info) }
+      T_REGEX (Buffer.contents buf, info)) }
 
 and regexp buf = parse
   | '\\' (_ as x) { Buffer.add_char buf '\\';

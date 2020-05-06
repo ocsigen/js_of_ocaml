@@ -61,7 +61,7 @@ let parse_aux the_parser lexbuf =
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> loop_error prev (I.resume checkpoint)
   in
-  let rec loop prev comments (inputneeded, checkpoint) =
+  let rec loop prev comments (last_checkpoint, checkpoint) =
     let module I = Js_parser.MenhirInterpreter in
     match checkpoint with
     | I.InputNeeded _env ->
@@ -113,12 +113,13 @@ let parse_aux the_parser lexbuf =
               in
               t, comments
         in
+        let last_checkpoint = prev, comments, inputneeded in
         let checkpoint =
           I.offer checkpoint (token, lexbuf.Lexing.lex_start_p, lexbuf.Lexing.lex_curr_p)
         in
-        loop (token :: prev) comments (inputneeded, checkpoint)
+        loop (token :: prev) comments (last_checkpoint, checkpoint)
     | I.Shifting _ | I.AboutToReduce _ ->
-        loop prev comments (inputneeded, I.resume checkpoint)
+        loop prev comments (last_checkpoint, I.resume checkpoint)
     | I.Accepted v -> `Ok (v, prev, comments)
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> (
@@ -137,31 +138,32 @@ let parse_aux the_parser lexbuf =
         (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
         let insert_virtual_semmit =
           match prev with
-          | [] | T_VIRTUAL_SEMICOLON _ :: _ -> None
-          | T_RCURLY _ :: prev -> Some prev
-          | EOF _ :: prev -> Some prev
-          | offending :: (before :: _ as prev) when fol [ before ] offending -> Some prev
-          | _ -> None
+          | [] | T_VIRTUAL_SEMICOLON _ :: _ -> false
+          | T_RCURLY _ :: _ -> true
+          | EOF _ :: _ -> true
+          | offending :: before :: _ when fol [ before ] offending -> true
+          | _ -> false
         in
         match insert_virtual_semmit with
-        | None -> loop_error prev (I.resume checkpoint)
-        | Some new_prev ->
+        | false -> loop_error prev (I.resume checkpoint)
+        | true ->
+            let error_checkpoint = checkpoint in
+            let error_prev = prev in
+            let prev, comments, checkpoint = last_checkpoint in
             if I.acceptable
-                 inputneeded
+                 checkpoint
                  (Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero)
-                 lexbuf.Lexing.lex_start_p
+                 lexbuf.Lexing.lex_curr_p
             then (
               reset lexbuf;
               let t = Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero in
               let checkpoint =
-                I.offer
-                  inputneeded
-                  (t, lexbuf.Lexing.lex_start_p, lexbuf.Lexing.lex_curr_p)
+                I.offer checkpoint (t, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
               in
-              loop (t :: new_prev) comments (inputneeded, checkpoint))
-            else loop_error prev (I.resume checkpoint))
+              loop (t :: prev) comments (last_checkpoint, checkpoint))
+            else loop_error error_prev (I.resume error_checkpoint))
   in
-  match loop [] [] (init, init) with
+  match loop [] [] (([], [], init), init) with
   | `Ok x -> x
   | `Error tok ->
       let tok =
