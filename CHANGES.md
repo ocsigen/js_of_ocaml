@@ -1,6 +1,7 @@
 # dev (????-??-??) - Somewhere
 ## Features/Changes
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
+* Runtime: Change the semantic of MlBytes.toString, introduce MlBytes.toUtf16
 * Compiler: initial support for OCaml 4.11
 * Compiler: improve the javascript parser by relying on menhir incremental api.
 
