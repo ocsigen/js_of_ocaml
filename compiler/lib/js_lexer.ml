@@ -75,26 +75,24 @@ let update_loc lexbuf ?file ~line ~absolute chars =
     pos_bol = pos.pos_cnum - chars;
                               }
 
-let tokinfo prev lexbuf =
-  let pi = Parse_info.t_of_lexbuf lexbuf in
-  match prev with
-  | None -> { pi with Parse_info.fol = Yes }
-  | Some prev ->
-    let prev_pi = Js_token.info prev in
-    if prev_pi.Parse_info.line <> pi.Parse_info.line
-    && Option.equal String.equal prev_pi.Parse_info.name pi.Parse_info.name
-    then { pi with Parse_info.fol = Yes }
-    else { pi with Parse_info.fol = No }
+let tokinfo lexbuf = Parse_info.t_of_lexbuf lexbuf
 
+let with_pos lexbuf f =
+  let p = lexbuf.Lexing.lex_start_p in
+  let pos = lexbuf.Lexing.lex_start_pos in
+  let r = f () in
+  lexbuf.Lexing.lex_start_p <- p;
+  lexbuf.Lexing.lex_start_pos <- pos;
+  r
 
-# 91 "compiler/lib/js_lexer.ml"
+# 89 "compiler/lib/js_lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base =
-   "\000\000\195\255\196\255\198\255\081\000\103\000\160\000\205\255\
+   "\000\000\194\255\195\255\198\255\081\000\103\000\160\000\205\255\
     \003\000\031\000\035\000\083\000\100\000\078\000\081\000\084\000\
     \085\000\127\000\109\000\240\255\241\255\242\255\243\255\237\000\
     \245\255\246\255\247\255\248\255\249\255\250\255\251\255\001\000\
-    \003\000\120\000\197\255\155\000\255\255\153\000\030\001\040\001\
+    \003\000\120\000\196\255\155\000\255\255\153\000\030\001\040\001\
     \161\000\166\000\174\000\159\000\192\000\254\255\004\000\050\001\
     \102\000\225\255\072\001\082\001\092\001\218\255\239\255\217\255\
     \238\255\103\000\237\255\112\000\236\255\116\000\235\255\229\255\
@@ -102,10 +100,10 @@ let __ocaml_lex_tables = {
     \230\255\220\255\219\255\216\255\127\001\139\001\149\001\204\001\
     \209\000\252\255\253\255\003\002\026\002\255\255\064\002\254\255\
     \087\002\125\002\148\002\228\001\250\255\251\255\253\255\005\000\
-    \006\000\255\255\254\255\007\000\065\001\250\255\251\255\252\255\
-    \253\255\254\255\028\000\255\255\210\000\251\255\252\255\253\255\
-    \041\000\255\255\254\255\186\002\221\001\251\255\021\002\254\255\
-    \008\000\133\000\255\255";
+    \006\000\255\255\254\255\007\000\133\000\255\255\065\001\250\255\
+    \251\255\252\255\253\255\254\255\028\000\255\255\210\000\251\255\
+    \252\255\253\255\041\000\255\255\254\255\186\002\221\001\251\255\
+    \021\002\254\255\008\000\142\000\255\255";
   Lexing.lex_backtrk =
    "\255\255\255\255\255\255\255\255\056\000\056\000\052\000\255\255\
     \048\000\045\000\044\000\043\000\042\000\041\000\040\000\049\000\
@@ -120,9 +118,9 @@ let __ocaml_lex_tables = {
     \255\255\255\255\255\255\002\000\002\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\002\000\
     \003\000\255\255\255\255\001\000\255\255\255\255\255\255\255\255\
-    \255\255\255\255\003\000\255\255\255\255\255\255\255\255\255\255\
-    \002\000\255\255\255\255\000\000\255\255\255\255\002\000\255\255\
-    \001\000\003\000\255\255";
+    \255\255\255\255\255\255\255\255\003\000\255\255\255\255\255\255\
+    \255\255\255\255\002\000\255\255\255\255\000\000\255\255\255\255\
+    \002\000\255\255\001\000\003\000\255\255";
   Lexing.lex_default =
    "\001\000\000\000\000\000\000\000\255\255\255\255\255\255\000\000\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -136,14 +134,14 @@ let __ocaml_lex_tables = {
     \000\000\000\000\000\000\000\000\255\255\255\255\255\255\255\255\
     \082\000\000\000\000\000\255\255\255\255\000\000\255\255\000\000\
     \255\255\255\255\255\255\093\000\000\000\000\000\000\000\255\255\
-    \255\255\000\000\000\000\255\255\103\000\000\000\000\000\000\000\
-    \000\000\000\000\107\000\000\000\111\000\000\000\000\000\000\000\
-    \114\000\000\000\000\000\255\255\118\000\000\000\118\000\000\000\
-    \255\255\255\255\000\000";
+    \255\255\000\000\000\000\255\255\255\255\000\000\105\000\000\000\
+    \000\000\000\000\000\000\000\000\109\000\000\000\113\000\000\000\
+    \000\000\000\000\116\000\000\000\000\000\255\255\120\000\000\000\
+    \120\000\000\000\255\255\255\255\000\000";
   Lexing.lex_trans =
    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\032\000\030\000\030\000\032\000\031\000\045\000\094\000\
-    \098\000\098\000\119\000\099\000\000\000\000\000\000\000\000\000\
+    \098\000\098\000\121\000\099\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \032\000\015\000\003\000\032\000\006\000\009\000\018\000\003\000\
     \027\000\026\000\010\000\012\000\021\000\011\000\023\000\033\000\
@@ -163,12 +161,12 @@ let __ocaml_lex_tables = {
     \077\000\077\000\077\000\077\000\077\000\077\000\077\000\004\000\
     \004\000\069\000\036\000\255\255\058\000\255\255\255\255\035\000\
     \255\255\255\255\053\000\255\255\050\000\060\000\043\000\041\000\
-    \255\255\063\000\068\000\255\255\122\000\034\000\050\000\042\000\
-    \045\000\067\000\066\000\046\000\055\000\000\000\038\000\078\000\
+    \255\255\063\000\068\000\255\255\101\000\034\000\050\000\042\000\
+    \045\000\067\000\066\000\046\000\055\000\124\000\038\000\078\000\
     \000\000\044\000\000\000\042\000\006\000\000\000\041\000\000\000\
     \040\000\044\000\045\000\000\000\050\000\046\000\042\000\000\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
-    \006\000\006\000\000\000\000\000\110\000\000\000\000\000\078\000\
+    \006\000\006\000\000\000\000\000\112\000\000\000\000\000\078\000\
     \044\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
@@ -178,34 +176,34 @@ let __ocaml_lex_tables = {
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\048\000\255\255\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\038\000\
-    \255\255\255\255\000\000\255\255\000\000\085\000\112\000\113\000\
+    \255\255\255\255\000\000\255\255\000\000\085\000\114\000\115\000\
     \000\000\041\000\255\255\000\000\000\000\255\255\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\038\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\083\000\000\000\
-    \041\000\084\000\040\000\102\000\000\000\000\000\039\000\039\000\
+    \041\000\084\000\040\000\104\000\000\000\000\000\039\000\039\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\000\000\000\000\000\000\000\000\
-    \105\000\000\000\000\000\052\000\000\000\052\000\000\000\050\000\
+    \107\000\000\000\000\000\052\000\000\000\052\000\000\000\050\000\
     \051\000\051\000\051\000\051\000\051\000\051\000\051\000\051\000\
     \051\000\051\000\051\000\051\000\051\000\051\000\051\000\051\000\
     \051\000\051\000\051\000\051\000\051\000\051\000\051\000\051\000\
     \051\000\051\000\051\000\051\000\051\000\051\000\000\000\050\000\
-    \000\000\255\255\000\000\255\255\104\000\106\000\000\000\255\255\
+    \000\000\255\255\000\000\255\255\106\000\108\000\000\000\255\255\
     \000\000\255\255\000\000\000\000\000\000\000\000\255\255\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\255\255\047\000\
     \047\000\047\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\076\000\000\000\077\000\077\000\077\000\077\000\077\000\
     \077\000\077\000\077\000\004\000\004\000\079\000\079\000\079\000\
     \079\000\079\000\079\000\079\000\079\000\079\000\079\000\000\000\
-    \050\000\081\000\109\000\000\000\000\000\000\000\079\000\079\000\
+    \050\000\081\000\111\000\000\000\000\000\000\000\079\000\079\000\
     \079\000\079\000\079\000\079\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\119\000\
-    \000\000\000\000\120\000\000\000\000\000\000\000\094\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\121\000\
+    \000\000\000\000\122\000\000\000\000\000\000\000\094\000\000\000\
     \050\000\095\000\000\000\000\000\000\000\000\000\079\000\079\000\
     \079\000\079\000\079\000\079\000\079\000\079\000\079\000\079\000\
-    \079\000\079\000\079\000\079\000\079\000\079\000\097\000\121\000\
+    \079\000\079\000\079\000\079\000\079\000\079\000\097\000\123\000\
     \000\000\000\000\000\000\097\000\000\000\079\000\079\000\079\000\
     \079\000\079\000\079\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\255\255\255\255\
@@ -213,7 +211,7 @@ let __ocaml_lex_tables = {
     \255\255\000\000\000\000\000\000\000\000\079\000\079\000\079\000\
     \079\000\079\000\079\000\088\000\088\000\088\000\088\000\088\000\
     \088\000\088\000\088\000\088\000\088\000\000\000\000\000\255\255\
-    \096\000\101\000\000\000\000\000\088\000\088\000\088\000\088\000\
+    \096\000\103\000\000\000\000\000\088\000\088\000\088\000\088\000\
     \088\000\088\000\086\000\086\000\086\000\086\000\086\000\086\000\
     \086\000\086\000\086\000\086\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\086\000\086\000\086\000\086\000\086\000\
@@ -232,18 +230,18 @@ let __ocaml_lex_tables = {
     \090\000\090\000\090\000\090\000\087\000\087\000\087\000\087\000\
     \087\000\087\000\087\000\087\000\087\000\087\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\087\000\087\000\087\000\
-    \087\000\087\000\087\000\000\000\000\000\117\000\090\000\090\000\
+    \087\000\087\000\087\000\000\000\000\000\119\000\090\000\090\000\
     \090\000\090\000\090\000\090\000\092\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\087\000\087\000\087\000\
-    \087\000\087\000\087\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\255\255\000\000\000\000\
-    \000\000\000\000\000\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\000\000\000\000\000\000\
+    \087\000\087\000\087\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\255\255\000\000\000\000\
+    \000\000\000\000\000\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -264,7 +262,7 @@ let __ocaml_lex_tables = {
   Lexing.lex_check =
    "\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\000\000\000\000\031\000\032\000\000\000\046\000\095\000\
-    \096\000\099\000\120\000\096\000\255\255\255\255\255\255\255\255\
+    \096\000\099\000\122\000\096\000\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \000\000\000\000\000\000\032\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -284,12 +282,12 @@ let __ocaml_lex_tables = {
     \005\000\005\000\005\000\005\000\005\000\005\000\005\000\005\000\
     \005\000\012\000\033\000\037\000\057\000\035\000\037\000\033\000\
     \035\000\043\000\018\000\040\000\005\000\059\000\040\000\041\000\
-    \041\000\061\000\066\000\041\000\121\000\033\000\004\000\042\000\
-    \042\000\064\000\064\000\042\000\017\000\255\255\035\000\005\000\
+    \041\000\061\000\066\000\041\000\100\000\033\000\004\000\042\000\
+    \042\000\064\000\064\000\042\000\017\000\123\000\035\000\005\000\
     \255\255\043\000\255\255\040\000\006\000\255\255\041\000\255\255\
     \041\000\044\000\044\000\255\255\005\000\044\000\042\000\255\255\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
-    \006\000\006\000\255\255\255\255\108\000\255\255\255\255\005\000\
+    \006\000\006\000\255\255\255\255\110\000\255\255\255\255\005\000\
     \044\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
@@ -297,44 +295,44 @@ let __ocaml_lex_tables = {
     \000\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
     \006\000\006\000\006\000\006\000\006\000\006\000\006\000\006\000\
-    \006\000\006\000\006\000\023\000\106\000\023\000\023\000\023\000\
+    \006\000\006\000\006\000\023\000\108\000\023\000\023\000\023\000\
     \023\000\023\000\023\000\023\000\023\000\023\000\023\000\038\000\
-    \038\000\112\000\255\255\038\000\255\255\080\000\108\000\108\000\
+    \038\000\114\000\255\255\038\000\255\255\080\000\110\000\110\000\
     \255\255\039\000\039\000\255\255\255\255\039\000\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\038\000\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\080\000\255\255\
-    \039\000\080\000\039\000\100\000\255\255\255\255\038\000\038\000\
+    \039\000\080\000\039\000\102\000\255\255\255\255\038\000\038\000\
     \038\000\038\000\038\000\038\000\038\000\038\000\038\000\038\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\047\000\047\000\047\000\047\000\047\000\047\000\
     \047\000\047\000\047\000\047\000\255\255\255\255\255\255\255\255\
-    \100\000\255\255\255\255\050\000\255\255\050\000\255\255\047\000\
+    \102\000\255\255\255\255\050\000\255\255\050\000\255\255\047\000\
     \050\000\050\000\050\000\050\000\050\000\050\000\050\000\050\000\
     \050\000\050\000\051\000\051\000\051\000\051\000\051\000\051\000\
     \051\000\051\000\051\000\051\000\052\000\052\000\052\000\052\000\
     \052\000\052\000\052\000\052\000\052\000\052\000\255\255\047\000\
-    \255\255\037\000\255\255\035\000\100\000\100\000\255\255\043\000\
+    \255\255\037\000\255\255\035\000\102\000\102\000\255\255\043\000\
     \255\255\040\000\255\255\255\255\255\255\255\255\041\000\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\042\000\076\000\
     \076\000\076\000\076\000\076\000\076\000\076\000\076\000\076\000\
     \076\000\077\000\255\255\077\000\077\000\077\000\077\000\077\000\
     \077\000\077\000\077\000\077\000\077\000\078\000\078\000\078\000\
     \078\000\078\000\078\000\078\000\078\000\078\000\078\000\255\255\
-    \077\000\080\000\108\000\255\255\255\255\255\255\078\000\078\000\
+    \077\000\080\000\110\000\255\255\255\255\255\255\078\000\078\000\
     \078\000\078\000\078\000\078\000\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\116\000\
-    \255\255\255\255\116\000\255\255\255\255\255\255\091\000\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\118\000\
+    \255\255\255\255\118\000\255\255\255\255\255\255\091\000\255\255\
     \077\000\091\000\255\255\255\255\255\255\255\255\078\000\078\000\
     \078\000\078\000\078\000\078\000\079\000\079\000\079\000\079\000\
-    \079\000\079\000\079\000\079\000\079\000\079\000\091\000\116\000\
+    \079\000\079\000\079\000\079\000\079\000\079\000\091\000\118\000\
     \255\255\255\255\255\255\091\000\255\255\079\000\079\000\079\000\
     \079\000\079\000\079\000\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\038\000\118\000\
-    \255\255\255\255\118\000\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\038\000\120\000\
+    \255\255\255\255\120\000\255\255\255\255\255\255\255\255\255\255\
     \039\000\255\255\255\255\255\255\255\255\079\000\079\000\079\000\
     \079\000\079\000\079\000\083\000\083\000\083\000\083\000\083\000\
-    \083\000\083\000\083\000\083\000\083\000\255\255\255\255\118\000\
-    \091\000\100\000\255\255\255\255\083\000\083\000\083\000\083\000\
+    \083\000\083\000\083\000\083\000\083\000\255\255\255\255\120\000\
+    \091\000\102\000\255\255\255\255\083\000\083\000\083\000\083\000\
     \083\000\083\000\084\000\084\000\084\000\084\000\084\000\084\000\
     \084\000\084\000\084\000\084\000\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\084\000\084\000\084\000\084\000\084\000\
@@ -353,18 +351,18 @@ let __ocaml_lex_tables = {
     \089\000\089\000\089\000\089\000\090\000\090\000\090\000\090\000\
     \090\000\090\000\090\000\090\000\090\000\090\000\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\090\000\090\000\090\000\
-    \090\000\090\000\090\000\255\255\255\255\116\000\089\000\089\000\
+    \090\000\090\000\090\000\255\255\255\255\118\000\089\000\089\000\
     \089\000\089\000\089\000\089\000\091\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\090\000\090\000\090\000\
-    \090\000\090\000\090\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\118\000\255\255\255\255\
-    \255\255\255\255\255\255\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\115\000\115\000\115\000\
-    \115\000\115\000\115\000\115\000\115\000\255\255\255\255\255\255\
+    \090\000\090\000\090\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\120\000\255\255\255\255\
+    \255\255\255\255\255\255\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\117\000\117\000\117\000\
+    \117\000\117\000\117\000\117\000\117\000\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -398,7 +396,7 @@ let __ocaml_lex_tables = {
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000";
+    \000\000\000\000\000\000\000\000\000\000";
   Lexing.lex_backtrk_code =
    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -415,7 +413,7 @@ let __ocaml_lex_tables = {
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000";
+    \000\000\000\000\000\000\000\000\000\000";
   Lexing.lex_default_code =
    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -432,7 +430,7 @@ let __ocaml_lex_tables = {
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000";
+    \000\000\000\000\000\000\000\000\000\000";
   Lexing.lex_trans_code =
    "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\001\000\000\000\000\000\000\000\000\000\015\000\000\000\
@@ -509,458 +507,433 @@ let __ocaml_lex_tables = {
     \008\255";
 }
 
-let rec main prev lexbuf =
-  lexbuf.Lexing.lex_mem <- Array.make 10 (-1); __ocaml_lex_main_rec prev lexbuf 0
-and __ocaml_lex_main_rec prev lexbuf __ocaml_lex_state =
+let rec main lexbuf =
+  lexbuf.Lexing.lex_mem <- Array.make 10 (-1); __ocaml_lex_main_rec lexbuf 0
+and __ocaml_lex_main_rec lexbuf __ocaml_lex_state =
   match Lexing.new_engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 102 "compiler/lib/js_lexer.mll"
+# 100 "compiler/lib/js_lexer.mll"
          (
-      let info = tokinfo prev lexbuf in
+      with_pos lexbuf (fun () ->
+      let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       Buffer.add_string buf (tok lexbuf);
       st_comment buf lexbuf;
       let content = Buffer.contents buf in
-      TComment(content, info)
+      TComment(content, info))
     )
-# 527 "compiler/lib/js_lexer.ml"
+# 526 "compiler/lib/js_lexer.ml"
 
   | 1 ->
 let
-# 111 "compiler/lib/js_lexer.mll"
+# 110 "compiler/lib/js_lexer.mll"
                     line
-# 533 "compiler/lib/js_lexer.ml"
+# 532 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(0) lexbuf.Lexing.lex_mem.(1)
 and
-# 112 "compiler/lib/js_lexer.mll"
+# 111 "compiler/lib/js_lexer.mll"
                            file
-# 538 "compiler/lib/js_lexer.ml"
+# 537 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_mem.(2) lexbuf.Lexing.lex_mem.(3)
 and
-# 113 "compiler/lib/js_lexer.mll"
+# 112 "compiler/lib/js_lexer.mll"
          raw
-# 543 "compiler/lib/js_lexer.ml"
+# 542 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_mem.(4) in
-# 113 "compiler/lib/js_lexer.mll"
+# 112 "compiler/lib/js_lexer.mll"
                      (
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       let line = int_of_string line in
       update_loc lexbuf ~file ~line ~absolute:true 0;
       TCommentLineDirective (raw, info)
     )
-# 552 "compiler/lib/js_lexer.ml"
+# 551 "compiler/lib/js_lexer.ml"
 
   | 2 ->
 let
-# 120 "compiler/lib/js_lexer.mll"
+# 119 "compiler/lib/js_lexer.mll"
                               cmt
-# 558 "compiler/lib/js_lexer.ml"
+# 557 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 120 "compiler/lib/js_lexer.mll"
-                                  ( TComment(cmt, tokinfo prev lexbuf) )
-# 562 "compiler/lib/js_lexer.ml"
+# 119 "compiler/lib/js_lexer.mll"
+                                  ( TComment(cmt, tokinfo lexbuf) )
+# 561 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 122 "compiler/lib/js_lexer.mll"
+# 121 "compiler/lib/js_lexer.mll"
                  (
-      main prev lexbuf
+      main lexbuf
     )
-# 569 "compiler/lib/js_lexer.ml"
+# 568 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 125 "compiler/lib/js_lexer.mll"
+# 124 "compiler/lib/js_lexer.mll"
             (
       update_loc lexbuf ~line:1 ~absolute:false 0;
-      main prev lexbuf
+      main lexbuf
     )
-# 577 "compiler/lib/js_lexer.ml"
+# 576 "compiler/lib/js_lexer.ml"
 
   | 5 ->
-# 134 "compiler/lib/js_lexer.mll"
-        ( T_LCURLY (tokinfo prev lexbuf); )
-# 582 "compiler/lib/js_lexer.ml"
+# 133 "compiler/lib/js_lexer.mll"
+        ( T_LCURLY (tokinfo lexbuf); )
+# 581 "compiler/lib/js_lexer.ml"
 
   | 6 ->
-# 135 "compiler/lib/js_lexer.mll"
-        ( T_RCURLY (tokinfo prev lexbuf); )
-# 587 "compiler/lib/js_lexer.ml"
+# 134 "compiler/lib/js_lexer.mll"
+        ( T_RCURLY (tokinfo lexbuf); )
+# 586 "compiler/lib/js_lexer.ml"
 
   | 7 ->
-# 137 "compiler/lib/js_lexer.mll"
-        ( T_LPAREN (tokinfo prev lexbuf); )
-# 592 "compiler/lib/js_lexer.ml"
+# 136 "compiler/lib/js_lexer.mll"
+        ( T_LPAREN (tokinfo lexbuf); )
+# 591 "compiler/lib/js_lexer.ml"
 
   | 8 ->
-# 138 "compiler/lib/js_lexer.mll"
-        ( T_RPAREN (tokinfo prev lexbuf); )
-# 597 "compiler/lib/js_lexer.ml"
+# 137 "compiler/lib/js_lexer.mll"
+        ( T_RPAREN (tokinfo lexbuf); )
+# 596 "compiler/lib/js_lexer.ml"
 
   | 9 ->
-# 140 "compiler/lib/js_lexer.mll"
-        ( T_LBRACKET (tokinfo prev lexbuf); )
-# 602 "compiler/lib/js_lexer.ml"
+# 139 "compiler/lib/js_lexer.mll"
+        ( T_LBRACKET (tokinfo lexbuf); )
+# 601 "compiler/lib/js_lexer.ml"
 
   | 10 ->
-# 141 "compiler/lib/js_lexer.mll"
-        ( T_RBRACKET (tokinfo prev lexbuf); )
-# 607 "compiler/lib/js_lexer.ml"
+# 140 "compiler/lib/js_lexer.mll"
+        ( T_RBRACKET (tokinfo lexbuf); )
+# 606 "compiler/lib/js_lexer.ml"
 
   | 11 ->
-# 142 "compiler/lib/js_lexer.mll"
-        ( T_PERIOD (tokinfo prev lexbuf); )
-# 612 "compiler/lib/js_lexer.ml"
+# 141 "compiler/lib/js_lexer.mll"
+        ( T_PERIOD (tokinfo lexbuf); )
+# 611 "compiler/lib/js_lexer.ml"
 
   | 12 ->
-# 143 "compiler/lib/js_lexer.mll"
-        ( T_SEMICOLON (tokinfo prev lexbuf); )
-# 617 "compiler/lib/js_lexer.ml"
+# 142 "compiler/lib/js_lexer.mll"
+        ( T_SEMICOLON (tokinfo lexbuf); )
+# 616 "compiler/lib/js_lexer.ml"
 
   | 13 ->
-# 144 "compiler/lib/js_lexer.mll"
-        ( T_COMMA (tokinfo prev lexbuf); )
-# 622 "compiler/lib/js_lexer.ml"
+# 143 "compiler/lib/js_lexer.mll"
+        ( T_COMMA (tokinfo lexbuf); )
+# 621 "compiler/lib/js_lexer.ml"
 
   | 14 ->
-# 145 "compiler/lib/js_lexer.mll"
-        ( T_COLON (tokinfo prev lexbuf); )
-# 627 "compiler/lib/js_lexer.ml"
+# 144 "compiler/lib/js_lexer.mll"
+        ( T_COLON (tokinfo lexbuf); )
+# 626 "compiler/lib/js_lexer.ml"
 
   | 15 ->
-# 146 "compiler/lib/js_lexer.mll"
-        ( T_PLING (tokinfo prev lexbuf); )
-# 632 "compiler/lib/js_lexer.ml"
+# 145 "compiler/lib/js_lexer.mll"
+        ( T_PLING (tokinfo lexbuf); )
+# 631 "compiler/lib/js_lexer.ml"
 
   | 16 ->
-# 147 "compiler/lib/js_lexer.mll"
-         ( T_AND (tokinfo prev lexbuf); )
-# 637 "compiler/lib/js_lexer.ml"
+# 146 "compiler/lib/js_lexer.mll"
+         ( T_AND (tokinfo lexbuf); )
+# 636 "compiler/lib/js_lexer.ml"
 
   | 17 ->
-# 148 "compiler/lib/js_lexer.mll"
-         ( T_OR (tokinfo prev lexbuf); )
-# 642 "compiler/lib/js_lexer.ml"
+# 147 "compiler/lib/js_lexer.mll"
+         ( T_OR (tokinfo lexbuf); )
+# 641 "compiler/lib/js_lexer.ml"
 
   | 18 ->
-# 149 "compiler/lib/js_lexer.mll"
-          ( T_STRICT_EQUAL (tokinfo prev lexbuf); )
-# 647 "compiler/lib/js_lexer.ml"
+# 148 "compiler/lib/js_lexer.mll"
+          ( T_STRICT_EQUAL (tokinfo lexbuf); )
+# 646 "compiler/lib/js_lexer.ml"
 
   | 19 ->
-# 150 "compiler/lib/js_lexer.mll"
-          ( T_STRICT_NOT_EQUAL (tokinfo prev lexbuf); )
-# 652 "compiler/lib/js_lexer.ml"
+# 149 "compiler/lib/js_lexer.mll"
+          ( T_STRICT_NOT_EQUAL (tokinfo lexbuf); )
+# 651 "compiler/lib/js_lexer.ml"
 
   | 20 ->
-# 151 "compiler/lib/js_lexer.mll"
-         ( T_LESS_THAN_EQUAL (tokinfo prev lexbuf); )
-# 657 "compiler/lib/js_lexer.ml"
+# 150 "compiler/lib/js_lexer.mll"
+         ( T_LESS_THAN_EQUAL (tokinfo lexbuf); )
+# 656 "compiler/lib/js_lexer.ml"
 
   | 21 ->
-# 152 "compiler/lib/js_lexer.mll"
-         ( T_GREATER_THAN_EQUAL (tokinfo prev lexbuf); )
-# 662 "compiler/lib/js_lexer.ml"
+# 151 "compiler/lib/js_lexer.mll"
+         ( T_GREATER_THAN_EQUAL (tokinfo lexbuf); )
+# 661 "compiler/lib/js_lexer.ml"
 
   | 22 ->
-# 153 "compiler/lib/js_lexer.mll"
-         ( T_EQUAL (tokinfo prev lexbuf); )
-# 667 "compiler/lib/js_lexer.ml"
+# 152 "compiler/lib/js_lexer.mll"
+         ( T_EQUAL (tokinfo lexbuf); )
+# 666 "compiler/lib/js_lexer.ml"
 
   | 23 ->
-# 154 "compiler/lib/js_lexer.mll"
-         ( T_NOT_EQUAL (tokinfo prev lexbuf); )
-# 672 "compiler/lib/js_lexer.ml"
+# 153 "compiler/lib/js_lexer.mll"
+         ( T_NOT_EQUAL (tokinfo lexbuf); )
+# 671 "compiler/lib/js_lexer.ml"
 
   | 24 ->
-# 155 "compiler/lib/js_lexer.mll"
-         (
-      let cpi = tokinfo prev lexbuf in
-      match prev with
-        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
-          T_INCR_NB(cpi)
-        | _ -> T_INCR(cpi) )
-# 682 "compiler/lib/js_lexer.ml"
+# 154 "compiler/lib/js_lexer.mll"
+         ( T_INCR (tokinfo lexbuf); )
+# 676 "compiler/lib/js_lexer.ml"
 
   | 25 ->
-# 161 "compiler/lib/js_lexer.mll"
-         (
-      let cpi = tokinfo prev lexbuf in
-      match prev with
-        | Some p when (Js_token.info p).Parse_info.line = cpi.Parse_info.line ->
-          T_DECR_NB(cpi)
-        | _ -> T_DECR(cpi) )
-# 692 "compiler/lib/js_lexer.ml"
+# 155 "compiler/lib/js_lexer.mll"
+         ( T_DECR (tokinfo lexbuf); )
+# 681 "compiler/lib/js_lexer.ml"
 
   | 26 ->
-# 167 "compiler/lib/js_lexer.mll"
-          ( T_LSHIFT_ASSIGN (tokinfo prev lexbuf); )
-# 697 "compiler/lib/js_lexer.ml"
+# 156 "compiler/lib/js_lexer.mll"
+          ( T_LSHIFT_ASSIGN (tokinfo lexbuf); )
+# 686 "compiler/lib/js_lexer.ml"
 
   | 27 ->
-# 168 "compiler/lib/js_lexer.mll"
-         ( T_LSHIFT (tokinfo prev lexbuf); )
-# 702 "compiler/lib/js_lexer.ml"
+# 157 "compiler/lib/js_lexer.mll"
+         ( T_LSHIFT (tokinfo lexbuf); )
+# 691 "compiler/lib/js_lexer.ml"
 
   | 28 ->
-# 169 "compiler/lib/js_lexer.mll"
-          ( T_RSHIFT_ASSIGN (tokinfo prev lexbuf); )
-# 707 "compiler/lib/js_lexer.ml"
+# 158 "compiler/lib/js_lexer.mll"
+          ( T_RSHIFT_ASSIGN (tokinfo lexbuf); )
+# 696 "compiler/lib/js_lexer.ml"
 
   | 29 ->
-# 170 "compiler/lib/js_lexer.mll"
-           ( T_RSHIFT3_ASSIGN (tokinfo prev lexbuf); )
-# 712 "compiler/lib/js_lexer.ml"
+# 159 "compiler/lib/js_lexer.mll"
+           ( T_RSHIFT3_ASSIGN (tokinfo lexbuf); )
+# 701 "compiler/lib/js_lexer.ml"
 
   | 30 ->
-# 171 "compiler/lib/js_lexer.mll"
-          ( T_SPREAD (tokinfo prev lexbuf); )
-# 717 "compiler/lib/js_lexer.ml"
+# 160 "compiler/lib/js_lexer.mll"
+          ( T_SPREAD (tokinfo lexbuf); )
+# 706 "compiler/lib/js_lexer.ml"
 
   | 31 ->
-# 172 "compiler/lib/js_lexer.mll"
-          ( T_RSHIFT3 (tokinfo prev lexbuf); )
-# 722 "compiler/lib/js_lexer.ml"
+# 161 "compiler/lib/js_lexer.mll"
+          ( T_RSHIFT3 (tokinfo lexbuf); )
+# 711 "compiler/lib/js_lexer.ml"
 
   | 32 ->
-# 173 "compiler/lib/js_lexer.mll"
-         ( T_RSHIFT (tokinfo prev lexbuf); )
-# 727 "compiler/lib/js_lexer.ml"
+# 162 "compiler/lib/js_lexer.mll"
+         ( T_RSHIFT (tokinfo lexbuf); )
+# 716 "compiler/lib/js_lexer.ml"
 
   | 33 ->
-# 174 "compiler/lib/js_lexer.mll"
-         ( T_PLUS_ASSIGN (tokinfo prev lexbuf); )
-# 732 "compiler/lib/js_lexer.ml"
+# 163 "compiler/lib/js_lexer.mll"
+         ( T_PLUS_ASSIGN (tokinfo lexbuf); )
+# 721 "compiler/lib/js_lexer.ml"
 
   | 34 ->
-# 175 "compiler/lib/js_lexer.mll"
-         ( T_MINUS_ASSIGN (tokinfo prev lexbuf); )
-# 737 "compiler/lib/js_lexer.ml"
+# 164 "compiler/lib/js_lexer.mll"
+         ( T_MINUS_ASSIGN (tokinfo lexbuf); )
+# 726 "compiler/lib/js_lexer.ml"
 
   | 35 ->
-# 177 "compiler/lib/js_lexer.mll"
-         ( T_MULT_ASSIGN (tokinfo prev lexbuf); )
-# 742 "compiler/lib/js_lexer.ml"
+# 166 "compiler/lib/js_lexer.mll"
+         ( T_MULT_ASSIGN (tokinfo lexbuf); )
+# 731 "compiler/lib/js_lexer.ml"
 
   | 36 ->
-# 178 "compiler/lib/js_lexer.mll"
-         ( T_MOD_ASSIGN (tokinfo prev lexbuf); )
-# 747 "compiler/lib/js_lexer.ml"
+# 167 "compiler/lib/js_lexer.mll"
+         ( T_MOD_ASSIGN (tokinfo lexbuf); )
+# 736 "compiler/lib/js_lexer.ml"
 
   | 37 ->
-# 179 "compiler/lib/js_lexer.mll"
-         ( T_BIT_AND_ASSIGN (tokinfo prev lexbuf); )
-# 752 "compiler/lib/js_lexer.ml"
+# 168 "compiler/lib/js_lexer.mll"
+         ( T_BIT_AND_ASSIGN (tokinfo lexbuf); )
+# 741 "compiler/lib/js_lexer.ml"
 
   | 38 ->
-# 180 "compiler/lib/js_lexer.mll"
-         ( T_BIT_OR_ASSIGN (tokinfo prev lexbuf); )
-# 757 "compiler/lib/js_lexer.ml"
+# 169 "compiler/lib/js_lexer.mll"
+         ( T_BIT_OR_ASSIGN (tokinfo lexbuf); )
+# 746 "compiler/lib/js_lexer.ml"
 
   | 39 ->
-# 181 "compiler/lib/js_lexer.mll"
-         ( T_BIT_XOR_ASSIGN (tokinfo prev lexbuf); )
-# 762 "compiler/lib/js_lexer.ml"
+# 170 "compiler/lib/js_lexer.mll"
+         ( T_BIT_XOR_ASSIGN (tokinfo lexbuf); )
+# 751 "compiler/lib/js_lexer.ml"
 
   | 40 ->
-# 182 "compiler/lib/js_lexer.mll"
-        ( T_LESS_THAN (tokinfo prev lexbuf); )
-# 767 "compiler/lib/js_lexer.ml"
+# 171 "compiler/lib/js_lexer.mll"
+        ( T_LESS_THAN (tokinfo lexbuf); )
+# 756 "compiler/lib/js_lexer.ml"
 
   | 41 ->
-# 183 "compiler/lib/js_lexer.mll"
-        ( T_GREATER_THAN (tokinfo prev lexbuf); )
-# 772 "compiler/lib/js_lexer.ml"
+# 172 "compiler/lib/js_lexer.mll"
+        ( T_GREATER_THAN (tokinfo lexbuf); )
+# 761 "compiler/lib/js_lexer.ml"
 
   | 42 ->
-# 184 "compiler/lib/js_lexer.mll"
-        ( T_PLUS (tokinfo prev lexbuf); )
-# 777 "compiler/lib/js_lexer.ml"
+# 173 "compiler/lib/js_lexer.mll"
+        ( T_PLUS (tokinfo lexbuf); )
+# 766 "compiler/lib/js_lexer.ml"
 
   | 43 ->
-# 185 "compiler/lib/js_lexer.mll"
-        ( T_MINUS (tokinfo prev lexbuf); )
-# 782 "compiler/lib/js_lexer.ml"
+# 174 "compiler/lib/js_lexer.mll"
+        ( T_MINUS (tokinfo lexbuf); )
+# 771 "compiler/lib/js_lexer.ml"
 
   | 44 ->
-# 186 "compiler/lib/js_lexer.mll"
-        ( T_MULT (tokinfo prev lexbuf); )
-# 787 "compiler/lib/js_lexer.ml"
+# 175 "compiler/lib/js_lexer.mll"
+        ( T_MULT (tokinfo lexbuf); )
+# 776 "compiler/lib/js_lexer.ml"
 
   | 45 ->
-# 188 "compiler/lib/js_lexer.mll"
-        ( T_MOD (tokinfo prev lexbuf); )
-# 792 "compiler/lib/js_lexer.ml"
+# 177 "compiler/lib/js_lexer.mll"
+        ( T_MOD (tokinfo lexbuf); )
+# 781 "compiler/lib/js_lexer.ml"
 
   | 46 ->
-# 189 "compiler/lib/js_lexer.mll"
-        ( T_BIT_OR (tokinfo prev lexbuf); )
-# 797 "compiler/lib/js_lexer.ml"
+# 178 "compiler/lib/js_lexer.mll"
+        ( T_BIT_OR (tokinfo lexbuf); )
+# 786 "compiler/lib/js_lexer.ml"
 
   | 47 ->
-# 190 "compiler/lib/js_lexer.mll"
-        ( T_BIT_AND (tokinfo prev lexbuf); )
-# 802 "compiler/lib/js_lexer.ml"
+# 179 "compiler/lib/js_lexer.mll"
+        ( T_BIT_AND (tokinfo lexbuf); )
+# 791 "compiler/lib/js_lexer.ml"
 
   | 48 ->
-# 191 "compiler/lib/js_lexer.mll"
-        ( T_BIT_XOR (tokinfo prev lexbuf); )
-# 807 "compiler/lib/js_lexer.ml"
+# 180 "compiler/lib/js_lexer.mll"
+        ( T_BIT_XOR (tokinfo lexbuf); )
+# 796 "compiler/lib/js_lexer.ml"
 
   | 49 ->
-# 192 "compiler/lib/js_lexer.mll"
-        ( T_NOT (tokinfo prev lexbuf); )
-# 812 "compiler/lib/js_lexer.ml"
+# 181 "compiler/lib/js_lexer.mll"
+        ( T_NOT (tokinfo lexbuf); )
+# 801 "compiler/lib/js_lexer.ml"
 
   | 50 ->
-# 193 "compiler/lib/js_lexer.mll"
-        ( T_BIT_NOT (tokinfo prev lexbuf); )
-# 817 "compiler/lib/js_lexer.ml"
+# 182 "compiler/lib/js_lexer.mll"
+        ( T_BIT_NOT (tokinfo lexbuf); )
+# 806 "compiler/lib/js_lexer.ml"
 
   | 51 ->
-# 194 "compiler/lib/js_lexer.mll"
-        ( T_ASSIGN (tokinfo prev lexbuf); )
-# 822 "compiler/lib/js_lexer.ml"
+# 183 "compiler/lib/js_lexer.mll"
+        ( T_ASSIGN (tokinfo lexbuf); )
+# 811 "compiler/lib/js_lexer.ml"
 
   | 52 ->
-# 199 "compiler/lib/js_lexer.mll"
+# 188 "compiler/lib/js_lexer.mll"
                                                          (
       let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       try
         let f = Hashtbl.find keyword_table s in
         f info
       with
         | Not_found -> T_IDENTIFIER (s, info)
     )
-# 835 "compiler/lib/js_lexer.ml"
+# 824 "compiler/lib/js_lexer.ml"
 
   | 53 ->
-# 213 "compiler/lib/js_lexer.mll"
+# 202 "compiler/lib/js_lexer.mll"
                        (
       let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       T_NUMBER (s, info)
     )
-# 844 "compiler/lib/js_lexer.ml"
+# 833 "compiler/lib/js_lexer.ml"
 
   | 54 ->
-# 218 "compiler/lib/js_lexer.mll"
+# 207 "compiler/lib/js_lexer.mll"
                   (
       let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       T_NUMBER (s, info)
     )
-# 853 "compiler/lib/js_lexer.ml"
+# 842 "compiler/lib/js_lexer.ml"
 
   | 55 ->
-# 224 "compiler/lib/js_lexer.mll"
+# 213 "compiler/lib/js_lexer.mll"
                                                                     (
       let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       T_NUMBER (s, info)
     )
-# 862 "compiler/lib/js_lexer.ml"
+# 851 "compiler/lib/js_lexer.ml"
 
   | 56 ->
-# 230 "compiler/lib/js_lexer.mll"
+# 219 "compiler/lib/js_lexer.mll"
                             (
       let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       T_NUMBER (s, info)
     )
-# 871 "compiler/lib/js_lexer.ml"
+# 860 "compiler/lib/js_lexer.ml"
 
   | 57 ->
 let
-# 239 "compiler/lib/js_lexer.mll"
+# 228 "compiler/lib/js_lexer.mll"
                  quote
-# 877 "compiler/lib/js_lexer.ml"
+# 866 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 239 "compiler/lib/js_lexer.mll"
+# 228 "compiler/lib/js_lexer.mll"
                        (
+      with_pos lexbuf (fun () ->
       let from = lexbuf.Lexing.lex_start_p.pos_cnum in
-      let info = tokinfo prev lexbuf in
+      let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       string_quote quote buf lexbuf;
       let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       let to_ = lexbuf.Lexing.lex_curr_p.pos_cnum in
-      T_STRING (s, info, to_ - 1 - from)
+      T_STRING (s, info, to_ - 1 - from))
     )
-# 890 "compiler/lib/js_lexer.ml"
+# 880 "compiler/lib/js_lexer.ml"
 
   | 58 ->
-# 266 "compiler/lib/js_lexer.mll"
-               (
-      let s = tok lexbuf in
-      let info = tokinfo prev lexbuf in
-
-      match prev with
-      | Some (
-            T_IDENTIFIER _
-          | T_NUMBER _ | T_STRING _ | T_REGEX _
-          | T_FALSE _ | T_TRUE _ | T_NULL _
-          | T_THIS _
-          | T_INCR _ | T_DECR _
-          | T_RBRACKET _ | T_RPAREN _
-        ) -> begin match s with
-          | "/" -> T_DIV (info);
-          | "/=" -> T_DIV_ASSIGN info
-          | _ -> assert false
-        end
-      | _ ->
-          let buf = Buffer.create 127 in
-          Buffer.add_string buf s;
-          regexp buf lexbuf;
-          T_REGEX (Buffer.contents buf, info)
-    )
-# 917 "compiler/lib/js_lexer.ml"
+# 239 "compiler/lib/js_lexer.mll"
+        ( T_DIV (tokinfo lexbuf) )
+# 885 "compiler/lib/js_lexer.ml"
 
   | 59 ->
-# 294 "compiler/lib/js_lexer.mll"
-        ( EOF (tokinfo prev lexbuf) )
-# 922 "compiler/lib/js_lexer.ml"
+# 240 "compiler/lib/js_lexer.mll"
+         ( T_DIV_ASSIGN (tokinfo lexbuf) )
+# 890 "compiler/lib/js_lexer.ml"
 
   | 60 ->
-# 296 "compiler/lib/js_lexer.mll"
+# 245 "compiler/lib/js_lexer.mll"
+        ( EOF (tokinfo lexbuf) )
+# 895 "compiler/lib/js_lexer.ml"
+
+  | 61 ->
+# 247 "compiler/lib/js_lexer.mll"
       (
-      TUnknown (tok lexbuf, tokinfo prev lexbuf)
+      TUnknown (tok lexbuf, tokinfo lexbuf)
     )
-# 929 "compiler/lib/js_lexer.ml"
+# 902 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
-      __ocaml_lex_main_rec prev lexbuf __ocaml_lex_state
+      __ocaml_lex_main_rec lexbuf __ocaml_lex_state
 
 and string_escape quote buf lexbuf =
    __ocaml_lex_string_escape_rec quote buf lexbuf 80
 and __ocaml_lex_string_escape_rec quote buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 302 "compiler/lib/js_lexer.mll"
+# 253 "compiler/lib/js_lexer.mll"
         ( Buffer.add_string buf "\\\\" )
-# 941 "compiler/lib/js_lexer.ml"
+# 914 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 304 "compiler/lib/js_lexer.mll"
+# 255 "compiler/lib/js_lexer.mll"
                             (
       Buffer.add_char buf '\\';
       Buffer.add_string buf (tok lexbuf) )
-# 948 "compiler/lib/js_lexer.ml"
+# 921 "compiler/lib/js_lexer.ml"
 
   | 2 ->
 let
-# 307 "compiler/lib/js_lexer.mll"
+# 258 "compiler/lib/js_lexer.mll"
           c
-# 954 "compiler/lib/js_lexer.ml"
+# 927 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 308 "compiler/lib/js_lexer.mll"
+# 259 "compiler/lib/js_lexer.mll"
     ( if Char.(c <> '\'') && Char.(c <> '\"') then Buffer.add_char buf '\\';
       Buffer.add_char buf c )
-# 959 "compiler/lib/js_lexer.ml"
+# 932 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 310 "compiler/lib/js_lexer.mll"
+# 261 "compiler/lib/js_lexer.mll"
         ( Format.eprintf  "LEXER: WEIRD end of file in string_escape@."; ())
-# 964 "compiler/lib/js_lexer.ml"
+# 937 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_string_escape_rec quote buf lexbuf __ocaml_lex_state
@@ -971,210 +944,228 @@ and __ocaml_lex_string_quote_rec q buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 313 "compiler/lib/js_lexer.mll"
+# 264 "compiler/lib/js_lexer.mll"
                  q'
-# 977 "compiler/lib/js_lexer.ml"
+# 950 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 313 "compiler/lib/js_lexer.mll"
+# 264 "compiler/lib/js_lexer.mll"
                     (
     if Char.(q = q')
     then ()
     else (Buffer.add_char buf q'; string_quote q buf lexbuf) )
-# 984 "compiler/lib/js_lexer.ml"
+# 957 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 317 "compiler/lib/js_lexer.mll"
+# 268 "compiler/lib/js_lexer.mll"
                  (
     update_loc lexbuf ~line:1 ~absolute:false 0;
     string_quote q buf lexbuf )
-# 991 "compiler/lib/js_lexer.ml"
+# 964 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 320 "compiler/lib/js_lexer.mll"
+# 271 "compiler/lib/js_lexer.mll"
             (
     Format.eprintf  "LEXER: WEIRD newline in quoted string@.";
     update_loc lexbuf ~line:1 ~absolute:false 0;
     Buffer.add_string buf (tok lexbuf);
     string_quote q buf lexbuf )
-# 1000 "compiler/lib/js_lexer.ml"
+# 973 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 325 "compiler/lib/js_lexer.mll"
+# 276 "compiler/lib/js_lexer.mll"
          (
       string_escape q buf lexbuf;
       string_quote q buf lexbuf
     )
-# 1008 "compiler/lib/js_lexer.ml"
+# 981 "compiler/lib/js_lexer.ml"
 
   | 4 ->
 let
-# 329 "compiler/lib/js_lexer.mll"
+# 280 "compiler/lib/js_lexer.mll"
           x
-# 1014 "compiler/lib/js_lexer.ml"
+# 987 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 329 "compiler/lib/js_lexer.mll"
+# 280 "compiler/lib/js_lexer.mll"
                    ( Buffer.add_char buf x; string_quote q buf lexbuf )
-# 1018 "compiler/lib/js_lexer.ml"
+# 991 "compiler/lib/js_lexer.ml"
 
   | 5 ->
-# 330 "compiler/lib/js_lexer.mll"
+# 281 "compiler/lib/js_lexer.mll"
         ( Format.eprintf  "LEXER: WEIRD end of file in quoted string@."; ())
-# 1023 "compiler/lib/js_lexer.ml"
+# 996 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_string_quote_rec q buf lexbuf __ocaml_lex_state
 
+and main_regexp lexbuf =
+   __ocaml_lex_main_regexp_rec lexbuf 100
+and __ocaml_lex_main_regexp_rec lexbuf __ocaml_lex_state =
+  match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
+      | 0 ->
+# 285 "compiler/lib/js_lexer.mll"
+        (
+      with_pos lexbuf (fun () ->
+      let info = tokinfo lexbuf in
+      let buf = Buffer.create 127 in
+      Buffer.add_string buf (Lexing.lexeme lexbuf);
+      regexp buf lexbuf;
+      T_REGEX (Buffer.contents buf, info)) )
+# 1014 "compiler/lib/js_lexer.ml"
+
+  | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
+      __ocaml_lex_main_regexp_rec lexbuf __ocaml_lex_state
+
 and regexp buf lexbuf =
-   __ocaml_lex_regexp_rec buf lexbuf 100
+   __ocaml_lex_regexp_rec buf lexbuf 102
 and __ocaml_lex_regexp_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
 let
-# 334 "compiler/lib/js_lexer.mll"
+# 294 "compiler/lib/js_lexer.mll"
                x
-# 1036 "compiler/lib/js_lexer.ml"
+# 1027 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1) in
-# 334 "compiler/lib/js_lexer.mll"
+# 294 "compiler/lib/js_lexer.mll"
                   ( Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
                     regexp buf lexbuf )
-# 1042 "compiler/lib/js_lexer.ml"
+# 1033 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 337 "compiler/lib/js_lexer.mll"
+# 297 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf )
-# 1047 "compiler/lib/js_lexer.ml"
+# 1038 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 338 "compiler/lib/js_lexer.mll"
+# 298 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf '['; regexp_class buf lexbuf )
-# 1052 "compiler/lib/js_lexer.ml"
+# 1043 "compiler/lib/js_lexer.ml"
 
   | 3 ->
 let
-# 339 "compiler/lib/js_lexer.mll"
+# 299 "compiler/lib/js_lexer.mll"
                  x
-# 1058 "compiler/lib/js_lexer.ml"
+# 1049 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 339 "compiler/lib/js_lexer.mll"
+# 299 "compiler/lib/js_lexer.mll"
                           ( Buffer.add_char buf x; regexp buf lexbuf )
-# 1062 "compiler/lib/js_lexer.ml"
+# 1053 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 340 "compiler/lib/js_lexer.mll"
+# 300 "compiler/lib/js_lexer.mll"
          ( Format.eprintf "LEXER: WEIRD newline in regexp@.";
            update_loc lexbuf ~line:1 ~absolute:false 0;
            ())
-# 1069 "compiler/lib/js_lexer.ml"
+# 1060 "compiler/lib/js_lexer.ml"
 
   | 5 ->
-# 343 "compiler/lib/js_lexer.mll"
+# 303 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: WEIRD end of file in regexp@."; ())
-# 1074 "compiler/lib/js_lexer.ml"
+# 1065 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_rec buf lexbuf __ocaml_lex_state
 
 and regexp_class buf lexbuf =
-   __ocaml_lex_regexp_class_rec buf lexbuf 108
+   __ocaml_lex_regexp_class_rec buf lexbuf 110
 and __ocaml_lex_regexp_class_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 346 "compiler/lib/js_lexer.mll"
+# 306 "compiler/lib/js_lexer.mll"
         ( Buffer.add_char buf ']';
              regexp buf lexbuf )
-# 1087 "compiler/lib/js_lexer.ml"
+# 1078 "compiler/lib/js_lexer.ml"
 
   | 1 ->
 let
-# 348 "compiler/lib/js_lexer.mll"
+# 308 "compiler/lib/js_lexer.mll"
                x
-# 1093 "compiler/lib/js_lexer.ml"
+# 1084 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf (lexbuf.Lexing.lex_start_pos + 1) in
-# 348 "compiler/lib/js_lexer.mll"
+# 308 "compiler/lib/js_lexer.mll"
                   ( Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf )
-# 1099 "compiler/lib/js_lexer.ml"
+# 1090 "compiler/lib/js_lexer.ml"
 
   | 2 ->
 let
-# 351 "compiler/lib/js_lexer.mll"
+# 311 "compiler/lib/js_lexer.mll"
                  x
-# 1105 "compiler/lib/js_lexer.ml"
+# 1096 "compiler/lib/js_lexer.ml"
 = Lexing.sub_lexeme_char lexbuf lexbuf.Lexing.lex_start_pos in
-# 351 "compiler/lib/js_lexer.mll"
+# 311 "compiler/lib/js_lexer.mll"
                     ( Buffer.add_char buf x; regexp_class buf lexbuf )
-# 1109 "compiler/lib/js_lexer.ml"
+# 1100 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 352 "compiler/lib/js_lexer.mll"
+# 312 "compiler/lib/js_lexer.mll"
          ( Format.eprintf "LEXER: WEIRD newline in regexp_class@.";
            update_loc lexbuf ~line:1 ~absolute:false 0;
            ())
-# 1116 "compiler/lib/js_lexer.ml"
+# 1107 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 355 "compiler/lib/js_lexer.mll"
+# 315 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ())
-# 1121 "compiler/lib/js_lexer.ml"
+# 1112 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_class_rec buf lexbuf __ocaml_lex_state
 
 and regexp_maybe_ident buf lexbuf =
-   __ocaml_lex_regexp_maybe_ident_rec buf lexbuf 115
+   __ocaml_lex_regexp_maybe_ident_rec buf lexbuf 117
 and __ocaml_lex_regexp_maybe_ident_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 358 "compiler/lib/js_lexer.mll"
+# 318 "compiler/lib/js_lexer.mll"
                       ( Buffer.add_string buf (tok lexbuf) )
-# 1133 "compiler/lib/js_lexer.ml"
+# 1124 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_regexp_maybe_ident_rec buf lexbuf __ocaml_lex_state
 
 and st_comment buf lexbuf =
-   __ocaml_lex_st_comment_rec buf lexbuf 116
+   __ocaml_lex_st_comment_rec buf lexbuf 118
 and __ocaml_lex_st_comment_rec buf lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 363 "compiler/lib/js_lexer.mll"
+# 323 "compiler/lib/js_lexer.mll"
          ( Buffer.add_string buf (tok lexbuf) )
-# 1145 "compiler/lib/js_lexer.ml"
+# 1136 "compiler/lib/js_lexer.ml"
 
   | 1 ->
-# 364 "compiler/lib/js_lexer.mll"
+# 324 "compiler/lib/js_lexer.mll"
             (
       update_loc lexbuf ~line:1 ~absolute:false 0;
       Buffer.add_string buf (tok lexbuf);
       st_comment buf lexbuf )
-# 1153 "compiler/lib/js_lexer.ml"
+# 1144 "compiler/lib/js_lexer.ml"
 
   | 2 ->
-# 368 "compiler/lib/js_lexer.mll"
+# 328 "compiler/lib/js_lexer.mll"
                        ( Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf )
-# 1158 "compiler/lib/js_lexer.ml"
+# 1149 "compiler/lib/js_lexer.ml"
 
   | 3 ->
-# 369 "compiler/lib/js_lexer.mll"
+# 329 "compiler/lib/js_lexer.mll"
             ( Buffer.add_char buf '*';st_comment buf lexbuf )
-# 1163 "compiler/lib/js_lexer.ml"
+# 1154 "compiler/lib/js_lexer.ml"
 
   | 4 ->
-# 371 "compiler/lib/js_lexer.mll"
+# 331 "compiler/lib/js_lexer.mll"
         ( Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/")
-# 1168 "compiler/lib/js_lexer.ml"
+# 1159 "compiler/lib/js_lexer.ml"
 
   | 5 ->
-# 372 "compiler/lib/js_lexer.mll"
+# 332 "compiler/lib/js_lexer.mll"
        (
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
       st_comment buf lexbuf
     )
-# 1178 "compiler/lib/js_lexer.ml"
+# 1169 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_st_comment_rec buf lexbuf __ocaml_lex_state

@@ -18,21 +18,15 @@
  *)
 open! Stdlib
 
-type fol =
-  | Yes
-  | No
-  | Unknown
-
 type t =
   { src : string option
   ; name : string option
   ; col : int
   ; line : int
   ; idx : int
-  ; fol : fol
   }
 
-let zero = { src = None; name = None; col = 0; line = 0; idx = 0; fol = Unknown }
+let zero = { src = None; name = None; col = 0; line = 0; idx = 0 }
 
 let t_of_lexbuf lexbuf : t =
   let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
@@ -42,7 +36,14 @@ let t_of_lexbuf lexbuf : t =
   in
   let name = Some lexbuf.Lexing.lex_start_p.pos_fname in
   let src = Some lexbuf.Lexing.lex_start_p.pos_fname in
-  { fol = Unknown; idx; line; col; name; src }
+  { idx; line; col; name; src }
+
+let start_position (t : t) =
+  { Lexing.pos_fname = Option.value ~default:"" t.name
+  ; pos_lnum = t.line
+  ; pos_bol = t.idx - t.col
+  ; pos_cnum = t.idx
+  }
 
 let t_of_position ~src pos =
   { name = Some pos.Lexing.pos_fname
@@ -50,5 +51,4 @@ let t_of_position ~src pos =
   ; line = pos.Lexing.pos_lnum
   ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
   ; idx = 0
-  ; fol = Unknown
   }

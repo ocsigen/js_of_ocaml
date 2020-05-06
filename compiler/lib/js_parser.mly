@@ -30,12 +30,8 @@
  *)
 
 module J = Javascript
-open Js_token
 
 let var pi name = J.ident ~loc:(Pi pi) name
-
-(* This is need to fake menhir while using `--infer`. *)
-let _tok = EOF Parse_info.zero
 
 %}
 
@@ -100,6 +96,10 @@ T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 (*-----------------------------------------*)
 
 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
+%token <string * Parse_info.t> TUnknown
+%token <string * Parse_info.t> TComment
+%token <string * Parse_info.t> TCommentLineDirective
+
 
 (* classic *)
 %token <Parse_info.t> EOF
@@ -182,38 +182,6 @@ statement_need_semi:
 statement:
  | s=statement_no_semi { s }
  | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { s }
- | statement=statement_need_semi {
-    (* 7.9.1 - 1 *)
-    (* When, as the program is parsed from left to right, a token (called the offending token)
-       is encountered that is not allowed by any production of the grammar, then a semicolon
-       is automatically inserted before the offending token if one or more of the following
-       conditions is true:
-       - The offending token is }.
-       - The offending token is separated from the previous
-         token by at least one LineTerminator. *)
-
-    (* 7.9.1 - 2 *)
-    (* When, as the program is parsed from left to right, the end of the input stream of tokens *)
-    (* is encountered and the parser is unable to parse the input token stream as a single *)
-    (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
-    (* of the input stream. *)
-
-    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
-    (* menhir internal's         *)
-    (* look the current token:   *)
-    (* - if it is on another line (linebreak in between), accept the statement *)
-    (* - fail otherwise *)
-    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
-
-    match _tok with
-      | EOF _ | T_RCURLY _ -> statement
-      | token ->
-        let info = Js_token.info token in
-        match info.Parse_info.fol with
-          | Yes -> statement
-          | No -> $syntaxerror
-          | Unknown -> assert false
-  }
 
 labeled_statement:
 | l=label T_COLON s=statement { J.Labelled_statement (l, s), J.N }

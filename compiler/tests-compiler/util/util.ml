@@ -153,7 +153,6 @@ let parse_js file =
       lex_curr_p = { lexbuf.lex_curr_p with pos_fname = Filetype.path_of_js_file file }
     }
   in
-
   Jsoo.Parse_js.Lexer.of_lexbuf lexbuf |> Jsoo.Parse_js.parse
 
 let channel_to_string c_in =

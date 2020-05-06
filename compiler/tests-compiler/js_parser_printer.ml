@@ -167,20 +167,36 @@ let check_vs_string s toks =
   loop 0 toks
 
 let parse_print_token ?(extra = false) s =
-  let lex = Parse_js.Lexer.of_lexbuf ~rm_comment:false (Lexing.from_string s) in
-  let tokens = List.rev (Parse_js.Lexer.fold ~f:(fun l t -> t :: l) ~init:[] lex) in
+  let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+  let _p, tokens, comments =
+    try Parse_js.parse' lex
+    with Parse_js.Parsing_error pi as e ->
+      Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col;
+      raise e
+  in
+  let tokens =
+    List.merge
+      ~cmp:(fun a b ->
+        compare (Js_token.info a).Parse_info.idx (Js_token.info b).Parse_info.idx)
+      tokens
+      comments
+  in
   check_vs_string s tokens;
   let prev = ref 0 in
-  List.iter tokens ~f:(fun tok ->
-      let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
-      let pos = Js_token.info tok in
-      (if !prev <> pos.Parse_info.line
-      then
-        match pos.Parse_info.fol with
-        | Yes -> Printf.printf "\n%2d: " pos.Parse_info.line
-        | _ -> assert false);
-      prev := pos.Parse_info.line;
-      Printf.printf "%d:%s, " pos.Parse_info.col s)
+  let rec loop tokens =
+    match tokens with
+    | [ Js_token.EOF _ ] | [] -> ()
+    | tok :: xs ->
+        let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
+        let pos = Js_token.info tok in
+        (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
+        | true -> Printf.printf "\n%2d: " pos.Parse_info.line
+        | false -> ());
+        if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
+        Printf.printf "%d:%s, " pos.Parse_info.col s;
+        loop xs
+  in
+  loop tokens
 
 let%expect_test "tokens" =
   parse_print_token {|
@@ -190,33 +206,35 @@ let%expect_test "tokens" =
 
 let%expect_test "multiline string" =
   parse_print_token {|
-    42
+    42;
     "
-    "
+    ";
     42
 |};
   [%expect
     {|
     LEXER: WEIRD newline in quoted string
 
-     2: 4:42,
+     2: 4:42, 6:;,
      3: 4:"\n    ",
-     5: 4:42, |}];
+     4: 5:;,
+     5: 4:42, 0:;, |}];
   parse_print_token {|
-    42
+    42;
     "\
-    "
+    ";
     42
 |};
   [%expect {|
-    2: 4:42,
+    2: 4:42, 6:;,
     3: 4:"    ",
-    5: 4:42, |}];
+    4: 5:;,
+    5: 4:42, 0:;, |}];
   parse_print_token {|
-    42
+    42;
     "
 
-    "
+    ";
     42
 |};
   [%expect
@@ -224,9 +242,10 @@ let%expect_test "multiline string" =
     LEXER: WEIRD newline in quoted string
     LEXER: WEIRD newline in quoted string
 
-     2: 4:42,
+     2: 4:42, 6:;,
      3: 4:"\n\n    ",
-     6: 4:42, |}];
+     5: 5:;,
+     6: 4:42, 0:;, |}];
   [%expect {| |}]
 
 let%expect_test "multiline comments" =
@@ -243,7 +262,7 @@ let%expect_test "multiline comments" =
 /* test */ 42 /* test */
 |};
   [%expect {|
-    2: 0:/* test */, 11:42, 14:/* test */, |}];
+    2: 0:/* test */, 11:42, 0:;, 14:/* test */, |}];
   parse_print_token {|
     42
     /*
@@ -253,12 +272,12 @@ let%expect_test "multiline comments" =
     42
 |};
   [%expect {|
-    2: 4:42,
+    2: 4:42, 0:;,
     3: 4:/*
        "
 
        */,
-    7: 4:42, |}]
+    7: 4:42, 0:;, |}]
 
 let%expect_test "++--" =
   parse_print_token ~extra:true {|
@@ -269,10 +288,10 @@ let%expect_test "++--" =
 |};
   [%expect
     {|
-    2: 4:++ (INCR), 6:a (identifier),
-    3: 4:-- (DECR), 6:a (identifier),
-    4: 4:a (identifier), 5:++ (INCR_NB),
-    5: 4:a (identifier), 5:++ (INCR_NB), |}]
+    2: 4:++ (INCR), 6:a (identifier), 0:; (virtual),
+    3: 4:-- (DECR), 6:a (identifier), 0:; (virtual),
+    4: 4:a (identifier), 5:++ (INCR_NB), 0:; (virtual),
+    5: 4:a (identifier), 5:++ (INCR_NB), 0:; (virtual), |}]
 
 let%expect_test "div_or_regexp" =
   parse_print_token
@@ -280,23 +299,20 @@ let%expect_test "div_or_regexp" =
     1 / 2
     1 + /regexp/
     if(a) { e } /regexp/
-    +{ e } / denominator
-    +{ e } / denominator[a
+    +{ } / denominator
+    +{ } / denominator[a]
     if(b) /regexp/
     (b) / denominator
 |};
   [%expect
     {|
-    LEXER: WEIRD newline in regexp
-    LEXER: WEIRD newline in regexp_class
-
-     2: 4:1, 6:/, 8:2,
-     3: 4:1, 6:+, 8:/regexp/,
-     4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 14:}, 16:/regexp/,
-     5: 4:+, 5:{, 7:e, 9:}, 11:/ denominator,
-     6: 4:+, 5:{, 7:e, 9:}, 11:/ denominator[a,
-     7: 4:if, 6:(, 7:b, 8:), 10:/, 11:regexp, 17:/,
-     8: 4:(, 5:b, 6:), 8:/, 10:denominator, |}]
+    2: 4:1, 6:/, 8:2, 0:;,
+    3: 4:1, 6:+, 8:/regexp/, 0:;,
+    4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 0:;, 14:}, 16:/regexp/,
+    5: 4:+, 5:{, 7:}, 9:/, 11:denominator,
+    6: 4:+, 5:{, 7:}, 9:/, 11:denominator, 22:[, 23:a, 24:], 0:;,
+    7: 4:if, 6:(, 7:b, 8:), 10:/regexp/,
+    8: 4:(, 5:b, 6:), 8:/, 10:denominator, 0:;, |}]
 
 let%expect_test "virtual semicolon" =
   parse_print_token
@@ -308,45 +324,81 @@ let%expect_test "virtual semicolon" =
     2
 
     continue;
-    continue 2
+    continue a
     continue
-    2
+    a
 
     break;
-    break 2
+    break a
     break
-    2
+    a
 
-    throw;
+    throw 2;
     throw 2
-    throw
-    2
 
-    f;
-    f 2
-    f
-    2
+    { 1
+    2 } 3
+
+    a = b
+    ++c
+
+    a = b + c
+    (d + e).print()
 
 |};
   [%expect
     {|
      2: 4:return, 10:;,
-     3: 4:return, 11:2,
-     4: 4:return,
-     5: 4:; (virtual), 4:2,
+     3: 4:return, 11:2, 0:; (virtual),
+     4: 4:return, 0:; (virtual),
+     5: 4:2, 0:; (virtual),
      7: 4:continue, 12:;,
-     8: 4:continue, 13:2,
-     9: 4:continue,
-    10: 4:; (virtual), 4:2,
+     8: 4:continue, 13:a (identifier), 0:; (virtual),
+     9: 4:continue, 0:; (virtual),
+    10: 4:a (identifier), 0:; (virtual),
     12: 4:break, 9:;,
-    13: 4:break, 10:2,
-    14: 4:break,
-    15: 4:; (virtual), 4:2,
-    17: 4:throw, 9:;,
-    18: 4:throw, 10:2,
-    19: 4:throw,
-    20: 4:; (virtual), 4:2,
-    22: 4:f (identifier), 5:;,
-    23: 4:f (identifier), 6:2,
-    24: 4:f (identifier),
-    25: 4:2, |}]
+    13: 4:break, 10:a (identifier), 0:; (virtual),
+    14: 4:break, 0:; (virtual),
+    15: 4:a (identifier), 0:; (virtual),
+    17: 4:throw, 10:2, 11:;,
+    18: 4:throw, 10:2, 0:; (virtual),
+    20: 4:{, 6:1, 0:; (virtual),
+    21: 4:2, 0:; (virtual), 6:}, 8:3, 0:; (virtual),
+    23: 4:a (identifier), 6:=, 8:b (identifier), 0:; (virtual),
+    24: 4:++ (INCR), 6:c (identifier), 0:; (virtual),
+    26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
+    27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual), |}]
+
+let%expect_test _ =
+  parse_print_token
+    ~extra:true
+    {|
+function UnexpectedVirtualElement(data) {
+    var err = new Error();
+
+    err.type = 'virtual-hyperscript.unexpected.virtual-element';
+    err.message =
+        'The parent vnode is:\n' +
+        errorString(data.parentVnode)
+        '\n' +
+        'Suggested fix: change your `h(..., [ ... ])` callsite.';
+    err.foreignObject = data.foreignObject;
+    err.parentVnode = data.parentVnode;
+
+    return err;
+}
+|};
+  [%expect
+    {|
+     2: 0:function, 9:UnexpectedVirtualElement (identifier), 33:(, 34:data (identifier), 38:), 40:{,
+     3: 4:var, 8:err (identifier), 12:=, 14:new, 18:Error (identifier), 23:(, 24:), 25:;,
+     5: 4:err (identifier), 7:., 8:type (identifier), 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
+     6: 4:err (identifier), 7:., 8:message (identifier), 16:=,
+     7: 8:"The parent vnode is:\\n", 33:+,
+     8: 8:errorString (identifier), 19:(, 20:data (identifier), 24:., 25:parentVnode (identifier), 36:), 0:; (virtual),
+     9: 8:"\\n", 13:+,
+    10: 8:"Suggested fix: change your `h(..., [ ... ])` callsite.", 64:;,
+    11: 4:err (identifier), 7:., 8:foreignObject (identifier), 22:=, 24:data (identifier), 28:., 29:foreignObject (identifier), 42:;,
+    12: 4:err (identifier), 7:., 8:parentVnode (identifier), 20:=, 22:data (identifier), 26:., 27:parentVnode (identifier), 38:;,
+    14: 4:return, 11:err (identifier), 14:;,
+    15: 0:}, |}]

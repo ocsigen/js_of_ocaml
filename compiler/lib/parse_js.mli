@@ -20,19 +20,17 @@
 module Lexer : sig
   type t
 
-  val of_file : ?rm_comment:bool -> string -> t
+  val of_file : string -> t
 
-  val of_lexbuf : ?rm_comment:bool -> Lexing.lexbuf -> t
+  val of_lexbuf : Lexing.lexbuf -> t
 
-  val of_channel : ?rm_comment:bool -> in_channel -> t
-
-  val fold : f:('a -> Js_token.t -> 'a) -> init:'a -> t -> 'a
-
-  val of_list : Js_token.t list -> t
+  val of_channel : in_channel -> t
 end
 
 exception Parsing_error of Parse_info.t
 
 val parse : Lexer.t -> Javascript.program
+
+val parse' : Lexer.t -> Javascript.program * Js_token.t list * Js_token.t list
 
 val parse_expr : Lexer.t -> Javascript.expression
