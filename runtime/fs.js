@@ -238,8 +238,10 @@ function caml_fs_init (){
 }
 
 //Provides: caml_create_file
-//Requires: caml_failwith, resolve_fs_device
+//Requires: caml_failwith, resolve_fs_device, caml_string_of_jsbytes
 function caml_create_file(name,content) {
+  var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
+  var content = (typeof content == "string")?caml_string_of_jsbytes(content):content;
   var root = resolve_fs_device(name);
   if(! root.device.register) caml_failwith("cannot register file");
   root.device.register(root.rest,content);
