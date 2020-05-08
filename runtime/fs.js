@@ -250,6 +250,7 @@ function caml_create_file(name,content) {
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes
+//Requires: caml_string_of_jsbytes
 function caml_read_file_content (name) {
   var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
   var root = resolve_fs_device(name);
