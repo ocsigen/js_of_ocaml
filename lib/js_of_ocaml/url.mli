@@ -77,7 +77,8 @@ val encode_arguments : (string * string) list -> string
 
 val decode_arguments : string -> (string * string) list
 (** [decode_arguments s] parses [s] returning the sliced-diced
-    association list. *)
+    association list. [s] should be only the arguments part (after the '?')
+    not the whole url. *)
 
 (** The following part allow one to handle Url object in a much higher level
     than what a string provides. *)
