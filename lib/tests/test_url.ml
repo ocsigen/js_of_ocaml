@@ -39,3 +39,20 @@ let%expect_test _ =
   then ()
   else print_endline "escaping error";
   [%expect {||}]
+
+let%expect_test "[decode_arguments]" =
+  let test url =
+    ListLabels.iter (Url.decode_arguments url) ~f:(fun (key, value) ->
+        Printf.printf "'%s' => '%s'\n" key value)
+  in
+  (* Incorrect usage: passing in full url. *)
+  test "https://foo.com/?foo=bar&baz%20=qux%22quux";
+  [%expect {|
+    'https://foo.com/?foo' => 'bar'
+    'baz ' => 'qux"quux' |}];
+  (* correct usage: only the arguments part *)
+  test "foo=bar&baz%20=qux%22quux";
+  [%expect {|
+    'foo' => 'bar'
+    'baz ' => 'qux"quux' |}];
+  ignore ()
