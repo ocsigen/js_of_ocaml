@@ -29,13 +29,11 @@
 (rule
  (targets js_parser.mli js_parser.ml)
  (deps standard.mly)
- (mode promote)
  (action (ignore-stderr (run menhir --stdlib . --table --external-tokens Js_token --explain %{dep:js_parser.mly}))))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
  (deps standard.mly)
- (mode promote)
  (action (ignore-stderr (run menhir --stdlib . --explain %{dep:annot_parser.mly}))))
 
 (rule
