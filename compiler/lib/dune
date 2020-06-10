@@ -11,15 +11,7 @@
   (preprocess (pps ppx_optcomp_light))
   )
 
-(rule
-  (targets js_lexer.ml)
-  (mode promote)
-  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:js_lexer.mll} -o %{targets}))))
-
-(rule
-  (targets annot_lexer.ml)
-  (mode promote)
-  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:annot_lexer.mll} -o %{targets}))))
+(ocamllex js_lexer annot_lexer)
 
 ;; cp $(ocamlfind printconf path)/menhir/standard.mly standard.mly
 
@@ -29,13 +21,11 @@
 (rule
  (targets js_parser.mli js_parser.ml)
  (deps standard.mly)
- (mode promote)
  (action (ignore-stderr (run menhir --stdlib . --table --external-tokens Js_token --explain %{dep:js_parser.mly}))))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
  (deps standard.mly)
- (mode promote)
  (action (ignore-stderr (run menhir --stdlib . --explain %{dep:annot_parser.mly}))))
 
 (rule
