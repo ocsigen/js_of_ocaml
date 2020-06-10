@@ -761,6 +761,12 @@ let compiled_blocks = ref Addr.Map.empty
 
 let method_cache_id = ref 1
 
+let new_closure_repr =
+  (* true starting with 4.12 *)
+  match Ocaml_version.v with
+  | `V4_02 | `V4_03 | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 ->
+      false
+
 type compile_info =
   { blocks : Blocks.u
   ; code : string
@@ -883,7 +889,9 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           { state with
-            State.stack = State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack
+            State.stack =
+              (* See interp.c *)
+              State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack
           }
           instrs
     | APPLY ->
@@ -1021,9 +1029,13 @@ and compile infos pc state instrs =
         let state = if nvars > 0 then State.push state else state in
         let vals, state = State.grab nvars state in
         let x, state = State.fresh_var state in
+        let env = List.map vals ~f:(fun x -> State.Var x) in
         let env =
-          Array.of_list (State.Dummy :: List.map vals ~f:(fun x -> State.Var x))
+          let code = State.Dummy in
+          let closure_info = State.Dummy in
+          if new_closure_repr then code :: closure_info :: env else code :: env
         in
+        let env = Array.of_list env in
         if debug_parser () then Format.printf "fun %a (" Var.print x;
         let nparams =
           match (get_instr_exn code addr).Instr.code with
@@ -1058,8 +1070,15 @@ and compile infos pc state instrs =
         done;
         let env = ref (List.map vals ~f:(fun x -> State.Var x)) in
         List.iter !vars ~f:(fun (i, x) ->
-            env := State.Var x :: !env;
-            if i > 0 then env := State.Dummy :: !env);
+            let code = State.Var x in
+            let closure_info = State.Dummy in
+            if new_closure_repr
+            then env := code :: closure_info :: !env
+            else env := code :: !env;
+            if i > 0
+            then
+              let infix_tag = State.Dummy in
+              env := infix_tag :: !env);
         let env = Array.of_list !env in
         let state = !state in
         let instrs =
@@ -1071,7 +1090,8 @@ and compile infos pc state instrs =
                 | GRAB -> getu code (addr + 1) + 1
                 | _ -> 1
               in
-              let state' = State.start_function state env (i * 2) in
+              let offset = if new_closure_repr then i * 3 else i * 2 in
+              let state' = State.start_function state env offset in
               let params, state' = State.make_stack nparams state' in
               if debug_parser () then Format.printf ") {@.";
               let state' = State.clear_accu state' in
@@ -1463,6 +1483,7 @@ and compile infos pc state instrs =
           (pc + 2)
           { (State.push_handler state x addr) with
             State.stack =
+              (* See interp.c *)
               State.Dummy
               :: State.Dummy
               :: State.Dummy
