@@ -81,8 +81,31 @@ let keep loc (attrs : attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
-          | { Location.txt = "if"; _ }, attr_payload -> (
+          | { Location.txt = ("if" | "ifnot") as ifnot; _ }, attr_payload -> (
+              let norm =
+                match ifnot with
+                | "if" -> fun x -> x
+                | "ifnot" -> fun x -> not x
+                | _ -> assert false
+              in
               match attr_payload with
+              | PStr
+                  [ { pstr_desc =
+                        Pstr_eval
+                          ( { pexp_desc = Pexp_construct ({ txt = Lident ident; _ }, None)
+                            ; _
+                            }
+                          , [] )
+                    ; _
+                    }
+                  ] ->
+                  let b =
+                    match bool_of_string (Sys.getenv ident) with
+                    | true -> true
+                    | false -> false
+                    | exception _ -> false
+                  in
+                  norm b
               | PStr
                   [ { pstr_desc =
                         Pstr_eval
@@ -123,7 +146,7 @@ let keep loc (attrs : attributes) =
                   let op = get_op op in
                   let a = eval a in
                   let b = eval b in
-                  op (Version.compare a b) 0
+                  norm (op (Version.compare a b) 0)
               | _ -> raise Invalid)
           | _ -> true)
     in
