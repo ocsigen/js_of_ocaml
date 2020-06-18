@@ -35,20 +35,12 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
       Tuple (Obj.double_array_tag, Array.of_list l, Unknown)
-  (*
-     For bucklescript,
-     - uncomment the two branches below
-     - and comment out the two last ones
-     {[
-       | Const_pointer (i,_) ->
-         Int (Int32.of_int i)
-       | Const_block (tag,_,l) ->
-         let l = Array.of_list (List.map l ~f:constant_of_const) in
-         Tuple (tag, l, Unknown)
-     ]}
-  *)
-  | Const_pointer i -> Int (Int32.of_int i)
-  | Const_block (tag, l) ->
+  | ((Const_pointer (i, _))[@if BUCKLESCRIPT]) -> Int (Int32.of_int i)
+  | ((Const_block (tag, _, l))[@if BUCKLESCRIPT]) ->
+      let l = Array.of_list (List.map l ~f:constant_of_const) in
+      Tuple (tag, l, Unknown)
+  | ((Const_pointer i)[@ifnot BUCKLESCRIPT]) -> Int (Int32.of_int i)
+  | ((Const_block (tag, l))[@ifnot BUCKLESCRIPT]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
