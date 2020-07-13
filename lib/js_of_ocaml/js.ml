@@ -758,3 +758,17 @@ type float_prop = float prop
 external float : float -> float = "%identity"
 
 external to_float : float -> float = "%identity"
+
+[@@@ocaml.warning "-32-60"]
+
+module For_compatibility_only = struct
+  (* Add primitives for compatibility reasons. Existing users might
+     depend on it (e.g. gen_js_api), we dont want the ocaml compiler
+     to complain about theses missing primitives. *)
+
+  external caml_js_from_string : string -> js_string t = "caml_js_from_string"
+
+  external caml_js_to_byte_string : js_string t -> string = "caml_js_to_byte_string"
+
+  external caml_js_to_string : js_string t -> string = "caml_js_to_string"
+end
