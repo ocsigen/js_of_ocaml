@@ -38,7 +38,7 @@ and errorEvent =
   object
     inherit event
 
-    method msg : js_string t readonly_prop
+    method message : js_string t readonly_prop
 
     method filename : js_string t readonly_prop
 
