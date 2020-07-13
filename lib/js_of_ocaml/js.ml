@@ -771,4 +771,8 @@ module For_compatibility_only = struct
   external caml_js_to_byte_string : js_string t -> string = "caml_js_to_byte_string"
 
   external caml_js_to_string : js_string t -> string = "caml_js_to_string"
+
+  external caml_list_of_js_array : 'a js_array t -> 'a list = "caml_list_of_js_array"
+
+  external caml_list_to_js_array : 'a list -> 'a js_array t = "caml_list_to_js_array"
 end

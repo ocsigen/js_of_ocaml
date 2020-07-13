@@ -192,6 +192,14 @@ void caml_list_mount_point () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_list_mount_point!\n");
   exit(1);
 }
+void caml_list_of_js_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_list_of_js_array!\n");
+  exit(1);
+}
+void caml_list_to_js_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_list_to_js_array!\n");
+  exit(1);
+}
 void caml_ml_set_channel_output () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_ml_set_channel_output!\n");
   exit(1);
