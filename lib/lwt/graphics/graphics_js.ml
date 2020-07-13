@@ -22,28 +22,31 @@ open Js_of_ocaml_lwt
 open! Import
 include Graphics
 
-type context
+class type context_ =
+  object
+    method canvas : Dom_html.canvasElement Js.t Js.readonly_prop
+  end
+
+type context = context_ Js.t
 
 let _ = Callback.register_exception "Graphics.Graphic_failure" (Graphic_failure "")
 
 let ( >>= ) = Lwt.bind
 
-let get_context () = Js.Unsafe.(fun_call (variable "caml_gr_state_get") [||])
+external get_context : unit -> context = "caml_gr_state_get"
 
-let set_context ctx = Js.Unsafe.(fun_call (variable "caml_gr_state_set") [| inject ctx |])
+external set_context : context -> unit = "caml_gr_state_set"
 
-let create_context canvas w h =
-  Js.Unsafe.(
-    fun_call (variable "caml_gr_state_create") [| inject canvas; inject w; inject h |])
+external create_context : Dom_html.canvasElement Js.t -> int -> int -> context
+  = "caml_gr_state_create"
 
-let document_of_context ctx =
-  Js.Unsafe.(fun_call (variable "caml_gr_doc_of_state") [| inject ctx |])
+external document_of_context : context -> Dom_html.document Js.t = "caml_gr_doc_of_state"
 
 let open_canvas x =
   let ctx = create_context x x##.width x##.height in
   set_context ctx
 
-let compute_real_pos elt =
+let compute_real_pos (elt : #Dom_html.element Js.t) =
   let rec loop elt left top =
     let top = elt##.offsetTop - elt##.scrollTop + top
     and left = elt##.offsetLeft - elt##.scrollLeft + left in
@@ -58,7 +61,7 @@ let mouse_pos () =
   let elt = ctx##.canvas in
   Lwt_js_events.mousemove elt
   >>= fun ev ->
-  let top, left = compute_real_pos elt in
+  let top, left = compute_real_pos (elt :> Dom_html.element Js.t) in
   Lwt.return
     ( Js.Optdef.get ev##.pageX (fun _ -> 0) - left
     , elt##.height - (Js.Optdef.get ev##.pageY (fun _ -> 0) - top) )
@@ -102,7 +105,7 @@ let loop elist f : unit =
           Js._true);
   elt##.onmousemove :=
     Dom_html.handler (fun ev ->
-        let cy, cx = compute_real_pos elt in
+        let cy, cx = compute_real_pos (elt :> Dom_html.element Js.t) in
         mouse_x := Js.Optdef.get ev##.pageX (fun _ -> 0) - cx;
         mouse_y := elt##.height - (Js.Optdef.get ev##.pageY (fun _ -> 0) - cy);
         (if List.mem Mouse_motion elist
