@@ -90,12 +90,12 @@ a list of JavaScript filename as input and concatenates them all
 (merging source-maps together if needed).
 
 {{{
-js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js -o myexe.js
+js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js-o myexe.js
 }}}
 
-Note that, unlike the ocaml compiler, the ocaml stdlib need to be
-passed explicitly (here, {stdlib.js} is the result of compiling
-{stdlib.cma}).
+Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
+passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compiling
+{stdlib.cma} and {std_exit.cma}).
 
 == Support in dune
 
