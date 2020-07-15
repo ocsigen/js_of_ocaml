@@ -95,7 +95,7 @@ js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js-o mye
 
 Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
 passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compiling
-{stdlib.cma} and {std_exit.cma}).
+{stdlib.cma} and {std_exit.cmo}).
 
 == Support in dune
 
