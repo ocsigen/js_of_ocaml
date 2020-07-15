@@ -504,7 +504,8 @@ end = struct
 
   let size t = Array.length t.arr * int_num_bits
 
-  let mem { arr } i =
+  let mem t i =
+    let arr = t.arr in
     let idx = i / int_num_bits in
     let off = i mod int_num_bits in
     idx < Array.length arr && Array.unsafe_get arr idx land (1 lsl off) <> 0
