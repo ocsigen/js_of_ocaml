@@ -1,6 +1,6 @@
 (executables
   (names main)
-  (libraries ppx_js ocaml-migrate-parsetree))
+  (libraries ppx_js ppxlib))
 
 (install
   (section lib)

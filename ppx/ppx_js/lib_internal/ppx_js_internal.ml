@@ -16,9 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Ocaml_ast_mapper = Ast_mapper
+open Ppxlib
 open StdLabels
-open Migrate_parsetree
-open OCaml_408.Ast
 open Ast_helper
 open Asttypes
 open Parsetree
@@ -72,9 +72,9 @@ let parse_lid s =
   | None -> assert false
   | Some v -> v
 
-let lid ?(loc = !default_loc) s = Location.mkloc (parse_lid s) loc
+let lid ?(loc = !default_loc) s = { txt = parse_lid s; loc }
 
-let mkloc_opt ?(loc = !default_loc) x = Location.mkloc x loc
+let mkloc_opt ?(loc = !default_loc) x = { txt = x; loc }
 
 let unit ?loc ?attrs () =
   Exp.construct ?loc ?attrs (mkloc_opt ?loc (Longident.Lident "()")) None
@@ -95,9 +95,13 @@ let exp_to_string = function
     when String.length s > 0 && s.[0] >= 'A' && s.[0] <= 'Z' ->
       "_" ^ s
   | { pexp_loc; _ } ->
-      Location.raise_errorf
-        ~loc:pexp_loc
-        "Javascript methods or attributes can only be simple identifiers."
+      let err =
+        Location.Error.make
+          ~loc:pexp_loc
+          ~sub:[]
+          "Javascript methods or attributes can only be simple identifiers."
+      in
+      raise (Location.Error err)
 
 let typ s = Typ.constr (lid s) []
 
@@ -108,13 +112,18 @@ let arrows args ret =
 let wrapper = ref None
 
 let make_str ?loc s =
-  match loc with
-  | None -> Location.mknoloc s
-  | Some loc -> Location.mkloc s loc
+  let loc =
+    match loc with
+    | None -> Location.none
+    | Some loc -> loc
+  in
+  { txt = s; loc }
 
 let inside_Js =
   lazy
-    (try Filename.basename (Filename.chop_extension !Location.input_name) = "js"
+    (try
+       Filename.basename (Filename.chop_extension !Ocaml_common.Location.input_name)
+       = "js"
      with Invalid_argument _ -> false)
 
 (* [merlin_hide] tells merlin to not look at a node, or at any of its
@@ -127,13 +136,22 @@ let merlin_hide =
 
 module Js : sig
   val type_ :
-    ?loc:Ast_helper.loc -> string -> Parsetree.core_type list -> Parsetree.core_type
+       ?loc:Ppxlib.Ast_helper.loc
+    -> string
+    -> Ppxlib.Parsetree.core_type list
+    -> Ppxlib.Parsetree.core_type
 
   val unsafe :
-    ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
+       ?loc:Ppxlib.Ast_helper.loc
+    -> string
+    -> Ppxlib.Parsetree.expression list
+    -> Ppxlib.Parsetree.expression
 
   val fun_ :
-    ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
+       ?loc:Ppxlib.Ast_helper.loc
+    -> string
+    -> Ppxlib.Parsetree.expression list
+    -> Ppxlib.Parsetree.expression
 end = struct
   let js_dot name =
     if Lazy.force inside_Js
@@ -241,7 +259,7 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   let labels_and_pats =
     List.map arguments ~f:(fun d ->
         let label = Arg.label d in
-        let patt = Pat.var (Location.mknoloc (Arg.name d)) in
+        let patt = Pat.var { txt = Arg.name d; loc = Location.none } in
         label, patt)
   in
   let make_fun (label, pat) (label', typ) expr =
@@ -312,7 +330,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
              ~loc:gloc
              nolabel
              None
-             (Pat.var ~loc:gloc (Location.mknoloc "x"))
+             (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
              (Exp.send
                 ~loc
                 (Exp.ident ~loc:obj.pexp_loc (lid ~loc:obj.pexp_loc "x"))
@@ -354,7 +372,7 @@ let prop_get ~loc obj prop =
            ~loc:gloc
            nolabel
            None
-           (Pat.var ~loc:gloc (Location.mknoloc "x"))
+           (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
            (Exp.send ~loc (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc prop)))
     ]
 
@@ -404,7 +422,7 @@ let prop_set ~loc ~prop_loc obj prop value =
            ~loc:{ loc with loc_ghost = true }
            nolabel
            None
-           (Pat.var ~loc:gloc (Location.mknoloc "x"))
+           (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
            (Exp.send
               ~loc:prop_loc
               (Exp.ident ~loc:obj.pexp_loc (lid ~loc:gloc "x"))
@@ -432,7 +450,9 @@ let prop_set ~loc ~prop_loc obj prop value =
 let new_object constr args =
   let invoker =
     invoker
-      (fun _args _tres -> [%type: unit])
+      (fun _args _tres ->
+        let loc = constr.loc in
+        [%type: unit])
       (fun args tres ->
         let tres = Js.type_ "t" [ tres ] in
         match args with
@@ -451,6 +471,7 @@ let new_object constr args =
     invoker
     ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
     @ [ app_arg (unit ~loc:gloc ()) ])
+  [@@ocaml.warning "-26"]
 
 module S = Map.Make (String)
 
@@ -492,13 +513,16 @@ end
 
 type field_desc =
   | Meth of
-      string Asttypes.loc
-      * Asttypes.private_flag
-      * Asttypes.override_flag
-      * Parsetree.expression
+      string Ppxlib.Asttypes.loc
+      * Ppxlib.Asttypes.private_flag
+      * Ppxlib.Asttypes.override_flag
+      * Ppxlib.Parsetree.expression
       * Arg.t list
   | Val of
-      string Asttypes.loc * Prop_kind.t * Asttypes.override_flag * Parsetree.expression
+      string Ppxlib.Asttypes.loc
+      * Prop_kind.t
+      * Ppxlib.Asttypes.override_flag
+      * Ppxlib.Parsetree.expression
 
 let filter_map f l =
   let l =
@@ -523,11 +547,13 @@ let preprocess_literal_object mappper fields :
       let sub =
         [ id'.loc, Printf.sprintf "Duplicated val or method %S%s." id'.txt (details id') ]
       in
-      Ast_mapper.make_error_of_message
-        ~loc:id.loc
-        ~sub
-        (Printf.sprintf "Duplicated val or method %S%s." id.txt (details id))
-      |> Ast_mapper.raise_error
+      let err =
+        Location.Error.make
+          ~loc:id.loc
+          ~sub
+          (Printf.sprintf "Duplicated val or method %S%s." id.txt (details id))
+      in
+      raise (Location.Error err)
     else S.add txt id names
   in
   let drop_prefix ~prefix s =
@@ -563,11 +589,26 @@ let preprocess_literal_object mappper fields :
           | (Immutable | Mutable), [ `Writeonly ] -> `Writeonly
           | (Immutable | Mutable), [ `Readwrite ] -> `Readwrite
           | (Immutable | Mutable), [ `Unkown s ] ->
-              Location.raise_errorf ~loc:exp.pcf_loc "Unkown jsoo attribute ([@@@@%s])." s
+              let err =
+                Location.Error.make
+                  ~loc:exp.pcf_loc
+                  ~sub:[]
+                  (Printf.sprintf "Unkown jsoo attribute ([@@%s])." s)
+              in
+              raise (Location.Error err)
           | Mutable, [ `Readonly ] ->
-              Location.raise_errorf ~loc:exp.pcf_loc "A mutable field cannot be readonly."
+              let err =
+                Location.Error.make
+                  ~loc:exp.pcf_loc
+                  ~sub:[]
+                  "A mutable field cannot be readonly."
+              in
+              raise (Location.Error err)
           | _, _ :: _ :: _ ->
-              Location.raise_errorf ~loc:exp.pcf_loc "Too many attributes."
+              let err =
+                Location.Error.make ~loc:exp.pcf_loc ~sub:[] "Too many attributes."
+              in
+              raise (Location.Error err)
         in
         names, Val (id, kind, bang, body) :: fields
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
@@ -581,12 +622,16 @@ let preprocess_literal_object mappper fields :
         let fun_ty = create_meth_ty body in
         names, Meth (id, priv, bang, body, fun_ty) :: fields
     | _ ->
-        Location.raise_errorf
-          ~loc:exp.pcf_loc
-          "This field is not valid inside a js literal object."
+        let err =
+          Location.Error.make
+            ~loc:exp.pcf_loc
+            ~sub:[]
+            "This field is not valid inside a js literal object."
+        in
+        raise (Location.Error err)
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
-  with Location.Error error -> `Error (Ast_mapper.extension_of_error error)
+  with Location.Error error -> `Error (Location.Error.to_extension error)
 
 (* {[ object%js (self)
      val readonlyprop = e1
@@ -723,116 +768,116 @@ let literal_object self_id (fields : field_desc list) =
                    ~loc:gloc
                    nolabel
                    None
-                   (Pat.var ~loc:gloc (Location.mknoloc name))
+                   (Pat.var ~loc:gloc { txt = name; loc = Location.none })
                    fun_))
             with
             pexp_attributes = [ merlin_hide ]
           }
       ])
 
+let transform =
+  object (self)
+    inherit Ast_traverse.map as super
+
+    method! expression expr =
+      let prev_default_loc = !default_loc in
+      default_loc := expr.pexp_loc;
+      let { pexp_attributes; _ } = expr in
+      let new_expr =
+        match expr with
+        (* obj##.var *)
+        | [%expr [%e? obj] ##. [%e? meth]] ->
+            let obj = self#expression obj in
+            let prop = exp_to_string meth in
+            let new_expr = prop_get ~loc:meth.pexp_loc obj prop in
+            self#expression { new_expr with pexp_attributes }
+        (* obj##.var := value *)
+        | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as prop] := [%e? value]] ->
+            let obj = self#expression obj in
+            let value = self#expression value in
+            let prop_loc = prop.pexp_loc in
+            let prop = exp_to_string meth in
+            let new_expr = prop_set ~loc:meth.pexp_loc ~prop_loc obj prop value in
+            self#expression { new_expr with pexp_attributes }
+        (* obj##(meth arg1 arg2) .. *)
+        | [%expr [%e? obj] ## [%e? { pexp_desc = Pexp_apply (meth, args); _ }]] ->
+            let meth_str = exp_to_string meth in
+            let obj = self#expression obj in
+            let args = List.map args ~f:(fun (s, e) -> s, self#expression e) in
+            let new_expr =
+              let loc =
+                (* The method call "obj ## meth" node doesn't really exist. *)
+                { expr.pexp_loc with loc_ghost = true }
+              in
+
+              method_call ~loc ~apply_loc:expr.pexp_loc obj (meth_str, meth.pexp_loc) args
+            in
+            self#expression { new_expr with pexp_attributes }
+        (* obj##meth arg1 arg2 .. *)
+        | { pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args)
+          ; pexp_loc
+          ; _
+          } ->
+            let meth_str = exp_to_string meth in
+            let obj = self#expression obj in
+            let args = List.map args ~f:(fun (s, e) -> s, self#expression e) in
+            let new_expr =
+              method_call
+                ~loc:prop.pexp_loc
+                ~apply_loc:pexp_loc
+                obj
+                (meth_str, meth.pexp_loc)
+                args
+            in
+            self#expression { new_expr with pexp_attributes }
+        (* obj##meth *)
+        | [%expr [%e? obj] ## [%e? meth]] as expr ->
+            let obj = self#expression obj in
+            let meth_str = exp_to_string meth in
+            let new_expr =
+              method_call
+                ~loc:expr.pexp_loc
+                ~apply_loc:expr.pexp_loc
+                obj
+                (meth_str, meth.pexp_loc)
+                []
+            in
+            self#expression { new_expr with pexp_attributes }
+        (* new%js constr] *)
+        | [%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]] ->
+            let new_expr = new_object constr [] in
+            self#expression { new_expr with pexp_attributes }
+        (* new%js constr arg1 arg2 ..)] *)
+        | { pexp_desc =
+              Pexp_apply ([%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]], args)
+          ; _
+          } ->
+            let args = List.map args ~f:(fun (s, e) -> s, self#expression e) in
+            let new_expr = new_object constr args in
+            self#expression { new_expr with pexp_attributes }
+        (* object%js ... end *)
+        | [%expr [%js [%e? { pexp_desc = Pexp_object class_struct; _ }]]] ->
+            let fields =
+              preprocess_literal_object self#expression class_struct.pcstr_fields
+            in
+            let new_expr =
+              match fields with
+              | `Fields fields -> literal_object class_struct.pcstr_self fields
+              | `Error e -> Exp.extension e
+            in
+            self#expression { new_expr with pexp_attributes }
+        | _ -> super#expression expr
+      in
+      default_loc := prev_default_loc;
+      new_expr
+  end
+
+let () = Driver.register_transformation "ppx_js" ~impl:transform#structure
+
 let mapper =
-  { Ast_mapper.default_mapper with
-    expr =
-      (fun mapper expr ->
-        let prev_default_loc = !default_loc in
-        default_loc := expr.pexp_loc;
-        let { pexp_attributes; _ } = expr in
-        let new_expr =
-          match expr with
-          (* obj##.var *)
-          | [%expr [%e? obj] ##. [%e? meth]] ->
-              let obj = mapper.expr mapper obj in
-              let prop = exp_to_string meth in
-              let new_expr = prop_get ~loc:meth.pexp_loc obj prop in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* obj##.var := value *)
-          | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as prop] := [%e? value]] ->
-              let obj = mapper.expr mapper obj in
-              let value = mapper.expr mapper value in
-              let prop_loc = prop.pexp_loc in
-              let prop = exp_to_string meth in
-              let new_expr = prop_set ~loc:meth.pexp_loc ~prop_loc obj prop value in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* obj##(meth arg1 arg2) .. *)
-          | [%expr [%e? obj] ## [%e? { pexp_desc = Pexp_apply (meth, args); _ }]] ->
-              let meth_str = exp_to_string meth in
-              let obj = mapper.expr mapper obj in
-              let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
-              let new_expr =
-                let loc =
-                  (* The method call "obj ## meth" node doesn't really exist. *)
-                  { expr.pexp_loc with loc_ghost = true }
-                in
-
-                method_call
-                  ~loc
-                  ~apply_loc:expr.pexp_loc
-                  obj
-                  (meth_str, meth.pexp_loc)
-                  args
-              in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* obj##meth arg1 arg2 .. *)
-          | { pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args)
-            ; pexp_loc
-            ; _
-            } ->
-              let meth_str = exp_to_string meth in
-              let obj = mapper.expr mapper obj in
-              let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
-              let new_expr =
-                method_call
-                  ~loc:prop.pexp_loc
-                  ~apply_loc:pexp_loc
-                  obj
-                  (meth_str, meth.pexp_loc)
-                  args
-              in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* obj##meth *)
-          | [%expr [%e? obj] ## [%e? meth]] as expr ->
-              let obj = mapper.expr mapper obj in
-              let meth_str = exp_to_string meth in
-              let new_expr =
-                method_call
-                  ~loc:expr.pexp_loc
-                  ~apply_loc:expr.pexp_loc
-                  obj
-                  (meth_str, meth.pexp_loc)
-                  []
-              in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* new%js constr] *)
-          | [%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]] ->
-              let new_expr = new_object constr [] in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* new%js constr arg1 arg2 ..)] *)
-          | { pexp_desc =
-                Pexp_apply ([%expr [%js [%e? { pexp_desc = Pexp_new constr; _ }]]], args)
-            ; _
-            } ->
-              let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
-              let new_expr = new_object constr args in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          (* object%js ... end *)
-          | [%expr [%js [%e? { pexp_desc = Pexp_object class_struct; _ }]]] ->
-              let fields =
-                preprocess_literal_object (mapper.expr mapper) class_struct.pcstr_fields
-              in
-              let new_expr =
-                match fields with
-                | `Fields fields -> literal_object class_struct.pcstr_self fields
-                | `Error e -> Exp.extension e
-              in
-              mapper.expr mapper { new_expr with pexp_attributes }
-          | _ -> Ast_mapper.default_mapper.expr mapper expr
-        in
-        default_loc := prev_default_loc;
-        new_expr)
-  }
-
-let () =
-  Driver.register
-    ~name:"ppx_js"
-    Migrate_parsetree.Versions.ocaml_408
-    (fun _config _cookies -> mapper)
+  let expr _ exp =
+    Ppxlib_ast.Selected_ast.of_ocaml Expression exp
+    |> transform#expression
+    |> Ppxlib_ast.Selected_ast.to_ocaml Expression
+  in
+  { Ocaml_ast_mapper.default_mapper with expr }

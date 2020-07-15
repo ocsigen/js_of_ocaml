@@ -1,6 +1,6 @@
 (library
   (name ppx_js_internal)
   (libraries compiler-libs.common
-             ocaml-migrate-parsetree)
+             ppxlib)
   (kind ppx_rewriter)
-  (preprocess (pps ppx_tools_versioned.metaquot_408)))
+  (preprocess (pps ppxlib.metaquot)))

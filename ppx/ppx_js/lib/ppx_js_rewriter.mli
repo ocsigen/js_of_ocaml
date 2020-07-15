@@ -18,4 +18,4 @@
 
 (**/**)
 
-val mapper : Migrate_parsetree.OCaml_408.Ast.Ast_mapper.mapper
+val mapper : Ast_mapper.mapper

@@ -3,7 +3,6 @@
   (public_name js_of_ocaml-ppx_deriving_json)
   (synopsis "[@@deriving json]")
   (libraries compiler-libs.common
-             ocaml-migrate-parsetree
              ppxlib
   )
   (ppx_runtime_libraries js_of_ocaml.deriving)

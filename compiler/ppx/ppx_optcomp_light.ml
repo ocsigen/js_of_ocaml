@@ -26,9 +26,7 @@
 *)
 
 open StdLabels
-open Migrate_parsetree
-open OCaml_407.Ast
-open Parsetree
+open Ppxlib.Parsetree
 
 module Version : sig
   type t
@@ -82,11 +80,11 @@ let get_env s =
   | None -> Sys.getenv s
   | Some p -> p
 
-let keep loc (attrs : attributes) =
+let keep loc (attrs : Ppxlib.attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
-          | { Location.txt = ("if" | "ifnot") as ifnot; _ }, attr_payload -> (
+          | { attr_name = { txt = ("if" | "ifnot") as ifnot; _ }; attr_payload; _ } -> (
               let norm =
                 match ifnot with
                 | "if" -> fun x -> x
@@ -186,32 +184,27 @@ let rec filter_pattern = function
   | { ppat_attributes; ppat_loc; _ } as p ->
       if keep ppat_loc ppat_attributes then Some p else None
 
-let mapper =
-  { Ast_mapper.default_mapper with
-    cases =
-      (fun mapper cases ->
-        let cases =
-          filter_map cases ~f:(fun case ->
-              match filter_pattern case.pc_lhs with
-              | None -> None
-              | Some pattern -> Some { case with pc_lhs = pattern })
-        in
-        Ast_mapper.default_mapper.cases mapper cases)
-  ; structure =
-      (fun mapper items ->
-        let items =
-          List.filter items ~f:(fun item ->
-              match item.pstr_desc with
-              | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
-              | Pstr_primitive { pval_attributes; pval_loc; _ } ->
-                  keep pval_loc pval_attributes
-              | _ -> true)
-        in
-        Ast_mapper.default_mapper.structure mapper items)
-  }
+let traverse =
+  object
+    inherit Ppxlib.Ast_traverse.map as super
+
+    method! structure items =
+      let items =
+        List.filter items ~f:(fun item ->
+            match item.pstr_desc with
+            | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
+            | Pstr_primitive { pval_attributes; pval_loc; _ } ->
+                keep pval_loc pval_attributes
+            | _ -> true)
+      in
+      super#structure items
+
+    method! cases =
+      filter_map ~f:(fun case ->
+          match filter_pattern case.pc_lhs with
+          | None -> None
+          | Some pattern -> Some { case with pc_lhs = pattern })
+  end
 
 let () =
-  Driver.register
-    ~name:"ppx_optcomp_light"
-    Migrate_parsetree.Versions.ocaml_407
-    (fun _config _cookies -> mapper)
+  Ppxlib.Driver.register_transformation ~impl:traverse#structure "ppx_optcomp_light"
