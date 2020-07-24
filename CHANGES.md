@@ -3,6 +3,7 @@
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
 * Runtime: Change the semantic of MlBytes.toString, introduce MlBytes.toUtf16
 * Compiler: initial support for OCaml 4.11
+* Compiler: initial support for OCaml 4.12
 * Compiler: improve the javascript parser by relying on menhir incremental api.
 
 ## Bug fixes
@@ -11,6 +12,7 @@
             when parsing constant in the from the bytecode
 * Compiled: make sure inline doesn't loop indefinitly (#1043)
 * Lib: Rename msg to message in Worker (#1037)
+* Lib: fix graphics_js when build with separate compilation (#1029)
 
 # 3.6.0 (2020-04-26) - Lille
 ## Features/Changes
