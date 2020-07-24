@@ -77,6 +77,11 @@ end
 
 exception Invalid
 
+let get_env s =
+  match Properties.get s with
+  | None -> Sys.getenv s
+  | Some p -> p
+
 let keep loc (attrs : attributes) =
   try
     let keep =
@@ -100,7 +105,7 @@ let keep loc (attrs : attributes) =
                     }
                   ] ->
                   let b =
-                    match bool_of_string (Sys.getenv ident) with
+                    match bool_of_string (get_env ident) with
                     | true -> true
                     | false -> false
                     | exception _ -> false
