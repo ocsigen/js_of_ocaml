@@ -9,6 +9,7 @@
 * Compiler: fix code generation for recursive function under for-loops (#1009)
 * Compiler: the jsoo compiler compiled to javascript was not behaving correctly
             when parsing constant in the from the bytecode
+* Compiled: make sure inline doesn't loop indefinitly (#1043)
 * Lib: Rename msg to message in Worker (#1037)
 
 # 3.6.0 (2020-04-26) - Lille

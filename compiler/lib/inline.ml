@@ -134,34 +134,40 @@ let simple blocks cont mapping =
     | Pc c -> Pc c
     | Pv x -> Pv (map_var mapping x)
   in
-  let rec follow (pc, args) (instr : [ `Empty | `Ok of 'a ]) mapping =
-    let b = Addr.Map.find pc blocks in
-    let mapping = (b.params, args) :: mapping in
-    let instr : [ `Empty | `Ok of 'a | `Fail ] =
-      match b.body, instr with
-      | [], _ -> (instr :> [ `Empty | `Ok of 'a | `Fail ])
-      | [ Let (y, exp) ], `Empty -> `Ok (y, exp)
-      | _, _ -> `Fail
-    in
-    match instr, b.branch with
-    | `Fail, _ -> `Fail
-    | `Empty, Return ret -> `Alias (map_var mapping ret)
-    | `Ok (x, exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0 -> (
-        match exp with
-        | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
-        | Apply (f, args, true) ->
-            `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
-        | Prim (prim, args) -> `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
-        | Block (tag, args, aon) ->
-            `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
-        | Field (x, i) -> `Exp (Field (map_var mapping x, i))
-        | Closure _ -> `Fail
-        | Constant _ -> `Fail
-        | Apply _ -> `Fail)
-    | ((`Empty | `Ok _) as instr), Branch cont -> follow cont instr mapping
-    | (`Empty | `Ok _), _ -> `Fail
+  let rec follow seen (pc, args) (instr : [ `Empty | `Ok of 'a ]) mapping =
+    if Addr.Set.mem pc seen
+    then `Fail
+    else
+      let b = Addr.Map.find pc blocks in
+      let mapping = (b.params, args) :: mapping in
+      let instr : [ `Empty | `Ok of 'a | `Fail ] =
+        match b.body, instr with
+        | [], _ -> (instr :> [ `Empty | `Ok of 'a | `Fail ])
+        | [ Let (y, exp) ], `Empty -> `Ok (y, exp)
+        | _, _ -> `Fail
+      in
+      match instr, b.branch with
+      | `Fail, _ -> `Fail
+      | `Empty, Return ret -> `Alias (map_var mapping ret)
+      | `Ok (x, exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0
+        -> (
+          match exp with
+          | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+          | Apply (f, args, true) ->
+              `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
+          | Prim (prim, args) ->
+              `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
+          | Block (tag, args, aon) ->
+              `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
+          | Field (x, i) -> `Exp (Field (map_var mapping x, i))
+          | Closure _ -> `Fail
+          | Constant _ -> `Fail
+          | Apply _ -> `Fail)
+      | ((`Empty | `Ok _) as instr), Branch cont ->
+          follow (Addr.Set.add pc seen) cont instr mapping
+      | (`Empty | `Ok _), _ -> `Fail
   in
-  try follow cont `Empty mapping with Not_found -> `Fail
+  try follow Addr.Set.empty cont `Empty mapping with Not_found -> `Fail
 
 let rec args_equal xs ys =
   match xs, ys with
