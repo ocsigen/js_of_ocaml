@@ -120,7 +120,10 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match fst iftrue, fst iffalse with
   (* Empty blocks *)
-  | J.Block [], J.Block [] -> [ J.Expression_statement e, loc ]
+  | J.Block [], J.Block [] -> (
+      match e with
+      | J.EVar _ -> []
+      | _ -> [ J.Expression_statement e, loc ])
   | J.Block [], _ -> if_statement_2 (enot e) loc iffalse falsestop iftrue truestop
   | _, J.Block [] -> [ J.If_statement (e, iftrue, None), loc ]
   | _ -> (
