@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
-u * Copyright (C) 2017 Hugo Heuzard
+ * Copyright (C) 2017 Hugo Heuzard
  * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
