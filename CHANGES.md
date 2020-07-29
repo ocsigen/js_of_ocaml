@@ -10,7 +10,8 @@
 * Compiler: fix code generation for recursive function under for-loops (#1009)
 * Compiler: the jsoo compiler compiled to javascript was not behaving correctly
             when parsing constant in the from the bytecode
-* Compiled: make sure inline doesn't loop indefinitly (#1043)
+* Compiler: make sure inline doesn't loop indefinitly (#1043)
+* Compiler: fix bug generating invalid javascript for if-then construct (#1046)
 * Lib: Rename msg to message in Worker (#1037)
 * Lib: fix graphics_js when build with separate compilation (#1029)
 

@@ -787,7 +787,6 @@ struct
     | Debugger_statement ->
         PP.string f "debugger";
         last_semi ()
-    | Expression_statement (EVar _) -> last_semi ()
     | Expression_statement e ->
         (* Parentheses are required when the expression
            starts syntactically with "{" or "function" *)
