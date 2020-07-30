@@ -266,10 +266,10 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
-let float_equal a b =
-  Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
-
 let int64_equal (a : int64) (b : int64) = Poly.(=) a b
+
+let float_equal a b =
+  int64_equal (Int64.bits_of_float a) (Int64.bits_of_float b)
 
 let rec constant_equal a b =
   match a, b with
