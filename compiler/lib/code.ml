@@ -266,6 +266,9 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
+let float_equal a b =
+  Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
+
 let rec constant_equal a b =
   match a, b with
   | String a, String b -> Some (String.equal a b)
@@ -282,10 +285,16 @@ let rec constant_equal a b =
           | Some s, Some c -> same := Some (s && c)
         done;
         !same
-  | Int64 a, Int64 b -> Some (Poly.equal a b)
-  | Float_array a, Float_array b -> Some Poly.(a = b)
-  | Int a, Int b -> Some (Poly.equal a b)
-  | Float a, Float b -> Some (Float.equal a b)
+  | Int64 a, Int64 b -> Some (Int64.equal a b)
+  | Float_array a, Float_array b ->
+    if Array.length a <> Array.length b
+    then Some false
+    else
+      let same = ref true in
+      Array.iter2 ~f:(fun ai bi -> same := !same && float_equal ai bi) a b;
+      Some !same
+  | Int a, Int b -> Some (Int32.equal a b)
+  | Float a, Float b -> Some (float_equal a b)
   | String _, IString _ | IString _, String _ -> None
   | Int _, Float _ | Float _, Int _ -> None
   | Tuple ((0 | 254), _, _), Float_array _ -> None
