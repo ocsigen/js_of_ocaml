@@ -292,9 +292,11 @@ let rec constant_equal a b =
     if Array.length a <> Array.length b
     then Some false
     else
-      let same = ref true in
-      Array.iter2 ~f:(fun ai bi -> same := !same && float_equal ai bi) a b;
-      Some !same
+      let i = ref 0 in
+      while !i < Array.length a && float_equal a.(!i) b.(!i) do
+        incr i
+      done;
+      Some (!i = Array.length a)
   | Int a, Int b -> Some (Int32.equal a b)
   | Float a, Float b -> Some (float_equal a b)
   | String _, IString _ | IString _, String _ -> None
