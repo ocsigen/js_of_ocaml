@@ -20,9 +20,8 @@
 let%expect_test _ =
   (* copied from https://github.com/ocaml/ocaml/pull/1794 *)
   let z =
-    let x = -0. and y = +0. in
-    if mod_float x 1. >= 0. then
-      x
-    else if false then x else y in
+    let x = -0. and y = 0. in
+    if mod_float x 1. >= 0. then x else if false then x else y
+  in
   Printf.printf "%g\n" (1. /. z);
   [%expect {|-inf|}]
