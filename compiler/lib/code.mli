@@ -149,6 +149,8 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
+val constant_equal : constant -> constant -> bool option
+
 type prim_arg =
   | Pv of Var.t
   | Pc of constant

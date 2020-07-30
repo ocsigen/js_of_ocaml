@@ -239,10 +239,17 @@ module Option = struct
     | Some s -> s
 end
 
+module Int64 = struct
+  include Int64
+
+  let equal (a : int64) (b : int64) = Poly.( = ) a b
+end
+
 module Float = struct
   type t = float
 
-  let equal (a : float) (b : float) = Poly.compare a b = 0
+  let equal (a : float) (b : float) =
+    Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
 
   (* Re-defined here to stay compatible with OCaml 4.02 *)
   external classify_float : float -> fpclass = "caml_classify_float"
@@ -564,6 +571,17 @@ module Array = struct
       r := f i (Array.unsafe_get a i) !r
     done;
     !r
+
+  let equal eq a b =
+    let len_a = Array.length a in
+    if len_a <> Array.length b
+    then false
+    else
+      let i = ref 0 in
+      while !i < len_a && eq a.(!i) b.(!i) do
+        incr i
+      done;
+      !i = len_a
 end
 
 module Filename = struct

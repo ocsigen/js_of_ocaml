@@ -12,6 +12,7 @@
             when parsing constant in the from the bytecode
 * Compiler: make sure inline doesn't loop indefinitly (#1043)
 * Compiler: fix bug generating invalid javascript for if-then construct (#1046)
+* Compiler: do not use polymorphic comparison when joining float values (#1048)
 * Lib: Rename msg to message in Worker (#1037)
 * Lib: fix graphics_js when build with separate compilation (#1029)
 

@@ -330,7 +330,7 @@ let the_const_of info x =
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when Poly.(i = j) -> u
+          | Some i, Some j when Poly.(Code.constant_equal i j = Some true) -> u
           | _ -> None)
         x
   | Pc c -> Some c
