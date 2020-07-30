@@ -269,6 +269,8 @@ type constant =
 let float_equal a b =
   Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
 
+let int64_equal (a : int64) (b : int64) = Poly.(=) a b
+
 let rec constant_equal a b =
   match a, b with
   | String a, String b -> Some (String.equal a b)
@@ -285,7 +287,7 @@ let rec constant_equal a b =
           | Some s, Some c -> same := Some (s && c)
         done;
         !same
-  | Int64 a, Int64 b -> Some (Int64.equal a b)
+  | Int64 a, Int64 b -> Some (int64_equal a b)
   | Float_array a, Float_array b ->
     if Array.length a <> Array.length b
     then Some false
