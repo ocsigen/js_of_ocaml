@@ -266,6 +266,43 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
+let rec constant_equal a b =
+  match a, b with
+  | String a, String b -> Some (String.equal a b)
+  | IString a, IString b -> Some (String.equal a b)
+  | Tuple (ta, a, _), Tuple (tb, b, _) ->
+      if ta <> tb || Array.length a <> Array.length b
+      then Some false
+      else
+        let same = ref (Some true) in
+        for i = 0 to Array.length a - 1 do
+          match !same, constant_equal a.(i) b.(i) with
+          | None, _ -> ()
+          | _, None -> same := None
+          | Some s, Some c -> same := Some (s && c)
+        done;
+        !same
+  | Int64 a, Int64 b -> Some (Poly.equal a b)
+  | Float_array a, Float_array b -> Some Poly.(a = b)
+  | Int a, Int b -> Some (Poly.equal a b)
+  | Float a, Float b -> Some (Float.equal a b)
+  | String _, IString _ | IString _, String _ -> None
+  | Int _, Float _ | Float _, Int _ -> None
+  | Tuple ((0 | 254), _, _), Float_array _ -> None
+  | Float_array _, Tuple ((0 | 254), _, _) -> None
+  | Tuple _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
+      Some false
+  | Float_array _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
+      Some false
+  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
+  | IString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
+  | Int64 _, (String _ | IString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
+      Some false
+  | Float _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+      Some false
+  | Int _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+      Some false
+
 type prim_arg =
   | Pv of Var.t
   | Pc of constant
