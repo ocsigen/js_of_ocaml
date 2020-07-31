@@ -4,7 +4,9 @@
 * Runtime: Change the semantic of MlBytes.toString, introduce MlBytes.toUtf16
 * Compiler: initial support for OCaml 4.11
 * Compiler: initial support for OCaml 4.12
-* Compiler: improve the javascript parser by relying on menhir incremental api.
+* Compiler: improve the javascript parser by relying on menhir
+  incremental api.
+* Compiler: Eliminate allocation of dummy function #1013
 
 ## Bug fixes
 * Compiler: fix code generation for recursive function under for-loops (#1009)
