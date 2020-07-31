@@ -100,13 +100,18 @@ let buid_dummy_functions_map p =
         List.fold_left block.body ~init:acc ~f:(fun ((alloc, update) as acc) i ->
             match i with
             | Let (dummy, Prim (Extern "caml_alloc_dummy_function", [ _; _ ])) ->
+                (* [dummy] will be bound once only, it's an invariant *)
                 Var.Set.add dummy alloc, update
             | Let (_, Prim (Extern "caml_update_dummy", [ Pv dummy; Pv clo_var ])) ->
+                assert (not (Var.Map.mem clo_var update));
                 alloc, Var.Map.add clo_var dummy update
             | _ -> acc))
       p
       (Var.Set.empty, Var.Map.empty)
   in
+  (* We only want to keep [caml_update_dummy] and correspond to
+     [caml_alloc_dummy_function]]. There are occurrences of [caml_update_dummy] that are
+     unrelated (e.g. [let rec unfinite_zeros = 0 :: unfinite_zeros]) *)
   Var.Map.filter (fun _clo dummy -> Var.Set.mem dummy dummy_alloc) update
 
 let specialize_instrs info p =
