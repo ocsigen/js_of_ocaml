@@ -146,6 +146,14 @@ function caml_ml_open_descriptor_in (fd)  {
 }
 
 
+//Provides: caml_channel_descriptor
+//Requires: caml_global_data, caml_ml_channels
+function caml_channel_descriptor(chanid){
+  var chan = caml_ml_channels[chanid];
+  return chan.fd;
+}
+
+
 //Provides: caml_ml_set_binary_mode
 //Requires: caml_global_data, caml_ml_channels
 function caml_ml_set_binary_mode(chanid,mode){

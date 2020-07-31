@@ -59,6 +59,12 @@ function caml_sys_getenv (name) {
   caml_raise_not_found ();
 }
 
+//Provides: caml_sys_unsafe_getenv
+//Requires: caml_sys_getenv
+function caml_sys_unsafe_getenv(name){
+  return caml_sys_getenv (name);
+}
+
 //Provides: caml_argv
 //Requires: caml_string_of_jsstring
 var caml_argv = ((function () {
@@ -129,6 +135,12 @@ var caml_initial_time = (new Date()).getTime() * 0.001;
 function caml_sys_time () {
   var now = (new Date()).getTime();
   return now * 0.001 - caml_initial_time;
+}
+
+//Provides: caml_sys_time_include_children
+//Requires: caml_sys_time
+function caml_sys_time_include_children() {
+  return caml_sys_time();
 }
 
 //Provides: caml_sys_random_seed mutable
