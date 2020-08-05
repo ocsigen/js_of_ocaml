@@ -1,4 +1,4 @@
-# dev (????-??-??) - Somewhere
+# 3.7.0 (2020-08-05) - Lille
 ## Features/Changes
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
 * Runtime: Change the semantic of MlBytes.toString, introduce MlBytes.toUtf16
