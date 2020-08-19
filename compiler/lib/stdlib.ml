@@ -215,7 +215,7 @@ module Int32 = struct
     convert_warning_on_overflow
       ~to_int32:Int32.of_int
       ~of_int32:Int32.to_int
-      ~equal:Int.equal
+      ~equal:Int_replace_polymorphic_compare.(=)
       ~to_dec:(Printf.sprintf "%d")
       ~to_hex:(Printf.sprintf "%x")
       i
