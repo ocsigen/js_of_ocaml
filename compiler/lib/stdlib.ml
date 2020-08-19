@@ -195,6 +195,39 @@ module Int32 = struct
   external compare : int32 -> int32 -> int = "%compare"
 
   external equal : int32 -> int32 -> bool = "%equal"
+
+  let warn_overflow ~to_dec ~to_hex i i32 =
+    warn
+      "Warning: integer overflow: integer 0x%s (%s) truncated to 0x%lx (%ld); the \
+       generated code might be incorrect.@."
+      (to_hex i)
+      (to_dec i)
+      i32
+      i32
+
+  let convert_warning_on_overflow ~to_int32 ~of_int32 ~equal ~to_dec ~to_hex x =
+    let i32 = to_int32 x in
+    let x' = of_int32 i32 in
+    if not (equal x' x) then warn_overflow ~to_dec ~to_hex x i32;
+    i32
+
+  let of_int_warning_on_overflow i =
+    convert_warning_on_overflow
+      ~to_int32:Int32.of_int
+      ~of_int32:Int32.to_int
+      ~equal:Int.equal
+      ~to_dec:(Printf.sprintf "%d")
+      ~to_hex:(Printf.sprintf "%x")
+      i
+
+  let of_nativeint_warning_on_overflow n =
+    convert_warning_on_overflow
+      ~to_int32:Nativeint.to_int32
+      ~of_int32:Nativeint.of_int32
+      ~equal:Nativeint.equal
+      ~to_dec:(Printf.sprintf "%nd")
+      ~to_hex:(Printf.sprintf "%nx")
+      n
 end
 
 module Option = struct

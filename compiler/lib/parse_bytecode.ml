@@ -401,14 +401,6 @@ end = struct
     | Some y -> String.equal x y
     | None -> false
 
-  let warn_overflow i i32 =
-    warn
-      "Warning: integer overflow: integer %s truncated to 0x%lx (%ld); the generated \
-       code might be incorrect.@."
-      i
-      i32
-      i32
-
   let ident_32 = ident_of_custom (Obj.repr 0l)
 
   let ident_64 = ident_of_custom (Obj.repr 0L)
@@ -431,10 +423,7 @@ end = struct
         | Some name when same_ident name ident_32 -> Int (Obj.magic x : int32)
         | Some name when same_ident name ident_native ->
             let i : nativeint = Obj.magic x in
-            let i32 = Nativeint.to_int32 i in
-            let i' = Nativeint.of_int32 i32 in
-            if Poly.(i' <> i) then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
-            Int i32
+            Int (Int32.of_nativeint_warning_on_overflow i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -448,10 +437,7 @@ end = struct
       else assert false
     else
       let i : int = Obj.magic x in
-      let i32 = Int32.of_int i in
-      let i' = Int32.to_int i32 in
-      if i' <> i then warn_overflow (Printf.sprintf "0x%x (%d)" i i) i32;
-      Int i32
+      Int (Int32.of_int_warning_on_overflow i)
 
   let inlined = function
     | String _ | IString _ -> false

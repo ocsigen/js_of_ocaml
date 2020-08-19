@@ -33,6 +33,7 @@ let%expect_test _ =
   Util.print_fun_decl (Util.compile_and_parse prog) None;
   [%expect
     {|
+    Warning: integer overflow: integer 0xffffffff (4294967295) truncated to 0xffffffff (-1); the generated code might be incorrect.
     function caml_call2(f,a0,a1)
      {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])} |}];
   ()
