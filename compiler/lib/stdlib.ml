@@ -180,7 +180,7 @@ end
 module Nativeint = struct
   include Nativeint
 
-  external equal : int32 -> int32 -> bool = "%equal"
+  external equal : nativeint -> nativeint -> bool = "%equal"
 end
 
 module Int32 = struct
