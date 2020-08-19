@@ -177,6 +177,12 @@ module List = struct
     loop t [] []
 end
 
+module Nativeint = struct
+  include Nativeint
+
+  external equal : int32 -> int32 -> bool = "%equal"
+end
+
 module Int32 = struct
   include Int32
 
