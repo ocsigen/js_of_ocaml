@@ -865,7 +865,9 @@ module Unsafe : sig
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
   (** Create a Javascript object.  The expression [new_obj c a]
         creates a Javascript object with constructor [c] using the
-        arguments given by the array [a]. *)
+        arguments given by the array [a].
+        Example: [Js.new_obj (Js.Unsafe.variable "ArrayBuffer") [||]]
+  *)
 
   external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
   (** Same Create a Javascript object.  The expression [new_obj_arr c a]
