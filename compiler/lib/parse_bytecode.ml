@@ -158,11 +158,12 @@ end = struct
       let paths = read_paths ic @ includes in
       List.iter
         evl
-        ~f:(fun ({ ev_module
-                 ; ev_loc = { Location.loc_start = { Lexing.pos_fname; _ }; _ }
-                 ; _
-                 } as ev)
-                ->
+        ~f:(fun
+             ({ ev_module
+              ; ev_loc = { Location.loc_start = { Lexing.pos_fname; _ }; _ }
+              ; _
+              } as ev)
+           ->
           let unit =
             try Hashtbl.find units (ev_module, pos_fname)
             with Not_found ->
