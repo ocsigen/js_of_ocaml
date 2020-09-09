@@ -22,7 +22,7 @@ let rec constant_of_const : _ -> Code.constant =
   let open Lambda in
   let open Asttypes in
   function
-  | Const_base (Const_int i) -> Int (Int32.of_int i)
+  | Const_base (Const_int i) -> Int (Int32.of_int_warning_on_overflow i)
   | Const_base (Const_char c) -> Int (Int32.of_int (Char.code c))
   | ((Const_base (Const_string (s, _)))[@if ocaml_version < (4, 11, 0)])
   | ((Const_base (Const_string (s, _, _)))[@if ocaml_version >= (4, 11, 0)]) ->
@@ -30,16 +30,16 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_base (Const_float s) -> Float (float_of_string s)
   | Const_base (Const_int32 i) -> Int i
   | Const_base (Const_int64 i) -> Int64 i
-  | Const_base (Const_nativeint i) -> Int (Nativeint.to_int32 i)
+  | Const_base (Const_nativeint i) -> Int (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
       Tuple (Obj.double_array_tag, Array.of_list l, Unknown)
-  | ((Const_pointer (i, _))[@if BUCKLESCRIPT]) -> Int (Int32.of_int i)
+  | ((Const_pointer (i, _))[@if BUCKLESCRIPT]) -> Int (Int32.of_int_warning_on_overflow i)
   | ((Const_block (tag, _, l))[@if BUCKLESCRIPT]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | ((Const_pointer i)[@ifnot BUCKLESCRIPT]) -> Int (Int32.of_int i)
+  | ((Const_pointer i)[@ifnot BUCKLESCRIPT]) -> Int (Int32.of_int_warning_on_overflow i)
   | ((Const_block (tag, l))[@ifnot BUCKLESCRIPT]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
