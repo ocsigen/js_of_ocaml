@@ -19,7 +19,7 @@
 
 open StdLabels
 open Migrate_parsetree
-open OCaml_408.Ast
+open OCaml_410.Ast
 open Ast_helper
 open Asttypes
 open Parsetree
@@ -123,7 +123,7 @@ let fresh_var bound =
   in
   loop 0
 
-module To_current = Migrate_parsetree.Convert (OCaml_408) (OCaml_current)
+module To_current = Migrate_parsetree.Convert (OCaml_410) (OCaml_current)
 
 let string_of_core_type typ : string =
   let typ = { typ with ptyp_attributes = [] } in
