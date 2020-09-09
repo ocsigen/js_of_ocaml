@@ -139,7 +139,7 @@ function caml_sys_time () {
 
 //Provides: caml_sys_time_include_children
 //Requires: caml_sys_time
-function caml_sys_time_include_children() {
+function caml_sys_time_include_children(b) {
   return caml_sys_time();
 }
 
