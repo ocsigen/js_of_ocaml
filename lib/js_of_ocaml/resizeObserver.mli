@@ -54,9 +54,9 @@ class type resizeObserverEntry =
 
     method contentRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method borderBoxSize : resizeObserverSize Js.t Js.readonly_prop
+    method borderBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
 
-    method contentBoxSize : resizeObserverSize Js.t Js.readonly_prop
+    method contentBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
   end
 
 class type resizeObserverOptions =
