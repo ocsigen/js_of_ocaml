@@ -27,7 +27,7 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
     if(typeof shape === "number")
       switch(shape){
       case 0://function
-        struct[idx]=undef_module;
+        struct[idx]={fun:undef_module};
         break;
       case 1://lazy
         struct[idx]=[246, undef_module];
@@ -53,27 +53,22 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
 //Provides: caml_CamlinternalMod_update_mod
 //Requires: caml_update_dummy
 function caml_CamlinternalMod_update_mod(shape,real,x) {
-  function loop (shape,real,x,parent,i) {
-    if(typeof shape === "number")
-      switch(shape){
-      case 0://function
-        parent[i]=x;
-        break
-      case 1://lazy
-      case 2://class
-      default:
-        caml_update_dummy(real,x);
-      }
-    else
-      switch(shape[0]){
-      case 0://module
-        for(var i=1;i<shape[1].length;i++)
-          loop(shape[1][i],real[i],x[i],real,i);
-        break;
-        //case 1://Value
-      default:
-      };
-  }
-  loop(shape,real,x,undefined,undefined);
-  return 0;
+  if(typeof shape === "number")
+    switch(shape){
+    case 0://function
+    case 1://lazy
+    case 2://class
+    default:
+      caml_update_dummy(real,x);
+    }
+  else
+    switch(shape[0]){
+    case 0://module
+      for(var i=1;i<shape[1].length;i++)
+        caml_CamlinternalMod_update_mod(shape[1][i],real[i],x[i]);
+      break;
+      //case 1://Value
+    default:
+    };
+  return 0
 }
