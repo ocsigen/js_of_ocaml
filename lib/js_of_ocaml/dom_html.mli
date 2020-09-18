@@ -2011,11 +2011,15 @@ class type navigator =
 
     method platform : js_string t readonly_prop
 
+    method vendor : js_string t readonly_prop
+
     method userAgent : js_string t readonly_prop
 
     method language : js_string t optdef readonly_prop
 
     method userLanguage : js_string t optdef readonly_prop
+
+    method maxTouchPoints : int t readonly_prop
   end
 
 class type screen =
