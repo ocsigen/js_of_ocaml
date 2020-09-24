@@ -4,7 +4,6 @@
 
     https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API *)
 
-
 class type intersectionObserverEntry =
   object
     method target : Dom.node Js.t Js.readonly_prop
@@ -18,7 +17,6 @@ class type intersectionObserverEntry =
     method intersectionRatio : float Js.t Js.readonly_prop
 
     method isIntersecting : bool Js.t Js.readonly_prop
-
     (* Missing Dom.highResTimeStamp
        method time : Dom.highResTimeStamp Js.t Js.readonly_prop *)
   end
@@ -54,6 +52,10 @@ val empty_intersection_observer_options : unit -> intersectionObserverOptions Js
 val is_supported : unit -> bool
 
 val intersectionObserver :
-  ((intersectionObserverEntry Js.t Js.js_array Js.t -> intersectionObserver Js.t -> unit) Js.callback ->
-   intersectionObserverOptions Js.t -> intersectionObserver Js.t)
+  (   (   intersectionObserverEntry Js.t Js.js_array Js.t
+       -> intersectionObserver Js.t
+       -> unit)
+      Js.callback
+   -> intersectionObserverOptions Js.t
+   -> intersectionObserver Js.t)
   Js.constr

@@ -43,19 +43,17 @@ class type intersectionObserver =
 
 let empty_intersection_observer_options () : intersectionObserverOptions Js.t =
   Js.Unsafe.obj [||]
-;;
 
 let intersectionObserver_unsafe = Js.Unsafe.global##._IntersectionObserver
+
 let is_supported () = Js.Optdef.test intersectionObserver_unsafe
 
-let intersectionObserver
-  : ((intersectionObserverEntry Js.t Js.js_array Js.t
-      -> intersectionObserver Js.t
-      -> unit)
-       Js.callback
+let intersectionObserver :
+    (   (   intersectionObserverEntry Js.t Js.js_array Js.t
+         -> intersectionObserver Js.t
+         -> unit)
+        Js.callback
      -> intersectionObserverOptions Js.t
      -> intersectionObserver Js.t)
-      Js.constr
-  =
+    Js.constr =
   intersectionObserver_unsafe
-;;
