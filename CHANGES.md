@@ -1,3 +1,14 @@
+# 3.7.1 (2020-09-29) - London
+## Features/Changes
+* lib: Add Navigator.{vendor,maxTouchPoints} (#1062)
+* lib: adds the intersection observer API (#1063)
+
+## Bug fixes
+* compiler: revert of "Eliminate allocation of dummy function #1013"
+* compiler: fix for #1051 (#1052), Ensure the overflow warning is always displayed
+* runtime: add missing primitives for 4.11
+* lib: Fix resize-observer (#1058)
+
 # 3.7.0 (2020-08-05) - Lille
 ## Features/Changes
 * Runtime: allow one to override xmlHttpRequest.create (#1002)
