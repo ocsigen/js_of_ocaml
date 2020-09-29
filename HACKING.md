@@ -11,8 +11,7 @@
 
 # Documentation generation
 * make doc
-* git checkout wikidoc
-* git reset --hard origin/wikidoc
+* git checkout wikidoc && git reset --hard origin/wikidoc && git checkout master
 * make installdoc
 * cd _wikidoc
 * git diff # review diff
