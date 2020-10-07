@@ -72,15 +72,17 @@ let parse_lid s =
   | None -> assert false
   | Some v -> v
 
+let mkloc txt loc = { txt; loc }
+
 let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
 
 let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
 let pint ?loc ?attrs x = Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
 
-let lid ?(loc = !default_loc) s = { txt = parse_lid s; loc }
+let lid ?(loc = !default_loc) s = mkloc (parse_lid s) loc
 
-let pvar ?(loc = !default_loc) ?attrs s = Pat.var ~loc ?attrs { txt = s; loc }
+let pvar ?(loc = !default_loc) ?attrs s = Pat.var ~loc ?attrs (mkloc s loc)
 
 let evar ?loc ?attrs s = Exp.ident ?loc ?attrs (lid ?loc s)
 
@@ -127,7 +129,7 @@ let string_of_core_type typ : string =
   Format.asprintf "%a" Ppxlib.Pprintast.core_type typ
 
 let core_type_of_type_decl { ptype_name = name; ptype_params; _ } =
-  let name = { txt = Longident.Lident name.txt; loc = name.loc } in
+  let name = mkloc (Longident.Lident name.txt) name.loc in
   Typ.constr name (List.map ~f:fst ptype_params)
 
 let fold_right_type_params fn params accum =
@@ -136,7 +138,7 @@ let fold_right_type_params fn params accum =
       match param with
       | { ptyp_desc = Ptyp_any; _ } -> accum
       | { ptyp_desc = Ptyp_var name; _ } ->
-          let name = { txt = name; loc = param.ptyp_loc } in
+          let name = mkloc name param.ptyp_loc in
           fn name accum
       | _ -> assert false)
     params
@@ -151,7 +153,7 @@ let fold_left_type_params fn accum params =
       match param with
       | { ptyp_desc = Ptyp_any; _ } -> accum
       | { ptyp_desc = Ptyp_var name; _ } ->
-          let name = { txt = name; loc = param.ptyp_loc } in
+          let name = mkloc name param.ptyp_loc in
           fn accum name
       | _ -> assert false)
     ~init:accum
@@ -210,12 +212,12 @@ let suffix_lid { Location.txt; loc } ~suffix =
 
 let suffix_decl ({ Parsetree.ptype_loc = loc; _ } as d) ~suffix =
   (let s = mangle_type_decl (`Suffix suffix) d |> parse_lid in
-   { txt = s; loc })
+   mkloc s loc)
   |> Exp.ident ~loc
 
 let suffix_decl_p ({ Parsetree.ptype_loc = loc; _ } as d) ~suffix =
   (let s = mangle_type_decl (`Suffix suffix) d in
-   { txt = s; loc })
+   mkloc s loc)
   |> Pat.var ~loc
 
 let rec fresh_vars ?(acc = []) n =
@@ -302,7 +304,7 @@ and write_poly_case r ~arg ~poly =
       Exp.case lhs rhs
   | Rinherit ({ ptyp_desc = Ptyp_constr (lid, _); ptyp_loc; _ } as y) ->
       Exp.case
-        (Pat.(alias (type_ lid)) { txt = arg; loc = ptyp_loc })
+        (Pat.(alias (type_ lid)) (mkloc arg ptyp_loc))
         (write_body_of_type y ~arg ~poly)
   | Rinherit { ptyp_loc; _ } ->
       Location.raise_errorf ~loc:ptyp_loc "%s write case cannot be derived" deriver
@@ -709,7 +711,7 @@ let json_str_of_decl ({ Parsetree.ptype_loc; _ } as d) =
 let read_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "of_json") d in
-     { txt = s; loc = ptype_loc }
+     mkloc s ptype_loc
    and y =
      let f y = [%type: [%t lexbuf_t] -> [%t y]] in
      let y = f (core_type_of_type_decl d) in
@@ -721,7 +723,7 @@ let read_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
 let recognize_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "recognize") d in
-     { txt = s; loc = ptype_loc }
+     mkloc s ptype_loc
    and y = [%type: [ `NCst of int | `Cst of int ] -> bool] in
    Ast_helper.Val.mk s y)
   |> Ast_helper.Sig.value
@@ -729,7 +731,7 @@ let recognize_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
 let read_with_tag_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "of_json_with_tag") d in
-     { txt = s; loc = ptype_loc }
+     mkloc s ptype_loc
    and y =
      let f y = [%type: [%t lexbuf_t] -> [%t y]] in
      let y =
@@ -744,7 +746,7 @@ let read_with_tag_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
 let write_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "to_json") d in
-     { txt = s; loc = ptype_loc }
+     mkloc s ptype_loc
    and y =
      let f y = [%type: Buffer.t -> [%t y] -> unit] in
      let y = f (core_type_of_type_decl d) in
@@ -756,7 +758,7 @@ let write_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
 let json_sig_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   (let s =
      let s = mangle_type_decl (`Suffix "json") d in
-     { txt = s; loc = ptype_loc }
+     mkloc s ptype_loc
    and y =
      let f y = rt_t y in
      let y = f (core_type_of_type_decl d) in

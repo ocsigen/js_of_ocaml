@@ -136,22 +136,13 @@ let merlin_hide =
 
 module Js : sig
   val type_ :
-       ?loc:Ppxlib.Ast_helper.loc
-    -> string
-    -> Ppxlib.Parsetree.core_type list
-    -> Ppxlib.Parsetree.core_type
+    ?loc:Ast_helper.loc -> string -> Parsetree.core_type list -> Parsetree.core_type
 
   val unsafe :
-       ?loc:Ppxlib.Ast_helper.loc
-    -> string
-    -> Ppxlib.Parsetree.expression list
-    -> Ppxlib.Parsetree.expression
+    ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
 
   val fun_ :
-       ?loc:Ppxlib.Ast_helper.loc
-    -> string
-    -> Ppxlib.Parsetree.expression list
-    -> Ppxlib.Parsetree.expression
+    ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
 end = struct
   let js_dot name =
     if Lazy.force inside_Js
@@ -471,7 +462,6 @@ let new_object constr args =
     invoker
     ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
     @ [ app_arg (unit ~loc:gloc ()) ])
-  [@@ocaml.warning "-26"]
 
 module S = Map.Make (String)
 
@@ -513,16 +503,13 @@ end
 
 type field_desc =
   | Meth of
-      string Ppxlib.Asttypes.loc
-      * Ppxlib.Asttypes.private_flag
-      * Ppxlib.Asttypes.override_flag
-      * Ppxlib.Parsetree.expression
+      string Asttypes.loc
+      * Asttypes.private_flag
+      * Asttypes.override_flag
+      * Parsetree.expression
       * Arg.t list
   | Val of
-      string Ppxlib.Asttypes.loc
-      * Prop_kind.t
-      * Ppxlib.Asttypes.override_flag
-      * Ppxlib.Parsetree.expression
+      string Asttypes.loc * Prop_kind.t * Asttypes.override_flag * Parsetree.expression
 
 let filter_map f l =
   let l =

@@ -80,7 +80,7 @@ let get_env s =
   | None -> Sys.getenv s
   | Some p -> p
 
-let keep loc (attrs : Ppxlib.attributes) =
+let keep loc (attrs : attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
