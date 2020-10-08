@@ -72,9 +72,13 @@ let parse_lid s =
   | None -> assert false
   | Some v -> v
 
-let lid ?(loc = !default_loc) s = { txt = parse_lid s; loc }
+let mkloc txt loc = { txt; loc }
 
-let mkloc_opt ?(loc = !default_loc) x = { txt = x; loc }
+let mknoloc txt = { txt; loc = Location.none }
+
+let lid ?(loc = !default_loc) s = mkloc (parse_lid s) loc
+
+let mkloc_opt ?(loc = !default_loc) x = mkloc x loc
 
 let unit ?loc ?attrs () =
   Exp.construct ?loc ?attrs (mkloc_opt ?loc (Longident.Lident "()")) None
@@ -112,12 +116,9 @@ let arrows args ret =
 let wrapper = ref None
 
 let make_str ?loc s =
-  let loc =
-    match loc with
-    | None -> Location.none
-    | Some loc -> loc
-  in
-  { txt = s; loc }
+  match loc with
+  | None -> mknoloc s
+  | Some loc -> mkloc s loc
 
 let inside_Js =
   lazy
@@ -250,7 +251,7 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   let labels_and_pats =
     List.map arguments ~f:(fun d ->
         let label = Arg.label d in
-        let patt = Pat.var { txt = Arg.name d; loc = Location.none } in
+        let patt = Pat.var (mknoloc (Arg.name d)) in
         label, patt)
   in
   let make_fun (label, pat) (label', typ) expr =
@@ -321,7 +322,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
              ~loc:gloc
              nolabel
              None
-             (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
+             (Pat.var ~loc:gloc (mknoloc "x"))
              (Exp.send
                 ~loc
                 (Exp.ident ~loc:obj.pexp_loc (lid ~loc:obj.pexp_loc "x"))
@@ -363,7 +364,7 @@ let prop_get ~loc obj prop =
            ~loc:gloc
            nolabel
            None
-           (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
+           (Pat.var ~loc:gloc (mknoloc "x"))
            (Exp.send ~loc (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc prop)))
     ]
 
@@ -413,7 +414,7 @@ let prop_set ~loc ~prop_loc obj prop value =
            ~loc:{ loc with loc_ghost = true }
            nolabel
            None
-           (Pat.var ~loc:gloc { txt = "x"; loc = Location.none })
+           (Pat.var ~loc:gloc (mknoloc "x"))
            (Exp.send
               ~loc:prop_loc
               (Exp.ident ~loc:obj.pexp_loc (lid ~loc:gloc "x"))
@@ -751,12 +752,7 @@ let literal_object self_id (fields : field_desc list) =
                (self :: List.map fields ~f:(fun f -> (name f).txt))
                ~init:fake_object
                ~f:(fun name fun_ ->
-                 Exp.fun_
-                   ~loc:gloc
-                   nolabel
-                   None
-                   (Pat.var ~loc:gloc { txt = name; loc = Location.none })
-                   fun_))
+                 Exp.fun_ ~loc:gloc nolabel None (Pat.var ~loc:gloc (mknoloc name)) fun_))
             with
             pexp_attributes = [ merlin_hide ]
           }
