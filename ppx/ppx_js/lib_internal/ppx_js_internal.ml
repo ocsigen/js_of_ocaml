@@ -25,6 +25,13 @@ open Parsetree
 
 let nolabel = Nolabel
 
+let raise_errorf ~loc fmt =
+  Printf.ksprintf
+    (fun str ->
+      let err = Location.Error.make ~loc ~sub:[] str in
+      raise (Location.Error err))
+    fmt
+
 let unflatten l =
   match l with
   | [] -> None
@@ -99,13 +106,9 @@ let exp_to_string = function
     when String.length s > 0 && s.[0] >= 'A' && s.[0] <= 'Z' ->
       "_" ^ s
   | { pexp_loc; _ } ->
-      let err =
-        Location.Error.make
-          ~loc:pexp_loc
-          ~sub:[]
-          "Javascript methods or attributes can only be simple identifiers."
-      in
-      raise (Location.Error err)
+      raise_errorf
+        ~loc:pexp_loc
+        "Javascript methods or attributes can only be simple identifiers."
 
 let typ s = Typ.constr (lid s) []
 
@@ -577,26 +580,10 @@ let preprocess_literal_object mappper fields :
           | (Immutable | Mutable), [ `Writeonly ] -> `Writeonly
           | (Immutable | Mutable), [ `Readwrite ] -> `Readwrite
           | (Immutable | Mutable), [ `Unkown s ] ->
-              let err =
-                Location.Error.make
-                  ~loc:exp.pcf_loc
-                  ~sub:[]
-                  (Printf.sprintf "Unkown jsoo attribute ([@@%s])." s)
-              in
-              raise (Location.Error err)
+              raise_errorf ~loc:exp.pcf_loc "Unkown jsoo attribute ([@@%s])." s
           | Mutable, [ `Readonly ] ->
-              let err =
-                Location.Error.make
-                  ~loc:exp.pcf_loc
-                  ~sub:[]
-                  "A mutable field cannot be readonly."
-              in
-              raise (Location.Error err)
-          | _, _ :: _ :: _ ->
-              let err =
-                Location.Error.make ~loc:exp.pcf_loc ~sub:[] "Too many attributes."
-              in
-              raise (Location.Error err)
+              raise_errorf ~loc:exp.pcf_loc "A mutable field cannot be readonly."
+          | _, _ :: _ :: _ -> raise_errorf ~loc:exp.pcf_loc "Too many attributes."
         in
         names, Val (id, kind, bang, body) :: fields
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
@@ -610,13 +597,9 @@ let preprocess_literal_object mappper fields :
         let fun_ty = create_meth_ty body in
         names, Meth (id, priv, bang, body, fun_ty) :: fields
     | _ ->
-        let err =
-          Location.Error.make
-            ~loc:exp.pcf_loc
-            ~sub:[]
-            "This field is not valid inside a js literal object."
-        in
-        raise (Location.Error err)
+        raise_errorf
+          ~loc:exp.pcf_loc
+          "This field is not valid inside a js literal object."
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
   with Location.Error error -> `Error (Location.Error.to_extension error)
