@@ -82,6 +82,15 @@ let int_num_bits =
 module List = struct
   include ListLabels
 
+  let concat_map ~f l =
+    let rec aux f acc = function
+      | [] -> rev acc
+      | x :: l ->
+          let xs = f x in
+          aux f (rev_append xs acc) l
+    in
+    aux f [] l
+
   let filter_map ~f l =
     let l =
       List.fold_left

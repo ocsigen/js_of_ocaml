@@ -1,5 +1,8 @@
 module Js_of_ocaml = struct
   module Js = struct
+
+    class type js_string = object end
+
     type +'a t
 
     type (-'a, +'b) meth_callback
@@ -44,6 +47,8 @@ module Js_of_ocaml = struct
 
     let wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback = fun _ -> assert false
 
+    let string : string -> js_string t = fun _ -> assert false
+
     let undefined : unit -> 'a optdef = fun () -> assert false
 
     let def : 'a -> 'a optdef = fun _ -> assert false
@@ -58,6 +63,7 @@ module Js_of_ocaml :
   sig
     module Js :
       sig
+        class type js_string = object  end
         type +'a t
         type (-'a, +'b) meth_callback
         type +'a opt
@@ -81,6 +87,7 @@ module Js_of_ocaml :
             val obj : (string * any) array -> 'a
           end
         val wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+        val string : string -> js_string t
         val undefined : unit -> 'a optdef
         val def : 'a -> 'a optdef
       end

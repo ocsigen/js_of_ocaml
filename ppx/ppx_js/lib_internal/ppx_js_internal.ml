@@ -84,7 +84,7 @@ let tuple ?loc ?attrs = function
   | [ x ] -> x
   | xs -> Exp.tuple ?loc ?attrs xs
 
-let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
+let ocaml_str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
@@ -155,6 +155,8 @@ end = struct
 
   let fun_ = apply_ ~where:js_dot
 end
+
+let javascript_str ?loc ?attrs s = Js.fun_ "string" ?loc [ ocaml_str ?loc ?attrs s ]
 
 let unescape lab =
   if lab = ""
@@ -300,7 +302,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
         | [] -> assert false
         | eobj :: eargs ->
             let eargs = inject_args eargs in
-            Js.unsafe "meth_call" [ eobj; str (unescape meth); eargs ])
+            Js.unsafe "meth_call" [ eobj; ocaml_str (unescape meth); eargs ])
       (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
   in
   Exp.apply
@@ -343,7 +345,7 @@ let prop_get ~loc obj prop =
       (fun eargs ->
         match eargs with
         | [] | _ :: _ :: _ -> assert false
-        | [ only_arg ] -> Js.unsafe "get" [ only_arg; str (unescape prop) ])
+        | [ only_arg ] -> Js.unsafe "get" [ only_arg; javascript_str (unescape prop) ])
       [ Arg.make () ]
   in
   Exp.apply
@@ -391,7 +393,8 @@ let prop_set ~loc ~prop_loc obj prop value =
         | _ -> assert false)
       (fun args _tres -> js_dot_t_the_first_arg args, [%type: unit])
       (function
-        | [ obj; arg ] -> Js.unsafe "set" [ obj; str (unescape prop); inject_arg arg ]
+        | [ obj; arg ] ->
+            Js.unsafe "set" [ obj; javascript_str (unescape prop); inject_arg arg ]
         | _ -> assert false)
       [ Arg.make (); Arg.make () ]
   in
@@ -673,7 +676,7 @@ let literal_object self_id (fields : field_desc list) =
           [ Exp.array
               (List.map2 fields args ~f:(fun f arg ->
                    tuple
-                     [ str (unescape (name f).txt)
+                     [ ocaml_str (unescape (name f).txt)
                      ; inject_arg
                          (match f with
                          | Val _ -> arg

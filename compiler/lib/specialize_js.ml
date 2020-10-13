@@ -40,8 +40,8 @@ let specialize_instr info i rem =
   | Let
       ( x
       , Prim
-          (Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim), [ y ])
-      ) ->
+          ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
+          , [ (Pv _ as y) ] ) ) ->
       (match the_string_of info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
@@ -77,7 +77,7 @@ let specialize_instr info i rem =
                 ( x
                 , Prim
                     ( Extern "%caml_js_opt_meth_call"
-                    , o :: Pc (String m) :: Array.to_list a ) )
+                    , o :: Pc (NativeString m) :: Array.to_list a ) )
           | _ -> i)
       | _ -> i)
       :: rem
@@ -101,7 +101,7 @@ let specialize_instr info i rem =
                | Some (Block (_, [| k; v |], _)) ->
                    let k =
                      match the_string_of info (Pv k) with
-                     | Some s -> Pc (String s)
+                     | Some s -> Pc (NativeString s)
                      | _ -> raise Exit
                    in
                    [ k; Pv v ]
@@ -110,24 +110,24 @@ let specialize_instr info i rem =
          Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
        with Exit -> i)
       :: rem
-  | Let (x, Prim (Extern "caml_js_get", [ o; f ])) ->
-      (match the_string_of info f with
-      | Some s -> Let (x, Prim (Extern "caml_js_get", [ o; Pc (String s) ]))
+  | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])) ->
+      (match the_native_string_of info f with
+      | Some s -> Let (x, Prim (Extern "caml_js_get", [ o; Pc (NativeString s) ]))
       | _ -> i)
       :: rem
-  | Let (x, Prim (Extern "caml_js_set", [ o; f; v ])) ->
-      (match the_string_of info f with
-      | Some s -> Let (x, Prim (Extern "caml_js_set", [ o; Pc (String s); v ]))
+  | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])) ->
+      (match the_native_string_of info f with
+      | Some s -> Let (x, Prim (Extern "caml_js_set", [ o; Pc (NativeString s); v ]))
       | _ -> i)
       :: rem
-  | Let (x, Prim (Extern "caml_js_delete", [ o; f ])) ->
-      (match the_string_of info f with
-      | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (String s) ]))
+  | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])) ->
+      (match the_native_string_of info f with
+      | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (NativeString s) ]))
       | _ -> i)
       :: rem
   | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) ->
       (match the_string_of info y with
-      | Some s when String.is_ascii s -> Let (x, Constant (IString s))
+      | Some s when String.is_ascii s -> Let (x, Constant (NativeString s))
       | _ -> i)
       :: rem
   | Let (x, Prim (Extern "%int_mul", [ y; z ])) ->

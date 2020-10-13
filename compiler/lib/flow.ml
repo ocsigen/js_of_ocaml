@@ -306,7 +306,7 @@ let the_def_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Float _ | Int _ | IString _) as e) -> Some e
+          | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
           | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if info.info_possibly_mutable.(Var.idx x) then None else Some e
           | _ -> None)
@@ -322,7 +322,7 @@ let the_const_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Constant ((Float _ | Int _ | IString _) as c)) -> Some c
+          | Expr (Constant ((Float _ | Int _ | NativeString _) as c)) -> Some c
           | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
           | Expr (Constant c) ->
               if info.info_possibly_mutable.(Var.idx x) then None else Some c
@@ -342,7 +342,12 @@ let the_int info x =
 
 let the_string_of info x =
   match the_const_of info x with
-  | Some (String i | IString i) -> Some i
+  | Some (String i) -> Some i
+  | _ -> None
+
+let the_native_string_of info x =
+  match the_const_of info x with
+  | Some (NativeString i) -> Some i
   | _ -> None
 
 (*XXX Maybe we could iterate? *)

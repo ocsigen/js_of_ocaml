@@ -441,7 +441,7 @@ end = struct
       Int (Int32.of_int_warning_on_overflow i)
 
   let inlined = function
-    | String _ | IString _ -> false
+    | String _ | NativeString _ -> false
     | Float _ -> true
     | Float_array _ -> false
     | Int64 _ -> false
@@ -712,7 +712,7 @@ let register_global ?(force = false) g i rem =
       | None -> []
       | Some name ->
           Code.Var.name (access_global g i) name;
-          [ Pc (IString name) ]
+          [ Pc (NativeString name) ]
     in
     Let
       ( Var.fresh ()
@@ -2119,7 +2119,7 @@ let parse_bytecode code globals debug_data =
 
 let override_global =
   let jsmodule name func =
-    Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
+    Prim (Extern "%overrideMod", [ Pc (NativeString name); Pc (NativeString func) ])
   in
   [ ( "CamlinternalMod"
     , fun _orig instrs ->
@@ -2275,7 +2275,8 @@ let from_exe
             Let (c, Constant const)
             :: Let
                  ( Var.fresh ()
-                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (String name); Pv c ]) )
+                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (NativeString name); Pv c ])
+                 )
             :: rem)
       in
       Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
@@ -2456,14 +2457,14 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
-                | (String str | IString str), None ->
+                | (String str | NativeString str), None ->
                     Code.Var.name x (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
             | Some name ->
                 Var.name x name;
-                Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (IString name) ])) :: l
-            )
+                Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (NativeString name) ]))
+                :: l)
         | _ -> l)
   in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
@@ -2560,7 +2561,7 @@ let predefined_exceptions () =
         let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
         [ Let (v_name, Constant (String name))
-        ; Let (v_name_js, Constant (IString name))
+        ; Let (v_name_js, Constant (NativeString name))
         ; Let (v_index, Constant (Int (Int32.of_int (-index))))
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray))
         ; Let

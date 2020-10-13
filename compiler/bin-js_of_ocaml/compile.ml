@@ -135,10 +135,15 @@ let run
     Pseudo_fs.f ~prim ~cmis ~files:fs_files ~paths
   in
   let env_instr () =
-    List.map static_env ~f:(fun (k, v) ->
+    List.concat_map static_env ~f:(fun (k, v) ->
         Primitive.add_external "caml_set_static_env";
-        let args = [ Code.Pc (IString k); Code.Pc (IString v) ] in
-        Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
+        let var_k = Code.Var.fresh () in
+        let var_v = Code.Var.fresh () in
+        Code.
+          [ Let (var_k, Prim (Extern "caml_jsstring_of_string", [ Pc (String k) ]))
+          ; Let (var_v, Prim (Extern "caml_jsstring_of_string", [ Pc (String v) ]))
+          ; Let (Var.fresh (), Prim (Extern "caml_set_static_env", [ Pv var_k; Pv var_v ]))
+          ])
   in
   let output (one : Parse_bytecode.one) ~standalone output_file =
     check_debug one.debug;

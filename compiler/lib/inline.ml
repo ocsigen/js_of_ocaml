@@ -152,7 +152,7 @@ let simple blocks cont mapping =
       | `Ok (x, exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0
         -> (
           match exp with
-          | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+          | Constant (Float _ | Int64 _ | Int _ | NativeString _) -> `Exp exp
           | Apply (f, args, true) ->
               `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
           | Prim (prim, args) ->
@@ -257,7 +257,8 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                    && Primitive.has_arity prim len
                    && args_equal l args
                 then
-                  Let (x, Prim (Extern "%closure", [ Pc (IString prim) ])) :: rem, state
+                  ( Let (x, Prim (Extern "%closure", [ Pc (NativeString prim) ])) :: rem
+                  , state )
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)

@@ -309,6 +309,12 @@ and regExp =
     method lastIndex : int prop
   end
 
+(* string is used by ppx_js, it needs to come before any use of the
+   new syntax in this file *)
+external string : string -> js_string t = "caml_jsstring_of_string"
+
+external to_string : js_string t -> string = "caml_string_of_jsstring"
+
 class type string_constr =
   object
     method fromCharCode : int -> js_string t meth
@@ -698,10 +704,6 @@ let unescape (s : js_string t) : js_string t =
 external bool : bool -> bool t = "caml_js_from_bool"
 
 external to_bool : bool t -> bool = "caml_js_to_bool"
-
-external string : string -> js_string t = "caml_jsstring_of_string"
-
-external to_string : js_string t -> string = "caml_string_of_jsstring"
 
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
 

@@ -142,7 +142,7 @@ type array_or_not =
 
 type constant =
   | String of string
-  | IString of string
+  | NativeString of string
   | Float of float
   | Float_array of float array
   | Int64 of int64
