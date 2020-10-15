@@ -25,12 +25,15 @@ open Parsetree
 
 let nolabel = Nolabel
 
+exception Avoid_uncaught_raising of Location.Error.t
+
+let make_exception ~loc ~sub str =
+  Avoid_uncaught_raising (Location.Error.make ~loc ~sub str)
+
 let raise_errorf ~loc fmt =
-  Printf.ksprintf
-    (fun str ->
-      let err = Location.Error.make ~loc ~sub:[] str in
-      raise (Location.Error err))
-    fmt
+  Printf.ksprintf (fun str -> make_exception ~loc ~sub:[] str |> raise) fmt
+
+let input_name = ref ""
 
 let unflatten l =
   match l with
@@ -125,9 +128,7 @@ let make_str ?loc s =
 
 let inside_Js =
   lazy
-    (try
-       Filename.basename (Filename.chop_extension !Ocaml_common.Location.input_name)
-       = "js"
+    (try Filename.basename (Filename.chop_extension !input_name) = "js"
      with Invalid_argument _ -> false)
 
 (* [merlin_hide] tells merlin to not look at a node, or at any of its
@@ -538,13 +539,11 @@ let preprocess_literal_object mappper fields :
       let sub =
         [ id'.loc, Printf.sprintf "Duplicated val or method %S%s." id'.txt (details id') ]
       in
-      let err =
-        Location.Error.make
-          ~loc:id.loc
-          ~sub
-          (Printf.sprintf "Duplicated val or method %S%s." id.txt (details id))
-      in
-      raise (Location.Error err)
+      make_exception
+        ~loc:id.loc
+        ~sub
+        (Printf.sprintf "Duplicated val or method %S%s." id.txt (details id))
+      |> raise
     else S.add txt id names
   in
   let drop_prefix ~prefix s =
@@ -602,7 +601,7 @@ let preprocess_literal_object mappper fields :
           "This field is not valid inside a js literal object."
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
-  with Location.Error error -> `Error (Location.Error.to_extension error)
+  with Avoid_uncaught_raising error -> `Error (Location.Error.to_extension error)
 
 (* {[ object%js (self)
      val readonlyprop = e1
@@ -746,6 +745,8 @@ let transform =
     inherit Ast_traverse.map as super
 
     method! expression expr =
+      input_name := expr.pexp_loc.loc_start.pos_fname;
+
       let prev_default_loc = !default_loc in
       default_loc := expr.pexp_loc;
       let { pexp_attributes; _ } = expr in
