@@ -25,10 +25,9 @@ open Parsetree
 
 let nolabel = Nolabel
 
-exception Avoid_uncaught_raising of Location.Error.t
+exception Syntax_error of Location.Error.t
 
-let make_exception ~loc ~sub str =
-  Avoid_uncaught_raising (Location.Error.make ~loc ~sub str)
+let make_exception ~loc ~sub str = Syntax_error (Location.Error.make ~loc ~sub str)
 
 let raise_errorf ~loc fmt =
   Printf.ksprintf (fun str -> make_exception ~loc ~sub:[] str |> raise) fmt
@@ -601,7 +600,7 @@ let preprocess_literal_object mappper fields :
           "This field is not valid inside a js literal object."
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
-  with Avoid_uncaught_raising error -> `Error (Location.Error.to_extension error)
+  with Syntax_error error -> `Error (Location.Error.to_extension error)
 
 (* {[ object%js (self)
      val readonlyprop = e1
