@@ -32,8 +32,6 @@ let make_exception ~loc ~sub str = Syntax_error (Location.Error.make ~loc ~sub s
 let raise_errorf ~loc fmt =
   Printf.ksprintf (fun str -> make_exception ~loc ~sub:[] str |> raise) fmt
 
-let input_name = ref ""
-
 let unflatten l =
   match l with
   | [] -> None
@@ -127,7 +125,9 @@ let make_str ?loc s =
 
 let inside_Js =
   lazy
-    (try Filename.basename (Filename.chop_extension !input_name) = "js"
+    (try
+       Filename.basename (Filename.chop_extension !Ocaml_common.Location.input_name)
+       = "js"
      with Invalid_argument _ -> false)
 
 (* [merlin_hide] tells merlin to not look at a node, or at any of its
@@ -744,8 +744,6 @@ let transform =
     inherit Ast_traverse.map as super
 
     method! expression expr =
-      input_name := expr.pexp_loc.loc_start.pos_fname;
-
       let prev_default_loc = !default_loc in
       default_loc := expr.pexp_loc;
       let { pexp_attributes; _ } = expr in
