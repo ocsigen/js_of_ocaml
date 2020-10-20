@@ -74,11 +74,11 @@ let parse_lid s =
 
 let mkloc txt loc = { txt; loc }
 
-let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
+let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Const.string s)
 
-let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
+let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Const.int x)
 
-let pint ?loc ?attrs x = Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
+let pint ?loc ?attrs x = Pat.constant ?loc ?attrs (Const.int x)
 
 let lid ?(loc = !default_loc) s = mkloc (parse_lid s) loc
 

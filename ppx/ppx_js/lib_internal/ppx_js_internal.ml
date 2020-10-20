@@ -95,7 +95,7 @@ let tuple ?loc ?attrs = function
   | [ x ] -> x
   | xs -> Exp.tuple ?loc ?attrs xs
 
-let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
+let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Const.string s)
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
