@@ -339,6 +339,7 @@ let prop_get ~loc obj prop =
   let invoker =
     invoker
       (fun args tres ->
+        let loc = !default_loc in
         arrows
           (Arg.args args)
           (Js.type_ "gen_prop" [ [%type: < get : [%t tres] ; .. > ] ]))
@@ -386,13 +387,16 @@ let prop_set ~loc ~prop_loc obj prop value =
       (fun args _tres ->
         match args with
         | [ obj; arg ] ->
+            let loc = !default_loc in
             assert (Arg.label obj = nolabel);
             assert (Arg.label arg = nolabel);
             arrows
               [ nolabel, Arg.typ obj ]
               (Js.type_ "gen_prop" [ [%type: < set : [%t Arg.typ arg] -> unit ; .. > ] ])
         | _ -> assert false)
-      (fun args _tres -> js_dot_t_the_first_arg args, [%type: unit])
+      (fun args _tres ->
+        let loc = !default_loc in
+        js_dot_t_the_first_arg args, [%type: unit])
       (function
         | [ obj; arg ] -> Js.unsafe "set" [ obj; str (unescape prop); inject_arg arg ]
         | _ -> assert false)
@@ -436,7 +440,7 @@ let new_object constr args =
   let invoker =
     invoker
       (fun _args _tres ->
-        let loc = constr.loc in
+        let loc = !default_loc in
         [%type: unit])
       (fun args tres ->
         let tres = Js.type_ "t" [ tres ] in
