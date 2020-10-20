@@ -4,6 +4,5 @@
   (synopsis "Js_of_ocaml toplevel library")
   (libraries
     js_of_ocaml-compiler js_of_ocaml bytes
-    compiler-libs.bytecomp compiler-libs.toplevel
-    ppxlib)
+    compiler-libs.bytecomp compiler-libs.toplevel)
   (preprocess (pps js_of_ocaml-ppx)))
