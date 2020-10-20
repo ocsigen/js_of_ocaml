@@ -123,13 +123,6 @@ let make_str ?loc s =
   | None -> mknoloc s
   | Some loc -> mkloc s loc
 
-let inside_Js =
-  lazy
-    (try
-       Filename.basename (Filename.chop_extension !Ocaml_common.Location.input_name)
-       = "js"
-     with Invalid_argument _ -> false)
-
 (* [merlin_hide] tells merlin to not look at a node, or at any of its
    descendants.  *)
 let merlin_hide =
@@ -149,12 +142,9 @@ module Js : sig
     ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
 end = struct
   let js_dot name =
-    if Lazy.force inside_Js
-    then name
-    else
-      match !wrapper with
-      | None -> "Js." ^ name
-      | Some m -> m ^ ".Js." ^ name
+    match !wrapper with
+    | None -> "Js." ^ name
+    | Some m -> m ^ ".Js." ^ name
 
   let js_unsafe_dot name = js_dot ("Unsafe." ^ name)
 
