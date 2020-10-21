@@ -19,199 +19,204 @@
  *)
 open! Import
 
-type +'a t
+(* This local module [Js] is needed so that the ppx_js extension work within that file. *)
+module Js = struct
+  type +'a t
 
-type (-'a, +'b) meth_callback
+  type (-'a, +'b) meth_callback
 
-module Unsafe = struct
-  type top
+  module Unsafe = struct
+    type top
 
-  type any = top t
+    type any = top t
 
-  type any_js_array = any
+    type any_js_array = any
 
-  external inject : 'a -> any = "%identity"
+    external inject : 'a -> any = "%identity"
 
-  external coerce : _ t -> _ t = "%identity"
+    external coerce : _ t -> _ t = "%identity"
 
-  external get : 'a -> 'b -> 'c = "caml_js_get"
+    external get : 'a -> 'b -> 'c = "caml_js_get"
 
-  external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+    external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
 
-  external delete : 'a -> 'b -> unit = "caml_js_delete"
+    external delete : 'a -> 'b -> unit = "caml_js_delete"
 
-  external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
+    external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
 
-  external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
+    external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
 
-  external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
+    external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
 
-  external new_obj : 'a -> any array -> 'b = "caml_js_new"
+    external new_obj : 'a -> any array -> 'b = "caml_js_new"
 
-  external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
+    external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
 
-  external obj : (string * any) array -> 'a = "caml_js_object"
+    external obj : (string * any) array -> 'a = "caml_js_object"
 
-  external equals : 'a -> 'b -> bool = "caml_js_equals"
+    external equals : 'a -> 'b -> bool = "caml_js_equals"
 
-  external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+    external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 
-  external eval_string : string -> 'a = "caml_js_eval_string"
+    external eval_string : string -> 'a = "caml_js_eval_string"
 
-  external js_expr : string -> 'a = "caml_js_expr"
+    external js_expr : string -> 'a = "caml_js_expr"
 
-  external pure_js_expr : string -> 'a = "caml_pure_js_expr"
+    external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
-  let global = pure_js_expr "joo_global_object"
+    let global = pure_js_expr "joo_global_object"
 
-  external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
+    external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
 
-  external callback_with_arguments :
-    (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback
-    = "caml_js_wrap_callback_arguments"
+    external callback_with_arguments :
+      (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback
+      = "caml_js_wrap_callback_arguments"
 
-  external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
-    = "caml_js_wrap_callback_strict"
+    external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+      = "caml_js_wrap_callback_strict"
 
-  external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
-    = "caml_js_wrap_meth_callback_unsafe"
+    external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
+      = "caml_js_wrap_meth_callback_unsafe"
 
-  external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
-    = "caml_js_wrap_meth_callback_strict"
+    external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
+      = "caml_js_wrap_meth_callback_strict"
 
-  external meth_callback_with_arguments :
-    ('b -> any_js_array -> 'a) -> ('b, any_js_array -> 'a) meth_callback
-    = "caml_js_wrap_meth_callback_arguments"
+    external meth_callback_with_arguments :
+      ('b -> any_js_array -> 'a) -> ('b, any_js_array -> 'a) meth_callback
+      = "caml_js_wrap_meth_callback_arguments"
 
-  (* DEPRECATED *)
-  external variable : string -> 'a = "caml_js_var"
+    (* DEPRECATED *)
+    external variable : string -> 'a = "caml_js_var"
+  end
+
+  (****)
+
+  type 'a opt = 'a
+
+  type 'a optdef = 'a
+
+  external debugger : unit -> unit = "debugger"
+
+  let null : 'a opt = Unsafe.pure_js_expr "null"
+
+  external some : 'a -> 'a opt = "%identity"
+
+  let undefined : 'a optdef = Unsafe.pure_js_expr "undefined"
+
+  external def : 'a -> 'a optdef = "%identity"
+
+  module type OPT = sig
+    type 'a t
+
+    val empty : 'a t
+
+    val return : 'a -> 'a t
+
+    val map : 'a t -> ('a -> 'b) -> 'b t
+
+    val bind : 'a t -> ('a -> 'b t) -> 'b t
+
+    val test : 'a t -> bool
+
+    val iter : 'a t -> ('a -> unit) -> unit
+
+    val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+
+    val get : 'a t -> (unit -> 'a) -> 'a
+
+    val option : 'a option -> 'a t
+
+    val to_option : 'a t -> 'a option
+  end
+
+  module Opt : OPT with type 'a t = 'a opt = struct
+    type 'a t = 'a opt
+
+    let empty = null
+
+    let return = some
+
+    let map x f = if Unsafe.equals x null then null else return (f x)
+
+    let bind x f = if Unsafe.equals x null then null else f x
+
+    let test x = not (Unsafe.equals x null)
+
+    let iter x f = if not (Unsafe.equals x null) then f x
+
+    let case x f g = if Unsafe.equals x null then f () else g x
+
+    let get x f = if Unsafe.equals x null then f () else x
+
+    let option x =
+      match x with
+      | None -> empty
+      | Some x -> return x
+
+    let to_option x = case x (fun () -> None) (fun x -> Some x)
+  end
+
+  module Optdef : OPT with type 'a t = 'a optdef = struct
+    type 'a t = 'a optdef
+
+    let empty = undefined
+
+    let return = def
+
+    let map x f = if x == undefined then undefined else return (f x)
+
+    let bind x f = if x == undefined then undefined else f x
+
+    let test x = x != undefined
+
+    let iter x f = if x != undefined then f x
+
+    let case x f g = if x == undefined then f () else g x
+
+    let get x f = if x == undefined then f () else x
+
+    let option x =
+      match x with
+      | None -> empty
+      | Some x -> return x
+
+    let to_option x = case x (fun () -> None) (fun x -> Some x)
+  end
+
+  (****)
+
+  let coerce x f g = Opt.get (f x) (fun () -> g x)
+
+  let coerce_opt x f g = Opt.get (Opt.bind x f) (fun () -> g x)
+
+  (****)
+
+  type +'a meth
+
+  type +'a gen_prop
+
+  type 'a readonly_prop = < get : 'a > gen_prop
+
+  type 'a writeonly_prop = < set : 'a -> unit > gen_prop
+
+  type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
+
+  type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
+
+  type +'a constr
+
+  (****)
+
+  type 'a callback = (unit, 'a) meth_callback
+
+  external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+    = "caml_js_wrap_callback"
+
+  external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+    = "caml_js_wrap_meth_callback"
 end
 
-(****)
-
-type 'a opt = 'a
-
-type 'a optdef = 'a
-
-external debugger : unit -> unit = "debugger"
-
-let null : 'a opt = Unsafe.pure_js_expr "null"
-
-external some : 'a -> 'a opt = "%identity"
-
-let undefined : 'a optdef = Unsafe.pure_js_expr "undefined"
-
-external def : 'a -> 'a optdef = "%identity"
-
-module type OPT = sig
-  type 'a t
-
-  val empty : 'a t
-
-  val return : 'a -> 'a t
-
-  val map : 'a t -> ('a -> 'b) -> 'b t
-
-  val bind : 'a t -> ('a -> 'b t) -> 'b t
-
-  val test : 'a t -> bool
-
-  val iter : 'a t -> ('a -> unit) -> unit
-
-  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
-
-  val get : 'a t -> (unit -> 'a) -> 'a
-
-  val option : 'a option -> 'a t
-
-  val to_option : 'a t -> 'a option
-end
-
-module Opt : OPT with type 'a t = 'a opt = struct
-  type 'a t = 'a opt
-
-  let empty = null
-
-  let return = some
-
-  let map x f = if Unsafe.equals x null then null else return (f x)
-
-  let bind x f = if Unsafe.equals x null then null else f x
-
-  let test x = not (Unsafe.equals x null)
-
-  let iter x f = if not (Unsafe.equals x null) then f x
-
-  let case x f g = if Unsafe.equals x null then f () else g x
-
-  let get x f = if Unsafe.equals x null then f () else x
-
-  let option x =
-    match x with
-    | None -> empty
-    | Some x -> return x
-
-  let to_option x = case x (fun () -> None) (fun x -> Some x)
-end
-
-module Optdef : OPT with type 'a t = 'a optdef = struct
-  type 'a t = 'a optdef
-
-  let empty = undefined
-
-  let return = def
-
-  let map x f = if x == undefined then undefined else return (f x)
-
-  let bind x f = if x == undefined then undefined else f x
-
-  let test x = x != undefined
-
-  let iter x f = if x != undefined then f x
-
-  let case x f g = if x == undefined then f () else g x
-
-  let get x f = if x == undefined then f () else x
-
-  let option x =
-    match x with
-    | None -> empty
-    | Some x -> return x
-
-  let to_option x = case x (fun () -> None) (fun x -> Some x)
-end
-
-(****)
-
-let coerce x f g = Opt.get (f x) (fun () -> g x)
-
-let coerce_opt x f g = Opt.get (Opt.bind x f) (fun () -> g x)
-
-(****)
-
-type +'a meth
-
-type +'a gen_prop
-
-type 'a readonly_prop = < get : 'a > gen_prop
-
-type 'a writeonly_prop = < set : 'a -> unit > gen_prop
-
-type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
-
-type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
-
-type +'a constr
-
-(****)
-
-type 'a callback = (unit, 'a) meth_callback
-
-external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
-  = "caml_js_wrap_callback"
-
-external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
-  = "caml_js_wrap_meth_callback"
+include Js
 
 (****)
 

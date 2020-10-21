@@ -1,3 +1,7 @@
+# unreleased
+## Features/Changes
+* compiler, ppx_js, ppx_deriving_json: port PPX's to ppxlib (#1041)
+
 # 3.7.1 (2020-09-29) - London
 ## Features/Changes
 * lib: Add Navigator.{vendor,maxTouchPoints} (#1062)

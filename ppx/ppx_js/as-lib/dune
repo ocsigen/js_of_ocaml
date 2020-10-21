@@ -3,8 +3,8 @@
   (public_name js_of_ocaml-ppx.as-lib)
   (synopsis "Js_of_ocaml ppx")
   (libraries compiler-libs.common
-             ocaml-migrate-parsetree)
-  (preprocess (pps ppx_tools_versioned.metaquot_408)))
+             ppxlib)
+  (preprocess (pps ppxlib.metaquot)))
 
 (rule
   (targets ppx_js_internal.ml)

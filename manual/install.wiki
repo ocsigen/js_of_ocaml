@@ -1,7 +1,7 @@
 = Installation =
 == Requirements =
 * dune
-* Cmdliner, ppx_tools_versioned, ocaml-migrate-parsetree
+* Cmdliner, ppxlib
 
 See opam files at the root of the repository for version constraints.
 

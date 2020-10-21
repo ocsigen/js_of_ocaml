@@ -26,9 +26,7 @@
 *)
 
 open StdLabels
-open Migrate_parsetree
-open OCaml_407.Ast
-open Parsetree
+open Ppxlib.Parsetree
 
 module Version : sig
   type t
@@ -86,7 +84,7 @@ let keep loc (attrs : attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
-          | { Location.txt = ("if" | "ifnot") as ifnot; _ }, attr_payload -> (
+          | { attr_name = { txt = ("if" | "ifnot") as ifnot; _ }; attr_payload; _ } -> (
               let norm =
                 match ifnot with
                 | "if" -> fun x -> x
@@ -186,32 +184,53 @@ let rec filter_pattern = function
   | { ppat_attributes; ppat_loc; _ } as p ->
       if keep ppat_loc ppat_attributes then Some p else None
 
-let mapper =
-  { Ast_mapper.default_mapper with
-    cases =
-      (fun mapper cases ->
-        let cases =
-          filter_map cases ~f:(fun case ->
-              match filter_pattern case.pc_lhs with
-              | None -> None
-              | Some pattern -> Some { case with pc_lhs = pattern })
-        in
-        Ast_mapper.default_mapper.cases mapper cases)
-  ; structure =
-      (fun mapper items ->
-        let items =
-          List.filter items ~f:(fun item ->
-              match item.pstr_desc with
-              | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
-              | Pstr_primitive { pval_attributes; pval_loc; _ } ->
-                  keep pval_loc pval_attributes
-              | _ -> true)
-        in
-        Ast_mapper.default_mapper.structure mapper items)
-  }
+(* TODO: This class is useful while we transition to ppxlib.0.17 that provides the `cases`
+   method. Remove this once we drop support for ppxlib < 0.17 *)
+class map =
+  object (self)
+    inherit Ppxlib.Ast_traverse.map as super
+
+    method cases = self#list self#case [@@ocaml.warning "-7"]
+
+    method expression_desc : expression_desc -> expression_desc =
+      fun x ->
+        match x with
+        | Pexp_function a ->
+            let a = self#cases a in
+            Pexp_function a
+        | Pexp_match (a, b) ->
+            let a = self#expression a in
+            let b = self#cases b in
+            Pexp_match (a, b)
+        | Pexp_try (a, b) ->
+            let a = self#expression a in
+            let b = self#cases b in
+            Pexp_try (a, b)
+        | _ -> super#expression_desc x
+    [@@ocaml.warning "-7"]
+  end
+
+let traverse =
+  object
+    inherit map as super
+
+    method! structure items =
+      let items =
+        List.filter items ~f:(fun item ->
+            match item.pstr_desc with
+            | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
+            | Pstr_primitive { pval_attributes; pval_loc; _ } ->
+                keep pval_loc pval_attributes
+            | _ -> true)
+      in
+      super#structure items
+
+    method! cases =
+      filter_map ~f:(fun case ->
+          match filter_pattern case.pc_lhs with
+          | None -> None
+          | Some pattern -> Some { case with pc_lhs = pattern })
+  end
 
 let () =
-  Driver.register
-    ~name:"ppx_optcomp_light"
-    Migrate_parsetree.Versions.ocaml_407
-    (fun _config _cookies -> mapper)
+  Ppxlib.Driver.register_transformation ~impl:traverse#structure "ppx_optcomp_light"
