@@ -16,7 +16,7 @@ name: "js_of_ocaml"
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "ocaml" {>= "4.04.0"}
+  "ocaml" {>= "4.02.0"}
   "dune" {>= "2.5"}
   "ppxlib" {>= "0.15.0" }
   "uchar"
