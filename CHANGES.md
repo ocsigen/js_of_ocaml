@@ -1,4 +1,4 @@
-# unreleased
+# 3.8.0 (2020-10-21) - London
 ## Features/Changes
 * compiler, ppx_js, ppx_deriving_json: port PPX's to ppxlib (#1041)
 
