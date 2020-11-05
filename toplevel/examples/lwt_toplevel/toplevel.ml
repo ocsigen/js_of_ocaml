@@ -351,8 +351,9 @@ let run _ =
     let content = Js.to_string textbox##.value##trim in
     let content' =
       let len = String.length content in
-      if try content <> "" && content.[len - 1] <> ';' && content.[len - 2] <> ';'
-         with _ -> true
+      if
+        try content <> "" && content.[len - 1] <> ';' && content.[len - 2] <> ';'
+        with _ -> true
       then content ^ ";;"
       else content
     in

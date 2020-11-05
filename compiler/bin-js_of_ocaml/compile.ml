@@ -117,9 +117,10 @@ let run
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
   let check_debug debug =
-    if (not runtime_only)
-       && Option.is_some source_map
-       && Parse_bytecode.Debug.is_empty debug
+    if
+      (not runtime_only)
+      && Option.is_some source_map
+      && Parse_bytecode.Debug.is_empty debug
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \

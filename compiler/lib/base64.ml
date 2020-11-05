@@ -217,8 +217,9 @@ let decode_sub ?(pad = true) { dmap; _ } ?(off = 0) ?len input =
       while !idx + 4 < len do
         (* use [unsafe_get_uint16] instead [unsafe_get_uint32] to avoid allocation
            of [int32]. Of course, [3d3d3d3d] is [====]. *)
-        if unsafe_get_uint16 input (off + !idx) <> 0x3d3d
-           || unsafe_get_uint16 input (off + !idx + 2) <> 0x3d3d
+        if
+          unsafe_get_uint16 input (off + !idx) <> 0x3d3d
+          || unsafe_get_uint16 input (off + !idx + 2) <> 0x3d3d
         then raise Not_found;
         (* We got something bad, should be a valid character according to
            [alphabet] but outside the scope. *)

@@ -69,15 +69,15 @@ let string_of_mapping mapping =
     if i < len
     then
       let c = a.(i) in
-      if prev >= 0
-         && c.ori_source = a.(prev).ori_source
-         && c.ori_line = a.(prev).ori_line
-         && c.ori_col = a.(prev).ori_col
+      if
+        prev >= 0
+        && c.ori_source = a.(prev).ori_source
+        && c.ori_line = a.(prev).ori_line
+        && c.ori_col = a.(prev).ori_col
       then (* We already are at this location *)
         loop prev (i + 1)
-      else if i + 1 < len
-              && c.gen_line = a.(i + 1).gen_line
-              && c.gen_col = a.(i + 1).gen_col
+      else if
+        i + 1 < len && c.gen_line = a.(i + 1).gen_line && c.gen_col = a.(i + 1).gen_col
       then (* Only keep one source location per generated location *)
         loop prev (i + 1)
       else (

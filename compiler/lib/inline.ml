@@ -201,14 +201,15 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                     [], (Branch (free_pc, [ arg ]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
-                if live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
-                   (* Inlining the code of an optimizable function could
-                      make this code unoptimized. (wrt to Jit compilers)
+                if
+                  live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
+                  (* Inlining the code of an optimizable function could
+                     make this code unoptimized. (wrt to Jit compilers)
 
-                      At the moment, V8 doesn't optimize function
-                      containing try..catch.  We disable inlining if the
-                      inner and outer functions don't have the same
-                      "contain_try_catch" property *)
+                     At the moment, V8 doesn't optimize function
+                     containing try..catch.  We disable inlining if the
+                     inner and outer functions don't have the same
+                     "contain_try_catch" property *)
                 then
                   let blocks, cont_pc =
                     match rem, branch with
@@ -253,9 +254,10 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
               ; params = []
               } ->
                 let len = List.length l in
-                if Code.Var.compare y y' = 0
-                   && Primitive.has_arity prim len
-                   && args_equal l args
+                if
+                  Code.Var.compare y y' = 0
+                  && Primitive.has_arity prim len
+                  && args_equal l args
                 then
                   Let (x, Prim (Extern "%closure", [ Pc (IString prim) ])) :: rem, state
                 else i :: rem, state

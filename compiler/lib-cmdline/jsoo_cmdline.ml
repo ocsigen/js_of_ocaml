@@ -28,9 +28,10 @@ let normalize_argv ?(warn = fun _ -> ()) a =
         let size = String.length s in
         if size <= 2
         then s
-        else if Char.equal s.[0] '-'
-                && (not (Char.equal s.[1] '-'))
-                && not (Char.equal s.[2] '=')
+        else if
+          Char.equal s.[0] '-'
+          && (not (Char.equal s.[1] '-'))
+          && not (Char.equal s.[2] '=')
         then (
           bad := s :: !bad;
           (* long option with one dash lets double the dash *)
