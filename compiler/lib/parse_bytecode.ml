@@ -753,6 +753,8 @@ let new_closure_repr =
   match Ocaml_version.v with
   | `V4_02 | `V4_03 | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 ->
       false
+  | `V4_12 ->
+      true
 
 type compile_info =
   { blocks : Blocks.u
