@@ -95,7 +95,7 @@ var caml_method_cache = [];
 function caml_get_public_method (obj, tag, cacheid) {
   var meths = obj[1];
   var ofs = caml_method_cache[cacheid];
-  if (ofs === null) {
+  if (ofs === undefined) {
     // Make sure the array is not sparse
     for (var i = caml_method_cache.length; i < cacheid; i++)
       caml_method_cache[i] = 0;
