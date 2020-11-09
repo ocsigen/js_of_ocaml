@@ -12,4 +12,4 @@ break-infix-before-func
 break-separators=before
 dock-collection-brackets=false
 margin=90
-version=0.15.0
+version=0.15.1
