@@ -39,7 +39,8 @@ let rec constant_of_const : _ -> Code.constant =
   | ((Const_block (tag, _, l))[@if BUCKLESCRIPT]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | ((Const_pointer i)[@ifnot BUCKLESCRIPT]) -> Int (Int32.of_int_warning_on_overflow i)
+  | ((Const_pointer i)[@ifnot BUCKLESCRIPT] [@if ocaml_version < (4, 12, 0)]) ->
+      Int (Int32.of_int_warning_on_overflow i)
   | ((Const_block (tag, l))[@ifnot BUCKLESCRIPT]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
