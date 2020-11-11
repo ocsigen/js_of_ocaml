@@ -1,6 +1,7 @@
 # ??? (??) - ??
 ## Features/Changes
 * Compiler: complete support for OCaml 4.12
+* Lib: expose API to attached and retrieve js errors to/from ocaml exceptions
 
 # 3.8.0 (2020-10-21) - London
 ## Features/Changes
