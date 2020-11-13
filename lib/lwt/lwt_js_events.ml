@@ -75,11 +75,10 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture ?passive target handler 
       if cancel_handler then Lwt.cancel !cur_handler;
       cancelled := true);
   let rec aux () =
-    if
-      not !cancelled
-      (* In the case it has been cancelled
-                        during the previous handler,
-                        we do not reinstall the event handler *)
+    if not !cancelled
+       (* In the case it has been cancelled
+                         during the previous handler,
+                         we do not reinstall the event handler *)
     then (
       let t = evh ?use_capture ?passive target in
       cur := t;

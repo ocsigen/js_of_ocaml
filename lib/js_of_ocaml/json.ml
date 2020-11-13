@@ -49,10 +49,9 @@ let input_reviver =
   let reviver _this _key (value : Unsafe.any) : Obj.t =
     if unsafe_equals (typeof value) (typeof (string "foo"))
     then Obj.repr (of_jsbytes (Unsafe.coerce value))
-    else if
-      instanceof value Js.array_empty
-      && (Unsafe.coerce value)##.length == 4
-      && Unsafe.get value 0 == 255
+    else if instanceof value Js.array_empty
+            && (Unsafe.coerce value)##.length == 4
+            && Unsafe.get value 0 == 255
     then
       Obj.repr
         (create_int64_lo_mi_hi

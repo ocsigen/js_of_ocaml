@@ -150,11 +150,10 @@ let parse_aux the_parser lexbuf =
             let error_checkpoint = checkpoint in
             let error_prev = prev in
             let prev, comments, checkpoint = last_checkpoint in
-            if
-              I.acceptable
-                checkpoint
-                (Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero)
-                lexbuf.Lexing.lex_curr_p
+            if I.acceptable
+                 checkpoint
+                 (Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero)
+                 lexbuf.Lexing.lex_curr_p
             then (
               reset lexbuf;
               let t = Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero in

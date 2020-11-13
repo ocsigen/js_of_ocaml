@@ -233,10 +233,9 @@ let eval_instr info i =
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
       let res =
-        if
-          List.for_all prim_args' ~f:(function
-              | Some _ -> true
-              | _ -> false)
+        if List.for_all prim_args' ~f:(function
+               | Some _ -> true
+               | _ -> false)
         then
           eval_prim
             ( prim

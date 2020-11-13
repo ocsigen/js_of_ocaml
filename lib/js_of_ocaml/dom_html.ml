@@ -2441,14 +2441,14 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
         Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
     | `Unknown ->
         createElementSyntax :=
-          if
-            try
-              let el : inputElement Js.t =
-                Js.Unsafe.coerce
-                  (document##createElement (Js.string "<input name=\"x\">"))
-              in
-              el##.tagName##toLowerCase == Js.string "input" && el##.name == Js.string "x"
-            with _ -> false
+          if try
+               let el : inputElement Js.t =
+                 Js.Unsafe.coerce
+                   (document##createElement (Js.string "<input name=\"x\">"))
+               in
+               el##.tagName##toLowerCase == Js.string "input"
+               && el##.name == Js.string "x"
+             with _ -> false
           then `Extended
           else `Standard;
         unsafeCreateElementEx ?_type ?name doc elt

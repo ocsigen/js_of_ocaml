@@ -1302,9 +1302,8 @@ and translate_instrs ctx expr_queue loc instr =
       st @ instrs, expr_queue
 
 and compile_block st queue (pc : Addr.t) frontier interm =
-  if
-    (not (List.is_empty queue))
-    && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
+  if (not (List.is_empty queue))
+     && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
   then flush_all queue (compile_block st [] pc frontier interm)
   else (
     if pc >= 0

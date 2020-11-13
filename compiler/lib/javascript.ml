@@ -55,12 +55,11 @@ end = struct
   let to_string s = s
 
   let to_int32 s =
-    if
-      String.is_prefix s ~prefix:"0"
-      && String.length s > 1
-      && String.for_all s ~f:(function
-             | '0' .. '7' -> true
-             | _ -> false)
+    if String.is_prefix s ~prefix:"0"
+       && String.length s > 1
+       && String.for_all s ~f:(function
+              | '0' .. '7' -> true
+              | _ -> false)
     then (* octal notation *)
       Int32.of_string ("0o" ^ s)
     else Int32.of_string s
