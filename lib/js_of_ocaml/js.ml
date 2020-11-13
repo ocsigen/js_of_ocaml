@@ -673,6 +673,10 @@ let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
 let raise_js_error : error t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
 
+external exn_with_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
+
+external js_error_of_exn : exn -> error t opt = "caml_js_error_of_exception"
+
 class type json =
   object
     method parse : js_string t -> 'a meth

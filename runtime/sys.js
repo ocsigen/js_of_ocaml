@@ -230,6 +230,11 @@ function caml_spacetime_enabled(_unit) {
   return 0;
 }
 
+//Provides: caml_sys_const_naked_pointers_checked const (const)
+function caml_sys_const_naked_pointers_checked(_unit) {
+  return 0;
+}
+
 //Provides: caml_register_channel_for_spacetime const (const)
 function caml_register_channel_for_spacetime(_channel) {
   return 0;
