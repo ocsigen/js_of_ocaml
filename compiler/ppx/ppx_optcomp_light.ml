@@ -122,12 +122,12 @@ let keep loc (attrs : attributes) =
                   let get_op = function
                     | { pexp_desc = Pexp_ident { txt = Lident str; _ }; _ } -> (
                         match str with
-                        | "<=" -> ( <=)
-                        | ">=" -> ( >=)
-                        | ">" -> ( >)
-                        | "<" -> ( <)
-                        | "<>" -> ( <>)
-                        | "=" -> ( =)
+                        | "<=" -> ( <= )
+                        | ">=" -> ( >= )
+                        | ">" -> ( > )
+                        | "<" -> ( < )
+                        | "<>" -> ( <> )
+                        | "=" -> ( = )
                         | _ -> raise Invalid)
                     | _ -> raise Invalid
                   in
