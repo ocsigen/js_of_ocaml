@@ -447,6 +447,7 @@ let f
   +> Generate_closure.f
   +> deadcode'
   +> generate d ~exported_runtime
+  +> Javascript_from_ir.run
   +> link ~standalone ~linkall ~export_runtime:dynlink
   +> pack ~global
   +> coloring

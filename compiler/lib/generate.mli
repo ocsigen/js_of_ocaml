@@ -23,4 +23,4 @@ val f :
   -> exported_runtime:bool
   -> live_vars:int array
   -> Parse_bytecode.Debug.t
-  -> Javascript.program
+  -> Ir.program

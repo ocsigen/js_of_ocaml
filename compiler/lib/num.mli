@@ -18,19 +18,30 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Ir
+type t
 
-val if_statement :
-     expression
-  -> Loc.t
-  -> statement * Loc.t
-  -> bool
-  -> statement * Loc.t
-  -> bool
-  -> (statement * Loc.t) list
+(** Conversions *)
 
-val get_variable : Code.Var.Set.t -> expression -> Code.Var.Set.t
+val of_string_unsafe : string -> t
 
-val block : (statement * Loc.t) list -> statement * Loc.t
+val of_int32 : int32 -> t
 
-val unblock : statement * Loc.t -> (statement * Loc.t) list
+val of_float : float -> t
+
+val to_string : t -> string
+
+val to_int32 : t -> int32
+
+(** Predicates *)
+
+val is_zero : t -> bool
+
+val is_one : t -> bool
+
+val is_neg : t -> bool
+
+(** Arithmetic *)
+
+val add : t -> t -> t
+
+val neg : t -> t
