@@ -423,6 +423,13 @@ and touch =
     method pageY : int readonly_prop
   end
 
+and submitEvent =
+  object
+    inherit event
+
+    method submitter : element t optdef readonly_prop
+  end
+
 and dragEvent =
   object
     inherit mouseEvent
@@ -841,7 +848,7 @@ class type formElement =
 
     method reset : unit meth
 
-    method onsubmit : ('self t, event t) event_listener writeonly_prop
+    method onsubmit : ('self t, submitEvent t) event_listener writeonly_prop
   end
 
 class type optGroupElement =
@@ -2333,7 +2340,7 @@ module Event : sig
 
   val timeupdate : event t typ
 
-  val submit : event t typ
+  val submit : submitEvent t typ
 
   val scroll : event t typ
 
