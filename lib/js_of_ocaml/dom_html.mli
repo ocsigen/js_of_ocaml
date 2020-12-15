@@ -437,6 +437,13 @@ and dragEvent =
     method dataTransfer : dataTransfer t readonly_prop
   end
 
+and clipboardEvent =
+  object
+    inherit event
+
+    method clipboardData : dataTransfer t readonly_prop
+  end
+
 and dataTransfer =
   object
     method dropEffect : js_string t prop
@@ -2287,6 +2294,12 @@ module Event : sig
   type 'a typ = 'a Dom.Event.typ
 
   val click : mouseEvent t typ
+
+  val copy : clipboardEvent t typ
+
+  val cut : clipboardEvent t typ
+
+  val paste : clipboardEvent t typ
 
   val dblclick : mouseEvent t typ
 
