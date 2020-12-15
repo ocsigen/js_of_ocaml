@@ -172,6 +172,15 @@ let limited_loop event ?(elapsed_time = 0.1) =
 let click ?use_capture ?passive target =
   make_event Dom_html.Event.click ?use_capture ?passive target
 
+let copy ?use_capture ?passive target =
+  make_event Dom_html.Event.copy ?use_capture ?passive target
+
+let cut ?use_capture ?passive target =
+  make_event Dom_html.Event.cut ?use_capture ?passive target
+
+let paste ?use_capture ?passive target =
+  make_event Dom_html.Event.paste ?use_capture ?passive target
+
 let dblclick ?use_capture ?passive target =
   make_event Dom_html.Event.dblclick ?use_capture ?passive target
 
