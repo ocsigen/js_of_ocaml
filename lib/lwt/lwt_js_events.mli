@@ -326,7 +326,7 @@ val submit :
      ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> Dom_html.event Js.t Lwt.t
+  -> Dom_html.submitEvent Js.t Lwt.t
 
 val select :
      ?use_capture:bool

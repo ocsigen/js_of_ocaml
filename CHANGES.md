@@ -1,5 +1,6 @@
 # ??? (??) - ??
 ## Features/Changes
+* Lib: add submitEvent to Dom_html and update appropriate function signatures
 * Compiler: complete support for OCaml 4.12
 * Lib: expose API to attached and retrieve js errors to/from ocaml exceptions
 
