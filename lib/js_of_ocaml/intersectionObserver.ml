@@ -4,15 +4,15 @@ class type intersectionObserverEntry =
 
     method boundingClientRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method rootBounds : Dom_html.clientRect Js.t Js.readonly_prop
+    method rootBounds : Dom_html.clientRect Js.t Js.opt Js.readonly_prop
 
     method intersectionRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method intersectionRatio : float Js.t Js.readonly_prop
+    method intersectionRatio : float Js.readonly_prop
 
     method isIntersecting : bool Js.t Js.readonly_prop
-    (* Missing Dom.highResTimeStamp
-       method time : Dom.highResTimeStamp Js.t Js.readonly_prop *)
+
+    method time : float Js.readonly_prop
   end
 
 class type intersectionObserverOptions =
@@ -26,11 +26,11 @@ class type intersectionObserverOptions =
 
 class type intersectionObserver =
   object
-    method root : Dom.node Js.t Js.readonly_prop
+    method root : Dom.node Js.t Js.opt Js.readonly_prop
 
     method rootMargin : Js.js_string Js.t Js.readonly_prop
 
-    method threshold : float Js.t Js.readonly_prop
+    method thresholds : float Js.js_array Js.t Js.readonly_prop
 
     method observe : #Dom.node Js.t -> unit Js.meth
 

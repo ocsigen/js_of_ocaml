@@ -27,6 +27,7 @@ module File = File
 module Firebug = Firebug
 module Form = Form
 module Geolocation = Geolocation
+module IntersectionObserver = IntersectionObserver
 module Intl = Intl
 module Js = Js
 module Json = Json
