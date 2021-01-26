@@ -417,7 +417,7 @@ end = struct
       else if tag = Obj.double_tag
       then Float (Obj.magic x : float)
       else if tag = Obj.double_array_tag
-      then Float_array (Obj.magic x : float array)
+      then Float_array (Array.init (Obj.size x) ~f:(fun i -> Obj.double_field x i))
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
