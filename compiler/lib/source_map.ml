@@ -98,8 +98,10 @@ let string_of_mapping mapping =
           then []
           else
             (c.ori_source - !ori_source)
-            :: (c.ori_line - !ori_line)
-            :: (c.ori_col - !ori_col)
+            ::
+            (c.ori_line - !ori_line)
+            ::
+            (c.ori_col - !ori_col)
             ::
             (match c.ori_name with
             | None -> []

@@ -1462,7 +1462,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             queue
             (( J.Try_statement (body, Some (J.V x, handler), None)
              , source_location st.ctx pc )
-            :: after)
+             :: after)
       | _ ->
           let prefix, new_frontier, new_interm =
             colapse_frontier st new_frontier interm
