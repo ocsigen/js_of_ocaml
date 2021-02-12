@@ -190,6 +190,24 @@ val click :
   -> #Dom_html.eventTarget Js.t
   -> Dom_html.mouseEvent Js.t Lwt.t
 
+val copy :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.clipboardEvent Js.t Lwt.t
+
+val cut :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.clipboardEvent Js.t Lwt.t
+  
+val paste :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.clipboardEvent Js.t Lwt.t
+
 val dblclick :
      ?use_capture:bool
   -> ?passive:bool
@@ -571,6 +589,30 @@ val clicks :
   -> (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
+val copies :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.clipboardEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val cuts :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.clipboardEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val pastes :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.clipboardEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
 val dblclicks :
      ?cancel_handler:bool
   -> ?use_capture:bool
@@ -792,7 +834,7 @@ val submits :
   -> ?use_capture:bool
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> (Dom_html.submitEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
 val selects :

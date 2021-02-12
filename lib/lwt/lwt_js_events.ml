@@ -387,6 +387,15 @@ let pointerup ?use_capture ?passive target =
 let clicks ?cancel_handler ?use_capture ?passive t =
   seq_loop click ?cancel_handler ?use_capture ?passive t
 
+let copies ?cancel_handler ?use_capture ?passive t =
+  seq_loop copy ?cancel_handler ?use_capture ?passive t
+
+let cuts ?cancel_handler ?use_capture ?passive t =
+  seq_loop cut ?cancel_handler ?use_capture ?passive t
+
+let pastes ?cancel_handler ?use_capture ?passive t =
+  seq_loop paste ?cancel_handler ?use_capture ?passive t
+
 let dblclicks ?cancel_handler ?use_capture ?passive t =
   seq_loop dblclick ?cancel_handler ?use_capture ?passive t
 
