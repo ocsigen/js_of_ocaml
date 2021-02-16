@@ -1,4 +1,6 @@
 # ??? (??) - ??
+
+# 3.9.0 (202&-02-15) - Lille
 ## Features/Changes
 * Lib: add clipboardEvent to Dom_html and update appropriate function signatures
 * Lib: add submitEvent to Dom_html and update appropriate function signatures
