@@ -106,7 +106,7 @@ let cells_to_see bd cf (i, j) =
         then c :: cells_to_see_rec l
         else
           let l1, l2 = relevant (neighbours cf c) in
-          (c :: l1) @ cells_to_see_rec (l2 @ l)
+          c :: l1 @ cells_to_see_rec (l2 @ l)
   in
   visited.(i).(j) <- true;
   cells_to_see_rec [ i, j ]

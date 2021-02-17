@@ -124,11 +124,11 @@ module List = struct
         let f4 = f x4 in
         let f5 = f x5 in
         f1
-        :: f2
-        :: f3
-        :: f4
-        :: f5
-        :: (if ctr > 1000 then slow_map ~f tl else count_map ~f tl (ctr + 1))
+        ::
+        f2
+        ::
+        f3
+        :: f4 :: f5 :: (if ctr > 1000 then slow_map ~f tl else count_map ~f tl (ctr + 1))
 
   let map l ~f = count_map ~f l 0
 
