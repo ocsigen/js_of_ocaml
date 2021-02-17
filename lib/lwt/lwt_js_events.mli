@@ -201,7 +201,7 @@ val cut :
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
   -> Dom_html.clipboardEvent Js.t Lwt.t
-  
+
 val paste :
      ?use_capture:bool
   -> ?passive:bool

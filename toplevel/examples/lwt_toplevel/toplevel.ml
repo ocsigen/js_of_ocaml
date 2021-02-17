@@ -78,9 +78,22 @@ module Version = struct
     split 0 0
 
   let split v =
-    match split_char ~sep:(function '+'|'-'|'~' -> true | _ -> false) v with
+    match
+      split_char
+        ~sep:(function
+          | '+' | '-' | '~' -> true
+          | _ -> false)
+        v
+    with
     | [] -> assert false
-    | x :: _ -> List.map int_of_string (split_char ~sep:(function '.' -> true | _ -> false) x)
+    | x :: _ ->
+        List.map
+          int_of_string
+          (split_char
+             ~sep:(function
+               | '.' -> true
+               | _ -> false)
+             x)
 
   let current = split Sys.ocaml_version
 
