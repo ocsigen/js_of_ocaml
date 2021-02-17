@@ -20,10 +20,21 @@ open! Stdlib
 
 type t = int list
 
-let split v =
-  match String.split_char ~sep:'+' v with
-  | [] -> assert false
-  | x :: _ -> List.map (String.split_char ~sep:'.' x) ~f:int_of_string
+let split_char ~sep p =
+  let len = String.length p in
+  let rec split beg cur =
+      if cur >= len
+      then if cur - beg > 0 then [ String.sub p ~pos:beg ~len:(cur - beg) ] else []
+      else if sep p.[cur]
+      then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
+      else split beg (cur + 1)
+  in
+  split 0 0
+
+  let split v =
+    match split_char ~sep:(function '+'|'-'|'~' -> true | _ -> false) v with
+    | [] -> assert false
+    | x :: _ -> List.map (split_char ~sep:(function '.' -> true | _ -> false) x) ~f:int_of_string
 
 let current = split Sys.ocaml_version
 
