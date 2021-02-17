@@ -309,7 +309,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
   Exp.apply
     ~loc:apply_loc
     { invoker with pexp_attributes = [ merlin_hide ] }
-    ((app_arg obj :: args)
+    (app_arg obj :: args
     @ [ app_arg
           (Exp.fun_
              ~loc:gloc
@@ -458,8 +458,7 @@ let new_object constr args =
   let gloc = { constr.loc with loc_ghost = true } in
   Exp.apply
     invoker
-    ((app_arg (Exp.ident ~loc:constr.loc constr) :: args)
-    @ [ app_arg (unit ~loc:gloc ()) ])
+    (app_arg (Exp.ident ~loc:constr.loc constr) :: args @ [ app_arg (unit ~loc:gloc ()) ])
 
 module S = Map.Make (String)
 
