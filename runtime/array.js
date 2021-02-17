@@ -60,6 +60,16 @@ function caml_array_blit(a1, i1, a2, i2, len) {
   return 0;
 }
 
+//Provides: caml_floatarray_blit
+function caml_floatarray_blit(a1, i1, a2, i2, len) {
+  if (i2 <= i1) {
+    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+  } else {
+    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
+  };
+  return 0;
+}
+
 ///////////// Pervasive
 //Provides: caml_array_set (mutable, const, const)
 //Requires: caml_array_bound_error
