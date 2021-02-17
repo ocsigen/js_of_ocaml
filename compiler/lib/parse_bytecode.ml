@@ -1092,7 +1092,8 @@ and compile infos pc state instrs =
               Let (x, Closure (List.rev params, (addr, args))) :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
-    | OFFSETCLOSUREM3 -> compile infos (pc + 1) (State.env_acc (- clo_offset_3) state) instrs
+    | OFFSETCLOSUREM3 ->
+        compile infos (pc + 1) (State.env_acc (-clo_offset_3) state) instrs
     | OFFSETCLOSURE0 -> compile infos (pc + 1) (State.env_acc 0 state) instrs
     | OFFSETCLOSURE3 -> compile infos (pc + 1) (State.env_acc clo_offset_3 state) instrs
     | OFFSETCLOSURE ->
@@ -1100,7 +1101,7 @@ and compile infos pc state instrs =
         compile infos (pc + 2) (State.env_acc n state) instrs
     | PUSHOFFSETCLOSUREM3 ->
         let state = State.push state in
-        compile infos (pc + 1) (State.env_acc (- clo_offset_3) state) instrs
+        compile infos (pc + 1) (State.env_acc (-clo_offset_3) state) instrs
     | PUSHOFFSETCLOSURE0 ->
         let state = State.push state in
         compile infos (pc + 1) (State.env_acc 0 state) instrs
