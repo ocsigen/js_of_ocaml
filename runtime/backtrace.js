@@ -15,6 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//Provides: caml_ml_debug_info_status const
+function caml_ml_debug_info_status () { return 0; }
 //Provides: caml_backtrace_status const
 function caml_backtrace_status () { return 0; }
 //Provides: caml_get_exception_backtrace const

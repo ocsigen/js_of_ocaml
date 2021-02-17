@@ -128,3 +128,9 @@ function caml_set_oo_id (b) {
 function caml_fresh_oo_id() {
   return caml_oo_last_id++;
 }
+
+//Provides: caml_obj_raw_field
+function caml_obj_raw_field(o,i) { return o[i+1] }
+
+//Provides: caml_obj_set_raw_field
+function caml_obj_set_raw_field(o,i,v) { return o[i+1] = v }
