@@ -53,9 +53,22 @@ end = struct
     split 0 0
 
   let split v =
-    match split_char ~sep:(function '+'|'-'|'~' -> true | _ -> false) v with
+    match
+      split_char
+        ~sep:(function
+          | '+' | '-' | '~' -> true
+          | _ -> false)
+        v
+    with
     | [] -> assert false
-    | x :: _ -> List.map (split_char ~sep:(function '.' -> true | _ -> false) x) ~f:int_of_string
+    | x :: _ ->
+        List.map
+          (split_char
+             ~sep:(function
+               | '.' -> true
+               | _ -> false)
+             x)
+          ~f:int_of_string
 
   let current = split Sys.ocaml_version
 
