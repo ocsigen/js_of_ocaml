@@ -1,5 +1,13 @@
 # ??? (??) - ??
 
+# 3.9.1 (2021-02-17) - Lille
+## Features/Changes
+* Runtime: add missing primitives for OCaml 4.12
+
+## Bug fixes
+* Compiler: fix handling of offsetclosure with 4.12
+* Compiler: fix ocaml_version parsing to support tilde
+
 # 3.9.0 (2021-02-15) - Lille
 ## Features/Changes
 * Lib: add clipboardEvent to Dom_html and update appropriate function signatures
