@@ -64,23 +64,23 @@ let exec' s =
   if not res then Format.eprintf "error while evaluating %s@." s
 
 module Version = struct
-  let split_char sep p =
+  type t = int list
+
+  let split_char ~sep p =
     let len = String.length p in
     let rec split beg cur =
       if cur >= len
       then if cur - beg > 0 then [ String.sub p beg (cur - beg) ] else []
-      else if p.[cur] = sep
+      else if sep p.[cur]
       then String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
     in
     split 0 0
 
-  type t = int list
-
   let split v =
-    match split_char '+' v with
+    match split_char ~sep:(function '+'|'-'|'~' -> true | _ -> false) v with
     | [] -> assert false
-    | x :: _ -> List.map int_of_string (split_char '.' x)
+    | x :: _ -> List.map int_of_string (split_char ~sep:(function '.' -> true | _ -> false) x)
 
   let current = split Sys.ocaml_version
 
