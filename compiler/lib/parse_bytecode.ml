@@ -754,6 +754,8 @@ let new_closure_repr =
       false
   | `V4_12 -> true
 
+let clo_offset_3 = if new_closure_repr then 3 else 2
+
 type compile_info =
   { blocks : Blocks.u
   ; code : string
@@ -1077,7 +1079,7 @@ and compile infos pc state instrs =
                 | GRAB -> getu code (addr + 1) + 1
                 | _ -> 1
               in
-              let offset = if new_closure_repr then i * 3 else i * 2 in
+              let offset = i * clo_offset_3 in
               let state' = State.start_function state env offset in
               let params, state' = State.make_stack nparams state' in
               if debug_parser () then Format.printf ") {@.";
@@ -1090,21 +1092,21 @@ and compile infos pc state instrs =
               Let (x, Closure (List.rev params, (addr, args))) :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
-    | OFFSETCLOSUREM2 -> compile infos (pc + 1) (State.env_acc (-2) state) instrs
+    | OFFSETCLOSUREM3 -> compile infos (pc + 1) (State.env_acc (- clo_offset_3) state) instrs
     | OFFSETCLOSURE0 -> compile infos (pc + 1) (State.env_acc 0 state) instrs
-    | OFFSETCLOSURE2 -> compile infos (pc + 1) (State.env_acc 2 state) instrs
+    | OFFSETCLOSURE3 -> compile infos (pc + 1) (State.env_acc clo_offset_3 state) instrs
     | OFFSETCLOSURE ->
         let n = gets code (pc + 1) in
         compile infos (pc + 2) (State.env_acc n state) instrs
-    | PUSHOFFSETCLOSUREM2 ->
+    | PUSHOFFSETCLOSUREM3 ->
         let state = State.push state in
-        compile infos (pc + 1) (State.env_acc (-2) state) instrs
+        compile infos (pc + 1) (State.env_acc (- clo_offset_3) state) instrs
     | PUSHOFFSETCLOSURE0 ->
         let state = State.push state in
         compile infos (pc + 1) (State.env_acc 0 state) instrs
-    | PUSHOFFSETCLOSURE2 ->
+    | PUSHOFFSETCLOSURE3 ->
         let state = State.push state in
-        compile infos (pc + 1) (State.env_acc 2 state) instrs
+        compile infos (pc + 1) (State.env_acc clo_offset_3 state) instrs
     | PUSHOFFSETCLOSURE ->
         let state = State.push state in
         let n = gets code (pc + 1) in
