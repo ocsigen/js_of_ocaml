@@ -333,3 +333,9 @@ function re_replacement_text(repl,groups,orig) {
     }
   }
   return caml_string_of_jsbytes(res); }
+
+
+//Provides: caml_str_initialize
+function caml_str_initialize(unit) {
+  return 0;
+}

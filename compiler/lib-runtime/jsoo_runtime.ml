@@ -52,6 +52,7 @@ let runtime =
     ; str
     ; unix
     ; weak
+    ; domain
     ]
 
 include Files

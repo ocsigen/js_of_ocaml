@@ -55,11 +55,11 @@ end
 
 let%expect_test _ =
   (try print_int (M1.f 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| 2 |}];
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 48, characters 6-12: Undefined recursive module |}];
   (try print_int (M1.g 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| 2 |}];
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 48, characters 6-12: Undefined recursive module |}];
   (try print_int (M1.h 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect {| 2 |}]
+  [%expect {| File "compiler/tests-jsoo/test_rec_mod.ml", line 48, characters 6-12: Undefined recursive module |}]
 
 module rec Odd : sig
   val odd : int -> bool

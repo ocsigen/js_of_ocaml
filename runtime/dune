@@ -28,4 +28,5 @@
   stdlib.js
   toplevel.js
   unix.js
-  weak.js))
+  weak.js
+  domain.js))

@@ -2052,6 +2052,55 @@ and compile infos pc state instrs =
           :: Let (meths, Field (obj, 0))
           :: instrs)
     | STOP -> instrs, Stop, state
+    | RESUME ->
+        let _stack = State.accu state in
+        let _func = State.peek 0 state in
+        let _arg = State.peek 1 state in
+        let state = State.pop 2 state in
+        let ret, state = State.fresh_var state in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             (ret, Prim (Extern "caml_failwith", [ Pc (String "RESUME not implemented") ]))
+          :: instrs)
+    | PERFORM ->
+        let _eff = State.accu state in
+        let ret, state = State.fresh_var state in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( ret
+             , Prim (Extern "caml_failwith", [ Pc (String "PERFORM not implemented") ]) )
+          :: instrs)
+    | RESUMETERM ->
+        let _n = gets32 code (pc + 1) in
+        let _stack = State.accu state in
+        let _func = State.peek 0 state in
+        let _arg = State.peek 1 state in
+        let state = State.pop 2 state in
+        let ret, state = State.fresh_var state in
+        ( Let
+            ( ret
+            , Prim (Extern "caml_failwith", [ Pc (String "RESUMETERM not implemented") ])
+            )
+          :: instrs
+        , Return ret
+        , state )
+    | REPERFORMTERM ->
+        let _n = gets32 code (pc + 1) in
+        let ret, state = State.fresh_var state in
+        ( Let
+            ( ret
+            , Prim
+                (Extern "caml_failwith", [ Pc (String "REPERFORMTERM not implemented") ])
+            )
+          :: instrs
+        , Return ret
+        , state )
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)

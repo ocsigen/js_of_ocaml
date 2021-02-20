@@ -169,6 +169,10 @@ type t =
   | RERAISE
   | RAISE_NOTRACE
   | GETSTRINGCHAR
+  | PERFORM
+  | RESUME
+  | RESUMETERM
+  | REPERFORMTERM
   | FIRST_UNIMPLEMENTED_OP
 
 type kind =
@@ -350,6 +354,10 @@ let ops =
      ; RERAISE, KStop 0, "RERAISE"
      ; RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE"
      ; GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR"
+     ; PERFORM, KNullary, "PERFORM"
+     ; RESUME, KNullary, "RESUME"
+     ; RESUMETERM, KUnary, "RESUMETERM"
+     ; REPERFORMTERM, KUnary, "REPERFORMTERM"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in

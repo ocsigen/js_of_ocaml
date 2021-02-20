@@ -143,3 +143,52 @@ function caml_obj_reachable_words(o) { return 0; }
 function caml_obj_add_offset(v,offset) {
   caml_failwith("Obj.add_offset is not supported");
 }
+
+//Provides: caml_obj_update_tag
+function caml_obj_update_tag(b,o,n) {
+    if(b[0]==o) { b[0] = n; return 1 }
+    return 0
+}
+
+//Provides: caml_ml_domain_id
+function caml_ml_domain_id(unit) { return 0 }
+
+//Provides: caml_lazy_update_to_forcing
+//Requires: caml_obj_tag, caml_obj_update_tag, caml_ml_domain_unique_token
+function caml_lazy_update_to_forcing(o) {
+  var t = caml_obj_tag(o);
+  if(t != 246 && t != 250 && t != 244)
+    return 4
+  if(caml_obj_update_tag(o, 246, 244)) {
+    return 0
+  } else {
+    var field0 = o[1];
+    t = o[0]
+    if(t == 244) {
+      if(field0 == caml_ml_domain_unique_token(0))
+        return 1
+      else
+        return 2
+    } else if (t == 250) {
+      return 3;
+    } else {
+      // assert t = lazy_tag
+      return 2;
+    }
+  }
+}
+
+//Provides: caml_lazy_update_to_forward
+//Requires: caml_obj_update_tag
+  function caml_lazy_update_to_forward(o) {
+  caml_obj_update_tag(o,244,250);
+  return 0; // unit
+}
+
+
+//Provides: caml_lazy_reset_to_lazy
+//Requires: caml_obj_update_tag
+function caml_lazy_reset_to_lazy(o) {
+  caml_obj_update_tag(o,244,246);
+  return 0;
+}
