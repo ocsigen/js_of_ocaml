@@ -25,8 +25,8 @@
 
 (rule
   (alias runtest)
-  (deps js_parser.conflict.reference js_parser.conflict)
-  (action (diff js_parser.conflict.reference js_parser.conflict)))
+  (deps js_parser.conflicts.reference js_parser.conflicts)
+  (action (diff js_parser.conflicts.reference js_parser.conflicts)))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
