@@ -1,0 +1,75 @@
+name: build
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-version:
+          - 4.02.x
+          - 4.03.x
+          - 4.04.x
+          - 4.05.x
+          - 4.06.x
+          - 4.07.x
+          - 4.08.x
+          - 4.09.x
+          - 4.10.x
+          - 4.11.x
+        include:
+          - os: macos-latest
+            ocaml-version: 4.11.x
+          - os: windows-latest
+            ocaml-version: 4.11.x
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use OCaml ${{ matrix.ocaml-version }}
+        uses: actions-ml/setup-ocaml@master
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
+          opam-depext: false
+
+      - run: brew install xquartz --cask
+        if: ${{ matrix.os == 'macos-latest' }}
+
+      - run: opam install . --with-test --with-doc
+
+      - run: opam exec -- make all
+
+      - run: opam exec -- make tests
+        if: ${{ matrix.ocaml-version == '4.11.x' }}
+
+  lint-fmt:
+    strategy:
+      matrix:
+        ocaml-version:
+          - 4.11.x
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use OCaml ${{ matrix.ocaml-version }}
+        uses: actions-ml/setup-ocaml@master
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+          dune-cache: true
+          opam-depext: false
+
+      - run: opam depext ocamlformat=$(cat .ocamlformat | grep version | cut -d '=' -f 2) --install
+
+      - run: opam exec -- dune build @fmt
