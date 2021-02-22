@@ -19,14 +19,19 @@
 ;; because we don't use --infer (to avoid having to write  manually and
 ;; badly specified dependencieds), so we just discard stderr.
 (rule
- (targets js_parser.mli js_parser.ml)
+ (targets js_parser.mli js_parser.ml js_parser.conflicts)
  (deps standard.mly)
- (action (ignore-stderr (run menhir --stdlib . --table --external-tokens Js_token --explain %{dep:js_parser.mly}))))
+ (action (run menhir --stdlib . --table --external-tokens Js_token --explain %{dep:js_parser.mly} --unused-token TComment --unused-token TCommentLineDirective --unused-token TUnknown)))
+
+(rule
+  (alias runtest)
+  (deps js_parser.conflict.reference js_parser.conflict)
+  (action (diff js_parser.conflict.reference js_parser.conflict)))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
  (deps standard.mly)
- (action (ignore-stderr (run menhir --stdlib . --explain %{dep:annot_parser.mly}))))
+ (action (run menhir --stdlib . --explain %{dep:annot_parser.mly})))
 
 (rule
  (targets compiler_version.ml)
