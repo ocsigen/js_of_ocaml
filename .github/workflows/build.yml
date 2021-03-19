@@ -22,11 +22,12 @@ jobs:
           - 4.09.x
           - 4.10.x
           - 4.11.x
+          - 4.12.x
         include:
           - os: macos-latest
-            ocaml-version: 4.11.x
-          - os: windows-latest
-            ocaml-version: 4.11.x
+            ocaml-version: 4.12.x
+          # - os: windows-latest
+          #   ocaml-version: 4.12.x
 
     runs-on: ${{ matrix.os }}
 
@@ -44,18 +45,23 @@ jobs:
       - run: brew install xquartz --cask
         if: ${{ matrix.os == 'macos-latest' }}
 
-      - run: opam install . --with-test --with-doc
+      - run: opam install . --best-effort
+        if: ${{ matrix.ocaml-version != '4.12.x' }}
+
+      - run: opam install . --with-test
+        if: ${{ matrix.ocaml-version == '4.12.x' }}
 
       - run: opam exec -- make all
+        if: ${{ matrix.ocaml-version == '4.12.x' }}
 
       - run: opam exec -- make tests
-        if: ${{ matrix.ocaml-version == '4.11.x' }}
+        if: ${{ matrix.ocaml-version == '4.12.x' }}
 
   lint-fmt:
     strategy:
       matrix:
         ocaml-version:
-          - 4.11.x
+          - 4.12.x
 
     runs-on: ubuntu-latest
 

@@ -10,11 +10,11 @@ doc: "https://ocsigen.github.io/js_of_ocaml"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
   "dune" {>= "2.8"}
+  "ocaml" {>= "4.03"}
   "js_of_ocaml" {= version}
   "js_of_ocaml-ppx" {= version}
   "lwt" {>= "2.4.4"}
   "num" {with-test}
-  "ocaml" {>= "4.03"}
   "ppx_expect" {with-test}
   "ppxlib" {>= "0.22.0" & with-test}
   "re" {>= "1.9.0" & with-test}

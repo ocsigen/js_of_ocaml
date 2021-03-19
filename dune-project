@@ -18,8 +18,8 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (num :with-test)
   (ocaml (>= 4.02))
+  (num :with-test)
   (ppx_expect (and (>= v0.12.0) :with-test))
   (ppxlib (>= 0.15.0))
   (re :with-test)
@@ -32,7 +32,8 @@
   ocamlfind)
  (conflicts
   (ocamlfind (< 1.5.1))
-  (js_of_ocaml (< 3.0))))
+  (js_of_ocaml (< 3.0))
+))
 
 (package
  (name js_of_ocaml-lwt)
@@ -40,17 +41,18 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
+  (ocaml (>= 4.03))
   (js_of_ocaml (= :version))
   (js_of_ocaml-ppx (= :version))
   (lwt (>= 2.4.4))
   (num :with-test)
-  (ocaml (>= 4.03))
   (ppx_expect :with-test)
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
   graphics
-  lwt_log))
+  lwt_log
+))
 
 (package
  (name js_of_ocaml-ocamlbuild)
@@ -58,12 +60,13 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (num :with-test)
   (ocaml (>= 4.03))
+  ocamlbuild
+  (num :with-test)
   (ppx_expect :with-test)
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test))
-  ocamlbuild))
+))
 
 (package
  (name js_of_ocaml-ppx_deriving_json)
@@ -71,12 +74,13 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (js_of_ocaml (= :version))
-  (num :with-test)
   (ocaml (>= 4.04))
-  (ppx_expect :with-test)
+  (js_of_ocaml (= :version))
   (ppxlib (>= 0.15))
-  (re (and (>= 1.9.0) :with-test))))
+  (num :with-test)
+  (ppx_expect :with-test)
+  (re (and (>= 1.9.0) :with-test))
+))
 
 (package
  (name js_of_ocaml-ppx)
@@ -84,12 +88,13 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (js_of_ocaml (= :version))
-  (num :with-test)
   (ocaml (>= 4.02))
-  (ppx_expect :with-test)
+  (js_of_ocaml (= :version))
   (ppxlib (>= 0.15.0))
-  (re (and (>= 1.9.0) :with-test))))
+  (num :with-test)
+  (ppx_expect :with-test)
+  (re (and (>= 1.9.0) :with-test))
+))
 
 (package
  (name js_of_ocaml-toplevel)
@@ -97,17 +102,18 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (cohttp-lwt-unix :with-test)
-  (graphics :with-test)
+  (ocaml (>= 4.02))
   (js_of_ocaml (= :version))
   (js_of_ocaml-compiler (= :version))
   (js_of_ocaml-ppx (= :version))
-  (num :with-test)
-  (ocaml (>= 4.02))
   (ocamlfind (>= 1.5.1))
+  (cohttp-lwt-unix :with-test)
+  (graphics :with-test)
+  (num :with-test)
   (ppx_expect :with-test)
   (ppxlib (and (>= 0.15) :with-test))
-  (re (and (>= 1.9.0) :with-test))))
+  (re (and (>= 1.9.0) :with-test))
+))
 
 (package
  (name js_of_ocaml-tyxml)
@@ -115,16 +121,17 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
+  (ocaml (>= 4.02))
   (js_of_ocaml (= :version))
   (js_of_ocaml-ppx (= :version))
+  (react (>= 1.2.1))
+  (reactiveData (>= 0.2))
+  (tyxml (>= 4.3))
   (num :with-test)
-  (ocaml (>= 4.02))
   (ppx_expect :with-test)
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test))
-  (react (>= 1.2.1))
-  (reactiveData (>= 0.2))
-  (tyxml (>= 4.3))))
+))
 
 (package
  (name js_of_ocaml)
@@ -132,10 +139,11 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (js_of_ocaml-compiler (= :version))
-  (num :with-test)
   (ocaml (>= 4.02))
-  (ppx_expect :with-test)
+  (js_of_ocaml-compiler (= :version))
   (ppxlib (>= 0.15))
+  uchar
+  (num :with-test)
+  (ppx_expect :with-test)
   (re (and (>= 1.9.0) :with-test))
-  uchar))
+))
