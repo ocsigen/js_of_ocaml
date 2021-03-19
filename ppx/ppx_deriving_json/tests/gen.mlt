@@ -390,7 +390,7 @@ type poly2 =
 [%%expect
 {|
 
-type poly2 = [ poly1 | `C of int ][@@deriving json]
+type poly2 = [ | poly1 | `C of int ][@@deriving json]
 include
   struct
     let _ = fun (_ : poly2) -> ()
@@ -406,7 +406,7 @@ include
       fun buf ->
         function
         | x when poly1_recognize x ->
-            (poly1_of_json_with_tag buf x :> [ poly1 | `C of int ])
+            (poly1_of_json_with_tag buf x :> [ | poly1 | `C of int ])
         | `NCst 67 ->
             (Deriving_Json_lexer.read_comma buf;
              (let v = Deriving_Json.Json_int.read buf in
