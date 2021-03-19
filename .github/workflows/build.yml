@@ -26,8 +26,8 @@ jobs:
         include:
           - os: macos-latest
             ocaml-version: 4.12.x
-          # - os: windows-latest
-          #   ocaml-version: 4.12.x
+          - os: windows-latest
+            ocaml-version: 4.12.x
 
     runs-on: ${{ matrix.os }}
 
@@ -40,7 +40,7 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
-          opam-depext: false
+          opam-depext: ${{ matrix.ocaml-version != '4.02.x' && matrix.ocaml-version != '4.03.x' }}
 
       - run: brew install xquartz --cask
         if: ${{ matrix.os == 'macos-latest' }}
@@ -74,7 +74,6 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
           dune-cache: true
-          opam-depext: false
 
       - run: opam depext ocamlformat=$(cat .ocamlformat | grep version | cut -d '=' -f 2) --install
 
