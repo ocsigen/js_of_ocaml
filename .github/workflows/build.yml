@@ -45,7 +45,7 @@ jobs:
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
-          opam-depext: ${{ matrix.ocaml-version != '4.02.x' && matrix.ocaml-version != '4.03.x' }}
+          opam-depext: ${{ matrix.ocaml-version == '4.12.x' }}
           opam-depext-flags: --with-test
 
       - run: opam install . --best-effort
