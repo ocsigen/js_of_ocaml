@@ -1,5 +1,5 @@
 all:
-	dune build @install @default
+	dune build @all
 
 tests:
 	dune runtest
