@@ -61,9 +61,11 @@ jobs:
 
       - run: opam exec -- make all
         if: ${{ matrix.ocaml-version == '4.12.x' }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
       - run: opam exec -- make tests
         if: ${{ matrix.ocaml-version == '4.12.x' }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
   lint-fmt:
     strategy:
