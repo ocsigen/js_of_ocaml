@@ -1,8 +1,11 @@
 name: build
 
 on:
-  - pull_request
-  - push
+  pull_request:
+  push:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
 
 jobs:
   build:
@@ -11,23 +14,23 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-        ocaml-version:
-          - 4.02.x
-          - 4.03.x
-          - 4.04.x
-          - 4.05.x
-          - 4.06.x
-          - 4.07.x
-          - 4.08.x
-          - 4.09.x
-          - 4.10.x
-          - 4.11.x
-          - 4.12.x
+        ocaml-compiler:
+          - ocaml-base-compiler.4.02.3
+          - ocaml-base-compiler.4.03.0
+          - ocaml-base-compiler.4.04.2
+          - ocaml-base-compiler.4.05.0
+          - ocaml-base-compiler.4.06.1
+          - ocaml-base-compiler.4.07.1
+          - ocaml-base-compiler.4.08.1
+          - ocaml-base-compiler.4.09.1
+          - ocaml-base-compiler.4.10.2
+          - ocaml-base-compiler.4.11.2
+          - ocaml-base-compiler.4.12.0
         include:
           - os: macos-latest
-            ocaml-version: 4.12.x
+            ocaml-compiler: ocaml-base-compiler.4.12.0
           - os: windows-latest
-            ocaml-version: 4.12.x
+            ocaml-compiler: ocaml-variants.4.12.0+mingw64c
 
     runs-on: ${{ matrix.os }}
 
@@ -40,33 +43,33 @@ jobs:
         with:
           node-version: 14.x
 
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: actions-ml/setup-ocaml@master
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
-          opam-depext: ${{ matrix.ocaml-version == '4.12.x' }}
+          opam-depext: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
           opam-depext-flags: --with-test
 
       - run: opam install . --best-effort
-        if: ${{ matrix.ocaml-version != '4.12.x' }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') != true }}
 
       - run: opam install . --with-test
-        if: ${{ matrix.ocaml-version == '4.12.x' }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
 
       - run: opam exec -- make all
-        if: ${{ matrix.ocaml-version == '4.12.x' }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
       - run: opam exec -- make tests
-        if: ${{ matrix.ocaml-version == '4.12.x' }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
   lint-fmt:
     strategy:
       matrix:
-        ocaml-version:
-          - 4.12.x
+        ocaml-compiler:
+          - ocaml-base-compiler.4.12.0
 
     runs-on: ubuntu-latest
 
@@ -74,10 +77,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: actions-ml/setup-ocaml@master
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
         with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
 
       - run: opam depext ocamlformat=$(cat .ocamlformat | grep version | cut -d '=' -f 2) --install
