@@ -293,6 +293,10 @@ and mouseEvent =
 
     method screenY : int readonly_prop
 
+    method offsetX : int readonly_prop
+
+    method offsetY : int readonly_prop
+
     method ctrlKey : bool t readonly_prop
 
     method shiftKey : bool t readonly_prop
