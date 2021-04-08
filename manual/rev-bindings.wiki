@@ -5,6 +5,8 @@ create a JavaScript object containing all values to export
 and to make the object reachable.
 
 <<code language="ocaml"|
+open Js_of_ocaml
+
 let _ =
   Js.export "myMathLib"
     (object%js
@@ -23,6 +25,8 @@ myMathLib.add(3,4)
 
 {{{
 # cat math.ml
+open Js_of_ocaml
+
 let _ =
   Js.export_all
     (object%js
