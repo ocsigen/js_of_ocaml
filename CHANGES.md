@@ -1,4 +1,6 @@
 # ??? (??) - ??
++## Features/Changes
++* Lib: add innerText property for Dom_html
 
 # 3.9.1 (2021-02-17) - Lille
 ## Features/Changes
