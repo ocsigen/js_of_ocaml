@@ -682,6 +682,8 @@ and element =
 
     method textContent : js_string t opt prop
 
+    method innerText : js_string t prop
+
     method clientLeft : int readonly_prop
 
     method clientTop : int readonly_prop
