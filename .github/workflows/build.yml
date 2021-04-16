@@ -15,22 +15,22 @@ jobs:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - ocaml-base-compiler.4.02.3
-          - ocaml-base-compiler.4.03.0
-          - ocaml-base-compiler.4.04.2
-          - ocaml-base-compiler.4.05.0
-          - ocaml-base-compiler.4.06.1
-          - ocaml-base-compiler.4.07.1
-          - ocaml-base-compiler.4.08.1
-          - ocaml-base-compiler.4.09.1
-          - ocaml-base-compiler.4.10.2
-          - ocaml-base-compiler.4.11.2
-          - ocaml-base-compiler.4.12.0
+          - 4.02.x
+          - 4.03.x
+          - 4.04.x
+          - 4.05.x
+          - 4.06.x
+          - 4.07.x
+          - 4.08.x
+          - 4.09.x
+          - 4.10.x
+          - 4.11.x
+          - 4.12.x
         include:
           - os: macos-latest
-            ocaml-compiler: ocaml-base-compiler.4.12.0
+            ocaml-compiler: 4.12.x
           - os: windows-latest
-            ocaml-compiler: ocaml-variants.4.12.0+mingw64c
+            ocaml-compiler: 4.12.x
 
     runs-on: ${{ matrix.os }}
 
@@ -48,28 +48,28 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
-          opam-depext: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
+          opam-depext: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
           opam-depext-flags: --with-test
 
       - run: opam install . --best-effort
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') != true }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') != true }}
 
       - run: opam install . --with-test
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
 
       - run: opam exec -- make all
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
       - run: opam exec -- make tests
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.0') }}
+        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
   lint-fmt:
     strategy:
       matrix:
         ocaml-compiler:
-          - ocaml-base-compiler.4.12.0
+          - 4.12.x
 
     runs-on: ubuntu-latest
 
