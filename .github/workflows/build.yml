@@ -48,21 +48,21 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
-          opam-depext: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
+          opam-depext: ${{ matrix.ocaml-compiler == '4.12.x' }}
           opam-depext-flags: --with-test
 
       - run: opam install . --best-effort
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') != true }}
+        if: ${{ matrix.ocaml-compiler != '4.12.x' }}
 
       - run: opam install . --with-test
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
 
       - run: opam exec -- make all
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
       - run: opam exec -- make tests
-        if: ${{ contains(matrix.ocaml-compiler, '4.12.x') }}
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
 
   lint-fmt:
