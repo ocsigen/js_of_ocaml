@@ -1,5 +1,6 @@
 # ??? (??) - ??
 ## Features/Changes
+* Lib: add offsetX and offsetY to Dom_html.mouseEvent
 * Lib: add innerText property for Dom_html
 
 ## Misc

@@ -289,15 +289,19 @@ and mouseEvent =
 
     method relatedTarget : element t opt optdef readonly_prop
 
+    (* Relative to viewport *)
     method clientX : int readonly_prop
 
-    (* Relative to viewport *)
     method clientY : int readonly_prop
 
+    (* Relative to the edge of the screen *)
     method screenX : int readonly_prop
 
-    (* Relative to the edge of the screen *)
     method screenY : int readonly_prop
+
+    method offsetX : int readonly_prop
+
+    method offsetY : int readonly_prop
 
     method ctrlKey : bool t readonly_prop
 
