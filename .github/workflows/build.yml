@@ -1,0 +1,88 @@
+name: build
+
+on:
+  pull_request:
+  push:
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.02.x
+          - 4.03.x
+          - 4.04.x
+          - 4.05.x
+          - 4.06.x
+          - 4.07.x
+          - 4.08.x
+          - 4.09.x
+          - 4.10.x
+          - 4.11.x
+          - 4.12.x
+        include:
+          - os: macos-latest
+            ocaml-compiler: 4.12.x
+          - os: windows-latest
+            ocaml-compiler: 4.12.x
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use Node.js 14.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14.x
+
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
+          opam-depext: ${{ matrix.ocaml-compiler == '4.12.x' }}
+          opam-depext-flags: --with-test
+
+      - run: opam install . --best-effort
+        if: ${{ matrix.ocaml-compiler != '4.12.x' }}
+
+      - run: opam install . --with-test
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
+
+      - run: opam exec -- make all
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+
+      - run: opam exec -- make tests
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+
+  lint-fmt:
+    strategy:
+      matrix:
+        ocaml-compiler:
+          - 4.12.x
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: avsm/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+
+      - run: opam depext ocamlformat=$(cat .ocamlformat | grep version | cut -d '=' -f 2) --install
+
+      - run: opam exec -- dune build @fmt

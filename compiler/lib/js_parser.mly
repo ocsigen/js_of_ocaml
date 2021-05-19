@@ -562,7 +562,6 @@ identifier_or_kw:
    | T_IN { "in" }
    | T_INSTANCEOF { "instanceof" }
    | T_ELSE { "else" }
-   | T_WHILE { "while" }
    | T_BREAK { "break" }
    | T_CASE { "case" }
    | T_CONTINUE { "continue" }

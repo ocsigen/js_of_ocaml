@@ -440,7 +440,7 @@ let ()  = M.run ()
         var
          _c_=caml_call1(Stdlib_list[9],delayed[1]),
          _d_=function(f){return caml_call1(f,0)};
-        return caml_call2(Stdlib_list[15],_d_,_c_)}} |}]
+        return caml_call2(Stdlib_list[17],_d_,_c_)}} |}]
 
 let%expect_test _ =
   let prog =
@@ -551,6 +551,6 @@ let ()  = M.run ()
             var
              _e_=caml_call1(Stdlib_list[9],delayed[1]),
              _f_=function(f){return caml_call1(f,0)};
-            return caml_call2(Stdlib_list[15],_f_,_e_)}
+            return caml_call2(Stdlib_list[17],_f_,_e_)}
           var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2;
           continue}}} |}]
