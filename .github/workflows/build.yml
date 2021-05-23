@@ -44,7 +44,7 @@ jobs:
           node-version: 14.x
 
       - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: avsm/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
@@ -78,7 +78,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: avsm/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
