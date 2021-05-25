@@ -51,9 +51,6 @@ jobs:
           opam-depext: ${{ matrix.ocaml-compiler == '4.12.x' }}
           opam-depext-flags: --with-test
 
-      - run: echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/opt/X11/share/pkgconfig" >>"$GITHUB_ENV"
-        if: ${{ matrix.os == 'macos-latest' }}
-
       - run: opam install . --best-effort
         if: ${{ matrix.ocaml-compiler != '4.12.x' }}
 
