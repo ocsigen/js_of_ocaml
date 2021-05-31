@@ -218,10 +218,11 @@ let merge = function
               ; sources_content =
                   merge_sources_content acc.sources_content sm.sources_content
               ; mappings =
-                  acc.mappings
-                  @ List.map
-                      ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
-                      sm.mappings
+                  List.rev_append
+                    (List.rev acc.mappings)
+                    (List.map
+                       ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
+                       sm.mappings)
               }
             in
             loop
