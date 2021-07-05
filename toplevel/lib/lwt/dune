@@ -1,0 +1,8 @@
+(library
+  (name js_of_ocaml_toplevel_lwt)
+  (public_name js_of_ocaml-toplevel.lwt)
+  (synopsis "Js_of_ocaml toplevel library")
+  (libraries lwt
+    js_of_ocaml-compiler js_of_ocaml bytes js_of_ocaml-toplevel
+    compiler-libs.bytecomp compiler-libs.toplevel)
+  (preprocess (pps js_of_ocaml-ppx)))
