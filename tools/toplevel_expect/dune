@@ -12,5 +12,6 @@
            toplevel_expect_test.ml-4.10
            toplevel_expect_test.ml-4.11
            toplevel_expect_test.ml-4.12
+           toplevel_expect_test.ml-4.13
            toplevel_expect_test.ml-default)
   (action  (with-stdout-to %{targets} (run %{deps}))))
