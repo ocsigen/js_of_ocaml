@@ -96,6 +96,11 @@ module List = struct
 
   let slow_map l ~f = rev (rev_map ~f l)
 
+  let max_non_tailcall =
+    match Sys.backend_type with
+    | Sys.Native | Sys.Bytecode -> 1_000
+    | Sys.Other _ -> 50
+
   let rec count_map ~f l ctr =
     match l with
     | [] -> []
@@ -128,7 +133,11 @@ module List = struct
         f2
         ::
         f3
-        :: f4 :: f5 :: (if ctr > 1000 then slow_map ~f tl else count_map ~f tl (ctr + 1))
+        ::
+        f4
+        ::
+        f5
+        :: (if ctr > max_non_tailcall then slow_map ~f tl else count_map ~f tl (ctr + 1))
 
   let map l ~f = count_map ~f l 0
 
@@ -175,7 +184,38 @@ module List = struct
           | `Snd y -> loop t fst (y :: snd))
     in
     loop t [] []
+
+  let tail_append l1 l2 = rev_append (rev l1) l2
+
+  let rec count_append l1 l2 count =
+    match l2 with
+    | [] -> l1
+    | _ -> (
+        match l1 with
+        | [] -> l2
+        | [ x1 ] -> x1 :: l2
+        | [ x1; x2 ] -> x1 :: x2 :: l2
+        | [ x1; x2; x3 ] -> x1 :: x2 :: x3 :: l2
+        | [ x1; x2; x3; x4 ] -> x1 :: x2 :: x3 :: x4 :: l2
+        | x1 :: x2 :: x3 :: x4 :: x5 :: tl ->
+            x1
+            ::
+            x2
+            ::
+            x3
+            ::
+            x4
+            ::
+            x5
+            ::
+            (if count > max_non_tailcall
+            then tail_append tl l2
+            else count_append tl l2 (count + 1)))
+
+  let append l1 l2 = count_append l1 l2 0
 end
+
+let ( @ ) = List.append
 
 module Nativeint = struct
   include Nativeint
