@@ -3,7 +3,7 @@ open Jbuild_plugin.V1
 
 let graphics_exists =
   try
-    match run_and_read_lines "ocamlfind query -a-format -predicates byte graphics" with
+    match run_and_read_lines "ocamlfind query -a-format -predicates byte graphics -qe" with
     | path :: _ -> Sys.file_exists path
     | _ -> false
   with _ -> false
