@@ -131,8 +131,8 @@ let setup_toplevel () =
   exec' "#enable \"pretty\";;";
   exec' "#disable \"shortvar\";;";
   Ppx_support.init ();
-  Hashtbl.add
-    Toploop.directive_table
+  let[@alert "-deprecated"] new_directive n k = Hashtbl.add Toploop.directive_table n k in
+  new_directive
     "load_js"
     (Toploop.Directive_string (fun name -> Js.Unsafe.global##load_script_ name));
   Sys.interactive := true;

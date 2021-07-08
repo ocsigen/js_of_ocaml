@@ -83,4 +83,6 @@ let v =
   then `V4_10
   else if compare current [ 4; 12 ] < 0
   then `V4_11
-  else `V4_12
+  else if compare current [ 4; 13 ] < 0
+  then `V4_12
+  else `V4_13

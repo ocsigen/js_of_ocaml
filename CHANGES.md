@@ -1,7 +1,9 @@
 # ??? (??) - ??
 ## Features/Changes
+* Compiler: add support for OCaml 4.13
 * Lib: add offsetX and offsetY to Dom_html.mouseEvent
 * Lib: add innerText property for Dom_html
+* Runtime: add dummy implementation for many dummy primitives
 
 ## Misc
 * manual/rev_bindings.wiki: fix compilation error

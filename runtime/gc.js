@@ -50,3 +50,27 @@ function caml_memprof_start(rate,stack_size,tracker){
 function caml_memprof_stop(unit) {
   return 0;
 }
+
+//Provides: caml_eventlog_resume
+function caml_eventlog_resume(unit) { return 0; }
+
+//Provides: caml_eventlog_pause
+function caml_eventlog_pause(unit) { return 0; }
+
+//Provides: caml_gc_huge_fallback_count
+function caml_gc_huge_fallback_count(unit) { return 0; }
+
+//Provides: caml_gc_major_slice
+function caml_gc_major_slice(work) { return 0; }
+
+//Provides: caml_gc_minor_words
+function caml_gc_minor_words(unit) { return 0; }
+
+//Provides: caml_get_minor_free
+function caml_get_minor_free(unit) { return 0; }
+
+//Provides: caml_get_major_bucket
+function caml_get_major_bucket(n) { return 0; }
+
+//Provides: caml_get_major_credit
+function caml_get_major_credit(n) { return 0; }

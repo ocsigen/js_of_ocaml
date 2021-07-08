@@ -38,7 +38,7 @@ let () =
 (env
  (dev
   (flags
-   (:standard -w +a-4-40-41-42-44-48-58-66%s))))
+   (:standard -w +a-4-40-41-42-44-48-58-66-69-70%s))))
 
 (rule
   (targets version.ml.in)
