@@ -26,7 +26,6 @@ let runtime =
     ; bigstring_cstruct
     ; compare
     ; fail
-    ; floats
     ; format
     ; fs
     ; fs_fake
