@@ -129,7 +129,7 @@ let decode_arguments_js_string s =
                Js.Optdef.case (name_value_split s) interrupt (fun (x, y) ->
                    let get = urldecode_js_string_string in
                    get x, get y))
-           :: acc)
+          :: acc)
           (pred idx)
       with Local_exn -> aux acc (pred idx)
   in

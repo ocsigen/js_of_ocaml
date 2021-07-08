@@ -339,7 +339,7 @@ let mousewheel ?use_capture ?passive target =
   t
 
 (* let _DOMMouseScroll ?use_capture ?passive target =
-  make_event Dom_html.Event._DOMMouseScroll ?use_capture ?passive target
+   make_event Dom_html.Event._DOMMouseScroll ?use_capture ?passive target
 *)
 
 let touchstart ?use_capture ?passive target =

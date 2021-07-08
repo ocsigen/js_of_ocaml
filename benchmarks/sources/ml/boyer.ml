@@ -1210,20 +1210,20 @@ let _ =
 *)
 
 (*********
-with
-    failure s ->
-      print_string "Exception failure("; print_string s; print_string ")\n"
-  | Unify ->
-      print_string "Exception Unify\n"
-  | match_failure(file,start,stop) ->
-      print_string "Exception match_failure(";
-      print_string file;
-      print_string ",";
-      print_int start;
-      print_string ",";
-      print_int stop;
-      print_string ")\n"
-  | _ ->
-      print_string "Exception ?\n"
+  with
+      failure s ->
+        print_string "Exception failure("; print_string s; print_string ")\n"
+    | Unify ->
+        print_string "Exception Unify\n"
+    | match_failure(file,start,stop) ->
+        print_string "Exception match_failure(";
+        print_string file;
+        print_string ",";
+        print_int start;
+        print_string ",";
+        print_int stop;
+        print_string ")\n"
+    | _ ->
+        print_string "Exception ?\n"
 
-**********)
+  **********)

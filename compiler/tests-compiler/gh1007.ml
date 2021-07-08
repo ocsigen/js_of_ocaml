@@ -28,7 +28,7 @@
    for-loop.
 
    In the test below, [f] compiles into a for loop and
-   [MyList.stable_sort] gets inlined.  *)
+   [MyList.stable_sort] gets inlined. *)
 
 let%expect_test _ =
   let prog =
