@@ -67,7 +67,7 @@ let%expect_test "number comparison" =
 let%expect_test "string comparison" =
   assert (Pack (Js.Unsafe.js_expr "String(2)") = Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abc')") = Pack (Js.string "abc"));
-  assert (Pack (Js.Unsafe.js_expr "new String('abc')") = Pack (Js.string "abc"));
+  assert (Pack (Js.Unsafe.js_expr "new String('abc')") <> Pack (Js.string "abc"));
   assert (Pack (Js.Unsafe.js_expr "String(1)") <> Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abcd')") <> Pack (Js.string "abc"));
   assert (Pack (Js.Unsafe.js_expr "new String('abcd')") <> Pack (Js.string "abc"));
