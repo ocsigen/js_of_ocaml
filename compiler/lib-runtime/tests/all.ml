@@ -21,7 +21,6 @@ let%expect_test _ =
     +compare.js
     +dynlink.js
     +fail.js
-    +floats.js
     +format.js
     +fs.js
     +fs_fake.js
@@ -60,7 +59,6 @@ let%expect_test _ =
     +bigstring.js
     +compare.js
     +fail.js
-    +floats.js
     +format.js
     +fs.js
     +fs_fake.js

@@ -269,11 +269,20 @@ function caml_expm1_float (x) {
   return (Math.abs(x)>1?z:(z==0?x:x*z/Math.log(y)));
 }
 
+//Provides: caml_exp2_float const
+function caml_exp2_float(x) { return Math.pow(2, x); }
+
 //Provides: caml_log1p_float const
-function caml_log1p_float (x) {
+var caml_log1p_float = Math.log1p || function (x) {
   var y = 1 + x, z = y - 1;
   return (z==0?x:x*Math.log(y)/z);
 }
+
+//Provides: caml_log2_float const
+var caml_log2_float = Math.log2 || function (x) {
+  return Math.log(x) * Math.LOG2E;
+}
+
 
 //Provides: caml_hypot_float const
 function caml_hypot_float (x, y) {
@@ -284,19 +293,81 @@ function caml_hypot_float (x, y) {
 
 // FIX: these five functions only give approximate results.
 //Provides: caml_log10_float const
-function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
+var caml_log10_float = Math.log10 || function (x) { return Math.LOG10E * Math.log(x); }
 //Provides: caml_cosh_float const
-function caml_cosh_float (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
+var caml_cosh_float = Math.cosh || function (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
+//Provides: caml_acosh_float const
+var caml_acosh_float = Math.acosh || function (x) { return Math.log(x + Math.sqrt(x * x - 1)); }
 //Provides: caml_sinh_float const
-function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
+var caml_sinh_float = Math.sinh || function (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
+//Provides: caml_asinh_float const
+var caml_asinh_float = Math.asinh || function (x) { 
+  // Polyfill from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/asinh
+  var absX = Math.abs(x), w
+  if (absX < 3.725290298461914e-9) // |x| < 2^-28
+      return x
+  if (absX > 268435456) // |x| > 2^28
+      w = Math.log(absX) + Math.LN2
+  else if (absX > 2) // 2^28 >= |x| > 2
+      w = Math.log(2 * absX + 1 / (Math.sqrt(x * x + 1) + absX))
+  else
+      var t = x * x, w = Math.log1p(absX + t / (1 + Math.sqrt(1 + t)))
+
+  return x > 0 ? w : -w
+}
+
 //Provides: caml_tanh_float const
-function caml_tanh_float (x) {
+var caml_tanh_float = Math.tanh || function (x) {
   var y = Math.exp(x), z = Math.exp(-x);
   return (y - z) / (y + z);
 }
 
-//Provides: caml_round_float
+//Provides: caml_atanh_float const
+var caml_atanh_float = Math.atanh || function (x) {
+  return Math.log((1+x)/(1-x)) / 2;
+}
+
+
+//Provides: caml_round_float const
 function caml_round_float (x) { return Math.round(x); }
+
+//Provides: caml_cbrt_float const
+var caml_cbrt_float = Math.cbrt || (function (pow) { 
+  return function cbrt(x) {
+    return x < 0 ? -pow(x, 1/3) : pow(x, 1/3);
+  };
+})(Math.pow);
+
+//Provides: caml_erf_float const
+function caml_erf_float(x) {
+  var a1 = 0.254829592;
+  var a2 = -0.284496736;
+  var a3 = 1.421413741;
+  var a4 = -1.453152027;
+  var a5 = 1.061405429;
+  var p = 0.3275911;
+
+  var sign = 1;
+  if (x < 0) {
+    sign = -1;
+  }
+  x = Math.abs(x);
+  var t = 1.0 / (1.0 + p * x);
+  var y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t + Math.exp(-x * x);
+
+  return sign * y;
+}
+
+//Provides: caml_erfc_float const
+//Requires: caml_erf_float
+function caml_erfc_float(x) {
+  return 1 - caml_erf_float(x);
+}
+
+//Provides: caml_fma_float const
+function caml_fma_float(x) {
+  // TODO: Implement this
+}
 
 //Provides: caml_format_float const
 //Requires: caml_parse_format, caml_finish_formatting
