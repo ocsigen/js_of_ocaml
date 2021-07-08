@@ -49,7 +49,9 @@ let%expect_test "dup" =
   let s = "Hello" in
   let s' : string = Obj.obj (Obj.dup (Obj.repr s)) in
   print_bool (s = s');
-  print_bool (s != s');
+  (match Sys.backend_type with
+  | Other "js_of_ocaml" -> print_bool (s = s')
+  | Native | Bytecode | Other _ -> print_bool (s != s'));
   [%expect {|
     true
     true |}];

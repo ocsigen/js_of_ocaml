@@ -150,9 +150,37 @@ let specialize_instr info i rem =
       :: rem
   | _ -> i :: rem
 
+let all_equal = function
+  | [] -> true
+  | x :: xs -> List.for_all xs ~f:(fun y -> Var.equal x y)
+
 let rec specialize_instrs info checks l =
   match l with
   | [] -> []
+  | Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ]))
+    :: Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ]))
+       :: Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ]))
+          :: Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ]))
+             :: Let
+                  ( _
+                  , Prim
+                      ( Extern "caml_blit_string"
+                      , [ Pv a'; Pc (Int 0l); Pv bytes'; Pc (Int 0l); Pv alen'' ] ) )
+                :: Let
+                     ( _
+                     , Prim
+                         ( Extern "caml_blit_string"
+                         , [ Pv b'; Pc (Int 0l); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+                   :: Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ]))
+                      :: rest
+    when all_equal [ a; a' ]
+         && all_equal [ b; b' ]
+         && all_equal [ len; len' ]
+         && all_equal [ alen; alen'; alen''; alen''' ]
+         && all_equal [ blen; blen'; blen'' ]
+         && all_equal [ bytes; bytes'; bytes''; bytes''' ] ->
+      Let (res, Prim (Extern "%string_concat", [ Pv a; Pv b ]))
+      :: specialize_instrs info checks rest
   | i :: r -> (
       (* We make bound checking explicit. Then, we can remove duplicated
          bound checks. Also, it appears to be more efficient to inline

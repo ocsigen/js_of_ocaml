@@ -746,6 +746,7 @@ let _ =
     [ "%int_mul", "caml_mul"
     ; "%int_div", "caml_div"
     ; "%int_mod", "caml_mod"
+    ; "%string_concat", "caml_string_concat"
     ; "caml_int32_neg", "%int_neg"
     ; "caml_int32_add", "%int_add"
     ; "caml_int32_sub", "%int_sub"
@@ -1184,6 +1185,11 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
+        | Extern "%string_concat", [ a; b ] when Config.Flag.use_js_string () ->
+            let (_pa, ca), queue = access_queue' ~ctx queue a in
+            let (_pb, cb), queue = access_queue' ~ctx queue b in
+            let e = J.EBin (J.Plus, ca, cb) in
+            e, const_p, queue
         | Extern name, l -> (
             let name = Primitive.resolve name in
             match internal_prim name with
