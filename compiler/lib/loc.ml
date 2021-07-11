@@ -17,20 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
-open Ir
-
-val if_statement :
-     expression
-  -> Loc.t
-  -> statement * Loc.t
-  -> bool
-  -> statement * Loc.t
-  -> bool
-  -> (statement * Loc.t) list
-
-val get_variable : Code.Var.Set.t -> expression -> Code.Var.Set.t
-
-val block : (statement * Loc.t) list -> statement * Loc.t
-
-val unblock : statement * Loc.t -> (statement * Loc.t) list
+type t =
+  | Pi of Parse_info.t
+  | N
+  | U

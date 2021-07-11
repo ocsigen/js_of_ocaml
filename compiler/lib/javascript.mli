@@ -18,35 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Num : sig
-  type t
-
-  (** Conversions *)
-
-  val of_string_unsafe : string -> t
-
-  val of_int32 : int32 -> t
-
-  val of_float : float -> t
-
-  val to_string : t -> string
-
-  val to_int32 : t -> int32
-
-  (** Predicates *)
-
-  val is_zero : t -> bool
-
-  val is_one : t -> bool
-
-  val is_neg : t -> bool
-
-  (** Arithmetic *)
-
-  val add : t -> t -> t
-
-  val neg : t -> t
-end
+module Num = Num
 
 module Label : sig
   type t
@@ -60,7 +32,7 @@ module Label : sig
   val of_string : string -> t
 end
 
-type location =
+type location = Loc.t =
   | Pi of Parse_info.t
   | N
   (* No location; use the one above *)
@@ -72,14 +44,14 @@ type location =
 
 type identifier = string
 
-type ident_string =
+type ident_string = Id.ident_string =
   { name : identifier
   ; var : Code.Var.t option
   ; loc : location
   }
 
-type ident =
-  | S of ident_string
+type ident = Id.t =
+  | S of Id.ident_string
   | V of Code.Var.t
 
 and array_litteral = element_list
@@ -151,6 +123,7 @@ and property_name =
   | PNN of Num.t
 
 and expression =
+  | ERaw of string
   | ESeq of expression * expression
   | ECond of expression * expression * expression
   | EBin of binop * expression * expression

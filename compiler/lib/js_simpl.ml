@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open! Stdlib
-module J = Javascript
+module J = Ir
 
 let rec enot_rec e =
   let ((_, cost) as res) =
@@ -55,12 +55,20 @@ let rec enot_rec e =
         *)
         | _ -> J.EUn (J.Not, e), 1)
     | J.EUn (J.Not, e) -> e, 0
-    | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot), _) ->
-        J.EUn (J.Not, e), 0
+    | J.EUn ((J.Neg | J.Typeof | J.Void | J.Delete | J.Bnot), _) -> J.EUn (J.Not, e), 0
     | J.EBool b -> J.EBool (not b), 0
     | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _ | J.EStr _
-    | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _ | J.ERegexp _
-    | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) ->
+    | J.EArr _ | J.EInt _ | J.EObj _ | J.EQuote _ | J.ERegexp _
+    | EUn ((FloatNeg | IsInt | ToInt | ToBool | IntToString | FloatToInt | IntToFloat), _)
+    | ERuntime
+    | ECopy (_, _)
+    | EArityTest _ | EVectlength _
+    | EArrAccess (_, _)
+    | EArrLen _
+    | EStructAccess (_, _)
+    | EStruct _
+    | ETag (_, _)
+    | EFloat _ | ERaw _ ->
         J.EUn (J.Not, e), 1
   in
   if cost <= 1 then res else J.EUn (J.Not, e), 1
@@ -75,7 +83,7 @@ let unblock st =
 let block l =
   match l with
   | [ x ] -> x
-  | l -> J.Block l, J.N
+  | l -> J.Block l, Loc.N
 
 exception Not_expression
 
@@ -108,12 +116,11 @@ let assignment_of_statement st =
   | _ -> raise Not_assignment
 
 let simplify_condition = function
-  | J.ECond (e, J.ENum one, J.ENum zero) when J.Num.is_one one && J.Num.is_zero zero -> e
-  | J.ECond (e, J.ENum zero, J.ENum one) when J.Num.is_one one && J.Num.is_zero zero ->
-      J.EUn (J.Not, e)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), J.ENum n, y), e1, e2)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), y, J.ENum n), e1, e2) ->
-      J.ECond (J.EBin (J.Band, y, J.ENum n), e1, e2)
+  | J.ECond (e, J.EInt one, J.EInt zero) when one = 1 && zero = 0 -> e
+  | J.ECond (e, J.EInt zero, J.EInt one) when one = 1 && zero = 0 -> J.EUn (J.Not, e)
+  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), J.EInt n, y), e1, e2)
+  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), y, J.EInt n), e1, e2) ->
+      J.ECond (J.EBin (J.Band, y, J.EInt n), e1, e2)
   | cond -> cond
 
 let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
@@ -149,7 +156,7 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
 let unopt b =
   match b with
   | Some b -> b
-  | None -> J.Block [], J.N
+  | None -> J.Block [], Loc.N
 
 let if_statement e loc iftrue truestop iffalse falsestop =
   (*FIX: should be done at an earlier stage*)
@@ -186,12 +193,20 @@ let rec get_variable acc = function
   | J.ECond (e1, e2, e3) -> get_variable (get_variable (get_variable acc e1) e2) e3
   | J.EUn (_, e1) | J.EDot (e1, _) | J.ENew (e1, None) -> get_variable acc e1
   | J.ECall (e1, el, _) | J.ENew (e1, Some el) ->
-      (e1, `Not_spread) :: el
-      |> List.map ~f:(fun (a, _) -> a)
-      |> List.fold_left ~init:acc ~f:get_variable
-  | J.EVar (J.V v) -> Code.Var.Set.add v acc
-  | J.EVar (J.S _) -> acc
-  | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc
+      e1 :: el |> List.fold_left ~init:acc ~f:get_variable
+  | J.EVar (Id.V v) -> Code.Var.Set.add v acc
+  | J.EVar (Id.S _) -> acc
+  | J.ERuntime
+  | J.ECopy (_, _)
+  | J.EArityTest _ | J.EVectlength _
+  | J.EArrAccess (_, _)
+  | J.EArrLen _
+  | J.EStructAccess (_, _)
+  | J.EStruct _
+  | J.ETag (_, _)
+  | J.EFloat _ | J.ERaw _ | J.EFun _ | J.EStr _ | J.EBool _ | J.EInt _ | J.EQuote _
+  | J.ERegexp _ ->
+      acc
   | J.EArr a ->
       List.fold_left
         ~f:(fun acc i ->

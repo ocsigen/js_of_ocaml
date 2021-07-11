@@ -155,7 +155,8 @@ class map : mapper =
       | (EBool _ as x)
       | (ENum _ as x)
       | (EQuote _ as x)
-      | (ERegexp _ as x) ->
+      | (ERegexp _ as x)
+      | (ERaw _ as x) ->
           x
 
     method expression_o x =

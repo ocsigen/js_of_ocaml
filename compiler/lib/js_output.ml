@@ -275,6 +275,7 @@ struct
 
   let rec need_paren l e =
     match e with
+    | ERaw _ -> true
     | ESeq (e, _) -> l <= 0 && need_paren 0 e
     | ECond (e, _, _) -> l <= 2 && need_paren 3 e
     | EBin (op, e, _) ->
@@ -340,6 +341,7 @@ struct
 
   let rec expression l f e =
     match e with
+    | ERaw s -> PP.string f s
     | EVar v -> ident f v
     | ESeq (e1, e2) ->
         if l > 0
@@ -1004,6 +1006,21 @@ struct
             PP.string f "}";
             last_semi ();
             PP.end_group f;
+            PP.end_group f
+        (* Because raw macros can have newlines in them, we should always make
+           * sure a return has a guarding paren immediately after it *)
+        | Some (ERaw s) ->
+            PP.start_group f 0;
+            PP.string f "return";
+            PP.non_breaking_space f;
+            PP.string f "(";
+            PP.start_group f 2;
+            PP.break f;
+            expression 1 f (ERaw s);
+            PP.end_group f;
+            PP.break f;
+            PP.string f ")";
+            last_semi ();
             PP.end_group f
         | Some e ->
             PP.start_group f 7;
