@@ -32,8 +32,7 @@ let split_primitives p =
   in
   Array.of_list (split 0 0)
 
-let new_directive name k =
-  Hashtbl.add Toploop.directive_table name k
+let new_directive name k = Hashtbl.add Toploop.directive_table name k
   [@@alert "-deprecated"]
 
 let setup =

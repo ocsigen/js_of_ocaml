@@ -115,6 +115,6 @@ and ham2 = lazy (force (map x2 hamming))
 and ham3 = lazy (force (map x3 hamming))
 
 and ham5 = lazy (force (map x5 hamming))
-
 ;;
+
 iter_interval pr hamming (88000, 88100)

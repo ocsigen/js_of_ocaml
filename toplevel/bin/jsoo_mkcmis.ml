@@ -18,7 +18,7 @@
  *)
 
 (* Helper to generate a javascript file containing
-  cmis needed to use findlib packages in the toplevel *)
+   cmis needed to use findlib packages in the toplevel *)
 (* #use "topfind" *)
 (* #require "findlib" *)
 (* #require "js_of_ocaml.compiler" *)

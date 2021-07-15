@@ -100,7 +100,7 @@ let rec unify term1 term2 =
       else failwith "unify"
 
 (* We need to print terms with variables independently from input terms
-  obtained by parsing. We give arbitrary names v1,v2,... to their variables.
+   obtained by parsing. We give arbitrary names v1,v2,... to their variables.
 *)
 
 let infixes = [ "+"; "*" ]
@@ -358,10 +358,10 @@ let rec super m = function
   | _ -> []
 
 (* Ex :
-let (m,_) = <<F(A,B)>>
-and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
-==> [[1],[2,Term ("B",[])];                      x <- B
-     [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
+   let (m,_) = <<F(A,B)>>
+   and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
+   ==> [[1],[2,Term ("B",[])];                      x <- B
+        [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
 *)
 
 (* All (u,subst), u&[], such that n/u unifies with m *)
@@ -505,7 +505,7 @@ let kb_completion greater =
   kbrec
 
 (* complete_rules is assumed locally confluent, and checked Noetherian with
-  ordering greater, rules is any list of rules *)
+   ordering greater, rules is any list of rules *)
 
 let kb_complete greater complete_rules rules =
   let n = check_rules complete_rules
@@ -530,16 +530,16 @@ let kb_complete greater complete_rules rules =
 (* $Id: kbmain.ml 7017 2005-08-12 09:22:04Z xleroy $ *)
 
 (****
-let group_rules = [
-  { number = 1; numvars = 1;
-    lhs = Term("*", [Term("U",[]); Var 1]); rhs = Var 1 };
-  { number = 2; numvars = 1;
-    lhs = Term("*", [Term("I",[Var 1]); Var 1]); rhs = Term("U",[]) };
-  { number = 3; numvars = 3;
-    lhs = Term("*", [Term("*", [Var 1; Var 2]); Var 3]);
-    rhs = Term("*", [Var 1; Term("*", [Var 2; Var 3])]) }
-]
-****)
+  let group_rules = [
+    { number = 1; numvars = 1;
+      lhs = Term("*", [Term("U",[]); Var 1]); rhs = Var 1 };
+    { number = 2; numvars = 1;
+      lhs = Term("*", [Term("I",[Var 1]); Var 1]); rhs = Term("U",[]) };
+    { number = 3; numvars = 3;
+      lhs = Term("*", [Term("*", [Var 1; Var 2]); Var 3]);
+      rhs = Term("*", [Var 1; Term("*", [Var 2; Var 3])]) }
+  ]
+  ****)
 
 let geom_rules =
   [ { number = 1; numvars = 1; lhs = Term ("*", [ Term ("U", []); Var 1 ]); rhs = Var 1 }

@@ -1475,7 +1475,10 @@ and compile infos pc state instrs =
             State.stack =
               (* See interp.c *)
               State.Dummy
-              :: State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack
+              :: State.Dummy
+              :: State.Dummy
+              :: State.Dummy
+              :: state.State.stack
           };
         ( instrs
         , Pushtrap
@@ -2012,7 +2015,8 @@ and compile infos pc state instrs =
              , Prim
                  ( Extern "caml_get_public_method"
                  , [ Pv obj; Pv tag; Pc (Int (Int32.of_int cache)) ] ) )
-           :: Let (tag, const n) :: instrs)
+          :: Let (tag, const n)
+          :: instrs)
     | GETDYNMET ->
         let tag = State.accu state in
         let obj = State.peek 0 state in
@@ -2032,7 +2036,7 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           (Let (m, Prim (Extern "caml_get_public_method", [ Pv obj; Pv tag; Pc (Int 0l) ]))
-           :: instrs)
+          :: instrs)
     | GETMETHOD ->
         let lab = State.accu state in
         let obj = State.peek 0 state in
@@ -2045,7 +2049,8 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           (Let (m, Prim (Array_get, [ Pv meths; Pv lab ]))
-           :: Let (meths, Field (obj, 0)) :: instrs)
+          :: Let (meths, Field (obj, 0))
+          :: instrs)
     | STOP -> instrs, Stop, state
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
@@ -2130,9 +2135,9 @@ let override_global =
             let update_mod = Var.fresh_n "update_mod" in
             ( x
             , Let (x, Block (0, [| init_mod; update_mod |], NotArray))
-              ::
-              Let (init_mod, jsmodule "CamlinternalMod" "init_mod")
-              :: Let (update_mod, jsmodule "CamlinternalMod" "update_mod") :: instrs ) )
+              :: Let (init_mod, jsmodule "CamlinternalMod" "init_mod")
+              :: Let (update_mod, jsmodule "CamlinternalMod" "update_mod")
+              :: instrs ) )
       ]
 
 (* HACK END *)
@@ -2275,10 +2280,9 @@ let from_exe
         List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
             let c = Var.fresh () in
             Let (c, Constant const)
-            ::
-            Let
-              ( Var.fresh ()
-              , Prim (Extern "caml_js_set", [ Pv gdata; Pc (String name); Pv c ]) )
+            :: Let
+                 ( Var.fresh ()
+                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (String name); Pv c ]) )
             :: rem)
       in
       Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body

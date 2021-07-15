@@ -54,7 +54,9 @@ let link_opts prod =
   (* It doesn't do it with 'query' command, we have to it manually. *)
   let cmd = "-format" :: "pkg_%p" :: "-r" :: all_pkgs in
   let predicates_pkgs = ocamlfind cmd (fun ic -> input_line ic) in
-  let all_predicates = String.concat "," ("javascript" :: predicates @ predicates_pkgs) in
+  let all_predicates =
+    String.concat "," (("javascript" :: predicates) @ predicates_pkgs)
+  in
   (* query findlib for linking option *)
   let cmd = "-o-format" :: "-r" :: "-predicates" :: all_predicates :: all_pkgs in
   ocamlfind cmd (fun ic -> A (input_line ic))

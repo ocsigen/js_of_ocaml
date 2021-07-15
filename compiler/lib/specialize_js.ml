@@ -174,8 +174,7 @@ let rec specialize_instrs info checks l =
           else
             let y' = Code.Var.fresh () in
             Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
-            ::
-            Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ]))
+            :: Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ]))
             :: specialize_instrs info ((y, idx) :: checks) r
       | Let (x, Prim (Extern "caml_array_set", [ y; z; t ]))
       | Let (x, Prim (Extern "caml_array_set_float", [ y; z; t ]))
@@ -192,8 +191,7 @@ let rec specialize_instrs info checks l =
           else
             let y' = Code.Var.fresh () in
             Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
-            ::
-            Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ]))
+            :: Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ]))
             :: specialize_instrs info ((y, idx) :: checks) r
       | _ -> specialize_instr info i (specialize_instrs info checks r))
 

@@ -106,7 +106,7 @@ let rec unify term1 term2 =
       else failwith "unify"
 
 (* We need to print terms with variables independently from input terms
-  obtained by parsing. We give arbitrary names v1,v2,... to their variables.
+   obtained by parsing. We give arbitrary names v1,v2,... to their variables.
 *)
 
 let infixes = [ "+"; "*" ]
@@ -403,10 +403,10 @@ let rec super m = function
   | _ -> []
 
 (* Ex :
-let (m,_) = <<F(A,B)>>
-and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
-==> [[1],[2,Term ("B",[])];                      x <- B
-     [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
+   let (m,_) = <<F(A,B)>>
+   and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
+   ==> [[1],[2,Term ("B",[])];                      x <- B
+        [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
 *)
 
 (* All (u,subst), u&[], such that n/u unifies with m *)
@@ -550,7 +550,7 @@ let kb_completion greater =
   kbrec
 
 (* complete_rules is assumed locally confluent, and checked Noetherian with
-  ordering greater, rules is any list of rules *)
+   ordering greater, rules is any list of rules *)
 
 let kb_complete greater complete_rules rules =
   let n = check_rules complete_rules

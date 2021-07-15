@@ -6893,9 +6893,9 @@ let p_o3' nucls i j partial_inst =
     | n :: ns ->
         generate
           (mk_var i (tfo_combine (nuc_p_o3'_60_tfo n) align) n
-           ::
-           mk_var i (tfo_combine (nuc_p_o3'_180_tfo n) align) n
-           :: mk_var i (tfo_combine (nuc_p_o3'_275_tfo n) align) n :: domains)
+          :: mk_var i (tfo_combine (nuc_p_o3'_180_tfo n) align) n
+          :: mk_var i (tfo_combine (nuc_p_o3'_275_tfo n) align) n
+          :: domains)
           ns
   in
   generate [] nucls
