@@ -357,10 +357,6 @@ function caml_fma_float(x, y, z) {
     return x !== 0 && y !== 0 && SPLIT * x - (SPLIT * x - x) === x ? x * (1 + (x < 0 ? -1 : +1) * (y < 0 ? -1 : +1) * EPSILON) : x;
   };
 
-  x = Number(x);
-  y = Number(y);
-  z = Number(z);
-
   if (x === 0 || x !== x || x === +1 / 0 || x === -1 / 0 ||
       y === 0 || y !== y || y === +1 / 0 || y === -1 / 0) {
     return x * y + z;
