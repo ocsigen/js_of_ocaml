@@ -318,9 +318,112 @@ function caml_erfc_float(x) {
   return 1 - caml_erf_float(x);
 }
 
+
 //Provides: caml_fma_float const
-function caml_fma_float(x) {
-  // TODO: Implement this
+function caml_fma_float(x, y, z) {
+  var SPLIT = Math.pow(2, 27) + 1;
+  var MIN_VALUE = Math.pow(2, -1022);
+  var EPSILON = Math.pow(2, -52);
+  var C = 416;
+  var A = Math.pow(2, +C);
+  var B = Math.pow(2, -C);
+
+  function multiply (a, b) {
+    var at = SPLIT * a;
+    var ahi = at - (at - a);
+    var alo = a - ahi;
+    var bt = SPLIT * b;
+    var bhi = bt - (bt - b);
+    var blo = b - bhi;
+    var p = a * b;
+    var e = ((ahi * bhi - p) + ahi * blo + alo * bhi) + alo * blo;
+    return {
+      p: p,
+      e: e
+    };
+  };
+
+  function add (a, b) {
+    var s = a + b;
+    var v = s - a;
+    var e = (a - (s - v)) + (b - v);
+    return {
+      s: s,
+      e: e
+    };
+  };
+
+  function adjust (x, y) {
+    return x !== 0 && y !== 0 && SPLIT * x - (SPLIT * x - x) === x ? x * (1 + (x < 0 ? -1 : +1) * (y < 0 ? -1 : +1) * EPSILON) : x;
+  };
+
+  x = Number(x);
+  y = Number(y);
+  z = Number(z);
+
+  if (x === 0 || x !== x || x === +1 / 0 || x === -1 / 0 ||
+      y === 0 || y !== y || y === +1 / 0 || y === -1 / 0) {
+    return x * y + z;
+  }
+  if (z === 0) {
+    return x * y;
+  }
+  if (z !== z || z === +1 / 0 || z === -1 / 0) {
+    return z;
+  }
+
+  var scale = 1;
+  while (Math.abs(x) > A) {
+    scale *= A;
+    x *= B;
+  }
+  while (Math.abs(y) > A) {
+    scale *= A;
+    y *= B;
+  }
+  if (scale === 1 / 0) {
+    return x * y * scale;
+  }
+  while (Math.abs(x) < B) {
+    scale *= B;
+    x *= A;
+  }
+  while (Math.abs(y) < B) {
+    scale *= B;
+    y *= A;
+  }
+  if (scale === 0) {
+    return z;
+  }
+
+  var xs = x;
+  var ys = y;
+  var zs = z / scale;
+
+  if (Math.abs(zs) > Math.abs(xs * ys) * 4 / EPSILON) {
+    return z;
+  }
+  if (Math.abs(zs) < Math.abs(xs * ys) * EPSILON / 4 * EPSILON / 4) {
+    zs = (z < 0 ? -1 : +1) * MIN_VALUE;
+  }
+
+  var xy = multiply(xs, ys);
+  var s = add(xy.p, zs);
+  var u = add(xy.e, s.e);
+  var i = add(s.s, u.s);
+
+  var f = i.s + adjust(i.e, u.e);
+  if (f === 0) {
+    return f;
+  }
+
+  var fs = f * scale;
+  if (Math.abs(fs) > MIN_VALUE) {
+    return fs;
+  }
+
+  // It is possible that there was extra rounding for a denormalized value.
+  return fs + adjust(f - fs / scale, i.e) * scale;
 }
 
 //Provides: caml_format_float const
