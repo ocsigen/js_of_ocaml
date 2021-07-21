@@ -307,7 +307,7 @@ function caml_erf_float(x) {
   }
   x = Math.abs(x);
   var t = 1.0 / (1.0 + p * x);
-  var y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t + Math.exp(-x * x);
+  var y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
 
   return sign * y;
 }

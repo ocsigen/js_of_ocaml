@@ -92,38 +92,36 @@ let%expect_test "atanh" =
   [%expect {| inf |}];
 ;;
 
-(* TODO: These results don't seem to be correct *)
 let%expect_test "erf" =
   let p x = Printf.printf "%f\n" (Float.erf x) in
   p (-2.0);
-  [%expect {| -0.762913 |}];
+  [%expect {| -0.995322 |}];
   p (-1.0);
-  [%expect {| -0.940296 |}];
+  [%expect {| -0.842701 |}];
   p 0.0;
-  [%expect {| 1.000000 |}];
+  [%expect {| 0.000000 |}];
   p 0.5;
-  [%expect {| 1.163111 |}];
+  [%expect {| 0.520500 |}];
   p 1.0;
-  [%expect {| 0.940296 |}];
+  [%expect {| 0.842701 |}];
   p 10.0;
-  [%expect {| 0.941387 |}];
+  [%expect {| 1.000000 |}];
 ;;
 
-(* TODO: These results don't seem to be correct *)
 let%expect_test "erfc" =
   let p x = Printf.printf "%f\n" (Float.erfc x) in
   p (-2.0);
-  [%expect {| 1.762913 |}];
+  [%expect {| 1.995322 |}];
   p (-1.0);
-  [%expect {| 1.940296 |}];
+  [%expect {| 1.842701 |}];
   p 0.0;
-  [%expect {| -0.000000 |}];
+  [%expect {| 1.000000 |}];
   p 0.5;
-  [%expect {| -0.163111 |}];
+  [%expect {| 0.479500 |}];
   p 1.0;
-  [%expect {| 0.059704 |}];
+  [%expect {| 0.157299 |}];
   p 10.0;
-  [%expect {| 0.058613 |}];
+  [%expect {| 0.000000 |}];
 ;;
 
 let%expect_test "cbrt" =
