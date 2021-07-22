@@ -26,6 +26,9 @@ function caml_return_exn_constant (tag) { return tag; }
 //Provides: caml_raise_with_arg (const, const)
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
+//Provides: caml_raise_with_args (const, const, const)
+function caml_raise_with_args (tag, nargs, args) { throw [0, tag].concat(args); }
+
 //Provides: caml_raise_with_string (const, const)
 //Requires: caml_raise_with_arg, caml_string_of_jsbytes
 function caml_raise_with_string (tag, msg) {
