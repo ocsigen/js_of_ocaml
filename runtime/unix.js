@@ -93,8 +93,8 @@ function caml_raise_unix_exn_of_nodejs_error(err) {
   }
   var args = [
     variant,
-    caml_string_of_jsbytes(err.syscall || ""),
-    caml_string_of_jsbytes(err.path || "")
+    caml_string_of_jsbytes(err.syscall || ''),
+    caml_string_of_jsbytes(err.path || '')
   ];
   caml_raise_with_args(caml_named_value('Unix.Unix_error'), args.length, args);
 }
@@ -169,7 +169,7 @@ function caml_stats_from_js(js_stats) {
 //Provides: unix_stat
 //Requires: fs_node_supported, caml_stats_from_js
 //Requires: caml_jsbytes_of_string
-//Requires: caml_raise_unix_exn_of_nodejs_error
+//Requires: caml_raise_unix_exn_of_nodejs_error, caml_failwith
 function unix_stat(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -181,14 +181,14 @@ function unix_stat(filename) {
       caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
-    // TODO: What should happen if not in nodejs?
+    caml_failwith('unix_stat unsupported outside nodejs');
   }
 }
 
 //Provides: unix_lstat
 //Requires: fs_node_supported, caml_stats_from_js
 //Requires: caml_jsbytes_of_string
-//Requires: caml_raise_unix_exn_of_nodejs_error
+//Requires: caml_raise_unix_exn_of_nodejs_error, caml_failwith
 function unix_lstat(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -200,13 +200,13 @@ function unix_lstat(filename) {
       caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
-    // TODO: What should happen if not in nodejs?
+    caml_failwith('unix_lstat unsupported outside nodejs');
   }
 }
 
 //Provides: unix_mkdir
 //Requires: fs_node_supported, caml_jsbytes_of_string
-//Requires: caml_raise_unix_exn_of_nodejs_error
+//Requires: caml_raise_unix_exn_of_nodejs_error, caml_failwith
 function unix_mkdir(dirname, perm) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -220,13 +220,13 @@ function unix_mkdir(dirname, perm) {
       caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
-    // TODO: What should happen if not in nodejs?
+    caml_failwith('unix_mkdir unsupported outside nodejs');
   }
 }
 
 //Provides: unix_readlink
 //Requires: fs_node_supported, caml_jsbytes_of_string, caml_string_of_jsbytes
-//Requires: caml_raise_unix_exn_of_nodejs_error
+//Requires: caml_raise_unix_exn_of_nodejs_error, caml_failwith
 function unix_readlink(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -238,6 +238,6 @@ function unix_readlink(filename) {
       caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
-    // TODO: What should happen if not in nodejs?
+    caml_failwith('unix_readlink unsupported outside nodejs');
   }
 }
