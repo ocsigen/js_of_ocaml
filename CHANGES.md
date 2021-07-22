@@ -5,7 +5,9 @@
 * Runtime: Fix for Windows, tests pass
 * Runtime: add support for Sys.mkdir and Sys.rmdir
 * Runtime: make stdin work on nodejs
- 
+* Runtime: add implementation for unix_stat, unix_lstat, unix_mkdir, unix_rmdir, unix_symlink, and unix_readlink in nodejs environments
+* Runtime: add caml_raise_with_args
+
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
 
