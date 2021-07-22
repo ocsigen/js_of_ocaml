@@ -65,20 +65,10 @@ function unix_isatty(fileDescriptor) {
   }
 }
 
-//Provides: internal_raise_unix_error
+//Provides: caml_raise_unix_exn_of_nodejs_error
+//Requires: caml_raise_with_args
 //Requires: caml_named_value, caml_string_of_jsbytes
-function internal_raise_unix_error(tag, name, param) {
-  throw [
-    0,
-    caml_named_value('Unix.Unix_error'),
-    tag,
-    caml_string_of_jsbytes(name || ""),
-    caml_string_of_jsbytes(param || "")
-  ];
-}
-
-//Provides: internal_unix_error_from_js
-function internal_unix_error_from_js(err) {
+function caml_raise_unix_exn_of_nodejs_error(err) {
   /* ===Unix.error===
    *
    * This array is in order of the variant in OCaml
@@ -96,13 +86,17 @@ function internal_unix_error_from_js(err) {
     'EISCONN', 'ENOTCONN', 'ESHUTDOWN', 'ETOOMANYREFS', 'ETIMEDOUT', 'ECONNREFUSED',
     'EHOSTDOWN', 'EHOSTUNREACH', 'ELOOP', 'EOVERFLOW'
   ];
-  var variantId = errors.indexOf(err.code);
-  if (variantId < 0) {
+  var variant = errors.indexOf(err.code);
+  if (variant < 0) {
     // TODO: Make sure this works `EUNKNOWNERR(int)`
-    return BLOCK(0, err.errno);
-  } else {
-    return variantId;
+    variant = BLOCK(0, err.errno);
   }
+  var args = [
+    variant,
+    caml_string_of_jsbytes(err.syscall || ""),
+    caml_string_of_jsbytes(err.path || "")
+  ];
+  caml_raise_with_args(caml_named_value('Unix.Unix_error'), args.length, args);
 }
 
 //Provides: caml_stats_from_js
@@ -175,7 +169,7 @@ function caml_stats_from_js(js_stats) {
 //Provides: unix_stat
 //Requires: fs_node_supported, caml_stats_from_js
 //Requires: caml_jsbytes_of_string
-//Requires: internal_unix_error_from_js, internal_raise_unix_error
+//Requires: caml_raise_unix_exn_of_nodejs_error
 function unix_stat(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -184,7 +178,7 @@ function unix_stat(filename) {
       var js_stats = fs.statSync(js_filename);
       return caml_stats_from_js(js_stats);
     } catch (err) {
-      internal_raise_unix_error(internal_unix_error_from_js(err), err.syscall, err.path);
+      caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
     // TODO: What should happen if not in nodejs?
@@ -194,7 +188,7 @@ function unix_stat(filename) {
 //Provides: unix_lstat
 //Requires: fs_node_supported, caml_stats_from_js
 //Requires: caml_jsbytes_of_string
-//Requires: internal_unix_error_from_js, internal_raise_unix_error
+//Requires: caml_raise_unix_exn_of_nodejs_error
 function unix_lstat(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -203,7 +197,7 @@ function unix_lstat(filename) {
       var js_stats = fs.lstatSync(js_filename);
       return caml_stats_from_js(js_stats);
     } catch (err) {
-      internal_raise_unix_error(internal_unix_error_from_js(err), err.syscall, err.path);
+      caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
     // TODO: What should happen if not in nodejs?
@@ -212,7 +206,7 @@ function unix_lstat(filename) {
 
 //Provides: unix_mkdir
 //Requires: fs_node_supported, caml_jsbytes_of_string
-//Requires: internal_unix_error_from_js, internal_raise_unix_error
+//Requires: caml_raise_unix_exn_of_nodejs_error
 function unix_mkdir(dirname, perm) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -223,7 +217,7 @@ function unix_mkdir(dirname, perm) {
     try {
       fs.mkdirSync(js_dirname, perm);
     } catch (err) {
-      internal_raise_unix_error(internal_unix_error_from_js(err), err.syscall, err.path);
+      caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
     // TODO: What should happen if not in nodejs?
@@ -232,7 +226,7 @@ function unix_mkdir(dirname, perm) {
 
 //Provides: unix_readlink
 //Requires: fs_node_supported, caml_jsbytes_of_string, caml_string_of_jsbytes
-//Requires: internal_unix_error_from_js, internal_raise_unix_error
+//Requires: caml_raise_unix_exn_of_nodejs_error
 function unix_readlink(filename) {
   if (fs_node_supported()) {
     var fs = require('fs');
@@ -241,7 +235,7 @@ function unix_readlink(filename) {
       var js_string = fs.readlinkSync(js_filename, 'utf8');
       return caml_string_of_jsbytes(js_string);
     } catch (err) {
-      internal_raise_unix_error(internal_unix_error_from_js(err), err.syscall, err.path);
+      caml_raise_unix_exn_of_nodejs_error(err);
     }
   } else {
     // TODO: What should happen if not in nodejs?
