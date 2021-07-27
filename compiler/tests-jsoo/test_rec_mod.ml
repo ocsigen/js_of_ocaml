@@ -40,39 +40,27 @@ let%expect_test _ =
 
 (* Looping version *)
 module rec M1 : sig
-  val f : unit -> unit
+  val f : int -> int
 
-  val g : unit -> unit
+  val g : int -> int
+
+  val h : int -> int
 end = struct
   let f = M1.g
 
-  let g () = M1.f ()
+  let g i = if i < 0 then 2 else M1.f (i - 1)
+
+  let h = M1.f
 end
 
 let%expect_test _ =
-  (try M1.f () with e -> print_endline @@ Printexc.to_string e);
+  (try print_int (M1.f 3) with e -> print_endline @@ Printexc.to_string e);
   [%expect
     {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
-  (try M1.g () with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
-
-(* Alias chain *)
-module rec M2 : sig
-  val f : unit -> unit
-
-  val g : unit -> unit
-end = struct
-  let f = M2.g
-
-  let g = M2.f
-end
-
-let%expect_test _ =
-  (try M2.f () with e -> print_endline @@ Printexc.to_string e);
+  (try print_int (M1.g 3) with e -> print_endline @@ Printexc.to_string e);
   [%expect
     {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
-  (try M2.g () with e -> print_endline @@ Printexc.to_string e);
+  (try print_int (M1.h 3) with e -> print_endline @@ Printexc.to_string e);
   [%expect
     {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
 
