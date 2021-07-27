@@ -74,7 +74,7 @@ let fun2 () =
     {|
     function fun1(param)
      {try
-       {var switch$0=0,i$0=caml_call1(Stdlib_random[5],2);switch$0 = 1}
+       {var switch$0=0,i$0=caml_call1(Stdlib_Random[5],2);switch$0 = 1}
       catch(_d_)
        {_d_ = caml_wrap_exception(_d_);
         if(_d_[1] !== A)throw _d_;
@@ -85,7 +85,7 @@ let fun2 () =
       return i}
     function fun2(param)
      {try
-       {var switch$0=0,i$0=caml_call1(Stdlib_random[5],2);switch$0 = 1}
+       {var switch$0=0,i$0=caml_call1(Stdlib_Random[5],2);switch$0 = 1}
       catch(_b_)
        {_b_ = caml_wrap_exception(_b_);
         var switch$1=0;

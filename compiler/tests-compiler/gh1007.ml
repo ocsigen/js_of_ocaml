@@ -414,7 +414,7 @@ let ()  = M.run ()
              {if(2 < n >>> 0)return 1 - (1 - odd(n - 1 | 0));
               switch(n)
                {case 0:
-                 var f=function(param){return caml_call2(Stdlib_printf[2],_b_,i)};
+                 var f=function(param){return caml_call2(Stdlib_Printf[2],_b_,i)};
                  delayed[1] = [0,f,delayed[1]];
                  f(0);
                  return 1;
@@ -424,7 +424,7 @@ let ()  = M.run ()
              {if(2 < n >>> 0)return 1 - (1 - even(n - 1 | 0));
               switch(n)
                {case 0:
-                 var f=function(param){return caml_call2(Stdlib_printf[2],_a_,i)};
+                 var f=function(param){return caml_call2(Stdlib_Printf[2],_a_,i)};
                  delayed[1] = [0,f,delayed[1]];
                  f(0);
                  return 0;
@@ -438,9 +438,9 @@ let ()  = M.run ()
         var _e_=i + 1 | 0;
         if(4 !== i){var i=_e_;continue}
         var
-         _c_=caml_call1(Stdlib_list[9],delayed[1]),
+         _c_=caml_call1(Stdlib_List[9],delayed[1]),
          _d_=function(f){return caml_call1(f,0)};
-        return caml_call2(Stdlib_list[17],_d_,_c_)}} |}]
+        return caml_call2(Stdlib_List[17],_d_,_c_)}} |}]
 
 let%expect_test _ =
   let prog =
@@ -517,7 +517,7 @@ let ()  = M.run ()
                          748545554,
                          function(param)
                           {function f(param)
-                            {return caml_call2(Stdlib_printf[2],_c_,i)}
+                            {return caml_call2(Stdlib_Printf[2],_c_,i)}
                            delayed[1] = [0,f,delayed[1]];
                            f(0);
                            return _d_}];
@@ -532,7 +532,7 @@ let ()  = M.run ()
                          748545554,
                          function(param)
                           {function f(param)
-                            {return caml_call2(Stdlib_printf[2],_a_,i)}
+                            {return caml_call2(Stdlib_Printf[2],_a_,i)}
                            delayed[1] = [0,f,delayed[1]];
                            f(0);
                            return _b_}];
@@ -549,8 +549,8 @@ let ()  = M.run ()
            {var _g_=i + 1 | 0;
             if(4 !== i){var i=_g_;continue a}
             var
-             _e_=caml_call1(Stdlib_list[9],delayed[1]),
+             _e_=caml_call1(Stdlib_List[9],delayed[1]),
              _f_=function(f){return caml_call1(f,0)};
-            return caml_call2(Stdlib_list[17],_f_,_e_)}
+            return caml_call2(Stdlib_List[17],_f_,_e_)}
           var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2;
           continue}}} |}]
