@@ -129,14 +129,10 @@ module List = struct
         let f4 = f x4 in
         let f5 = f x5 in
         f1
-        ::
-        f2
-        ::
-        f3
-        ::
-        f4
-        ::
-        f5
+        :: f2
+        :: f3
+        :: f4
+        :: f5
         :: (if ctr > max_non_tailcall then slow_map ~f tl else count_map ~f tl (ctr + 1))
 
   let map l ~f = count_map ~f l 0
@@ -199,14 +195,10 @@ module List = struct
         | [ x1; x2; x3; x4 ] -> x1 :: x2 :: x3 :: x4 :: l2
         | x1 :: x2 :: x3 :: x4 :: x5 :: tl ->
             x1
-            ::
-            x2
-            ::
-            x3
-            ::
-            x4
-            ::
-            x5
+            :: x2
+            :: x3
+            :: x4
+            :: x5
             ::
             (if count > max_non_tailcall
             then tail_append tl l2
