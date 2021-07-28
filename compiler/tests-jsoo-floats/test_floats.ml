@@ -30,7 +30,6 @@ let%expect_test _ =
   in
   Printf.printf "%g\n" (1. /. z);
   [%expect {|-inf|}]
-;;
 
 module Float = struct
   include Float
@@ -52,7 +51,8 @@ module Float = struct
   external log2 : float -> float = "caml_log2_float"
 end
 
-let print f = match Float.classify_float f with
+let print f =
+  match Float.classify_float f with
   | FP_nan -> print_endline "nan"
   | _ -> Printf.printf "%f\n" f
 
@@ -68,7 +68,6 @@ let%expect_test "acosh" =
   [%expect {| 0.000000 |}];
   p 2.0;
   [%expect {| 1.316958 |}]
-;;
 
 let%expect_test "asinh" =
   let p x = print (Float.asinh x) in
@@ -80,7 +79,6 @@ let%expect_test "asinh" =
   [%expect {| -0.881374 |}];
   p 2.0;
   [%expect {| 1.443635 |}]
-;;
 
 let%expect_test "atanh" =
   let p x = print (Float.atanh x) in
@@ -93,11 +91,10 @@ let%expect_test "atanh" =
   p 0.5;
   [%expect {| 0.549306 |}];
   p 1.0;
-  [%expect {| inf |}];
-;;
+  [%expect {| inf |}]
 
 let%expect_test "erf" =
-  let p x =  print (Float.erf x) in
+  let p x = print (Float.erf x) in
   p (-2.0);
   [%expect {| -0.995322 |}];
   p (-1.0);
@@ -109,8 +106,7 @@ let%expect_test "erf" =
   p 1.0;
   [%expect {| 0.842701 |}];
   p 10.0;
-  [%expect {| 1.000000 |}];
-;;
+  [%expect {| 1.000000 |}]
 
 let%expect_test "erfc" =
   let p x = print (Float.erfc x) in
@@ -125,8 +121,7 @@ let%expect_test "erfc" =
   p 1.0;
   [%expect {| 0.157299 |}];
   p 10.0;
-  [%expect {| 0.000000 |}];
-;;
+  [%expect {| 0.000000 |}]
 
 let%expect_test "cbrt" =
   let p x = print (Float.cbrt x) in
@@ -146,7 +141,6 @@ let%expect_test "cbrt" =
   [%expect {| inf |}];
   p 2.0;
   [%expect {| 1.259921 |}]
-;;
 
 let%expect_test "exp2" =
   let p x = print (Float.exp2 x) in
@@ -166,7 +160,6 @@ let%expect_test "exp2" =
   [%expect {| inf |}];
   p 2.0;
   [%expect {| 4.000000 |}]
-;;
 
 let%expect_test "log2" =
   let p x = print (Float.log2 x) in
@@ -181,5 +174,4 @@ let%expect_test "log2" =
   p (-2.0);
   [%expect {| nan |}];
   p 1024.0;
-  [%expect {| 10.000000 |}];
-;;
+  [%expect {| 10.000000 |}]
