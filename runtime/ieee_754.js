@@ -264,39 +264,163 @@ function caml_signbit_float(x) {
 }
 
 //Provides: caml_expm1_float const
-function caml_expm1_float (x) {
-  var y = Math.exp(x), z = y - 1;
-  return (Math.abs(x)>1?z:(z==0?x:x*z/Math.log(y)));
-}
-
+function caml_expm1_float (x) { return Math.expm1(x); }
+//Provides: caml_exp2_float const
+function caml_exp2_float(x) { return Math.pow(2, x); }
 //Provides: caml_log1p_float const
-function caml_log1p_float (x) {
-  var y = 1 + x, z = y - 1;
-  return (z==0?x:x*Math.log(y)/z);
-}
-
+function caml_log1p_float(x) { return Math.log1p(x); }
+//Provides: caml_log2_float const
+function caml_log2_float(x) { return Math.log2(x); }
 //Provides: caml_hypot_float const
-function caml_hypot_float (x, y) {
-  var x = Math.abs(x), y = Math.abs(y);
-  var a = Math.max(x, y), b = Math.min(x,y) / (a?a:1);
-  return (a * Math.sqrt(1 + b*b));
-}
-
-// FIX: these five functions only give approximate results.
+function caml_hypot_float (x, y) { return Math.hypot(x, y); }
 //Provides: caml_log10_float const
-function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
+function caml_log10_float (x) { return Math.log10(x); }
 //Provides: caml_cosh_float const
-function caml_cosh_float (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
+function caml_cosh_float (x) { return Math.cosh(x); }
+//Provides: caml_acosh_float const
+function caml_acosh_float (x) { return Math.acosh(x); }
 //Provides: caml_sinh_float const
-function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
+function caml_sinh_float (x) { return Math.sinh(x); }
+//Provides: caml_asinh_float const
+function caml_asinh_float (x) { return Math.asinh(x); }
 //Provides: caml_tanh_float const
-function caml_tanh_float (x) {
-  var y = Math.exp(x), z = Math.exp(-x);
-  return (y - z) / (y + z);
+function caml_tanh_float (x) { return Math.tanh(x); }
+//Provides: caml_atanh_float const
+function caml_atanh_float (x) { return Math.atanh(x); }
+//Provides: caml_round_float const
+function caml_round_float (x) { return Math.round(x); }
+//Provides: caml_cbrt_float const
+function caml_cbrt_float (x) { return Math.cbrt(x); }
+
+//Provides: caml_erf_float const
+function caml_erf_float(x) {
+  var a1 = 0.254829592;
+  var a2 = -0.284496736;
+  var a3 = 1.421413741;
+  var a4 = -1.453152027;
+  var a5 = 1.061405429;
+  var p = 0.3275911;
+
+  var sign = 1;
+  if (x < 0) {
+    sign = -1;
+  }
+  x = Math.abs(x);
+  var t = 1.0 / (1.0 + p * x);
+  var y = 1.0 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return sign * y;
 }
 
-//Provides: caml_round_float
-function caml_round_float (x) { return Math.round(x); }
+//Provides: caml_erfc_float const
+//Requires: caml_erf_float
+function caml_erfc_float(x) {
+  return 1 - caml_erf_float(x);
+}
+
+
+//Provides: caml_fma_float const
+function caml_fma_float(x, y, z) {
+  var SPLIT = Math.pow(2, 27) + 1;
+  var MIN_VALUE = Math.pow(2, -1022);
+  var EPSILON = Math.pow(2, -52);
+  var C = 416;
+  var A = Math.pow(2, +C);
+  var B = Math.pow(2, -C);
+
+  function multiply (a, b) {
+    var at = SPLIT * a;
+    var ahi = at - (at - a);
+    var alo = a - ahi;
+    var bt = SPLIT * b;
+    var bhi = bt - (bt - b);
+    var blo = b - bhi;
+    var p = a * b;
+    var e = ((ahi * bhi - p) + ahi * blo + alo * bhi) + alo * blo;
+    return {
+      p: p,
+      e: e
+    };
+  };
+
+  function add (a, b) {
+    var s = a + b;
+    var v = s - a;
+    var e = (a - (s - v)) + (b - v);
+    return {
+      s: s,
+      e: e
+    };
+  };
+
+  function adjust (x, y) {
+    return x !== 0 && y !== 0 && SPLIT * x - (SPLIT * x - x) === x ? x * (1 + (x < 0 ? -1 : +1) * (y < 0 ? -1 : +1) * EPSILON) : x;
+  };
+
+  if (x === 0 || x !== x || x === +1 / 0 || x === -1 / 0 ||
+      y === 0 || y !== y || y === +1 / 0 || y === -1 / 0) {
+    return x * y + z;
+  }
+  if (z === 0) {
+    return x * y;
+  }
+  if (z !== z || z === +1 / 0 || z === -1 / 0) {
+    return z;
+  }
+
+  var scale = 1;
+  while (Math.abs(x) > A) {
+    scale *= A;
+    x *= B;
+  }
+  while (Math.abs(y) > A) {
+    scale *= A;
+    y *= B;
+  }
+  if (scale === 1 / 0) {
+    return x * y * scale;
+  }
+  while (Math.abs(x) < B) {
+    scale *= B;
+    x *= A;
+  }
+  while (Math.abs(y) < B) {
+    scale *= B;
+    y *= A;
+  }
+  if (scale === 0) {
+    return z;
+  }
+
+  var xs = x;
+  var ys = y;
+  var zs = z / scale;
+
+  if (Math.abs(zs) > Math.abs(xs * ys) * 4 / EPSILON) {
+    return z;
+  }
+  if (Math.abs(zs) < Math.abs(xs * ys) * EPSILON / 4 * EPSILON / 4) {
+    zs = (z < 0 ? -1 : +1) * MIN_VALUE;
+  }
+
+  var xy = multiply(xs, ys);
+  var s = add(xy.p, zs);
+  var u = add(xy.e, s.e);
+  var i = add(s.s, u.s);
+
+  var f = i.s + adjust(i.e, u.e);
+  if (f === 0) {
+    return f;
+  }
+
+  var fs = f * scale;
+  if (Math.abs(fs) > MIN_VALUE) {
+    return fs;
+  }
+
+  // It is possible that there was extra rounding for a denormalized value.
+  return fs + adjust(f - fs / scale, i.e) * scale;
+}
 
 //Provides: caml_format_float const
 //Requires: caml_parse_format, caml_finish_formatting
