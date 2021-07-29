@@ -4,6 +4,7 @@
 * Lib: add offsetX and offsetY to Dom_html.mouseEvent
 * Lib: add innerText property for Dom_html
 * Runtime: add dummy implementation for many dummy primitives
+* Runtime: add runtime for new float operation in 4.13 #1113 (by pmwhite)
 
 ## Misc
 * manual/rev_bindings.wiki: fix compilation error
