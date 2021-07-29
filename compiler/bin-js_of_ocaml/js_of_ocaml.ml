@@ -53,6 +53,7 @@ let _ =
       ; Build_fs.command
       ; Build_runtime.command
       ; Print_runtime.command
+      ; Check_runtime.command
       ; Compile.command
       ]
   with

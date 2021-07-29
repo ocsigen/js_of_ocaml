@@ -490,3 +490,9 @@ let all state =
       with Not_found -> acc)
     state.ids
     []
+
+let origin ~name =
+  try
+    let _, ploc, _ = Hashtbl.find provided name in
+    Option.bind ploc ~f:(fun ploc -> ploc.Parse_info.src)
+  with Not_found -> None

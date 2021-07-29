@@ -62,3 +62,5 @@ val link : Javascript.program -> state -> output
 val get_provided : unit -> StringSet.t
 
 val all : state -> string list
+
+val origin : name:string -> string option

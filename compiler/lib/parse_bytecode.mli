@@ -38,6 +38,14 @@ type one =
   ; debug : Debug.t
   }
 
+module Toc : sig
+  type t
+
+  val read : in_channel -> t
+end
+
+val read_primitives : Toc.t -> in_channel -> string list
+
 val from_exe :
      ?includes:string list
   -> ?toplevel:bool
