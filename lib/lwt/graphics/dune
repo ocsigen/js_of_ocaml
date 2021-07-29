@@ -1,18 +1,3 @@
-(* -*- tuareg -*- *)
-open Jbuild_plugin.V1
-
-let graphics_exists =
-  try
-    match run_and_read_lines "ocamlfind query -a-format -predicates byte graphics" with
-    | path :: _ -> Sys.file_exists path
-    | _ -> false
-  with _ -> false
-
-let () =
-  let jbuild =
-    if graphics_exists
-    then
-      {|
 (library
   (name graphics_js)
   (public_name js_of_ocaml-lwt.graphics)
@@ -28,8 +13,3 @@ let () =
  (mode promote)
  (action (with-stdout-to %{targets}
           (run ../../gen_stubs/gen_stubs.exe %{deps}))))
-
-|}
-    else {||}
-  in
-  send jbuild
