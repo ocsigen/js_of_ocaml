@@ -220,6 +220,15 @@ module List = struct
     match l with
     | [] -> []
     | x :: xs -> loop xs [ x ] []
+
+  let concat_map ~f l =
+    let rec aux f acc = function
+      | [] -> rev acc
+      | x :: l ->
+          let xs = f x in
+          aux f (rev_append xs acc) l
+    in
+    aux f [] l
 end
 
 let ( @ ) = List.append
