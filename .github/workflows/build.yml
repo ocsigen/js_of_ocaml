@@ -47,7 +47,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
+          dune-cache: true
           opam-depext: ${{ matrix.ocaml-compiler == '4.12.x' }}
           opam-depext-flags: --with-test
 
