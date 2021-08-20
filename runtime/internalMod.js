@@ -19,6 +19,7 @@
 
 //Provides: caml_CamlinternalMod_init_mod
 //Requires: caml_raise_with_arg, caml_global_data
+//Version: < 4.13
 function caml_CamlinternalMod_init_mod(loc,shape) {
   function undef_module (_x) {
     caml_raise_with_arg(caml_global_data.Undefined_recursive_module, loc);
@@ -52,6 +53,7 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
 }
 //Provides: caml_CamlinternalMod_update_mod
 //Requires: caml_update_dummy
+//Version: < 4.13
 function caml_CamlinternalMod_update_mod(shape,real,x) {
   if(typeof shape === "number")
     switch(shape){

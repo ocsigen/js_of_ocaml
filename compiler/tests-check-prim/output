@@ -1,0 +1,199 @@
+Missing
+-------
+
+From main.bc:
+caml_add_debug_info
+caml_alloc_dummy_function
+caml_alloc_dummy_infix
+caml_array_unsafe_set_addr
+caml_dynlink_add_primitive
+caml_dynlink_close_lib
+caml_dynlink_get_current_libs
+caml_dynlink_lookup_symbol
+caml_dynlink_open_lib
+caml_get_current_environment
+caml_get_section_table
+caml_int64_add_native
+caml_int64_and_native
+caml_int64_div_native
+caml_int64_mod_native
+caml_int64_mul_native
+caml_int64_neg_native
+caml_int64_or_native
+caml_int64_sub_native
+caml_int64_xor_native
+caml_int_as_pointer
+caml_invoke_traced_function
+caml_realloc_global
+caml_reify_bytecode
+caml_remove_debug_info
+caml_reset_afl_instrumentation
+caml_setup_afl
+caml_signbit
+caml_static_release_bytecode
+caml_sys_mkdir
+caml_sys_rmdir
+caml_terminfo_rows
+debugger
+is_digit_normalized
+
+Unused
+-------
+
+From +array.js:
+caml_check_bound
+
+From +bigarray.js:
+caml_ba_create_from
+caml_ba_init
+
+From +bigstring-cstruct.js:
+caml_blit_bigstring_to_bigstring
+caml_blit_bigstring_to_string
+caml_blit_string_to_bigstring
+
+From +bigstring.js:
+caml_bigstring_blit_ba_to_ba
+caml_bigstring_blit_ba_to_bytes
+caml_bigstring_blit_bytes_to_ba
+caml_bigstring_blit_string_to_ba
+caml_bigstring_memcmp
+caml_hash_mix_bigstring
+
+From +fail.js:
+caml_return_exn_constant
+
+From +fs.js:
+caml_ba_map_file
+caml_ba_map_file_bytecode
+caml_create_file_extern
+caml_fs_init
+
+From +gc.js:
+caml_memprof_set
+
+From +graphics.js:
+caml_gr_arc_aux
+caml_gr_blit_image
+caml_gr_clear_graph
+caml_gr_close_graph
+caml_gr_close_subwindow
+caml_gr_create_image
+caml_gr_current_x
+caml_gr_current_y
+caml_gr_display_mode
+caml_gr_doc_of_state
+caml_gr_draw_arc
+caml_gr_draw_char
+caml_gr_draw_image
+caml_gr_draw_rect
+caml_gr_draw_str
+caml_gr_draw_string
+caml_gr_dump_image
+caml_gr_fill_arc
+caml_gr_fill_poly
+caml_gr_fill_rect
+caml_gr_lineto
+caml_gr_make_image
+caml_gr_moveto
+caml_gr_open_graph
+caml_gr_open_subwindow
+caml_gr_plot
+caml_gr_point_color
+caml_gr_remember_mode
+caml_gr_resize_window
+caml_gr_set_color
+caml_gr_set_font
+caml_gr_set_line_width
+caml_gr_set_text_size
+caml_gr_set_window_title
+caml_gr_sigio_handler
+caml_gr_sigio_signal
+caml_gr_size_x
+caml_gr_size_y
+caml_gr_state
+caml_gr_state_create
+caml_gr_state_get
+caml_gr_state_init
+caml_gr_state_set
+caml_gr_synchronize
+caml_gr_text_size
+caml_gr_wait_event
+caml_gr_window_id
+
+From +hash.js:
+caml_hash_univ_param
+
+From +ieee_754.js:
+caml_acosh_float
+caml_asinh_float
+caml_atanh_float
+caml_cbrt_float
+caml_erf_float
+caml_erfc_float
+caml_exp2_float
+caml_log2_float
+
+From +internalMod.js:
+caml_CamlinternalMod_init_mod
+caml_CamlinternalMod_update_mod
+
+From +ints.js:
+caml_div
+caml_mod
+
+From +jslib.js:
+caml_is_js
+caml_trampoline
+caml_trampoline_return
+caml_wrap_exception
+
+From +marshal.js:
+BigStringReader
+caml_input_value_from_string
+caml_marshal_constants
+
+From +mlBytes.js:
+caml_new_string
+caml_string_set16
+caml_string_set32
+caml_string_set64
+caml_to_js_string
+
+From +nat.js:
+compare_nat_real
+
+From +obj.js:
+caml_obj_is_block
+
+From +stdlib.js:
+caml_is_printable
+caml_named_value
+caml_register_global
+
+From +str.js:
+re_match
+re_partial_match
+re_replacement_text
+re_search_backward
+re_search_forward
+re_string_match
+
+From +sys.js:
+caml_register_channel_for_spacetime
+caml_set_static_env
+caml_spacetime_enabled
+caml_spacetime_only_works_for_native_code
+unix_inet_addr_of_string
+
+From +unix.js:
+unix_gettimeofday
+unix_gmtime
+unix_isatty
+unix_localtime
+unix_mktime
+unix_time
+win_cleanup
+win_handle_fd
+win_startup
+

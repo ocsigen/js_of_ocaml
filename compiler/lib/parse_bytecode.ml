@@ -2142,30 +2142,78 @@ let override_global =
 
 (* HACK END *)
 
-let seek_section toc ic name =
-  let rec seek_sec curr_ofs = function
-    | [] -> raise Not_found
-    | (n, len) :: rem ->
-        if String.equal n name
-        then (
-          seek_in ic (curr_ofs - len);
-          len)
-        else seek_sec (curr_ofs - len) rem
-  in
-  seek_sec (in_channel_length ic - 16 - (8 * List.length toc)) toc
+module Toc : sig
+  type t
 
-let read_toc ic =
-  let pos_trailer = in_channel_length ic - 16 in
-  seek_in ic pos_trailer;
-  let num_sections = input_binary_int ic in
-  seek_in ic (pos_trailer - (8 * num_sections));
-  let section_table = ref [] in
-  for _i = 1 to num_sections do
-    let name = really_input_string ic 4 in
-    let len = input_binary_int ic in
-    section_table := (name, len) :: !section_table
-  done;
-  !section_table
+  val read : in_channel -> t
+
+  val seek_section : t -> in_channel -> string -> int
+
+  val read_code : t -> in_channel -> string
+
+  val read_data : t -> in_channel -> Obj.t array
+
+  val read_crcs : t -> in_channel -> (string * Digest.t option) list
+
+  val read_prim : t -> in_channel -> string
+
+  val read_symb : t -> in_channel -> Ocaml_compiler.Symtable.GlobalMap.t
+end = struct
+  type t = (string * int) list
+
+  let seek_section toc ic name =
+    let rec seek_sec curr_ofs = function
+      | [] -> raise Not_found
+      | (n, len) :: rem ->
+          if String.equal n name
+          then (
+            seek_in ic (curr_ofs - len);
+            len)
+          else seek_sec (curr_ofs - len) rem
+    in
+    seek_sec (in_channel_length ic - 16 - (8 * List.length toc)) toc
+
+  let read ic =
+    let pos_trailer = in_channel_length ic - 16 in
+    seek_in ic pos_trailer;
+    let num_sections = input_binary_int ic in
+    seek_in ic (pos_trailer - (8 * num_sections));
+    let section_table = ref [] in
+    for _i = 1 to num_sections do
+      let name = really_input_string ic 4 in
+      let len = input_binary_int ic in
+      section_table := (name, len) :: !section_table
+    done;
+    !section_table
+
+  let read_code toc ic =
+    let code_size = seek_section toc ic "CODE" in
+    really_input_string ic code_size
+
+  let read_data toc ic =
+    ignore (seek_section toc ic "DATA");
+    let init_data : Obj.t array = input_value ic in
+    init_data
+
+  let read_symb toc ic =
+    ignore (seek_section toc ic "SYMB");
+    let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
+    orig_symbols
+
+  let read_crcs toc ic =
+    ignore (seek_section toc ic "CRCS");
+    let orig_crcs : (string * Digest.t option) list = input_value ic in
+    orig_crcs
+
+  let read_prim toc ic =
+    let prim_size = seek_section toc ic "PRIM" in
+    let prim = really_input_string ic prim_size in
+    prim
+end
+
+let read_primitives toc ic =
+  let prim = Toc.read_prim toc ic in
+  String.split_char ~sep:'\000' prim
 
 let from_exe
     ?(includes = [])
@@ -2175,19 +2223,14 @@ let from_exe
     ?(debug = false)
     ic =
   let debug_data = Debug.create ~toplevel debug in
-  let toc = read_toc ic in
-  let prim_size = seek_section toc ic "PRIM" in
-  let prim = really_input_string ic prim_size in
-  let primitive_table = Array.of_list (String.split_char ~sep:'\000' prim) in
-  let code_size = seek_section toc ic "CODE" in
-  let code = really_input_string ic code_size in
-  ignore (seek_section toc ic "DATA");
-  let init_data : Obj.t array = input_value ic in
+  let toc = Toc.read ic in
+  let primitives = read_primitives toc ic in
+  let primitive_table = Array.of_list primitives in
+  let code = Toc.read_code toc ic in
+  let init_data = Toc.read_data toc ic in
   let init_data = Array.map ~f:Constants.parse init_data in
-  ignore (seek_section toc ic "SYMB");
-  let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
-  ignore (seek_section toc ic "CRCS");
-  let orig_crcs : (string * Digest.t option) list = input_value ic in
+  let orig_symbols = Toc.read_symb toc ic in
+  let orig_crcs = Toc.read_crcs toc ic in
   let keeps =
     let t = Hashtbl.create 17 in
     List.iter ~f:(fun (_, s) -> Hashtbl.add t s ()) predefined_exceptions;
@@ -2213,7 +2256,7 @@ let from_exe
   then ()
   else
     try
-      ignore (seek_section toc ic "DBUG");
+      ignore (Toc.seek_section toc ic "DBUG");
       Debug.read debug_data ~crcs ~includes ic
     with Not_found ->
       if Debug.enabled debug_data || Debug.toplevel debug_data
@@ -2268,7 +2311,10 @@ let from_exe
     then
       (* Include linking information *)
       let toc =
-        [ "SYMB", Obj.repr symbols; "CRCS", Obj.repr crcs; "PRIM", Obj.repr prim ]
+        [ "SYMB", Obj.repr symbols
+        ; "CRCS", Obj.repr crcs
+        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives)
+        ]
       in
       let gdata = Var.fresh () in
       let infos =

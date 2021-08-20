@@ -205,6 +205,30 @@ module List = struct
             else count_append tl l2 (count + 1)))
 
   let append l1 l2 = count_append l1 l2 0
+
+  let group l ~f =
+    let rec loop (l : 'a list) (this_group : 'a list) (acc : 'a list list) : 'a list list
+        =
+      match l with
+      | [] -> List.rev (List.rev this_group :: acc)
+      | x :: xs ->
+          let pred = List.hd this_group in
+          if f x pred
+          then loop xs (x :: this_group) acc
+          else loop xs [ x ] (List.rev this_group :: acc)
+    in
+    match l with
+    | [] -> []
+    | x :: xs -> loop xs [ x ] []
+
+  let concat_map ~f l =
+    let rec aux f acc = function
+      | [] -> rev acc
+      | x :: l ->
+          let xs = f x in
+          aux f (rev_append xs acc) l
+    in
+    aux f [] l
 end
 
 let ( @ ) = List.append
@@ -273,6 +297,11 @@ module Option = struct
     match x with
     | None -> None
     | Some v -> Some (f v)
+
+  let bind ~f x =
+    match x with
+    | None -> None
+    | Some v -> f v
 
   let iter ~f x =
     match x with
