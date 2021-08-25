@@ -20,15 +20,9 @@
 // Weak API, but without the weak semantics
 
 //Provides: caml_ephe_key_offset
-//Version: < 4.03
-var caml_ephe_key_offset = 2
-
-//Provides: caml_ephe_key_offset
-//Version: >= 4.03
 var caml_ephe_key_offset = 3
 
 //Provides: caml_ephe_data_offset
-//Version: >= 4.03
 var caml_ephe_data_offset = 2
 
 //Provides: caml_weak_create
@@ -122,7 +116,6 @@ function caml_ephe_unset_key(x, i) {
 
 //Provides: caml_ephe_blit_data
 //Requires: caml_ephe_data_offset
-//Version: >= 4.03
 function caml_ephe_blit_data(src, dst){
   dst[caml_ephe_data_offset] = src[caml_ephe_data_offset];
   return 0;
@@ -130,7 +123,6 @@ function caml_ephe_blit_data(src, dst){
 
 //Provides: caml_ephe_get_data
 //Requires: caml_ephe_data_offset
-//Version: >= 4.03
 function caml_ephe_get_data(x){
   if(x[caml_ephe_data_offset] === undefined)
     return 0;
@@ -141,7 +133,6 @@ function caml_ephe_get_data(x){
 //Provides: caml_ephe_get_data_copy
 //Requires: caml_ephe_data_offset
 //Requires: caml_obj_dup
-//Version: >= 4.03
 function caml_ephe_get_data_copy(x){
   if(x[caml_ephe_data_offset] === undefined)
     return 0;
@@ -151,7 +142,6 @@ function caml_ephe_get_data_copy(x){
 
 //Provides: caml_ephe_set_data
 //Requires: caml_ephe_data_offset
-//Version: >= 4.03
 function caml_ephe_set_data(x, data){
   x[caml_ephe_data_offset] = data;
   return 0;
@@ -159,7 +149,6 @@ function caml_ephe_set_data(x, data){
 
 //Provides: caml_ephe_unset_data
 //Requires: caml_ephe_data_offset
-//Version: >= 4.03
 function caml_ephe_unset_data(x, data){
   x[caml_ephe_data_offset] = undefined;
   return 0;
@@ -167,7 +156,6 @@ function caml_ephe_unset_data(x, data){
 
 //Provides: caml_ephe_check_data
 //Requires: caml_ephe_data_offset
-//Version: >= 4.03
 function caml_ephe_check_data(x){
   if(x[caml_ephe_data_offset] === undefined)
     return 0;
