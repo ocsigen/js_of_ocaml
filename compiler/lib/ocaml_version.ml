@@ -65,22 +65,21 @@ let rec compare v v' =
       | n -> n)
 
 let v =
-  if compare current [ 4; 4 ] < 0
-  then failwith "OCaml version unsupported"
-  else if compare current [ 4; 6 ] < 0
-  then `V4_04
-  else if compare current [ 4; 7 ] < 0
-  then `V4_06
-  else if compare current [ 4; 8 ] < 0
-  then `V4_07
-  else if compare current [ 4; 9 ] < 0
-  then `V4_08
-  else if compare current [ 4; 10 ] < 0
-  then `V4_09
-  else if compare current [ 4; 11 ] < 0
-  then `V4_10
-  else if compare current [ 4; 12 ] < 0
-  then `V4_11
-  else if compare current [ 4; 13 ] < 0
-  then `V4_12
-  else `V4_13
+  match current with
+  | 4 :: (4 | 5) :: _ -> `V4_04
+  | 4 :: 6 :: _ -> `V4_06
+  | 4 :: 7 :: _ -> `V4_07
+  | 4 :: 8 :: _ -> `V4_08
+  | 4 :: 9 :: _ -> `V4_09
+  | 4 :: 10 :: _ -> `V4_10
+  | 4 :: 11 :: _ -> `V4_11
+  | 4 :: 12 :: _ -> `V4_12
+  | 4 :: 13 :: _ -> `V4_13
+  (* Trunk is the next 4.14, it's likely compatible with 4.13 *)
+  | 4 :: 14 :: _ -> `V4_13
+  | _ ->
+      if compare current [ 4; 4 ] < 0
+      then failwith "OCaml version unsupported. Upgrade to OCaml 4.04 or newer."
+      else (
+        assert (compare current [ 4; 15 ] >= 0);
+        failwith "OCaml version unsupported. Upgrade js_of_ocaml.")
