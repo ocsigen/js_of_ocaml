@@ -4,7 +4,7 @@
   * In the wikidoc branch, copy dev to VERSION
 * update VERSION
 * dune-release tag $(cat VERSION)
-* dune-release distrib -n js_of_ocaml
+* dune-release distrib
 * dune-release publish distrib
 * dune-release opam pkg
 * dune-release opam submit
