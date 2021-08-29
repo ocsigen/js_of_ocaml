@@ -39,7 +39,8 @@ function MlFile(){  }
 //Requires: caml_jsstring_of_string
 function caml_make_path (name) {
   name=caml_jsstring_of_string(name);
-  if(name.charCodeAt(0) != 47)
+  // 47 is `/` for unix root, 58 is `:` which is the character after Windows drive letter
+  if(name.charCodeAt(0) != 47 && name.charCodeAt(1) != 58)
     name = caml_current_dir + name;
   var comp = name.split("/");
   var ncomp = []
