@@ -66,7 +66,7 @@ let equal a b = compare a b = 0
 let current_exe =
   let v =
     match Ocaml_version.v with
-    | `V4_02 | `V4_03 | `V4_04 -> 11
+    | `V4_04 -> 11
     | `V4_06 -> 11
     | `V4_07 -> 23
     | `V4_08 -> 25
@@ -81,8 +81,7 @@ let current_exe =
 let current_cmo =
   let v =
     match Ocaml_version.v with
-    | `V4_02 -> 10
-    | `V4_03 | `V4_04 -> 11
+    | `V4_04 -> 11
     | `V4_06 -> 22
     | `V4_07 -> 23
     | `V4_08 -> 25
@@ -97,8 +96,7 @@ let current_cmo =
 let current_cma =
   let v =
     match Ocaml_version.v with
-    | `V4_02 -> 11
-    | `V4_03 | `V4_04 -> 12
+    | `V4_04 -> 12
     | `V4_06 -> 22
     | `V4_07 -> 23
     | `V4_08 -> 25

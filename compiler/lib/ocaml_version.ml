@@ -65,10 +65,8 @@ let rec compare v v' =
       | n -> n)
 
 let v =
-  if compare current [ 4; 3 ] < 0
-  then `V4_02
-  else if compare current [ 4; 4 ] < 0
-  then `V4_03
+  if compare current [ 4; 4 ] < 0
+  then failwith "OCaml version unsupported"
   else if compare current [ 4; 6 ] < 0
   then `V4_04
   else if compare current [ 4; 7 ] < 0

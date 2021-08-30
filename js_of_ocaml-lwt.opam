@@ -10,7 +10,7 @@ doc: "https://ocsigen.github.io/js_of_ocaml"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
   "dune" {>= "2.8"}
-  "ocaml" {>= "4.03"}
+  "ocaml" {>= "4.04"}
   "js_of_ocaml" {= version}
   "js_of_ocaml-ppx" {= version}
   "lwt" {>= "2.4.4"}
