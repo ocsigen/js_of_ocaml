@@ -11,6 +11,7 @@
 (bug_reports "https://github.com/ocsigen/js_of_ocaml/issues")
 (homepage "https://ocsigen.github.io/js_of_ocaml")
 (documentation "https://ocsigen.github.io/js_of_ocaml")
+(license "GPL-2.0-or-later AND LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception")
 
 (package
  (name js_of_ocaml-compiler)
