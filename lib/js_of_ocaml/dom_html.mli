@@ -2022,6 +2022,39 @@ class type history =
 class type undoManager = object end
 (** Undo manager *)
 
+class type optionPromise =
+  object
+    method url : js_string t opt prop
+
+    method text : js_string t opt prop
+
+    method title : js_string t opt prop
+
+  end
+
+class type promise =
+  object
+    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise meth
+
+    method catch : (js_string -> promise ) Js.callback -> unit meth
+  end
+
+class type connection =
+  object
+    method downlink : int t readonly_prop
+
+    method downlinkMax : int t readonly_prop
+
+    method effectiveType : js_string t readonly_prop
+
+    method rtt : int t readonly_prop
+
+    method saveData : bool t readonly_prop
+
+    method _type : js_string t readonly_prop
+
+  end
+
 (** Navigator information *)
 class type navigator =
   object
@@ -2046,6 +2079,10 @@ class type navigator =
     method userLanguage : js_string t optdef readonly_prop
 
     method maxTouchPoints : int t readonly_prop
+
+    method connection : connection t readonly_prop
+
+    method share : #optionPromise t -> promise t meth
   end
 
 class type screen =

@@ -1,5 +1,13 @@
 # ?? (??) - ??
 
+# 3.10.2 (2021-09-06) - Paris
+## Features/Changes
+Lib: add 'connection' and 'share' functions to Dom_html.navigator (and other class types that depend on it)
+
+# 3.10.1 (2021-09-06) - Paris
+## Features/Changes
+Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to to Dom_html.document
+
 ## Features/Changes
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
 * Runtime: fixes for Windows, all tests pass
