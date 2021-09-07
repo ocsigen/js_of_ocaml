@@ -2167,11 +2167,11 @@ class type undoManager = object end
 
 class type optionPromise =
   object
-    method url : js_string t opt prop
+    method url : js_string t option prop
 
-    method text : js_string t opt prop
+    method text : js_string t option prop
 
-    method title : js_string t opt prop
+    method title : js_string t option prop
 
   end
 
@@ -2411,6 +2411,30 @@ let getElementById_coerce id coerce =
     (document##getElementById (Js.string id))
     (fun () -> None)
     (fun e -> Js.Opt.to_option (coerce e))
+
+let optionPromise ?url ?text ?title () =
+  let option : optionPromise t = Js.Unsafe.obj [||] in
+  option##.text := text;
+  option##.title := title;
+  option##.url := url;
+  option
+  (*
+  let conv x = x |> Option.map Js.string |> Js.Optdef.option in
+    object%js
+      val text = conv text
+
+      val title = conv title
+
+      val url = conv url
+    end
+   *)
+  (*
+  let option = new optionPromise t in
+  option##.text := text;
+  option##.title := title;
+  option##.url := url;
+  option
+  *)
 
 (****)
 
