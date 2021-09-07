@@ -1,7 +1,7 @@
 # ?? (??) - ??
 
-# 3.10.1 (2021-09-06) - Paris
-Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to to Dom_html.document
+## Extend API (2021-09-06)
+* Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to to Dom_html.document
 
 # 3.10.0 (2021-08-30) - Lille
 ## Features/Changes
