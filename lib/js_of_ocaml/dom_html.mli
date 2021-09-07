@@ -1932,6 +1932,12 @@ class type document =
 
     method activeElement : element t opt readonly_prop
 
+    method hidden : bool t readonly_prop
+
+    method onfullscreenchange : (document t, event t) event_listener writeonly_prop
+
+    method onwebkitfullscreenchange : (document t, event t) event_listener writeonly_prop
+
     inherit eventTarget
   end
 
