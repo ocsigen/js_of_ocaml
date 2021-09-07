@@ -2053,7 +2053,6 @@ class type connection =
     method saveData : bool t readonly_prop
 
     method _type : js_string t readonly_prop
-
   end
 
 (** Navigator information *)
