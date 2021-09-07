@@ -2172,7 +2172,6 @@ class type optionPromise =
     method text : js_string t option prop
 
     method title : js_string t option prop
-
   end
 
 class type promise =
@@ -2418,24 +2417,6 @@ let optionPromise ?url ?text ?title () =
   option##.title := title;
   option##.url := url;
   option
-  (*
-  let conv x = x |> Option.map Js.string |> Js.Optdef.option in
-    object%js
-      val text = conv text
-
-      val title = conv title
-
-      val url = conv url
-    end
-   *)
-  (*
-  let option = new optionPromise t in
-  option##.text := text;
-  option##.title := title;
-  option##.url := url;
-  option
-  *)
-
 (****)
 
 class type frameSetElement =

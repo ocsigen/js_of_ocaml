@@ -2029,7 +2029,6 @@ class type optionPromise =
     method text : js_string t option prop
 
     method title : js_string t option prop
-
   end
 
 val optionPromise : ?url:js_string t -> ?text:js_string t -> ?title:js_string t -> unit -> optionPromise t
