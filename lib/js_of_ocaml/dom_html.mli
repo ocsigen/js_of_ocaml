@@ -2022,7 +2022,7 @@ class type history =
 class type undoManager = object end
 (** Undo manager *)
 
-class type optionPromise =
+class type shareOption =
   object
     method url : js_string t option prop
 
@@ -2031,11 +2031,11 @@ class type optionPromise =
     method title : js_string t option prop
   end
 
-val optionPromise : ?url:js_string t -> ?text:js_string t -> ?title:js_string t -> unit -> optionPromise t
+val shareOption : ?url:js_string t -> ?text:js_string t -> ?title:js_string t -> unit -> shareOption t
 
 class type promise =
   object
-    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise meth
+    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise t meth
 
     method catch : (js_string -> promise ) Js.callback -> unit meth
   end
@@ -2082,7 +2082,7 @@ class type navigator =
 
     method connection : connection t readonly_prop
 
-    method share : #optionPromise t -> promise t meth
+    method share : #shareOption t -> promise t meth
   end
 
 class type screen =

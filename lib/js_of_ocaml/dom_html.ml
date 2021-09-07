@@ -2165,7 +2165,7 @@ class type history =
 
 class type undoManager = object end
 
-class type optionPromise =
+class type shareOption =
   object
     method url : js_string t option prop
 
@@ -2176,7 +2176,7 @@ class type optionPromise =
 
 class type promise =
   object
-    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise meth
+    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise t meth
 
     method catch : (js_string -> promise) Js.callback -> unit meth
   end
@@ -2222,7 +2222,7 @@ class type navigator =
 
     method connection : connection t readonly_prop
 
-    method share : #optionPromise t -> promise t meth
+    method share : #shareOption t -> promise t meth
   end
 
 class type screen =
@@ -2411,8 +2411,8 @@ let getElementById_coerce id coerce =
     (fun () -> None)
     (fun e -> Js.Opt.to_option (coerce e))
 
-let optionPromise ?url ?text ?title () =
-  let option : optionPromise t = Js.Unsafe.obj [||] in
+let shareOption ?url ?text ?title () =
+  let option : shareOption t = Js.Unsafe.obj [||] in
   option##.text := text;
   option##.title := title;
   option##.url := url;
