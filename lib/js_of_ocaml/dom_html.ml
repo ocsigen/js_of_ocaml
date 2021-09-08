@@ -2180,7 +2180,7 @@ class type promise =
              ('self t, (event t -> unit)) Js.meth_callback opt
              -> promise t meth
 
-    method catch : (js_string -> promise) Js.callback -> unit meth
+    method catch : ('self t, (js_string -> unit)) Js.meth_callback -> unit meth
   end
 
 class type connection =
