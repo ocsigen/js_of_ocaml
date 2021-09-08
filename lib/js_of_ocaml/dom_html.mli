@@ -2042,7 +2042,6 @@ class type promise =
   object
     method _then :
              ('self t, event t) event_listener opt
-             -> ('self t, js_string t) event_listener opt
              -> promise t meth
 
     method catch : (js_string -> promise ) Js.callback -> unit meth
