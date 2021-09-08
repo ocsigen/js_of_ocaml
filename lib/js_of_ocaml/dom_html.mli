@@ -2024,18 +2024,26 @@ class type undoManager = object end
 
 class type shareOption =
   object
-    method url : js_string t option prop
+    method url : js_string t optdef prop
 
-    method text : js_string t option prop
+    method text : js_string t optdef prop
 
-    method title : js_string t option prop
+    method title : js_string t optdef prop
   end
 
-val shareOption : ?url:js_string t -> ?text:js_string t -> ?title:js_string t -> unit -> shareOption t
+val shareOption :
+  ?url:js_string t
+  -> ?text:js_string t
+  -> ?title:js_string t
+  -> unit
+  -> shareOption t
 
 class type promise =
   object
-    method _then : ('self t, event t) event_listener opt -> ('self t, js_string t) event_listener opt -> promise t meth
+    method _then :
+             ('self t, event t) event_listener opt
+             -> ('self t, js_string t) event_listener opt
+             -> promise t meth
 
     method catch : (js_string -> promise ) Js.callback -> unit meth
   end
