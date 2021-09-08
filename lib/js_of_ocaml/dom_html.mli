@@ -2040,9 +2040,7 @@ val shareOption :
 
 class type promise =
   object
-    method _then :
-             ('self t, event t) event_listener opt
-             -> promise t meth
+    method _then : ('self t, event t) Js.meth_callback opt -> promise t meth
 
     method catch : (js_string -> promise ) Js.callback -> unit meth
   end
