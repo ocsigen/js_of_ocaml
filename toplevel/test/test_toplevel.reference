@@ -1,2 +1,6 @@
+
 let () = print_endline "hello";;
 hello
+1+;;
+<ERR>: Line 3, characters 2-4:
+<ERR>: Error: Syntax error
