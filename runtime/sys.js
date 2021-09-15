@@ -181,6 +181,10 @@ function caml_sys_const_backend_type () {
 //Provides: caml_sys_get_config const
 //Requires: caml_string_of_jsbytes
 function caml_sys_get_config () {
+  if (joo_global_object.process &&
+    joo_global_object.process.platform &&
+    joo_global_object.process.platform == "win32")
+    return [0, caml_string_of_jsbytes("Cygwin"), 32, 0];
   return [0, caml_string_of_jsbytes("Unix"), 32, 0];
 }
 
