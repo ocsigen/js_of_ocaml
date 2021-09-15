@@ -34,23 +34,53 @@ var caml_root = caml_current_dir.match(/[^\/]*\//)[0];
 //Provides: MlFile
 function MlFile(){  }
 
+//Provides: path_is_absolute
+function make_path_is_absolute() {
+    function posix(path) {
+	if (path.charAt(0) === '/') return ["", path.substring(1)];
+	return;
+    }
+
+    function win32(path) {
+	// https://github.com/nodejs/node/blob/b3fcc245fb25539909ef1d5eaa01dbf92e168633/lib/path.js#L56
+	var splitDeviceRe = /^([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$/;
+	var result = splitDeviceRe.exec(path);
+	var device = result[1] || '';
+	var isUnc = Boolean(device && device.charAt(1) !== ':');
+
+	// UNC paths are always absolute
+	if (Boolean(result[2] || isUnc)) {
+	    var root = (result[1] || '');
+	    var sep = (result[2] || '');
+	    return [root, path.substring(root.length + sep.length)]
+	}
+	return;
+    }
+    if(joo_global_object.process && joo_global_object.process.platform) {
+	return joo_global_object.process.platform === 'win32' ? win32 : posix;
+    }
+    else return posix
+}
+var path_is_absolute = make_path_is_absolute();
+
 //Provides: caml_make_path
 //Requires: caml_current_dir
-//Requires: caml_jsstring_of_string
+//Requires: caml_jsstring_of_string, path_is_absolute
 function caml_make_path (name) {
   name=caml_jsstring_of_string(name);
-  if(name.charCodeAt(0) != 47)
+  if( !path_is_absolute(name) )
     name = caml_current_dir + name;
-  var comp = name.split("/");
+  var comp0 = path_is_absolute(name);
+  var comp = comp0[1].split("/");
   var ncomp = []
   for(var i = 0; i<comp.length; i++){
     switch(comp[i]){
     case "..": if(ncomp.length>1) ncomp.pop(); break;
     case ".": break;
-    case "": if(ncomp.length == 0) ncomp.push(""); break;
     default: ncomp.push(comp[i]);break
     }
   }
+  ncomp.unshift(comp0[0]);
   ncomp.orig = name;
   return ncomp;
 }
@@ -63,7 +93,7 @@ if (fs_node_supported()) {
 } else {
   jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
 }
-jsoo_mount_point.push({path:caml_root+"static/", device:new MlFakeDevice(caml_root+"static/")});
+jsoo_mount_point.push({path:"/static/", device:new MlFakeDevice("/static/")});
 
 //Provides:caml_list_mount_point
 //Requires: jsoo_mount_point, caml_string_of_jsbytes
@@ -77,7 +107,7 @@ function caml_list_mount_point(){
 }
 
 //Provides: resolve_fs_device
-//Requires: caml_make_path, jsoo_mount_point
+//Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error
 function resolve_fs_device(name){
   var path = caml_make_path(name);
   var name = path.join("/");
@@ -89,7 +119,8 @@ function resolve_fs_device(name){
        && (!res || res.path.length < m.path.length))
       res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
   }
-  return res;
+  if( res ) return res;
+  caml_raise_sys_error("no device found for " + name_slash);
 }
 
 //Provides: caml_mount_autoload
