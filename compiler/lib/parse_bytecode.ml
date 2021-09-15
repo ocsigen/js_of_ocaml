@@ -2211,7 +2211,8 @@ end
 
 let read_primitives toc ic =
   let prim = Toc.read_prim toc ic in
-  String.split_char ~sep:'\000' prim
+  assert (Char.equal (String.get prim (String.length prim - 1)) '\000');
+  String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
 let from_exe
     ?(includes = [])
@@ -2311,7 +2312,7 @@ let from_exe
       let toc =
         [ "SYMB", Obj.repr symbols
         ; "CRCS", Obj.repr crcs
-        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives)
+        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
         ]
       in
       let gdata = Var.fresh () in
