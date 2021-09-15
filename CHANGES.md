@@ -1,7 +1,10 @@
 # ?? (??) - ??
 
 ## Features/Changes
-* Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to to Dom_html.document
+* Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
+
+## Bug fixes
+* Compiler: fix toplevel generation (#1129, #1130, #1131)
 
 # 3.10.0 (2021-08-30) - Lille
 ## Features/Changes
