@@ -486,16 +486,7 @@ module String = struct
     done;
     !res
 
-  let split_char ~sep p =
-    let len = String.length p in
-    let rec split beg cur =
-      if cur >= len
-      then if cur - beg > 0 then [ String.sub p beg (cur - beg) ] else []
-      else if Char.equal p.[cur] sep
-      then String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-      else split beg (cur + 1)
-    in
-    split 0 0
+  let split_char ~sep p = String.split_on_char sep p
 
   (* copied from https://github.com/ocaml/ocaml/pull/10 *)
   let split ~sep s =
