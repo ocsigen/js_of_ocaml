@@ -2311,7 +2311,7 @@ let from_exe
       let toc =
         [ "SYMB", Obj.repr symbols
         ; "CRCS", Obj.repr crcs
-        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives)
+        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
         ]
       in
       let gdata = Var.fresh () in
