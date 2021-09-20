@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open Js_of_ocaml_compiler.Stdlib
 module Jsoo = Js_of_ocaml_compiler
 
 let exe =
@@ -198,9 +199,9 @@ let exec_to_string_exn ~cmd =
   let results' = channel_to_string proc_err in
   proc_result_ok
     (String.concat
-       "\n"
+       ~sep:"\n"
        (List.filter
-          (function
+          ~f:(function
             | "" -> false
             | _ -> true)
           [ results'; results ]))
@@ -254,7 +255,7 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
       ; flags
       ]
   in
-  let extra_args = String.concat " " extra_args in
+  let extra_args = String.concat ~sep:" " extra_args in
   let compiler_location =
     Filename.concat js_of_ocaml_root "compiler/bin-js_of_ocaml/js_of_ocaml.exe"
   in
@@ -270,7 +271,7 @@ let jsoo_minify ?(flags = []) ~pretty file =
   let file = Filetype.path_of_js_file file in
   let out_file = swap_extention file ~ext:"min.js" in
   let extra_args = List.flatten [ (if pretty then [ "--pretty" ] else []); flags ] in
-  let extra_args = String.concat " " extra_args in
+  let extra_args = String.concat ~sep:" " extra_args in
   let compiler_location =
     Filename.concat js_of_ocaml_root "compiler/bin-jsoo_minify/jsoo_minify.exe"
   in
@@ -322,7 +323,7 @@ let compile_lib list name =
         (Format.sprintf
            "%s -g -a %s -o %s"
            ocamlc
-           (String.concat " " (List.map Filetype.path_of_cmo_file list))
+           (String.concat ~sep:" " (List.map ~f:Filetype.path_of_cmo_file list))
            out_file)
   in
   print_string stdout;
@@ -346,7 +347,7 @@ class find_variable_declaration r n =
 
     method! variable_declaration v =
       (match v with
-      | Jsoo.Javascript.S { name; _ }, _ when name = n -> r := v :: !r
+      | Jsoo.Javascript.S { name; _ }, _ when String.equal name n -> r := v :: !r
       | _ -> ());
       super#variable_declaration v
   end
@@ -370,7 +371,7 @@ class find_function_declaration r n =
           let record =
             match fd, n with
             | _, None -> true
-            | (Jsoo.Javascript.S { name; _ }, _, _, _), Some n -> name = n
+            | (Jsoo.Javascript.S { name; _ }, _, _, _), Some n -> String.equal name n
             | _ -> false
           in
           if record then r := fd :: !r
@@ -406,3 +407,10 @@ let compile_and_parse ?(debug = true) ?flags s =
       |> compile_ocaml_to_cmo ~debug
       |> compile_cmo_to_javascript ?flags ~pretty:true ~sourcemap:debug
       |> parse_js)
+
+let normalize_path s =
+  String.map
+    ~f:(function
+      | '\\' -> '/' (* Normalize windows path for the tests *)
+      | x -> x)
+    s

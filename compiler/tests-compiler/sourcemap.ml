@@ -26,7 +26,7 @@ let print_mapping (sm : Source_map.t) =
   List.iter sm.mappings ~f:(fun (m : Source_map.map) ->
       let file = function
         | -1 -> "null"
-        | n -> sources.(n)
+        | n -> normalize_path sources.(n)
       in
       Printf.printf
         "%s:%d:%d -> %d:%d\n"
