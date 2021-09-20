@@ -21,7 +21,7 @@
 
 let%expect_test _ =
   let tmp = Filename.temp_file "b" "txt" in
-  let oc = open_out tmp in
+  let oc = open_out_bin tmp in
   let () = print_int (out_channel_length oc) in
   let () = output_string oc "test" in
   let () = print_int (out_channel_length oc) in
@@ -54,7 +54,7 @@ let%expect_test _ =
     let _ =
       let tmp = Filename.temp_file "out" "txt" in
       let filename = tmp in
-      let chan = open_out filename in
+      let chan = open_out_bin filename in
       output_binary_int chan 8900;
       marshal_out_segment filename chan [ "output"; "data" ];
       marshal_out_segment filename chan [ "more"; "stuff" ]
