@@ -20,12 +20,15 @@
 external read_directory : string -> unit = "caml_sys_read_directory"
 
 let%expect_test _ =
-  (try open_in "/a.txt" |> close_in with e -> Printexc.to_string e |> print_endline);
+  (try open_in "/a.txt" |> close_in with
+  | Sys_error _ -> print_endline "properly raised Sys_error"
+  | e -> Printexc.to_string e |> print_endline);
   [%expect {|
-  (Sys_error "Error: ENOENT: no such file or directory, open '/a.txt'") |}]
+  properly raised Sys_error |}]
 
 let%expect_test _ =
-  (try read_directory "/hello" with e -> Printexc.to_string e |> print_endline);
-  [%expect
-    {|
-   (Sys_error "Error: ENOENT: no such file or directory, scandir '/hello'") |}]
+  (try read_directory "/hello" with
+  | Sys_error _ -> print_endline "properly raised Sys_error"
+  | e -> Printexc.to_string e |> print_endline);
+  [%expect {|
+   properly raised Sys_error |}]
