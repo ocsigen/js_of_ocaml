@@ -55,7 +55,7 @@ let%expect_test _ =
   end in
   let open M in
   let tmp_filename = Filename.temp_file "out" "txt" in
-  let chan = open_out tmp_filename in
+  let chan = open_out_bin tmp_filename in
   let v1 = Op (Add, [ Literal (Numeral (SPlus, 5)); Literal (Numeral (SMinus, 7)) ]) in
   let v2 = Op (Times, [ v1; v1 ]) (* shared *) in
   let v1_sz = write_out chan v1 in
@@ -69,7 +69,7 @@ let%expect_test _ =
     v2_ns_sz
     (if v2_sz < v2_ns_sz then "<" else ">=");
 
-  let chan = open_in tmp_filename in
+  let chan = open_in_bin tmp_filename in
   let v1' = Marshal.from_channel chan in
   (let v2' = Marshal.from_channel chan in
    Format.printf "readback = %B %B\n%!" (v1 = v1') (v2 = v2'));
