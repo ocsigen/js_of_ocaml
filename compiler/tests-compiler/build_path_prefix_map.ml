@@ -33,7 +33,8 @@ let%expect_test _ =
           Printf.printf "file: %s\n" sm.file;
           Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
           Printf.printf "sources:\n";
-          List.iter sm.sources ~f:(fun source -> Printf.printf "- %s\n" source)
+          List.iter sm.sources ~f:(fun source ->
+              Printf.printf "- %s\n" (normalize_path source))
       | None -> failwith "no sourcemap generated!");
   [%expect
     {|

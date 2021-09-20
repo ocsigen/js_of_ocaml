@@ -63,3 +63,5 @@ val print_fun_decl : Javascript.program -> string option -> unit
 val compile_and_run : ?flags:string list -> string -> unit
 
 val compile_and_parse : ?debug:bool -> ?flags:string list -> string -> Javascript.program
+
+val normalize_path : string -> string
