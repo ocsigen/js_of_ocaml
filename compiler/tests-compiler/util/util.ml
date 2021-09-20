@@ -18,9 +18,14 @@
  *)
 module Jsoo = Js_of_ocaml_compiler
 
-let ocamlc = try Sys.getenv "OCAMLC" with Not_found -> "ocamlc"
+let exe =
+  match Sys.os_type with
+  | "Cygwin" | "Win32" -> fun x -> x ^ ".exe"
+  | "Unix" | _ -> fun x -> x
 
-let node = try Sys.getenv "NODE" with Not_found -> "node"
+let ocamlc = try Sys.getenv "OCAMLC" with Not_found -> exe "ocamlc"
+
+let node = try Sys.getenv "NODE" with Not_found -> exe "node"
 
 let js_of_ocaml_root =
   try
@@ -167,20 +172,25 @@ let channel_to_string c_in =
   Buffer.contents buffer
 
 let exec_to_string_exn ~cmd =
-  let env = [ Format.sprintf "BUILD_PATH_PREFIX_MAP=/dune-root=%s" (Sys.getcwd ()) ] in
-  let env = Array.concat [ Unix.environment (); Array.of_list env ] in
+  let cwd = Sys.getcwd () in
+  let build_path =
+    let open Js_of_ocaml_compiler.Build_path_prefix_map in
+    let str = encode_map [ Some { target = "/dune-root"; source = cwd } ] in
+    Format.sprintf "BUILD_PATH_PREFIX_MAP=%s" str
+  in
+  let env = Array.concat [ Unix.environment (); [| build_path |] ] in
   let proc_result_ok std_out =
     let open Unix in
     function
     | WEXITED 0 -> std_out
     | WEXITED i ->
-        Format.printf "process exited with error code %d\n %s" i cmd;
+        Format.printf "process exited with error code %d\n %s\n" i cmd;
         std_out
     | WSIGNALED i ->
-        Format.printf "process signaled with signal number %d\n %s" i cmd;
+        Format.printf "process signaled with signal number %d\n %s\n" i cmd;
         std_out
     | WSTOPPED i ->
-        Format.printf "process stopped with signal number %d\n %s" i cmd;
+        Format.printf "process stopped with signal number %d\n %s\n" i cmd;
         std_out
   in
   let ((proc_in, _, proc_err) as proc_full) = Unix.open_process_full cmd env in
