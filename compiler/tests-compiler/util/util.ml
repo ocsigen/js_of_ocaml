@@ -26,11 +26,12 @@ let js_of_ocaml_root =
   try
     let dir = Sys.getenv "PROJECT_ROOT" in
     if Filename.is_relative dir then Filename.concat (Sys.getcwd ()) dir else dir
-  with Not_found ->
-    let regex_text = "_build/default" in
+  with Not_found -> (
+    let regex_text = "_build" in
     let regex = Str.regexp regex_text in
-    let left = Sys.getcwd () |> Str.split regex |> List.hd in
-    Filename.concat left regex_text
+    match Sys.getcwd () |> Str.split regex with
+    | left :: _ :: _ -> Filename.concat (Filename.concat left regex_text) "default"
+    | _ -> failwith "unable to find project root")
 
 let prng = lazy (Random.State.make_self_init ())
 
