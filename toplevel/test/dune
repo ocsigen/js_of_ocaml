@@ -32,7 +32,7 @@
 (rule
   (target test_toplevel.referencejs)
   (deps test_toplevel.js)
-  (action (with-stdout-to %{target} (run node ./test_toplevel.js))))
+  (action (with-outputs-to %{target} (run node ./test_toplevel.js))))
 
 (rule
   (alias runtest)

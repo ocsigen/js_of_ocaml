@@ -2,6 +2,8 @@ let () = Js_of_ocaml_toplevel.JsooTop.initialize ()
 
 let fmt = Format.std_formatter
 
+let () = Printf.eprintf "Stderr captured\n"
+
 let () =
   Js_of_ocaml.Sys_js.set_channel_flusher stderr (fun str -> Printf.printf "<ERR>: %s" str)
 

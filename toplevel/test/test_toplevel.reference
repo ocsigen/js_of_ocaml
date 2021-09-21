@@ -1,3 +1,4 @@
+Stderr captured
 
 let () = print_endline "hello";;
 hello
