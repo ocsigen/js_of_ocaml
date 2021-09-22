@@ -502,7 +502,7 @@ var caml_output_val = function (){
 
     var no_sharing = (flags.indexOf(0 /*Marshal.No_sharing*/) !== -1),
         closures =  (flags.indexOf(1 /*Marshal.Closures*/) !== -1);
-        /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
+    /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
       joo_global_object.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");

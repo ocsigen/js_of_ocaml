@@ -56,12 +56,12 @@ function caml_hash_univ_param (count, limit, obj) {
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (caml_is_ml_string(obj)) {
-        var jsbytes = caml_jsbytes_of_string(obj);
-        for (var b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
-          hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
+      var jsbytes = caml_jsbytes_of_string(obj);
+      for (var b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
+        hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (typeof obj === "string") {
-        for (var b = obj, l = obj.length, i = 0; i < l; i++)
-          hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
+      for (var b = obj, l = obj.length, i = 0; i < l; i++)
+        hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (obj === (obj|0)) {
       // Integer
       count --;

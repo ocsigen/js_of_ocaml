@@ -325,7 +325,7 @@ function caml_bytes_set16(s,i,i16){
 //Requires: caml_failwith
 //If: js-string
 function caml_string_set16(s,i,i16){
-    caml_failwith("caml_string_set16");
+  caml_failwith("caml_string_set16");
 }
 
 //Provides: caml_string_set16
@@ -354,7 +354,7 @@ function caml_bytes_set32(s,i,i32){
 //Requires: caml_failwith
 //If: js-string
 function caml_string_set32(s,i,i32){
-    caml_failwith("caml_string_set32");
+  caml_failwith("caml_string_set32");
 }
 
 //Provides: caml_string_set32
@@ -380,7 +380,7 @@ function caml_bytes_set64(s,i,i64){
 //Requires: caml_failwith
 //If: js-string
 function caml_string_set64(s,i,i64){
-    caml_failwith("caml_string_set64");
+  caml_failwith("caml_string_set64");
 }
 
 //Provides: caml_string_set64
@@ -642,8 +642,8 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
 //Provides: caml_blit_string
 //Requires: caml_blit_bytes, caml_bytes_of_string
 function caml_blit_string(a,b,c,d,e) {
-    caml_blit_bytes(caml_bytes_of_string(a),b,c,d,e);
-    return 0
+  caml_blit_bytes(caml_bytes_of_string(a),b,c,d,e);
+  return 0
 }
 
 //Provides: caml_ml_bytes_length const
@@ -659,7 +659,7 @@ function caml_string_unsafe_get (s, i) {
 //Requires: caml_failwith
 //If: js-string
 function caml_string_unsafe_set (s, i, c) {
-    caml_failwith("caml_string_unsafe_set");
+  caml_failwith("caml_string_unsafe_set");
 }
 
 //Provides: caml_ml_string_length const
@@ -697,7 +697,7 @@ function caml_string_lessthan(s1, s2) {
 //Requires: caml_convert_string_to_bytes, caml_string_of_jsbytes
 //If: js-string
 function caml_string_of_bytes(s) {
-    (s.t & 6) && caml_convert_string_to_bytes(s);
+  (s.t & 6) && caml_convert_string_to_bytes(s);
   return caml_string_of_jsbytes(s.c);
 }
 

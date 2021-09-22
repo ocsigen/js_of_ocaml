@@ -141,5 +141,5 @@ function caml_obj_reachable_words(o) { return 0; }
 //Provides: caml_obj_add_offset
 //Requires: caml_failwith
 function caml_obj_add_offset(v,offset) {
-    caml_failwith("Obj.add_offset is not supported");
+  caml_failwith("Obj.add_offset is not supported");
 }
