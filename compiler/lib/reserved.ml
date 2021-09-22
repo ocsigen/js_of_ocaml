@@ -140,4 +140,5 @@ let provided =
     ; "parseInt"
     ; "module"
     ; "require"
+    ; "Symbol"
     ]

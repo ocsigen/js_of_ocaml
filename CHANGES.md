@@ -3,6 +3,7 @@
 ## Features/Changes
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
 * Runtime: Fix for Windows, tests pass
+* Runtime: add support for Sys.mkdir and Sys.rmdir
 
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
