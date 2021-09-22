@@ -1,3 +1,1 @@
-let () =
-  input_line stdin
-  |> output_string stdout
+let () = input_line stdin |> output_string stdout
