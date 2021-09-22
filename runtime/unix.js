@@ -16,9 +16,9 @@ function unix_gmtime (t) {
   var januaryfirst = (new Date(Date.UTC(d.getUTCFullYear(), 0, 1))).getTime();
   var doy = Math.floor((d_num - januaryfirst) / 86400000);
   return BLOCK(0, d.getUTCSeconds(), d.getUTCMinutes(), d.getUTCHours(),
-          d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear() - 1900,
-          d.getUTCDay(), doy,
-          false | 0 /* for UTC daylight savings time is false */)
+               d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear() - 1900,
+               d.getUTCDay(), doy,
+               false | 0 /* for UTC daylight savings time is false */)
 }
 
 //Provides: unix_localtime
@@ -31,9 +31,9 @@ function unix_localtime (t) {
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
   return BLOCK(0, d.getSeconds(), d.getMinutes(), d.getHours(),
-          d.getDate(), d.getMonth(), d.getFullYear() - 1900,
-          d.getDay(), doy,
-          (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */)
+               d.getDate(), d.getMonth(), d.getFullYear() - 1900,
+               d.getDay(), doy,
+               (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */)
 }
 
 //Provides: unix_mktime
@@ -54,7 +54,7 @@ function win_cleanup() {}
 //Provides: win_handle_fd const
 function win_handle_fd(x) {return x;}
 
-//Provides: unix_isatty 
+//Provides: unix_isatty
 //Requires: fs_node_supported
 function unix_isatty(fileDescriptor) {
   if(fs_node_supported()) {

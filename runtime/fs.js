@@ -36,30 +36,30 @@ function MlFile(){  }
 
 //Provides: path_is_absolute
 function make_path_is_absolute() {
-    function posix(path) {
-	if (path.charAt(0) === '/') return ["", path.substring(1)];
-	return;
-    }
+  function posix(path) {
+    if (path.charAt(0) === '/') return ["", path.substring(1)];
+    return;
+  }
 
-    function win32(path) {
-	// https://github.com/nodejs/node/blob/b3fcc245fb25539909ef1d5eaa01dbf92e168633/lib/path.js#L56
-	var splitDeviceRe = /^([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$/;
-	var result = splitDeviceRe.exec(path);
-	var device = result[1] || '';
-	var isUnc = Boolean(device && device.charAt(1) !== ':');
+  function win32(path) {
+    // https://github.com/nodejs/node/blob/b3fcc245fb25539909ef1d5eaa01dbf92e168633/lib/path.js#L56
+    var splitDeviceRe = /^([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$/;
+    var result = splitDeviceRe.exec(path);
+    var device = result[1] || '';
+    var isUnc = Boolean(device && device.charAt(1) !== ':');
 
-	// UNC paths are always absolute
-	if (Boolean(result[2] || isUnc)) {
-	    var root = (result[1] || '');
-	    var sep = (result[2] || '');
-	    return [root, path.substring(root.length + sep.length)]
-	}
-	return;
+    // UNC paths are always absolute
+    if (Boolean(result[2] || isUnc)) {
+      var root = (result[1] || '');
+      var sep = (result[2] || '');
+      return [root, path.substring(root.length + sep.length)]
     }
-    if(joo_global_object.process && joo_global_object.process.platform) {
-	return joo_global_object.process.platform === 'win32' ? win32 : posix;
-    }
-    else return posix
+    return;
+  }
+  if(joo_global_object.process && joo_global_object.process.platform) {
+    return joo_global_object.process.platform === 'win32' ? win32 : posix;
+  }
+  else return posix
 }
 var path_is_absolute = make_path_is_absolute();
 

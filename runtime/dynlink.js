@@ -33,8 +33,8 @@ function caml_dynlink_open_lib (_mode,file) {
 //Provides: caml_dynlink_close_lib
 //Requires: current_libs
 function caml_dynlink_close_lib (idx) {
-    current_libs[idx]=null;
-    return 0;
+  current_libs[idx]=null;
+  return 0;
 }
 
 //Provides: caml_dynlink_lookup_symbol

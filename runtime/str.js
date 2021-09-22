@@ -151,7 +151,7 @@ var re_match = function(){
         }
         break;
       case opcodes.CHARCLASS:
-      if(pos === s.length) {prefix_match (); break};
+        if(pos === s.length) {prefix_match (); break};
         if (in_bitset(cpool[uarg], c)) pos++;
         else backtrack();
         break;
