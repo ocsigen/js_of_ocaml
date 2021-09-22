@@ -23,12 +23,13 @@ jobs:
           - 4.09.x
           - 4.10.x
           - 4.11.x
-          - 4.12.0
+          - 4.12.x
+          - 4.13.x
         include:
           - os: macos-latest
-            ocaml-compiler: 4.12.0
+            ocaml-compiler: 4.13.x
           - os: windows-latest
-            ocaml-compiler: 4.12.0
+            ocaml-compiler: 4.13.x
 
     runs-on: ${{ matrix.os }}
 
@@ -51,29 +52,29 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
-          opam-depext: ${{ matrix.ocaml-compiler == '4.12.0' }}
+          opam-depext: ${{ matrix.ocaml-compiler == '4.13.x' }}
           opam-depext-flags: --with-test
 
       - run: opam install . --best-effort
-        if: ${{ matrix.ocaml-compiler != '4.12.0' }}
+        if: ${{ matrix.ocaml-compiler != '4.13.x' }}
 
       - run: opam install . --with-test
-        if: ${{ matrix.ocaml-compiler == '4.12.0' }}
+        if: ${{ matrix.ocaml-compiler == '4.13.x' }}
 
       - run: opam exec -- make all
-        if: ${{ matrix.ocaml-compiler == '4.12.0' }}
+        if: ${{ matrix.ocaml-compiler == '4.13.x' }}
 
       - run: opam exec -- make tests
-        if: ${{ matrix.ocaml-compiler == '4.12.0' }}
- 
+        if: ${{ matrix.ocaml-compiler == '4.13.x' }}
+
       - run: opam exec -- git diff --exit-code
-        if: ${{ matrix.ocaml-compiler == '4.12.0' }}
+        if: ${{ matrix.ocaml-compiler == '4.13.x' }}
 
   lint-fmt:
     strategy:
       matrix:
         ocaml-compiler:
-          - 4.12.0
+          - 4.13.x
 
     runs-on: ubuntu-latest
 
