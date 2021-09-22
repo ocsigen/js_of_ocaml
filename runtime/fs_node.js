@@ -43,6 +43,22 @@ MlNodeDevice.prototype.exists = function(name) {
     caml_raise_sys_error(err.toString());
   }
 }
+MlNodeDevice.prototype.mkdir = function(name, mode) {
+  try {
+    this.fs.mkdirSync(this.nm(name),{mode:mode});
+    return 0
+  } catch (err) {
+    caml_raise_sys_error(err.toString());
+  }
+}
+MlNodeDevice.prototype.rmdir = function(name) {
+  try {
+    this.fs.rmdirSync(this.nm(name));
+    return 0
+  } catch (err) {
+    caml_raise_sys_error(err.toString());
+  }
+}
 MlNodeDevice.prototype.readdir = function(name) {
   try {
     return this.fs.readdirSync(this.nm(name));

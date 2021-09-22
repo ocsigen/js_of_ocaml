@@ -31,28 +31,52 @@ function MlFakeDevice (root, f) {
 MlFakeDevice.prototype.nm = function(name) {
   return (this.root + name);
 }
+MlFakeDevice.prototype.create_dir_if_needed = function(name) {
+  var comp = name.split("/");
+  var res = "";
+  for(var i = 0; i < comp.length - 1; i++){
+    res += comp[i] + "/";
+    if(this.content[res]) continue;
+    this.content[res] = Symbol("directory");
+  }
+}
+MlFakeDevice.prototype.slash = function(name){
+  return /\/$/.test(name)?name:(name + "/");
+}
 MlFakeDevice.prototype.lookup = function(name) {
   if(!this.content[name] && this.lookupFun) {
     var res = this.lookupFun(caml_string_of_jsbytes(this.root), caml_string_of_jsbytes(name));
-    if(res !== 0) this.content[name]=new MlFakeFile(caml_bytes_of_string(res[1]));
+    if(res !== 0) {
+      this.create_dir_if_needed(name);
+      this.content[name]=new MlFakeFile(caml_bytes_of_string(res[1]));
+    }
   }
 }
 MlFakeDevice.prototype.exists = function(name) {
   // The root of the device exists
   if(name == "") return 1;
   // Check if a directory exists
-  var name_slash = (name + "/");
-  var r = new RegExp("^" + name_slash);
-  for(var n in this.content) {
-    if (n.match(r)) return 1
-  }
+  var name_slash = this.slash(name);
+  if(this.content[name_slash]) return 1;
   // Check if a file exists
   this.lookup(name);
   return this.content[name]?1:0;
 }
+MlFakeDevice.prototype.mkdir = function(name,mode) {
+  this.create_dir_if_needed(this.slash(name));
+}
+MlFakeDevice.prototype.rmdir = function(name) {
+  var name_slash = (name == "")?"":(this.slash(name));
+  var r = new RegExp("^" + name_slash + "([^/]+)");
+  for(var n in this.content) {
+    if(n.match(r))
+      caml_raise_sys_error(this.nm(name) + ": Directory not empty");
+  }
+  delete this.content[name_slash];
+}
 MlFakeDevice.prototype.readdir = function(name) {
-  var name_slash = (name == "")?"":(name + "/");
-  var r = new RegExp("^" + name_slash + "([^/]*)");
+  var name_slash = (name == "")?"":(this.slash(name));
+  var r = new RegExp("^" + name_slash + "([^/]+)");
   var seen = {}
   var a = [];
   for(var n in this.content) {
@@ -62,14 +86,9 @@ MlFakeDevice.prototype.readdir = function(name) {
   return a;
 }
 MlFakeDevice.prototype.is_dir = function(name) {
-  var name_slash = (name == "")?"":(name + "/");
-  var r = new RegExp("^" + name_slash + "([^/]*)");
-  var a = [];
-  for(var n in this.content) {
-    var m = n.match(r);
-    if(m) return 1
-  }
-  return 0
+  if(name == "")  return true;
+  var name_slash = this.slash(name);
+  return this.content[name_slash]?1:0;
 }
 MlFakeDevice.prototype.unlink = function(name) {
   var ok = this.content[name]?true:false;
@@ -89,6 +108,7 @@ MlFakeDevice.prototype.open = function(name, f) {
     if(f.truncate) file.truncate();
     return file;
   } else if (f.create) {
+    this.create_dir_if_needed(name);
     this.content[name] = new MlFakeFile(caml_create_bytes(0));
     return this.content[name];
   } else {
@@ -97,18 +117,23 @@ MlFakeDevice.prototype.open = function(name, f) {
 }
 
 MlFakeDevice.prototype.register= function (name,content){
+  var file;
   if(this.content[name]) caml_raise_sys_error(this.nm(name) + " : file already exists");
   if(caml_is_ml_bytes(content))
-    this.content[name] = new MlFakeFile(content);
+    file = new MlFakeFile(content);
   if(caml_is_ml_string(content))
-    this.content[name] = new MlFakeFile(caml_bytes_of_string(content));
+    file = new MlFakeFile(caml_bytes_of_string(content));
   else if(content instanceof Array)
-    this.content[name] = new MlFakeFile(caml_bytes_of_array(content));
+    file = new MlFakeFile(caml_bytes_of_array(content));
   else if(typeof content === "string")
-    this.content[name] = new MlFakeFile(caml_bytes_of_jsbytes(content));
+    file = new MlFakeFile(caml_bytes_of_jsbytes(content));
   else if(content.toString) {
     var bytes = caml_bytes_of_string(caml_string_of_jsstring(content.toString()));
-    this.content[name] = new MlFakeFile(bytes);
+    file = new MlFakeFile(bytes);
+  }
+  if(file){
+    this.create_dir_if_needed(name);
+    this.content[name];
   }
   else caml_raise_sys_error(this.nm(name) + " : registering file with invalid content type");
 }

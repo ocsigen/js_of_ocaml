@@ -31,8 +31,6 @@ caml_reset_afl_instrumentation
 caml_setup_afl
 caml_signbit
 caml_static_release_bytecode
-caml_sys_mkdir
-caml_sys_rmdir
 caml_terminfo_rows
 debugger
 is_digit_normalized
