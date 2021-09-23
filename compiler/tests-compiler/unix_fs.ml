@@ -34,7 +34,7 @@ let%expect_test "Unix.mkdir_Unix.rmdir" =
   List.iter print_endline l;
   (match Unix.rmdir "aaa" with
   | exception _ -> ()
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Unix.rmdir "aaa/bbb";
   Unix.rmdir "aaa"
   |};
@@ -51,7 +51,7 @@ let%expect_test "Unix.mkdir_Unix.rmdir_static" =
   List.iter print_endline l;
   (match Unix.rmdir "aaa" with
   | exception _ -> ()
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Unix.rmdir "aaa/bbb";
   Unix.rmdir "aaa";
   |};
@@ -64,8 +64,8 @@ let%expect_test "Unix.mkdir_ENOENT" =
     {|
   (match Unix.mkdir "/not/exists" 0o777 with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
-  | exception _ -> print_endline "INCORRECT ERROR"
-  | _ -> print_endline "BUG");
+  | exception err -> print_endline (Printexc.to_string err)
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
   [%expect {|ENOENT: mkdir /not/exists|}]
 
@@ -78,8 +78,8 @@ let%expect_test "Unix.mkdir_ENOTDIR" =
   close_out oc;
   (match Unix.mkdir "aaa/bbb" 0o777 with
   | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("ENOTDIR: " ^ syscall)
-  | exception _ -> print_endline "INCORRECT ERROR"
-  | _ -> print_endline "BUG");
+  | exception err -> print_endline (Printexc.to_string err)
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa";
   |};
   [%expect {|ENOTDIR: mkdir|}]
@@ -90,8 +90,8 @@ let%expect_test "Unix.rmdir_ENOENT" =
     {|
   (match Unix.rmdir "/not/exists" with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
-  | exception _ -> print_endline "INCORRECT ERROR"
-  | _ -> print_endline "BUG");
+  | exception err -> print_endline (Printexc.to_string err)
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
   [%expect {|ENOENT: rmdir /not/exists|}]
 
@@ -105,8 +105,8 @@ let%expect_test "Unix.rmdir_ENOTDIR" =
   close_out oc;
   (match Unix.rmdir "aaa/bbb" with
   | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("ENOTDIR: " ^ syscall)
-  | exception _ -> print_endline "INCORRECT ERROR"
-  | _ -> print_endline "BUG");
+  | exception err -> print_endline (Printexc.to_string err)
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa/bbb";
   Unix.rmdir "aaa";
   |};
@@ -121,11 +121,11 @@ let%expect_test "Unix.stat_file" =
   output_string oc "bbb";
   close_out oc;
   (match Unix.stat "aaa" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_REG; st_size } ->
       print_string "File size: ";
       print_int st_size;
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa"
   |};
   [%expect {|File size: 3|}]
@@ -136,9 +136,9 @@ let%expect_test "Unix.stat_dir" =
     {|
   Unix.mkdir "aaa" 0o777;
   (match Unix.stat "aaa" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_DIR } -> print_string "Found dir"
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Unix.rmdir "aaa"
   |};
   [%expect {|Found dir|}]
@@ -152,11 +152,11 @@ let%expect_test "Unix.stat_symlink" =
   close_out oc;
   Unix.symlink "aaa" "ccc";
   (match Unix.stat "ccc" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_REG; st_size } ->
     print_string "File size: ";
     print_int st_size;
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "ccc";
   Sys.remove "aaa";
   |};
@@ -171,7 +171,7 @@ let%expect_test "Unix.symlink_Unix.readlink" =
   close_out oc;
   Unix.symlink "aaa" "ccc";
   (match Unix.readlink "ccc" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | path -> (
     let ic = open_in path in
     let contents = input_line ic in
@@ -188,8 +188,8 @@ let%expect_test "Unix.readlink_EINVAL" =
     {|
   (match Unix.readlink "." with
   | exception Unix.Unix_error (Unix.EINVAL, syscall, path) -> print_endline ("EINVAL: " ^ syscall)
-  | exception _ -> print_endline "INCORRECT ERROR"
-  | _ -> print_endline "BUG");
+  | exception err -> print_endline (Printexc.to_string err)
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
   [%expect {|EINVAL: readlink|}]
 
@@ -201,11 +201,11 @@ let%expect_test "Unix.lstat_file" =
   output_string oc "bbb";
   close_out oc;
   (match Unix.lstat "aaa" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_REG; st_size } ->
     print_string "File size: ";
     print_int st_size;
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa";
   |};
   [%expect {|File size: 3|}]
@@ -219,9 +219,9 @@ let%expect_test "Unix.lstat_symlink" =
   close_out oc;
   Unix.symlink "aaa" "ccc";
   (match Unix.lstat "ccc" with
-  | exception _ -> print_endline "UNEXPECTED ERROR"
+  | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_LNK; st_size } -> print_endline "Found link"
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "ccc";
   Sys.remove "aaa";
   |};

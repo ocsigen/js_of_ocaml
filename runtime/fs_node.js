@@ -39,7 +39,7 @@ function MlNodeDevice(root) {
    * This array is in order of the variant in OCaml
    *
    * Attached to the MlNodeDevice to avoid allocating this array
-   * each timean error is caught
+   * each time an error is caught
    */
   this.unix_error = [
     "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
