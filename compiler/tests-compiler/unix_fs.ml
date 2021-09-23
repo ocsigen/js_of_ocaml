@@ -19,8 +19,14 @@
 
 open Util
 
+(* Unix.LargeFile requires unix_stat_64 which causes tests
+ * to log incorrectly on Windows
+ *)
+let flags = [ "--disable genprim" ]
+
 let%expect_test "Unix.mkdir_Unix.rmdir" =
   compile_and_run
+    ~flags
     {|
   Unix.mkdir "aaa" 0o777;
   Unix.mkdir "aaa/bbb" 0o777;
@@ -36,6 +42,7 @@ let%expect_test "Unix.mkdir_Unix.rmdir" =
 
 let%expect_test "Unix.mkdir_Unix.rmdir_static" =
   compile_and_run
+    ~flags
     {|
   Sys.chdir "/static/";
   Unix.mkdir "aaa" 0o777;
@@ -53,6 +60,7 @@ let%expect_test "Unix.mkdir_Unix.rmdir_static" =
 
 let%expect_test "Unix.mkdir_ENOENT" =
   compile_and_run
+    ~flags
     {|
   (match Unix.mkdir "/not/exists" 0o777 with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
@@ -63,6 +71,7 @@ let%expect_test "Unix.mkdir_ENOENT" =
 
 let%expect_test "Unix.mkdir_ENOTDIR" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
@@ -77,6 +86,7 @@ let%expect_test "Unix.mkdir_ENOTDIR" =
 
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
+    ~flags
     {|
   (match Unix.rmdir "/not/exists" with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
@@ -87,6 +97,7 @@ let%expect_test "Unix.rmdir_ENOENT" =
 
 let%expect_test "Unix.rmdir_ENOTDIR" =
   compile_and_run
+    ~flags
     {|
   Unix.mkdir "aaa" 0o777;
   let oc = open_out "aaa/bbb" in
@@ -104,6 +115,7 @@ let%expect_test "Unix.rmdir_ENOTDIR" =
 
 let%expect_test "Unix.stat_file" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
@@ -120,6 +132,7 @@ let%expect_test "Unix.stat_file" =
 
 let%expect_test "Unix.stat_dir" =
   compile_and_run
+    ~flags
     {|
   Unix.mkdir "aaa" 0o777;
   (match Unix.stat "aaa" with
@@ -132,6 +145,7 @@ let%expect_test "Unix.stat_dir" =
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
@@ -150,6 +164,7 @@ let%expect_test "Unix.stat_symlink" =
 
 let%expect_test "Unix.symlink_Unix.readlink" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
@@ -169,6 +184,7 @@ let%expect_test "Unix.symlink_Unix.readlink" =
 
 let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
+    ~flags
     {|
   (match Unix.readlink "." with
   | exception Unix.Unix_error (Unix.EINVAL, syscall, path) -> print_endline ("EINVAL: " ^ syscall)
@@ -179,6 +195,7 @@ let%expect_test "Unix.readlink_EINVAL" =
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
@@ -195,6 +212,7 @@ let%expect_test "Unix.lstat_file" =
 
 let%expect_test "Unix.lstat_symlink" =
   compile_and_run
+    ~flags
     {|
   let oc = open_out "aaa" in
   output_string oc "bbb";
