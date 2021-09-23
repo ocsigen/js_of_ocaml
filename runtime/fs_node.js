@@ -170,7 +170,8 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   }
 }
 MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
-  if (raise_unix && caml_named_value("Unix.Unix_error")) {
+  var unix_error = caml_named_value("Unix.Unix_error");
+  if (raise_unix && unix_error) {
     var variant = this.unix_error.indexOf(err.code);
     if (variant < 0) {
       // If none of the above variants, fallback to EUNKNOWNERR(int)
@@ -181,7 +182,7 @@ MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
       caml_string_of_jsbytes(err.syscall || ""),
       caml_string_of_jsbytes(err.path || "")
     ];
-    caml_raise_with_args(caml_named_value("Unix.Unix_error"), args);
+    caml_raise_with_args(unix_error, args);
   } else {
     caml_raise_sys_error(err.toString());
   }
