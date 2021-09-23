@@ -75,6 +75,10 @@ function unix_stat(name) {
   return root.device.stat(root.rest, /* raise Unix_error */ true);
 }
 
+//Provides: unix_stat_64
+//Requires: unix_stat
+var unix_stat_64 = unix_stat;
+
 //Provides: unix_lstat
 //Requires: resolve_fs_device, caml_failwith
 function unix_lstat(name) {
@@ -84,6 +88,10 @@ function unix_lstat(name) {
   }
   return root.device.lstat(root.rest, /* raise Unix_error */ true);
 }
+
+//Provides: unix_lstat_64
+//Requires: unix_lstat
+var unix_lstat_64 = unix_lstat;
 
 //Provides: unix_mkdir
 //Requires: resolve_fs_device, caml_failwith
