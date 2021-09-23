@@ -67,12 +67,15 @@ let%expect_test "Unix.mkdir_ENOTDIR" =
   output_string oc "bbb";
   close_out oc;
   (match Unix.mkdir "aaa/bbb" 0o777 with
-  | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("ENOTDIR: " ^ syscall)
+  (* Linux & Mac raise Unix.ENOTDIR *)
+  | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("EXPECTED ERROR: " ^ syscall)
+  (* Windows raises Unix.ENOENT *)
+  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("EXPECTED ERROR: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa";
   |};
-  [%expect {|ENOTDIR: mkdir|}]
+  [%expect {|EXPECTED ERROR: mkdir|}]
 
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
@@ -172,11 +175,14 @@ let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
     {|
   (match Unix.readlink "." with
-  | exception Unix.Unix_error (Unix.EINVAL, syscall, path) -> print_endline ("EINVAL: " ^ syscall)
+  (* Linux & Mac raise Unix.EINVAL *)
+  | exception Unix.Unix_error (Unix.EINVAL, syscall, path) -> print_endline "EXPECTED ERROR"
+  (* Windows raises Unix.EUNKNOWNERR *)
+  | exception Unix.Unix_error (Unix.EUNKNOWNERR(code), syscall, path) -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
-  [%expect {|EINVAL: readlink|}]
+  [%expect {|EXPECTED ERROR|}]
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
