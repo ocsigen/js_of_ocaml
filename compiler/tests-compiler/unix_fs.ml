@@ -124,13 +124,11 @@ let%expect_test "Unix.stat_dir" =
   Unix.mkdir "aaa" 0o777;
   (match Unix.stat "aaa" with
   | exception _ -> print_endline "UNEXPECTED ERROR"
-  | { st_kind = Unix.S_DIR; st_size } ->
-      print_string "Dir size: ";
-      print_int st_size;
+  | { st_kind = Unix.S_DIR } -> print_string "Found dir"
   | _ -> print_endline "BUG");
   Unix.rmdir "aaa"
   |};
-  [%expect {|Dir size: 64|}]
+  [%expect {|Found dir|}]
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run

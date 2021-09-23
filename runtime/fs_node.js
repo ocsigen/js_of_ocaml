@@ -208,6 +208,7 @@ MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
   ];
   var variant = errors.indexOf(err.code);
   if (variant < 0) {
+    // If none of the above variants, fallback to EUNKNOWNERR(int)
     variant = BLOCK(0, err.errno);
   }
   var args = [

@@ -59,7 +59,7 @@ let%expect_test _ =
   | exception _ -> print_endline "INCORRECT ERROR"
   | _ -> print_endline "BUG");
   |};
-  [%expect {|Sys_error: /not/exists|}]
+  [%expect {|Sys_error: Error: ENOENT: no such file or directory, mkdir '/not/exists'|}]
 
 let%expect_test _ =
   compile_and_run
