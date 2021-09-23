@@ -163,8 +163,8 @@ MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
 }
 MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   try {
-    var js_stats = this.fs.readlinkSync(this.nm(name), 'utf8');
-    return caml_string_of_jsbytes(js_stats);
+    var link = this.fs.readlinkSync(this.nm(name), 'utf8');
+    return caml_string_of_jsbytes(link);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
