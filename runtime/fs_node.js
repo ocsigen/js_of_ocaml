@@ -29,7 +29,7 @@ function fs_node_supported () {
 
 //Provides: MlNodeDevice
 //Requires: MlNodeFile, caml_raise_sys_error
-//Requires: caml_raise_with_args, caml_named_value, caml_string_of_jsbytes
+//Requires: caml_raise_with_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
   this.fs = require('fs');
   this.root = root;
@@ -164,7 +164,7 @@ MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
 MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   try {
     var link = this.fs.readlinkSync(this.nm(name), 'utf8');
-    return caml_string_of_jsbytes(link);
+    return caml_string_of_jsstring(link);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
@@ -179,8 +179,8 @@ MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
     }
     var args = [
       variant,
-      caml_string_of_jsbytes(err.syscall || ""),
-      caml_string_of_jsbytes(err.path || "")
+      caml_string_of_jsstring(err.syscall || ""),
+      caml_string_of_jsstring(err.path || "")
     ];
     caml_raise_with_args(unix_error, args);
   } else {
