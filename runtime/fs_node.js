@@ -216,7 +216,7 @@ MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
     caml_string_of_jsbytes(err.syscall || ""),
     caml_string_of_jsbytes(err.path || "")
   ];
-  caml_raise_with_args(caml_named_value("Unix.Unix_error"), args.length, args);
+  caml_raise_with_args(caml_named_value("Unix.Unix_error"), args);
 }
 MlNodeDevice.prototype.stats_from_js = function(js_stats) {
   /* ===Unix.file_kind===
