@@ -53,12 +53,12 @@ let%expect_test "Unix.mkdir_Unix.rmdir_static" =
 let%expect_test "Unix.mkdir_ENOENT" =
   compile_and_run
     {|
-  (match Unix.mkdir "/not/exists" 0o777 with
-  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
+  (match Unix.mkdir "aaa/bbb/ccc" 0o777 with
+  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
-  [%expect {|ENOENT: mkdir /not/exists|}]
+  [%expect {|ENOENT: mkdir|}]
 
 let%expect_test "Unix.mkdir_ENOTDIR" =
   compile_and_run
@@ -77,12 +77,12 @@ let%expect_test "Unix.mkdir_ENOTDIR" =
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
     {|
-  (match Unix.rmdir "/not/exists" with
-  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall ^ " " ^ path)
+  (match Unix.rmdir "aaa/bbb/ccc" with
+  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   |};
-  [%expect {|ENOENT: rmdir /not/exists|}]
+  [%expect {|ENOENT: rmdir|}]
 
 let%expect_test "Unix.rmdir_ENOTDIR" =
   compile_and_run
@@ -92,13 +92,16 @@ let%expect_test "Unix.rmdir_ENOTDIR" =
   output_string oc "ccc";
   close_out oc;
   (match Unix.rmdir "aaa/bbb" with
-  | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("ENOTDIR: " ^ syscall)
+  (* Linux & Mac raise Unix.ENOTDIR *)
+  | exception Unix.Unix_error (Unix.ENOTDIR, syscall, path) -> print_endline ("EXPECTED ERROR: " ^ syscall)
+  (* Windows raises Unix.ENOENT *)
+  | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("EXPECTED ERROR: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa/bbb";
   Unix.rmdir "aaa";
   |};
-  [%expect {|ENOTDIR: rmdir|}]
+  [%expect {|EXPECTED ERROR: rmdir|}]
 
 let%expect_test "Unix.stat_file" =
   compile_and_run

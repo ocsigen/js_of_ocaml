@@ -55,18 +55,18 @@ let%expect_test _ =
   compile_and_run
     {|
   (match Sys.mkdir "/not/exists" 0o777 with
-  | exception Sys_error path -> print_endline ("Sys_error: " ^ path)
+  | exception Sys_error path -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "BUG");
   |};
-  [%expect {|Sys_error: Error: ENOENT: no such file or directory, mkdir '/not/exists'|}]
+  [%expect {|EXPECTED ERROR|}]
 
 let%expect_test _ =
   compile_and_run
     {|
   (match Sys.rmdir "/not/exists" with
-  | exception Sys_error path -> print_endline ("Sys_error: " ^ path)
+  | exception Sys_error path -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "BUG");
   |};
-  [%expect {|Sys_error: /not/exists: No such file or directory|}]
+  [%expect {|EXPECTED ERROR|}]
