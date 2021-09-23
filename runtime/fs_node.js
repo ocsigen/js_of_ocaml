@@ -117,6 +117,38 @@ MlNodeDevice.prototype.rename = function(o,n) {
     this.raise_unix_exn_of_nodejs_error(err);
   }
 }
+MlNodeDevice.prototype.stat = function(name) {
+  try {
+    var js_stats = this.fs.statSync(this.nm(name));
+    return this.stats_from_js(js_stats);
+  } catch (err) {
+    this.raise_unix_exn_of_nodejs_error(err);
+  }
+}
+MlNodeDevice.prototype.lstat = function(name) {
+  try {
+    var js_stats = this.fs.lstatSync(this.nm(name));
+    return this.stats_from_js(js_stats);
+  } catch (err) {
+    this.raise_unix_exn_of_nodejs_error(err);
+  }
+}
+MlNodeDevice.prototype.symlink = function(to_dir, src, dst) {
+  try {
+    this.fs.symlinkSync(this.nm(src), this.nm(dst), to_dir ? 'dir' : 'file');
+    return 0;
+  } catch (err) {
+    this.raise_unix_exn_of_nodejs_error(err);
+  }
+}
+MlNodeDevice.prototype.readlink = function(name) {
+  try {
+    var js_stats = this.fs.readlinkSync(this.nm(name), 'utf8');
+    return caml_string_of_jsbytes(js_stats);
+  } catch (err) {
+    this.raise_unix_exn_of_nodejs_error(err);
+  }
+}
 MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
   /* ===Unix.error===
    *
@@ -145,6 +177,65 @@ MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
     caml_string_of_jsbytes(err.path || "")
   ];
   caml_raise_with_args(caml_named_value("Unix.Unix_error"), args.length, args);
+}
+MlNodeDevice.prototype.stats_from_js = function(js_stats) {
+  /* ===Unix.file_kind===
+   * type file_kind =
+   *     S_REG                       (** Regular file *)
+   *   | S_DIR                       (** Directory *)
+   *   | S_CHR                       (** Character device *)
+   *   | S_BLK                       (** Block device *)
+   *   | S_LNK                       (** Symbolic link *)
+   *   | S_FIFO                      (** Named pipe *)
+   *   | S_SOCK                      (** Socket *)
+   */
+  var file_kind;
+  if (js_stats.isFile()) {
+    file_kind = 0;
+  } else if (js_stats.isDirectory()) {
+    file_kind = 1;
+  } else if (js_stats.isCharacterDevice()) {
+    file_kind = 2;
+  } else if (js_stats.isBlockDevice()) {
+    file_kind = 3;
+  } else if (js_stats.isSymbolicLink()) {
+    file_kind = 4;
+  } else if (js_stats.isFIFO()) {
+    file_kind = 5;
+  } else if (js_stats.isSocket()) {
+    file_kind = 6;
+  }
+  /* ===Unix.stats===
+   * type stats =
+   *  { st_dev : int;               (** Device number *)
+   *    st_ino : int;               (** Inode number *)
+   *    st_kind : file_kind;        (** Kind of the file *)
+   *    st_perm : file_perm;        (** Access rights *)
+   *    st_nlink : int;             (** Number of links *)
+   *    st_uid : int;               (** User id of the owner *)
+   *    st_gid : int;               (** Group ID of the file's group *)
+   *    st_rdev : int;              (** Device ID (if special file) *)
+   *    st_size : int;              (** Size in bytes *)
+   *    st_atime : float;           (** Last access time *)
+   *    st_mtime : float;           (** Last modification time *)
+   *    st_ctime : float;           (** Last status change time *)
+   *  }
+   */
+  return BLOCK(
+    0,
+    js_stats.dev,
+    js_stats.ino,
+    file_kind,
+    js_stats.mode,
+    js_stats.nlink,
+    js_stats.uid,
+    js_stats.gid,
+    js_stats.rdev,
+    js_stats.size,
+    js_stats.atimeMs,
+    js_stats.mtimeMs,
+    js_stats.ctimeMs
+  );
 }
 
 MlNodeDevice.prototype.constructor = MlNodeDevice
