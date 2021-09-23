@@ -166,11 +166,14 @@ function caml_sys_const_int_size () { return 32; }
 function caml_sys_const_max_wosize () { return (0x7FFFFFFF/4) | 0;}
 
 //Provides: caml_sys_const_ostype_unix const
-function caml_sys_const_ostype_unix () { return 1; }
+//Requires: os_type
+function caml_sys_const_ostype_unix () { return os_type == "Unix" ? 1 : 0; }
 //Provides: caml_sys_const_ostype_win32 const
-function caml_sys_const_ostype_win32 () { return 0; }
+//Requires: os_type
+function caml_sys_const_ostype_win32 () { return os_type == "Win32" ? 1 : 0; }
 //Provides: caml_sys_const_ostype_cygwin const
-function caml_sys_const_ostype_cygwin () { return 0; }
+//Requires: os_type
+function caml_sys_const_ostype_cygwin () { return os_type == "Cygwin" ? 1 : 0; }
 
 //Provides: caml_sys_const_backend_type const
 //Requires: caml_string_of_jsbytes
@@ -178,14 +181,16 @@ function caml_sys_const_backend_type () {
   return [0, caml_string_of_jsbytes("js_of_ocaml")];
 }
 
+//Provides: os_type
+var os_type = (joo_global_object.process &&
+               joo_global_object.process.platform &&
+               joo_global_object.process.platform == "win32") ? "Cygwin" : "Unix";
+
+
 //Provides: caml_sys_get_config const
-//Requires: caml_string_of_jsbytes
+//Requires: caml_string_of_jsbytes, os_type
 function caml_sys_get_config () {
-  if (joo_global_object.process &&
-      joo_global_object.process.platform &&
-      joo_global_object.process.platform == "win32")
-    return [0, caml_string_of_jsbytes("Cygwin"), 32, 0];
-  return [0, caml_string_of_jsbytes("Unix"), 32, 0];
+  return [0, caml_string_of_jsbytes(os_type), 32, 0];
 }
 
 //Provides: caml_sys_isatty
