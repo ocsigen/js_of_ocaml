@@ -49,11 +49,7 @@ MlNodeDevice.prototype.mkdir = function(name, mode, raise_unix) {
     this.fs.mkdirSync(this.nm(name),{mode:mode});
     return 0
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.rmdir = function(name, raise_unix) {
@@ -61,22 +57,14 @@ MlNodeDevice.prototype.rmdir = function(name, raise_unix) {
     this.fs.rmdirSync(this.nm(name));
     return 0
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.readdir = function(name, raise_unix) {
   try {
     return this.fs.readdirSync(this.nm(name));
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.is_dir = function(name) {
@@ -92,11 +80,7 @@ MlNodeDevice.prototype.unlink = function(name, raise_unix) {
     this.fs.unlinkSync(this.nm(name));
     return b;
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.open = function(name, f, raise_unix) {
@@ -121,11 +105,7 @@ MlNodeDevice.prototype.open = function(name, f, raise_unix) {
     var fd = this.fs.openSync(this.nm(name), res);
     return new MlNodeFile(fd);
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 
@@ -133,11 +113,7 @@ MlNodeDevice.prototype.rename = function(o, n, raise_unix) {
   try {
     this.fs.renameSync(this.nm(o), this.nm(n));
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.stat = function(name, raise_unix) {
@@ -145,11 +121,7 @@ MlNodeDevice.prototype.stat = function(name, raise_unix) {
     var js_stats = this.fs.statSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.lstat = function(name, raise_unix) {
@@ -157,11 +129,7 @@ MlNodeDevice.prototype.lstat = function(name, raise_unix) {
     var js_stats = this.fs.lstatSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
@@ -169,11 +137,7 @@ MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
     this.fs.symlinkSync(this.nm(src), this.nm(dst), to_dir ? 'dir' : 'file');
     return 0;
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
   }
 }
 MlNodeDevice.prototype.readlink = function(name, raise_unix) {
@@ -181,11 +145,14 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
     var js_stats = this.fs.readlinkSync(this.nm(name), 'utf8');
     return caml_string_of_jsbytes(js_stats);
   } catch (err) {
-    if (raise_unix) {
-      this.raise_unix_exn_of_nodejs_error(err);
-    } else {
-      caml_raise_sys_error(err.toString());
-    }
+    this.raise_nodejs_error(err, raise_unix);
+  }
+}
+MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
+  if (raise_unix) {
+    this.raise_unix_exn_of_nodejs_error(err);
+  } else {
+    caml_raise_sys_error(err.toString());
   }
 }
 MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
