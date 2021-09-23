@@ -149,7 +149,7 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   }
 }
 MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
-  if (raise_unix) {
+  if (raise_unix && caml_named_value("Unix.Unix_error")) {
     this.raise_unix_exn_of_nodejs_error(err);
   } else {
     caml_raise_sys_error(err.toString());
