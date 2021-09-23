@@ -23,6 +23,7 @@
 //Requires: caml_string_of_jsbytes, caml_string_of_jsstring
 //Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
 //Requires: caml_is_ml_bytes, caml_is_ml_string
+//Requires: caml_named_value, caml_raise_with_args, caml_named_values
 function MlFakeDevice (root, f) {
   this.content={};
   this.root = root;
@@ -62,15 +63,64 @@ MlFakeDevice.prototype.exists = function(name) {
   this.lookup(name);
   return this.content[name]?1:0;
 }
-MlFakeDevice.prototype.mkdir = function(name,mode) {
+MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
+  var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
+  if(this.exists(name)) {
+    if (unix_error) {
+      caml_raise_with_args(unix_error, [8, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(name))]);
+    }
+    else {
+      caml_raise_sys_error(name + ": File exists");
+    }
+  }
+  var parent = /^(.*)\/[^/]+/.exec(name);
+  parent = (parent && parent[1]) || '';
+  if(!this.exists(parent)){
+    if (unix_error) {
+      caml_raise_with_args(unix_error, [20, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(parent))]);
+    }
+    else {
+      caml_raise_sys_error(parent + ": No such file or directory");
+    }
+  }
+  if(!this.is_dir(parent)){
+    if (unix_error) {
+      caml_raise_with_args(unix_error, [26, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(parent))]);
+    }
+    else {
+      caml_raise_sys_error(parent + ": Not a directory");
+    }
+  }
   this.create_dir_if_needed(this.slash(name));
 }
-MlFakeDevice.prototype.rmdir = function(name) {
+MlFakeDevice.prototype.rmdir = function(name, raise_unix) {
+  var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
   var name_slash = (name == "")?"":(this.slash(name));
   var r = new RegExp("^" + name_slash + "([^/]+)");
+  if(!this.exists(name)) {
+    if (unix_error) {
+      caml_raise_with_args(unix_error, [20, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+    }
+    else {
+      caml_raise_sys_error(name + ": No such file or directory");
+    }
+  }
+  if(!this.is_dir(name)) {
+    if (unix_error) {
+      caml_raise_with_args(unix_error, [26, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+    }
+    else {
+      caml_raise_sys_error(name + ": Not a directory");
+    }
+  }
   for(var n in this.content) {
-    if(n.match(r))
-      caml_raise_sys_error(this.nm(name) + ": Directory not empty");
+    if(n.match(r)) {
+      if (unix_error) {
+        caml_raise_with_args(unix_error, [27, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+      } else {
+        caml_raise_sys_error(this.nm(name) + ": Directory not empty");
+      }
+    }
   }
   delete this.content[name_slash];
 }

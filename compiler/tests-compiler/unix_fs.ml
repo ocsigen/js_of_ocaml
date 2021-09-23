@@ -22,47 +22,41 @@ open Util
 let%expect_test "Unix.mkdir_Unix.rmdir" =
   compile_and_run
     {|
+let f () =
   Unix.mkdir "aaa" 0o777;
   Unix.mkdir "aaa/bbb" 0o777;
   let l = Sys.readdir "aaa" |> Array.to_list in
   List.iter print_endline l;
   (match Unix.rmdir "aaa" with
-  | exception _ -> ()
+  | exception (Unix.Unix_error (Unix.ENOTEMPTY, _, _)) -> ()
+  | exception e -> print_endline (Printexc.to_string e)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Unix.rmdir "aaa/bbb";
   Unix.rmdir "aaa"
-  |};
-  [%expect {|bbb|}]
-
-let%expect_test "Unix.mkdir_Unix.rmdir_static" =
-  compile_and_run
-    {|
-  Sys.chdir "/static/";
-  Unix.mkdir "aaa" 0o777;
-  Unix.mkdir "aaa/bbb" 0o777;
-  let l = Sys.readdir "aaa" |> Array.to_list in
-  List.iter print_endline l;
-  (match Unix.rmdir "aaa" with
-  | exception _ -> ()
-  | _ -> print_endline "UNEXPECTED SUCCESS");
-  Unix.rmdir "aaa/bbb";
-  Unix.rmdir "aaa";
-  |};
-  [%expect {|bbb|}]
+in
+f ();Sys.chdir "/static"; f ()|};
+  [%expect {|
+    bbb
+    bbb|}]
 
 let%expect_test "Unix.mkdir_ENOENT" =
   compile_and_run
     {|
+let f () =
   (match Unix.mkdir "aaa/bbb/ccc" 0o777 with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
-  | _ -> print_endline "UNEXPECTED SUCCESS");
-  |};
-  [%expect {|ENOENT: mkdir|}]
+  | _ -> print_endline "UNEXPECTED SUCCESS")
+in
+f (); Sys.chdir "/static"; f ()|};
+  [%expect {|
+    ENOENT: mkdir
+    ENOENT: mkdir|}]
 
 let%expect_test "Unix.mkdir_ENOTDIR" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
@@ -73,23 +67,31 @@ let%expect_test "Unix.mkdir_ENOTDIR" =
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("EXPECTED ERROR: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
-  Sys.remove "aaa";
-  |};
-  [%expect {|EXPECTED ERROR: mkdir|}]
+  Sys.remove "aaa"
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    EXPECTED ERROR: mkdir
+    EXPECTED ERROR: mkdir|}]
 
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
     {|
+let f () =
   (match Unix.rmdir "aaa/bbb/ccc" with
   | exception Unix.Unix_error (Unix.ENOENT, syscall, path) -> print_endline ("ENOENT: " ^ syscall)
   | exception err -> print_endline (Printexc.to_string err)
-  | _ -> print_endline "UNEXPECTED SUCCESS");
-  |};
-  [%expect {|ENOENT: rmdir|}]
+  | _ -> print_endline "UNEXPECTED SUCCESS")
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    ENOENT: rmdir
+    ENOENT: rmdir|}]
 
 let%expect_test "Unix.rmdir_ENOTDIR" =
   compile_and_run
     {|
+let f () =
   Unix.mkdir "aaa" 0o777;
   let oc = open_out "aaa/bbb" in
   output_string oc "ccc";
@@ -102,9 +104,12 @@ let%expect_test "Unix.rmdir_ENOTDIR" =
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa/bbb";
-  Unix.rmdir "aaa";
-  |};
-  [%expect {|EXPECTED ERROR: rmdir|}]
+  Unix.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    EXPECTED ERROR: rmdir
+    EXPECTED ERROR: rmdir|}]
 
 let%expect_test "Unix.stat_file" =
   compile_and_run
