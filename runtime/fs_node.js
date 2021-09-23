@@ -33,6 +33,27 @@ function fs_node_supported () {
 function MlNodeDevice(root) {
   this.fs = require('fs');
   this.root = root;
+
+  /* ===Unix.error===
+   *
+   * This array is in order of the variant in OCaml
+   *
+   * Attached to the MlNodeDevice to avoid allocating this array
+   * each timean error is caught
+   */
+  this.unix_error = [
+    "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
+    "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
+    "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
+    "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
+    "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
+    "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
+    "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
+    "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
+    "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
+    "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
+    "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
+  ];
 }
 MlNodeDevice.prototype.nm = function(name) {
   return (this.root + name);
@@ -150,40 +171,20 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
 }
 MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
   if (raise_unix && caml_named_value("Unix.Unix_error")) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    var variant = this.unix_error.indexOf(err.code);
+    if (variant < 0) {
+      // If none of the above variants, fallback to EUNKNOWNERR(int)
+      variant = BLOCK(0, err.errno);
+    }
+    var args = [
+      variant,
+      caml_string_of_jsbytes(err.syscall || ""),
+      caml_string_of_jsbytes(err.path || "")
+    ];
+    caml_raise_with_args(caml_named_value("Unix.Unix_error"), args);
   } else {
     caml_raise_sys_error(err.toString());
   }
-}
-MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
-  /* ===Unix.error===
-   *
-   * This array is in order of the variant in OCaml
-   */
-  var errors = [
-    "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
-    "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
-    "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
-    "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
-    "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
-    "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
-    "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
-    "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
-    "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
-    "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
-    "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
-  ];
-  var variant = errors.indexOf(err.code);
-  if (variant < 0) {
-    // If none of the above variants, fallback to EUNKNOWNERR(int)
-    variant = BLOCK(0, err.errno);
-  }
-  var args = [
-    variant,
-    caml_string_of_jsbytes(err.syscall || ""),
-    caml_string_of_jsbytes(err.path || "")
-  ];
-  caml_raise_with_args(caml_named_value("Unix.Unix_error"), args);
 }
 MlNodeDevice.prototype.stats_from_js = function(js_stats) {
   /* ===Unix.file_kind===
