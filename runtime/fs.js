@@ -189,7 +189,7 @@ function caml_sys_file_exists (name) {
 
 //Provides: caml_sys_read_directory
 //Requires: caml_string_of_jsbytes
-//Requires: caml_raise_not_a_dir, resolve_fs_device, caml_raise_sys_error
+//Requires: caml_raise_not_a_dir, resolve_fs_device
 function caml_sys_read_directory(name){
   var root = resolve_fs_device(name);
   var a = root.device.readdir(root.rest);
@@ -201,7 +201,7 @@ function caml_sys_read_directory(name){
 }
 
 //Provides: caml_sys_remove
-//Requires: caml_raise_no_such_file, resolve_fs_device, caml_raise_sys_error
+//Requires: caml_raise_no_such_file, resolve_fs_device
 function caml_sys_remove(name){
   var root = resolve_fs_device(name);
   var ok = root.device.unlink(root.rest);
@@ -218,7 +218,7 @@ function caml_sys_is_directory(name){
 }
 
 //Provides: caml_sys_rename
-//Requires: caml_failwith, resolve_fs_device, caml_raise_sys_error
+//Requires: caml_failwith, resolve_fs_device
 function caml_sys_rename(o,n){
   var o_root = resolve_fs_device(o);
   var n_root = resolve_fs_device(n);
@@ -230,7 +230,7 @@ function caml_sys_rename(o,n){
 }
 
 //Provides: caml_sys_mkdir
-//Requires: resolve_fs_device, caml_raise_sys_error
+//Requires: resolve_fs_device
 function caml_sys_mkdir(name, perm){
   var root = resolve_fs_device(name);
   if(root.device.exists(root.rest)) {
