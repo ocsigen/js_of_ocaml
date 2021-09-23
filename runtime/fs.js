@@ -189,24 +189,32 @@ function caml_sys_file_exists (name) {
 
 //Provides: caml_sys_read_directory
 //Requires: caml_string_of_jsbytes
-//Requires: caml_raise_not_a_dir, resolve_fs_device
+//Requires: caml_raise_not_a_dir, resolve_fs_device, caml_raise_sys_error
 function caml_sys_read_directory(name){
   var root = resolve_fs_device(name);
-  var a = root.device.readdir(root.rest);
-  var l = new Array(a.length + 1);
-  l[0] = 0;
-  for(var i=0;i<a.length;i++)
-    l[i+1] = caml_string_of_jsbytes(a[i]);
-  return l;
+  try {
+    var a = root.device.readdir(root.rest);
+    var l = new Array(a.length + 1);
+    l[0] = 0;
+    for(var i=0;i<a.length;i++)
+      l[i+1] = caml_string_of_jsbytes(a[i]);
+    return l;
+  } catch (err) {
+    caml_raise_sys_error(name.toString());
+  }
 }
 
 //Provides: caml_sys_remove
-//Requires: caml_raise_no_such_file, resolve_fs_device
+//Requires: caml_raise_no_such_file, resolve_fs_device, caml_raise_sys_error
 function caml_sys_remove(name){
   var root = resolve_fs_device(name);
-  var ok = root.device.unlink(root.rest);
-  if(ok == 0) caml_raise_no_such_file(name);
-  return 0;
+  try {
+    var ok = root.device.unlink(root.rest);
+    if(ok == 0) caml_raise_no_such_file(name);
+    return 0;
+  } catch (err) {
+    caml_raise_sys_error(name.toString());
+  }
 }
 
 //Provides: caml_sys_is_directory
@@ -218,7 +226,7 @@ function caml_sys_is_directory(name){
 }
 
 //Provides: caml_sys_rename
-//Requires: caml_failwith, resolve_fs_device
+//Requires: caml_failwith, resolve_fs_device, caml_raise_sys_error
 function caml_sys_rename(o,n){
   var o_root = resolve_fs_device(o);
   var n_root = resolve_fs_device(n);
@@ -226,7 +234,11 @@ function caml_sys_rename(o,n){
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
   if(!o_root.device.rename)
     caml_failwith("caml_sys_rename: no implemented");
-  o_root.device.rename(o_root.rest, n_root.rest);
+  try {
+    o_root.device.rename(o_root.rest, n_root.rest);
+  } catch (err) {
+    caml_raise_sys_error(o.toString())
+  }
 }
 
 //Provides: caml_sys_mkdir
@@ -236,8 +248,12 @@ function caml_sys_mkdir(name, perm){
   if(root.device.exists(root.rest)) {
     caml_raise_sys_error(name + ": File exists");
   }
-  root.device.mkdir(root.rest,perm);
-  return 0;
+  try {
+    root.device.mkdir(root.rest,perm);
+    return 0;
+  } catch (err) {
+    caml_raise_sys_error(name.toString());
+  }
 }
 
 //Provides: caml_sys_rmdir
@@ -250,8 +266,12 @@ function caml_sys_rmdir(name){
   if(!root.device.is_dir(root.rest)) {
     caml_raise_not_a_dir(name);
   };
-  root.device.rmdir(root.rest);
-  return 0;
+  try {
+    root.device.rmdir(root.rest);
+    return 0;
+  } catch (err) {
+    caml_raise_sys_error(name.toString());
+  }
 }
 
 //Provides: caml_ba_map_file
@@ -305,16 +325,20 @@ function caml_create_file(name,content) {
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes
-//Requires: caml_string_of_jsbytes
+//Requires: caml_string_of_jsbytes, caml_raise_sys_error
 function caml_read_file_content (name) {
   var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
   var root = resolve_fs_device(name);
   if(root.device.exists(root.rest)) {
-    var file = root.device.open(root.rest,{rdonly:1});
-    var len  = file.length();
-    var buf  = caml_create_bytes(len);
-    file.read(0,buf,0,len);
-    return caml_string_of_bytes(buf)
+    try {
+      var file = root.device.open(root.rest,{rdonly:1});
+      var len  = file.length();
+      var buf  = caml_create_bytes(len);
+      file.read(0,buf,0,len);
+      return caml_string_of_bytes(buf)
+    } catch (err) {
+      caml_raise_sys_error(name.toString());
+    }
   }
   caml_raise_no_such_file(name);
 }

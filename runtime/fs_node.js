@@ -29,6 +29,7 @@ function fs_node_supported () {
 
 //Provides: MlNodeDevice
 //Requires: MlNodeFile, caml_raise_sys_error
+//Requires: caml_raise_with_args, caml_named_value, caml_string_of_jsbytes
 function MlNodeDevice(root) {
   this.fs = require('fs');
   this.root = root;
@@ -40,7 +41,8 @@ MlNodeDevice.prototype.exists = function(name) {
   try {
     return this.fs.existsSync(this.nm(name))?1:0;
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    // TODO: Is it correct to always return a boolean, even on error?
+    return 0;
   }
 }
 MlNodeDevice.prototype.mkdir = function(name, mode) {
@@ -48,7 +50,7 @@ MlNodeDevice.prototype.mkdir = function(name, mode) {
     this.fs.mkdirSync(this.nm(name),{mode:mode});
     return 0
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
 }
 MlNodeDevice.prototype.rmdir = function(name) {
@@ -56,14 +58,14 @@ MlNodeDevice.prototype.rmdir = function(name) {
     this.fs.rmdirSync(this.nm(name));
     return 0
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
 }
 MlNodeDevice.prototype.readdir = function(name) {
   try {
     return this.fs.readdirSync(this.nm(name));
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
 }
 MlNodeDevice.prototype.is_dir = function(name) {
@@ -78,7 +80,7 @@ MlNodeDevice.prototype.unlink = function(name) {
     var b = this.fs.existsSync(this.nm(name))?1:0;
     this.fs.unlinkSync(this.nm(name));
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
   return b
 }
@@ -104,7 +106,7 @@ MlNodeDevice.prototype.open = function(name, f) {
     var fd = this.fs.openSync(this.nm(name), res);
     return new MlNodeFile(fd);
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
 }
 
@@ -112,8 +114,37 @@ MlNodeDevice.prototype.rename = function(o,n) {
   try {
     this.fs.renameSync(this.nm(o), this.nm(n));
   } catch (err) {
-    caml_raise_sys_error(err.toString());
+    this.raise_unix_exn_of_nodejs_error(err);
   }
+}
+MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {
+  /* ===Unix.error===
+   *
+   * This array is in order of the variant in OCaml
+   */
+  var errors = [
+    "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
+    "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
+    "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
+    "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
+    "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
+    "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
+    "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
+    "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
+    "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
+    "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
+    "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
+  ];
+  var variant = errors.indexOf(err.code);
+  if (variant < 0) {
+    variant = BLOCK(0, err.errno);
+  }
+  var args = [
+    variant,
+    caml_string_of_jsbytes(err.syscall || ""),
+    caml_string_of_jsbytes(err.path || "")
+  ];
+  caml_raise_with_args(caml_named_value("Unix.Unix_error"), args.length, args);
 }
 
 MlNodeDevice.prototype.constructor = MlNodeDevice
