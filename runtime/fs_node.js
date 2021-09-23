@@ -41,31 +41,42 @@ MlNodeDevice.prototype.exists = function(name) {
   try {
     return this.fs.existsSync(this.nm(name))?1:0;
   } catch (err) {
-    // TODO: Is it correct to always return a boolean, even on error?
     return 0;
   }
 }
-MlNodeDevice.prototype.mkdir = function(name, mode) {
+MlNodeDevice.prototype.mkdir = function(name, mode, raise_unix) {
   try {
     this.fs.mkdirSync(this.nm(name),{mode:mode});
     return 0
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.rmdir = function(name) {
+MlNodeDevice.prototype.rmdir = function(name, raise_unix) {
   try {
     this.fs.rmdirSync(this.nm(name));
     return 0
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.readdir = function(name) {
+MlNodeDevice.prototype.readdir = function(name, raise_unix) {
   try {
     return this.fs.readdirSync(this.nm(name));
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
 MlNodeDevice.prototype.is_dir = function(name) {
@@ -75,16 +86,20 @@ MlNodeDevice.prototype.is_dir = function(name) {
     caml_raise_sys_error(err.toString());
   }
 }
-MlNodeDevice.prototype.unlink = function(name) {
+MlNodeDevice.prototype.unlink = function(name, raise_unix) {
   try {
     var b = this.fs.existsSync(this.nm(name))?1:0;
     this.fs.unlinkSync(this.nm(name));
+    return b;
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
-  return b
 }
-MlNodeDevice.prototype.open = function(name, f) {
+MlNodeDevice.prototype.open = function(name, f, raise_unix) {
   var consts = require('constants');
   var res = 0;
   for(var key in f){
@@ -106,47 +121,71 @@ MlNodeDevice.prototype.open = function(name, f) {
     var fd = this.fs.openSync(this.nm(name), res);
     return new MlNodeFile(fd);
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
 
-MlNodeDevice.prototype.rename = function(o,n) {
+MlNodeDevice.prototype.rename = function(o, n, raise_unix) {
   try {
     this.fs.renameSync(this.nm(o), this.nm(n));
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.stat = function(name) {
+MlNodeDevice.prototype.stat = function(name, raise_unix) {
   try {
     var js_stats = this.fs.statSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.lstat = function(name) {
+MlNodeDevice.prototype.lstat = function(name, raise_unix) {
   try {
     var js_stats = this.fs.lstatSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.symlink = function(to_dir, src, dst) {
+MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
   try {
     this.fs.symlinkSync(this.nm(src), this.nm(dst), to_dir ? 'dir' : 'file');
     return 0;
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
-MlNodeDevice.prototype.readlink = function(name) {
+MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   try {
     var js_stats = this.fs.readlinkSync(this.nm(name), 'utf8');
     return caml_string_of_jsbytes(js_stats);
   } catch (err) {
-    this.raise_unix_exn_of_nodejs_error(err);
+    if (raise_unix) {
+      this.raise_unix_exn_of_nodejs_error(err);
+    } else {
+      caml_raise_sys_error(err.toString());
+    }
   }
 }
 MlNodeDevice.prototype.raise_unix_exn_of_nodejs_error = function(err) {

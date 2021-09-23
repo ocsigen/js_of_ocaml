@@ -78,13 +78,9 @@ function caml_sys_open (name, flags, _perms) {
   if(f.text && f.binary)
     caml_raise_sys_error(caml_jsbytes_of_string(name) + " : flags Open_text and Open_binary are not compatible");
   var root = resolve_fs_device(name);
-  try {
-    var file = root.device.open(root.rest,f);
-    var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    return caml_sys_open_internal (idx+1,caml_std_output,file,f);
-  } catch (err) {
-    caml_raise_sys_error(name.toString());
-  }
+  var file = root.device.open(root.rest,f);
+  var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
+  return caml_sys_open_internal (idx+1,caml_std_output,file,f);
 }
 caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_bytes(0))); //stdin
 caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_bytes(0))); //stdout

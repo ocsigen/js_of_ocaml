@@ -192,29 +192,21 @@ function caml_sys_file_exists (name) {
 //Requires: caml_raise_not_a_dir, resolve_fs_device, caml_raise_sys_error
 function caml_sys_read_directory(name){
   var root = resolve_fs_device(name);
-  try {
-    var a = root.device.readdir(root.rest);
-    var l = new Array(a.length + 1);
-    l[0] = 0;
-    for(var i=0;i<a.length;i++)
-      l[i+1] = caml_string_of_jsbytes(a[i]);
-    return l;
-  } catch (err) {
-    caml_raise_sys_error(name.toString());
-  }
+  var a = root.device.readdir(root.rest);
+  var l = new Array(a.length + 1);
+  l[0] = 0;
+  for(var i=0;i<a.length;i++)
+    l[i+1] = caml_string_of_jsbytes(a[i]);
+  return l;
 }
 
 //Provides: caml_sys_remove
 //Requires: caml_raise_no_such_file, resolve_fs_device, caml_raise_sys_error
 function caml_sys_remove(name){
   var root = resolve_fs_device(name);
-  try {
-    var ok = root.device.unlink(root.rest);
-    if(ok == 0) caml_raise_no_such_file(name);
-    return 0;
-  } catch (err) {
-    caml_raise_sys_error(name.toString());
-  }
+  var ok = root.device.unlink(root.rest);
+  if(ok == 0) caml_raise_no_such_file(name);
+  return 0;
 }
 
 //Provides: caml_sys_is_directory
@@ -234,11 +226,7 @@ function caml_sys_rename(o,n){
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
   if(!o_root.device.rename)
     caml_failwith("caml_sys_rename: no implemented");
-  try {
-    o_root.device.rename(o_root.rest, n_root.rest);
-  } catch (err) {
-    caml_raise_sys_error(o.toString())
-  }
+  o_root.device.rename(o_root.rest, n_root.rest);
 }
 
 //Provides: caml_sys_mkdir
@@ -248,12 +236,8 @@ function caml_sys_mkdir(name, perm){
   if(root.device.exists(root.rest)) {
     caml_raise_sys_error(name + ": File exists");
   }
-  try {
-    root.device.mkdir(root.rest,perm);
-    return 0;
-  } catch (err) {
-    caml_raise_sys_error(name.toString());
-  }
+  root.device.mkdir(root.rest,perm);
+  return 0;
 }
 
 //Provides: caml_sys_rmdir
@@ -266,12 +250,8 @@ function caml_sys_rmdir(name){
   if(!root.device.is_dir(root.rest)) {
     caml_raise_not_a_dir(name);
   };
-  try {
-    root.device.rmdir(root.rest);
-    return 0;
-  } catch (err) {
-    caml_raise_sys_error(name.toString());
-  }
+  root.device.rmdir(root.rest);
+  return 0;
 }
 
 //Provides: caml_ba_map_file
@@ -330,15 +310,11 @@ function caml_read_file_content (name) {
   var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
   var root = resolve_fs_device(name);
   if(root.device.exists(root.rest)) {
-    try {
-      var file = root.device.open(root.rest,{rdonly:1});
-      var len  = file.length();
-      var buf  = caml_create_bytes(len);
-      file.read(0,buf,0,len);
-      return caml_string_of_bytes(buf)
-    } catch (err) {
-      caml_raise_sys_error(name.toString());
-    }
+    var file = root.device.open(root.rest,{rdonly:1});
+    var len  = file.length();
+    var buf  = caml_create_bytes(len);
+    file.read(0,buf,0,len);
+    return caml_string_of_bytes(buf)
   }
   caml_raise_no_such_file(name);
 }

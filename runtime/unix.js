@@ -72,7 +72,7 @@ function unix_stat(name) {
   if (!root.device.stat) {
     caml_failwith("unix_stat: not implemented");
   }
-  return root.device.stat(root.rest);
+  return root.device.stat(root.rest, /* raise Unix_error */ true);
 }
 
 //Provides: unix_lstat
@@ -82,7 +82,7 @@ function unix_lstat(name) {
   if (!root.device.lstat) {
     caml_failwith("unix_lstat: not implemented");
   }
-  return root.device.lstat(root.rest);
+  return root.device.lstat(root.rest, /* raise Unix_error */ true);
 }
 
 //Provides: unix_mkdir
@@ -92,7 +92,7 @@ function unix_mkdir(name, perm) {
   if (!root.device.mkdir) {
     caml_failwith("unix_mkdir: not implemented");
   }
-  return root.device.mkdir(root.rest, perm);
+  return root.device.mkdir(root.rest, perm, /* raise Unix_error */ true);
 }
 
 //Provides: unix_rmdir
@@ -102,7 +102,7 @@ function unix_rmdir(name) {
   if (!root.device.rmdir) {
     caml_failwith("unix_rmdir: not implemented");
   }
-  return root.device.rmdir(root.rest);
+  return root.device.rmdir(root.rest, /* raise Unix_error */ true);
 }
 
 //Provides: unix_symlink
@@ -115,7 +115,7 @@ function unix_symlink(to_dir, src, dst) {
   if (!src_root.device.symlink) {
     caml_failwith("unix_symlink: not implemented");
   }
-  return src_root.device.symlink(to_dir, src_root.rest, dst_root.rest);
+  return src_root.device.symlink(to_dir, src_root.rest, dst_root.rest, /* raise Unix_error */ true);
 }
 
 //Provides: unix_readlink
@@ -125,5 +125,5 @@ function unix_readlink(name) {
   if (!root.device.readlink) {
     caml_failwith("unix_readlink: not implemented");
   }
-  return root.device.readlink(root.rest);
+  return root.device.readlink(root.rest, /* raise Unix_error */ true);
 }
