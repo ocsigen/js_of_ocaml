@@ -2,10 +2,11 @@
 
 ## Features/Changes
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
-* Runtime: Fix for Windows, tests pass
+* Runtime: fixes for Windows, all tests pass
+* Runtime: make all windows drive available on nodejs.
 * Runtime: add support for Sys.mkdir and Sys.rmdir
 * Runtime: make stdin work on nodejs
-* Runtime: add implementation for unix_stat, unix_lstat, unix_mkdir, unix_rmdir, unix_symlink, and unix_readlink in nodejs environments
+* Runtime: add support for unix_stat, unix_lstat, unix_mkdir, unix_rmdir, unix_symlink, unix_readlink on nodejs.
 * Runtime: add caml_raise_with_args
 
 ## Bug fixes
