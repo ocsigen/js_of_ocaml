@@ -69,9 +69,9 @@ function unix_isatty(fileDescriptor) {
 //Requires: caml_string_of_jsstring
 var unix_error = [
   /* ===Unix.error===
-  *
-  * This array is in order of the variant in OCaml
-  */
+   *
+   * This array is in order of the variant in OCaml
+   */
   "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
   "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
   "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
