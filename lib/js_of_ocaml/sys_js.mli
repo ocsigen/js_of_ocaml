@@ -36,9 +36,17 @@ val set_channel_filler : in_channel -> (unit -> string) -> unit
 
 val mount_point : unit -> string list
 
+type fs_type =
+  | Fake
+  | Node
+
 val unmount : path:string -> unit
 
-val mount : path:string -> (prefix:string -> path:string -> string option) -> unit
+val mount :
+     path:string
+  -> ?fs_type:fs_type
+  -> (prefix:string -> path:string -> string option)
+  -> unit
 (** Register a callback to the [path] to dynamically load missing files.
       Whenever a file is missing in [path], the callback is used to optionally
       get the content of the file.

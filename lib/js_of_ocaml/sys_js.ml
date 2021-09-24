@@ -46,14 +46,18 @@ let set_channel_filler (in_channel : in_channel) (f : unit -> string) =
 
 external mount_point : unit -> string list = "caml_list_mount_point"
 
+type fs_type =
+  | Fake
+  | Node
+
 external mount_autoload :
-  string -> (string -> string -> string option) Js.callback -> unit
+  string -> (string -> string -> string option) Js.callback -> fs_type -> unit
   = "caml_mount_autoload"
 
 external unmount : string -> unit = "caml_unmount"
 
-let mount ~path f =
-  mount_autoload path (Js.wrap_callback (fun prefix path -> f ~prefix ~path))
+let mount ~path ?(fs_type = Fake) f =
+  mount_autoload path (Js.wrap_callback (fun prefix path -> f ~prefix ~path)) fs_type
 
 let unmount ~path = unmount path
 

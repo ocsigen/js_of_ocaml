@@ -124,11 +124,23 @@ function resolve_fs_device(name){
 }
 
 //Provides: caml_mount_autoload
-//Requires: MlFakeDevice, caml_make_path, jsoo_mount_point
-function caml_mount_autoload(name,f){
+//Requires: caml_make_path, jsoo_mount_point
+//Requires: MlFakeDevice, MlNodeDevice
+//Requires: caml_js_get_console
+function caml_mount_autoload(name, f, nodejs_mount){
   var path = caml_make_path(name);
-  var name = path.join("/") + "/";
-  jsoo_mount_point.push({path:name,device:new MlFakeDevice(name,f)})
+  var name = path.join("/")
+  // Only add a trailing slash if it doesn't end with one
+  if (name[name.length - 1] != "/") {
+    name += "/";
+  }
+  var console = caml_js_get_console();
+  console.log(nodejs_mount);
+  if (nodejs_mount) {
+    jsoo_mount_point.push({path:name,device:new MlNodeDevice(name)})
+  } else {
+    jsoo_mount_point.push({path:name,device:new MlFakeDevice(name,f)})
+  }
   return 0;
 }
 
