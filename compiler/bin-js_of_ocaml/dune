@@ -1,57 +1,70 @@
 (executable
-  (name        js_of_ocaml)
-  (public_name js_of_ocaml)
-  (package js_of_ocaml-compiler)
-  (libraries
-    jsoo_cmdline
-    js_of_ocaml-compiler
-    cmdliner
-    compiler-libs.common
-    js_of_ocaml-compiler.runtime
-    (select findlib_support.ml from
-     ;; Only link js_of_ocaml-compiler.findlib-support if it exists
-     (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
-     (                                     -> findlib_support.empty.ml))
-    )
-  (modes byte native)
-  (flags (:standard -safe-string))
-  )
+ (name js_of_ocaml)
+ (public_name js_of_ocaml)
+ (package js_of_ocaml-compiler)
+ (libraries
+  jsoo_cmdline
+  js_of_ocaml-compiler
+  cmdliner
+  compiler-libs.common
+  js_of_ocaml-compiler.runtime
+  (select
+   findlib_support.ml
+   from
+   ;; Only link js_of_ocaml-compiler.findlib-support if it exists
+   (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
+   (-> findlib_support.empty.ml)))
+ (modes byte native)
+ (flags
+  (:standard -safe-string)))
 
 (rule
-  (targets js_of_ocaml.1)
-  (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} --help=groff))))
+ (targets js_of_ocaml.1)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} --help=groff))))
 
 (rule
-  (targets js_of_ocaml-link.1)
-  (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} link --help=groff))))
+ (targets js_of_ocaml-link.1)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} link --help=groff))))
 
 (rule
-  (targets js_of_ocaml-build-fs.1)
-  (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} build-fs --help=groff))))
+ (targets js_of_ocaml-build-fs.1)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} build-fs --help=groff))))
 
 (rule
-  (targets js_of_ocaml-build-runtime.1)
-  (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} build-runtime --help=groff))))
+ (targets js_of_ocaml-build-runtime.1)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} build-runtime --help=groff))))
 
 (install
-  (section man)
-  (package js_of_ocaml-compiler)
-  (files
-     js_of_ocaml.1
-     js_of_ocaml-link.1
-     js_of_ocaml-build-fs.1
-     js_of_ocaml-build-runtime.1
-  ))
-
+ (section man)
+ (package js_of_ocaml-compiler)
+ (files
+  js_of_ocaml.1
+  js_of_ocaml-link.1
+  js_of_ocaml-build-fs.1
+  js_of_ocaml-build-runtime.1))
 
 ;; Generate and install runtime.js for compatibility reasons
 
 (rule
-  (target runtime.js)
-  (action
-   (with-stdout-to %{target} (run %{bin:js_of_ocaml} print-standard-runtime))))
+ (target runtime.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run %{bin:js_of_ocaml} print-standard-runtime))))
 
 (install
-  (section lib)
-  (package js_of_ocaml-compiler)
-  (files runtime.js))
+ (section lib)
+ (package js_of_ocaml-compiler)
+ (files runtime.js))

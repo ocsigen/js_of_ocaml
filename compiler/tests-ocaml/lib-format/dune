@@ -1,35 +1,46 @@
 (executables
-  (names pr6824 print_if_newline pp_print_custom_break)
-  (libraries)
-  (modes js)
-)
+ (names pr6824 print_if_newline pp_print_custom_break)
+ (libraries)
+ (modes js))
 
 (rule
-  (target pr6824.referencejs)
-  (deps pr6824.bc.js)
-  (action (with-stdout-to %{target} (run node ./pr6824.bc.js))))
+ (target pr6824.referencejs)
+ (deps pr6824.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./pr6824.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps pr6824.reference pr6824.referencejs)
-  (action (diff pr6824.reference pr6824.referencejs)))
+ (alias runtest)
+ (deps pr6824.reference pr6824.referencejs)
+ (action
+  (diff pr6824.reference pr6824.referencejs)))
 
 (rule
-  (target print_if_newline.referencejs)
-  (deps print_if_newline.bc.js)
-  (action (with-stdout-to %{target} (run node ./print_if_newline.bc.js))))
+ (target print_if_newline.referencejs)
+ (deps print_if_newline.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./print_if_newline.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps print_if_newline.reference print_if_newline.referencejs)
-  (action (diff print_if_newline.reference print_if_newline.referencejs)))
+ (alias runtest)
+ (deps print_if_newline.reference print_if_newline.referencejs)
+ (action
+  (diff print_if_newline.reference print_if_newline.referencejs)))
 
 (rule
-  (target pp_print_custom_break.referencejs)
-  (deps pp_print_custom_break.bc.js)
-  (action (with-stdout-to %{target} (run node ./pp_print_custom_break.bc.js))))
+ (target pp_print_custom_break.referencejs)
+ (deps pp_print_custom_break.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./pp_print_custom_break.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps pp_print_custom_break.reference pp_print_custom_break.referencejs)
-  (action (diff pp_print_custom_break.reference pp_print_custom_break.referencejs)))
+ (alias runtest)
+ (deps pp_print_custom_break.reference pp_print_custom_break.referencejs)
+ (action
+  (diff pp_print_custom_break.reference pp_print_custom_break.referencejs)))

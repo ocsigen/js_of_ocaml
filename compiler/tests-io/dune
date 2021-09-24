@@ -1,15 +1,26 @@
 (executable
-  (name cat)
-  (modes native js))
+ (name cat)
+ (modes native js))
 
 (rule
-  (target native.stdout)
-  (action (with-stdout-to native.stdout (pipe-stdout (run printf "echo \xE2\x98\xA0") (run %{dep:./cat.exe})))))
+ (target native.stdout)
+ (action
+  (with-stdout-to
+   native.stdout
+   (pipe-stdout
+    (run printf "echo \226\152\160")
+    (run %{dep:./cat.exe})))))
 
 (rule
-  (target js.stdout)
-  (action (with-stdout-to js.stdout (pipe-stdout (run printf "echo \xE2\x98\xA0") (run node %{dep:./cat.bc.js})))))
+ (target js.stdout)
+ (action
+  (with-stdout-to
+   js.stdout
+   (pipe-stdout
+    (run printf "echo \226\152\160")
+    (run node %{dep:./cat.bc.js})))))
 
 (rule
-  (alias runtest)
-  (action (diff js.stdout native.stdout)))
+ (alias runtest)
+ (action
+  (diff js.stdout native.stdout)))

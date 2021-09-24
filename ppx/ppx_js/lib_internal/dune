@@ -1,6 +1,6 @@
 (library
-  (name ppx_js_internal)
-  (libraries compiler-libs.common
-             ppxlib)
-  (kind ppx_rewriter)
-  (preprocess (pps ppxlib.metaquot)))
+ (name ppx_js_internal)
+ (libraries compiler-libs.common ppxlib)
+ (kind ppx_rewriter)
+ (preprocess
+  (pps ppxlib.metaquot)))

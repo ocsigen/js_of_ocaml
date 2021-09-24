@@ -1,17 +1,21 @@
 (library
-  (name toplevel_expect_test)
-  (libraries compiler-libs.common compiler-libs.toplevel))
+ (name toplevel_expect_test)
+ (libraries compiler-libs.common compiler-libs.toplevel))
 
 (rule
-  (targets toplevel_expect_test.ml)
-  (deps    ../select/select.exe
-           toplevel_expect_test.ml-4.04
-           toplevel_expect_test.ml-4.05
-           toplevel_expect_test.ml-4.08
-           toplevel_expect_test.ml-4.09
-           toplevel_expect_test.ml-4.10
-           toplevel_expect_test.ml-4.11
-           toplevel_expect_test.ml-4.12
-           toplevel_expect_test.ml-4.13
-           toplevel_expect_test.ml-default)
-  (action  (with-stdout-to %{targets} (run %{deps}))))
+ (targets toplevel_expect_test.ml)
+ (deps
+  ../select/select.exe
+  toplevel_expect_test.ml-4.04
+  toplevel_expect_test.ml-4.05
+  toplevel_expect_test.ml-4.08
+  toplevel_expect_test.ml-4.09
+  toplevel_expect_test.ml-4.10
+  toplevel_expect_test.ml-4.11
+  toplevel_expect_test.ml-4.12
+  toplevel_expect_test.ml-4.13
+  toplevel_expect_test.ml-default)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{deps}))))

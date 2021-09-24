@@ -1,3 +1,4 @@
 (alias
-  (name ocsigen-doc)
-  (deps (alias ../doc)))
+ (name ocsigen-doc)
+ (deps
+  (alias ../doc)))

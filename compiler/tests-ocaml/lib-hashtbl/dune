@@ -1,25 +1,32 @@
 (executables
-  (names hfun htbl)
-  (libraries)
-  (modes js)
-)
+ (names hfun htbl)
+ (libraries)
+ (modes js))
 
 (rule
-  (target hfun.referencejs)
-  (deps hfun.bc.js ../../../LICENSE)
-  (action (with-stdout-to %{target} (run node ./hfun.bc.js))))
+ (target hfun.referencejs)
+ (deps hfun.bc.js ../../../LICENSE)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./hfun.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps hfun.referencejs hfun.reference)
-  (action (diff hfun.referencejs hfun.reference)))
+ (alias runtest)
+ (deps hfun.referencejs hfun.reference)
+ (action
+  (diff hfun.referencejs hfun.reference)))
 
 (rule
-  (target htbl.referencejs)
-  (deps htbl.bc.js ../../../LICENSE)
-  (action (with-stdout-to %{target} (run node ./htbl.bc.js))))
+ (target htbl.referencejs)
+ (deps htbl.bc.js ../../../LICENSE)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./htbl.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps htbl.reference htbl.referencejs)
-  (action (diff htbl.reference htbl.referencejs)))
+ (alias runtest)
+ (deps htbl.reference htbl.referencejs)
+ (action
+  (diff htbl.reference htbl.referencejs)))

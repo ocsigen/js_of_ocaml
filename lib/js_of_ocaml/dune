@@ -2,17 +2,25 @@
  (name js_of_ocaml)
  (public_name js_of_ocaml)
  (libraries uchar bytes)
- (foreign_stubs (language c) (names js_of_ocaml_stubs))
- (preprocess (pps ppx_js_internal)))
+ (foreign_stubs
+  (language c)
+  (names js_of_ocaml_stubs))
+ (preprocess
+  (pps ppx_js_internal)))
 
 (rule
  (targets js_of_ocaml_stubs.c)
- (deps (glob_files *.ml))
+ (deps
+  (glob_files *.ml))
  (mode promote)
- (action (with-stdout-to %{targets}
-          (run ../gen_stubs/gen_stubs.exe %{deps}))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../gen_stubs/gen_stubs.exe %{deps}))))
 
 (rule
  (targets lib_version.ml)
- (deps (:input-file ../../version.ml.in))
- (action (copy %{input-file} %{targets})))
+ (deps
+  (:input-file ../../version.ml.in))
+ (action
+  (copy %{input-file} %{targets})))

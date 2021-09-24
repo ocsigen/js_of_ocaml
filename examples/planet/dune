@@ -1,16 +1,21 @@
 (executables
-  (names planet)
-  (libraries js_of_ocaml-lwt)
-  (modes byte)
-  (preprocess (pps js_of_ocaml-ppx))
-  )
+ (names planet)
+ (libraries js_of_ocaml-lwt)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
-  (targets planet.js)
-  (action
-    (run %{bin:js_of_ocaml}
-         --source-map %{dep:planet.bc} -o %{targets} --pretty)))
+ (targets planet.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --source-map
+   %{dep:planet.bc}
+   -o
+   %{targets}
+   --pretty)))
 
 (alias
-  (name default)
-  (deps planet.js index.html texture.jpg))
+ (name default)
+ (deps planet.js index.html texture.jpg))

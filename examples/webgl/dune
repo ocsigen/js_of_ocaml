@@ -1,16 +1,25 @@
 (executables
-  (names webgldemo)
-  (libraries js_of_ocaml-lwt)
-  (modes byte)
-  (preprocess (pps js_of_ocaml-ppx)))
+ (names webgldemo)
+ (libraries js_of_ocaml-lwt)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
-  (targets webgldemo.js)
-  (action
-    (run %{bin:js_of_ocaml}
-         --source-map %{dep:webgldemo.bc} -o %{targets} --pretty
-         -I ./ --file %{dep:monkey.model})))
+ (targets webgldemo.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --source-map
+   %{dep:webgldemo.bc}
+   -o
+   %{targets}
+   --pretty
+   -I
+   ./
+   --file
+   %{dep:monkey.model})))
 
 (alias
-  (name default)
-  (deps webgldemo.js index.html))
+ (name default)
+ (deps webgldemo.js index.html))

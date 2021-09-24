@@ -1,40 +1,45 @@
 (executables
  (names test_toplevel)
  (libraries js_of_ocaml js_of_ocaml_toplevel)
- (flags (:standard -linkall))
+ (flags
+  (:standard -linkall))
  (modes byte))
 
 (rule
  (targets export.txt)
  (deps
-   (package js_of_ocaml-toplevel)
- )
- (action (run
-    jsoo_listunits -o %{targets}
-      stdlib
-      js_of_ocaml-toplevel
-      )))
+  (package js_of_ocaml-toplevel))
+ (action
+  (run jsoo_listunits -o %{targets} stdlib js_of_ocaml-toplevel)))
 
 (rule
  (targets test_toplevel.js)
  (action
-    (run %{bin:js_of_ocaml}
-         -I .
-         --export %{dep:export.txt}
-         --toplevel
-         --disable shortvar
-         +toplevel.js +dynlink.js
-         %{dep:test_toplevel.bc}
-         -o %{targets}
-    )))
-
+  (run
+   %{bin:js_of_ocaml}
+   -I
+   .
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --disable
+   shortvar
+   +toplevel.js
+   +dynlink.js
+   %{dep:test_toplevel.bc}
+   -o
+   %{targets})))
 
 (rule
-  (target test_toplevel.referencejs)
-  (deps test_toplevel.js)
-  (action (with-stdout-to %{target} (run node ./test_toplevel.js))))
+ (target test_toplevel.referencejs)
+ (deps test_toplevel.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test_toplevel.js))))
 
 (rule
-  (alias runtest)
-  (deps test_toplevel.reference test_toplevel.referencejs)
-  (action (diff test_toplevel.reference test_toplevel.referencejs)))
+ (alias runtest)
+ (deps test_toplevel.reference test_toplevel.referencejs)
+ (action
+  (diff test_toplevel.reference test_toplevel.referencejs)))

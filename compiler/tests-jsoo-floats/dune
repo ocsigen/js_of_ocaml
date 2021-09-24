@@ -1,4 +1,6 @@
 (library
  (name jsoo_floats_testsuite)
- (inline_tests (modes js))
- (preprocess (pps ppx_expect)))
+ (inline_tests
+  (modes js))
+ (preprocess
+  (pps ppx_expect)))

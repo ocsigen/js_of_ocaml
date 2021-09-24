@@ -1,11 +1,12 @@
 (library
-  (name ppx_js)
-  (public_name js_of_ocaml-ppx.as-lib)
-  (synopsis "Js_of_ocaml ppx")
-  (libraries compiler-libs.common
-             ppxlib)
-  (preprocess (pps ppxlib.metaquot)))
+ (name ppx_js)
+ (public_name js_of_ocaml-ppx.as-lib)
+ (synopsis "Js_of_ocaml ppx")
+ (libraries compiler-libs.common ppxlib)
+ (preprocess
+  (pps ppxlib.metaquot)))
 
 (rule
-  (targets ppx_js_internal.ml)
-  (action (copy %{dep:../lib_internal/ppx_js_internal.ml} %{targets})))
+ (targets ppx_js_internal.ml)
+ (action
+  (copy %{dep:../lib_internal/ppx_js_internal.ml} %{targets})))

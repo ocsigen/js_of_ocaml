@@ -1,25 +1,32 @@
 (executables
-  (names suffix extension)
-  (libraries)
-  (modes js)
-)
+ (names suffix extension)
+ (libraries)
+ (modes js))
 
 (rule
-  (target suffix.referencejs)
-  (deps suffix.bc.js)
-  (action (with-stdout-to %{target} (run node ./suffix.bc.js))))
+ (target suffix.referencejs)
+ (deps suffix.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./suffix.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps suffix.reference suffix.referencejs)
-  (action (diff suffix.reference suffix.referencejs)))
+ (alias runtest)
+ (deps suffix.reference suffix.referencejs)
+ (action
+  (diff suffix.reference suffix.referencejs)))
 
 (rule
-  (target extension.referencejs)
-  (deps extension.bc.js)
-  (action (with-stdout-to %{target} (run node ./extension.bc.js))))
+ (target extension.referencejs)
+ (deps extension.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./extension.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps extension.reference extension.referencejs)
-  (action (diff extension.reference extension.referencejs)))
+ (alias runtest)
+ (deps extension.reference extension.referencejs)
+ (action
+  (diff extension.reference extension.referencejs)))

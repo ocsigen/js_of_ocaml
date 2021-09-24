@@ -1,6 +1,7 @@
 (library
-  (name deriving_expect_tests)
-  (libraries unix js_of_ocaml js_of_ocaml.deriving)
-  (inline_tests
-    (modes js))
-  (preprocess (pps ppx_expect ppx_deriving_json)))
+ (name deriving_expect_tests)
+ (libraries unix js_of_ocaml js_of_ocaml.deriving)
+ (inline_tests
+  (modes js))
+ (preprocess
+  (pps ppx_expect ppx_deriving_json)))

@@ -4,4 +4,5 @@
  (inline_tests
   (flags -allow-output-patterns)
   (modes native))
- (preprocess (pps ppx_expect)))
+ (preprocess
+  (pps ppx_expect)))

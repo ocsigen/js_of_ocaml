@@ -1,8 +1,7 @@
 (executables
-  (names report run)
-  (libraries unix)
-)
+ (names report run)
+ (libraries unix))
 
 (alias
-  (name default)
-  (deps report.exe run.exe))
+ (name default)
+ (deps report.exe run.exe))

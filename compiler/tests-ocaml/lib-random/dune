@@ -1,15 +1,18 @@
 (executables
-  (names rand)
-  (libraries)
-  (modes js)
-)
+ (names rand)
+ (libraries)
+ (modes js))
 
 (rule
-  (target rand.referencejs)
-  (deps rand.bc.js)
-  (action (with-stdout-to %{target} (run node ./rand.bc.js))))
+ (target rand.referencejs)
+ (deps rand.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./rand.bc.js))))
 
 (rule
-  (alias runtest)
-  (deps rand.reference rand.referencejs)
-  (action (diff rand.reference rand.referencejs)))
+ (alias runtest)
+ (deps rand.reference rand.referencejs)
+ (action
+  (diff rand.reference rand.referencejs)))

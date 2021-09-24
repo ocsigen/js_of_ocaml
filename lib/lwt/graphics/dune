@@ -1,15 +1,21 @@
 (library
-  (name graphics_js)
-  (public_name js_of_ocaml-lwt.graphics)
-  (synopsis "Graphics for js_of_ocaml.")
-  (optional)
-  (libraries js_of_ocaml js_of_ocaml-lwt lwt graphics)
-  (foreign_stubs (language c) (names graphics_js_stubs))
-  (preprocess (pps js_of_ocaml-ppx)))
+ (name graphics_js)
+ (public_name js_of_ocaml-lwt.graphics)
+ (synopsis "Graphics for js_of_ocaml.")
+ (optional)
+ (libraries js_of_ocaml js_of_ocaml-lwt lwt graphics)
+ (foreign_stubs
+  (language c)
+  (names graphics_js_stubs))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
  (targets graphics_js_stubs.c)
- (deps (glob_files *.ml))
+ (deps
+  (glob_files *.ml))
  (mode promote)
- (action (with-stdout-to %{targets}
-          (run ../../gen_stubs/gen_stubs.exe %{deps}))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../../gen_stubs/gen_stubs.exe %{deps}))))

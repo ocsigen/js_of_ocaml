@@ -1,15 +1,21 @@
 (library
-  (name js_of_ocaml_compiler)
-  (public_name js_of_ocaml-compiler)
-  (synopsis "Js_of_ocaml compiler library")
-  (libraries compiler-libs.common compiler-libs.bytecomp bytes menhirLib
-   (select source_map_io.ml from
-    (yojson -> source_map_io.yojson.ml)
-    (       -> source_map_io.unsupported.ml))
-  )
-  (flags (:standard -w -7-37 -safe-string))
-  (preprocess (pps ppx_optcomp_light))
-  )
+ (name js_of_ocaml_compiler)
+ (public_name js_of_ocaml-compiler)
+ (synopsis "Js_of_ocaml compiler library")
+ (libraries
+  compiler-libs.common
+  compiler-libs.bytecomp
+  bytes
+  menhirLib
+  (select
+   source_map_io.ml
+   from
+   (yojson -> source_map_io.yojson.ml)
+   (-> source_map_io.unsupported.ml)))
+ (flags
+  (:standard -w -7-37 -safe-string))
+ (preprocess
+  (pps ppx_optcomp_light)))
 
 (ocamllex js_lexer annot_lexer)
 
@@ -18,22 +24,42 @@
 ;; menhir is just noisy, both because this parser has conflicts, or
 ;; because we don't use --infer (to avoid having to write  manually and
 ;; badly specified dependencieds), so we just discard stderr.
+
 (rule
  (targets js_parser.mli js_parser.ml js_parser.conflicts)
  (deps standard.mly)
- (action (run menhir --stdlib . --table --external-tokens Js_token --explain %{dep:js_parser.mly} --unused-token TComment --unused-token TCommentLineDirective --unused-token TUnknown)))
+ (action
+  (run
+   menhir
+   --stdlib
+   .
+   --table
+   --external-tokens
+   Js_token
+   --explain
+   %{dep:js_parser.mly}
+   --unused-token
+   TComment
+   --unused-token
+   TCommentLineDirective
+   --unused-token
+   TUnknown)))
 
 (rule
-  (alias runtest)
-  (deps js_parser.conflicts.reference js_parser.conflicts)
-  (action (diff js_parser.conflicts.reference js_parser.conflicts)))
+ (alias runtest)
+ (deps js_parser.conflicts.reference js_parser.conflicts)
+ (action
+  (diff js_parser.conflicts.reference js_parser.conflicts)))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
  (deps standard.mly)
- (action (run menhir --stdlib . --explain %{dep:annot_parser.mly})))
+ (action
+  (run menhir --stdlib . --explain %{dep:annot_parser.mly})))
 
 (rule
  (targets compiler_version.ml)
- (deps (:input-file ../../version.ml.in))
- (action (copy %{input-file} %{targets})))
+ (deps
+  (:input-file ../../version.ml.in))
+ (action
+  (copy %{input-file} %{targets})))

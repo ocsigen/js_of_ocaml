@@ -1,10 +1,9 @@
 (library
-  (name ppx_deriving_json)
-  (public_name js_of_ocaml-ppx_deriving_json)
-  (synopsis "[@@deriving json]")
-  (libraries compiler-libs.common
-             ppxlib
-  )
-  (ppx_runtime_libraries js_of_ocaml.deriving)
-  (kind ppx_deriver)
-  (preprocess (pps ppxlib.metaquot)))
+ (name ppx_deriving_json)
+ (public_name js_of_ocaml-ppx_deriving_json)
+ (synopsis "[@@deriving json]")
+ (libraries compiler-libs.common ppxlib)
+ (ppx_runtime_libraries js_of_ocaml.deriving)
+ (kind ppx_deriver)
+ (preprocess
+  (pps ppxlib.metaquot)))

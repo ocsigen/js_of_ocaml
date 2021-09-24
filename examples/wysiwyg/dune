@@ -1,15 +1,15 @@
 (executables
-  (names main)
-  (libraries js_of_ocaml-lwt)
-  (modes byte)
-  (preprocess (pps js_of_ocaml-ppx)))
+ (names main)
+ (libraries js_of_ocaml-lwt)
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
-  (targets main.js)
-  (action
-    (run %{bin:js_of_ocaml}
-         --source-map %{dep:main.bc} -o %{targets} --pretty)))
+ (targets main.js)
+ (action
+  (run %{bin:js_of_ocaml} --source-map %{dep:main.bc} -o %{targets} --pretty)))
 
 (alias
-  (name default)
-  (deps main.js index.html))
+ (name default)
+ (deps main.js index.html))

@@ -1,8 +1,6 @@
 (lang dune 2.8)
 (name js_of_ocaml)
 
-(formatting (enabled_for ocaml))
-
 (generate_opam_files true)
 
 (authors "Ocsigen team <dev@ocsigen.org>")

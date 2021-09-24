@@ -1,3 +1,5 @@
 (alias
-  (name default)
-  (deps index.html (glob_files *.{png})))
+ (name default)
+ (deps
+  index.html
+  (glob_files *.{png})))

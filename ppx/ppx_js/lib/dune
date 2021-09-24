@@ -1,7 +1,7 @@
 (library
-  (name ppx_js_rewriter)
-  (public_name js_of_ocaml-ppx)
-  (synopsis "Js_of_ocaml ppx")
-  (libraries ppx_js)
-  (ppx_runtime_libraries js_of_ocaml)
-  (kind ppx_rewriter))
+ (name ppx_js_rewriter)
+ (public_name js_of_ocaml-ppx)
+ (synopsis "Js_of_ocaml ppx")
+ (libraries ppx_js)
+ (ppx_runtime_libraries js_of_ocaml)
+ (kind ppx_rewriter))

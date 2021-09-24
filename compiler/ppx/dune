@@ -1,6 +1,4 @@
 (library
-  (name ppx_optcomp_light)
-  (libraries compiler-libs.common
-             ppxlib)
-  (kind ppx_rewriter)
-  )
+ (name ppx_optcomp_light)
+ (libraries compiler-libs.common ppxlib)
+ (kind ppx_rewriter))

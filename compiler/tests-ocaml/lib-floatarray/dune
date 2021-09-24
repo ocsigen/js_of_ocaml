@@ -1,14 +1,16 @@
 (executables
-  (names floatarray)
-  (libraries)
-  (modes js)
-)
+ (names floatarray)
+ (libraries)
+ (modes js))
 
 (rule
-  (target floatarray.referencejs)
-  (deps floatarray.bc.js)
-  (action (with-stdout-to %{target} (run node ./floatarray.bc.js))))
+ (target floatarray.referencejs)
+ (deps floatarray.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./floatarray.bc.js))))
 
 (alias
-  (name runtest)
-  (deps floatarray.referencejs))
+ (name runtest)
+ (deps floatarray.referencejs))

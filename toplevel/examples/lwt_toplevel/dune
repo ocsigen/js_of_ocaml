@@ -1,91 +1,113 @@
 (executables
-  (names toplevel)
-  (libraries
-    js_of_ocaml-compiler
-    js_of_ocaml-tyxml
-    js_of_ocaml-toplevel
-    lwt
-    js_of_ocaml-lwt
-    ;; not used directly
-    graphics
-    js_of_ocaml.deriving
-    bigarray
-    react reactiveData
-    str
-   (select ocp_indent.ml from
-    (ocp-indent.lib -> ocp_indent.ok.ml)
-    (               -> ocp_indent.fake.ml))
-   (select colorize.ml from
-    (higlo higlo.ocaml   -> colorize.higlo.ml)
-    (!higlo              -> colorize.fake.ml))
-   (select graphics_support.ml from
-    (js_of_ocaml-lwt.graphics -> graphics_support.enabled.ml)
-    (                         -> graphics_support.disabled.ml))
-   (select ppx_support.ml from
-    (js_of_ocaml-ppx -> ppx_support.enabled.ml)
-    (                -> ppx_support.disabled.ml))
-    )
-  (flags (:standard -rectypes -linkall))
-  (modes byte)
-  (modules (:standard \ test_dynlink examples))
-  (preprocess (pps js_of_ocaml-ppx)))
+ (names toplevel)
+ (libraries
+  js_of_ocaml-compiler
+  js_of_ocaml-tyxml
+  js_of_ocaml-toplevel
+  lwt
+  js_of_ocaml-lwt
+  ;; not used directly
+  graphics
+  js_of_ocaml.deriving
+  bigarray
+  react
+  reactiveData
+  str
+  (select
+   ocp_indent.ml
+   from
+   (ocp-indent.lib -> ocp_indent.ok.ml)
+   (-> ocp_indent.fake.ml))
+  (select
+   colorize.ml
+   from
+   (higlo higlo.ocaml -> colorize.higlo.ml)
+   (!higlo -> colorize.fake.ml))
+  (select
+   graphics_support.ml
+   from
+   (js_of_ocaml-lwt.graphics -> graphics_support.enabled.ml)
+   (-> graphics_support.disabled.ml))
+  (select
+   ppx_support.ml
+   from
+   (js_of_ocaml-ppx -> ppx_support.enabled.ml)
+   (-> ppx_support.disabled.ml)))
+ (flags
+  (:standard -rectypes -linkall))
+ (modes byte)
+ (modules
+  (:standard \ test_dynlink examples))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
  (targets test_dynlink.cmo test_dynlink.cmi)
- (action (run ocamlc -c %{dep:test_dynlink.ml})))
+ (action
+  (run ocamlc -c %{dep:test_dynlink.ml})))
 
 (rule
  (targets test_dynlink.js)
- (action (run %{bin:js_of_ocaml}
-          -I ./
-          --pretty
-          --toplevel
-          %{dep:test_dynlink.cmo})))
+ (action
+  (run %{bin:js_of_ocaml} -I ./ --pretty --toplevel %{dep:test_dynlink.cmo})))
 
 (rule
  (targets export.txt)
  (deps
-   (package js_of_ocaml-ppx)
-   (package js_of_ocaml)
-   (package js_of_ocaml-lwt)
-   (package js_of_ocaml-tyxml)
-   (package js_of_ocaml-toplevel)
- )
- (action (run
-    jsoo_listunits -o %{targets}
-      stdlib
-      graphics
-      str
-      js_of_ocaml-lwt.graphics
-      js_of_ocaml-ppx.as-lib
-      js_of_ocaml.deriving
-      lwt bigarray
-      tyxml.functor
-      tyxml.functor:html_types.cmi
-      react reactiveData
-      js_of_ocaml js_of_ocaml-lwt
-      js_of_ocaml-tyxml
-      js_of_ocaml-toplevel
-      dynlink
-      )))
+  (package js_of_ocaml-ppx)
+  (package js_of_ocaml)
+  (package js_of_ocaml-lwt)
+  (package js_of_ocaml-tyxml)
+  (package js_of_ocaml-toplevel))
+ (action
+  (run
+   jsoo_listunits
+   -o
+   %{targets}
+   stdlib
+   graphics
+   str
+   js_of_ocaml-lwt.graphics
+   js_of_ocaml-ppx.as-lib
+   js_of_ocaml.deriving
+   lwt
+   bigarray
+   tyxml.functor
+   tyxml.functor:html_types.cmi
+   react
+   reactiveData
+   js_of_ocaml
+   js_of_ocaml-lwt
+   js_of_ocaml-tyxml
+   js_of_ocaml-toplevel
+   dynlink)))
 
 (rule
  (targets toplevel.js)
  (action
-    (run %{bin:js_of_ocaml}
-         -I %{lib:reactiveData:.}
-         -I .
-         --file %{dep:examples.ml}
-         --file %{dep:test_dynlink.cmo}
-         --file %{dep:test_dynlink.js}
-         --export %{dep:export.txt}
-         --toplevel
-         --disable shortvar
-         +toplevel.js +dynlink.js
-         %{dep:toplevel.bc}
-         -o %{targets}
-    )))
+  (run
+   %{bin:js_of_ocaml}
+   -I
+   %{lib:reactiveData:.}
+   -I
+   .
+   --file
+   %{dep:examples.ml}
+   --file
+   %{dep:test_dynlink.cmo}
+   --file
+   %{dep:test_dynlink.js}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --disable
+   shortvar
+   +toplevel.js
+   +dynlink.js
+   %{dep:toplevel.bc}
+   -o
+   %{targets})))
 
 (alias
-  (name default)
-  (deps toplevel.js index.html))
+ (name default)
+ (deps toplevel.js index.html))

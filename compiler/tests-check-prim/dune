@@ -1,12 +1,16 @@
 (executables
-  (names main)
-  (libraries js_of_ocaml num)
-  (link_flags (:standard -linkall))
-  (modes byte)
-)
+ (names main)
+ (libraries js_of_ocaml num)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
 
 (rule
-(targets output)
-(deps main.bc)
-(mode (promote (until-clean)))
-(action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} check-runtime main.bc))))
+ (targets output)
+ (deps main.bc)
+ (mode
+  (promote (until-clean)))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} check-runtime main.bc))))

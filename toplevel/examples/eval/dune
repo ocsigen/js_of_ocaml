@@ -1,29 +1,33 @@
 (executables
-  (names eval)
-  (libraries
-    js_of_ocaml-compiler
-    js_of_ocaml-toplevel)
-  (link_flags (:standard -linkall))
-  (modes byte)
-  (preprocess (pps js_of_ocaml-ppx)))
+ (names eval)
+ (libraries js_of_ocaml-compiler js_of_ocaml-toplevel)
+ (link_flags
+  (:standard -linkall))
+ (modes byte)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
 
 (rule
  (targets export.txt)
  (deps eval.bc)
- (action (run jsoo_listunits -o %{targets} stdlib)))
+ (action
+  (run jsoo_listunits -o %{targets} stdlib)))
 
 (rule
  (targets eval.js)
  (action
-    (run %{bin:js_of_ocaml}
-         --export %{dep:export.txt}
-         --toplevel
-         --pretty
-         +toplevel.js +dynlink.js
-         %{dep:eval.bc}
-         -o %{targets}
-    )))
+  (run
+   %{bin:js_of_ocaml}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --pretty
+   +toplevel.js
+   +dynlink.js
+   %{dep:eval.bc}
+   -o
+   %{targets})))
 
 (alias
-  (name default)
-  (deps eval.js index.html))
+ (name default)
+ (deps eval.js index.html))
