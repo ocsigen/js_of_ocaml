@@ -184,7 +184,7 @@ MlFakeDevice.prototype.register= function (name,content){
   }
   if(file){
     this.create_dir_if_needed(name);
-    this.content[name];
+    this.content[name] = file;
   }
   else caml_raise_sys_error(this.nm(name) + " : registering file with invalid content type");
 }
