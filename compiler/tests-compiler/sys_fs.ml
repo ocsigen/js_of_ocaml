@@ -22,22 +22,30 @@ open Util
 let%expect_test _ =
   compile_and_run
     {|
+let f () =
   Sys.mkdir "aaa" 0o777;
-  Sys.mkdir "aaa/bbb" 0o777;
-  let l = Sys.readdir "aaa" |> Array.to_list in
-  List.iter print_endline l;
-  (match Sys.rmdir "aaa" with
-  | exception _ -> ()
-  | _ -> print_endline "BUG");
-  Sys.rmdir "aaa/bbb";
+  let oc = open_out "aaa/bbb" in
+  close_out oc;
+  (try ignore(Sys.readdir "aaa/bb") with
+  | e -> print_endline (Printexc.to_string e));
+  (try ignore(Sys.readdir "aaa/bbb") with
+  | e -> print_endline (Printexc.to_string e));
+  Sys.remove "aaa/bbb";
   Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|bbb|}]
+  [%expect
+    {|
+    Sys_error("Error: ENOENT: no such file or directory, scandir '/tmp/buildf0641d.dune/jsoo-test324896/aaa/bb'")
+    Sys_error("Error: ENOTDIR: not a directory, scandir '/tmp/buildf0641d.dune/jsoo-test324896/aaa/bbb'")
+    Sys_error("aaa/bb: No such file or directory")
+    Sys_error("aaa/bbb: Not a directory")|}]
 
 let%expect_test _ =
   compile_and_run
     {|
-  Sys.chdir "/static/";
+let f () =
   Sys.mkdir "aaa" 0o777;
   Sys.mkdir "aaa/bbb" 0o777;
   let l = Sys.readdir "aaa" |> Array.to_list in
@@ -47,8 +55,11 @@ let%expect_test _ =
   | _ -> print_endline "BUG");
   Sys.rmdir "aaa/bbb";
   Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
   |};
   [%expect {|
+    bbb
     bbb|}]
 
 let%expect_test _ =
