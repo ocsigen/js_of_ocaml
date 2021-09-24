@@ -65,6 +65,9 @@ jobs:
 
       - run: opam exec -- make tests
         if: ${{ matrix.ocaml-compiler == '4.12.x' }}
+ 
+      - run: opam exec -- git diff --exit-code
+        if: ${{ matrix.ocaml-compiler == '4.12.x' }}
 
   lint-fmt:
     strategy:
