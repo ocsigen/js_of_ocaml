@@ -3,14 +3,31 @@
  (libraries js_of_ocaml num)
  (link_flags
   (:standard -linkall))
+ (modules main)
+ (modes byte))
+
+(executables
+ (names unix)
+ (libraries js_of_ocaml num unix)
+ (link_flags
+  (:standard -linkall))
+ (modules unix)
  (modes byte))
 
 (rule
- (targets output)
- (deps main.bc)
+ (targets main.output)
  (mode
   (promote (until-clean)))
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime main.bc))))
+   (run %{bin:js_of_ocaml} check-runtime %{dep:main.bc}))))
+
+(rule
+ (targets unix.output)
+ (mode
+  (promote (until-clean)))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
