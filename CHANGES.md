@@ -10,6 +10,7 @@
 
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
+* Runtime: fix error handling of Sys.readdir
 
 # 3.10.0 (2021-08-30) - Lille
 ## Features/Changes
