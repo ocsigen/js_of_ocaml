@@ -65,6 +65,43 @@ function unix_isatty(fileDescriptor) {
   }
 }
 
+//Provides: make_unix_err_args
+//Requires: caml_string_of_jsstring
+var unix_error = [
+  /* ===Unix.error===
+  *
+  * This array is in order of the variant in OCaml
+  */
+  "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
+  "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
+  "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
+  "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
+  "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
+  "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
+  "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
+  "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
+  "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
+  "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
+  "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
+];
+function make_unix_err_args(code, syscall, path, errno) {
+  var variant = unix_error.indexOf(code);
+  if (variant < 0) {
+    // Default if undefined
+    if (errno == null) {
+      errno = -9999
+    }
+    // If none of the above variants, fallback to EUNKNOWNERR(int)
+    variant = BLOCK(0, errno);
+  }
+  var args = [
+    variant,
+    caml_string_of_jsstring(syscall || ""),
+    caml_string_of_jsstring(path || "")
+  ];
+  return args;
+}
+
 //Provides: unix_stat
 //Requires: resolve_fs_device, caml_failwith
 function unix_stat(name) {

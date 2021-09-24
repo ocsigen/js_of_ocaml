@@ -24,6 +24,7 @@
 //Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 //Requires: caml_named_value, caml_raise_with_args, caml_named_values
+//Requires: make_unix_err_args
 function MlFakeDevice (root, f) {
   this.content={};
   this.root = root;
@@ -67,7 +68,7 @@ MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
   var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
   if(this.exists(name)) {
     if (unix_error) {
-      caml_raise_with_args(unix_error, [8, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(name))]);
+      caml_raise_with_args(unix_error, make_unix_err_args("EEXIST", "mkdir", this.nm(name)));
     }
     else {
       caml_raise_sys_error(name + ": File exists");
@@ -77,7 +78,7 @@ MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
   parent = (parent && parent[1]) || '';
   if(!this.exists(parent)){
     if (unix_error) {
-      caml_raise_with_args(unix_error, [20, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(parent))]);
+      caml_raise_with_args(unix_error, make_unix_err_args("ENOENT", "mkdir", this.nm(parent)));
     }
     else {
       caml_raise_sys_error(parent + ": No such file or directory");
@@ -85,7 +86,7 @@ MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
   }
   if(!this.is_dir(parent)){
     if (unix_error) {
-      caml_raise_with_args(unix_error, [26, caml_string_of_jsstring("mkdir"), caml_string_of_jsstring(this.nm(parent))]);
+      caml_raise_with_args(unix_error, make_unix_err_args("ENOTDIR", "mkdir", this.nm(parent)));
     }
     else {
       caml_raise_sys_error(parent + ": Not a directory");
@@ -99,7 +100,7 @@ MlFakeDevice.prototype.rmdir = function(name, raise_unix) {
   var r = new RegExp("^" + name_slash + "([^/]+)");
   if(!this.exists(name)) {
     if (unix_error) {
-      caml_raise_with_args(unix_error, [20, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+      caml_raise_with_args(unix_error, make_unix_err_args("ENOENT", "rmdir", this.nm(name)));
     }
     else {
       caml_raise_sys_error(name + ": No such file or directory");
@@ -107,7 +108,7 @@ MlFakeDevice.prototype.rmdir = function(name, raise_unix) {
   }
   if(!this.is_dir(name)) {
     if (unix_error) {
-      caml_raise_with_args(unix_error, [26, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+      caml_raise_with_args(unix_error, make_unix_err_args("ENOTDIR", "rmdir", this.nm(name)));
     }
     else {
       caml_raise_sys_error(name + ": Not a directory");
@@ -116,7 +117,7 @@ MlFakeDevice.prototype.rmdir = function(name, raise_unix) {
   for(var n in this.content) {
     if(n.match(r)) {
       if (unix_error) {
-        caml_raise_with_args(unix_error, [27, caml_string_of_jsstring("rmdir"), caml_string_of_jsstring(this.nm(name))]);
+        caml_raise_with_args(unix_error, make_unix_err_args("ENOTEMPTY", "rmdir", this.nm(name)));
       } else {
         caml_raise_sys_error(this.nm(name) + ": Directory not empty");
       }

@@ -28,32 +28,11 @@ function fs_node_supported () {
 
 
 //Provides: MlNodeDevice
-//Requires: MlNodeFile, caml_raise_sys_error
-//Requires: caml_raise_with_args, caml_named_value, caml_string_of_jsstring
+//Requires: MlNodeFile, caml_raise_sys_error, caml_raise_with_args
+//Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
   this.fs = require('fs');
   this.root = root;
-
-  /* ===Unix.error===
-   *
-   * This array is in order of the variant in OCaml
-   *
-   * Attached to the MlNodeDevice to avoid allocating this array
-   * each time an error is caught
-   */
-  this.unix_error = [
-    "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
-    "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
-    "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
-    "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
-    "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
-    "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
-    "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
-    "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
-    "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
-    "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
-    "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
-  ];
 }
 MlNodeDevice.prototype.nm = function(name) {
   return (this.root + name);
@@ -172,16 +151,7 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
 MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {
-    var variant = this.unix_error.indexOf(err.code);
-    if (variant < 0) {
-      // If none of the above variants, fallback to EUNKNOWNERR(int)
-      variant = BLOCK(0, err.errno);
-    }
-    var args = [
-      variant,
-      caml_string_of_jsstring(err.syscall || ""),
-      caml_string_of_jsstring(err.path || "")
-    ];
+    var args = make_unix_err_args(err.code, err.syscall, err.path, err.errno);
     caml_raise_with_args(unix_error, args);
   } else {
     caml_raise_sys_error(err.toString());
