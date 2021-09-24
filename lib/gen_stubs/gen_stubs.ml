@@ -52,6 +52,7 @@ let () =
        with exn -> Location.report_exception Format.std_formatter exn);
       close_in_noerr in_)
     !mls;
+  set_binary_mode_out stdout true;
   print_endline "#include <stdlib.h>";
   print_endline "#include <stdio.h>";
   String_set.iter print_stub !externals

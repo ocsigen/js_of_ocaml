@@ -115,6 +115,7 @@ let f (runtime_files, bytecode) =
   in
 
   let output = stdout in
+  set_binary_mode_out output true;
   output_string output "Missing\n";
   output_string output "-------\n";
   print_groups output missing_for_real;
