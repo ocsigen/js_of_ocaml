@@ -37,8 +37,7 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect
-    {| |}]
+  [%expect {| |}]
 
 let%expect_test _ =
   compile_and_run
