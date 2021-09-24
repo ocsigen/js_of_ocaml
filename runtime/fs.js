@@ -126,7 +126,6 @@ function resolve_fs_device(name){
 //Provides: caml_mount_autoload
 //Requires: caml_make_path, jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice
-//Requires: caml_js_get_console
 function caml_mount_autoload(name, f, nodejs_mount){
   var path = caml_make_path(name);
   var name = path.join("/")
@@ -134,8 +133,6 @@ function caml_mount_autoload(name, f, nodejs_mount){
   if (name[name.length - 1] != "/") {
     name += "/";
   }
-  var console = caml_js_get_console();
-  console.log(nodejs_mount);
   if (nodejs_mount) {
     jsoo_mount_point.push({path:name,device:new MlNodeDevice(name)})
   } else {
