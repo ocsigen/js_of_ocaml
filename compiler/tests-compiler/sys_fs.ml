@@ -27,8 +27,10 @@ let f () =
   let oc = open_out "aaa/bbb" in
   close_out oc;
   (try ignore(Sys.readdir "aaa/bb") with
+  | Sys_error _ -> ()
   | e -> print_endline (Printexc.to_string e));
   (try ignore(Sys.readdir "aaa/bbb") with
+  | Sys_error _ -> ()
   | e -> print_endline (Printexc.to_string e));
   Sys.remove "aaa/bbb";
   Sys.rmdir "aaa"
@@ -36,11 +38,7 @@ in
 f (); Sys.chdir "/static"; f ()
   |};
   [%expect
-    {|
-    Sys_error("Error: ENOENT: no such file or directory, scandir '/tmp/buildf0641d.dune/jsoo-test324896/aaa/bb'")
-    Sys_error("Error: ENOTDIR: not a directory, scandir '/tmp/buildf0641d.dune/jsoo-test324896/aaa/bbb'")
-    Sys_error("aaa/bb: No such file or directory")
-    Sys_error("aaa/bbb: Not a directory")|}]
+    {| |}]
 
 let%expect_test _ =
   compile_and_run
