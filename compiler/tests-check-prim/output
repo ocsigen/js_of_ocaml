@@ -166,7 +166,6 @@ caml_obj_is_block
 
 From +stdlib.js:
 caml_is_printable
-caml_named_value
 caml_register_global
 
 From +str.js:
@@ -189,7 +188,15 @@ unix_gettimeofday
 unix_gmtime
 unix_isatty
 unix_localtime
+unix_lstat
+unix_lstat_64
+unix_mkdir
 unix_mktime
+unix_readlink
+unix_rmdir
+unix_stat
+unix_stat_64
+unix_symlink
 unix_time
 win_cleanup
 win_handle_fd

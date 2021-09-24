@@ -233,9 +233,6 @@ function caml_sys_rename(o,n){
 //Requires: resolve_fs_device, caml_raise_sys_error
 function caml_sys_mkdir(name, perm){
   var root = resolve_fs_device(name);
-  if(root.device.exists(root.rest)) {
-    caml_raise_sys_error(name + ": File exists");
-  }
   root.device.mkdir(root.rest,perm);
   return 0;
 }
@@ -244,12 +241,6 @@ function caml_sys_mkdir(name, perm){
 //Requires: resolve_fs_device, caml_raise_sys_error, caml_raise_not_a_dir
 function caml_sys_rmdir(name){
   var root = resolve_fs_device(name);
-  if(!root.device.exists(root.rest)) {
-    caml_raise_sys_error(name + ": No such file or directory");
-  }
-  if(!root.device.is_dir(root.rest)) {
-    caml_raise_not_a_dir(name);
-  };
   root.device.rmdir(root.rest);
   return 0;
 }

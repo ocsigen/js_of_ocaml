@@ -64,3 +64,111 @@ function unix_isatty(fileDescriptor) {
     return false;
   }
 }
+
+//Provides: make_unix_err_args
+//Requires: caml_string_of_jsstring
+var unix_error = [
+  /* ===Unix.error===
+  *
+  * This array is in order of the variant in OCaml
+  */
+  "E2BIG", "EACCES", "EAGAIN", "EBADF", "EBUSY", "ECHILD", "EDEADLK", "EDOM",
+  "EEXIST", "EFAULT", "EFBIG", "EINTR", "EINVAL", "EIO", "EISDIR", "EMFILE",
+  "EMLINK", "ENAMETOOLONG", "ENFILE", "ENODEV", "ENOENT", "ENOEXEC", "ENOLCK",
+  "ENOMEM", "ENOSPC", "ENOSYS", "ENOTDIR", "ENOTEMPTY", "ENOTTY", "ENXIO",
+  "EPERM", "EPIPE", "ERANGE", "EROFS", "ESPIPE", "ESRCH", "EXDEV", "EWOULDBLOCK",
+  "EINPROGRESS", "EALREADY", "ENOTSOCK", "EDESTADDRREQ", "EMSGSIZE",
+  "EPROTOTYPE", "ENOPROTOOPT", "EPROTONOSUPPORT", "ESOCKTNOSUPPORT",
+  "EOPNOTSUPP", "EPFNOSUPPORT", "EAFNOSUPPORT", "EADDRINUSE", "EADDRNOTAVAIL",
+  "ENETDOWN", "ENETUNREACH", "ENETRESET", "ECONNABORTED", "ECONNRESET", "ENOBUFS",
+  "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
+  "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
+];
+function make_unix_err_args(code, syscall, path, errno) {
+  var variant = unix_error.indexOf(code);
+  if (variant < 0) {
+    // Default if undefined
+    if (errno == null) {
+      errno = -9999
+    }
+    // If none of the above variants, fallback to EUNKNOWNERR(int)
+    variant = BLOCK(0, errno);
+  }
+  var args = [
+    variant,
+    caml_string_of_jsstring(syscall || ""),
+    caml_string_of_jsstring(path || "")
+  ];
+  return args;
+}
+
+//Provides: unix_stat
+//Requires: resolve_fs_device, caml_failwith
+function unix_stat(name) {
+  var root = resolve_fs_device(name);
+  if (!root.device.stat) {
+    caml_failwith("unix_stat: not implemented");
+  }
+  return root.device.stat(root.rest, /* raise Unix_error */ true);
+}
+
+//Provides: unix_stat_64
+//Requires: unix_stat
+var unix_stat_64 = unix_stat;
+
+//Provides: unix_lstat
+//Requires: resolve_fs_device, caml_failwith
+function unix_lstat(name) {
+  var root = resolve_fs_device(name);
+  if (!root.device.lstat) {
+    caml_failwith("unix_lstat: not implemented");
+  }
+  return root.device.lstat(root.rest, /* raise Unix_error */ true);
+}
+
+//Provides: unix_lstat_64
+//Requires: unix_lstat
+var unix_lstat_64 = unix_lstat;
+
+//Provides: unix_mkdir
+//Requires: resolve_fs_device, caml_failwith
+function unix_mkdir(name, perm) {
+  var root = resolve_fs_device(name);
+  if (!root.device.mkdir) {
+    caml_failwith("unix_mkdir: not implemented");
+  }
+  return root.device.mkdir(root.rest, perm, /* raise Unix_error */ true);
+}
+
+//Provides: unix_rmdir
+//Requires: resolve_fs_device, caml_failwith
+function unix_rmdir(name) {
+  var root = resolve_fs_device(name);
+  if (!root.device.rmdir) {
+    caml_failwith("unix_rmdir: not implemented");
+  }
+  return root.device.rmdir(root.rest, /* raise Unix_error */ true);
+}
+
+//Provides: unix_symlink
+//Requires: resolve_fs_device, caml_failwith
+function unix_symlink(to_dir, src, dst) {
+  var src_root = resolve_fs_device(src);
+  var dst_root = resolve_fs_device(dst);
+  if(src_root.device != dst_root.device)
+    caml_failwith("unix_symlink: cannot symlink between two filesystems");
+  if (!src_root.device.symlink) {
+    caml_failwith("unix_symlink: not implemented");
+  }
+  return src_root.device.symlink(to_dir, src_root.rest, dst_root.rest, /* raise Unix_error */ true);
+}
+
+//Provides: unix_readlink
+//Requires: resolve_fs_device, caml_failwith
+function unix_readlink(name) {
+  var root = resolve_fs_device(name);
+  if (!root.device.readlink) {
+    caml_failwith("unix_readlink: not implemented");
+  }
+  return root.device.readlink(root.rest, /* raise Unix_error */ true);
+}
