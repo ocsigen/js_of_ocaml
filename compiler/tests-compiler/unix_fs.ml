@@ -114,6 +114,7 @@ f (); Sys.chdir "/static"; f () |};
 let%expect_test "Unix.stat_file" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
@@ -122,48 +123,66 @@ let%expect_test "Unix.stat_file" =
   | { st_kind = Unix.S_REG; st_size } ->
       print_string "File size: ";
       print_int st_size;
+      print_newline ();
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa"
-  |};
-  [%expect {|File size: 3|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    File size: 3
+    Failure("unix_stat: not implemented")|}]
 
 let%expect_test "Unix.stat_dir" =
   compile_and_run
     {|
+let f () =
   Unix.mkdir "aaa" 0o777;
   (match Unix.stat "aaa" with
   | exception err -> print_endline (Printexc.to_string err)
-  | { st_kind = Unix.S_DIR } -> print_string "Found dir"
+  | { st_kind = Unix.S_DIR } -> print_endline "Found dir"
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Unix.rmdir "aaa"
-  |};
-  [%expect {|Found dir|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    Found dir
+    Failure("unix_stat: not implemented")|}]
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
-  Unix.symlink "aaa" "ccc";
+  (try Unix.symlink "aaa" "ccc" with
+  | err -> print_endline (Printexc.to_string err));
   (match Unix.stat "ccc" with
   | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_REG; st_size } ->
     print_string "File size: ";
     print_int st_size;
+    print_newline ();
   | _ -> print_endline "UNEXPECTED SUCCESS");
-  Sys.remove "ccc";
+  (try Sys.remove "ccc" with | _ -> ());
   Sys.remove "aaa";
-  |};
-  [%expect {|File size: 3|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect
+    {|
+    File size: 3
+    Failure("unix_symlink: not implemented")
+    Failure("unix_stat: not implemented")|}]
 
 let%expect_test "Unix.symlink_Unix.readlink" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
-  Unix.symlink "aaa" "ccc";
+  (try Unix.symlink "aaa" "ccc" with
+  | err -> print_endline (Printexc.to_string err));
   (match Unix.readlink "ccc" with
   | exception err -> print_endline (Printexc.to_string err)
   | path -> (
@@ -171,14 +190,20 @@ let%expect_test "Unix.symlink_Unix.readlink" =
     let contents = input_line ic in
     print_endline contents;
     close_in ic));
-  Sys.remove "ccc";
+  (try Sys.remove "ccc" with | _ -> ());
   Sys.remove "aaa";
-  |};
-  [%expect {|bbb|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect
+    {|
+    bbb
+    Failure("unix_symlink: not implemented")
+    Failure("unix_readlink: not implemented")|}]
 
 let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
     {|
+let f () =
   (match Unix.readlink "." with
   (* Linux & Mac raise Unix.EINVAL *)
   | exception Unix.Unix_error (Unix.EINVAL, syscall, path) -> print_endline "EXPECTED ERROR"
@@ -186,12 +211,16 @@ let%expect_test "Unix.readlink_EINVAL" =
   | exception Unix.Unix_error (Unix.EUNKNOWNERR(code), syscall, path) -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
   | _ -> print_endline "UNEXPECTED SUCCESS");
-  |};
-  [%expect {|EXPECTED ERROR|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    EXPECTED ERROR
+    Failure("unix_readlink: not implemented")|}]
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
@@ -200,23 +229,34 @@ let%expect_test "Unix.lstat_file" =
   | { st_kind = Unix.S_REG; st_size } ->
     print_string "File size: ";
     print_int st_size;
+    print_newline ();
   | _ -> print_endline "UNEXPECTED SUCCESS");
   Sys.remove "aaa";
-  |};
-  [%expect {|File size: 3|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect {|
+    File size: 3
+    Failure("unix_lstat: not implemented")|}]
 
 let%expect_test "Unix.lstat_symlink" =
   compile_and_run
     {|
+let f () =
   let oc = open_out "aaa" in
   output_string oc "bbb";
   close_out oc;
-  Unix.symlink "aaa" "ccc";
+  (try Unix.symlink "aaa" "ccc" with
+  | err -> print_endline (Printexc.to_string err));
   (match Unix.lstat "ccc" with
   | exception err -> print_endline (Printexc.to_string err)
   | { st_kind = Unix.S_LNK; st_size } -> print_endline "Found link"
   | _ -> print_endline "UNEXPECTED SUCCESS");
-  Sys.remove "ccc";
+  (try Sys.remove "ccc" with | _ -> ());
   Sys.remove "aaa";
-  |};
-  [%expect {|Found link|}]
+in
+f (); Sys.chdir "/static"; f () |};
+  [%expect
+    {|
+    Found link
+    Failure("unix_symlink: not implemented")
+    Failure("unix_lstat: not implemented")|}]
