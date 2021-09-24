@@ -26,9 +26,16 @@ else
   var caml_current_dir =  "/static";
 if(caml_current_dir.slice(-1) !== "/") caml_current_dir += "/"
 
+//Provides: caml_get_root
+//Requires: path_is_absolute
+function caml_get_root(path){
+  var x = path_is_absolute(path);
+  if (!x) return;
+  return x[0] + "/"}
+
 //Provides: caml_root
-//Requires: caml_current_dir
-var caml_root = caml_current_dir.match(/[^\/]*\//)[0];
+//Requires: caml_get_root, caml_current_dir, caml_failwith
+var caml_root = caml_get_root(caml_current_dir) || caml_failwith("unable to compute caml_root");
 
 
 //Provides: MlFile
@@ -107,7 +114,7 @@ function caml_list_mount_point(){
 }
 
 //Provides: resolve_fs_device
-//Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error
+//Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice
 function resolve_fs_device(name){
   var path = caml_make_path(name);
   var name = path.join("/");
@@ -118,6 +125,14 @@ function resolve_fs_device(name){
     if(name_slash.search(m.path) == 0
        && (!res || res.path.length < m.path.length))
       res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
+  }
+  if( !res) {
+    var root = caml_get_root(name);
+    if (root && root.match(/^[a-zA-Z]:\/$/)){
+      var m = {path:root,device:new MlNodeDevice(root)};
+      jsoo_mount_point.push(m);
+      res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
+    }
   }
   if( res ) return res;
   caml_raise_sys_error("no device found for " + name_slash);
