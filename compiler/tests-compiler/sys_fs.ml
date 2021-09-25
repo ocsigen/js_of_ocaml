@@ -22,22 +22,27 @@ open Util
 let%expect_test _ =
   compile_and_run
     {|
+let f () =
   Sys.mkdir "aaa" 0o777;
-  Sys.mkdir "aaa/bbb" 0o777;
-  let l = Sys.readdir "aaa" |> Array.to_list in
-  List.iter print_endline l;
-  (match Sys.rmdir "aaa" with
-  | exception _ -> ()
-  | _ -> print_endline "BUG");
-  Sys.rmdir "aaa/bbb";
+  let oc = open_out "aaa/bbb" in
+  close_out oc;
+  (try ignore(Sys.readdir "aaa/bb") with
+  | Sys_error _ -> ()
+  | e -> print_endline (Printexc.to_string e));
+  (try ignore(Sys.readdir "aaa/bbb") with
+  | Sys_error _ -> ()
+  | e -> print_endline (Printexc.to_string e));
+  Sys.remove "aaa/bbb";
   Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|bbb|}]
+  [%expect {| |}]
 
 let%expect_test _ =
   compile_and_run
     {|
-  Sys.chdir "/static/";
+let f () =
   Sys.mkdir "aaa" 0o777;
   Sys.mkdir "aaa/bbb" 0o777;
   let l = Sys.readdir "aaa" |> Array.to_list in
@@ -47,8 +52,11 @@ let%expect_test _ =
   | _ -> print_endline "BUG");
   Sys.rmdir "aaa/bbb";
   Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
   |};
   [%expect {|
+    bbb
     bbb|}]
 
 let%expect_test _ =

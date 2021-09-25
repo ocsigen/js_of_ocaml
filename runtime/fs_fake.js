@@ -127,6 +127,12 @@ MlFakeDevice.prototype.rmdir = function(name, raise_unix) {
 }
 MlFakeDevice.prototype.readdir = function(name) {
   var name_slash = (name == "")?"":(this.slash(name));
+  if(!this.exists(name)) {
+    caml_raise_sys_error(name + ": No such file or directory");
+  }
+  if(!this.is_dir(name)) {
+    caml_raise_sys_error(name + ": Not a directory");
+  }
   var r = new RegExp("^" + name_slash + "([^/]+)");
   var seen = {}
   var a = [];
