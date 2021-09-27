@@ -158,7 +158,7 @@ let%expect_test _ =
         var
          _c_=indirect[1],
          _d_=function(f){return caml_call1(f,0)},
-         indirect$0=caml_call2(Stdlib_list[19],_d_,_c_),
+         indirect$0=caml_call2(Stdlib_List[19],_d_,_c_),
          direct$0=direct[1];
         if(runtime.caml_equal(indirect$0,direct$0))return 0;
         throw [0,Assert_failure,_b_]}}|}]

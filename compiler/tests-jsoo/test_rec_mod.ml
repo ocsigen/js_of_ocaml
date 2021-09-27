@@ -55,14 +55,11 @@ end
 
 let%expect_test _ =
   (try print_int (M1.f 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
+  [%expect {| 2 |}];
   (try print_int (M1.g 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}];
+  [%expect {| 2 |}];
   (try print_int (M1.h 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| File "[^"]*test_rec_mod.ml", line [0-9]*, characters [0-9-]*: Undefined recursive module (regexp) |}]
+  [%expect {| 2 |}]
 
 module rec Odd : sig
   val odd : int -> bool
