@@ -70,7 +70,13 @@ let%expect_test "acosh" =
   [%expect {| 1.316958 |}]
 
 let%expect_test "asinh" =
-  let p x = print (Float.asinh x) in
+  let p x =
+    let r = Float.asinh x in
+    match Float.classify_float r with
+    (* asinh(0) returns (-0) on windows *)
+    | FP_zero -> print 0.
+    | _ -> print r
+  in
   p 1.0;
   [%expect {| 0.881374 |}];
   p 0.0;
