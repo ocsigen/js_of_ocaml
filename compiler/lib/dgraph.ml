@@ -208,7 +208,7 @@ struct
 
     type stack =
       { stack : N.t Stack.t
-      ; mutable set : NSet.t
+      ; set : NSet.t
       }
 
     let is_empty st = Stack.is_empty st.stack

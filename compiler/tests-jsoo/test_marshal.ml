@@ -85,7 +85,9 @@ let%expect_test _ =
 
     let l = { pointer = None }
 
-    let () = l.pointer <- Some l
+    let () =
+      assert (l.pointer = None);
+      l.pointer <- Some l
 
     let _ =
       let s = Marshal.to_string l [] in

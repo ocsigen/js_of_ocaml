@@ -80,7 +80,7 @@ while compiling the OCaml toplevel:
 
   type alloc =
     { mutable first_free : int
-    ; mutable used : BitSet.t
+    ; used : BitSet.t
     }
 
   let make_alloc_table () = { first_free = 0; used = BitSet.create () }
