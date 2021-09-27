@@ -151,6 +151,7 @@ struct
     { back : int Id.Map.t
     ; forth : Id.t array
     }
+  [@@ocaml.warning "-unused-field"]
 
   let number graph =
     let size = Id.Map.cardinal graph in

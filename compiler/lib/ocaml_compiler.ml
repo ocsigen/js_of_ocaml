@@ -74,6 +74,8 @@ let rec find_loc_in_summary ident' = function
 
 (* Copied from ocaml/utils/tbl.ml *)
 module Tbl = struct
+  [@@@ocaml.warning "-unused-field"]
+
   open Poly
 
   type ('a, 'b) t =
@@ -221,6 +223,8 @@ end
 [@@if ocaml_version >= (4, 8, 0)]
 
 module Ident = struct
+  [@@@ocaml.warning "-unused-field"]
+
   (* Copied from ocaml/typing/ident.ml *)
   type 'a tbl' =
     | Empty

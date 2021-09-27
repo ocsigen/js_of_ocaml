@@ -83,7 +83,7 @@ module Share = struct
     { prims = StringMap.empty; strings = StringMap.empty; applies = IntMap.empty }
 
   type t =
-    { mutable count : int aux
+    { count : int aux
     ; mutable vars : J.ident aux
     ; alias_prims : bool
     ; alias_strings : bool

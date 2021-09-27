@@ -93,6 +93,7 @@ end = struct
     ; paths : string list
     ; source : string option
     }
+  [@@ocaml.warning "-unused-field"]
 
   module String_table = Hashtbl.Make (String)
   module Int_table = Hashtbl.Make (Int)
