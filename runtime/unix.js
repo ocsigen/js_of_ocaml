@@ -182,3 +182,18 @@ function unix_unlink(name) {
   }
   return root.device.unlink(root.rest, /* raise Unix_error */ true);
 }
+
+//Provides: unix_getuid
+//Requires: caml_raise_not_found
+function unix_getuid(unit) {
+  if(joo_global_object.process && joo_global_object.process.getuid){
+    return joo_global_object.process.getuid();
+  }
+  caml_raise_not_found();
+}
+
+//Provides: unix_getpwuid
+//Requires: caml_raise_not_found
+function unix_getpwuid(unit) {
+  caml_raise_not_found()
+}
