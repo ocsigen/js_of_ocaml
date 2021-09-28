@@ -38,6 +38,7 @@ module Regexp = Regexp
 module Sys_js = Sys_js
 module Typed_array = Typed_array
 module Url = Url
+module WeakMap = WeakMap
 module WebGL = WebGL
 module WebSockets = WebSockets
 module Worker = Worker
