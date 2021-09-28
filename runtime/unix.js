@@ -59,9 +59,9 @@ function win_handle_fd(x) {return x;}
 function unix_isatty(fileDescriptor) {
   if(fs_node_supported()) {
     var tty = require('tty');
-    return tty.isatty(fileDescriptor);
+    return tty.isatty(fileDescriptor)?1:0;
   } else {
-    return false;
+    return 0;
   }
 }
 
