@@ -6,7 +6,7 @@
 * Runtime: make all windows drive available on nodejs.
 * Runtime: add support for Sys.mkdir and Sys.rmdir
 * Runtime: make stdin work on nodejs
-* Runtime: add support for unix_stat, unix_lstat, unix_mkdir, unix_rmdir, unix_symlink, unix_readlink on nodejs.
+* Runtime: add support for Unix(stat,lstat,mkdir,rmdir,symlink,readlink,unlink,getuid) on nodejs.
 * Runtime: add caml_raise_with_args
 
 ## Bug fixes
