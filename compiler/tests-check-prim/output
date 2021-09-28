@@ -170,6 +170,7 @@ unix_getpwuid
 unix_gettimeofday
 unix_getuid
 unix_gmtime
+unix_has_symlink
 unix_isatty
 unix_localtime
 unix_lstat
