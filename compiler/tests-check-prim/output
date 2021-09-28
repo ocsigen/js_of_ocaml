@@ -180,6 +180,7 @@ unix_stat
 unix_stat_64
 unix_symlink
 unix_time
+unix_unlink
 win_cleanup
 win_handle_fd
 win_startup

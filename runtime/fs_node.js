@@ -132,9 +132,9 @@ MlNodeDevice.prototype.lstat = function(name, raise_unix) {
     this.raise_nodejs_error(err, raise_unix);
   }
 }
-MlNodeDevice.prototype.symlink = function(to_dir, src, dst, raise_unix) {
+MlNodeDevice.prototype.symlink = function(to_dir, target, path, raise_unix) {
   try {
-    this.fs.symlinkSync(this.nm(src), this.nm(dst), to_dir ? 'dir' : 'file');
+    this.fs.symlinkSync(this.nm(target), this.nm(path), to_dir ? 'dir' : 'file');
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);

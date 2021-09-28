@@ -172,3 +172,13 @@ function unix_readlink(name) {
   }
   return root.device.readlink(root.rest, /* raise Unix_error */ true);
 }
+
+//Provides: unix_unlink
+//Requires: resolve_fs_device, caml_failwith
+function unix_unlink(name) {
+  var root = resolve_fs_device(name);
+  if (!root.device.unlink) {
+    caml_failwith("unix_unlink: not implemented");
+  }
+  return root.device.unlink(root.rest, /* raise Unix_error */ true);
+}
