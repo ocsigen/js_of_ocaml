@@ -197,3 +197,9 @@ function unix_getuid(unit) {
 function unix_getpwuid(unit) {
   caml_raise_not_found()
 }
+
+//Provides: unix_has_symlink
+//Requires: fs_node_supported
+function unix_has_symlink(unit) {
+  return fs_node_supported()?1:0
+}
