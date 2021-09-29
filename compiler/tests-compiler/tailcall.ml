@@ -65,3 +65,41 @@ let%expect_test _ =
         {odd(5000);var _d_=log_success(0);return _d_}
        catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}
       throw [0,Assert_failure,_b_]} |}]
+
+let%expect_test _ =
+  let prog =
+    {|
+    let log_success () = print_endline "Success!"
+    let log_failure = Printf.printf "Failure! %s"
+
+    let fun1 () =
+      let rec odd x = if x = 0 then false else even (x - 1)
+      and even x = if x = 0 then true else odd (x - 1) in
+      assert (odd 1 <> even 1);
+      try
+        ignore (odd 5000);
+        log_success ()
+      with _ -> log_failure "too much recursion"
+
+    let () = fun1 ()
+    |}
+  in
+  Util.compile_and_run prog;
+  [%expect {| Success! |}];
+  let program = Util.compile_and_parse ~flags:[ "--set"; "tc_depth=0" ] prog in
+  Util.print_fun_decl program (Some "fun1");
+  [%expect
+    {|
+    function fun1(param)
+     {function odd$0(x)
+       {return 0 === x?0:caml_trampoline_return(even$0,[0,x - 1 | 0])}
+      function even$0(x)
+       {return 0 === x?1:caml_trampoline_return(odd$0,[0,x - 1 | 0])}
+      function odd(x){return caml_trampoline(odd$0(x))}
+      function even(x){return caml_trampoline(even$0(x))}
+      var _c_=even(1);
+      if(odd(1) !== _c_)
+       try
+        {odd(5000);var _d_=log_success(0);return _d_}
+       catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}
+      throw [0,Assert_failure,_b_]} |}]
