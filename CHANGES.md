@@ -1,6 +1,7 @@
 # ?? (??) - ??
 
 ## Features/Changes
+* Compiler: setting tc_depth to 0 remove direct call from the tc optimization.  
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
 * Runtime: fixes for Windows, all tests pass
 * Runtime: make all windows drive available on nodejs.

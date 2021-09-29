@@ -110,16 +110,24 @@ let group_closures ~tc_only closures_map =
 
 module Trampoline = struct
   let direct_call_block block ~counter ~x ~f ~args =
-    let counter_plus_1 = Code.Var.fork counter in
     let return = Code.Var.fork x in
-    { block with
-      params = []
-    ; body =
-        [ Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
-        ; Let (return, Apply (f, counter_plus_1 :: args, true))
-        ]
-    ; branch = Return return
-    }
+    match counter with
+    | None ->
+        { block with
+          params = []
+        ; body = [ Let (return, Apply (f, args, true)) ]
+        ; branch = Return return
+        }
+    | Some counter ->
+        let counter_plus_1 = Code.Var.fork counter in
+        { block with
+          params = []
+        ; body =
+            [ Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
+            ; Let (return, Apply (f, counter_plus_1 :: args, true))
+            ]
+        ; branch = Return return
+        }
 
   let bounce_call_block block ~x ~f ~args =
     let return = Code.Var.fork x in
@@ -143,10 +151,16 @@ module Trampoline = struct
       { params = []
       ; handler = None
       ; body =
-          [ Let (counter, Constant (Int 0l))
-          ; Let (result1, Apply (f, counter :: args, true))
-          ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
-          ]
+          (match counter with
+          | None ->
+              [ Let (result1, Apply (f, args, true))
+              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+              ]
+          | Some counter ->
+              [ Let (counter, Constant (Int 0l))
+              ; Let (result1, Apply (f, counter :: args, true))
+              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+              ])
       ; branch = Return result2
       }
     in
@@ -167,9 +181,13 @@ module Trampoline = struct
           Format.eprintf
             "%s\n%!"
             (String.concat ~sep:", " (List.map all ~f:(fun x -> Var.to_string x))));
+        let tailcall_max_depth = Config.Param.tailcall_max_depth () in
         let all =
           List.map all ~f:(fun id ->
-              Code.Var.fresh_n "counter", Var.Map.find id closures_map)
+              ( (if tailcall_max_depth = 0
+                then None
+                else Some (Code.Var.fresh_n "counter"))
+              , Var.Map.find id closures_map ))
         in
         let blocks, free_pc, instrs, instrs_wrapper =
           List.fold_left
@@ -182,13 +200,17 @@ module Trampoline = struct
               let new_args = List.map ci.args ~f:Code.Var.fork in
               let wrapper_pc = free_pc in
               let free_pc = free_pc + 1 in
-              let new_counter = Code.Var.fork counter in
+              let new_counter = Option.map counter ~f:Code.Var.fork in
               let wrapper_block =
                 wrapper_block new_f ~args:new_args ~counter:new_counter
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
               let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
-              let instr_real = Let (new_f, Closure (counter :: ci.args, ci.cont)) in
+              let instr_real =
+                match counter with
+                | None -> Let (new_f, Closure (ci.args, ci.cont))
+                | Some counter -> Let (new_f, Closure (counter :: ci.args, ci.cont))
+              in
               let counter_and_pc =
                 List.fold_left all ~init:[] ~f:(fun acc (counter, ci2) ->
                     try
@@ -221,24 +243,26 @@ module Trampoline = struct
                             (bounce_call_block block ~x ~f:new_f ~args)
                             blocks
                         in
-                        let direct = Code.Var.fresh () in
-                        let branch =
-                          Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
-                        in
-                        let last =
-                          Let
-                            ( direct
-                            , Prim
-                                ( Lt
-                                , [ Pv counter
-                                  ; Pc
-                                      (Int
-                                         (Int32.of_int
-                                            (Config.Param.tailcall_max_depth ())))
-                                  ] ) )
-                        in
                         let block =
-                          { block with body = List.rev (last :: rem_rev); branch }
+                          match counter with
+                          | None ->
+                              let branch = Branch (bounce_call_pc, []) in
+                              { block with body = List.rev rem_rev; branch }
+                          | Some counter ->
+                              let direct = Code.Var.fresh () in
+                              let branch =
+                                Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
+                              in
+                              let last =
+                                Let
+                                  ( direct
+                                  , Prim
+                                      ( Lt
+                                      , [ Pv counter
+                                        ; Pc (Int (Int32.of_int tailcall_max_depth))
+                                        ] ) )
+                              in
+                              { block with body = List.rev (last :: rem_rev); branch }
                         in
                         let blocks = Addr.Map.remove pc blocks in
                         Addr.Map.add pc block blocks, free_pc
