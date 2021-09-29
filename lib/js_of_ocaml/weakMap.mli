@@ -28,18 +28,6 @@
 
 val is_supported : unit -> bool
 
-(*
-class type key =
-object
-inherit [element] Js.t
-end
-*)
-
-(*type key = `a = "caml_js_object" *)
-
-(*type key = 'a Js.t*)
-
-(*module plus qu'un type? -> Non car doit être consturit*)
 class type weakMap =
   object
     method get : 'a -> 'b Js.meth
@@ -51,6 +39,4 @@ class type weakMap =
     method has : 'a -> bool Js.meth
   end
 
-val empty_weakMap : (unit -> weakMap Js.t) Js.constr
-
-val weakMap : (('a -> 'b) array -> weakMap Js.t) Js.constr
+val weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr

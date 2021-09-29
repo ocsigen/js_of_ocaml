@@ -30,8 +30,6 @@ class type weakMap =
 
 let weakMap = Js.Unsafe.global ##. WeakMap
 
-let is_supported () = Js.Optdef.test weakMap
+let is_supported () = Js.Optdef.test Js.Unsafe.global ##. WeakMap
 
-let empty_weakMap : (unit -> weakMap Js.t) Js.constr = weakMap
-
-let weakMap : (('a -> 'b) array -> weakMap Js.t) Js.constr = weakMap
+let weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr = weakMap
