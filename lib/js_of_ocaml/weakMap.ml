@@ -28,8 +28,8 @@ class type weakMap =
     method has : 'a -> bool Js.meth
   end
 
-let weakMap = Js.Unsafe.global ##. WeakMap
+let weakM = Js.Unsafe.global ##. WeakMap
 
 let is_supported () = Js.Optdef.test Js.Unsafe.global ##. WeakMap
 
-let weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr = weakMap
+let new_weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr = weakM

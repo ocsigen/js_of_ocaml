@@ -39,4 +39,4 @@ class type weakMap =
     method has : 'a -> bool Js.meth
   end
 
-val weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr
+val new_weakMap : (?init:('a -> 'b) array -> unit -> weakMap Js.t) Js.constr
