@@ -84,6 +84,8 @@ optimized:
   [More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call
   optimization.
 
+## Data representation
+
 Data representation differs from the usual one. Most notably, integers are 32
 bits (rather than 31 bits or 63 bits), which is their natural size in
 JavaScript, and floats are not boxed. As a consequence, marshalling, polymorphic
@@ -93,6 +95,27 @@ comparison, and hashing functions can yield results different from usual:
 - the polymorphic hash function will not give the same results on datastructures
   containing floats;
 - these functions may be more prone to stack overflow.
+
+| Ocaml | javascript |
+| ------------- | ------------- |
+| int   | number (32bit int)  |
+| int32 | number (32bit int)  |
+| nativeint | number (32bit int)  |
+| int64 | Object (MlInt64) |
+| float | number |
+| string | string or object (MlBytes) |
+| bytes | object (MlBytes) |
+| "immediate" (e.g. true, false, None, ()) | number (32bit int) |
+| "block" | array with tag as first element (e.g. `C(1,2) => [tag,1,2]`) |
+| array | block with tag 0 (e.g. `[\|1;2\|] => [0,1,2]`) |
+| tuple | block with tag 0 (e.g. `(1,2) => [0,1,2]`) |
+| record | block (e.g. `{x=1;y=2} => [0,1,2]`) |
+| contructor with arguments | block (e.g. `C (1, 2) => [tag,1,2]`) |
+| module | block |
+| exception and extensible variant | block or immediate |
+| function | function |
+
+
 
 ## Toplevel
 
