@@ -32,4 +32,4 @@ let weakMap = Js.Unsafe.global ##. WeakMap
 
 let is_supported () = Js.Optdef.test weakMap
 
-let weakMap : (('a -> 'b) array -> weakMap Js.t) Js.constr = weakMap
+let weakMap : (unit -> weakMap Js.t) Js.constr = weakMap
