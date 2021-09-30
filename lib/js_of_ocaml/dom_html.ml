@@ -2176,11 +2176,9 @@ class type shareOption =
 
 class type promise =
   object
-    method _then :
-             ('self t, (event t -> unit)) Js.meth_callback opt
-             -> promise t meth
+    method _then : ('self t, event t -> unit) Js.meth_callback opt -> promise t meth
 
-    method catch : ('self t, (js_string -> unit)) Js.meth_callback -> unit meth
+    method catch : ('self t, js_string -> unit) Js.meth_callback -> unit meth
   end
 
 class type connection =
@@ -2226,6 +2224,13 @@ class type navigator =
 
     method share : #shareOption t -> promise t meth
   end
+
+let navigator_supported () = Js.Optdef.test Js.Unsafe.global##.navigator
+
+let navigator_connection_supported () =
+  Js.Optdef.test Js.Unsafe.global##.navigator##.connection
+
+let navigator_share_supported () = Js.Optdef.test Js.Unsafe.global##.navigator##.share
 
 class type screen =
   object

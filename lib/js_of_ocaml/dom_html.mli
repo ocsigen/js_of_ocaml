@@ -2032,19 +2032,13 @@ class type shareOption =
   end
 
 val shareOption :
-  ?url:js_string t
-  -> ?text:js_string t
-  -> ?title:js_string t
-  -> unit
-  -> shareOption t
+  ?url:js_string t -> ?text:js_string t -> ?title:js_string t -> unit -> shareOption t
 
 class type promise =
   object
-    method _then :
-             ('self t, (event t -> unit)) Js.meth_callback opt
-             -> promise t meth
+    method _then : ('self t, event t -> unit) Js.meth_callback opt -> promise t meth
 
-    method catch : ('self t, (js_string -> unit) ) Js.meth_callback -> unit meth
+    method catch : ('self t, js_string -> unit) Js.meth_callback -> unit meth
   end
 
 class type connection =
@@ -2091,6 +2085,12 @@ class type navigator =
 
     method share : #shareOption t -> promise t meth
   end
+
+val navigator_supported : unit -> bool
+
+val navigator_connection_supported : unit -> bool
+
+val navigator_share_supported : unit -> bool
 
 class type screen =
   object
