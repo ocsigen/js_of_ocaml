@@ -24,12 +24,9 @@ let%expect_test "uncaugh error" =
   compile_and_run prog;
   [%expect
     {|
-    /tmp/build76e80b.dune/jsoo-test5e0747/test.js:5368
-        throw Not_found}
-        ^
-    248,Not_found,-7
+    Fatal error: exception Not_found
 
-    process exited with error code 1
+    process exited with error code 2
      node test.js |}];
   compile_and_run_bytecode prog;
   [%expect
@@ -49,12 +46,10 @@ let _ = raise C |}
   compile_and_run prog;
   [%expect
     {|
-    /tmp/build76e80b.dune/jsoo-test6c676e/test.js:5370
-        throw C}
-        ^
-    248,Test.C,7
+    Fatal error: exception Test.C
 
-    process exited with error code 1
+
+    process exited with error code 2
      node test.js |}];
   let prog =
     {|
@@ -67,12 +62,10 @@ let _ = raise (D(2,"test",43L))
   compile_and_run prog;
   [%expect
     {|
-    /tmp/build76e80b.dune/jsoo-testf98b41/test.js:5372
-        throw [0,D,2,_cN_,_cM_]}
-        ^
-    0,248,Test.D,7,2,test,[object Object]
+    Fatal error: exception Test.D(2, "test", _)
 
-    process exited with error code 1
+
+    process exited with error code 2
      node test.js |}];
   let prog =
     {|
@@ -83,12 +76,10 @@ let _ = assert false |}
   compile_and_run prog;
   [%expect
     {|
-    /tmp/build76e80b.dune/jsoo-testfe7fd7/test.js:5369
-        throw [0,Assert_failure,_cL_]}
-        ^
-    0,248,Assert_failure,-11,0,test.ml,4,8
+    Fatal error: exception Assert_failure("test.ml", 4, 8)
 
-    process exited with error code 1
+
+    process exited with error code 2
      node test.js |}];
   let prog =
     {|
@@ -99,12 +90,10 @@ let () = Callback.register "Printexc.handle_uncaught_exception" null
   compile_and_run prog;
   [%expect
     {|
-    /tmp/build76e80b.dune/jsoo-test75a355/test.js:5369
-        throw [0,Match_failure,_cL_]}
-        ^
-    0,248,Match_failure,-8,0,test.ml,4,33
+    Fatal error: exception Match_failure("test.ml", 4, 33)
 
-    process exited with error code 1
+
+    process exited with error code 2
      node test.js |}];
 
   (* Uncaught javascript exception *)
