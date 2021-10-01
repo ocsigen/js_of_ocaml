@@ -27,6 +27,7 @@ type fragment =
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
+  ; always : bool
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
   }
@@ -46,6 +47,7 @@ type state
 type always_required =
   { filename : string
   ; program : Javascript.program
+  ; requires : string list
   }
 
 type output =

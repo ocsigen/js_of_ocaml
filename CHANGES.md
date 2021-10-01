@@ -13,6 +13,7 @@
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
 * Compiler: fix predefined exn id with separate compilation
+* Compiler: js stubs without 'Provides' should still allow 'Require'
 * Runtime: fix handling of uncaugh exceptions
 * Runtime: fix error handling of Sys.readdir
 * Dune: make git version lookup more resilient
