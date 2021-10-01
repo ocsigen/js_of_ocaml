@@ -26,6 +26,8 @@ let exe =
 
 let ocamlc = try Sys.getenv "OCAMLC" with Not_found -> exe "ocamlc"
 
+let ocamlrun = try Sys.getenv "OCAMLRUN" with Not_found -> exe "ocamlrun"
+
 let node = try Sys.getenv "NODE" with Not_found -> exe "node"
 
 let js_of_ocaml_root =
@@ -210,6 +212,10 @@ let exec_to_string_exn ~cmd =
 let run_javascript file =
   exec_to_string_exn ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
 
+let run_bytecode file =
+  exec_to_string_exn
+    ~cmd:(Format.sprintf "%s %s" ocamlrun (Filetype.path_of_bc_file file))
+
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
 
@@ -388,6 +394,15 @@ let print_fun_decl program n =
   | [ fd ] -> print_string (program_to_string [ J.Function_declaration fd, J.N ])
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
+
+let compile_and_run_bytecode s =
+  with_temp_dir ~f:(fun () ->
+      s
+      |> Filetype.ocaml_text_of_string
+      |> Filetype.write_ocaml ~name:"test.ml"
+      |> compile_ocaml_to_bc
+      |> run_bytecode
+      |> print_endline)
 
 let compile_and_run ?flags s =
   with_temp_dir ~f:(fun () ->
