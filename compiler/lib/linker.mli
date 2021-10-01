@@ -20,7 +20,7 @@
 
 open Stdlib
 
-type fragment =
+type fragment_ =
   { provides :
       (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
       option
@@ -31,6 +31,11 @@ type fragment =
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
   }
+
+type fragment =
+  [ `Always_include of Javascript.program
+  | `Some of fragment_
+  ]
 
 val parse_file : string -> fragment list
 

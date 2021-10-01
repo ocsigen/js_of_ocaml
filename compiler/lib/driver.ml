@@ -168,10 +168,13 @@ let extra_js_files =
              List.fold_left
                (Linker.parse_builtin file)
                ~init:StringSet.empty
-               ~f:(fun ss { Linker.provides; _ } ->
-                 match provides with
-                 | Some (_, name, _, _) -> StringSet.add name ss
-                 | _ -> ss)
+               ~f:(fun ss frag ->
+                 match frag with
+                 | `Always_include _ -> ss
+                 | `Some { Linker.provides; _ } -> (
+                     match provides with
+                     | Some (_, name, _, _) -> StringSet.add name ss
+                     | _ -> ss))
            in
            (name, ss) :: acc
          with _ -> acc))
