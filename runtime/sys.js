@@ -34,6 +34,72 @@ function caml_sys_exit (code) {
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
+//Provides: caml_is_special_exception
+function caml_is_special_exception(exn){
+  switch(exn[2]) {
+  case -8: // Match_failure
+  case -11: // Assert_failure
+  case -12: // Undefined_recursive_module
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+//Provides: caml_format_exception
+//Requires: MlBytes, caml_is_special_exception
+function caml_format_exception(exn){
+  var r = "";
+  if(exn[0] == 0) {
+    r += exn[1][1];
+    if(exn.length == 3 && exn[2][0] == 0 && caml_is_special_exception(exn[1])) {
+
+      var bucket = exn[2];
+      var start = 1;
+    } else {
+      var start = 2
+      var bucket = exn;
+    }
+    r += "(";
+    for(var i = start; i < bucket.length; i ++){
+      if(i > start) r+=", ";
+      var v = bucket[i]
+      if(typeof v == "number")
+        r+= v.toString();
+      else if(v instanceof MlBytes){
+        r+= '"' + v.toString() + '"';
+      }
+      else if(typeof v == "string"){
+        r+= '"' + v.toString() + '"';
+      }
+      else r += "_";
+    }
+    r += ")"
+  } else if (exn[0] == 248){
+    r += exn[1]
+  }
+  return r
+}
+
+//Provides: caml_fatal_uncaught_exception
+//Requires: caml_named_value, caml_format_exception
+function caml_fatal_uncaught_exception(err){
+  if(err instanceof Array && (err[0] == 0 || err[0] == 248)) {
+    var handler = caml_named_value("Printexc.handle_uncaught_exception");
+    if(handler) handler(err,false);
+    else {
+      var msg = caml_format_exception(err);
+      var at_exit = caml_named_value("Pervasives.do_at_exit");
+      if(at_exit) { at_exit(0) }
+      joo_global_object.console.error("Fatal error: exception " + msg + "\n");
+    }
+  }
+  else {
+    throw err
+  }
+}
+
+
 //Provides: caml_set_static_env
 function caml_set_static_env(k,v){
   if(!joo_global_object.jsoo_static_env)
@@ -45,6 +111,7 @@ function caml_set_static_env(k,v){
 //Requires: caml_raise_not_found
 //Requires: caml_string_of_jsstring
 //Requires: caml_jsstring_of_string
+//Requires: caml_setup_uncaught_exception_handler
 function caml_sys_getenv (name) {
   var g = joo_global_object;
   var n = caml_jsstring_of_string(name);
@@ -58,6 +125,13 @@ function caml_sys_getenv (name) {
     return caml_string_of_jsstring(joo_global_object.jsoo_static_env[n])
   caml_raise_not_found ();
 }
+// HACK ON
+// This is a sad hack that should be removed once
+// https://github.com/ocsigen/js_of_ocaml/issues/1141 is addressed.
+// What we want here is to always run the setup. The hack is to run
+// the setup as part of a primitive declaration that is likely to be included.
+caml_setup_uncaught_exception_handler();
+// HACK OFF
 
 //Provides: caml_sys_unsafe_getenv
 //Requires: caml_sys_getenv
@@ -253,4 +327,22 @@ function caml_register_channel_for_spacetime(_channel) {
 //Requires: caml_failwith
 function caml_spacetime_only_works_for_native_code() {
   caml_failwith("Spacetime profiling only works for native code");
+}
+
+//Provides: caml_setup_uncaught_exception_handler
+//Requires: caml_fatal_uncaught_exception
+function caml_setup_uncaught_exception_handler() {
+  var g = joo_global_object;
+  if(g.process && g.process.on) {
+    g.process.on('uncaughtException', function (err, origin) {
+      caml_fatal_uncaught_exception(err);
+      g.process.exit (2);
+    })
+  }
+  if(g.hasOwnProperty && g.hasOwnProperty("addEventListener")){
+    g.addEventListener('error', function(event){
+      g.console.log("ERROR: " + event);
+      caml_fatal_uncaught_exception(event);
+    });
+  }
 }
