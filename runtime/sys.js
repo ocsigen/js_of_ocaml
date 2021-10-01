@@ -111,7 +111,6 @@ function caml_set_static_env(k,v){
 //Requires: caml_raise_not_found
 //Requires: caml_string_of_jsstring
 //Requires: caml_jsstring_of_string
-//Requires: caml_setup_uncaught_exception_handler
 function caml_sys_getenv (name) {
   var g = joo_global_object;
   var n = caml_jsstring_of_string(name);
@@ -125,13 +124,6 @@ function caml_sys_getenv (name) {
     return caml_string_of_jsstring(joo_global_object.jsoo_static_env[n])
   caml_raise_not_found ();
 }
-// HACK ON
-// This is a sad hack that should be removed once
-// https://github.com/ocsigen/js_of_ocaml/issues/1141 is addressed.
-// What we want here is to always run the setup. The hack is to run
-// the setup as part of a primitive declaration that is likely to be included.
-caml_setup_uncaught_exception_handler();
-// HACK OFF
 
 //Provides: caml_sys_unsafe_getenv
 //Requires: caml_sys_getenv
@@ -329,7 +321,7 @@ function caml_spacetime_only_works_for_native_code() {
   caml_failwith("Spacetime profiling only works for native code");
 }
 
-//Provides: caml_setup_uncaught_exception_handler
+//Always
 //Requires: caml_fatal_uncaught_exception
 function caml_setup_uncaught_exception_handler() {
   var g = joo_global_object;
@@ -346,3 +338,4 @@ function caml_setup_uncaught_exception_handler() {
     });
   }
 }
+caml_setup_uncaught_exception_handler();

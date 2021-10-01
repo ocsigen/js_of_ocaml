@@ -27,6 +27,7 @@ type fragment =
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
+  ; always : bool
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
   }
@@ -49,6 +50,7 @@ let parse_annot loc s =
         | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
         | `Version (_, l) -> Some (`Version (Some loc, l))
         | `Weakdef _ -> Some (`Weakdef (Some loc))
+        | `Always _ -> Some (`Always (Some loc))
         | `If (_, name) -> Some (`If (Some loc, name))
         | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
       with
@@ -107,6 +109,7 @@ let parse_from_lex ~filename lex =
             in
             status, blocks, rest
         | _, Javascript.N ->
+            (* FIXME: This is not correct *)
             let status, blocks =
               match status with
               | `Code (annot, code) -> `Code (annot, t :: code), blocks
@@ -127,6 +130,7 @@ let parse_from_lex ~filename lex =
           ; requires = []
           ; version_constraint = []
           ; weakdef = false
+          ; always = false
           ; code
           ; ignore = `No
           }
@@ -139,6 +143,7 @@ let parse_from_lex ~filename lex =
             | `Version (_, l) ->
                 { fragment with version_constraint = l :: fragment.version_constraint }
             | `Weakdef _ -> { fragment with weakdef = true }
+            | `Always _ -> { fragment with always = true }
             | `If (_, "js-string") as reason ->
                 if not (Config.Flag.use_js_string ())
                 then { fragment with ignore = `Because reason }
@@ -290,6 +295,7 @@ let version_match =
 type always_required =
   { filename : string
   ; program : Javascript.program
+  ; requires : string list
   }
 
 type state =
@@ -336,7 +342,7 @@ let find_named_value code =
 
 let load_fragment
     ~filename
-    { provides; requires; version_constraint; weakdef; code; ignore } =
+    { provides; requires; version_constraint; weakdef; always = _; code; ignore } =
   match ignore with
   | `Because _ -> ()
   | `No ->
@@ -350,7 +356,8 @@ let load_fragment
         incr last_code_id;
         let id = !last_code_id in
         match provides with
-        | None -> always_included := { filename; program = code } :: !always_included
+        | None ->
+            always_included := { filename; program = code; requires } :: !always_included
         | Some (pi, name, kind, ka) ->
             let code = Macro.f code in
             let module J = Javascript in
@@ -476,9 +483,24 @@ let resolve_deps ?(linkall = false) visited_rev used =
   in
   visited_rev, missing
 
-let link program state =
+let link program (state : state) =
+  let always, always_required =
+    List.partition
+      ~f:(function
+        | { requires = []; _ } -> false
+        | _ -> true)
+      state.always_required_codes
+  in
+
+  let state =
+    List.fold_left always ~init:state ~f:(fun (state : state) always ->
+        let state =
+          List.fold_left always.requires ~init:state ~f:(fun state nm ->
+              resolve_dep_name_rev state [] nm)
+        in
+        { state with codes = always.program :: state.codes })
+  in
   let runtime = List.flatten (List.rev (program :: state.codes)) in
-  let always_required = state.always_required_codes in
   { runtime_code = runtime; always_required_codes = always_required }
 
 let all state =

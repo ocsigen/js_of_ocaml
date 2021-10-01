@@ -25,6 +25,7 @@ rule main = parse
   | "Requires" {TRequires}
   | "Version" {TVersion}
   | "Weakdef" {TWeakdef}
+  | "Always" {TAlways}
   | "If" {TIf}
   | "pure" {TA_Pure }
   | "const" {TA_Const }

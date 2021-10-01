@@ -395,7 +395,9 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
           //# 1 myfile.js
        v}
     *)
-    List.map always_required_codes ~f:(fun { Linker.program; filename = _ } ->
+    List.map
+      always_required_codes
+      ~f:(fun { Linker.program; filename = _; requires = _ } ->
         wrap_in_iifa ~can_use_strict:false program)
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
