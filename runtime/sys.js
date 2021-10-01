@@ -331,10 +331,11 @@ function caml_setup_uncaught_exception_handler() {
       g.process.exit (2);
     })
   }
-  if(g.hasOwnProperty && g.hasOwnProperty("addEventListener")){
+  else if(g.addEventListener){
     g.addEventListener('error', function(event){
-      g.console.log("ERROR: " + event);
-      caml_fatal_uncaught_exception(event);
+      if(event.error){
+        caml_fatal_uncaught_exception(event.error);
+      }
     });
   }
 }

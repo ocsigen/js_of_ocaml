@@ -159,6 +159,9 @@ re_search_forward
 re_string_match
 
 From +sys.js:
+caml_fatal_uncaught_exception
+caml_format_exception
+caml_is_special_exception
 caml_register_channel_for_spacetime
 caml_set_static_env
 caml_spacetime_enabled
