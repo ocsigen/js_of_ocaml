@@ -48,13 +48,13 @@ let%expect_test "static eval of string get" =
   print_fun_decl program (Some "my_truncate");
   [%expect
     {|
-    function my_is_block(x){return caml_call1(Stdlib_Obj[1],x)}
+    function my_is_block(x){return caml_call1(Stdlib_obj[1],x)}
     function my_is_int(x){return typeof x === "number"?1:0}
     function my_tag(x){return runtime.caml_obj_tag([0,x,0])}
     function my_size(x){return x.length - 1}
     function my_field(x,i){return x[1 + i]}
     function my_set_field(x,i,o){x[1 + i] = o;return 0}
     function my_set_tag(x,t){return runtime.caml_obj_set_tag([0,x,0],t)}
-    function my_new_block(x,l){return runtime.caml_obj_block(x + 1 | 0,3)}
+    function my_new_block(x,_a_){return runtime.caml_obj_block(x + 1 | 0,3)}
     function my_dup(t){return [0,t,0].slice()}
     function my_truncate(t,i){return runtime.caml_obj_truncate([0,t,0],i)} |}]

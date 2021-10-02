@@ -74,7 +74,6 @@ let%expect_test _ =
       /dune-root/test.ml:1:7 -> 4:16
       /dune-root/test.ml:1:11 -> 4:19
       /dune-root/test.ml:1:7 -> 4:26
-      /dune-root/test.ml:1:12 -> 4:27
       /dune-root/test.ml:1:4 -> 5:16
       null:-1:-1 -> 7:10
     |}]
