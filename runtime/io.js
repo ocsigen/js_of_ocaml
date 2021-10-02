@@ -159,6 +159,9 @@ function caml_channel_descriptor(chanid){
   return chan.fd;
 }
 
+//Provides: win_filedescr_of_channel
+//Requires: caml_channel_descriptor
+var win_filedescr_of_channel = caml_channel_descriptor
 
 //Provides: caml_ml_set_binary_mode
 //Requires: caml_global_data, caml_ml_channels
