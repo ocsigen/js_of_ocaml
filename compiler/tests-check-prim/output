@@ -122,6 +122,9 @@ From +ints.js:
 caml_div
 caml_mod
 
+From +io.js:
+win_filedescr_of_channel
+
 From +jslib.js:
 caml_is_js
 caml_trampoline
