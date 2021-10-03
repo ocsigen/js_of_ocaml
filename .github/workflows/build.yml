@@ -28,13 +28,13 @@ jobs:
           - true
         include:
           - os: ubuntu-latest
-            ocaml-compiler: 4.13.x
+            ocaml-compiler: ocaml-variants.4.12.0+domains
             skip-test: false
           - os: macos-latest
-            ocaml-compiler: 4.13.x
+            ocaml-compiler: ocaml-variants.4.12.0+domains
             skip-test: false
           - os: windows-latest
-            ocaml-compiler: 4.13.x
+            ocaml-compiler: ocaml-variants.4.12.0+domains
             skip-test: false
 
     runs-on: ${{ matrix.os }}
@@ -80,7 +80,7 @@ jobs:
     strategy:
       matrix:
         ocaml-compiler:
-          - 4.13.x
+          - ocaml-variants.4.12.0+domains
 
     runs-on: ubuntu-latest
 
