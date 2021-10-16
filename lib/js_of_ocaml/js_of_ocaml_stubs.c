@@ -232,6 +232,10 @@ void caml_read_file_content () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_read_file_content!\n");
   exit(1);
 }
+void caml_register_lazy () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_register_lazy!\n");
+  exit(1);
+}
 void caml_string_of_array () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_string_of_array!\n");
   exit(1);

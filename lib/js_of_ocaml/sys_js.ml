@@ -61,3 +61,5 @@ let js_of_ocaml_version =
   if String.equal Lib_version.git_version ""
   then Lib_version.s
   else Lib_version.s ^ "+" ^ Lib_version.git_version
+
+external register_lazy : string -> unit = "caml_register_lazy"

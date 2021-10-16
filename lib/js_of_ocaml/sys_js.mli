@@ -56,6 +56,12 @@ val create_file : name:string -> content:string -> unit
       [create_file ~name ~content] register the file [name] with content [content]
       so it can be be opened with [open_in name] *)
 
+val register_lazy : string -> unit
+(** Register a lazy file to a Pseudo Filesystem.
+    [register_lazy name] causes an entry to be made in the filesystem such that it
+    will be present in a directory list, but the callback will be called when the
+    file is opened. *)
+
 val update_file : name:string -> content:string -> unit
 (** Update a file in the Pseudo Filesystem.
       [update_file ~name ~content] update the file [name] with content [content] *)

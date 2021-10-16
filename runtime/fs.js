@@ -314,7 +314,6 @@ function caml_create_file(name,content) {
   return 0;
 }
 
-
 //Provides: jsoo_create_file
 //Requires: caml_create_file, caml_string_of_jsbytes
 function jsoo_create_file(name,content) {
@@ -323,6 +322,16 @@ function jsoo_create_file(name,content) {
   return caml_create_file(name, content);
 }
 
+
+//Provides: caml_register_lazy
+//Requires: caml_failwith, resolve_fs_device, caml_string_of_jsbytes
+function caml_register_lazy(name) {
+  var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
+  var root = resolve_fs_device(name);
+  if(! root.device.register_lazy) caml_failwith("cannot register lazy file");
+  root.device.register_lazy(root.rest);
+  return 0;
+}
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes

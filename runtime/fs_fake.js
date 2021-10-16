@@ -27,6 +27,7 @@
 //Requires: make_unix_err_args
 function MlFakeDevice (root, f) {
   this.content={};
+  this.lazyfiles = [];
   this.root = root;
   this.lookupFun = f;
 }
@@ -60,13 +61,15 @@ MlFakeDevice.prototype.exists = function(name) {
   // Check if a directory exists
   var name_slash = this.slash(name);
   if(this.content[name_slash]) return 1;
+  // If it's a lazy file, let's say it exists without doing a lookup.
+  if(this.lazyfiles.indexOf(name) >= 0) return 1;
   // Check if a file exists
   this.lookup(name);
   return this.content[name]?1:0;
 }
 MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
   var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
-  if(this.exists(name)) {
+  if(this.exists(name) || (this.lazyfiles.indexOf(name) >= 0)) {
     if (unix_error) {
       caml_raise_with_args(unix_error, make_unix_err_args("EEXIST", "mkdir", this.nm(name)));
     }
@@ -140,6 +143,10 @@ MlFakeDevice.prototype.readdir = function(name) {
     var m = n.match(r);
     if(m && !seen[m[1]]) {seen[m[1]] = true; a.push(m[1])}
   }
+  this.lazyfiles.forEach(function(n) {
+    var m = n.match(r);
+    if(m && !seen[m[1]]) {seen[m[1]] = true; a.push(m[1])}
+  })
   return a;
 }
 MlFakeDevice.prototype.is_dir = function(name) {
@@ -148,7 +155,7 @@ MlFakeDevice.prototype.is_dir = function(name) {
   return this.content[name_slash]?1:0;
 }
 MlFakeDevice.prototype.unlink = function(name) {
-  var ok = this.content[name]?true:false;
+  var ok = (this.content[name]?true:false) || (this.lazyfiles.indexOf(name) >= 0);
   delete this.content[name];
   return ok;
 }
@@ -193,6 +200,10 @@ MlFakeDevice.prototype.register= function (name,content){
     this.content[name] = file;
   }
   else caml_raise_sys_error(this.nm(name) + " : registering file with invalid content type");
+}
+
+MlFakeDevice.prototype.register_lazy = function (name) {
+  this.lazyfiles.push(name)
 }
 
 MlFakeDevice.prototype.constructor = MlFakeDevice
