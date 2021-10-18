@@ -61,6 +61,8 @@ jobs:
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
+      - run: opam pin add ppx_expect https://github.com/hhugo/ppx_expect.git#v0.14.1+winfix --no-action
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 

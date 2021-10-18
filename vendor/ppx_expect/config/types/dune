@@ -1,4 +1,0 @@
-(library (name expect_test_config_types)
- (public_name ppx_expect.config_types)
- (synopsis "Runtime configuration options for ppx_expect") (libraries)
- (preprocess no_preprocessing))
