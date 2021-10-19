@@ -34,6 +34,7 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : string option
+  ; target_env : [`Isomorphic | `Nodejs | `Browser ]
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -134,6 +135,10 @@ let options =
       & opt_all (list (pair ~sep:'=' string string)) []
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let target_env =
+    let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    Arg.(value & opt (some string) (Some "isomorphic") & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
+  in
   let toplevel =
     let doc = "Compile a toplevel." in
     Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
@@ -216,6 +221,7 @@ let options =
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
       sourcemap_root
+      target_env
       output_file
       input_file
       js_files
@@ -228,6 +234,12 @@ let options =
       else runtime_files
     in
     let linkall = linkall || toplevel || runtime_only in
+    let target_env = match target_env with 
+      | Some "browser" -> `Browser
+      | Some "nodejs" -> `Nodejs
+      | Some "isomorphic" | None -> `Isomorphic
+      | Some env_name -> failwith @@ "invalid target_env " ^ env_name
+    in
     let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
     let input_file =
       match input_file, runtime_only with
@@ -284,6 +296,7 @@ let options =
       ; wrap_with_fun
       ; dynlink
       ; linkall
+      ; target_env
       ; toplevel
       ; export_file
       ; include_dir
@@ -324,6 +337,7 @@ let options =
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
       $ sourcemap_root
+      $ target_env
       $ output_file
       $ input_file
       $ js_files
@@ -370,6 +384,10 @@ let options_runtime_only =
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+  in
+  let target_env =
+    let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    Arg.(value & opt (some string) (Some "isomorphic") & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let wrap_with_function =
     let doc =
@@ -448,6 +466,7 @@ let options_runtime_only =
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
       sourcemap_root
+      target_env
       output_file
       js_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
@@ -488,6 +507,12 @@ let options_runtime_only =
         None)
       else source_map
     in
+    let target_env = match target_env with 
+      | Some "browser" -> `Browser
+      | Some "nodejs" -> `Nodejs
+      | Some "isomorphic" | None -> `Isomorphic
+      | Some env_name -> failwith @@ "invalid target_env " ^ env_name
+    in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     `Ok
@@ -498,6 +523,7 @@ let options_runtime_only =
       ; wrap_with_fun
       ; dynlink = false
       ; linkall = false
+      ; target_env
       ; toplevel = false
       ; export_file = None
       ; include_dir
@@ -531,6 +557,7 @@ let options_runtime_only =
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
       $ sourcemap_root
+      $ target_env
       $ output_file
       $ js_files)
   in

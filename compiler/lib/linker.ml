@@ -164,6 +164,14 @@ let parse_from_lex ~filename lex =
                       if Config.Flag.use_js_string ()
                       then { fragment with ignore = `Because reason }
                       else fragment
+                  | `If (_, "nodejs") as reason ->
+                      if Config.Flag.include_node_apis ()
+                      then { fragment with ignore = `Because reason }
+                      else fragment
+                  | `If (_, "browser") as reason ->
+                      if Config.Flag.include_node_apis ()
+                      then { fragment with ignore = `Because reason }
+                      else fragment
                   | `If (pi, name) | `Ifnot (pi, name) ->
                       let loc =
                         match pi with

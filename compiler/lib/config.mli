@@ -57,6 +57,9 @@ module Flag : sig
 
   val inline_callgen : unit -> bool
 
+  val include_node_apis : unit -> bool
+  val include_browser_apis : unit -> bool
+
   val safe_string : unit -> bool
 
   val use_js_string : unit -> bool
