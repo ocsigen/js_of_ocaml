@@ -24,7 +24,8 @@ module rec Id : sig
   type t = { id : int }
 
   val compare : t -> t -> int
-end = (* error here: undefined compare function *)
+end =
+  (* error here: undefined compare function *)
   Id
 
 module IdSet = Set.Make (Id)

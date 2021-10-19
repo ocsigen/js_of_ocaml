@@ -6919,13 +6919,11 @@ let anticodon_domains =
   ; stacked3' rG 37 38
   ; stacked3' rA 36 37
   ; stacked3' rA 35 36
-  ; stacked3' rG 34 35
-  ; (* <-. Distance      *)
-    p_o3' rCs 32 31
-  ; (*   | Constraint    *)
-    p_o3' rUs 33 32
-    (* <-' 3.0 Angstroms *)
+  ; stacked3' rG 34 35 (* <-. Distance      *)
+  ; p_o3' rCs 32 31 (*      | Constraint    *)
+  ; p_o3' rUs 33 32 (*    <-' 3.0 Angstroms *)
   ]
+[@@ocamlformat "disable"]
 
 (* Anticodon constraint *)
 
@@ -6950,43 +6948,29 @@ let pseudoknot_domains =
   ; wc_dumas rC 10 21
   ; helix3' rC 20 21
   ; wc_dumas rG 11 20
-  ; helix3' rU' 19 20
-  ; (* <-.               *)
-    wc_dumas rA 12 19
-  ; (*   | Distance      *)
-    (*                             | Constraint    *)
-    (*  Helix 1                    | 4.0 Angstroms *)
-    helix3' rC 3 19
-  ; (*   |               *)
-    wc_dumas rG 13 3
-  ; (*   |               *)
-    helix3' rC 2 3
-  ; (*   |               *)
-    wc_dumas rG 14 2
-  ; (*   |               *)
-    helix3' rC 1 2
-  ; (*   |               *)
-    wc_dumas rG' 15 1
-  ; (*   |               *)
-    (*                             |               *)
-    (*  L2 LOOP                    |               *)
-    p_o3' rUs 16 15
-  ; (*   |               *)
-    p_o3' rCs 17 16
-  ; (*   |               *)
-    p_o3' rAs 18 17
-  ; (* <-'               *)
-    (*                                             *)
-    (*  L1 LOOP                                    *)
-    helix3' rU 7 8
-  ; (* <-.               *)
-    p_o3' rCs 4 3
-  ; (*   | Constraint    *)
-    stacked5' rU 5 4
-  ; (*   | 4.5 Angstroms *)
-    stacked5' rC 6 5
-    (* <-'               *)
+  ; helix3' rU' 19 20 (* <-.               *)
+  ; wc_dumas rA 12 19 (*   | Distance      *)
+    (*                     | Constraint    *)
+    (*  Helix 1            | 4.0 Angstroms *)
+  ; helix3' rC 3 19   (*   |               *)
+  ; wc_dumas rG 13 3  (*   |               *)
+  ; helix3' rC 2 3    (*   |               *)
+  ; wc_dumas rG 14 2  (*   |               *)
+  ; helix3' rC 1 2    (*   |               *)
+  ; wc_dumas rG' 15 1 (*   |               *)
+    (*                     |               *)
+    (*  L2 LOOP            |               *)
+  ; p_o3' rUs 16 15   (*   |               *)
+  ; p_o3' rCs 17 16   (*   |               *)
+  ; p_o3' rAs 18 17   (* <-'               *) 
+    (*                                     *)
+    (*  L1 LOOP                            *)
+  ; helix3' rU 7 8    (* <-.               *)
+  ; p_o3' rCs 4 3     (*   | Constraint    *)
+  ; stacked5' rU 5 4  (*   | 4.5 Angstroms *)
+  ; stacked5' rC 6 5  (* <-'               *)
   ]
+[@@ocamlformat "disable"]
 
 (* Pseudoknot constraint *)
 
