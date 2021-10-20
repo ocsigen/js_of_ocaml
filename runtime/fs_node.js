@@ -18,105 +18,87 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: fs_node_supported
-//If: nodejs
-function fs_node_supported() {
+function fs_node_supported () {
   return (
-    typeof joo_global_object.process !== "undefined" &&
-    typeof joo_global_object.process.versions !== "undefined" &&
-    typeof joo_global_object.process.versions.node !== "undefined" &&
-    joo_global_object.process.platform !== "browser"
-  );
+    typeof joo_global_object.process !== 'undefined'
+      && typeof joo_global_object.process.versions !== 'undefined'
+      && typeof joo_global_object.process.versions.node !== 'undefined'
+      && joo_global_object.process.platform !== "browser")
 }
+
 
 //Provides: MlNodeDevice
 //Requires: MlNodeFile, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
-//If: nodejs
 function MlNodeDevice(root) {
-  this.fs = require("fs");
+  this.fs = require('fs');
   this.root = root;
 }
-MlNodeDevice.prototype.nm = function (name) {
-  return this.root + name;
-};
-MlNodeDevice.prototype.exists = function (name) {
+MlNodeDevice.prototype.nm = function(name) {
+  return (this.root + name);
+}
+MlNodeDevice.prototype.exists = function(name) {
   try {
-    return this.fs.existsSync(this.nm(name)) ? 1 : 0;
+    return this.fs.existsSync(this.nm(name))?1:0;
   } catch (err) {
     return 0;
   }
-};
-MlNodeDevice.prototype.mkdir = function (name, mode, raise_unix) {
+}
+MlNodeDevice.prototype.mkdir = function(name, mode, raise_unix) {
   try {
-    this.fs.mkdirSync(this.nm(name), { mode: mode });
-    return 0;
+    this.fs.mkdirSync(this.nm(name),{mode:mode});
+    return 0
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.rmdir = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.rmdir = function(name, raise_unix) {
   try {
     this.fs.rmdirSync(this.nm(name));
-    return 0;
+    return 0
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.readdir = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.readdir = function(name, raise_unix) {
   try {
     return this.fs.readdirSync(this.nm(name));
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.is_dir = function (name) {
+}
+MlNodeDevice.prototype.is_dir = function(name) {
   try {
-    return this.fs.statSync(this.nm(name)).isDirectory() ? 1 : 0;
+    return this.fs.statSync(this.nm(name)).isDirectory()?1:0;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-};
-MlNodeDevice.prototype.unlink = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.unlink = function(name, raise_unix) {
   try {
-    var b = this.fs.existsSync(this.nm(name)) ? 1 : 0;
+    var b = this.fs.existsSync(this.nm(name))?1:0;
     this.fs.unlinkSync(this.nm(name));
     return b;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.open = function (name, f, raise_unix) {
-  var consts = require("constants");
+}
+MlNodeDevice.prototype.open = function(name, f, raise_unix) {
+  var consts = require('constants');
   var res = 0;
-  for (var key in f) {
-    switch (key) {
-      case "rdonly":
-        res |= consts.O_RDONLY;
-        break;
-      case "wronly":
-        res |= consts.O_WRONLY;
-        break;
-      case "append":
-        res |= consts.O_WRONLY | consts.O_APPEND;
-        break;
-      case "create":
-        res |= consts.O_CREAT;
-        break;
-      case "truncate":
-        res |= consts.O_TRUNC;
-        break;
-      case "excl":
-        res |= consts.O_EXCL;
-        break;
-      case "binary":
-        res |= consts.O_BINARY;
-        break;
-      case "text":
-        res |= consts.O_TEXT;
-        break;
-      case "nonblock":
-        res |= consts.O_NONBLOCK;
-        break;
+  for(var key in f){
+    switch(key){
+    case "rdonly"  : res |= consts.O_RDONLY; break;
+    case "wronly"  : res |= consts.O_WRONLY; break;
+    case "append"  :
+      res |= consts.O_WRONLY | consts.O_APPEND;
+      break;
+    case "create"   : res |= consts.O_CREAT;    break;
+    case "truncate" : res |= consts.O_TRUNC;    break;
+    case "excl"     : res |= consts.O_EXCL;     break;
+    case "binary"   : res |= consts.O_BINARY;   break;
+    case "text"     : res |= consts.O_TEXT;     break;
+    case "nonblock" : res |= consts.O_NONBLOCK; break;
     }
   }
   try {
@@ -125,52 +107,48 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
+}
 
-MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+MlNodeDevice.prototype.rename = function(o, n, raise_unix) {
   try {
     this.fs.renameSync(this.nm(o), this.nm(n));
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.stat = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.stat = function(name, raise_unix) {
   try {
     var js_stats = this.fs.statSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.lstat = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.lstat = function(name, raise_unix) {
   try {
     var js_stats = this.fs.lstatSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
+}
+MlNodeDevice.prototype.symlink = function(to_dir, target, path, raise_unix) {
   try {
-    this.fs.symlinkSync(
-      this.nm(target),
-      this.nm(path),
-      to_dir ? "dir" : "file"
-    );
+    this.fs.symlinkSync(this.nm(target), this.nm(path), to_dir ? 'dir' : 'file');
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.readlink = function (name, raise_unix) {
+}
+MlNodeDevice.prototype.readlink = function(name, raise_unix) {
   try {
-    var link = this.fs.readlinkSync(this.nm(name), "utf8");
+    var link = this.fs.readlinkSync(this.nm(name), 'utf8');
     return caml_string_of_jsstring(link);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
+}
+MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {
     var args = make_unix_err_args(err.code, err.syscall, err.path, err.errno);
@@ -178,8 +156,8 @@ MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
   } else {
     caml_raise_sys_error(err.toString());
   }
-};
-MlNodeDevice.prototype.stats_from_js = function (js_stats) {
+}
+MlNodeDevice.prototype.stats_from_js = function(js_stats) {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -237,35 +215,35 @@ MlNodeDevice.prototype.stats_from_js = function (js_stats) {
     js_stats.mtimeMs,
     js_stats.ctimeMs
   );
-};
+}
 
-MlNodeDevice.prototype.constructor = MlNodeDevice;
+MlNodeDevice.prototype.constructor = MlNodeDevice
 
 //Provides: MlNodeFile
 //Requires: MlFile, caml_array_of_string, caml_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-function MlNodeFile(fd) {
-  this.fs = require("fs");
+function MlNodeFile(fd){
+  this.fs = require('fs');
   this.fd = fd;
 }
-MlNodeFile.prototype = new MlFile();
+MlNodeFile.prototype = new MlFile ();
 
-MlNodeFile.prototype.truncate = function (len) {
+MlNodeFile.prototype.truncate = function(len){
   try {
-    this.fs.ftruncateSync(this.fd, len | 0);
+    this.fs.ftruncateSync(this.fd,len|0)
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-};
+}
 MlNodeFile.prototype.length = function () {
   try {
     return this.fs.fstatSync(this.fd).size;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-};
-MlNodeFile.prototype.write = function (offset, buf, buf_offset, len) {
+}
+MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
-  if (!(a instanceof joo_global_object.Uint8Array))
+  if(! (a instanceof joo_global_object.Uint8Array))
     a = new joo_global_object.Uint8Array(a);
   var buffer = joo_global_object.Buffer.from(a);
   try {
@@ -274,10 +252,10 @@ MlNodeFile.prototype.write = function (offset, buf, buf_offset, len) {
     caml_raise_sys_error(err.toString());
   }
   return 0;
-};
-MlNodeFile.prototype.read = function (offset, buf, buf_offset, len) {
+}
+MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   var a = caml_array_of_bytes(buf);
-  if (!(a instanceof joo_global_object.Uint8Array))
+  if(! (a instanceof joo_global_object.Uint8Array))
     a = new joo_global_object.Uint8Array(a);
   var buffer = joo_global_object.Buffer.from(a);
   try {
@@ -285,12 +263,12 @@ MlNodeFile.prototype.read = function (offset, buf, buf_offset, len) {
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-  for (var i = 0; i < len; i++) {
-    caml_bytes_set(buf, buf_offset + i, buffer[buf_offset + i]);
+  for(var i = 0; i < len; i++){
+    caml_bytes_set(buf,buf_offset + i,buffer[buf_offset+i]);
   }
-  return 0;
-};
-MlNodeFile.prototype.read_one = function (offset) {
+  return 0
+}
+MlNodeFile.prototype.read_one = function(offset){
   var a = new joo_global_object.Uint8Array(1);
   var buffer = joo_global_object.Buffer.from(a);
   try {
@@ -299,13 +277,13 @@ MlNodeFile.prototype.read_one = function (offset) {
     caml_raise_sys_error(err.toString());
   }
   return buffer[0];
-};
-MlNodeFile.prototype.close = function () {
+}
+MlNodeFile.prototype.close = function(){
   try {
     this.fs.closeSync(this.fd);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-};
+}
 
 MlNodeFile.prototype.constructor = MlNodeFile;

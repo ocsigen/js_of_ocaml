@@ -1,5 +1,8 @@
 # Boring file regexps:
 
+# Editor
+.vscode
+
 # C object files
 *.o
 *.a
