@@ -166,7 +166,7 @@ let parse_from_lex ~filename lex =
                       else fragment
                   | `If (_, "nodejs") as reason ->
                       if Config.Flag.include_node_apis ()
-                      then fragment 
+                      then fragment
                       else { fragment with ignore = `Because reason }
                   | `If (_, "browser") as reason ->
                       if Config.Flag.include_browser_apis ()
@@ -393,9 +393,17 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                let kal = Option.value ~default:[] ka in 
-                let target_env = Option.value ~default:`Isomorphic @@ 
-                  List.find_map ~f:(fun kind -> match kind with `If (_, "nodejs") -> Some (`Nodejs) | `If (_, "browser") -> Some(`Browser) | _ -> None ) kal in
+                let kal = Option.value ~default:[] ka in
+                let target_env =
+                  Option.value ~default:`Isomorphic
+                  @@ List.find_map
+                       ~f:(fun kind ->
+                         match kind with
+                         | `If (_, "nodejs") -> Some `Nodejs
+                         | `If (_, "browser") -> Some `Browser
+                         | _ -> None)
+                       kal
+                in
                 let rec find = function
                   | [] -> None
                   | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
@@ -410,7 +418,7 @@ let load_fragment ~filename f =
                 (if Hashtbl.mem provided name
                 then
                   let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
-                  if not weakdef && prev_target_env != target_env
+                  if (not weakdef) && prev_target_env != target_env
                   then
                     warn
                       "warning: overriding primitive %S\n  old: %s\n  new: %s@."

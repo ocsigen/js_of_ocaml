@@ -34,7 +34,7 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : string option
-  ; target_env : [`Isomorphic | `Nodejs | `Browser ]
+  ; target_env : [ `Isomorphic | `Nodejs | `Browser ]
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -137,7 +137,10 @@ let options =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
-    Arg.(value & opt (some string) (Some "isomorphic") & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
+    Arg.(
+      value
+      & opt (some string) (Some "isomorphic")
+      & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let toplevel =
     let doc = "Compile a toplevel." in
@@ -234,7 +237,8 @@ let options =
       else runtime_files
     in
     let linkall = linkall || toplevel || runtime_only in
-    let target_env = match target_env with 
+    let target_env =
+      match target_env with
       | Some "browser" -> `Browser
       | Some "nodejs" -> `Nodejs
       | Some "isomorphic" | None -> `Isomorphic
@@ -387,7 +391,10 @@ let options_runtime_only =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
-    Arg.(value & opt (some string) (Some "isomorphic") & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
+    Arg.(
+      value
+      & opt (some string) (Some "isomorphic")
+      & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let wrap_with_function =
     let doc =
@@ -507,7 +514,8 @@ let options_runtime_only =
         None)
       else source_map
     in
-    let target_env = match target_env with 
+    let target_env =
+      match target_env with
       | Some "browser" -> `Browser
       | Some "nodejs" -> `Nodejs
       | Some "isomorphic" | None -> `Isomorphic

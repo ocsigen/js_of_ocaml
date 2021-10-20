@@ -75,6 +75,7 @@ module Flag = struct
   let include_cmis = o ~name:"withcmi" ~default:true
 
   let include_node_apis = o ~name:"include-node" ~default:true
+
   let include_browser_apis = o ~name:"include-browser" ~default:true
 
   let warn_unused = o ~name:"warn-unused" ~default:false

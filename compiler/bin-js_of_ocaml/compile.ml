@@ -66,8 +66,14 @@ let run
   | `Name _, _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
-  Config.Flag.(match target_env with `Nodejs | `Isomorphic -> enable "include-node"  | _ -> disable "include-node");
-  Config.Flag.(match target_env with `Browser | `Isomorphic -> enable "include-browser"  | _ -> disable "include-browser");
+  Config.Flag.(
+    match target_env with
+    | `Nodejs | `Isomorphic -> enable "include-node"
+    | _ -> disable "include-node");
+  Config.Flag.(
+    match target_env with
+    | `Browser | `Isomorphic -> enable "include-browser"
+    | _ -> disable "include-browser");
   let t = Timer.make () in
   let include_dir =
     List.map include_dir ~f:(fun d ->
