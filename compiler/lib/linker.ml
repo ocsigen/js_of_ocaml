@@ -393,17 +393,21 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                let kal = Option.value ~default:[] ka in
-                let target_env =
-                  Option.value ~default:`Isomorphic
-                  @@ List.find_map
-                       ~f:(fun kind ->
-                         match kind with
-                         | `If (_, "nodejs") -> Some `Nodejs
-                         | `If (_, "browser") -> Some `Browser
-                         | _ -> None)
-                       kal
-                in
+                (* @TODO - if a target_env specific impl is provided, we need to selectively override
+                   that resource. However, Primitive.t is not available here for the parsed entity.
+                   How do we expose If: ... directives here? :thinking:
+                *)
+                (* let kal = Option.value ~default:[] ka in *)
+                (* let target_env =
+                     Option.value ~default:`Isomorphic
+                     @@ List.find_map
+                          ~f:(fun kind ->
+                            match kind with
+                            | `If (_, "nodejs") -> Some `Nodejs
+                            | `If (_, "browser") -> Some `Browser
+                            | _ -> None)
+                          kal
+                   in *)
                 let rec find = function
                   | [] -> None
                   | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
@@ -417,15 +421,18 @@ let load_fragment ~filename f =
                 StringSet.iter Primitive.register_named_value named_values;
                 (if Hashtbl.mem provided name
                 then
-                  let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
-                  if (not weakdef) && prev_target_env != target_env
+                  let _, ploc, weakdef (* prev_target_env *) =
+                    Hashtbl.find provided name
+                  in
+                  if not weakdef (* && prev_target_env != target_env *)
                   then
                     warn
                       "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                       name
                       (loc ploc)
                       (loc pi));
-                Hashtbl.add provided name (id, pi, weakdef, target_env);
+                Hashtbl.add provided name (id, pi, weakdef);
+                (* target_env*)
                 Hashtbl.add provided_rev id (name, pi);
                 check_primitive ~name pi ~code ~requires;
                 Hashtbl.add code_pieces id (code, requires)))
