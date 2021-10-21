@@ -30,6 +30,7 @@ type fragment_ =
   ; always : bool
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
+  ; annot : Primitive.t list
   }
 
 type fragment =

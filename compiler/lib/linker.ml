@@ -30,6 +30,7 @@ type fragment_ =
   ; always : bool
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
+  ; annot : Primitive.t list
   }
 
 type fragment =
@@ -141,6 +142,7 @@ let parse_from_lex ~filename lex =
               ; always = false
               ; code
               ; ignore = `No
+              ; annot = []
               }
             in
             let fragment =
@@ -171,7 +173,7 @@ let parse_from_lex ~filename lex =
                   | `If (_, "browser") as reason ->
                       if Config.Flag.include_browser_apis ()
                       then fragment
-                      else { fragment with ignore = `Because reason }
+                      else { fragment with ignore = `Because reason; annot }
                   | `If (pi, name) | `Ifnot (pi, name) ->
                       let loc =
                         match pi with
@@ -366,7 +368,8 @@ let load_fragment ~filename f =
   match f with
   | `Always_include code ->
       always_included := { filename; program = code; requires = [] } :: !always_included
-  | `Some { provides; requires; version_constraint; weakdef; always; code; ignore } -> (
+  | `Some { provides; requires; version_constraint; weakdef; always; code; ignore; annot }
+    -> (
       match ignore with
       | `Because _ -> ()
       | `No ->
@@ -393,21 +396,15 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                (* @TODO - if a target_env specific impl is provided, we need to selectively override
-                   that resource. However, Primitive.t is not available here for the parsed entity.
-                   How do we expose If: ... directives here? :thinking:
-                *)
-                (* let kal = Option.value ~default:[] ka in *)
-                (* let target_env =
-                     Option.value ~default:`Isomorphic
-                     @@ List.find_map
-                          ~f:(fun kind ->
-                            match kind with
-                            | `If (_, "nodejs") -> Some `Nodejs
-                            | `If (_, "browser") -> Some `Browser
-                            | _ -> None)
-                          kal
-                   in *)
+                let target_env =
+                  Option.value ~default:`Isomorphic
+                  @@ List.find_map
+                       ~f:(function
+                         | `If (_, "nodejs") -> Some `Nodejs
+                         | `If (_, "browser") -> Some `Browser
+                         | _ -> None)
+                       annot
+                in
                 let rec find = function
                   | [] -> None
                   | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
@@ -419,23 +416,52 @@ let load_fragment ~filename f =
                 let named_values = find_named_value code in
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
-                (if Hashtbl.mem provided name
-                then
-                  let _, ploc, weakdef (* prev_target_env *) =
-                    Hashtbl.find provided name
-                  in
-                  if not weakdef (* && prev_target_env != target_env *)
+                let is_isomorphic_js =
+                  Config.Flag.(include_browser_apis () && include_node_apis ())
+                in
+                let is_updating =
+                  if Hashtbl.mem provided name
                   then
-                    warn
-                      "warning: overriding primitive %S\n  old: %s\n  new: %s@."
-                      name
-                      (loc ploc)
-                      (loc pi));
-                Hashtbl.add provided name (id, pi, weakdef);
-                (* target_env*)
-                Hashtbl.add provided_rev id (name, pi);
-                check_primitive ~name pi ~code ~requires;
-                Hashtbl.add code_pieces id (code, requires)))
+                    let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
+                    if not weakdef
+                    then
+                      match prev_target_env, target_env, is_isomorphic_js with
+                      | `Isomorphic, _, true
+                      | `Node, `Browser, true
+                      | `Browser, `Node, true ->
+                          (* isomorphic case trumps special cases *)
+                          false
+                      | _, `Isomorphic, false ->
+                          warn
+                            "warning: isomorphic javascript primitive provided after \
+                             specialized environment primitive %S\n\
+                            \  old: %s\n\
+                            \  new: %s@."
+                            name
+                            (loc ploc)
+                            (loc pi);
+                          true
+                      | a, b, _ when a == b ->
+                          (* support legacy case that i dont understand *)
+                          warn
+                            "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+                            name
+                            (loc ploc)
+                            (loc pi);
+                          true
+                      | _ ->
+                          (* permit target_env specilization from default, backwards compat isomorphic case *)
+                          true
+                    else true
+                  else true
+                in
+                if is_updating
+                then (
+                  Hashtbl.add provided name (id, pi, weakdef, target_env);
+                  Hashtbl.add provided_rev id (name, pi);
+                  check_primitive ~name pi ~code ~requires;
+                  Hashtbl.add code_pieces id (code, requires))
+                else ()))
 
 let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
 
@@ -475,7 +501,7 @@ let load_files l =
 let rec resolve_dep_name_rev visited path nm =
   let id =
     try
-      let x, _, _ = Hashtbl.find provided nm in
+      let x, _, _, _ = Hashtbl.find provided nm in
       x
     with Not_found -> error "missing dependency '%s'@." nm
   in
@@ -514,7 +540,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
       (* link all primitives *)
       let prog, set =
         Hashtbl.fold
-          (fun nm (_id, _, _) (visited, set) ->
+          (fun nm (_id, _, _, _) (visited, set) ->
             resolve_dep_name_rev visited [] nm, StringSet.add nm set)
           provided
           (visited_rev, StringSet.empty)
@@ -565,6 +591,6 @@ let all state =
 
 let origin ~name =
   try
-    let _, ploc, _ = Hashtbl.find provided name in
+    let _, ploc, _, _ = Hashtbl.find provided name in
     Option.bind ploc ~f:(fun ploc -> ploc.Parse_info.src)
   with Not_found -> None
