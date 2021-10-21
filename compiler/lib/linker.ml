@@ -429,7 +429,7 @@ let load_fragment ~filename f =
                       | `Isomorphic, _, true
                       | `Node, `Browser, true
                       | `Browser, `Node, true ->
-                          (* isomorphic case trumps special cases *)
+                          (* isomorphic case trumps special cases in isomorphic mode *)
                           false
                       | _, `Isomorphic, false ->
                           warn
@@ -450,7 +450,7 @@ let load_fragment ~filename f =
                             (loc pi);
                           true
                       | _ ->
-                          (* permit target_env specilization from default, backwards compat isomorphic case *)
+                          (* permit target_env specialization from default isomorphic case *)
                           true
                     else true
                   else true
