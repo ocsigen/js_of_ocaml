@@ -22,8 +22,7 @@ function fs_node_supported () {
   return (
     typeof joo_global_object.process !== 'undefined'
       && typeof joo_global_object.process.versions !== 'undefined'
-      && typeof joo_global_object.process.versions.node !== 'undefined'
-      && joo_global_object.process.platform !== "browser")
+      && typeof joo_global_object.process.versions.node !== 'undefined')
 }
 
 
@@ -219,6 +218,11 @@ MlNodeDevice.prototype.stats_from_js = function(js_stats) {
 
 MlNodeDevice.prototype.constructor = MlNodeDevice
 
+//Provides: MlNodeDevice
+//If: browser
+function MlNodeDevice() {
+}
+
 //Provides: MlNodeFile
 //Requires: MlFile, caml_array_of_string, caml_array_of_bytes, caml_bytes_set, caml_raise_sys_error
 function MlNodeFile(fd){
@@ -287,3 +291,8 @@ MlNodeFile.prototype.close = function(){
 }
 
 MlNodeFile.prototype.constructor = MlNodeFile;
+
+//Provides: MlNodeFile
+//If: browser
+function MlNodeFile(){
+}
