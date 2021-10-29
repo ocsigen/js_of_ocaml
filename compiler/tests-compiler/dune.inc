@@ -1,6 +1,6 @@
 
 (library
- (name jsoo_compiler_expect_tests_array_access)
+ (name jsooexp_array_access)
  (modules array_access)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -13,7 +13,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_build_path_prefix_map)
+ (name jsooexp_build_path_prefix_map)
  (modules build_path_prefix_map)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -26,7 +26,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_call_gen)
+ (name jsooexp_call_gen)
  (modules call_gen)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -39,7 +39,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_cond)
+ (name jsooexp_cond)
  (modules cond)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -52,7 +52,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_eliminate_exception_handler)
+ (name jsooexp_eliminate_exception_handler)
  (modules eliminate_exception_handler)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -65,7 +65,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_empty_cma)
+ (name jsooexp_empty_cma)
  (modules empty_cma)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -78,7 +78,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_end_to_end)
+ (name jsooexp_end_to_end)
  (modules end_to_end)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -91,7 +91,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_error)
+ (name jsooexp_error)
  (modules error)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -104,7 +104,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_exceptions)
+ (name jsooexp_exceptions)
  (modules exceptions)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -117,7 +117,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_getenv)
+ (name jsooexp_getenv)
  (modules getenv)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -130,7 +130,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_gh1007)
+ (name jsooexp_gh1007)
  (modules gh1007)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -143,7 +143,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_gh1051)
+ (name jsooexp_gh1051)
  (modules gh1051)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -156,7 +156,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_gl507)
+ (name jsooexp_gl507)
  (modules gl507)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -169,7 +169,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_inlining)
+ (name jsooexp_inlining)
  (modules inlining)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -182,7 +182,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_js_parser_printer)
+ (name jsooexp_js_parser_printer)
  (modules js_parser_printer)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -195,7 +195,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_lazy)
+ (name jsooexp_lazy)
  (modules lazy)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -208,7 +208,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_macro)
+ (name jsooexp_macro)
  (modules macro)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -221,7 +221,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_match_with_exn)
+ (name jsooexp_match_with_exn)
  (modules match_with_exn)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -234,7 +234,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_mutable_closure)
+ (name jsooexp_mutable_closure)
  (modules mutable_closure)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -247,7 +247,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_obj)
+ (name jsooexp_obj)
  (modules obj)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -260,7 +260,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_obj_dup)
+ (name jsooexp_obj_dup)
  (modules obj_dup)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -273,7 +273,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_side_effect)
+ (name jsooexp_side_effect)
  (modules side_effect)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -286,7 +286,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_sourcemap)
+ (name jsooexp_sourcemap)
  (modules sourcemap)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -299,7 +299,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_static_eval)
+ (name jsooexp_static_eval)
  (modules static_eval)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -312,7 +312,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_sys_command)
+ (name jsooexp_sys_command)
  (modules sys_command)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -325,7 +325,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_sys_fs)
+ (name jsooexp_sys_fs)
  (modules sys_fs)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -338,7 +338,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_tailcall)
+ (name jsooexp_tailcall)
  (modules tailcall)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -351,7 +351,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_unix_fs)
+ (name jsooexp_unix_fs)
  (modules unix_fs)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -364,7 +364,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_compiler_expect_tests_variable_declaration_output)
+ (name jsooexp_variable_declaration_output)
  (modules variable_declaration_output)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests

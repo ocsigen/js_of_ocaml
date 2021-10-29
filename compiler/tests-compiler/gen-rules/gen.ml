@@ -23,7 +23,7 @@ let () =
          Printf.printf
            {|
 (library
- (name jsoo_compiler_expect_tests_%s)
+ (name jsooexp_%s)
  (modules %s)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
