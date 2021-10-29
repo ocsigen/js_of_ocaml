@@ -12,6 +12,8 @@ let is_implem x =
     with Exit -> false
   else false
 
+let () = set_binary_mode_out stdout true
+
 let () =
   Array.to_list (Sys.readdir ".")
   |> List.filter is_implem
