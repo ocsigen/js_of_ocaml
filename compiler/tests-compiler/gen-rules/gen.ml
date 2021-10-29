@@ -1,9 +1,15 @@
-let is_implem x = 
+let is_implem x =
   if String.equal (Filename.extension x) ".ml"
   then
     let fname = Filename.chop_extension x in
-    try String.iter (function 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> () | _ -> raise Exit) fname; true with
-    | Exit -> false
+    try
+      String.iter
+        (function
+          | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> ()
+          | _ -> raise Exit)
+        fname;
+      true
+    with Exit -> false
   else false
 
 let () =
