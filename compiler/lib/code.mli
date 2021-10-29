@@ -227,6 +227,8 @@ val prepend : program -> instr list -> program
 
 val empty : program
 
+val is_empty : program -> bool
+
 val eq : program -> program -> bool
 
 val invariant : program -> unit

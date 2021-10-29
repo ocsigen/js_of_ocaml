@@ -116,10 +116,11 @@ let run
   in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
-  let check_debug debug =
+  let check_debug (one : Parse_bytecode.one) =
     if (not runtime_only)
        && Option.is_some source_map
-       && Parse_bytecode.Debug.is_empty debug
+       && Parse_bytecode.Debug.is_empty one.debug
+       && not (Code.is_empty one.code)
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \
@@ -141,7 +142,7 @@ let run
         Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
   let output (one : Parse_bytecode.one) ~standalone output_file =
-    check_debug one.debug;
+    check_debug one;
     let init_pseudo_fs = fs_external && standalone in
     (match output_file with
     | `Stdout ->

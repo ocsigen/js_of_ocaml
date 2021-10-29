@@ -222,7 +222,7 @@ module Ctx = struct
     ; live : int array
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
-    ; exported_runtime : Code.Var.t option
+    ; exported_runtime : (Code.Var.t * bool ref) option
     }
 
   let initial ~exported_runtime blocks live share debug =
@@ -275,7 +275,9 @@ let s_var name = J.EVar (J.ident name)
 
 let runtime_fun ctx name =
   match ctx.Ctx.exported_runtime with
-  | Some runtime -> J.EDot (J.EVar (J.V runtime), name)
+  | Some (runtime, runtime_needed) ->
+      runtime_needed := true;
+      J.EDot (J.EVar (J.V runtime), name)
   | None -> s_var name
 
 let str_js s = J.EStr (s, `Bytes)
@@ -1891,7 +1893,8 @@ let generate_shared_value ctx =
         (J.Variable_statement
            ((match ctx.Ctx.exported_runtime with
             | None -> []
-            | Some v ->
+            | Some (_, { contents = false }) -> []
+            | Some (v, _) ->
                 [ J.V v, Some (J.EDot (s_var Constant.global_object, "jsoo_runtime"), J.N)
                 ])
            @ List.map
@@ -1924,7 +1927,7 @@ let f (p : Code.program) ~exported_runtime ~live_vars debug =
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =
-    if exported_runtime then Some (Code.Var.fresh_n "runtime") else None
+    if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
   let ctx = Ctx.initial ~exported_runtime p.blocks live_vars share debug in
   let p = compile_program ctx p.start in

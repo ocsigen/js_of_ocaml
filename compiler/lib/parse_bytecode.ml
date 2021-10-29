@@ -2101,22 +2101,29 @@ let parse_bytecode code globals debug_data =
     else blocks
   in
   let blocks' = Blocks.finish_analysis blocks in
-  if not (Blocks.is_empty blocks') then compile_block blocks' debug_data code 0 state;
-  let blocks =
-    Addr.Map.mapi
-      (fun _ (state, instr, last) ->
-        { params = State.stack_vars state
-        ; handler = State.current_handler state
-        ; body = instr
-        ; branch = last
-        })
-      !compiled_blocks
+  let p =
+    if not (Blocks.is_empty blocks')
+    then (
+      let start = 0 in
+      compile_block blocks' debug_data code start state;
+      let blocks =
+        Addr.Map.mapi
+          (fun _ (state, instr, last) ->
+            { params = State.stack_vars state
+            ; handler = State.current_handler state
+            ; body = instr
+            ; branch = last
+            })
+          !compiled_blocks
+      in
+      let blocks = match_exn_traps blocks in
+      let free_pc = String.length code / 4 in
+      { start; blocks; free_pc })
+    else Code.empty
   in
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Set.empty;
-  let free_pc = String.length code / 4 in
-  let blocks = match_exn_traps blocks in
-  { start = 0; blocks; free_pc }
+  p
 
 (* HACK - override module *)
 
@@ -2317,6 +2324,7 @@ let from_exe
         ]
       in
       let gdata = Var.fresh () in
+      let need_gdata = ref false in
       let infos =
         [ "toc", Constants.parse (Obj.repr toc)
         ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
@@ -2324,6 +2332,7 @@ let from_exe
       in
       let body =
         List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
+            need_gdata := true;
             let c = Var.fresh () in
             Let (c, Constant const)
             :: Let
@@ -2331,7 +2340,9 @@ let from_exe
                  , Prim (Extern "caml_js_set", [ Pv gdata; Pc (String name); Pv c ]) )
             :: rem)
       in
-      Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+      if !need_gdata
+      then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+      else body
     else body
   in
   (* List interface files *)
@@ -2387,13 +2398,20 @@ let from_bytes primitives (code : bytecode) =
   let globals = make_globals 0 [||] primitives in
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh () in
+  let need_gdata = ref false in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
         match var with
-        | Some x when globals.is_const.(i) -> Let (x, Field (gdata, i)) :: l
+        | Some x when globals.is_const.(i) ->
+            need_gdata := true;
+            Let (x, Field (gdata, i)) :: l
         | _ -> l)
   in
-  let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
+  let body =
+    if !need_gdata
+    then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+    else body
+  in
   prepend p body, debug_data
 
 let from_string primitives (code : string) = from_bytes primitives code
@@ -2500,6 +2518,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
   in
   let prog = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
+  let need_gdata = ref false in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
         match var with
@@ -2515,11 +2534,16 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
                 Let (x, Constant cst) :: l
             | Some name ->
                 Var.name x name;
+                need_gdata := true;
                 Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (IString name) ])) :: l
             )
         | _ -> l)
   in
-  let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
+  let body =
+    if !need_gdata
+    then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+    else body
+  in
   let cmis =
     if toplevel && Config.Flag.include_cmis ()
     then
