@@ -27,7 +27,7 @@ val parse_js : Filetype.js_file -> Javascript.program
 
 val compile_ocaml_to_cmo : ?debug:bool -> Filetype.ocaml_file -> Filetype.cmo_file
 
-val compile_ocaml_to_bc : Filetype.ocaml_file -> Filetype.bc_file
+val compile_ocaml_to_bc : ?debug:bool -> Filetype.ocaml_file -> Filetype.bc_file
 
 val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
@@ -56,6 +56,8 @@ val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
 val print_file : string -> unit
 
+val print_program : Javascript.program -> unit
+
 val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string option -> unit
@@ -65,5 +67,8 @@ val compile_and_run : ?flags:string list -> string -> unit
 val compile_and_run_bytecode : string -> unit
 
 val compile_and_parse : ?debug:bool -> ?flags:string list -> string -> Javascript.program
+
+val compile_and_parse_whole_program :
+  ?debug:bool -> ?flags:string list -> string -> Javascript.program
 
 val normalize_path : string -> string

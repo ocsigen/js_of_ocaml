@@ -79,21 +79,20 @@ let%expect_test "static eval of string get" =
 
 let%expect_test "static eval of Sys.backend_type" =
   let program =
-    compile_and_parse
+    compile_and_parse_whole_program
       {|
-    external get_backend_type : unit -> Sys.backend_type = "%backend_type"
+    exception Myfun of (unit -> int)
     let myfun () = 
-    let backend_type = get_backend_type () in
-    let constant = match backend_type with
-    | Other "js_of_ocaml" -> 42
-    | Native -> 1
-    | Bytecode -> 2
-    | Other _ -> 3
-    in
-    constant
+      let constant = match Sys.backend_type with
+      | Other "js_of_ocaml" -> 42
+      | Native -> 1
+      | Bytecode -> 2
+      | Other _ -> 3
+      in
+      constant
+    let () = raise (Myfun myfun)
   |}
   in
   print_fun_decl program (Some "myfun");
-  [%expect
-    {|
+  [%expect {|
     function myfun(param){return 42} |}]
