@@ -1,4 +1,6 @@
 # dev (2021-??-??) - ??
+## Features/Changes
+* Compiler: static evaluation of backend_type
 
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma
