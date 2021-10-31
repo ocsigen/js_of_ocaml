@@ -134,7 +134,7 @@ let parse_from_lex ~filename lex =
         match annot with
         | [] -> `Always_include code
         | annot ->
-            let no_annot_fragment =
+            let initial_fragment =
               { provides = None
               ; requires = []
               ; version_constraint = []
@@ -142,11 +142,11 @@ let parse_from_lex ~filename lex =
               ; always = false
               ; code
               ; ignore = `No
-              ; annot = []
+              ; annot
               }
             in
             let fragment =
-              List.fold_left annot ~init:no_annot_fragment ~f:(fun fragment a ->
+              List.fold_left annot ~init:initial_fragment ~f:(fun fragment a ->
                   match a with
                   | `Provides (pi, name, kind, ka) ->
                       { fragment with provides = Some (pi, name, kind, ka) }
@@ -426,23 +426,13 @@ let load_fragment ~filename f =
                     if not weakdef
                     then
                       match prev_target_env, target_env, is_isomorphic_js with
-                      | `Isomorphic, _, true
-                      | `Node, `Browser, true
-                      | `Browser, `Node, true ->
-                          (* isomorphic case trumps special cases in isomorphic mode *)
-                          false
-                      | _, `Isomorphic, false ->
-                          warn
-                            "warning: isomorphic javascript primitive provided after \
-                             specialized environment primitive %S\n\
-                            \  old: %s\n\
-                            \  new: %s@."
-                            name
-                            (loc ploc)
-                            (loc pi);
-                          true
+                      | _, `Isomorphic, true -> true
+                      | _, `Isomorphic, false -> false
+                      | _, `Nodejs, true -> false
+                      | _, `Nodejs, false -> Config.Flag.include_node_apis ()
+                      | _, `Browser, true -> false
+                      | _, `Browser, false -> Config.Flag.include_browser_apis ()
                       | a, b, _ when a == b ->
-                          (* support legacy case that i dont understand *)
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
