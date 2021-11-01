@@ -1,0 +1,12 @@
+# Develop using a known working environment.
+# @usage
+# run `make dev_container`
+FROM ocaml/opam:ubuntu-18.04-ocaml-4.12
+USER root
+RUN apt-get update && apt-get install -y libgmp-dev pkg-config
+USER opam
+RUN opam install --deps-only js_of_ocaml js_of_ocaml-lwt js_of_ocaml-compiler js_of_ocaml-ocamlbuild js_of_ocaml-toplevel js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
+RUN opam install lwt reactiveData tyxml ppxlib cohttp-lwt-unix menhir ppx_expect yojson sexplib ocp-indent graphics
+RUN curl -fsSL https://fnm.vercel.app/install | bash
+ENV PATH=/home/opam/.fnm:$PATH
+RUN eval "`fnm env`" && fnm install 16

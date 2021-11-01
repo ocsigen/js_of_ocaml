@@ -28,4 +28,10 @@ installdoc:
 	cp -r _build/default/manual _wikidoc/doc/dev/manual
 	find _wikidoc/doc/dev/ -name dune -delete
 
-.PHONY: all tests test runtest runtests doc clean installdoc
+docker_dev_image:
+	docker build -f Dockerfile.dev -t jsoo_dev .
+
+dev_container: docker_dev_image
+	docker run -it --rm -v $$PWD:/js_of_ocaml --workdir=/js_of_ocaml jsoo_dev
+
+.PHONY: all dev_container docker_dev_image tests test runtest runtests doc clean installdoc
