@@ -2,8 +2,10 @@ Missing
 -------
 
 From main.bc:
+caml_add_debug_info
 caml_alloc_dummy_function
 caml_alloc_dummy_infix
+caml_array_unsafe_set_addr
 caml_dynlink_add_primitive
 caml_dynlink_close_lib
 caml_dynlink_get_current_libs
@@ -24,7 +26,9 @@ caml_int_as_pointer
 caml_invoke_traced_function
 caml_realloc_global
 caml_reify_bytecode
+caml_remove_debug_info
 caml_reset_afl_instrumentation
+caml_setup_afl
 caml_signbit
 caml_static_release_bytecode
 caml_terminfo_rows
@@ -117,6 +121,20 @@ caml_gr_window_id
 
 From +hash.js:
 caml_hash_univ_param
+
+From +ieee_754.js:
+caml_acosh_float
+caml_asinh_float
+caml_atanh_float
+caml_cbrt_float
+caml_erf_float
+caml_erfc_float
+caml_exp2_float
+caml_log2_float
+
+From +internalMod.js:
+caml_CamlinternalMod_init_mod
+caml_CamlinternalMod_update_mod
 
 From +ints.js:
 caml_div

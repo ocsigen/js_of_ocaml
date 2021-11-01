@@ -61,4 +61,4 @@ let () =
     print_endline @@ Printexc.to_string e;
     ()
   |};
-  [%expect {| TypeError.*is not a function (regexp) |}]
+  [%expect {| Failure("TypeError: root.device.readdir is not a function") |}]
