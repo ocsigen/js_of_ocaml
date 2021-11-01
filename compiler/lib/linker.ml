@@ -396,15 +396,20 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                let target_env =
-                  Option.value ~default:`Isomorphic
-                  @@ List.find_map
-                       ~f:(function
-                         | `If (_, "nodejs") -> Some `Nodejs
-                         | `If (_, "browser") -> Some `Browser
-                         | _ -> None)
-                       annot
+                let target_env = ref `Isomorphic in
+                let _ =
+                  List.find_opt
+                    (function
+                      | `If (_, "nodejs") ->
+                          target_env := `Nodejs;
+                          true
+                      | `If (_, "browser") ->
+                          target_env := `Browser;
+                          true
+                      | _ -> false)
+                    annot
                 in
+                let target_env = !target_env in
                 let rec find = function
                   | [] -> None
                   | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
