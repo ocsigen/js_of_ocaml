@@ -364,6 +364,13 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
+let rec find_map f = function
+  | [] -> None
+  | x :: l -> (
+      match f x with
+      | Some _ as result -> result
+      | None -> find_map f l)
+
 let load_fragment ~filename f =
   match f with
   | `Always_include code ->
@@ -396,20 +403,15 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                let target_env = ref `Isomorphic in
-                let _ =
-                  List.find_opt
-                    (function
-                      | `If (_, "nodejs") ->
-                          target_env := `Nodejs;
-                          true
-                      | `If (_, "browser") ->
-                          target_env := `Browser;
-                          true
-                      | _ -> false)
-                    annot
+                let target_env =
+                  Option.value ~default:`Isomorphic
+                  @@ find_map
+                       (function
+                         | `If (_, "nodejs") -> Some `Nodejs
+                         | `If (_, "browser") -> Some `Browser
+                         | _ -> None)
+                       annot
                 in
-                let target_env = !target_env in
                 let rec find = function
                   | [] -> None
                   | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
