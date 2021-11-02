@@ -24,6 +24,11 @@ function fs_node_supported () {
       && typeof joo_global_object.process.versions !== 'undefined'
       && typeof joo_global_object.process.versions.node !== 'undefined')
 }
+//Provides: fs_node_supported
+//If: browser
+function fs_node_supported () {
+  return false
+}
 
 
 //Provides: MlNodeDevice

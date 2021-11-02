@@ -61,4 +61,4 @@ let () =
     print_endline @@ Printexc.to_string e;
     ()
   |};
-  [%expect {| Failure("TypeError: root.device.readdir is not a function") |}]
+  [%expect {| Sys_error*No such file or directory* (glob) |}]
