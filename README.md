@@ -55,7 +55,7 @@ ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx -linkpkg -o cubes
 Then, run the `js_of_ocaml` compiler to produce JavaScript code:
 
 ```
-js_of_ocaml cubes.byte
+js_of_ocaml --target-env=browser cubes.byte
 ```
 
 ## Features
