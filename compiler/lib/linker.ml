@@ -433,12 +433,6 @@ let load_fragment ~filename f =
                     if not weakdef
                     then
                       match prev_target_env, target_env, is_isomorphic_js with
-                      | _, `Isomorphic, true -> true
-                      | _, `Isomorphic, false -> false
-                      | _, `Nodejs, true -> false
-                      | _, `Nodejs, false -> Config.Flag.include_node_apis ()
-                      | _, `Browser, true -> false
-                      | _, `Browser, false -> Config.Flag.include_browser_apis ()
                       | a, b, _ when a == b ->
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
@@ -446,6 +440,10 @@ let load_fragment ~filename f =
                             (loc ploc)
                             (loc pi);
                           true
+                      | _, target_env, true -> target_env == `Isomorphic
+                      | _, `Isomorphic, false -> false
+                      | _, `Browser, false -> Config.Flag.include_browser_apis ()
+                      | _, `Nodejs, false -> Config.Flag.include_node_apis ()
                       | _ ->
                           (* permit target_env specialization from default isomorphic case *)
                           true
