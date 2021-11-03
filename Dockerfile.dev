@@ -1,7 +1,7 @@
 # Develop using a known working environment.
 # @usage
 # run `make dev_container`
-FROM ocaml/opam:ubuntu-18.04-ocaml-4.12
+FROM ocaml/opam:ubuntu-18.04-ocaml-4.13
 USER root
 RUN apt-get update && apt-get install -y libgmp-dev pkg-config
 USER opam

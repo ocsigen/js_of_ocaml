@@ -9,6 +9,7 @@
 * Runtime: make stdin work on nodejs
 * Runtime: add support for Unix(stat,lstat,mkdir,rmdir,symlink,readlink,unlink,getuid) on nodejs.
 * Runtime: add caml_raise_with_args
+* Workspace: add development container
 
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
