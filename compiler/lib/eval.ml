@@ -197,13 +197,13 @@ let eval_instr info i =
       match the_const_of info y, the_const_of info z with
       | Some e1, Some e2 -> (
           match constant_equal e1 e2 with
-          | None -> i
+          | None -> [ i ]
           | Some c ->
               let c = if c then 1l else 0l in
               let c = Constant (Int c) in
               Flow.update_def info x c;
-              Let (x, c))
-      | _ -> i)
+              [ Let (x, c) ])
+      | _ -> [ i ])
   | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
       let c =
         match s with
@@ -212,24 +212,29 @@ let eval_instr info i =
         | _ -> None
       in
       match c with
-      | None -> i
+      | None -> [ i ]
       | Some c ->
           let c = Constant (Int c) in
           Flow.update_def info x c;
-          Let (x, c))
+          [ Let (x, c) ])
   | Let (_, Prim (Extern ("caml_array_unsafe_get" | "caml_array_unsafe_set"), _)) ->
       (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
-      i
+      [ i ]
   | Let (x, Prim (IsInt, [ y ])) -> (
       match is_int info y with
-      | Unknown -> i
+      | Unknown -> [ i ]
       | (Y | N) as b ->
           let b = if Poly.(b = N) then 0l else 1l in
           let c = Constant (Int b) in
           Flow.update_def info x c;
-          Let (x, c))
+          [ Let (x, c) ])
+  | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
+      let jsoo = Code.Var.fresh () in
+      [ Let (jsoo, Constant (String "js_of_ocaml"))
+      ; Let (x, Block (0, [| jsoo |], NotArray))
+      ]
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
       let res =
@@ -248,22 +253,23 @@ let eval_instr info i =
       | Some c ->
           let c = Constant c in
           Flow.update_def info x c;
-          Let (x, c)
+          [ Let (x, c) ]
       | _ ->
-          Let
-            ( x
-            , Prim
-                ( prim
-                , List.map2 prim_args prim_args' ~f:(fun arg c ->
-                      match c with
-                      | Some ((Int _ | Float _ | IString _) as c) -> Pc c
-                      | Some (String _ as c) when Config.Flag.use_js_string () -> Pc c
-                      | Some _
-                      (* do not be duplicated other constant as
-                          they're not represented with constant in javascript. *)
-                      | None ->
-                          arg) ) ))
-  | _ -> i
+          [ Let
+              ( x
+              , Prim
+                  ( prim
+                  , List.map2 prim_args prim_args' ~f:(fun arg c ->
+                        match c with
+                        | Some ((Int _ | Float _ | IString _) as c) -> Pc c
+                        | Some (String _ as c) when Config.Flag.use_js_string () -> Pc c
+                        | Some _
+                        (* do not be duplicated other constant as
+                            they're not represented with constant in javascript. *)
+                        | None ->
+                            arg) ) )
+          ])
+  | _ -> [ i ]
 
 type case_of =
   | CConst of int
@@ -385,7 +391,7 @@ let drop_exception_handler blocks =
 let eval info blocks =
   Addr.Map.map
     (fun block ->
-      let body = List.map block.body ~f:(eval_instr info) in
+      let body = List.concat_map block.body ~f:(eval_instr info) in
       let branch = eval_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
