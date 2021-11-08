@@ -76,3 +76,30 @@ let%expect_test "static eval of string get" =
     var ex = call_with_char(caml_string_get(constant,- 10));
     var ax = call_with_char(103);
     var bx = call_with_char(caml_string_get(constant,30)); |}]
+
+let%expect_test "static eval of Sys.backend_type" =
+  let program =
+    compile_and_parse
+      {|
+    let myfun () = 
+    let constant = match Sys.backend_type with
+    | Other "js_of_ocaml" -> 42
+    | Native -> 1
+    | Bytecode -> 2
+    | Other _ -> 3
+    in
+    constant
+  |}
+  in
+  print_fun_decl program (Some "myfun");
+  [%expect
+    {|
+    function myfun(param)
+     {var _a_=Stdlib_sys[5];
+      if(typeof _a_ === "number")
+       var constant=_a_?2:1;
+      else
+       var
+        _b_=runtime.caml_string_notequal(_a_[1],cst_js_of_ocaml)?3:42,
+        constant=_b_;
+      return constant} |}]
