@@ -1,12 +1,11 @@
-(library
- (name jsoo_compiler_expect_tests)
- (libraries js_of_ocaml_compiler unix str)
- (inline_tests
-  (flags -allow-output-patterns)
-  (deps
-   (file ../../compiler/bin-js_of_ocaml/js_of_ocaml.exe)
-   (file ../../compiler/bin-jsoo_minify/jsoo_minify.exe)))
- (preprocess
-  (pps ppx_expect)))
+(include dune.inc)
 
-(include_subdirs unqualified)
+(rule
+ (with-stdout-to
+  dune.inc.gen
+  (run gen-rules/gen.exe)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff dune.inc dune.inc.gen)))
