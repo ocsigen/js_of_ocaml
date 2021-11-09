@@ -21,7 +21,7 @@ open Util
 
 let%expect_test _ =
   compile_lib [] "empty"
-  |> compile_cmo_to_javascript ~sourcemap:false
+  |> compile_cmo_to_javascript ~sourcemap:true
   |> Filetype.read_js
   |> Filetype.string_of_js_text
   |> print_endline;
@@ -29,7 +29,7 @@ let%expect_test _ =
   Sys.remove "empty.js";
   [%expect
     {|
-      (function(joo_global_object)
-         {"use strict";var runtime=joo_global_object.jsoo_runtime;return}
-        (function(){return this}()));
+      (function(joo_global_object){"use strict";return}(function(){return this}()));
+
+      //# sourceMappingURL=empty.map
     |}]

@@ -531,13 +531,25 @@ let prepend ({ start; blocks; free_pc } as p) body =
       let free_pc = free_pc + 1 in
       { start = new_start; blocks; free_pc }
 
+let empty_block = { params = []; handler = None; body = []; branch = Stop }
+
 let empty =
   let start = 0 in
-  let free_pc = 1 in
-  let blocks =
-    Addr.Map.singleton start { params = []; handler = None; body = []; branch = Stop }
-  in
-  { start; blocks; free_pc }
+  let blocks = Addr.Map.singleton start empty_block in
+  { start; blocks; free_pc = start + 1 }
+
+let is_empty p =
+  match Addr.Map.cardinal p.blocks with
+  | 0 -> true
+  | 1 -> (
+      let _, v = Addr.Map.choose p.blocks in
+      match v with
+      | { handler = None; body; branch = Stop; params = _ } -> (
+          match body with
+          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
+          | _ -> false)
+      | _ -> false)
+  | _ -> false
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
@@ -601,9 +613,10 @@ let with_invariant = Debug.find "invariant"
 
 let check_defs = false
 
-let invariant { blocks; _ } =
+let invariant { blocks; start; _ } =
   if with_invariant ()
-  then
+  then (
+    assert (Addr.Map.mem start blocks);
     let defs = Array.make (Var.count ()) false in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
@@ -655,4 +668,4 @@ let invariant { blocks; _ } =
         Option.iter block.handler ~f:(fun (_, cont) -> check_cont cont);
         List.iter block.body ~f:check_instr;
         check_last block.branch)
-      blocks
+      blocks)

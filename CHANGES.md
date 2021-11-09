@@ -1,3 +1,8 @@
+# dev (2021-??-??) - ??
+
+## Bug fixes
+* Compiler: fix sourcemap warning for empty cma
+
 # 3.11.0 (2021-10-06) - Lille
 
 ## Features/Changes
