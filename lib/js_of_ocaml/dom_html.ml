@@ -31,13 +31,14 @@ external decode_html_entities : js_string t -> js_string t = "caml_js_html_entit
 
 class type cssStyleDeclaration =
   object
-    method setProperty : js_string t -> js_string t -> js_string t optdef -> js_string t meth
+    method setProperty :
+      js_string t -> js_string t -> js_string t optdef -> js_string t meth
 
-    method getPropertyValue : js_string t ->  js_string t meth
+    method getPropertyValue : js_string t -> js_string t meth
     
-    method getPropertyPriority : js_string t ->  js_string t meth
+    method getPropertyPriority : js_string t -> js_string t meth
 
-    method removeProperty : js_string t ->  js_string t meth
+    method removeProperty : js_string t -> js_string t meth
   
     method animation : js_string t prop
 
