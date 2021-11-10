@@ -35,11 +35,11 @@ class type cssStyleDeclaration =
       js_string t -> js_string t -> js_string t optdef -> js_string t meth
 
     method getPropertyValue : js_string t -> js_string t meth
-    
+
     method getPropertyPriority : js_string t -> js_string t meth
 
     method removeProperty : js_string t -> js_string t meth
-  
+    
     method animation : js_string t prop
 
     method animationDelay : js_string t prop
