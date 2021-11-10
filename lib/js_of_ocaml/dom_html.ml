@@ -39,7 +39,7 @@ class type cssStyleDeclaration =
     method getPropertyPriority : js_string t -> js_string t meth
 
     method removeProperty : js_string t -> js_string t meth
-    
+
     method animation : js_string t prop
 
     method animationDelay : js_string t prop
