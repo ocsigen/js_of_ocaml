@@ -173,7 +173,7 @@ let parse_from_lex ~filename lex =
                   | `If (_, "browser") as reason ->
                       if Config.Flag.include_browser_apis ()
                       then fragment
-                      else { fragment with ignore = `Because reason; annot }
+                      else { fragment with ignore = `Because reason }
                   | `If (pi, name) | `Ifnot (pi, name) ->
                       let loc =
                         match pi with
