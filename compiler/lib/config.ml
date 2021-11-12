@@ -80,9 +80,11 @@ module Flag = struct
 
   let is_targetting_isomorphic_env _ = include_browser_apis () && include_node_apis ()
 
-  let is_targetting_nodejs_env _ = include_node_apis () && not (is_targetting_isomorphic_env ())
+  let is_targetting_nodejs_env _ =
+    include_node_apis () && not (is_targetting_isomorphic_env ())
 
-  let is_targetting_browser_env _ = include_browser_apis () && not (is_targetting_isomorphic_env ())
+  let is_targetting_browser_env _ =
+    include_browser_apis () && not (is_targetting_isomorphic_env ())
 
   let warn_unused = o ~name:"warn-unused" ~default:false
 

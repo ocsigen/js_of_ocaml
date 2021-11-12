@@ -62,7 +62,7 @@ module Flag : sig
   val include_browser_apis : unit -> bool
 
   val is_targetting_nodejs_env : unit -> bool
-  
+
   val is_targetting_browser_env : unit -> bool
 
   val safe_string : unit -> bool
