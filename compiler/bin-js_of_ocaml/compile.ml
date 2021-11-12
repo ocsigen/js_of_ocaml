@@ -69,11 +69,11 @@ let run
   Config.Flag.(
     match target_env with
     | `Nodejs | `Isomorphic -> enable "include-node"
-    | _ -> disable "include-node");
+    | `Browser -> disable "include-node");
   Config.Flag.(
     match target_env with
     | `Browser | `Isomorphic -> enable "include-browser"
-    | _ -> disable "include-browser");
+    | `Nodejs -> disable "include-browser");
   let t = Timer.make () in
   let include_dir =
     List.map include_dir ~f:(fun d ->
