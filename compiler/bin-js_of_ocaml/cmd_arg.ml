@@ -137,7 +137,7 @@ let options =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
-    let options = [("isomorphic", `Isomorphic); ("nodejs", `Nodjes); ("browser", `Browser)] in
+    let options = [("isomorphic", `Isomorphic); ("nodejs", `Nodejs); ("browser", `Browser)] in
     Arg.(
       value
       & opt (enum options) `Isomorphic
@@ -238,13 +238,6 @@ let options =
       else runtime_files
     in
     let linkall = linkall || toplevel || runtime_only in
-    let target_env =
-      match target_env with
-      | Some "browser" -> `Browser
-      | Some "nodejs" -> `Nodejs
-      | Some "isomorphic" | None -> `Isomorphic
-      | Some env_name -> failwith @@ "invalid target_env " ^ env_name
-    in
     let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
     let input_file =
       match input_file, runtime_only with
@@ -392,9 +385,10 @@ let options_runtime_only =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    let options = [("isomorphic", `Isomorphic); ("nodejs", `Nodejs); ("browser", `Browser)] in
     Arg.(
       value
-      & opt (some string) (Some "isomorphic")
+      & opt (enum options) `Isomorphic
       & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let wrap_with_function =
@@ -514,13 +508,6 @@ let options_runtime_only =
            %!";
         None)
       else source_map
-    in
-    let target_env =
-      match target_env with
-      | Some "browser" -> `Browser
-      | Some "nodejs" -> `Nodejs
-      | Some "isomorphic" | None -> `Isomorphic
-      | Some env_name -> failwith @@ "invalid target_env " ^ env_name
     in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
