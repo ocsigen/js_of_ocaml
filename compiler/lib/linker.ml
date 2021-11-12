@@ -426,7 +426,7 @@ let load_fragment ~filename f =
                     if not weakdef
                     then
                       match prev_target_env, target_env, is_isomorphic_js with
-                      | a, b, _ when a == b ->
+                      | a, b, _ when a = b ->
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
