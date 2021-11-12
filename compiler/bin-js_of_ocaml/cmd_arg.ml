@@ -137,9 +137,10 @@ let options =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    let options = [("isomorphic", `Isomorphic); ("nodejs", `Nodjes); ("browser", `Browser)] in
     Arg.(
       value
-      & opt (some string) (Some "isomorphic")
+      & opt (enum options) `Isomorphic
       & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let toplevel =
