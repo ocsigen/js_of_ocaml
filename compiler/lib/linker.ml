@@ -364,13 +364,6 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let rec find_map f = function
-  | [] -> None
-  | x :: l -> (
-      match f x with
-      | Some _ as result -> result
-      | None -> find_map f l)
-
 let load_fragment ~filename f =
   match f with
   | `Always_include code ->
@@ -405,7 +398,7 @@ let load_fragment ~filename f =
                 let module J = Javascript in
                 let target_env =
                   Option.value ~default:`Isomorphic
-                  @@ find_map
+                  @@ List.find_map
                        (function
                          | `If (_, "nodejs") -> Some `Nodejs
                          | `If (_, "browser") -> Some `Browser
