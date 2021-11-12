@@ -416,30 +416,35 @@ let load_fragment ~filename f =
                 let named_values = find_named_value code in
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
-                let is_isomorphic_js =
-                  Config.Flag.(include_browser_apis () && include_node_apis ())
-                in
                 let is_updating =
                   if Hashtbl.mem provided name
                   then
                     let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
                     if not weakdef
-                    then
-                      match prev_target_env, target_env, is_isomorphic_js with
-                      | a, b, _ when a = b ->
+                    then (
+                      match prev_target_env, target_env with
+                      | `Isomorphic, `Browser -> Config.Flag.is_targetting_browser_env ()
+                      | `Isomorphic, `Nodejs -> Config.Flag.is_targetting_nodejs_env ()
+                      | `Nodejs, `Browser
+                      | `Browser, `Nodejs
+                      | `Nodejs, `Isomorphic
+                      | `Browser, `Isomorphic ->
+                          warn
+                            "warning: target_env should not transition from one \
+                             specialization to another. ignoring. %S\n\
+                            \  old: %s\n\
+                            \  new: %s@."
+                            name
+                            (loc ploc)
+                            (loc pi);
+                          false
+                      | _ ->
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
                             (loc ploc)
                             (loc pi);
-                          true
-                      | _, target_env, true -> target_env == `Isomorphic
-                      | _, `Isomorphic, false -> false
-                      | _, `Browser, false -> Config.Flag.include_browser_apis ()
-                      | _, `Nodejs, false -> Config.Flag.include_node_apis ()
-                      | _ ->
-                          (* permit target_env specialization from default isomorphic case *)
-                          true
+                          true)
                     else true
                   else true
                 in
