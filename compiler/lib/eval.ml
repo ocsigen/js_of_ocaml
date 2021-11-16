@@ -311,8 +311,8 @@ let eval_branch info = function
          Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
          see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
       match the_case_of info (Pv x) with
-      | CConst j when j < Array.length const -> Branch const.(j)
-      | CTag j when j < Array.length tags -> Branch tags.(j)
+      | CConst j when j >= 0 && j < Array.length const -> Branch const.(j)
+      | CTag j when j >= 0 && j < Array.length tags -> Branch tags.(j)
       | CConst _ | CTag _ | Unknown -> b)
   | _ as b -> b
 
