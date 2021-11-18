@@ -1,6 +1,8 @@
 # dev (2021-??-??) - ??
 ## Features/Changes
 * Compiler: static evaluation of backend_type
+* Lib: add messageEvent to Dom_html
+* Lib: add PerformanceObserver API
 
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma

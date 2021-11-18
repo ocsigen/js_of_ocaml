@@ -631,6 +631,15 @@ and mediaEvent =
     inherit event
   end
 
+and messageEvent =
+  object
+    inherit event
+
+    method data : Unsafe.any opt readonly_prop
+
+    method source : Unsafe.any opt readonly_prop
+  end
+
 (** {2 HTML elements} *)
 
 and nodeSelector =
@@ -2439,6 +2448,8 @@ module Event : sig
 
   val lostpointercapture : pointerEvent t typ
 
+  val message : messageEvent t typ
+
   val pause : mediaEvent t typ
 
   val play : mediaEvent t typ
@@ -2972,6 +2983,7 @@ val opt_tagged : #element t opt -> taggedElement option
 type taggedEvent =
   | MouseEvent of mouseEvent t
   | KeyboardEvent of keyboardEvent t
+  | MessageEvent of messageEvent t
   | MousewheelEvent of mousewheelEvent t
   | MouseScrollEvent of mouseScrollEvent t
   | PopStateEvent of popStateEvent t
@@ -3123,6 +3135,8 @@ module CoerceTo : sig
   val mouseScrollEvent : #event t -> mouseScrollEvent t opt
 
   val popStateEvent : #event t -> popStateEvent t opt
+
+  val messageEvent : #event t -> messageEvent t opt
 end
 
 type timeout_id_safe

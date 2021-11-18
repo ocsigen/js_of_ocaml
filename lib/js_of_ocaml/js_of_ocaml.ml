@@ -33,6 +33,7 @@ module Js = Js
 module Json = Json
 module Jstable = Jstable
 module MutationObserver = MutationObserver
+module PerformanceObserver = PerformanceObserver
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
 module Sys_js = Sys_js
