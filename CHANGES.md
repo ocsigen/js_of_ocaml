@@ -1,5 +1,8 @@
 # dev (2021-??-??) - ??
 
+## Features/Changes
+* Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty}
+
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma
 
