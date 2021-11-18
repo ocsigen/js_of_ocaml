@@ -752,7 +752,7 @@ let method_cache_id = ref 1
 let new_closure_repr =
   match Ocaml_version.v with
   | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 -> true
+  | `V4_12 | `V4_13 | `V4_14 -> true
 
 let clo_offset_3 = if new_closure_repr then 3 else 2
 
@@ -2129,7 +2129,7 @@ let parse_bytecode code globals debug_data =
 
 let override_global =
   match Ocaml_version.v with
-  | `V4_13 -> []
+  | `V4_13 | `V4_14 -> []
   | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
         Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
