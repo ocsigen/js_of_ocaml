@@ -4,6 +4,9 @@
 * Lib: add messageEvent to Dom_html
 * Lib: add PerformanceObserver API
 
+## Features/Changes
+* Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty}
+
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma
 
