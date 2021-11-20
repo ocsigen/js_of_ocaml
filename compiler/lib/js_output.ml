@@ -296,47 +296,46 @@ struct
     done;
     if !simple < !double then '\'' else '"'
 
-  let array_str1 = Array.init 256 ~f:(fun i -> String.make 1 (Char.chr i))
-
-  let array_conv = Array.init 16 ~f:(fun i -> String.make 1 "0123456789abcdef".[i])
+  let array_conv = Array.init 16 ~f:(fun i -> "0123456789abcdef".[i])
 
   let pp_string f ?(quote = '"') ?(utf = false) s =
-    let quote_s = String.make 1 quote in
-    PP.string f quote_s;
     let l = String.length s in
+    let b = Buffer.create (String.length s + 2) in
+    Buffer.add_char b quote;
     for i = 0 to l - 1 do
       let c = s.[i] in
       match c with
-      | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> PP.string f "\\0"
-      | '\b' -> PP.string f "\\b"
-      | '\t' -> PP.string f "\\t"
-      | '\n' -> PP.string f "\\n"
+      | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> Buffer.add_string b "\\0"
+      | '\b' -> Buffer.add_string b "\\b"
+      | '\t' -> Buffer.add_string b "\\t"
+      | '\n' -> Buffer.add_string b "\\n"
       (* This escape sequence is not supported by IE < 9
          | '\011' -> "\\v"
       *)
-      | '\012' -> PP.string f "\\f"
+      | '\012' -> Buffer.add_string b "\\f"
       (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
-      | '/' when i > 0 && Char.equal s.[i - 1] '<' -> PP.string f "\\/"
-      | '\\' when not utf -> PP.string f "\\\\"
-      | '\r' -> PP.string f "\\r"
+      | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
+      | '\\' when not utf -> Buffer.add_string b "\\\\"
+      | '\r' -> Buffer.add_string b "\\r"
       | '\000' .. '\031' | '\127' ->
           let c = Char.code c in
-          PP.string f "\\x";
-          PP.string f (Array.unsafe_get array_conv (c lsr 4));
-          PP.string f (Array.unsafe_get array_conv (c land 0xf))
+          Buffer.add_string b "\\x";
+          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
+          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
       | '\128' .. '\255' when not utf ->
           let c = Char.code c in
-          PP.string f "\\x";
-          PP.string f (Array.unsafe_get array_conv (c lsr 4));
-          PP.string f (Array.unsafe_get array_conv (c land 0xf))
+          Buffer.add_string b "\\x";
+          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
+          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
       | _ ->
           if Char.equal c quote
           then (
-            PP.string f "\\";
-            PP.string f (Array.unsafe_get array_str1 (Char.code c)))
-          else PP.string f (Array.unsafe_get array_str1 (Char.code c))
+            Buffer.add_char b '\\';
+            Buffer.add_char b c)
+          else Buffer.add_char b c
     done;
-    PP.string f quote_s
+    Buffer.add_char b quote;
+    PP.string f (Buffer.contents b)
 
   let rec expression l f e =
     match e with

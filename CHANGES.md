@@ -1,10 +1,9 @@
 # dev (2021-??-??) - ??
 ## Features/Changes
 * Compiler: static evaluation of backend_type
+* Compiler: speedup emitting js files.
 * Lib: add messageEvent to Dom_html
 * Lib: add PerformanceObserver API
-
-## Features/Changes
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty}
 
 ## Bug fixes
