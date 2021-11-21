@@ -2,6 +2,7 @@
 ## Features/Changes
 * Compiler: static evaluation of backend_type
 * Compiler: speedup emitting js files.
+* Compiler: simplify (a | 0) >>> 0 into (a >>> 0)
 * Lib: add messageEvent to Dom_html
 * Lib: add PerformanceObserver API
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty}
