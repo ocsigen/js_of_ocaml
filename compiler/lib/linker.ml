@@ -429,9 +429,9 @@ let load_fragment ~filename f =
                       | `Isomorphic, `Nodejs -> Config.Flag.is_targetting_nodejs_env ()
                       | `Nodejs, `Isomorphic | `Browser, `Isomorphic -> false
                       | `Nodejs, `Browser | `Browser, `Nodejs ->
-                          warn
-                            "warning: target_env should not transition from one \
-                             specialization to another. ignoring. %S\n\
+                          failwith_
+                            "target_env should not transition from one \
+                             specialization to another. %S\n\
                             \  old: %s\n\
                             \  new: %s@."
                             name
