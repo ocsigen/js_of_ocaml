@@ -417,18 +417,18 @@ let load_fragment ~filename f =
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
                 let is_updating =
-                  if Hashtbl.mem provided name
-                  then
+                  if not (Hashtbl.mem provided name)
+                  then true
+                  else
                     let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
-                    if not weakdef
-                    then (
+                    if weakdef
+                    then true
+                    else
                       match prev_target_env, target_env with
                       | `Isomorphic, `Browser -> Config.Flag.is_targetting_browser_env ()
                       | `Isomorphic, `Nodejs -> Config.Flag.is_targetting_nodejs_env ()
-                      | `Nodejs, `Isomorphic
-                      | `Browser, `Isomorphic -> false
-                      | `Nodejs, `Browser
-                      | `Browser, `Nodejs ->
+                      | `Nodejs, `Isomorphic | `Browser, `Isomorphic -> false
+                      | `Nodejs, `Browser | `Browser, `Nodejs ->
                           warn
                             "warning: target_env should not transition from one \
                              specialization to another. ignoring. %S\n\
@@ -438,17 +438,14 @@ let load_fragment ~filename f =
                             (loc ploc)
                             (loc pi);
                           false
-                      | `Browser, `Browser
-                      | `Nodejs, `Nodejs
-                      | `Isomorphic, `Isomorphic ->
+                      | `Browser, `Browser | `Nodejs, `Nodejs | `Isomorphic, `Isomorphic
+                        ->
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
                             (loc ploc)
                             (loc pi);
-                          true)
-                    else true
-                  else true
+                          true
                 in
                 if is_updating
                 then (
