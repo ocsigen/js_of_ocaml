@@ -240,6 +240,11 @@ let to_int cx = J.EBin (J.Bor, cx, int 0)
 let unsigned' x = J.EBin (J.Lsr, x, int 0)
 
 let unsigned x =
+  let x =
+    match x with
+    | J.EBin (J.Bor, x, J.ENum maybe_zero) when J.Num.is_zero maybe_zero -> x
+    | _ -> x
+  in
   let pos_int32 =
     match x with
     | J.ENum num -> ( try Int32.(J.Num.to_int32 num >= 0l) with _ -> false)
