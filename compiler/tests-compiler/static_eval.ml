@@ -145,7 +145,8 @@ let%expect_test "static eval of string get" =
              data$0=param$0[2],
              next$0=param$0[3],
              r=[0,key$0,data$0,next$0];
-            if(prec){prec[3] = r;var prec=r,param$0=next$0;continue}
-            throw [0,Assert_failure,_a_]}
+            prec[3] = r;
+            var prec=r,param$0=next$0;
+            continue}
           return prec$0}}
       return 0} |}]
