@@ -23,41 +23,41 @@ let%expect_test _ =
   compile_and_run
     {|
 let () =
-  try 
+  try
     let _files = Sys.readdir "." in
-    print_endline "ok"
+    print_endline "Sys.readdir ok - isomorphic compile"
   with
-  | e -> 
+  | e ->
     print_endline @@ Printexc.to_string e;
     ()
   |};
-  [%expect {|ok|}]
+  [%expect {|Sys.readdir ok - isomorphic compile|}]
 
 let%expect_test _ =
   compile_and_run
     ~flags:[ "--target-env=nodejs" ]
     {|
 let () =
-  try 
+  try
     let _files = Sys.readdir "." in
-    print_endline "ok"
+    print_endline "Sys.readdir ok - nodejs compile"
   with
-  | e -> 
+  | e ->
     print_endline @@ Printexc.to_string e;
     ()
   |};
-  [%expect {|ok|}]
+  [%expect {|Sys.readdir ok - nodejs compile|}]
 
 let%expect_test _ =
   compile_and_run
     ~flags:[ "--target-env=browser" ]
     {|
 let () =
-  try 
+  try
     let _files = Sys.readdir "." in
-    print_endline "ok"
+    print_endline "Sys.readdir ok - browser compile"
   with
-  | e -> 
+  | e ->
     print_endline @@ Printexc.to_string e;
     ()
   |};
