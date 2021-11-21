@@ -1242,6 +1242,10 @@ and translate_instr ctx expr_queue loc instr =
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
+        (* "switcher" is emitted by the OCaml compiler when compiling
+           pattern matching, it does not help much to keep it in the
+           generated js, let's drop it *)
+        | Some "switcher" -> false
         | Some s -> not (String.is_prefix s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
