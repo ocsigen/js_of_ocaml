@@ -167,11 +167,11 @@ let parse_from_lex ~filename lex =
                       then { fragment with ignore = `Because reason }
                       else fragment
                   | `If (_, "nodejs") as reason ->
-                      if Config.Flag.include_node_apis ()
+                      if Config.Flag.is_targetting_nodejs_env ()
                       then fragment
                       else { fragment with ignore = `Because reason }
                   | `If (_, "browser") as reason ->
-                      if Config.Flag.include_browser_apis ()
+                    if Config.Flag.is_targetting_browser_env ()
                       then fragment
                       else { fragment with ignore = `Because reason }
                   | `If (pi, name) | `Ifnot (pi, name) ->

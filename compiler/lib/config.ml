@@ -74,17 +74,11 @@ module Flag = struct
 
   let include_cmis = o ~name:"withcmi" ~default:true
 
-  let include_node_apis = o ~name:"include-node" ~default:true
+  let is_targetting_isomorphic_env = o ~name:"is-targetting-isomorphic-env" ~default:false
 
-  let include_browser_apis = o ~name:"include-browser" ~default:true
+  let is_targetting_nodejs_env = o ~name:"is-targetting-node-env" ~default:false
 
-  let is_targetting_isomorphic_env _ = include_browser_apis () && include_node_apis ()
-
-  let is_targetting_nodejs_env _ =
-    include_node_apis () && not (is_targetting_isomorphic_env ())
-
-  let is_targetting_browser_env _ =
-    include_browser_apis () && not (is_targetting_isomorphic_env ())
+  let is_targetting_browser_env = o ~name:"is-targetting-browser-env" ~default:false
 
   let warn_unused = o ~name:"warn-unused" ~default:false
 
