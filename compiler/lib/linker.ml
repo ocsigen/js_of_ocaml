@@ -425,10 +425,10 @@ let load_fragment ~filename f =
                       match prev_target_env, target_env with
                       | `Isomorphic, `Browser -> Config.Flag.is_targetting_browser_env ()
                       | `Isomorphic, `Nodejs -> Config.Flag.is_targetting_nodejs_env ()
-                      | `Nodejs, `Browser
-                      | `Browser, `Nodejs
                       | `Nodejs, `Isomorphic
-                      | `Browser, `Isomorphic ->
+                      | `Browser, `Isomorphic -> false
+                      | `Nodejs, `Browser
+                      | `Browser, `Nodejs ->
                           warn
                             "warning: target_env should not transition from one \
                              specialization to another. ignoring. %S\n\
@@ -438,7 +438,9 @@ let load_fragment ~filename f =
                             (loc ploc)
                             (loc pi);
                           false
-                      | _ ->
+                      | `Browser, `Browser
+                      | `Nodejs, `Nodejs
+                      | `Isomorphic, `Isomorphic ->
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
