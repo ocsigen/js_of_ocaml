@@ -96,3 +96,56 @@ let%expect_test "static eval of Sys.backend_type" =
   print_fun_decl program (Some "myfun");
   [%expect {|
     function myfun(param){return 42} |}]
+
+let%expect_test "static eval of string get" =
+  let program =
+    compile_and_parse
+      {|
+
+      type ('a, 'b) bucketlist =
+        | Empty
+        | Cons of { mutable key: 'a;
+                    mutable data: 'b;
+                    mutable next: ('a, 'b) bucketlist }
+      
+      let copy_bucketlist = function
+        | Empty -> Empty
+        | Cons {key; data; next} ->
+            let rec loop prec = function
+              | Empty -> ()
+              | Cons {key; data; next} ->
+                  let r = Cons {key; data; next} in
+                  begin match prec with
+                  | Empty -> assert false
+                  | Cons prec ->  prec.next <- r
+                  end;
+                  loop r next
+            in
+            let r = Cons {key; data; next} in
+            loop r next;
+            r
+  |}
+  in
+  print_fun_decl program (Some "copy_bucketlist");
+  [%expect
+    {|
+    function copy_bucketlist(param)
+     {if(param)
+       {var
+         key=param[1],
+         data=param[2],
+         next=param[3],
+         prec$0=[0,key,data,next],
+         prec=prec$0,
+         param$0=next;
+        for(;;)
+         {if(param$0)
+           {var
+             key$0=param$0[1],
+             data$0=param$0[2],
+             next$0=param$0[3],
+             r=[0,key$0,data$0,next$0];
+            if(prec){prec[3] = r;var prec=r,param$0=next$0;continue}
+            throw [0,Assert_failure,_a_]}
+          return prec$0}}
+      return 0} |}]
