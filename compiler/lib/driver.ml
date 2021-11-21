@@ -336,7 +336,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
 let pack ~global { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
-  if times () then Format.eprintf "Start Flagizing js...@.";
+  if times () then Format.eprintf "Start Optimizing js...@.";
   (* pre pack optim *)
   let js =
     if Config.Flag.share_constant ()
@@ -443,20 +443,31 @@ let f
     ?source_map
     ?custom_header
     formatter
-    d =
+    d
+    p =
   let exported_runtime = not standalone in
   let linkall = linkall || dynlink in
-  configure formatter
-  +> specialize_js_once
-  +> profile
-  +> Generate_closure.f
-  +> deadcode'
-  +> generate d ~exported_runtime
-  +> link ~standalone ~linkall ~export_runtime:dynlink
-  +> pack ~global
-  +> coloring
-  +> check_js
-  +> output formatter ~standalone ~custom_header ?source_map ()
+
+  let opt =
+    configure formatter
+    +> specialize_js_once
+    +> profile
+    +> Generate_closure.f
+    +> deadcode'
+  in
+  let emit =
+    generate d ~exported_runtime
+    +> link ~standalone ~linkall ~export_runtime:dynlink
+    +> pack ~global
+    +> coloring
+    +> check_js
+    +> output formatter ~standalone ~custom_header ?source_map ()
+  in
+  if times () then Format.eprintf "Start Optimizing...@.";
+  let t = Timer.make () in
+  let r = opt p in
+  let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
+  emit r
 
 let from_string prims s formatter =
   let p, d = Parse_bytecode.from_string prims s in
