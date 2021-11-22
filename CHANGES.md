@@ -1,14 +1,15 @@
 # dev (2021-??-??) - ??
 ## Features/Changes
-* Compiler: static evaluation of backend_type
-* Compiler: speedup emitting js files.
-* Compiler: simplify (a | 0) >>> 0 into (a >>> 0)
-* Lib: add messageEvent to Dom_html
-* Lib: add PerformanceObserver API
-* Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty}
+* Compiler: static evaluation of backend_type (#1166)
+* Compiler: speedup emitting js files (#1174)
+* Compiler: simplify (a | 0) >>> 0 into (a >>> 0) (#1177)
+* Compiler: improve static evaluation of cond (#1178)
+* Lib: add messageEvent to Dom_html (#1164)
+* Lib: add PerformanceObserver API (#1164)
+* Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
 
 ## Bug fixes
-* Compiler: fix sourcemap warning for empty cma
+* Compiler: fix sourcemap warning for empty cma (#1169)
 
 # 3.11.0 (2021-10-06) - Lille
 
