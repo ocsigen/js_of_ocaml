@@ -18,7 +18,7 @@
  (depends
   (ocaml (and (>= 4.04) (< 4.14)))
   (num :with-test)
-  (ppx_expect (and (>= v0.12.0) :with-test))
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.15.0))
   (re :with-test)
   cmdliner
@@ -44,7 +44,7 @@
   (js_of_ocaml-ppx (= :version))
   (lwt (>= 2.4.4))
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
@@ -61,7 +61,7 @@
   (ocaml (>= 4.04))
   ocamlbuild
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -76,7 +76,7 @@
   (js_of_ocaml (= :version))
   (ppxlib (>= 0.15))
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -90,7 +90,7 @@
   (js_of_ocaml (= :version))
   (ppxlib (>= 0.15.0))
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -108,7 +108,7 @@
   (cohttp-lwt-unix :with-test)
   (graphics :with-test)
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (and (>= 0.15) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -126,7 +126,7 @@
   (reactiveData (>= 0.2))
   (tyxml (>= 4.3))
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (and (>= 0.22.0) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
@@ -142,6 +142,6 @@
   (ppxlib (>= 0.15))
   uchar
   (num :with-test)
-  (ppx_expect :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
