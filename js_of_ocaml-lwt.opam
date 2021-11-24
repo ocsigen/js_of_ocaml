@@ -7,17 +7,17 @@ maintainer: ["Ocsigen team <dev@ocsigen.org>"]
 authors: ["Ocsigen team <dev@ocsigen.org>"]
 license:
   "GPL-2.0-or-later AND LGPL-2.1-or-later WITH OCaml-LGPL-linking-exception"
-homepage: "https://ocsigen.github.io/js_of_ocaml"
-doc: "https://ocsigen.github.io/js_of_ocaml"
+homepage: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
+doc: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
-  "dune" {>= "2.8"}
+  "dune" {>= "2.9"}
   "ocaml" {>= "4.04"}
   "js_of_ocaml" {= version}
   "js_of_ocaml-ppx" {= version}
   "lwt" {>= "2.4.4"}
   "num" {with-test}
-  "ppx_expect" {with-test}
+  "ppx_expect" {>= "v0.14.2" & with-test}
   "ppxlib" {>= "0.22.0" & with-test}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
@@ -33,7 +33,9 @@ build: [
     name
     "-j"
     jobs
+    "--promote-install-files=false"
     "@install"
     "@doc" {with-doc}
   ]
+  ["dune" "install" "-p" name "--create-install-files" name]
 ]

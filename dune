@@ -1,5 +1,3 @@
-(vendored_dirs vendor)
-
 (env
  (dev
   (flags
