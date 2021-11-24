@@ -34,7 +34,7 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : string option
-  ; target_env : [ `Isomorphic | `Nodejs | `Browser ]
+  ; target_env : Target_env.t
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -137,10 +137,11 @@ let options =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
-    let options = [ "isomorphic", `Isomorphic; "nodejs", `Nodejs; "browser", `Browser ] in
+    let open Target_env in
+    let options = [ "isomorphic", Isomorphic; "nodejs", Nodejs; "browser", Browser ] in
     Arg.(
       value
-      & opt (enum options) `Isomorphic
+      & opt (enum options) Isomorphic
       & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let toplevel =
@@ -385,10 +386,11 @@ let options_runtime_only =
   in
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
-    let options = [ "isomorphic", `Isomorphic; "nodejs", `Nodejs; "browser", `Browser ] in
+    let open Target_env in
+    let options = [ "isomorphic", Isomorphic; "nodejs", Nodejs; "browser", Browser ] in
     Arg.(
       value
-      & opt (enum options) `Isomorphic
+      & opt (enum options) Isomorphic
       & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let wrap_with_function =

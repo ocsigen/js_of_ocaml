@@ -166,14 +166,7 @@ let parse_from_lex ~filename lex =
                       if Config.Flag.use_js_string ()
                       then { fragment with ignore = `Because reason }
                       else fragment
-                  | `If (_, "nodejs") as reason ->
-                      if Config.Flag.is_targetting_nodejs_env ()
-                      then fragment
-                      else { fragment with ignore = `Because reason }
-                  | `If (_, "browser") as reason ->
-                    if Config.Flag.is_targetting_browser_env ()
-                      then fragment
-                      else { fragment with ignore = `Because reason }
+                  | `If (_, "nodejs") | `If (_, "browser") -> fragment
                   | `If (pi, name) | `Ifnot (pi, name) ->
                       let loc =
                         match pi with
@@ -364,7 +357,7 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let load_fragment ~filename f =
+let load_fragment ~target_env ~filename f =
   match f with
   | `Always_include code ->
       always_included := { filename; program = code; requires = [] } :: !always_included
@@ -396,12 +389,13 @@ let load_fragment ~filename f =
             | Some (pi, name, kind, ka) ->
                 let code = Macro.f code in
                 let module J = Javascript in
-                let target_env =
-                  Option.value ~default:`Isomorphic
+                let annot_target_env =
+                  let open Target_env in
+                  Option.value ~default:Isomorphic
                   @@ List.find_map
                        (function
-                         | `If (_, "nodejs") -> Some `Nodejs
-                         | `If (_, "browser") -> Some `Browser
+                         | `If (_, "nodejs") -> Some Nodejs
+                         | `If (_, "browser") -> Some Browser
                          | _ -> None)
                        annot
                 in
@@ -416,46 +410,42 @@ let load_fragment ~filename f =
                 let named_values = find_named_value code in
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
+                let is_symbol_missing = not (Hashtbl.mem provided name) in
+                let is_target_env_match = target_env == annot_target_env in
                 let is_updating =
-                  if not (Hashtbl.mem provided name)
+                  if is_symbol_missing && annot_target_env == Isomorphic
                   then true
                   else
-                    let _, ploc, weakdef, prev_target_env = Hashtbl.find provided name in
-                    if weakdef
-                    then true
-                    else
-                      match prev_target_env, target_env with
-                      | `Isomorphic, `Browser -> Config.Flag.is_targetting_browser_env ()
-                      | `Isomorphic, `Nodejs -> Config.Flag.is_targetting_nodejs_env ()
-                      | `Nodejs, `Isomorphic | `Browser, `Isomorphic -> false
-                      | `Nodejs, `Browser | `Browser, `Nodejs ->
-                          failwith_
-                            "target_env should not transition from one \
-                             specialization to another. %S\n\
-                            \  old: %s\n\
-                            \  new: %s@."
-                            name
-                            (loc ploc)
-                            (loc pi);
-                          false
-                      | `Browser, `Browser | `Nodejs, `Nodejs | `Isomorphic, `Isomorphic
-                        ->
+                    match is_target_env_match, is_symbol_missing with
+                    | false, _ -> false
+                    | true, true -> true
+                    | true, false ->
+                        (* collision detected *)
+                        let _, ploc, weakdef, prev_env = Hashtbl.find provided name in
+                        let is_specializing =
+                          Target_env.(
+                            prev_env == Isomorphic && annot_target_env != Isomorphic)
+                        in
+                        if weakdef || is_specializing
+                        then true
+                        else (
                           warn
                             "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                             name
                             (loc ploc)
                             (loc pi);
-                          true
+                          true)
                 in
                 if is_updating
                 then (
-                  Hashtbl.add provided name (id, pi, weakdef, target_env);
+                  Hashtbl.add provided name (id, pi, weakdef, annot_target_env);
                   Hashtbl.add provided_rev id (name, pi);
                   check_primitive ~name pi ~code ~requires;
                   Hashtbl.add code_pieces id (code, requires))
                 else ()))
 
-let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
+let add_file ~target_env filename =
+  List.iter (parse_file filename) ~f:(load_fragment ~target_env ~filename)
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -485,8 +475,8 @@ let check_deps () =
           ())
     code_pieces
 
-let load_files l =
-  List.iter l ~f:add_file;
+let load_files ~target_env l =
+  List.iter l ~f:(fun filename -> add_file ~target_env filename);
   check_deps ()
 
 (* resolve *)

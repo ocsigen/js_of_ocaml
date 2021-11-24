@@ -66,11 +66,6 @@ let run
   | `Name _, _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
-  Config.Flag.(
-    match target_env with
-    | `Browser -> enable "is-targetting-browser-env"
-    | `Isomorphic -> enable "is-targetting-node-env"
-    | `Nodejs -> enable "is-targetting-isomorphic-env");
   let t = Timer.make () in
   let include_dir =
     List.map include_dir ~f:(fun d ->
@@ -113,8 +108,8 @@ let run
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.parse_builtin t in
-      List.iter runtimes ~f:(Linker.load_fragment ~filename));
-  Linker.load_files runtime_files;
+      List.iter runtimes ~f:(Linker.load_fragment ~target_env ~filename));
+  Linker.load_files ~target_env runtime_files;
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]

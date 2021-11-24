@@ -74,12 +74,6 @@ module Flag = struct
 
   let include_cmis = o ~name:"withcmi" ~default:true
 
-  let is_targetting_isomorphic_env = o ~name:"is-targetting-isomorphic-env" ~default:false
-
-  let is_targetting_nodejs_env = o ~name:"is-targetting-node-env" ~default:false
-
-  let is_targetting_browser_env = o ~name:"is-targetting-browser-env" ~default:false
-
   let warn_unused = o ~name:"warn-unused" ~default:false
 
   let inline_callgen = o ~name:"callgen" ~default:false

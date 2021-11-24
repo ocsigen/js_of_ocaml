@@ -42,7 +42,7 @@ let () =
   | [] -> assert false
   | _ :: rest ->
       (* load all files to make sure they are valid *)
-      Js_of_ocaml_compiler.Linker.load_files rest;
+      Js_of_ocaml_compiler.Linker.load_files ~target_env:Isomorphic rest;
       let linkinfos = Js_of_ocaml_compiler.Linker.init () in
       let prov = Js_of_ocaml_compiler.Linker.get_provided () in
       let _linkinfos, missing =

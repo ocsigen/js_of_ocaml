@@ -57,14 +57,6 @@ module Flag : sig
 
   val inline_callgen : unit -> bool
 
-  val is_targetting_isomorphic_env : unit -> bool
-
-  (* exclusive from is_targetting_isomorphic_env *)
-  val is_targetting_nodejs_env : unit -> bool
-
-  (* exclusive from is_targetting_isomorphic_env *)
-  val is_targetting_browser_env : unit -> bool
-
   val safe_string : unit -> bool
 
   val use_js_string : unit -> bool

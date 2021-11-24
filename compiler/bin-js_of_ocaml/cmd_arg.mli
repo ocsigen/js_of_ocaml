@@ -32,7 +32,7 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : string option
-  ; target_env : [ `Isomorphic | `Nodejs | `Browser ]
+  ; target_env : Target_env.t
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool

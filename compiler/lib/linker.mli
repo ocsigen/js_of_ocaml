@@ -44,9 +44,9 @@ val parse_string : string -> fragment list
 
 val parse_builtin : Builtins.File.t -> fragment list
 
-val load_files : string list -> unit
+val load_files : target_env:Target_env.t -> string list -> unit
 
-val load_fragment : filename:string -> fragment -> unit
+val load_fragment : target_env:Target_env.t -> filename:string -> fragment -> unit
 
 type state
 
