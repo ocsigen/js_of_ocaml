@@ -56,6 +56,12 @@ module Int_replace_polymorphic_compare = struct
   let min (x : int) y = if x <= y then x else y
 end
 
+let phys_equal = ( == )
+
+let ( == ) = `use_phys_equal
+
+let ( != ) = `use_phys_equal
+
 include Int_replace_polymorphic_compare
 
 let quiet = ref false
