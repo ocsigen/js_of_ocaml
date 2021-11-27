@@ -21,29 +21,21 @@
 
 ;; cp $(ocamlfind printconf path)/menhir/standard.mly standard.mly
 
-;; menhir is just noisy, both because this parser has conflicts, or
-;; because we don't use --infer (to avoid having to write  manually and
-;; badly specified dependencieds), so we just discard stderr.
-
-(rule
- (targets js_parser.mli js_parser.ml js_parser.conflicts)
- (deps standard.mly)
- (action
-  (run
-   menhir
-   --stdlib
-   .
+(menhir
+  (modules js_parser)
+  (flags
    --table
    --external-tokens
    Js_token
    --explain
-   %{dep:js_parser.mly}
    --unused-token
    TComment
    --unused-token
    TCommentLineDirective
    --unused-token
-   TUnknown)))
+   TUnknown
+  )
+)
 
 (rule
  (alias runtest)
