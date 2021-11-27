@@ -19,8 +19,6 @@
 
 (ocamllex js_lexer annot_lexer)
 
-;; cp $(ocamlfind printconf path)/menhir/standard.mly standard.mly
-
 (menhir
   (modules js_parser)
   (flags
