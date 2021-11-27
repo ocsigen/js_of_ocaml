@@ -20,31 +20,22 @@
 (ocamllex js_lexer annot_lexer)
 
 (menhir
-  (modules js_parser)
-  (flags
-   --table
-   --external-tokens
-   Js_token
-   --explain
-   --unused-token
-   TComment
-   --unused-token
-   TCommentLineDirective
-   --unused-token
-   TUnknown
-  )
-)
-
-(rule
- (alias runtest)
- (deps js_parser.conflicts.reference js_parser.conflicts)
- (action
-  (diff js_parser.conflicts.reference js_parser.conflicts)))
+ (modules js_parser)
+ (flags
+  --table
+  --external-tokens
+  Js_token
+  --explain
+  --unused-token
+  TComment
+  --unused-token
+  TCommentLineDirective
+  --unused-token
+  TUnknown))
 
 (menhir
-  (modules annot_parser)
-  (flags --explain)
-)
+ (modules annot_parser)
+ (flags --explain))
 
 (rule
  (targets compiler_version.ml)
