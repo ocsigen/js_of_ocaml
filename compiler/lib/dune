@@ -51,11 +51,10 @@
  (action
   (diff js_parser.conflicts.reference js_parser.conflicts)))
 
-(rule
- (targets annot_parser.mli annot_parser.ml)
- (deps standard.mly)
- (action
-  (run menhir --stdlib . --explain %{dep:annot_parser.mly})))
+(menhir
+  (modules annot_parser)
+  (flags --explain)
+)
 
 (rule
  (targets compiler_version.ml)
