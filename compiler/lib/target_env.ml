@@ -21,3 +21,5 @@ type t =
   | Browser
   | Nodejs
   | Isomorphic
+
+let equals = Stdlib.Poly.equal

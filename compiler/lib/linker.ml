@@ -411,9 +411,9 @@ let load_fragment ~target_env ~filename f =
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
                 let is_symbol_missing = not (Hashtbl.mem provided name) in
-                let is_target_env_match = target_env == annot_target_env in
+                let is_target_env_match =  Target_env.equals target_env annot_target_env in
                 let is_updating =
-                  if is_symbol_missing && annot_target_env == Isomorphic
+                  if is_symbol_missing && Target_env.equals annot_target_env Isomorphic
                   then true
                   else
                     match is_target_env_match, is_symbol_missing with
@@ -424,7 +424,7 @@ let load_fragment ~target_env ~filename f =
                         let _, ploc, weakdef, prev_env = Hashtbl.find provided name in
                         let is_specializing =
                           Target_env.(
-                            prev_env == Isomorphic && annot_target_env != Isomorphic)
+                            equals prev_env Isomorphic && annot_target_env != Isomorphic)
                         in
                         if weakdef || is_specializing
                         then true

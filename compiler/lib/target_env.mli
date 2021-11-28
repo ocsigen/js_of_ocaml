@@ -21,3 +21,5 @@ type t =
   | Browser
   | Nodejs
   | Isomorphic
+
+val equals: 'a -> 'a -> bool
