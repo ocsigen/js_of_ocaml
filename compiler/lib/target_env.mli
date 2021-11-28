@@ -22,4 +22,4 @@ type t =
   | Nodejs
   | Isomorphic
 
-val equals: 'a -> 'a -> bool
+val equals : 'a -> 'a -> bool

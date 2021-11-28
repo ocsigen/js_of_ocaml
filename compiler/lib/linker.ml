@@ -411,30 +411,33 @@ let load_fragment ~target_env ~filename f =
                 Primitive.register name kind ka arity;
                 StringSet.iter Primitive.register_named_value named_values;
                 let is_symbol_missing = not (Hashtbl.mem provided name) in
-                let is_target_env_match =  Target_env.equals target_env annot_target_env in
+                let is_target_env_match = Target_env.equals target_env annot_target_env in
+                let is_annot_isomorphic = Target_env.equals annot_target_env Isomorphic in
                 let is_updating =
-                  if is_symbol_missing && Target_env.equals annot_target_env Isomorphic
-                  then true
-                  else
-                    match is_target_env_match, is_symbol_missing with
-                    | false, _ -> false
-                    | true, true -> true
-                    | true, false ->
-                        (* collision detected *)
-                        let _, ploc, weakdef, prev_env = Hashtbl.find provided name in
-                        let is_specializing =
-                          Target_env.(
-                            equals prev_env Isomorphic && annot_target_env != Isomorphic)
-                        in
-                        if weakdef || is_specializing
-                        then true
-                        else (
-                          warn
-                            "warning: overriding primitive %S\n  old: %s\n  new: %s@."
-                            name
-                            (loc ploc)
-                            (loc pi);
-                          true)
+                  match is_symbol_missing, is_annot_isomorphic, is_target_env_match with
+                  (* permit default, un-annotated symbols *)
+                  | true, true, true
+                  | true, true, false
+                  (* permit env specializations *)
+                  | true, false, true ->
+                      true
+                  (* ignore non target matched envs *)
+                  | true, false, false | false, false, false | false, true, false -> false
+                  (* collision detected *)
+                  | false, false, true | false, true, true ->
+                      let _, ploc, weakdef, prev_env = Hashtbl.find provided name in
+                      let is_specializing =
+                        Target_env.(equals prev_env Isomorphic && not is_annot_isomorphic)
+                      in
+                      if weakdef || is_specializing
+                      then true
+                      else (
+                        warn
+                          "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+                          name
+                          (loc ploc)
+                          (loc pi);
+                        true)
                 in
                 if is_updating
                 then (
