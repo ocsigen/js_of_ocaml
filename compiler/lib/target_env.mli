@@ -22,4 +22,8 @@ type t =
   | Nodejs
   | Isomorphic
 
+val all : t list
+
 val equals : 'a -> 'a -> bool
+
+val to_string : t -> string

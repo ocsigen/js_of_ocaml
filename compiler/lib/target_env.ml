@@ -22,4 +22,11 @@ type t =
   | Nodejs
   | Isomorphic
 
+let all = [ Browser; Nodejs; Isomorphic ]
+
 let equals = Stdlib.Poly.equal
+
+let to_string = function
+  | Browser -> "browser"
+  | Nodejs -> "nodejs"
+  | Isomorphic -> "isomorphic"

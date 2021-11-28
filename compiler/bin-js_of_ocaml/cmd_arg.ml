@@ -138,7 +138,7 @@ let options =
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
     let open Target_env in
-    let options = [ "isomorphic", Isomorphic; "nodejs", Nodejs; "browser", Browser ] in
+    let options = List.map ~f:(fun env -> to_string env, env) all in
     Arg.(
       value
       & opt (enum options) Isomorphic
@@ -387,7 +387,7 @@ let options_runtime_only =
   let target_env =
     let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
     let open Target_env in
-    let options = [ "isomorphic", Isomorphic; "nodejs", Nodejs; "browser", Browser ] in
+    let options = List.map ~f:(fun env -> to_string env, env) all in
     Arg.(
       value
       & opt (enum options) Isomorphic
