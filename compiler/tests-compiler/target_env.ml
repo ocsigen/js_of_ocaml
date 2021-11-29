@@ -20,45 +20,23 @@
 open Util
 
 let%expect_test _ =
-  compile_and_run
+  let p =
     {|
 let () =
   try
     let _files = Sys.readdir "." in
-    print_endline "Sys.readdir ok - isomorphic compile"
+    print_endline "Sys.readdir ok"
   with
   | e ->
     print_endline @@ Printexc.to_string e;
     ()
-  |};
-  [%expect {|Sys.readdir ok - isomorphic compile|}]
-
-let%expect_test _ =
-  compile_and_run
-    ~flags:[ "--target-env=nodejs" ]
-    {|
-let () =
-  try
-    let _files = Sys.readdir "." in
-    print_endline "Sys.readdir ok - nodejs compile"
-  with
-  | e ->
-    print_endline @@ Printexc.to_string e;
-    ()
-  |};
-  [%expect {|Sys.readdir ok - nodejs compile|}]
-
-let%expect_test _ =
-  compile_and_run
-    ~flags:[ "--target-env=browser" ]
-    {|
-let () =
-  try
-    let _files = Sys.readdir "." in
-    print_endline "Sys.readdir ok - browser compile"
-  with
-  | e ->
-    print_endline @@ Printexc.to_string e;
-    ()
-  |};
+  |}
+  in
+  compile_and_run p;
+  [%expect {|Sys.readdir ok|}];
+  compile_and_run p ~flags:[ "--target-env=isomorphic" ];
+  [%expect {|Sys.readdir ok|}];
+  compile_and_run p ~flags:[ "--target-env=nodejs" ];
+  [%expect {|Sys.readdir ok|}];
+  compile_and_run p ~flags:[ "--target-env=browser" ];
   [%expect {| Sys_error*No such file or directory* (glob) |}]
