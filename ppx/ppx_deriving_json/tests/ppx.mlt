@@ -369,3 +369,16 @@ let () = test' inline_record_json "inline_record 2" (J {empty = ()})
 [%%expect {|
 inline_record 2 = [1,0]
 |}]
+
+type mutable_record =
+  { mutable i : int }
+[@@deriving json]
+
+[%%expect
+{|
+type mutable_record = { mutable i : int; }
+val mutable_record_of_json : Deriving_Json_lexer.lexbuf -> mutable_record =
+  <fun>
+val mutable_record_to_json : Buffer.t -> mutable_record -> unit = <fun>
+val mutable_record_json : mutable_record Deriving_Json.t = <abstr>
+|}]

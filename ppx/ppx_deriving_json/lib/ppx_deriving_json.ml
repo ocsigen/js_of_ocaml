@@ -245,8 +245,6 @@ let seqlist = function
 
 let check_record_fields =
   List.iter ~f:(function
-      | { Parsetree.pld_mutable = Mutable; _ } ->
-          Location.raise_errorf "%s cannot be derived for mutable records" deriver
       | { pld_type = { ptyp_desc = Ptyp_poly _; _ }; _ } ->
           Location.raise_errorf "%s cannot be derived for polymorphic records" deriver
       | _ -> ())
