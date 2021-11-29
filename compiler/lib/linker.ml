@@ -348,8 +348,6 @@ type output =
   ; always_required_codes : always_required list
   }
 
-let last_code_id = ref 0
-
 type provided =
   { id : int
   ; pi : Parse_info.t option
@@ -357,13 +355,22 @@ type provided =
   ; target_env : Target_env.t
   }
 
+let last_code_id = ref 0
+
+let always_included = ref []
+
 let provided = Hashtbl.create 31
 
 let provided_rev = Hashtbl.create 31
 
 let code_pieces = Hashtbl.create 31
 
-let always_included = ref []
+let reset () =
+  last_code_id := 0;
+  always_included := [];
+  Hashtbl.clear provided;
+  Hashtbl.clear provided_rev;
+  Hashtbl.clear code_pieces
 
 class traverse_and_find_named_values all =
   object
@@ -533,6 +540,12 @@ let check_deps () =
           (* FIXME handle missing deps in this case *)
           ())
     code_pieces
+
+let load_fragments ~target_env ~filename l =
+  List.iter l ~f:(fun frag ->
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      ());
+  check_deps ()
 
 let load_files ~target_env l =
   List.iter l ~f:(fun filename -> add_file ~target_env filename);

@@ -1,7 +1,7 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2021 Hugo Heuzard
- *
+l *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
@@ -53,9 +53,7 @@ let f (runtime_files, bytecode, target_env) =
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.parse_builtin t in
-      List.iter runtimes ~f:(fun frag ->
-          let (`Ok | `Ignored) = Linker.load_fragment ~target_env ~filename frag in
-          ()));
+      Linker.load_fragments ~target_env ~filename runtimes);
   Linker.load_files ~target_env runtime_files;
   let all_prims =
     List.concat_map bytecode ~f:(fun f ->

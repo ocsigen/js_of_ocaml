@@ -26,6 +26,8 @@ module Fragment : sig
   val provides : t -> string list
 end
 
+val reset : unit -> unit
+
 val parse_file : string -> Fragment.t list
 
 val parse_string : string -> Fragment.t list
@@ -34,8 +36,7 @@ val parse_builtin : Builtins.File.t -> Fragment.t list
 
 val load_files : target_env:Target_env.t -> string list -> unit
 
-val load_fragment :
-  target_env:Target_env.t -> filename:string -> Fragment.t -> [ `Ok | `Ignored ]
+val load_fragments : target_env:Target_env.t -> filename:string -> Fragment.t list -> unit
 
 type state
 

@@ -74,14 +74,7 @@ let args =
   List.iter builtin ~f:(fun t ->
       let filename = Js_of_ocaml_compiler.Builtins.File.name t in
       let runtimes = Js_of_ocaml_compiler.Linker.parse_builtin t in
-      List.iter runtimes ~f:(fun frag ->
-          let (`Ok | `Ignored) =
-            Js_of_ocaml_compiler.Linker.load_fragment
-              ~target_env:Isomorphic
-              ~filename
-              frag
-          in
-          ()));
+      Js_of_ocaml_compiler.Linker.load_fragments ~target_env:Isomorphic ~filename runtimes);
   Js_of_ocaml_compiler.Linker.load_files ~target_env:Isomorphic runtime_files;
   let all = Jsoo_common.cmis args in
   let instr =

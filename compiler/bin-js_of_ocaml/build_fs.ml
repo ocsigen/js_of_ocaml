@@ -62,10 +62,7 @@ function caml_create_file_extern(name,content){
 |}
   in
   let fragments = Linker.parse_string code in
-  List.iter fragments ~f:(fun fr ->
-      match Linker.load_fragment ~target_env:Isomorphic ~filename:"<dummy>" fr with
-      | `Ok -> ()
-      | `Ignored -> assert false);
+  Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
   let instr =
     Pseudo_fs.f
       ~prim:`caml_create_file_extern

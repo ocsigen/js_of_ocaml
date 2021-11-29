@@ -41,15 +41,20 @@ let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
   | _ :: rest ->
-      (* load all files to make sure they are valid *)
-      Js_of_ocaml_compiler.Linker.load_files ~target_env:Isomorphic rest;
-      let linkinfos = Js_of_ocaml_compiler.Linker.init () in
-      let prov = Js_of_ocaml_compiler.Linker.get_provided () in
-      let _linkinfos, missing =
-        Js_of_ocaml_compiler.Linker.resolve_deps ~linkall:true linkinfos prov
+      let fragments =
+        List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.parse_file f)
       in
-      assert (StringSet.is_empty missing);
-
+      (* load all files to make sure they are valid *)
+      List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
+          Js_of_ocaml_compiler.Linker.reset ();
+          List.iter fragments ~f:(fun (filename, frags) ->
+              Js_of_ocaml_compiler.Linker.load_fragments ~target_env ~filename frags);
+          let linkinfos = Js_of_ocaml_compiler.Linker.init () in
+          let prov = Js_of_ocaml_compiler.Linker.get_provided () in
+          let _linkinfos, missing =
+            Js_of_ocaml_compiler.Linker.resolve_deps ~linkall:true linkinfos prov
+          in
+          assert (StringSet.is_empty missing));
       (* generation *)
       let rest = List.sort_uniq ~compare:String.compare rest in
       List.iter rest ~f:(fun f ->
