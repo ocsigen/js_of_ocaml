@@ -136,13 +136,11 @@ let options =
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let target_env =
-    let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    let doc = "Runtime compile target." in
     let open Target_env in
     let options = List.map ~f:(fun env -> to_string env, env) all in
-    Arg.(
-      value
-      & opt (enum options) Isomorphic
-      & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
+    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+    Arg.(value & opt (enum options) Isomorphic & info [ "target-env" ] ~docv ~doc)
   in
   let toplevel =
     let doc = "Compile a toplevel." in
@@ -385,13 +383,11 @@ let options_runtime_only =
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
   in
   let target_env =
-    let doc = "Runtime compile target (isomorphic, nodejs, browser)." in
+    let doc = "Runtime compile target." in
     let open Target_env in
     let options = List.map ~f:(fun env -> to_string env, env) all in
-    Arg.(
-      value
-      & opt (enum options) Isomorphic
-      & info [ "target-env" ] ~docv:"PARAM=VALUE" ~doc)
+    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+    Arg.(value & opt (enum options) Isomorphic & info [ "target-env" ] ~docv ~doc)
   in
   let wrap_with_function =
     let doc =

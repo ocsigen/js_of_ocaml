@@ -24,7 +24,7 @@ type t =
   | Nodejs
   | Isomorphic
 
-let all = [ Browser; Nodejs; Isomorphic ]
+let all = [ Isomorphic; Browser; Nodejs ]
 
 let equal (x : t) y = Stdlib.Poly.equal x y
 
