@@ -23,9 +23,21 @@ let%expect_test _ =
   let p =
     {|
 let () =
+  let cwd = Sys.getcwd() in
+  if cwd = "/static/"
+  then print_endline "without node filesystem"
+  else print_endline "with node filesystem";
   try
     let _files = Sys.readdir "." in
-    print_endline "Sys.readdir ok"
+    print_endline "Sys.readdir ok";
+    let rec get_root s =
+      let parent = Filename.dirname s in
+      if s = parent then s else get_root parent
+    in
+    let files = Array.to_list (Sys.readdir (get_root cwd)) in
+    (match files with
+    | [] -> print_endline "empty root"
+    | _ -> ())
   with
   | e ->
     print_endline @@ Printexc.to_string e;
@@ -33,10 +45,19 @@ let () =
   |}
   in
   compile_and_run p;
-  [%expect {|Sys.readdir ok|}];
+  [%expect {|
+    with node filesystem
+    Sys.readdir ok|}];
   compile_and_run p ~flags:[ "--target-env=isomorphic" ];
-  [%expect {|Sys.readdir ok|}];
+  [%expect {|
+    with node filesystem
+    Sys.readdir ok|}];
   compile_and_run p ~flags:[ "--target-env=nodejs" ];
-  [%expect {|Sys.readdir ok|}];
+  [%expect {|
+    with node filesystem
+    Sys.readdir ok|}];
   compile_and_run p ~flags:[ "--target-env=browser" ];
-  [%expect {| Sys_error*No such file or directory* (glob) |}]
+  [%expect {|
+    without node filesystem
+    Sys.readdir ok
+    empty root |}]
