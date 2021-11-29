@@ -176,26 +176,10 @@ let parse_from_lex ~filename lex =
                       in
                       { fragment with js_string = Some b }
                   | `If (pi, name) when Option.is_some (Target_env.of_string name) ->
-                      (if Option.is_some fragment.fragment_target
-                      then
-                        let loc =
-                          match pi with
-                          | None -> ""
-                          | Some loc ->
-                              Format.sprintf
-                                "%d:%d"
-                                loc.Parse_info.line
-                                loc.Parse_info.col
-                        in
-                        Format.eprintf "Duplicated target_env in %s\n" loc);
+                      if Option.is_some fragment.fragment_target
+                      then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
                       { fragment with fragment_target = Target_env.of_string name }
                   | `If (pi, name) | `Ifnot (pi, name) ->
-                      let loc =
-                        match pi with
-                        | None -> ""
-                        | Some loc ->
-                            Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
-                      in
                       let filename =
                         match pi with
                         | Some { Parse_info.src = Some x; _ }
@@ -203,7 +187,7 @@ let parse_from_lex ~filename lex =
                             x
                         | _ -> "??"
                       in
-                      Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
+                      Format.eprintf "Unkown flag %S in %s %s\n" name filename (loc pi);
                       fragment)
             in
             `Some fragment)
