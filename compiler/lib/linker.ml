@@ -168,26 +168,21 @@ let parse_from_lex ~filename lex =
                       }
                   | `Weakdef _ -> { fragment with weakdef = true }
                   | `Always _ -> { fragment with always = true }
-                  | (`Ifnot (_, "js-string") | `If (_, "js-string")) as i ->
+                  | (`Ifnot (pi, "js-string") | `If (pi, "js-string")) as i ->
                       let b =
                         match i with
                         | `If _ -> true
                         | `Ifnot _ -> false
                       in
+                      if Option.is_some fragment.js_string
+                      then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
                       { fragment with js_string = Some b }
                   | `If (pi, name) when Option.is_some (Target_env.of_string name) ->
                       if Option.is_some fragment.fragment_target
                       then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
                       { fragment with fragment_target = Target_env.of_string name }
                   | `If (pi, name) | `Ifnot (pi, name) ->
-                      let filename =
-                        match pi with
-                        | Some { Parse_info.src = Some x; _ }
-                        | Some { Parse_info.name = Some x; _ } ->
-                            x
-                        | _ -> "??"
-                      in
-                      Format.eprintf "Unkown flag %S in %s %s\n" name filename (loc pi);
+                      Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
                       fragment)
             in
             `Some fragment)
