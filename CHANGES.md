@@ -7,6 +7,7 @@
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
+* PPX: json can now be derived for mutable records (#1184)
 
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma (#1169)
