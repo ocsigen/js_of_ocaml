@@ -88,12 +88,19 @@ let int_num_bits =
 module List = struct
   include ListLabels
 
-  let rec find_map f = function
+  let rec find_map ~f = function
     | [] -> None
     | x :: l -> (
         match f x with
         | Some _ as result -> result
-        | None -> find_map f l)
+        | None -> find_map ~f l)
+
+  let rec find_map_value ~f ~default = function
+    | [] -> default
+    | x :: l -> (
+        match f x with
+        | Some result -> result
+        | None -> find_map_value ~f ~default l)
 
   let filter_map ~f l =
     let l =

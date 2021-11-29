@@ -24,6 +24,8 @@ type t =
 
 val all : t list
 
-val equals : 'a -> 'a -> bool
+val equal : t -> t -> bool
 
 val to_string : t -> string
+
+val of_string : string -> t option

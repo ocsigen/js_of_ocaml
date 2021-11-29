@@ -30,7 +30,7 @@ type fragment_ =
   ; always : bool
   ; code : Javascript.program
   ; ignore : [ `No | `Because of Primitive.condition ]
-  ; annot : Primitive.t list
+  ; fragment_target : Target_env.t option
   }
 
 type fragment =
@@ -142,7 +142,7 @@ let parse_from_lex ~filename lex =
               ; always = false
               ; code
               ; ignore = `No
-              ; annot
+              ; fragment_target = None
               }
             in
             let fragment =
@@ -166,7 +166,20 @@ let parse_from_lex ~filename lex =
                       if Config.Flag.use_js_string ()
                       then { fragment with ignore = `Because reason }
                       else fragment
-                  | `If (_, "nodejs") | `If (_, "browser") -> fragment
+                  | `If (pi, name) when Option.is_some (Target_env.of_string name) ->
+                      (if Option.is_some fragment.fragment_target
+                      then
+                        let loc =
+                          match pi with
+                          | None -> ""
+                          | Some loc ->
+                              Format.sprintf
+                                "%d:%d"
+                                loc.Parse_info.line
+                                loc.Parse_info.col
+                        in
+                        Format.eprintf "Duplicated target_env in %s\n" loc);
+                      { fragment with fragment_target = Target_env.of_string name }
                   | `If (pi, name) | `Ifnot (pi, name) ->
                       let loc =
                         match pi with
@@ -328,6 +341,13 @@ type output =
 
 let last_code_id = ref 0
 
+type provided =
+  { id : int
+  ; pi : Parse_info.t option
+  ; weakdef : bool
+  ; target_env : Target_env.t
+  }
+
 let provided = Hashtbl.create 31
 
 let provided_rev = Hashtbl.create 31
@@ -361,91 +381,107 @@ let load_fragment ~target_env ~filename f =
   match f with
   | `Always_include code ->
       always_included := { filename; program = code; requires = [] } :: !always_included
-  | `Some { provides; requires; version_constraint; weakdef; always; code; ignore; annot }
-    -> (
-      match ignore with
-      | `Because _ -> ()
-      | `No ->
-          let vmatch =
+  | `Some
+      { provides
+      ; requires
+      ; version_constraint
+      ; weakdef
+      ; always
+      ; code
+      ; ignore
+      ; fragment_target
+      } -> (
+      let ignore_early =
+        match ignore with
+        | `Because _ -> true
+        | `No -> (
             match version_constraint with
-            | [] -> true
-            | l -> List.exists l ~f:version_match
-          in
-          if vmatch
-          then (
-            incr last_code_id;
-            let id = !last_code_id in
-            match provides with
-            | None ->
-                if always
-                then
-                  always_included :=
-                    { filename; program = code; requires } :: !always_included
-                else
-                  error
-                    "Found JavaScript code with neither `//Provides` nor `//Always` in \
-                     file %S@."
-                    filename
-            | Some (pi, name, kind, ka) ->
-                let code = Macro.f code in
-                let module J = Javascript in
-                let annot_target_env =
-                  let open Target_env in
-                  Option.value ~default:Isomorphic
-                  @@ List.find_map
-                       (function
-                         | `If (_, "nodejs") -> Some Nodejs
-                         | `If (_, "browser") -> Some Browser
-                         | _ -> None)
-                       annot
-                in
-                let rec find = function
-                  | [] -> None
-                  | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
-                    when String.equal name n ->
-                      Some (List.length l)
-                  | _ :: rem -> find rem
-                in
-                let arity = find code in
-                let named_values = find_named_value code in
-                Primitive.register name kind ka arity;
-                StringSet.iter Primitive.register_named_value named_values;
-                let is_symbol_missing = not (Hashtbl.mem provided name) in
-                let is_target_env_match = Target_env.equals target_env annot_target_env in
-                let is_annot_isomorphic = Target_env.equals annot_target_env Isomorphic in
-                let is_updating =
-                  match is_symbol_missing, is_annot_isomorphic, is_target_env_match with
-                  (* permit default, un-annotated symbols *)
-                  | true, true, true
-                  | true, true, false
-                  (* permit env specializations *)
-                  | true, false, true ->
-                      true
-                  (* ignore non target matched envs *)
-                  | true, false, false | false, false, false | false, true, false -> false
-                  (* collision detected *)
-                  | false, false, true | false, true, true ->
-                      let _, ploc, weakdef, prev_env = Hashtbl.find provided name in
-                      let is_specializing =
-                        Target_env.(equals prev_env Isomorphic && not is_annot_isomorphic)
-                      in
-                      if weakdef || is_specializing
-                      then true
-                      else (
-                        warn
-                          "warning: overriding primitive %S\n  old: %s\n  new: %s@."
-                          name
-                          (loc ploc)
-                          (loc pi);
-                        true)
-                in
-                if is_updating
-                then (
-                  Hashtbl.add provided name (id, pi, weakdef, annot_target_env);
-                  Hashtbl.add provided_rev id (name, pi);
-                  check_primitive ~name pi ~code ~requires;
-                  Hashtbl.add code_pieces id (code, requires))
-                else ()))
+            | [] -> false
+            | l -> not (List.exists l ~f:version_match))
+      in
+      if ignore_early
+      then ()
+      else
+        match provides with
+        | None ->
+            if always
+            then
+              always_included :=
+                { filename; program = code; requires } :: !always_included
+            else
+              error
+                "Found JavaScript code with neither `//Provides` nor `//Always` in file \
+                 %S@."
+                filename
+        | Some (pi, name, kind, ka) ->
+            let fragment_target =
+              Option.value ~default:Target_env.Isomorphic fragment_target
+            in
+            let exists =
+              try `Exists (Hashtbl.find provided name) with Not_found -> `New
+            in
+            let is_updating =
+              match
+                exists, (target_env : Target_env.t), (fragment_target : Target_env.t)
+              with
+              (* permit default, un-annotated symbols *)
+              | `New, _, Isomorphic -> true
+              (* permit env specializations *)
+              | `New, Nodejs, Nodejs | `New, Browser, Browser -> true
+              | `Exists { target_env = Isomorphic; _ }, Nodejs, Nodejs -> true
+              | `Exists { target_env = Isomorphic; _ }, Browser, Browser -> true
+              (* ignore non target matched envs *)
+              | (`Exists _ | `New), Isomorphic, (Browser | Nodejs)
+              | (`Exists _ | `New), Browser, Nodejs
+              | (`Exists _ | `New), Nodejs, Browser ->
+                  false
+              (* Ignore env unspecializations *)
+              | `Exists { target_env = Nodejs; _ }, Nodejs, Isomorphic -> false
+              | `Exists { target_env = Browser; _ }, Browser, Isomorphic -> false
+              (* The following are impossible *)
+              | `Exists { target_env = Nodejs; _ }, Browser, _
+              | `Exists { target_env = Browser; _ }, Nodejs, _
+              | `Exists { target_env = Nodejs | Browser; _ }, Isomorphic, _ ->
+                  assert false
+              (* collision detected *)
+              | `Exists ({ target_env = Nodejs; _ } as p), Nodejs, Nodejs
+              | `Exists ({ target_env = Isomorphic; _ } as p), Nodejs, Isomorphic
+              | `Exists ({ target_env = Browser; _ } as p), Browser, Browser
+              | `Exists ({ target_env = Isomorphic; _ } as p), Browser, Isomorphic
+              | `Exists ({ target_env = Isomorphic; _ } as p), Isomorphic, Isomorphic ->
+                  if p.weakdef
+                  then true
+                  else (
+                    warn
+                      "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+                      name
+                      (loc p.pi)
+                      (loc pi);
+                    true)
+            in
+            if is_updating
+            then (
+              let rec find_arity = function
+                | [] -> None
+                | ( Javascript.Function_declaration
+                      (Javascript.S { Javascript.name = n; _ }, l, _, _)
+                  , _ )
+                  :: _
+                  when String.equal name n ->
+                    Some (List.length l)
+                | _ :: rem -> find_arity rem
+              in
+              incr last_code_id;
+              let id = !last_code_id in
+              let code = Macro.f code in
+              let arity = find_arity code in
+              let named_values = find_named_value code in
+              check_primitive ~name pi ~code ~requires;
+              Primitive.register name kind ka arity;
+              StringSet.iter Primitive.register_named_value named_values;
+              Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
+              Hashtbl.add provided_rev id (name, pi);
+              Hashtbl.add code_pieces id (code, requires)))
 
 let add_file ~target_env filename =
   List.iter (parse_file filename) ~f:(load_fragment ~target_env ~filename)
@@ -486,8 +522,8 @@ let load_files ~target_env l =
 let rec resolve_dep_name_rev visited path nm =
   let id =
     try
-      let x, _, _, _ = Hashtbl.find provided nm in
-      x
+      let x = Hashtbl.find provided nm in
+      x.id
     with Not_found -> error "missing dependency '%s'@." nm
   in
   resolve_dep_id_rev visited path id
@@ -525,7 +561,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
       (* link all primitives *)
       let prog, set =
         Hashtbl.fold
-          (fun nm (_id, _, _, _) (visited, set) ->
+          (fun nm _ (visited, set) ->
             resolve_dep_name_rev visited [] nm, StringSet.add nm set)
           provided
           (visited_rev, StringSet.empty)
@@ -576,6 +612,6 @@ let all state =
 
 let origin ~name =
   try
-    let _, ploc, _, _ = Hashtbl.find provided name in
-    Option.bind ploc ~f:(fun ploc -> ploc.Parse_info.src)
+    let x = Hashtbl.find provided name in
+    Option.bind x.pi ~f:(fun ploc -> ploc.Parse_info.src)
   with Not_found -> None

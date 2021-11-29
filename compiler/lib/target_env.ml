@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+
 type t =
   | Browser
   | Nodejs
@@ -24,9 +26,14 @@ type t =
 
 let all = [ Browser; Nodejs; Isomorphic ]
 
-let equals = Stdlib.Poly.equal
+let equal (x : t) y = Stdlib.Poly.equal x y
 
 let to_string = function
   | Browser -> "browser"
   | Nodejs -> "nodejs"
   | Isomorphic -> "isomorphic"
+
+let of_string =
+  let t = Hashtbl.create 17 in
+  List.iter all ~f:(fun x -> Hashtbl.add t (to_string x) x);
+  fun name -> try Some (Hashtbl.find t name) with Not_found -> None
