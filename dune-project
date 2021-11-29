@@ -1,4 +1,5 @@
 (lang dune 2.9)
+(using menhir 2.0)
 (name js_of_ocaml)
 
 (generate_opam_files true)
