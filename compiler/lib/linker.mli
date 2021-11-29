@@ -20,33 +20,22 @@
 
 open Stdlib
 
-type fragment_ =
-  { provides :
-      (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
-      option
-  ; requires : string list
-  ; version_constraint : ((int -> int -> bool) * string) list list
-  ; weakdef : bool
-  ; always : bool
-  ; code : Javascript.program
-  ; ignore : [ `No | `Because of Primitive.condition ]
-  ; fragment_target : Target_env.t option
-  }
+module Fragment : sig
+  type t
 
-type fragment =
-  [ `Always_include of Javascript.program
-  | `Some of fragment_
-  ]
+  val provides : t -> string list
+end
 
-val parse_file : string -> fragment list
+val parse_file : string -> Fragment.t list
 
-val parse_string : string -> fragment list
+val parse_string : string -> Fragment.t list
 
-val parse_builtin : Builtins.File.t -> fragment list
+val parse_builtin : Builtins.File.t -> Fragment.t list
 
 val load_files : target_env:Target_env.t -> string list -> unit
 
-val load_fragment : target_env:Target_env.t -> filename:string -> fragment -> unit
+val load_fragment :
+  target_env:Target_env.t -> filename:string -> Fragment.t -> [ `Ok | `Ignored ]
 
 type state
 

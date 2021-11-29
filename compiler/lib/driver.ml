@@ -165,16 +165,8 @@ let extra_js_files =
          try
            let name = Builtins.File.name file in
            let ss =
-             List.fold_left
-               (Linker.parse_builtin file)
-               ~init:StringSet.empty
-               ~f:(fun ss frag ->
-                 match frag with
-                 | `Always_include _ -> ss
-                 | `Some { Linker.provides; _ } -> (
-                     match provides with
-                     | Some (_, name, _, _) -> StringSet.add name ss
-                     | _ -> ss))
+             List.concat_map ~f:Linker.Fragment.provides (Linker.parse_builtin file)
+             |> StringSet.of_list
            in
            (name, ss) :: acc
          with _ -> acc))
