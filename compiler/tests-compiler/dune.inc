@@ -351,6 +351,19 @@
   (pps ppx_expect)))
 
 (library
+ (name jsooexp_target_env)
+ (modules target_env)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (flags -allow-output-patterns)
+  (deps
+   (file ../../compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file ../../compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsooexp_unix_fs)
  (modules unix_fs)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)

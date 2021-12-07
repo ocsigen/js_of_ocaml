@@ -42,7 +42,7 @@ let print_groups output l =
           List.iter group ~f:(fun (name, _) ->
               output_string output (Printf.sprintf "%s\n" name)))
 
-let f (runtime_files, bytecode) =
+let f (runtime_files, bytecode, target_env) =
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with
@@ -53,8 +53,8 @@ let f (runtime_files, bytecode) =
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.parse_builtin t in
-      List.iter runtimes ~f:(Linker.load_fragment ~filename));
-  Linker.load_files runtime_files;
+      Linker.load_fragments ~target_env ~filename runtimes);
+  Linker.load_files ~target_env runtime_files;
   let all_prims =
     List.concat_map bytecode ~f:(fun f ->
         let ic = open_in_bin f in
@@ -133,11 +133,20 @@ let options =
     let doc = "Bytecode and JavaScript files [$(docv)]. " in
     Arg.(value & pos_all string [] & info [] ~docv:"FILES" ~doc)
   in
-  let build_t files =
-    let files = List.partition files ~f:(fun file -> Filename.check_suffix file ".js") in
-    `Ok files
+  let build_t files target_env =
+    let runtime_files, bc_files =
+      List.partition files ~f:(fun file -> Filename.check_suffix file ".js")
+    in
+    `Ok (runtime_files, bc_files, target_env)
   in
-  let t = Term.(pure build_t $ files) in
+  let target_env =
+    let doc = "Runtime compile target." in
+    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
+    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+    Arg.(
+      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
+  in
+  let t = Term.(pure build_t $ files $ target_env) in
   Term.ret t
 
 let info =

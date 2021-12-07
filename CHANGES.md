@@ -1,5 +1,6 @@
 # dev (2021-??-??) - ??
 ## Features/Changes
+* Compiler: add --target-env flag, for JS runtime specific compilation targets (#1160).
 * Compiler: static evaluation of backend_type (#1166)
 * Compiler: speedup emitting js files (#1174)
 * Compiler: simplify (a | 0) >>> 0 into (a >>> 0) (#1177)
@@ -15,7 +16,7 @@
 # 3.11.0 (2021-10-06) - Lille
 
 ## Features/Changes
-* Compiler: setting tc_depth to 0 remove direct call from the tc optimization.  
+* Compiler: setting tc_depth to 0 remove direct call from the tc optimization.
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
 * Runtime: fixes for Windows, all tests pass
 * Runtime: make all windows drive available on nodejs.

@@ -20,22 +20,30 @@
 
 open! Stdlib
 
-type fragment_ =
-  { provides :
-      (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
-      option
-  ; requires : string list
-  ; version_constraint : ((int -> int -> bool) * string) list list
-  ; weakdef : bool
-  ; always : bool
-  ; code : Javascript.program
-  ; ignore : [ `No | `Because of Primitive.condition ]
-  }
+module Fragment = struct
+  type fragment_ =
+    { provides :
+        (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
+        option
+    ; requires : string list
+    ; version_constraint : ((int -> int -> bool) * string) list list
+    ; weakdef : bool
+    ; always : bool
+    ; code : Javascript.program
+    ; js_string : bool option
+    ; fragment_target : Target_env.t option
+    }
 
-type fragment =
-  [ `Always_include of Javascript.program
-  | `Some of fragment_
-  ]
+  type t =
+    [ `Always_include of Javascript.program
+    | `Some of fragment_
+    ]
+
+  let provides = function
+    | `Always_include _ -> []
+    | `Some { provides = Some (_, name, _, _); _ } -> [ name ]
+    | `Some _ -> []
+end
 
 let loc pi =
   match pi with
@@ -133,18 +141,22 @@ let parse_from_lex ~filename lex =
         match annot with
         | [] -> `Always_include code
         | annot ->
-            let no_annot_fragment =
+            let initial_fragment : Fragment.fragment_ =
               { provides = None
               ; requires = []
               ; version_constraint = []
               ; weakdef = false
               ; always = false
               ; code
-              ; ignore = `No
+              ; js_string = None
+              ; fragment_target = None
               }
             in
             let fragment =
-              List.fold_left annot ~init:no_annot_fragment ~f:(fun fragment a ->
+              List.fold_left
+                annot
+                ~init:initial_fragment
+                ~f:(fun (fragment : Fragment.fragment_) a ->
                   match a with
                   | `Provides (pi, name, kind, ka) ->
                       { fragment with provides = Some (pi, name, kind, ka) }
@@ -156,29 +168,21 @@ let parse_from_lex ~filename lex =
                       }
                   | `Weakdef _ -> { fragment with weakdef = true }
                   | `Always _ -> { fragment with always = true }
-                  | `If (_, "js-string") as reason ->
-                      if not (Config.Flag.use_js_string ())
-                      then { fragment with ignore = `Because reason }
-                      else fragment
-                  | `Ifnot (_, "js-string") as reason ->
-                      if Config.Flag.use_js_string ()
-                      then { fragment with ignore = `Because reason }
-                      else fragment
+                  | (`Ifnot (pi, "js-string") | `If (pi, "js-string")) as i ->
+                      let b =
+                        match i with
+                        | `If _ -> true
+                        | `Ifnot _ -> false
+                      in
+                      if Option.is_some fragment.js_string
+                      then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
+                      { fragment with js_string = Some b }
+                  | `If (pi, name) when Option.is_some (Target_env.of_string name) ->
+                      if Option.is_some fragment.fragment_target
+                      then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
+                      { fragment with fragment_target = Target_env.of_string name }
                   | `If (pi, name) | `Ifnot (pi, name) ->
-                      let loc =
-                        match pi with
-                        | None -> ""
-                        | Some loc ->
-                            Format.sprintf "%d:%d" loc.Parse_info.line loc.Parse_info.col
-                      in
-                      let filename =
-                        match pi with
-                        | Some { Parse_info.src = Some x; _ }
-                        | Some { Parse_info.name = Some x; _ } ->
-                            x
-                        | _ -> "??"
-                      in
-                      Format.eprintf "Unkown flag %S in %s %s\n" name filename loc;
+                      Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
                       fragment)
             in
             `Some fragment)
@@ -323,7 +327,16 @@ type output =
   ; always_required_codes : always_required list
   }
 
+type provided =
+  { id : int
+  ; pi : Parse_info.t option
+  ; weakdef : bool
+  ; target_env : Target_env.t
+  }
+
 let last_code_id = ref 0
+
+let always_included = ref []
 
 let provided = Hashtbl.create 31
 
@@ -331,7 +344,12 @@ let provided_rev = Hashtbl.create 31
 
 let code_pieces = Hashtbl.create 31
 
-let always_included = ref []
+let reset () =
+  last_code_id := 0;
+  always_included := [];
+  Hashtbl.clear provided;
+  Hashtbl.clear provided_rev;
+  Hashtbl.clear code_pieces
 
 class traverse_and_find_named_values all =
   object
@@ -354,64 +372,125 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let load_fragment ~filename f =
+let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
   | `Always_include code ->
-      always_included := { filename; program = code; requires = [] } :: !always_included
-  | `Some { provides; requires; version_constraint; weakdef; always; code; ignore } -> (
-      match ignore with
-      | `Because _ -> ()
-      | `No ->
-          let vmatch =
-            match version_constraint with
-            | [] -> true
-            | l -> List.exists l ~f:version_match
-          in
-          if vmatch
-          then (
-            incr last_code_id;
-            let id = !last_code_id in
-            match provides with
-            | None ->
-                if always
-                then
-                  always_included :=
-                    { filename; program = code; requires } :: !always_included
-                else
-                  error
-                    "Found JavaScript code with neither `//Provides` nor `//Always` in \
-                     file %S@."
-                    filename
-            | Some (pi, name, kind, ka) ->
-                let code = Macro.f code in
-                let module J = Javascript in
-                let rec find = function
-                  | [] -> None
-                  | (J.Function_declaration (J.S { J.name = n; _ }, l, _, _), _) :: _
-                    when String.equal name n ->
-                      Some (List.length l)
-                  | _ :: rem -> find rem
-                in
-                let arity = find code in
-                let named_values = find_named_value code in
-                Primitive.register name kind ka arity;
-                StringSet.iter Primitive.register_named_value named_values;
-                (if Hashtbl.mem provided name
-                then
-                  let _, ploc, weakdef = Hashtbl.find provided name in
-                  if not weakdef
-                  then
+      always_included := { filename; program = code; requires = [] } :: !always_included;
+      `Ok
+  | `Some
+      { provides
+      ; requires
+      ; version_constraint
+      ; weakdef
+      ; always
+      ; code
+      ; js_string
+      ; fragment_target
+      } -> (
+      let ignore_because_of_js_string =
+        match js_string, Config.Flag.use_js_string () with
+        | Some true, false | Some false, true -> true
+        | None, _ | Some true, true | Some false, false -> false
+      in
+      let ignore_because_of_version_constraint =
+        match version_constraint with
+        | [] -> false
+        | l -> not (List.exists l ~f:version_match)
+      in
+      if ignore_because_of_version_constraint || ignore_because_of_js_string
+      then `Ignored
+      else
+        match provides with
+        | None ->
+            if always
+            then (
+              always_included :=
+                { filename; program = code; requires } :: !always_included;
+              `Ok)
+            else
+              error
+                "Found JavaScript code with neither `//Provides` nor `//Always` in file \
+                 %S@."
+                filename
+        | Some (pi, name, kind, ka) ->
+            let fragment_target =
+              Option.value ~default:Target_env.Isomorphic fragment_target
+            in
+            let exists =
+              try `Exists (Hashtbl.find provided name) with Not_found -> `New
+            in
+            let is_updating =
+              match
+                exists, (target_env : Target_env.t), (fragment_target : Target_env.t)
+              with
+              (* permit default, un-annotated symbols *)
+              | `New, _, Isomorphic -> true
+              (* permit env specializations *)
+              | `New, Nodejs, Nodejs
+              | `New, Browser, Browser
+              | `Exists { target_env = Isomorphic; _ }, Nodejs, Nodejs
+              | `Exists { target_env = Isomorphic; _ }, Browser, Browser ->
+                  true
+              (* ignore non target matched envs *)
+              | (`Exists _ | `New), Isomorphic, (Browser | Nodejs)
+              | (`Exists _ | `New), Browser, Nodejs
+              | (`Exists _ | `New), Nodejs, Browser ->
+                  false
+              (* Ignore env unspecializations *)
+              | `Exists { target_env = Nodejs; _ }, Nodejs, Isomorphic
+              | `Exists { target_env = Browser; _ }, Browser, Isomorphic ->
+                  false
+              (* The following are impossible *)
+              | `Exists { target_env = Nodejs; _ }, Browser, _
+              | `Exists { target_env = Browser; _ }, Nodejs, _
+              | `Exists { target_env = Nodejs | Browser; _ }, Isomorphic, _ ->
+                  assert false
+              (* collision detected *)
+              | `Exists ({ target_env = Nodejs; _ } as p), Nodejs, Nodejs
+              | `Exists ({ target_env = Isomorphic; _ } as p), Nodejs, Isomorphic
+              | `Exists ({ target_env = Browser; _ } as p), Browser, Browser
+              | `Exists ({ target_env = Isomorphic; _ } as p), Browser, Isomorphic
+              | `Exists ({ target_env = Isomorphic; _ } as p), Isomorphic, Isomorphic ->
+                  if p.weakdef
+                  then true
+                  else (
                     warn
                       "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                       name
-                      (loc ploc)
-                      (loc pi));
-                Hashtbl.add provided name (id, pi, weakdef);
-                Hashtbl.add provided_rev id (name, pi);
-                check_primitive ~name pi ~code ~requires;
-                Hashtbl.add code_pieces id (code, requires)))
+                      (loc p.pi)
+                      (loc pi);
+                    true)
+            in
+            if not is_updating
+            then `Ignored
+            else
+              let rec find_arity = function
+                | [] -> None
+                | ( Javascript.Function_declaration
+                      (Javascript.S { Javascript.name = n; _ }, l, _, _)
+                  , _ )
+                  :: _
+                  when String.equal name n ->
+                    Some (List.length l)
+                | _ :: rem -> find_arity rem
+              in
+              incr last_code_id;
+              let id = !last_code_id in
+              let code = Macro.f code in
+              let arity = find_arity code in
+              let named_values = find_named_value code in
+              check_primitive ~name pi ~code ~requires;
+              Primitive.register name kind ka arity;
+              StringSet.iter Primitive.register_named_value named_values;
+              Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
+              Hashtbl.add provided_rev id (name, pi);
+              Hashtbl.add code_pieces id (code, requires);
+              `Ok)
 
-let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
+let add_file ~target_env filename =
+  List.iter (parse_file filename) ~f:(fun frag ->
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      ())
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -441,16 +520,22 @@ let check_deps () =
           ())
     code_pieces
 
-let load_files l =
-  List.iter l ~f:add_file;
+let load_fragments ~target_env ~filename l =
+  List.iter l ~f:(fun frag ->
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      ());
+  check_deps ()
+
+let load_files ~target_env l =
+  List.iter l ~f:(fun filename -> add_file ~target_env filename);
   check_deps ()
 
 (* resolve *)
 let rec resolve_dep_name_rev visited path nm =
   let id =
     try
-      let x, _, _ = Hashtbl.find provided nm in
-      x
+      let x = Hashtbl.find provided nm in
+      x.id
     with Not_found -> error "missing dependency '%s'@." nm
   in
   resolve_dep_id_rev visited path id
@@ -488,7 +573,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
       (* link all primitives *)
       let prog, set =
         Hashtbl.fold
-          (fun nm (_id, _, _) (visited, set) ->
+          (fun nm _ (visited, set) ->
             resolve_dep_name_rev visited [] nm, StringSet.add nm set)
           provided
           (visited_rev, StringSet.empty)
@@ -539,6 +624,6 @@ let all state =
 
 let origin ~name =
   try
-    let _, ploc, _ = Hashtbl.find provided name in
-    Option.bind ploc ~f:(fun ploc -> ploc.Parse_info.src)
+    let x = Hashtbl.find provided name in
+    Option.bind x.pi ~f:(fun ploc -> ploc.Parse_info.src)
   with Not_found -> None

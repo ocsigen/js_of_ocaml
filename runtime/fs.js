@@ -25,8 +25,8 @@ function caml_trailing_slash(name){
 }
 
 //Provides: caml_current_dir
-//Requires: caml_trailing_slash
-if(joo_global_object.process && joo_global_object.process.cwd)
+//Requires: caml_trailing_slash, fs_node_supported
+if(fs_node_supported () && joo_global_object.process && joo_global_object.process.cwd)
   var caml_current_dir = joo_global_object.process.cwd().replace(/\\/g,'/');
 else
   var caml_current_dir =  "/static";
@@ -48,6 +48,7 @@ var caml_root = caml_get_root(caml_current_dir) || caml_failwith("unable to comp
 function MlFile(){  }
 
 //Provides: path_is_absolute
+//Requires: fs_node_supported
 function make_path_is_absolute() {
   function posix(path) {
     if (path.charAt(0) === '/') return ["", path.substring(1)];
@@ -69,7 +70,7 @@ function make_path_is_absolute() {
     }
     return;
   }
-  if(joo_global_object.process && joo_global_object.process.platform) {
+  if(fs_node_supported () && joo_global_object.process && joo_global_object.process.platform) {
     return joo_global_object.process.platform === 'win32' ? win32 : posix;
   }
   else return posix
@@ -120,7 +121,7 @@ function caml_list_mount_point(){
 }
 
 //Provides: resolve_fs_device
-//Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice, caml_trailing_slash
+//Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice, caml_trailing_slash, fs_node_supported
 function resolve_fs_device(name){
   var path = caml_make_path(name);
   var name = path.join("/");
@@ -132,7 +133,7 @@ function resolve_fs_device(name){
        && (!res || res.path.length < m.path.length))
       res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
   }
-  if( !res) {
+  if( !res && fs_node_supported()) {
     var root = caml_get_root(name);
     if (root && root.match(/^[a-zA-Z]:\/$/)){
       var m = {path:root,device:new MlNodeDevice(root)};

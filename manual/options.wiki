@@ -8,6 +8,13 @@
                             (default 1). See **Optimization**
                              section below.                        |
 | --pretty                | Pretty print javascript output         |
+| --target-env            | Build javascript for the requested
+                            environment (default "isomorphic").
+                            Isomorphic javascript runs in both the
+                            browser & nodejs. "nodejs" & "browser"
+                            options bundle less javascript, but
+                            drop support for APIs incompatible with
+                            the selected runtime.                  |
 | --no-inline             | Disable code inlining                  |
 | --debug-info            | Output debug information               |
 | -I dir                  | Add <dir> to the list of

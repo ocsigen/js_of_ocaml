@@ -34,6 +34,7 @@ type t =
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : string option
+  ; target_env : Target_env.t
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -134,6 +135,13 @@ let options =
       & opt_all (list (pair ~sep:'=' string string)) []
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let target_env =
+    let doc = "Runtime compile target." in
+    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
+    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+    Arg.(
+      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
+  in
   let toplevel =
     let doc = "Compile a toplevel." in
     Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
@@ -216,6 +224,7 @@ let options =
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
       sourcemap_root
+      target_env
       output_file
       input_file
       js_files
@@ -284,6 +293,7 @@ let options =
       ; wrap_with_fun
       ; dynlink
       ; linkall
+      ; target_env
       ; toplevel
       ; export_file
       ; include_dir
@@ -324,6 +334,7 @@ let options =
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
       $ sourcemap_root
+      $ target_env
       $ output_file
       $ input_file
       $ js_files
@@ -370,6 +381,13 @@ let options_runtime_only =
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+  in
+  let target_env =
+    let doc = "Runtime compile target." in
+    let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
+    let docv = Printf.sprintf "{%s}" (String.concat ~sep:"," (List.map ~f:fst options)) in
+    Arg.(
+      value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
   in
   let wrap_with_function =
     let doc =
@@ -448,6 +466,7 @@ let options_runtime_only =
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
       sourcemap_root
+      target_env
       output_file
       js_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
@@ -498,6 +517,7 @@ let options_runtime_only =
       ; wrap_with_fun
       ; dynlink = false
       ; linkall = false
+      ; target_env
       ; toplevel = false
       ; export_file = None
       ; include_dir
@@ -531,6 +551,7 @@ let options_runtime_only =
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
       $ sourcemap_root
+      $ target_env
       $ output_file
       $ js_files)
   in
