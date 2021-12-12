@@ -2533,7 +2533,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
-                | (String str | NativeString str), None ->
+                | String str, None ->
                     Code.Var.name x (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
