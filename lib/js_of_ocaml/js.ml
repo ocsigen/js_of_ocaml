@@ -214,105 +214,111 @@ module Js = struct
 
   external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
     = "caml_js_wrap_meth_callback"
+
+  (****)
+
+  let _true = Unsafe.pure_js_expr "true"
+
+  let _false = Unsafe.pure_js_expr "false"
+
+  type match_result_handle
+
+  type string_array
+
+  class type js_string =
+    object
+      method toString : js_string t meth
+
+      method valueOf : js_string t meth
+
+      method charAt : int -> js_string t meth
+
+      method charCodeAt : int -> float meth
+
+      (* This may return NaN... *)
+      method concat : js_string t -> js_string t meth
+
+      method concat_2 : js_string t -> js_string t -> js_string t meth
+
+      method concat_3 : js_string t -> js_string t -> js_string t -> js_string t meth
+
+      method concat_4 :
+        js_string t -> js_string t -> js_string t -> js_string t -> js_string t meth
+
+      method indexOf : js_string t -> int meth
+
+      method indexOf_from : js_string t -> int -> int meth
+
+      method lastIndexOf : js_string t -> int meth
+
+      method lastIndexOf_from : js_string t -> int -> int meth
+
+      method localeCompare : js_string t -> float meth
+
+      method _match : regExp t -> match_result_handle t opt meth
+
+      method replace : regExp t -> js_string t -> js_string t meth
+
+      method replace_string : js_string t -> js_string t -> js_string t meth
+
+      method search : regExp t -> int meth
+
+      method slice : int -> int -> js_string t meth
+
+      method slice_end : int -> js_string t meth
+
+      method split : js_string t -> string_array t meth
+
+      method split_limited : js_string t -> int -> string_array t meth
+
+      method split_regExp : regExp t -> string_array t meth
+
+      method split_regExpLimited : regExp t -> int -> string_array t meth
+
+      method substring : int -> int -> js_string t meth
+
+      method substring_toEnd : int -> js_string t meth
+
+      method toLowerCase : js_string t meth
+
+      method toLocaleLowerCase : js_string t meth
+
+      method toUpperCase : js_string t meth
+
+      method toLocaleUpperCase : js_string t meth
+
+      method trim : js_string t meth
+
+      method length : int readonly_prop
+    end
+
+  and regExp =
+    object
+      method exec : js_string t -> match_result_handle t opt meth
+
+      method test : js_string t -> bool t meth
+
+      method toString : js_string t meth
+
+      method source : js_string t readonly_prop
+
+      method global : bool t readonly_prop
+
+      method ignoreCase : bool t readonly_prop
+
+      method multiline : bool t readonly_prop
+
+      method lastIndex : int prop
+    end
+
+  (* string is used by ppx_js, it needs to come before any use of the
+     new syntax in this file *)
+  external string : string -> js_string t = "caml_jsstring_of_string"
+
+  external to_string : js_string t -> string = "caml_string_of_jsstring"
 end
 
 include Js
-
-(****)
-
-let _true = Unsafe.pure_js_expr "true"
-
-let _false = Unsafe.pure_js_expr "false"
-
-type match_result_handle
-
-type string_array
-
-class type js_string =
-  object
-    method toString : js_string t meth
-
-    method valueOf : js_string t meth
-
-    method charAt : int -> js_string t meth
-
-    method charCodeAt : int -> float meth
-
-    (* This may return NaN... *)
-    method concat : js_string t -> js_string t meth
-
-    method concat_2 : js_string t -> js_string t -> js_string t meth
-
-    method concat_3 : js_string t -> js_string t -> js_string t -> js_string t meth
-
-    method concat_4 :
-      js_string t -> js_string t -> js_string t -> js_string t -> js_string t meth
-
-    method indexOf : js_string t -> int meth
-
-    method indexOf_from : js_string t -> int -> int meth
-
-    method lastIndexOf : js_string t -> int meth
-
-    method lastIndexOf_from : js_string t -> int -> int meth
-
-    method localeCompare : js_string t -> float meth
-
-    method _match : regExp t -> match_result_handle t opt meth
-
-    method replace : regExp t -> js_string t -> js_string t meth
-
-    method replace_string : js_string t -> js_string t -> js_string t meth
-
-    method search : regExp t -> int meth
-
-    method slice : int -> int -> js_string t meth
-
-    method slice_end : int -> js_string t meth
-
-    method split : js_string t -> string_array t meth
-
-    method split_limited : js_string t -> int -> string_array t meth
-
-    method split_regExp : regExp t -> string_array t meth
-
-    method split_regExpLimited : regExp t -> int -> string_array t meth
-
-    method substring : int -> int -> js_string t meth
-
-    method substring_toEnd : int -> js_string t meth
-
-    method toLowerCase : js_string t meth
-
-    method toLocaleLowerCase : js_string t meth
-
-    method toUpperCase : js_string t meth
-
-    method toLocaleUpperCase : js_string t meth
-
-    method trim : js_string t meth
-
-    method length : int readonly_prop
-  end
-
-and regExp =
-  object
-    method exec : js_string t -> match_result_handle t opt meth
-
-    method test : js_string t -> bool t meth
-
-    method toString : js_string t meth
-
-    method source : js_string t readonly_prop
-
-    method global : bool t readonly_prop
-
-    method ignoreCase : bool t readonly_prop
-
-    method multiline : bool t readonly_prop
-
-    method lastIndex : int prop
-  end
 
 class type string_constr =
   object
@@ -707,10 +713,6 @@ let unescape (s : js_string t) : js_string t =
 external bool : bool -> bool t = "caml_js_from_bool"
 
 external to_bool : bool t -> bool = "caml_js_to_bool"
-
-external string : string -> js_string t = "caml_jsstring_of_string"
-
-external to_string : js_string t -> string = "caml_string_of_jsstring"
 
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
 

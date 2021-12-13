@@ -137,10 +137,15 @@ let run
     Pseudo_fs.f ~prim ~cmis ~files:fs_files ~paths
   in
   let env_instr () =
-    List.map static_env ~f:(fun (k, v) ->
+    List.concat_map static_env ~f:(fun (k, v) ->
         Primitive.add_external "caml_set_static_env";
-        let args = [ Code.Pc (IString k); Code.Pc (IString v) ] in
-        Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
+        let var_k = Code.Var.fresh () in
+        let var_v = Code.Var.fresh () in
+        Code.
+          [ Let (var_k, Prim (Extern "caml_jsstring_of_string", [ Pc (String k) ]))
+          ; Let (var_v, Prim (Extern "caml_jsstring_of_string", [ Pc (String v) ]))
+          ; Let (Var.fresh (), Prim (Extern "caml_set_static_env", [ Pv var_k; Pv var_v ]))
+          ])
   in
   let output (one : Parse_bytecode.one) ~standalone output_file =
     check_debug one;
@@ -149,7 +154,7 @@ let run
     | `Stdout ->
         let instr =
           List.concat
-            [ pseudo_fs_instr `caml_create_file one.debug one.cmis
+            [ pseudo_fs_instr `create_file one.debug one.cmis
             ; (if init_pseudo_fs then [ Pseudo_fs.init () ] else [])
             ; env_instr ()
             ]
@@ -170,8 +175,8 @@ let run
     | `Name file ->
         let fs_instr1, fs_instr2 =
           match fs_output with
-          | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
-          | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
+          | None -> pseudo_fs_instr `create_file one.debug one.cmis, []
+          | Some _ -> [], pseudo_fs_instr `create_file_extern one.debug one.cmis
         in
         Filename.gen_file file (fun chan ->
             let instr =

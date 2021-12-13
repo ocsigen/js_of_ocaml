@@ -49,10 +49,10 @@ let options =
 let f { files; output_file; include_dirs } =
   let code =
     {|
-//Provides: caml_create_file_extern
-function caml_create_file_extern(name,content){
-  if(joo_global_object.caml_create_file)
-    joo_global_object.caml_create_file(name,content);
+//Provides: jsoo_create_file_extern
+function jsoo_create_file_extern(name,content){
+  if(joo_global_object.jsoo_create_file)
+    joo_global_object.jsoo_create_file(name,content);
   else {
     if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
     joo_global_object.caml_fs_tmp.push({name:name,content:content});
@@ -64,11 +64,7 @@ function caml_create_file_extern(name,content){
   let fragments = Linker.parse_string code in
   Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
   let instr =
-    Pseudo_fs.f
-      ~prim:`caml_create_file_extern
-      ~cmis:StringSet.empty
-      ~files
-      ~paths:include_dirs
+    Pseudo_fs.f ~prim:`create_file_extern ~cmis:StringSet.empty ~files ~paths:include_dirs
   in
   let code = Code.prepend Code.empty instr in
   Filename.gen_file output_file (fun chan ->

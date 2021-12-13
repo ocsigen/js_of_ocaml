@@ -5,6 +5,7 @@
 * Compiler: speedup emitting js files (#1174)
 * Compiler: simplify (a | 0) >>> 0 into (a >>> 0) (#1177)
 * Compiler: improve static evaluation of cond (#1178)
+* Compiler: be more consistent dealing with js vs ocaml strings (#984)
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)

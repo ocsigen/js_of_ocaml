@@ -111,12 +111,12 @@ module Share = struct
     then share
     else add_prim "caml_string_of_jsbytes" share
 
-  let add_code_istring s share = add_string s share
+  let add_code_native_string s share = add_string s share
 
   let rec get_constant c t =
     match c with
     | String s -> add_code_string s t
-    | IString s -> add_code_istring s t
+    | NativeString s -> add_code_native_string s t
     | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
     | _ -> t
 
@@ -139,7 +139,7 @@ module Share = struct
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (_, Apply (_, args, false)) -> add_apply (List.length args) share
-              | Let (_, Prim (Extern "%closure", [ Pc (IString name | String name) ])) ->
+              | Let (_, Prim (Extern "%closure", [ Pc (NativeString name) ])) ->
                   let name = Primitive.resolve name in
                   let share =
                     if Primitive.exists name then add_prim name share else share
@@ -332,7 +332,7 @@ let rec constant_rec ~ctx x level instrs =
       let e = Share.get_string str_js s ctx.Ctx.share in
       let e = ocaml_string ~ctx ~loc:J.N e in
       e, instrs
-  | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
+  | NativeString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
@@ -1048,9 +1048,8 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             Mlvalue.Array.field cx cy, or_p mutable_p (or_p px py), queue
-        | Extern "caml_js_var", [ Pc (String nm | IString nm) ]
-        | Extern ("caml_js_expr" | "caml_pure_js_expr"), [ Pc (String nm | IString nm) ]
-          -> (
+        | Extern "caml_js_var", [ Pc (String nm) ]
+        | Extern ("caml_js_expr" | "caml_pure_js_expr"), [ Pc (String nm) ] -> (
             try
               let lexbuf = Lexing.from_string nm in
               let lexbuf =
@@ -1095,9 +1094,10 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                 ~init:([], const_p, queue)
             in
             J.EArr (List.map args ~f:(fun x -> Some x)), prop, queue
-        | Extern "%closure", [ Pc (IString name | String name) ] ->
+        | Extern "%closure", [ Pc (NativeString name) ] ->
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             prim, const_p, queue
+        | Extern "%closure", _ -> assert false
         | Extern "%caml_js_opt_call", f :: o :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let (po, co), queue = access_queue' ~ctx queue o in
@@ -1121,7 +1121,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                 ~init:([], mutator_p, queue)
             in
             ecall cf args loc, or_p pf prop, queue
-        | Extern "%caml_js_opt_meth_call", o :: Pc (String m | IString m) :: l ->
+        | Extern "%caml_js_opt_meth_call", o :: Pc (NativeString m) :: l ->
             let (po, co), queue = access_queue' ~ctx queue o in
             let args, prop, queue =
               List.fold_right
@@ -1132,6 +1132,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                 ~init:([], mutator_p, queue)
             in
             ecall (J.EDot (co, m)) args loc, or_p po prop, queue
+        | Extern "%caml_js_opt_meth_call", _ :: Pc (String _) :: _ -> assert false
         | Extern "%caml_js_opt_new", c :: l ->
             let (pc, cc), queue = access_queue' ~ctx queue c in
             let args, prop, queue =
@@ -1145,27 +1146,32 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             ( J.ENew (cc, if List.is_empty args then None else Some args)
             , or_p pc prop
             , queue )
-        | Extern "caml_js_get", [ Pv o; Pc (String f | IString f) ] when J.is_ident f ->
+        | Extern "caml_js_get", [ Pv o; Pc (NativeString f) ] when J.is_ident f ->
             let (po, co), queue = access_queue queue o in
             J.EDot (co, f), or_p po mutable_p, queue
-        | Extern "caml_js_set", [ Pv o; Pc (String f | IString f); v ] when J.is_ident f
-          ->
+        | Extern "caml_js_set", [ Pv o; Pc (NativeString f); v ] when J.is_ident f ->
             let (po, co), queue = access_queue queue o in
             let (pv, cv), queue = access_queue' ~ctx queue v in
             J.EBin (J.Eq, J.EDot (co, f), cv), or_p (or_p po pv) mutator_p, queue
-        | Extern "caml_js_delete", [ Pv o; Pc (String f | IString f) ] when J.is_ident f
-          ->
+        | Extern "caml_js_delete", [ Pv o; Pc (NativeString f) ] when J.is_ident f ->
             let (po, co), queue = access_queue queue o in
             J.EUn (J.Delete, J.EDot (co, f)), or_p po mutator_p, queue
-        | Extern "%overrideMod", [ Pc (String m | IString m); Pc (String f | IString f) ]
-          ->
+        (*
+           This is only useful for debugging:
+           {[
+           | Extern "caml_js_get", [ _; Pc (String _) ] -> assert false
+           | Extern "caml_js_set", [ _; Pc (String s); _ ] -> assert false
+           | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
+           ]}
+        *)
+        | Extern "%overrideMod", [ Pc (NativeString m); Pc (NativeString f) ] ->
             runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p, queue
         | Extern "%overrideMod", _ -> assert false
         | Extern "%caml_js_opt_object", fields ->
             let rec build_fields queue l =
               match l with
               | [] -> const_p, [], queue
-              | Pc (String nm | IString nm) :: x :: r ->
+              | Pc (NativeString nm) :: x :: r ->
                   let (prop, cx), queue = access_queue' ~ctx queue x in
                   let prop', r', queue = build_fields queue r in
                   or_p prop prop', (J.PNS nm, cx) :: r', queue

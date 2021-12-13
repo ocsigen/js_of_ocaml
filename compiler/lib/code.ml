@@ -259,7 +259,7 @@ type array_or_not =
 
 type constant =
   | String of string
-  | IString of string
+  | NativeString of string
   | Float of float
   | Float_array of float array
   | Int64 of int64
@@ -269,7 +269,7 @@ type constant =
 let rec constant_equal a b =
   match a, b with
   | String a, String b -> Some (String.equal a b)
-  | IString a, IString b -> Some (String.equal a b)
+  | NativeString a, NativeString b -> Some (String.equal a b)
   | Tuple (ta, a, _), Tuple (tb, b, _) ->
       if ta <> tb || Array.length a <> Array.length b
       then Some false
@@ -286,21 +286,21 @@ let rec constant_equal a b =
   | Float_array a, Float_array b -> Some (Array.equal Float.equal a b)
   | Int a, Int b -> Some (Int32.equal a b)
   | Float a, Float b -> Some (Float.equal a b)
-  | String _, IString _ | IString _, String _ -> None
+  | String _, NativeString _ | NativeString _, String _ -> None
   | Int _, Float _ | Float _, Int _ -> None
   | Tuple ((0 | 254), _, _), Float_array _ -> None
   | Float_array _, Tuple ((0 | 254), _, _) -> None
-  | Tuple _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
+  | Tuple _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
       Some false
-  | Float_array _, (String _ | IString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
+  | Float_array _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
       Some false
   | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | IString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | Int64 _, (String _ | IString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
+  | NativeString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
+  | Int64 _, (String _ | NativeString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
       Some false
-  | Float _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+  | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
       Some false
-  | Int _, (String _ | IString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+  | Int _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
       Some false
 
 type prim_arg =
@@ -360,7 +360,7 @@ module Print = struct
   let rec constant f x =
     match x with
     | String s -> Format.fprintf f "%S" s
-    | IString s -> Format.fprintf f "%S" s
+    | NativeString s -> Format.fprintf f "%Sj" s
     | Float fl -> Format.fprintf f "%.12g" fl
     | Float_array a ->
         Format.fprintf f "[|";

@@ -60,8 +60,9 @@ caml_return_exn_constant
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode
-caml_create_file_extern
 caml_fs_init
+jsoo_create_file
+jsoo_create_file_extern
 
 From +gc.js:
 caml_memprof_set

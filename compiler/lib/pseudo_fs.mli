@@ -20,7 +20,7 @@
 open Stdlib
 
 val f :
-     prim:[ `caml_create_file | `caml_create_file_extern ]
+     prim:[ `create_file | `create_file_extern ]
   -> cmis:StringSet.t
   -> files:string list
   -> paths:string list

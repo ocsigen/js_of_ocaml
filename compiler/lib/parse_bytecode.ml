@@ -442,7 +442,7 @@ end = struct
       Int (Int32.of_int_warning_on_overflow i)
 
   let inlined = function
-    | String _ | IString _ -> false
+    | String _ | NativeString _ -> false
     | Float _ -> true
     | Float_array _ -> false
     | Int64 _ -> false
@@ -712,8 +712,11 @@ let register_global ?(force = false) g i rem =
       match g.named_value.(i) with
       | None -> []
       | Some name ->
-          Code.Var.name (access_global g i) name;
-          [ Pc (IString name) ]
+          if String.is_ascii name
+          then (
+            Code.Var.name (access_global g i) name;
+            [ Pc (NativeString name) ])
+          else []
     in
     Let
       ( Var.fresh ()
@@ -2132,7 +2135,7 @@ let override_global =
   | `V4_13 -> []
   | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
-        Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
+        Prim (Extern "%overrideMod", [ Pc (NativeString name); Pc (NativeString func) ])
       in
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
@@ -2332,12 +2335,14 @@ let from_exe
       in
       let body =
         List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
+            assert (String.is_ascii name);
             need_gdata := true;
             let c = Var.fresh () in
             Let (c, Constant const)
             :: Let
                  ( Var.fresh ()
-                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (String name); Pv c ]) )
+                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (NativeString name); Pv c ])
+                 )
             :: rem)
       in
       if !need_gdata
@@ -2528,15 +2533,24 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
-                | (String str | IString str), None ->
-                    Code.Var.name x (Printf.sprintf "cst_%s" str)
+                | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
             | Some name ->
                 Var.name x name;
                 need_gdata := true;
-                Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (IString name) ])) :: l
-            )
+                if String.is_ascii name
+                then
+                  Let
+                    (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (NativeString name) ]))
+                  :: l
+                else
+                  let name_js = Var.fresh () in
+                  Let
+                    ( name_js
+                    , Prim (Extern "caml_jsstring_of_string", [ Pc (String name) ]) )
+                  :: Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pv name_js ]))
+                  :: l)
         | _ -> l)
   in
   let body =
@@ -2632,12 +2646,13 @@ let predefined_exceptions () =
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
+        assert (String.is_ascii name);
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
         let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
         [ Let (v_name, Constant (String name))
-        ; Let (v_name_js, Constant (IString name))
+        ; Let (v_name_js, Constant (NativeString name))
         ; Let
             ( v_index
             , Constant
