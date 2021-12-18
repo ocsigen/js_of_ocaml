@@ -48,7 +48,7 @@ let parse_lid s =
         match i, c with
         | 0, ('a' .. 'z' | '_') -> ()
         | 0, _ -> assert false
-        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '\'' | '0' .. '9') -> ()
         | _ -> assert false)
   in
   let assert_uid =
@@ -56,7 +56,7 @@ let parse_lid s =
         match i, c with
         | 0, 'A' .. 'Z' -> ()
         | 0, _ -> assert false
-        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '0' .. '9') -> ()
+        | _, ('a' .. 'z' | 'A' .. 'Z' | '_' | '\'' | '0' .. '9') -> ()
         | _ -> assert false)
   in
   let rec check = function

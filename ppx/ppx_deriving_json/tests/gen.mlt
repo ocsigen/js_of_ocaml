@@ -695,3 +695,27 @@ let t s =
     (Deriving_Json_lexer.init_lexer (Lexing.from_string s));;
 val t : string -> t * t = <fun>
 |}]
+
+;;
+type id' = int [@@deriving json]
+[%%expect {|
+
+type id' = int[@@deriving json]
+include
+  struct
+    let _ = fun (_ : id') -> ()
+    let rec (id'_of_json : Deriving_Json_lexer.lexbuf -> id') =
+      fun buf -> Deriving_Json.Json_int.read buf
+    let _ = id'_of_json
+    let rec (id'_to_json : Buffer.t -> id' -> unit) =
+      fun buf -> fun a -> Deriving_Json.Json_int.write buf a
+    let _ = id'_to_json
+    let (id'_json : id' Deriving_Json.t) =
+      Deriving_Json.make id'_to_json id'_of_json
+    let _ = id'_json
+  end[@@ocaml.doc "@inline"][@@merlin.hide ];;
+type id' = int
+val id'_of_json : Deriving_Json_lexer.lexbuf -> id' = <fun>
+val id'_to_json : Buffer.t -> id' -> unit = <fun>
+val id'_json : id' Deriving_Json.t = <abstr>
+|}]
