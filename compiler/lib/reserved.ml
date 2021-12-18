@@ -119,6 +119,7 @@ let provided =
     ; "String"
     ; "Boolean"
     ; "Number"
+    ; "BigInt"
     ; "Infinity"
     ; "isFinite"
     ; "ActiveXObject"
