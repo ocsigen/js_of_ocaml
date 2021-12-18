@@ -11,7 +11,7 @@ function initialize_nat() {
 
 //Provides: MlNat
 function MlNat(x){
-  this.data = new joo_global_object.Int32Array(x);
+  this.data = new globalThis.Int32Array(x);
   // length_nat isn't external, so we have to make the Obj.size
   // work out right. The +2 to array length seems to work.
   this.length = this.data.length + 2

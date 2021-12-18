@@ -67,9 +67,9 @@ function caml_int64_bits_of_float (x) {
 //Provides: caml_int32_bits_of_float const
 //Requires: jsoo_floor_log2
 function caml_int32_bits_of_float (x) {
-  var float32a = new joo_global_object.Float32Array(1);
+  var float32a = new globalThis.Float32Array(1);
   float32a[0] = x;
-  var int32a = new joo_global_object.Int32Array(float32a.buffer);
+  var int32a = new globalThis.Int32Array(float32a.buffer);
   return int32a[0] | 0;
 }
 
@@ -174,9 +174,9 @@ function caml_trunc_float(x){
 
 //Provides: caml_int32_float_of_bits const
 function caml_int32_float_of_bits (x) {
-  var int32a = new joo_global_object.Int32Array(1);
+  var int32a = new globalThis.Int32Array(1);
   int32a[0] = x;
-  var float32a = new joo_global_object.Float32Array(int32a.buffer);
+  var float32a = new globalThis.Float32Array(int32a.buffer);
   return float32a[0];
 }
 

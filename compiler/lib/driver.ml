@@ -363,7 +363,7 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
       | `Function -> f
       | `Bind_to _ -> f
       | `Custom name -> J.ECall (f, [ J.EVar (J.ident name), `Not_spread ], J.N)
-      | `globalThis -> J.ECall (f, [ J.EVar (J.ident "globalThis"), `Not_spread ], J.N)
+      | `globalThis -> J.ECall (f, [ J.EVar (J.ident global_object), `Not_spread ], J.N)
     in
     match global with
     | `Bind_to name ->

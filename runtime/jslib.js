@@ -38,7 +38,7 @@ function caml_js_typeof(o) { return typeof o; }
 //Provides: caml_js_on_ie const
 function caml_js_on_ie () {
   var ua =
-      joo_global_object.navigator?joo_global_object.navigator.userAgent:"";
+      globalThis.navigator?globalThis.navigator.userAgent:"";
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
@@ -71,7 +71,7 @@ function caml_js_html_entities(s) {
 /////////// Debugging console
 //Provides: caml_js_get_console const
 function caml_js_get_console () {
-  var c = joo_global_object.console?joo_global_object.console:{};
+  var c = globalThis.console?globalThis.console:{};
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
            "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];
   function f () {}
@@ -98,7 +98,7 @@ function caml_trampoline_return(f,args) {
 //Requires: caml_utf16_of_utf8
 function js_print_stdout(s) {
   var s = caml_utf16_of_utf8(s);
-  var g = joo_global_object;
+  var g = globalThis;
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stdout.write(s)
   } else {
@@ -114,7 +114,7 @@ function js_print_stdout(s) {
 //Requires: caml_utf16_of_utf8
 function js_print_stderr(s) {
   var s = caml_utf16_of_utf8(s);
-  var g = joo_global_object;
+  var g = globalThis;
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stderr.write(s)
   } else {
@@ -141,19 +141,19 @@ function caml_is_js() {
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
   //Stack_overflow: chrome, safari
-  if(joo_global_object.RangeError
-     && e instanceof joo_global_object.RangeError
+  if(globalThis.RangeError
+     && e instanceof globalThis.RangeError
      && e.message
      && e.message.match(/maximum call stack/i))
     return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Stack_overflow: firefox
-  if(joo_global_object.InternalError
-     && e instanceof joo_global_object.InternalError
+  if(globalThis.InternalError
+     && e instanceof globalThis.InternalError
      && e.message
      && e.message.match(/too much recursion/i))
     return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Wrap Error in Js.Error exception
-  if(e instanceof joo_global_object.Error && caml_named_value("jsError"))
+  if(e instanceof globalThis.Error && caml_named_value("jsError"))
     return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
   return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
@@ -164,7 +164,7 @@ function caml_wrap_exception(e) {
 //Requires: caml_global_data
 function caml_exn_with_js_backtrace(exn, force) {
   //never reraise for constant exn
-  if(!exn.js_error || force || exn[0] == 248) exn.js_error = new joo_global_object.Error("Js exception containing backtrace");
+  if(!exn.js_error || force || exn[0] == 248) exn.js_error = new globalThis.Error("Js exception containing backtrace");
   return exn;
 }
 

@@ -54,7 +54,7 @@ function caml_ba_get_size_per_element(kind){
 //Requires: caml_ba_get_size_per_element
 //Requires: caml_invalid_argument
 function caml_ba_create_buffer(kind, size){
-  var g = joo_global_object;
+  var g = globalThis;
   var view;
   switch(kind){
   case 0:  view = g.Float32Array; break;
@@ -877,7 +877,7 @@ function caml_ba_to_typed_array(ba){
 //Provides: caml_ba_kind_of_typed_array mutable
 //Requires: caml_invalid_argument
 function caml_ba_kind_of_typed_array(ta){
-  var g = joo_global_object;
+  var g = globalThis;
   var kind;
   if (ta instanceof g.Float32Array) kind = 0;
   else if (ta instanceof g.Float64Array) kind = 1;

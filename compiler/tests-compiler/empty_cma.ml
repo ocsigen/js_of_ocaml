@@ -29,7 +29,7 @@ let%expect_test _ =
   Sys.remove "empty.js";
   [%expect
     {|
-      (function(joo_global_object){"use strict";return}(globalThis));
+(function(globalThis){"use strict";return}(globalThis));
 
-      //# sourceMappingURL=empty.map
+//# sourceMappingURL=empty.map
     |}]

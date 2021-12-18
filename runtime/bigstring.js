@@ -19,14 +19,14 @@ function bigstring_to_typed_array(bs) {
 //Provides: bigstring_of_array_buffer mutable
 //Requires: caml_ba_create_unsafe
 function bigstring_of_array_buffer(ab) {
-  var ta = new joo_global_object.Uint8Array(ab);
+  var ta = new globalThis.Uint8Array(ab);
   return caml_ba_create_unsafe(12, 0, [ta.length], ta);
 }
 
 //Provides: bigstring_of_typed_array mutable
 //Requires: caml_ba_create_unsafe
 function bigstring_of_typed_array(ba) {
-  var ta = new joo_global_object.Uint8Array(ba.buffer, ba.byteOffset, ba.length * ba.BYTES_PER_ELEMENT);
+  var ta = new globalThis.Uint8Array(ba.buffer, ba.byteOffset, ba.length * ba.BYTES_PER_ELEMENT);
   return caml_ba_create_unsafe(12, 0, [ta.length], ta);
 }
 

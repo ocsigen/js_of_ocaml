@@ -64,7 +64,7 @@ module Js = struct
 
     external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
-    let global = pure_js_expr "joo_global_object"
+    let global = pure_js_expr "globalThis"
 
     external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
 

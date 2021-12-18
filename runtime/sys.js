@@ -26,7 +26,7 @@ function caml_raise_sys_error (msg) {
 //Provides: caml_sys_exit
 //Requires: caml_invalid_argument
 function caml_sys_exit (code) {
-  var g = joo_global_object;
+  var g = globalThis;
   if(g.quit) g.quit(code);
   //nodejs
   if(g.process && g.process.exit)
@@ -91,7 +91,7 @@ function caml_fatal_uncaught_exception(err){
       var msg = caml_format_exception(err);
       var at_exit = caml_named_value("Pervasives.do_at_exit");
       if(at_exit) { at_exit(0) }
-      joo_global_object.console.error("Fatal error: exception " + msg + "\n");
+      globalThis.console.error("Fatal error: exception " + msg + "\n");
     }
   }
   else {
@@ -102,9 +102,9 @@ function caml_fatal_uncaught_exception(err){
 
 //Provides: caml_set_static_env
 function caml_set_static_env(k,v){
-  if(!joo_global_object.jsoo_static_env)
-    joo_global_object.jsoo_static_env = {}
-  joo_global_object.jsoo_static_env[k] = v;
+  if(!globalThis.jsoo_static_env)
+    globalThis.jsoo_static_env = {}
+  globalThis.jsoo_static_env[k] = v;
   return 0;
 }
 //Provides: caml_sys_getenv (const)
@@ -112,16 +112,16 @@ function caml_set_static_env(k,v){
 //Requires: caml_string_of_jsstring
 //Requires: caml_jsstring_of_string
 function caml_sys_getenv (name) {
-  var g = joo_global_object;
+  var g = globalThis;
   var n = caml_jsstring_of_string(name);
   //nodejs env
   if(g.process
      && g.process.env
      && g.process.env[n] != undefined)
     return caml_string_of_jsstring(g.process.env[n]);
-  if(joo_global_object.jsoo_static_env
-     && joo_global_object.jsoo_static_env[n])
-    return caml_string_of_jsstring(joo_global_object.jsoo_static_env[n])
+  if(globalThis.jsoo_static_env
+     && globalThis.jsoo_static_env[n])
+    return caml_string_of_jsstring(globalThis.jsoo_static_env[n])
   caml_raise_not_found ();
 }
 
@@ -134,7 +134,7 @@ function caml_sys_unsafe_getenv(name){
 //Provides: caml_argv
 //Requires: caml_string_of_jsstring
 var caml_argv = ((function () {
-  var g = joo_global_object;
+  var g = globalThis;
   var main = "a.out";
   var args = []
 
@@ -248,9 +248,9 @@ function caml_sys_const_backend_type () {
 }
 
 //Provides: os_type
-var os_type = (joo_global_object.process &&
-               joo_global_object.process.platform &&
-               joo_global_object.process.platform == "win32") ? "Cygwin" : "Unix";
+var os_type = (globalThis.process &&
+               globalThis.process.platform &&
+               globalThis.process.platform == "win32") ? "Cygwin" : "Unix";
 
 
 //Provides: caml_sys_get_config const
@@ -324,7 +324,7 @@ function caml_spacetime_only_works_for_native_code() {
 //Always
 //Requires: caml_fatal_uncaught_exception
 function caml_setup_uncaught_exception_handler() {
-  var g = joo_global_object;
+  var g = globalThis;
   if(g.process && g.process.on) {
     g.process.on('uncaughtException', function (err, origin) {
       caml_fatal_uncaught_exception(err);

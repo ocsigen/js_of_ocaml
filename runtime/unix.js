@@ -186,8 +186,8 @@ function unix_unlink(name) {
 //Provides: unix_getuid
 //Requires: caml_raise_not_found
 function unix_getuid(unit) {
-  if(joo_global_object.process && joo_global_object.process.getuid){
-    return joo_global_object.process.getuid();
+  if(globalThis.process && globalThis.process.getuid){
+    return globalThis.process.getuid();
   }
   caml_raise_not_found();
 }

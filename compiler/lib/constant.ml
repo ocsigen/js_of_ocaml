@@ -18,4 +18,4 @@
 
 open! Stdlib
 
-let global_object = "joo_global_object"
+let global_object = "globalThis"
