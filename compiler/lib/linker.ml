@@ -295,6 +295,16 @@ let check_primitive ~name pi ~code ~requires =
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
   let freename = StringSet.remove Constant.global_object freename in
+  if StringSet.mem Constant.old_global_object freename && false
+     (* Don't warn yet, we want to give a transition period where both
+        "globalThis" and "joo_global_object" are allowed without extra
+        noise *)
+  then
+    warn
+      "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
+       instead@."
+      (loc pi);
+  let freename = StringSet.remove Constant.old_global_object freename in
   if not (StringSet.mem name free#get_def_name)
   then
     warn

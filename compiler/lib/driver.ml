@@ -355,6 +355,20 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
     else js
   in
   let wrap_in_iifa ~can_use_strict js =
+    let js =
+      let o = new Js_traverse.free in
+      let js = o#program js in
+      if StringSet.mem Constant.old_global_object o#get_free_name
+      then
+        ( J.Statement
+            (J.Variable_statement
+               [ ( J.ident Constant.old_global_object
+                 , Some (J.EVar (J.ident global_object), J.N) )
+               ])
+        , J.N )
+        :: js
+      else js
+    in
     let f =
       J.EFun (None, [ J.ident global_object ], use_strict js ~can_use_strict, J.U)
     in
@@ -384,12 +398,13 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
   let js = List.flatten always_required_js @ runtime_js in
-  let js = match global, standalone with
-    | (`Function | `Bind_to _ | `Custom _), _  -> js
+  let js =
+    match global, standalone with
+    | (`Function | `Bind_to _ | `Custom _), _ -> js
     | `globalThis, false -> js
     | `globalThis, true ->
-      let s =
-        {|
+        let s =
+          {|
 (function (Object) {
   typeof globalThis !== 'object' && (
     this ?
@@ -406,11 +421,11 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
   }
 }(Object));
 |}
-      in
-      let lex = Lexing.from_string s in
-      let lex = Parse_js.Lexer.of_lexbuf lex in
-      let e = Parse_js.parse lex in
-      e @ js
+        in
+        let lex = Lexing.from_string s in
+        let lex = Parse_js.Lexer.of_lexbuf lex in
+        let e = Parse_js.parse lex in
+        e @ js
   in
   (* post pack optim *)
   let t3 = Timer.make () in

@@ -19,3 +19,5 @@
 open! Stdlib
 
 let global_object = "globalThis"
+
+let old_global_object = "joo_global_object"
