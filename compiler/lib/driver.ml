@@ -325,7 +325,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Timer.print t
 
-let pack ~global { Linker.runtime_code = js; always_required_codes } =
+let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Optimizing js...@.";
@@ -363,20 +363,7 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
       | `Function -> f
       | `Bind_to _ -> f
       | `Custom name -> J.ECall (f, [ J.EVar (J.ident name), `Not_spread ], J.N)
-      | `Auto ->
-          let global =
-            J.ECall
-              ( J.EFun
-                  ( None
-                  , []
-                  , [ ( J.Statement (J.Return_statement (Some (J.EVar (J.ident "this"))))
-                      , J.N )
-                    ]
-                  , J.N )
-              , []
-              , J.N )
-          in
-          J.ECall (f, [ global, `Not_spread ], J.N)
+      | `globalThis -> J.ECall (f, [ J.EVar (J.ident "globalThis"), `Not_spread ], J.N)
     in
     match global with
     | `Bind_to name ->
@@ -397,6 +384,34 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
   let js = List.flatten always_required_js @ runtime_js in
+  let js = match global, standalone with
+    | (`Function | `Bind_to _ | `Custom _), _  -> js
+    | `globalThis, false -> js
+    | `globalThis, true ->
+      let s =
+        {|
+(function (Object) {
+  typeof globalThis !== 'object' && (
+    this ?
+      get() :
+      (Object.defineProperty(Object.prototype, '_T_', {
+        configurable: true,
+        get: get
+      }), _T_)
+  );
+  function get() {
+    var global = this || self;
+    global.globalThis = global;
+    delete Object.prototype._T_;
+  }
+}(Object));
+|}
+      in
+      let lex = Lexing.from_string s in
+      let lex = Parse_js.Lexer.of_lexbuf lex in
+      let e = Parse_js.parse lex in
+      e @ js
+  in
   (* post pack optim *)
   let t3 = Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
@@ -428,7 +443,7 @@ type profile = Code.program -> Code.program
 
 let f
     ?(standalone = true)
-    ?(global = `Auto)
+    ?(global = `globalThis)
     ?(profile = o1)
     ?(dynlink = false)
     ?(linkall = false)
@@ -450,7 +465,7 @@ let f
   let emit =
     generate d ~exported_runtime
     +> link ~standalone ~linkall ~export_runtime:dynlink
-    +> pack ~global
+    +> pack ~global ~standalone
     +> coloring
     +> check_js
     +> output formatter ~standalone ~custom_header ?source_map ()

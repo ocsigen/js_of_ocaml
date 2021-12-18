@@ -66,7 +66,7 @@ let%expect_test _ =
         5:     var Test=[0,id];
         6:     runtime.caml_register_global(0,Test,"Test");
         7:     return}
-        8:   (function(){return this}()));
+        8:   (globalThis));
         9:
        10: //# sourceMappingURL=test.map
       null:-1:-1 -> 3:4
