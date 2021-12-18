@@ -115,6 +115,7 @@ let provided =
     ; "Math"
     ; "JSON"
     ; "Object"
+    ; "globalThis"
     ; "RegExp"
     ; "String"
     ; "Boolean"

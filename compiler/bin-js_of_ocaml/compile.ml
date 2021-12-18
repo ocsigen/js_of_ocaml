@@ -57,7 +57,7 @@ let run
   let global =
     match wrap_with_fun with
     | Some fun_name -> `Bind_to fun_name
-    | None -> `Auto
+    | None -> `globalThis
   in
   Jsoo_cmdline.Arg.eval common;
   (match output_file with

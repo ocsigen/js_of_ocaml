@@ -71,7 +71,7 @@ function jsoo_create_file_extern(name,content){
       let pfs_fmt = Pretty_print.to_out_channel chan in
       Driver.f
         ~standalone:true
-        ~global:`Auto
+        ~global:`globalThis
         pfs_fmt
         (Parse_bytecode.Debug.create ~toplevel:false false)
         code)
