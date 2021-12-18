@@ -51,11 +51,11 @@ let f { files; output_file; include_dirs } =
     {|
 //Provides: jsoo_create_file_extern
 function jsoo_create_file_extern(name,content){
-  if(joo_global_object.jsoo_create_file)
-    joo_global_object.jsoo_create_file(name,content);
+  if(globalThis.jsoo_create_file)
+    globalThis.jsoo_create_file(name,content);
   else {
-    if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
-    joo_global_object.caml_fs_tmp.push({name:name,content:content});
+    if(!globalThis.caml_fs_tmp) globalThis.caml_fs_tmp = [];
+    globalThis.caml_fs_tmp.push({name:name,content:content});
   }
   return 0;
 }

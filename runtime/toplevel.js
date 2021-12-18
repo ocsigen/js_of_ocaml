@@ -52,8 +52,8 @@ function caml_get_section_table () {
 //Requires: caml_failwith
 //Version: < 4.08
 function caml_reify_bytecode (code, _sz) {
-  if(joo_global_object.toplevelCompile)
-    return joo_global_object.toplevelCompile([0,code]);
+  if(globalThis.toplevelCompile)
+    return globalThis.toplevelCompile([0,code]);
   else caml_failwith("Toplevel not initialized (toplevelCompile)")
 }
 
@@ -61,8 +61,8 @@ function caml_reify_bytecode (code, _sz) {
 //Requires: caml_failwith
 //Version: >= 4.08
 function caml_reify_bytecode (code, _sz,_) {
-  if(joo_global_object.toplevelCompile)
-    return [0, 0, joo_global_object.toplevelCompile(code)];
+  if(globalThis.toplevelCompile)
+    return [0, 0, globalThis.toplevelCompile(code)];
   else caml_failwith("Toplevel not initialized (toplevelCompile)")
 }
 

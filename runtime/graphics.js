@@ -42,7 +42,7 @@ function caml_gr_state_set(ctx) {
 //Requires: caml_failwith
 //Requires: caml_jsstring_of_string
 function caml_gr_open_graph(info){
-  var g = joo_global_object;
+  var g = globalThis;
   var info = caml_jsstring_of_string(info);
   function get(name){
     var res = info.match("(^|,) *"+name+" *= *([a-zA-Z0-9_]+) *(,|$)");
@@ -446,7 +446,7 @@ function caml_gr_draw_image(im,x,y){
     canvas.width = s.width;
     canvas.height = s.height;
     canvas.getContext("2d").putImageData(im,0,0);
-    var image = new joo_global_object.Image();
+    var image = new globalThis.Image();
     image.onload = function () {
       s.context.drawImage(image,x,s.height - im.height - y);
       im.image = image;

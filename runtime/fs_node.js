@@ -20,9 +20,9 @@
 //Provides: fs_node_supported
 function fs_node_supported () {
   return (
-    typeof joo_global_object.process !== 'undefined'
-      && typeof joo_global_object.process.versions !== 'undefined'
-      && typeof joo_global_object.process.versions.node !== 'undefined')
+    typeof globalThis.process !== 'undefined'
+      && typeof globalThis.process.versions !== 'undefined'
+      && typeof globalThis.process.versions.node !== 'undefined')
 }
 //Provides: fs_node_supported
 //If: browser
@@ -252,9 +252,9 @@ MlNodeFile.prototype.length = function () {
 }
 MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
-  if(! (a instanceof joo_global_object.Uint8Array))
-    a = new joo_global_object.Uint8Array(a);
-  var buffer = joo_global_object.Buffer.from(a);
+  if(! (a instanceof globalThis.Uint8Array))
+    a = new globalThis.Uint8Array(a);
+  var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.writeSync(this.fd, buffer, buf_offset, len, offset);
   } catch (err) {
@@ -264,9 +264,9 @@ MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
 }
 MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   var a = caml_array_of_bytes(buf);
-  if(! (a instanceof joo_global_object.Uint8Array))
-    a = new joo_global_object.Uint8Array(a);
-  var buffer = joo_global_object.Buffer.from(a);
+  if(! (a instanceof globalThis.Uint8Array))
+    a = new globalThis.Uint8Array(a);
+  var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.readSync(this.fd, buffer, buf_offset, len, offset);
   } catch (err) {
@@ -278,8 +278,8 @@ MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   return 0
 }
 MlNodeFile.prototype.read_one = function(offset){
-  var a = new joo_global_object.Uint8Array(1);
-  var buffer = joo_global_object.Buffer.from(a);
+  var a = new globalThis.Uint8Array(1);
+  var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.readSync(this.fd, buffer, 0, 1, offset);
   } catch (err) {

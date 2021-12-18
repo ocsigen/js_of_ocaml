@@ -26,8 +26,8 @@ function caml_trailing_slash(name){
 
 //Provides: caml_current_dir
 //Requires: caml_trailing_slash, fs_node_supported
-if(fs_node_supported () && joo_global_object.process && joo_global_object.process.cwd)
-  var caml_current_dir = joo_global_object.process.cwd().replace(/\\/g,'/');
+if(fs_node_supported () && globalThis.process && globalThis.process.cwd)
+  var caml_current_dir = globalThis.process.cwd().replace(/\\/g,'/');
 else
   var caml_current_dir =  "/static";
 caml_current_dir = caml_trailing_slash(caml_current_dir);
@@ -70,8 +70,8 @@ function make_path_is_absolute() {
     }
     return;
   }
-  if(fs_node_supported () && joo_global_object.process && joo_global_object.process.platform) {
-    return joo_global_object.process.platform === 'win32' ? win32 : posix;
+  if(fs_node_supported () && globalThis.process && globalThis.process.platform) {
+    return globalThis.process.platform === 'win32' ? win32 : posix;
   }
   else return posix
 }
@@ -282,11 +282,11 @@ function caml_ba_map_file_bytecode(argv,argn){
 
 //Provides: jsoo_create_file_extern
 function jsoo_create_file_extern(name,content){
-  if(joo_global_object.jsoo_create_file)
-    joo_global_object.jsoo_create_file(name,content);
+  if(globalThis.jsoo_create_file)
+    globalThis.jsoo_create_file(name,content);
   else {
-    if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
-    joo_global_object.caml_fs_tmp.push({name:name,content:content});
+    if(!globalThis.caml_fs_tmp) globalThis.caml_fs_tmp = [];
+    globalThis.caml_fs_tmp.push({name:name,content:content});
   }
   return 0;
 }
@@ -294,14 +294,14 @@ function jsoo_create_file_extern(name,content){
 //Provides: caml_fs_init
 //Requires: jsoo_create_file
 function caml_fs_init (){
-  var tmp=joo_global_object.caml_fs_tmp
+  var tmp=globalThis.caml_fs_tmp
   if(tmp){
     for(var i = 0; i < tmp.length; i++){
       jsoo_create_file(tmp[i].name,tmp[i].content);
     }
   }
-  joo_global_object.jsoo_create_file = jsoo_create_file;
-  joo_global_object.caml_fs_tmp = [];
+  globalThis.jsoo_create_file = jsoo_create_file;
+  globalThis.caml_fs_tmp = [];
   return 0;
 }
 

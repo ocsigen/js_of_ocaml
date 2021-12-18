@@ -17,14 +17,14 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: current_libs
-var current_libs = [0, joo_global_object]
+var current_libs = [0, globalThis]
 
 //Provides: caml_dynlink_open_lib
 //Requires: current_libs, caml_failwith
 //Requires: caml_jsstring_of_string
 function caml_dynlink_open_lib (_mode,file) {
   var name = caml_jsstring_of_string(file);
-  joo_global_object.console.log("Dynlink: try to open ", name);
+  globalThis.console.log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
   current_libs.push({});
   return current_libs.length;
@@ -42,7 +42,7 @@ function caml_dynlink_close_lib (idx) {
 //Requires: caml_jsstring_of_string
 function caml_dynlink_lookup_symbol (idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
-  joo_global_object.console.log("Dynlink: look for symbol ", name);
+  globalThis.console.log("Dynlink: look for symbol ", name);
   if(current_libs[idx] && current_libs[idx][name])
     return current_libs[idx][name];
   return 0;

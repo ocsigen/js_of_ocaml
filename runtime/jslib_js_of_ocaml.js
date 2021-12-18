@@ -68,7 +68,7 @@ function caml_js_var(x) {
   //Checks that x has the form ident[.ident]*
   if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
     js_print_stderr("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
-    //joo_global_object.console.error("Js.Unsafe.eval_string")
+    //globalThis.console.error("Js.Unsafe.eval_string")
   }
   return eval(x);
 }
@@ -247,7 +247,7 @@ function caml_js_export_var (){
   if(typeof module !== 'undefined' && module && module.exports)
     return module.exports
   else
-    return joo_global_object;
+    return globalThis;
 }
 
 
@@ -255,7 +255,7 @@ function caml_js_export_var (){
 //Requires: caml_failwith
 //Weakdef
 function caml_xmlhttprequest_create(unit){
-  var g = joo_global_object;
+  var g = globalThis;
   if(typeof g.XMLHttpRequest !== 'undefined') {
     try { return new g.XMLHttpRequest } catch (e) { };
   }

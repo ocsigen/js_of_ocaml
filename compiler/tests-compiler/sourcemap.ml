@@ -59,9 +59,9 @@ let%expect_test _ =
       $ cat "test.ml"
         1: let id x = x
       $ cat "test.js"
-        1: (function(joo_global_object)
+        1: (function(globalThis)
         2:    {"use strict";
-        3:     var runtime=joo_global_object.jsoo_runtime;
+        3:     var runtime=globalThis.jsoo_runtime;
         4:     function id(x){return x}
         5:     var Test=[0,id];
         6:     runtime.caml_register_global(0,Test,"Test");

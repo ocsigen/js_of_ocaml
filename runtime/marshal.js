@@ -412,7 +412,7 @@ function caml_marshal_data_size (s, ofs) {
 
 //Provides: MlObjectTable
 var MlObjectTable;
-if (typeof joo_global_object.WeakMap === 'undefined') {
+if (typeof globalThis.WeakMap === 'undefined') {
   MlObjectTable = function() {
     /* polyfill (using linear search) */
     function NaiveLookup(objs) { this.objs = objs; }
@@ -432,7 +432,7 @@ if (typeof joo_global_object.WeakMap === 'undefined') {
 }
 else {
   MlObjectTable = function MlObjectTable() {
-    this.objs = []; this.lookup = new joo_global_object.WeakMap();
+    this.objs = []; this.lookup = new globalThis.WeakMap();
   };
 }
 
@@ -505,7 +505,7 @@ var caml_output_val = function (){
     /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
-      joo_global_object.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
+      globalThis.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
 
     var writer = new Writer ();
     var stack = [];
