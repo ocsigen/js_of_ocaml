@@ -6,6 +6,7 @@
 * Compiler: simplify (a | 0) >>> 0 into (a >>> 0) (#1177)
 * Compiler: improve static evaluation of cond (#1178)
 * Compiler: be more consistent dealing with js vs ocaml strings (#984)
+* Compiler: Compiler: add BigInt to provided symbols (fix #1168) (#1191)
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
@@ -13,6 +14,8 @@
 
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma (#1169)
+* Compiler: Strengthen bound checks. (#1172)
+* Ppx: allow apostrophe in lident (fix #1183) (#1192)
 
 # 3.11.0 (2021-10-06) - Lille
 
