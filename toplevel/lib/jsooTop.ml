@@ -111,11 +111,20 @@ let refill_lexbuf s p ppf buffer len =
     p := !p + len'';
     len''
 
+let toploop_use_silently ffp name =
+  Toploop.use_silently ffp name
+[@@ocaml.warning "-32"]
+[@@if ocaml_version < (4,14,0)]
+let toploop_use_silently ffp name =
+  Toploop.use_silently ffp (File name)
+[@@ocaml.warning "-32"]
+[@@if ocaml_version >= (4,14,0)]
+
 let use ffp content =
   let name = "/dev/fake_stdin" in
   if Sys.file_exists name then Sys.remove name;
   Sys_js.create_file ~name ~content;
-  Toploop.use_silently ffp name
+  toploop_use_silently ffp name
 
 let execute printval ?pp_code ?highlight_location pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in

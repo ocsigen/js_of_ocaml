@@ -452,3 +452,9 @@ function caml_ml_output_int (chanid,i) {
   caml_ml_output(chanid,s,0,4);
   return 0
 }
+
+//Provides: caml_ml_is_buffered
+function caml_ml_is_buffered(c) { return 1 }
+
+//Provides: caml_ml_set_buffered
+function caml_ml_set_buffered(c,v) { return 0 }

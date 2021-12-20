@@ -75,8 +75,7 @@ let v =
   | 4 :: 11 :: _ -> `V4_11
   | 4 :: 12 :: _ -> `V4_12
   | 4 :: 13 :: _ -> `V4_13
-  (* Trunk is the next 4.14, it's likely compatible with 4.13 *)
-  | 4 :: 14 :: _ -> `V4_13
+  | 4 :: 14 :: _ -> `V4_14
   | _ ->
       if compare current [ 4; 4 ] < 0
       then failwith "OCaml version unsupported. Upgrade to OCaml 4.04 or newer."
