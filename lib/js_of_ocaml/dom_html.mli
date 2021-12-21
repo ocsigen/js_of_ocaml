@@ -2063,7 +2063,7 @@ class type navigator =
 
     method userLanguage : js_string t optdef readonly_prop
 
-    method maxTouchPoints : int t readonly_prop
+    method maxTouchPoints : int readonly_prop
   end
 
 class type screen =
