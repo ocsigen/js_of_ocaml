@@ -230,7 +230,7 @@ let traverse =
 
     method! structure items =
       let items =
-        List.filter_map items ~f:(fun item ->
+        filter_map items ~f:(fun item ->
             match item.pstr_desc with
             | Pstr_module { pmb_attributes; pmb_loc; _ } ->
                 if keep pmb_loc pmb_attributes then Some item else None
@@ -238,7 +238,7 @@ let traverse =
                 if keep pval_loc pval_attributes then Some item else None
             | Pstr_value (r, l) -> (
                 let l =
-                  List.filter_map l ~f:(fun b ->
+                  filter_map l ~f:(fun b ->
                       if keep b.pvb_loc b.pvb_attributes then Some b else None)
                 in
                 match l with
