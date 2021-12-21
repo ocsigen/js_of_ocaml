@@ -22,7 +22,9 @@
     {[
       [@if ocaml_version < (4,8,0)]
     ]}
-    on module (Pstr_module) and pattern in case (pc_lhs)
+    on module (Pstr_module),
+    toplevel bindings (Pstr_value, Pstr_primitive)
+    and pattern in case (pc_lhs)
 *)
 
 open StdLabels
@@ -229,12 +231,21 @@ let traverse =
 
     method! structure items =
       let items =
-        List.filter items ~f:(fun item ->
+        List.filter_map items ~f:(fun item ->
             match item.pstr_desc with
-            | Pstr_module { pmb_attributes; pmb_loc; _ } -> keep pmb_loc pmb_attributes
+            | Pstr_module { pmb_attributes; pmb_loc; _ } ->
+                if keep pmb_loc pmb_attributes then Some item else None
             | Pstr_primitive { pval_attributes; pval_loc; _ } ->
-                keep pval_loc pval_attributes
-            | _ -> true)
+                if keep pval_loc pval_attributes then Some item else None
+            | Pstr_value (r, l) -> (
+                let l =
+                  List.filter_map l ~f:(fun b ->
+                      if keep b.pvb_loc b.pvb_attributes then Some b else None)
+                in
+                match l with
+                | [] -> None
+                | _ -> Some { item with pstr_desc = Pstr_value (r, l) })
+            | _ -> Some item)
       in
       super#structure items
 
