@@ -50,11 +50,11 @@ and errorEvent =
 
     method filename : js_string t readonly_prop
 
-    method lineno : int t readonly_prop
+    method lineno : int readonly_prop
 
-    method colno : int t readonly_prop
+    method colno : int readonly_prop
 
-    method error : Unsafe.any -> unit meth
+    method error : Unsafe.any readonly_prop
   end
 
 and ['a] messageEvent =
