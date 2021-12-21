@@ -155,8 +155,7 @@ class map : mapper =
       | (EBool _ as x)
       | (ENum _ as x)
       | (EQuote _ as x)
-      | (ERegexp _ as x) ->
-          x
+      | (ERegexp _ as x) -> x
 
     method expression_o x =
       match x with
@@ -206,8 +205,7 @@ class map_for_share_constant =
       (* Some js bundler get confused when the argument
          of 'require' is not a literal *)
       | ECall (EVar (S { var = None; name = "require"; _ }), [ (EStr _, `Not_spread) ], _)
-        ->
-          e
+        -> e
       | _ -> super#expression e
 
     (* do not replace constant in switch case *)
@@ -843,8 +841,7 @@ let assign_op = function
       | true, _ -> Some (EBin (StarEq, exp, exp''))
       | _, true -> Some (EBin (StarEq, exp, exp')))
   | exp, EBin (((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor) as unop), exp', y)
-    when Poly.(exp = exp') ->
-      Some (EBin (translate_assign_op unop, exp, y))
+    when Poly.(exp = exp') -> Some (EBin (translate_assign_op unop, exp, y))
   | _ -> None
 
 class simpl =
@@ -885,8 +882,7 @@ class simpl =
           match st with
           | If_statement
               (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
-            ->
-              (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
+            -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
           | If_statement
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
@@ -912,8 +908,7 @@ class simpl =
           List.map st ~f:(function
               | ( Variable_statement
                     [ (addr, Some (EFun (None, params, body, loc'), loc)) ]
-                , _ ) ->
-                  Function_declaration (addr, params, body, loc'), loc
+                , _ ) -> Function_declaration (addr, params, body, loc'), loc
               | s, loc -> Statement s, loc)
         in
         List.rev_append st sources_rev

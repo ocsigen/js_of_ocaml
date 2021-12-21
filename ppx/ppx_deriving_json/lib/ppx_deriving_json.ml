@@ -773,8 +773,7 @@ let sigs_of_decl ({ Parsetree.ptype_loc; _ } as d) =
   | { Parsetree.ptype_manifest =
         Some { Parsetree.ptyp_desc = Parsetree.Ptyp_variant _; _ }
     ; _
-    } ->
-      read_with_tag_sig_of_decl d :: recognize_sig_of_decl d :: l
+    } -> read_with_tag_sig_of_decl d :: recognize_sig_of_decl d :: l
   | _ -> l
 
 let core_type_exp ({ Parsetree.ptyp_loc; _ } as y) =

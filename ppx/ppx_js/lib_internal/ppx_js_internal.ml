@@ -103,8 +103,7 @@ let ocaml_str ?loc ?attrs s = Exp.constant ?loc ?attrs (Const.string s)
 let exp_to_string = function
   | { pexp_desc = Pexp_ident { txt = Longident.Lident s; _ }; _ } -> s
   | { pexp_desc = Pexp_construct ({ txt = Longident.Lident s; _ }, None); _ }
-    when String.length s > 0 && s.[0] >= 'A' && s.[0] <= 'Z' ->
-      "_" ^ s
+    when String.length s > 0 && s.[0] >= 'A' && s.[0] <= 'Z' -> "_" ^ s
   | { pexp_loc; _ } ->
       raise_errorf
         ~loc:pexp_loc

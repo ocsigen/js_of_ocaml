@@ -193,9 +193,18 @@ struct
 
   let op_prec op =
     match op with
-    | Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq | LslEq | AsrEq | LsrEq | BandEq
-    | BxorEq | BorEq ->
-        1, 13, 1
+    | Eq
+    | StarEq
+    | SlashEq
+    | ModEq
+    | PlusEq
+    | MinusEq
+    | LslEq
+    | AsrEq
+    | LsrEq
+    | BandEq
+    | BxorEq
+    | BorEq -> 1, 13, 1
     (*
       | Or -> 3, 3, 4
       | And -> 4, 4, 5
@@ -265,13 +274,20 @@ struct
     | If_statement (_, _, Some st)
     | While_statement (_, st)
     | For_statement (_, _, _, st)
-    | ForIn_statement (_, _, st) ->
-        ends_with_if_without_else st
+    | ForIn_statement (_, _, st) -> ends_with_if_without_else st
     | If_statement (_, _, None) -> true
-    | Block _ | Variable_statement _ | Empty_statement | Expression_statement _
-    | Continue_statement _ | Break_statement _ | Return_statement _ | Throw_statement _
-    | Do_while_statement _ | Switch_statement _ | Try_statement _ | Debugger_statement ->
-        false
+    | Block _
+    | Variable_statement _
+    | Empty_statement
+    | Expression_statement _
+    | Continue_statement _
+    | Break_statement _
+    | Return_statement _
+    | Throw_statement _
+    | Do_while_statement _
+    | Switch_statement _
+    | Try_statement _
+    | Debugger_statement -> false
 
   let rec need_paren l e =
     match e with
@@ -282,8 +298,7 @@ struct
         l <= out && need_paren lft e
     | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) -> l <= 15 && need_paren 15 e
     | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ | EUn _ | ENew _
-      ->
-        false
+      -> false
     | EFun _ | EObj _ -> true
 
   let best_string_quote s =
@@ -1184,8 +1199,7 @@ let need_space a b =
   | '/', '/'
   (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
   | '-', '-'
-  | '+', '+' ->
-      true
+  | '+', '+' -> true
   | _, _ -> false
 
 let program f ?source_map p =

@@ -351,8 +351,7 @@ let is_A = function
       , c4
       , c5
       , c6
-      , A (_, _, _, _, _, _, _, _) ) ->
-      true
+      , A (_, _, _, _, _, _, _, _) ) -> true
   | _ -> false
 
 let is_C = function
@@ -386,8 +385,7 @@ let is_C = function
       , c4
       , c5
       , c6
-      , C (_, _, _, _, _, _) ) ->
-      true
+      , C (_, _, _, _, _, _) ) -> true
   | _ -> false
 
 let is_G = function
@@ -421,8 +419,7 @@ let is_G = function
       , c4
       , c5
       , c6
-      , G (_, _, _, _, _, _, _, _, _) ) ->
-      true
+      , G (_, _, _, _, _, _, _, _, _) ) -> true
   | _ -> false
 
 let nuc_C1'
@@ -864,8 +861,7 @@ let rA_N9 = function
       , c4
       , c5
       , c6
-      , A (n6, n7, n9, c8, h2, h61, h62, h8) ) ->
-      n9
+      , A (n6, n7, n9, c8, h2, h61, h62, h8) ) -> n9
   | _ -> assert false
 
 let rG_N9 = function
@@ -899,8 +895,7 @@ let rG_N9 = function
       , c4
       , c5
       , c6
-      , G (n2, n7, n9, c8, o6, h1, h21, h22, h8) ) ->
-      n9
+      , G (n2, n7, n9, c8, o6, h1, h21, h22, h8) ) -> n9
   | _ -> assert false
 
 (* Database of nucleotide conformations: *)

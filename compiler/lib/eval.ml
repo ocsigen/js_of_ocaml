@@ -154,8 +154,7 @@ let the_length_of info x =
       match info.info_defs.(Var.idx x) with
       | Expr (Constant (String s)) -> Some (Int32.of_int (String.length s))
       | Expr (Prim (Extern "caml_create_string", [ arg ]))
-      | Expr (Prim (Extern "caml_create_bytes", [ arg ])) ->
-          the_int info arg
+      | Expr (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int info arg
       | _ -> None)
     None
     (fun u v ->
@@ -264,8 +263,7 @@ let eval_instr info i =
                         | Some _
                         (* do not be duplicated other constant as
                             they're not represented with constant in javascript. *)
-                        | None ->
-                            arg) ) )
+                        | None -> arg) ) )
           ])
   | _ -> [ i ]
 
@@ -310,9 +308,13 @@ let the_cond_of info x =
       | Expr (Constant (Int 0l)) -> Zero
       | Expr
           (Constant
-            ( Int _ | Float _ | Tuple _ | String _ | NativeString _ | Float_array _
-            | Int64 _ )) ->
-          Non_zero
+            ( Int _
+            | Float _
+            | Tuple _
+            | String _
+            | NativeString _
+            | Float_array _
+            | Int64 _ )) -> Non_zero
       | Expr (Block (_, _, _)) -> Non_zero
       | Expr (Field _ | Closure _ | Prim _ | Apply _) -> Unknown
       | Param | Phi _ -> Unknown)

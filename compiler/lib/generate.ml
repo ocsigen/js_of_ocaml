@@ -1265,8 +1265,7 @@ and translate_instr ctx expr_queue loc instr =
           flush_queue expr_queue prop (instrs @ [ J.Expression_statement ce, loc ])
       | 1, _
         when Config.Flag.compact () && ((not (Config.Flag.pretty ())) || not (keep_name x))
-        ->
-          enqueue expr_queue prop x ce loc 1 instrs
+        -> enqueue expr_queue prop x ce loc 1 instrs
       (* We could inline more.
          size_v : length of the variable after serialization
          size_c : length of the constant after serialization

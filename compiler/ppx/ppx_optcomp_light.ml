@@ -154,8 +154,7 @@ let keep loc (attrs : attributes) =
                           List.map l ~f:(function
                               | { pexp_desc = Pexp_constant (Pconst_integer (d, None))
                                 ; _
-                                } ->
-                                  int_of_string d
+                                } -> int_of_string d
                               | _ -> raise Invalid)
                         in
                         Version.of_list l

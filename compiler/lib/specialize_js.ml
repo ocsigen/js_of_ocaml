@@ -219,8 +219,11 @@ let f_once p =
             ( x
             , (Prim
                  ( Extern
-                     ( "caml_array_set" | "caml_array_unsafe_set" | "caml_array_set_float"
-                     | "caml_array_set_addr" | "caml_array_unsafe_set_float"
+                     ( "caml_array_set"
+                     | "caml_array_unsafe_set"
+                     | "caml_array_set_float"
+                     | "caml_array_set_addr"
+                     | "caml_array_unsafe_set_float"
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in

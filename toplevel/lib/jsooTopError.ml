@@ -27,6 +27,5 @@ let loc = function
   | Typedecl.Error (loc, _)
   | Translcore.Error (loc, _)
   | Translclass.Error (loc, _)
-  | Translmod.Error (loc, _) ->
-      Some loc
+  | Translmod.Error (loc, _) -> Some loc
   | _ -> None

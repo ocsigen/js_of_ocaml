@@ -90,8 +90,7 @@ let parse_aux the_parser lexbuf =
                  * one LineTerminator, then a semicolon is automatically inserted before the
                  * restricted token. *)
                 | ( (T_RETURN _ | T_CONTINUE _ | T_BREAK _ | T_THROW _) :: _
-                  , ((T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _) as t) ) ->
-                    t
+                  , ((T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _) as t) ) -> t
                 | (T_RETURN _ | T_CONTINUE _ | T_BREAK _ | T_THROW _) :: _, t
                   when fol prev t ->
                     reset lexbuf;

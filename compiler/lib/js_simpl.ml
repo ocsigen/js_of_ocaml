@@ -58,10 +58,19 @@ let rec enot_rec e =
     | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot), _) ->
         J.EUn (J.Not, e), 0
     | J.EBool b -> J.EBool (not b), 0
-    | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _ | J.EStr _
-    | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _ | J.ERegexp _
-    | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) ->
-        J.EUn (J.Not, e), 1
+    | J.ECall _
+    | J.EAccess _
+    | J.EDot _
+    | J.ENew _
+    | J.EVar _
+    | J.EFun _
+    | J.EStr _
+    | J.EArr _
+    | J.ENum _
+    | J.EObj _
+    | J.EQuote _
+    | J.ERegexp _
+    | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) -> J.EUn (J.Not, e), 1
   in
   if cost <= 1 then res else J.EUn (J.Not, e), 1
 
@@ -157,8 +166,7 @@ let if_statement e loc iftrue truestop iffalse falsestop =
   match iftrue, iffalse with
   (* Shared statements *)
   | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = unopt iffalse')
-    ->
-      if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
+    -> if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
   | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = iftrue') ->
       if_statement_2
         (J.EBin (J.And, e, J.EUn (J.Not, e')))

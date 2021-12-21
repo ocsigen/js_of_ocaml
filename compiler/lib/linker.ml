@@ -48,8 +48,7 @@ end
 let loc pi =
   match pi with
   | Some { Parse_info.src = Some src; line; _ }
-  | Some { Parse_info.name = Some src; line; _ } ->
-      Printf.sprintf "%s:%d" src line
+  | Some { Parse_info.name = Some src; line; _ } -> Printf.sprintf "%s:%d" src line
   | None | Some _ -> "unknown location"
 
 let parse_annot loc s =
@@ -360,8 +359,7 @@ class traverse_and_find_named_values all =
       (match x with
       | ECall
           (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
-        ->
-          all := StringSet.add v !all
+        -> all := StringSet.add v !all
       | _ -> ());
       self#expression x
   end
@@ -429,17 +427,14 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               | `New, Nodejs, Nodejs
               | `New, Browser, Browser
               | `Exists { target_env = Isomorphic; _ }, Nodejs, Nodejs
-              | `Exists { target_env = Isomorphic; _ }, Browser, Browser ->
-                  true
+              | `Exists { target_env = Isomorphic; _ }, Browser, Browser -> true
               (* ignore non target matched envs *)
               | (`Exists _ | `New), Isomorphic, (Browser | Nodejs)
               | (`Exists _ | `New), Browser, Nodejs
-              | (`Exists _ | `New), Nodejs, Browser ->
-                  false
+              | (`Exists _ | `New), Nodejs, Browser -> false
               (* Ignore env unspecializations *)
               | `Exists { target_env = Nodejs; _ }, Nodejs, Isomorphic
-              | `Exists { target_env = Browser; _ }, Browser, Isomorphic ->
-                  false
+              | `Exists { target_env = Browser; _ }, Browser, Isomorphic -> false
               (* The following are impossible *)
               | `Exists { target_env = Nodejs; _ }, Browser, _
               | `Exists { target_env = Browser; _ }, Nodejs, _
@@ -470,8 +465,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                       (Javascript.S { Javascript.name = n; _ }, l, _, _)
                   , _ )
                   :: _
-                  when String.equal name n ->
-                    Some (List.length l)
+                  when String.equal name n -> Some (List.length l)
                 | _ :: rem -> find_arity rem
               in
               incr last_code_id;

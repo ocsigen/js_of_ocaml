@@ -92,7 +92,6 @@ let%expect_test _ =
     ; Unix.tm_wday = 4
     ; Unix.tm_yday = 233
     ; Unix.tm_isdst = false
-    } ->
-      ()
+    } -> ()
   | _ -> failure_tm "Unix.gmtime" tmg);
   [%expect {||}]

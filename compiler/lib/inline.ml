@@ -31,8 +31,7 @@ let optimizable blocks pc _ =
         let b = Addr.Map.find pc blocks in
         match b with
         | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
-          ->
-            false
+          -> false
         | _ ->
             List.for_all b.body ~f:(function
                 | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false

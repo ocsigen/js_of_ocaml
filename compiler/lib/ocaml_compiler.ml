@@ -25,8 +25,7 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_base (Const_int i) -> Int (Int32.of_int_warning_on_overflow i)
   | Const_base (Const_char c) -> Int (Int32.of_int (Char.code c))
   | ((Const_base (Const_string (s, _))) [@if ocaml_version < (4, 11, 0)])
-  | ((Const_base (Const_string (s, _, _))) [@if ocaml_version >= (4, 11, 0)]) ->
-      String s
+  | ((Const_base (Const_string (s, _, _))) [@if ocaml_version >= (4, 11, 0)]) -> String s
   | Const_base (Const_float s) -> Float (float_of_string s)
   | Const_base (Const_int32 i) -> Int i
   | Const_base (Const_int64 i) -> Int64 i
