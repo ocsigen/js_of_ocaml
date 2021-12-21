@@ -4,10 +4,7 @@ break-infix=fit-or-vertical
 if-then-else=keyword-first
 parens-tuple=multi-line-only
 type-decl=sparse
-wrap-comments=false
 wrap-fun-args=false
-doc-comments=after-when-possible
-indicate-multiline-delimiters=no
 break-infix-before-func
 break-separators=before
 dock-collection-brackets=false
