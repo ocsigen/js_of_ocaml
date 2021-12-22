@@ -18,14 +18,25 @@ support. See [Js_of_ocaml.Json.output] and [Js_of_ocaml.Json.output].
 One can derive serialisation functions from type definitions using
 the {{{[@@deriving ..]}}} attribute.
 
+Note that for types named [t], we omit the "t_" prefix when naming
+generated functions.
+
 <<code language="ocaml"|
 
 type t = A | B
 [@@deriving json]
 
-val t_of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
-val t_to_json : Buffer.t -> t -> unit = <fun>
-val t_json : t Deriving_Json.t = <abstr>
+val of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
+val to_json : Buffer.t -> t -> unit = <fun>
+val json : t Deriving_Json.t = <abstr>
+
+
+type u = A | B
+[@@deriving json]
+
+val u_of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
+val u_to_json : Buffer.t -> t -> unit = <fun>
+val u_json : t Deriving_Json.t = <abstr>
 
 >>
 
