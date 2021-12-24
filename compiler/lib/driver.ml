@@ -363,20 +363,7 @@ let pack ~global { Linker.runtime_code = js; always_required_codes } =
       | `Function -> f
       | `Bind_to _ -> f
       | `Custom name -> J.ECall (f, [ J.EVar (J.ident name), `Not_spread ], J.N)
-      | `Auto ->
-          let global =
-            J.ECall
-              ( J.EFun
-                  ( None
-                  , []
-                  , [ ( J.Statement (J.Return_statement (Some (J.EVar (J.ident "this"))))
-                      , J.N )
-                    ]
-                  , J.N )
-              , []
-              , J.N )
-          in
-          J.ECall (f, [ global, `Not_spread ], J.N)
+      | `Auto -> J.ECall (f, [ J.EVar (J.ident "globalThis"), `Not_spread ], J.N)
     in
     match global with
     | `Bind_to name ->
