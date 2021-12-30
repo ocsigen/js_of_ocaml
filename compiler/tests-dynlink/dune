@@ -1,0 +1,40 @@
+(executable
+ (name main)
+ (modules main)
+ (libraries dynlink js_of_ocaml-toplevel)
+ (modes byte))
+
+(rule
+ (target main.js)
+ (deps plugin.cmo)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --dynlink
+   +dynlink.js
+   --toplevel
+   +toplevel.js
+   -I
+   ./
+   --file
+   ./plugin.cmo
+   -o
+   %{target}
+   %{dep:main.bc})))
+
+(rule
+ (target plugin.cmo)
+ (action
+  (run %{bin:ocamlc} -c %{dep:./plugin.ml})))
+
+(rule
+ (target main.out)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main.js}))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff main.out.expected main.out)))
