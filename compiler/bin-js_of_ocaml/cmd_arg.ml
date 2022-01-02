@@ -33,7 +33,7 @@ type t =
   ; input_file : string option
   ; params : (string * string) list
   ; static_env : (string * string) list
-  ; wrap_with_fun : string option
+  ; wrap_with_fun : [ `Iife | `Named of string | `Anonymous ]
   ; target_env : Target_env.t
   ; (* toplevel *)
     dynlink : bool
@@ -48,6 +48,25 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   }
+
+let wrap_with_fun_conv =
+  let conv s =
+    if String.equal s ""
+    then Ok `Anonymous
+    else if Javascript.is_ident s
+    then Ok (`Named s)
+    else Error (`Msg "must be empty or a valid JavaScript identifier")
+  in
+  let printer fmt o =
+    Format.fprintf
+      fmt
+      "%s"
+      (match o with
+      | `Anonymous -> ""
+      | `Named s -> s
+      | `Iife -> "<Immediately Invoked Function Expression>")
+  in
+  Arg.conv (conv, printer)
 
 let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
@@ -118,7 +137,7 @@ let options =
       "Wrap the generated JavaScript code inside a function that needs to be applied \
        with the global object."
     in
-    Arg.(value & opt (some string) None & info [ "wrap-with-fun" ] ~doc)
+    Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in
@@ -394,7 +413,7 @@ let options_runtime_only =
       "Wrap the generated JavaScript code inside a function that needs to be applied \
        with the global object."
     in
-    Arg.(value & opt (some string) None & info [ "wrap-with-fun" ] ~doc)
+    Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in

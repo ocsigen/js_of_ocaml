@@ -54,11 +54,6 @@ let run
     } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
-  let global =
-    match wrap_with_fun with
-    | Some fun_name -> `Bind_to fun_name
-    | None -> `globalThis
-  in
   Jsoo_cmdline.Arg.eval common;
   (match output_file with
   | `Stdout, _ -> ()
@@ -165,7 +160,7 @@ let run
           ~standalone
           ?profile
           ~linkall
-          ~global
+          ~wrap_with_fun
           ~dynlink
           ?source_map
           ?custom_header
@@ -192,7 +187,7 @@ let run
               ~standalone
               ?profile
               ~linkall
-              ~global
+              ~wrap_with_fun
               ~dynlink
               ?source_map
               ?custom_header
@@ -208,7 +203,7 @@ let run
                   ~standalone
                   ?profile
                   ?custom_header
-                  ~global
+                  ~wrap_with_fun
                   pfs_fmt
                   one.debug
                   code)));
