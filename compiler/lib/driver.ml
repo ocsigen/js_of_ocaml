@@ -318,14 +318,14 @@ let coloring js =
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
 
-let output formatter ~standalone ~custom_header ?source_map () js =
+let output formatter ~standalone ~custom_header ~source_map () js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Writing file...@.";
   if standalone then header ~custom_header formatter;
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Timer.print t
 
-let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes } =
+let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
   if times () then Format.eprintf "Start Optimizing js...@.";
@@ -349,40 +349,30 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
     else js
   in
   (* pack *)
-  let use_strict js ~can_use_strict =
-    if Config.Flag.strictmode () && can_use_strict
-    then (J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8))), J.N) :: js
-    else js
-  in
-  let wrap_in_iifa ~can_use_strict js =
-    let js =
+  let wrap_in_iife ~use_strict js =
+    let var ident e =
+      J.Statement (J.Variable_statement [ J.ident ident, Some (e, J.N) ]), J.N
+    in
+    let expr e = J.Statement (J.Expression_statement e), J.N in
+    let old_global_object_shim js =
       let o = new Js_traverse.free in
       let js = o#program js in
       if StringSet.mem Constant.old_global_object o#get_free_name
-      then
-        ( J.Statement
-            (J.Variable_statement
-               [ ( J.ident Constant.old_global_object
-                 , Some (J.EVar (J.ident global_object), J.N) )
-               ])
-        , J.N )
-        :: js
+      then var Constant.old_global_object (J.EVar (J.ident global_object)) :: js
       else js
     in
-    let f =
-      J.EFun (None, [ J.ident global_object ], use_strict js ~can_use_strict, J.U)
+    let efun args body = J.EFun (None, args, body, J.U) in
+    let sfun name args body = J.Function_declaration (name, args, body, J.U), J.U in
+    let mk f =
+      let js = old_global_object_shim js in
+      let js = if use_strict then expr (J.EStr ("use strict", `Utf8)) :: js else js in
+      f [ J.ident global_object ] js
     in
-    let expr =
-      match global with
-      | `Function -> f
-      | `Bind_to _ -> f
-      | `Custom name -> J.ECall (f, [ J.EVar (J.ident name), `Not_spread ], J.N)
-      | `globalThis -> J.ECall (f, [ J.EVar (J.ident global_object), `Not_spread ], J.N)
-    in
-    match global with
-    | `Bind_to name ->
-        [ J.Statement (J.Variable_statement [ J.ident name, Some (expr, J.N) ]), J.N ]
-    | _ -> [ J.Statement (J.Expression_statement expr), J.N ]
+    match wrap_with_fun with
+    | `Anonymous -> expr (mk efun)
+    | `Named name -> mk (sfun (J.ident name))
+    | `Iife ->
+        expr (J.ECall (mk efun, [ J.EVar (J.ident global_object), `Not_spread ], J.N))
   in
   let always_required_js =
     (* consider adding a comments in the generated file with original
@@ -394,17 +384,19 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
     List.map
       always_required_codes
       ~f:(fun { Linker.program; filename = _; requires = _ } ->
-        wrap_in_iifa ~can_use_strict:false program)
+        wrap_in_iife ~use_strict:false program)
   in
-  let runtime_js = wrap_in_iifa ~can_use_strict:true js in
-  let js = List.flatten always_required_js @ runtime_js in
+  let runtime_js = wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js in
+  let js = always_required_js @ [ runtime_js ] in
   let js =
-    match global, standalone with
-    | (`Function | `Bind_to _ | `Custom _), _ -> js
-    | `globalThis, false -> js
-    | `globalThis, true ->
-        let s =
-          {|
+    match wrap_with_fun, standalone with
+    | `Named _, _ -> js
+    | `Anonymous, _ -> js
+    | `Iife, false -> js
+    | `Iife, true ->
+        let e =
+          let s =
+            {|
 (function (Object) {
   typeof globalThis !== 'object' && (
     this ?
@@ -421,10 +413,10 @@ let pack ~global ~standalone { Linker.runtime_code = js; always_required_codes }
   }
 }(Object));
 |}
+          in
+          let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+          Parse_js.parse lex
         in
-        let lex = Lexing.from_string s in
-        let lex = Parse_js.Lexer.of_lexbuf lex in
-        let e = Parse_js.parse lex in
         e @ js
   in
   (* post pack optim *)
@@ -456,14 +448,14 @@ let configure formatter p =
 
 type profile = Code.program -> Code.program
 
-let f
-    ?(standalone = true)
-    ?(global = `globalThis)
-    ?(profile = o1)
-    ?(dynlink = false)
-    ?(linkall = false)
-    ?source_map
-    ?custom_header
+let full
+    ~standalone
+    ~wrap_with_fun
+    ~profile
+    ~dynlink
+    ~linkall
+    ~source_map
+    ~custom_header
     formatter
     d
     p =
@@ -480,10 +472,10 @@ let f
   let emit =
     generate d ~exported_runtime
     +> link ~standalone ~linkall ~export_runtime:dynlink
-    +> pack ~global ~standalone
+    +> pack ~wrap_with_fun ~standalone
     +> coloring
     +> check_js
-    +> output formatter ~standalone ~custom_header ?source_map ()
+    +> output formatter ~standalone ~custom_header ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
@@ -491,9 +483,42 @@ let f
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 
+let f
+    ?(standalone = true)
+    ?(wrap_with_fun = `Iife)
+    ?(profile = o1)
+    ?(dynlink = false)
+    ?(linkall = false)
+    ?source_map
+    ?custom_header
+    formatter
+    d
+    p =
+  full
+    ~standalone
+    ~wrap_with_fun
+    ~profile
+    ~dynlink
+    ~linkall
+    ~source_map
+    ~custom_header
+    formatter
+    d
+    p
+
 let from_string prims s formatter =
   let p, d = Parse_bytecode.from_string prims s in
-  f ~standalone:false ~global:`Function formatter d p
+  full
+    ~standalone:false
+    ~wrap_with_fun:`Anonymous
+    ~profile:o1
+    ~dynlink:false
+    ~linkall:false
+    ~source_map:None
+    ~custom_header:None
+    formatter
+    d
+    p
 
 let profiles = [ 1, o1; 2, o2; 3, o3 ]
 

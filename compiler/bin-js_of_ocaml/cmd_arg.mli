@@ -31,7 +31,11 @@ type t =
   ; input_file : string option
   ; params : (string * string) list
   ; static_env : (string * string) list
-  ; wrap_with_fun : string option
+  ; wrap_with_fun :
+      [ `Iife (* IIFE stands for Immediately Invoked Function Expression *)
+      | `Named of string
+      | `Anonymous
+      ]
   ; target_env : Target_env.t
   ; (* toplevel *)
     dynlink : bool
