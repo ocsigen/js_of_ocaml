@@ -38,8 +38,8 @@ annot:
     { `Requires (None,l) }
   | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
     { `Version (None,l) }
-  | TWeakdef { `Weakdef None }
-  | TAlways { `Always None }
+  | TWeakdef endline { `Weakdef None }
+  | TAlways endline { `Always None }
   | TIf TSemi name=TIdent endline
     { `If (None,name) }
   | TIf TSemi TBang name=TIdent endline
