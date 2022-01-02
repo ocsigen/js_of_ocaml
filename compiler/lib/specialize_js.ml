@@ -136,10 +136,10 @@ let specialize_instr info i =
       | _ -> i)
   | _ -> i
 
-let specialize_instrs info checks l =
+let specialize_instrs info l =
   let rec aux info checks l acc =
     match l with
-    | [] -> acc
+    | [] -> List.rev acc
     | i :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
@@ -192,12 +192,12 @@ let specialize_instrs info checks l =
             let i = specialize_instr info i in
             aux info checks r (i :: acc))
   in
-  List.rev (aux info checks l [])
+  aux info [] l []
 
 let specialize_all_instrs info p =
   let blocks =
     Addr.Map.map
-      (fun block -> { block with Code.body = specialize_instrs info [] block.body })
+      (fun block -> { block with Code.body = specialize_instrs info block.body })
       p.blocks
   in
   { p with blocks }
@@ -207,9 +207,9 @@ let specialize_all_instrs info p =
 let f info p = specialize_all_instrs info p
 
 let f_once p =
-  let rec loop l =
+  let rec loop acc l =
     match l with
-    | [] -> []
+    | [] -> List.rev acc
     | i :: r -> (
         match i with
         | Let
@@ -224,10 +224,11 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            Let (x, Constant (Int 0l)) :: Let (x', p) :: loop r
-        | _ -> i :: loop r)
+            let acc = Let (x', p) :: Let (x, Constant (Int 0l)) :: acc in
+            loop acc r
+        | _ -> loop (i :: acc) r)
   in
   let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop block.body }) p.blocks
+    Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
   in
   { p with blocks }
