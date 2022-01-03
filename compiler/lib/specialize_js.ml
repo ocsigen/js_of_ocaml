@@ -22,55 +22,49 @@ open! Stdlib
 open Code
 open Flow
 
-let specialize_instr info i rem =
+let specialize_instr info i =
   match i with
-  | Let (x, Prim (Extern "caml_format_int", [ y; z ])) ->
-      (match the_string_of info y with
+  | Let (x, Prim (Extern "caml_format_int", [ y; z ])) -> (
+      match the_string_of info y with
       | Some "%d" -> (
           match the_int info z with
           | Some i -> Let (x, Constant (String (Int32.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [ z ])))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])) ->
-      (match the_int info z with
+  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])) -> (
+      match the_int info z with
       | Some i -> Let (x, Constant (String (Int32.to_string i)))
       | None -> i)
-      :: rem
   (* inline the String constant argument so that generate.ml can attempt to parse it *)
   | Let
       ( x
       , Prim
           ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
           , [ (Pv _ as y) ] ) )
-    when Config.Flag.safe_string () ->
-      (match the_string_of info y with
+    when Config.Flag.safe_string () -> (
+      match the_string_of info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])) ->
-      (match the_string_of info y with
+  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])) -> (
+      match the_string_of info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
       | Some _ -> Let (x, Constant (Int 0l))
       | None -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])) ->
-      (match the_def_of info a with
+  | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])) -> (
+      match the_def_of info a with
       | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])) ->
-      (match the_def_of info a with
+  | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])) -> (
+      match the_def_of info a with
       | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])) ->
-      (match the_string_of info m with
+  | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])) -> (
+      match the_string_of info m with
       | Some m when String.is_ascii m -> (
           match the_def_of info a with
           | Some (Block (_, a, _)) ->
@@ -82,125 +76,128 @@ let specialize_instr info i rem =
                     , o :: Pc (NativeString m) :: Array.to_list a ) )
           | _ -> i)
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_new", [ c; a ])) ->
-      (match the_def_of info a with
+  | Let (x, Prim (Extern "caml_js_new", [ c; a ])) -> (
+      match the_def_of info a with
       | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_object", [ a ])) ->
-      (try
-         let a =
-           match the_def_of info a with
-           | Some (Block (_, a, _)) -> a
-           | _ -> raise Exit
-         in
-         let a =
-           Array.map a ~f:(fun x ->
-               match the_def_of info (Pv x) with
-               | Some (Block (_, [| k; v |], _)) ->
-                   let k =
-                     match the_string_of info (Pv k) with
-                     | Some s when String.is_ascii s -> Pc (NativeString s)
-                     | _ -> raise Exit
-                   in
-                   [ k; Pv v ]
-               | _ -> raise Exit)
-         in
-         Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
-       with Exit -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])) ->
-      (match the_native_string_of info f with
+  | Let (x, Prim (Extern "caml_js_object", [ a ])) -> (
+      try
+        let a =
+          match the_def_of info a with
+          | Some (Block (_, a, _)) -> a
+          | _ -> raise Exit
+        in
+        let a =
+          Array.map a ~f:(fun x ->
+              match the_def_of info (Pv x) with
+              | Some (Block (_, [| k; v |], _)) ->
+                  let k =
+                    match the_string_of info (Pv k) with
+                    | Some s when String.is_ascii s -> Pc (NativeString s)
+                    | _ -> raise Exit
+                  in
+                  [ k; Pv v ]
+              | _ -> raise Exit)
+        in
+        Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
+      with Exit -> i)
+  | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])) -> (
+      match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_get", [ o; Pc (NativeString s) ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])) ->
-      (match the_native_string_of info f with
+  | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])) -> (
+      match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_set", [ o; Pc (NativeString s); v ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])) ->
-      (match the_native_string_of info f with
+  | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])) -> (
+      match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (NativeString s) ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) ->
-      (match the_string_of info y with
+  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) -> (
+      match the_string_of info y with
       | Some s when String.is_ascii s -> Let (x, Constant (NativeString s))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "%int_mul", [ y; z ])) ->
-      (match the_int info y, the_int info z with
+  | Let (x, Prim (Extern "%int_mul", [ y; z ])) -> (
+      match the_int info y, the_int info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _, Some j when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "%int_div", [ y; z ])) ->
-      (match the_int info z with
+  | Let (x, Prim (Extern "%int_div", [ y; z ])) -> (
+      match the_int info z with
       | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_div", [ y; z ]))
       | _ -> i)
-      :: rem
-  | Let (x, Prim (Extern "%int_mod", [ y; z ])) ->
-      (match the_int info z with
+  | Let (x, Prim (Extern "%int_mod", [ y; z ])) -> (
+      match the_int info z with
       | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_mod", [ y; z ]))
       | _ -> i)
-      :: rem
-  | _ -> i :: rem
+  | _ -> i
 
-let rec specialize_instrs info checks l =
-  match l with
-  | [] -> []
-  | i :: r -> (
-      (* We make bound checking explicit. Then, we can remove duplicated
-         bound checks. Also, it appears to be more efficient to inline
-         the array access. The bound checking function returns the array,
-         which allows to produce more compact code. *)
-      match i with
-      | Let (x, Prim (Extern "caml_array_get", [ y; z ]))
-      | Let (x, Prim (Extern "caml_array_get_float", [ y; z ]))
-      | Let (x, Prim (Extern "caml_array_get_addr", [ y; z ])) ->
-          let idx =
-            match the_int info z with
-            | Some idx -> `Cst idx
-            | None -> `Var z
-          in
-          if List.mem (y, idx) ~set:checks
-          then
-            Let (x, Prim (Extern "caml_array_unsafe_get", [ y; z ]))
-            :: specialize_instrs info checks r
-          else
-            let y' = Code.Var.fresh () in
-            Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
-            :: Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ]))
-            :: specialize_instrs info ((y, idx) :: checks) r
-      | Let (x, Prim (Extern "caml_array_set", [ y; z; t ]))
-      | Let (x, Prim (Extern "caml_array_set_float", [ y; z; t ]))
-      | Let (x, Prim (Extern "caml_array_set_addr", [ y; z; t ])) ->
-          let idx =
-            match the_int info z with
-            | Some idx -> `Cst idx
-            | None -> `Var z
-          in
-          if List.mem (y, idx) ~set:checks
-          then
-            Let (x, Prim (Extern "caml_array_unsafe_set", [ y; z; t ]))
-            :: specialize_instrs info checks r
-          else
-            let y' = Code.Var.fresh () in
-            Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
-            :: Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ]))
-            :: specialize_instrs info ((y, idx) :: checks) r
-      | _ -> specialize_instr info i (specialize_instrs info checks r))
+let specialize_instrs info l =
+  let rec aux info checks l acc =
+    match l with
+    | [] -> List.rev acc
+    | i :: r -> (
+        (* We make bound checking explicit. Then, we can remove duplicated
+           bound checks. Also, it appears to be more efficient to inline
+           the array access. The bound checking function returns the array,
+           which allows to produce more compact code. *)
+        match i with
+        | Let (x, Prim (Extern "caml_array_get", [ y; z ]))
+        | Let (x, Prim (Extern "caml_array_get_float", [ y; z ]))
+        | Let (x, Prim (Extern "caml_array_get_addr", [ y; z ])) ->
+            let idx =
+              match the_int info z with
+              | Some idx -> `Cst idx
+              | None -> `Var z
+            in
+            if List.mem (y, idx) ~set:checks
+            then
+              let acc = Let (x, Prim (Extern "caml_array_unsafe_get", [ y; z ])) :: acc in
+              aux info checks r acc
+            else
+              let y' = Code.Var.fresh () in
+              let acc =
+                Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ]))
+                :: Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
+                :: acc
+              in
+              aux info ((y, idx) :: checks) r acc
+        | Let (x, Prim (Extern "caml_array_set", [ y; z; t ]))
+        | Let (x, Prim (Extern "caml_array_set_float", [ y; z; t ]))
+        | Let (x, Prim (Extern "caml_array_set_addr", [ y; z; t ])) ->
+            let idx =
+              match the_int info z with
+              | Some idx -> `Cst idx
+              | None -> `Var z
+            in
+            if List.mem (y, idx) ~set:checks
+            then
+              let acc =
+                Let (x, Prim (Extern "caml_array_unsafe_set", [ y; z; t ])) :: acc
+              in
+              aux info checks r acc
+            else
+              let y' = Code.Var.fresh () in
+              let acc =
+                Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ]))
+                :: Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
+                :: acc
+              in
+              aux info ((y, idx) :: checks) r acc
+        | _ ->
+            let i = specialize_instr info i in
+            aux info checks r (i :: acc))
+  in
+  aux info [] l []
 
 let specialize_all_instrs info p =
   let blocks =
     Addr.Map.map
-      (fun block -> { block with Code.body = specialize_instrs info [] block.body })
+      (fun block -> { block with Code.body = specialize_instrs info block.body })
       p.blocks
   in
   { p with blocks }
@@ -210,9 +207,9 @@ let specialize_all_instrs info p =
 let f info p = specialize_all_instrs info p
 
 let f_once p =
-  let rec loop l =
+  let rec loop acc l =
     match l with
-    | [] -> []
+    | [] -> List.rev acc
     | i :: r -> (
         match i with
         | Let
@@ -227,10 +224,11 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            Let (x, Constant (Int 0l)) :: Let (x', p) :: loop r
-        | _ -> i :: loop r)
+            let acc = Let (x', p) :: Let (x, Constant (Int 0l)) :: acc in
+            loop acc r
+        | _ -> loop (i :: acc) r)
   in
   let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop block.body }) p.blocks
+    Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
   in
   { p with blocks }
