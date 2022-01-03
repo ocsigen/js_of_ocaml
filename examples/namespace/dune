@@ -1,0 +1,19 @@
+(executables
+  (names a b)
+  (modes byte)
+  (libraries js_of_ocaml)
+)
+
+(rule
+  (target a.js)
+  (action (run %{bin:js_of_ocaml} %{dep:./a.bc} --wrap-with-fun implemA -o a.js --pretty --target-env browser --no-extern-fs)))
+
+(rule
+  (target b.js)
+  (action (run %{bin:js_of_ocaml} %{dep:./b.bc} --wrap-with-fun implemB -o b.js --pretty --target-env browser --no-extern-fs)))
+
+(alias
+ (name default)
+ (deps
+  a.js b.js
+  index.html))
