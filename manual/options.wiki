@@ -19,9 +19,10 @@
 | --debug-info            | Output debug information               |
 | -I dir                  | Add <dir> to the list of
                             include directories                    |
-| --file file[:dir]       | Register <file> to the pseudo filesystem
-                            and choose the the destination
-                            directory <dir> (default /)            |
+| --file file[:target]    | Register <file> to the pseudo filesystem
+                            and choose the destination <target>. The
+			    <target> can be a directory or a file
+			    (default /static/)                     |
 | --enable <option>       | Enable option <option>                 |
 | --disable <option>      | Disable option <option>                |
 

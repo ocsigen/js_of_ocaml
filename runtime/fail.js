@@ -36,8 +36,10 @@ function caml_raise_with_string (tag, msg) {
 }
 
 //Provides: caml_failwith (const)
-//Requires: caml_raise_with_string, caml_global_data
+//Requires: caml_raise_with_string, caml_global_data, caml_string_of_jsbytes
 function caml_failwith (msg) {
+  if(!caml_global_data.Failure)
+    caml_global_data.Failure=[248,caml_string_of_jsbytes("Failure"),-3];
   caml_raise_with_string(caml_global_data.Failure, msg);
 }
 
