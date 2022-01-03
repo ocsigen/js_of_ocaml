@@ -390,7 +390,21 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   let js = always_required_js @ [ runtime_js ] in
   let js =
     match wrap_with_fun, standalone with
-    | `Named _, _ -> js
+    | `Named name, (true | false) ->
+        let export_node =
+          let s =
+            Printf.sprintf
+              {|
+if (typeof module === 'object' && module.exports) {
+  module['exports'] = %s;
+}
+|}
+              name
+          in
+          let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+          Parse_js.parse lex
+        in
+        js @ export_node
     | `Anonymous, _ -> js
     | `Iife, false -> js
     | `Iife, true ->
