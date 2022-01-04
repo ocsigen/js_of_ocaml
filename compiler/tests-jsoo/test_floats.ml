@@ -181,3 +181,11 @@ let%expect_test "log2" =
   [%expect {| nan |}];
   p 1024.0;
   [%expect {| 10.000000 |}]
+
+let%expect_test "of_string" =
+  let x = "0x1.1" in
+  print (float_of_string x);
+  [%expect {| 1.062500 |}];
+  let x = "0x1.1p-1" in
+  print (float_of_string x);
+  [%expect {| 0.531250 |}]
