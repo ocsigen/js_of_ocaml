@@ -223,10 +223,11 @@ module Ctx = struct
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : (Code.Var.t * bool ref) option
+    ; should_export : bool
     }
 
-  let initial ~exported_runtime blocks live share debug =
-    { blocks; live; share; debug; exported_runtime }
+  let initial ~exported_runtime ~should_export blocks live share debug =
+    { blocks; live; share; debug; exported_runtime; should_export }
 end
 
 let var x = J.EVar (J.V x)
@@ -1671,7 +1672,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
     | Raise (x, k) ->
         let (_px, cx), queue = access_queue queue x in
         flush_all queue (throw_statement st.ctx cx k loc)
-    | Stop -> flush_all queue [ J.Return_statement None, loc ]
+    | Stop ->
+        let e_opt = if st.ctx.Ctx.should_export then Some (s_var "exports") else None in
+        flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont handler backs frontier interm
     | Pushtrap _ -> assert false
     | Poptrap (cont, _) ->
@@ -1937,13 +1940,13 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@.@.";
   res
 
-let f (p : Code.program) ~exported_runtime ~live_vars debug =
+let f (p : Code.program) ~exported_runtime ~live_vars ~should_export debug =
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
-  let ctx = Ctx.initial ~exported_runtime p.blocks live_vars share debug in
+  let ctx = Ctx.initial ~exported_runtime ~should_export p.blocks live_vars share debug in
   let p = compile_program ctx p.start in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p

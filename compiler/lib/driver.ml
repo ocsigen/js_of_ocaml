@@ -23,6 +23,10 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
+let should_export = function
+  | `Iife -> false
+  | `Named _ | `Anonymous -> true
+
 let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
@@ -140,9 +144,10 @@ let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
 let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
-let generate d ~exported_runtime (p, live_vars) =
+let generate d ~exported_runtime ~wrap_with_fun (p, live_vars) =
   if times () then Format.eprintf "Start Generation...@.";
-  Generate.f p ~exported_runtime ~live_vars d
+  let should_export = should_export wrap_with_fun in
+  Generate.f p ~exported_runtime ~live_vars ~should_export d
 
 let header formatter ~custom_header =
   (match custom_header with
@@ -354,16 +359,39 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       J.Statement (J.Variable_statement [ J.ident ident, Some (e, J.N) ]), J.N
     in
     let expr e = J.Statement (J.Expression_statement e), J.N in
-    let old_global_object_shim js =
+    let freenames =
       let o = new Js_traverse.free in
-      let js = o#program js in
-      if StringSet.mem Constant.old_global_object o#get_free_name
+      let (_ : J.program) = o#program js in
+      o#get_free_name
+    in
+    let export_shim js =
+      if StringSet.mem "exports" freenames
+      then
+        if should_export wrap_with_fun
+        then var "exports" (J.EObj []) :: js
+        else
+          let export_node =
+            let s =
+              Printf.sprintf
+                {|((typeof module === 'object' && module.exports) || %s)|}
+                global_object
+            in
+            let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+            Parse_js.parse_expr lex
+          in
+          var "exports" export_node :: js
+      else js
+    in
+    let old_global_object_shim js =
+      if StringSet.mem Constant.old_global_object freenames
       then var Constant.old_global_object (J.EVar (J.ident global_object)) :: js
       else js
     in
+
     let efun args body = J.EFun (None, args, body, J.U) in
     let sfun name args body = J.Function_declaration (name, args, body, J.U), J.U in
     let mk f =
+      let js = export_shim js in
       let js = old_global_object_shim js in
       let js = if use_strict then expr (J.EStr ("use strict", `Utf8)) :: js else js in
       f [ J.ident global_object ] js
@@ -484,7 +512,7 @@ let full
     +> deadcode'
   in
   let emit =
-    generate d ~exported_runtime
+    generate d ~exported_runtime ~wrap_with_fun
     +> link ~standalone ~linkall ~export_runtime:dynlink
     +> pack ~wrap_with_fun ~standalone
     +> coloring

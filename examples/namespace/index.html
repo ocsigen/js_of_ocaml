@@ -8,14 +8,6 @@
     <script type="text/javascript" src="a.js"></script>
     <script type="text/javascript" src="b.js"></script>
     <script type="text/javascript">
-      function instanciate (f) {
-	function a() { };
-	a.prototype = globalThis.prototype;
-	var impl = new a();
-	implemA(impl);
-	delete impl.prototype;
-	return impl;
-      }
       function shouldRaise(f) {
 	try {
 	  f();
@@ -29,8 +21,8 @@
 	  return
 	} catch (e) { throw new Error ("should have raised"); }
       }
-      var a = instanciate(implemA);
-      var b = instanciate(implemB);
+      var a = implemA(globalThis);
+      var b = implemB(globalThis);
       shouldNotRaise (() => a.tryWith(a.raise));
       shouldNotRaise (() => b.tryWith(b.raise));
       shouldRaise(() => a.tryWith(b.raise));

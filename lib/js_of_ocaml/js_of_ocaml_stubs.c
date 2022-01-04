@@ -60,10 +60,6 @@ void caml_js_eval_string () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_eval_string!\n");
   exit(1);
 }
-void caml_js_export_var () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_export_var!\n");
-  exit(1);
-}
 void caml_js_expr () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_expr!\n");
   exit(1);
