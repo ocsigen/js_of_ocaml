@@ -16,6 +16,7 @@
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma (#1169)
 * Compiler: Strengthen bound checks. (#1172)
+* Compiler: fix `--wrap-with-fun` under node (#653, #1171)
 * Ppx: allow apostrophe in lident (fix #1183) (#1192)
 
 # 3.11.0 (2021-10-06) - Lille
