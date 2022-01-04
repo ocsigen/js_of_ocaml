@@ -17,6 +17,7 @@
 * Compiler: fix sourcemap warning for empty cma (#1169)
 * Compiler: Strengthen bound checks. (#1172)
 * Ppx: allow apostrophe in lident (fix #1183) (#1192)
+* Runtime: fix float parsing in hexadecimal form
 
 # 3.11.0 (2021-10-06) - Lille
 
