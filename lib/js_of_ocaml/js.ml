@@ -749,9 +749,7 @@ let _ =
 
 let string_of_error e = to_string e##toString
 
-external get_export_var : unit -> < .. > t = "caml_js_export_var"
-
-let export_js (field : js_string t) x = Unsafe.set (get_export_var ()) field x
+let export_js (field : js_string t) x = Unsafe.set (Unsafe.pure_js_expr "exports") field x
 
 let export field x = export_js (string field) x
 

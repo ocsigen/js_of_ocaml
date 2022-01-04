@@ -9,11 +9,20 @@
   (action (run %{bin:js_of_ocaml} %{dep:./a.bc} --wrap-with-fun implemA -o a.js --pretty --target-env browser --no-extern-fs)))
 
 (rule
+  (target a-iife.js)
+  (action (run %{bin:js_of_ocaml} %{dep:./a.bc} -o a-iife.js --target-env browser --no-extern-fs)))
+
+(rule
   (target b.js)
   (action (run %{bin:js_of_ocaml} %{dep:./b.bc} --wrap-with-fun implemB -o b.js --pretty --target-env browser --no-extern-fs)))
 
 (alias
  (name default)
  (deps
-  a.js b.js
+  a.js b.js a-iife.js
   index.html))
+
+(rule
+  (alias runtest)
+  (deps a.js b.js a-iife.js for-node.js)
+  (action (run node for-node.js)))

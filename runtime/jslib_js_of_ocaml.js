@@ -241,16 +241,6 @@ function caml_js_object (a) {
   return o;
 }
 
-
-//Provides: caml_js_export_var
-function caml_js_export_var (){
-  if(typeof module !== 'undefined' && module && module.exports)
-    return module.exports
-  else
-    return globalThis;
-}
-
-
 //Provides: caml_xmlhttprequest_create
 //Requires: caml_failwith
 //Weakdef
