@@ -99,29 +99,42 @@ function caml_fatal_uncaught_exception(err){
   }
 }
 
+//Provides: jsoo_static_env
+var jsoo_static_env
+
+//Provides: get_static_env
+//Requires: jsoo_static_env
+function get_static_env(){
+  if(jsoo_static_env === undefined) {
+    jsoo_static_env = {}
+    if(globalThis.jsoo_static_env)
+      Object.assign(jsoo_static_env, globalThis.jsoo_static_env);
+  }
+  return jsoo_static_env;
+}
 
 //Provides: caml_set_static_env
+//Requires: get_static_env
 function caml_set_static_env(k,v){
-  if(!globalThis.jsoo_static_env)
-    globalThis.jsoo_static_env = {}
-  globalThis.jsoo_static_env[k] = v;
+  var env = get_static_env();
+  env[k] = v;
   return 0;
 }
 //Provides: caml_sys_getenv (const)
 //Requires: caml_raise_not_found
 //Requires: caml_string_of_jsstring
 //Requires: caml_jsstring_of_string
+//Requires: get_static_env
 function caml_sys_getenv (name) {
-  var g = globalThis;
   var n = caml_jsstring_of_string(name);
   //nodejs env
-  if(g.process
-     && g.process.env
-     && g.process.env[n] != undefined)
-    return caml_string_of_jsstring(g.process.env[n]);
-  if(globalThis.jsoo_static_env
-     && globalThis.jsoo_static_env[n])
-    return caml_string_of_jsstring(globalThis.jsoo_static_env[n])
+  if(globalThis.process
+     && globalThis.process.env
+     && globalThis.process.env[n] != undefined)
+    return caml_string_of_jsstring(globalThis.process.env[n]);
+  var env = get_static_env()
+  if(env[n])
+    return caml_string_of_jsstring(env[n])
   caml_raise_not_found ();
 }
 
