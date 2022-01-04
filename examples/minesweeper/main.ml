@@ -53,4 +53,4 @@ let onload _ =
          Js._false));
   Js._false
 
-let _ = Html.window##.onload := Html.handler onload
+let () = Html.window##.onload := Html.handler onload

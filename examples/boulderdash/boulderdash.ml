@@ -82,12 +82,12 @@ and state =
   { map : cell array array
   ; imgs : Html.imageElement Js.t array array
   ; mutable pos : int * int
-  ; mutable endpos : int * int
+  ; endpos : int * int
   ; mutable rem : int
   ; mutable dead : bool
-  ; mutable map_mutex : Lwt_mutex.t
+  ; map_mutex : Lwt_mutex.t
   ; mutable events_mutex : bool
-  ; mutable pending_out_cb : (unit -> unit) option ref
+  ; pending_out_cb : (unit -> unit) option ref
   }
 
 exception Death

@@ -92,22 +92,18 @@ let float32array a =
   Array.iteri (fun i v -> Typed_array.set array i v) a;
   array
 
-let int16array a =
-  let array = new%js Typed_array.int16Array (Array.length a) in
-  Array.iteri (fun i v -> Typed_array.set array i v) a;
-  array
-
 module Proj3D = struct
   type t = float array
 
-  let scale x y z = [| x; 0.; 0.; 0.; 0.; y; 0.; 0.; 0.; 0.; z; 0.; 0.; 0.; 0.; 1. |]
+  let scale x y z : t = [| x; 0.; 0.; 0.; 0.; y; 0.; 0.; 0.; 0.; z; 0.; 0.; 0.; 0.; 1. |]
 
-  let translate x y z = [| 1.; 0.; 0.; 0.; 0.; 1.; 0.; 0.; 0.; 0.; 1.; 0.; x; y; z; 1. |]
+  let translate x y z : t =
+    [| 1.; 0.; 0.; 0.; 0.; 1.; 0.; 0.; 0.; 0.; 1.; 0.; x; y; z; 1. |]
 
-  let rotate_x t =
+  let rotate_x t : t =
     [| 1.; 0.; 0.; 0.; 0.; cos t; sin t; 0.; 0.; -.sin t; cos t; 0.; 0.; 0.; 0.; 1. |]
 
-  let rotate_y t =
+  let rotate_y t : t =
     [| cos t; 0.; -.sin t; 0.; 0.; 1.; 0.; 0.; sin t; 0.; cos t; 0.; 0.; 0.; 0.; 1. |]
 
   let c i j = (i * 4) + j

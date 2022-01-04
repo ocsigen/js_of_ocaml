@@ -102,18 +102,6 @@ let checkbox txt checked action =
   Dom.appendChild lab (doc##createTextNode (Js.string txt));
   lab
 
-let radio txt name checked action =
-  let b = Dom_html.createInput ~name:(Js.string name) ~_type:(Js.string "radio") doc in
-  b##.checked := Js.bool checked;
-  b##.onclick :=
-    Dom_html.handler (fun _ ->
-        action ();
-        Js._true);
-  let lab = Dom_html.createLabel doc in
-  Dom.appendChild lab b;
-  Dom.appendChild lab (doc##createTextNode (Js.string txt));
-  lab
-
 (****)
 
 type vertex =
@@ -215,7 +203,7 @@ type t =
 let rotate_object m o =
   { o with vertices = Array.map (fun v -> matrix_vect_mul m v) o.vertices }
 
-let octahedron =
+let _octahedron =
   { vertices =
       [| vertex 0. 0. 1.
        ; vertex 1. 0. 0.
@@ -272,7 +260,7 @@ let tesselate_sphere p_div t_div =
 
 (****)
 
-let divide all o =
+let _divide all o =
   let vn =
     if all
     then Array.length o.vertices + (Array.length o.faces * 3 / 2)
@@ -563,6 +551,8 @@ let dv = v' -. v in
     o.faces
 
 let ( >> ) x f = f x
+
+let _ = ( >> )
 
 (*
 let o = tesselate_sphere 8 6
