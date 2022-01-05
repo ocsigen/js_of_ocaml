@@ -1,0 +1,10 @@
+(executable
+ (name main)
+ (modes js)
+ (libraries js_of_ocaml-lwt.graphics)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps main.bc.js index.html))

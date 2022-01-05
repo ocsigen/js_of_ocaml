@@ -19,6 +19,7 @@
 * Compiler: fix `--wrap-with-fun` under node (#653, #1171)
 * Ppx: allow apostrophe in lident (fix #1183) (#1192)
 * Runtime: fix float parsing in hexadecimal form
+* Graphics: fix mouse_{x,y} (#1206)
 
 # 3.11.0 (2021-10-06) - Lille
 
