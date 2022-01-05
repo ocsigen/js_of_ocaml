@@ -1673,7 +1673,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         let (_px, cx), queue = access_queue queue x in
         flush_all queue (throw_statement st.ctx cx k loc)
     | Stop ->
-        let e_opt = if st.ctx.Ctx.should_export then Some (s_var "exports") else None in
+        let e_opt =
+          if st.ctx.Ctx.should_export then Some (s_var Constant.exports) else None
+        in
         flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont handler backs frontier interm
     | Pushtrap _ -> assert false

@@ -32,6 +32,7 @@ let%expect_test "uncaugh error" =
     {|
     Fatal error: exception Not_found
 
+
     process exited with error code 2
      %{NODE} test.js |}];
   compile_and_run_bytecode prog;
