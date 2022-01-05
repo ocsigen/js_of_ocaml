@@ -124,7 +124,7 @@ class type style =
     method buttonColor : Js.js_string Js.t Js.optdef Js.readonly_prop
   end
 
-let style : style Js.t = option Js.Unsafe.global##.hyp_style
+let style : style Js.t = option Js.Unsafe.global##.hyp_style_
 
 class type messages =
   object
@@ -163,8 +163,6 @@ let zero = { x = 0.; y = 0. }
 (* Scalar operations *)
 
 let sdiv z s = { x = z.x /. s; y = z.y /. s }
-
-let smul s z = { x = s *. z.x; y = s *. z.y }
 
 (* Norm *)
 
@@ -280,7 +278,7 @@ let create_canvas w h =
   c##.height := h;
   c
 
-let debug_widget =
+let _debug_widget =
   let d = Html.document in
   let w = Html.createDiv d in
   w##.style##.position := Js.string "absolute";
@@ -779,8 +777,6 @@ let draw canvas vertices edges nodes boxes =
   Firebug.console##timeEnd (Js.string "draw");
   Firebug.console##log_2 !image_count !large_image_count
 
-let default_img = "frog.jpg"
-
 let tree_url = "tree.json"
 
 let ( >> ) x f = f x
@@ -846,12 +842,6 @@ let image_node img =
         Lwt.return img)
     , img )
 
-let nl_re = Regexp.regexp "\n"
-
-let not_space_re = Regexp.regexp "[^ ]"
-
-let pipe_re = Regexp.regexp "[|]"
-
 let compute_text_node info =
   let font = opt_style style##.nodeFont (Js.string "20px sans-serif") in
   let w, h = text_size font info in
@@ -903,16 +893,6 @@ let compute_nodes node =
     Node (info, ch)
   in
   compute true node
-
-let list_tl l =
-  let rec tl x l =
-    match l with
-    | [] -> x
-    | x :: r -> tl x r
-  in
-  match l with
-  | [] -> assert false
-  | x :: r -> tl x r
 
 let compute_neighbors nodes tree =
   let frontiers = Array.make (Array.length nodes) ([||], [||]) in
@@ -1093,10 +1073,6 @@ let load_tree () =
     >> Array.to_list
   in
   Lwt.return (tree_layout node_names tree, node_names)
-
-let radius_of_length r = (exp r -. 1.) /. (exp r +. 1.)
-
-let length_of_radius r = log ((1. +. r) /. (1. -. r))
 
 type info =
   { name : Js.js_string Js.t

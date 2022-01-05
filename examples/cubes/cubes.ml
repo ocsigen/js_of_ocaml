@@ -61,8 +61,6 @@ let left = Js.string "#d9d9d9"
 
 let right = Js.string "#767676"
 
-let edge = Js.string "#000000"
-
 let on_cube c i j k f =
   let x = float (i - k + n - 1) *. w in
   let y = (float (n - 1 - j) *. h) +. (float (i + k) *. h /. 2.) in
