@@ -21,6 +21,7 @@ open Util
 
 let%expect_test "Unix.mkdir_Unix.rmdir" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   Unix.mkdir "aaa" 0o777;
@@ -41,6 +42,7 @@ f ();Sys.chdir "/static"; f ()|};
 
 let%expect_test "Unix.mkdir_ENOENT" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   (match Unix.mkdir "aaa/bbb/ccc" 0o777 with
@@ -55,6 +57,7 @@ f (); Sys.chdir "/static"; f ()|};
 
 let%expect_test "Unix.mkdir_ENOTDIR" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in
@@ -76,6 +79,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   (match Unix.rmdir "aaa/bbb/ccc" with
@@ -90,6 +94,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.rmdir_ENOTDIR" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   Unix.mkdir "aaa" 0o777;
@@ -113,6 +118,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.stat_file" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in
@@ -134,6 +140,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.stat_dir" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   Unix.mkdir "aaa" 0o777;
@@ -150,6 +157,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in
@@ -176,6 +184,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.symlink_Unix.readlink" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in
@@ -202,6 +211,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   (match Unix.readlink "." with
@@ -219,6 +229,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in
@@ -240,6 +251,7 @@ f (); Sys.chdir "/static"; f () |};
 
 let%expect_test "Unix.lstat_symlink" =
   compile_and_run
+    ~unix:true
     {|
 let f () =
   let oc = open_out "aaa" in

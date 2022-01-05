@@ -749,7 +749,8 @@ let _ =
 
 let string_of_error e = to_string e##toString
 
-let export_js (field : js_string t) x = Unsafe.set (Unsafe.pure_js_expr "exports") field x
+let export_js (field : js_string t) x =
+  Unsafe.set (Unsafe.pure_js_expr "jsoo_exports") field x
 
 let export field x = export_js (string field) x
 

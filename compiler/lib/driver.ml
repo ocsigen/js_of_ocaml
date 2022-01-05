@@ -365,10 +365,10 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       o#get_free_name
     in
     let export_shim js =
-      if StringSet.mem "exports" freenames
+      if StringSet.mem Constant.exports freenames
       then
         if should_export wrap_with_fun
-        then var "exports" (J.EObj []) :: js
+        then var Constant.exports (J.EObj []) :: js
         else
           let export_node =
             let s =
@@ -379,7 +379,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
             let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
             Parse_js.parse_expr lex
           in
-          var "exports" export_node :: js
+          var Constant.exports export_node :: js
       else js
     in
     let old_global_object_shim js =

@@ -311,16 +311,17 @@ let compile_ocaml_to_cmo ?(debug = true) file =
   print_string stdout;
   Filetype.cmo_file_of_path out_file
 
-let compile_ocaml_to_bc ?(debug = true) file =
+let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
   let file = Filetype.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"bc" in
   let (stdout : string) =
     exec_to_string_exn
       ~cmd:
         (Format.sprintf
-           "%s %s unix.cma %s -o %s"
+           "%s -no-check-prims %s %s %s -o %s"
            ocamlc
            (if debug then "-g" else "")
+           (if unix then "unix.cma" else "")
            file
            out_file)
   in
@@ -403,31 +404,31 @@ let print_fun_decl program n =
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 
-let compile_and_run_bytecode s =
+let compile_and_run_bytecode ?unix s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
-      |> compile_ocaml_to_bc
+      |> compile_ocaml_to_bc ?unix
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?flags s =
+let compile_and_run ?flags ?unix s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
-      |> compile_ocaml_to_bc
+      |> compile_ocaml_to_bc ?unix
       |> compile_bc_to_javascript ?flags
       |> run_javascript
       |> print_endline)
 
-let compile_and_parse_whole_program ?(debug = true) ?flags s =
+let compile_and_parse_whole_program ?(debug = true) ?flags ?unix s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
-      |> compile_ocaml_to_bc ~debug
+      |> compile_ocaml_to_bc ?unix ~debug
       |> compile_bc_to_javascript ?flags ~pretty:true ~sourcemap:debug
       |> parse_js)
 
