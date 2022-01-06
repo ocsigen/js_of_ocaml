@@ -23,9 +23,13 @@ We actively welcome pull requests.
 ### Install dependencies
 ```
 opam install --deps-only js_of_ocaml js_of_ocaml-lwt js_of_ocaml-compiler js_of_ocaml-ocamlbuild js_of_ocaml-toplevel js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
-opam install lwt reactiveData tyxml ppxlib cohttp-lwt-unix menhir ppx_expect yojson sexplib
+opam install lwt reactiveData tyxml ppxlib cohttp-lwt-unix menhir ppx_expect yojson sexplib ocp-indent graphics
 ```
 
 ### Running the tests
 
-Just run `make tests`.
+Tests are maintained for a single version of the OCaml compiler (currently 4.13).
+
+Make sure to use the correct opam switch (e.g. `opam switch 4.13.1`).
+
+Run `make tests`.
