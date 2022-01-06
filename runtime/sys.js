@@ -212,6 +212,19 @@ function caml_sys_time_include_children(b) {
 //Provides: caml_sys_random_seed mutable
 //The function needs to return an array since OCaml 4.0...
 function caml_sys_random_seed () {
+  if(globalThis.crypto) {
+    if(typeof globalThis.crypto.getRandomValues === 'function'){
+      // Webbrowsers
+      var a = new globalThis.Uint32Array(1);
+      globalThis.crypto.getRandomValues(a);
+      return [0,a[0]];
+    } else if(globalThis.crypto.randomBytes === 'function'){
+      // Nodejs
+      var buff = globalThis.crypto.randomBytes(4);
+      var a = new globalThis.Uint32Array(buff);
+      return [0,a[0]];
+    }
+  }
   var now = (new Date()).getTime();
   var x = now^0xffffffff*Math.random();
   return [0,x];
