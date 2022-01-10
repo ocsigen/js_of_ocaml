@@ -18,7 +18,7 @@
 * Compiler: fix sourcemap warning for empty cma (#1169)
 * Compiler: Strengthen bound checks. (#1172)
 * Compiler: fix `--wrap-with-fun` under node (#653, #1171)
-* Compiler: fix parsing of annotaions in js stubs
+* Compiler: fix parsing of annotaions in js stubs (#1212, fix #1213)
 * Ppx: allow apostrophe in lident (fix #1183) (#1192)
 * Runtime: fix float parsing in hexadecimal form
 * Graphics: fix mouse_{x,y} (#1206)
