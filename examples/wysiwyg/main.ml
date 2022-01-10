@@ -27,7 +27,6 @@ let ( |> ) x f = f x
 exception Break of bool
 
 let is_visible_text s =
-  (* TODO: rewrite with regexps. *)
   let len = String.length s in
   let rec loop i =
     if i >= len

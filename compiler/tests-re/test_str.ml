@@ -236,7 +236,6 @@ let _ =
 
   (* Group (or submatch) *)
 
-  (* TODO: infinite loop *)
   expect_pass "group" (fun () ->
     eq_match "\\(a\\)\\(a\\)?\\(b\\)"   "ab";
   );

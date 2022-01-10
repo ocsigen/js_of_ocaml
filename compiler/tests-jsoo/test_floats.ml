@@ -17,11 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* TODO: These float tests were put in their own library because they depend on
- * primitives that aren't implemented in native OCaml. Once OCaml 4.13 gets
- * released, they can be moved back into the tests-jsoo directory.
- *)
-
 let%expect_test _ =
   (* copied from https://github.com/ocaml/ocaml/pull/1794 *)
   let z =

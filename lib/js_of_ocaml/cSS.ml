@@ -857,7 +857,6 @@ module Color = struct
 
   let name cn = Js.string (string_of_name cn)
 
-  (* TODO? inline function calls *)
   let js = function
     | Name n -> name n
     | (RGB _ | RGB_percent _ | RGBA _ | RGBA_percent _ | HSL _ | HSLA _) as c ->
