@@ -3,8 +3,6 @@ name: build
 on:
   pull_request:
   push:
-    branches:
-      - master
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
@@ -84,7 +82,7 @@ jobs:
       - name: build doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
         run: |
-           opam exec -- dune build  @ocsigen-doc
+           opam exec -- dune build @ocsigen-doc
            rmdir -Rf doc-dev
            mkdir doc-dev
            cp -r _build/default/_doc/_html doc-dev/api
