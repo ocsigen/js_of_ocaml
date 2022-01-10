@@ -38,9 +38,11 @@ jobs:
           - os: macos-latest
             ocaml-compiler: 4.13.x
             skip-test: false
+            skip-doc: true
           - os: windows-latest
             ocaml-compiler: 4.13.x
             skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
