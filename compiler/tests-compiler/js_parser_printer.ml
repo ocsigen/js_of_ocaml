@@ -413,7 +413,8 @@ b
 //Provides: test
 c
 |};
-  [%expect {|
+  [%expect
+    {|
      2: 0:a (identifier), 0:; (virtual),
      3: 0://Provides: test(annot),
      4: 0://Just a comment,
