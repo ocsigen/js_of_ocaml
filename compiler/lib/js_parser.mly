@@ -191,7 +191,7 @@ statement:
  | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { s }
 
 labeled_statement:
-| l=label T_COLON s=statement { Labelled_statement (l, s), N }
+| l=label T_COLON s=statement { Labelled_statement (fst l, s), Pi (snd l)}
 
 block:
  | block=curly_block(statement*)
@@ -250,10 +250,10 @@ initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2, Pi $1 }
 
 continue_statement:
- | pi=T_CONTINUE label? { (Continue_statement $2,Pi pi) }
+ | pi=T_CONTINUE label? { (Continue_statement (Stdlib.Option.map ~f:fst $2),Pi pi) }
 
 break_statement:
- | pi=T_BREAK label? { (Break_statement $2, Pi pi) }
+ | pi=T_BREAK label? { (Break_statement (Stdlib.Option.map ~f:fst $2), Pi pi) }
 
 return_statement:
  | pi=T_RETURN expression? { (Return_statement $2, Pi pi) }
@@ -601,7 +601,7 @@ variable_with_loc:
  | i=T_IDENTIFIER { let name, pi = i in var pi name, pi }
 
 label:
- | T_IDENTIFIER { Label.of_string (fst $1) }
+ | T_IDENTIFIER { Label.of_string (fst $1), snd $1 }
 
 property_name:
  | i=identifier_or_kw { PNI i }
