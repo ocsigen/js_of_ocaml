@@ -84,7 +84,7 @@ jobs:
         run: |
            opam install odoc
            opam exec -- dune build @ocsigen-doc
-           rmdir -Rf doc-dev
+           rmdir -rf doc-dev
            mkdir doc-dev
            cp -r _build/default/_doc/_html doc-dev/api
            cp -r _build/default/manual doc-dev/manual
