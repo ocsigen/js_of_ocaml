@@ -1,7 +1,10 @@
 (rule
  (target dune.inc)
  (mode promote)
- (action (with-stdout-to %{target} (run ./gen_dune_inc.exe))))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./gen_dune_inc.exe))))
 
 (executable
  (name gen_dune_inc))
