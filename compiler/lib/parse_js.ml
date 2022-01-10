@@ -61,22 +61,50 @@ let parse_aux the_parser lexbuf =
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> loop_error prev (I.resume checkpoint)
   in
-  let rec loop prev comments (last_checkpoint, checkpoint) =
+  let parse_annot s =
+    match String.drop_prefix ~prefix:"//" s with
+    | None -> None
+    | Some s -> (
+        let buf = Lexing.from_string s in
+        try
+          match Annot_parser.annot Annot_lexer.main buf with
+          | `Requires l -> Some (`Requires l)
+          | `Provides (n, k, ka) -> Some (`Provides (n, k, ka))
+          | `Version l -> Some (`Version l)
+          | `Weakdef -> Some `Weakdef
+          | `Always -> Some `Always
+          | `If name -> Some (`If name)
+          | `Ifnot name -> Some (`Ifnot name)
+        with
+        | Not_found -> None
+        | _ -> None)
+  in
+  let rec loop prev prev_with_comment (last_checkpoint, checkpoint) =
     let module I = Js_parser.MenhirInterpreter in
     match checkpoint with
     | I.InputNeeded _env ->
         let inputneeded = checkpoint in
-        let token, comments =
+        let token, prev_with_comment =
           match prev with
-          | (Js_token.EOF _ as prev) :: _ -> prev, comments
+          | (Js_token.EOF _ as prev) :: _ -> prev, prev_with_comment
           | _ ->
-              let rec read_one comments lexbuf =
+              let rec read_one prev_with_comment lexbuf =
                 match Js_lexer.main lexbuf with
-                | (TCommentLineDirective _ | TComment _) as t ->
-                    read_one (t :: comments) lexbuf
-                | t -> t, comments
+                | TCommentLineDirective _ as tok ->
+                    read_one (tok :: prev_with_comment) lexbuf
+                | TComment (s, pi) as tok ->
+                    if fol prev_with_comment tok
+                    then
+                      match parse_annot s with
+                      | None -> read_one (tok :: prev_with_comment) lexbuf
+                      | Some annot ->
+                          let tok = Js_token.TAnnot (s, pi, annot) in
+                          tok, prev_with_comment
+                    else read_one (tok :: prev_with_comment) lexbuf
+                | TAnnot _ -> assert false
+                | t -> t, prev_with_comment
               in
-              let t, comments = read_one comments lexbuf in
+              let t, prev_with_comment = read_one prev_with_comment lexbuf in
               let t =
                 match prev, t with
                 (* restricted productions
@@ -110,16 +138,16 @@ let parse_aux the_parser lexbuf =
                       Js_lexer.main_regexp lexbuf)
                 | _, t -> t
               in
-              t, comments
+              t, prev_with_comment
         in
-        let last_checkpoint = prev, comments, inputneeded in
+        let last_checkpoint = prev, prev_with_comment, inputneeded in
         let checkpoint =
           I.offer checkpoint (token, lexbuf.Lexing.lex_start_p, lexbuf.Lexing.lex_curr_p)
         in
-        loop (token :: prev) comments (last_checkpoint, checkpoint)
+        loop (token :: prev) (token :: prev_with_comment) (last_checkpoint, checkpoint)
     | I.Shifting _ | I.AboutToReduce _ ->
-        loop prev comments (last_checkpoint, I.resume checkpoint)
-    | I.Accepted v -> `Ok (v, prev, comments)
+        loop prev prev_with_comment (last_checkpoint, I.resume checkpoint)
+    | I.Accepted v -> `Ok (v, prev_with_comment)
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> (
         (* 7.9.1 - 1 *)
@@ -143,12 +171,18 @@ let parse_aux the_parser lexbuf =
           | offending :: before :: _ when fol [ before ] offending -> true
           | _ -> false
         in
+        let drop_annot_or_error () =
+          match prev with
+          | TAnnot (s, i, _) :: _ ->
+              let prev, prev_with_comment, checkpoint = last_checkpoint in
+              let t = Js_token.TComment (s, i) in
+              loop prev (t :: prev_with_comment) (last_checkpoint, checkpoint)
+          | _ -> loop_error prev (I.resume checkpoint)
+        in
         match insert_virtual_semmit with
-        | false -> loop_error prev (I.resume checkpoint)
+        | false -> drop_annot_or_error ()
         | true ->
-            let error_checkpoint = checkpoint in
-            let error_prev = prev in
-            let prev, comments, checkpoint = last_checkpoint in
+            let prev, prev_with_comment, checkpoint = last_checkpoint in
             if I.acceptable
                  checkpoint
                  (Js_token.T_VIRTUAL_SEMICOLON Parse_info.zero)
@@ -159,8 +193,8 @@ let parse_aux the_parser lexbuf =
               let checkpoint =
                 I.offer checkpoint (t, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
               in
-              loop (t :: prev) comments (last_checkpoint, checkpoint))
-            else loop_error error_prev (I.resume error_checkpoint))
+              loop (t :: prev) (t :: prev_with_comment) (last_checkpoint, checkpoint))
+            else drop_annot_or_error ())
   in
   match loop [] [] (([], [], init), init) with
   | `Ok x -> x
@@ -174,13 +208,13 @@ let parse_aux the_parser lexbuf =
       raise (Parsing_error pi)
 
 let parse' lex =
-  let p, t_rev, comment_rev = parse_aux Js_parser.Incremental.program lex in
-  p, List.rev t_rev, List.rev comment_rev
+  let p, t_rev = parse_aux Js_parser.Incremental.program lex in
+  p, List.rev t_rev
 
 let parse lex =
-  let p, _, _ = parse_aux Js_parser.Incremental.program lex in
-  p
+  let p, _ = parse_aux Js_parser.Incremental.program lex in
+  List.map p ~f:(fun (c, _) -> c)
 
 let parse_expr lex =
-  let expr, _, _ = parse_aux Js_parser.Incremental.standalone_expression lex in
+  let expr, _ = parse_aux Js_parser.Incremental.standalone_expression lex in
   expr

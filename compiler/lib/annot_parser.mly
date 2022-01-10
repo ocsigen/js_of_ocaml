@@ -33,17 +33,17 @@ annot:
   | TProvides TSemi id=TIdent opt=option(prim_annot)
     args=option(delimited(LPARENT, separated_list(TComma,arg_annot),RPARENT))
     endline
-    { `Provides (None,id,(match opt with None -> `Mutator | Some k -> k),args) }
+    { `Provides (id,(match opt with None -> `Mutator | Some k -> k),args) }
   | TRequires TSemi l=separated_nonempty_list(TComma,TIdent) endline
-    { `Requires (None,l) }
+    { `Requires (l) }
   | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
-    { `Version (None,l) }
-  | TWeakdef endline { `Weakdef None }
-  | TAlways endline { `Always None }
+    { `Version (l) }
+  | TWeakdef endline { `Weakdef   }
+  | TAlways endline { `Always   }
   | TIf TSemi name=TIdent endline
-    { `If (None,name) }
+    { `If (name) }
   | TIf TSemi TBang name=TIdent endline
-                           { `Ifnot (None,name) }
+                           { `Ifnot (name) }
 prim_annot:
   | TA_Pure {`Pure}
   | TA_Const {`Pure}

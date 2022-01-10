@@ -96,6 +96,7 @@ T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 (*-----------------------------------------*)
 
 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
+%token <Js_token.Annot.t> TAnnot
 %token <string * Parse_info.t> TUnknown
 %token <string * Parse_info.t> TComment
 %token <string * Parse_info.t> TCommentLineDirective
@@ -130,7 +131,7 @@ T_IN T_INSTANCEOF
 (* 1 Rules type declaration                                              *)
 (*************************************************************************)
 
-%start <Javascript.program> program
+%start <Javascript.program_with_annots> program
 %start <Javascript.expression> standalone_expression
 
 %%
@@ -140,10 +141,16 @@ T_IN T_INSTANCEOF
 (*************************************************************************)
 
 program:
- | l=source_element* EOF { l }
+ | l=source_element_with_annot* EOF { l }
 
 standalone_expression:
  | e=expression EOF { e }
+
+annot:
+  | a=TAnnot { a }
+
+source_element_with_annot:
+ | annots=annot* s=source_element {s,annots}
 
 source_element:
  | statement

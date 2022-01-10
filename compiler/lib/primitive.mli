@@ -37,16 +37,16 @@ type kind_arg =
   ]
 
 type condition =
-  [ `If of Parse_info.t option * string
-  | `Ifnot of Parse_info.t option * string
+  [ `If of string
+  | `Ifnot of string
   ]
 
 type t =
-  [ `Requires of Parse_info.t option * string list
-  | `Provides of Parse_info.t option * string * kind * kind_arg list option
-  | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
-  | `Weakdef of Parse_info.t option
-  | `Always of Parse_info.t option
+  [ `Requires of string list
+  | `Provides of string * kind * kind_arg list option
+  | `Version of ((int -> int -> bool) * string) list
+  | `Weakdef
+  | `Always
   | condition
   ]
 
