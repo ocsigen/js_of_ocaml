@@ -3,6 +3,8 @@ name: build
 on:
   pull_request:
   push:
+    branches:
+      - master
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
@@ -80,7 +82,7 @@ jobs:
         if: ${{ !matrix.skip-test }}
 
       - name: build doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
         run: |
            opam install odoc
            opam exec -- dune build @ocsigen-doc
@@ -90,10 +92,10 @@ jobs:
            cp -r _build/default/manual doc-dev/manual
 
       - name: synchronize doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc' }}
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: JamesIves/github-pages-deploy-action@4.2.1
         with:
-          branch: wikidoc-test
+          branch: wikidoc
           folder: doc-dev
           target-folder: doc/dev/
 
