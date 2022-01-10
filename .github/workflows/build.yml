@@ -90,6 +90,8 @@ jobs:
            mkdir doc-dev
            cp -r _build/default/_doc/_html doc-dev/api
            cp -r _build/default/manual doc-dev/manual
+           find doc-dev/ -name dune -delete
+           find doc-dev/ -name "*.exe" -delete
 
       - name: synchronize doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
