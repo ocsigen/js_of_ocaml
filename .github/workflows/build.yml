@@ -82,6 +82,7 @@ jobs:
       - name: build doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
         run: |
+           opam install odoc
            opam exec -- dune build @ocsigen-doc
            rmdir -Rf doc-dev
            mkdir doc-dev
