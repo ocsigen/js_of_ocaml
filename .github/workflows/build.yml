@@ -85,11 +85,12 @@ jobs:
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
         run: |
            opam install odoc
+           opam exec -- dune clean
            opam exec -- dune build @ocsigen-doc
            rm -rf doc-dev
            mkdir doc-dev
-           cp -r _build/default/_doc/_html doc-dev/api
-           cp -r _build/default/manual doc-dev/manual
+           rsync -av _build/default/_doc/_html doc-dev/api
+           rsync -av --exclude=".*" _build/default/manual doc-dev/manual
            find doc-dev/ -name dune -delete
            find doc-dev/ -name "*.exe" -delete
 
