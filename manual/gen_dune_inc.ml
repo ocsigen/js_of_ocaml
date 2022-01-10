@@ -31,7 +31,13 @@ let fmt_dep fmt dep : unit =
   else Format.fprintf fmt "%s" dep
 
 let fmt_copy fmt (dir, dst, files) : unit =
-  let srcs = List.map (fun f -> dir ^ "/" ^ f) files in
+  let srcs =
+    List.map
+      (fun f ->
+        let f = if is_dir f then String.sub f 0 (String.length f - 1) else f in
+        dir ^ "/" ^ f)
+      files
+  in
   Format.fprintf fmt "(bash \"cp -r %s files/%s\")" (String.concat " " srcs) dst
 
 let fmt_mkdir fmt (_, dst, _) : unit =
