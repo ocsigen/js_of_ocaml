@@ -93,8 +93,8 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@4.2.1
         with:
           branch: wikidoc-test
-          folder:doc-dev
-          target-folder:doc/dev/
+          folder: doc-dev
+          target-folder: doc/dev/
 
   lint-fmt:
     strategy:
