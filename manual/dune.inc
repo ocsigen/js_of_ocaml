@@ -2,6 +2,8 @@
 (rule
  (alias doc-manual)
  (deps
+  (glob_files *wiki)
+  (source_tree files)
   ../toplevel/examples/lwt_toplevel/index.html
   ../toplevel/examples/lwt_toplevel/toplevel.js
   ../toplevel/examples/lwt_toplevel/test_dynlink.js

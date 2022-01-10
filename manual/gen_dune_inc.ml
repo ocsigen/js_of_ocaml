@@ -49,7 +49,7 @@ let _ =
     {|
 (rule
  (alias doc-manual)
- (deps@;<0 2>@[<v 0>%a@])
+ (deps@;<0 2>@[<v 0>(glob_files *wiki)@;(source_tree files)@;%a@])
  (action (progn@;<0 2>@[<v 0>%a%a@])))
 |}
     (Format.pp_print_list ~pp_sep:(fun fmt () -> Format.pp_print_break fmt 0 0) fmt_dep)
