@@ -80,8 +80,8 @@ jobs:
         if: ${{ !matrix.skip-test }}
 
       - name: build doc
-          if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
-         run: |
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
+        run: |
            dune build @ocsigen-doc
            rmdir -Rf doc-dev
            mkdir doc-dev
@@ -89,7 +89,7 @@ jobs:
            cp -r _build/default/manual doc-dev/manual
 
       - name: synchronize doc
-          if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc' }}
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc' }}
         uses: JamesIves/github-pages-deploy-action@4.2.1
         with:
           branch: wikidoc-test
