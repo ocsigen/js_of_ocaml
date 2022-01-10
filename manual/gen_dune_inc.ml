@@ -19,7 +19,7 @@ let all : desc list =
   ; "../examples/cubes", "cubes", [ "index.html"; "cubes.js" ]
   ]
 
-let deps (dir, _, files) = List.map (fun f -> Filename.concat dir f) files
+let deps (dir, _, files) = List.map (fun f -> dir ^ "/" ^ f) files
 
 let is_dir x =
   let len = String.length x in
@@ -31,7 +31,7 @@ let fmt_dep fmt dep : unit =
   else Format.fprintf fmt "%s" dep
 
 let fmt_copy fmt (dir, dst, files) : unit =
-  let srcs = List.map (fun f -> Filename.concat dir f) files in
+  let srcs = List.map (fun f -> dir ^ "/" ^ f) files in
   Format.fprintf fmt "(bash \"cp -r %s files/%s\")" (String.concat " " srcs) dst
 
 let fmt_mkdir fmt (_, dst, _) : unit =
