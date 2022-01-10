@@ -126,7 +126,7 @@ let check_vs_string s toks =
     else
       match s.[a] with
       | ' ' | '\n' | '\t' -> space (succ a) b
-      | c -> Printf.printf "pos:%d, expecting space, found %C\n" a c
+      | c -> Printf.printf "pos:%d, expecting space until %d, found %C\n" a b c
   in
   let text pos str =
     let strlen = String.length str in
@@ -168,18 +168,11 @@ let check_vs_string s toks =
 
 let parse_print_token ?(extra = false) s =
   let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
-  let _p, tokens, comments =
+  let _p, tokens =
     try Parse_js.parse' lex
     with Parse_js.Parsing_error pi as e ->
       Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col;
       raise e
-  in
-  let tokens =
-    List.merge
-      ~cmp:(fun a b ->
-        compare (Js_token.info a).Parse_info.idx (Js_token.info b).Parse_info.idx)
-      tokens
-      comments
   in
   check_vs_string s tokens;
   let prev = ref 0 in
@@ -262,7 +255,7 @@ let%expect_test "multiline comments" =
 /* test */ 42 /* test */
 |};
   [%expect {|
-    2: 0:/* test */, 11:42, 0:;, 14:/* test */, |}];
+    2: 0:/* test */, 11:42, 14:/* test */, 0:;, |}];
   parse_print_token {|
     42
     /*
@@ -272,11 +265,11 @@ let%expect_test "multiline comments" =
     42
 |};
   [%expect {|
-    2: 4:42, 0:;,
+    2: 4:42,
     3: 4:/*
        "
 
-       */,
+       */, 0:;,
     7: 4:42, 0:;, |}]
 
 let%expect_test "++--" =
@@ -402,3 +395,35 @@ function UnexpectedVirtualElement(data) {
     12: 4:err (identifier), 7:., 8:parentVnode (identifier), 20:=, 22:data (identifier), 26:., 27:parentVnode (identifier), 38:;,
     14: 4:return, 11:err (identifier), 14:;,
     15: 0:}, |}]
+
+let%expect_test "annot" =
+  parse_print_token
+    ~extra:true
+    {|
+a
+//Provides: test
+//Just a comment
+//Requires: something
+//Another comment
+a
+if (a) {
+//Provides: test
+b
+}
+//Provides: test
+c
+|};
+  [%expect
+    {|
+     2: 0:a (identifier), 0:; (virtual),
+     3: 0://Provides: test(annot),
+     4: 0://Just a comment,
+     5: 0://Requires: something(annot),
+     6: 0://Another comment,
+     7: 0:a (identifier), 0:; (virtual),
+     8: 0:if, 3:(, 4:a (identifier), 5:), 7:{,
+     9: 0://Provides: test,
+    10: 0:b (identifier), 0:; (virtual),
+    11: 0:},
+    12: 0://Provides: test(annot),
+    13: 0:c (identifier), 0:; (virtual), |}]

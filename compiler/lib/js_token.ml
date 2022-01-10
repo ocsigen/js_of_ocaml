@@ -19,6 +19,10 @@
 
 open! Stdlib
 
+module Annot = struct
+  type t = string * Parse_info.t * Primitive.t
+end
+
 type t =
   | T_WITH of Parse_info.t
   | T_WHILE of Parse_info.t
@@ -108,11 +112,13 @@ type t =
   | TUnknown of (string * Parse_info.t)
   | TComment of (string * Parse_info.t)
   | TCommentLineDirective of (string * Parse_info.t)
+  | TAnnot of Annot.t
   | EOF of Parse_info.t
 
 type token = t
 
 let info = function
+  | TAnnot (_, ii, _) -> ii
   | TUnknown (_, ii) -> ii
   | TComment (_, ii) -> ii
   | TCommentLineDirective (_, ii) -> ii
@@ -204,6 +210,7 @@ let info = function
   | T_VIRTUAL_SEMICOLON ii -> ii
 
 let to_string = function
+  | TAnnot (s, _, _) -> s
   | TUnknown (s, _) -> s
   | TComment (s, _) -> s
   | TCommentLineDirective (s, _) -> s
@@ -304,9 +311,5 @@ let to_string_extra x =
   | T_DECR_NB _ -> " (DECR_NB)"
   | T_DECR _ -> " (DECR)"
   | T_VIRTUAL_SEMICOLON _ -> " (virtual)"
+  | TAnnot _ -> "(annot)"
   | _ -> ""
-
-let is_comment = function
-  | TComment _ -> true
-  | TCommentLineDirective _ -> true
-  | _ -> false

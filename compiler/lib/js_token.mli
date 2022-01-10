@@ -15,6 +15,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+module Annot : sig
+  type t = string * Parse_info.t * Primitive.t
+end
 
 type t =
   | T_WITH of Parse_info.t
@@ -105,6 +108,7 @@ type t =
   | TUnknown of (string * Parse_info.t)
   | TComment of (string * Parse_info.t)
   | TCommentLineDirective of (string * Parse_info.t)
+  | TAnnot of Annot.t
   | EOF of Parse_info.t
 
 type token = t
@@ -114,5 +118,3 @@ val info : t -> Parse_info.t
 val to_string : t -> string
 
 val to_string_extra : t -> string
-
-val is_comment : t -> bool

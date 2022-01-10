@@ -232,6 +232,8 @@ and program = source_elements
 
 and source_elements = (source_element * location) list
 
+and program_with_annots = ((source_element * location) * Js_token.Annot.t list) list
+
 and source_element =
   | Statement of statement
   | Function_declaration of function_declaration

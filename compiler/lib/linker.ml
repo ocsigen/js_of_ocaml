@@ -23,8 +23,7 @@ open! Stdlib
 module Fragment = struct
   type fragment_ =
     { provides :
-        (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option)
-        option
+        (Parse_info.t * string * Primitive.kind * Primitive.kind_arg list option) option
     ; requires : string list
     ; version_constraint : ((int -> int -> bool) * string) list list
     ; weakdef : bool
@@ -47,32 +46,14 @@ end
 
 let loc pi =
   match pi with
-  | Some { Parse_info.src = Some src; line; _ }
-  | Some { Parse_info.name = Some src; line; _ } -> Printf.sprintf "%s:%d" src line
-  | None | Some _ -> "unknown location"
-
-let parse_annot loc s =
-  match String.drop_prefix ~prefix:"//" s with
-  | None -> None
-  | Some s -> (
-      let buf = Lexing.from_string s in
-      try
-        match Annot_parser.annot Annot_lexer.main buf with
-        | `Requires (_, l) -> Some (`Requires (Some loc, l))
-        | `Provides (_, n, k, ka) -> Some (`Provides (Some loc, n, k, ka))
-        | `Version (_, l) -> Some (`Version (Some loc, l))
-        | `Weakdef _ -> Some (`Weakdef (Some loc))
-        | `Always _ -> Some (`Always (Some loc))
-        | `If (_, name) -> Some (`If (Some loc, name))
-        | `Ifnot (_, name) -> Some (`Ifnot (Some loc, name))
-      with
-      | Not_found -> None
-      | _ -> None)
+  | { Parse_info.src = Some src; line; _ } | { Parse_info.name = Some src; line; _ } ->
+      Printf.sprintf "%s:%d" src line
+  | _ -> "unknown location"
 
 let error s = Format.ksprintf (fun s -> failwith s) s
 
 let parse_from_lex ~filename lex =
-  let program, _prev, comments =
+  let program, _ =
     try Parse_js.parse' lex
     with Parse_js.Parsing_error pi ->
       let name =
@@ -87,54 +68,22 @@ let parse_from_lex ~filename lex =
         pi.Parse_info.line
         pi.Parse_info.col
   in
-  let rec take_annot_before loc acc = function
-    | [] -> acc, []
-    | x :: l ->
-        if (Js_token.info x).Parse_info.idx <= loc.Parse_info.idx
-        then
-          let acc =
-            match x with
-            | Js_token.TComment (str, info) -> (
-                match parse_annot info str with
-                | None -> acc
-                | Some a -> a :: acc)
-            | Js_token.TCommentLineDirective (_, _) -> []
-            | _ -> acc
-          in
-          take_annot_before loc acc l
-        else acc, x :: l
+  let rec collect_without_annot acc = function
+    | [] -> List.rev acc, []
+    | (x, []) :: program -> collect_without_annot (x :: acc) program
+    | (_, _ :: _) :: _ as program -> List.rev acc, program
   in
-  let status, blocks, _comments =
-    List.fold_left
-      program
-      ~init:(`Annot [], [], comments)
-      ~f:(fun (status, blocks, comments) t ->
-        match t with
-        | _, Javascript.Pi loc ->
-            let a, rest = take_annot_before loc [] comments in
-            let status, blocks =
-              match a, status with
-              | [], `Code (annot, code) -> `Code (annot, t :: code), blocks
-              | annot1, `Annot annot2 -> `Code (annot1 @ annot2, [ t ]), blocks
-              | annot1, `Code (annot2, code2) ->
-                  `Code (annot1, [ t ]), (List.rev annot2, List.rev code2) :: blocks
-            in
-            status, blocks, rest
-        | _, Javascript.N ->
-            (* FIXME: This is not correct *)
-            let status, blocks =
-              match status with
-              | `Code (annot, code) -> `Code (annot, t :: code), blocks
-              | `Annot annot -> `Code (annot, [ t ]), blocks
-            in
-            status, blocks, comments
-        | _, Javascript.U -> assert false)
+  let rec collect acc program =
+    match program with
+    | [] -> List.rev acc
+    | (x, []) :: program ->
+        let code, program = collect_without_annot [ x ] program in
+        collect (([], code) :: acc) program
+    | (x, annots) :: program ->
+        let code, program = collect_without_annot [ x ] program in
+        collect ((annots, code) :: acc) program
   in
-  let blocks =
-    match status with
-    | `Annot _ -> blocks
-    | `Code (annot, code) -> (List.rev annot, List.rev code) :: blocks
-  in
+  let blocks = collect [] program in
   let res =
     List.rev_map blocks ~f:(fun (annot, code) ->
         match annot with
@@ -155,19 +104,18 @@ let parse_from_lex ~filename lex =
               List.fold_left
                 annot
                 ~init:initial_fragment
-                ~f:(fun (fragment : Fragment.fragment_) a ->
+                ~f:(fun (fragment : Fragment.fragment_) (_, pi, a) ->
                   match a with
-                  | `Provides (pi, name, kind, ka) ->
+                  | `Provides (name, kind, ka) ->
                       { fragment with provides = Some (pi, name, kind, ka) }
-                  | `Requires (_, mn) ->
-                      { fragment with requires = mn @ fragment.requires }
-                  | `Version (_, l) ->
+                  | `Requires mn -> { fragment with requires = mn @ fragment.requires }
+                  | `Version l ->
                       { fragment with
                         version_constraint = l :: fragment.version_constraint
                       }
-                  | `Weakdef _ -> { fragment with weakdef = true }
-                  | `Always _ -> { fragment with always = true }
-                  | (`Ifnot (pi, "js-string") | `If (pi, "js-string")) as i ->
+                  | `Weakdef -> { fragment with weakdef = true }
+                  | `Always -> { fragment with always = true }
+                  | (`Ifnot "js-string" | `If "js-string") as i ->
                       let b =
                         match i with
                         | `If _ -> true
@@ -176,11 +124,11 @@ let parse_from_lex ~filename lex =
                       if Option.is_some fragment.js_string
                       then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
                       { fragment with js_string = Some b }
-                  | `If (pi, name) when Option.is_some (Target_env.of_string name) ->
+                  | `If name when Option.is_some (Target_env.of_string name) ->
                       if Option.is_some fragment.fragment_target
                       then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
                       { fragment with fragment_target = Target_env.of_string name }
-                  | `If (pi, name) | `Ifnot (pi, name) ->
+                  | `If name | `Ifnot name ->
                       Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
                       fragment)
             in
@@ -338,7 +286,7 @@ type output =
 
 type provided =
   { id : int
-  ; pi : Parse_info.t option
+  ; pi : Parse_info.t
   ; weakdef : bool
   ; target_env : Target_env.t
   }
@@ -629,5 +577,5 @@ let all state =
 let origin ~name =
   try
     let x = Hashtbl.find provided name in
-    Option.bind x.pi ~f:(fun ploc -> ploc.Parse_info.src)
+    x.pi.Parse_info.src
   with Not_found -> None
