@@ -90,8 +90,8 @@ jobs:
            opam exec -- dune build @ocsigen-doc
            rm -rf doc-dev
            mkdir doc-dev
-           rsync -av _build/default/_doc/_html doc-dev/api
-           rsync -av --exclude=".*" _build/default/manual doc-dev/manual
+           rsync -av _build/default/_doc/_html/ doc-dev/api
+           rsync -av --exclude=".*" _build/default/manual/ doc-dev/manual
            find doc-dev/ -name dune -delete
            find doc-dev/ -name "*.exe" -delete
 
