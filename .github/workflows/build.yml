@@ -3,6 +3,8 @@ name: build
 on:
   pull_request:
   push:
+    branches:
+      - master
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
@@ -26,10 +28,13 @@ jobs:
           - 4.12.x
         skip-test:
           - true
+        skip-doc:
+          - true
         include:
           - os: ubuntu-latest
             ocaml-compiler: 4.13.x
             skip-test: false
+            skip-doc: false
           - os: macos-latest
             ocaml-compiler: 4.13.x
             skip-test: false
@@ -75,6 +80,23 @@ jobs:
 
       - run: opam exec -- git diff --exit-code
         if: ${{ !matrix.skip-test }}
+
+      - name: build doc
+          if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc'}}
+         run: |
+           dune build @ocsigen-doc
+           rmdir -Rf doc-dev
+           mkdir doc-dev
+           cp -r _build/default/_doc/_html doc-dev/api
+           cp -r _build/default/manual doc-dev/manual
+
+      - name: synchronize doc
+          if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/update-wikidoc' }}
+        uses: JamesIves/github-pages-deploy-action@4.2.1
+        with:
+          branch: wikidoc-test
+          folder:doc-dev
+          target-folder:doc/dev/
 
   lint-fmt:
     strategy:
