@@ -23,7 +23,8 @@ let expand_path exts real virt =
   let rec loop realfile virtfile acc =
     if try Sys.is_directory realfile with _ -> false
     then
-      Array.fold_left (Sys.readdir realfile) ~init:acc ~f:(fun acc s ->
+      let l = Array.to_list (Sys.readdir realfile) |> List.sort ~cmp:String.compare in
+      List.fold_left l ~init:acc ~f:(fun acc s ->
           loop (Filename.concat realfile s) (Filename.concat virtfile s) acc)
     else
       try
