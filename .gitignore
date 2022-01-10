@@ -45,18 +45,8 @@ benchmarks/build
 benchmarks/results
 benchmarks/config
 
-api/wiki/
-api/html
-manual/files/boulderdash/
-manual/files/cubes/
-manual/files/graph_viewer/
-manual/files/hyperbolic/
-manual/files/minesweeper/
-manual/files/planet/
-manual/files/toplevel/
-manual/files/webgl/
-manual/files/wiki/
-manual/files/wysiwyg/
+doc-dev
+_wikidoc
 
 toplevel/examples/lwt_toplevel_bin/*.cmis.js
 toplevel/examples/lwt_toplevel_bin/test_dynlink.js

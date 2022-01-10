@@ -1,4 +1,0 @@
-(alias
- (name ocsigen-doc)
- (deps
-  (alias ../doc)))

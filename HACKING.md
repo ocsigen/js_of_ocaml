@@ -11,10 +11,8 @@
 
 # Documentation generation
 * make doc
-* git checkout wikidoc && git reset --hard origin/wikidoc && git checkout master
 * make installdoc
 * cd _wikidoc
 * git diff # review diff
-* git commit -am "sync doc" && git push origin wikidoc
-* cd ..
+* git commit -am "sync doc"
 * git push origin wikidoc

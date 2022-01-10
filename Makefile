@@ -7,7 +7,15 @@ tests:
 test runtest runtests: tests
 
 doc:
-	dune build @ocsigen-doc
+	rm -rf doc-dev
+	mkdir doc-dev
+	dune clean
+	dune build @doc --cache=disabled --force
+	rsync -av _build/default/_doc/_html/ doc-dev/api
+	dune build @doc-manual --cache=disabled --force
+	rsync -av --exclude=".*" _build/default/manual/ doc-dev/manual
+	find doc-dev/ -name dune -delete
+	find doc-dev/ -name "*.exe" -delete
 
 promote:
 	dune promote
@@ -20,12 +28,7 @@ clean:
 	dune clean
 
 installdoc:
-	rm -rf _wikidoc
-	git clone ./ _wikidoc
-	(cd _wikidoc && git checkout wikidoc)
-	rm -rf _wikidoc/doc/dev/*
-	cp -r _build/default/_doc/_html _wikidoc/doc/dev/api
-	cp -r _build/default/manual _wikidoc/doc/dev/manual
-	find _wikidoc/doc/dev/ -name dune -delete
+	git worktree add _wikidoc origin/wikidoc
+	rsync -av doc-dev/ _wikidoc/doc/dev/
 
 .PHONY: all tests test runtest runtests doc clean installdoc

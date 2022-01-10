@@ -48,7 +48,7 @@ let _ =
     Format.std_formatter
     {|
 (rule
- (alias ocsigen-doc)
+ (alias doc-manual)
  (deps@;<0 2>@[<v 0>%a@])
  (action (progn@;<0 2>@[<v 0>%a%a@])))
 |}

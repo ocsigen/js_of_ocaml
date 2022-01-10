@@ -1,6 +1,6 @@
 
 (rule
- (alias ocsigen-doc)
+ (alias doc-manual)
  (deps
   ../toplevel/examples/lwt_toplevel/index.html
   ../toplevel/examples/lwt_toplevel/toplevel.js
