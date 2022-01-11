@@ -22,32 +22,44 @@ open! Stdlib
 open Code
 
 let optimizable blocks pc _ =
-  Code.traverse
-    { fold = Code.fold_children }
-    (fun pc acc ->
-      if not acc
-      then acc
-      else
+  let count = ref 0 in
+  let x =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc acc ->
         let b = Addr.Map.find pc blocks in
-        match b with
-        | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
-          -> false
-        | _ ->
-            List.for_all b.body ~f:(function
-                | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
-                | Let (_, Prim (Extern "debugger", _)) -> false
-                | Let
-                    ( _
-                    , Prim
-                        (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
-                    ) ->
-                    (* TODO: we should be smarter here and look the generated js *)
-                    (* let's consider it this opmiziable *)
-                    true
-                | _ -> true))
-    pc
-    blocks
-    true
+        (match b with
+        | { branch; body; _ } -> (
+            count := List.length body + !count;
+            match branch with
+            | Cond _ -> count := !count + 2
+            | Switch (_, a1, a2) -> count := !count + Array.length a1 + Array.length a2
+            | _ -> ()));
+        if not acc
+        then acc
+        else
+          match b with
+          | { handler = Some _; _ }
+          | { branch = Pushtrap _; _ }
+          | { branch = Poptrap _; _ } -> false
+          | _ ->
+              List.for_all b.body ~f:(function
+                  | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
+                  | Let (_, Prim (Extern "debugger", _)) -> false
+                  | Let
+                      ( _
+                      , Prim
+                          ( Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr")
+                          , _ ) ) ->
+                      (* TODO: we should be smarter here and look the generated js *)
+                      (* let's consider it this opmiziable *)
+                      true
+                  | _ -> true))
+      pc
+      blocks
+      true
+  in
+  x, !count
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k -> (
@@ -174,7 +186,7 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
-let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
+let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
   let block = Addr.Map.find pc blocks in
   let body, (branch, blocks, free_pc) =
     List.fold_right
@@ -184,7 +196,7 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
         match i with
         | Let (x, Apply (f, args, true)) when Var.Map.mem f closures -> (
             let branch, blocks, free_pc = state in
-            let params, clos_cont, f_optimizable = Var.Map.find f closures in
+            let params, clos_cont, (f_optimizable, f_size) = Var.Map.find f closures in
             match simple blocks clos_cont [ params, args ] with
             | `Alias arg -> (
                 match rem, branch with
@@ -200,7 +212,9 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                     [], (Branch (free_pc, [ arg ]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
-                if live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
+                if live_vars.(Var.idx f) = 1
+                   && Bool.equal outer_optimizable f_optimizable
+                   && f_size < Config.Param.inline_max_size ()
                    (* Inlining the code of an optimizable function could
                       make this code unoptimized. (wrt to Jit compilers)
 
