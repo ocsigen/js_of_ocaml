@@ -11,9 +11,9 @@ doc:
 	mkdir doc-dev
 	dune clean
 	dune build @doc --cache=disabled --force
-	rsync -av _build/default/_doc/_html/ doc-dev/api
+	rsync -av --delete _build/default/_doc/_html/ doc-dev/api
 	dune build @doc-manual --cache=disabled --force
-	rsync -av --exclude=".*" _build/default/manual/ doc-dev/manual
+	rsync -av --delete --exclude=".*" _build/default/manual/ doc-dev/manual
 	find doc-dev/ -name dune -delete
 	find doc-dev/ -name "*.exe" -delete
 

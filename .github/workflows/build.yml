@@ -96,6 +96,7 @@ jobs:
         with:
           branch: wikidoc
           folder: doc-dev
+          clean: true
           target-folder: doc/dev/
 
   lint-fmt:
