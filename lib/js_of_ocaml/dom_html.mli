@@ -2189,13 +2189,13 @@ class type window =
 
     method screen : screen t readonly_prop
 
-    method innerWidth : int optdef readonly_prop
+    method innerWidth : int readonly_prop
 
-    method innerHeight : int optdef readonly_prop
+    method innerHeight : int readonly_prop
 
-    method outerWidth : int optdef readonly_prop
+    method outerWidth : int readonly_prop
 
-    method outerHeight : int optdef readonly_prop
+    method outerHeight : int readonly_prop
 
     method getComputedStyle : #element t -> cssStyleDeclaration t meth
 
