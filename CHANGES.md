@@ -11,6 +11,7 @@
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
+* Lib: make window.{inner,outer}{Width,Height} non-optional
 * PPX: json can now be derived for mutable records (#1184)
 * Runtime: use crypto.getRandomValues when available (#1209)
 
