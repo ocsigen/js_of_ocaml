@@ -671,17 +671,17 @@ class type error =
     method toString : js_string t meth
   end
 
-exception Error of error t
+exception Error = Js_of_ocaml_runtime.Js_error.Exn
 
 let error_constr = Unsafe.global##._Error
-
-let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
 let raise_js_error : error t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
 
 external exn_with_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
 
 external js_error_of_exn : exn -> error t opt = "caml_js_error_of_exception"
+
+external js_error : Js_of_ocaml_runtime.Js_error.t -> error t = "%identity"
 
 class type json =
   object
@@ -739,7 +739,9 @@ let parseFloat (s : js_string t) : float =
 
 let _ =
   Printexc.register_printer (function
-      | Error e -> Some (to_string e##toString)
+      | Error e ->
+          let e = js_error e in
+          Some (to_string e##toString)
       | _ -> None)
 
 let _ =

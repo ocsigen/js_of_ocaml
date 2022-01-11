@@ -1,0 +1,4 @@
+(library
+  (name js_of_ocaml_runtime)
+  (public_name js_of_ocaml.runtime-lib)
+)

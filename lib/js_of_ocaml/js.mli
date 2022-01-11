@@ -698,7 +698,9 @@ val js_error_of_exn : exn -> error t opt
 (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
     inspect an eventual stack strace, especially when sourcemap is enabled. *)
 
-exception Error of error t
+external js_error : Js_of_ocaml_runtime.Js_error.t -> error t = "%identity"
+
+exception Error of Js_of_ocaml_runtime.Js_error.t
 (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
       In case the javascript exception is not an instance of javascript [Error],
       it will be serialized and wrapped into a [Failure] exception.
