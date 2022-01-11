@@ -132,25 +132,26 @@ let get_input_val ?(get = false) (elt : inputElement t) =
     | _ -> [ name, `String value ]
   else []
 
+let get_form_elements (form : formElement t) =
+  let rec loop acc i =
+    if i < 0
+    then acc
+    else
+      match Opt.to_option (form##.elements##item i) with
+      | None -> loop acc (i - i)
+      | Some x -> loop (x :: acc) (i - 1)
+  in
+  loop [] (form##.elements##.length - 1)
+
+let get_element_content ?get v =
+  match tagged v with
+  | Select v -> get_select_val v
+  | Input v -> get_input_val ?get v
+  | Textarea v -> get_textarea_val v
+  | _ -> []
+
 let form_elements ?get (form : formElement t) =
-  let length = form##.elements##.length in
-  let elements =
-    Array.to_list (Array.init length (fun i -> Opt.to_option (form##.elements##item i)))
-  in
-  let contents =
-    List.flatten
-      (List.map
-         (function
-           | None -> [] (* shouldn't happen *)
-           | Some v -> (
-               match tagged v with
-               | Select v -> get_select_val v
-               | Input v -> get_input_val ?get v
-               | Textarea v -> get_textarea_val v
-               | _ -> []))
-         elements)
-  in
-  contents
+  List.flatten (List.map (fun v -> get_element_content ?get v) (get_form_elements form))
 
 let append (form_contents : form_contents) (form_elt : string * form_elt) =
   match form_contents with
