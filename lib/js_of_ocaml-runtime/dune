@@ -1,4 +1,16 @@
 (library
-  (name js_of_ocaml_runtime)
-  (public_name js_of_ocaml.runtime-lib)
-)
+ (name js_of_ocaml_runtime)
+ (public_name js_of_ocaml.runtime-lib)
+ (foreign_stubs
+  (language c)
+  (names js_of_ocaml_runtime_stubs)))
+
+(rule
+ (targets js_of_ocaml_runtime_stubs.c)
+ (deps
+  (glob_files *.ml))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../gen_stubs/gen_stubs.exe %{deps}))))

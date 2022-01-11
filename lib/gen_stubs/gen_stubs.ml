@@ -29,8 +29,9 @@ let print_stub s =
 
 let () =
   let mls = ref [] in
+  let ignores = ref [] in
   Arg.parse
-    []
+    [ "--ignore", String (fun x -> ignores := x :: !ignores), "" ]
     (fun ml -> if not (Filename.check_suffix ml ".pp.ml") then mls := ml :: !mls)
     "generate dummy js stubs";
   let externals = ref String_set.empty in
@@ -39,6 +40,7 @@ let () =
     externals := List.fold_right String_set.add l !externals;
     desc
   in
+  let ignores = List.fold_right String_set.add !ignores String_set.empty in
   let mapper = { Ast_mapper.default_mapper with value_description } in
   List.iter
     (fun ml ->
@@ -52,7 +54,8 @@ let () =
        with exn -> Location.report_exception Format.std_formatter exn);
       close_in_noerr in_)
     !mls;
+  let externals = String_set.diff !externals ignores in
   set_binary_mode_out stdout true;
   print_endline "#include <stdlib.h>";
   print_endline "#include <stdio.h>";
-  String_set.iter print_stub !externals
+  String_set.iter print_stub externals

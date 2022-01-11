@@ -16,7 +16,15 @@
  (action
   (with-stdout-to
    %{targets}
-   (run ../gen_stubs/gen_stubs.exe %{deps}))))
+   (run
+    ../gen_stubs/gen_stubs.exe
+    --ignore
+    caml_js_get
+    --ignore
+    caml_js_set
+    --ignore
+    caml_js_equals
+    %{deps}))))
 
 (rule
  (targets lib_version.ml)
