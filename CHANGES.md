@@ -14,6 +14,7 @@
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
 * Lib: make window.{inner,outer}{Width,Height} non-optional
+* Lib: Introduce js_of_ocaml.runtime-lib to improve compatibility with gen_js_api and brr
 * PPX: json can now be derived for mutable records (#1184)
 * Runtime: use crypto.getRandomValues when available (#1209)
 
