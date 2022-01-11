@@ -27,10 +27,10 @@
 
 (** {2 Dealing with [null] and [undefined] values.} *)
 
-type +'a opt
+type +'a opt = 'a Js_of_ocaml_runtime.Js.opt
 (** Type of possibly null values. *)
 
-type +'a optdef
+type +'a optdef = 'a Js_of_ocaml_runtime.Js.optdef
 (** Type of possibly undefined values. *)
 
 val null : 'a opt
@@ -91,18 +91,18 @@ module Optdef : OPT with type 'a t = 'a optdef
 
 (** {2 Types for specifying method and properties of Javascript objects} *)
 
-type +'a t
+type +'a t = 'a Js_of_ocaml_runtime.Js.t
 (** Type of Javascript objects.  The type parameter is used to
       specify more precisely an object.  *)
 
-type +'a meth
+type +'a meth = 'a Js_of_ocaml_runtime.Js.meth
 (** Type used to specify method types:
       a Javascript object
         [<m : t1 -> t2 -> ... -> tn -> t Js.meth> Js.t]
       has a Javascript method [m] expecting {i n} arguments
       of types [t1] to [tn] and returns a value of type [t]. *)
 
-type +'a gen_prop
+type +'a gen_prop = 'a Js_of_ocaml_runtime.Js.gen_prop
 (** Type used to specify the properties of Javascript
       objects.  In practice you should rarely need this type directly,
       but should rather use the type abbreviations below instead. *)
@@ -133,7 +133,7 @@ type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
 
 (** {2 Object constructors} *)
 
-type +'a constr
+type +'a constr = 'a Js_of_ocaml_runtime.Js.constr
 (** A value of type [(t1 -> ... -> tn -> t Js.t) Js.constr] is a
       Javascript constructor expecting {i n} arguments of types [t1]
       to [tn] and returning a Javascript object of type [t Js.t].  Use
@@ -142,7 +142,7 @@ type +'a constr
 
 (** {2 Callbacks to OCaml} *)
 
-type (-'a, +'b) meth_callback
+type (-'a, +'b) meth_callback = ('a, 'b) Js_of_ocaml_runtime.Js.meth_callback
 (** Type of callback functions.  A function of type
        [(u, t1 -> ... -> tn -> t) meth_callback] can be called
        from Javascript with [this] bound to a value of type [u]
@@ -176,13 +176,13 @@ val _true : bool t
 val _false : bool t
 (** Javascript [false] boolean. *)
 
-type match_result_handle
+type match_result_handle = Js_of_ocaml_runtime.Js.match_result_handle
 (** A handle to a match result.  Use function [Js.match_result]
       to get the corresponding [MatchResult] object.
       (This type is used to resolved the mutual dependency between
        string and array type definitions.) *)
 
-type string_array
+type string_array = Js_of_ocaml_runtime.Js.string_array
 (** Opaque type for string arrays.  You can get the actual [Array]
       object using function [Js.str_array].
       (This type is used to resolved the mutual dependency between
@@ -834,7 +834,7 @@ export_all
 
 (** Unsafe Javascript operations *)
 module Unsafe : sig
-  type top
+  type top = Js_of_ocaml_runtime.Js.Unsafe.top
 
   type any = top t
   (** Top type.  Used for putting values of different types

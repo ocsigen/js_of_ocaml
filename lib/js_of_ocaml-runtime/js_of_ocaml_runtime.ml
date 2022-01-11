@@ -198,6 +198,117 @@ module Js = struct
 
   external to_string : js_string t -> string = "caml_string_of_jsstring"
 
+  external bytestring : string -> js_string t = "caml_jsbytes_of_string"
+
+  external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
+
+  external bool : bool -> bool t = "caml_js_from_bool"
+
+  external to_bool : bool t -> bool = "caml_js_to_bool"
+
+  external typeof : _ t -> js_string t = "caml_js_typeof"
+
+  external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
+
+  class type number =
+    object
+      method toString : js_string t meth
+
+      method toString_radix : int -> js_string t meth
+
+      method toLocaleString : js_string t meth
+
+      method toFixed : int -> js_string t meth
+
+      method toExponential : js_string t meth
+
+      method toExponential_digits : int -> js_string t meth
+
+      method toPrecision : int -> js_string t meth
+    end
+
+  external number_of_float : float -> number t = "caml_js_from_float"
+
+  external float_of_number : number t -> float = "caml_js_to_float"
+
+  class type ['a] js_array =
+    object
+      method toString : js_string t meth
+
+      method toLocaleString : js_string t meth
+
+      method concat : 'a js_array t -> 'a js_array t meth
+
+      method join : js_string t -> js_string t meth
+
+      method pop : 'a optdef meth
+
+      method push : 'a -> int meth
+
+      method push_2 : 'a -> 'a -> int meth
+
+      method push_3 : 'a -> 'a -> 'a -> int meth
+
+      method push_4 : 'a -> 'a -> 'a -> 'a -> int meth
+
+      method reverse : 'a js_array t meth
+
+      method shift : 'a optdef meth
+
+      method slice : int -> int -> 'a js_array t meth
+
+      method slice_end : int -> 'a js_array t meth
+
+      method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
+
+      method sort_asStrings : 'a js_array t meth
+
+      method splice : int -> int -> 'a js_array t meth
+
+      method splice_1 : int -> int -> 'a -> 'a js_array t meth
+
+      method splice_2 : int -> int -> 'a -> 'a -> 'a js_array t meth
+
+      method splice_3 : int -> int -> 'a -> 'a -> 'a -> 'a js_array t meth
+
+      method splice_4 : int -> int -> 'a -> 'a -> 'a -> 'a -> 'a js_array t meth
+
+      method unshift : 'a -> int meth
+
+      method unshift_2 : 'a -> 'a -> int meth
+
+      method unshift_3 : 'a -> 'a -> 'a -> int meth
+
+      method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
+
+      method some : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
+
+      method every : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
+
+      method forEach : ('a -> int -> 'a js_array t -> unit) callback -> unit meth
+
+      method map : ('a -> int -> 'a js_array t -> 'b) callback -> 'b js_array t meth
+
+      method filter :
+        ('a -> int -> 'a js_array t -> bool t) callback -> 'a js_array t meth
+
+      method reduce_init :
+        ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
+
+      method reduce : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
+
+      method reduceRight_init :
+        ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
+
+      method reduceRight : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
+
+      method length : int prop
+    end
+
+  external array : 'a array -> 'a js_array t = "caml_js_from_array"
+
+  external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
+
   class type error =
     object
       method name : js_string t prop
@@ -220,4 +331,45 @@ module Js_error = struct
   exception Exn of t
 
   let () = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
+end
+
+module Sys = struct
+  external create_file : name:string -> content:string -> unit = "caml_create_file"
+
+  external read_file : name:string -> string = "caml_read_file_content"
+
+  external set_channel_output' :
+    out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit
+    = "caml_ml_set_channel_output"
+
+  external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit
+    = "caml_ml_set_channel_refill"
+
+  external mount_point : unit -> string list = "caml_list_mount_point"
+
+  external mount_autoload :
+    string -> (string -> string -> string option) Js.callback -> unit
+    = "caml_mount_autoload"
+
+  external unmount : string -> unit = "caml_unmount"
+end
+
+[@@@ocaml.warning "-32-60"]
+
+module For_compatibility_only : sig end = struct
+  (* Add primitives for compatibility reasons. Existing users might
+     depend on it (e.g. gen_js_api), we dont want the ocaml compiler
+     to complain about theses missing primitives. *)
+
+  external caml_js_from_string : string -> Js.js_string Js.t = "caml_js_from_string"
+
+  external caml_js_to_byte_string : Js.js_string Js.t -> string = "caml_js_to_byte_string"
+
+  external caml_js_to_string : Js.js_string Js.t -> string = "caml_js_to_string"
+
+  external caml_list_of_js_array : 'a Js.js_array Js.t -> 'a list
+    = "caml_list_of_js_array"
+
+  external caml_list_to_js_array : 'a list -> 'a Js.js_array Js.t
+    = "caml_list_to_js_array"
 end

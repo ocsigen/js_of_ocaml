@@ -17,22 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open! Import
-
-external create_file : name:string -> content:string -> unit = "caml_create_file"
-
-external read_file : name:string -> string = "caml_read_file_content"
+include Js_of_ocaml_runtime.Sys
 
 let update_file ~name ~content =
   let oc = open_out name in
   output_string oc content;
   close_out oc
-
-external set_channel_output' :
-  out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit
-  = "caml_ml_set_channel_output"
-
-external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit
-  = "caml_ml_set_channel_refill"
 
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback =
@@ -43,14 +33,6 @@ let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
 let set_channel_filler (in_channel : in_channel) (f : unit -> string) =
   let f' : (unit -> string) Js.callback = Js.wrap_callback f in
   set_channel_input' in_channel f'
-
-external mount_point : unit -> string list = "caml_list_mount_point"
-
-external mount_autoload :
-  string -> (string -> string -> string option) Js.callback -> unit
-  = "caml_mount_autoload"
-
-external unmount : string -> unit = "caml_unmount"
 
 let mount ~path f =
   mount_autoload path (Js.wrap_callback (fun prefix path -> f ~prefix ~path))

@@ -22,8 +22,6 @@
     caml_js_get
     --ignore
     caml_js_set
-    --ignore
-    caml_js_equals
     %{deps}))))
 
 (rule

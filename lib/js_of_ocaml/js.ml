@@ -146,79 +146,6 @@ let regExp_copy = regExp
 
 let regExp_withFlags = regExp
 
-class type ['a] js_array =
-  object
-    method toString : js_string t meth
-
-    method toLocaleString : js_string t meth
-
-    method concat : 'a js_array t -> 'a js_array t meth
-
-    method join : js_string t -> js_string t meth
-
-    method pop : 'a optdef meth
-
-    method push : 'a -> int meth
-
-    method push_2 : 'a -> 'a -> int meth
-
-    method push_3 : 'a -> 'a -> 'a -> int meth
-
-    method push_4 : 'a -> 'a -> 'a -> 'a -> int meth
-
-    method reverse : 'a js_array t meth
-
-    method shift : 'a optdef meth
-
-    method slice : int -> int -> 'a js_array t meth
-
-    method slice_end : int -> 'a js_array t meth
-
-    method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
-
-    method sort_asStrings : 'a js_array t meth
-
-    method splice : int -> int -> 'a js_array t meth
-
-    method splice_1 : int -> int -> 'a -> 'a js_array t meth
-
-    method splice_2 : int -> int -> 'a -> 'a -> 'a js_array t meth
-
-    method splice_3 : int -> int -> 'a -> 'a -> 'a -> 'a js_array t meth
-
-    method splice_4 : int -> int -> 'a -> 'a -> 'a -> 'a -> 'a js_array t meth
-
-    method unshift : 'a -> int meth
-
-    method unshift_2 : 'a -> 'a -> int meth
-
-    method unshift_3 : 'a -> 'a -> 'a -> int meth
-
-    method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
-
-    method some : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
-
-    method every : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
-
-    method forEach : ('a -> int -> 'a js_array t -> unit) callback -> unit meth
-
-    method map : ('a -> int -> 'a js_array t -> 'b) callback -> 'b js_array t meth
-
-    method filter : ('a -> int -> 'a js_array t -> bool t) callback -> 'a js_array t meth
-
-    method reduce_init :
-      ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
-
-    method reduce : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
-
-    method reduceRight_init :
-      ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
-
-    method reduceRight : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
-
-    method length : int prop
-  end
-
 let object_constructor = Unsafe.global##._Object
 
 let object_keys o : js_string t js_array t = object_constructor##keys o
@@ -253,27 +180,6 @@ class type match_result =
 let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
 
 let match_result : match_result_handle t -> match_result t = Unsafe.coerce
-
-class type number =
-  object
-    method toString : js_string t meth
-
-    method toString_radix : int -> js_string t meth
-
-    method toLocaleString : js_string t meth
-
-    method toFixed : int -> js_string t meth
-
-    method toExponential : js_string t meth
-
-    method toExponential_digits : int -> js_string t meth
-
-    method toPrecision : int -> js_string t meth
-  end
-
-external number_of_float : float -> number t = "caml_js_from_float"
-
-external float_of_number : number t -> float = "caml_js_to_float"
 
 class type date =
   object
@@ -506,22 +412,6 @@ let escape (s : js_string t) : js_string t =
 let unescape (s : js_string t) : js_string t =
   Unsafe.fun_call Unsafe.global##.unescape [| Unsafe.inject s |]
 
-external bool : bool -> bool t = "caml_js_from_bool"
-
-external to_bool : bool t -> bool = "caml_js_to_bool"
-
-external array : 'a array -> 'a js_array t = "caml_js_from_array"
-
-external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
-
-external bytestring : string -> js_string t = "caml_jsbytes_of_string"
-
-external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
-
-external typeof : _ t -> js_string t = "caml_js_typeof"
-
-external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
-
 let isNaN (i : 'a) : bool =
   to_bool (Unsafe.fun_call Unsafe.global##.isNaN [| Unsafe.inject i |])
 
@@ -564,21 +454,3 @@ type float_prop = float prop
 external float : float -> float = "%identity"
 
 external to_float : float -> float = "%identity"
-
-[@@@ocaml.warning "-32-60"]
-
-module For_compatibility_only = struct
-  (* Add primitives for compatibility reasons. Existing users might
-     depend on it (e.g. gen_js_api), we dont want the ocaml compiler
-     to complain about theses missing primitives. *)
-
-  external caml_js_from_string : string -> js_string t = "caml_js_from_string"
-
-  external caml_js_to_byte_string : js_string t -> string = "caml_js_to_byte_string"
-
-  external caml_js_to_string : js_string t -> string = "caml_js_to_string"
-
-  external caml_list_of_js_array : 'a js_array t -> 'a list = "caml_list_of_js_array"
-
-  external caml_list_to_js_array : 'a list -> 'a js_array t = "caml_list_to_js_array"
-end
