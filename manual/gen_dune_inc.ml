@@ -43,7 +43,9 @@ let fmt_copy fmt (dir, dst, files) : unit =
 let fmt_mkdir fmt (_, dst, _) : unit =
   Format.fprintf fmt "(bash \"mkdir -p files/%s\")" dst
 
-let _ =
+let () = set_binary_mode_out stdout true
+
+let () =
   Format.fprintf
     Format.std_formatter
     {|
