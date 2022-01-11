@@ -75,7 +75,7 @@ module Param : sig
 
   val switch_max_case : unit -> int
 
-  val inline_max_size : unit -> int
+  val inlining_limit : unit -> int
 
   val tailcall_max_depth : unit -> int
 

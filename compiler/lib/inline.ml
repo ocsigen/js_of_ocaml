@@ -214,7 +214,7 @@ let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
             | `Fail ->
                 if live_vars.(Var.idx f) = 1
                    && Bool.equal outer_optimizable f_optimizable
-                   && f_size < Config.Param.inline_max_size ()
+                   && f_size < Config.Param.inlining_limit ()
                    (* Inlining the code of an optimizable function could
                       make this code unoptimized. (wrt to Jit compilers)
 
