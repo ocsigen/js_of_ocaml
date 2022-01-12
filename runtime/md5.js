@@ -38,7 +38,7 @@ function caml_md5_string(s, ofs, len) {
 }
 
 //Provides: caml_md5_bytes
-//Requires: caml_string_of_array, caml_convert_string_to_bytes
+//Requires: caml_string_of_array, caml_ml_bytes_content
 var caml_md5_bytes = function () {
   function add (x, y) { return (x + y) | 0; }
   function xx(q,a,b,x,s,t) {
@@ -152,11 +152,9 @@ var caml_md5_bytes = function () {
     // FIX: maybe we should perform the computation by chunk of 64 bytes
     // as in http://www.myersdaily.org/joseph/javascript/md5.js
     var buf = [];
-    switch (s.t & 6) {
-    default:
-      caml_convert_string_to_bytes(s);
-    case 0: /* BYTES */
-      var b = s.c;
+    var content = caml_ml_bytes_content(s);
+    if(typeof content === "string"){
+      var b = content;
       for (var i = 0; i < len; i+=4) {
         var j = i + ofs;
         buf[i>>2] =
@@ -164,9 +162,8 @@ var caml_md5_bytes = function () {
           (b.charCodeAt(j+2) << 16) | (b.charCodeAt(j+3) << 24);
       }
       for (; i < len; i++) buf[i>>2] |= b.charCodeAt(i + ofs) << (8 * (i & 3));
-      break;
-    case 4: /* ARRAY */
-      var a = s.c;
+    } else { /* ARRAY */
+      var a = content;
       for (var i = 0; i < len; i+=4) {
         var j = i + ofs;
         buf[i>>2] = a[j] | (a[j+1] << 8) | (a[j+2] << 16) | (a[j+3] << 24);

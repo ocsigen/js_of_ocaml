@@ -19,7 +19,7 @@
 
 //Provides: caml_hash_univ_param mutable
 //Requires: caml_is_ml_string, caml_is_ml_bytes
-//Requires: caml_convert_string_to_bytes
+//Requires: caml_ml_bytes_content
 //Requires: caml_int64_to_bytes, caml_int64_bits_of_float, caml_custom_ops
 //Requires: caml_ml_bytes_length, caml_jsbytes_of_string
 function caml_hash_univ_param (count, limit, obj) {
@@ -44,15 +44,12 @@ function caml_hash_univ_param (count, limit, obj) {
       }
     } else if (caml_is_ml_bytes(obj)) {
       count --;
-      switch (obj.t & 6) {
-      default: /* PARTIAL */
-        caml_convert_string_to_bytes(obj);
-      case 0: /* BYTES */
-        for (var b = obj.c, l = caml_ml_bytes_length(obj), i = 0; i < l; i++)
+      var content = caml_ml_bytes_content(obj);
+      if(typeof content === "string") {
+	for (var b = content, l = b.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
-        break;
-      case 2: /* ARRAY */
-        for (var a = obj.c, l = caml_ml_bytes_length(obj), i = 0; i < l; i++)
+      } else { /* ARRAY */
+        for (var a = content, l = a.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (caml_is_ml_string(obj)) {
@@ -167,20 +164,15 @@ function caml_hash_mix_bytes_arr(h, s) {
 }
 
 //Provides: caml_hash_mix_bytes
-//Requires: caml_convert_string_to_bytes
+//Requires: caml_ml_bytes_content
 //Requires: caml_hash_mix_jsbytes
 //Requires: caml_hash_mix_bytes_arr
 function caml_hash_mix_bytes(h, v) {
-  switch (v.t & 6) {
-  default:
-    caml_convert_string_to_bytes (v);
-  case 0: /* BYTES */
-    h = caml_hash_mix_jsbytes(h, v.c);
-    break;
-  case 2: /* ARRAY */
-    h = caml_hash_mix_bytes_arr(h, v.c);
-  }
-  return h
+  var content = caml_ml_bytes_content(v);
+  if(typeof content === "string")
+    return caml_hash_mix_jsbytes(h, content)
+  else /* ARRAY */
+    return caml_hash_mix_bytes_arr(h, content);
 }
 
 //Provides: caml_hash_mix_string
