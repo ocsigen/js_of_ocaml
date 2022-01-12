@@ -806,7 +806,7 @@ function caml_string_of_jsbytes(s) { return caml_bytes_of_jsbytes(s); }
 //Requires: caml_convert_string_to_bytes
 //If: !js-string
 function caml_jsbytes_of_string(s) {
-  if ((s.t & 6) != 0 /* BYTES */) caml_convert_string_to_bytes(s);
+  (s.t & 6) && caml_convert_string_to_bytes(s);
   return s.c }
 
 //Provides: caml_jsstring_of_string mutable (const)
@@ -826,6 +826,19 @@ function caml_string_of_jsstring (s) {
 //Requires: MlBytes
 function caml_is_ml_bytes(s) {
   return (s instanceof MlBytes);
+}
+
+//Provides: caml_ml_bytes_content
+//Requires: MlBytes, caml_convert_string_to_bytes
+function caml_ml_bytes_content(s) {
+  switch (s.t & 6) {
+  default: /* PARTIAL */
+    caml_convert_string_to_bytes(s);
+  case 0: /* BYTES */
+    return s.c;
+  case 4:
+    return s.c
+  }
 }
 
 //Provides: caml_is_ml_string
