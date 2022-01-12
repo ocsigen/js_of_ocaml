@@ -30,6 +30,7 @@ type t =
   { debug : string list on_off
   ; optim : string list on_off
   ; quiet : bool
+  ; werror : bool
   ; custom_header : string option
   }
 
@@ -73,6 +74,10 @@ let is_quiet =
   let doc = "suppress non-error messages." in
   Arg.(value & flag & info [ "quiet"; "q" ] ~doc)
 
+let is_werror =
+  let doc = "turn all warnings into errors." in
+  Arg.(value & flag & info [ "Werror" ] ~doc)
+
 let custom_header =
   let doc =
     "Provide a custom header for the generated JavaScript file, useful for making the \
@@ -82,7 +87,7 @@ let custom_header =
 
 let t =
   Term.(
-    pure (fun debug enable disable pretty debuginfo noinline quiet c_header ->
+    pure (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
         let enable = if pretty then "pretty" :: enable else enable in
         let enable = if debuginfo then "debuginfo" :: enable else enable in
         let disable = if noinline then "inline" :: disable else disable in
@@ -94,6 +99,7 @@ let t =
         { debug = { enable = debug; disable = [] }
         ; optim = { enable; disable }
         ; quiet
+        ; werror
         ; custom_header = c_header
         })
     $ debug
@@ -103,6 +109,7 @@ let t =
     $ debuginfo
     $ noinline
     $ is_quiet
+    $ is_werror
     $ custom_header)
 
 let on_off on off t =
@@ -112,4 +119,5 @@ let on_off on off t =
 let eval t =
   Config.Flag.(on_off enable disable t.optim);
   Debug.(on_off enable disable t.debug);
-  quiet := t.quiet
+  quiet := t.quiet;
+  werror := t.werror
