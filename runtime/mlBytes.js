@@ -540,8 +540,8 @@ function caml_bytes_equal(s1, s2) {
 function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
 
 //Provides: caml_bytes_notequal mutable (const, const)
-//Requires: caml_string_equal
-function caml_bytes_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
+//Requires: caml_bytes_equal
+function caml_bytes_notequal(s1, s2) { return 1-caml_bytes_equal(s1, s2); }
 
 //Provides: caml_bytes_lessequal mutable
 //Requires: caml_convert_string_to_bytes

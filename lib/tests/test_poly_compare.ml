@@ -64,10 +64,15 @@ let%expect_test "number comparison" =
     Pack (Js.Unsafe.js_expr "new Number(2.1)")
     = Pack (Js.Unsafe.js_expr "new Number(2.1)"))
 
+let js_string_enabled = Js.typeof (Obj.magic "") == Js.string "string"
+
 let%expect_test "string comparison" =
   assert (Pack (Js.Unsafe.js_expr "String(2)") = Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abc')") = Pack (Js.string "abc"));
-  assert (Pack (Js.Unsafe.js_expr "new String('abc')") = Pack (Js.string "abc"));
+  assert (
+    js_string_enabled
+    = (Pack (Js.Unsafe.js_expr "new String('abc')") <> Pack (Js.string "abc")));
+  assert (Pack (Js.Unsafe.js_expr "new String('abcሴ')") = Pack (Js.string "abcሴ"));
   assert (Pack (Js.Unsafe.js_expr "String(1)") <> Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abcd')") <> Pack (Js.string "abc"));
   assert (Pack (Js.Unsafe.js_expr "new String('abcd')") <> Pack (Js.string "abc"));

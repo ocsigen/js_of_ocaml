@@ -173,7 +173,7 @@ function caml_sys_getcwd() {
 }
 
 //Provides: caml_sys_chdir
-//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash
+//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsbytes_of_string
 function caml_sys_chdir(dir) {
   var root = resolve_fs_device(dir);
   if(root.device.exists(root.rest)) {
@@ -182,23 +182,19 @@ function caml_sys_chdir(dir) {
     return 0;
   }
   else {
-    caml_raise_no_such_file(dir);
+    caml_raise_no_such_file(caml_jsbytes_of_string(dir));
   }
 }
 
 //Provides: caml_raise_no_such_file
 //Requires: caml_raise_sys_error
-//Requires: caml_jsbytes_of_string
 function caml_raise_no_such_file(name){
-  name = caml_jsbytes_of_string(name);
   caml_raise_sys_error (name + ": No such file or directory");
 }
 
 //Provides: caml_raise_not_a_dir
 //Requires: caml_raise_sys_error
-//Requires: caml_jsbytes_of_string
 function caml_raise_not_a_dir(name){
-  name = caml_jsbytes_of_string(name);
   caml_raise_sys_error (name + ": Not a directory");
 }
 
@@ -223,11 +219,11 @@ function caml_sys_read_directory(name){
 }
 
 //Provides: caml_sys_remove
-//Requires: caml_raise_no_such_file, resolve_fs_device
+//Requires: caml_raise_no_such_file, resolve_fs_device, caml_jsbytes_of_string
 function caml_sys_remove(name){
   var root = resolve_fs_device(name);
   var ok = root.device.unlink(root.rest);
-  if(ok == 0) caml_raise_no_such_file(name);
+  if(ok == 0) caml_raise_no_such_file(caml_jsbytes_of_string(name));
   return 0;
 }
 
@@ -326,7 +322,7 @@ function jsoo_create_file(name,content) {
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes
-//Requires: caml_string_of_jsbytes
+//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_read_file_content (name) {
   var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
   var root = resolve_fs_device(name);
@@ -337,5 +333,5 @@ function caml_read_file_content (name) {
     file.read(0,buf,0,len);
     return caml_string_of_bytes(buf)
   }
-  caml_raise_no_such_file(name);
+  caml_raise_no_such_file(caml_jsbytes_of_string(name));
 }
