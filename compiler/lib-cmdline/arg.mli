@@ -26,6 +26,7 @@ type t =
   { debug : string list on_off
   ; optim : string list on_off
   ; quiet : bool
+  ; werror : bool
   ; custom_header : string option
   }
 

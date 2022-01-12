@@ -45,17 +45,29 @@ let _ =
     | _ -> argv
   in
   try
-    Cmdliner.Term.eval_choice
-      ~catch:false
-      ~argv
-      Compile.command_main
-      [ Link.command
-      ; Build_fs.command
-      ; Build_runtime.command
-      ; Print_runtime.command
-      ; Check_runtime.command
-      ; Compile.command
-      ]
+    match
+      Cmdliner.Term.eval_choice
+        ~catch:false
+        ~argv
+        Compile.command_main
+        [ Link.command
+        ; Build_fs.command
+        ; Build_runtime.command
+        ; Print_runtime.command
+        ; Check_runtime.command
+        ; Compile.command
+        ]
+    with
+    | `Ok () | `Help | `Version ->
+        if !warnings > 0 && !werror
+        then (
+          Format.eprintf "%s: all warnings being treated as errors@." Sys.argv.(0);
+          exit 1)
+        else exit 0
+    | `Error `Term -> exit 1
+    | `Error `Parse -> exit 124
+    | `Error `Exn -> ()
+    (* should not happen *)
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
@@ -65,7 +77,7 @@ let _ =
         Sys.argv.(0);
       Format.eprintf "Error: %s@." (Printexc.to_string exc);
       prerr_string backtrace;
-      exit 1
+      exit 125
   | Magic_number.Bad_magic_number s ->
       Format.eprintf "%s: Error: Not an ocaml bytecode file@." Sys.argv.(0);
       Format.eprintf "%s: Error: Invalid magic number %S@." Sys.argv.(0) s;

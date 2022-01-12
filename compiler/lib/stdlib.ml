@@ -66,7 +66,16 @@ include Int_replace_polymorphic_compare
 
 let quiet = ref false
 
-let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s%!" s) fmt
+let werror = ref false
+
+let warnings = ref 0
+
+let warn fmt =
+  Format.ksprintf
+    (fun s ->
+      incr warnings;
+      if not !quiet then Format.eprintf "%s%!" s)
+    fmt
 
 let fail = ref true
 

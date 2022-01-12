@@ -86,7 +86,7 @@
  (targets toplevel.js)
  (action
   (run
-   %{bin:js_of_ocaml}
+   %{bin:js_of_ocaml} --Werror
    -I
    %{lib:reactiveData:.}
    -I
