@@ -8,6 +8,7 @@
 * Compiler: be more consistent dealing with js vs ocaml strings (#984)
 * Compiler: Compiler: add BigInt to provided symbols (fix #1168) (#1191)
 * Compiler: use globalThis, drop joo_global_object #1193
+* Compiler: new -Werror flag to turn wanrings into errors (#1222)
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
