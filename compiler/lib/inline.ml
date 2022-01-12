@@ -21,45 +21,54 @@
 open! Stdlib
 open Code
 
+type prop =
+  { size : int
+  ; try_catch : bool
+  ; optimizable : bool
+  }
+
 let optimizable blocks pc _ =
-  let count = ref 0 in
-  let x =
-    Code.traverse
-      { fold = Code.fold_children }
-      (fun pc acc ->
-        let b = Addr.Map.find pc blocks in
-        (match b with
+  Code.traverse
+    { fold = Code.fold_children }
+    (fun pc { size; try_catch; optimizable } ->
+      let b = Addr.Map.find pc blocks in
+      let this_size =
+        match b with
         | { branch; body; _ } -> (
-            count := List.length body + !count;
+            List.length body
+            +
             match branch with
-            | Cond _ -> count := !count + 2
-            | Switch (_, a1, a2) -> count := !count + Array.length a1 + Array.length a2
-            | _ -> ()));
-        if not acc
-        then acc
-        else
-          match b with
-          | { handler = Some _; _ }
-          | { branch = Pushtrap _; _ }
-          | { branch = Poptrap _; _ } -> false
-          | _ ->
-              List.for_all b.body ~f:(function
-                  | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
-                  | Let (_, Prim (Extern "debugger", _)) -> false
-                  | Let
-                      ( _
-                      , Prim
-                          ( Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr")
-                          , _ ) ) ->
-                      (* TODO: we should be smarter here and look the generated js *)
-                      (* let's consider it this opmiziable *)
-                      true
-                  | _ -> true))
-      pc
-      blocks
-      true
-  in
-  x, !count
+            | Cond _ -> 2
+            | Switch (_, a1, a2) -> Array.length a1 + Array.length a2
+            | _ -> 0)
+      in
+      let try_catch =
+        try_catch
+        ||
+        match b with
+        | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
+          -> true
+        | _ -> false
+      in
+      let optimizable =
+        optimizable
+        || List.for_all b.body ~f:(function
+               | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
+               | Let (_, Prim (Extern "debugger", _)) -> false
+               | Let
+                   ( _
+                   , Prim
+                       (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
+                   ) ->
+                   (* TODO: we should be smarter here and look the generated js *)
+                   (* let's consider it this opmiziable *)
+                   true
+               | _ -> true)
+      in
+      { try_catch; optimizable; size = size + this_size })
+    pc
+    blocks
+    { try_catch = false; optimizable = true; size = 0 }
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k -> (
@@ -186,7 +195,12 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
-let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
+let inline
+    closures
+    live_vars
+    { optimizable = outer_optimizable; try_catch = outer_try_catch; size = _ }
+    pc
+    (blocks, free_pc) =
   let block = Addr.Map.find pc blocks in
   let body, (branch, blocks, free_pc) =
     List.fold_right
@@ -196,7 +210,12 @@ let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
         match i with
         | Let (x, Apply (f, args, true)) when Var.Map.mem f closures -> (
             let branch, blocks, free_pc = state in
-            let params, clos_cont, (f_optimizable, f_size) = Var.Map.find f closures in
+            let ( params
+                , clos_cont
+                , { size = f_size; optimizable = f_optimizable; try_catch = f_try_catch }
+                ) =
+              Var.Map.find f closures
+            in
             match simple blocks clos_cont [ params, args ] with
             | `Alias arg -> (
                 match rem, branch with
@@ -214,6 +233,7 @@ let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
             | `Fail ->
                 if live_vars.(Var.idx f) = 1
                    && Bool.equal outer_optimizable f_optimizable
+                   && Bool.equal outer_try_catch f_try_catch
                    && f_size < Config.Param.inlining_limit ()
                    (* Inlining the code of an optimizable function could
                       make this code unoptimized. (wrt to Jit compilers)
@@ -221,7 +241,7 @@ let inline closures live_vars (outer_optimizable, _) pc (blocks, free_pc) =
                       At the moment, V8 doesn't optimize function
                       containing try..catch.  We disable inlining if the
                       inner and outer functions don't have the same
-                      "contain_try_catch" property *)
+                      "try_catch" property *)
                 then
                   let blocks, cont_pc =
                     match rem, branch with
