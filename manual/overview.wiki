@@ -37,7 +37,7 @@ For alternatives, see <<a_manual chapter="install" |Install>>.
   Your program must first be compiled using the OCaml bytecode
   compiler {{{ocamlc}}}.  JavaScript bindings are provided by the
   {{{js_of_ocaml}}} package and the syntax extension by the
-  {{{js_of_ocaml-ppx}}} package (or {{{js_of_ocaml-camlp4}}})
+  {{{js_of_ocaml-ppx}}} package
 {{{
       ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx \
           -linkpkg -o cubes.byte cubes.ml
