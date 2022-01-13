@@ -20,50 +20,14 @@
 open! Import
 open Js
 
-class type arrayBuffer =
-  object
-    method byteLength : int readonly_prop
-
-    method slice : int -> int -> arrayBuffer t meth
-
-    method slice_toEnd : int -> arrayBuffer t meth
-  end
+include (
+  Js_of_ocaml_runtime.Typed_array :
+    module type of struct
+      include Js_of_ocaml_runtime.Typed_array
+    end
+    with module String := Js_of_ocaml_runtime.Typed_array.String)
 
 let arrayBuffer : (int -> arrayBuffer t) constr = Js.Unsafe.global##._ArrayBuffer
-
-class type arrayBufferView =
-  object
-    method buffer : arrayBuffer t readonly_prop
-
-    method byteOffset : int readonly_prop
-
-    method byteLength : int readonly_prop
-  end
-
-class type ['a, 'b] typedArray =
-  object
-    inherit arrayBufferView
-
-    method _BYTES_PER_ELEMENT : int readonly_prop
-
-    method length : int readonly_prop
-
-    method set_fromArray : 'a js_array t -> int -> unit meth
-
-    method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
-
-    method subarray : int -> int -> ('a, 'b) typedArray t meth
-
-    method subarray_toEnd : int -> ('a, 'b) typedArray t meth
-
-    method slice : int -> int -> ('a, 'b) typedArray t meth
-
-    method slice_toEnd : int -> ('a, 'b) typedArray t meth
-
-    (* This fake method is needed for typing purposes.
-       Without it, ['b] would not be constrained. *)
-    method _content_type_ : 'b optdef readonly_prop
-  end
 
 type int8Array = (int, Bigarray.int8_signed_elt) typedArray
 
@@ -80,17 +44,6 @@ type uint32Array = (int32, Bigarray.int32_elt) typedArray
 type float32Array = (float, Bigarray.float32_elt) typedArray
 
 type float64Array = (float, Bigarray.float64_elt) typedArray
-
-external kind : ('a, 'b) typedArray t -> ('a, 'b) Bigarray.kind
-  = "caml_ba_kind_of_typed_array"
-
-external from_genarray :
-  ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t -> ('a, 'b) typedArray t
-  = "caml_ba_to_typed_array"
-
-external to_genarray :
-  ('a, 'b) typedArray t -> ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t
-  = "caml_ba_from_typed_array"
 
 let int8Array = Js.Unsafe.global##._Int8Array
 
@@ -172,13 +125,6 @@ let float64Array_fromBuffer = float64Array
 
 let float64Array_inBuffer = float64Array
 
-let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
- fun a i v -> array_set (Unsafe.coerce a) i v
-
-let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
-
-let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
-
 class type dataView =
   object
     inherit arrayBufferView
@@ -244,20 +190,8 @@ let dataView = Js.Unsafe.global##._DataView
 
 let dataView_inBuffer = dataView
 
-module Bigstring = struct
-  type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
-
-  external to_arrayBuffer : t -> arrayBuffer Js.t = "bigstring_to_array_buffer"
-
-  external to_uint8Array : t -> uint8Array Js.t = "bigstring_to_typed_array"
-
-  external of_arrayBuffer : arrayBuffer Js.t -> t = "bigstring_of_array_buffer"
-
-  external of_uint8Array : uint8Array Js.t -> t = "bigstring_of_typed_array"
-end
-
 module String = struct
-  external of_uint8Array : uint8Array Js.t -> string = "caml_string_of_array"
+  include Js_of_ocaml_runtime.Typed_array.String
 
   let of_arrayBuffer ab =
     let uint8 = new%js uint8Array_fromBuffer ab in

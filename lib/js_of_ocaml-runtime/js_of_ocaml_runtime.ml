@@ -333,6 +333,91 @@ module Js_error = struct
   let () = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
 end
 
+module Typed_array = struct
+  open Js
+
+  class type arrayBuffer =
+    object
+      method byteLength : int readonly_prop
+
+      method slice : int -> int -> arrayBuffer t meth
+
+      method slice_toEnd : int -> arrayBuffer t meth
+    end
+
+  class type arrayBufferView =
+    object
+      method buffer : arrayBuffer t readonly_prop
+
+      method byteOffset : int readonly_prop
+
+      method byteLength : int readonly_prop
+    end
+
+  class type ['a, 'b] typedArray =
+    object
+      inherit arrayBufferView
+
+      method _BYTES_PER_ELEMENT : int readonly_prop
+
+      method length : int readonly_prop
+
+      method set_fromArray : 'a js_array t -> int -> unit meth
+
+      method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
+
+      method subarray : int -> int -> ('a, 'b) typedArray t meth
+
+      method subarray_toEnd : int -> ('a, 'b) typedArray t meth
+
+      method slice : int -> int -> ('a, 'b) typedArray t meth
+
+      method slice_toEnd : int -> ('a, 'b) typedArray t meth
+
+      (* This fake method is needed for typing purposes.
+         Without it, ['b] would not be constrained. *)
+      method _content_type_ : 'b optdef readonly_prop
+    end
+
+  external kind : ('a, 'b) typedArray t -> ('a, 'b) Bigarray.kind
+    = "caml_ba_kind_of_typed_array"
+
+  external from_genarray :
+    ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t -> ('a, 'b) typedArray t
+    = "caml_ba_to_typed_array"
+
+  external to_genarray :
+    ('a, 'b) typedArray t -> ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t
+    = "caml_ba_from_typed_array"
+
+  let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
+   fun a i v -> Unsafe.set (Unsafe.coerce a) i v
+
+  let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
+
+  let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
+
+  module Bigstring = struct
+    type uint8Array = (int, Bigarray.int8_unsigned_elt) typedArray
+
+    type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+    external to_arrayBuffer : t -> arrayBuffer Js.t = "bigstring_to_array_buffer"
+
+    external to_uint8Array : t -> uint8Array Js.t = "bigstring_to_typed_array"
+
+    external of_arrayBuffer : arrayBuffer Js.t -> t = "bigstring_of_array_buffer"
+
+    external of_uint8Array : uint8Array Js.t -> t = "bigstring_of_typed_array"
+  end
+
+  module String = struct
+    type uint8Array = (int, Bigarray.int8_unsigned_elt) typedArray
+
+    external of_uint8Array : uint8Array Js.t -> string = "caml_string_of_array"
+  end
+end
+
 module Sys = struct
   external create_file : name:string -> content:string -> unit = "caml_create_file"
 
