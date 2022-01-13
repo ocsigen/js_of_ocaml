@@ -21,33 +21,54 @@
 open! Stdlib
 open Code
 
+type prop =
+  { size : int
+  ; try_catch : bool
+  ; optimizable : bool
+  }
+
 let optimizable blocks pc _ =
   Code.traverse
     { fold = Code.fold_children }
-    (fun pc acc ->
-      if not acc
-      then acc
-      else
-        let b = Addr.Map.find pc blocks in
+    (fun pc { size; try_catch; optimizable } ->
+      let b = Addr.Map.find pc blocks in
+      let this_size =
+        match b with
+        | { branch; body; _ } -> (
+            List.length body
+            +
+            match branch with
+            | Cond _ -> 2
+            | Switch (_, a1, a2) -> Array.length a1 + Array.length a2
+            | _ -> 0)
+      in
+      let try_catch =
+        try_catch
+        ||
         match b with
         | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
-          -> false
-        | _ ->
-            List.for_all b.body ~f:(function
-                | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
-                | Let (_, Prim (Extern "debugger", _)) -> false
-                | Let
-                    ( _
-                    , Prim
-                        (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
-                    ) ->
-                    (* TODO: we should be smarter here and look the generated js *)
-                    (* let's consider it this opmiziable *)
-                    true
-                | _ -> true))
+          -> true
+        | _ -> false
+      in
+      let optimizable =
+        optimizable
+        || List.for_all b.body ~f:(function
+               | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
+               | Let (_, Prim (Extern "debugger", _)) -> false
+               | Let
+                   ( _
+                   , Prim
+                       (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
+                   ) ->
+                   (* TODO: we should be smarter here and look the generated js *)
+                   (* let's consider it this opmiziable *)
+                   true
+               | _ -> true)
+      in
+      { try_catch; optimizable; size = size + this_size })
     pc
     blocks
-    true
+    { try_catch = false; optimizable = true; size = 0 }
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k -> (
@@ -174,22 +195,27 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
-let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
+let inline live_vars closures pc (outer, blocks, free_pc) =
   let block = Addr.Map.find pc blocks in
-  let body, (branch, blocks, free_pc) =
+  let body, (outer, branch, blocks, free_pc) =
     List.fold_right
       block.body
-      ~init:([], (block.branch, blocks, free_pc))
+      ~init:([], (outer, block.branch, blocks, free_pc))
       ~f:(fun i (rem, state) ->
         match i with
         | Let (x, Apply (f, args, true)) when Var.Map.mem f closures -> (
-            let branch, blocks, free_pc = state in
-            let params, clos_cont, f_optimizable = Var.Map.find f closures in
+            let outer, branch, blocks, free_pc = state in
+            let ( params
+                , clos_cont
+                , { size = f_size; optimizable = f_optimizable; try_catch = f_try_catch }
+                ) =
+              Var.Map.find f closures
+            in
             match simple blocks clos_cont [ params, args ] with
             | `Alias arg -> (
                 match rem, branch with
                 | [], Return y when Var.compare x y = 0 ->
-                    [], (Return arg, blocks, free_pc)
+                    [], (outer, Return arg, blocks, free_pc)
                 | _ ->
                     let blocks =
                       Addr.Map.add
@@ -197,17 +223,20 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                         { params = [ x ]; handler = block.handler; body = rem; branch }
                         blocks
                     in
-                    [], (Branch (free_pc, [ arg ]), blocks, free_pc + 1))
+                    [], (outer, Branch (free_pc, [ arg ]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
-                if live_vars.(Var.idx f) = 1 && Bool.equal outer_optimizable f_optimizable
+                if live_vars.(Var.idx f) = 1
+                   && Bool.equal outer.optimizable f_optimizable
+                   && Bool.equal outer.try_catch f_try_catch
+                   && f_size < Config.Param.inlining_limit ()
                    (* Inlining the code of an optimizable function could
                       make this code unoptimized. (wrt to Jit compilers)
 
                       At the moment, V8 doesn't optimize function
                       containing try..catch.  We disable inlining if the
                       inner and outer functions don't have the same
-                      "contain_try_catch" property *)
+                      "try_catch" property *)
                 then
                   let blocks, cont_pc =
                     match rem, branch with
@@ -241,7 +270,8 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                       }
                       blocks
                   in
-                  [], (Branch (free_pc + 1, args), blocks, free_pc + 2)
+                  let outer = { outer with size = outer.size + f_size } in
+                  [], (outer, Branch (free_pc + 1, args), blocks, free_pc + 2)
                 else i :: rem, state)
         | Let (x, Closure (l, (pc, []))) -> (
             let block = Addr.Map.find pc blocks in
@@ -262,7 +292,7 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)
   in
-  Addr.Map.add pc { block with body; branch } blocks, free_pc
+  outer, Addr.Map.add pc { block with body; branch } blocks, free_pc
 
 (****)
 
@@ -272,24 +302,28 @@ let f p live_vars =
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
-  let blocks, free_pc =
+  let _closures, blocks, free_pc =
     Code.fold_closures
       p
-      (fun name _ (pc, _) (blocks, free_pc) ->
-        let outer_optimizable =
-          match name with
-          | None -> optimizable blocks pc true
-          | Some x ->
-              let _, _, b = Var.Map.find x closures in
-              b
+      (fun name _ (pc, _) (closures, blocks, free_pc) ->
+        let traverse outer =
+          Code.traverse
+            { fold = Code.fold_children }
+            (inline live_vars closures)
+            pc
+            blocks
+            (outer, blocks, free_pc)
         in
-        Code.traverse
-          { fold = Code.fold_children }
-          (inline closures live_vars outer_optimizable)
-          pc
-          blocks
-          (blocks, free_pc))
-      (p.blocks, p.free_pc)
+        match name with
+        | None ->
+            let _, blocks, free_pc = traverse (optimizable blocks pc true) in
+            closures, blocks, free_pc
+        | Some x ->
+            let l, c, outer = Var.Map.find x closures in
+            let outer, blocks, free_pc = traverse outer in
+            let closures = Var.Map.add x (l, c, outer) closures in
+            closures, blocks, free_pc)
+      (closures, p.blocks, p.free_pc)
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   let p = { p with blocks; free_pc } in
