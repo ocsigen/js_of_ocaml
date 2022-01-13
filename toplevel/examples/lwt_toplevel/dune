@@ -87,6 +87,7 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --pretty
    --Werror
    -I
    %{lib:reactiveData:.}
