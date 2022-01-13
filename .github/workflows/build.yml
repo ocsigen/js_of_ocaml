@@ -87,7 +87,7 @@ jobs:
       - name: build doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
         run: |
-           opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
+           opam install odoc.1.5.3 lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
            opam exec -- make doc
 
       - name: synchronize doc
