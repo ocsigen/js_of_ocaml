@@ -390,12 +390,11 @@ module Typed_array = struct
     ('a, 'b) typedArray t -> ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t
     = "caml_ba_from_typed_array"
 
-  let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
-   fun a i v -> Unsafe.set (Unsafe.coerce a) i v
+  external set : ('a, 'b) typedArray t -> int -> 'a -> unit = "caml_js_set"
 
-  let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
+  external get : ('a, 'b) typedArray t -> int -> 'a optdef = "caml_js_get"
 
-  let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
+  external unsafe_get : ('a, 'b) typedArray t -> int -> 'a = "caml_js_get"
 
   module Bigstring = struct
     type uint8Array = (int, Bigarray.int8_unsigned_elt) typedArray

@@ -168,11 +168,11 @@ val float64Array_fromBuffer : (arrayBuffer t -> float64Array t) constr
 
 val float64Array_inBuffer : (arrayBuffer t -> int -> int -> float64Array t) constr
 
-val set : ('a, 'b) typedArray t -> int -> 'a -> unit
+external set : ('a, 'b) typedArray t -> int -> 'a -> unit = "caml_js_set"
 
-val get : ('a, 'b) typedArray t -> int -> 'a optdef
+external get : ('a, 'b) typedArray t -> int -> 'a optdef = "caml_js_get"
 
-val unsafe_get : ('a, 'b) typedArray t -> int -> 'a
+external unsafe_get : ('a, 'b) typedArray t -> int -> 'a = "caml_js_get"
 
 class type dataView =
   object
