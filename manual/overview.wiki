@@ -15,8 +15,7 @@ bytecode provides a very stable API.
 
 Js_of_ocaml is composed of multiple packages:
   * js_of_ocaml-compiler, the compiler.
-  * js_of_ocaml-ppx, the ppx syntax extension (recommended).
-  * js_of_ocaml-camlp4, the camlp4 syntax extension (deprecated).
+  * js_of_ocaml-ppx, a ppx syntax extension.
   * js_of_ocaml, the base library.
   * js_of_ocaml-ocamlbuild, an ocamlbuild plugin to compile to
     javascript.

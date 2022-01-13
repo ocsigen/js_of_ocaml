@@ -46,7 +46,7 @@ opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
 
 Your program must first be compiled using the OCaml bytecode compiler `ocamlc`.
 JavaScript bindings are provided by the `js_of_ocaml` package. The syntax
-extension is provided by `js_of_ocaml.syntax` package.
+extension is provided by `js_of_ocaml-ppx` package.
 
 ```
 ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx -linkpkg -o cubes.byte cubes.ml
