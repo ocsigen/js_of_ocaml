@@ -306,33 +306,23 @@ let f p live_vars =
     Code.fold_closures
       p
       (fun name _ (pc, _) (closures, blocks, free_pc) ->
-        let outer_optimizable =
-          match name with
-          | None -> optimizable blocks pc true
-          | Some x ->
-              let _, _, b = Var.Map.find x closures in
-              b
-        in
-        let outer_optimizable, blocks, free_pc =
+        let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
             (inline live_vars closures)
             pc
             blocks
-            (outer_optimizable, blocks, free_pc)
+            (outer, blocks, free_pc)
         in
-        let closures =
-          match name with
-          | None -> closures
-          | Some x ->
-              Var.Map.update
-                x
-                (function
-                  | None -> None
-                  | Some (l, c, _) -> Some (l, c, outer_optimizable))
-                closures
-        in
-        closures, blocks, free_pc)
+        match name with
+        | None ->
+            let _, blocks, free_pc = traverse (optimizable blocks pc true) in
+            closures, blocks, free_pc
+        | Some x ->
+            let l, c, outer = Var.Map.find x closures in
+            let outer, blocks, free_pc = traverse outer in
+            let closures = Var.Map.add x (l, c, outer) closures in
+            closures, blocks, free_pc)
       (closures, p.blocks, p.free_pc)
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
