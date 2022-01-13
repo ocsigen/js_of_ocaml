@@ -21,7 +21,7 @@
   (select
    colorize.ml
    from
-   (higlo higlo.ocaml -> colorize.higlo.ml)
+   (higlo -> colorize.higlo.ml)
    (!higlo -> colorize.fake.ml))
   (select
    graphics_support.ml

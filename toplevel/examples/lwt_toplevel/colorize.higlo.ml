@@ -4,20 +4,20 @@ open Js_of_ocaml_tyxml
 let text ~a_class:cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ])
 
 let ocaml ~a_class:cl s =
-  let tks = Higlo.parse ~lang:"ocaml" s in
+  let tks = Higlo.Lang.parse ~lang:"ocaml" s in
   let span' cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ]) in
   let make_span = function
-    | Higlo.Bcomment s -> span' "comment" s
-    | Higlo.Constant s -> span' "constant" s
-    | Higlo.Directive s -> span' "directive" s
-    | Higlo.Escape s -> span' "escape" s
-    | Higlo.Id s -> span' "id" s
-    | Higlo.Keyword (level, s) -> span' (Printf.sprintf "kw%d" level) s
-    | Higlo.Lcomment s -> span' "comment" s
-    | Higlo.Numeric s -> span' "numeric" s
-    | Higlo.String s -> span' "string" s
-    | Higlo.Symbol (level, s) -> span' (Printf.sprintf "sym%d" level) s
-    | Higlo.Text s -> span' "text" s
+    | Higlo.Lang.Bcomment s -> span' "comment" s
+    | Higlo.Lang.Constant s -> span' "constant" s
+    | Higlo.Lang.Directive s -> span' "directive" s
+    | Higlo.Lang.Escape s -> span' "escape" s
+    | Higlo.Lang.Id s -> span' "id" s
+    | Higlo.Lang.Keyword (level, s) -> span' (Printf.sprintf "kw%d" level) s
+    | Higlo.Lang.Lcomment s -> span' "comment" s
+    | Higlo.Lang.Numeric s -> span' "numeric" s
+    | Higlo.Lang.String s -> span' "string" s
+    | Higlo.Lang.Symbol (level, s) -> span' (Printf.sprintf "sym%d" level) s
+    | Higlo.Lang.Text s -> span' "text" s
   in
   Tyxml_js.Html.(div ~a:[ a_class [ cl ] ] (List.map make_span tks))
 
