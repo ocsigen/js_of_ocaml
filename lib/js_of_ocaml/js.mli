@@ -681,9 +681,35 @@ val error_constr : (js_string t -> error t) constr
       [new%js error_constr (msg)]
       returns an [Error] object with the message [msg]. *)
 
+module Js_error : sig
+  type error_t = error t
+
+  type t
+
+  val to_string : t -> string
+
+  val raise_ : t -> 'a
+
+  val of_exn : exn -> t option
+  (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
+      inspect an eventual stack strace, especially when sourcemap is enabled. *)
+
+  exception Exn of t
+  (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
+      In case the javascript exception is not an instance of javascript [Error],
+      it will be serialized and wrapped into a [Failure] exception.
+  *)
+
+  val of_error : error_t -> t
+
+  val to_error : t -> error_t
+end
+
 val string_of_error : error t -> string
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.to_string] instead."]
 
 val raise_js_error : error t -> 'a
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
 
 val exn_with_js_backtrace : exn -> force:bool -> exn
 (** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
@@ -695,13 +721,14 @@ val exn_with_js_backtrace : exn -> force:bool -> exn
 *)
 
 val js_error_of_exn : exn -> error t opt
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.of_exn] instead."]
 (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
     inspect an eventual stack strace, especially when sourcemap is enabled. *)
 
-exception Error of error t
+exception Error of error t [@ocaml.deprecated "[since 3.12] Use [Js_error.Exn] instead."]
 (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
-      In case the javascript exception is not an instance of javascript [Error],
-      it will be serialized and wrapped into a [Failure] exception.
+    In case the javascript exception is not an instance of javascript [Error],
+    it will be serialized and wrapped into a [Failure] exception.
   *)
 
 (** Specification of Javascript JSON object. *)
