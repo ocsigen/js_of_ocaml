@@ -30,6 +30,7 @@ module Geolocation = Geolocation
 module IntersectionObserver = IntersectionObserver
 module Intl = Intl
 module Js = Js
+module Js_error = Js.Js_error
 module Json = Json
 module Jstable = Jstable
 module MutationObserver = MutationObserver

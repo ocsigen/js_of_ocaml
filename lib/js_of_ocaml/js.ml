@@ -671,13 +671,35 @@ class type error =
     method toString : js_string t meth
   end
 
-exception Error of error t
-
 let error_constr = Unsafe.global##._Error
 
-let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
+module Js_error = struct
+  type error_t = error t
 
-let raise_js_error : error t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
+  type t = error Js.t
+
+  exception Exn of t
+
+  let _ = Callback.register_exception "jsError" (Exn (Unsafe.obj [||]))
+
+  let to_string e = to_string e##toString
+
+  let raise_ : t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
+
+  external of_exn' : exn -> t opt = "caml_js_error_of_exception"
+
+  let of_exn e = Opt.to_option (of_exn' e)
+
+  let to_error x = x
+
+  let of_error x = x
+end
+
+exception Error = Js_error.Exn
+
+let raise_js_error = Js_error.raise_
+
+let string_of_error = Js_error.to_string
 
 external exn_with_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
 
@@ -746,8 +768,6 @@ let _ =
   Printexc.register_printer (fun e ->
       let e : < .. > t = Obj.magic e in
       if instanceof e array_constructor then None else Some (to_string e##toString))
-
-let string_of_error e = to_string e##toString
 
 let export_js (field : js_string t) x =
   Unsafe.set (Unsafe.pure_js_expr "jsoo_exports") field x
