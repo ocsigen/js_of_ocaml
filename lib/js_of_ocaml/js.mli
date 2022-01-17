@@ -982,11 +982,14 @@ end
 
 (** {2 Deprecated functions and types.} *)
 
-external float : float -> float = "%identity"
+external float : float -> float = "%identity" [@@ocaml.deprecated "[since 2.0]."]
+
 (** Conversion of OCaml floats to Javascript numbers. *)
 
-external to_float : float -> float = "%identity"
+external to_float : float -> float = "%identity" [@@ocaml.deprecated "[since 2.0]."]
+
 (** Conversion of Javascript numbers to OCaml floats. *)
 
-type float_prop = float prop
+type float_prop = float prop [@@ocaml.deprecated "[since 2.0]."]
+
 (** Type of float properties. *)

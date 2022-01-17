@@ -3162,6 +3162,7 @@ val js_array_of_collection : #element collection Js.t -> #element Js.t Js.js_arr
 (** {2 Deprecated function.} *)
 
 val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
+  [@@ocaml.deprecated "[since 2.6] Use [Dom_html.window##requestAnimationFrame] instead."]
 (** Call the appropriate [requestAnimationFrame] method variant
       (depending on the navigator), or sleep for a short amount
       of time when there no such method is provided. We currently
