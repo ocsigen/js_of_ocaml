@@ -173,3 +173,9 @@ function caml_js_error_of_exception(exn) {
   if(exn.js_error) { return exn.js_error; }
   return null;
 }
+
+//Provides: caml_js_error_option_of_exception
+function caml_js_error_option_of_exception(exn) {
+  if(exn.js_error) { return [0, exn.js_error]; }
+  return 0;
+}

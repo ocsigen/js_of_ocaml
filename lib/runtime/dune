@@ -1,0 +1,19 @@
+(library
+  (name jsoo_runtime)
+  (foreign_stubs
+    (language c)
+    (names js_of_ocaml_runtime_stubs))
+
+  (public_name js_of_ocaml-compiler.runtime)
+)
+
+
+(rule
+ (targets js_of_ocaml_runtime_stubs.c)
+ (deps
+  (glob_files *.ml))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ../gen_stubs/gen_stubs.exe %{deps}))))

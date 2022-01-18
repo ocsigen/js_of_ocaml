@@ -676,38 +676,37 @@ let error_constr = Unsafe.global##._Error
 module Js_error = struct
   type error_t = error t
 
-  type t = error Js.t
-
-  exception Exn of t
-
-  let _ = Callback.register_exception "jsError" (Exn (Unsafe.obj [||]))
-
-  let name e = to_string e##.name
-
-  let message e = to_string e##.message
-
-  let stack (e : t) : string option = Opt.to_option (Opt.map e##.stack to_string)
-
-  let to_string e = to_string e##toString
+  type t = error_t
 
   let raise_ : t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
 
-  external of_exn' : exn -> t opt = "caml_js_error_of_exception"
+  external of_exn : exn -> t option = "caml_js_error_option_of_exception"
 
   external attach_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
 
-  let of_exn e = Opt.to_option (of_exn' e)
+  exception Exn of t
 
-  let to_error x = x
+  let _ = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
 
-  let of_error x = x
+  external of_error : error_t -> t = "%identity"
+
+  external to_error : t -> error_t = "%identity"
+
+  let name e = to_string (to_error e)##.name
+
+  let message e = to_string (to_error e)##.message
+
+  let stack (e : t) : string option =
+    Opt.to_option (Opt.map (to_error e)##.stack to_string)
+
+  let to_string e = to_string (to_error e)##toString
 end
 
 exception Error = Js_error.Exn
 
-let raise_js_error = Js_error.raise_
+let raise_js_error e = Js_error.raise_ (Js_error.of_error e)
 
-let string_of_error = Js_error.to_string
+let string_of_error e = Js_error.to_string (Js_error.of_error e)
 
 let exn_with_js_backtrace = Js_error.attach_js_backtrace
 
@@ -769,7 +768,7 @@ let parseFloat (s : js_string t) : float =
 
 let _ =
   Printexc.register_printer (function
-      | Error e -> Some (to_string e##toString)
+      | Js_error.Exn e -> Some (Js_error.to_string e)
       | _ -> None)
 
 let _ =
@@ -796,21 +795,3 @@ type float_prop = float prop
 external float : float -> float = "%identity"
 
 external to_float : float -> float = "%identity"
-
-[@@@ocaml.warning "-32-60"]
-
-module For_compatibility_only = struct
-  (* Add primitives for compatibility reasons. Existing users might
-     depend on it (e.g. gen_js_api), we dont want the ocaml compiler
-     to complain about theses missing primitives. *)
-
-  external caml_js_from_string : string -> js_string t = "caml_js_from_string"
-
-  external caml_js_to_byte_string : js_string t -> string = "caml_js_to_byte_string"
-
-  external caml_js_to_string : js_string t -> string = "caml_js_to_string"
-
-  external caml_list_of_js_array : 'a js_array t -> 'a list = "caml_list_of_js_array"
-
-  external caml_list_to_js_array : 'a list -> 'a js_array t = "caml_list_to_js_array"
-end

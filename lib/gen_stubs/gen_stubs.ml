@@ -29,30 +29,39 @@ let print_stub s =
 
 let () =
   let mls = ref [] in
+  let except_mls = ref [] in
   Arg.parse
-    []
-    (fun ml -> if not (Filename.check_suffix ml ".pp.ml") then mls := ml :: !mls)
+    [ "--except", Rest_all (fun l -> except_mls := l), "" ]
+    (fun ml -> mls := ml :: !mls)
     "generate dummy js stubs";
-  let externals = ref String_set.empty in
-  let value_description _mapper desc =
-    let l = List.filter (fun x -> x.[0] <> '%') desc.Parsetree.pval_prim in
-    externals := List.fold_right String_set.add l !externals;
-    desc
+  let real_ml ml = not (Filename.check_suffix ml ".pp.ml") in
+  let get_externals l =
+    let l = List.filter real_ml l in
+    let externals = ref String_set.empty in
+    let value_description _mapper desc =
+      let l = List.filter (fun x -> x.[0] <> '%') desc.Parsetree.pval_prim in
+      externals := List.fold_right String_set.add l !externals;
+      desc
+    in
+    let mapper = { Ast_mapper.default_mapper with value_description } in
+    List.iter
+      (fun ml ->
+        let in_ = open_in ml in
+        (try
+           Location.input_name := ml;
+           let lex = Lexing.from_channel in_ in
+           let impl = Parse.implementation lex in
+           let (_ : Parsetree.structure) = mapper.structure mapper impl in
+           ()
+         with exn -> Location.report_exception Format.std_formatter exn);
+        close_in_noerr in_)
+      l;
+    !externals
   in
-  let mapper = { Ast_mapper.default_mapper with value_description } in
-  List.iter
-    (fun ml ->
-      let in_ = open_in ml in
-      (try
-         Location.input_name := ml;
-         let lex = Lexing.from_channel in_ in
-         let impl = Parse.implementation lex in
-         let (_ : Parsetree.structure) = mapper.structure mapper impl in
-         ()
-       with exn -> Location.report_exception Format.std_formatter exn);
-      close_in_noerr in_)
-    !mls;
+  let mls = get_externals !mls in
+  let except_mls = get_externals !except_mls in
+  let externals = String_set.diff mls except_mls in
   set_binary_mode_out stdout true;
   print_endline "#include <stdlib.h>";
   print_endline "#include <stdio.h>";
-  String_set.iter print_stub !externals
+  String_set.iter print_stub externals
