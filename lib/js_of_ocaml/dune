@@ -11,8 +11,10 @@
 (rule
  (targets js_of_ocaml_stubs.c)
  (deps
-  (:jsoo (glob_files *.ml))
-  (:runtime (glob_files ../runtime/*.ml)))
+  (:jsoo
+   (glob_files *.ml))
+  (:runtime
+   (glob_files ../runtime/*.ml)))
  (mode promote)
  (action
   (with-stdout-to

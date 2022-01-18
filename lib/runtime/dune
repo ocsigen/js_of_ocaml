@@ -1,12 +1,9 @@
 (library
-  (name jsoo_runtime)
-  (foreign_stubs
-    (language c)
-    (names js_of_ocaml_runtime_stubs))
-
-  (public_name js_of_ocaml-compiler.runtime)
-)
-
+ (name jsoo_runtime)
+ (foreign_stubs
+  (language c)
+  (names js_of_ocaml_runtime_stubs))
+ (public_name js_of_ocaml-compiler.runtime))
 
 (rule
  (targets js_of_ocaml_runtime_stubs.c)
