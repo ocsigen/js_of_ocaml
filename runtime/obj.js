@@ -123,7 +123,7 @@ function caml_set_oo_id (b) {
   return b;
 }
 
-//Provides: caml_fresh_oo_id
+//Provides: caml_fresh_oo_id const
 //Requires: caml_oo_last_id
 function caml_fresh_oo_id() {
   return caml_oo_last_id++;
