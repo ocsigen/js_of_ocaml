@@ -23,7 +23,7 @@ open Js_of_ocaml_compiler
 let f () =
   let output = stdout in
   let new_line () = output_string output "\n" in
-  List.iter Jsoo_runtime.runtime ~f:(fun x ->
+  List.iter Js_of_ocaml_compiler_runtime_files.runtime ~f:(fun x ->
       output_string output (Printf.sprintf "//# 1 %S" (Builtins.File.name x));
       new_line ();
       output_string output (Builtins.File.content x);

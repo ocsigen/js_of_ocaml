@@ -1,6 +1,6 @@
 (library
  (name jsoo_lib_runtime_test)
- (libraries jsoo_runtime)
+ (libraries js_of_ocaml-compiler.runtime-files)
  (inline_tests
   (flags -allow-output-patterns)
   (modes native))

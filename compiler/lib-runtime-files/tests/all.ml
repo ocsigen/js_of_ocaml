@@ -6,7 +6,7 @@ module SS = Set.Make (String)
 
 let%expect_test _ =
   let all = List.map Builtins.File.name (Builtins.all ()) in
-  let runtime = List.map Builtins.File.name Jsoo_runtime.runtime in
+  let runtime = List.map Builtins.File.name Js_of_ocaml_compiler_runtime_files.runtime in
   let extra = SS.elements (SS.diff (SS.of_list all) (SS.of_list runtime)) in
   printl all;
   [%expect
