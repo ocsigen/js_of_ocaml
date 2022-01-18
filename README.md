@@ -21,8 +21,6 @@ Js_of_ocaml is composed of multiple packages:
 - js_of_ocaml-ppx_deriving_json
 - js_of_ocaml-lwt, lwt support.
 - js_of_ocaml-tyxml, tyxml support.
-- js_of_ocaml-ocamlbuild, an ocamlbuild plugin to compile to
-  javascript.
 - js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
   javascript.
 
@@ -152,4 +150,3 @@ comparison, and hashing functions can yield results different from usual:
 | ppx/        | ppx syntax extensions                        |
 | runtime/    | runtime system                               |
 | toplevel/   | web-based OCaml toplevel                     |
-| ocamlbuild/ | ocamlbuild plugin for js_of_ocaml            |

@@ -54,20 +54,6 @@
 ))
 
 (package
- (name js_of_ocaml-ocamlbuild)
- (synopsis "Compiler from OCaml bytecode to JavaScript")
- (description
-  "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
- (depends
-  (ocaml (>= 4.04))
-  ocamlbuild
-  (num :with-test)
-  (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (and (>= 0.22.0) :with-test))
-  (re (and (>= 1.9.0) :with-test))
-))
-
-(package
  (name js_of_ocaml-ppx_deriving_json)
  (synopsis "Compiler from OCaml bytecode to JavaScript")
  (description

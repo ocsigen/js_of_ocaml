@@ -1,5 +1,0 @@
-(library
- (name ocamlbuild_js_of_ocaml)
- (public_name js_of_ocaml-ocamlbuild)
- (synopsis "Js_of_ocaml ocamlbuild plugin")
- (libraries ocamlbuild str))
