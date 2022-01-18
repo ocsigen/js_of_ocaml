@@ -10,11 +10,14 @@
 * Compiler: use globalThis, drop joo_global_object #1193
 * Compiler: new -Werror flag to turn wanrings into errors (#1222)
 * Compiler: make the inlining less agressive, reduce size, improve pref (#1220)
+* Compiler: rename internal library js_of_ocaml-compiler.runtime to js_of_ocaml-compiler.runtime-files
+* Lib: new runtime library to improve compatibility with Brr and gen_js_api
 * Lib: add messageEvent to Dom_html (#1164)
 * Lib: add PerformanceObserver API (#1164)
 * Lib: add CSSStyleDeclaration.{setProperty, getPropertyValue, getPropertyPriority, removeProperty} (#1170)
 * Lib: make window.{inner,outer}{Width,Height} non-optional
 * Lib: introduce Js_of_ocaml.Js_error module, deprecate Js_of_ocaml.Js.Error exception.
+* Lib: add deprecation warning for deprecated code
 * PPX: json can now be derived for mutable records (#1184)
 * Runtime: use crypto.getRandomValues when available (#1209)
 
@@ -25,6 +28,7 @@
 * Compiler: fix parsing of annotaions in js stubs (#1212, fix #1213)
 * Ppx: allow apostrophe in lident (fix #1183) (#1192)
 * Runtime: fix float parsing in hexadecimal form
+* Runtime: fix implementation of caml_js_instanceof
 * Graphics: fix mouse_{x,y} (#1206)
 
 # 3.11.0 (2021-10-06) - Lille
