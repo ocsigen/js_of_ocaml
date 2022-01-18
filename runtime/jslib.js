@@ -30,7 +30,7 @@ function caml_js_get(o,f) { return o[f]; }
 function caml_js_delete(o,f) { delete o[f]; return 0}
 
 //Provides: caml_js_instanceof (const, const)
-function caml_js_instanceof(o,c) { return o instanceof c; }
+function caml_js_instanceof(o,c) { return (o instanceof c) ? 1 : 0; }
 
 //Provides: caml_js_typeof (const)
 function caml_js_typeof(o) { return typeof o; }
