@@ -1,6 +1,10 @@
 module Js = struct
   type t
 
+  type 'a js_array = t
+
+  type ('a, 'b) meth_callback = t
+
   external string : string -> t = "caml_jsstring_of_string"
 
   external to_string : t -> string = "caml_string_of_jsstring"
@@ -41,7 +45,7 @@ module Js = struct
 
   external new_obj : t -> t array -> t = "caml_js_new"
 
-  external new_obj_arr : t -> t -> t = "caml_ojs_new_arr"
+  external new_obj_arr : t -> t js_array -> t = "caml_ojs_new_arr"
 
   external obj : (string * t) array -> t = "caml_js_object"
 
@@ -55,21 +59,28 @@ module Js = struct
 
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
-  external callback_with_arguments : (t -> 'b) -> t = "caml_js_wrap_callback_arguments"
+  external callback_with_arguments :
+    (t js_array -> 'b) -> ('c, t js_array -> 'b) meth_callback
+    = "caml_js_wrap_callback_arguments"
 
-  external callback_with_arity : int -> ('a -> 'b) -> t = "caml_js_wrap_callback_strict"
+  external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+    = "caml_js_wrap_callback_strict"
 
-  external meth_callback : ('b -> 'a) -> t = "caml_js_wrap_meth_callback_unsafe"
+  external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
+    = "caml_js_wrap_meth_callback_unsafe"
 
-  external meth_callback_with_arity : int -> ('b -> 'a) -> t
+  external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_strict"
 
-  external meth_callback_with_arguments : ('b -> t -> 'a) -> t
+  external meth_callback_with_arguments :
+    ('b -> t js_array -> 'a) -> ('b, t js_array -> 'a) meth_callback
     = "caml_js_wrap_meth_callback_arguments"
 
-  external wrap_callback : ('a -> 'b) -> t = "caml_js_wrap_callback"
+  external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+    = "caml_js_wrap_callback"
 
-  external wrap_meth_callback : ('a -> 'b) -> t = "caml_js_wrap_meth_callback"
+  external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+    = "caml_js_wrap_meth_callback"
 end
 
 module Sys = struct
@@ -142,9 +153,9 @@ module For_compatibility_only = struct
 
   external caml_js_to_string : Js.t -> string = "caml_js_to_string"
 
-  external caml_list_of_js_array : Js.t -> 'a list = "caml_list_of_js_array"
+  external caml_list_of_js_array : 'a Js.js_array -> 'a list = "caml_list_of_js_array"
 
-  external caml_list_to_js_array : 'a list -> Js.t = "caml_list_to_js_array"
+  external caml_list_to_js_array : 'a list -> 'a Js.js_array = "caml_list_to_js_array"
 
   external variable : string -> 'a = "caml_js_var"
 end
