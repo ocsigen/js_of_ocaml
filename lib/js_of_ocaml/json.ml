@@ -36,9 +36,6 @@ class type json =
 
 let json : json Js.t = Unsafe.global##._JSON
 
-external create_int64_lo_mi_hi : int -> int -> int -> Int64.t
-  = "caml_int64_create_lo_mi_hi"
-
 let input_reviver =
   let reviver _this _key (value : Unsafe.any) : Obj.t =
     if typeof value == string "string"
@@ -48,7 +45,7 @@ let input_reviver =
             && Unsafe.get value 0 == 255
     then
       Obj.repr
-        (create_int64_lo_mi_hi
+        (Jsoo_runtime.Int64.create_int64_lo_mi_hi
            (Unsafe.get value 1)
            (Unsafe.get value 2)
            (Unsafe.get value 3))
