@@ -676,17 +676,7 @@ let error_constr = Unsafe.global##._Error
 module Js_error = struct
   type error_t = error t
 
-  type t = error_t
-
-  let raise_ : t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"
-
-  external of_exn : exn -> t option = "caml_js_error_option_of_exception"
-
-  external attach_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
-
-  exception Exn of t
-
-  let _ = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
+  include Jsoo_runtime.Error
 
   external of_error : error_t -> t = "%identity"
 
@@ -702,7 +692,26 @@ module Js_error = struct
   let to_string e = to_string (to_error e)##toString
 end
 
-exception Error = Js_error.Exn
+module Magic = struct
+  module type T = sig
+    exception Error of error t
+  end
+
+  type ('a, 'b) eq = Eq : ('a, 'a) eq
+
+  let (eq : (error t, Js_error.t) eq) = Obj.magic Eq
+
+  let m =
+    match eq with
+    | Eq ->
+        (module struct
+          exception Error = Js_error.Exn
+        end : T)
+
+  module Error = (val m : T)
+end
+
+include Magic.Error
 
 let raise_js_error e = Js_error.raise_ (Js_error.of_error e)
 
