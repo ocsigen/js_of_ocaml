@@ -351,10 +351,13 @@ Firebug.console##log_2(Js.string "update", Js.date##now());
     if not !redraw_queued
     then (
       redraw_queued := true;
-      Html._requestAnimationFrame
-        (Js.wrap_callback (fun () ->
-             redraw_queued := false;
-             redraw st (get_scale ()) hadj#value vadj#value canvas)))
+      let (_ : Html.animation_frame_request_id) =
+        Html.window##requestAnimationFrame
+          (Js.wrap_callback (fun (_ : float) ->
+               redraw_queued := false;
+               redraw st (get_scale ()) hadj#value vadj#value canvas))
+      in
+      ())
     (*
     if force then redraw st (get_scale ()) hadj#value vadj#value canvas else
     if not !redraw_queued then

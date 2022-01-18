@@ -605,7 +605,10 @@ let transitionends ?cancel_handler elt f =
 
 let request_animation_frame () =
   let t, s = Lwt.wait () in
-  Dom_html._requestAnimationFrame (Js.wrap_callback (fun () -> Lwt.wakeup s ()));
+  let (_ : Dom_html.animation_frame_request_id) =
+    Dom_html.window##requestAnimationFrame
+      (Js.wrap_callback (fun (_ : float) -> Lwt.wakeup s ()))
+  in
   t
 
 let onload () = make_event Dom_html.Event.load Dom_html.window

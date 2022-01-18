@@ -813,8 +813,11 @@ let schedule_redraw () =
   if not !need_redraw
   then (
     need_redraw := true;
-    Html._requestAnimationFrame
-      (Js.wrap_callback (fun () -> if !need_redraw then perform_redraw ())))
+    let (_ : Html.animation_frame_request_id) =
+      Html.window##requestAnimationFrame
+        (Js.wrap_callback (fun (_ : float) -> if !need_redraw then perform_redraw ()))
+    in
+    ())
 
 (*
 let load_image src =
