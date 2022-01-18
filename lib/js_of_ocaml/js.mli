@@ -690,6 +690,14 @@ module Js_error : sig
 
   val raise_ : t -> 'a
 
+  val attach_js_backtrace : exn -> force:bool -> exn
+  (** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
+    JavasScript error is already attached, it will do nothing. This function is useful to
+    store and retrieve information about JavaScript stack traces.
+
+    Attaching JavasScript errors will happen automatically when compiling with
+    [--enable with-js-error]. *)
+
   val of_exn : exn -> t option
   (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
       inspect an eventual stack strace, especially when sourcemap is enabled. *)
@@ -712,6 +720,7 @@ val raise_js_error : error t -> 'a
   [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
 
 val exn_with_js_backtrace : exn -> force:bool -> exn
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
 (** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
     JavasScript error is already attached, it will do nothing. This function is useful to
     store and retrieve information about JavaScript stack traces.
