@@ -22,6 +22,8 @@
 
 open Js
 
+type uint32 = float
+
 class type arrayBuffer =
   object
     method byteLength : int readonly_prop
@@ -140,7 +142,7 @@ val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
 
 val uint32Array : (int -> uint32Array t) constr
 
-val uint32Array_fromArray : (float js_array t -> uint32Array t) constr
+val uint32Array_fromArray : (uint32 js_array t -> uint32Array t) constr
 
 val uint32Array_fromTypedArray : (uint32Array t -> uint32Array t) constr
 
@@ -194,9 +196,9 @@ class type dataView =
 
     method getInt32_ : int -> bool t -> int meth
 
-    method getUint32 : int -> float meth
+    method getUint32 : int -> uint32 meth
 
-    method getUint32_ : int -> bool t -> float meth
+    method getUint32_ : int -> bool t -> uint32 meth
 
     method getFloat32 : int -> float meth
 
@@ -222,9 +224,9 @@ class type dataView =
 
     method setInt32_ : int -> int -> bool t -> unit meth
 
-    method setUint32 : int -> float -> unit meth
+    method setUint32 : int -> uint32 -> unit meth
 
-    method setUint32_ : int -> float -> bool t -> unit meth
+    method setUint32_ : int -> uint32 -> bool t -> unit meth
 
     method setFloat32 : int -> float -> unit meth
 
