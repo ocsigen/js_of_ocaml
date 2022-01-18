@@ -1,9 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-void caml_int64_create_lo_mi_hi () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_int64_create_lo_mi_hi!\n");
-  exit(1);
-}
 void caml_js_error_of_exception () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_error_of_exception!\n");
   exit(1);
@@ -22,10 +18,6 @@ void caml_js_html_escape () {
 }
 void caml_js_on_ie () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
-  exit(1);
-}
-void caml_js_var () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_var!\n");
   exit(1);
 }
 void caml_xmlhttprequest_create () {

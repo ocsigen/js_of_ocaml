@@ -145,6 +145,8 @@ module For_compatibility_only = struct
   external caml_list_of_js_array : Js.t -> 'a list = "caml_list_of_js_array"
 
   external caml_list_to_js_array : 'a list -> Js.t = "caml_list_to_js_array"
+
+  external variable : string -> 'a = "caml_js_var"
 end
 
 module Typed_array = struct
@@ -178,4 +180,9 @@ module Typed_array = struct
   end
 
   external of_uint8Array : uint8Array -> string = "caml_string_of_array"
+end
+
+module Int64 = struct
+  external create_int64_lo_mi_hi : int -> int -> int -> Int64.t
+    = "caml_int64_create_lo_mi_hi"
 end
