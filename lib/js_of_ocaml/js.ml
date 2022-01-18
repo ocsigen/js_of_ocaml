@@ -688,6 +688,8 @@ module Js_error = struct
 
   external of_exn' : exn -> t opt = "caml_js_error_of_exception"
 
+  external attach_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
+
   let of_exn e = Opt.to_option (of_exn' e)
 
   let to_error x = x
@@ -701,7 +703,7 @@ let raise_js_error = Js_error.raise_
 
 let string_of_error = Js_error.to_string
 
-external exn_with_js_backtrace : exn -> force:bool -> exn = "caml_exn_with_js_backtrace"
+let exn_with_js_backtrace = Js_error.attach_js_backtrace
 
 external js_error_of_exn : exn -> error t opt = "caml_js_error_of_exception"
 
