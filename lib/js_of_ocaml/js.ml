@@ -682,6 +682,12 @@ module Js_error = struct
 
   let _ = Callback.register_exception "jsError" (Exn (Unsafe.obj [||]))
 
+  let name e = to_string e##.name
+
+  let message e = to_string e##.message
+
+  let stack (e : t) : string option = Opt.to_option (Opt.map e##.stack to_string)
+
   let to_string e = to_string e##toString
 
   let raise_ : t -> 'a = Unsafe.js_expr "(function (exn) { throw exn })"

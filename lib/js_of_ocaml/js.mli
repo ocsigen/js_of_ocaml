@@ -688,6 +688,12 @@ module Js_error : sig
 
   val to_string : t -> string
 
+  val name : t -> string
+
+  val message : t -> string
+
+  val stack : t -> string option
+
   val raise_ : t -> 'a
 
   val attach_js_backtrace : exn -> force:bool -> exn
@@ -712,33 +718,6 @@ module Js_error : sig
 
   val to_error : t -> error_t
 end
-
-val string_of_error : error t -> string
-  [@@ocaml.deprecated "[since 3.12] Use [Js_error.to_string] instead."]
-
-val raise_js_error : error t -> 'a
-  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
-
-val exn_with_js_backtrace : exn -> force:bool -> exn
-  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
-(** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
-    JavasScript error is already attached, it will do nothing. This function is useful to
-    store and retrieve information about JavaScript stack traces.
-
-    Attaching JavasScript errors will happen automatically when compiling with
-    [--enable with-js-error].
-*)
-
-val js_error_of_exn : exn -> error t opt
-  [@@ocaml.deprecated "[since 3.12] Use [Js_error.of_exn] instead."]
-(** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
-    inspect an eventual stack strace, especially when sourcemap is enabled. *)
-
-exception Error of error t [@ocaml.deprecated "[since 3.12] Use [Js_error.Exn] instead."]
-(** The [Error] exception wrap javascript exceptions when caught by OCaml code.
-    In case the javascript exception is not an instance of javascript [Error],
-    it will be serialized and wrapped into a [Failure] exception.
-  *)
 
 (** Specification of Javascript JSON object. *)
 class type json =
@@ -985,11 +964,39 @@ module Unsafe : sig
   (** {3 Deprecated functions.} *)
 
   external variable : string -> 'a = "caml_js_var"
+    [@@ocaml.deprecated "[since 2.6] use Js.Unsafe.pure_js_expr instead"]
   (** Access a Javascript variable.  [variable "foo"] will
         return the current value of variable [foo]. *)
 end
 
 (** {2 Deprecated functions and types.} *)
+
+val string_of_error : error t -> string
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.to_string] instead."]
+
+val raise_js_error : error t -> 'a
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
+
+val exn_with_js_backtrace : exn -> force:bool -> exn
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.raise_] instead."]
+(** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
+    JavasScript error is already attached, it will do nothing. This function is useful to
+    store and retrieve information about JavaScript stack traces.
+
+    Attaching JavasScript errors will happen automatically when compiling with
+    [--enable with-js-error].
+*)
+
+val js_error_of_exn : exn -> error t opt
+  [@@ocaml.deprecated "[since 3.12] Use [Js_error.of_exn] instead."]
+(** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
+    inspect an eventual stack strace, especially when sourcemap is enabled. *)
+
+exception Error of error t [@ocaml.deprecated "[since 3.12] Use [Js_error.Exn] instead."]
+(** The [Error] exception wrap javascript exceptions when caught by OCaml code.
+    In case the javascript exception is not an instance of javascript [Error],
+    it will be serialized and wrapped into a [Failure] exception.
+  *)
 
 external float : float -> float = "%identity" [@@ocaml.deprecated "[since 2.0]."]
 
