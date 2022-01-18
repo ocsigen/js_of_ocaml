@@ -109,8 +109,18 @@ module Error : sig
   val of_exn : exn -> t option
   (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
       inspect an eventual stack strace, especially when sourcemap is enabled. *)
+
+  exception Exn of t
+  (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
+      In case the javascript exception is not an instance of javascript [Error],
+      it will be serialized and wrapped into a [Failure] exception.
+  *)
 end = struct
   type t
+
+  exception Exn of t
+
+  let _ = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
 
   let raise_ : t -> 'a = Js.js_expr "(function (exn) { throw exn })"
 
