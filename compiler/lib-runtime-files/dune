@@ -1,7 +1,7 @@
 (library
- (name jsoo_runtime)
+ (name js_of_ocaml_compiler_runtime_files)
  (libraries js_of_ocaml-compiler)
- (public_name js_of_ocaml-compiler.runtime))
+ (public_name js_of_ocaml-compiler.runtime-files))
 
 (rule
  (target files.ml)

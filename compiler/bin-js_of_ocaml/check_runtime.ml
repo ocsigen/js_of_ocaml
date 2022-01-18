@@ -49,7 +49,9 @@ let f (runtime_files, bytecode, target_env) =
         | Some t -> `Snd t
         | None -> `Fst name)
   in
-  let builtin = if false then builtin else Jsoo_runtime.runtime @ builtin in
+  let builtin =
+    if false then builtin else Js_of_ocaml_compiler_runtime_files.runtime @ builtin
+  in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.parse_builtin t in

@@ -69,7 +69,9 @@ let args =
         | Some t -> `Snd t
         | None -> `Fst name)
   in
-  let builtin = if !runtime then Jsoo_runtime.runtime @ builtin else builtin in
+  let builtin =
+    if !runtime then Js_of_ocaml_compiler_runtime_files.runtime @ builtin else builtin
+  in
 
   List.iter builtin ~f:(fun t ->
       let filename = Js_of_ocaml_compiler.Builtins.File.name t in
