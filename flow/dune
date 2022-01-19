@@ -1,0 +1,6 @@
+(env
+ (dev
+  (flags
+   (:standard -w -6-69))))
+
+(data_only_dirs flow ocaml-wtf8)

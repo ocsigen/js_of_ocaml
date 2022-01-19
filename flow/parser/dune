@@ -1,0 +1,4 @@
+(library
+ (name flow_parser)
+ (libraries sedlex)
+ (preprocess (pps sedlex.ppx)))
