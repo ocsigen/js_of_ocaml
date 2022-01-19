@@ -15,6 +15,13 @@ rm parser/flow_parser_dot_js.ml
 rm parser/flow_parser_js.ml
 rm parser/relativeLoc.ml
 rm parser/relativeLoc.mli
+rm parser/comment_utils.ml
+rm parser/estree_translator.ml
+rm parser/libflowparser.ml
+rm parser/offset_utils.ml
+rm parser/offset_utils.mli
+rm parser/token_translator.ml
+rm parser/translator_intf.ml
 
 cat << EOF > parser/dune
 (library
