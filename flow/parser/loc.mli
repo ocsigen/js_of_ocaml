@@ -11,6 +11,8 @@ type position = {
 }
 [@@deriving eq, show]
 
+val equal_position : position -> position -> bool
+
 type t = {
   source: File_key.t option;
   start: position;

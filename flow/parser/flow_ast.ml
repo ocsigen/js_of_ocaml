@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  *)
 
-[%%gen
 (*
  * An Ocaml implementation of the SpiderMonkey Parser API
  * https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
@@ -1896,4 +1895,4 @@ and Program : sig
   }
   [@@deriving show]
 end =
-  Program]
+  Program

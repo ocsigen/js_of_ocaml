@@ -167,6 +167,8 @@ type t =
   | ThisParamBannedInConstructor
 [@@deriving ord]
 
+let compare a b = compare a b
+
 exception Error of (Loc.t * t) * (Loc.t * t) list
 
 let error loc e = raise (Error ((loc, e), []))

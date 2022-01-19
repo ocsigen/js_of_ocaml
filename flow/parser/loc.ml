@@ -12,6 +12,8 @@ type position = {
 }
 [@@deriving eq, show]
 
+let equal_position a b = a = b
+
 (* start is inclusive; end is exclusive *)
 (* If you are modifying this record, go look at ALoc.ml and make sure you understand the
  * representation there. *)
