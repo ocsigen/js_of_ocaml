@@ -13,6 +13,8 @@ cp flow/src/parser/*.ml parser/
 cp flow/src/parser/*.mli parser/
 rm parser/flow_parser_dot_js.ml
 rm parser/flow_parser_js.ml
+rm parser/relativeLoc.ml
+rm parser/relativeLoc.mli
 
 cat << EOF > parser/dune
 (library
