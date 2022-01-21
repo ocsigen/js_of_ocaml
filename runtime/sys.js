@@ -27,10 +27,10 @@ function caml_raise_sys_error (msg) {
 //Requires: caml_invalid_argument
 function caml_sys_exit (code) {
   var g = globalThis;
-  if(g.quit) g.quit(code);
+  if(g.quit) return g.quit(code);
   //nodejs
   if(g.process && g.process.exit)
-    g.process.exit(code);
+    return g.process.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
