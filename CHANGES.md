@@ -1,4 +1,4 @@
-# 4.0.0 (2021-01-18) - Lille
+# 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
 * Compiler: add --target-env flag, for JS runtime specific compilation targets (#1160).
 * Compiler: static evaluation of backend_type (#1166)
