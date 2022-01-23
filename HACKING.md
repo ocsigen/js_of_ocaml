@@ -5,7 +5,7 @@
   * In the wikidoc branch, copy dev to VERSION
 * dune-release tag $(cat VERSION)
 * dune-release distrib
-* dune-release publish distrib
+* dune-release publish distrib --delegate github-dune-release-delegate
 * dune-release opam pkg
 * dune-release opam submit
 
