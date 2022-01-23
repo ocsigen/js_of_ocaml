@@ -54,8 +54,8 @@
  (deps a.js b.js a-iife.js for-node.js)
  (action
   (with-outputs-to
-    %{target}
-    (run node for-node.js))))
+   %{target}
+   (run node for-node.js))))
 
 (rule
  (alias runtest)

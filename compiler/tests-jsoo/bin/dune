@@ -47,7 +47,8 @@
 
 (rule
  (alias runtest)
- (enabled_if (= %{profile} dev))
+ (enabled_if
+  (= %{profile} dev))
  (action
   (diff %{dep:error2.expected} %{dep:error2.actual})))
 
