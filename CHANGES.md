@@ -21,6 +21,7 @@
 * PPX: json can now be derived for mutable records (#1184)
 * Runtime: use crypto.getRandomValues when available (#1209)
 * Misc: move js_of_ocaml-ocamlbuild out to its own repo
+* Misc: add support for OCaml 4.14 (#1173)
 
 ## Bug fixes
 * Compiler: fix sourcemap warning for empty cma (#1169)
