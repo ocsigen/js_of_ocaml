@@ -50,7 +50,14 @@
  (deps a.js b.js a-iife.js index.html))
 
 (rule
- (alias runtest)
+ (target for-node.actual)
  (deps a.js b.js a-iife.js for-node.js)
  (action
-  (run node for-node.js)))
+  (with-outputs-to
+    %{target}
+    (run node for-node.js))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff %{dep:for-node.expected} %{dep:for-node.actual})))
