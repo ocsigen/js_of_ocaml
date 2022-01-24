@@ -31,7 +31,7 @@ let () =
   let mls = ref [] in
   let except_mls = ref [] in
   Arg.parse
-    [ "--except", Rest_all (fun l -> except_mls := l), "" ]
+    [ "--except", Rest (fun ml -> except_mls := ml :: !except_mls), "" ]
     (fun ml -> mls := ml :: !mls)
     "generate dummy js stubs";
   let real_ml ml = not (Filename.check_suffix ml ".pp.ml") in
