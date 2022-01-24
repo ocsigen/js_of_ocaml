@@ -149,7 +149,7 @@ let resize ~container ~textbox () =
 
 let setup_printers () =
   exec'
-    "let _print_error fmt e = Format.pp_print_string fmt (Js_of_ocaml.Js.string_of_error \
+    "let _print_error fmt e = Format.pp_print_string fmt (Js_of_ocaml.Js_error.to_string \
      e)";
   Topdirs.dir_install_printer Format.std_formatter Longident.(Lident "_print_error");
   exec' "let _print_unit fmt (_ : 'a) : 'a = Format.pp_print_string fmt \"()\"";
