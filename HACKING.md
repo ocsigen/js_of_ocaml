@@ -1,8 +1,8 @@
 # Release procedure
+* update VERSION
 * Documentation
   * Make sure the doc is up to date (See Documentation generation)
   * In the wikidoc branch, copy dev to VERSION
-* update VERSION
 * dune-release tag $(cat VERSION)
 * dune-release distrib
 * dune-release publish distrib
