@@ -13,10 +13,9 @@ function shouldNotRaise(f) {
 }
 
 // a0, a1 and b are three separate instances.
-
-var a0 = require('./a.js')(globalThis);
-var a1 = require('./a.js')(globalThis);
-var b = require('./b.js')(globalThis);
+var a0 = require('./a.js')(global);
+var a1 = require('./a.js')(global);
+var b = require('./b.js')(global);
 shouldNotRaise(() => a0.tryWith(a0.raise));
 shouldRaise(() => a1.tryWith(a0.raise));
 shouldRaise(() => b.tryWith(a0.raise));
