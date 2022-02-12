@@ -366,6 +366,7 @@ function caml_ml_flush (chanid) {
 //Requires: caml_ml_flush,caml_ml_bytes_length
 //Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels, caml_string_of_bytes
 //Requires: caml_jsbytes_of_string
+var MAX_LENGTH = 65536;
 function caml_ml_output_bytes(chanid,buffer,offset,len) {
   var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
@@ -380,16 +381,15 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
   var jsstring = caml_jsbytes_of_string(string);
   var id = jsstring.lastIndexOf("\n");
   var total_length = jsstring.length + chan.buffer.length;
-  if(id < 0) {
+  if (total_length > MAX_LENGTH) {
     chan.buffer+=jsstring;
-    if (total_length > 65536) {
-      caml_ml_flush (chanid);
-    }
-  }
-  else {
+    caml_ml_flush (chanid);
+  } else if(id >= 0) {
     chan.buffer+=jsstring.substr(0,id+1);
     caml_ml_flush (chanid);
     chan.buffer += jsstring.substr(id+1);
+  } else {
+    chan.buffer+=jsstring;
   }
   return 0;
 }
