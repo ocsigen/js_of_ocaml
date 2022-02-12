@@ -379,8 +379,13 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
   var string = caml_string_of_bytes(bytes);
   var jsstring = caml_jsbytes_of_string(string);
   var id = jsstring.lastIndexOf("\n");
-  if(id < 0)
+  var total_length = jsstring.length + chan.buffer.length;
+  if(id < 0) {
     chan.buffer+=jsstring;
+    if (total_length > 65536) {
+      caml_ml_flush (chanid);
+    }
+  }
   else {
     chan.buffer+=jsstring.substr(0,id+1);
     caml_ml_flush (chanid);
