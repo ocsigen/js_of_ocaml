@@ -46,4 +46,4 @@ let make ~name ~doc ~description =
     | "" -> Compiler_version.s
     | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
   in
-  Term.info name ~version ~doc ~man
+  Cmd.info name ~version ~doc ~man

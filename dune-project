@@ -22,7 +22,7 @@
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.15.0))
   (re :with-test)
-  cmdliner
+  (cmdliner (>= 1.1.0))
   menhir
   menhirLib
   menhirSdk

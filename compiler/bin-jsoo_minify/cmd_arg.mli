@@ -27,4 +27,4 @@ type t =
 
 val options : t Cmdliner.Term.t
 
-val info : Cmdliner.Term.info
+val info : Cmdliner.Cmd.info

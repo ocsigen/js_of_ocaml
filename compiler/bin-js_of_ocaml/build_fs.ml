@@ -41,7 +41,7 @@ let options =
     Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
   Term.(
-    pure (fun files output_file include_dirs -> { files; output_file; include_dirs })
+    const (fun files output_file include_dirs -> { files; output_file; include_dirs })
     $ files
     $ output_file
     $ include_dirs)
@@ -83,4 +83,6 @@ let info =
     ~description:
       "jsoo_fs is a tool for embeding files in a Js_of_ocaml pseudo filesystem."
 
-let command = Cmdliner.Term.(pure f $ options), info
+let command =
+  let t = Cmdliner.Term.(const f $ options) in
+  Cmdliner.Cmd.v info t

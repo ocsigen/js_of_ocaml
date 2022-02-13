@@ -40,7 +40,7 @@ let debug =
   let arg =
     Arg.(value & opt_all (list (enum all)) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
   in
-  Term.(pure List.flatten $ arg)
+  Term.(const List.flatten $ arg)
 
 let enable =
   let doc = "Enable optimization [$(docv)]." in
@@ -48,7 +48,7 @@ let enable =
   let arg =
     Arg.(value & opt_all (list (enum all)) [] & info [ "enable" ] ~docv:"OPT" ~doc)
   in
-  Term.(pure List.flatten $ arg)
+  Term.(const List.flatten $ arg)
 
 let disable =
   let doc = "Disable optimization [$(docv)]." in
@@ -56,7 +56,7 @@ let disable =
   let arg =
     Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
   in
-  Term.(pure List.flatten $ arg)
+  Term.(const List.flatten $ arg)
 
 let pretty =
   let doc = "Pretty print the output." in
@@ -87,7 +87,7 @@ let custom_header =
 
 let t =
   Term.(
-    pure (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
+    const (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
         let enable = if pretty then "pretty" :: enable else enable in
         let enable = if debuginfo then "debuginfo" :: enable else enable in
         let disable = if noinline then "inline" :: disable else disable in
