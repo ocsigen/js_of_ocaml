@@ -92,12 +92,14 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
       let pp = Pretty_print.to_out_channel out_channel in
       gen pp)
 
-let main = Cmdliner.Term.(pure f $ Cmd_arg.options), Cmd_arg.info
+let main =
+  let t = Cmdliner.Term.(const f $ Cmd_arg.options) in
+  Cmdliner.Cmd.v Cmd_arg.info t
 
 let _ =
   Timer.init Sys.time;
   try
-    Cmdliner.Term.eval
+    Cmdliner.Cmd.eval
       ~catch:false
       ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
       main

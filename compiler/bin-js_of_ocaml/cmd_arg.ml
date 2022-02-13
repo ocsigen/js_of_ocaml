@@ -331,7 +331,7 @@ let options =
   in
   let t =
     Term.(
-      pure build_t
+      const build_t
       $ Jsoo_cmdline.Arg.t
       $ set_param
       $ set_env
@@ -555,7 +555,7 @@ let options_runtime_only =
   in
   let t =
     Term.(
-      pure build_t
+      const build_t
       $ Jsoo_cmdline.Arg.t
       $ set_param
       $ set_env

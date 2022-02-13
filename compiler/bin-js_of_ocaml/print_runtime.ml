@@ -35,4 +35,6 @@ let info =
     ~doc:"Print standard runtime to stdout"
     ~description:"js_of_ocaml-print-standard-runtime dump the standard runtime to stdout."
 
-let command = Cmdliner.Term.(pure f $ pure ()), info
+let command =
+  let t = Cmdliner.Term.(const f $ const ()) in
+  Cmdliner.Cmd.v info t

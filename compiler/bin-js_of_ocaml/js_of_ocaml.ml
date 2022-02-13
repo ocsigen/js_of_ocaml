@@ -40,33 +40,34 @@ let _ =
         then argv
         else
           (* Keep compatibility with js_of_ocaml < 3.6.0 *)
-          Array.of_list
-            (exe :: Cmdliner.Term.name (snd Compile.command) :: maybe_command :: rest)
+          Array.of_list (exe :: Cmdliner.Cmd.name Compile.command :: maybe_command :: rest)
     | _ -> argv
   in
   try
     match
-      Cmdliner.Term.eval_choice
+      Cmdliner.Cmd.eval_value
         ~catch:false
         ~argv
-        Compile.command_main
-        [ Link.command
-        ; Build_fs.command
-        ; Build_runtime.command
-        ; Print_runtime.command
-        ; Check_runtime.command
-        ; Compile.command
-        ]
+        (Cmdliner.Cmd.group
+           ~default:Compile.term
+           (Compile.info "js_of_ocaml")
+           [ Link.command
+           ; Build_fs.command
+           ; Build_runtime.command
+           ; Print_runtime.command
+           ; Check_runtime.command
+           ; Compile.command
+           ])
     with
-    | `Ok () | `Help | `Version ->
+    | Ok (`Ok () | `Help | `Version) ->
         if !warnings > 0 && !werror
         then (
           Format.eprintf "%s: all warnings being treated as errors@." Sys.argv.(0);
           exit 1)
         else exit 0
-    | `Error `Term -> exit 1
-    | `Error `Parse -> exit 124
-    | `Error `Exn -> ()
+    | Error `Term -> exit 1
+    | Error `Parse -> exit 124
+    | Error `Exn -> ()
     (* should not happen *)
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->

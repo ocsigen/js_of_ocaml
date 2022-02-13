@@ -300,6 +300,8 @@ let info name =
        to run pure OCaml programs in JavaScript environments like web browsers and \
        Node.js."
 
-let command_main = Cmdliner.Term.(pure run $ Cmd_arg.options), info "js_of_ocaml"
+let term = Cmdliner.Term.(const run $ Cmd_arg.options)
 
-let command = Cmdliner.Term.(pure run $ Cmd_arg.options), info "compile"
+let command =
+  let t = Cmdliner.Term.(const run $ Cmd_arg.options) in
+  Cmdliner.Cmd.v (info "compile") t

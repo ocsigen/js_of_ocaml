@@ -148,7 +148,7 @@ let options =
     Arg.(
       value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
   in
-  let t = Term.(pure build_t $ files $ target_env) in
+  let t = Term.(const build_t $ files $ target_env) in
   Term.ret t
 
 let info =
@@ -157,4 +157,6 @@ let info =
     ~doc:"Check runtime"
     ~description:"js_of_ocaml-check-runtime checks the runtime."
 
-let command = Cmdliner.Term.(pure f $ options), info
+let command =
+  let t = Cmdliner.Term.(const f $ options) in
+  Cmdliner.Cmd.v info t

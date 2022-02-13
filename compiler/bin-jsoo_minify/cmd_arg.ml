@@ -42,7 +42,7 @@ let options =
   let build_t common files output_file use_stdin =
     `Ok { common; use_stdin; output_file; files }
   in
-  let t = Term.(pure build_t $ Jsoo_cmdline.Arg.t $ files $ output_file $ use_stdin) in
+  let t = Term.(const build_t $ Jsoo_cmdline.Arg.t $ files $ output_file $ use_stdin) in
   Term.ret t
 
 let info =
@@ -72,4 +72,4 @@ let info =
     | "" -> Compiler_version.s
     | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
   in
-  Term.info "jsoo_minify" ~version ~doc ~man
+  Cmd.info "jsoo_minify" ~version ~doc ~man

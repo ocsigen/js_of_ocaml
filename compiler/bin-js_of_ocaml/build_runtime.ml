@@ -28,4 +28,6 @@ let info =
        to run pure OCaml programs in JavaScript environments like web browsers and \
        Node.js."
 
-let command = Cmdliner.Term.(pure Compile.run $ Cmd_arg.options_runtime_only), info
+let command =
+  let t = Cmdliner.Term.(const Compile.run $ Cmd_arg.options_runtime_only) in
+  Cmdliner.Cmd.v info t

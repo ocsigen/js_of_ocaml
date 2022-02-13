@@ -18,6 +18,8 @@
 
 val run : Cmd_arg.t -> unit
 
-val command : unit Cmdliner.Term.t * Cmdliner.Term.info
+val command : unit Cmdliner.Cmd.t
 
-val command_main : unit Cmdliner.Term.t * Cmdliner.Term.info
+val term : unit Cmdliner.Term.t
+
+val info : string -> Cmdliner.Cmd.info

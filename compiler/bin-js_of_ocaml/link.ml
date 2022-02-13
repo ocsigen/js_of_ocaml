@@ -86,7 +86,7 @@ let options =
   in
   let t =
     Term.(
-      pure build_t
+      const build_t
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_root
@@ -113,4 +113,6 @@ let info =
       "js_of_ocaml-link is a JavaScript linker. It can concatenate multiple JavaScript \
        files keeping sourcemap information."
 
-let command = Cmdliner.Term.(pure f $ options), info
+let command =
+  let t = Cmdliner.Term.(const f $ options) in
+  Cmdliner.Cmd.v info t

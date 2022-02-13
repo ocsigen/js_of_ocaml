@@ -17,4 +17,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val make : name:string -> doc:string -> description:string -> Cmdliner.Term.info
+val make : name:string -> doc:string -> description:string -> Cmdliner.Cmd.info
