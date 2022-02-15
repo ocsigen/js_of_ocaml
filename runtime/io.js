@@ -82,9 +82,9 @@ function caml_sys_open (name, flags, _perms) {
   var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
   return caml_sys_open_internal (idx+1,caml_std_output,file,f);
 }
-caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_bytes(0))); //stdin
-caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_bytes(0))); //stdout
-caml_sys_open_internal(2,js_print_stderr, new MlFakeFile(caml_create_bytes(0))); //stderr
+caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_bytes(0)), {rdonly:1}); //stdin
+caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_bytes(0)), {buffered:2}); //stdout
+caml_sys_open_internal(2,js_print_stderr, new MlFakeFile(caml_create_bytes(0)), {buffered:2}); //stderr
 
 
 // ocaml Channels
@@ -115,13 +115,15 @@ function caml_ml_out_channels_list () {
 function caml_ml_open_descriptor_out (fd) {
   var data = caml_global_data.fds[fd];
   if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
+  var buffered = (data.flags.buffered !== undefined) ? data.flags.buffered : 1;
   var channel = {
     file:data.file,
     offset:data.offset,
     fd:fd,
     opened:true,
     out:true,
-    buffer:""
+    buffer:"",
+    buffered:buffered
   };
   caml_ml_channels[channel.fd]=channel;
   return channel.fd;
@@ -378,13 +380,22 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
   }
   var string = caml_string_of_bytes(bytes);
   var jsstring = caml_jsbytes_of_string(string);
-  var id = jsstring.lastIndexOf("\n");
-  if(id < 0)
-    chan.buffer+=jsstring;
-  else {
-    chan.buffer+=jsstring.substr(0,id+1);
+  switch(chan.buffered){
+  case 0: // Unbuffered
+    chan.buffer+=jsstring
     caml_ml_flush (chanid);
-    chan.buffer += jsstring.substr(id+1);
+    break
+  case 1: // Buffered (the default)
+  case 2: // Buffered (only for stdout and stderr)
+    var id = jsstring.lastIndexOf("\n");
+    if(id < 0)
+      chan.buffer+=jsstring;
+    else {
+      chan.buffer+=jsstring.substr(0,id+1);
+      caml_ml_flush (chanid);
+      chan.buffer += jsstring.substr(id+1);
+    }
+    break;
   }
   return 0;
 }
@@ -454,7 +465,15 @@ function caml_ml_output_int (chanid,i) {
 }
 
 //Provides: caml_ml_is_buffered
-function caml_ml_is_buffered(c) { return 1 }
+//Requires: caml_ml_channels
+function caml_ml_is_buffered(chanid) {
+  return caml_ml_channels[chanid].buffered ? 1 : 0
+}
 
 //Provides: caml_ml_set_buffered
-function caml_ml_set_buffered(c,v) { return 0 }
+//Requires: caml_ml_channels, caml_ml_flush
+function caml_ml_set_buffered(chanid,v) {
+  caml_ml_channels[chanid].buffered = v;
+  if(!v) caml_ml_flush(chanid);
+  return 0
+}
