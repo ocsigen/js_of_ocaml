@@ -1,3 +1,10 @@
+# dev (2022-??) - ??
+## Features/Changes
+* Misc: switch to cmdliner.1.1.0
+* Misc: remove old binaries jsoo_link, jsoo_fs
+
+## Bug fixes
+
 # 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
 * Compiler: add --target-env flag, for JS runtime specific compilation targets (#1160).

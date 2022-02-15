@@ -66,7 +66,7 @@ let _ =
           exit 1)
         else exit 0
     | Error `Term -> exit 1
-    | Error `Parse -> exit 124
+    | Error `Parse -> exit Cmdliner.Cmd.Exit.cli_error
     | Error `Exn -> ()
     (* should not happen *)
   with
@@ -78,7 +78,7 @@ let _ =
         Sys.argv.(0);
       Format.eprintf "Error: %s@." (Printexc.to_string exc);
       prerr_string backtrace;
-      exit 125
+      exit Cmdliner.Cmd.Exit.internal_error
   | Magic_number.Bad_magic_number s ->
       Format.eprintf "%s: Error: Not an ocaml bytecode file@." Sys.argv.(0);
       Format.eprintf "%s: Error: Invalid magic number %S@." Sys.argv.(0) s;
