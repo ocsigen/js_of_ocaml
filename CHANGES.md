@@ -5,6 +5,7 @@
 * Misc: remove uchar dep
 
 ## Bug fixes
+* Compiler: fix rewriter bug in share_constant (fix #1247)
 
 # 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
