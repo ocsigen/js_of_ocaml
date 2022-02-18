@@ -201,7 +201,7 @@ class map_for_share_constant =
       | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
           EBin (op, EUn (Typeof, super#expression e1), e2)
       | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
-          EBin (op, EUn (Typeof, e1), super#expression e2)
+          EBin (op, e1, EUn (Typeof, super#expression e2))
       (* Some js bundler get confused when the argument
          of 'require' is not a literal *)
       | ECall (EVar (S { var = None; name = "require"; _ }), [ (EStr _, `Not_spread) ], _)
