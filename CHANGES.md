@@ -2,6 +2,7 @@
 ## Features/Changes
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
+* Misc: remove uchar dep
 
 ## Bug fixes
 
