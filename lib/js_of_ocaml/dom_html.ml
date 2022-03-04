@@ -1289,6 +1289,23 @@ class type dListElement = element
 
 class type liElement = element
 
+class type dialogElement =
+  object
+    inherit element
+
+    method close : unit meth
+
+    method close_returnValue : js_string t -> unit meth
+
+    method open_ : bool t prop
+
+    method returnValue : js_string t prop
+
+    method show : unit meth
+
+    method showModal : unit meth
+  end
+
 class type divElement = element
 
 class type paragraphElement = element
@@ -2537,6 +2554,8 @@ let createDl doc : dListElement t = unsafeCreateElement doc "dl"
 
 let createLi doc : liElement t = unsafeCreateElement doc "li"
 
+let createDialog doc : dialogElement t = unsafeCreateElement doc "dialog"
+
 let createDiv doc : divElement t = unsafeCreateElement doc "div"
 
 let createEmbed doc : embedElement t = unsafeCreateElement doc "embed"
@@ -3360,6 +3379,7 @@ type taggedElement =
   | Col of tableColElement t
   | Colgroup of tableColElement t
   | Del of modElement t
+  | Dialog of dialogElement t
   | Div of divElement t
   | Dl of dListElement t
   | Embed of embedElement t
