@@ -1129,6 +1129,10 @@ class type dialogElement =
     method show : unit meth
 
     method showModal : unit meth
+
+    method oncancel : ('self t, event t) event_listener prop
+
+    method onclose : ('self t, event t) event_listener prop
   end
 
 class type divElement = element
@@ -2314,7 +2318,11 @@ val eventRelatedTarget : #mouseEvent t -> element t opt
 module Event : sig
   type 'a typ = 'a Dom.Event.typ
 
+  val cancel : event t typ
+
   val click : mouseEvent t typ
+
+  val close : event t typ
 
   val copy : clipboardEvent t typ
 

@@ -770,7 +770,11 @@ let invoke_handler = Dom.invoke_handler
 module Event = struct
   type 'a typ = 'a Dom.Event.typ
 
+  let cancel = Dom.Event.make "cancel"
+
   let click = Dom.Event.make "click"
+
+  let close = Dom.Event.make "close"
 
   let copy = Dom.Event.make "copy"
 
@@ -1304,6 +1308,10 @@ class type dialogElement =
     method show : unit meth
 
     method showModal : unit meth
+
+    method oncancel : ('self t, event t) event_listener prop
+
+    method onclose : ('self t, event t) event_listener prop
   end
 
 class type divElement = element
