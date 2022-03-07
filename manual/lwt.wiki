@@ -1,7 +1,7 @@
 == Events ==
 
 Besides the functions provided by {{{Dom_html}}} to register event handlers
-(mainly <<a_api subproject="js_of_ocaml"|val Dom_html.addEventListener>>)
+(mainly <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.addEventListener>>)
 using the usual Javascript way, js_of_ocaml provides another module to
 program event handlers very easily and concisely, in the module
 <<a_api subproject="js_of_ocaml-lwt"|module Js_of_ocaml_lwt.Lwt_js_events>>.
