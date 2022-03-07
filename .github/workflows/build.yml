@@ -54,7 +54,7 @@ jobs:
           git config --global core.ignorecase false
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Use Node.js 16.x
         uses: actions/setup-node@v2
@@ -65,7 +65,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
+          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
@@ -87,8 +87,8 @@ jobs:
       - name: build doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
         run: |
-           opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
-           opam exec -- make doc
+          opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
+          opam exec -- make doc
 
       - name: synchronize doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
@@ -100,23 +100,16 @@ jobs:
           target-folder: doc/dev/
 
   lint-fmt:
-    strategy:
-      matrix:
-        ocaml-compiler:
-          - 4.13.x
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      - name: Use OCaml 4.13.x
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          ocaml-compiler: 4.13.x
           dune-cache: true
 
-      - run: opam depext ocamlformat=$(cat .ocamlformat | grep version | cut -d '=' -f 2) --install
-
-      - run: opam exec -- dune build @fmt
+      - name: Lint fmt
+        uses: ocaml/setup-ocaml/lint-fmt@v2
