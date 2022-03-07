@@ -154,6 +154,7 @@ let provided =
     ; "Uint32Array"
     ; "Uint8Array"
     ; "atob"
+    ; "btoa"
     ; "clearInterval"
     ; "console"
     ; "global" (* only available in node *)
