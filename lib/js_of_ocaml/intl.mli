@@ -517,6 +517,16 @@ module DateTimeFormat : sig
 
   class type options =
     object
+      method dateStyle : Js.js_string Js.t Js.optdef Js.prop
+
+      method timeStyle : Js.js_string Js.t Js.optdef Js.prop
+
+      method calendar : Js.js_string Js.t Js.optdef Js.prop
+
+      method dayPeriod : Js.js_string Js.t Js.optdef Js.prop
+
+      method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
       method localeMatcher : Js.js_string Js.t Js.prop
 
       method timeZone : Js.js_string Js.t Js.optdef Js.prop
@@ -542,6 +552,8 @@ module DateTimeFormat : sig
       method minute : Js.js_string Js.t Js.optdef Js.prop
 
       method second : Js.js_string Js.t Js.optdef Js.prop
+
+      method fractionalSecondDigits : int Js.optdef Js.prop
 
       method timeZoneName : Js.js_string Js.t Js.optdef Js.prop
     end
