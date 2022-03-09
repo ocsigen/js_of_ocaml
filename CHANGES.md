@@ -4,6 +4,7 @@
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
 * Misc: use 4.14 in the CI
+* Lib: add missing options for Intl.DateTimeFormat
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)

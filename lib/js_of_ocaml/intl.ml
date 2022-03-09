@@ -149,6 +149,16 @@ module DateTimeFormat = struct
 
   class type options =
     object
+      method dateStyle : Js.js_string Js.t Js.optdef Js.prop
+
+      method timeStyle : Js.js_string Js.t Js.optdef Js.prop
+
+      method calendar : Js.js_string Js.t Js.optdef Js.prop
+
+      method dayPeriod : Js.js_string Js.t Js.optdef Js.prop
+
+      method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
       method localeMatcher : Js.js_string Js.t Js.prop
 
       method timeZone : Js.js_string Js.t Js.optdef Js.prop
@@ -175,11 +185,23 @@ module DateTimeFormat = struct
 
       method second : Js.js_string Js.t Js.optdef Js.prop
 
+      method fractionalSecondDigits : int Js.optdef Js.prop
+
       method timeZoneName : Js.js_string Js.t Js.optdef Js.prop
     end
 
   let options () : options Js.t =
     object%js
+      val mutable dateStyle = Js.undefined
+
+      val mutable timeStyle = Js.undefined
+
+      val mutable calendar = Js.undefined
+
+      val mutable dayPeriod = Js.undefined
+
+      val mutable numberingSystem = Js.undefined
+
       val mutable localeMatcher = Js.string "best fit"
 
       val mutable timeZone = Js.undefined
@@ -205,6 +227,8 @@ module DateTimeFormat = struct
       val mutable minute = Js.undefined
 
       val mutable second = Js.undefined
+
+      val mutable fractionalSecondDigits = Js.undefined
 
       val mutable timeZoneName = Js.undefined
     end
