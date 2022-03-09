@@ -5,6 +5,7 @@
 * Misc: remove uchar dep
 * Misc: use 4.14 in the CI
 * Lib: add missing options for Intl.DateTimeFormat
+* Lib: add missing options for Intl.NumberFormat
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)

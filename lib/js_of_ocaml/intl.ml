@@ -281,15 +281,37 @@ module NumberFormat = struct
 
   class type options =
     object
-      method localeMatcher : Js.js_string Js.t Js.prop
-
-      method style : Js.js_string Js.t Js.prop
+      method compactDisplay : Js.js_string Js.t Js.optdef Js.prop
 
       method currency : Js.js_string Js.t Js.optdef Js.prop
 
       method currencyDisplay : Js.js_string Js.t Js.optdef Js.prop
 
+      method currencySign : Js.js_string Js.t Js.optdef Js.prop
+
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method notation : Js.js_string Js.t Js.optdef Js.prop
+
+      method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
+      method signDisplay : Js.js_string Js.t Js.optdef Js.prop
+
+      method style : Js.js_string Js.t Js.prop
+
+      method unit : Js.js_string Js.t Js.optdef Js.prop
+
+      method unitDisplay : Js.js_string Js.t Js.optdef Js.prop
+
       method useGrouping : bool Js.t Js.prop
+
+      method roundingMode : Js.js_string Js.t Js.optdef Js.prop
+
+      method roundingPriority : Js.js_string Js.t Js.optdef Js.prop
+
+      method roundingIncrement : Js.js_string Js.t Js.optdef Js.prop
+
+      method trailingZeroDisplay : Js.js_string Js.t Js.optdef Js.prop
 
       method minimumIntegerDigits : int Js.optdef Js.prop
 
@@ -304,15 +326,37 @@ module NumberFormat = struct
 
   let options () : options Js.t =
     object%js
-      val mutable localeMatcher = Js.string "best fit"
-
-      val mutable style = Js.string "decimal"
+      val mutable compactDisplay = Js.undefined
 
       val mutable currency = Js.undefined
 
       val mutable currencyDisplay = Js.undefined
 
+      val mutable currencySign = Js.undefined
+
+      val mutable localeMatcher = Js.string "best fit"
+
+      val mutable notation = Js.undefined
+
+      val mutable numberingSystem = Js.undefined
+
+      val mutable signDisplay = Js.undefined
+
+      val mutable style = Js.string "decimal"
+
+      val mutable unit = Js.undefined
+
+      val mutable unitDisplay = Js.undefined
+
       val mutable useGrouping = Js._true
+
+      val mutable roundingMode = Js.undefined
+
+      val mutable roundingPriority = Js.undefined
+
+      val mutable roundingIncrement = Js.undefined
+
+      val mutable trailingZeroDisplay = Js.undefined
 
       val mutable minimumIntegerDigits = Js.undefined
 
