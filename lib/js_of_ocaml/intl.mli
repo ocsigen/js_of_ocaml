@@ -608,15 +608,37 @@ module NumberFormat : sig
 
   class type options =
     object
-      method localeMatcher : Js.js_string Js.t Js.prop
-
-      method style : Js.js_string Js.t Js.prop
+      method compactDisplay : Js.js_string Js.t Js.optdef Js.prop
 
       method currency : Js.js_string Js.t Js.optdef Js.prop
 
       method currencyDisplay : Js.js_string Js.t Js.optdef Js.prop
 
+      method currencySign : Js.js_string Js.t Js.optdef Js.prop
+
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method notation : Js.js_string Js.t Js.optdef Js.prop
+
+      method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
+      method signDisplay : Js.js_string Js.t Js.optdef Js.prop
+
+      method style : Js.js_string Js.t Js.prop
+
+      method unit : Js.js_string Js.t Js.optdef Js.prop
+
+      method unitDisplay : Js.js_string Js.t Js.optdef Js.prop
+
       method useGrouping : bool Js.t Js.prop
+
+      method roundingMode : Js.js_string Js.t Js.optdef Js.prop
+
+      method roundingPriority : Js.js_string Js.t Js.optdef Js.prop
+
+      method roundingIncrement : Js.js_string Js.t Js.optdef Js.prop
+
+      method trailingZeroDisplay : Js.js_string Js.t Js.optdef Js.prop
 
       method minimumIntegerDigits : int Js.optdef Js.prop
 
