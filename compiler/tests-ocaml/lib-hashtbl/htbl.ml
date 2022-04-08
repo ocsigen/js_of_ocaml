@@ -1,4 +1,5 @@
 [@@@ocaml.warning "-27"]
+[@@@ocaml.alert "-old_ephemeron_api"]
 (* TEST
 *)
 

@@ -124,8 +124,6 @@ caml_div
 caml_mod
 
 From +io.js:
-caml_ml_is_buffered
-caml_ml_set_buffered
 win_filedescr_of_channel
 
 From +jslib.js:
