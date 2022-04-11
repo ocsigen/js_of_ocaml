@@ -85,12 +85,13 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   compile
    --pretty
    --Werror
    -I
-   %{lib:reactiveData:.}
-   -I
    .
+   -I
+   +reactiveData/ ;; reactiveData doesn't seem to be compiled with debug info.
    --file
    %{dep:examples.ml}
    --file
