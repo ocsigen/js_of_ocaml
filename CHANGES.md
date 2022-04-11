@@ -9,6 +9,7 @@
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
 * Misc: use 4.14 in the CI
+* Misc: switch to dune 3
 * Lib: add missing options for Intl.DateTimeFormat
 * Lib: add missing options for Intl.NumberFormat
 * Lib: wheel event binding

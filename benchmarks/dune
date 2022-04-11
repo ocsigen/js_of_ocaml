@@ -1,3 +1,8 @@
+(env
+ (_
+  (flags
+   (:standard -w -32-34-38-69))))
+
 (executables
  (names report run)
  (libraries unix))
