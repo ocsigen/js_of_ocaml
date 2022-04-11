@@ -1,8 +1,9 @@
-(lang dune 2.9)
+(lang dune 3.2)
 (using menhir 2.0)
 (name js_of_ocaml)
 
 (generate_opam_files true)
+(executables_implicit_empty_intf true)
 
 (authors "Ocsigen team <dev@ocsigen.org>")
 (maintainers "Ocsigen team <dev@ocsigen.org>")
