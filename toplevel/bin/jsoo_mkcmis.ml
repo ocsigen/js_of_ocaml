@@ -57,7 +57,7 @@ let rec scan_args acc = function
   | x :: xs -> scan_args (x :: acc) xs
   | [] -> List.rev acc
 
-let args =
+let () =
   let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let runtime_files, args =
