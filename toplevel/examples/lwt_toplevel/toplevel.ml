@@ -95,7 +95,7 @@ module Version = struct
                | _ -> false)
              x)
 
-  let current = split Sys.ocaml_version
+  let current : t = split Sys.ocaml_version
 
   let compint (a : int) b = compare a b
 
