@@ -45,56 +45,58 @@ let%expect_test _ =
   [%expect {|
     33 |}]
 
-(* TODO: uncomment after switching to 4.14
-   let%expect_test _ =
-     Printf.printf "%b%!" (Out_channel.(is_buffered stdout));
-     [%expect {| true |}];
-     Printf.printf "%b%!" (Out_channel.(is_buffered stderr));
-     [%expect {| true |}];
-     Out_channel.(set_buffered stdout false);
-     Printf.printf "%b%!" (Out_channel.(is_buffered stdout));
-     [%expect {| false |}];
-     Out_channel.(set_buffered stderr false);
-     Printf.printf "%b%!" (Out_channel.(is_buffered stderr));
-     [%expect {| false |}];
-     Out_channel.(set_buffered stdout true);
-     Printf.printf "%b%!" (Out_channel.(is_buffered stdout));
-     [%expect {| true |}];
-     Out_channel.(set_buffered stderr true);
-     Printf.printf "%b%!" (Out_channel.(is_buffered stderr));
-     [%expect {| true |}]
+let%expect_test _ =
+  Printf.printf "%b%!" Out_channel.(is_buffered stdout);
+  [%expect {| true |}];
+  Printf.printf "%b%!" Out_channel.(is_buffered stderr);
+  [%expect {| true |}];
+  Out_channel.(set_buffered stdout false);
+  Printf.printf "%b%!" Out_channel.(is_buffered stdout);
+  [%expect {| false |}];
+  Out_channel.(set_buffered stderr false);
+  Printf.printf "%b%!" Out_channel.(is_buffered stderr);
+  [%expect {| false |}];
+  Out_channel.(set_buffered stdout true);
+  Printf.printf "%b%!" Out_channel.(is_buffered stdout);
+  [%expect {| true |}];
+  Out_channel.(set_buffered stderr true);
+  Printf.printf "%b%!" Out_channel.(is_buffered stderr);
+  [%expect {| true |}]
 
-   let%expect_test _ =
-     let file_contents fname =
-       let ic = open_in_bin fname in
-       match really_input_string ic (in_channel_length ic) with
-       | s           -> close_in ic; s
-       | exception e -> close_in ic; raise e
-     in
-     let fname = "file2.txt" in
-     let oc = open_out fname in
-     Printf.printf "%b%!" (Out_channel.(is_buffered oc));
-     [%expect {| true |}];
-     output_string oc "this ";
-     print_endline (file_contents fname);
-     [%expect {||}];
-     flush oc;
-     print_endline (file_contents fname);
-     [%expect {| this |}];
-     output_string oc "is ";
-     print_endline (file_contents fname);
-     [%expect {| this |}];
-     Out_channel.set_buffered oc false;
-     print_endline (file_contents fname);
-     [%expect {| this is |}];
-     output_string oc "a test";
-     print_endline (file_contents fname);
-     [%expect {| this is a test |}];
-     flush oc;
-     print_endline (file_contents fname);
-     [%expect {| this is a test |}];
-     close_out oc;
-     print_endline (file_contents fname);
-     [%expect {| this is a test |}];
-     ()
-*)
+let%expect_test _ =
+  let file_contents fname =
+    let ic = open_in_bin fname in
+    match really_input_string ic (in_channel_length ic) with
+    | s ->
+        close_in ic;
+        s
+    | exception e ->
+        close_in ic;
+        raise e
+  in
+  let fname = "file2.txt" in
+  let oc = open_out fname in
+  Printf.printf "%b%!" Out_channel.(is_buffered oc);
+  [%expect {| true |}];
+  output_string oc "this ";
+  print_endline (file_contents fname);
+  [%expect {||}];
+  flush oc;
+  print_endline (file_contents fname);
+  [%expect {| this |}];
+  output_string oc "is ";
+  print_endline (file_contents fname);
+  [%expect {| this |}];
+  Out_channel.set_buffered oc false;
+  print_endline (file_contents fname);
+  [%expect {| this is |}];
+  output_string oc "a test";
+  print_endline (file_contents fname);
+  [%expect {| this is a test |}];
+  flush oc;
+  print_endline (file_contents fname);
+  [%expect {| this is a test |}];
+  close_out oc;
+  print_endline (file_contents fname);
+  [%expect {| this is a test |}];
+  ()
