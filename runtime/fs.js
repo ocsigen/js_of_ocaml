@@ -91,6 +91,7 @@ function caml_make_path (name) {
     switch(comp[i]){
     case "..": if(ncomp.length>1) ncomp.pop(); break;
     case ".": break;
+    case "": break;
     default: ncomp.push(comp[i]);break
     }
   }
