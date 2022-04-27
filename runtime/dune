@@ -28,4 +28,7 @@
   stdlib.js
   toplevel.js
   unix.js
-  weak.js))
+  weak.js
+  domain.js
+  prng.js
+  sync.js))
