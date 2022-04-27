@@ -27,13 +27,13 @@ let print_digest d = print_endline (Digest.to_hex d)
 
 let%expect_test _ =
   print_digest (Digest.string content);
-  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
+  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
   let c = open_out_bin "/static/temp0" in
   output_string c content;
   close_out c;
   let c = open_in_bin "/static/temp0" in
   print_digest (Digest.channel c (-1));
-  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
+  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
   let c = open_out_bin "/static/temp1" in
   close_out c;
   let c = open_in_bin "/static/temp1" in
@@ -45,7 +45,7 @@ let%expect_test _ =
         pos := String.length content;
         content));
   print_digest (Digest.channel c (-1));
-  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
+  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
   let c = open_in_bin "/static/temp1" in
   let pos = ref 0 in
   Sys_js.set_channel_filler c (fun () ->
@@ -60,19 +60,19 @@ let%expect_test _ =
         pos := !pos + len;
         c);
   print_digest (Digest.channel c (-1));
-  [%expect {| ed06ea572e62b0e2448c55777aeaca4c |}];
+  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
   ()
 
 let%expect_test _ =
   let size = String.length content / 2 in
   print_digest (Digest.string (String.sub content 0 size));
-  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
+  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
   let c = open_out_bin "/static/temp0" in
   output_string c content;
   close_out c;
   let c = open_in_bin "/static/temp0" in
   print_digest (Digest.channel c size);
-  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
+  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
   let c = open_out_bin "/static/temp1" in
   close_out c;
   let c = open_in_bin "/static/temp1" in
@@ -84,7 +84,7 @@ let%expect_test _ =
         pos := String.length content;
         content));
   print_digest (Digest.channel c size);
-  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
+  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
   let c = open_in_bin "/static/temp1" in
   let pos = ref 0 in
   Sys_js.set_channel_filler c (fun () ->
@@ -99,5 +99,5 @@ let%expect_test _ =
         pos := !pos + len;
         c);
   print_digest (Digest.channel c size);
-  [%expect {| e2a6ef4c88593bb6d8e456687407bf04 |}];
+  [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
   ()

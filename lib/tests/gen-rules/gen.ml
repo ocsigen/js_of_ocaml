@@ -46,11 +46,11 @@ let prefix : string =
          | c -> c)
 
 type enabled_if =
-  | TL5
+  | GE5
   | Any
 
 let enabled_if = function
-  | "test_sys" -> TL5
+  | "test_sys" -> GE5
   | _ -> Any
 
 let () =
@@ -77,5 +77,5 @@ let () =
            (Hashtbl.hash prefix mod 100)
            (match enabled_if basename with
            | Any -> "true"
-           | TL5 -> "(< %{ocaml_version} 5)")
+           | GE5 -> "(>= %{ocaml_version} 5)")
            basename)
