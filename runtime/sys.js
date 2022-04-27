@@ -304,6 +304,9 @@ function caml_install_signal_handler(){return 0}
 //Provides: unix_inet_addr_of_string
 function unix_inet_addr_of_string () {return 0;}
 
+//Provides: caml_unix_inet_addr_of_string
+function caml_unix_inet_addr_of_string () {return 0;}
+
 
 
 //Provides: caml_runtime_warnings

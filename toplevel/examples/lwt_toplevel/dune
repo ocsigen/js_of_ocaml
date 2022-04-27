@@ -89,9 +89,10 @@
    %{bin:js_of_ocaml}
    compile
    --pretty
-   --Werror
    --target-env
    browser
+   -I
+   %{lib:reactiveData:.}
    -I
    .
    --file
