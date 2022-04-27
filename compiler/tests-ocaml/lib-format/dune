@@ -1,6 +1,7 @@
 (executables
- (names pr6824 print_if_newline pp_print_custom_break)
+ (names pr6824 print_if_newline pp_print_custom_break print_seq tformat)
  (libraries)
+ (flags (:standard \ -strict-formats))
  (modes js))
 
 (rule
@@ -44,3 +45,31 @@
  (deps pp_print_custom_break.reference pp_print_custom_break.referencejs)
  (action
   (diff pp_print_custom_break.reference pp_print_custom_break.referencejs)))
+
+(rule
+ (target print_seq.referencejs)
+ (deps print_seq.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./print_seq.bc.js))))
+
+(rule
+ (alias runtest)
+ (deps print_seq.reference print_seq.referencejs)
+ (action
+  (diff print_seq.reference print_seq.referencejs)))
+
+(rule
+ (target tformat.referencejs)
+ (deps tformat.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./tformat.bc.js))))
+
+(rule
+ (alias runtest)
+ (deps tformat.reference tformat.referencejs)
+ (action
+  (diff tformat.reference tformat.referencejs)))

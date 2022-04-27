@@ -1,5 +1,5 @@
 (executables
- (names test_string)
+ (names test_string binary)
  (libraries)
  (modes js))
 
@@ -16,3 +16,9 @@
  (deps test_string.reference test_string.referencejs)
  (action
   (diff test_string.reference test_string.referencejs)))
+
+(rule
+ (alias runtest)
+ (deps binary.bc.js)
+ (action
+  (run node binary.bc.js)))

@@ -65,7 +65,7 @@ let end_test () =
 
 let automated_test() =
 
-  (*** Forward searches *)
+  (** Forward searches *)
   start_test "Search for /the quick brown fox/";
   let r = Str.regexp "the quick brown fox" in
   let n = 0 in
@@ -700,7 +700,7 @@ let automated_test() =
        ""; ""; ""; ""; ""; ""; ""; ""; ""; "";
        ""; "x"; "y" |];
 
-  (*** Backward searches *)
+  (** Backward searches *)
   start_test "Backward search for /the quick/";
   let r = Str.regexp "the quick" in
   let n = 0 in
@@ -721,7 +721,7 @@ let automated_test() =
   test_search_backward r n "ab123"
     [||];
 
-  (*** Partial match searches *)
+  (** Partial match searches *)
 
   start_test "Partial match for /partial match/";
   let r = Str.regexp "partial match" in
@@ -749,7 +749,7 @@ let automated_test() =
   test_partial_match r n "zorglub"
     [||];
 
-  (*** Replacement *)
+  (** Replacement *)
   start_test "Global replacement";
   test (Str.global_replace (Str.regexp "[aeiou]") ".."
           "abcdefghijklmnopqrstuvwxyz")
@@ -769,7 +769,7 @@ let automated_test() =
           "abc012def3ghi45")
        "abc-012-12-def3ghi45";
 
-  (*** Splitting *)
+  (** Splitting *)
   start_test "Splitting";
   test (Str.split (Str.regexp "[ \t]+") "si non e vero")
        ["si"; "non"; "e"; "vero"];
@@ -787,7 +787,7 @@ let automated_test() =
         Str.Delim "\t"; Str.Text "e";
         Str.Delim " "; Str.Text "vero"; Str.Delim "\t"];
 
-  (*** XML tokenization *)
+  (** XML tokenization *)
   (* See "REX: XML Shallow Parsing with Regular Expressions",
      Robert D. Cameron, Simon Fraser University, CMPT TR 1998-17. *)
   start_test "XML tokenization";

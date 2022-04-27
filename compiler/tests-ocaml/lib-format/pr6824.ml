@@ -11,4 +11,3 @@ print_endline (f 1);;
 print_endline (f 2);;
 
 include Testing
-let () = exit 0

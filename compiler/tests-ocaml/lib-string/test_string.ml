@@ -1,5 +1,6 @@
 (* TEST
 *)
+open Printf
 
 let rec build_string f n accu =
   if n <= 0
@@ -40,10 +41,16 @@ let () =
   done
 ;;
 
+
+let () =
+  printf "-- Hashtbl.hash raw_string: %x\n%!" (Hashtbl.hash raw_string);
+  printf "-- Hashtbl.seeded_hash 16 raw_string: %x\n%!" (Hashtbl.seeded_hash 16 raw_string);
+;;
+
 (* GPR#805/815/833 *)
-(* max_string_length is smaller in javascript *)
-(* let ()  =
+let ()  =
   if Sys.word_size = 32 then begin
+(*
     let big = String.make Sys.max_string_length 'x' in
     let push x l = l := x :: !l in
     let (+=) a b = a := !a + b in
@@ -51,6 +58,18 @@ let () =
     while !sz >= 0 do push big l; sz += Sys.max_string_length done;
     while !sz <= 0 do push big l; sz += Sys.max_string_length done;
     try ignore (String.concat "" !l); assert false
-    with Invalid_argument _ -> ()
-  end
+    with Invalid_argument _ -> ();
 *)
+    assert(String.starts_with ~prefix:"foob" "foobarbaz");
+    assert(String.starts_with ~prefix:"" "foobarbaz");
+    assert(String.starts_with ~prefix:"" "");
+    assert(not (String.starts_with ~prefix:"foobar" "bar"));
+    assert(not (String.starts_with ~prefix:"foo" ""));
+    assert(not (String.starts_with ~prefix:"fool" "foobar"));
+    assert(String.ends_with ~suffix:"baz" "foobarbaz");
+    assert(String.ends_with ~suffix:"" "foobarbaz");
+    assert(String.ends_with ~suffix:"" "");
+    assert(not (String.ends_with ~suffix:"foobar" "bar"));
+    assert(not (String.ends_with ~suffix:"foo" ""));
+    assert(not (String.ends_with ~suffix:"obaz" "foobar"));
+  end
