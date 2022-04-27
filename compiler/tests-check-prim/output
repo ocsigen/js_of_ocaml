@@ -54,6 +54,17 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
+From +domain.js:
+caml_atomic_cas
+caml_atomic_exchange
+caml_atomic_fetch_add
+caml_atomic_load
+caml_domain_dls
+caml_domain_dls_get
+caml_domain_dls_set
+caml_ml_domain_set_name
+caml_ml_domain_unique_token
+
 From +fail.js:
 caml_return_exn_constant
 
@@ -118,12 +129,14 @@ caml_gr_window_id
 
 From +hash.js:
 caml_hash_univ_param
+caml_string_hash
 
 From +ints.js:
 caml_div
 caml_mod
 
 From +io.js:
+caml_input_value_to_outside_heap
 win_filedescr_of_channel
 
 From +jslib.js:
@@ -148,19 +161,39 @@ From +nat.js:
 compare_nat_real
 
 From +obj.js:
+caml_lazy_read_result
+caml_lazy_reset_to_lazy
+caml_lazy_update_to_forcing
+caml_lazy_update_to_forward
+caml_ml_domain_id
+caml_obj_compare_and_swap
 caml_obj_is_block
+caml_obj_is_shared
+caml_obj_update_tag
+
+From +prng.js:
+caml_lxm_next
 
 From +stdlib.js:
 caml_is_printable
+caml_maybe_print_stats
 caml_register_global
 
 From +str.js:
+caml_str_initialize
 re_match
 re_partial_match
 re_replacement_text
 re_search_backward
 re_search_forward
 re_string_match
+
+From +sync.js:
+MlMutex
+caml_ml_mutex_lock
+caml_ml_mutex_new
+caml_ml_mutex_try_lock
+caml_ml_mutex_unlock
 
 From +sys.js:
 caml_fatal_uncaught_exception
