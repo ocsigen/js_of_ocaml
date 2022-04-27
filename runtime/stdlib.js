@@ -78,3 +78,6 @@ function caml_get_global_data () { return caml_global_data; }
 
 //Provides: caml_is_printable const (const)
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
+
+//Provides: caml_maybe_print_stats
+function caml_maybe_print_stats(unit) { return 0 }

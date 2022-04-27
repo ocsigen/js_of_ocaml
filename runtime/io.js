@@ -269,6 +269,12 @@ function caml_input_value (chanid) {
   return res;
 }
 
+//Provides: caml_input_value_to_outside_heap
+//Requires: caml_input_value
+function caml_input_value_to_outside_heap(c) {
+  return caml_input_value(c);
+}
+
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
 //Requires: caml_ml_may_refill_input, caml_ml_channels
