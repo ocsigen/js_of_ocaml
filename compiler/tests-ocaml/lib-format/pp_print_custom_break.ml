@@ -1,4 +1,3 @@
-[@@@ocaml.warning "-39"]
 (* TEST *)
 
 (*

@@ -1,0 +1,9 @@
+(executables
+ (names test_atomic)
+ (libraries)
+ (modes js))
+
+(rule
+  (alias runtest)
+  (deps test_atomic.bc.js)
+  (action (run node test_atomic.bc.js)))

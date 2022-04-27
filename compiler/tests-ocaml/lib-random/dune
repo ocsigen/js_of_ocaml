@@ -1,18 +1,18 @@
 (executables
- (names rand)
+ (names selfinit)
  (libraries)
- (modes js))
+ (modes js native))
 
 (rule
- (target rand.referencejs)
- (deps rand.bc.js)
+ (target selfinit.referencejs)
+ (deps selfinit.bc.js)
  (action
   (with-stdout-to
    %{target}
-   (run node ./rand.bc.js))))
+   (run node ./selfinit.bc.js))))
 
 (rule
  (alias runtest)
- (deps rand.reference rand.referencejs)
+ (deps selfinit.reference selfinit.referencejs)
  (action
-  (diff rand.reference rand.referencejs)))
+  (diff selfinit.reference selfinit.referencejs)))

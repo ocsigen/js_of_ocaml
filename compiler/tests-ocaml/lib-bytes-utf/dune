@@ -1,0 +1,19 @@
+(executables
+ (names test)
+ (libraries)
+ (flags (:standard \ -strict-sequence))
+ (modes js native))
+
+(rule
+ (target test.referencejs)
+ (deps test.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test.bc.js))))
+
+(rule
+ (alias runtest)
+ (deps test.reference test.referencejs)
+ (action
+  (diff test.reference test.referencejs)))

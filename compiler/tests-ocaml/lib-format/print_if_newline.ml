@@ -1,5 +1,3 @@
-[@@@ocaml.warning "-39"]
-
 (* TEST *)
 
 (*
@@ -26,5 +24,3 @@ printf "  newline here\n";
    is no next printing statement. *)
 print_if_newline ();
 ;;
-
-let () = exit 0

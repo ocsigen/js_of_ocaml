@@ -80,7 +80,7 @@ let eq_bytes_string (i: bytes) (j: string) = (i = Bytes.of_string j);;
 let eq_nativeint (i: nativeint) (j: nativeint) = (i = j);;
 let eq_int32 (i: int32) (j: int32) = (i = j);;
 let eq_int64 (i: int64) (j: int64) = (i = j);;
-let eq_float (x: float) (y: float) = Pervasives.compare x y = 0;;
+let eq_float (x: float) (y: float) = Stdlib.compare x y = 0;;
 
 let sixtyfour = Sys.int_size > 32
 
