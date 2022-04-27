@@ -9,7 +9,6 @@
   ;; not used directly
   graphics
   js_of_ocaml.deriving
-  bigarray
   react
   reactiveData
   str
@@ -71,7 +70,6 @@
    js_of_ocaml-ppx.as-lib
    js_of_ocaml.deriving
    lwt
-   bigarray
    tyxml.functor
    tyxml.functor:html_types.cmi
    react
