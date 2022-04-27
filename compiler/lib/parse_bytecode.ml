@@ -755,7 +755,7 @@ let method_cache_id = ref 1
 let new_closure_repr =
   match Ocaml_version.v with
   | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 -> true
+  | `V4_12 | `V4_13 | `V4_14 | `V5_00 -> true
 
 let clo_offset_3 = if new_closure_repr then 3 else 2
 
@@ -2055,6 +2055,65 @@ and compile infos pc state instrs =
           :: Let (meths, Field (obj, 0))
           :: instrs)
     | STOP -> instrs, Stop, state
+    | RESUME ->
+        let _stack = State.accu state in
+        let _func = State.peek 0 state in
+        let _arg = State.peek 1 state in
+        let state = State.pop 2 state in
+        let ret, state = State.fresh_var state in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( ret
+             , Prim
+                 (Extern "caml_failwith", [ Pc (NativeString "RESUME not implemented") ])
+             )
+          :: instrs)
+    | PERFORM ->
+        let _eff = State.accu state in
+        let ret, state = State.fresh_var state in
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( ret
+             , Prim
+                 (Extern "caml_failwith", [ Pc (NativeString "PERFORM not implemented") ])
+             )
+          :: instrs)
+    | RESUMETERM ->
+        let n = getu code (pc + 1) in
+        let _stack = State.accu state in
+        let _func = State.peek 0 state in
+        let _arg = State.peek 1 state in
+        let state = State.pop n state in
+        let ret, state = State.fresh_var state in
+        ( Let
+            ( ret
+            , Prim
+                ( Extern "caml_failwith"
+                , [ Pc (NativeString "RESUMETERM not implemented") ] ) )
+          :: instrs
+        , Return ret
+        , state )
+    | REPERFORMTERM ->
+        let n = getu code (pc + 1) in
+        let _eff = State.accu state in
+        let _cont = State.peek 0 state in
+        let _cont_tail = State.peek 1 state in
+        let state = State.pop n state in
+        let ret, state = State.fresh_var state in
+        ( Let
+            ( ret
+            , Prim
+                ( Extern "caml_failwith"
+                , [ Pc (NativeString "REPERFORMTERM not implemented") ] ) )
+          :: instrs
+        , Return ret
+        , state )
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)
@@ -2132,7 +2191,7 @@ let parse_bytecode code globals debug_data =
 
 let override_global =
   match Ocaml_version.v with
-  | `V4_13 | `V4_14 -> []
+  | `V4_13 | `V4_14 | `V5_00 -> []
   | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
         Prim (Extern "%overrideMod", [ Pc (NativeString name); Pc (NativeString func) ])
