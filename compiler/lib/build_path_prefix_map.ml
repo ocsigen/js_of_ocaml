@@ -25,7 +25,7 @@ type ('a, 'b) result =
   | Ok of 'a
   | Error of 'b
 
-let errorf fmt = Printf.kprintf (fun err -> Error err) fmt
+let errorf fmt = Printf.ksprintf (fun err -> Error err) fmt
 
 let encode_prefix str =
   let buf = Buffer.create (String.length str) in
