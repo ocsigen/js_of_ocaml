@@ -214,7 +214,7 @@
  (modules gh1320)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (< %{ocaml_version} 5))
+  (enabled_if (>= %{ocaml_version} 5))
   (flags -allow-output-patterns)
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
@@ -278,7 +278,7 @@
  (modules lazy)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (< %{ocaml_version} 5))
+  (enabled_if (>= %{ocaml_version} 5))
   (flags -allow-output-patterns)
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
@@ -370,11 +370,11 @@
 (library
  ;; compiler/tests-compiler/obj.ml
  (name obj_15)
- (enabled_if (< %{ocaml_version} 5))
+ (enabled_if (>= %{ocaml_version} 5))
  (modules obj)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if (< %{ocaml_version} 5))
+  (enabled_if (>= %{ocaml_version} 5))
   (flags -allow-output-patterns)
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)

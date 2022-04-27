@@ -56,7 +56,7 @@ let () = myfun ()
          closures$0=closures(i),
          g=closures$0[1],
          _b_=g(i);
-        caml_call2(Stdlib_Format[131],_a_,_b_);
+        caml_call2(Stdlib_Format[137],_a_,_b_);
         var _c_=i + 1 | 0;
         if(4 === i)return 0;
         var i=_c_}}
