@@ -19,6 +19,7 @@ let%expect_test _ =
     +bigstring-cstruct.js
     +bigstring.js
     +compare.js
+    +domain.js
     +dynlink.js
     +fail.js
     +format.js
@@ -42,9 +43,11 @@ let%expect_test _ =
     +nat.js
     +obj.js
     +parsing.js
+    +prng.js
     +stdlib.js
     +stdlib_modern.js
     +str.js
+    +sync.js
     +sys.js
     +toplevel.js
     +unix.js
@@ -58,6 +61,7 @@ let%expect_test _ =
     +bigstring-cstruct.js
     +bigstring.js
     +compare.js
+    +domain.js
     +fail.js
     +format.js
     +fs.js
@@ -80,8 +84,10 @@ let%expect_test _ =
     +nat.js
     +obj.js
     +parsing.js
+    +prng.js
     +stdlib.js
     +str.js
+    +sync.js
     +sys.js
     +unix.js
     +weak.js |}];

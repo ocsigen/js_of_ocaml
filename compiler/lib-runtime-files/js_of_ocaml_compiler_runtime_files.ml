@@ -52,6 +52,9 @@ let runtime =
     ; str
     ; unix
     ; weak
+    ; domain
+    ; prng
+    ; sync
     ]
 
 include Files
