@@ -67,7 +67,7 @@ let match_expect_extension (ext : Parsetree.extension) =
     in
     let string_constant (e : Parsetree.expression) =
       match e.pexp_desc with
-      | Pexp_constant (Pconst_string (str, _, Some tag)) ->
+      | Pexp_constant (Pconst_string (str, Some tag)) ->
         { str; tag }
       | _ -> invalid_payload ()
     in
@@ -138,17 +138,19 @@ module Compiler_messages = struct
       Format.fprintf ppf ", characters %d-%d" startchar endchar;
     Format.fprintf ppf ":@."
 
-  let () =
-    let default = !Location.report_printer () in
-    Location.report_printer := (fun _ ->
-      { default with
-        Location.pp_main_loc = (fun _ _ fmt loc -> print_loc fmt loc);
-        Location.pp_submsg_loc = (fun _ _ fmt loc -> print_loc fmt loc);
-      })
+  let error_prefix = "Error"
 
+
+  let rec error_reporter ppf ({loc; msg; sub; if_highlight=_} : Location.error)=
+    print_loc ppf loc;
+    Format.fprintf ppf "@{<error>%s@}: %s" error_prefix msg;
+    List.iter sub ~f:(fun err ->
+        Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
+ 
   let capture ppf ~f =
     Misc.protect_refs
       [ R (Location.formatter_for_warnings , ppf            )
+      ; R (Location.error_reporter         , error_reporter )
       ]
       f
 end
@@ -371,8 +373,6 @@ let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
 let run mapper =
-  Toploop.set_paths ();
-  Clflags.error_style := Some Misc.Error_style.Short;
   try
     Arg.parse args (main mapper) usage;
     Printf.eprintf "expect_test: no input file\n";
