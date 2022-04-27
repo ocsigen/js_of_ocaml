@@ -93,7 +93,7 @@ function caml_finish_formatting(f, rawbuffer) {
     else if (f.signstyle != '-') buffer += f.signstyle;
   }
   if (f.alternate && f.base == 8) buffer += '0';
-  if (f.alternate && f.base == 16) buffer += "0x";
+  if (f.alternate && f.base == 16) buffer += f.uppercase?"0X":"0x";
   if (f.justify == '+' && f.filler == '0')
     for (var i = len; i < f.width; i++) buffer += '0';
   buffer += rawbuffer;
