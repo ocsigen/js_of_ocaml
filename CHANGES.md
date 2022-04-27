@@ -1,5 +1,6 @@
 # dev (2022-??) - ??
 ## Features/Changes
+* Compiler: initial support for OCaml 5 (#1265)
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
