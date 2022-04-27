@@ -4,11 +4,18 @@ Missing
 From main.bc:
 caml_alloc_dummy_function
 caml_alloc_dummy_infix
+caml_alloc_stack
+caml_continuation_use
+caml_continuation_use_and_update_handler_noexc
+caml_continuation_use_noexc
+caml_domain_spawn
+caml_drop_continuation
 caml_dynlink_add_primitive
 caml_dynlink_close_lib
 caml_dynlink_get_current_libs
 caml_dynlink_lookup_symbol
 caml_dynlink_open_lib
+caml_get_continuation_callstack
 caml_get_current_environment
 caml_get_section_table
 caml_int64_add_native
@@ -22,6 +29,11 @@ caml_int64_sub_native
 caml_int64_xor_native
 caml_int_as_pointer
 caml_invoke_traced_function
+caml_ml_condition_broadcast
+caml_ml_condition_new
+caml_ml_condition_signal
+caml_ml_condition_wait
+caml_ml_domain_cpu_relax
 caml_realloc_global
 caml_reify_bytecode
 caml_reset_afl_instrumentation
@@ -54,17 +66,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +domain.js:
-caml_atomic_cas
-caml_atomic_exchange
-caml_atomic_fetch_add
-caml_atomic_load
-caml_domain_dls
-caml_domain_dls_get
-caml_domain_dls_set
-caml_ml_domain_set_name
-caml_ml_domain_unique_token
-
 From +fail.js:
 caml_return_exn_constant
 
@@ -76,6 +77,9 @@ jsoo_create_file
 jsoo_create_file_extern
 
 From +gc.js:
+caml_gc_huge_fallback_count
+caml_get_major_bucket
+caml_get_major_credit
 caml_memprof_set
 
 From +graphics.js:
@@ -129,14 +133,12 @@ caml_gr_window_id
 
 From +hash.js:
 caml_hash_univ_param
-caml_string_hash
 
 From +ints.js:
 caml_div
 caml_mod
 
 From +io.js:
-caml_input_value_to_outside_heap
 win_filedescr_of_channel
 
 From +jslib.js:
@@ -151,7 +153,6 @@ caml_input_value_from_string
 caml_marshal_constants
 
 From +mlBytes.js:
-caml_new_string
 caml_string_set16
 caml_string_set32
 caml_string_set64
@@ -161,18 +162,10 @@ From +nat.js:
 compare_nat_real
 
 From +obj.js:
-caml_lazy_read_result
-caml_lazy_reset_to_lazy
-caml_lazy_update_to_forcing
-caml_lazy_update_to_forward
-caml_ml_domain_id
-caml_obj_compare_and_swap
 caml_obj_is_block
-caml_obj_is_shared
-caml_obj_update_tag
-
-From +prng.js:
-caml_lxm_next
+caml_obj_make_forward
+caml_obj_set_tag
+caml_obj_truncate
 
 From +stdlib.js:
 caml_is_printable
@@ -188,13 +181,6 @@ re_search_backward
 re_search_forward
 re_string_match
 
-From +sync.js:
-MlMutex
-caml_ml_mutex_lock
-caml_ml_mutex_new
-caml_ml_mutex_try_lock
-caml_ml_mutex_unlock
-
 From +sys.js:
 caml_fatal_uncaught_exception
 caml_format_exception
@@ -203,6 +189,7 @@ caml_register_channel_for_spacetime
 caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
+caml_sys_const_naked_pointers_checked
 unix_inet_addr_of_string
 
 From +unix.js:
