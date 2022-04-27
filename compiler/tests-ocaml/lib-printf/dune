@@ -1,7 +1,8 @@
 (executables
  (names pr6534 pr6938 tprintf)
  (libraries)
- (flags (:standard \ -strict-formats))
+ (flags
+  (:standard \ -strict-formats))
  (modes js native))
 
 (rule

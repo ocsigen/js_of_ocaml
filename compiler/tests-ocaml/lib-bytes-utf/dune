@@ -1,7 +1,8 @@
 (executables
  (names test)
  (libraries)
- (flags (:standard \ -strict-sequence))
+ (flags
+  (:standard \ -strict-sequence))
  (modes js native))
 
 (rule
