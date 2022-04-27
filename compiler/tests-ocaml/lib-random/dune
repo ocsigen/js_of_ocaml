@@ -1,7 +1,13 @@
 (executables
- (names selfinit)
+ (names chi2 selfinit testvectors)
  (libraries)
  (modes js native))
+
+(rule
+ (alias runtest)
+ (deps chi2.bc.js)
+ (action
+  (run node chi2.bc.js)))
 
 (rule
  (target selfinit.referencejs)
@@ -16,3 +22,17 @@
  (deps selfinit.reference selfinit.referencejs)
  (action
   (diff selfinit.reference selfinit.referencejs)))
+
+(rule
+ (target testvectors.referencejs)
+ (deps testvectors.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./testvectors.bc.js))))
+
+(rule
+ (alias runtest)
+ (deps testvectors.reference testvectors.referencejs)
+ (action
+  (diff testvectors.reference testvectors.referencejs)))

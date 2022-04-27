@@ -19,7 +19,7 @@
  (mode
   (promote (until-clean)))
  (enabled_if
-  (< %{ocaml_version} 5))
+  (>= %{ocaml_version} 5))
  (action
   (with-stdout-to
    %{targets}
@@ -29,7 +29,7 @@
  (targets unix-unix.output)
  (enabled_if
   (and
-   (< %{ocaml_version} 5)
+   (>= %{ocaml_version} 5)
    (= %{os_type} Unix)))
  (mode
   (promote (until-clean)))
@@ -42,7 +42,7 @@
  (targets unix-win32.output)
  (enabled_if
   (and
-   (< %{ocaml_version} 5)
+   (>= %{ocaml_version} 5)
    (= %{os_type} Win32)))
  (mode
   (promote (until-clean)))
