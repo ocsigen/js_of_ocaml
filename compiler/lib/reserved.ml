@@ -159,6 +159,6 @@ let provided =
     ; "console"
     ; "global" (* only available in node *)
     ; "importScripts" (* only available in WebWorker *)
-    ; "performance"
+    ; "performance" (* Not available in node until v16+ *)
     ; "setTimeout"
     ]
