@@ -92,8 +92,6 @@
    --Werror
    -I
    .
-   -I
-   +reactiveData/ ;; reactiveData doesn't seem to be compiled with debug info.
    --file
    %{dep:examples.ml}
    --file
