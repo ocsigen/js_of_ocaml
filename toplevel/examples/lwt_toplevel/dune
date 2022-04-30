@@ -55,6 +55,7 @@
  (deps
   (package js_of_ocaml-ppx)
   (package js_of_ocaml)
+  (package js_of_ocaml-compiler)
   (package js_of_ocaml-lwt)
   (package js_of_ocaml-tyxml)
   (package js_of_ocaml-toplevel))
@@ -66,6 +67,7 @@
    stdlib
    graphics
    str
+   js_of_ocaml-compiler.runtime
    js_of_ocaml-lwt.graphics
    js_of_ocaml-ppx.as-lib
    js_of_ocaml.deriving
