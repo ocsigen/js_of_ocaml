@@ -54,7 +54,7 @@ function caml_js_html_entities(s) {
 
 //Provides: caml_js_get_console const
 function caml_js_get_console () {
-  var c = globalThis.console?globalThis.console:{};
+  var c = console;
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
            "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];
   function f () {}
@@ -66,14 +66,13 @@ function caml_js_get_console () {
 //Requires: caml_failwith
 //Weakdef
 function caml_xmlhttprequest_create(unit){
-  var g = globalThis;
-  if(typeof g.XMLHttpRequest !== 'undefined') {
-    try { return new g.XMLHttpRequest } catch (e) { };
+  if(typeof globalThis.XMLHttpRequest !== 'undefined') {
+    try { return new globalThis.XMLHttpRequest } catch (e) { };
   }
-  if(typeof g.activeXObject !== 'undefined') {
-    try { return new g.activeXObject("Msxml2.XMLHTTP") } catch(e){ };
-    try { return new g.activeXObject("Msxml3.XMLHTTP") } catch(e){ };
-    try { return new g.activeXObject("Microsoft.XMLHTTP") } catch(e){ };
+  if(typeof globalThis.activeXObject !== 'undefined') {
+    try { return new globalThis.activeXObject("Msxml2.XMLHTTP") } catch(e){ };
+    try { return new globalThis.activeXObject("Msxml3.XMLHTTP") } catch(e){ };
+    try { return new globalThis.activeXObject("Microsoft.XMLHTTP") } catch(e){ };
   }
   caml_failwith("Cannot create a XMLHttpRequest");
 }

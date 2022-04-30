@@ -252,8 +252,8 @@ MlNodeFile.prototype.length = function () {
 }
 MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
-  if(! (a instanceof globalThis.Uint8Array))
-    a = new globalThis.Uint8Array(a);
+  if(! (a instanceof Uint8Array))
+    a = new Uint8Array(a);
   var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.writeSync(this.fd, buffer, buf_offset, len, offset);
@@ -264,8 +264,8 @@ MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
 }
 MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   var a = caml_array_of_bytes(buf);
-  if(! (a instanceof globalThis.Uint8Array))
-    a = new globalThis.Uint8Array(a);
+  if(! (a instanceof Uint8Array))
+    a = new Uint8Array(a);
   var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.readSync(this.fd, buffer, buf_offset, len, offset);
@@ -278,7 +278,7 @@ MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   return 0
 }
 MlNodeFile.prototype.read_one = function(offset){
-  var a = new globalThis.Uint8Array(1);
+  var a = new Uint8Array(1);
   var buffer = globalThis.Buffer.from(a);
   try {
     this.fs.readSync(this.fd, buffer, 0, 1, offset);

@@ -452,8 +452,8 @@ function caml_convert_string_to_bytes (s) {
 //Provides: caml_convert_bytes_to_array
 function caml_convert_bytes_to_array (s) {
   /* Assumes not ARRAY */
-  if(globalThis.Uint8Array) {
-    var a = new globalThis.Uint8Array(s.l);
+  if(typeof Uint8Array != 'undefined') {
+    var a = new Uint8Array(s.l);
   } else {
     var a = new Array(s.l);
   }

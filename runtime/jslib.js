@@ -54,15 +54,15 @@ function caml_trampoline_return(f,args) {
 //Requires: caml_utf16_of_utf8
 function js_print_stdout(s) {
   var s = caml_utf16_of_utf8(s);
-  var g = globalThis;
-  if (g.process && g.process.stdout && g.process.stdout.write) {
-    g.process.stdout.write(s)
+  var process = globalThis.process;
+  if (process && process.stdout && process.stdout.write) {
+    process.stdout.write(s)
   } else {
     // Do not output the last \n if present
     // as console logging display a newline at the end
     if(s.charCodeAt(s.length - 1) == 10)
       s = s.substr(0,s.length - 1 );
-    var v = g.console;
+    var v = console;
     v  && v.log && v.log(s);
   }
 }
@@ -70,15 +70,15 @@ function js_print_stdout(s) {
 //Requires: caml_utf16_of_utf8
 function js_print_stderr(s) {
   var s = caml_utf16_of_utf8(s);
-  var g = globalThis;
-  if (g.process && g.process.stdout && g.process.stdout.write) {
-    g.process.stderr.write(s)
+  var process = globalThis.process;
+  if (process && process.stdout && process.stdout.write) {
+    process.stderr.write(s)
   } else {
     // Do not output the last \n if present
     // as console logging display a newline at the end
     if(s.charCodeAt(s.length - 1) == 10)
       s = s.substr(0,s.length - 1 );
-    var v = g.console;
+    var v = console;
     v && v.error && v.error(s);
   }
 }
@@ -179,7 +179,7 @@ function caml_js_var(x) {
   //Checks that x has the form ident[.ident]*
   if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
     js_print_stderr("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
-    //globalThis.console.error("Js.Unsafe.eval_string")
+    //console.error("Js.Unsafe.eval_string")
   }
   return eval(x);
 }

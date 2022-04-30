@@ -505,7 +505,7 @@ var caml_output_val = function (){
     /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
-      globalThis.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
+      console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
 
     var writer = new Writer ();
     var stack = [];

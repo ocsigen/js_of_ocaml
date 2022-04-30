@@ -54,22 +54,21 @@ function caml_ba_get_size_per_element(kind){
 //Requires: caml_ba_get_size_per_element
 //Requires: caml_invalid_argument
 function caml_ba_create_buffer(kind, size){
-  var g = globalThis;
   var view;
   switch(kind){
-  case 0:  view = g.Float32Array; break;
-  case 1:  view = g.Float64Array; break;
-  case 2:  view = g.Int8Array; break;
-  case 3:  view = g.Uint8Array; break;
-  case 4:  view = g.Int16Array; break;
-  case 5:  view = g.Uint16Array; break;
-  case 6:  view = g.Int32Array; break;
-  case 7:  view = g.Int32Array; break;
-  case 8:  view = g.Int32Array; break;
-  case 9:  view = g.Int32Array; break;
-  case 10: view = g.Float32Array; break;
-  case 11: view = g.Float64Array; break;
-  case 12: view = g.Uint8Array; break;
+  case 0:  view = Float32Array; break;
+  case 1:  view = Float64Array; break;
+  case 2:  view = Int8Array; break;
+  case 3:  view = Uint8Array; break;
+  case 4:  view = Int16Array; break;
+  case 5:  view = Uint16Array; break;
+  case 6:  view = Int32Array; break;
+  case 7:  view = Int32Array; break;
+  case 8:  view = Int32Array; break;
+  case 9:  view = Int32Array; break;
+  case 10: view = Float32Array; break;
+  case 11: view = Float64Array; break;
+  case 12: view = Uint8Array; break;
   }
   if (!view) caml_invalid_argument("Bigarray.create: unsupported kind");
   var data = new view(size * caml_ba_get_size_per_element(kind));
@@ -877,16 +876,15 @@ function caml_ba_to_typed_array(ba){
 //Provides: caml_ba_kind_of_typed_array mutable
 //Requires: caml_invalid_argument
 function caml_ba_kind_of_typed_array(ta){
-  var g = globalThis;
   var kind;
-  if (ta instanceof g.Float32Array) kind = 0;
-  else if (ta instanceof g.Float64Array) kind = 1;
-  else if (ta instanceof g.Int8Array) kind = 2;
-  else if (ta instanceof g.Uint8Array) kind = 3;
-  else if (ta instanceof g.Int16Array) kind = 4;
-  else if (ta instanceof g.Uint16Array) kind = 5;
-  else if (ta instanceof g.Int32Array) kind = 6;
-  else if (ta instanceof g.Uint32Array) kind = 6;
+  if      (ta instanceof Float32Array) kind = 0;
+  else if (ta instanceof Float64Array) kind = 1;
+  else if (ta instanceof Int8Array) kind = 2;
+  else if (ta instanceof Uint8Array) kind = 3;
+  else if (ta instanceof Int16Array) kind = 4;
+  else if (ta instanceof Uint16Array) kind = 5;
+  else if (ta instanceof Int32Array) kind = 6;
+  else if (ta instanceof Uint32Array) kind = 6;
   else caml_invalid_argument("caml_ba_kind_of_typed_array: unsupported kind");
   return kind;
 }
