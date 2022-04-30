@@ -140,7 +140,25 @@ let provided =
     ; "isNaN"
     ; "parseFloat"
     ; "parseInt"
-    ; "module"
-    ; "require"
+    ; "module" (* only available in node *)
+    ; "require" (* only available in node *)
     ; "Symbol"
+    ; "ArrayBuffer"
+    ; "Float32Array"
+    ; "Float64Array"
+    ; "Int16Array"
+    ; "Int32Array"
+    ; "Int8Array"
+    ; "TextDecoder"
+    ; "Uint16Array"
+    ; "Uint32Array"
+    ; "Uint8Array"
+    ; "atob"
+    ; "btoa"
+    ; "clearInterval"
+    ; "console"
+    ; "global" (* only available in node *)
+    ; "importScripts" (* only available in WebWorker *)
+    ; "performance" (* Not available in node until v16+ *)
+    ; "setTimeout"
     ]
