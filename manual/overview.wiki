@@ -60,8 +60,6 @@ You can find an OCaml toplevel running in the browser <<a_file src="toplevel/ind
 == Supported features ==
 
 Most of the OCaml standard library is supported. However,
-  * Weak semantic cannot be implemented using JavaScript.
-    A dummy implementation is provided.
   * Most of Sys module is not supported.
 
 Extra libraries distributed with Ocaml (such as Thread) are not

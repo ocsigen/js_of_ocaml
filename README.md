@@ -72,8 +72,6 @@ js_of_ocaml cubes.byte
 
 Most of the OCaml standard library is supported. However,
 
-- Weak semantic cannot be implemented using JavaScript. A dummy implementation
-  is provided.
 - Most of the Sys module is not supported.
 
 Extra libraries distributed with OCaml (such as Thread) are not supported in

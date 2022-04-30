@@ -17,7 +17,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-// Weak API, but without the weak semantics
+// Weak API
 
 //Provides: caml_ephe_key_offset
 var caml_ephe_key_offset = 3
@@ -26,10 +26,13 @@ var caml_ephe_key_offset = 3
 var caml_ephe_data_offset = 2
 
 //Provides: caml_weak_create
-//Requires: caml_ephe_key_offset, caml_invalid_argument
+//Requires: caml_ephe_key_offset, caml_invalid_argument,caml_ephe_data_offset
 function caml_weak_create (n) {
   if (n < 0) caml_invalid_argument ("Weak.create");
   var x = [251,"caml_ephe_list_head"];
+  if(globalThis.FinalizationRegistry){
+    x[1] = new globalThis.FinalizationRegistry(function () { x[caml_ephe_data_offset] = undefined});
+  }
   x.length = caml_ephe_key_offset + n;
   return x;
 }
@@ -39,7 +42,16 @@ function caml_weak_create (n) {
 function caml_weak_set(x, i, v) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument ("Weak.set");
-  x[caml_ephe_key_offset + i] = v;
+  if(v == 0) {
+    if(x[caml_ephe_key_offset + i] instanceof globalThis.WeakRef && x[1].unregister)
+      x[1].unregister(x[caml_ephe_key_offset + i].deref()).
+    x[caml_ephe_key_offset + i] = undefined;
+  }
+  else if (v[1] instanceof Object && globalThis.WeakRef) {
+    if(x[1].register) x[1].register(v[1], undefined, v[1]);
+    x[caml_ephe_key_offset + i] = new globalThis.WeakRef(v[1]);
+  }
+  else x[caml_ephe_key_offset + i] = v[1];
   return 0;
 }
 //Provides: caml_weak_get
@@ -47,7 +59,9 @@ function caml_weak_set(x, i, v) {
 function caml_weak_get(x, i) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument ("Weak.get_key");
-  return (x[caml_ephe_key_offset + i ]===undefined)?0:x[caml_ephe_key_offset + i];
+  var weak = x[caml_ephe_key_offset + i ];
+  if(weak instanceof globalThis.WeakRef) weak = weak.deref();
+  return (weak===undefined)?0:[0, weak];
 }
 //Provides: caml_weak_get_copy
 //Requires: caml_weak_get,caml_ephe_key_offset
@@ -65,7 +79,9 @@ function caml_weak_get_copy(x, i) {
 //Provides: caml_weak_check mutable
 //Requires: caml_ephe_key_offset
 function caml_weak_check(x, i) {
-  if(x[caml_ephe_key_offset + i]!==undefined && x[caml_ephe_key_offset + i] !==0)
+  var weak = x[caml_ephe_key_offset + i];
+  if(weak instanceof globalThis.WeakRef) weak = weak.deref();
+  if(weak!==undefined)
     return 1;
   else
     return 0;
