@@ -8,6 +8,7 @@
 * Lib: add missing options for Intl.DateTimeFormat
 * Lib: add missing options for Intl.NumberFormat
 * Runtime: Implement weak semantic for weak and ephemeron
+* Runtime: Implement Gc.finalise_last
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
