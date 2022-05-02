@@ -36,8 +36,18 @@ function caml_memprof_set(_control) {
 
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
+
 //Provides: caml_final_register_called_without_value const
-function caml_final_register_called_without_value () { return 0; }
+var all_finalizers = new globalThis.Set()
+function caml_final_register_called_without_value (cb, a) {
+  if(globalThis.FinalizationRegistry && a instanceof Object) {
+    var x = new globalThis.FinalizationRegistry(function (x){all_finalizers.delete(x); cb(0); return;});
+    x.register(a,x);
+    all_finalizers.add(x);
+  }
+  return 0;
+}
+
 //Provides: caml_final_release const
 function caml_final_release () { return 0; }
 
