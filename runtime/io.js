@@ -392,10 +392,17 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
     caml_ml_flush (chanid);
     break
   case 1: // Buffered (the default)
+    chan.buffer+=jsstring;
+    if(chan.buffer.length > 65536)
+      caml_ml_flush (chanid);
+    break;
   case 2: // Buffered (only for stdout and stderr)
     var id = jsstring.lastIndexOf("\n");
-    if(id < 0)
+    if(id < 0) {
       chan.buffer+=jsstring;
+      if(chan.buffer.length > 65536)
+        caml_ml_flush (chanid);
+    }
     else {
       chan.buffer+=jsstring.substr(0,id+1);
       caml_ml_flush (chanid);
