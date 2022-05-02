@@ -7,6 +7,7 @@
 * Misc: use 4.14 in the CI
 * Lib: add missing options for Intl.DateTimeFormat
 * Lib: add missing options for Intl.NumberFormat
+* Runtime: Implement weak semantic for weak and ephemeron
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
