@@ -104,7 +104,7 @@ let run
   in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
-      let runtimes = Linker.parse_builtin t in
+      let runtimes = Linker.Fragment.parse_builtin t in
       Linker.load_fragments ~target_env ~filename runtimes);
   Linker.load_files ~target_env runtime_files;
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;

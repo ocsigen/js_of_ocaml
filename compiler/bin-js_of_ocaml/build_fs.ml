@@ -61,7 +61,7 @@ function jsoo_create_file_extern(name,content){
 }
 |}
   in
-  let fragments = Linker.parse_string code in
+  let fragments = Linker.Fragment.parse_string code in
   Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
   let instr =
     Pseudo_fs.f ~prim:`create_file_extern ~cmis:StringSet.empty ~files ~paths:include_dirs

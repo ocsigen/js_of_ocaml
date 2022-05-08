@@ -42,7 +42,7 @@ let () =
   | [] -> assert false
   | _ :: rest ->
       let fragments =
-        List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.parse_file f)
+        List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in
       (* load all files to make sure they are valid *)
       List.iter [ true; false ] ~f:(fun js_string ->

@@ -20,10 +20,121 @@
 
 open! Stdlib
 
+let loc pi =
+  match pi with
+  | { Parse_info.src = Some src; line; _ } | { Parse_info.name = Some src; line; _ } ->
+      Printf.sprintf "%s:%d" src line
+  | _ -> "unknown location"
+
+let error s = Format.ksprintf (fun s -> failwith s) s
+
+module Arity : sig
+  val find : Javascript.program -> name:string -> int option
+end = struct
+  let rec find p ~name =
+    match p with
+    | [] -> None
+    | ( Javascript.Function_declaration (Javascript.S { Javascript.name = n; _ }, l, _, _)
+      , _ )
+      :: _
+      when String.equal name n -> Some (List.length l)
+    | _ :: rem -> find rem ~name
+end
+
+module Named_value : sig
+  val find_all : Javascript.program -> StringSet.t
+end = struct
+  class traverse_and_find_named_values all =
+    object
+      inherit Js_traverse.map as self
+
+      method expression x =
+        let open Javascript in
+        (match x with
+        | ECall
+            (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
+          -> all := StringSet.add v !all
+        | _ -> ());
+        self#expression x
+    end
+
+  let find_all code =
+    let all = ref StringSet.empty in
+    let p = new traverse_and_find_named_values all in
+    ignore (p#program code);
+    !all
+end
+
+module Check = struct
+  class check_and_warn name pi =
+    object
+      inherit Js_traverse.free as super
+
+      method merge_info from =
+        let def = from#get_def_name in
+        let use = from#get_use_name in
+        let diff = StringSet.diff def use in
+        let diff = StringSet.remove name diff in
+        let diff =
+          StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff
+        in
+        if not (StringSet.is_empty diff)
+        then
+          warn
+            "WARN unused for primitive %s at %s:@. %s@."
+            name
+            (loc pi)
+            (String.concat ~sep:", " (StringSet.elements diff));
+        super#merge_info from
+    end
+
+  let primitive ~name pi ~code ~requires =
+    let free =
+      if Config.Flag.warn_unused ()
+      then new check_and_warn name pi
+      else new Js_traverse.free
+    in
+    let _code = free#program code in
+    let freename = free#get_free_name in
+    let freename =
+      List.fold_left requires ~init:freename ~f:(fun freename x ->
+          StringSet.remove x freename)
+    in
+    let freename = StringSet.diff freename Reserved.keyword in
+    let freename = StringSet.diff freename Reserved.provided in
+    let freename = StringSet.remove Constant.global_object freename in
+    if StringSet.mem Constant.old_global_object freename && false
+       (* Don't warn yet, we want to give a transition period where both
+          "globalThis" and "joo_global_object" are allowed without extra
+          noise *)
+    then
+      warn
+        "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
+         instead@."
+        (loc pi);
+    let freename = StringSet.remove Constant.old_global_object freename in
+    if not (StringSet.mem name free#get_def_name)
+    then
+      warn
+        "warning: primitive code does not define value with the expected name: %s (%s)@."
+        name
+        (loc pi);
+    if not (StringSet.is_empty freename)
+    then (
+      warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
+      warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
+end
+
 module Fragment = struct
+  type provides =
+    { parse_info : Parse_info.t
+    ; name : string
+    ; kind : Primitive.kind
+    ; kind_arg : Primitive.kind_arg list option
+    }
+
   type fragment_ =
-    { provides :
-        (Parse_info.t * string * Primitive.kind * Primitive.kind_arg list option) option
+    { provides : provides option
     ; requires : string list
     ; version_constraint : ((int -> int -> bool) * string) list list
     ; weakdef : bool
@@ -40,155 +151,129 @@ module Fragment = struct
 
   let provides = function
     | `Always_include _ -> []
-    | `Some { provides = Some (_, name, _, _); _ } -> [ name ]
+    | `Some { provides = Some p; _ } -> [ p.name ]
     | `Some _ -> []
-end
 
-let loc pi =
-  match pi with
-  | { Parse_info.src = Some src; line; _ } | { Parse_info.name = Some src; line; _ } ->
-      Printf.sprintf "%s:%d" src line
-  | _ -> "unknown location"
-
-let error s = Format.ksprintf (fun s -> failwith s) s
-
-let parse_from_lex ~filename lex =
-  let program, _ =
-    try Parse_js.parse' lex
-    with Parse_js.Parsing_error pi ->
-      let name =
-        match pi with
-        | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
-        | _ -> "??"
-      in
-      error
-        "cannot parse file %S (orig:%S from l:%d, c:%d)@."
-        filename
-        name
-        pi.Parse_info.line
-        pi.Parse_info.col
-  in
-  let rec collect_without_annot acc = function
-    | [] -> List.rev acc, []
-    | (x, []) :: program -> collect_without_annot (x :: acc) program
-    | (_, _ :: _) :: _ as program -> List.rev acc, program
-  in
-  let rec collect acc program =
-    match program with
-    | [] -> List.rev acc
-    | (x, []) :: program ->
-        let code, program = collect_without_annot [ x ] program in
-        collect (([], code) :: acc) program
-    | (x, annots) :: program ->
-        let code, program = collect_without_annot [ x ] program in
-        collect ((annots, code) :: acc) program
-  in
-  let blocks = collect [] program in
-  let res =
-    List.rev_map blocks ~f:(fun (annot, code) ->
-        match annot with
-        | [] -> `Always_include code
-        | annot ->
-            let initial_fragment : Fragment.fragment_ =
-              { provides = None
-              ; requires = []
-              ; version_constraint = []
-              ; weakdef = false
-              ; always = false
-              ; code
-              ; js_string = None
-              ; fragment_target = None
-              }
-            in
-            let fragment =
-              List.fold_left
-                annot
-                ~init:initial_fragment
-                ~f:(fun (fragment : Fragment.fragment_) (_, pi, a) ->
-                  match a with
-                  | `Provides (name, kind, ka) ->
-                      { fragment with provides = Some (pi, name, kind, ka) }
-                  | `Requires mn -> { fragment with requires = mn @ fragment.requires }
-                  | `Version l ->
-                      { fragment with
-                        version_constraint = l :: fragment.version_constraint
-                      }
-                  | `Weakdef -> { fragment with weakdef = true }
-                  | `Always -> { fragment with always = true }
-                  | (`Ifnot "js-string" | `If "js-string") as i ->
-                      let b =
-                        match i with
-                        | `If _ -> true
-                        | `Ifnot _ -> false
-                      in
-                      if Option.is_some fragment.js_string
-                      then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
-                      { fragment with js_string = Some b }
-                  | `If name when Option.is_some (Target_env.of_string name) ->
-                      if Option.is_some fragment.fragment_target
-                      then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
-                      { fragment with fragment_target = Target_env.of_string name }
-                  | `If name | `Ifnot name ->
-                      Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
-                      fragment)
-            in
-            `Some fragment)
-  in
-  res
-
-let parse_builtin builtin =
-  let filename = Builtins.File.name builtin in
-  let content = Builtins.File.content builtin in
-  let lexbuf = Lexing.from_string content in
-  let lexbuf =
-    { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = filename } }
-  in
-  let lex = Parse_js.Lexer.of_lexbuf lexbuf in
-  parse_from_lex ~filename lex
-
-let parse_string string =
-  let lexbuf = Lexing.from_string string in
-  let lex = Parse_js.Lexer.of_lexbuf lexbuf in
-  parse_from_lex ~filename:"<dummy>" lex
-
-let parse_file f =
-  let file =
-    try
-      match Findlib.path_require_findlib f with
-      | Some f ->
-          let pkg, f' =
-            match String.split ~sep:Filename.dir_sep f with
-            | [] -> assert false
-            | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
-          in
-          Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
-      | None -> Fs.absolute_path f
-    with
-    | Not_found -> error "cannot find file '%s'. @." f
-    | Sys_error s -> error "%s@." s
-  in
-  let lex = Parse_js.Lexer.of_file file in
-  parse_from_lex ~filename:file lex
-
-class check_and_warn name pi =
-  object
-    inherit Js_traverse.free as super
-
-    method merge_info from =
-      let def = from#get_def_name in
-      let use = from#get_use_name in
-      let diff = StringSet.diff def use in
-      let diff = StringSet.remove name diff in
-      let diff = StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff in
-      if not (StringSet.is_empty diff)
-      then
-        warn
-          "WARN unused for primitive %s at %s:@. %s@."
+  let parse_from_lex ~filename lex =
+    let program, _ =
+      try Parse_js.parse' lex
+      with Parse_js.Parsing_error pi ->
+        let name =
+          match pi with
+          | { Parse_info.src = Some x; _ } | { Parse_info.name = Some x; _ } -> x
+          | _ -> "??"
+        in
+        error
+          "cannot parse file %S (orig:%S from l:%d, c:%d)@."
+          filename
           name
-          (loc pi)
-          (String.concat ~sep:", " (StringSet.elements diff));
-      super#merge_info from
-  end
+          pi.Parse_info.line
+          pi.Parse_info.col
+    in
+    let rec collect_without_annot acc = function
+      | [] -> List.rev acc, []
+      | (x, []) :: program -> collect_without_annot (x :: acc) program
+      | (_, _ :: _) :: _ as program -> List.rev acc, program
+    in
+    let rec collect acc program =
+      match program with
+      | [] -> List.rev acc
+      | (x, []) :: program ->
+          let code, program = collect_without_annot [ x ] program in
+          collect (([], code) :: acc) program
+      | (x, annots) :: program ->
+          let code, program = collect_without_annot [ x ] program in
+          collect ((annots, code) :: acc) program
+    in
+    let blocks = collect [] program in
+    let res =
+      List.rev_map blocks ~f:(fun (annot, code) ->
+          match annot with
+          | [] -> `Always_include code
+          | annot ->
+              let initial_fragment : fragment_ =
+                { provides = None
+                ; requires = []
+                ; version_constraint = []
+                ; weakdef = false
+                ; always = false
+                ; code
+                ; js_string = None
+                ; fragment_target = None
+                }
+              in
+              let fragment =
+                List.fold_left
+                  annot
+                  ~init:initial_fragment
+                  ~f:(fun (fragment : fragment_) (_, pi, a) ->
+                    match a with
+                    | `Provides (name, kind, ka) ->
+                        { fragment with
+                          provides = Some { parse_info = pi; name; kind; kind_arg = ka }
+                        }
+                    | `Requires mn -> { fragment with requires = mn @ fragment.requires }
+                    | `Version l ->
+                        { fragment with
+                          version_constraint = l :: fragment.version_constraint
+                        }
+                    | `Weakdef -> { fragment with weakdef = true }
+                    | `Always -> { fragment with always = true }
+                    | (`Ifnot "js-string" | `If "js-string") as i ->
+                        let b =
+                          match i with
+                          | `If _ -> true
+                          | `Ifnot _ -> false
+                        in
+                        if Option.is_some fragment.js_string
+                        then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
+                        { fragment with js_string = Some b }
+                    | `If name when Option.is_some (Target_env.of_string name) ->
+                        if Option.is_some fragment.fragment_target
+                        then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
+                        { fragment with fragment_target = Target_env.of_string name }
+                    | `If name | `Ifnot name ->
+                        Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
+                        fragment)
+              in
+              `Some fragment)
+    in
+    res
+
+  let parse_builtin builtin =
+    let filename = Builtins.File.name builtin in
+    let content = Builtins.File.content builtin in
+    let lexbuf = Lexing.from_string content in
+    let lexbuf =
+      { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = filename } }
+    in
+    let lex = Parse_js.Lexer.of_lexbuf lexbuf in
+    parse_from_lex ~filename lex
+
+  let parse_string string =
+    let lexbuf = Lexing.from_string string in
+    let lex = Parse_js.Lexer.of_lexbuf lexbuf in
+    parse_from_lex ~filename:"<dummy>" lex
+
+  let parse_file f =
+    let file =
+      try
+        match Findlib.path_require_findlib f with
+        | Some f ->
+            let pkg, f' =
+              match String.split ~sep:Filename.dir_sep f with
+              | [] -> assert false
+              | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
+            in
+            Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
+        | None -> Fs.absolute_path f
+      with
+      | Not_found -> error "cannot find file '%s'. @." f
+      | Sys_error s -> error "%s@." s
+    in
+    let lex = Parse_js.Lexer.of_file file in
+    parse_from_lex ~filename:file lex
+end
 
 (*
 exception May_not_return
@@ -227,42 +312,6 @@ let all_return p =
       loop_all_sources xs in
   try loop_all_sources p; true with May_not_return -> false
 *)
-
-let check_primitive ~name pi ~code ~requires =
-  let free =
-    if Config.Flag.warn_unused ()
-    then new check_and_warn name pi
-    else new Js_traverse.free
-  in
-  let _code = free#program code in
-  let freename = free#get_free_name in
-  let freename =
-    List.fold_left requires ~init:freename ~f:(fun freename x ->
-        StringSet.remove x freename)
-  in
-  let freename = StringSet.diff freename Reserved.keyword in
-  let freename = StringSet.diff freename Reserved.provided in
-  let freename = StringSet.remove Constant.global_object freename in
-  if StringSet.mem Constant.old_global_object freename && false
-     (* Don't warn yet, we want to give a transition period where both
-        "globalThis" and "joo_global_object" are allowed without extra
-        noise *)
-  then
-    warn
-      "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
-       instead@."
-      (loc pi);
-  let freename = StringSet.remove Constant.old_global_object freename in
-  if not (StringSet.mem name free#get_def_name)
-  then
-    warn
-      "warning: primitive code does not define value with the expected name: %s (%s)@."
-      name
-      (loc pi);
-  if not (StringSet.is_empty freename)
-  then (
-    warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
 
 let version_match =
   List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
@@ -308,26 +357,6 @@ let reset () =
   Hashtbl.clear provided_rev;
   Hashtbl.clear code_pieces
 
-class traverse_and_find_named_values all =
-  object
-    inherit Js_traverse.map as self
-
-    method expression x =
-      let open Javascript in
-      (match x with
-      | ECall
-          (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
-        -> all := StringSet.add v !all
-      | _ -> ());
-      self#expression x
-  end
-
-let find_named_value code =
-  let all = ref StringSet.empty in
-  let p = new traverse_and_find_named_values all in
-  ignore (p#program code);
-  !all
-
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
   | `Always_include code ->
@@ -368,7 +397,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                 "Found JavaScript code with neither `//Provides` nor `//Always` in file \
                  %S@."
                 filename
-        | Some (pi, name, kind, ka) ->
+        | Some { parse_info = pi; name; kind; kind_arg = ka } ->
             let fragment_target =
               Option.value ~default:Target_env.Isomorphic fragment_target
             in
@@ -417,21 +446,13 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
             if not is_updating
             then `Ignored
             else
-              let rec find_arity = function
-                | [] -> None
-                | ( Javascript.Function_declaration
-                      (Javascript.S { Javascript.name = n; _ }, l, _, _)
-                  , _ )
-                  :: _
-                  when String.equal name n -> Some (List.length l)
-                | _ :: rem -> find_arity rem
-              in
+              let () = () in
               incr last_code_id;
               let id = !last_code_id in
               let code = Macro.f code in
-              let arity = find_arity code in
-              let named_values = find_named_value code in
-              check_primitive ~name pi ~code ~requires;
+              let arity = Arity.find code ~name in
+              let named_values = Named_value.find_all code in
+              Check.primitive ~name pi ~code ~requires;
               Primitive.register name kind ka arity;
               StringSet.iter Primitive.register_named_value named_values;
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
@@ -440,7 +461,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               `Ok)
 
 let add_file ~target_env filename =
-  List.iter (parse_file filename) ~f:(fun frag ->
+  List.iter (Fragment.parse_file filename) ~f:(fun frag ->
       let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
       ())
 

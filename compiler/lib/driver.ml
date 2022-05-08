@@ -170,7 +170,9 @@ let extra_js_files =
          try
            let name = Builtins.File.name file in
            let ss =
-             List.concat_map ~f:Linker.Fragment.provides (Linker.parse_builtin file)
+             List.concat_map
+               ~f:Linker.Fragment.provides
+               (Linker.Fragment.parse_builtin file)
              |> StringSet.of_list
            in
            (name, ss) :: acc
