@@ -41,6 +41,7 @@ let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
   | _ :: rest ->
+      let rest = List.sort_uniq ~compare:String.compare rest in
       let fragments =
         List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in
@@ -59,10 +60,10 @@ let () =
               let _linkinfos, missing =
                 Js_of_ocaml_compiler.Linker.resolve_deps ~linkall:true linkinfos prov
               in
+              Js_of_ocaml_compiler.Linker.check_deps ();
               assert (StringSet.is_empty missing)));
       (* generation *)
-      let rest = List.sort_uniq ~compare:String.compare rest in
-      List.iter rest ~f:(fun f ->
+      List.iter fragments ~f:(fun (f, _fragments) ->
           let name = Filename.basename f in
           let content = read_file f in
           Printf.printf

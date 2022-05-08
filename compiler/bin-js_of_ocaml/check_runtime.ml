@@ -57,6 +57,7 @@ let f (runtime_files, bytecode, target_env) =
       let runtimes = Linker.Fragment.parse_builtin t in
       Linker.load_fragments ~target_env ~filename runtimes);
   Linker.load_files ~target_env runtime_files;
+  Linker.check_deps ();
   let all_prims =
     List.concat_map bytecode ~f:(fun f ->
         let ic = open_in_bin f in

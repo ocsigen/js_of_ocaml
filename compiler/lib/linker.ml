@@ -131,6 +131,8 @@ module Fragment = struct
     ; name : string
     ; kind : Primitive.kind
     ; kind_arg : Primitive.kind_arg list option
+    ; arity : int option
+    ; named_values : StringSet.t
     }
 
   type fragment_ =
@@ -153,6 +155,29 @@ module Fragment = struct
     | `Always_include _ -> []
     | `Some { provides = Some p; _ } -> [ p.name ]
     | `Some _ -> []
+
+  let analyze (t : t) : t =
+    match t with
+    | `Always_include _ -> t
+    | `Some { provides = None; _ } -> t
+    | `Some
+        ({ provides =
+             Some
+               ({ parse_info = pi
+                ; name
+                ; kind = _
+                ; kind_arg = _
+                ; arity = _
+                ; named_values = _
+                } as provides)
+         ; _
+         } as fragment) ->
+        let code = Macro.f fragment.code in
+        let named_values = Named_value.find_all code in
+        let arity = Arity.find code ~name in
+        Check.primitive ~name pi ~code ~requires:fragment.requires;
+        let provides = Some { provides with named_values; arity } in
+        `Some { fragment with code; provides }
 
   let parse_from_lex ~filename lex =
     let program, _ =
@@ -210,7 +235,15 @@ module Fragment = struct
                     match a with
                     | `Provides (name, kind, ka) ->
                         { fragment with
-                          provides = Some { parse_info = pi; name; kind; kind_arg = ka }
+                          provides =
+                            Some
+                              { parse_info = pi
+                              ; name
+                              ; kind
+                              ; kind_arg = ka
+                              ; arity = None
+                              ; named_values = StringSet.empty
+                              }
                         }
                     | `Requires mn -> { fragment with requires = mn @ fragment.requires }
                     | `Version l ->
@@ -238,7 +271,7 @@ module Fragment = struct
               in
               `Some fragment)
     in
-    res
+    List.map ~f:analyze res
 
   let parse_builtin builtin =
     let filename = Builtins.File.name builtin in
@@ -397,7 +430,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                 "Found JavaScript code with neither `//Provides` nor `//Always` in file \
                  %S@."
                 filename
-        | Some { parse_info = pi; name; kind; kind_arg = ka } ->
+        | Some { parse_info = pi; name; kind; kind_arg = ka; arity; named_values } ->
             let fragment_target =
               Option.value ~default:Target_env.Isomorphic fragment_target
             in
@@ -449,21 +482,12 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               let () = () in
               incr last_code_id;
               let id = !last_code_id in
-              let code = Macro.f code in
-              let arity = Arity.find code ~name in
-              let named_values = Named_value.find_all code in
-              Check.primitive ~name pi ~code ~requires;
               Primitive.register name kind ka arity;
               StringSet.iter Primitive.register_named_value named_values;
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, requires);
               `Ok)
-
-let add_file ~target_env filename =
-  List.iter (Fragment.parse_file filename) ~f:(fun frag ->
-      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
-      ())
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -493,6 +517,11 @@ let check_deps () =
           ())
     code_pieces
 
+let load_file ~target_env filename =
+  List.iter (Fragment.parse_file filename) ~f:(fun frag ->
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      ())
+
 let load_fragments ~target_env ~filename l =
   List.iter l ~f:(fun frag ->
       let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
@@ -500,7 +529,7 @@ let load_fragments ~target_env ~filename l =
   check_deps ()
 
 let load_files ~target_env l =
-  List.iter l ~f:(fun filename -> add_file ~target_env filename);
+  List.iter l ~f:(fun filename -> load_file ~target_env filename);
   check_deps ()
 
 (* resolve *)

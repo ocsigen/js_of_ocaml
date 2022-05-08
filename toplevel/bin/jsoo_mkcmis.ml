@@ -78,6 +78,7 @@ let () =
       let runtimes = Js_of_ocaml_compiler.Linker.Fragment.parse_builtin t in
       Js_of_ocaml_compiler.Linker.load_fragments ~target_env:Isomorphic ~filename runtimes);
   Js_of_ocaml_compiler.Linker.load_files ~target_env:Isomorphic runtime_files;
+  Js_of_ocaml_compiler.Linker.check_deps ();
   let all = Jsoo_common.cmis args in
   let instr =
     List.map all ~f:(fun filename ->

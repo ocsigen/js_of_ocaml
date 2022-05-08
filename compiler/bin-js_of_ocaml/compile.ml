@@ -107,6 +107,7 @@ let run
       let runtimes = Linker.Fragment.parse_builtin t in
       Linker.load_fragments ~target_env ~filename runtimes);
   Linker.load_files ~target_env runtime_files;
+  Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   let paths =
     try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
