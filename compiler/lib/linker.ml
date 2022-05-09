@@ -373,8 +373,6 @@ type provided =
   ; target_env : Target_env.t
   }
 
-let last_code_id = ref 0
-
 let always_included = ref []
 
 let provided = Hashtbl.create 31
@@ -384,7 +382,6 @@ let provided_rev = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
 
 let reset () =
-  last_code_id := 0;
   always_included := [];
   Hashtbl.clear provided;
   Hashtbl.clear provided_rev;
@@ -475,8 +472,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
             then `Ignored
             else
               let () = () in
-              incr last_code_id;
-              let id = !last_code_id in
+              let id = Hashtbl.length provided in
               Primitive.register name kind ka arity;
               StringSet.iter Primitive.register_named_value named_values;
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
