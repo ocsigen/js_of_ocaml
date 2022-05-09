@@ -138,7 +138,7 @@ module Fragment = struct
   type fragment_ =
     { provides : provides option
     ; requires : string list
-    ; version_constraint : ((int -> int -> bool) * string) list list
+    ; version_constraint_ok : bool
     ; weakdef : bool
     ; always : bool
     ; code : Javascript.program
@@ -147,20 +147,19 @@ module Fragment = struct
     }
 
   type t =
-    [ `Always_include of Javascript.program
-    | `Some of fragment_
-    ]
+    | Always_include of Javascript.program
+    | Fragment of fragment_
 
   let provides = function
-    | `Always_include _ -> []
-    | `Some { provides = Some p; _ } -> [ p.name ]
-    | `Some _ -> []
+    | Always_include _ -> []
+    | Fragment { provides = Some p; _ } -> [ p.name ]
+    | Fragment _ -> []
 
   let analyze (t : t) : t =
     match t with
-    | `Always_include _ -> t
-    | `Some { provides = None; _ } -> t
-    | `Some
+    | Always_include _ -> t
+    | Fragment { provides = None; _ } -> t
+    | Fragment
         ({ provides =
              Some
                ({ parse_info = pi
@@ -177,7 +176,10 @@ module Fragment = struct
         let arity = Arity.find code ~name in
         Check.primitive ~name pi ~code ~requires:fragment.requires;
         let provides = Some { provides with named_values; arity } in
-        `Some { fragment with code; provides }
+        Fragment { fragment with code; provides }
+
+  let version_match =
+    List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
   let parse_from_lex ~filename lex =
     let program, _ =
@@ -214,12 +216,12 @@ module Fragment = struct
     let res =
       List.rev_map blocks ~f:(fun (annot, code) ->
           match annot with
-          | [] -> `Always_include code
+          | [] -> Always_include code
           | annot ->
               let initial_fragment : fragment_ =
                 { provides = None
                 ; requires = []
-                ; version_constraint = []
+                ; version_constraint_ok = true
                 ; weakdef = false
                 ; always = false
                 ; code
@@ -248,7 +250,8 @@ module Fragment = struct
                     | `Requires mn -> { fragment with requires = mn @ fragment.requires }
                     | `Version l ->
                         { fragment with
-                          version_constraint = l :: fragment.version_constraint
+                          version_constraint_ok =
+                            fragment.version_constraint_ok && version_match l
                         }
                     | `Weakdef -> { fragment with weakdef = true }
                     | `Always -> { fragment with always = true }
@@ -269,7 +272,7 @@ module Fragment = struct
                         Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
                         fragment)
               in
-              `Some fragment)
+              Fragment fragment)
     in
     List.map ~f:analyze res
 
@@ -346,9 +349,6 @@ let all_return p =
   try loop_all_sources p; true with May_not_return -> false
 *)
 
-let version_match =
-  List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
-
 type always_required =
   { filename : string
   ; program : Javascript.program
@@ -392,13 +392,13 @@ let reset () =
 
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
-  | `Always_include code ->
+  | Always_include code ->
       always_included := { filename; program = code; requires = [] } :: !always_included;
       `Ok
-  | `Some
+  | Fragment
       { provides
       ; requires
-      ; version_constraint
+      ; version_constraint_ok
       ; weakdef
       ; always
       ; code
@@ -410,12 +410,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
         | Some true, false | Some false, true -> true
         | None, _ | Some true, true | Some false, false -> false
       in
-      let ignore_because_of_version_constraint =
-        match version_constraint with
-        | [] -> false
-        | l -> not (List.exists l ~f:version_match)
-      in
-      if ignore_because_of_version_constraint || ignore_because_of_js_string
+      if (not version_constraint_ok) || ignore_because_of_js_string
       then `Ignored
       else
         match provides with
