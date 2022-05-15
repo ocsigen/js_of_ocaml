@@ -514,6 +514,8 @@ and eventTarget =
 
     method onscroll : ('self t, event t) event_listener writeonly_prop
 
+    method onwheel : ('self t, wheelEvent t) event_listener writeonly_prop
+
     method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
     method ondragend : ('self t, dragEvent t) event_listener writeonly_prop
