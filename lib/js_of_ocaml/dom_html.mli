@@ -2548,7 +2548,7 @@ val addMousewheelEventListenerWithOptions :
   -> ?passive:bool t
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> event_listener_id
-(** Add a mousewheel event listener with option-object variant of the
+(** Add a wheel event listener with option-object variant of the
       [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
@@ -2558,7 +2558,7 @@ val addMousewheelEventListener :
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> bool t
   -> event_listener_id
-(** Add a mousewheel event listener with the useCapture boolean variant
+(** Add a wheel event listener with the useCapture boolean variant
       of the [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
