@@ -275,6 +275,11 @@ type mouse_button =
   | Middle_button
   | Right_button
 
+type delta_mode =
+  | Delta_pixel
+  | Delta_line
+  | Delta_page
+
 class type event =
   object
     inherit [element] Dom.event
@@ -400,7 +405,7 @@ and wheelEvent =
 
     method deltaZ : float readonly_prop
 
-    method deltaMode : int readonly_prop
+    method deltaMode : delta_mode readonly_prop
   end
 
 and touchEvent =
