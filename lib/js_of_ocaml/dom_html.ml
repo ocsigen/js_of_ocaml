@@ -380,6 +380,20 @@ and mouseScrollEvent =
     method _VERTICAL_AXIS : int optdef readonly_prop
   end
 
+and wheelEvent = 
+  object 
+    (* All modern browsers *)
+    inherit mousewheelEvent
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : int readonly_prop
+  end
+
 and touchEvent =
   object
     inherit event
@@ -792,6 +806,8 @@ module Event = struct
   let keyup = Dom.Event.make "keyup"
 
   let mousewheel = Dom.Event.make "mousewheel"
+
+  let wheel = Dom.Event.make "wheel"
 
   let _DOMMouseScroll = Dom.Event.make "DOMMouseScroll"
 
@@ -2833,6 +2849,8 @@ module CoerceTo = struct
   let wheelEvent ev = unsafeCoerceEvent Js.Unsafe.global##._WheelEvent ev
 
   let mouseScrollEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MouseScrollEvent ev
+
+  let wheelEvent' ev = unsafeCoerceEvent Js.Unsafe.global##._WheelEvent ev
 
   let popStateEvent ev = unsafeCoerceEvent Js.Unsafe.global##._PopStateEvent ev
 

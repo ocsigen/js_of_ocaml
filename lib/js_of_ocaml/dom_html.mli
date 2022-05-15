@@ -389,6 +389,20 @@ and mouseScrollEvent =
     method _VERTICAL_AXIS : int optdef readonly_prop
   end
 
+and wheelEvent = 
+  object 
+    (* All modern browsers *)
+    inherit mousewheelEvent
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : int readonly_prop
+  end
+
 and touchEvent =
   object
     inherit event
@@ -2353,6 +2367,8 @@ module Event : sig
 
   val _DOMMouseScroll : mouseScrollEvent t typ
 
+  val wheel : wheelEvent t typ
+
   val touchstart : touchEvent t typ
 
   val touchmove : touchEvent t typ
@@ -3142,6 +3158,8 @@ module CoerceTo : sig
   val wheelEvent : #event t -> mousewheelEvent t opt
 
   val mouseScrollEvent : #event t -> mouseScrollEvent t opt
+
+  val wheelEvent' : #event t -> wheelEvent t opt
 
   val popStateEvent : #event t -> popStateEvent t opt
 
