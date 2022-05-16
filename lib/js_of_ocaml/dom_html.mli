@@ -368,9 +368,9 @@ and keyboardEvent =
     method keyIdentifier : js_string t optdef readonly_prop
   end
 
-and mousewheelEvent =
+  and mousewheelEvent =
   object
-    (* All browsers but Firefox *)
+    (* All modern browsers *)
     inherit mouseEvent
 
     method wheelDelta : int readonly_prop
@@ -378,6 +378,14 @@ and mousewheelEvent =
     method wheelDeltaX : int optdef readonly_prop
 
     method wheelDeltaY : int optdef readonly_prop
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : delta_mode readonly_prop
   end
 
 and mouseScrollEvent =
@@ -392,20 +400,6 @@ and mouseScrollEvent =
     method _HORIZONTAL_AXIS : int optdef readonly_prop
 
     method _VERTICAL_AXIS : int optdef readonly_prop
-  end
-
-and wheelEvent = 
-  object 
-    (* All modern browsers *)
-    inherit mousewheelEvent
-
-    method deltaX : float readonly_prop
-
-    method deltaY : float readonly_prop
-
-    method deltaZ : float readonly_prop
-
-    method deltaMode : delta_mode readonly_prop
   end
 
 and touchEvent =
@@ -525,7 +519,7 @@ and eventTarget =
 
     method onscroll : ('self t, event t) event_listener writeonly_prop
 
-    method onwheel : ('self t, wheelEvent t) event_listener writeonly_prop
+    method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
 
     method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -2374,7 +2368,7 @@ module Event : sig
 
   val _DOMMouseScroll : mouseScrollEvent t typ
 
-  val wheel : wheelEvent t typ
+  val wheel : mousewheelEvent t typ
 
   val touchstart : touchEvent t typ
 
@@ -3165,8 +3159,6 @@ module CoerceTo : sig
   val wheelEvent : #event t -> mousewheelEvent t opt
 
   val mouseScrollEvent : #event t -> mouseScrollEvent t opt
-
-  val wheelEvent' : #event t -> wheelEvent t opt
 
   val popStateEvent : #event t -> popStateEvent t opt
 

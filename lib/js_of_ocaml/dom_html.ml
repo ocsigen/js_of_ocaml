@@ -361,7 +361,7 @@ and keyboardEvent =
 
 and mousewheelEvent =
   object
-    (* All browsers but Firefox *)
+    (* All modern browsers *)
     inherit mouseEvent
 
     method wheelDelta : int readonly_prop
@@ -369,6 +369,14 @@ and mousewheelEvent =
     method wheelDeltaX : int optdef readonly_prop
 
     method wheelDeltaY : int optdef readonly_prop
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : delta_mode readonly_prop
   end
 
 and mouseScrollEvent =
@@ -383,20 +391,6 @@ and mouseScrollEvent =
     method _HORIZONTAL_AXIS : int optdef readonly_prop
 
     method _VERTICAL_AXIS : int optdef readonly_prop
-  end
-
-and wheelEvent = 
-  object 
-    (* All modern browsers *)
-    inherit mousewheelEvent
-
-    method deltaX : float readonly_prop
-
-    method deltaY : float readonly_prop
-
-    method deltaZ : float readonly_prop
-
-    method deltaMode : delta_mode readonly_prop
   end
 
 and touchEvent =
@@ -514,7 +508,7 @@ and eventTarget =
 
     method onscroll : ('self t, event t) event_listener writeonly_prop
 
-    method onwheel : ('self t, wheelEvent t) event_listener writeonly_prop
+    method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
 
     method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -2857,8 +2851,6 @@ module CoerceTo = struct
 
   let mouseScrollEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MouseScrollEvent ev
 
-  let wheelEvent' ev = unsafeCoerceEvent Js.Unsafe.global##._WheelEvent ev
-
   let popStateEvent ev = unsafeCoerceEvent Js.Unsafe.global##._PopStateEvent ev
 
   let messageEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MessageEvent ev
@@ -2917,7 +2909,7 @@ let addMousewheelEventListenerWithOptions e ?capture ?once ?passive h =
     ?passive
     e
     Event.wheel
-    (handler (fun (e : wheelEvent t) ->
+    (handler (fun (e : mousewheelEvent t) ->
           let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
           let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
           h (e :> mouseEvent t) ~dx ~dy))

@@ -12,7 +12,7 @@ let () =
       (fun _ -> assert false)
   in
   html##.onwheel :=
-    Dom.handler (fun (event : Dom_html.wheelEvent Js.t) ->
+    Dom.handler (fun (event : Dom_html.mousewheelEvent Js.t) ->
         Firebug.console##debug event;
         let deltaX = event##.deltaX in
         let deltaY = event##.deltaY in
