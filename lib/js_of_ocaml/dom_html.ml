@@ -2910,9 +2910,9 @@ let addMousewheelEventListenerWithOptions e ?capture ?once ?passive h =
     e
     Event.wheel
     (handler (fun (e : mousewheelEvent t) ->
-          let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
-          let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
-          h (e :> mouseEvent t) ~dx ~dy))
+         let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
+         let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
+         h (e :> mouseEvent t) ~dx ~dy))
 
 let addMousewheelEventListener e h capt =
   addMousewheelEventListenerWithOptions ~capture:capt e h

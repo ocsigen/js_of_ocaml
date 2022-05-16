@@ -368,7 +368,7 @@ and keyboardEvent =
     method keyIdentifier : js_string t optdef readonly_prop
   end
 
-  and mousewheelEvent =
+and mousewheelEvent =
   object
     (* All modern browsers *)
     inherit mouseEvent
