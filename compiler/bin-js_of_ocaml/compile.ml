@@ -222,13 +222,14 @@ let run
     in
     output code ~standalone:true (fst output_file)
   else
-    let kind, ic, close_ic =
+    let kind, ic, close_ic, paths =
       match input_file with
-      | None -> Parse_bytecode.from_channel stdin, stdin, fun () -> ()
+      | None -> Parse_bytecode.from_channel stdin, stdin, (fun () -> ()), paths
       | Some fn ->
           let ch = open_in_bin fn in
           let res = Parse_bytecode.from_channel ch in
-          res, ch, fun () -> close_in ch
+          let paths = Filename.dirname fn :: paths in
+          res, ch, (fun () -> close_in ch), paths
     in
     (match kind with
     | `Exe ->
