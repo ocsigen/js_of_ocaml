@@ -65,24 +65,23 @@ let list_files name paths =
     | None -> name, []
   in
   let file =
-    if Filename.is_relative name
-    then
-      try Findlib.find_in_findlib_paths paths name
-      with Not_found -> failwith (Printf.sprintf "file '%s' not found" name)
-    else name
+    match Findlib.find paths name with
+    | None -> failwith (Printf.sprintf "file '%s' not found" name)
+    | Some file -> file
   in
   expand_path exts file virtname
 
 let find_cmi paths base =
-  let name, filename =
-    try
-      let name = String.uncapitalize_ascii base ^ ".cmi" in
-      name, Findlib.find_in_findlib_paths paths name
-    with Not_found ->
-      let name = String.capitalize_ascii base ^ ".cmi" in
-      name, Findlib.find_in_findlib_paths paths name
-  in
-  Filename.concat "/static/cmis" name, filename
+  match
+    List.find_map
+      [ String.uncapitalize_ascii base ^ ".cmi"; String.capitalize_ascii base ^ ".cmi" ]
+      ~f:(fun name ->
+        match Fs.find_in_path paths name with
+        | Some cmi -> Some (name, cmi)
+        | None -> None)
+  with
+  | Some (name, filename) -> Some (Filename.concat "/static/cmis" name, filename)
+  | None -> None
 
 let instr_of_name_content prim ~name ~content =
   let open Code in
@@ -104,10 +103,9 @@ let f ~prim ~cmis ~files ~paths =
   let cmi_files, missing_cmis =
     StringSet.fold
       (fun s (acc, missing) ->
-        try
-          let name, filename = find_cmi paths s in
-          (name, Fs.read_file filename) :: acc, missing
-        with Not_found -> acc, s :: missing)
+        match find_cmi paths s with
+        | Some (name, filename) -> (name, Fs.read_file filename) :: acc, missing
+        | None -> acc, s :: missing)
       cmis
       ([], [])
   in

@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val find_in_path : string list -> string -> string
+val find_in_path : string list -> string -> string option
 
 val absolute_path : string -> string
 

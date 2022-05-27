@@ -86,21 +86,27 @@ module Debug : sig
 end = struct
   open Instruct
 
+  type path = string
+
   type ml_unit =
     { module_name : string
-    ; fname : string
     ; crc : string option
     ; paths : string list
-    ; source : string option
+    ; source : path option
     }
   [@@ocaml.warning "-unused-field"]
+
+  type event_and_source =
+    { event : debug_event
+    ; source : path option
+    }
 
   module String_table = Hashtbl.Make (String)
   module Int_table = Hashtbl.Make (Int)
 
   type t =
-    { events_by_pc : (debug_event * ml_unit) Int_table.t
-    ; units : (string * string, ml_unit) Hashtbl.t
+    { events_by_pc : event_and_source Int_table.t
+    ; units : (string * string option, ml_unit) Hashtbl.t
     ; pos_fname_to_source : string String_table.t
     ; toplevel : bool
     ; names : bool
@@ -131,9 +137,9 @@ end = struct
 
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize_ascii name in
-    try Some (Fs.find_in_path paths (uname ^ ".ml"))
-    with Not_found -> (
-      try Some (Fs.find_in_path paths (name ^ ".ml")) with Not_found -> None)
+    match Fs.find_in_path paths (uname ^ ".ml") with
+    | Some _ as x -> x
+    | None -> Fs.find_in_path paths (name ^ ".ml")
 
   let read_event_list =
     let rewrite_path path =
@@ -157,23 +163,32 @@ end = struct
       in
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
-      List.iter
-        evl
-        ~f:(fun
-             ({ ev_module
-              ; ev_loc = { Location.loc_start = { Lexing.pos_fname; _ }; _ }
-              ; _
-              } as ev)
-           ->
+      List.iter evl ~f:(fun ev ->
+          let pos_fname =
+            match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
+            | "_none_" -> None
+            | x -> Some x
+          in
+          let ev_module = ev.ev_module in
           let unit =
             try Hashtbl.find units (ev_module, pos_fname)
             with Not_found ->
               let crc = try Hashtbl.find crcs ev_module with Not_found -> None in
-              let source =
-                try Some (Fs.find_in_path paths pos_fname)
-                with Not_found -> (
-                  try Some (Fs.find_in_path paths (Filename.basename pos_fname))
-                  with Not_found -> find_ml_in_paths paths ev_module)
+              let source : path option =
+                (* First search the source based on [pos_fname] because the
+                   filename of the source might be unreleased to the
+                   module name. (e.g. pos_fname = list.ml, module = Stdlib__list) *)
+                let from_pos_fname =
+                  match pos_fname with
+                  | None -> None
+                  | Some pos_fname -> (
+                      match Fs.find_in_path paths pos_fname with
+                      | Some _ as x -> x
+                      | None -> Fs.find_in_path paths (Filename.basename pos_fname))
+                in
+                match from_pos_fname with
+                | None -> find_ml_in_paths paths ev_module
+                | Some _ as x -> x
               in
               let source =
                 match source with
@@ -188,25 +203,30 @@ end = struct
                   (match source with
                   | None -> "NONE"
                   | Some x -> x)
-                  pos_fname;
-              let u =
-                { module_name = ev_module; fname = pos_fname; crc; source; paths }
-              in
+                  (match pos_fname with
+                  | None -> "NONE"
+                  | Some x -> x);
+              let u = { module_name = ev_module; crc; source; paths } in
               (match pos_fname, source with
-              | "_none_", _ | _, None -> ()
-              | pos_fname, Some source ->
+              | None, _ | _, None -> ()
+              | Some pos_fname, Some source ->
                   String_table.add pos_fname_to_source pos_fname source);
               Hashtbl.add units (ev_module, pos_fname) u;
               u
           in
           relocate_event orig ev;
-          if enabled || names then Int_table.add events_by_pc ev.ev_pos (ev, unit);
+          if enabled || names
+          then Int_table.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
           ())
 
   let find_source { pos_fname_to_source; _ } pos_fname =
-    match String_table.find_all pos_fname_to_source pos_fname with
-    | [ x ] -> Some x
-    | [] | _ :: _ :: _ -> None
+    match pos_fname with
+    | "_none_" -> None
+    | _ -> (
+        match String_table.find_all pos_fname_to_source pos_fname with
+        | [ x ] -> Some x
+        | _ :: _ :: _ -> None
+        | [] -> None)
 
   let read t ~crcs ~includes ic =
     let len = input_binary_int ic in
@@ -217,16 +237,16 @@ end = struct
 
   let find { events_by_pc; _ } pc =
     try
-      let ev, _ = Int_table.find events_by_pc pc in
-      ( Ocaml_compiler.Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
-      , ev.ev_typenv )
+      let { event; _ } = Int_table.find events_by_pc pc in
+      ( Ocaml_compiler.Ident.table_contents event.ev_stacksize event.ev_compenv.ce_stack
+      , event.ev_typenv )
     with Not_found -> [], Env.Env_empty
 
   let mem { events_by_pc; _ } = Int_table.mem events_by_pc
 
   let find_loc { events_by_pc; _ } ?(after = false) pc =
     try
-      let before, (ev, unit) =
+      let before, { event; source } =
         try false, Int_table.find events_by_pc pc
         with Not_found -> (
           ( true
@@ -235,7 +255,7 @@ end = struct
               try Int_table.find events_by_pc (pc + 2)
               with Not_found -> Int_table.find events_by_pc (pc + 3)) ))
       in
-      let loc = ev.ev_loc in
+      let loc = event.ev_loc in
       if loc.Location.loc_ghost
       then None
       else
@@ -245,12 +265,11 @@ end = struct
           else if before
           then loc.Location.loc_start
           else
-            match ev.ev_kind with
+            match event.ev_kind with
             | Event_after _ -> loc.Location.loc_end
             | _ -> loc.Location.loc_start
         in
-        let src = unit.source in
-        Some (Parse_info.t_of_position ~src pos)
+        Some (Parse_info.t_of_position ~src:source pos)
     with Not_found -> None
 
   let rec propagate l1 l2 =
@@ -260,7 +279,8 @@ end = struct
         propagate r1 r2
     | _ -> ()
 
-  let fold t f acc = Int_table.fold (fun k (e, _u) acc -> f k e acc) t.events_by_pc acc
+  let fold t f acc =
+    Int_table.fold (fun k { event; _ } acc -> f k event acc) t.events_by_pc acc
 
   let paths t ~units =
     let paths =

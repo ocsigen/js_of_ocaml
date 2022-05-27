@@ -293,19 +293,9 @@ module Fragment = struct
 
   let parse_file f =
     let file =
-      try
-        match Findlib.path_require_findlib f with
-        | Some f ->
-            let pkg, f' =
-              match String.split ~sep:Filename.dir_sep f with
-              | [] -> assert false
-              | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
-            in
-            Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
-        | None -> Fs.absolute_path f
-      with
-      | Not_found -> error "cannot find file '%s'. @." f
-      | Sys_error s -> error "%s@." s
+      match Findlib.find [] f with
+      | Some file -> Fs.absolute_path file
+      | None -> error "cannot find file '%s'. @." f
     in
     let lex = Parse_js.Lexer.of_file file in
     parse_from_lex ~filename:file lex

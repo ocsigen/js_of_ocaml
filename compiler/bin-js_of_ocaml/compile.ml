@@ -45,7 +45,7 @@ let run
     ; toplevel
     ; nocmis
     ; runtime_only
-    ; include_dir
+    ; include_dirs
     ; fs_files
     ; fs_output
     ; fs_external
@@ -62,18 +62,8 @@ let run
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
   let t = Timer.make () in
-  let include_dir =
-    List.map include_dir ~f:(fun d ->
-        match Findlib.path_require_findlib d with
-        | Some d ->
-            let pkg, d' =
-              match String.split ~sep:Filename.dir_sep d with
-              | [] -> assert false
-              | [ d ] -> "js_of_ocaml", d
-              | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
-            in
-            Filename.concat (Findlib.find_pkg_dir pkg) d'
-        | None -> d)
+  let include_dirs =
+    List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
   in
   let exported_unit =
     match export_file with
@@ -109,10 +99,6 @@ let run
   Linker.load_files ~target_env runtime_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
-  let paths =
-    try List.append include_dir [ Findlib.find_pkg_dir "stdlib" ]
-    with Not_found -> include_dir
-  in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
   let check_debug (one : Parse_bytecode.one) =
@@ -130,7 +116,7 @@ let run
   let pseudo_fs_instr prim debug cmis =
     let cmis = if nocmis then StringSet.empty else cmis in
     let paths =
-      paths @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
+      include_dirs @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
     in
     Pseudo_fs.f ~prim ~cmis ~files:fs_files ~paths
   in
@@ -222,21 +208,21 @@ let run
     in
     output code ~standalone:true (fst output_file)
   else
-    let kind, ic, close_ic, paths =
+    let kind, ic, close_ic, include_dirs =
       match input_file with
-      | None -> Parse_bytecode.from_channel stdin, stdin, (fun () -> ()), paths
+      | None -> Parse_bytecode.from_channel stdin, stdin, (fun () -> ()), include_dirs
       | Some fn ->
           let ch = open_in_bin fn in
           let res = Parse_bytecode.from_channel ch in
-          let paths = Filename.dirname fn :: paths in
-          res, ch, (fun () -> close_in ch), paths
+          let include_dirs = Filename.dirname fn :: include_dirs in
+          res, ch, (fun () -> close_in ch), include_dirs
     in
     (match kind with
     | `Exe ->
         let t1 = Timer.make () in
         let code =
           Parse_bytecode.from_exe
-            ~includes:paths
+            ~includes:include_dirs
             ~toplevel
             ?exported_unit
             ~dynlink
@@ -260,7 +246,12 @@ let run
         in
         let t1 = Timer.make () in
         let code =
-          Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
+          Parse_bytecode.from_cmo
+            ~includes:include_dirs
+            ~toplevel
+            ~debug:need_debug
+            cmo
+            ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
         output code ~standalone:false output_file
@@ -278,7 +269,12 @@ let run
             in
             let t1 = Timer.make () in
             let code =
-              Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
+              Parse_bytecode.from_cmo
+                ~includes:include_dirs
+                ~toplevel
+                ~debug:need_debug
+                cmo
+                ic
             in
             if times ()
             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
@@ -286,7 +282,12 @@ let run
     | `Cma cma ->
         let t1 = Timer.make () in
         let code =
-          Parse_bytecode.from_cma ~includes:paths ~toplevel ~debug:need_debug cma ic
+          Parse_bytecode.from_cma
+            ~includes:include_dirs
+            ~toplevel
+            ~debug:need_debug
+            cma
+            ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
         output code ~standalone:false (fst output_file));
