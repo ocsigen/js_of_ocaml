@@ -44,7 +44,7 @@ type t =
   ; export_file : string option
   ; nocmis : bool
   ; (* filesystem *)
-    include_dir : string list
+    include_dirs : string list
   ; fs_files : string list
   ; fs_output : string option
   ; fs_external : bool

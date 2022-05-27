@@ -21,6 +21,24 @@ open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 open Cmdliner
 
+let is_dir_sep = function
+  | '/' -> true
+  | '\\' when String.equal Filename.dir_sep "\\" -> true
+  | _ -> false
+
+let trim_trailing_dir_sep s =
+  if String.equal s ""
+  then s
+  else
+    let len = String.length s in
+    let j = ref (len - 1) in
+    while !j >= 0 && is_dir_sep (String.unsafe_get s !j) do
+      decr j
+    done;
+    if !j >= 0 then String.sub s ~pos:0 ~len:(!j + 1) else String.sub s ~pos:0 ~len:1
+
+let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
+
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
@@ -42,7 +60,7 @@ type t =
   ; export_file : string option
   ; nocmis : bool
   ; (* filesystem *)
-    include_dir : string list
+    include_dirs : string list
   ; fs_files : string list
   ; fs_output : string option
   ; fs_external : bool
@@ -181,7 +199,7 @@ let options =
     let doc = "Do not include cmis when compiling toplevel." in
     Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
   in
-  let include_dir =
+  let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(
       value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
@@ -230,7 +248,7 @@ let options =
       toplevel
       export_file
       wrap_with_fun
-      include_dir
+      include_dirs
       fs_files
       fs_output
       fs_external
@@ -304,6 +322,7 @@ let options =
     in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
+    let include_dirs = normalize_include_dirs include_dirs in
     `Ok
       { common
       ; params
@@ -315,7 +334,7 @@ let options =
       ; target_env
       ; toplevel
       ; export_file
-      ; include_dir
+      ; include_dirs
       ; runtime_files
       ; no_runtime
       ; runtime_only
@@ -340,7 +359,7 @@ let options =
       $ toplevel
       $ export_file
       $ wrap_with_function
-      $ include_dir
+      $ include_dirs
       $ fs_files
       $ fs_output
       $ fs_external
@@ -430,7 +449,7 @@ let options_runtime_only =
       & opt_all (list (pair ~sep:'=' string string)) []
       & info [ "setenv" ] ~docv:"PARAM=VALUE" ~doc)
   in
-  let include_dir =
+  let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(
       value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
@@ -478,7 +497,7 @@ let options_runtime_only =
       fs_files
       fs_output
       fs_external
-      include_dir
+      include_dirs
       no_runtime
       no_sourcemap
       sourcemap
@@ -528,6 +547,7 @@ let options_runtime_only =
     in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
+    let include_dirs = normalize_include_dirs include_dirs in
     `Ok
       { common
       ; params
@@ -539,7 +559,7 @@ let options_runtime_only =
       ; target_env
       ; toplevel = false
       ; export_file = None
-      ; include_dir
+      ; include_dirs
       ; runtime_files
       ; no_runtime
       ; runtime_only = true
@@ -563,7 +583,7 @@ let options_runtime_only =
       $ fs_files
       $ fs_output
       $ fs_external
-      $ include_dir
+      $ include_dirs
       $ noruntime
       $ no_sourcemap
       $ sourcemap

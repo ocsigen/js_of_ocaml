@@ -17,21 +17,24 @@
  *)
 open! Stdlib
 
-let find_pkg_dir_ref = ref (fun _ -> raise Not_found)
+let find_pkg_dir_ref = ref (fun _ -> None)
 
 let set_find_pkg_dir f = find_pkg_dir_ref := f
 
 let find_pkg_dir pkg = !find_pkg_dir_ref pkg
 
-let path_require_findlib path = String.drop_prefix path ~prefix:"+"
+let path_require_findlib path =
+  match String.drop_prefix path ~prefix:"+" with
+  | None -> None
+  | Some suffix -> (
+      match String.lsplit2 ~on:'/' suffix with
+      | None -> Some ("stdlib", suffix)
+      | Some (pkg, suffix) -> Some (pkg, suffix))
 
-let rec find_in_findlib_paths ?(pkg = "stdlib") paths name =
-  match paths with
-  | [] -> raise Not_found
-  | path :: rem ->
-      let file =
-        match path_require_findlib path with
-        | Some path -> Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
-        | None -> Filename.concat path name
-      in
-      if Sys.file_exists file then file else find_in_findlib_paths rem name
+let find paths name =
+  match path_require_findlib name with
+  | Some (pkg, suffix) -> (
+      match find_pkg_dir pkg with
+      | None -> None
+      | Some dir -> Fs.find_in_path [] (Filename.concat dir suffix))
+  | None -> Fs.find_in_path paths name

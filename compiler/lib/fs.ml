@@ -17,21 +17,19 @@
  *)
 open! Stdlib
 
-let rec find_in_path paths name =
+let rec find_in_path_rec paths name =
   match paths with
-  | [] -> raise Not_found
+  | [] -> None
   | path :: rem ->
       let file = Filename.concat path name in
-      if Sys.file_exists file then file else find_in_path rem name
+      if Sys.file_exists file then Some file else find_in_path_rec rem name
 
 let find_in_path paths name =
-  if String.is_empty name || String.equal name "."
-  then raise Not_found
-  else if Filename.is_relative name
-  then find_in_path paths name
+  if Filename.is_implicit name && not (String.equal name ".")
+  then find_in_path_rec paths name
   else if Sys.file_exists name
-  then name
-  else raise Not_found
+  then Some name
+  else None
 
 let rec concat dir filename =
   match String.drop_prefix ~prefix:"../" filename with

@@ -64,6 +64,9 @@ function jsoo_create_file_extern(name,content){
   let fragments = Linker.Fragment.parse_string code in
   Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
   Linker.check_deps ();
+  let include_dirs =
+    List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
+  in
   let instr =
     Pseudo_fs.f ~prim:`create_file_extern ~cmis:StringSet.empty ~files ~paths:include_dirs
   in

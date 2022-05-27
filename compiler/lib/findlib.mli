@@ -16,10 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val path_require_findlib : string -> string option
+val set_find_pkg_dir : (string -> string option) -> unit
 
-val set_find_pkg_dir : (string -> string) -> unit
+val find_pkg_dir : string -> string option
 
-val find_pkg_dir : string -> string
-
-val find_in_findlib_paths : ?pkg:string -> string list -> string -> string
+val find : string list -> string -> string option

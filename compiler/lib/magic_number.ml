@@ -58,8 +58,9 @@ let kind (s, _) =
 let to_string (k, v) = Printf.sprintf "%s%03d" k v
 
 let compare (p1, n1) (p2, n2) =
-  if not (String.equal p1 p2) then raise Not_found;
-  compare n1 n2
+  match Poly.compare (p1 : string) p2 with
+  | 0 -> compare (n1 : int) n2
+  | n -> n
 
 let equal a b = compare a b = 0
 
