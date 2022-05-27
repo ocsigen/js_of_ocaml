@@ -271,6 +271,11 @@ type mouse_button =
   | Middle_button
   | Right_button
 
+type delta_mode =
+  | Delta_pixel
+  | Delta_line
+  | Delta_page
+
 class type event =
   object
     inherit [element] Dom.event
@@ -356,7 +361,7 @@ and keyboardEvent =
 
 and mousewheelEvent =
   object
-    (* All browsers but Firefox *)
+    (* All modern browsers *)
     inherit mouseEvent
 
     method wheelDelta : int readonly_prop
@@ -364,6 +369,14 @@ and mousewheelEvent =
     method wheelDeltaX : int optdef readonly_prop
 
     method wheelDeltaY : int optdef readonly_prop
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : delta_mode readonly_prop
   end
 
 and mouseScrollEvent =
@@ -494,6 +507,8 @@ and eventTarget =
     method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
 
     method onscroll : ('self t, event t) event_listener writeonly_prop
+
+    method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
 
     method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -792,6 +807,8 @@ module Event = struct
   let keyup = Dom.Event.make "keyup"
 
   let mousewheel = Dom.Event.make "mousewheel"
+
+  let wheel = Dom.Event.make "wheel"
 
   let _DOMMouseScroll = Dom.Event.make "DOMMouseScroll"
 
@@ -2885,36 +2902,17 @@ let buttonPressed (ev : #mouseEvent Js.t) =
       | _ -> No_button)
     (fun x -> x)
 
-let hasMousewheelEvents () =
-  let d = createDiv document in
-  d##setAttribute (Js.string "onmousewheel") (Js.string "return;");
-  Js.typeof (Js.Unsafe.get d (Js.string "onmousewheel")) == Js.string "function"
-
 let addMousewheelEventListenerWithOptions e ?capture ?once ?passive h =
-  if hasMousewheelEvents ()
-  then
-    addEventListenerWithOptions
-      ?capture
-      ?once
-      ?passive
-      e
-      Event.mousewheel
-      (handler (fun (e : mousewheelEvent t) ->
-           let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
-           let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
-           h (e :> mouseEvent t) ~dx ~dy))
-  else
-    addEventListenerWithOptions
-      ?capture
-      ?once
-      ?passive
-      e
-      Event._DOMMouseScroll
-      (handler (fun (e : mouseScrollEvent t) ->
-           let d = e##.detail in
-           if e##.axis == e##._HORIZONTAL_AXIS
-           then h (e :> mouseEvent t) ~dx:d ~dy:0
-           else h (e :> mouseEvent t) ~dx:0 ~dy:d))
+  addEventListenerWithOptions
+    ?capture
+    ?once
+    ?passive
+    e
+    Event.wheel
+    (handler (fun (e : mousewheelEvent t) ->
+         let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
+         let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
+         h (e :> mouseEvent t) ~dx ~dy))
 
 let addMousewheelEventListener e h capt =
   addMousewheelEventListenerWithOptions ~capture:capt e h

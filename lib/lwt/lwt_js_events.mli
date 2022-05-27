@@ -362,6 +362,12 @@ val mousewheel :
     Positive means down or right.
     This interface is compatible with all (recent) browsers. *)
 
+val wheel :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.mousewheelEvent Js.t Lwt.t
+
 val touchstart :
      ?use_capture:bool
   -> ?passive:bool
@@ -771,6 +777,14 @@ val mousewheels :
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
   -> (Dom_html.mouseEvent Js.t * (int * int) -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val wheels :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.mousewheelEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
 val touchstarts :

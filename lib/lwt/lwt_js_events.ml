@@ -342,6 +342,9 @@ let mousewheel ?use_capture ?passive target =
    make_event Dom_html.Event._DOMMouseScroll ?use_capture ?passive target
 *)
 
+let wheel ?use_capture ?passive target =
+  make_event Dom_html.Event.wheel ?use_capture ?passive target
+
 let touchstart ?use_capture ?passive target =
   make_event Dom_html.Event.touchstart ?use_capture ?passive target
 
@@ -455,6 +458,9 @@ let drops ?cancel_handler ?use_capture ?passive t =
 
 let mousewheels ?cancel_handler ?use_capture ?passive t =
   seq_loop mousewheel ?cancel_handler ?use_capture ?passive t
+
+let wheels ?cancel_handler ?use_capture ?passive t =
+  seq_loop wheel ?cancel_handler ?use_capture ?passive t
 
 let touchstarts ?cancel_handler ?use_capture ?passive t =
   seq_loop touchstart ?cancel_handler ?use_capture ?passive t

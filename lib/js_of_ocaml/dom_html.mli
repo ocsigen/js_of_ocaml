@@ -275,6 +275,11 @@ type mouse_button =
   | Middle_button
   | Right_button
 
+type delta_mode =
+  | Delta_pixel
+  | Delta_line
+  | Delta_page
+
 class type event =
   object
     inherit [element] Dom.event
@@ -365,7 +370,7 @@ and keyboardEvent =
 
 and mousewheelEvent =
   object
-    (* All browsers but Firefox *)
+    (* All modern browsers *)
     inherit mouseEvent
 
     method wheelDelta : int readonly_prop
@@ -373,6 +378,14 @@ and mousewheelEvent =
     method wheelDeltaX : int optdef readonly_prop
 
     method wheelDeltaY : int optdef readonly_prop
+
+    method deltaX : float readonly_prop
+
+    method deltaY : float readonly_prop
+
+    method deltaZ : float readonly_prop
+
+    method deltaMode : delta_mode readonly_prop
   end
 
 and mouseScrollEvent =
@@ -505,6 +518,8 @@ and eventTarget =
     method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
 
     method onscroll : ('self t, event t) event_listener writeonly_prop
+
+    method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
 
     method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -2353,6 +2368,8 @@ module Event : sig
 
   val _DOMMouseScroll : mouseScrollEvent t typ
 
+  val wheel : mousewheelEvent t typ
+
   val touchstart : touchEvent t typ
 
   val touchmove : touchEvent t typ
@@ -2532,7 +2549,7 @@ val addMousewheelEventListenerWithOptions :
   -> ?passive:bool t
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> event_listener_id
-(** Add a mousewheel event listener with option-object variant of the
+(** Add a wheel event listener with option-object variant of the
       [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
@@ -2542,7 +2559,7 @@ val addMousewheelEventListener :
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> bool t
   -> event_listener_id
-(** Add a mousewheel event listener with the useCapture boolean variant
+(** Add a wheel event listener with the useCapture boolean variant
       of the [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
