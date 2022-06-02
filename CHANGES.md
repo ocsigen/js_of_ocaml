@@ -15,6 +15,7 @@
 * Compiler: fix rewriter bug in share_constant (fix #1247)
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
+* Misc: fix installation with dune 3 without opam
 
 # 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
