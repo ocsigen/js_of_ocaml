@@ -23,7 +23,6 @@ open Js_of_ocaml_compiler
 
 let _ =
   Sys.catch_break true;
-  Timer.init Sys.time;
   let argv = Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv in
   let argv =
     let like_arg x = String.length x > 0 && Char.equal x.[0] '-' in
