@@ -18,8 +18,6 @@
 
 type t
 
-val init : (unit -> float) -> unit
-
 val make : unit -> t
 
 val get : t -> float

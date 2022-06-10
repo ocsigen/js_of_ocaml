@@ -97,7 +97,6 @@ let main =
   Cmdliner.Cmd.v Cmd_arg.info t
 
 let _ =
-  Timer.init Sys.time;
   try
     Cmdliner.Cmd.eval
       ~catch:false
