@@ -27,12 +27,13 @@ let print ~compact source =
   let lexbuf = Lexing.from_string source in
   let lexed = Parse_js.Lexer.of_lexbuf lexbuf in
   let parsed = Parse_js.parse lexed in
+  Config.Flag.enable "debuginfo";
   Js_output.program pp parsed;
   print_endline (Buffer.contents buffer)
 
 let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
-  [%expect {| f(...[1,2,3]); |}]
+  [%expect {| /*<< 1 0>>*/f(...[1,2,3]); |}]
 
 let%expect_test "no postfix addition coalesce" =
   print ~compact:true "a + +b";
@@ -65,10 +66,10 @@ let%expect_test "reserved words as fields" =
     x.catch;
     x.for;
     x.continue;
-    var y={debugger:2};
-    var y={catch:2};
-    var y={for:2};
-    var y={continue:2}; |}]
+     /*<< 6 4>>*/  /*<< 6 10>>*/ var y={debugger:2};
+     /*<< 7 4>>*/  /*<< 7 10>>*/ var y={catch:2};
+     /*<< 8 4>>*/  /*<< 8 10>>*/ var y={for:2};
+     /*<< 9 4>>*/  /*<< 9 10>>*/ var y={continue:2}; |}]
 
 let%expect_test "preserve number literals" =
   print
@@ -86,22 +87,22 @@ let%expect_test "preserve number literals" =
      var t = 1E+3; |};
   [%expect
     {|
-    var x=0xffff;
-    var x=0Xffff;
-    var y=071923;
-    var y=07123;
-    var z=0.0;
-    var z=0.;
-    var t=1.0e-3;
-    var t=1.0E+3;
-    var t=1e-3;
-    var t=1E+3; |}]
+    /*<< 2 5>>*/  /*<< 2 11>>*/ var x=0xffff;
+    /*<< 3 5>>*/  /*<< 3 11>>*/ var x=0Xffff;
+    /*<< 4 5>>*/  /*<< 4 11>>*/ var y=071923;
+    /*<< 5 5>>*/  /*<< 5 11>>*/ var y=07123;
+    /*<< 6 5>>*/  /*<< 6 11>>*/ var z=0.0;
+    /*<< 7 5>>*/  /*<< 7 11>>*/ var z=0.;
+    /*<< 8 5>>*/  /*<< 8 11>>*/ var t=1.0e-3;
+    /*<< 9 5>>*/  /*<< 9 11>>*/ var t=1.0E+3;
+    /*<< 10 5>>*/  /*<< 10 11>>*/ var t=1e-3;
+    /*<< 11 5>>*/  /*<< 11 11>>*/ var t=1E+3; |}]
 
 let%expect_test "preserve number literals in property_name" =
   print ~compact:false {|
     var number_as_key = { 100000000000000000000 : 2 }; |};
   [%expect {|
-    var number_as_key={100000000000000000000:2}; |}]
+    /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key={100000000000000000000:2}; |}]
 
 let%expect_test "error reporting" =
   (try print ~compact:false {|
