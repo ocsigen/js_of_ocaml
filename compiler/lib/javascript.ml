@@ -280,7 +280,8 @@ and function_body = source_elements
 
 and program = source_elements
 
-and program_with_annots = ((source_element * location) * Js_token.Annot.t list) list
+and program_with_annots =
+  ((source_element * location) * (Js_token.Annot.t * Parse_info.t) list) list
 
 and source_elements = (source_element * location) list
 

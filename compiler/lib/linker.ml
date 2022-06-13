@@ -233,7 +233,7 @@ module Fragment = struct
                 List.fold_left
                   annot
                   ~init:initial_fragment
-                  ~f:(fun (fragment : fragment_) (_, pi, a) ->
+                  ~f:(fun (fragment : fragment_) ((_, a), pi) ->
                     match a with
                     | `Provides (name, kind, ka) ->
                         { fragment with

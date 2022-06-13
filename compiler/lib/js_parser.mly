@@ -33,7 +33,9 @@ open Javascript
 
 let var pi name = ident ~loc:(pi) name
 
-let p pos = Pi (Parse_info.t_of_pos pos)
+let pi pos = (Parse_info.t_of_pos pos)
+
+let p pos = Pi (pi pos)
 
 %}
 
@@ -149,7 +151,7 @@ standalone_expression:
  | e=expression EOF { e }
 
 annot:
-  | a=TAnnot { a }
+  | a=TAnnot { a, pi $symbolstartpos }
 
 source_element_with_annot:
  | annots=annot* s=source_element {s,annots}

@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 module Annot : sig
-  type t = string * Parse_info.t * Primitive.t
+  type t = string * Primitive.t
 end
 
 type t =

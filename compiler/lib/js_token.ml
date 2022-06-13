@@ -20,7 +20,7 @@
 open! Stdlib
 
 module Annot = struct
-  type t = string * Parse_info.t * Primitive.t
+  type t = string * Primitive.t
 end
 
 type t =
@@ -118,7 +118,7 @@ type t =
 type token = t
 
 let to_string = function
-  | TAnnot (s, _, _) -> s
+  | TAnnot (s, _) -> s
   | TUnknown s -> s
   | TComment s -> s
   | TCommentLineDirective s -> s

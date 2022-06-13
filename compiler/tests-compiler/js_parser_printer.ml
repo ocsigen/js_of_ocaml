@@ -101,7 +101,8 @@ let%expect_test "preserve number literals" =
 let%expect_test "preserve number literals in property_name" =
   print ~compact:false {|
     var number_as_key = { 100000000000000000000 : 2 }; |};
-  [%expect {|
+  [%expect
+    {|
     /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key={100000000000000000000:2}; |}]
 
 let%expect_test "error reporting" =
