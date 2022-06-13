@@ -98,7 +98,7 @@ let parse_aux the_parser lexbuf =
                       match parse_annot s with
                       | None -> read_one ((tok, pi) :: prev_with_comment) lexbuf
                       | Some annot ->
-                          let tok = Js_token.TAnnot (s, pi, annot) in
+                          let tok = Js_token.TAnnot (s, annot) in
                           (tok, pi), prev_with_comment
                     else read_one ((tok, pi) :: prev_with_comment) lexbuf
                 | TAnnot _ -> assert false
@@ -181,7 +181,7 @@ let parse_aux the_parser lexbuf =
         in
         let drop_annot_or_error () =
           match prev with
-          | (TAnnot (s, _, _), i) :: _ ->
+          | (TAnnot (s, _), i) :: _ ->
               let prev, prev_with_comment, checkpoint = last_checkpoint in
               let t = Js_token.TComment s in
               loop prev ((t, i) :: prev_with_comment) (last_checkpoint, checkpoint)
