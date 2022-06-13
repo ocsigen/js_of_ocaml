@@ -31,7 +31,9 @@
 
 open Javascript
 
-let var pi name = ident ~loc:(Pi pi) name
+let var pi name = ident ~loc:(pi) name
+
+let p pos = Pi (Parse_info.t_of_pos pos)
 
 %}
 
@@ -44,24 +46,24 @@ let var pi name = ident ~loc:(Pi pi) name
 (*-----------------------------------------*)
 
 (* Tokens with a value *)
-%token<string * Parse_info.t> T_NUMBER
-%token<string * Parse_info.t> T_IDENTIFIER
-%token<string * Parse_info.t * int> T_STRING
-%token<string * Parse_info.t> T_REGEX
+%token<string> T_NUMBER
+%token<string> T_IDENTIFIER
+%token<string * int> T_STRING
+%token<string> T_REGEX
 
 (* Keywords tokens *)
-%token <Parse_info.t>
+%token
 T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
 T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
 T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
 T_DEBUGGER
 
-%token <Parse_info.t> T_ELSE
+%token T_ELSE
 
-%token <Parse_info.t> T_NEW
+%token T_NEW
 
 (* Syntax *)
-%token <Parse_info.t>
+%token 
 T_LCURLY T_RCURLY
 T_LPAREN T_RPAREN
 T_LBRACKET T_RBRACKET
@@ -71,12 +73,12 @@ T_SPREAD
 T_PERIOD
 
 (* Operators *)
-%token <Parse_info.t>
+%token 
 T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
 T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
 T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
 
-%token <Parse_info.t>
+%token 
 T_PLING T_COLON
 T_OR
 T_AND
@@ -95,15 +97,15 @@ T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 (* 2 extra tokens:                         *)
 (*-----------------------------------------*)
 
-%token <Parse_info.t> T_VIRTUAL_SEMICOLON
+%token T_VIRTUAL_SEMICOLON
 %token <Js_token.Annot.t> TAnnot
-%token <string * Parse_info.t> TUnknown
-%token <string * Parse_info.t> TComment
-%token <string * Parse_info.t> TCommentLineDirective
+%token <string> TUnknown
+%token <string> TComment
+%token <string> TCommentLineDirective
 
 
 (* classic *)
-%token <Parse_info.t> EOF
+%token EOF
 
 (*-----------------------------------------*)
 (* 2 priorities                            *)
@@ -154,9 +156,9 @@ source_element_with_annot:
 
 source_element:
  | statement
-   { let statement, pi = $1 in Statement statement, pi }
+   { let statement,pos = $1 in Statement statement, pos }
  | function_declaration
-   { let declaration, pi = $1 in Function_declaration declaration, pi }
+   { let declaration = $1 in Function_declaration declaration, p $symbolstartpos }
 
 (*************************************************************************)
 (* 1 statement                                                           *)
@@ -164,8 +166,8 @@ source_element:
 
 statement_no_semi:
  | block=curly_block(statement*)
-   { let statements, pi_start, _pi_end = block in
-     Block statements, Pi pi_start }
+   { let statements,_ = block in
+     Block statements }
  | s=if_statement
  | s=while_statement
  | s=for_statement
@@ -187,96 +189,96 @@ statement_need_semi:
  | s=debugger_statement { s }
 
 statement:
- | s=statement_no_semi { s }
- | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { s }
+ | s=statement_no_semi { (s : statement), p $symbolstartpos }
+ | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { (s : statement), p $symbolstartpos }
 
 labeled_statement:
-| l=label T_COLON s=statement { Labelled_statement (fst l, s), Pi (snd l)}
+| l=label T_COLON s=statement { Labelled_statement (l, s)}
 
 block:
  | block=curly_block(statement*)
-   { let statements, _, _ = block in statements }
+   { let statements,_ = block in statements }
 
 variable_statement:
- | pi=T_VAR list=separated_nonempty_list(T_COMMA, pair(variable, initializer_?))
-   { Variable_statement list, Pi pi }
+ | T_VAR list=separated_nonempty_list(T_COMMA, pair(variable, initializer_?))
+   { Variable_statement list }
 
 initializer_:
- | pi=T_ASSIGN e=assignment_expression { e, Pi pi }
+ | T_ASSIGN e=assignment_expression { e, p $symbolstartpos }
 
 empty_statement:
- | pi=T_SEMICOLON { Empty_statement, Pi pi }
+ | T_SEMICOLON { Empty_statement }
 
 debugger_statement:
- | pi=T_DEBUGGER { Debugger_statement, Pi pi }
+ | T_DEBUGGER { Debugger_statement }
 
 expression_statement:
- | expression_no_statement { Expression_statement $1, N }
+ | expression_no_statement { Expression_statement $1 }
 
 if_statement:
- | pi=T_IF condition=parenthesised(expression) t=statement T_ELSE e=statement
-     { (If_statement (condition, t, Some e), Pi pi) }
- | pi=T_IF condition=parenthesised(expression) t=statement %prec p_IF
-     { (If_statement (condition, t, None), Pi pi) }
+ | T_IF condition=parenthesised(expression) t=statement T_ELSE e=statement
+     { If_statement (condition, t, Some e) }
+ | T_IF condition=parenthesised(expression) t=statement %prec p_IF
+     { If_statement (condition, t, None) }
 
 do_while_statement:
-  | pi=T_DO body=statement T_WHILE condition=parenthesised(expression)
-    { (Do_while_statement (body, condition), Pi pi) }
+  | T_DO body=statement T_WHILE condition=parenthesised(expression)
+    { Do_while_statement (body, condition) }
 
 while_statement:
- | pi=T_WHILE condition=parenthesised(expression) body=statement
-     { (While_statement (condition, body), Pi pi) }
+ | T_WHILE condition=parenthesised(expression) body=statement
+     { While_statement (condition, body) }
 
 for_statement:
- | pi=T_FOR T_LPAREN initial=expression_no_in?
+ | T_FOR T_LPAREN initial=expression_no_in?
    T_SEMICOLON condition=expression? T_SEMICOLON increment=expression?
    T_RPAREN statement=statement
-   { For_statement (Left initial, condition, increment, statement), Pi pi }
- | pi=T_FOR T_LPAREN T_VAR
+   { For_statement (Left initial, condition, increment, statement) }
+ | T_FOR T_LPAREN T_VAR
    initial=separated_nonempty_list(T_COMMA, pair(variable, initializer_no_in?))
    T_SEMICOLON condition=expression?  T_SEMICOLON increment=expression?
    T_RPAREN statement=statement
-   { For_statement (Right initial, condition, increment, statement), Pi pi }
+   { For_statement (Right initial, condition, increment, statement) }
 
 for_in_statement:
- | pi=T_FOR T_LPAREN left=left_hand_side_expression
+ | T_FOR T_LPAREN left=left_hand_side_expression
    T_IN right=expression T_RPAREN body=statement
-   { ForIn_statement (Left left, right, body), Pi pi }
- | pi=T_FOR T_LPAREN T_VAR left=pair(variable, initializer_no_in?)
+   { ForIn_statement (Left left, right, body) }
+ | T_FOR T_LPAREN T_VAR left=pair(variable, initializer_no_in?)
    T_IN right=expression T_RPAREN body=statement
-   { ForIn_statement (Right left, right, body), Pi pi }
+   { ForIn_statement (Right left, right, body) }
 
 initializer_no_in:
- | T_ASSIGN assignment_expression_no_in { $2, Pi $1 }
+ | T_ASSIGN assignment_expression_no_in { $2, p $symbolstartpos }
 
 continue_statement:
- | pi=T_CONTINUE label? { (Continue_statement (Stdlib.Option.map ~f:fst $2),Pi pi) }
+ | T_CONTINUE label? { (Continue_statement ($2)) }
 
 break_statement:
- | pi=T_BREAK label? { (Break_statement (Stdlib.Option.map ~f:fst $2), Pi pi) }
+ | T_BREAK label? { (Break_statement ($2)) }
 
 return_statement:
- | pi=T_RETURN expression? { (Return_statement $2, Pi pi) }
+ | T_RETURN expression? { (Return_statement $2) }
 
 with_statement:
  | T_WITH parenthesised(expression) statement { assert false }
 
 switch_statement:
- | pi=T_SWITCH subject=parenthesised(expression)
+ | T_SWITCH subject=parenthesised(expression)
    T_LCURLY pair=pair(case_clause*, pair(default_clause, case_clause*)?) T_RCURLY
    { let switch = match pair with
        | cases, None ->
          Switch_statement (subject, cases, None, [])
        | cases, Some (default, more_cases) ->
          Switch_statement (subject, cases, Some default, more_cases)
-      in switch, Pi pi }
+      in switch }
 
 throw_statement:
- | pi=T_THROW expression { (Throw_statement $2, Pi pi) }
+ | T_THROW expression { (Throw_statement $2) }
 
 try_statement:
- | pi=T_TRY block catch finally? { (Try_statement ($2, Some $3, $4), Pi pi) }
- | pi=T_TRY block       finally { (Try_statement ($2, None, Some $3), Pi pi) }
+ | T_TRY block catch finally? { (Try_statement ($2, Some $3, $4)) }
+ | T_TRY block       finally { (Try_statement ($2, None, Some $3)) }
 
 catch:
  | T_CATCH pair=pair(parenthesised(variable), block) { pair }
@@ -299,16 +301,16 @@ default_clause:
 (*************************************************************************)
 
 function_declaration:
- | pi=T_FUNCTION name=variable args=parenthesised(separated_list(T_COMMA, variable))
+ | T_FUNCTION name=variable args=parenthesised(separated_list(T_COMMA, variable))
    block=curly_block(source_element*)
-   { let elements, _pi_start, pi_end = block in
-     (name, args, elements, Pi pi_end), Pi pi }
+   { let elements,(_,loc) = block in
+     (name, args, elements, p loc) }
 
 function_expression:
- | pi=T_FUNCTION name=variable? args=parenthesised(separated_list(T_COMMA, variable))
+ | T_FUNCTION name=variable? args=parenthesised(separated_list(T_COMMA, variable))
    block=curly_block(source_element*)
-   { let elements, _pi_start, _pi_end = block in
-     pi, EFun (name, args, elements, Pi pi) }
+   { let elements,_ = block in
+     EFun (name, args, elements, p $symbolstartpos) }
 
 (*************************************************************************)
 (* 1 expression                                                          *)
@@ -324,8 +326,8 @@ assignment_expression:
    { EBin ($2, $1, $3) }
 
 left_hand_side_expression:
- | new_expression  { snd $1 }
- | call_expression { snd $1 }
+ | new_expression  { $1 }
+ | call_expression { $1 }
 
 conditional_expression:
  | post_in_expression { $1 }
@@ -356,27 +358,27 @@ pre_in_expression:
 
 call_expression:
  | member_expression arguments
-     { let (start, e) = $1 in (start, ECall(e, $2, Pi start)) }
+     { let e = $1 in (ECall(e, $2, p $symbolstartpos)) }
  | call_expression arguments
-     { let (start, e) = $1 in (start, ECall(e, $2, Pi start)) }
+     { let (e) = $1 in (ECall(e, $2, p $symbolstartpos)) }
  | call_expression T_LBRACKET expression T_RBRACKET
-     { let (start, e) = $1 in (start, EAccess (e, $3)) }
+     { let (e) = $1 in (EAccess (e, $3)) }
  | call_expression T_PERIOD identifier_or_kw
-     { let (start, e) = $1 in (start, EDot (e, $3)) }
+     { let (e) = $1 in (EDot (e, $3)) }
 
 new_expression:
  | member_expression    { $1 }
- | pi=T_NEW new_expression { (pi, ENew (snd $2,None)) }
+ | T_NEW new_expression { (ENew ($2,None)) }
 
 member_expression:
  | e=primary_expression
      { e }
  | member_expression T_LBRACKET e2=expression T_RBRACKET
-     { let (start, e1) = $1 in (start, EAccess (e1,e2)) }
+     { let (e1) = $1 in (EAccess (e1,e2)) }
  | member_expression T_PERIOD i=identifier_or_kw
-     { let (start, e1) = $1 in (start, EDot(e1,i)) }
- | pi=T_NEW e1=member_expression a=arguments
-     { (pi, ENew(snd e1, Some a)) }
+     { let (e1) = $1 in (EDot(e1,i)) }
+ | T_NEW e1=member_expression a=arguments
+     { (ENew(e1, Some a)) }
 
 primary_expression:
  | e=primary_expression_no_statement
@@ -384,15 +386,15 @@ primary_expression:
  | e=function_expression { e }
 
 primary_expression_no_statement:
- | pi=T_THIS         { (pi, EVar (var pi "this")) }
- | variable_with_loc { let (i, pi) = $1 in (pi, EVar i) }
+ | T_THIS         { (EVar (var (p $symbolstartpos) "this")) }
+ | variable_with_loc { let i = $1 in (EVar i) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
- | numeric_literal   { let (start, n) = $1 in (start, ENum (Num.of_string_unsafe n)) }
- | T_STRING          { let (s, start, _len) = $1 in (start, EStr (s, `Utf8)) }
+ | numeric_literal   { let n = $1 in (ENum (Num.of_string_unsafe n)) }
+ | T_STRING          { let (s, _len) = $1 in (EStr (s, `Utf8)) }
  | r=regex_literal                { r }
  | a=array_literal                { a }
- | pi=T_LPAREN e=expression T_RPAREN { (pi, e) }
+ | T_LPAREN e=expression T_RPAREN { (e) }
 
 (*----------------------------*)
 (* 2 no in                    *)
@@ -454,50 +456,50 @@ pre_in_expression_no_statement:
    { EBin (op, left, right) }
 
 left_hand_side_expression_no_statement:
- | new_expression_no_statement { snd $1 }
- | call_expression_no_statement { snd $1 }
+ | new_expression_no_statement { $1 }
+ | call_expression_no_statement { $1 }
 
 new_expression_no_statement:
  | member_expression_no_statement { $1 }
- | pi=T_NEW new_expression { (pi, ENew (snd $2,None)) }
+ | T_NEW new_expression { (ENew ($2,None)) }
 
 call_expression_no_statement:
  | member_expression_no_statement arguments
-   { let (start, e) = $1 in (start, ECall(e, $2, Pi start)) }
+   { let ( e) = $1 in ( ECall(e, $2, p $symbolstartpos)) }
  | call_expression_no_statement arguments
-   { let (start, e) = $1 in (start, ECall(e, $2, Pi start)) }
+   { let ( e) = $1 in ( ECall(e, $2, p $symbolstartpos)) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
-   { let (start, e) = $1 in (start, EAccess(e, $3)) }
+   { let ( e) = $1 in ( EAccess(e, $3)) }
  | call_expression_no_statement T_PERIOD identifier_or_kw
-   { let (start, e) = $1 in (start, EDot(e,$3)) }
+   { let ( e) = $1 in ( EDot(e,$3)) }
 
 member_expression_no_statement:
  | e=primary_expression_no_statement
    { e }
  | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
-   { let (start, e1) = $1 in (start, EAccess(e1, e2)) }
+   { let ( e1) = $1 in ( EAccess(e1, e2)) }
  | member_expression_no_statement T_PERIOD i=identifier_or_kw
-   { let (start, e1) = $1 in (start, EDot(e1,i)) }
- | pi=T_NEW e=member_expression a=arguments
-   { (pi, ENew(snd e,Some a)) }
+   { let ( e1) = $1 in ( EDot(e1,i)) }
+ | T_NEW e=member_expression a=arguments
+   { (ENew(e,Some a)) }
 
 (*----------------------------*)
 (* 2 scalar                   *)
 (*----------------------------*)
 
 null_literal:
- | pi=T_NULL { (pi, EVar (var pi "null")) }
+ | T_NULL { (EVar (var (p $symbolstartpos) "null")) }
 
 boolean_literal:
- | pi=T_TRUE  { (pi, EBool true) }
- | pi=T_FALSE { (pi, EBool false) }
+ | T_TRUE  { (EBool true) }
+ | T_FALSE { (EBool false) }
 
 numeric_literal:
- | T_NUMBER { let (f, pi) = $1 in (pi, f) }
+ | T_NUMBER { let f = $1 in (f) }
 
 regex_literal:
  | T_REGEX {
-   let (s, pi) = $1 in
+   let s = $1 in
    let len = String.length s in
    let regexp, option =
      if s.[len - 1] = '/'
@@ -506,21 +508,21 @@ regex_literal:
        let i = String.rindex s '/' in
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
-   (pi, ERegexp (regexp, option)) }
+   (ERegexp (regexp, option)) }
 
 (*----------------------------*)
 (* 2 array                    *)
 (*----------------------------*)
 
 array_literal:
- | pi=T_LBRACKET elison T_RBRACKET
-     { (pi, EArr $2) }
- | pi=T_LBRACKET        T_RBRACKET
-     { (pi, EArr []) }
- | pi=T_LBRACKET element_list T_RBRACKET
-     { (pi, EArr $2) }
- | pi=T_LBRACKET element_list_rev elison_rev T_RBRACKET
-     { (pi, EArr (List.rev_append $2 (List.rev $3))) }
+ | T_LBRACKET elison T_RBRACKET
+     { (EArr $2) }
+ | T_LBRACKET        T_RBRACKET
+     { (EArr []) }
+ | T_LBRACKET element_list T_RBRACKET
+     { (EArr $2) }
+ | T_LBRACKET element_list_rev elison_rev T_RBRACKET
+     { (EArr (List.rev_append $2 (List.rev $3))) }
 
 element_list:
  | element_list_rev { List.rev $1 }
@@ -532,9 +534,9 @@ element_list_rev:
 
 object_literal:
  | block=curly_block(empty)
-   { let _pairs, pi_start, _pi_end = block in pi_start, EObj [] }
+   { let _pairs, _ = block in EObj [] }
  | block=curly_block(separated_or_terminated_list(T_COMMA, object_key_value))
-   { let pairs, pi_start, _pi_end = block in pi_start, EObj pairs }
+   { let pairs, _ = block in EObj pairs }
 
 object_key_value:
  | pair=separated_pair(property_name, T_COLON, assignment_expression) { pair }
@@ -563,7 +565,7 @@ arguments:
 (*************************************************************************)
 
 identifier_or_kw:
-   | T_IDENTIFIER { fst $1 }
+   | T_IDENTIFIER { $1 }
    | T_CATCH { "catch" }
    | T_FINALLY { "finally" }
    | T_IN { "in" }
@@ -595,19 +597,19 @@ identifier_or_kw:
    | T_DEBUGGER { "debugger" }
 
 variable:
- | i=variable_with_loc { fst i }
+ | i=variable_with_loc { i }
 
 variable_with_loc:
- | i=T_IDENTIFIER { let name, pi = i in var pi name, pi }
+ | i=T_IDENTIFIER { let name = i in var (p $symbolstartpos) name }
 
 label:
- | T_IDENTIFIER { Label.of_string (fst $1), snd $1 }
+ | T_IDENTIFIER { Label.of_string ($1) }
 
 property_name:
  | i=identifier_or_kw { PNI i }
  | s=T_STRING         {
-    let s, _info, _len = s in PNS s }
- | n=numeric_literal  { PNN (Num.of_string_unsafe (snd n)) }
+    let s, _len = s in PNS s }
+ | n=numeric_literal  { PNN (Num.of_string_unsafe (n)) }
 
 (*************************************************************************)
 (* 1 xxx_opt, xxx_list                                                   *)
@@ -621,7 +623,7 @@ elison: elison_rev {$1}
  (* | elison_rev { List.rev $1} *)
 
 curly_block(X):
- | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, pi1, pi2) }
+ | T_LCURLY x=X T_RCURLY { x, ($startpos($1),$startpos($3)) }
 
 (*----------------------------*)
 (* Infix binary operators     *)

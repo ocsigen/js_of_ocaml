@@ -20,100 +20,98 @@ module Annot : sig
 end
 
 type t =
-  | T_WITH of Parse_info.t
-  | T_WHILE of Parse_info.t
-  | T_VOID of Parse_info.t
-  | T_VIRTUAL_SEMICOLON of Parse_info.t
-  | T_VAR of Parse_info.t
-  | T_TYPEOF of Parse_info.t
-  | T_TRY of Parse_info.t
-  | T_TRUE of Parse_info.t
-  | T_THROW of Parse_info.t
-  | T_THIS of Parse_info.t
-  | T_SWITCH of Parse_info.t
-  | T_STRING of (string * Parse_info.t * int)
-  | T_STRICT_NOT_EQUAL of Parse_info.t
-  | T_STRICT_EQUAL of Parse_info.t
-  | T_SEMICOLON of Parse_info.t
-  | T_RSHIFT_ASSIGN of Parse_info.t
-  | T_RSHIFT3_ASSIGN of Parse_info.t
-  | T_RSHIFT3 of Parse_info.t
-  | T_RSHIFT of Parse_info.t
-  | T_RPAREN of Parse_info.t
-  | T_RETURN of Parse_info.t
-  | T_REGEX of (string * Parse_info.t)
-  | T_RCURLY of Parse_info.t
-  | T_RBRACKET of Parse_info.t
-  | T_PLUS_ASSIGN of Parse_info.t
-  | T_PLUS of Parse_info.t
-  | T_PLING of Parse_info.t
-  | T_PERIOD of Parse_info.t
-  | T_OR of Parse_info.t
-  | T_NUMBER of (string * Parse_info.t)
-  | T_NULL of Parse_info.t
-  | T_NOT_EQUAL of Parse_info.t
-  | T_NOT of Parse_info.t
-  | T_SPREAD of Parse_info.t
-  | T_NEW of Parse_info.t
-  | T_MULT_ASSIGN of Parse_info.t
-  | T_MULT of Parse_info.t
-  | T_MOD_ASSIGN of Parse_info.t
-  | T_MOD of Parse_info.t
-  | T_MINUS_ASSIGN of Parse_info.t
-  | T_MINUS of Parse_info.t
-  | T_LSHIFT_ASSIGN of Parse_info.t
-  | T_LSHIFT of Parse_info.t
-  | T_LPAREN of Parse_info.t
-  | T_LESS_THAN_EQUAL of Parse_info.t
-  | T_LESS_THAN of Parse_info.t
-  | T_LCURLY of Parse_info.t
-  | T_LBRACKET of Parse_info.t
-  | T_INSTANCEOF of Parse_info.t
-  | T_INCR_NB of Parse_info.t
-  | T_INCR of Parse_info.t
-  | T_IN of Parse_info.t
-  | T_IF of Parse_info.t
-  | T_IDENTIFIER of (string * Parse_info.t)
-  | T_GREATER_THAN_EQUAL of Parse_info.t
-  | T_GREATER_THAN of Parse_info.t
-  | T_FUNCTION of Parse_info.t
-  | T_FOR of Parse_info.t
-  | T_FINALLY of Parse_info.t
-  | T_FALSE of Parse_info.t
-  | T_EQUAL of Parse_info.t
-  | T_ELSE of Parse_info.t
-  | T_DO of Parse_info.t
-  | T_DIV_ASSIGN of Parse_info.t
-  | T_DIV of Parse_info.t
-  | T_DELETE of Parse_info.t
-  | T_DEFAULT of Parse_info.t
-  | T_DECR_NB of Parse_info.t
-  | T_DECR of Parse_info.t
-  | T_CONTINUE of Parse_info.t
-  | T_COMMA of Parse_info.t
-  | T_COLON of Parse_info.t
-  | T_CATCH of Parse_info.t
-  | T_CASE of Parse_info.t
-  | T_BREAK of Parse_info.t
-  | T_BIT_XOR_ASSIGN of Parse_info.t
-  | T_BIT_XOR of Parse_info.t
-  | T_BIT_OR_ASSIGN of Parse_info.t
-  | T_BIT_OR of Parse_info.t
-  | T_BIT_NOT of Parse_info.t
-  | T_BIT_AND_ASSIGN of Parse_info.t
-  | T_BIT_AND of Parse_info.t
-  | T_ASSIGN of Parse_info.t
-  | T_AND of Parse_info.t
-  | T_DEBUGGER of Parse_info.t
-  | TUnknown of (string * Parse_info.t)
-  | TComment of (string * Parse_info.t)
-  | TCommentLineDirective of (string * Parse_info.t)
+  | T_WITH
+  | T_WHILE
+  | T_VOID
+  | T_VIRTUAL_SEMICOLON
+  | T_VAR
+  | T_TYPEOF
+  | T_TRY
+  | T_TRUE
+  | T_THROW
+  | T_THIS
+  | T_SWITCH
+  | T_STRING of (string * int)
+  | T_STRICT_NOT_EQUAL
+  | T_STRICT_EQUAL
+  | T_SEMICOLON
+  | T_RSHIFT_ASSIGN
+  | T_RSHIFT3_ASSIGN
+  | T_RSHIFT3
+  | T_RSHIFT
+  | T_RPAREN
+  | T_RETURN
+  | T_REGEX of string
+  | T_RCURLY
+  | T_RBRACKET
+  | T_PLUS_ASSIGN
+  | T_PLUS
+  | T_PLING
+  | T_PERIOD
+  | T_OR
+  | T_NUMBER of string
+  | T_NULL
+  | T_NOT_EQUAL
+  | T_NOT
+  | T_SPREAD
+  | T_NEW
+  | T_MULT_ASSIGN
+  | T_MULT
+  | T_MOD_ASSIGN
+  | T_MOD
+  | T_MINUS_ASSIGN
+  | T_MINUS
+  | T_LSHIFT_ASSIGN
+  | T_LSHIFT
+  | T_LPAREN
+  | T_LESS_THAN_EQUAL
+  | T_LESS_THAN
+  | T_LCURLY
+  | T_LBRACKET
+  | T_INSTANCEOF
+  | T_INCR_NB
+  | T_INCR
+  | T_IN
+  | T_IF
+  | T_IDENTIFIER of string
+  | T_GREATER_THAN_EQUAL
+  | T_GREATER_THAN
+  | T_FUNCTION
+  | T_FOR
+  | T_FINALLY
+  | T_FALSE
+  | T_EQUAL
+  | T_ELSE
+  | T_DO
+  | T_DIV_ASSIGN
+  | T_DIV
+  | T_DELETE
+  | T_DEFAULT
+  | T_DECR_NB
+  | T_DECR
+  | T_CONTINUE
+  | T_COMMA
+  | T_COLON
+  | T_CATCH
+  | T_CASE
+  | T_BREAK
+  | T_BIT_XOR_ASSIGN
+  | T_BIT_XOR
+  | T_BIT_OR_ASSIGN
+  | T_BIT_OR
+  | T_BIT_NOT
+  | T_BIT_AND_ASSIGN
+  | T_BIT_AND
+  | T_ASSIGN
+  | T_AND
+  | T_DEBUGGER
+  | TUnknown of string
+  | TComment of string
+  | TCommentLineDirective of string
   | TAnnot of Annot.t
-  | EOF of Parse_info.t
+  | EOF
 
 type token = t
-
-val info : t -> Parse_info.t
 
 val to_string : t -> string
 

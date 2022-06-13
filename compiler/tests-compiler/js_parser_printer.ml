@@ -33,18 +33,18 @@ let print ~compact source =
 
 let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
-  [%expect {| /*<< 1 0>>*/f(...[1,2,3]); |}]
+  [%expect {| /*<< 1 0>>*/ /*<< 1 0>>*/f(...[1,2,3]); |}]
 
 let%expect_test "no postfix addition coalesce" =
   print ~compact:true "a + +b";
   [%expect {|
-    a+
+    /*<< 1 0>>*/a+
     +b; |}]
 
 let%expect_test "no postfix subtraction coalesce" =
   print ~compact:true "a - -b";
   [%expect {|
-    a-
+    /*<< 1 0>>*/a-
     -b; |}]
 
 let%expect_test "reserved words as fields" =
@@ -62,14 +62,14 @@ let%expect_test "reserved words as fields" =
   |};
   [%expect
     {|
-    x.debugger;
-    x.catch;
-    x.for;
-    x.continue;
-     /*<< 6 4>>*/  /*<< 6 10>>*/ var y={debugger:2};
-     /*<< 7 4>>*/  /*<< 7 10>>*/ var y={catch:2};
-     /*<< 8 4>>*/  /*<< 8 10>>*/ var y={for:2};
-     /*<< 9 4>>*/  /*<< 9 10>>*/ var y={continue:2}; |}]
+    /*<< 2 4>>*/ x.debugger;
+    /*<< 3 4>>*/ x.catch;
+    /*<< 4 4>>*/ x.for;
+    /*<< 5 4>>*/ x.continue;
+    /*<< 6 4>>*/  /*<< 6 10>>*/ var y={debugger:2};
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var y={catch:2};
+    /*<< 8 4>>*/  /*<< 8 10>>*/ var y={for:2};
+    /*<< 9 4>>*/  /*<< 9 10>>*/ var y={continue:2}; |}]
 
 let%expect_test "preserve number literals" =
   print
@@ -146,9 +146,9 @@ let check_vs_string s toks =
   in
   let rec loop pos = function
     | [] -> space pos (String.length s)
-    | Js_token.T_VIRTUAL_SEMICOLON _ :: rest -> loop pos rest
-    | (Js_token.T_STRING (_, _, len) as x) :: rest ->
-        let { Parse_info.idx; _ } = Js_token.info x in
+    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop pos rest
+    | ((Js_token.T_STRING (_, len) as x), pi) :: rest ->
+        let { Parse_info.idx; _ } = pi in
         let _str = Js_token.to_string x in
         space pos idx;
         let quote_start = s.[idx] in
@@ -158,8 +158,8 @@ let check_vs_string s toks =
         | a, b ->
             Printf.printf "pos:%d+%d, expecting quotes, found %C+%C\n" idx (idx + len) a b);
         loop (idx + len + 1) rest
-    | x :: rest ->
-        let { Parse_info.idx; _ } = Js_token.info x in
+    | (x, pi) :: rest ->
+        let { Parse_info.idx; _ } = pi in
         let str = Js_token.to_string x in
         space pos idx;
         text idx str;
@@ -179,10 +179,9 @@ let parse_print_token ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ Js_token.EOF _ ] | [] -> ()
-    | tok :: xs ->
+    | [ (Js_token.EOF, _) ] | [] -> ()
+    | (tok, pos) :: xs ->
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
-        let pos = Js_token.info tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
         | true -> Printf.printf "\n%2d: " pos.Parse_info.line
         | false -> ());
