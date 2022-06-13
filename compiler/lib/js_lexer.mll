@@ -27,36 +27,36 @@ let tok lexbuf = Lexing.lexeme lexbuf
 let keyword_table =
   let h = Hashtbl.create 17 in
   List.iter ~f:(fun (s,f) -> Hashtbl.add h s f ) [
-    "break",      (fun ii -> T_BREAK ii);
-    "case",       (fun ii -> T_CASE ii);
-    "catch",      (fun ii -> T_CATCH ii);
-    "continue",   (fun ii -> T_CONTINUE ii);
-    "debugger",   (fun ii -> T_DEBUGGER ii);
-    "default",    (fun ii -> T_DEFAULT ii);
-    "delete",     (fun ii -> T_DELETE ii);
-    "do",         (fun ii -> T_DO ii);
-    "else",       (fun ii -> T_ELSE ii);
-    "false",      (fun ii -> T_FALSE ii);
-    "finally",    (fun ii -> T_FINALLY ii);
-    "for",        (fun ii -> T_FOR ii);
-    "function",   (fun ii -> T_FUNCTION ii);
-    "if",         (fun ii -> T_IF ii);
-    "in",         (fun ii -> T_IN ii);
-    "instanceof", (fun ii -> T_INSTANCEOF ii);
-    "new",        (fun ii -> T_NEW ii);
-    "null",       (fun ii -> T_NULL ii);
-    "return",     (fun ii -> T_RETURN ii);
-    "switch",     (fun ii -> T_SWITCH ii);
-    "this",       (fun ii -> T_THIS ii);
-    "throw",      (fun ii -> T_THROW ii);
-    "true",       (fun ii -> T_TRUE ii);
-    "try",        (fun ii -> T_TRY ii);
-    "typeof",     (fun ii -> T_TYPEOF ii);
-    "var",        (fun ii -> T_VAR ii);
-    "void",       (fun ii -> T_VOID ii);
-    "while",      (fun ii -> T_WHILE ii);
-    "while",      (fun ii -> T_WHILE ii);
-    "with",       (fun ii -> T_WITH ii);
+    "break",      T_BREAK;
+    "case",       T_CASE;
+    "catch",      T_CATCH;
+    "continue",   T_CONTINUE;
+    "debugger",   T_DEBUGGER;
+    "default",    T_DEFAULT;
+    "delete",     T_DELETE;
+    "do",         T_DO;
+    "else",       T_ELSE;
+    "false",      T_FALSE;
+    "finally",    T_FINALLY;
+    "for",        T_FOR;
+    "function",   T_FUNCTION;
+    "if",         T_IF;
+    "in",         T_IN;
+    "instanceof", T_INSTANCEOF;
+    "new",        T_NEW;
+    "null",       T_NULL;
+    "return",     T_RETURN;
+    "switch",     T_SWITCH;
+    "this",       T_THIS;
+    "throw",      T_THROW;
+    "true",       T_TRUE;
+    "try",        T_TRY;
+    "typeof",     T_TYPEOF;
+    "var",        T_VAR;
+    "void",       T_VOID;
+    "while",      T_WHILE;
+    "while",      T_WHILE;
+    "with",       T_WITH;
   ];
   h
 
@@ -73,8 +73,6 @@ let update_loc lexbuf ?file ~line ~absolute chars =
     pos_lnum = if absolute then line else pos.pos_lnum + line;
     pos_bol = pos.pos_cnum - chars;
                               }
-
-let tokinfo lexbuf = Parse_info.t_of_lexbuf lexbuf
 
 let with_pos lexbuf f =
   let p = lexbuf.Lexing.lex_start_p in
@@ -99,24 +97,22 @@ rule main = parse
   (* ----------------------------------------------------------------------- *)
   | "/*" {
       with_pos lexbuf (fun () ->
-      let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       Buffer.add_string buf (tok lexbuf);
       st_comment buf lexbuf;
       let content = Buffer.contents buf in
-      TComment(content, info))
+      TComment content)
     }
   | ("//#" [' ' '\t' ]*
      (['0'-'9']+ as line) [' ' '\t' ]*
      '"' ([^ '"' '\n']* as file) '"' [' ' '\t' ]*
     ) as raw NEWLINE {
-      let info = tokinfo lexbuf in
       let line = int_of_string line in
       update_loc lexbuf ~file ~line ~absolute:true 0;
-      TCommentLineDirective (raw, info)
+      TCommentLineDirective raw
     }
   (* don't keep the trailing \n; it will be handled later *)
-  | ("//" inputCharacter*) as cmt { TComment(cmt, tokinfo lexbuf) }
+  | ("//" inputCharacter*) as cmt { TComment cmt }
 
   | [' ' '\t' ]+ {
       main lexbuf
@@ -130,69 +126,67 @@ rule main = parse
   (* symbols *)
   (* ----------------------------------------------------------------------- *)
 
-  | "{" { T_LCURLY (tokinfo lexbuf); }
-  | "}" { T_RCURLY (tokinfo lexbuf); }
+  | "{" { T_LCURLY; }
+  | "}" { T_RCURLY; }
 
-  | "(" { T_LPAREN (tokinfo lexbuf); }
-  | ")" { T_RPAREN (tokinfo lexbuf); }
+  | "(" { T_LPAREN; }
+  | ")" { T_RPAREN; }
 
-  | "[" { T_LBRACKET (tokinfo lexbuf); }
-  | "]" { T_RBRACKET (tokinfo lexbuf); }
-  | "." { T_PERIOD (tokinfo lexbuf); }
-  | ";" { T_SEMICOLON (tokinfo lexbuf); }
-  | "," { T_COMMA (tokinfo lexbuf); }
-  | ":" { T_COLON (tokinfo lexbuf); }
-  | "?" { T_PLING (tokinfo lexbuf); }
-  | "&&" { T_AND (tokinfo lexbuf); }
-  | "||" { T_OR (tokinfo lexbuf); }
-  | "===" { T_STRICT_EQUAL (tokinfo lexbuf); }
-  | "!==" { T_STRICT_NOT_EQUAL (tokinfo lexbuf); }
-  | "<=" { T_LESS_THAN_EQUAL (tokinfo lexbuf); }
-  | ">=" { T_GREATER_THAN_EQUAL (tokinfo lexbuf); }
-  | "==" { T_EQUAL (tokinfo lexbuf); }
-  | "!=" { T_NOT_EQUAL (tokinfo lexbuf); }
-  | "++" { T_INCR (tokinfo lexbuf); }
-  | "--" { T_DECR (tokinfo lexbuf); }
-  | "<<=" { T_LSHIFT_ASSIGN (tokinfo lexbuf); }
-  | "<<" { T_LSHIFT (tokinfo lexbuf); }
-  | ">>=" { T_RSHIFT_ASSIGN (tokinfo lexbuf); }
-  | ">>>=" { T_RSHIFT3_ASSIGN (tokinfo lexbuf); }
-  | "..." { T_SPREAD (tokinfo lexbuf); }
-  | ">>>" { T_RSHIFT3 (tokinfo lexbuf); }
-  | ">>" { T_RSHIFT (tokinfo lexbuf); }
-  | "+=" { T_PLUS_ASSIGN (tokinfo lexbuf); }
-  | "-=" { T_MINUS_ASSIGN (tokinfo lexbuf); }
+  | "[" { T_LBRACKET; }
+  | "]" { T_RBRACKET; }
+  | "." { T_PERIOD; }
+  | ";" { T_SEMICOLON; }
+  | "," { T_COMMA; }
+  | ":" { T_COLON; }
+  | "?" { T_PLING; }
+  | "&&" { T_AND; }
+  | "||" { T_OR; }
+  | "===" { T_STRICT_EQUAL; }
+  | "!==" { T_STRICT_NOT_EQUAL; }
+  | "<=" { T_LESS_THAN_EQUAL; }
+  | ">=" { T_GREATER_THAN_EQUAL; }
+  | "==" { T_EQUAL; }
+  | "!=" { T_NOT_EQUAL; }
+  | "++" { T_INCR; }
+  | "--" { T_DECR; }
+  | "<<=" { T_LSHIFT_ASSIGN; }
+  | "<<" { T_LSHIFT; }
+  | ">>=" { T_RSHIFT_ASSIGN; }
+  | ">>>=" { T_RSHIFT3_ASSIGN; }
+  | "..." { T_SPREAD; }
+  | ">>>" { T_RSHIFT3; }
+  | ">>" { T_RSHIFT; }
+  | "+=" { T_PLUS_ASSIGN; }
+  | "-=" { T_MINUS_ASSIGN; }
 
-  | "*=" { T_MULT_ASSIGN (tokinfo lexbuf); }
-  | "%=" { T_MOD_ASSIGN (tokinfo lexbuf); }
-  | "&=" { T_BIT_AND_ASSIGN (tokinfo lexbuf); }
-  | "|=" { T_BIT_OR_ASSIGN (tokinfo lexbuf); }
-  | "^=" { T_BIT_XOR_ASSIGN (tokinfo lexbuf); }
-  | "<" { T_LESS_THAN (tokinfo lexbuf); }
-  | ">" { T_GREATER_THAN (tokinfo lexbuf); }
-  | "+" { T_PLUS (tokinfo lexbuf); }
-  | "-" { T_MINUS (tokinfo lexbuf); }
-  | "*" { T_MULT (tokinfo lexbuf); }
+  | "*=" { T_MULT_ASSIGN; }
+  | "%=" { T_MOD_ASSIGN; }
+  | "&=" { T_BIT_AND_ASSIGN; }
+  | "|=" { T_BIT_OR_ASSIGN; }
+  | "^=" { T_BIT_XOR_ASSIGN; }
+  | "<" { T_LESS_THAN; }
+  | ">" { T_GREATER_THAN; }
+  | "+" { T_PLUS; }
+  | "-" { T_MINUS; }
+  | "*" { T_MULT; }
   (* for '/' see below the regexp handling *)
-  | "%" { T_MOD (tokinfo lexbuf); }
-  | "|" { T_BIT_OR (tokinfo lexbuf); }
-  | "&" { T_BIT_AND (tokinfo lexbuf); }
-  | "^" { T_BIT_XOR (tokinfo lexbuf); }
-  | "!" { T_NOT (tokinfo lexbuf); }
-  | "~" { T_BIT_NOT (tokinfo lexbuf); }
-  | "=" { T_ASSIGN (tokinfo lexbuf); }
+  | "%" { T_MOD; }
+  | "|" { T_BIT_OR; }
+  | "&" { T_BIT_AND; }
+  | "^" { T_BIT_XOR; }
+  | "!" { T_NOT; }
+  | "~" { T_BIT_NOT; }
+  | "=" { T_ASSIGN; }
 
   (* ----------------------------------------------------------------------- *)
   (* Keywords and ident *)
   (* ----------------------------------------------------------------------- *)
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
       try
-        let f = Hashtbl.find keyword_table s in
-        f info
+        Hashtbl.find keyword_table s
       with
-        | Not_found -> T_IDENTIFIER (s, info)
+        | Not_found -> T_IDENTIFIER s
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -201,25 +195,21 @@ rule main = parse
 
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER s
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER s
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER s
     }
   | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
-      let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER s
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -228,24 +218,23 @@ rule main = parse
   | ("'"|'"') as quote {
       with_pos lexbuf (fun () ->
       let from = lexbuf.Lexing.lex_start_p.pos_cnum in
-      let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       string_quote quote buf lexbuf;
       let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       let to_ = lexbuf.Lexing.lex_curr_p.pos_cnum in
-      T_STRING (s, info, to_ - 1 - from))
+      T_STRING (s, to_ - 1 - from))
     }
-  | "/" { T_DIV (tokinfo lexbuf) }
-  | "/=" { T_DIV_ASSIGN (tokinfo lexbuf) }
+  | "/" { T_DIV }
+  | "/=" { T_DIV_ASSIGN }
   (* ----------------------------------------------------------------------- *)
   (* eof *)
   (* ----------------------------------------------------------------------- *)
 
-  | eof { EOF (tokinfo lexbuf) }
+  | eof { EOF }
 
   | _ {
-      TUnknown (tok lexbuf, tokinfo lexbuf)
+      TUnknown (tok lexbuf)
     }
 (*****************************************************************************)
 
@@ -284,11 +273,10 @@ and string_quote q buf = parse
 and main_regexp = parse
   | '/' {
       with_pos lexbuf (fun () ->
-      let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
       Buffer.add_string buf (Lexing.lexeme lexbuf);
       regexp buf lexbuf;
-      T_REGEX (Buffer.contents buf, info)) }
+      T_REGEX (Buffer.contents buf)) }
 
 and regexp buf = parse
   | '\\' (_ as x) { Buffer.add_char buf '\\';

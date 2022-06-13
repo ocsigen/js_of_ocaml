@@ -28,15 +28,14 @@ type t =
 
 let zero = { src = None; name = None; col = 0; line = 0; idx = 0 }
 
-let t_of_lexbuf lexbuf : t =
-  let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
-  let line, col =
-    ( lexbuf.Lexing.lex_start_p.pos_lnum
-    , lexbuf.Lexing.lex_start_p.pos_cnum - lexbuf.Lexing.lex_start_p.pos_bol )
-  in
-  let name = Some lexbuf.Lexing.lex_start_p.pos_fname in
-  let src = Some lexbuf.Lexing.lex_start_p.pos_fname in
+let t_of_pos start_p =
+  let idx = start_p.Lexing.pos_cnum in
+  let line, col = start_p.pos_lnum, start_p.pos_cnum - start_p.pos_bol in
+  let name = Some start_p.pos_fname in
+  let src = Some start_p.pos_fname in
   { idx; line; col; name; src }
+
+let t_of_lexbuf lexbuf : t = t_of_pos lexbuf.Lexing.lex_start_p
 
 let start_position (t : t) =
   { Lexing.pos_fname = Option.value ~default:"" t.name

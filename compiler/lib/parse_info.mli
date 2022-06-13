@@ -29,6 +29,8 @@ val zero : t
 
 val t_of_lexbuf : Lexing.lexbuf -> t
 
+val t_of_pos : Lexing.position -> t
+
 val start_position : t -> Lexing.position
 
 val t_of_position : src:string option -> Lexing.position -> t
