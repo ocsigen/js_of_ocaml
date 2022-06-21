@@ -76,6 +76,8 @@ module Xml = struct
 
   let comma_sep_attrib name values = attr name (Js.string (String.concat "," values))
 
+  let semicolon_sep_attrib name values = attr name (Js.string (String.concat ";" values))
+
   let event_handler_attrib name (value : event_handler) = name, Event value
 
   let mouse_event_handler_attrib name (value : mouse_event_handler) =
@@ -413,6 +415,9 @@ module R = struct
 
     let comma_sep_attrib name s =
       attr name (fun f -> Some (Js.string (String.concat "," f))) s
+
+    let semicolon_sep_attrib name s =
+      attr name (fun f -> Some (Js.string (String.concat ";" f))) s
 
     let event_handler_attrib name s = Xml.event_handler_attrib name s
 
