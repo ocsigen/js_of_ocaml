@@ -80,7 +80,7 @@ function js_print_stdout(s) {
 function js_print_stderr(s) {
   var s = caml_utf16_of_utf8(s);
   var process = globalThis.process;
-  if (process && process.stdout && process.stdout.write) {
+  if (process && process.stderr && process.stderr.write) {
     process.stderr.write(s)
   } else {
     // Do not output the last \n if present
