@@ -138,9 +138,8 @@ function caml_ml_open_descriptor_in (fd)  {
   var refill = null;
   if(fd == 0 && fs_node_supported()){
     var fs = require('fs');
-    var Buffer = require('buffer').Buffer;
     refill = function () {
-      var buf = Buffer.alloc(256);
+      var buf = globalThis.Buffer.alloc(256);
       // Ref https://gist.github.com/espadrine/172658142820a356e1e0
       var stdinFd;
       var needsClose = false;
