@@ -150,7 +150,7 @@ function caml_ml_open_descriptor_in (fd)  {
         // Opening /dev/stdin can fail (on Windows or in pkg)
         if (globalThis.process.platform === 'win32') {
           // On Windows, we need to use the stdin fd
-          stdinFd = process.stdin.fd;
+          stdinFd = globalThis.process.stdin.fd;
         } else {
           // On Linux, we just want to use fd 0
           // due to this nodejs bug: https://github.com/nodejs/node/issues/42826
