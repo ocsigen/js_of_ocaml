@@ -16,6 +16,7 @@
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
 * Misc: fix installation with dune 3 without opam
+* Node: Only write small chunks to stdout/stderr so they flush
 
 # 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
