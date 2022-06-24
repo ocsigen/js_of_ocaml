@@ -50,13 +50,28 @@ function caml_trampoline_return(f,args) {
   return {joo_tramp:f,joo_args:args};
 }
 
+//Provides: nodejs_print (const)
+function nodejs_print(stream, s) {
+  // Writing too much data at once causes node's stdout socket to choke
+  // so we write it using 8-length chunks (which seem to flush quickly)
+  var written = 0;
+  var chunk_len = 8;
+  while (written <= s.length) {
+    var chunk = s.slice(written, written + chunk_len);
+    // TODO: Do we need to handle the `drained` flag returned? Throw when not drained?
+    stream.write(chunk);
+    written += chunk_len;
+  }
+}
+
 //Provides: js_print_stdout (const)
 //Requires: caml_utf16_of_utf8
+//Requires: nodejs_print
 function js_print_stdout(s) {
   var s = caml_utf16_of_utf8(s);
   var process = globalThis.process;
   if (process && process.stdout && process.stdout.write) {
-    process.stdout.write(s)
+    nodejs_print(process.stdout, s);
   } else {
     // Do not output the last \n if present
     // as console logging display a newline at the end
@@ -68,11 +83,12 @@ function js_print_stdout(s) {
 }
 //Provides: js_print_stderr (const)
 //Requires: caml_utf16_of_utf8
+//Requires: nodejs_print
 function js_print_stderr(s) {
   var s = caml_utf16_of_utf8(s);
   var process = globalThis.process;
-  if (process && process.stdout && process.stdout.write) {
-    process.stderr.write(s)
+  if (process && process.stderr && process.stderr.write) {
+    nodejs_print(process.stderr, s);
   } else {
     // Do not output the last \n if present
     // as console logging display a newline at the end
