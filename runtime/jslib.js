@@ -50,55 +50,6 @@ function caml_trampoline_return(f,args) {
   return {joo_tramp:f,joo_args:args};
 }
 
-//Provides: nodejs_print (const)
-function nodejs_print(stream, s) {
-  // Writing too much data at once causes node's stdout socket to choke
-  // so we write it using 8-length chunks (which seem to flush quickly)
-  var written = 0;
-  var chunk_len = 8;
-  while (written <= s.length) {
-    var chunk = s.slice(written, written + chunk_len);
-    // TODO: Do we need to handle the `drained` flag returned? Throw when not drained?
-    stream.write(chunk);
-    written += chunk_len;
-  }
-}
-
-//Provides: js_print_stdout (const)
-//Requires: caml_utf16_of_utf8
-//Requires: nodejs_print
-function js_print_stdout(s) {
-  var s = caml_utf16_of_utf8(s);
-  var process = globalThis.process;
-  if (process && process.stdout && process.stdout.write) {
-    nodejs_print(process.stdout, s);
-  } else {
-    // Do not output the last \n if present
-    // as console logging display a newline at the end
-    if(s.charCodeAt(s.length - 1) == 10)
-      s = s.substr(0,s.length - 1 );
-    var v = console;
-    v  && v.log && v.log(s);
-  }
-}
-//Provides: js_print_stderr (const)
-//Requires: caml_utf16_of_utf8
-//Requires: nodejs_print
-function js_print_stderr(s) {
-  var s = caml_utf16_of_utf8(s);
-  var process = globalThis.process;
-  if (process && process.stderr && process.stderr.write) {
-    nodejs_print(process.stderr, s);
-  } else {
-    // Do not output the last \n if present
-    // as console logging display a newline at the end
-    if(s.charCodeAt(s.length - 1) == 10)
-      s = s.substr(0,s.length - 1 );
-    var v = console;
-    v && v.error && v.error(s);
-  }
-}
-
 //Provides: caml_is_js
 function caml_is_js() {
   return 1;
@@ -188,13 +139,12 @@ function caml_list_to_js_array(l){
 }
 
 //Provides: caml_js_var mutable (const)
-//Requires: js_print_stderr
 //Requires: caml_jsstring_of_string
 function caml_js_var(x) {
   var x = caml_jsstring_of_string(x);
   //Checks that x has the form ident[.ident]*
   if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
-    js_print_stderr("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
+    console.error("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
     //console.error("Js.Unsafe.eval_string")
   }
   return eval(x);
@@ -344,17 +294,15 @@ function caml_js_equals (x, y) { return +(x == y); }
 function caml_js_eval_string (s) {return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_expr (const)
-//Requires: js_print_stderr
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
-  js_print_stderr("caml_js_expr: fallback to runtime evaluation\n");
+  console.error("caml_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_pure_js_expr const (const)
-//Requires: js_print_stderr
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr (s){
-  js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation\n");
+  console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_object (object_literal)

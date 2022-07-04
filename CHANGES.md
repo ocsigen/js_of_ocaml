@@ -10,12 +10,15 @@
 * Lib: add missing options for Intl.NumberFormat
 * Runtime: Implement weak semantic for weak and ephemeron
 * Runtime: Implement Gc.finalise_last
+* Runtime: Implement buffer for in_channels
 * Lib: wheel event binding
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
+* Runtime: fix Digest.channel
+* Runtime: sync channel seek / pos with the native runtime
 * Misc: fix installation with dune 3 without opam
 * Node: Only write small chunks to stdout/stderr so they flush
 

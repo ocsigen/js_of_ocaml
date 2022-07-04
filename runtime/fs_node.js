@@ -107,7 +107,8 @@ MlNodeDevice.prototype.open = function(name, f, raise_unix) {
   }
   try {
     var fd = this.fs.openSync(this.nm(name), res);
-    return new MlNodeFile(fd);
+    var isCharacterDevice = this.fs.lstatSync(this.nm(name)).isCharacterDevice();
+    return new MlNodeFile(fd, isCharacterDevice);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
@@ -229,16 +230,17 @@ function MlNodeDevice() {
 }
 
 //Provides: MlNodeFile
-//Requires: MlFile, caml_array_of_string, caml_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-function MlNodeFile(fd){
+//Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
+function MlNodeFile(fd, isCharacterDevice){
   this.fs = require('fs');
   this.fd = fd;
+  this.isCharacterDevice = isCharacterDevice || false;
 }
 MlNodeFile.prototype = new MlFile ();
 
 MlNodeFile.prototype.truncate = function(len){
   try {
-    this.fs.ftruncateSync(this.fd,len|0)
+    this.fs.ftruncateSync(this.fd,len|0);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
@@ -251,45 +253,31 @@ MlNodeFile.prototype.length = function () {
   }
 }
 MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
-  var a = caml_array_of_string(buf);
-  if(! (a instanceof Uint8Array))
-    a = new Uint8Array(a);
-  var buffer = globalThis.Buffer.from(a);
   try {
-    this.fs.writeSync(this.fd, buffer, buf_offset, len, offset);
+    if(this.isCharacterDevice)
+      this.fs.writeSync(this.fd, buf, buf_offset, len);
+    else
+      this.fs.writeSync(this.fd, buf, buf_offset, len, offset);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
   return 0;
 }
-MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
-  var a = caml_array_of_bytes(buf);
-  if(! (a instanceof Uint8Array))
-    a = new Uint8Array(a);
-  var buffer = globalThis.Buffer.from(a);
+MlNodeFile.prototype.read = function(offset,a,buf_offset,len){
   try {
-    this.fs.readSync(this.fd, buffer, buf_offset, len, offset);
+    if(this.isCharacterDevice)
+      var read = this.fs.readSync(this.fd, a, buf_offset, len);
+    else
+      var read = this.fs.readSync(this.fd, a, buf_offset, len, offset);
+    return read;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
-  for(var i = 0; i < len; i++){
-    caml_bytes_set(buf,buf_offset + i,buffer[buf_offset+i]);
-  }
-  return 0
-}
-MlNodeFile.prototype.read_one = function(offset){
-  var a = new Uint8Array(1);
-  var buffer = globalThis.Buffer.from(a);
-  try {
-    this.fs.readSync(this.fd, buffer, 0, 1, offset);
-  } catch (err) {
-    caml_raise_sys_error(err.toString());
-  }
-  return buffer[0];
 }
 MlNodeFile.prototype.close = function(){
   try {
     this.fs.closeSync(this.fd);
+    return 0
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
