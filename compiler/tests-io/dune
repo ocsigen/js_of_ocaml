@@ -1,21 +1,21 @@
-(executable
- (name cat)
+(executables
+ (names cat md5)
  (modes native js))
 
 (rule
- (target native.stdout)
+ (target cat-native.stdout)
  (action
   (with-stdout-to
-   native.stdout
+   %{target}
    (pipe-stdout
     (run printf "echo \226\152\160")
     (run %{dep:./cat.exe})))))
 
 (rule
- (target js.stdout)
+ (target cat-js.stdout)
  (action
   (with-stdout-to
-   js.stdout
+   %{target}
    (pipe-stdout
     (run printf "echo \226\152\160")
     (run node %{dep:./cat.bc.js})))))
@@ -23,4 +23,47 @@
 (rule
  (alias runtest)
  (action
-  (diff js.stdout native.stdout)))
+  (diff cat-js.stdout cat-native.stdout)))
+
+(rule
+ (target md5-native.stdout)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (run %{dep:md5.exe} %{dep:md5.bc.js})
+    (run %{dep:md5.exe} %{dep:md5.bc.js} %{dep:md5.bc.js})
+    (run %{dep:md5.exe} -offset 2000 -length 4000 %{dep:md5.bc.js})
+    (pipe-stdout
+     (echo "tests")
+     (run %{dep:md5.exe}))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run %{dep:md5.exe} -offset 5 -length 5))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run %{dep:md5.exe} -offset 2 -length 5))))))
+
+(rule
+ (target md5-js.stdout)
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (run node %{dep:md5.bc.js} %{dep:md5.bc.js})
+    (run node %{dep:md5.bc.js} %{dep:md5.bc.js} %{dep:md5.bc.js})
+    (run node %{dep:md5.bc.js} -offset 2000 -length 4000 %{dep:md5.bc.js})
+    (pipe-stdout
+     (echo "tests")
+     (run node %{dep:md5.bc.js}))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run node %{dep:md5.bc.js} -offset 5 -length 5))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run node %{dep:md5.bc.js} -offset 2 -length 5))))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff md5-js.stdout md5-native.stdout)))

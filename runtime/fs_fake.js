@@ -199,8 +199,8 @@ MlFakeDevice.prototype.constructor = MlFakeDevice
 
 //Provides: MlFakeFile
 //Requires: MlFile
-//Requires: caml_create_bytes, caml_ml_bytes_length, caml_blit_bytes, caml_blit_string
-//Requires: caml_bytes_get
+//Requires: caml_create_bytes, caml_ml_bytes_length, caml_blit_bytes
+//Requires: caml_uint8_array_of_bytes, caml_bytes_of_array
 function MlFakeFile(content){
   this.data = content;
 }
@@ -221,18 +221,51 @@ MlFakeFile.prototype.write = function(offset,buf,pos,len){
     this.data = new_str;
     caml_blit_bytes(old_data, 0, this.data, 0, clen);
   }
-  caml_blit_string(buf, pos, this.data, offset, len);
+  caml_blit_bytes(caml_bytes_of_array(buf), pos, this.data, offset, len);
   return 0
 }
 MlFakeFile.prototype.read = function(offset,buf,pos,len){
   var clen = this.length();
-  caml_blit_bytes(this.data, offset, buf, pos, len);
-  return 0
-}
-MlFakeFile.prototype.read_one = function(offset){
-  return caml_bytes_get(this.data, offset);
+  if(offset + len >= clen) {
+    len = clen - offset;
+  }
+  if(len) {
+    var data = caml_create_bytes(len|0);
+    caml_blit_bytes(this.data, offset, data, 0, len);
+    buf.set(caml_uint8_array_of_bytes(data), pos);
+  }
+  return len
 }
 MlFakeFile.prototype.close = function(){
 
 }
 MlFakeFile.prototype.constructor = MlFakeFile
+
+//Provides: MlFakeFile_out
+//Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_array
+function MlFakeFile_out(fd) {
+  MlFakeFile.call(this, caml_create_bytes(0));
+  this.log = (function (s) { return 0 });
+  if(fd == 1 && typeof console.log == "function")
+    this.log = console.log;
+  else if(fd == 2 && typeof console.error == "function")
+    this.log = console.error;
+  else if(typeof console.log == "function")
+    this.log = console.log
+}
+
+MlFakeFile_out.prototype = Object.create(MlFakeFile.prototype);
+MlFakeFile_out.prototype.constructor = MlFakeFile_out;
+
+MlFakeFile_out.prototype.write = function (offset,buf,pos,len) {
+  if(len > 0
+     && pos >= 0
+     && pos+len <= buf.length
+     && buf[pos+len-1] == 10)
+    len --;
+  // Do not output the last \n if present
+  // as console logging display a newline at the end
+  var src = caml_create_bytes(len);
+  caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len);
+  this.log(src.toUtf16());
+}

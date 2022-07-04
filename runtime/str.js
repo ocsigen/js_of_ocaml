@@ -21,7 +21,7 @@
 // Copied from https://github.com/jscoq/jscoq/blob/v8.11/coq-js/js_stub/str.js
 
 //Provides: re_match
-//Requires: caml_jsbytes_of_string, caml_js_from_array, caml_array_of_string
+//Requires: caml_jsbytes_of_string, caml_js_from_array, caml_uint8_array_of_string
 //Requires: caml_string_get
 
 var re_match = function(){
@@ -63,7 +63,7 @@ var re_match = function(){
         numregisters  = re[5] | 0,
         startchars    = re[6] | 0;
 
-    var s = caml_array_of_string(s);
+    var s = caml_uint8_array_of_string(s);
 
     var pc = 0,
         quit = false,

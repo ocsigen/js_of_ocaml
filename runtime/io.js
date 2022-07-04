@@ -22,36 +22,27 @@
 //Provides: caml_sys_close
 //Requires: caml_global_data
 function caml_sys_close(fd) {
+  var info = caml_global_data.fds[fd];
+  if(info) {
+    info.file.close();
+  }
   delete caml_global_data.fds[fd];
-  return 0;
-}
-
-//Provides: caml_std_output
-//Requires: caml_string_of_jsbytes, caml_ml_string_length, caml_ml_channels
-function caml_std_output(chanid,s){
-  var chan = caml_ml_channels[chanid];
-  var str = caml_string_of_jsbytes(s);
-  var slen = caml_ml_string_length(str);
-  chan.file.write(chan.offset, str, 0, slen);
-  chan.offset += slen;
   return 0;
 }
 
 //Provides: caml_sys_open
 //Requires: caml_raise_sys_error, caml_global_data
-//Requires: caml_create_bytes,MlFakeFile
-//Requires: js_print_stderr, js_print_stdout
-//Requires: caml_std_output
+//Requires: MlFakeFile_out, MlNodeFile
 //Requires: resolve_fs_device
 //Requires: caml_jsbytes_of_string
-function caml_sys_open_internal(idx,output,file,flags) {
+//Requires: fs_node_supported
+function caml_sys_open_internal(idx,file,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
   flags=flags?flags:{};
   var info = {};
   info.file = file;
   info.offset = flags.append?file.length():0;
   info.flags = flags;
-  info.output = output;
   caml_global_data.fds[idx] = info;
   if(!caml_global_data.fd_last_idx || idx > caml_global_data.fd_last_idx)
     caml_global_data.fd_last_idx = idx;
@@ -80,11 +71,27 @@ function caml_sys_open (name, flags, _perms) {
   var root = resolve_fs_device(name);
   var file = root.device.open(root.rest,f);
   var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-  return caml_sys_open_internal (idx+1,caml_std_output,file,f);
+  return caml_sys_open_internal (idx+1,file,f);
 }
-caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_bytes(0)), {rdonly:1}); //stdin
-caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_bytes(0)), {buffered:2}); //stdout
-caml_sys_open_internal(2,js_print_stderr, new MlFakeFile(caml_create_bytes(0)), {buffered:2}); //stderr
+(function () {
+  function file(fd, name) {
+    if(fs_node_supported()) {
+      if(name) {
+        try {
+          var fs = require("fs");
+          var fd2 = fs.openSync(name, "rs");
+          return new MlNodeFile(fd2, true);
+        } catch(e) {  }
+      }
+      return new MlNodeFile(fd, true);
+    }
+    else
+      return new MlFakeFile_out(fd)
+  }
+  caml_sys_open_internal(0,file(0,"/dev/stdin"), {rdonly:1});
+  caml_sys_open_internal(1,file(1), {buffered:2,wronly:1});
+  caml_sys_open_internal(2,file(2), {buffered:2,wronly:1});
+})()
 
 
 // ocaml Channels
@@ -112,6 +119,7 @@ function caml_ml_out_channels_list () {
 //Provides: caml_ml_open_descriptor_out
 //Requires: caml_ml_channels, caml_global_data
 //Requires: caml_raise_sys_error
+//Requires: caml_sys_open
 function caml_ml_open_descriptor_out (fd) {
   var data = caml_global_data.fds[fd];
   if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
@@ -122,7 +130,8 @@ function caml_ml_open_descriptor_out (fd) {
     fd:fd,
     opened:true,
     out:true,
-    buffer:"",
+    buffer_curr:0,
+    buffer:new Uint8Array(65536),
     buffered:buffered
   };
   caml_ml_channels[channel.fd]=channel;
@@ -130,23 +139,22 @@ function caml_ml_open_descriptor_out (fd) {
 }
 
 //Provides: caml_ml_open_descriptor_in
-//Requires: caml_global_data,caml_sys_open,caml_raise_sys_error, caml_ml_channels
-//Requires: fs_node_supported, caml_string_of_jsstring
+//Requires: caml_ml_channels, caml_global_data
+//Requires: caml_raise_sys_error
+//Requires: caml_sys_open
 function caml_ml_open_descriptor_in (fd)  {
   var data = caml_global_data.fds[fd];
   if(data.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
   var refill = null;
-  if(fd == 0 && fs_node_supported()){
-    var fs = require('fs');
-    refill = function () {
-      return caml_string_of_jsstring(fs.readFileSync(0, 'utf8'))};
-  }
   var channel = {
     file:data.file,
     offset:data.offset,
     fd:fd,
     opened:true,
     out: false,
+    buffer_curr:0,
+    buffer_max:0,
+    buffer:new Uint8Array(65536),
     refill:refill
   };
   caml_ml_channels[channel.fd]=channel;
@@ -182,9 +190,7 @@ function caml_ml_set_binary_mode(chanid,mode){
 //Requires: caml_sys_close
 function caml_ml_close_channel (chanid) {
   var chan = caml_ml_channels[chanid];
-  caml_ml_flush(chanid);
   chan.opened = false;
-  chan.file.close();
   caml_sys_close(chan.fd)
   return 0;
 }
@@ -207,7 +213,7 @@ function caml_ml_channel_size_64(chanid) {
 //Requires: caml_ml_channels, caml_global_data
 function caml_ml_set_channel_output(chanid,f) {
   var chan = caml_ml_channels[chanid];
-  caml_global_data.fds[chan.fd].output = f;
+  caml_global_data.fds[chan.fd].output = (function (s) {f(s)});
   return 0;
 }
 
@@ -218,53 +224,101 @@ function caml_ml_set_channel_refill(chanid,f) {
   return 0;
 }
 
-//Provides: caml_ml_refill_input
-//Requires: caml_ml_string_length
-function caml_ml_refill_input (chan) {
-  var str = chan.refill();
-  var str_len = caml_ml_string_length(str);
-  if (str_len == 0) chan.refill = null;
-  chan.file.write(chan.file.length(), str, 0, str_len);
-  return str_len;
-}
-
-//Provides: caml_ml_may_refill_input
-//Requires: caml_ml_refill_input, caml_ml_channels
-function caml_ml_may_refill_input (chanid) {
-  var chan = caml_ml_channels[chanid];
-  if (chan.refill == null) return;
-  if (chan.file.length() != chan.offset) return;
-  caml_ml_refill_input (chan);
+//Provides: caml_refill
+//Requires: caml_ml_string_length, caml_uint8_array_of_string
+function caml_refill (chan) {
+  if(chan.refill != null){
+    var str = chan.refill();
+    var str_a = caml_uint8_array_of_string(str);
+    if (str_a.length == 0) {
+      chan.refill = null
+    }
+    else {
+      if(chan.buffer.length < chan.buffer_max + str_a.length){
+        var b = new Uint8Array(chan.buffer_max + str_a.length);
+        b.set(chan.buffer);
+        chan.buffer = b;
+      }
+      chan.buffer.set(str_a,chan.buffer_max);
+      chan.offset += str_a.length;
+      chan.buffer_max += str_a.length;
+    }
+  } else {
+    var nread = chan.file.read(chan.offset, chan.buffer, chan.buffer_max, chan.buffer.length - chan.buffer_max);
+    chan.offset += nread;
+    chan.buffer_max += nread;
+  }
 }
 
 //Provides: caml_ml_input
-//Requires: caml_ml_refill_input, caml_ml_channels
-function caml_ml_input (chanid, s, i, l) {
+//Requires: caml_ml_input_block
+//Requires: caml_uint8_array_of_bytes
+function caml_ml_input (chanid, b, i, l) {
+  var ba = caml_uint8_array_of_bytes(b);
+  return caml_ml_input_block(chanid, ba, i, l)
+}
+
+//Provides: caml_ml_input_block
+//Requires: caml_refill, caml_ml_channels
+function caml_ml_input_block (chanid, ba, i, l) {
   var chan = caml_ml_channels[chanid];
-  var l2 = chan.file.length() - chan.offset;
-  if (l2 == 0 && chan.refill != null) l2 = caml_ml_refill_input(chan);
-  if (l2 < l) l = l2;
-  chan.file.read(chan.offset, s, i, l);
-  chan.offset += l;
-  return l;
+  var n = l;
+  var avail = chan.buffer_max - chan.buffer_curr;
+  if(l <= avail) {
+    ba.set(chan.buffer.subarray(chan.buffer_curr,chan.buffer_curr + l), i);
+    chan.buffer_curr += l;
+  }
+  else if(avail > 0) {
+    ba.set(chan.buffer.subarray(chan.buffer_curr,chan.buffer_curr + avail), i);
+    chan.buffer_curr += avail;
+    n = avail;
+  } else {
+    chan.buffer_curr = 0;
+    chan.buffer_max = 0;
+    caml_refill(chan);
+    var avail = chan.buffer_max - chan.buffer_curr;
+    if(n > avail) n = avail;
+    ba.set(chan.buffer.subarray(chan.buffer_curr,chan.buffer_curr + n), i);
+    chan.buffer_curr += n;
+  }
+  return n;
 }
 
 //Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_bytes, caml_create_bytes, caml_ml_channels
+//Requires: caml_marshal_data_size, caml_input_value_from_bytes, caml_create_bytes, caml_ml_channels, caml_bytes_of_array
+//Requires: caml_refill, caml_failwith, caml_raise_end_of_file
 function caml_input_value (chanid) {
   var chan = caml_ml_channels[chanid];
-
-  var buf = caml_create_bytes(8);
-  chan.file.read(chan.offset,buf,0,8);
-
-  // Header is 20 bytes
-  var len = caml_marshal_data_size (buf, 0) + 20;
-
-  var buf = caml_create_bytes(len);
-  chan.file.read(chan.offset,buf,0,len);
-
+  var header = new Uint8Array(20);
+  function block(buffer, offset, n) {
+    var r = 0;
+    while(r < n){
+      if(chan.buffer_curr >= chan.buffer_max){
+        chan.buffer_curr = 0;
+        chan.buffer_max = 0;
+        caml_refill(chan);
+      }
+      if (chan.buffer_curr >= chan.buffer_max)
+        break;
+      buffer[offset+r] = chan.buffer[chan.buffer_curr];
+      chan.buffer_curr++;
+      r++;
+    }
+    return r;
+  }
+  var r = block(header, 0, 20);
+  if(r == 0)
+    caml_raise_end_of_file();
+  else if (r < 20)
+    caml_failwith("input_value: truncated object");
+  var len = caml_marshal_data_size (caml_bytes_of_array(header), 0);
+  var buf = new Uint8Array(len + 20);
+  buf.set(header,0);
+  var r = block(buf, 20, len)
+  if(r < len)
+    caml_failwith("input_value: truncated object " + r + "  " + len);
   var offset = [0];
-  var res = caml_input_value_from_bytes(buf, offset);
+  var res = caml_input_value_from_bytes(caml_bytes_of_array(buf), offset);
   chan.offset = chan.offset + offset[0];
   return res;
 }
@@ -277,94 +331,125 @@ function caml_input_value_to_outside_heap(c) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
-//Requires: caml_ml_may_refill_input, caml_ml_channels
+//Requires: caml_ml_channels, caml_refill
 function caml_ml_input_char (chanid) {
   var chan = caml_ml_channels[chanid];
-  caml_ml_may_refill_input(chanid);
-  if (chan.offset >= chan.file.length())
+  if(chan.buffer_curr >= chan.buffer_max){
+    chan.buffer_curr = 0;
+    chan.buffer_max = 0;
+    caml_refill(chan);
+  }
+  if (chan.buffer_curr >= chan.buffer_max)
     caml_raise_end_of_file();
-  var res = chan.file.read_one(chan.offset);
-  chan.offset++;
+  var res = chan.buffer[chan.buffer_curr];
+  chan.buffer_curr++;
   return res;
 }
 
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
-//Requires: caml_ml_refill_input, caml_ml_channels
+//Requires: caml_ml_input_char, caml_ml_channels
 function caml_ml_input_int (chanid) {
   var chan = caml_ml_channels[chanid];
-  var file = chan.file;
-  while ((chan.offset + 3) >= file.length()) {
-    var l = caml_ml_refill_input(chan);
-    if (l == 0) caml_raise_end_of_file();
+  var res = 0;
+  for(var i = 0; i < 4; i++){
+    res = (res << 8) + caml_ml_input_char(chanid);
   }
-  var o = chan.offset;
-  var r =(file.read_one(o  ) << 24)
-      |  (file.read_one(o+1) << 16)
-      |  (file.read_one(o+2) << 8)
-      |  (file.read_one(o+3));
-  chan.offset+=4;
-  return r;
+  return res;
+}
+
+//Provides: caml_seek_in
+//Requires: caml_raise_sys_error, caml_ml_channels, caml_global_data
+function caml_seek_in(chanid, pos) {
+  var chan = caml_ml_channels[chanid];
+  if (chan.refill != null) caml_raise_sys_error("Illegal seek");
+  if(pos >= chan.offset - chan.buffer_max
+     && pos <= chan.offset
+     && caml_global_data.fds[chan.fd].flags.binary) {
+    chan.buffer_curr = chan.buffer_max - (chan.offset - pos);
+  } else {
+    chan.offset = pos;
+    chan.buffer_curr = 0;
+    chan.buffer_max = 0;
+  }
+  return 0;
 }
 
 //Provides: caml_ml_seek_in
-//Requires: caml_raise_sys_error, caml_ml_channels
+//Requires: caml_seek_in
 function caml_ml_seek_in(chanid,pos){
-  var chan = caml_ml_channels[chanid];
-  if (chan.refill != null) caml_raise_sys_error("Illegal seek");
-  chan.offset = pos;
-  return 0;
+  return caml_seek_in(chanid,pos);
 }
 
 //Provides: caml_ml_seek_in_64
-//Requires: caml_int64_to_float, caml_raise_sys_error, caml_ml_channels
+//Requires: caml_int64_to_float, caml_seek_in
 function caml_ml_seek_in_64(chanid,pos){
+  var pos = caml_int64_to_float(pos);
+  return caml_seek_in(chanid, pos);
+}
+
+//Provides: caml_pos_in
+//Requires: caml_ml_channels
+function caml_pos_in(chanid) {
   var chan = caml_ml_channels[chanid];
-  if (chan.refill != null) caml_raise_sys_error("Illegal seek");
-  chan.offset = caml_int64_to_float(pos);
-  return 0;
+  return chan.offset - (chan.buffer_max - chan.buffer_curr);
 }
 
 //Provides: caml_ml_pos_in
-//Requires: caml_ml_channels
-function caml_ml_pos_in(chanid) {return caml_ml_channels[chanid].offset}
+//Requires: caml_pos_in
+function caml_ml_pos_in(chanid) {
+  return caml_pos_in(chanid);
+}
 
 //Provides: caml_ml_pos_in_64
-//Requires: caml_int64_of_float, caml_ml_channels
-function caml_ml_pos_in_64(chanid) {return caml_int64_of_float(caml_ml_channels[chanid].offset)}
+//Requires: caml_int64_of_float, caml_pos_in
+function caml_ml_pos_in_64(chanid) {
+  return caml_int64_of_float(caml_pos_in(chanid));
+}
 
 //Provides: caml_ml_input_scan_line
 //Requires: caml_array_bound_error
-//Requires: caml_ml_may_refill_input, caml_ml_channels
+//Requires: caml_ml_channels, caml_refill
 function caml_ml_input_scan_line(chanid){
   var chan = caml_ml_channels[chanid];
-  caml_ml_may_refill_input(chanid);
-  var p = chan.offset;
-  var len = chan.file.length();
-  if(p >= len) { return 0;}
-  while(true) {
-    if(p >= len) return - (p - chan.offset);
-    if(chan.file.read_one(p) == 10) return p - chan.offset + 1;
-    p++;
-  }
+  var p = chan.buffer_curr;
+  do {
+    if(p >= chan.buffer_max) {
+      if(chan.buffer_curr > 0) {
+        chan.buffer.set(chan.buffer.subarray(chan.buffer_curr),0);
+        p -= chan.buffer_curr;
+        chan.buffer_max -= chan.buffer_curr;
+        chan.buffer_curr = 0;
+      }
+      if(chan.buffer_max >= chan.buffer.length) {
+        return -(chan.buffer_max);
+      }
+      var prev_max = chan.buffer_max;
+      caml_refill (chan);
+      if(prev_max == chan.buffer_max) {
+        return -(chan.buffer_max);
+      }
+    }
+  } while (chan.buffer[p++] != 10);
+  return p - chan.buffer_curr;
 }
 
 //Provides: caml_ml_flush
 //Requires: caml_raise_sys_error, caml_global_data, caml_ml_channels
+//Requires: caml_subarray_to_jsbytes
 function caml_ml_flush (chanid) {
   var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
-  if(!chan.buffer || chan.buffer == "") return 0;
+  if(!chan.buffer || chan.buffer_curr == 0) return 0;
   if(chan.fd
      && caml_global_data.fds[chan.fd]
      && caml_global_data.fds[chan.fd].output) {
-    var output = caml_global_data.fds[chan.fd].output;
-    switch(output.length){
-    case 2: output(chanid,chan.buffer);break;
-    default: output(chan.buffer)
-    };
+    caml_global_data.fds[chan.fd].output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr));
+  } else {
+    chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
   }
-  chan.buffer = "";
+  chan.offset += chan.buffer_curr;
+  chan.buffer_curr = 0;
   return 0;
 }
 
@@ -373,40 +458,43 @@ function caml_ml_flush (chanid) {
 //Provides: caml_ml_output_bytes
 //Requires: caml_ml_flush,caml_ml_bytes_length
 //Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels, caml_string_of_bytes
-//Requires: caml_jsbytes_of_string
+//Requires: caml_uint8_array_of_bytes
 function caml_ml_output_bytes(chanid,buffer,offset,len) {
   var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
-  var bytes;
-  if(offset == 0 && caml_ml_bytes_length(buffer) == len)
-    bytes = buffer;
-  else {
-    bytes = caml_create_bytes(len);
-    caml_blit_bytes(buffer,offset,bytes,0,len);
+  var buffer = caml_uint8_array_of_bytes(buffer);
+  buffer = buffer.subarray(offset, offset + len);
+  if(chan.buffer_curr + buffer.length > chan.buffer.length) {
+    var b = new Uint8Array(chan.buffer_curr + buffer.length);
+    b.set(chan.buffer);
+    chan.buffer = b
   }
-  var string = caml_string_of_bytes(bytes);
-  var jsstring = caml_jsbytes_of_string(string);
   switch(chan.buffered){
   case 0: // Unbuffered
-    chan.buffer+=jsstring
+    chan.buffer.set(buffer, chan.buffer_curr);
+    chan.buffer_curr += buffer.length;
     caml_ml_flush (chanid);
     break
   case 1: // Buffered (the default)
-    chan.buffer+=jsstring;
-    if(chan.buffer.length > 65536)
+    chan.buffer.set(buffer, chan.buffer_curr);
+    chan.buffer_curr += buffer.length;
+    if(chan.buffer_curr >= chan.buffer.length)
       caml_ml_flush (chanid);
     break;
   case 2: // Buffered (only for stdout and stderr)
-    var id = jsstring.lastIndexOf("\n");
+    var id = buffer.lastIndexOf(10)
     if(id < 0) {
-      chan.buffer+=jsstring;
-      if(chan.buffer.length > 65536)
+      chan.buffer.set(buffer, chan.buffer_curr);
+      chan.buffer_curr += buffer.length;
+      if(chan.buffer_curr >= chan.buffer.length)
         caml_ml_flush (chanid);
     }
     else {
-      chan.buffer+=jsstring.substr(0,id+1);
+      chan.buffer.set(buffer.subarray(0, id + 1), chan.buffer_curr);
+      chan.buffer_curr += id + 1;
       caml_ml_flush (chanid);
-      chan.buffer += jsstring.substr(id+1);
+      chan.buffer.set(buffer.subarray(id + 1), chan.buffer_curr);
+      chan.buffer_curr += buffer.length - id - 1;
     }
     break;
   }
@@ -437,34 +525,44 @@ function caml_output_value (chanid,v,flags) {
 }
 
 
-//Provides: caml_ml_seek_out
+//Provides: caml_seek_out
 //Requires: caml_ml_channels, caml_ml_flush
-function caml_ml_seek_out(chanid,pos){
+function caml_seek_out(chanid, pos){
   caml_ml_flush(chanid);
-  caml_ml_channels[chanid].offset = pos;
+  var chan = caml_ml_channels[chanid];
+  chan.offset = pos;
   return 0;
 }
 
+//Provides: caml_ml_seek_out
+//Requires: caml_seek_out
+function caml_ml_seek_out(chanid,pos){
+  return caml_seek_out(chanid, pos);
+}
 //Provides: caml_ml_seek_out_64
-//Requires: caml_int64_to_float, caml_ml_channels, caml_ml_flush
+//Requires: caml_int64_to_float, caml_seek_out
 function caml_ml_seek_out_64(chanid,pos){
-  caml_ml_flush(chanid);
-  caml_ml_channels[chanid].offset = caml_int64_to_float(pos);
-  return 0;
+  var pos = caml_int64_to_float(pos);
+  return caml_seek_out(chanid, pos);
+}
+
+//Provides: caml_pos_out
+//Requires: caml_ml_channels, caml_ml_flush
+function caml_pos_out(chanid) {
+  var chan = caml_ml_channels[chanid];
+  return chan.offset + chan.buffer_curr
 }
 
 //Provides: caml_ml_pos_out
-//Requires: caml_ml_channels, caml_ml_flush
+//Requires: caml_pos_out
 function caml_ml_pos_out(chanid) {
-  caml_ml_flush(chanid);
-  return caml_ml_channels[chanid].offset
+  return caml_pos_out(chanid);
 }
 
 //Provides: caml_ml_pos_out_64
-//Requires: caml_int64_of_float, caml_ml_channels, caml_ml_flush
+//Requires: caml_int64_of_float, caml_pos_out
 function caml_ml_pos_out_64(chanid) {
-  caml_ml_flush(chanid);
-  return caml_int64_of_float (caml_ml_channels[chanid].offset);
+  return caml_int64_of_float (caml_pos_out(chanid));
 }
 
 //Provides: caml_ml_output_int

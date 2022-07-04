@@ -452,11 +452,7 @@ function caml_convert_string_to_bytes (s) {
 //Provides: caml_convert_bytes_to_array
 function caml_convert_bytes_to_array (s) {
   /* Assumes not ARRAY */
-  if(typeof Uint8Array != 'undefined') {
-    var a = new Uint8Array(s.l);
-  } else {
-    var a = new Array(s.l);
-  }
+  var a = new Uint8Array(s.l);
   var b = s.c, l = b.length, i = 0;
   for (; i < l; i++) a[i] = b.charCodeAt(i);
   for (l = s.l; i < l; i++) a[i] = 0;
@@ -465,17 +461,17 @@ function caml_convert_bytes_to_array (s) {
   return a;
 }
 
-//Provides: caml_array_of_bytes mutable
+//Provides: caml_uint8_array_of_bytes mutable
 //Requires: caml_convert_bytes_to_array
-function caml_array_of_bytes (s) {
+function caml_uint8_array_of_bytes (s) {
   if (s.t != 4 /* ARRAY */) caml_convert_bytes_to_array(s);
   return s.c;
 }
 
-//Provides: caml_array_of_string mutable
+//Provides: caml_uint8_array_of_string mutable
 //Requires: caml_convert_bytes_to_array
 //Requires: caml_ml_string_length, caml_string_unsafe_get
-function caml_array_of_string (s) {
+function caml_uint8_array_of_string (s) {
   var l = caml_ml_string_length(s);
   var a = new Array(l);
   var i = 0;
@@ -514,6 +510,9 @@ function caml_string_of_array (a) {
 //Provides: caml_bytes_of_array
 //Requires: MlBytes
 function caml_bytes_of_array (a) {
+  if(! (a instanceof Uint8Array)) {
+    a = new Uint8Array(a);
+  }
   return new MlBytes(4,a,a.length);
 }
 
@@ -882,3 +881,12 @@ function caml_to_js_string(s) {
 function caml_js_to_string (s) {
   return caml_string_of_jsstring(s);
 }
+
+
+//Provides: caml_array_of_string
+//Requires: caml_uint8_array_of_string
+function caml_array_of_string(x) { return caml_uint8_array_of_string(x) }
+
+//Provides: caml_array_of_bytes
+//Requires: caml_uint8_array_of_bytes
+function caml_array_of_bytes(x) { return caml_uint8_array_of_bytes(x) }
