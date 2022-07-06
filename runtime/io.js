@@ -19,33 +19,31 @@
 
 ///////////// Io
 
+//Provides: caml_sys_fds
+var caml_sys_fds = new Array(3);
+
 //Provides: caml_sys_close
-//Requires: caml_global_data
+//Requires: caml_sys_fds
 function caml_sys_close(fd) {
-  var info = caml_global_data.fds[fd];
-  if(info) {
-    info.file.close();
-  }
-  delete caml_global_data.fds[fd];
+  var file = caml_sys_fds[fd];
+  if(file) file.close();
+  delete caml_sys_fds[fd];
   return 0;
 }
 
+
 //Provides: caml_sys_open
-//Requires: caml_raise_sys_error, caml_global_data
-//Requires: MlFakeFile_out, MlNodeFile
+//Requires: caml_raise_sys_error
+//Requires: MlFakeFd_out, MlNodeFd
 //Requires: resolve_fs_device
 //Requires: caml_jsbytes_of_string
 //Requires: fs_node_supported
-function caml_sys_open_internal(idx,file,flags) {
-  if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
-  flags=flags?flags:{};
-  var info = {};
-  info.file = file;
-  info.offset = flags.append?file.length():0;
-  info.flags = flags;
-  caml_global_data.fds[idx] = info;
-  if(!caml_global_data.fd_last_idx || idx > caml_global_data.fd_last_idx)
-    caml_global_data.fd_last_idx = idx;
+//Requires: caml_sys_fds
+function caml_sys_open_internal(file,idx) {
+  if(idx == undefined){
+    idx = caml_sys_fds.length;
+  }
+  caml_sys_fds[idx] = file;
   return idx;
 }
 function caml_sys_open (name, flags, _perms) {
@@ -70,34 +68,36 @@ function caml_sys_open (name, flags, _perms) {
     caml_raise_sys_error(caml_jsbytes_of_string(name) + " : flags Open_text and Open_binary are not compatible");
   var root = resolve_fs_device(name);
   var file = root.device.open(root.rest,f);
-  var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-  return caml_sys_open_internal (idx+1,file,f);
+  return caml_sys_open_internal (file, undefined);
 }
 (function () {
-  function file(fd, name) {
+  function file(fd, flags) {
     if(fs_node_supported()) {
-      if(name) {
+      if(flags.name) {
         try {
           var fs = require("fs");
-          var fd2 = fs.openSync(name, "rs");
-          return new MlNodeFile(fd2, true);
+          var fd2 = fs.openSync(flags.name, "rs");
+          return new MlNodeFd(fd2, flags);
         } catch(e) {  }
       }
-      return new MlNodeFile(fd, true);
+      return new MlNodeFd(fd, flags);
     }
     else
-      return new MlFakeFile_out(fd)
+      return new MlFakeFd_out(fd, flags)
   }
-  caml_sys_open_internal(0,file(0,"/dev/stdin"), {rdonly:1});
-  caml_sys_open_internal(1,file(1), {buffered:2,wronly:1});
-  caml_sys_open_internal(2,file(2), {buffered:2,wronly:1});
+  caml_sys_open_internal(file(0,{rdonly:1,altname:"/dev/stdin",isCharacterDevice:true}), 0);
+  caml_sys_open_internal(file(1,{buffered:2,wronly:1,isCharacterDevice:true}), 1);
+  caml_sys_open_internal(file(2,{buffered:2,wronly:1,isCharacterDevice:true}), 2);
 })()
 
 
 // ocaml Channels
 
 //Provides: caml_ml_set_channel_name
-function caml_ml_set_channel_name() {
+//Requires: caml_ml_channels
+function caml_ml_set_channel_name(chanid, name) {
+  var chan = caml_ml_channels[chanid];
+  chan.name = name;
   return 0
 }
 
@@ -117,16 +117,16 @@ function caml_ml_out_channels_list () {
 
 
 //Provides: caml_ml_open_descriptor_out
-//Requires: caml_ml_channels, caml_global_data
+//Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_out (fd) {
-  var data = caml_global_data.fds[fd];
-  if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
-  var buffered = (data.flags.buffered !== undefined) ? data.flags.buffered : 1;
+  var file = caml_sys_fds[fd];
+  if(file.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
+  var buffered = (file.flags.buffered !== undefined) ? file.flags.buffered : 1;
   var channel = {
-    file:data.file,
-    offset:data.offset,
+    file:file,
+    offset:file.flags.append?file.length():0,
     fd:fd,
     opened:true,
     out:true,
@@ -139,16 +139,16 @@ function caml_ml_open_descriptor_out (fd) {
 }
 
 //Provides: caml_ml_open_descriptor_in
-//Requires: caml_ml_channels, caml_global_data
+//Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_in (fd)  {
-  var data = caml_global_data.fds[fd];
-  if(data.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
+  var file = caml_sys_fds[fd];
+  if(file.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
   var refill = null;
   var channel = {
-    file:data.file,
-    offset:data.offset,
+    file:file,
+    offset:file.flags.append?file.length():0,
     fd:fd,
     opened:true,
     out: false,
@@ -163,7 +163,7 @@ function caml_ml_open_descriptor_in (fd)  {
 
 
 //Provides: caml_channel_descriptor
-//Requires: caml_global_data, caml_ml_channels
+//Requires: caml_ml_channels
 function caml_channel_descriptor(chanid){
   var chan = caml_ml_channels[chanid];
   return chan.fd;
@@ -174,12 +174,11 @@ function caml_channel_descriptor(chanid){
 var win_filedescr_of_channel = caml_channel_descriptor
 
 //Provides: caml_ml_set_binary_mode
-//Requires: caml_global_data, caml_ml_channels
+//Requires: caml_ml_channels
 function caml_ml_set_binary_mode(chanid,mode){
   var chan = caml_ml_channels[chanid];
-  var data = caml_global_data.fds[chan.fd];
-  data.flags.text = !mode
-  data.flags.binary = mode
+  chan.file.flags.text = !mode
+  chan.file.flags.binary = mode
   return 0;
 }
 
@@ -210,15 +209,15 @@ function caml_ml_channel_size_64(chanid) {
 }
 
 //Provides: caml_ml_set_channel_output
-//Requires: caml_ml_channels, caml_global_data
+//Requires: caml_ml_channels
 function caml_ml_set_channel_output(chanid,f) {
   var chan = caml_ml_channels[chanid];
-  caml_global_data.fds[chan.fd].output = (function (s) {f(s)});
+  chan.output = (function (s) {f(s)});
   return 0;
 }
 
 //Provides: caml_ml_set_channel_refill
-//Requires: caml_ml_channels, caml_global_data
+//Requires: caml_ml_channels
 function caml_ml_set_channel_refill(chanid,f) {
   caml_ml_channels[chanid].refill = f;
   return 0;
@@ -359,13 +358,13 @@ function caml_ml_input_int (chanid) {
 }
 
 //Provides: caml_seek_in
-//Requires: caml_raise_sys_error, caml_ml_channels, caml_global_data
+//Requires: caml_raise_sys_error, caml_ml_channels
 function caml_seek_in(chanid, pos) {
   var chan = caml_ml_channels[chanid];
   if (chan.refill != null) caml_raise_sys_error("Illegal seek");
   if(pos >= chan.offset - chan.buffer_max
      && pos <= chan.offset
-     && caml_global_data.fds[chan.fd].flags.binary) {
+     && chan.file.flags.binary) {
     chan.buffer_curr = chan.buffer_max - (chan.offset - pos);
   } else {
     chan.offset = pos;
@@ -435,16 +434,14 @@ function caml_ml_input_scan_line(chanid){
 }
 
 //Provides: caml_ml_flush
-//Requires: caml_raise_sys_error, caml_global_data, caml_ml_channels
+//Requires: caml_raise_sys_error, caml_ml_channels
 //Requires: caml_subarray_to_jsbytes
 function caml_ml_flush (chanid) {
   var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
   if(!chan.buffer || chan.buffer_curr == 0) return 0;
-  if(chan.fd
-     && caml_global_data.fds[chan.fd]
-     && caml_global_data.fds[chan.fd].output) {
-    caml_global_data.fds[chan.fd].output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr));
+  if(chan.output) {
+    chan.output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr));
   } else {
     chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
   }

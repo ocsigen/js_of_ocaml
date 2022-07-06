@@ -32,7 +32,7 @@ function fs_node_supported () {
 
 
 //Provides: MlNodeDevice
-//Requires: MlNodeFile, caml_raise_sys_error, caml_raise_with_args
+//Requires: MlNodeFd, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
   this.fs = require('fs');
@@ -108,7 +108,8 @@ MlNodeDevice.prototype.open = function(name, f, raise_unix) {
   try {
     var fd = this.fs.openSync(this.nm(name), res);
     var isCharacterDevice = this.fs.lstatSync(this.nm(name)).isCharacterDevice();
-    return new MlNodeFile(fd, isCharacterDevice);
+    f.isCharacterDevice = isCharacterDevice;
+    return new MlNodeFd(fd, f);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
@@ -229,32 +230,33 @@ MlNodeDevice.prototype.constructor = MlNodeDevice
 function MlNodeDevice() {
 }
 
-//Provides: MlNodeFile
+//Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-function MlNodeFile(fd, isCharacterDevice){
+function MlNodeFd(fd, flags){
   this.fs = require('fs');
   this.fd = fd;
-  this.isCharacterDevice = isCharacterDevice || false;
+  this.flags = flags;
 }
-MlNodeFile.prototype = new MlFile ();
+MlNodeFd.prototype = new MlFile ();
+MlNodeFd.prototype.constructor = MlNodeFd;
 
-MlNodeFile.prototype.truncate = function(len){
+MlNodeFd.prototype.truncate = function(len){
   try {
     this.fs.ftruncateSync(this.fd,len|0);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 }
-MlNodeFile.prototype.length = function () {
+MlNodeFd.prototype.length = function () {
   try {
     return this.fs.fstatSync(this.fd).size;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 }
-MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
+MlNodeFd.prototype.write = function(offset,buf,buf_offset,len){
   try {
-    if(this.isCharacterDevice)
+    if(this.flags.isCharacterDevice)
       this.fs.writeSync(this.fd, buf, buf_offset, len);
     else
       this.fs.writeSync(this.fd, buf, buf_offset, len, offset);
@@ -263,9 +265,9 @@ MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   }
   return 0;
 }
-MlNodeFile.prototype.read = function(offset,a,buf_offset,len){
+MlNodeFd.prototype.read = function(offset,a,buf_offset,len){
   try {
-    if(this.isCharacterDevice)
+    if(this.flags.isCharacterDevice)
       var read = this.fs.readSync(this.fd, a, buf_offset, len);
     else
       var read = this.fs.readSync(this.fd, a, buf_offset, len, offset);
@@ -274,7 +276,7 @@ MlNodeFile.prototype.read = function(offset,a,buf_offset,len){
     caml_raise_sys_error(err.toString());
   }
 }
-MlNodeFile.prototype.close = function(){
+MlNodeFd.prototype.close = function(){
   try {
     this.fs.closeSync(this.fd);
     return 0
@@ -283,9 +285,8 @@ MlNodeFile.prototype.close = function(){
   }
 }
 
-MlNodeFile.prototype.constructor = MlNodeFile;
 
-//Provides: MlNodeFile
+//Provides: MlNodeFd
 //If: browser
-function MlNodeFile(){
+function MlNodeFd(){
 }

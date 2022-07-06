@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: MlFakeDevice
-//Requires: MlFakeFile, caml_create_bytes
+//Requires: MlFakeFile, MlFakeFd, caml_create_bytes
 //Requires: caml_raise_sys_error, caml_raise_no_such_file
 //Requires: caml_string_of_jsbytes, caml_string_of_jsstring
 //Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
@@ -153,6 +153,7 @@ MlFakeDevice.prototype.unlink = function(name) {
   return ok;
 }
 MlFakeDevice.prototype.open = function(name, f) {
+  var file;
   if(f.rdonly && f.wronly)
     caml_raise_sys_error(this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible");
   if(f.text && f.binary)
@@ -161,16 +162,16 @@ MlFakeDevice.prototype.open = function(name, f) {
   if (this.content[name]) {
     if (this.is_dir(name)) caml_raise_sys_error(this.nm(name) + " : is a directory");
     if (f.create && f.excl) caml_raise_sys_error(this.nm(name) + " : file already exists");
-    var file = this.content[name];
+    file = this.content[name];
     if(f.truncate) file.truncate();
-    return file;
   } else if (f.create) {
     this.create_dir_if_needed(name);
     this.content[name] = new MlFakeFile(caml_create_bytes(0));
-    return this.content[name];
+    file = this.content[name];
   } else {
     caml_raise_no_such_file (this.nm(name));
   }
+  return new MlFakeFd(this.nm(name), file, f);
 }
 
 MlFakeDevice.prototype.register= function (name,content){
@@ -205,6 +206,7 @@ function MlFakeFile(content){
   this.data = content;
 }
 MlFakeFile.prototype = new MlFile ();
+MlFakeFile.prototype.constructor = MlFakeFile
 MlFakeFile.prototype.truncate = function(len){
   var old = this.data;
   this.data = caml_create_bytes(len|0);
@@ -236,14 +238,12 @@ MlFakeFile.prototype.read = function(offset,buf,pos,len){
   }
   return len
 }
-MlFakeFile.prototype.close = function(){
 
-}
-MlFakeFile.prototype.constructor = MlFakeFile
 
-//Provides: MlFakeFile_out
+//Provides: MlFakeFd_out
 //Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_array
-function MlFakeFile_out(fd) {
+//Requires: caml_raise_sys_error
+function MlFakeFd_out(fd,flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
   this.log = (function (s) { return 0 });
   if(fd == 1 && typeof console.log == "function")
@@ -252,20 +252,57 @@ function MlFakeFile_out(fd) {
     this.log = console.error;
   else if(typeof console.log == "function")
     this.log = console.log
+  this.flags = flags;
+}
+MlFakeFd_out.prototype.length = function() { return 0 }
+MlFakeFd_out.prototype.write = function (offset,buf,pos,len) {
+  if(this.log) {
+    if(len > 0
+       && pos >= 0
+       && pos+len <= buf.length
+       && buf[pos+len-1] == 10)
+      len --;
+    // Do not output the last \n if present
+    // as console logging display a newline at the end
+    var src = caml_create_bytes(len);
+    caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len);
+    this.log(src.toUtf16());
+    return 0;
+  }
+  caml_raise_sys_error(this.fd  + ": file descriptor already closed");
+}
+MlFakeFd_out.prototype.read = function (offset, buf, pos, len) {
+  caml_raise_sys_error(this.fd  + ": file descriptor is write only");
+}
+MlFakeFd_out.prototype.close = function () {
+  this.log = undefined;
 }
 
-MlFakeFile_out.prototype = Object.create(MlFakeFile.prototype);
-MlFakeFile_out.prototype.constructor = MlFakeFile_out;
 
-MlFakeFile_out.prototype.write = function (offset,buf,pos,len) {
-  if(len > 0
-     && pos >= 0
-     && pos+len <= buf.length
-     && buf[pos+len-1] == 10)
-    len --;
-  // Do not output the last \n if present
-  // as console logging display a newline at the end
-  var src = caml_create_bytes(len);
-  caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len);
-  this.log(src.toUtf16());
+//Provides: MlFakeFd
+//Requires: MlFakeFile
+//Requires: caml_raise_sys_error
+function MlFakeFd(name, file,flags) {
+  this.file = file;
+  this.name = name;
+  this.flags = flags;
+}
+
+MlFakeFd.prototype.err_closed = function () {
+  caml_raise_sys_error(this.name  + ": file descriptor already closed");
+}
+MlFakeFd.prototype.length = function() {
+  if(this.file) return this.file.length ()
+  this.err_closed();
+}
+MlFakeFd.prototype.write = function (offset,buf,pos,len) {
+  if(this.file) return this.file.write(offset,buf,pos,len)
+  this.err_closed();
+}
+MlFakeFd.prototype.read = function (offset, buf, pos, len) {
+  if(this.file) return this.file.read(offset, buf, pos, len)
+  this.err_closed();
+}
+MlFakeFd.prototype.close = function () {
+  this.file = undefined;
 }

@@ -267,7 +267,7 @@ function caml_sys_rmdir(name){
 //Provides: caml_ba_map_file
 //Requires: caml_failwith
 function caml_ba_map_file(vfd, kind, layout, shared, dims, pos) {
-  // var data = caml_global_data.fds[vfd];
+  // var data = caml_sys_fds[vfd];
   caml_failwith("caml_ba_map_file not implemented");
 }
 
