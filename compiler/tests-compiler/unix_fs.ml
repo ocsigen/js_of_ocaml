@@ -310,4 +310,28 @@ let f () =
     fail Unix.readdir dh
   with e -> print_endline  (Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
-  [%expect {||}]
+  [%expect {|
+    ccc
+    bbb
+    End_of_file
+    ccc
+    bbb
+    End_of_file
+    ccc
+    ccc
+    ccc
+    ccc
+    Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
+    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
+    bbb
+    ccc
+    End_of_file
+    bbb
+    ccc
+    End_of_file
+    bbb
+    bbb
+    bbb
+    bbb
+    Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
+    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>") |}]
