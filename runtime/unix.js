@@ -260,7 +260,7 @@ function unix_rewinddir(dir_handle) {
 //Requires: unix_opendir, unix_readdir
 function win_findfirst(path) {
   // The Windows code adds this glob to the path, so we need to remove it
-  var path = caml_string_of_jsstring(caml_jsstring_of_string(path).replace(/\*\.\*$/, ""));
+  var path = caml_string_of_jsstring(caml_jsstring_of_string(path).replace(/\\\*\.\*$/, ""));
   var dir_handle = unix_opendir(path);
   var first_entry = unix_readdir(dir_handle);
   // The Windows bindings type dir_handle as an `int` but it's not in JS

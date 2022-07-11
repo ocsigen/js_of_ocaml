@@ -295,11 +295,14 @@ let f () =
   reset_stable_name ();
   try
     Sys.mkdir "aaa" 0o777;
+    print_endline "directory created";
     let oc = open_out (Filename.concat "aaa" "bbb") in
     close_out oc;
     let oc = open_out (Filename.concat "aaa" "ccc") in
     close_out oc;
+    print_endline "files created";
     let dh = Unix.opendir "aaa" in
+    print_endline "got directory handle";
     read dh;
     read dh;
     fail Unix.readdir dh;
@@ -322,6 +325,9 @@ let f () =
 let () = f (); Sys.chdir "/static"; f () |};
   [%expect
     {|
+    directory created
+    files created
+    got directory handle
     <file 1>
     <file 2>
     End_of_file
@@ -334,6 +340,9 @@ let () = f (); Sys.chdir "/static"; f () |};
     <file 1>
     Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
     Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
+    directory created
+    files created
+    got directory handle
     <file 1>
     <file 2>
     End_of_file
