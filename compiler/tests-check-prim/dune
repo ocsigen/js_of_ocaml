@@ -25,7 +25,8 @@
 
 (rule
  (targets unix-unix.output)
- (enabled_if (= %{os_type} Unix))
+ (enabled_if
+  (= %{os_type} Unix))
  (mode
   (promote (until-clean)))
  (action
@@ -33,10 +34,10 @@
    %{targets}
    (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
 
-
 (rule
  (targets unix-win32.output)
- (enabled_if (= %{os_type} Win32))
+ (enabled_if
+  (= %{os_type} Win32))
  (mode
   (promote (until-clean)))
  (action
