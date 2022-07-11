@@ -208,6 +208,7 @@ caml_spacetime_only_works_for_native_code
 unix_inet_addr_of_string
 
 From +unix.js:
+unix_closedir
 unix_getpwuid
 unix_gettimeofday
 unix_getuid
@@ -219,7 +220,10 @@ unix_lstat
 unix_lstat_64
 unix_mkdir
 unix_mktime
+unix_opendir
+unix_readdir
 unix_readlink
+unix_rewinddir
 unix_rmdir
 unix_stat
 unix_stat_64
@@ -227,6 +231,9 @@ unix_symlink
 unix_time
 unix_unlink
 win_cleanup
+win_findclose
+win_findfirst
+win_findnext
 win_handle_fd
 win_startup
 

@@ -205,43 +205,32 @@ function unix_has_symlink(unit) {
 }
 
 //Provides: unix_opendir
-//Requires: caml_jsstring_of_string
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: fs_node_supported, caml_failwith
+//Requires: resolve_fs_device, caml_failwith
 function unix_opendir(path) {
-  if (!fs_node_supported()) {
+  var root = resolve_fs_device(path);
+  if (!root.device.opendir) {
     caml_failwith("unix_opendir: not implemented");
   }
-  var fs = require('fs');
-  var p = caml_jsstring_of_string(path);
-  try {
-    return fs.opendirSync(p);
-  } catch (err) {
-    var unix_error = caml_named_value('Unix.Unix_error');
-    caml_raise_with_args(unix_error, make_unix_err_args(err.code, err.syscall, err.path, err.errno));
-  }
+  var dir_handle = root.device.opendir(root.rest, /* raise Unix_error */ true);
+  return { pointer : dir_handle, path: path }
 }
 
 //Provides: unix_readdir
 //Requires: caml_raise_end_of_file
 //Requires: caml_string_of_jsstring
 //Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: fs_node_supported, caml_failwith
 function unix_readdir(dir_handle) {
-  if (!fs_node_supported()) {
-    caml_failwith("unix_readdir: not implemented");
-  }
-  var dir;
+  var entry;
   try {
-      dir = dir_handle.readSync();
+      entry = dir_handle.pointer.readSync();
   } catch (e) {
       var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.path));
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.pointer.path));
   }
-  if (dir === null) {
+  if (entry === null) {
       caml_raise_end_of_file();
   } else {
-      return caml_string_of_jsstring(dir.name);
+      return caml_string_of_jsstring(entry.name);
   }
 }
 
@@ -249,86 +238,43 @@ function unix_readdir(dir_handle) {
 //Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
 //Requires: fs_node_supported, caml_failwith
 function unix_closedir(dir_handle) {
-  if (!fs_node_supported()) {
-    caml_failwith("unix_closedir: not implemented");
-  }
   try {
-      dir_handle.closeSync();
+      dir_handle.pointer.closeSync();
   } catch (e) {
       var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.path));
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.pointer.path));
   }
+}
+
+//Provides: unix_rewinddir
+//Requires: unix_closedir, unix_opendir
+function unix_rewinddir(dir_handle) {
+  unix_closedir(dir_handle);
+  var new_dir_handle = unix_opendir(dir_handle.path);
+  dir_handle.pointer = new_dir_handle.pointer;
+  return 0;
 }
 
 //Provides: win_findfirst
 //Requires: caml_jsstring_of_string, caml_string_of_jsstring
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: caml_raise_end_of_file
-//Requires: fs_node_supported, caml_failwith
+//Requires: unix_opendir, unix_readdir
 function win_findfirst(path) {
-  if (!fs_node_supported()) {
-    caml_failwith("win_findfirst: not implemented");
-  }
-  var fs = require('fs');
   // The Windows code adds this glob to the path, so we need to remove it
-  var p = caml_jsstring_of_string(path).replace("*.*", "");
-  var dir_handle;
-  try {
-      dir_handle = fs.opendirSync(p);
-  } catch (err) {
-      var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args(err.code, err.syscall, err.path, err.errno));
-  }
-  var dir;
-  try {
-      dir = dir_handle.readSync();
-  } catch (e) {
-      var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.path));
-  }
-  if (dir === null) {
-      caml_raise_end_of_file();
-  } else {
-      var first_entry = caml_string_of_jsstring(dir.name);
-      // The Windows bindings type dir_handle as an `int` but it's not in JS
-      return [0, first_entry, dir_handle];
-  }
+  var path = caml_string_of_jsstring(caml_jsstring_of_string(path).replace("/*.*$/", ""));
+  var dir_handle = unix_opendir(path);
+  var first_entry = unix_readdir(dir_handle);
+  // The Windows bindings type dir_handle as an `int` but it's not in JS
+  return [0, first_entry, dir_handle];
 }
 
 //Provides: win_findnext
-//Requires: caml_raise_end_of_file
-//Requires: caml_string_of_jsstring
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: fs_node_supported, caml_failwith
+//Requires: unix_readdir
 function win_findnext(dir_handle) {
-  if (!fs_node_supported()) {
-    caml_failwith("win_findnext: not implemented");
-  }
-  var dir;
-  try {
-      dir = dir_handle.readSync();
-  } catch (e) {
-      var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.path));
-  }
-  if (dir === null) {
-      caml_raise_end_of_file();
-  } else {
-      return caml_string_of_jsstring(dir.name);
-  }
+  return unix_readdir(dir_handle);
 }
 
 //Provides: win_findclose
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: fs_node_supported, caml_failwith
+//Requires: unix_closedir
 function win_findclose(dir_handle) {
-  if (!fs_node_supported()) {
-    caml_failwith("win_findnext: not implemented");
-  }
-  try {
-      dir_handle.closeSync();
-  } catch (e) {
-      var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.path));
-  }
+  return unix_closedir(dir_handle);
 }

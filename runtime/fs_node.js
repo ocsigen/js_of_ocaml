@@ -154,6 +154,13 @@ MlNodeDevice.prototype.readlink = function(name, raise_unix) {
     this.raise_nodejs_error(err, raise_unix);
   }
 }
+MlNodeDevice.prototype.opendir = function(name, raise_unix) {
+  try {
+    return this.fs.opendirSync(this.nm(name));
+  } catch (err) {
+    this.raise_nodejs_error(err, raise_unix);
+  }
+}
 MlNodeDevice.prototype.raise_nodejs_error = function(err, raise_unix) {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {

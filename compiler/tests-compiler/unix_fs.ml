@@ -272,3 +272,42 @@ f (); Sys.chdir "/static"; f () |};
     Found link
     Failure("unix_symlink: not implemented")
     Failure("unix_lstat: not implemented")|}]
+
+let%expect_test "Unix.opendir" =
+  compile_and_run
+    ~unix:true
+    {|
+let norm = function
+    | Unix.Unix_error (t,n,_) -> Unix.Unix_error (t,n,"<PATH>")
+    | e -> e
+let read dh = print_endline (Unix.readdir dh)
+let fail f dh = try ignore (f dh); failwith "Failure expected"  with e -> print_endline (Printexc.to_string (norm e))
+let f () =
+  try
+    Sys.mkdir "aaa" 0o777;
+    let oc = open_out "aaa/bbb" in
+    close_out oc;
+    let oc = open_out "aaa/ccc" in
+    close_out oc;
+    let dh = Unix.opendir "aaa" in
+    read dh;
+    read dh;
+    fail Unix.readdir dh;
+    Unix.rewinddir dh;
+    read dh;
+    read dh;
+    fail Unix.readdir  dh;
+    Unix.rewinddir dh;
+    read dh;
+    Unix.rewinddir dh;
+    read dh;
+    Unix.rewinddir dh;
+    read dh;
+    Unix.rewinddir dh;
+    read dh;
+    Unix.closedir dh;
+    fail Unix.rewinddir dh;
+    fail Unix.readdir dh
+  with e -> print_endline  (Printexc.to_string (norm e))
+let () = f (); Sys.chdir "/static"; f () |};
+  [%expect {||}]
