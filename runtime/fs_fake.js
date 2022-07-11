@@ -142,6 +142,40 @@ MlFakeDevice.prototype.readdir = function(name) {
   }
   return a;
 }
+MlFakeDevice.prototype.opendir = function(name, raise_unix) {
+  var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
+
+  var a = this.readdir(name);
+  var c = false;
+  var i = 0;
+  return { readSync : (function () {
+    if (c) {
+      if (unix_error) {
+        caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", this.nm(name)));
+      }
+      else {
+        caml_raise_sys_error(name + ": closedir failed");
+      }
+    }
+    if(i == a.length) return null;
+    var entry = a[i];
+    i++;
+    return { name: entry }
+  })
+    , closeSync: (function () {
+      if (c) {
+        if (unix_error) {
+          caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", this.nm(name)));
+        }
+        else {
+          caml_raise_sys_error(name + ": closedir failed");
+        }
+      }
+      c = true;
+      a = [];
+    })
+  }
+}
 MlFakeDevice.prototype.is_dir = function(name) {
   if(name == "")  return true;
   var name_slash = this.slash(name);
@@ -152,6 +186,28 @@ MlFakeDevice.prototype.unlink = function(name) {
   delete this.content[name];
   return ok;
 }
+MlFakeDevice.prototype.open = function(name, f) {
+  var file;
+  if(f.rdonly && f.wronly)
+    caml_raise_sys_error(this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible");
+  if(f.text && f.binary)
+    caml_raise_sys_error(this.nm(name) + " : flags Open_text and Open_binary are not compatible");
+  this.lookup(name);
+  if (this.content[name]) {
+    if (this.is_dir(name)) caml_raise_sys_error(this.nm(name) + " : is a directory");
+    if (f.create && f.excl) caml_raise_sys_error(this.nm(name) + " : file already exists");
+    file = this.content[name];
+    if(f.truncate) file.truncate();
+  } else if (f.create) {
+    this.create_dir_if_needed(name);
+    this.content[name] = new MlFakeFile(caml_create_bytes(0));
+    file = this.content[name];
+  } else {
+    caml_raise_no_such_file (this.nm(name));
+  }
+  return new MlFakeFd(this.nm(name), file, f);
+}
+
 MlFakeDevice.prototype.open = function(name, f) {
   var file;
   if(f.rdonly && f.wronly)
