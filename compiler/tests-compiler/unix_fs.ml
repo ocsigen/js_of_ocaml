@@ -295,9 +295,9 @@ let f () =
   reset_stable_name ();
   try
     Sys.mkdir "aaa" 0o777;
-    let oc = open_out "aaa/bbb" in
+    let oc = open_out (Filename.concat "aaa" "bbb") in
     close_out oc;
-    let oc = open_out "aaa/ccc" in
+    let oc = open_out (Filename.concat "aaa" "ccc") in
     close_out oc;
     let dh = Unix.opendir "aaa" in
     read dh;

@@ -225,7 +225,7 @@ function unix_readdir(dir_handle) {
       entry = dir_handle.pointer.readSync();
   } catch (e) {
       var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.pointer.path));
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.path));
   }
   if (entry === null) {
       caml_raise_end_of_file();
@@ -242,7 +242,7 @@ function unix_closedir(dir_handle) {
       dir_handle.pointer.closeSync();
   } catch (e) {
       var unix_error = caml_named_value('Unix.Unix_error');
-      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.pointer.path));
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.path));
   }
 }
 
@@ -260,7 +260,7 @@ function unix_rewinddir(dir_handle) {
 //Requires: unix_opendir, unix_readdir
 function win_findfirst(path) {
   // The Windows code adds this glob to the path, so we need to remove it
-  var path = caml_string_of_jsstring(caml_jsstring_of_string(path).replace("/*.*$/", ""));
+  var path = caml_string_of_jsstring(caml_jsstring_of_string(path).replace(/\*\.\*$/, ""));
   var dir_handle = unix_opendir(path);
   var first_entry = unix_readdir(dir_handle);
   // The Windows bindings type dir_handle as an `int` but it's not in JS
