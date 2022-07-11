@@ -277,12 +277,22 @@ let%expect_test "Unix.opendir" =
   compile_and_run
     ~unix:true
     {|
+
+let stable_name = Hashtbl.create 17
+let reset_stable_name () = Hashtbl.clear stable_name
+let name s = match Hashtbl.find stable_name s with
+    | exception Not_found ->
+      let nname = Printf.sprintf "<file %d>" (Hashtbl.length stable_name + 1) in
+      Hashtbl.add stable_name s nname;
+      nname
+    | nname -> nname
 let norm = function
     | Unix.Unix_error (t,n,_) -> Unix.Unix_error (t,n,"<PATH>")
     | e -> e
-let read dh = print_endline (Unix.readdir dh)
+let read dh = print_endline (name (Unix.readdir dh))
 let fail f dh = try ignore (f dh); failwith "Failure expected"  with e -> print_endline (Printexc.to_string (norm e))
 let f () =
+  reset_stable_name ();
   try
     Sys.mkdir "aaa" 0o777;
     let oc = open_out "aaa/bbb" in
@@ -310,28 +320,29 @@ let f () =
     fail Unix.readdir dh
   with e -> print_endline  (Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
-  [%expect {|
-    ccc
-    bbb
+  [%expect
+    {|
+    <file 1>
+    <file 2>
     End_of_file
-    ccc
-    bbb
+    <file 1>
+    <file 2>
     End_of_file
-    ccc
-    ccc
-    ccc
-    ccc
+    <file 1>
+    <file 1>
+    <file 1>
+    <file 1>
     Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
     Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
-    bbb
-    ccc
+    <file 1>
+    <file 2>
     End_of_file
-    bbb
-    ccc
+    <file 1>
+    <file 2>
     End_of_file
-    bbb
-    bbb
-    bbb
-    bbb
+    <file 1>
+    <file 1>
+    <file 1>
+    <file 1>
     Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
     Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>") |}]
