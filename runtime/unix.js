@@ -236,7 +236,6 @@ function unix_readdir(dir_handle) {
 
 //Provides: unix_closedir
 //Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
-//Requires: fs_node_supported, caml_failwith
 function unix_closedir(dir_handle) {
   try {
       dir_handle.pointer.closeSync();
