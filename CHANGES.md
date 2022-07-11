@@ -12,6 +12,7 @@
 * Runtime: Implement Gc.finalise_last
 * Runtime: Implement buffer for in_channels
 * Lib: wheel event binding
+* Test: track external used in the stdlib and unix
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
