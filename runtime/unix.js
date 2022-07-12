@@ -203,3 +203,80 @@ function unix_getpwuid(unit) {
 function unix_has_symlink(unit) {
   return fs_node_supported()?1:0
 }
+
+//Provides: unix_opendir
+//Requires: resolve_fs_device, caml_failwith
+function unix_opendir(path) {
+  var root = resolve_fs_device(path);
+  if (!root.device.opendir) {
+    caml_failwith("unix_opendir: not implemented");
+  }
+  var dir_handle = root.device.opendir(root.rest, /* raise Unix_error */ true);
+  return { pointer : dir_handle, path: path }
+}
+
+//Provides: unix_readdir
+//Requires: caml_raise_end_of_file
+//Requires: caml_string_of_jsstring
+//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
+function unix_readdir(dir_handle) {
+  var entry;
+  try {
+      entry = dir_handle.pointer.readSync();
+  } catch (e) {
+      var unix_error = caml_named_value('Unix.Unix_error');
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "readdir", dir_handle.path));
+  }
+  if (entry === null) {
+      caml_raise_end_of_file();
+  } else {
+      return caml_string_of_jsstring(entry.name);
+  }
+}
+
+//Provides: unix_closedir
+//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
+function unix_closedir(dir_handle) {
+  try {
+      dir_handle.pointer.closeSync();
+  } catch (e) {
+      var unix_error = caml_named_value('Unix.Unix_error');
+      caml_raise_with_args(unix_error, make_unix_err_args("EBADF", "closedir", dir_handle.path));
+  }
+}
+
+//Provides: unix_rewinddir
+//Requires: unix_closedir, unix_opendir
+function unix_rewinddir(dir_handle) {
+  unix_closedir(dir_handle);
+  var new_dir_handle = unix_opendir(dir_handle.path);
+  dir_handle.pointer = new_dir_handle.pointer;
+  return 0;
+}
+
+//Provides: win_findfirst
+//Requires: caml_jsstring_of_string, caml_string_of_jsstring
+//Requires: unix_opendir, unix_readdir
+function win_findfirst(path) {
+  // The Windows code adds this glob to the path, so we need to remove it
+  var path_js = caml_jsstring_of_string(path);
+  path_js = path_js.replace(/(^|[\\\/])\*\.\*$/, "");
+  path = caml_string_of_jsstring(path_js);
+  // *.* is now stripped
+  var dir_handle = unix_opendir(path);
+  var first_entry = unix_readdir(dir_handle);
+  // The Windows bindings type dir_handle as an `int` but it's not in JS
+  return [0, first_entry, dir_handle];
+}
+
+//Provides: win_findnext
+//Requires: unix_readdir
+function win_findnext(dir_handle) {
+  return unix_readdir(dir_handle);
+}
+
+//Provides: win_findclose
+//Requires: unix_closedir
+function win_findclose(dir_handle) {
+  return unix_closedir(dir_handle);
+}

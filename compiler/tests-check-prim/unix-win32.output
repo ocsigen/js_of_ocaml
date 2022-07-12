@@ -98,9 +98,6 @@ unix_utimes
 unix_write
 win_clear_close_on_exec
 win_create_process
-win_findclose
-win_findfirst
-win_findnext
 win_inchannel_of_filedescr
 win_outchannel_of_filedescr
 win_set_close_on_exec
@@ -285,4 +282,5 @@ caml_spacetime_only_works_for_native_code
 From +unix.js:
 unix_getpwuid
 unix_getuid
+unix_rewinddir
 
