@@ -34,11 +34,12 @@ function caml_sys_close(fd) {
 
 //Provides: caml_sys_open
 //Requires: caml_raise_sys_error
-//Requires: MlFakeFd_out, MlNodeFd
+//Requires: MlFakeFd_out
 //Requires: resolve_fs_device
 //Requires: caml_jsbytes_of_string
 //Requires: fs_node_supported
 //Requires: caml_sys_fds
+//Requires: caml_sys_open_for_node
 function caml_sys_open_internal(file,idx) {
   if(idx == undefined){
     idx = caml_sys_fds.length;
@@ -73,14 +74,7 @@ function caml_sys_open (name, flags, _perms) {
 (function () {
   function file(fd, flags) {
     if(fs_node_supported()) {
-      if(flags.name) {
-        try {
-          var fs = require("fs");
-          var fd2 = fs.openSync(flags.name, "rs");
-          return new MlNodeFd(fd2, flags);
-        } catch(e) {  }
-      }
-      return new MlNodeFd(fd, flags);
+      return caml_sys_open_for_node(fd, flags);
     }
     else
       return new MlFakeFd_out(fd, flags)

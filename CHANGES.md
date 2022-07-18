@@ -14,6 +14,7 @@
 * Lib: wheel event binding
 * Test: track external used in the stdlib and unix
 * Runtime: add support for unix_opendir, unix_readdir, unix_closedir, win_findfirst, win_findnext, win_findclose
+* Runtime: Dont use require when target-env is browser
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
