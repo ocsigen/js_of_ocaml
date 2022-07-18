@@ -321,7 +321,7 @@ let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
            "%s -no-check-prims %s %s %s -o %s"
            ocamlc
            (if debug then "-g" else "")
-           (if unix then "unix.cma" else "")
+           (if unix then "-I +unix unix.cma" else "")
            file
            out_file)
   in
