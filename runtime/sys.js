@@ -186,13 +186,24 @@ function caml_sys_executable_name(a){
 //Requires: caml_jsstring_of_string
 function caml_sys_system_command(cmd){
   var cmd = caml_jsstring_of_string(cmd);
-  if (typeof require != "undefined"
-      && require('child_process')
-      && require('child_process').execSync) {
-    try {require('child_process').execSync(cmd,{stdio: 'inherit'}); return 0}
-    catch (e) {return 1}
+  if (typeof require != "undefined"){
+    var child_process = require('child_process');
+    if(child_process && child_process.execSync)
+      try {
+        child_process.execSync(cmd,{stdio: 'inherit'});
+        return 0
+      } catch (e) {
+        return 1
+      }
   }
   else return 127;
+}
+
+//Provides: caml_sys_system_command
+//Requires: caml_jsstring_of_string
+//If: browser
+function caml_sys_system_command(cmd){
+  return 127;
 }
 
 //Provides: caml_sys_time mutable

@@ -90,6 +90,8 @@
    compile
    --pretty
    --Werror
+   --target-env
+   browser
    -I
    .
    --file

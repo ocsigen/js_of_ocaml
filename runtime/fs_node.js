@@ -297,3 +297,23 @@ MlNodeFd.prototype.close = function(){
 //If: browser
 function MlNodeFd(){
 }
+
+
+//Provides: caml_sys_open_for_node
+//Requires: MlNodeFd
+function caml_sys_open_for_node(fd, flags){
+  if(flags.name) {
+    try {
+      var fs = require("fs");
+      var fd2 = fs.openSync(flags.name, "rs");
+      return new MlNodeFd(fd2, flags);
+    } catch(e) {  }
+  }
+  return new MlNodeFd(fd, flags);
+}
+
+//Provides: caml_sys_open_for_node
+//If: browser
+function caml_sys_open_for_node(fd, flags){
+  return null;
+}

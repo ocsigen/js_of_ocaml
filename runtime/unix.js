@@ -65,6 +65,13 @@ function unix_isatty(fileDescriptor) {
   }
 }
 
+
+//Provides: unix_isatty
+//If: browser
+function unix_isatty(fileDescriptor) {
+  return 0;
+}
+
 //Provides: make_unix_err_args
 //Requires: caml_string_of_jsstring
 var unix_error = [
