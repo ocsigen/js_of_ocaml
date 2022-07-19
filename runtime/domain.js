@@ -58,19 +58,28 @@ function caml_ml_domain_set_name(_name) {
 function caml_recommended_domain_count(unit) { return 1 }
 
 
+//Provides: caml_domain_id
+var caml_domain_id = 0;
+
 //Provides: caml_domain_spawn
 //Requires: caml_ml_mutex_unlock
-var caml_domain_idx = 1
+//Requires: caml_domain_id
+var caml_domain_latest_idx = 1
 function caml_domain_spawn(f,mutex){
+    var id = caml_domain_latest_idx++;
+    var old = caml_domain_id;
+    caml_domain_id = id;
     f(0);
+    caml_domain_id = old;
     caml_ml_mutex_unlock(mutex);
-    return caml_domain_idx++;
+    return id;
 }
 
 
 //Provides: caml_ml_domain_id
+//Requires: caml_domain_id
 function caml_ml_domain_id(unit){
-    return 0;
+    return caml_domain_id;
 }
 
 
