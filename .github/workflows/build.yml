@@ -34,15 +34,15 @@ jobs:
           - true
         include:
           - os: ubuntu-latest
-            ocaml-compiler: 5.0.0~alpha0
+            ocaml-compiler: ocaml-variants.5.0.0+trunk
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: 5.0.0~alpha0
+            ocaml-compiler: ocaml-variants.5.0.0+trunk
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: 5.0.0~alpha0
+            ocaml-compiler: ocaml-variants.5.0.0+trunk
             skip-test: false
             skip-doc: true
 
