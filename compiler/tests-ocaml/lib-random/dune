@@ -36,4 +36,3 @@
  (deps testvectors.reference testvectors.referencejs)
  (action
   (diff testvectors.reference testvectors.referencejs)))
-

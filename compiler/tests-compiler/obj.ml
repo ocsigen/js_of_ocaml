@@ -42,7 +42,8 @@ let%expect_test "static eval of string get" =
   print_fun_decl program (Some "my_set_field");
   print_fun_decl program (Some "my_new_block");
   print_fun_decl program (Some "my_dup");
-  [%expect{|
+  [%expect
+    {|
     function my_is_block(x){return caml_call1(Stdlib_Obj[1],x)}
     function my_is_int(x){return typeof x === "number"?1:0}
     function my_tag(x){return runtime.caml_obj_tag([0,x,0])}

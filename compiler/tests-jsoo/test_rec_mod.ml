@@ -56,14 +56,11 @@ end
 
 let%expect_test _ =
   (try print_int (M1.f 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| 2 |}];
+  [%expect {| 2 |}];
   (try print_int (M1.g 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| 2 |}];
+  [%expect {| 2 |}];
   (try print_int (M1.h 3) with e -> print_endline @@ Printexc.to_string e);
-  [%expect
-    {| 2 |}]
+  [%expect {| 2 |}]
 
 module rec Odd : sig
   val odd : int -> bool
