@@ -53,3 +53,6 @@ function caml_ml_domain_unique_token(unit) {
 function caml_ml_domain_set_name(_name) {
   return 0;
 }
+
+//Provides: caml_recommended_domain_count
+function caml_recommended_domain_count(unit) { return 1 }
