@@ -14,7 +14,7 @@ function caml_ml_mutex_new(unit) {
 //Requires: caml_failwith
 function caml_ml_mutex_lock(t) {
   if(t.locked)
-    caml_failwith("Mutex.lock is not implemented");
+    caml_failwith("Mutex.lock: mutex already locked. Cannot wait.");
   else t.locked = true;
   return 0;
 }

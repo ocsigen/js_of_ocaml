@@ -7,9 +7,12 @@ let%expect_test _ =
   let id = Domain.self () in
   Printf.printf "d_id: %d\n" (d_id :> int);
   Printf.printf "self id: %d\n" (id :> int);
+  let res = Domain.join d in
+  Printf.printf "result: %d\n" res;
   [%expect {|
     d_id: 2
-    self id: 0 |}]
+    self id: 0
+    result: 3 |}]
 
 type _ Effect.t += A : int Effect.t
 

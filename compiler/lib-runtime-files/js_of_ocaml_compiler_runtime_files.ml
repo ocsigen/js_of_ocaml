@@ -55,6 +55,7 @@ let runtime =
     ; domain
     ; prng
     ; sync
+    ; effect
     ]
 
 include Files

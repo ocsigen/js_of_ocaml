@@ -56,3 +56,25 @@ function caml_ml_domain_set_name(_name) {
 
 //Provides: caml_recommended_domain_count
 function caml_recommended_domain_count(unit) { return 1 }
+
+
+//Provides: caml_domain_spawn
+//Requires: caml_ml_mutex_unlock
+var caml_domain_idx = 1
+function caml_domain_spawn(f,mutex){
+    f(0);
+    caml_ml_mutex_unlock(mutex);
+    return caml_domain_idx++;
+}
+
+
+//Provides: caml_ml_domain_id
+function caml_ml_domain_id(unit){
+    return 0;
+}
+
+
+//Provides: caml_ml_domain_cpu_relax
+function caml_ml_domain_cpu_relax(unit){
+    return 0;
+}
