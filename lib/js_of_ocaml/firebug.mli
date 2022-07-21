@@ -20,8 +20,7 @@
 
 (** Firebug API (debugging console).
 
-@see <http://getfirebug.com/wiki/index.php/Console_API>
-the Firebug console API
+The Firebug console API
 *)
 
 open Js
