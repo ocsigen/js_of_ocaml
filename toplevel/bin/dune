@@ -3,7 +3,6 @@
  (public_names jsoo_mkcmis jsoo_mktop jsoo_listunits)
  (package js_of_ocaml-toplevel)
  (libraries
-  bytes
   js_of_ocaml-compiler
   js_of_ocaml-compiler.findlib-support
   js_of_ocaml-compiler.runtime-files))

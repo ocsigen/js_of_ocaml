@@ -2,7 +2,6 @@
  (name js_of_ocaml_deriving)
  (public_name js_of_ocaml.deriving)
  (synopsis "Runtime library for the class Json.")
- (libraries bytes)
  (wrapped false))
 
 (ocamllex deriving_Json_lexer)
