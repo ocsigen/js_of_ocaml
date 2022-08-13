@@ -898,7 +898,7 @@ struct
         PP.end_group f
     | Do_while_statement (((Block _, _) as s), e) ->
         PP.start_group f 0;
-        PP.string f "do";
+        PP.string f "{do";
         PP.break1 f;
         PP.start_group f 0;
         statement f s;
@@ -911,11 +911,12 @@ struct
         expression 0 f e;
         PP.string f ")";
         last_semi ();
+        PP.string f "}";
         PP.end_group f;
         PP.end_group f
     | Do_while_statement (s, e) ->
         PP.start_group f 0;
-        PP.string f "do";
+        PP.string f "{do";
         PP.space ~indent:1 f;
         PP.start_group f 0;
         statement f s;
@@ -928,6 +929,7 @@ struct
         expression 0 f e;
         PP.string f ")";
         last_semi ();
+        PP.string f "}";
         PP.end_group f;
         PP.end_group f
     | For_statement (e1, e2, e3, s) ->
