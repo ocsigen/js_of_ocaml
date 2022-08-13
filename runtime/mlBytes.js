@@ -173,6 +173,7 @@ function jsoo_is_ascii (s) {
 }
 
 //Provides: caml_bytes_unsafe_get mutable
+//Weakdef
 function caml_bytes_unsafe_get (s, i) {
   switch (s.t & 6) {
   default: /* PARTIAL */
@@ -185,6 +186,7 @@ function caml_bytes_unsafe_get (s, i) {
 }
 
 //Provides: caml_bytes_unsafe_set
+//Weakdef
 //Requires: caml_convert_bytes_to_array
 function caml_bytes_unsafe_set (s, i, c) {
   // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
@@ -450,6 +452,7 @@ function caml_convert_string_to_bytes (s) {
 }
 
 //Provides: caml_convert_bytes_to_array
+//Weakdef
 function caml_convert_bytes_to_array (s) {
   /* Assumes not ARRAY */
   var a = new Uint8Array(s.l);
@@ -582,6 +585,7 @@ function caml_bytes_greaterthan(s1, s2) {
 }
 
 //Provides: caml_fill_bytes
+//Weakdef
 //Requires: caml_str_repeat, caml_convert_bytes_to_array
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
@@ -606,6 +610,7 @@ function caml_fill_bytes(s, i, l, c) {
 var caml_fill_string = caml_fill_bytes
 
 //Provides: caml_blit_bytes
+//Weakdef
 //Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array
 function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len == 0) return 0;
