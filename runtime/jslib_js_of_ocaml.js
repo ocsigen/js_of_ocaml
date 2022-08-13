@@ -53,6 +53,8 @@ function caml_js_html_entities(s) {
 }
 
 //Provides: caml_js_get_console const
+//Weakdef
+// On the Windows Scripting Engine, [console] doesn't exist.
 function caml_js_get_console () {
   var c = console;
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
