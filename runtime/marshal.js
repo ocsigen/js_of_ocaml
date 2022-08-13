@@ -462,6 +462,7 @@ var caml_legacy_custom_code = true
 //Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
 //Requires: MlObjectTable, caml_list_to_js_array, caml_legacy_custom_code, caml_custom_ops
 //Requires: caml_invalid_argument,caml_string_of_jsbytes
+//Requires: caml_js_get_console
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -505,7 +506,7 @@ var caml_output_val = function (){
     /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
-      console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
+      caml_js_get_console().warn("in caml_output_val: flag Marshal.Closures is not supported.");
 
     var writer = new Writer ();
     var stack = [];

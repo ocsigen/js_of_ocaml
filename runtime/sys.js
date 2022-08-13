@@ -82,6 +82,7 @@ function caml_format_exception(exn){
 
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception
+//Requires: caml_js_get_console
 function caml_fatal_uncaught_exception(err){
   if(err instanceof Array && (err[0] == 0 || err[0] == 248)) {
     var handler = caml_named_value("Printexc.handle_uncaught_exception");
@@ -90,7 +91,7 @@ function caml_fatal_uncaught_exception(err){
       var msg = caml_format_exception(err);
       var at_exit = caml_named_value("Pervasives.do_at_exit");
       if(at_exit) { at_exit(0) }
-      console.error("Fatal error: exception " + msg + "\n");
+      caml_js_get_console().error("Fatal error: exception " + msg + "\n");
     }
   }
   else {

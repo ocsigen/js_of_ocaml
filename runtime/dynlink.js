@@ -22,9 +22,10 @@ var current_libs = [0, globalThis]
 //Provides: caml_dynlink_open_lib
 //Requires: current_libs, caml_failwith
 //Requires: caml_jsstring_of_string
+//Requires: caml_js_get_console
 function caml_dynlink_open_lib (_mode,file) {
   var name = caml_jsstring_of_string(file);
-  console.log("Dynlink: try to open ", name);
+  caml_js_get_console().log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
   current_libs.push({});
   return current_libs.length;
@@ -40,9 +41,10 @@ function caml_dynlink_close_lib (idx) {
 //Provides: caml_dynlink_lookup_symbol
 //Requires: current_libs
 //Requires: caml_jsstring_of_string
+//Requires: caml_js_get_console
 function caml_dynlink_lookup_symbol (idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
-  console.log("Dynlink: look for symbol ", name);
+  caml_js_get_console().log("Dynlink: look for symbol ", name);
   if(current_libs[idx] && current_libs[idx][name])
     return current_libs[idx][name];
   return 0;

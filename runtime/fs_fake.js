@@ -299,9 +299,11 @@ MlFakeFile.prototype.read = function(offset,buf,pos,len){
 //Provides: MlFakeFd_out
 //Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_array
 //Requires: caml_raise_sys_error
+//Requires: caml_js_get_console
 function MlFakeFd_out(fd,flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
   this.log = (function (s) { return 0 });
+  var console = caml_js_get_console();
   if(fd == 1 && typeof console.log == "function")
     this.log = console.log;
   else if(fd == 2 && typeof console.error == "function")

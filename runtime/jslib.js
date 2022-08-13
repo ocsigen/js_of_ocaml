@@ -140,12 +140,13 @@ function caml_list_to_js_array(l){
 
 //Provides: caml_js_var mutable (const)
 //Requires: caml_jsstring_of_string
+//Requires: caml_js_get_console
 function caml_js_var(x) {
   var x = caml_jsstring_of_string(x);
   //Checks that x has the form ident[.ident]*
   if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
-    console.error("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
-    //console.error("Js.Unsafe.eval_string")
+    caml_js_get_console().error("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
+    //caml_js_get_console().error("Js.Unsafe.eval_string")
   }
   return eval(x);
 }
@@ -295,14 +296,16 @@ function caml_js_eval_string (s) {return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_expr (const)
 //Requires: caml_jsstring_of_string
+//Requires: caml_js_get_console
 function caml_js_expr(s) {
-  console.error("caml_js_expr: fallback to runtime evaluation\n");
+  caml_js_get_console().error("caml_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_pure_js_expr const (const)
 //Requires: caml_jsstring_of_string
+//Requires: caml_js_get_console
 function caml_pure_js_expr (s){
-  console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
+  caml_js_get_console().error("caml_pure_js_expr: fallback to runtime evaluation\n");
   return eval(caml_jsstring_of_string(s));}
 
 //Provides: caml_js_object (object_literal)
