@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (modes js)
+ (libraries js_of_ocaml-wscript)
+ (preprocess (pps js_of_ocaml-ppx)))
