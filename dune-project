@@ -119,6 +119,17 @@
 ))
 
 (package
+ (name js_of_ocaml-wscript)
+ (synopsis "Compiler from OCaml bytecode to JavaScript")
+ (description
+  "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
+ (depends
+  (ocaml (>= 4.04))
+  (js_of_ocaml (= :version))
+  (js_of_ocaml-ppx (= :version))
+))
+
+(package
  (name js_of_ocaml)
  (synopsis "Compiler from OCaml bytecode to JavaScript")
  (description
