@@ -50,6 +50,7 @@ function caml_memprof_set(_control) {
 function caml_final_register () { return 0; }
 
 //Provides: caml_final_register_called_without_value const
+//Weakdef
 var all_finalizers = new globalThis.Set()
 function caml_final_register_called_without_value (cb, a) {
   if(globalThis.FinalizationRegistry && a instanceof Object) {

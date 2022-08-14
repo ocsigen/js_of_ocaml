@@ -1,5 +1,5 @@
 (library
  (name js_of_ocaml_wscript)
  (public_name js_of_ocaml-wscript)
- (js_of_ocaml (javascript_files "wscript.js"))
+ (js_of_ocaml (javascript_files "wscript.js" "gc.js"))
  (preprocess (pps js_of_ocaml-ppx)))
