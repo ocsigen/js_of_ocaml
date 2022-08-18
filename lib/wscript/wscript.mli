@@ -6,4 +6,4 @@ type obj
 
 val obj : (Js.js_string Js.t -> obj Js.t) Js.constr
 
-val set_prop : 'a -> 'b -> 'c -> 'd -> unit
+val set_prop : 'a -> string -> Js.Unsafe.any array -> 'd -> unit
