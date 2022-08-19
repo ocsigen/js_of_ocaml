@@ -8,6 +8,7 @@ let wut () =
   Printf.printf "%d\n" (Typed_array.unsafe_get ta 0)
 
 let () =
+  Wscript.(echo (String "direct string"));
   Printf.printf "Hello, world!\n";
   Printf.printf "What's your name? %!";
   Printf.printf "Hi %s, I'm an OCaml program!\n" (Js.to_string (Wscript.stdin##readLine));
