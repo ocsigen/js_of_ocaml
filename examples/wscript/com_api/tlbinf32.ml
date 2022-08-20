@@ -27,4 +27,4 @@ class typeLibInfo js = object
   method name : string = Js.to_string (Js.Unsafe.get js "Name")
 end
 
-let typeLibInfo () = new typeLibInfo (Js.Unsafe.new_obj Wscript.obj [|Js.(Unsafe.inject (string "TLI.TypeLibInfo"))|])
+let typeLibInfo () = new typeLibInfo (Js.Unsafe.new_obj Com.obj [|Js.(Unsafe.inject (string "TLI.TypeLibInfo"))|])
