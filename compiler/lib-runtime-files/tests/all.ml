@@ -50,6 +50,7 @@ let%expect_test _ =
     +sync.js
     +sys.js
     +toplevel.js
+    +typedarray.js
     +unix.js
     +weak.js |}];
   printl runtime;
@@ -89,6 +90,7 @@ let%expect_test _ =
     +str.js
     +sync.js
     +sys.js
+    +typedarray.js
     +unix.js
     +weak.js |}];
   printl extra;

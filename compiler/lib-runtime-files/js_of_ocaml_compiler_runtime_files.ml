@@ -50,6 +50,7 @@ let runtime =
     ; stdlib
     ; sys
     ; str
+    ; typedarray
     ; unix
     ; weak
     ; domain

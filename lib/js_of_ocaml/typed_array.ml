@@ -174,12 +174,11 @@ let float64Array_fromBuffer = float64Array
 
 let float64Array_inBuffer = float64Array
 
-let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
- fun a i v -> array_set (Unsafe.coerce a) i v
+external set : ('a, 'b) typedArray t -> int -> 'a -> unit = "caml_typedarray_set"
 
-let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
+external get : ('a, 'b) typedArray t -> int -> 'a optdef = "caml_typedarray_get"
 
-let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
+external unsafe_get : ('a, 'b) typedArray t -> int -> 'a = "caml_typedarray_get"
 
 class type dataView =
   object

@@ -66,16 +66,16 @@ function caml_str_repeat(n, s) {
 }
 
 //Provides: caml_subarray_to_jsbytes
-//Weakdef
-// Pre ECMAScript 5, [apply] would not support array-like object.
-// In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
-// fail here. Mark the primitive as Weakdef, so that people can override it easily.
+//Requires: caml_typedarray_copy, caml_typedarray_sub
 function caml_subarray_to_jsbytes (a, i, len) {
   var f = String.fromCharCode;
-  if (i == 0 && len <= 4096 && len == a.length) return f.apply (null, a);
+  if (i == 0 && len <= 4096 && len == a.length)
+    // Pre ECMAScript 5, [apply] would not support array-like object,
+    // so we pass a copy.
+    return f.apply (null, caml_typedarray_copy(a));
   var s = "";
   for (; 0 < len; i += 1024,len-=1024)
-    s += f.apply (null, a.slice(i,i + Math.min(len, 1024)));
+    s += f.apply (null, caml_typedarray_sub(a,i, Math.min(len, 1024)));
   return s;
 }
 
@@ -173,7 +173,7 @@ function jsoo_is_ascii (s) {
 }
 
 //Provides: caml_bytes_unsafe_get mutable
-//Weakdef
+//Requires: caml_typedarray_get
 function caml_bytes_unsafe_get (s, i) {
   switch (s.t & 6) {
   default: /* PARTIAL */
@@ -181,13 +181,12 @@ function caml_bytes_unsafe_get (s, i) {
   case 0: /* BYTES */
     return s.c.charCodeAt(i);
   case 4: /* ARRAY */
-    return s.c[i]
+    return caml_typedarray_get(s.c, i)
   }
 }
 
 //Provides: caml_bytes_unsafe_set
-//Weakdef
-//Requires: caml_convert_bytes_to_array
+//Requires: caml_convert_bytes_to_array, caml_typedarray_set
 function caml_bytes_unsafe_set (s, i, c) {
   // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
   c &= 0xff;
@@ -199,7 +198,7 @@ function caml_bytes_unsafe_set (s, i, c) {
     }
     caml_convert_bytes_to_array (s);
   }
-  s.c[i] = c;
+  caml_typedarray_set(s.c, i, c);
   return 0;
 }
 
@@ -452,13 +451,13 @@ function caml_convert_string_to_bytes (s) {
 }
 
 //Provides: caml_convert_bytes_to_array
-//Weakdef
+//Requires: caml_typedarray_set
 function caml_convert_bytes_to_array (s) {
   /* Assumes not ARRAY */
   var a = new Uint8Array(s.l);
   var b = s.c, l = b.length, i = 0;
-  for (; i < l; i++) a[i] = b.charCodeAt(i);
-  for (l = s.l; i < l; i++) a[i] = 0;
+  for (; i < l; i++) caml_typedarray_set(a, i, b.charCodeAt(i));
+  for (l = s.l; i < l; i++) caml_typedarray_set(a, i, 0);
   s.c = a;
   s.t = 4; /* ARRAY */
   return a;
@@ -585,8 +584,7 @@ function caml_bytes_greaterthan(s1, s2) {
 }
 
 //Provides: caml_fill_bytes
-//Weakdef
-//Requires: caml_str_repeat, caml_convert_bytes_to_array
+//Requires: caml_str_repeat, caml_convert_bytes_to_array, caml_typedarray_set
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     if (i == 0 && (l >= s.l || (s.t == 2 /* PARTIAL */ && l >= s.c.length))) {
@@ -599,7 +597,7 @@ function caml_fill_bytes(s, i, l, c) {
       }
     } else {
       if (s.t != 4 /* ARRAY */) caml_convert_bytes_to_array(s);
-      for (l += i; i < l; i++) s.c[i] = c;
+      for (l += i; i < l; i++) caml_typedarray_set(s.c, i, c);
     }
   }
   return 0;
@@ -610,8 +608,7 @@ function caml_fill_bytes(s, i, l, c) {
 var caml_fill_string = caml_fill_bytes
 
 //Provides: caml_blit_bytes
-//Weakdef
-//Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array
+//Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array, caml_typedarray_set, caml_typedarray_get
 function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len == 0) return 0;
   if ((i2 == 0) &&
@@ -630,14 +627,14 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
     var c1 = s1.c, c2 = s2.c;
     if (s1.t == 4 /* ARRAY */) {
       if (i2 <= i1) {
-        for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
+        for (var i = 0; i < len; i++) caml_typedarray_set(c2, i2 + i, caml_typedarray_get(c1, i1 + i));
       } else {
-        for (var i = len - 1; i >= 0; i--) c2 [i2 + i] = c1 [i1 + i];
+        for (var i = len - 1; i >= 0; i--) caml_typedarray_set(c2, i2 + i, caml_typedarray_get(c1, i1 + i));
       }
     } else {
       var l = Math.min (len, c1.length - i1);
-      for (var i = 0; i < l; i++) c2 [i2 + i] = c1.charCodeAt(i1 + i);
-      for (; i < len; i++) c2 [i2 + i] = 0;
+      for (var i = 0; i < l; i++) caml_typedarray_set(c2, i2 + i, c1.charCodeAt(i1 + i));
+      for (; i < len; i++) caml_typedarray_set(c2, i2 + i, 0);
     }
   }
   return 0;

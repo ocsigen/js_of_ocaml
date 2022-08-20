@@ -15,30 +15,26 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: caml_js_get_console const
-function caml_js_get_console(){
-  var f = function(x) {globalThis.WScript.StdOut.Write(x); return 0;};
-  return {
-    log: f,
-    debug: f,
-    info: f,
-    warn: f,
-    error: function(x) {globalThis.WScript.StdErr.Write(x); return 0;}
-  };
+//Provides: caml_typedarray_get const
+//Weakdef
+function caml_typedarray_get(a, i) {
+  return a[i];
 }
 
-//Provides: caml_js_set_prop (mutable, const, const, const)
-//Requires: caml_jsstring_of_string
-function caml_js_set_prop(o, p, a, v) {
-  p = caml_jsstring_of_string(p);
-  switch (a.length) {
-  case 2: o[p](a[1]) = v; break;
-  case 3: o[p](a[1],a[2]) = v; break;
-  case 4: o[p](a[1],a[2],a[3]) = v; break;
-  case 5: o[p](a[1],a[2],a[3],a[4]) = v; break;
-  case 6: o[p](a[1],a[2],a[3],a[4],a[5]) = v; break;
-  case 7: o[p](a[1],a[2],a[3],a[4],a[5],a[6]) = v; break;
-  case 8: o[p](a[1],a[2],a[3],a[4],a[5],a[6],a[7]) = v; break;
-  }
-  return 0;
+//Provides: caml_typedarray_set
+//Weakdef
+function caml_typedarray_set(a, i, x) {
+  a[i] = x;
+}
+
+//Provides: caml_typedarray_sub const
+//Weakdef
+function caml_typedarray_sub (a,i,l) {
+    return a.slice(i, i+l);
+}
+
+//Provides: caml_typedarray_copy const
+//Requires: caml_typedarray_sub
+function caml_typedarray_copy (a) {
+  return caml_typedarray_sub(a, 0, a.length);
 }

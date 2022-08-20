@@ -20,6 +20,14 @@ void caml_js_on_ie () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
   exit(1);
 }
+void caml_typedarray_get () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_typedarray_get!\n");
+  exit(1);
+}
+void caml_typedarray_set () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_typedarray_set!\n");
+  exit(1);
+}
 void caml_xmlhttprequest_create () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_xmlhttprequest_create!\n");
   exit(1);
