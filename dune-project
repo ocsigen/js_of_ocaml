@@ -125,8 +125,8 @@
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
   (ocaml (>= 4.04))
-  (js_of_ocaml (= :version))
-  (js_of_ocaml-ppx (= :version))
+  js_of_ocaml
+  js_of_ocaml-ppx
 ))
 
 (package
