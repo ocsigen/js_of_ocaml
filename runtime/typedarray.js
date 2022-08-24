@@ -35,6 +35,7 @@ function caml_typedarray_sub (a,i,l) {
 
 //Provides: caml_typedarray_copy const
 //Requires: caml_typedarray_sub
+//Weakdef
 function caml_typedarray_copy (a) {
   return caml_typedarray_sub(a, 0, a.length);
 }

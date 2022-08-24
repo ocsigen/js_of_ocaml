@@ -67,6 +67,7 @@ function caml_str_repeat(n, s) {
 
 //Provides: caml_subarray_to_jsbytes
 //Requires: caml_typedarray_copy, caml_typedarray_sub
+//Weakdef
 function caml_subarray_to_jsbytes (a, i, len) {
   var f = String.fromCharCode;
   if (i == 0 && len <= 4096 && len == a.length)
@@ -174,6 +175,7 @@ function jsoo_is_ascii (s) {
 
 //Provides: caml_bytes_unsafe_get mutable
 //Requires: caml_typedarray_get
+//Weakdef
 function caml_bytes_unsafe_get (s, i) {
   switch (s.t & 6) {
   default: /* PARTIAL */
@@ -187,6 +189,7 @@ function caml_bytes_unsafe_get (s, i) {
 
 //Provides: caml_bytes_unsafe_set
 //Requires: caml_convert_bytes_to_array, caml_typedarray_set
+//Weakdef
 function caml_bytes_unsafe_set (s, i, c) {
   // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
   c &= 0xff;
@@ -452,6 +455,7 @@ function caml_convert_string_to_bytes (s) {
 
 //Provides: caml_convert_bytes_to_array
 //Requires: caml_typedarray_set
+//Weakdef
 function caml_convert_bytes_to_array (s) {
   /* Assumes not ARRAY */
   var a = new Uint8Array(s.l);
@@ -585,6 +589,7 @@ function caml_bytes_greaterthan(s1, s2) {
 
 //Provides: caml_fill_bytes
 //Requires: caml_str_repeat, caml_convert_bytes_to_array, caml_typedarray_set
+//Weakdef
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     if (i == 0 && (l >= s.l || (s.t == 2 /* PARTIAL */ && l >= s.c.length))) {
@@ -609,6 +614,7 @@ var caml_fill_string = caml_fill_bytes
 
 //Provides: caml_blit_bytes
 //Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array, caml_typedarray_set, caml_typedarray_get
+//Weakdef
 function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len == 0) return 0;
   if ((i2 == 0) &&
