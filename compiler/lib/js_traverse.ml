@@ -331,7 +331,7 @@ class type freevar =
     method get_use : Code.Var.Set.t
   end
 
-class free =
+class free propagate_exn =
   object (m : 'test)
     inherit map as super
 
@@ -475,9 +475,14 @@ class free =
                 (* we need to propagate both def and use .. *)
                 (* .. except 'id' because its scope is limited to 'block' *)
                 let clean set sets =
-                  match id with
-                  | S { name; _ } -> set, StringSet.remove name sets
-                  | V i -> S.remove i set, sets
+                  if propagate_exn then
+                    (* no-op for WScript: the variable with the exception is *)
+                    (* visible across the whole function block *)
+                    set, sets
+                  else
+                    match id with
+                    | S { name; _ } -> set, StringSet.remove name sets
+                    | V i -> S.remove i set, sets
                 in
                 let def, def_name = clean tbody#state.def tbody#state.def_name in
                 let use, use_name = clean tbody#state.use tbody#state.use_name in
@@ -507,9 +512,9 @@ class free =
       | _ -> super#statement x
   end
 
-class rename_variable keeps =
+class rename_variable keeps propagate_exn =
   object
-    inherit free as super
+    inherit free propagate_exn as super
 
     val mutable sub_ = new subst (fun x -> x)
 
@@ -566,9 +571,9 @@ class rename_variable keeps =
       | Statement _ -> x
   end
 
-class compact_vardecl =
+class compact_vardecl propagate_exn =
   object (m)
-    inherit free as super
+    inherit free propagate_exn as super
 
     val mutable exc_ = IdentSet.empty
 

@@ -93,13 +93,14 @@ class type freevar =
     method get_use : Code.Var.Set.t
   end
 
-class free : freevar
+class free : bool -> freevar
 
-class rename_variable : StringSet.t -> freevar
+class rename_variable : StringSet.t -> bool -> freevar
 
 class share_constant : mapper
 
 class compact_vardecl :
+  bool ->
   object ('a)
     inherit free
 

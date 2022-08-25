@@ -33,6 +33,8 @@ module type Strategy = sig
   val record_block : t -> Js_traverse.t -> catch:bool -> Javascript.ident list -> unit
 
   val allocate_variables : t -> count:int Javascript.IdentMap.t -> string array
+
+  val propagate_exn : bool
 end
 
 module Min : Strategy = struct
@@ -273,6 +275,8 @@ while compiling the OCaml toplevel:
     let offset = if catch then 5 else 0 in
     let all = S.union scope.Js_traverse.def scope.Js_traverse.use in
     add_constraints state all ~offset params
+
+  let propagate_exn = true
 end
 
 module Preserve : Strategy = struct
@@ -345,11 +349,13 @@ module Preserve : Strategy = struct
         in
         ());
     names
+
+  let propagate_exn = false
 end
 
-class traverse record_block =
+class traverse record_block propagate_exn =
   object (m)
-    inherit Js_traverse.free as super
+    inherit Js_traverse.free propagate_exn as super
 
     method! block ?(catch = false) params =
       record_block m#state ~catch params;
@@ -359,7 +365,7 @@ class traverse record_block =
 let program' (module Strategy : Strategy) p =
   let nv = Var.count () in
   let state = Strategy.create nv in
-  let mapper = new traverse (Strategy.record_block state) in
+  let mapper = new traverse (Strategy.record_block state) Strategy.propagate_exn in
   let p = mapper#program p in
   mapper#block [];
   if S.cardinal mapper#get_free <> 0
