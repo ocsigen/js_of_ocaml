@@ -250,7 +250,7 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
   else
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
-    let traverse = new Js_traverse.free in
+    let traverse = new Js_traverse.free true in
     let js = traverse#program js in
     let free = traverse#get_free_name in
     let prim = Primitive.get_external () in
@@ -289,7 +289,7 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
 let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
-  let traverse = new Js_traverse.free in
+  let traverse = new Js_traverse.free true in
   let js = traverse#program js in
   let free = traverse#get_free_name in
   let prim = Primitive.get_external () in
@@ -317,7 +317,7 @@ let check_js js =
 let coloring js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Coloring...@.";
-  let traverse = new Js_traverse.free in
+  let traverse = new Js_traverse.free true in
   let js = traverse#program js in
   let free = traverse#get_free_name in
   Var_printer.add_reserved (StringSet.elements free);
@@ -350,7 +350,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
     if Config.Flag.compact_vardecl ()
     then (
       let t2 = Timer.make () in
-      let js = (new Js_traverse.compact_vardecl)#program js in
+      let js = (new Js_traverse.compact_vardecl true)#program js in
       if times () then Format.eprintf "    compact var decl: %a@." Timer.print t2;
       js)
     else js
@@ -362,7 +362,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
     in
     let expr e = J.Statement (J.Expression_statement e), J.N in
     let freenames =
-      let o = new Js_traverse.free in
+      let o = new Js_traverse.free true in
       let (_ : J.program) = o#program js in
       o#get_free_name
     in
@@ -475,7 +475,7 @@ if (typeof module === 'object' && module.exports) {
     then (
       let t5 = Timer.make () in
       let keep = StringSet.empty in
-      let js = (new Js_traverse.rename_variable keep)#program js in
+      let js = (new Js_traverse.rename_variable keep true)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
       js)
     else js

@@ -68,7 +68,7 @@ end
 module Check = struct
   class check_and_warn name pi =
     object
-      inherit Js_traverse.free as super
+      inherit Js_traverse.free true as super
 
       method merge_info from =
         let def = from#get_def_name in
@@ -92,7 +92,7 @@ module Check = struct
     let free =
       if Config.Flag.warn_unused ()
       then new check_and_warn name pi
-      else new Js_traverse.free
+      else new Js_traverse.free true
     in
     let _code = free#program code in
     let freename = free#get_free_name in
@@ -477,7 +477,7 @@ let check_deps () =
   let provided = get_provided () in
   Hashtbl.iter
     (fun id (code, requires) ->
-      let traverse = new Js_traverse.free in
+      let traverse = new Js_traverse.free true in
       let _js = traverse#program code in
       let free = traverse#get_free_name in
       let requires = List.fold_right requires ~init:StringSet.empty ~f:StringSet.add in

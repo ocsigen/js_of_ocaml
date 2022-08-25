@@ -22,7 +22,7 @@ open Util
 let%expect_test "static eval of string get" =
   let use_jsoo_exports st =
     let open Js_of_ocaml_compiler in
-    let traverse = new Js_traverse.free in
+    let traverse = new Js_traverse.free false in
     let _ = traverse#program [ st ] in
     Stdlib.StringSet.mem "jsoo_exports" traverse#get_use_name
     || Stdlib.StringSet.mem "jsoo_exports" traverse#get_def_name

@@ -67,7 +67,7 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
         try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
       else p
     in
-    let free = new Js_traverse.free in
+    let free = new Js_traverse.free true in
     let _pfree = free#program p in
     let toplevel_def = free#get_def_name in
     let () = Var_printer.add_reserved (StringSet.elements toplevel_def) in
@@ -75,7 +75,7 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
       [ ( Flag.shortvar
-        , fun () -> (new Js_traverse.rename_variable toplevel_def :> Js_traverse.mapper)
+        , fun () -> (new Js_traverse.rename_variable toplevel_def true :> Js_traverse.mapper)
         )
       ; (true_, fun () -> new Js_traverse.simpl)
       ; (true_, fun () -> new Js_traverse.clean)
