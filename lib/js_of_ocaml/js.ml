@@ -257,6 +257,10 @@ module Js = struct
 
       method _match : regExp t -> match_result_handle t opt meth
 
+      method normalize : js_string t meth
+
+      method normalize_form : normalization t -> js_string t meth
+
       method replace : regExp t -> js_string t -> js_string t meth
 
       method replace_string : js_string t -> js_string t -> js_string t meth
@@ -311,11 +315,21 @@ module Js = struct
       method lastIndex : int prop
     end
 
+  and normalization = js_string
+
   (* string is used by ppx_js, it needs to come before any use of the
      new syntax in this file *)
   external string : string -> js_string t = "caml_jsstring_of_string"
 
   external to_string : js_string t -> string = "caml_string_of_jsstring"
+
+  let nfc = string "NFC"
+
+  let nfd = string "NFD"
+
+  let nfkc = string "NFKC"
+
+  let nfkd = string "NFKD"
 end
 
 include Js

@@ -188,6 +188,21 @@ type string_array
       (This type is used to resolved the mutual dependency between
        string and array type definitions.) *)
 
+type normalization
+(** Opaque type for Unicode normalization forms. *)
+
+val nfd : normalization t
+(** Canonical Decomposition *)
+
+val nfc : normalization t
+(** Canonical Decomposition, followed by Canonical Composition *)
+
+val nfkd : normalization t
+(** Compatibility Decomposition *)
+
+val nfkc : normalization t
+(** Compatibility Decomposition, followed by Canonical Composition *)
+
 (** Specification of Javascript string objects. *)
 class type js_string =
   object
@@ -220,6 +235,10 @@ class type js_string =
     method localeCompare : js_string t -> float meth
 
     method _match : regExp t -> match_result_handle t opt meth
+
+    method normalize : js_string t meth
+
+    method normalize_form : normalization t -> js_string t meth
 
     method replace : regExp t -> js_string t -> js_string t meth
 
