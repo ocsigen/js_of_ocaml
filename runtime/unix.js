@@ -190,24 +190,24 @@ function caml_unix_unlink(name) {
   return root.device.unlink(root.rest, /* raise Unix_error */ true);
 }
 
-//Provides: unix_getuid
+//Provides: caml_unix_getuid
 //Requires: caml_raise_not_found
-function unix_getuid(unit) {
+function caml_unix_getuid(unit) {
   if(globalThis.process && globalThis.process.getuid){
     return globalThis.process.getuid();
   }
   caml_raise_not_found();
 }
 
-//Provides: unix_getpwuid
+//Provides: caml_unix_getpwuid
 //Requires: caml_raise_not_found
-function unix_getpwuid(unit) {
-  caml_raise_not_found()
+function caml_unix_getpwuid(unit) {
+  caml_raise_not_found();
 }
 
-//Provides: unix_has_symlink
+//Provides: caml_unix_has_symlink
 //Requires: fs_node_supported
-function unix_has_symlink(unit) {
+function caml_unix_has_symlink(unit) {
   return fs_node_supported()?1:0
 }
 
