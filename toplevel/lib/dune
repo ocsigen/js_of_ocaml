@@ -5,7 +5,6 @@
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml
-  bytes
   compiler-libs.bytecomp
   compiler-libs.toplevel)
  (preprocess
