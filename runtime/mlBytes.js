@@ -583,6 +583,7 @@ function caml_bytes_greaterthan(s1, s2) {
 
 //Provides: caml_fill_bytes
 //Requires: caml_str_repeat, caml_convert_bytes_to_array
+//Alias: caml_fill_string
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     if (i == 0 && (l >= s.l || (s.t == 2 /* PARTIAL */ && l >= s.c.length))) {
@@ -600,10 +601,6 @@ function caml_fill_bytes(s, i, l, c) {
   }
   return 0;
 }
-
-//Provides: caml_fill_string
-//Requires: caml_fill_bytes
-var caml_fill_string = caml_fill_bytes
 
 //Provides: caml_blit_bytes
 //Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array

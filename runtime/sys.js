@@ -301,10 +301,6 @@ function caml_runtime_parameters(_unit) {
 //Provides: caml_install_signal_handler const
 function caml_install_signal_handler(){return 0}
 
-//Provides: unix_inet_addr_of_string
-function unix_inet_addr_of_string () {return 0;}
-
-
 
 //Provides: caml_runtime_warnings
 var caml_runtime_warnings = 0;

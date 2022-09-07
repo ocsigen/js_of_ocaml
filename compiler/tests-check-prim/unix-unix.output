@@ -246,7 +246,6 @@ caml_mod
 
 From +io.js:
 caml_input_value_to_outside_heap
-win_filedescr_of_channel
 
 From +jslib.js:
 caml_is_js
@@ -316,10 +315,33 @@ caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
 
 From +unix.js:
-win_cleanup
-win_findclose
-win_findfirst
-win_findnext
-win_handle_fd
-win_startup
+caml_unix_cleanup
+caml_unix_closedir
+caml_unix_filedescr_of_fd
+caml_unix_findclose
+caml_unix_findfirst
+caml_unix_findnext
+caml_unix_getpwuid
+caml_unix_gettimeofday
+caml_unix_getuid
+caml_unix_gmtime
+caml_unix_has_symlink
+caml_unix_inet_addr_of_string
+caml_unix_isatty
+caml_unix_localtime
+caml_unix_lstat
+caml_unix_lstat_64
+caml_unix_mkdir
+caml_unix_mktime
+caml_unix_opendir
+caml_unix_readdir
+caml_unix_readlink
+caml_unix_rewinddir
+caml_unix_rmdir
+caml_unix_startup
+caml_unix_stat
+caml_unix_stat_64
+caml_unix_symlink
+caml_unix_time
+caml_unix_unlink
 
