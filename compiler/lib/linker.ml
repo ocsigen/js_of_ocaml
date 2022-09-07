@@ -144,6 +144,7 @@ module Fragment = struct
     ; code : Javascript.program
     ; js_string : bool option
     ; fragment_target : Target_env.t option
+    ; aliases : StringSet.t
     }
 
   type t =
@@ -227,6 +228,7 @@ module Fragment = struct
                 ; code
                 ; js_string = None
                 ; fragment_target = None
+                ; aliases = StringSet.empty
                 }
               in
               let fragment =
@@ -255,6 +257,8 @@ module Fragment = struct
                         }
                     | `Weakdef -> { fragment with weakdef = true }
                     | `Always -> { fragment with always = true }
+                    | `Alias name ->
+                        { fragment with aliases = StringSet.add name fragment.aliases }
                     | (`Ifnot "js-string" | `If "js-string") as i ->
                         let b =
                           match i with
@@ -391,6 +395,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; code
       ; js_string
       ; fragment_target
+      ; aliases
       } -> (
       let ignore_because_of_js_string =
         match js_string, Config.Flag.use_js_string () with
@@ -402,6 +407,12 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       else
         match provides with
         | None ->
+            if not (StringSet.is_empty aliases)
+            then
+              error
+                "Found JavaScript code with neither `//Alias` and not `//Provides` in \
+                 file %S@."
+                filename;
             if always
             then (
               always_included :=
@@ -468,6 +479,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, requires);
+              StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
               `Ok)
 
 let get_provided () =

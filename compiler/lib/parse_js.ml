@@ -73,6 +73,7 @@ let parse_aux the_parser lexbuf =
           | `Always -> Some `Always
           | `If name -> Some (`If name)
           | `Ifnot name -> Some (`Ifnot name)
+          | `Alias name -> Some (`Alias name)
         with
         | Not_found -> None
         | _ -> None)

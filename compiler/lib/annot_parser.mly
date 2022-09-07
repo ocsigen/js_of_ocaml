@@ -17,10 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-%token TProvides TRequires TVersion TWeakdef TIf TAlways
+%token TProvides TRequires TVersion TWeakdef TIf TAlways TAlias
 %token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
 %token<string> TIdent TVNum
-%token TComma TSemi EOF EOL LE LT GE GT EQ LPARENT RPARENT
+%token TComma TColon EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
 %token TBang
 
@@ -30,20 +30,19 @@
 %%
 
 annot:
-  | TProvides TSemi id=TIdent opt=option(prim_annot)
+  | TProvides TColon id=TIdent opt=option(prim_annot)
     args=option(delimited(LPARENT, separated_list(TComma,arg_annot),RPARENT))
     endline
     { `Provides (id,(match opt with None -> `Mutator | Some k -> k),args) }
-  | TRequires TSemi l=separated_nonempty_list(TComma,TIdent) endline
+  | TRequires TColon l=separated_nonempty_list(TComma,TIdent) endline
     { `Requires (l) }
-  | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
+  | TVersion TColon l=separated_nonempty_list(TComma,version) endline
     { `Version (l) }
   | TWeakdef endline { `Weakdef   }
   | TAlways endline { `Always   }
-  | TIf TSemi name=TIdent endline
-    { `If (name) }
-  | TIf TSemi TBang name=TIdent endline
-                           { `Ifnot (name) }
+  | TAlias TColon name=TIdent endline { `Alias (name) }
+  | TIf TColon name=TIdent endline { `If (name) }
+  | TIf TColon TBang name=TIdent endline { `Ifnot (name) }
 prim_annot:
   | TA_Pure {`Pure}
   | TA_Const {`Pure}

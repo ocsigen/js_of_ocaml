@@ -47,6 +47,7 @@ type t =
   | `Version of ((int -> int -> bool) * string) list
   | `Weakdef
   | `Always
+  | `Alias of string
   | condition
   ]
 
