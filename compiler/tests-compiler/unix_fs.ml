@@ -136,7 +136,7 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     File size: 3
-    Failure("unix_stat: not implemented")|}]
+    Failure("caml_unix_stat: not implemented")|}]
 
 let%expect_test "Unix.stat_dir" =
   compile_and_run
@@ -153,7 +153,7 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     Found dir
-    Failure("unix_stat: not implemented")|}]
+    Failure("caml_unix_stat: not implemented")|}]
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run
@@ -179,8 +179,8 @@ f (); Sys.chdir "/static"; f () |};
   [%expect
     {|
     File size: 3
-    Failure("unix_symlink: not implemented")
-    Failure("unix_stat: not implemented")|}]
+    Failure("caml_unix_symlink: not implemented")
+    Failure("caml_unix_stat: not implemented")|}]
 
 let%expect_test "Unix.symlink_Unix.readlink" =
   compile_and_run
@@ -206,8 +206,8 @@ f (); Sys.chdir "/static"; f () |};
   [%expect
     {|
     bbb
-    Failure("unix_symlink: not implemented")
-    Failure("unix_readlink: not implemented")|}]
+    Failure("caml_unix_symlink: not implemented")
+    Failure("caml_unix_readlink: not implemented")|}]
 
 let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
@@ -225,7 +225,7 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     EXPECTED ERROR
-    Failure("unix_readlink: not implemented")|}]
+    Failure("caml_unix_readlink: not implemented")|}]
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
@@ -247,7 +247,7 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     File size: 3
-    Failure("unix_lstat: not implemented")|}]
+    Failure("caml_unix_lstat: not implemented")|}]
 
 let%expect_test "Unix.lstat_symlink" =
   compile_and_run
@@ -270,8 +270,8 @@ f (); Sys.chdir "/static"; f () |};
   [%expect
     {|
     Found link
-    Failure("unix_symlink: not implemented")
-    Failure("unix_lstat: not implemented")|}]
+    Failure("caml_unix_symlink: not implemented")
+    Failure("caml_unix_lstat: not implemented")|}]
 
 let%expect_test "Unix.opendir" =
   compile_and_run

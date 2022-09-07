@@ -158,14 +158,11 @@ function caml_ml_open_descriptor_in (fd)  {
 
 //Provides: caml_channel_descriptor
 //Requires: caml_ml_channels
+//Alias: win_filedescr_of_channel
 function caml_channel_descriptor(chanid){
   var chan = caml_ml_channels[chanid];
   return chan.fd;
 }
-
-//Provides: win_filedescr_of_channel
-//Requires: caml_channel_descriptor
-var win_filedescr_of_channel = caml_channel_descriptor
 
 //Provides: caml_ml_set_binary_mode
 //Requires: caml_ml_channels

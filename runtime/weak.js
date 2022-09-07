@@ -88,6 +88,7 @@ function caml_weak_set(x, i, v) {
 }
 //Provides: caml_ephe_get_key
 //Requires: caml_ephe_key_offset, caml_invalid_argument
+//Alias: caml_weak_get
 function caml_ephe_get_key(x, i) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument ("Weak.get_key");
@@ -98,6 +99,7 @@ function caml_ephe_get_key(x, i) {
 //Provides: caml_ephe_get_key_copy
 //Requires: caml_ephe_get_key,caml_ephe_key_offset
 //Requires: caml_obj_dup, caml_invalid_argument
+//Alias: caml_weak_get_copy
 function caml_ephe_get_key_copy(x, i) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument ("Weak.get_copy");
@@ -110,6 +112,7 @@ function caml_ephe_get_key_copy(x, i) {
 
 //Provides: caml_ephe_check_key mutable
 //Requires: caml_ephe_key_offset
+//Alias: caml_weak_check
 function caml_ephe_check_key(x, i) {
   var weak = x[caml_ephe_key_offset + i];
   if(globalThis.WeakRef && weak instanceof globalThis.WeakRef) weak = weak.deref();
@@ -122,6 +125,7 @@ function caml_ephe_check_key(x, i) {
 //Provides: caml_ephe_blit_key
 //Requires: caml_array_blit
 //Requires: caml_ephe_key_offset
+//Alias: caml_weak_blit
 function caml_ephe_blit_key(a1, i1, a2, i2, len) {
   // minus one because caml_array_blit works on ocaml array
   caml_array_blit(a1, caml_ephe_key_offset + i1 - 1,
@@ -129,23 +133,6 @@ function caml_ephe_blit_key(a1, i1, a2, i2, len) {
                   len);
   return 0;
 }
-
-//Provides: caml_weak_blit
-//Requires: caml_ephe_blit_key
-var caml_weak_blit = caml_ephe_blit_key
-
-//Provides: caml_weak_get
-//Requires: caml_ephe_get_key
-var caml_weak_get = caml_ephe_get_key
-
-
-//Provides: caml_weak_get_copy
-//Requires: caml_ephe_get_key_copy
-var caml_weak_get_copy = caml_ephe_get_key_copy
-
-//Provides: caml_weak_check
-//Requires: caml_ephe_check_key
-var caml_weak_check = caml_ephe_check_key
 
 //Provides: caml_ephe_blit_data
 //Requires: caml_ephe_data_offset, caml_ephe_set_data, caml_ephe_unset_data
