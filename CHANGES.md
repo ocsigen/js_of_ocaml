@@ -1,6 +1,6 @@
 # dev (2022-??) - ??
 ## Features/Changes
-* Compiler: initial support for OCaml 5 (#1265)
+* Compiler: initial support for OCaml 5 (#1265,#1303)
 * Compiler: bump magic number to match the 5.0.0~alpha0 release (#1288)
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
@@ -8,14 +8,14 @@
 * Misc: use 4.14 in the CI
 * Lib: add missing options for Intl.DateTimeFormat
 * Lib: add missing options for Intl.NumberFormat
+* Lib: wheel event binding
+* Lib: add normalize in js_string (ES6)
 * Runtime: Implement weak semantic for weak and ephemeron
 * Runtime: Implement Gc.finalise_last
 * Runtime: Implement buffer for in_channels
-* Lib: wheel event binding
-* Test: track external used in the stdlib and unix
 * Runtime: add support for unix_opendir, unix_readdir, unix_closedir, win_findfirst, win_findnext, win_findclose
 * Runtime: Dont use require when target-env is browser
-* Lib: add normalize in js_string (ES6)
+* Test: track external used in the stdlib and unix
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
