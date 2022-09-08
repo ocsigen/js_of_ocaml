@@ -21,6 +21,7 @@ let%expect_test _ =
     +compare.js
     +domain.js
     +dynlink.js
+    +effect.js
     +fail.js
     +format.js
     +fs.js
@@ -62,6 +63,7 @@ let%expect_test _ =
     +bigstring.js
     +compare.js
     +domain.js
+    +effect.js
     +fail.js
     +format.js
     +fs.js

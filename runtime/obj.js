@@ -164,9 +164,6 @@ function caml_obj_update_tag(b,o,n) {
     return 0
 }
 
-//Provides: caml_ml_domain_id
-function caml_ml_domain_id(unit) { return 0 }
-
 //Provides: caml_lazy_update_to_forcing
 //Requires: caml_obj_tag, caml_obj_update_tag, caml_ml_domain_unique_token
 function caml_lazy_update_to_forcing(o) {
