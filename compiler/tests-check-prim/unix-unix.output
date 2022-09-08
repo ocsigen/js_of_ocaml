@@ -171,8 +171,20 @@ caml_atomic_load
 caml_domain_dls
 caml_domain_dls_get
 caml_domain_dls_set
+caml_domain_id
+caml_domain_spawn
+caml_ml_domain_cpu_relax
+caml_ml_domain_id
 caml_ml_domain_set_name
 caml_ml_domain_unique_token
+caml_recommended_domain_count
+
+From +effect.js:
+caml_alloc_stack
+caml_ml_condition_broadcast
+caml_ml_condition_new
+caml_ml_condition_signal
+caml_ml_condition_wait
 
 From +fail.js:
 caml_return_exn_constant
@@ -275,7 +287,6 @@ caml_lazy_read_result
 caml_lazy_reset_to_lazy
 caml_lazy_update_to_forcing
 caml_lazy_update_to_forward
-caml_ml_domain_id
 caml_obj_compare_and_swap
 caml_obj_is_block
 caml_obj_is_shared

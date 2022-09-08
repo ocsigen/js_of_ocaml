@@ -129,8 +129,6 @@ function caml_unix_stat(name) {
   return root.device.stat(root.rest, /* raise Unix_error */ true);
 }
 
-
-
 //Provides: caml_unix_stat_64
 //Requires: caml_unix_stat, caml_int64_of_int32
 //Alias: unix_stat_64

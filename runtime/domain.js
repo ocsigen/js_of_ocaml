@@ -53,3 +53,37 @@ function caml_ml_domain_unique_token(unit) {
 function caml_ml_domain_set_name(_name) {
   return 0;
 }
+
+//Provides: caml_recommended_domain_count
+function caml_recommended_domain_count(unit) { return 1 }
+
+
+//Provides: caml_domain_id
+var caml_domain_id = 0;
+
+//Provides: caml_domain_spawn
+//Requires: caml_ml_mutex_unlock
+//Requires: caml_domain_id
+var caml_domain_latest_idx = 1
+function caml_domain_spawn(f,mutex){
+    var id = caml_domain_latest_idx++;
+    var old = caml_domain_id;
+    caml_domain_id = id;
+    f(0);
+    caml_domain_id = old;
+    caml_ml_mutex_unlock(mutex);
+    return id;
+}
+
+
+//Provides: caml_ml_domain_id
+//Requires: caml_domain_id
+function caml_ml_domain_id(unit){
+    return caml_domain_id;
+}
+
+
+//Provides: caml_ml_domain_cpu_relax
+function caml_ml_domain_cpu_relax(unit){
+    return 0;
+}
