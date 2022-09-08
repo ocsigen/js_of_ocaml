@@ -42,6 +42,19 @@ let predefined_exceptions =
   ; 10, "Assert_failure"
   ; 11, "Undefined_recursive_module"
   ]
+  @
+  match Ocaml_version.v with
+  | `V4_04
+  | `V4_06
+  | `V4_07
+  | `V4_08
+  | `V4_09
+  | `V4_10
+  | `V4_11
+  | `V4_12
+  | `V4_13
+  | `V4_14 -> []
+  | `V5_00 -> [ 12, "Continuation_already_taken"; 13, "Unhandled" ]
 
 (* Read and manipulate debug section *)
 module Debug : sig
