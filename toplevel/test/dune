@@ -17,8 +17,6 @@
  (action
   (run
    %{bin:js_of_ocaml}
-   -I
-   .
    --export
    %{dep:export.txt}
    --toplevel

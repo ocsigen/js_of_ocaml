@@ -14,10 +14,8 @@
    +dynlink.js
    --toplevel
    +toplevel.js
-   -I
-   ./
    --file
-   ./plugin.cmo
+   plugin.cmo
    -o
    %{target}
    %{dep:main.bc})))

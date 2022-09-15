@@ -25,10 +25,10 @@ let rec find_in_path_rec paths name =
       if Sys.file_exists file then Some file else find_in_path_rec rem name
 
 let find_in_path paths name =
-  if Filename.is_implicit name && not (String.equal name ".")
-  then find_in_path_rec paths name
-  else if Sys.file_exists name
+  if Sys.file_exists name
   then Some name
+  else if Filename.is_implicit name && not (String.equal name ".")
+  then find_in_path_rec paths name
   else None
 
 let rec concat dir filename =

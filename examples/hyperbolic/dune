@@ -15,8 +15,6 @@
    -o
    %{targets}
    --pretty
-   -I
-   ./
    --file
    %{dep:image_info.json}
    --file
