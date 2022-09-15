@@ -48,7 +48,7 @@
 (rule
  (targets test_dynlink.js)
  (action
-  (run %{bin:js_of_ocaml} -I ./ --pretty --toplevel %{dep:test_dynlink.cmo})))
+  (run %{bin:js_of_ocaml} --pretty --toplevel %{dep:test_dynlink.cmo})))
 
 (rule
  (targets export.txt)
@@ -93,8 +93,6 @@
    --Werror
    --target-env
    browser
-   -I
-   .
    --file
    %{dep:examples.ml}
    --file

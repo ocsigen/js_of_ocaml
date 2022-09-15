@@ -28,8 +28,6 @@
    -o
    %{targets}
    --pretty
-   -I
-   ./
    --file
    %{dep:scene.json})))
 

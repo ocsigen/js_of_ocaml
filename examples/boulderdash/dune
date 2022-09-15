@@ -17,8 +17,6 @@
    -o
    %{targets}
    --pretty
-   -I
-   .
    --file
    %{dep:maps.txt}
    --file
