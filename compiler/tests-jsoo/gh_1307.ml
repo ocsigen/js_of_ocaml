@@ -10,7 +10,8 @@ let test content =
       print_endline "failure"
 
 let%expect_test "parsing" =
-  let (_ : bool) = Parsing.set_trace false in
+  (* use [Parsing.set_trace true] once https://github.com/janestreet/ppx_expect/issues/43 is fixed *)
+  let (old : bool) = Parsing.set_trace false in
   test "a";
   [%expect {|
     input: "a"
@@ -25,4 +26,6 @@ let%expect_test "parsing" =
   [%expect {|
     input: "aaa"
     Stdlib.Parsing.Parse_error
-    failure |}]
+    failure |}];
+  let (_ : bool) = Parsing.set_trace old in
+  ()

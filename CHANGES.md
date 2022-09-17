@@ -20,6 +20,7 @@
 * Runtime: Implement buffer for in_channels
 * Runtime: add support for unix_opendir, unix_readdir, unix_closedir, win_findfirst, win_findnext, win_findclose
 * Runtime: Dont use require when target-env is browser
+* Runtime: Implements Parsing.set_trace (#1308)
 * Test: track external used in the stdlib and unix
 
 ## Bug fixes
