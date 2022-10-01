@@ -544,6 +544,14 @@ and eventTarget =
 
     method onanimationcancel : ('self t, animationEvent t) event_listener writeonly_prop
 
+    method ontransitionrun : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitionstart : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitionend : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitioncancel : ('self t, transitionEvent t) event_listener writeonly_prop
+
     method ongotpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
 
     method onlostpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
@@ -644,6 +652,17 @@ and animationEvent =
     inherit event
 
     method animationName : js_string t readonly_prop
+
+    method elapsedTime : float readonly_prop
+
+    method pseudoElement : js_string t readonly_prop
+  end
+
+and transitionEvent =
+  object
+    inherit event
+
+    method propertyName : js_string t readonly_prop
 
     method elapsedTime : float readonly_prop
 
@@ -2453,6 +2472,14 @@ module Event : sig
   val animationiteration : animationEvent t typ
 
   val animationcancel : animationEvent t typ
+
+  val transitionrun : transitionEvent t typ
+
+  val transitionstart : transitionEvent t typ
+
+  val transitionend : transitionEvent t typ
+
+  val transitioncancel : transitionEvent t typ
 
   val canplay : mediaEvent t typ
 
