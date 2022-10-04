@@ -11,6 +11,7 @@
 * Lib: wheel event binding
 * Lib: add normalize in js_string (ES6)
 * Lib: more complete transition event bindings
+* Lib: remove support for old browser-specific transition events
 * Runtime: Implement weak semantic for weak and ephemeron
 * Runtime: Implement Gc.finalise_last
 * Runtime: Implement buffer for in_channels

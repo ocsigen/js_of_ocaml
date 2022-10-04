@@ -387,26 +387,8 @@ let pointerover ?use_capture ?passive target =
 let pointerup ?use_capture ?passive target =
   make_event Dom_html.Event.pointerup ?use_capture ?passive target
 
-let transition_evn =
-  lazy
-    (let e = Dom_html.createDiv Dom_html.document in
-     (* Prefer using [transition]. If missing, try to fallback on browser specific
-        extensions. *)
-     try
-       snd
-         (List.find
-            (fun (propname, _evname) -> Js.Unsafe.get e##.style propname != Js.undefined)
-            [ "transition", [ Dom_html.Event.transitionend ]
-            ; "WebkitTransition", [ Dom.Event.make "webkitTransitionEnd" ]
-            ; "MozTransition", [ Dom.Event.make "transitionend" ]
-            ; ( "OTransition"
-              , [ Dom.Event.make "oTransitionEnd"; Dom.Event.make "otransitionend" ] )
-            ])
-     with Not_found -> [])
-
 let transitionend ?use_capture ?passive elt =
-  let events = Lazy.force transition_evn in
-  Lwt.pick (List.map (fun ev -> make_event ev ?use_capture ?passive elt) events)
+  make_event Dom_html.Event.transitionend ?use_capture ?passive elt
 
 let transitionstart ?use_capture ?passive elt =
   make_event Dom_html.Event.transitionstart ?use_capture ?passive elt
