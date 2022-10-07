@@ -533,6 +533,14 @@ and eventTarget =
 
     method onanimationcancel : ('self t, animationEvent t) event_listener writeonly_prop
 
+    method ontransitionrun : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitionstart : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitionend : ('self t, transitionEvent t) event_listener writeonly_prop
+
+    method ontransitioncancel : ('self t, transitionEvent t) event_listener writeonly_prop
+
     method ongotpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
 
     method onlostpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
@@ -632,6 +640,17 @@ and animationEvent =
     inherit event
 
     method animationName : js_string t readonly_prop
+
+    method elapsedTime : float readonly_prop
+
+    method pseudoElement : js_string t readonly_prop
+  end
+
+and transitionEvent =
+  object
+    inherit event
+
+    method propertyName : js_string t readonly_prop
 
     method elapsedTime : float readonly_prop
 
@@ -895,6 +914,14 @@ module Event = struct
   let animationiteration = Dom.Event.make "animationiteration"
 
   let animationcancel = Dom.Event.make "animationcancel"
+
+  let transitionrun = Dom.Event.make "transitionrun"
+
+  let transitionstart = Dom.Event.make "transitionstart"
+
+  let transitionend = Dom.Event.make "transitionend"
+
+  let transitioncancel = Dom.Event.make "transitioncancel"
 
   let canplay = Dom.Event.make "canplay"
 

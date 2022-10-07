@@ -387,6 +387,18 @@ let pointerover ?use_capture ?passive target =
 let pointerup ?use_capture ?passive target =
   make_event Dom_html.Event.pointerup ?use_capture ?passive target
 
+let transitionend ?use_capture ?passive elt =
+  make_event Dom_html.Event.transitionend ?use_capture ?passive elt
+
+let transitionstart ?use_capture ?passive elt =
+  make_event Dom_html.Event.transitionstart ?use_capture ?passive elt
+
+let transitionrun ?use_capture ?passive elt =
+  make_event Dom_html.Event.transitionrun ?use_capture ?passive elt
+
+let transitioncancel ?use_capture ?passive elt =
+  make_event Dom_html.Event.transitioncancel ?use_capture ?passive elt
+
 let clicks ?cancel_handler ?use_capture ?passive t =
   seq_loop click ?cancel_handler ?use_capture ?passive t
 
@@ -582,32 +594,17 @@ let pointerovers ?cancel_handler ?use_capture ?passive t =
 let pointerups ?cancel_handler ?use_capture ?passive t =
   seq_loop pointerup ?cancel_handler ?use_capture ?passive t
 
-let transition_evn =
-  lazy
-    (let e = Dom_html.createDiv Dom_html.document in
-     try
-       snd
-         (List.find
-            (fun (propname, _evname) -> Js.Unsafe.get e##.style propname != Js.undefined)
-            [ "WebkitTransition", [ Dom.Event.make "webkitTransitionEnd" ]
-            ; "MozTransition", [ Dom.Event.make "transitionend" ]
-            ; ( "OTransition"
-              , [ Dom.Event.make "oTransitionEnd"; Dom.Event.make "otransitionend" ] )
-            ; "transition", [ Dom.Event.make "transitionend" ]
-            ])
-     with Not_found -> [])
+let transitionends ?cancel_handler ?use_capture ?passive t =
+  seq_loop transitionend ?cancel_handler ?use_capture ?passive t
 
-let transitionend elt =
-  match Lazy.force transition_evn with
-  | [] -> Lwt.return ()
-  | l -> Lwt.pick (List.map (fun ev -> make_event ev elt) l) >>= fun _ -> Lwt.return ()
+let transitionstarts ?cancel_handler ?use_capture ?passive t =
+  seq_loop transitionstart ?cancel_handler ?use_capture ?passive t
 
-let transitionends ?cancel_handler elt f =
-  seq_loop
-    (fun ?use_capture:_ ?passive:_ target -> transitionend target)
-    ?cancel_handler
-    elt
-    (fun _ cancel -> f cancel)
+let transitionruns ?cancel_handler ?use_capture ?passive t =
+  seq_loop transitionrun ?cancel_handler ?use_capture ?passive t
+
+let transitioncancels ?cancel_handler ?use_capture ?passive t =
+  seq_loop transitioncancel ?cancel_handler ?use_capture ?passive t
 
 let request_animation_frame () =
   let t, s = Lwt.wait () in

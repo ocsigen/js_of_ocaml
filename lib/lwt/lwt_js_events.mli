@@ -452,14 +452,30 @@ val pointerup :
   -> #Dom_html.eventTarget Js.t
   -> Dom_html.pointerEvent Js.t Lwt.t
 
-val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
+val transitionend :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.transitionEvent Js.t Lwt.t
 (** Returns when a CSS transition terminates on the element. *)
 
-val transitionends :
-     ?cancel_handler:bool
+val transitionstart :
+     ?use_capture:bool
+  -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
-  -> (unit Lwt.t -> unit Lwt.t)
-  -> unit Lwt.t
+  -> Dom_html.transitionEvent Js.t Lwt.t
+
+val transitionrun :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.transitionEvent Js.t Lwt.t
+
+val transitioncancel :
+     ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> Dom_html.transitionEvent Js.t Lwt.t
 
 val load :
      ?use_capture:bool
@@ -1105,6 +1121,38 @@ val pointerups :
   -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
   -> (Dom_html.pointerEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val transitionends :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.transitionEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val transitionstarts :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.transitionEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val transitionruns :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.transitionEvent Js.t -> unit Lwt.t -> unit Lwt.t)
+  -> unit Lwt.t
+
+val transitioncancels :
+     ?cancel_handler:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
+  -> #Dom_html.eventTarget Js.t
+  -> (Dom_html.transitionEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t
 
 val request_animation_frame : unit -> unit Lwt.t
