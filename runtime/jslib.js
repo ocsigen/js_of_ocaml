@@ -24,7 +24,7 @@ function caml_js_pure_expr (f) { return f(); }
 
 //Provides: caml_js_set (mutable, const, const)
 function caml_js_set(o,f,v) { o[f]=v;return 0}
-//Provides: caml_js_get mutable (const, const)
+//Provides: caml_js_get (const, const)
 function caml_js_get(o,f) { return o[f]; }
 //Provides: caml_js_delete (mutable, const)
 function caml_js_delete(o,f) { delete o[f]; return 0}

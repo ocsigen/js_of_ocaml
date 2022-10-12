@@ -965,7 +965,9 @@ let _ =
 
   register_tern_prim "caml_js_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, J.EAccess (cx, cy), cz));
-  register_bin_prim "caml_js_get" `Mutable (fun cx cy _ -> J.EAccess (cx, cy));
+  (* [caml_js_get] can have side effect, we declare it as mutator.
+     see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get *)
+  register_bin_prim "caml_js_get" `Mutator (fun cx cy _ -> J.EAccess (cx, cy));
   register_bin_prim "caml_js_delete" `Mutator (fun cx cy _ ->
       J.EUn (J.Delete, J.EAccess (cx, cy)));
   register_bin_prim "caml_js_equals" `Mutable (fun cx cy _ ->

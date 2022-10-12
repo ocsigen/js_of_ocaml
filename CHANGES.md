@@ -32,6 +32,7 @@
 * Compiler: fix rewriter bug in share_constant (fix #1247)
 * Compiler: fix miscompilation of mutually recursive functions in loop (#1321)
 * Compiler: fix bug while minifying/renaming try-catch blocks
+* Compiler: no dead code elimination for caml_js_get
 * Runtime: fix ocamlyacc parse engine (#1307)
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
