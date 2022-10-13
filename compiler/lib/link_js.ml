@@ -22,27 +22,34 @@ let sourceMappingURL = "//# sourceMappingURL="
 
 let sourceMappingURL_base64 = "//# sourceMappingURL=data:application/json;base64,"
 
-let kind ~resolve_sourcemap_url file line =
-  let s =
-    match String.drop_prefix ~prefix:sourceMappingURL_base64 line with
-    | Some base64 -> `Json_base64 base64
-    | None -> (
-        match String.drop_prefix ~prefix:sourceMappingURL line with
-        | Some url -> `Url url
-        | None -> `Other)
+type action =
+  | Keep
+  | Drop
+  | Source_map of Source_map.t
+
+let action ~resolve_sourcemap_url ~drop_source_map file line =
+  let prefix_kind =
+    match String.is_prefix ~prefix:sourceMappingURL line with
+    | false -> `Other
+    | true -> (
+        match String.is_prefix ~prefix:sourceMappingURL_base64 line with
+        | true -> `Json_base64 (String.length sourceMappingURL_base64)
+        | false -> `Url (String.length sourceMappingURL))
   in
-  match s with
-  | `Other -> `Other
-  | `Json_base64 base64 ->
-      `Source_map (Source_map_io.of_string (Base64.decode_exn base64))
-  | `Url _ when not resolve_sourcemap_url -> `Drop
-  | `Url url ->
+  match prefix_kind, drop_source_map with
+  | `Other, _ -> Keep
+  | _, true -> Drop
+  | `Json_base64 offset, false ->
+      Source_map (Source_map_io.of_string (Base64.decode_exn ~off:offset line))
+  | `Url _, false when not resolve_sourcemap_url -> Drop
+  | `Url offset, false ->
+      let url = String.sub line ~pos:offset ~len:(String.length line - offset) in
       let base = Filename.dirname file in
       let ic = open_in (Filename.concat base url) in
       let l = in_channel_length ic in
       let content = really_input_string ic l in
       close_in ic;
-      `Source_map (Source_map_io.of_string content)
+      Source_map (Source_map_io.of_string content)
 
 let link ~output ~files ~resolve_sourcemap_url ~source_map =
   let sm = ref [] in
@@ -51,7 +58,6 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
     output_string output "\n";
     incr line_offset
   in
-  let source_offset = ref 0 in
   List.iter
     ~f:(fun file ->
       let ic = open_in file in
@@ -61,15 +67,18 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
          let start_line = !line_offset in
          while true do
            let line = input_line ic in
-           match kind ~resolve_sourcemap_url file line, source_map with
-           | `Other, _ ->
+           match
+             action
+               ~resolve_sourcemap_url
+               ~drop_source_map:Poly.(source_map = None)
+               file
+               line
+           with
+           | Keep ->
                output_string output line;
                new_line ()
-           | `Drop, _ -> ()
-           | `Source_map _, None -> ()
-           | `Source_map x, Some _ ->
-               source_offset := List.length x.Source_map.sources;
-               sm := (start_line, file, x) :: !sm
+           | Drop -> ()
+           | Source_map x -> sm := (start_line, file, x) :: !sm
          done
        with End_of_file -> ());
       close_in ic;
