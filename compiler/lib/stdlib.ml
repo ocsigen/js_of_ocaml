@@ -123,6 +123,11 @@ module List = struct
     in
     rev l
 
+  let rec rev_append_map ~f l acc =
+    match l with
+    | [] -> acc
+    | x :: xs -> rev_append_map ~f xs (f x :: acc)
+
   let slow_map l ~f = rev (rev_map ~f l)
 
   let max_non_tailcall =
