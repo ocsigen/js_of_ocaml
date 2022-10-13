@@ -29,6 +29,7 @@
 * Runtime: sync channel seek / pos with the native runtime
 * Misc: fix installation with dune 3 without opam
 * Node: Only write small chunks to stdout/stderr so they flush
+* Compiler: no dead code elimination for caml_js_get
 
 # 4.0.0 (2021-01-24) - Lille
 ## Features/Changes
