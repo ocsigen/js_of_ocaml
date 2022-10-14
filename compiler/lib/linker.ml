@@ -379,7 +379,9 @@ let reset () =
   always_included := [];
   Hashtbl.clear provided;
   Hashtbl.clear provided_rev;
-  Hashtbl.clear code_pieces
+  Hashtbl.clear code_pieces;
+  Primitive.reset ();
+  Generate.init ()
 
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with

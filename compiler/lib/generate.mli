@@ -25,3 +25,5 @@ val f :
   -> should_export:bool
   -> Parse_bytecode.Debug.t
   -> Javascript.program
+
+val init : unit -> unit

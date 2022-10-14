@@ -53,6 +53,11 @@ type t =
   | condition
   ]
 
+let string_of_kind = function
+  | `Pure -> "pure"
+  | `Mutable -> "mutable"
+  | `Mutator -> "mutator"
+
 let kinds = Hashtbl.create 37
 
 let kind_args_tbl = Hashtbl.create 37
@@ -76,11 +81,18 @@ let externals = ref StringSet.empty
 
 let add_external name = externals := StringSet.add name !externals
 
-let is_external name = StringSet.mem name !externals
-
 let get_external () = !externals
 
 let register p k kargs arity =
+  (match Hashtbl.find kinds (resolve p) with
+  | exception Not_found -> ()
+  | k' when Poly.(k = k') -> ()
+  | k' ->
+      warn
+        "Warning: overriding the purity of the primitive %s: %s -> %s@."
+        p
+        (string_of_kind k')
+        (string_of_kind k));
   add_external p;
   (match arity with
   | Some a -> Hashtbl.add arities p a
@@ -100,3 +112,10 @@ let named_values = ref StringSet.empty
 let need_named_value s = StringSet.mem s !named_values
 
 let register_named_value s = named_values := StringSet.add s !named_values
+
+let reset () =
+  Hashtbl.clear kinds;
+  Hashtbl.clear kind_args_tbl;
+  Hashtbl.clear arities;
+  Hashtbl.clear aliases;
+  named_values := StringSet.empty
