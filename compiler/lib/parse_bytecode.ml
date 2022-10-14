@@ -29,32 +29,7 @@ let debug_sourcemap = Debug.find "sourcemap"
 type bytecode = string
 
 let predefined_exceptions =
-  [ 0, "Out_of_memory"
-  ; 1, "Sys_error"
-  ; 2, "Failure"
-  ; 3, "Invalid_argument"
-  ; 4, "End_of_file"
-  ; 5, "Division_by_zero"
-  ; 6, "Not_found"
-  ; 7, "Match_failure"
-  ; 8, "Stack_overflow"
-  ; 9, "Sys_blocked_io"
-  ; 10, "Assert_failure"
-  ; 11, "Undefined_recursive_module"
-  ]
-  @
-  match Ocaml_version.v with
-  | `V4_04
-  | `V4_06
-  | `V4_07
-  | `V4_08
-  | `V4_09
-  | `V4_10
-  | `V4_11
-  | `V4_12
-  | `V4_13
-  | `V4_14 -> []
-  | `V5_00 -> [ 12, "Continuation_already_taken"; 13, "Unhandled" ]
+  Runtimedef.builtin_exceptions |> Array.to_list |> List.mapi ~f:(fun i name -> i, name)
 
 (* Read and manipulate debug section *)
 module Debug : sig
