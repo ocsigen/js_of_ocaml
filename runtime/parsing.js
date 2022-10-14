@@ -96,7 +96,7 @@ function caml_parse_engine(tables, env, cmd, arg)
   var errflag = env[env_errflag];
 
   exit:for (;;) {
-    switch(cmd) {
+    next:switch(cmd) {
     case 0://START:
       state = 0;
       errflag = 0;
@@ -149,7 +149,7 @@ function caml_parse_engine(tables, env, cmd, arg)
           n2 = n1 + ERRCODE;
           if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
               tables.check[n2] == ERRCODE) {
-            cmd = shift_recover; break;
+            cmd = shift_recover; break next;
           } else {
             if (sp <= env[env_stackbase]) return RAISE_PARSE_ERROR;
             /* The ML code raises Parse_error */

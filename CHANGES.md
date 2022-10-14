@@ -22,6 +22,7 @@
 
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
+* Runtime: fix ocamlyacc parse engine (#1307)
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
 * Runtime: fix Digest.channel
