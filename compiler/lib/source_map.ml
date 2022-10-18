@@ -187,11 +187,6 @@ let mapping_of_string str =
   in
   readline 0 0 []
 
-let merge_sources_content x acc =
-  match acc, x with
-  | Some acc, Some x -> Some (List.rev_append x acc)
-  | _ -> None
-
 let maps ~gen_line_offset ~sources_offset ~names_offset x =
   let gen_line = x.gen_line + gen_line_offset in
   let ori_source = x.ori_source + sources_offset in
@@ -205,30 +200,32 @@ let maps ~gen_line_offset ~sources_offset ~names_offset x =
 let merge = function
   | [] -> None
   | (gen_line_offset, _file, x) :: rest ->
-      let rec loop acc ~sources_offset ~names_offset l =
+      let rec loop acc_rev ~sources_offset ~names_offset l =
         match l with
-        | [] -> acc
+        | [] -> acc_rev
         | (gen_line_offset, _, sm) :: rest ->
-            let acc =
-              { acc with
-                sources = List.rev_append sm.sources acc.sources
-              ; names = List.rev_append sm.names acc.names
+            let acc_rev =
+              { acc_rev with
+                sources = List.rev_append sm.sources acc_rev.sources
+              ; names = List.rev_append sm.names acc_rev.names
               ; sources_content =
-                  merge_sources_content sm.sources_content acc.sources_content
+                  (match sm.sources_content, acc_rev.sources_content with
+                  | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
+                  | None, _ | _, None -> None)
               ; mappings =
                   List.rev_append_map
                     ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
                     sm.mappings
-                    acc.mappings
+                    acc_rev.mappings
               }
             in
             loop
-              acc
+              acc_rev
               ~sources_offset:(sources_offset + List.length sm.sources)
               ~names_offset:(names_offset + List.length sm.names)
               rest
       in
-      let acc =
+      let acc_rev =
         { x with
           mappings =
             List.rev_map
@@ -239,19 +236,19 @@ let merge = function
         ; sources_content = Option.map ~f:List.rev x.sources_content
         }
       in
-      let rev =
+      let acc_rev =
         loop
-          acc
+          acc_rev
           ~sources_offset:(List.length x.sources)
           ~names_offset:(List.length x.names)
           rest
       in
       Some
-        { rev with
-          mappings = List.rev rev.mappings
-        ; sources = List.rev rev.sources
-        ; names = List.rev rev.names
-        ; sources_content = Option.map ~f:List.rev rev.sources_content
+        { acc_rev with
+          mappings = List.rev acc_rev.mappings
+        ; sources = List.rev acc_rev.sources
+        ; names = List.rev acc_rev.names
+        ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
         }
 
 let empty =

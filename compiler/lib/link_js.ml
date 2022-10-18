@@ -37,8 +37,8 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
         | false -> `Url (String.length sourceMappingURL))
   in
   match prefix_kind, drop_source_map with
-  | `Other, _ -> Keep
-  | _, true -> Drop
+  | `Other, (true | false) -> Keep
+  | (`Json_base64 _ | `Url _), true -> Drop
   | `Json_base64 offset, false ->
       Source_map (Source_map_io.of_string (Base64.decode_exn ~off:offset line))
   | `Url _, false when not resolve_sourcemap_url -> Drop
