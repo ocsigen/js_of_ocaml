@@ -475,7 +475,7 @@ type state =
   { succs : (int, int list) Hashtbl.t
   ; backs : (int, Addr.Set.t) Hashtbl.t
   ; preds : (int, int) Hashtbl.t
-  ; mutable loops : Addr.Set.t
+  ; loops : Addr.Set.t
   ; mutable loop_stack : (Addr.t * (J.Label.t * bool ref)) list
   ; mutable visited_blocks : Addr.Set.t
   ; mutable interm_idx : int
@@ -619,20 +619,42 @@ let fold_children blocks pc f accu =
       let accu = DTree.fold_cont f a2 accu in
       accu
 
-let rec build_graph st pc anc =
-  if not (Addr.Set.mem pc st.visited_blocks)
-  then (
-    st.visited_blocks <- Addr.Set.add pc st.visited_blocks;
-    let anc = Addr.Set.add pc anc in
-    let s = Code.fold_children st.blocks pc Addr.Set.add Addr.Set.empty in
-    let backs = Addr.Set.inter s anc in
-    Hashtbl.add st.backs pc backs;
-    let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
-    let succs = List.filter s ~f:(fun pc -> not (Addr.Set.mem pc anc)) in
-    Hashtbl.add st.succs pc succs;
-    Addr.Set.iter (fun pc' -> st.loops <- Addr.Set.add pc' st.loops) backs;
-    List.iter succs ~f:(fun pc' -> build_graph st pc' anc);
-    List.iter succs ~f:(fun pc' -> incr_preds st pc'))
+let build_graph ctx pc =
+  let visited_blocks = ref Addr.Set.empty in
+  let loops = ref Addr.Set.empty in
+  let succs = Hashtbl.create 17 in
+  let backs = Hashtbl.create 17 in
+  let preds = Hashtbl.create 17 in
+  let blocks = ctx.Ctx.blocks in
+  let rec loop pc anc =
+    if not (Addr.Set.mem pc !visited_blocks)
+    then (
+      visited_blocks := Addr.Set.add pc !visited_blocks;
+      let anc = Addr.Set.add pc anc in
+      let s = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
+      let pc_backs = Addr.Set.inter s anc in
+      Hashtbl.add backs pc pc_backs;
+      let s = fold_children blocks pc (fun x l -> x :: l) [] in
+      let pc_succs = List.filter s ~f:(fun pc -> not (Addr.Set.mem pc anc)) in
+      Hashtbl.add succs pc pc_succs;
+      Addr.Set.iter (fun pc' -> loops := Addr.Set.add pc' !loops) pc_backs;
+      List.iter pc_succs ~f:(fun pc' -> loop pc' anc);
+      List.iter pc_succs ~f:(fun pc' ->
+          match Hashtbl.find preds pc' with
+          | exception Not_found -> Hashtbl.add preds pc' 1
+          | n -> Hashtbl.add preds pc' (succ n)))
+  in
+  loop pc Addr.Set.empty;
+  { visited_blocks = !visited_blocks
+  ; loops = !loops
+  ; loop_stack = []
+  ; succs
+  ; backs
+  ; preds
+  ; interm_idx = -2
+  ; ctx
+  ; blocks
+  }
 
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
@@ -1811,19 +1833,7 @@ and compile_branch_selection pc interm =
   with Not_found -> []
 
 and compile_closure ctx (pc, args) =
-  let st =
-    { visited_blocks = Addr.Set.empty
-    ; loops = Addr.Set.empty
-    ; loop_stack = []
-    ; succs = Hashtbl.create 17
-    ; backs = Hashtbl.create 17
-    ; preds = Hashtbl.create 17
-    ; interm_idx = -1
-    ; ctx
-    ; blocks = ctx.Ctx.blocks
-    }
-  in
-  build_graph st pc Addr.Set.empty;
+  let st = build_graph ctx pc in
   let current_blocks = st.visited_blocks in
   st.visited_blocks <- Addr.Set.empty;
   if debug () then Format.eprintf "@[<hov 2>closure{@,";
