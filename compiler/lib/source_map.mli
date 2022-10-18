@@ -38,7 +38,7 @@ type t =
   ; mutable mappings : mapping
   }
 
-val merge : (int * string * t) list -> t option
+val merge : (int * t) list -> t option
 
 val mapping_of_string : string -> mapping
 

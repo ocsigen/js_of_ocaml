@@ -133,7 +133,7 @@ let%expect_test _ =
     ; mappings = [ gen (3, 3) (5, 5) 0 ]
     }
   in
-  let m = Source_map.merge [ 0, "", s1; 20, "", s2 ] in
+  let m = Source_map.merge [ 0, s1; 20, s2 ] in
   (match m with
   | None -> ()
   | Some sm ->

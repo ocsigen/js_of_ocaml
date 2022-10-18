@@ -78,7 +78,7 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
                output_string output line;
                new_line ()
            | Drop -> ()
-           | Source_map x -> sm := (start_line, file, x) :: !sm
+           | Source_map x -> sm := (start_line, x) :: !sm
          done
        with End_of_file -> ());
       close_in ic;
@@ -87,9 +87,17 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
   match source_map with
   | None -> ()
   | Some (file, init_sm) -> (
-      match Source_map.merge ((0, "", init_sm) :: List.rev !sm) with
+      match Source_map.merge ((0, init_sm) :: List.rev !sm) with
       | None -> ()
       | Some sm -> (
+          (* preserve some info from [init_sm] *)
+          let sm =
+            { sm with
+              version = init_sm.version
+            ; file = init_sm.file
+            ; sourceroot = init_sm.sourceroot
+            }
+          in
           match file with
           | None ->
               let data = Source_map_io.to_string sm in

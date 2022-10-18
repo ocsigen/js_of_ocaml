@@ -213,7 +213,7 @@ let merge = function
       let rec loop acc_rev ~sources_offset ~names_offset l =
         match l with
         | [] -> acc_rev
-        | (gen_line_offset, _, sm) :: rest ->
+        | (gen_line_offset, sm) :: rest ->
             let acc_rev =
               { acc_rev with
                 sources = List.rev_append sm.sources acc_rev.sources
