@@ -40,6 +40,16 @@ type t =
   ; mutable mappings : mapping
   }
 
+let empty ~filename =
+  { version = 3
+  ; file = filename
+  ; sourceroot = None
+  ; sources = []
+  ; sources_content = None
+  ; names = []
+  ; mappings = []
+  }
+
 let map_line_number ~f =
   let f i = if i < 0 then i else f i in
   fun m -> { m with ori_line = f m.ori_line; gen_line = f m.gen_line }
@@ -199,7 +209,7 @@ let maps ~gen_line_offset ~sources_offset ~names_offset x =
 
 let merge = function
   | [] -> None
-  | (gen_line_offset, _file, x) :: rest ->
+  | _ :: _ as l ->
       let rec loop acc_rev ~sources_offset ~names_offset l =
         match l with
         | [] -> acc_rev
@@ -225,24 +235,7 @@ let merge = function
               ~names_offset:(names_offset + List.length sm.names)
               rest
       in
-      let acc_rev =
-        { x with
-          mappings =
-            List.rev_map
-              x.mappings
-              ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
-        ; sources = List.rev x.sources
-        ; names = List.rev x.names
-        ; sources_content = Option.map ~f:List.rev x.sources_content
-        }
-      in
-      let acc_rev =
-        loop
-          acc_rev
-          ~sources_offset:(List.length x.sources)
-          ~names_offset:(List.length x.names)
-          rest
-      in
+      let acc_rev = loop (empty ~filename:"") ~sources_offset:0 ~names_offset:0 l in
       Some
         { acc_rev with
           mappings = List.rev acc_rev.mappings
@@ -250,13 +243,3 @@ let merge = function
         ; names = List.rev acc_rev.names
         ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
         }
-
-let empty =
-  { version = 3
-  ; file = "file"
-  ; sourceroot = None
-  ; sources = []
-  ; sources_content = None
-  ; names = []
-  ; mappings = []
-  }

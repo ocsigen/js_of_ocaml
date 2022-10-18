@@ -44,4 +44,4 @@ val mapping_of_string : string -> mapping
 
 val string_of_mapping : mapping -> string
 
-val empty : t
+val empty : filename:string -> t
