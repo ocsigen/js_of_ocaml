@@ -63,7 +63,6 @@ type t =
   ; def_name : StringSet.t
   ; def : Code.Var.Set.t
   ; use : Code.Var.Set.t
-  ; count : int IdentMap.t
   }
 
 class type freevar =
@@ -79,6 +78,8 @@ class type freevar =
     method use_var : ident -> unit
 
     method state : t
+
+    method get_count : int IdentMap.t
 
     method get_free_name : StringSet.t
 
