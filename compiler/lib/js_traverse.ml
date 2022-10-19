@@ -290,16 +290,10 @@ type t =
   ; def_name : StringSet.t
   ; def : S.t
   ; use : S.t
-  ; count : int Javascript.IdentMap.t
   }
 
 let empty =
-  { def = S.empty
-  ; use = S.empty
-  ; use_name = StringSet.empty
-  ; def_name = StringSet.empty
-  ; count = Javascript.IdentMap.empty
-  }
+  { def = S.empty; use = S.empty; use_name = StringSet.empty; def_name = StringSet.empty }
 
 (* def/used/free variable *)
 
@@ -311,11 +305,13 @@ class type freevar =
 
     method block : ?catch:bool -> Javascript.ident list -> unit
 
+    method state : t
+
     method def_var : Javascript.ident -> unit
 
     method use_var : Javascript.ident -> unit
 
-    method state : t
+    method get_count : int Javascript.IdentMap.t
 
     method get_free_name : StringSet.t
 
@@ -338,7 +334,11 @@ class free =
 
     val mutable state_ : t = empty
 
+    val count = ref Javascript.IdentMap.empty
+
     method state = state_
+
+    method get_count = !count
 
     method get_free = S.diff m#state.use m#state.def
 
@@ -355,36 +355,27 @@ class free =
     method merge_info from =
       let free_name = from#get_free_name in
       let free = from#get_free in
-      let count =
-        IdentMap.fold
-          (fun v k acc ->
-            let n = try IdentMap.find v acc with Not_found -> 0 in
-            IdentMap.add v (k + n) acc)
-          from#state.count
-          m#state.count
-      in
       state_ <-
         { state_ with
           use_name = StringSet.union state_.use_name free_name
         ; use = S.union state_.use free
-        ; count
         }
 
     method use_var x =
-      let n = try IdentMap.find x state_.count with Not_found -> 0 in
-      let count = IdentMap.add x (succ n) state_.count in
+      let n = try IdentMap.find x !count with Not_found -> 0 in
+      count := IdentMap.add x (succ n) !count;
       match x with
       | S { name; _ } ->
-          state_ <- { state_ with use_name = StringSet.add name state_.use_name; count }
-      | V v -> state_ <- { state_ with use = S.add v state_.use; count }
+          state_ <- { state_ with use_name = StringSet.add name state_.use_name }
+      | V v -> state_ <- { state_ with use = S.add v state_.use }
 
     method def_var x =
-      let n = try IdentMap.find x state_.count with Not_found -> 0 in
-      let count = IdentMap.add x (succ n) state_.count in
+      let n = try IdentMap.find x !count with Not_found -> 0 in
+      count := IdentMap.add x (succ n) !count;
       match x with
       | S { name; _ } ->
-          state_ <- { state_ with def_name = StringSet.add name state_.def_name; count }
-      | V v -> state_ <- { state_ with def = S.add v state_.def; count }
+          state_ <- { state_ with def_name = StringSet.add name state_.def_name }
+      | V v -> state_ <- { state_ with def = S.add v state_.def }
 
     method expression x =
       match x with
@@ -451,20 +442,11 @@ class free =
                 in
                 let def, def_name = clean tbody#state.def tbody#state.def_name in
                 let use, use_name = clean tbody#state.use tbody#state.use_name in
-                let count =
-                  IdentMap.fold
-                    (fun v k acc ->
-                      let n = try IdentMap.find v acc with Not_found -> 0 in
-                      IdentMap.add v (k + n) acc)
-                    tbody#state.count
-                    m#state.count
-                in
                 state_ <-
                   { use = S.union state_.use use
                   ; use_name = StringSet.union state_.use_name use_name
                   ; def = S.union state_.def def
                   ; def_name = StringSet.union state_.def_name def_name
-                  ; count
                   };
                 Some (id, block)
           in
