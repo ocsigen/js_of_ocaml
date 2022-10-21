@@ -120,20 +120,20 @@ let%expect_test _ =
     { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name = None }
   in
   let s1 : Source_map.t =
-    { Source_map.empty with
+    { (Source_map.empty ~filename:"1.map") with
       names = [ "na"; "nb"; "nc" ]
     ; sources = [ "sa"; "sb" ]
     ; mappings = [ gen (1, 1) (10, 10) 0; gen (3, 3) (20, 20) 1 ]
     }
   in
   let s2 : Source_map.t =
-    { Source_map.empty with
+    { (Source_map.empty ~filename:"2.map") with
       names = [ "na2"; "nb2" ]
     ; sources = [ "sa2" ]
     ; mappings = [ gen (3, 3) (5, 5) 0 ]
     }
   in
-  let m = Source_map.merge [ 0, "", s1; 20, "", s2 ] in
+  let m = Source_map.merge [ 0, s1; 20, s2 ] in
   (match m with
   | None -> ()
   | Some sm ->

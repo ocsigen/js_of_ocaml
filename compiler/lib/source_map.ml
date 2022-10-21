@@ -40,6 +40,16 @@ type t =
   ; mutable mappings : mapping
   }
 
+let empty ~filename =
+  { version = 3
+  ; file = filename
+  ; sourceroot = None
+  ; sources = []
+  ; sources_content = None
+  ; names = []
+  ; mappings = []
+  }
+
 let map_line_number ~f =
   let f i = if i < 0 then i else f i in
   fun m -> { m with ori_line = f m.ori_line; gen_line = f m.gen_line }
@@ -187,11 +197,6 @@ let mapping_of_string str =
   in
   readline 0 0 []
 
-let merge_sources_content a b =
-  match a, b with
-  | Some a, Some b -> Some (a @ b)
-  | _ -> None
-
 let maps ~gen_line_offset ~sources_offset ~names_offset x =
   let gen_line = x.gen_line + gen_line_offset in
   let ori_source = x.ori_source + sources_offset in
@@ -204,51 +209,37 @@ let maps ~gen_line_offset ~sources_offset ~names_offset x =
 
 let merge = function
   | [] -> None
-  | (gen_line_offset, _file, x) :: rest ->
-      let rec loop acc ~sources_offset ~names_offset l =
+  | _ :: _ as l ->
+      let rec loop acc_rev ~sources_offset ~names_offset l =
         match l with
-        | [] -> acc
-        | (gen_line_offset, _, sm) :: rest ->
-            let acc =
-              { acc with
-                sources = acc.sources @ sm.sources
-              ; names = acc.names @ sm.names
+        | [] -> acc_rev
+        | (gen_line_offset, sm) :: rest ->
+            let acc_rev =
+              { acc_rev with
+                sources = List.rev_append sm.sources acc_rev.sources
+              ; names = List.rev_append sm.names acc_rev.names
               ; sources_content =
-                  merge_sources_content acc.sources_content sm.sources_content
+                  (match sm.sources_content, acc_rev.sources_content with
+                  | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
+                  | None, _ | _, None -> None)
               ; mappings =
-                  acc.mappings
-                  @ List.map
-                      ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
-                      sm.mappings
+                  List.rev_append_map
+                    ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
+                    sm.mappings
+                    acc_rev.mappings
               }
             in
             loop
-              acc
+              acc_rev
               ~sources_offset:(sources_offset + List.length sm.sources)
               ~names_offset:(names_offset + List.length sm.names)
               rest
       in
-      let acc =
-        { x with
-          mappings =
-            List.map
-              x.mappings
-              ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
-        }
-      in
+      let acc_rev = loop (empty ~filename:"") ~sources_offset:0 ~names_offset:0 l in
       Some
-        (loop
-           acc
-           ~sources_offset:(List.length x.sources)
-           ~names_offset:(List.length x.names)
-           rest)
-
-let empty =
-  { version = 3
-  ; file = "file"
-  ; sourceroot = None
-  ; sources = []
-  ; sources_content = None
-  ; names = []
-  ; mappings = []
-  }
+        { acc_rev with
+          mappings = List.rev acc_rev.mappings
+        ; sources = List.rev acc_rev.sources
+        ; names = List.rev acc_rev.names
+        ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
+        }
