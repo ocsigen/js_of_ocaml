@@ -4,6 +4,7 @@
 * Compiler: bump magic number to match the 5.0.0~alpha0 release (#1288)
 * Compiler: complain when runtime and compiler built-in primitives disagree (#1312)
 * Compiler: more efficient implementation of Js_traverse.freevar
+* Compiler: more efficient implementation of Js_traverse.rename_variable
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
@@ -24,6 +25,7 @@
 ## Bug fixes
 * Compiler: fix rewriter bug in share_constant (fix #1247)
 * Compiler: fix miscompilation of mutually recursive functions in loop (#1321)
+* Compiler: fix bug while minifying/renaming try-catch blocks
 * Runtime: fix ocamlyacc parse engine (#1307)
 * Runtime: fix Out_channel.is_buffered, set_buffered
 * Runtime: fix format wrt alternative
