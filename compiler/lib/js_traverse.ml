@@ -180,6 +180,171 @@ class map : mapper =
     method program x = m#sources x
   end
 
+class type iterator =
+  object
+    method expression : Javascript.expression -> unit
+
+    method expression_o : Javascript.expression option -> unit
+
+    method switch_case : Javascript.expression -> unit
+
+    method initialiser : Javascript.expression * Javascript.location -> unit
+
+    method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
+
+    method variable_declaration : Javascript.variable_declaration -> unit
+
+    method statement : Javascript.statement -> unit
+
+    method statement_o : (Javascript.statement * Javascript.location) option -> unit
+
+    method statements : Javascript.statement_list -> unit
+
+    method source : Javascript.source_element -> unit
+
+    method sources : Javascript.source_elements -> unit
+
+    method ident : Javascript.ident -> unit
+
+    method program : Javascript.program -> unit
+  end
+
+(* generic js ast iterator *)
+class iter : iterator =
+  object (m)
+    method ident _ = ()
+
+    method statements l = List.iter l ~f:(fun (s, _) -> m#statement s)
+
+    method variable_declaration (id, eo) =
+      m#ident id;
+      m#initialiser_o eo
+
+    method statement s =
+      match s with
+      | Block b -> m#statements b
+      | Variable_statement l -> List.iter l ~f:m#variable_declaration
+      | Empty_statement -> ()
+      | Debugger_statement -> ()
+      | Expression_statement e -> m#expression e
+      | If_statement (e, (s, _), sopt) ->
+          m#expression e;
+          m#statement s;
+          m#statement_o sopt
+      | Do_while_statement ((s, _), e) ->
+          m#statement s;
+          m#expression e
+      | While_statement (e, (s, _)) ->
+          m#expression e;
+          m#statement s
+      | For_statement (e1, e2, e3, (s, _)) ->
+          (match e1 with
+          | Left o -> m#expression_o o
+          | Right l -> List.iter l ~f:(fun d -> m#variable_declaration d));
+          m#expression_o e2;
+          m#expression_o e3;
+          m#statement s
+      | ForIn_statement (e1, e2, (s, _)) ->
+          (match e1 with
+          | Left e -> m#expression e
+          | Right d -> m#variable_declaration d);
+
+          m#expression e2;
+          m#statement s
+      | Continue_statement _ -> ()
+      | Break_statement _ -> ()
+      | Return_statement e -> m#expression_o e
+      | Labelled_statement (_, (s, _)) -> m#statement s
+      | Throw_statement e -> m#expression e
+      | Switch_statement (e, l, def, l') ->
+          m#expression e;
+          List.iter l ~f:(fun (e, s) ->
+              m#switch_case e;
+              m#statements s);
+          (match def with
+          | None -> ()
+          | Some l -> m#statements l);
+          List.iter l' ~f:(fun (e, s) ->
+              m#switch_case e;
+              m#statements s)
+      | Try_statement (b, catch, final) -> (
+          m#statements b;
+          (match catch with
+          | None -> ()
+          | Some (id, b) ->
+              m#ident id;
+              m#statements b);
+          match final with
+          | None -> ()
+          | Some s -> m#statements s)
+
+    method statement_o x =
+      match x with
+      | None -> ()
+      | Some (s, _) -> m#statement s
+
+    method switch_case e = m#expression e
+
+    method expression x =
+      match x with
+      | ESeq (e1, e2) ->
+          m#expression e1;
+          m#expression e2
+      | ECond (e1, e2, e3) ->
+          m#expression e1;
+          m#expression e2;
+          m#expression e3
+      | EBin (_, e1, e2) ->
+          m#expression e1;
+          m#expression e2
+      | EUn (_, e1) -> m#expression e1
+      | ECall (e1, e2, _) ->
+          m#expression e1;
+          List.iter e2 ~f:(fun (e, _) -> m#expression e)
+      | EAccess (e1, e2) ->
+          m#expression e1;
+          m#expression e2
+      | EDot (e1, _) -> m#expression e1
+      | ENew (e1, Some args) ->
+          m#expression e1;
+          List.iter args ~f:(fun (e, _) -> m#expression e)
+      | ENew (e1, None) -> m#expression e1
+      | EVar v -> m#ident v
+      | EFun (idopt, params, body, _) ->
+          (match idopt with
+          | None -> ()
+          | Some i -> m#ident i);
+          List.iter params ~f:m#ident;
+          m#sources body
+      | EArr l -> List.iter l ~f:(fun x -> m#expression_o x)
+      | EObj l -> List.iter l ~f:(fun (_, e) -> m#expression e)
+      | EStr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ -> ()
+
+    method expression_o x =
+      match x with
+      | None -> ()
+      | Some s -> m#expression s
+
+    method initialiser (e, _) = m#expression e
+
+    method initialiser_o x =
+      match x with
+      | None -> ()
+      | Some i -> m#initialiser i
+
+    method source x =
+      match x with
+      | Statement s -> m#statement s
+      | Function_declaration (id, params, body, _) ->
+          m#ident id;
+          List.iter params ~f:m#ident;
+          m#sources body
+
+    method sources x = List.iter x ~f:(fun (s, _) -> m#source s)
+
+    method program x = m#sources x
+  end
+
 (* var substitution *)
 class subst sub =
   object
