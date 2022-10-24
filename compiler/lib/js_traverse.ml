@@ -430,17 +430,17 @@ class free =
             | None -> None
             | Some (id, block) ->
                 let block = tbody#statements block in
-                let () = tbody#def_var id in
                 tbody#block ~catch:true [ id ];
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
-                (* .. except 'id' because its scope is limited to 'block' *)
+                (* .. except the use of 'id' since its scope is limited
+                   to 'block' *)
                 let clean set sets =
                   match id with
                   | S { name; _ } -> set, StringSet.remove name sets
                   | V i -> S.remove i set, sets
                 in
-                let def, def_name = clean tbody#state.def tbody#state.def_name in
+                let def, def_name = tbody#state.def, tbody#state.def_name in
                 let use, use_name = clean tbody#state.use tbody#state.use_name in
                 state_ <-
                   { use = S.union state_.use use
