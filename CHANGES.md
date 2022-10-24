@@ -3,6 +3,7 @@
 * Compiler: initial support for OCaml 5 (#1265,#1303)
 * Compiler: bump magic number to match the 5.0.0~alpha0 release (#1288)
 * Compiler: complain when runtime and compiler built-in primitives disagree (#1312)
+* Compiler: more efficient implementation of Js_traverse.freevar
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
