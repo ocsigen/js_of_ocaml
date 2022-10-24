@@ -96,7 +96,7 @@ class type freevar =
 
 class free : freevar
 
-class rename_variable : freevar
+class rename_variable : mapper
 
 class share_constant : mapper
 

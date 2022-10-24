@@ -625,55 +625,82 @@ class free =
   end
 
 class rename_variable =
-  object
-    inherit free as super
+  object (m)
+    inherit map as super
 
-    val mutable sub_ = new subst (fun x -> x)
+    val subst = StringMap.empty
 
-    method merge_info from =
-      super#merge_info from;
-      let h = Hashtbl.create 17 in
-      let _ =
-        StringSet.iter
-          (fun name ->
-            let v = Code.Var.fresh_n name in
-            Hashtbl.add h name v)
-          from#state.def_name
+    val decl = StringSet.empty
+
+    method private update_state ident params body =
+      let declared_names = ref StringSet.empty in
+      let decl_var x =
+        match x with
+        | S { name; _ } -> declared_names := StringSet.add name !declared_names
+        | _ -> ()
       in
-      let f = function
-        | S { name; _ } when Hashtbl.mem h name -> V (Hashtbl.find h name)
-        | s -> s
-      in
-      sub_ <- new subst f
+      Option.iter ~f:decl_var ident;
+      List.iter ~f:decl_var params;
+      (object
+         inherit iter as super
 
-    (* method block params *)
-    method expression x =
-      let x = super#expression x in
-      match x with
-      | EFun _ -> sub_#expression x
-      | _ -> x
+         method expression _ = ()
 
-    method statement x =
-      let x = super#statement x in
-      match x with
-      | Try_statement (b, Some (S { name; _ }, block), f)
-        when not (StringSet.mem name super#get_def_name) ->
-          let v = Code.Var.fresh_n name in
-          let sub = function
-            | S { name = name'; _ } when String.equal name' name -> V v
-            | x -> x
-          in
-          let s = new subst sub in
-          let w = Some (V v, s#statements block) in
-          Try_statement (b, w, f)
-      | _ -> x
+         method source x =
+           match x with
+           | Function_declaration (id, _, _, _) -> decl_var id
+           | Statement _ -> super#source x
 
-    method source x =
-      let x = super#source x in
+         method variable_declaration (id, _) = decl_var id
+      end)
+        #sources
+        body;
+      {<subst = StringSet.fold
+                  (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
+                  !declared_names
+                  subst
+       ; decl = !declared_names>}
+
+    method ident x =
       match x with
+      | V _ -> x
+      | S { name; _ } -> ( try V (StringMap.find name subst) with Not_found -> x)
+
+    method expression e =
+      match e with
+      | EFun (ident, params, body, nid) ->
+          let m' = m#update_state ident params body in
+          EFun
+            ( Option.map ident ~f:m'#ident
+            , List.map params ~f:m'#ident
+            , m'#sources body
+            , nid )
+      | _ -> super#expression e
+
+    method statement s =
+      match s with
+      | Try_statement (b, Some ((S { name; _ } as id), block), final)
+        when not (StringSet.mem name decl) ->
+          (* If [name] is declared in [block] but not outside, then
+             we cannot replace [id] by a fresh variable. As a fast
+             approximation, we only use a fresh variable when [name]
+             is not declared. *)
+          Try_statement
+            ( m#statements b
+            , (let m' = {<subst = StringMap.add name (Code.Var.fresh_n name) subst>} in
+               Some (m'#ident id, m'#statements block))
+            , match final with
+              | None -> None
+              | Some s -> Some (m#statements s) )
+      | _ -> super#statement s
+
+    method source s =
+      match s with
       | Function_declaration (id, params, body, nid) ->
-          Function_declaration (id, List.map params ~f:sub_#ident, sub_#sources body, nid)
-      | Statement _ -> x
+          let m' = m#update_state None params body in
+          Function_declaration
+            (m#ident id, List.map params ~f:m'#ident, m'#sources body, nid)
+      | _ -> super#source s
   end
 
 class compact_vardecl =
