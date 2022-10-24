@@ -82,15 +82,14 @@ class map : mapper =
           let e1 =
             match e1 with
             | Left o -> Left (m#expression_o o)
-            | Right l ->
-                Right (List.map l ~f:(fun (id, eo) -> m#ident id, m#initialiser_o eo))
+            | Right l -> Right (List.map l ~f:(fun d -> m#variable_declaration d))
           in
           For_statement (e1, m#expression_o e2, m#expression_o e3, (m#statement s, loc))
       | ForIn_statement (e1, e2, (s, loc)) ->
           let e1 =
             match e1 with
             | Left e -> Left (m#expression e)
-            | Right (id, e) -> Right (m#ident id, m#initialiser_o e)
+            | Right d -> Right (m#variable_declaration d)
           in
           ForIn_statement (e1, m#expression e2, (m#statement s, loc))
       | Continue_statement s -> Continue_statement s
@@ -425,41 +424,12 @@ class free =
 
     method block ?catch:_ _ = ()
 
+    method variable_declaration ((id, _) as d) =
+      m#def_var id;
+      super#variable_declaration d
+
     method statement x =
       match x with
-      | Variable_statement l ->
-          let l =
-            List.map l ~f:(fun (id, eopt) ->
-                m#def_var id;
-                match eopt with
-                | None -> id, None
-                | Some (e, pc) ->
-                    let e = m#expression e in
-                    id, Some (e, pc))
-          in
-          Variable_statement l
-      | For_statement (Right l, e2, e3, (s, loc)) ->
-          let l =
-            List.map l ~f:(fun (id, eopt) ->
-                m#def_var id;
-                match eopt with
-                | None -> id, None
-                | Some (e, pc) ->
-                    let e = m#expression e in
-                    id, Some (e, pc))
-          in
-          For_statement
-            (Right l, m#expression_o e2, m#expression_o e3, (m#statement s, loc))
-      | ForIn_statement (Right (id, eopt), e2, (s, loc)) ->
-          m#def_var id;
-          let r =
-            match eopt with
-            | None -> id, None
-            | Some (e, pc) ->
-                let e = m#expression e in
-                id, Some (e, pc)
-          in
-          ForIn_statement (Right r, m#expression e2, (m#statement s, loc))
       | Try_statement (b, w, f) ->
           let b = m#statements b in
           let same_level = level in
