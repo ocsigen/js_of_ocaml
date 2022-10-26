@@ -1212,6 +1212,7 @@ let program f ?source_map p =
     let source_map = smo
   end) in
   PP.set_needed_space_function f need_space;
+  if Config.Flag.effects () then PP.set_adjust_indentation_function f (fun n -> n mod 40);
   PP.start_group f 0;
   O.program f p;
   PP.end_group f;
