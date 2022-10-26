@@ -43,6 +43,7 @@ type t =
   ; mutable w : int
   ; mutable compact : bool
   ; mutable needed_space : (char -> char -> bool) option
+  ; mutable adjust_indentation : (int -> int) option
   ; mutable pending_space : string option
   ; mutable last_char : char option
   ; mutable line : int
@@ -67,6 +68,11 @@ let output st (s : string) l =
   st.output s 0 l
 
 let rec output_spaces st n =
+  let n =
+    match st.adjust_indentation with
+    | Some f -> f n
+    | None -> n
+  in
   output st spaces (min n 80);
   if n > 80 then output_spaces st (n - 80)
 
@@ -235,6 +241,7 @@ let to_out_channel ch =
   ; pending_space = None
   ; last_char = None
   ; needed_space = None
+  ; adjust_indentation = None
   ; output = output_substring ch
   }
 
@@ -254,9 +261,12 @@ let to_buffer b =
   ; pending_space = None
   ; last_char = None
   ; needed_space = None
+  ; adjust_indentation = None
   ; output = (fun s i l -> Buffer.add_substring b s i l)
   }
 
 let set_compact st v = st.compact <- v
 
 let set_needed_space_function st f = st.needed_space <- Some f
+
+let set_adjust_indentation_function st f = st.adjust_indentation <- Some f

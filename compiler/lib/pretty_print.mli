@@ -54,3 +54,5 @@ val total : t -> int
 val set_compact : t -> bool -> unit
 
 val set_needed_space_function : t -> (char -> char -> bool) -> unit
+
+val set_adjust_indentation_function : t -> (int -> int) -> unit
