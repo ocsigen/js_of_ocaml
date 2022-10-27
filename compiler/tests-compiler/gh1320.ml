@@ -1,0 +1,76 @@
+(* Js_of_ocaml tests
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2022 Hugo Heuzard, Jérôme Vouillon
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
+(* https://github.com/ocsigen/js_of_ocaml/issues/1320 *)
+
+let%expect_test _ =
+  let prog =
+    {|
+let app f x = f x
+
+let myfun () =
+  for i = 1 to 4 do
+    let rec f x = if x = 0 then 1 else i * app g (x - 1) and g x = app f x in
+    Format.eprintf "%d@." (g i)
+  done
+
+let () = myfun ()
+|}
+  in
+  Util.compile_and_run prog;
+  [%expect
+    {|
+    /tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2401
+           throw err}
+           ^
+
+    TypeError: Cannot read property 'length' of undefined
+        at caml_call1 (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2417:16)
+        at app (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5652:36)
+        at f (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5657:55)
+        at caml_call1 (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2417:28)
+        at app (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5652:36)
+        at g (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5660:47)
+        at /tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5662:15
+        at Object.<anonymous> (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5672:3)
+        at Module._compile (internal/modules/cjs/loader.js:1076:30)
+        at Object.Module._extensions..js (internal/modules/cjs/loader.js:1097:10)
+
+    process exited with error code 7
+     node test.js |}];
+  let program = Util.compile_and_parse prog in
+  Util.print_fun_decl program (Some "myfun");
+  [%expect
+    {|
+    function myfun(param)
+     {var i=1;
+      for(;;)
+       {var
+         f$0=
+          function(i,g)
+           {function f(x){return 0 === x?1:runtime.caml_mul(i,app(g,x - 1 | 0))}
+            return f},
+         f=f$0(i,g),
+         g$0=function(f){function g(x){return app(f,x)}return g},
+         g=g$0(f),
+         _b_=g(i);
+        caml_call2(Stdlib_Format[131],_a_,_b_);
+        var _c_=i + 1 | 0;
+        if(4 !== i){var i=_c_;continue}
+        return 0}} |}]
