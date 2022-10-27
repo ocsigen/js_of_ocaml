@@ -27,7 +27,7 @@ type closure_info =
   ; args : Code.Var.t list
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
-  ; ntc : Code.Addr.Set.t Code.Var.Map.t
+  ; mutated_vars : Code.Var.Set.t
   }
 
 type 'a int_ext =
@@ -41,9 +41,9 @@ let add_multi k v map =
   let set = try Var.Map.find k map with Not_found -> Addr.Set.empty in
   Var.Map.add k (Addr.Set.add v set) map
 
-let rec collect_apply pc blocks visited tc ntc =
+let rec collect_apply pc blocks visited tc =
   if Addr.Set.mem pc visited
-  then visited, tc, ntc
+  then visited, tc
   else
     let visited = Addr.Set.add pc visited in
     let block = Addr.Map.find pc blocks in
@@ -57,32 +57,22 @@ let rec collect_apply pc blocks visited tc ntc =
           | Some _ -> None)
       | _ -> None
     in
-    let visited, ntc =
-      List.fold_left block.body ~init:(visited, ntc) ~f:(fun (visited, acc) x ->
-          match x with
-          | Let (_, Apply (z, _, _)) -> visited, add_multi z pc acc
-          | Let (_, Closure (_, (pc, _))) ->
-              let visited, _tc, ntc = collect_apply pc blocks visited tc ntc in
-              visited, ntc
-          | _ -> visited, acc)
-    in
     match tc_opt with
-    | Some tc -> visited, tc, ntc
+    | Some tc -> visited, tc
     | None ->
         Code.fold_children
           blocks
           pc
-          (fun pc (visited, tc, ntc) -> collect_apply pc blocks visited tc ntc)
-          (visited, tc, ntc)
+          (fun pc (visited, tc) -> collect_apply pc blocks visited tc)
+          (visited, tc)
 
-let rec collect_closures blocks l =
+let rec collect_closures blocks mutated_vars l =
   match l with
   | Let (f_name, Closure (args, ((pc, _) as cont))) :: rem ->
-      let _, tc, ntc =
-        collect_apply pc blocks Addr.Set.empty Var.Map.empty Var.Map.empty
-      in
-      let l, rem = collect_closures blocks rem in
-      { f_name; args; cont; tc; ntc } :: l, rem
+      let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
+      let l, rem = collect_closures blocks mutated_vars rem in
+      let mutated_vars = Addr.Map.find pc mutated_vars in
+      { f_name; args; cont; tc; mutated_vars } :: l, rem
   | rem -> [], rem
 
 let group_closures ~tc_only closures_map =
@@ -93,14 +83,7 @@ let group_closures ~tc_only closures_map =
     Var.Map.fold
       (fun _ x graph ->
         let calls = Var.Map.fold (fun x _ tc -> Var.Set.add x tc) x.tc Var.Set.empty in
-        let calls =
-          if tc_only
-          then calls
-          else
-            Var.Set.union
-              calls
-              (Var.Map.fold (fun x _ ntc -> Var.Set.add x ntc) x.ntc Var.Set.empty)
-        in
+        let calls = if tc_only then calls else Var.Set.union calls x.mutated_vars in
         Var.Map.add x.f_name (Var.Set.inter names calls) graph)
       closures_map
       Var.Map.empty
@@ -401,7 +384,7 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _
     =
   match body with
   | Let (_, Closure _) :: _ ->
-      let closures, rem = collect_closures blocks body in
+      let closures, rem = collect_closures blocks mutated_vars body in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)

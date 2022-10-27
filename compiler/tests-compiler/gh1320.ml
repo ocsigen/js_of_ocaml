@@ -36,24 +36,10 @@ let () = myfun ()
   Util.compile_and_run prog;
   [%expect
     {|
-    /tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2401
-           throw err}
-           ^
-
-    TypeError: Cannot read property 'length' of undefined
-        at caml_call1 (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2417:16)
-        at app (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5652:36)
-        at f (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5657:55)
-        at caml_call1 (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:2417:28)
-        at app (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5652:36)
-        at g (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5660:47)
-        at /tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5662:15
-        at Object.<anonymous> (/tmp/build_efe11c_dune/jsoo-test8e3030/test.js:5672:3)
-        at Module._compile (internal/modules/cjs/loader.js:1076:30)
-        at Object.Module._extensions..js (internal/modules/cjs/loader.js:1097:10)
-
-    process exited with error code 7
-     node test.js |}];
+    1
+    4
+    27
+    256 |}];
   let program = Util.compile_and_parse prog in
   Util.print_fun_decl program (Some "myfun");
   [%expect
@@ -62,13 +48,14 @@ let () = myfun ()
      {var i=1;
       for(;;)
        {var
-         f$0=
-          function(i,g)
-           {function f(x){return 0 === x?1:runtime.caml_mul(i,app(g,x - 1 | 0))}
-            return f},
-         f=f$0(i,g),
-         g$0=function(f){function g(x){return app(f,x)}return g},
-         g=g$0(f),
+         closures=
+          function(i)
+           {function g(x){return app(f,x)}
+            function f(x){return 0 === x?1:runtime.caml_mul(i,app(g,x - 1 | 0))}
+            var block=[0,g,f];
+            return block},
+         closures$0=closures(i),
+         g=closures$0[1],
          _b_=g(i);
         caml_call2(Stdlib_Format[131],_a_,_b_);
         var _c_=i + 1 | 0;
