@@ -39,6 +39,8 @@ let debug = Debug.find "gen"
 
 let times = Debug.find "times"
 
+let dominance_frontier_time = ref 0.
+
 open Code
 module J = Javascript
 
@@ -673,7 +675,10 @@ let rec dominance_frontier_rec st pc visited grey =
   else visited, grey
 
 let dominance_frontier st pc =
-  snd (dominance_frontier_rec st pc Addr.Map.empty Addr.Set.empty)
+  let start = Timer.make () in
+  let _, frontier = dominance_frontier_rec st pc Addr.Map.empty Addr.Set.empty in
+  dominance_frontier_time := !dominance_frontier_time +. Timer.get start;
+  frontier
 
 let rec resolve_node interm pc =
   try resolve_node interm (fst (Addr.Map.find pc interm)) with Not_found -> pc
@@ -1891,8 +1896,13 @@ let f (p : Code.program) ~exported_runtime ~live_vars ~should_export debug =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
   let ctx = Ctx.initial ~exported_runtime ~should_export p.blocks live_vars share debug in
+  dominance_frontier_time := 0.;
   let p = compile_program ctx p.start in
-  if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
+  if times ()
+  then (
+    Format.eprintf "  code gen.: %a@." Timer.print t';
+    Format.eprintf "     dominance_frontier: %.2f@." !dominance_frontier_time);
+  dominance_frontier_time := 0.;
   p
 
 let init () =
