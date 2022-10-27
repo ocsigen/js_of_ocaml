@@ -22,6 +22,7 @@
 * Test: track external used in the stdlib and unix
 
 ## Bug fixes
+* Compiler: fix quadratic behavior of dominance frontier (fix #1300)
 * Compiler: fix rewriter bug in share_constant (fix #1247)
 * Compiler: fix miscompilation of mutually recursive functions in loop (#1321)
 * Runtime: fix ocamlyacc parse engine (#1307)
