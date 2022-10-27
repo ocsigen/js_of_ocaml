@@ -459,7 +459,7 @@ class free =
       | _ -> super#statement x
   end
 
-class rename_variable keeps =
+class rename_variable =
   object
     inherit free as super
 
@@ -471,11 +471,8 @@ class rename_variable keeps =
       let _ =
         StringSet.iter
           (fun name ->
-            if StringSet.mem name keeps
-            then ()
-            else
-              let v = Code.Var.fresh_n name in
-              Hashtbl.add h name v)
+            let v = Code.Var.fresh_n name in
+            Hashtbl.add h name v)
           from#state.def_name
       in
       let f = function
@@ -494,19 +491,15 @@ class rename_variable keeps =
     method statement x =
       let x = super#statement x in
       match x with
-      | Try_statement (b, w, f) ->
-          let w =
-            match w with
-            | Some (S { name; _ }, block) ->
-                let v = Code.Var.fresh_n name in
-                let sub = function
-                  | S { name = name'; _ } when String.equal name' name -> V v
-                  | x -> x
-                in
-                let s = new subst sub in
-                Some (V v, s#statements block)
+      | Try_statement (b, Some (S { name; _ }, block), f)
+        when not (StringSet.mem name super#get_def_name) ->
+          let v = Code.Var.fresh_n name in
+          let sub = function
+            | S { name = name'; _ } when String.equal name' name -> V v
             | x -> x
           in
+          let s = new subst sub in
+          let w = Some (V v, s#statements block) in
           Try_statement (b, w, f)
       | _ -> x
 
