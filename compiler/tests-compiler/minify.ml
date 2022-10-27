@@ -94,13 +94,13 @@ console.log("xx =", xx);
     $ cat "test.min.js"
       1: var
       2: xx=1;function
-      3: f(){xx=2;try{throw 1}catch(a){var
-      4: a=3}return xx}function
+      3: f(){a=2;try{throw 1}catch(a){var
+      4: a=3}return a}function
       5: g(){var
-      6: xx=2;return xx}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
+      6: a=2;return a}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
     xx = 1
     f() = 2
-    xx = 2
+    xx = 1
     g() = 2
-    xx = 2
+    xx = 1
  |}])
