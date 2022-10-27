@@ -37,6 +37,8 @@ open! Stdlib
 
 let debug = Debug.find "gen"
 
+let debug_dominance_frontier = Debug.find "gen-frontier"
+
 let times = Debug.find "times"
 
 let dominance_frontier_time = ref 0.
@@ -474,12 +476,14 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 (****)
 
 type state =
-  { succs : (int, int list) Hashtbl.t
-  ; backs : (int, Addr.Set.t) Hashtbl.t
-  ; preds : (int, int) Hashtbl.t
+  { succs : (Addr.t, int list) Hashtbl.t
+  ; backs : (Addr.t, Addr.Set.t) Hashtbl.t
+  ; preds : (Addr.t, int) Hashtbl.t
   ; loops : Addr.Set.t
   ; mutable loop_stack : (Addr.t * (J.Label.t * bool ref)) list
   ; mutable visited_blocks : Addr.Set.t
+  ; mutable dominance_frontier_invalid : bool
+  ; dominance_frontier_cache : (Addr.t, (Addr.t, int) Hashtbl.t) Hashtbl.t
   ; mutable interm_idx : int
   ; ctx : Ctx.t
   ; mutable blocks : Code.block Addr.Map.t
@@ -487,13 +491,21 @@ type state =
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 
-let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
+let incr_preds st pc =
+  if not st.dominance_frontier_invalid then st.dominance_frontier_invalid <- true;
+  Hashtbl.replace st.preds pc (get_preds st pc + 1)
 
-let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
+let decr_preds st pc =
+  if not st.dominance_frontier_invalid then st.dominance_frontier_invalid <- true;
+  Hashtbl.replace st.preds pc (get_preds st pc - 1)
 
-let protect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1000000)
+let protect_preds st pc =
+  if not st.dominance_frontier_invalid then st.dominance_frontier_invalid <- true;
+  Hashtbl.replace st.preds pc (get_preds st pc + 1000000)
 
-let unprotect_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1000000)
+let unprotect_preds st pc =
+  if not st.dominance_frontier_invalid then st.dominance_frontier_invalid <- true;
+  Hashtbl.replace st.preds pc (get_preds st pc - 1000000)
 
 module DTree = struct
   (* This as to be kept in sync with the way we build conditionals
@@ -628,6 +640,7 @@ let build_graph ctx pc =
   let backs = Hashtbl.create 17 in
   let preds = Hashtbl.create 17 in
   let blocks = ctx.Ctx.blocks in
+  let dominance_frontier_cache = Hashtbl.create 17 in
   let rec loop pc anc =
     if not (Addr.Set.mem pc !visited_blocks)
     then (
@@ -648,6 +661,8 @@ let build_graph ctx pc =
   in
   loop pc Addr.Set.empty;
   { visited_blocks = !visited_blocks
+  ; dominance_frontier_cache
+  ; dominance_frontier_invalid = false
   ; loops = !loops
   ; loop_stack = []
   ; succs
@@ -658,25 +673,89 @@ let build_graph ctx pc =
   ; blocks
   }
 
-let rec dominance_frontier_rec st pc visited grey =
-  let n = get_preds st pc in
-  let v = try Addr.Map.find pc visited with Not_found -> 0 in
-  if v < n
-  then
-    let v = v + 1 in
-    let visited = Addr.Map.add pc v visited in
-    if v = n
+let dominance_frontier_ref_implem st pc =
+  let rec loop st pc visited grey =
+    let n = get_preds st pc in
+    let v = try Addr.Map.find pc visited with Not_found -> 0 in
+    if v < n
     then
-      let grey = Addr.Set.remove pc grey in
-      let s = Hashtbl.find st.succs pc in
-      List.fold_right s ~init:(visited, grey) ~f:(fun pc' (visited, grey) ->
-          dominance_frontier_rec st pc' visited grey)
-    else visited, if v = 1 then Addr.Set.add pc grey else grey
-  else visited, grey
+      let v = v + 1 in
+      let visited = Addr.Map.add pc v visited in
+      if v = n
+      then
+        let grey = Addr.Set.remove pc grey in
+        let s = Hashtbl.find st.succs pc in
+        List.fold_right s ~init:(visited, grey) ~f:(fun pc' (visited, grey) ->
+            loop st pc' visited grey)
+      else visited, if v = 1 then Addr.Set.add pc grey else grey
+    else visited, grey
+  in
+  let _visited, frontier = loop st pc Addr.Map.empty Addr.Set.empty in
+  frontier
+
+let dominance_frontier_opt st pc =
+  let rec frontier st pc =
+    match Hashtbl.find st.dominance_frontier_cache pc with
+    | d -> d
+    | exception Not_found ->
+        let succs = Hashtbl.find st.succs pc in
+        let visited = Hashtbl.create 17 in
+        let rec merge = function
+          | [] -> ()
+          | (x, n) :: xs ->
+              assert (n > 0);
+              let cur = try Hashtbl.find visited x + n with Not_found -> n in
+              Hashtbl.replace visited x cur;
+              let p = get_preds st x in
+              if p = cur
+              then (
+                Hashtbl.remove visited x;
+                let acc =
+                  Hashtbl.fold (fun k v acc -> (k, v) :: acc) (frontier st x) xs
+                in
+                merge acc)
+              else merge xs
+        in
+        merge (List.map succs ~f:(fun x -> x, 1));
+        Hashtbl.replace st.dominance_frontier_cache pc visited;
+        visited
+  in
+  if get_preds st pc > 1
+  then Addr.Set.singleton pc
+  else (
+    if st.dominance_frontier_invalid
+    then (
+      st.dominance_frontier_invalid <- false;
+      Hashtbl.clear st.dominance_frontier_cache);
+    let grey = frontier st pc in
+    Hashtbl.fold (fun k _ acc -> Addr.Set.add k acc) grey Addr.Set.empty)
+
+type dominance_frontier_mode =
+  | New
+  | Old
+
+let dominance_frontier_mode = New
 
 let dominance_frontier st pc =
   let start = Timer.make () in
-  let _, frontier = dominance_frontier_rec st pc Addr.Map.empty Addr.Set.empty in
+  let frontier =
+    match dominance_frontier_mode with
+    | Old -> dominance_frontier_ref_implem st pc
+    | New -> dominance_frontier_opt st pc
+  in
+  (if debug_dominance_frontier ()
+  then
+    let o, n =
+      match dominance_frontier_mode with
+      | Old -> frontier, dominance_frontier_opt st pc
+      | New -> dominance_frontier_ref_implem st pc, frontier
+    in
+    if not (Addr.Set.equal o n)
+    then
+      Format.eprintf
+        "Dominance frontier mismatch: legacy = %s vs %s = new@."
+        (string_of_set o)
+        (string_of_set n));
   dominance_frontier_time := !dominance_frontier_time +. Timer.get start;
   frontier
 
@@ -1539,6 +1618,7 @@ and colapse_frontier st new_frontier interm =
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
     Hashtbl.add st.backs idx Addr.Set.empty;
+    (* The [dominance_frontier_cache] is invalidated by [incr_preds] and [protect_preds] *)
     ( [ J.Variable_statement [ J.V x, Some (int default, J.N) ], J.N ]
     , Addr.Set.singleton idx
     , List.fold_right pc_i ~init:interm ~f:(fun (pc, i) interm ->
