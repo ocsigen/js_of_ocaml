@@ -34,8 +34,7 @@ let () = myfun ()
 |}
   in
   Util.compile_and_run prog;
-  [%expect
-    {|
+  [%expect {|
     1
     4
     27
