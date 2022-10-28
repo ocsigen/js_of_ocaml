@@ -64,11 +64,7 @@ let last s l =
   | Poptrap (cont, addr) -> Poptrap (subst_cont s cont, addr)
 
 let block s block =
-  { params = block.params
-  ; handler = Option.map block.handler ~f:(fun (x, cont) -> x, subst_cont s cont)
-  ; body = instrs s block.body
-  ; branch = last s block.branch
-  }
+  { params = block.params; body = instrs s block.body; branch = last s block.branch }
 
 let program s p =
   let blocks = Addr.Map.map (fun b -> block s b) p.blocks in

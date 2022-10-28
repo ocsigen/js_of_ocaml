@@ -545,6 +545,7 @@ module State = struct
     ; stack_len : int
     ; block_pc : Addr.t
     }
+  [@@warning "-69"]
 
   type t =
     { accu : elt
@@ -649,18 +650,6 @@ module State = struct
     match state.handlers with
     | [] -> assert false
     | x :: _ -> x.block_pc
-
-  let current_handler state =
-    match state.handlers with
-    | [] -> None
-    | { var; addr; stack_len; _ } :: _ ->
-        let state =
-          { state with
-            accu = Var var
-          ; stack = st_pop (List.length state.stack - stack_len) state.stack
-          }
-        in
-        Some (var, (addr, stack_vars state))
 
   let initial g =
     { accu = Dummy
@@ -2211,11 +2200,7 @@ let parse_bytecode code globals debug_data =
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
-            { params = State.stack_vars state
-            ; handler = State.current_handler state
-            ; body = instr
-            ; branch = last
-            })
+            { params = State.stack_vars state; body = instr; branch = last })
           !compiled_blocks
       in
       let blocks = match_exn_traps blocks in
@@ -2788,5 +2773,5 @@ let predefined_exceptions () =
         ])
     |> List.concat
   in
-  let block = { params = []; handler = None; body; branch = Stop } in
+  let block = { params = []; body; branch = Stop } in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }
