@@ -46,8 +46,7 @@ let optimizable blocks pc _ =
         try_catch
         ||
         match b with
-        | { handler = Some _; _ } | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ }
-          -> true
+        | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ } -> true
         | _ -> false
       in
       let optimizable =
@@ -100,10 +99,8 @@ let get_closures { blocks; _ } =
 
 (****)
 
-let rewrite_block (pc', handler) pc blocks =
+let rewrite_block pc' pc blocks =
   let block = Addr.Map.find pc blocks in
-  assert (Option.is_none block.handler);
-  let block = { block with handler } in
   let block =
     match block.branch, pc' with
     | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
@@ -127,13 +124,8 @@ let fold_children blocks pc f accu =
       let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
       accu
 
-let rewrite_closure blocks cont_pc clos_pc handler =
-  Code.traverse
-    { fold = fold_children }
-    (rewrite_block (cont_pc, handler))
-    clos_pc
-    blocks
-    blocks
+let rewrite_closure blocks cont_pc clos_pc =
+  Code.traverse { fold = fold_children } (rewrite_block cont_pc) clos_pc blocks blocks
 
 (****)
 
@@ -218,10 +210,7 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
                     [], (outer, Return arg, blocks, free_pc)
                 | _ ->
                     let blocks =
-                      Addr.Map.add
-                        free_pc
-                        { params = [ x ]; handler = block.handler; body = rem; branch }
-                        blocks
+                      Addr.Map.add free_pc { params = [ x ]; body = rem; branch } blocks
                     in
                     [], (outer, Branch (free_pc, [ arg ]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
@@ -246,28 +235,18 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
                     | _ ->
                         ( Addr.Map.add
                             free_pc
-                            { params = [ x ]
-                            ; handler = block.handler
-                            ; body = rem
-                            ; branch
-                            }
+                            { params = [ x ]; body = rem; branch }
                             blocks
                         , Some free_pc )
                   in
-                  let blocks =
-                    rewrite_closure blocks cont_pc (fst clos_cont) block.handler
-                  in
+                  let blocks = rewrite_closure blocks cont_pc (fst clos_cont) in
                   (* We do not really need this intermediate block.
                      It just avoids the need to find which function
                      parameters are used in the function body. *)
                   let blocks =
                     Addr.Map.add
                       (free_pc + 1)
-                      { params
-                      ; handler = block.handler
-                      ; body = []
-                      ; branch = Branch clos_cont
-                      }
+                      { params; body = []; branch = Branch clos_cont }
                       blocks
                   in
                   let outer = { outer with size = outer.size + f_size } in
@@ -278,7 +257,6 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
             match block with
             | { body = [ Let (y, Prim (Extern prim, args)) ]
               ; branch = Return y'
-              ; handler = None
               ; params = []
               } ->
                 let len = List.length l in

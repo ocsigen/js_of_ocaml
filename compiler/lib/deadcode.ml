@@ -193,7 +193,6 @@ let f ({ blocks; _ } as p : Code.program) =
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
           | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
-      Option.iter block.handler ~f:(fun (_, cont) -> add_cont_dep blocks defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
@@ -203,7 +202,9 @@ let f ({ blocks; _ } as p : Code.program) =
       | Switch (_, a1, a2) ->
           Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont);
           Array.iter a2 ~f:(fun cont -> add_cont_dep blocks defs cont)
-      | Pushtrap (cont, _, _, _) -> add_cont_dep blocks defs cont
+      | Pushtrap (cont, _, cont_h, _) ->
+          add_cont_dep blocks defs cont_h;
+          add_cont_dep blocks defs cont
       | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
     blocks;
   let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
@@ -219,9 +220,6 @@ let f ({ blocks; _ } as p : Code.program) =
           Addr.Map.add
             pc
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
-            ; handler =
-                Option.map block.handler ~f:(fun (x, cont) ->
-                    x, filter_cont all_blocks st cont)
             ; body =
                 List.map
                   (List.filter block.body ~f:(fun i -> live_instr st i))

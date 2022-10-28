@@ -92,19 +92,17 @@ let group_closures ~tc_only closures_map =
   SCC.connected_components_sorted_from_roots_to_leaf graph
 
 module Trampoline = struct
-  let direct_call_block block ~counter ~x ~f ~args =
+  let direct_call_block ~counter ~x ~f ~args =
     let return = Code.Var.fork x in
     match counter with
     | None ->
-        { block with
-          params = []
+        { params = []
         ; body = [ Let (return, Apply (f, args, true)) ]
         ; branch = Return return
         }
     | Some counter ->
         let counter_plus_1 = Code.Var.fork counter in
-        { block with
-          params = []
+        { params = []
         ; body =
             [ Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
             ; Let (return, Apply (f, counter_plus_1 :: args, true))
@@ -112,11 +110,10 @@ module Trampoline = struct
         ; branch = Return return
         }
 
-  let bounce_call_block block ~x ~f ~args =
+  let bounce_call_block ~x ~f ~args =
     let return = Code.Var.fork x in
     let new_args = Code.Var.fresh () in
-    { block with
-      params = []
+    { params = []
     ; body =
         [ Let
             ( new_args
@@ -132,7 +129,6 @@ module Trampoline = struct
     let result2 = Code.Var.fresh () in
     let block =
       { params = []
-      ; handler = None
       ; body =
           (match counter with
           | None ->
@@ -217,13 +213,13 @@ module Trampoline = struct
                         let blocks =
                           Addr.Map.add
                             direct_call_pc
-                            (direct_call_block block ~counter ~x ~f:new_f ~args)
+                            (direct_call_block ~counter ~x ~f:new_f ~args)
                             blocks
                         in
                         let blocks =
                           Addr.Map.add
                             bounce_call_pc
-                            (bounce_call_block block ~x ~f:new_f ~args)
+                            (bounce_call_block ~x ~f:new_f ~args)
                             blocks
                         in
                         let block =
@@ -317,7 +313,6 @@ let rewrite_mutable
         rewrite_list := (mapping, pc) :: !rewrite_list;
         let new_block =
           { params = []
-          ; handler = None
           ; body = [ Let (new_x, Closure (params, (pc, List.map pc_args ~f:mapping))) ]
           ; branch = Return new_x
           }
@@ -360,7 +355,6 @@ let rewrite_mutable
                 | _ -> assert false)
           in
           { params = []
-          ; handler = None
           ; body =
               closures_intern
               @ proj

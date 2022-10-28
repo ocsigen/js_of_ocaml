@@ -110,9 +110,6 @@ let program_deps { blocks; _ } =
               add_expr_def defs x e;
               expr_deps blocks vars deps defs x e
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      Option.iter block.handler ~f:(fun (x, cont) ->
-          add_param_def vars defs x;
-          cont_deps blocks vars deps defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont
@@ -122,7 +119,10 @@ let program_deps { blocks; _ } =
       | Switch (_, a1, a2) ->
           Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
           Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
-      | Pushtrap (cont, _, _, _) -> cont_deps blocks vars deps defs cont)
+      | Pushtrap (cont, x, cont_h, _) ->
+          add_param_def vars defs x;
+          cont_deps blocks vars deps defs cont_h;
+          cont_deps blocks vars deps defs cont)
     blocks;
   vars, deps, defs
 

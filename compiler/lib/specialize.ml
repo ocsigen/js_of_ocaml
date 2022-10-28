@@ -69,7 +69,6 @@ let specialize_instr info (acc, free_pc, extra) i =
             { params = params'
             ; body = [ Let (return', Apply (f, l @ params', true)) ]
             ; branch = Return return'
-            ; handler = None
             }
           in
           ( Let (x, Closure (missing, (free_pc, missing))) :: acc

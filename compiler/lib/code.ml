@@ -333,7 +333,6 @@ type last =
 
 type block =
   { params : Var.t list
-  ; handler : (Var.t * cont) option
   ; body : instr list
   ; branch : last
   }
@@ -492,9 +491,6 @@ module Print = struct
 
   let block annot pc block =
     Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
-    (match block.handler with
-    | Some (x, c) -> Format.eprintf "    handler %a => %a@." Var.print x cont c
-    | None -> ());
     List.iter block.body ~f:(fun i ->
         Format.eprintf " %s %a@." (annot pc (Instr i)) instr i);
     Format.eprintf " %s %a@." (annot pc (Last block.branch)) last block.branch;
@@ -525,13 +521,11 @@ let prepend ({ start; blocks; free_pc } as p) body =
   | _ ->
       let new_start = free_pc in
       let branch = if Addr.Map.mem start blocks then Branch (start, []) else Stop in
-      let blocks =
-        Addr.Map.add new_start { params = []; handler = None; body; branch } blocks
-      in
+      let blocks = Addr.Map.add new_start { params = []; body; branch } blocks in
       let free_pc = free_pc + 1 in
       { start = new_start; blocks; free_pc }
 
-let empty_block = { params = []; handler = None; body = []; branch = Stop }
+let empty_block = { params = []; body = []; branch = Stop }
 
 let empty =
   let start = 0 in
@@ -544,7 +538,7 @@ let is_empty p =
   | 1 -> (
       let _, v = Addr.Map.choose p.blocks in
       match v with
-      | { handler = None; body; branch = Stop; params = _ } -> (
+      | { body; branch = Stop; params = _ } -> (
           match body with
           | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
           | _ -> false)
@@ -553,14 +547,13 @@ let is_empty p =
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  let accu =
-    match block.handler with
-    | Some (_, (pc, _)) -> f pc accu
-    | None -> accu
-  in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap ((pc', _), _) | Pushtrap ((pc', _), _, _, _) -> f pc' accu
+  | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
+  | Pushtrap ((pc', _), _, (pc_h, _), _) ->
+      let accu = f pc' accu in
+      let accu = f pc_h accu in
+      accu
   | Cond (_, (pc1, _), (pc2, _)) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
@@ -665,7 +658,6 @@ let invariant { blocks; start; _ } =
     Addr.Map.iter
       (fun _pc block ->
         List.iter block.params ~f:define;
-        Option.iter block.handler ~f:(fun (_, cont) -> check_cont cont);
         List.iter block.body ~f:check_instr;
         check_last block.branch)
       blocks)

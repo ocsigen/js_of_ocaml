@@ -50,7 +50,6 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
           Addr.Map.add
             pc
             { params = block.params
-            ; handler = block.handler
             ; body = remove_last block.body
             ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m))
             }
