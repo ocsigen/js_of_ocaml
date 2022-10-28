@@ -62,7 +62,7 @@ let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
+  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap (_, _, (pc1, _), pcs) -> f pc1 (Addr.Set.fold f pcs accu)
   | Cond (_, (pc1, _), (pc2, _)) ->
       let accu = f pc1 accu in

@@ -329,7 +329,7 @@ type last =
   | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * Addr.Set.t
-  | Poptrap of cont * Addr.t
+  | Poptrap of cont
 
 type block =
   { params : Var.t list
@@ -483,7 +483,7 @@ module Print = struct
           cont
           cont2
           (String.concat ~sep:", " (List.map (Addr.Set.elements pcs) ~f:string_of_int))
-    | Poptrap (c, _) -> Format.fprintf f "poptrap %a" cont c
+    | Poptrap c -> Format.fprintf f "poptrap %a" cont c
 
   type xinstr =
     | Instr of instr
@@ -549,7 +549,7 @@ let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
+  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _), _) ->
       let accu = f pc' accu in
       let accu = f pc_h accu in
@@ -653,7 +653,7 @@ let invariant { blocks; start; _ } =
       | Pushtrap (cont1, _x, cont2, _pcs) ->
           check_cont cont1;
           check_cont cont2
-      | Poptrap (cont, _) -> check_cont cont
+      | Poptrap cont -> check_cont cont
     in
     Addr.Map.iter
       (fun _pc block ->

@@ -777,6 +777,8 @@ let tagged_blocks = ref Addr.Set.empty
 
 let compiled_blocks = ref Addr.Map.empty
 
+let pushpop = ref Addr.Map.empty
+
 let method_cache_id = ref 1
 
 let clo_offset_3 = if new_closure_repr then 3 else 2
@@ -817,7 +819,7 @@ let rec compile_block blocks debug_data code pc state =
     assert (not (Addr.Map.mem pc !compiled_blocks));
     compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
     match last with
-    | Branch (pc', _) | Poptrap ((pc', _), _) ->
+    | Branch (pc', _) | Poptrap (pc', _) ->
         compile_block blocks debug_data code pc' state'
     | Cond (_, (pc1, _), (pc2, _)) ->
         compile_block blocks debug_data code pc1 state';
@@ -1522,13 +1524,18 @@ and compile infos pc state instrs =
     | POPTRAP ->
         let addr = pc + 1 in
         let handler_addr = State.addr_of_current_handler state in
+        let set =
+          try Addr.Set.add addr (Addr.Map.find handler_addr !pushpop)
+          with Not_found -> Addr.Set.singleton addr
+        in
+        pushpop := Addr.Map.add handler_addr set !pushpop;
         compile_block
           infos.blocks
           infos.debug
           code
           addr
           (State.pop 4 (State.pop_handler state));
-        instrs, Poptrap ((addr, State.stack_vars state), handler_addr), state
+        instrs, Poptrap (addr, State.stack_vars state), state
     | RERAISE | RAISE_NOTRACE | RAISE ->
         let kind =
           match instr.Instr.code with
@@ -2148,20 +2155,6 @@ and compile infos pc state instrs =
 (****)
 
 let match_exn_traps (blocks : 'a Addr.Map.t) =
-  let map =
-    Addr.Map.fold
-      (fun _ block map ->
-        match block.branch with
-        | Poptrap ((cont, _), addr_push) ->
-            let set =
-              try Addr.Set.add cont (Addr.Map.find addr_push map)
-              with Not_found -> Addr.Set.singleton cont
-            in
-            Addr.Map.add addr_push set map
-        | _ -> map)
-      blocks
-      Addr.Map.empty
-  in
   Addr.Map.fold
     (fun pc conts' blocks ->
       match Addr.Map.find pc blocks with
@@ -2170,7 +2163,7 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
           let branch = Pushtrap (cont1, x, cont2, conts') in
           Addr.Map.add pc { block with branch } blocks
       | _ -> assert false)
-    map
+    !pushpop
     blocks
 
 (****)
@@ -2208,6 +2201,7 @@ let parse_bytecode code globals debug_data =
       { start; blocks; free_pc })
     else Code.empty
   in
+  pushpop := Addr.Map.empty;
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Set.empty;
   p
