@@ -178,7 +178,7 @@ type last =
   | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * Addr.Set.t
-  | Poptrap of cont * Addr.t
+  | Poptrap of cont
 
 type block =
   { params : Var.t list

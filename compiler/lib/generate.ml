@@ -621,7 +621,7 @@ let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap ((pc', _), _) -> f pc' accu
+  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
@@ -1445,7 +1445,7 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
         else
           match Addr.Map.find pc st.blocks with
           | { body = []; branch = Return _; _ } -> false
-          | { body = []; branch = Poptrap ((pc', _), _); _ }
+          | { body = []; branch = Poptrap (pc', _); _ }
           | { body = []; branch = Branch (pc', _); _ } -> limit pc'
           | _ -> true
       in
@@ -1694,8 +1694,7 @@ and compile_conditional st queue pc last backs frontier interm succs =
         flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont backs frontier interm
     | Pushtrap _ -> assert false
-    | Poptrap (cont, _) ->
-        flush_all queue (compile_branch st [] cont backs frontier interm)
+    | Poptrap cont -> flush_all queue (compile_branch st [] cont backs frontier interm)
     | Cond (x, c1, c2) ->
         let (_px, cx), queue = access_queue queue x in
         let b =

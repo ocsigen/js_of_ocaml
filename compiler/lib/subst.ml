@@ -61,7 +61,7 @@ let last s l =
         ( s x
         , Array.map a1 ~f:(fun cont -> subst_cont s cont)
         , Array.map a2 ~f:(fun cont -> subst_cont s cont) )
-  | Poptrap (cont, addr) -> Poptrap (subst_cont s cont, addr)
+  | Poptrap cont -> Poptrap (subst_cont s cont)
 
 let block s block =
   { params = block.params; body = instrs s block.body; branch = last s block.branch }

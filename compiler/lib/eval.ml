@@ -396,7 +396,7 @@ let drop_exception_handler blocks =
                   let b = Addr.Map.find pc2 blocks in
                   let branch =
                     match b.branch with
-                    | Poptrap (((addr, _) as cont), _) ->
+                    | Poptrap ((addr, _) as cont) ->
                         assert (Addr.Set.mem addr addrset);
                         Branch cont
                     | x -> x

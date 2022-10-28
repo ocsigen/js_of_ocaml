@@ -112,7 +112,7 @@ let program_deps { blocks; _ } =
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
-      | Branch cont | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont
+      | Branch cont | Poptrap cont -> cont_deps blocks vars deps defs cont
       | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2

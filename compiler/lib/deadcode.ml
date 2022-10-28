@@ -89,7 +89,7 @@ and mark_reachable st pc =
     match block.branch with
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
-    | Branch cont | Poptrap (cont, _) -> mark_cont_reachable st cont
+    | Branch cont | Poptrap cont -> mark_cont_reachable st cont
     | Cond (x, cont1, cont2) ->
         mark_var st x;
         mark_cont_reachable st cont1;
@@ -142,7 +142,7 @@ let filter_live_last blocks st l =
         , x
         , filter_cont blocks st cont2
         , Addr.Set.inter pcs st.reachable_blocks )
-  | Poptrap (cont, addr) -> Poptrap (filter_cont blocks st cont, addr)
+  | Poptrap cont -> Poptrap (filter_cont blocks st cont)
 
 (****)
 
@@ -205,7 +205,7 @@ let f ({ blocks; _ } as p : Code.program) =
       | Pushtrap (cont, _, cont_h, _) ->
           add_cont_dep blocks defs cont_h;
           add_cont_dep blocks defs cont
-      | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
+      | Poptrap cont -> add_cont_dep blocks defs cont)
     blocks;
   let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
   mark_reachable st p.start;

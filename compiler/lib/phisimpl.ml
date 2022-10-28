@@ -80,7 +80,7 @@ let program_deps { blocks; _ } =
       | Pushtrap (cont, _, cont_h, _) ->
           cont_deps blocks vars deps defs cont_h;
           cont_deps blocks vars deps defs cont
-      | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont)
+      | Poptrap cont -> cont_deps blocks vars deps defs cont)
     blocks;
   vars, deps, defs
 

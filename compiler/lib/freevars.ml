@@ -58,7 +58,7 @@ let iter_last_free_var f l =
   match l with
   | Return x | Raise (x, _) -> f x
   | Stop -> ()
-  | Branch cont | Poptrap (cont, _) -> iter_cont_free_vars f cont
+  | Branch cont | Poptrap cont -> iter_cont_free_vars f cont
   | Cond (x, cont1, cont2) ->
       f x;
       iter_cont_free_vars f cont1;
