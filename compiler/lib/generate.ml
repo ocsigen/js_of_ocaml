@@ -483,7 +483,7 @@ type state =
   ; mutable loop_stack : (Addr.t * (J.Label.t * bool ref)) list
   ; mutable visited_blocks : Addr.Set.t
   ; mutable dominance_frontier_invalid : bool
-  ; dominance_frontier_cache : (Addr.t, (Addr.t, int) Hashtbl.t) Hashtbl.t
+  ; dominance_frontier_cache : (Addr.t, int Addr.Map.t) Hashtbl.t
   ; mutable interm_idx : int
   ; ctx : Ctx.t
   ; mutable blocks : Code.block Addr.Map.t
@@ -698,27 +698,25 @@ let dominance_frontier_opt st pc =
     match Hashtbl.find st.dominance_frontier_cache pc with
     | d -> d
     | exception Not_found ->
+        let visited = ref Addr.Map.empty in
+        let q = Queue.create () in
         let succs = Hashtbl.find st.succs pc in
-        let visited = Hashtbl.create 17 in
-        let rec merge = function
-          | [] -> ()
-          | (x, n) :: xs ->
-              assert (n > 0);
-              let cur = try Hashtbl.find visited x + n with Not_found -> n in
-              Hashtbl.replace visited x cur;
-              let p = get_preds st x in
-              if p = cur
-              then (
-                Hashtbl.remove visited x;
-                let acc =
-                  Hashtbl.fold (fun k v acc -> (k, v) :: acc) (frontier st x) xs
-                in
-                merge acc)
-              else merge xs
-        in
-        merge (List.map succs ~f:(fun x -> x, 1));
-        Hashtbl.replace st.dominance_frontier_cache pc visited;
-        visited
+        List.iter ~f:(fun x -> Queue.add (Addr.Map.singleton x 1) q) succs;
+        while not (Queue.is_empty q) do
+          visited :=
+            Addr.Map.merge
+              (fun k a b ->
+                let sum = Option.value ~default:0 a + Option.value ~default:0 b in
+                if get_preds st k = sum
+                then (
+                  Queue.add (frontier st k) q;
+                  None)
+                else Some sum)
+              !visited
+              (Queue.take q)
+        done;
+        Hashtbl.replace st.dominance_frontier_cache pc !visited;
+        !visited
   in
   if get_preds st pc > 1
   then Addr.Set.singleton pc
@@ -728,7 +726,7 @@ let dominance_frontier_opt st pc =
       st.dominance_frontier_invalid <- false;
       Hashtbl.clear st.dominance_frontier_cache);
     let grey = frontier st pc in
-    Hashtbl.fold (fun k _ acc -> Addr.Set.add k acc) grey Addr.Set.empty)
+    Addr.Map.fold (fun k _ acc -> Addr.Set.add k acc) grey Addr.Set.empty)
 
 type dominance_frontier_mode =
   | New
