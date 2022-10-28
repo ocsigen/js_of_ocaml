@@ -539,13 +539,7 @@ module State = struct
     | Var x -> Format.fprintf f "%a" Var.print x
     | Dummy -> Format.fprintf f "???"
 
-  type handler =
-    { var : Var.t
-    ; addr : Addr.t
-    ; stack_len : int
-    ; block_pc : Addr.t
-    }
-  [@@warning "-69"]
+  type handler = { block_pc : Addr.t }
 
   type t =
     { accu : elt
@@ -633,16 +627,8 @@ module State = struct
         Var.propagate_name x y;
         state
 
-  let push_handler state x addr =
-    { state with
-      handlers =
-        { block_pc = state.current_pc
-        ; var = x
-        ; addr
-        ; stack_len = List.length state.stack
-        }
-        :: state.handlers
-    }
+  let push_handler state =
+    { state with handlers = { block_pc = state.current_pc } :: state.handlers }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
@@ -1505,7 +1491,7 @@ and compile infos pc state instrs =
           infos.debug
           code
           (pc + 2)
-          { (State.push_handler state x addr) with
+          { (State.push_handler state) with
             State.stack =
               (* See interp.c *)
               State.Dummy
