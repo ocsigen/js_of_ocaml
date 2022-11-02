@@ -2,10 +2,10 @@
 The Js_of_ocaml compiler accepts JavaScript files provided on the command-line.
 The main purpose is to provide (external) primitives needed by the bytecode program.
 
-Most of the primitives from the standard library are already implemented and loaded by default (located in "runtime.js").
+Most of the primitives from the standard library are already implemented and loaded by default.
 
-Additionally, some other primitives are installed but not loaded by default:
- * "+toplevel.js" : when compiling toplevel
+Additionally, some other primitives are available but not loaded by default:
+ * "+toplevel.js" and "+dynlink.js" when compiling toplevel and/or using dynlink.
 
 == Command-line
 Pass the JavaScript file (must have a ".js" extension)
@@ -13,12 +13,8 @@ Pass the JavaScript file (must have a ".js" extension)
 js_of_ocaml jsfile.js a.byte
 >>
 
-Or load it from a findlib package
-<<code |
-js_of_ocaml +mypackage/jsfile.js a.byte
->>
-The file **jsfile.js** will be looked up inside **mypackage** lib directory.
-When no package is provided, the compiler will look inside js_of_ocaml-compiler lib directory.
+See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
+discover runtime files.
 
 == Provide your own JavaScript
 You may need to provide extra JavaScript files to provide missing primitives or to override existing ones.

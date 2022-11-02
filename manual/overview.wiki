@@ -47,7 +47,7 @@ For alternatives, see <<a_manual chapter="install" |Install>>.
 
 === with ocamlbuild and oasis ===
   Js_of_ocaml also provide an ocamlbuild plugin.
-  See <<a_api subproject="js_of_ocaml-ocamlbuild"|module Ocamlbuild_js_of_ocaml>>.
+  See [[https://github.com/ocsigen/js_of_ocaml-ocamlbuild/blob/master/ocamlbuild_js_of_ocaml.mli|js_of_ocaml-ocamlbuild>>.
 
 === with dune ===
   Dune has native support for js_of_ocaml.
