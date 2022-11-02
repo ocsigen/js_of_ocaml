@@ -22,8 +22,6 @@
    %{dep:export.txt}
    --toplevel
    --pretty
-   +toplevel.js
-   +dynlink.js
    %{dep:eval.bc}
    -o
    %{targets})))
