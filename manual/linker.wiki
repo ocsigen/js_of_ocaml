@@ -4,9 +4,6 @@ The main purpose is to provide (external) primitives needed by the bytecode prog
 
 Most of the primitives from the standard library are already implemented and loaded by default.
 
-Additionally, some other primitives are available but not loaded by default:
- * "+toplevel.js" and "+dynlink.js" when compiling toplevel and/or using dynlink.
-
 == Command-line
 Pass the JavaScript file (must have a ".js" extension)
 <<code |

@@ -82,6 +82,13 @@ let run
         close_in ic;
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
+  let runtime_files =
+    if toplevel
+    then
+      let add_if_absent x l = if List.mem x ~set:l then l else x :: l in
+      runtime_files |> add_if_absent "+toplevel.js" |> add_if_absent "+dynlink.js"
+    else runtime_files
+  in
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with

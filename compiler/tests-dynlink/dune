@@ -11,9 +11,7 @@
   (run
    %{bin:js_of_ocaml}
    --dynlink
-   +dynlink.js
    --toplevel
-   +toplevel.js
    --file
    plugin.cmo
    -o

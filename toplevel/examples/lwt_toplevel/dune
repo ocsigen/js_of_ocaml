@@ -104,8 +104,6 @@
    --toplevel
    --disable
    shortvar
-   +toplevel.js
-   +dynlink.js
    %{dep:toplevel.bc}
    -o
    %{targets})))
