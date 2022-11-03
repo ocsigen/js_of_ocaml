@@ -44,6 +44,10 @@ For example, to declare that **mypackage.sublib** requires the file **mypackage/
   )
 }}}
 
+While the mechanism allows arbitrary naming for the javascript files,
+if there is only one file, we suggest naming it **runtime.js** by
+convention.
+
 == The old deprecated way
 
 Before dune and its native support for js_of_ocaml, the (hacky) way
