@@ -14,14 +14,20 @@ To list all JavaScript runtime files for a set of libraries:
   ocamlfind query -format "%+(jsoo_runtime)" -r LIB1 LIB2 ... | grep -v "^$"
 }}}
 
-For example, for **base** and **ppx_expect**
+For example, for **base** and **time_now**
 
 {{{
-  $ ocamlfind query -format "%+(jsoo_runtime)" -r base ppx_expect | grep -v "^$"
+  $ ocamlfind query -format "%+(jsoo_runtime)" -r base time_now | grep -v "^$"
   ~/.opam/4.14.0/lib/base/base_internalhash_types/runtime.js
   ~/.opam/4.14.0/lib/base/runtime.js
   ~/.opam/4.14.0/lib/time_now/runtime.js
-  ~/.opam/4.14.0/lib/ppx_expect/collector/runtime.js
+}}}
+
+Here is minimal example of compiling a single ml file program manually:
+{{{
+  $ export LIBS=base,time_now
+  $ ocamlfind ocamlc -package $LIBS -linkpkg main.ml -o main.byte
+  $ js_of_ocaml $(ocamlfind query -format "%+(jsoo_runtime)" -r $LIBS) main.byte
 }}}
 
 == Declaring runtime JavaScript files inside a META file
@@ -57,14 +63,13 @@ To list all {{{linkopts(javascript)}}} for a set of libraries:
   ocamlfind query -o-format -r -predicates javascript LIB1 LIB2 ...
 }}}
 
-For example, for **base** and **ppx_expect**
+For example, for **base** and **time_now**
 
 {{{
-  $ ocamlfind query -o-format -r -predicates javascript base ppx_expect
+  $ ocamlfind query -o-format -r -predicates javascript base time_now
   +base/base_internalhash_types/runtime.js
   +base/runtime.js
   +time_now/runtime.js
-  +ppx_expect/collector/runtime.js
 }}}
 
 === Declaring runtime JavaScript files inside META files
