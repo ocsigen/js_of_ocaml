@@ -5,6 +5,39 @@ JavaScript runtime files for some OCaml libraries used by the
 executable. Tracking the required runtime files is done using the de-facto
 standard for library management in OCaml, Findlib.
 
+
+== Listing js runtime files
+
+To list all JavaScript runtime files for a set of libraries:
+
+{{{
+  ocamlfind query -format "%+(jsoo_runtime)" -r LIB1 LIB2 ... | grep -v "^$"
+}}}
+
+For example, for **base** and **ppx_expect**
+
+{{{
+  $ ocamlfind query -format "%+(jsoo_runtime)" -r base ppx_expect | grep -v "^$"
+  ~/.opam/4.14.0/lib/base/base_internalhash_types/runtime.js
+  ~/.opam/4.14.0/lib/base/runtime.js
+  ~/.opam/4.14.0/lib/time_now/runtime.js
+  ~/.opam/4.14.0/lib/ppx_expect/collector/runtime.js
+}}}
+
+== Declaring runtime JavaScript files inside a META file
+
+The **jsoo_runtime** variable is used to declare one or more runtime files.
+Files must be coma-separated and should be plain names relative to the package directory.
+
+For example, to declare that **mypackage.sublib** requires the file **mypackage/subdir/runtime.js**
+{{{
+  cat mypackage/META
+  package "sublib" (
+    directory = "subdir"
+    jsoo_runtime = "runtime.js"
+  )
+}}}
+
 == The old deprecated way
 
 Before dune and its native support for js_of_ocaml, the (hacky) way
@@ -50,46 +83,7 @@ For example, to declare that **mypackage.sublib** requires the file **mypackage/
   )
 }}}
 
-
-== The new way (introduced by/for dune)
-
-Using findlib more efficiently, with a usage closer to what's
-done for OCaml archives.
-
-=== Listing js runtime files
-
-To list all JavaScript runtime files for a set of libraries:
-
-{{{
-  ocamlfind query -format "%+(jsoo_runtime)" -r LIB1 LIB2 ... | grep -v "^$"
-}}}
-
-For example, for **base** and **ppx_expect**
-
-{{{
-  $ ocamlfind query -format "%+(jsoo_runtime)" -r base ppx_expect | grep -v "^$"
-  ~/.opam/4.14.0/lib/base/base_internalhash_types/runtime.js
-  ~/.opam/4.14.0/lib/base/runtime.js
-  ~/.opam/4.14.0/lib/time_now/runtime.js
-  ~/.opam/4.14.0/lib/ppx_expect/collector/runtime.js
-}}}
-
-=== Declaring runtime JavaScript files inside META files
-
-The **jsoo_runtime** variable can be used to declare one or more runtime files.
-Files must be coma-separated and should be plain names relative to the package directory.
-
-To declare that **mypackage.sublib** requires the file **mypackage/subdir/runtime.js**
-{{{
-  cat mypackage/META
-  package "sublib" (
-    directory = "subdir"
-    jsoo_runtime = "runtime.js"
-  )
-}}}
-
-== Command line findlib support
-
+== Command line findlib support (deprecated)
 If js_of_ocaml is compiled with findlib support, one can use the
 following syntax to reference JavaScript files:
 * {{{ +{findlib-package}/{javascript-file} }}}
@@ -106,7 +100,7 @@ For example, if findlib install all libraries inside ${LIBDIR}:
 
 == Compatibility
 
-**dune** generate META files that are usable in both the new and old
+**dune** generate META files that are usable with the old deprecated
 way.  However, it only uses **jsoo_runtime** to look up information.
 
 **js_of_ocaml-ocamlbuild** uses **jsoo_runtime** by default starting with version 5.0.
