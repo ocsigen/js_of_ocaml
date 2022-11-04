@@ -23,7 +23,7 @@ For example, for **base** and **time_now**
   ~/.opam/4.14.0/lib/time_now/runtime.js
 }}}
 
-Here is minimal example of compiling a single ml file program manually:
+Here is minimal example of manually compiling a single ml file program:
 {{{
   $ export LIBS=base,time_now
   $ ocamlfind ocamlc -package $LIBS -linkpkg main.ml -o main.byte
