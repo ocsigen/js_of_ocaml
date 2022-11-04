@@ -38,19 +38,8 @@ Additional runtime files are sometime needed and can be passed on the
 command line.  In particular, some packages/libraries come with their
 own runtime file.
 
-As an example, compiling a program that has a dependency on {{{base}}}
-will require the {{{runtime.js}}}} file provided by base.
-
-{{{
-js_of_ocaml --runtime-only -o my-runtime.js PATH_TO_BASE_LIB/runtime.js dummy
-}}}
-
-If js_of_ocaml is compiled with findlib support, one can also use the
-following syntax {{{ +{findlib-package}/{javascript-file} }}}.
-
-{{{
-js_of_ocaml --runtime-only -o my-runtime.js +base/runtime.js dummy
-}}}
+See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
+discover these files.
 
 === 2. Build compilation units
 

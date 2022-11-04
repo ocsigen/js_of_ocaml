@@ -21,6 +21,7 @@
 ==[[tailcall|About tailcall optimization]]
 
 =Misc
+==[[runtime-files|How to look up runtime files]]
 ==[[debug|How to debug a program]]
 ==[[contribute|How to contribute]]
 ==[[performances|Performances]]
