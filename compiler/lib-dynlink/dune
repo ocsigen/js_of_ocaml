@@ -1,0 +1,9 @@
+(library
+ (name js_of_ocaml_compiler_dynlink)
+ (public_name js_of_ocaml-compiler.dynlink)
+ (synopsis "Js_of_ocaml compiler dynlink support")
+ (library_flags (-linkall))
+ (libraries
+  js_of_ocaml-compiler
+  js_of_ocaml-compiler.runtime
+  compiler-libs.bytecomp))
