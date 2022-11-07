@@ -189,8 +189,8 @@ let options =
   in
   let export_file =
     let doc =
-      "File containing the list of unit to export in a toplevel. If absent, all units \
-       will be exported."
+      "File containing the list of unit to export in a toplevel, with Dynlink or with \
+       --linkall. If absent, all units will be exported."
     in
     Arg.(value & opt (some string) None & info [ "export" ] ~docs:toplevel_section ~doc)
   in
@@ -203,7 +203,10 @@ let options =
     Arg.(value & flag & info [ "dynlink" ] ~doc)
   in
   let linkall =
-    let doc = "Link all primitives and compilation units." in
+    let doc =
+      "Link all primitives and compilation units. Exported compilation units can be \
+       configured with '--export'."
+    in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
   let no_cmis =
