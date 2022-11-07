@@ -1,0 +1,25 @@
+(executables
+ (names test_toplevel)
+ (libraries js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
+ (flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets test_toplevel.js)
+ (action
+  (run %{bin:js_of_ocaml} --toplevel %{dep:test_toplevel.bc} -o %{targets})))
+
+(rule
+ (target test_toplevel.referencejs)
+ (deps test_toplevel.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test_toplevel.js))))
+
+(rule
+ (alias runtest)
+ (deps test_toplevel.reference test_toplevel.referencejs)
+ (action
+  (diff test_toplevel.reference test_toplevel.referencejs)))
