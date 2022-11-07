@@ -1,0 +1,70 @@
+open Js_of_ocaml_compiler.Stdlib
+open Js_of_ocaml_compiler
+module J = Jsoo_runtime.Js
+
+let split_primitives p =
+  let len = String.length p in
+  let rec split beg cur =
+    if cur >= len
+    then []
+    else if Char.equal p.[cur] '\000'
+    then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
+    else split beg (cur + 1)
+  in
+  Array.of_list (split 0 0)
+
+let () =
+  let global = J.pure_js_expr "globalThis" in
+  let initial_primitive_count =
+    Array.length (split_primitives (Symtable.data_primitive_names ()))
+  in
+  (* this needs to stay synchronized with toplevel.js *)
+  let toplevel_compile (s : bytes array) : unit -> J.t =
+    let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
+    let prims = split_primitives (Symtable.data_primitive_names ()) in
+    let unbound_primitive p =
+      try
+        ignore (J.eval_string p);
+        false
+      with _ -> true
+    in
+    let stubs = ref [] in
+    Array.iteri prims ~f:(fun i p ->
+        if i >= initial_primitive_count && unbound_primitive p
+        then
+          stubs :=
+            Format.sprintf "function %s(){caml_failwith(\"%s not implemented\")}" p p
+            :: !stubs);
+    let output_program = Driver.from_string prims s in
+    let b = Buffer.create 100 in
+    output_program (Pretty_print.to_buffer b);
+    Format.(pp_print_flush std_formatter ());
+    Format.(pp_print_flush err_formatter ());
+    flush stdout;
+    flush stderr;
+    let js =
+      let s = Buffer.contents b in
+      String.concat ~sep:"" !stubs ^ s
+    in
+    let res : string -> unit -> J.t =
+      Obj.magic (J.get global (J.string "toplevelEval"))
+    in
+    res (js : string)
+  in
+  let toplevel_eval (x : string) : unit -> J.t =
+    let f : J.t -> J.t = J.eval_string x in
+    fun () ->
+      let res = f global in
+      Format.(pp_print_flush std_formatter ());
+      Format.(pp_print_flush err_formatter ());
+      flush stdout;
+      flush stderr;
+      res
+  in
+  let toplevel_reloc (name : J.t) : int =
+    let name = J.to_string name in
+    Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name
+  in
+  J.set global (J.string "toplevelCompile") (Obj.magic toplevel_compile) (*XXX HACK!*);
+  J.set global (J.string "toplevelEval") (Obj.magic toplevel_eval);
+  J.set global (J.string "toplevelReloc") (Obj.magic toplevel_reloc)

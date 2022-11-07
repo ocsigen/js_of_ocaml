@@ -1,7 +1,7 @@
 (executable
  (name main)
  (modules main)
- (libraries dynlink js_of_ocaml-toplevel)
+ (libraries dynlink js_of_ocaml-compiler.dynlink)
  (modes byte))
 
 (rule
@@ -12,6 +12,8 @@
    %{bin:js_of_ocaml}
    --dynlink
    --toplevel
+   --pretty
+   --no-cmis ;; This is usefull to reduce the size of the target
    --file
    plugin.cmo
    -o
