@@ -12,6 +12,7 @@
   react
   reactiveData
   str
+  dynlink
   (select
    ocp_indent.ml
    from
@@ -80,8 +81,7 @@
    js_of_ocaml
    js_of_ocaml-lwt
    js_of_ocaml-tyxml
-   js_of_ocaml-toplevel
-   dynlink)))
+   js_of_ocaml-toplevel)))
 
 (rule
  (targets toplevel.js)
