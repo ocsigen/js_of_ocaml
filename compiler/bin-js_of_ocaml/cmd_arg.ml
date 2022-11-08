@@ -58,7 +58,7 @@ type t =
   ; linkall : bool
   ; toplevel : bool
   ; export_file : string option
-  ; nocmis : bool
+  ; no_cmis : bool
   ; (* filesystem *)
     include_dirs : string list
   ; fs_files : string list
@@ -180,22 +180,33 @@ let options =
       value & opt (enum options) Target_env.Isomorphic & info [ "target-env" ] ~docv ~doc)
   in
   let toplevel =
-    let doc = "Compile a toplevel." in
+    let doc =
+      "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided). \
+       Exported compilation units can be configured with '--export'.  Note you you'll \
+       also need to link against js_of_ocaml-toplevel."
+    in
     Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
   in
   let export_file =
-    let doc = "File containing the list of unit to export in a toplevel." in
+    let doc =
+      "File containing the list of unit to export in a toplevel. If absent, all units \
+       will be exported."
+    in
     Arg.(value & opt (some string) None & info [ "export" ] ~docs:toplevel_section ~doc)
   in
-  let linkall =
-    let doc = "Link all primitives." in
-    Arg.(value & flag & info [ "linkall" ] ~doc)
-  in
   let dynlink =
-    let doc = "Enable dynlink." in
+    let doc =
+      "Enable dynlink of bytecode files.  Use this if you want to be able to use the \
+       Dynlink module. Note that you'll also need to link with \
+       'js_of_ocaml-compiler.dynlink'."
+    in
     Arg.(value & flag & info [ "dynlink" ] ~doc)
   in
-  let nocmis =
+  let linkall =
+    let doc = "Link all primitives and compilation units." in
+    Arg.(value & flag & info [ "linkall" ] ~doc)
+  in
+  let no_cmis =
     let doc = "Do not include cmis when compiling toplevel." in
     Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
   in
@@ -252,7 +263,7 @@ let options =
       fs_files
       fs_output
       fs_external
-      nocmis
+      no_cmis
       profile
       no_runtime
       runtime_only
@@ -273,8 +284,7 @@ let options =
       then runtime_files @ [ input_file ]
       else runtime_files
     in
-    let linkall = linkall || toplevel || runtime_only in
-    let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
+    let fs_external = fs_external || (toplevel && no_cmis) || runtime_only in
     let input_file =
       match input_file, runtime_only with
       | "-", _ | _, true -> None
@@ -341,7 +351,7 @@ let options =
       ; fs_files
       ; fs_output
       ; fs_external
-      ; nocmis
+      ; no_cmis
       ; output_file
       ; input_file
       ; source_map
@@ -363,7 +373,7 @@ let options =
       $ fs_files
       $ fs_output
       $ fs_external
-      $ nocmis
+      $ no_cmis
       $ profile
       $ noruntime
       $ runtime_only
@@ -566,7 +576,7 @@ let options_runtime_only =
       ; fs_files
       ; fs_output
       ; fs_external
-      ; nocmis = true
+      ; no_cmis = true
       ; output_file
       ; input_file = None
       ; source_map

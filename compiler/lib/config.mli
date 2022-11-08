@@ -49,8 +49,6 @@ module Flag : sig
 
   val excwrap : unit -> bool
 
-  val include_cmis : unit -> bool
-
   val improved_stacktrace : unit -> bool
 
   val warn_unused : unit -> bool

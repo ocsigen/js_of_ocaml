@@ -43,7 +43,7 @@ let run
     ; linkall
     ; target_env
     ; toplevel
-    ; nocmis
+    ; no_cmis
     ; runtime_only
     ; include_dirs
     ; fs_files
@@ -52,7 +52,7 @@ let run
     ; export_file
     ; keep_unit_names
     } =
-  let dynlink = dynlink || toplevel || runtime_only in
+  let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Jsoo_cmdline.Arg.eval common;
   (match output_file with
@@ -83,7 +83,7 @@ let run
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   let runtime_files =
-    if toplevel
+    if toplevel || dynlink
     then
       let add_if_absent x l = if List.mem x ~set:l then l else x :: l in
       runtime_files |> add_if_absent "+toplevel.js" |> add_if_absent "+dynlink.js"
@@ -121,7 +121,6 @@ let run
          %!"
   in
   let pseudo_fs_instr prim debug cmis =
-    let cmis = if nocmis then StringSet.empty else cmis in
     let paths =
       include_dirs @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
     in
@@ -138,7 +137,7 @@ let run
           ; Let (Var.fresh (), Prim (Extern "caml_set_static_env", [ Pv var_k; Pv var_v ]))
           ])
   in
-  let output (one : Parse_bytecode.one) ~standalone output_file =
+  let output (one : Parse_bytecode.one) ~linkall ~standalone output_file =
     check_debug one;
     let init_pseudo_fs = fs_external && standalone in
     (match output_file with
@@ -157,7 +156,6 @@ let run
           ?profile
           ~linkall
           ~wrap_with_fun
-          ~dynlink
           ?source_map
           ?custom_header
           fmt
@@ -184,7 +182,6 @@ let run
               ?profile
               ~linkall
               ~wrap_with_fun
-              ~dynlink
               ?source_map
               ?custom_header
               fmt
@@ -205,15 +202,18 @@ let run
                   code)));
     if times () then Format.eprintf "compilation: %a@." Timer.print t
   in
+  let output_partial code output_file =
+    output code ~standalone:false ~linkall:false output_file
+  in
   (if runtime_only
   then
     let code : Parse_bytecode.one =
       { code = Parse_bytecode.predefined_exceptions ()
       ; cmis = StringSet.empty
-      ; debug = Parse_bytecode.Debug.create ~toplevel:false false
+      ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
       }
     in
-    output code ~standalone:true (fst output_file)
+    output code ~standalone:true ~linkall:true (fst output_file)
   else
     let kind, ic, close_ic, include_dirs =
       match input_file with
@@ -227,17 +227,25 @@ let run
     (match kind with
     | `Exe ->
         let t1 = Timer.make () in
+        (* The OCaml compiler can generate code using the
+           "caml_string_greaterthan" primitive but does not use it
+           itself. This is (was at some point at least) the only primitive
+           in this case.  Ideally, Js_of_ocaml should parse the .mli files
+           for primitives as well as marking this primitive as potentially
+           used. But the -linkall option is probably good enough. *)
+        let linkall = linkall || toplevel || dynlink in
         let code =
           Parse_bytecode.from_exe
             ~includes:include_dirs
-            ~toplevel
+            ~include_cmis
+            ~link_info:(toplevel || dynlink)
+            ~linkall
             ?exported_unit
-            ~dynlink
             ~debug:need_debug
             ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code ~standalone:true (fst output_file)
+        output code ~standalone:true ~linkall (fst output_file)
     | `Cmo cmo ->
         let output_file =
           match output_file, keep_unit_names with
@@ -255,13 +263,13 @@ let run
         let code =
           Parse_bytecode.from_cmo
             ~includes:include_dirs
-            ~toplevel
+            ~include_cmis
             ~debug:need_debug
             cmo
             ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code ~standalone:false output_file
+        output_partial code output_file
     | `Cma cma when keep_unit_names ->
         List.iter cma.lib_units ~f:(fun cmo ->
             let output_file =
@@ -278,26 +286,26 @@ let run
             let code =
               Parse_bytecode.from_cmo
                 ~includes:include_dirs
-                ~toplevel
+                ~include_cmis
                 ~debug:need_debug
                 cmo
                 ic
             in
             if times ()
             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
-            output code ~standalone:false output_file)
+            output_partial code output_file)
     | `Cma cma ->
         let t1 = Timer.make () in
         let code =
           Parse_bytecode.from_cma
             ~includes:include_dirs
-            ~toplevel
+            ~include_cmis
             ~debug:need_debug
             cma
             ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code ~standalone:false (fst output_file));
+        output_partial code (fst output_file));
     close_ic ());
   Debug.stop_profiling ()
 

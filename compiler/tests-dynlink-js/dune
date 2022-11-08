@@ -7,7 +7,7 @@
 (rule
  (target main.js)
  (action
-  (run %{bin:js_of_ocaml} --dynlink -o %{target} %{dep:main.bc})))
+  (run %{bin:js_of_ocaml} --linkall -o %{target} %{dep:main.bc})))
 
 (rule
  (target plugin.cmo)

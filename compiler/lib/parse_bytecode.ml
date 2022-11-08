@@ -37,8 +37,6 @@ module Debug : sig
 
   val names : t -> bool
 
-  val toplevel : t -> bool
-
   val enabled : t -> bool
 
   val is_empty : t -> bool
@@ -66,7 +64,7 @@ module Debug : sig
     -> in_channel
     -> unit
 
-  val create : toplevel:bool -> bool -> t
+  val create : include_cmis:bool -> bool -> t
 
   val fold : t -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
 
@@ -96,29 +94,27 @@ end = struct
     { events_by_pc : event_and_source Int_table.t
     ; units : (string * string option, ml_unit) Hashtbl.t
     ; pos_fname_to_source : string String_table.t
-    ; toplevel : bool
     ; names : bool
     ; enabled : bool
+    ; include_cmis : bool
     }
 
   let names t = t.names
 
-  let toplevel t = t.toplevel
-
   let enabled t = t.enabled
 
-  let dbg_section_needed t = t.names || t.toplevel || t.enabled
+  let dbg_section_needed t = t.names || t.enabled || t.include_cmis
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let create ~toplevel enabled =
+  let create ~include_cmis enabled =
     let names = enabled || Config.Flag.pretty () in
     { events_by_pc = Int_table.create 17
     ; units = Hashtbl.create 17
     ; pos_fname_to_source = String_table.create 17
     ; names
-    ; toplevel
     ; enabled
+    ; include_cmis
     }
 
   let is_empty t = Int_table.length t.events_by_pc = 0
@@ -139,7 +135,7 @@ end = struct
         | None -> path
     in
     let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
-    fun { events_by_pc; units; pos_fname_to_source; toplevel = _; names; enabled }
+    fun { events_by_pc; units; pos_fname_to_source; names; enabled; include_cmis = _ }
         ~crcs
         ~includes
         ~orig
@@ -372,7 +368,9 @@ end = struct
 
   let analyse debug_data code =
     let debug_data =
-      if Debug.enabled debug_data then debug_data else Debug.create ~toplevel:false false
+      if Debug.enabled debug_data
+      then debug_data
+      else Debug.create ~include_cmis:false false
     in
     let blocks = Addr.Set.empty in
     let len = String.length code / 4 in
@@ -2294,12 +2292,13 @@ let read_primitives toc ic =
 
 let from_exe
     ?(includes = [])
-    ?(toplevel = false)
+    ~linkall
+    ~link_info
+    ~include_cmis
     ?exported_unit
-    ?(dynlink = false)
     ?(debug = false)
     ic =
-  let debug_data = Debug.create ~toplevel debug in
+  let debug_data = Debug.create ~include_cmis debug in
   let toc = Toc.read ic in
   let primitives = read_primitives toc ic in
   let primitive_table = Array.of_list primitives in
@@ -2329,14 +2328,13 @@ let from_exe
       (fun id -> keep (Ident.name id))
       orig_symbols
   in
-  (if not (Debug.dbg_section_needed debug_data)
-  then ()
-  else
+  (if Debug.dbg_section_needed debug_data
+  then
     try
       ignore (Toc.seek_section toc ic "DBUG");
       Debug.read debug_data ~crcs ~includes ic
     with Not_found ->
-      if Debug.enabled debug_data || Debug.toplevel debug_data
+      if Debug.enabled debug_data || include_cmis
       then
         warn
           "Warning: Program not linked with -g, original variable names and locations \
@@ -2350,22 +2348,14 @@ let from_exe
         globals.override.(i) <- Some v;
         if debug_parser () then Format.eprintf "overriding global %s@." name
       with Not_found -> ());
-  if toplevel || dynlink
+  if linkall
   then
     (* export globals *)
     Ocaml_compiler.Symtable.GlobalMap.iter
       (fun id n ->
         globals.named_value.(n) <- Some (Ident.name id);
         globals.is_exported.(n) <- true)
-      symbols
-    (* @vouillon: *)
-    (* we should then use the -linkall option to build the toplevel. *)
-    (* The OCaml compiler can generate code using this primitive but *)
-    (* does not use it itself. This is the only primitive in this case. *)
-    (* Ideally, Js_of_ocaml should parse the .mli files for primitives as *)
-    (* well as marking this primitive as potentially used. But *)
-    (* the -linkall option is probably good enough. *)
-    (* Primitive.mark_used "caml_string_greaterthan" *);
+      symbols;
   let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
@@ -2384,7 +2374,7 @@ let from_exe
         | _ -> l)
   in
   let body =
-    if toplevel
+    if link_info
     then
       (* Include linking information *)
       let toc =
@@ -2441,7 +2431,7 @@ let from_exe
     let exception_ids =
       List.fold_left predefined_exceptions ~init:(-1) ~f:(fun acc (i, _) -> max acc i)
     in
-    if toplevel && Config.Flag.include_cmis ()
+    if include_cmis
     then
       Ocaml_compiler.Symtable.GlobalMap.fold
         (fun id num acc ->
@@ -2456,7 +2446,7 @@ let from_exe
     match exported_unit with
     | None -> cmis
     | Some l ->
-        if toplevel && Config.Flag.include_cmis ()
+        if include_cmis
         then List.fold_left l ~init:cmis ~f:(fun acc s -> StringSet.add s acc)
         else cmis
   in
@@ -2466,7 +2456,7 @@ let from_exe
 
 (* As input: list of primitives + size of global table *)
 let from_bytes primitives (code : bytecode) =
-  let debug_data = Debug.create ~toplevel:false false in
+  let debug_data = Debug.create ~include_cmis:false false in
   let globals = make_globals 0 [||] primitives in
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh () in
@@ -2579,7 +2569,7 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
+let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
   let reloc = Reloc.create () in
   List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
@@ -2626,7 +2616,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
     else body
   in
   let cmis =
-    if toplevel && Config.Flag.include_cmis ()
+    if include_cmis
     then
       List.fold_left l ~init:StringSet.empty ~f:(fun acc (compunit, _) ->
           StringSet.add compunit.Cmo_format.cu_name acc)
@@ -2634,37 +2624,35 @@ let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
   in
   { code = prepend prog body; cmis; debug = debug_data }
 
-let from_cmo ?(includes = []) ?(toplevel = false) ?(debug = false) compunit ic =
-  let debug_data = Debug.create ~toplevel debug in
+let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic =
+  let debug_data = Debug.create ~include_cmis debug in
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
   really_input ic code 0 compunit.Cmo_format.cu_codesize;
-  if (not (Debug.dbg_section_needed debug_data)) || compunit.Cmo_format.cu_debug = 0
-  then ()
-  else (
+  if Debug.dbg_section_needed debug_data && compunit.Cmo_format.cu_debug <> 0
+  then (
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
-  let p = from_compilation_units ~toplevel ~includes ~debug_data [ compunit, code ] in
+  let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
   Code.invariant p.code;
   p
 
-let from_cma ?(includes = []) ?(toplevel = false) ?(debug = false) lib ic =
-  let debug_data = Debug.create ~toplevel debug in
+let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
+  let debug_data = Debug.create ~include_cmis debug in
   let orig = ref 0 in
   let units =
     List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
         seek_in ic compunit.Cmo_format.cu_pos;
         let code = Bytes.create compunit.Cmo_format.cu_codesize in
         really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        if (not (Debug.dbg_section_needed debug_data)) || compunit.Cmo_format.cu_debug = 0
-        then ()
-        else (
+        if Debug.dbg_section_needed debug_data && compunit.Cmo_format.cu_debug <> 0
+        then (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
         orig := !orig + compunit.Cmo_format.cu_codesize;
         compunit, code)
   in
-  let p = from_compilation_units ~toplevel ~includes ~debug_data units in
+  let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
   Code.invariant p.code;
   p
 
