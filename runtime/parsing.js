@@ -17,8 +17,13 @@
 
 /* The pushdown automata */
 
+//Provides: caml_parser_trace
+var caml_parser_trace = 0;
+
 //Provides: caml_parse_engine
-//Requires: caml_lex_array
+//Requires: caml_lex_array, caml_parser_trace,caml_jsstring_of_string
+//Requires: caml_ml_output, caml_ml_string_length, caml_string_of_jsbytes
+//Requires: caml_jsbytes_of_string, MlBytes
 function caml_parse_engine(tables, env, cmd, arg)
 {
   var ERRCODE = 256;
@@ -73,8 +78,42 @@ function caml_parse_engine(tables, env, cmd, arg)
   var tbl_table = 12;
   var tbl_check = 13;
   // var _tbl_error_function = 14;
-  // var _tbl_names_const = 15;
-  // var _tbl_names_block = 16;
+  var tbl_names_const = 15;
+  var tbl_names_block = 16;
+
+
+  function log(x) {
+    var s = caml_string_of_jsbytes(x + "\n");
+    caml_ml_output(2, s, 0, caml_ml_string_length(s));
+  }
+
+  function token_name(names, number)
+  {
+    var str = caml_jsstring_of_string(names);
+    if (str[0] == '\x00')
+      return "<unknown token>";
+    return str.split('\x00')[number];
+  }
+
+  function print_token(state, tok)
+  {
+    var token, kind;
+    if (tok instanceof Array) {
+      token = token_name(tables[tbl_names_block], tok[0]);
+      if (typeof tok[1] == "number")
+        kind = "" + tok[1];
+      else if (typeof tok[1] == "string")
+        kind = tok[1]
+      else if (tok[1] instanceof MlBytes)
+        kind = caml_jsbytes_of_string(tok[1])
+      else
+        kind = "_"
+      log("State " + state + ": read token " + token + "(" + kind + ")");
+    } else {
+      token = token_name(tables[tbl_names_const], tok);
+      log("State " + state + ": read token " + token);
+    }
+  }
 
   if (!tables.dgoto) {
     tables.defred = caml_lex_array (tables[tbl_defred]);
@@ -118,6 +157,7 @@ function caml_parse_engine(tables, env, cmd, arg)
         env[env_curr_char] = tables[tbl_transl_const][arg + 1];
         env[env_lval] = 0;
       }
+      if (caml_parser_trace) print_token (state, arg);
       // Fall through
 
     case 7://testshift:
@@ -149,16 +189,26 @@ function caml_parse_engine(tables, env, cmd, arg)
           n2 = n1 + ERRCODE;
           if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
               tables.check[n2] == ERRCODE) {
+            if (caml_parser_trace)
+              log("Recovering in state " + state1);
             cmd = shift_recover; break next;
           } else {
-            if (sp <= env[env_stackbase]) return RAISE_PARSE_ERROR;
+            if (caml_parser_trace)
+              log("Discarding state " + state1);
+            if (sp <= env[env_stackbase]) {
+              if (caml_parser_trace)
+                log("No more states to discard");
+              return RAISE_PARSE_ERROR;
+            }
             /* The ML code raises Parse_error */
             sp--;
           }
         }
       } else {
-        if (env[env_curr_char] == 0) return RAISE_PARSE_ERROR;
-        /* The ML code raises Parse_error */
+        if (env[env_curr_char] == 0)
+          return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
+        if (caml_parser_trace)
+          log("Discarding last token read");
         env[env_curr_char] = -1;
         cmd = loop; break;
       }
@@ -168,6 +218,8 @@ function caml_parse_engine(tables, env, cmd, arg)
       if (errflag > 0) errflag--;
       // Fall through
     case 9://shift_recover:
+      if (caml_parser_trace)
+        log("State " + state + ": shift to state " + tables.table[n2]);
       state = tables.table[n2];
       sp++;
       if (sp >= env[env_stacksize]) {
@@ -185,6 +237,8 @@ function caml_parse_engine(tables, env, cmd, arg)
       break;
 
     case 10://reduce:
+      if (caml_parser_trace)
+        log("State " + state + ": reduce by rule " + n);
       var m = tables.len[n];
       env[env_asp] = sp;
       env[env_rule_number] = n;
@@ -232,5 +286,9 @@ function caml_parse_engine(tables, env, cmd, arg)
 }
 
 //Provides: caml_set_parser_trace const
-//Dummy function!
-function caml_set_parser_trace() { return 0; }
+//Requires: caml_parser_trace
+function caml_set_parser_trace(bool) {
+  var oldflag = caml_parser_trace;
+  caml_parser_trace = bool;
+  return oldflag;
+}
