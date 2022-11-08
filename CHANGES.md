@@ -5,6 +5,9 @@
 * Compiler: complain when runtime and compiler built-in primitives disagree (#1312)
 * Compiler: more efficient implementation of Js_traverse.freevar
 * Compiler: more efficient implementation of Js_traverse.rename_variable
+* Compiler: --linkall now export all compilation units in addition to primitives (#1324)
+* Compiler: improve --dynlink, one no longer need to pass --toplevel to use Dynlink (#1324)
+* Compiler: toplevel runtime files "+toplevel.js" and "+dynlink.js" are added automatically (#1324)
 * Misc: switch to cmdliner.1.1.0
 * Misc: remove old binaries jsoo_link, jsoo_fs
 * Misc: remove uchar dep
