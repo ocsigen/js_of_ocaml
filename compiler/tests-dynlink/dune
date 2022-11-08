@@ -11,9 +11,7 @@
   (run
    %{bin:js_of_ocaml}
    --dynlink
-   --toplevel
    --pretty
-   --no-cmis ;; This is usefull to reduce the size of the target
    --file
    plugin.cmo
    -o

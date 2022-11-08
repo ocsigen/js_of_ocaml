@@ -243,8 +243,7 @@ let gen_missing js missing =
     report_missing_primitives missing);
   (Statement (Variable_statement miss), N) :: js
 
-let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) :
-    Linker.output =
+let link ~standalone ~linkall (js : Javascript.source_elements) : Linker.output =
   if not standalone
   then { runtime_code = js; always_required_codes = [] }
   else
@@ -272,7 +271,7 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     let js = if Config.Flag.genprim () then gen_missing js missing else js in
     if times () then Format.eprintf "  linking: %a@." Timer.print t;
     let js =
-      if export_runtime
+      if linkall
       then
         let open Javascript in
         let all = Linker.all linkinfos in
@@ -495,7 +494,6 @@ let full
     ~standalone
     ~wrap_with_fun
     ~profile
-    ~dynlink
     ~linkall
     ~source_map
     ~custom_header
@@ -503,8 +501,6 @@ let full
     d
     p =
   let exported_runtime = not standalone in
-  let linkall = linkall || dynlink in
-
   let opt =
     configure formatter
     +> specialize_js_once
@@ -514,7 +510,7 @@ let full
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun
-    +> link ~standalone ~linkall ~export_runtime:dynlink
+    +> link ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
     +> coloring
     +> check_js
@@ -530,7 +526,6 @@ let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = o1)
-    ?(dynlink = false)
     ?(linkall = false)
     ?source_map
     ?custom_header
@@ -541,7 +536,6 @@ let f
     ~standalone
     ~wrap_with_fun
     ~profile
-    ~dynlink
     ~linkall
     ~source_map
     ~custom_header
@@ -555,7 +549,6 @@ let from_string prims s formatter =
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:o1
-    ~dynlink:false
     ~linkall:false
     ~source_map:None
     ~custom_header:None

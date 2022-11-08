@@ -23,7 +23,7 @@ open Stdlib
 module Debug : sig
   type t
 
-  val create : toplevel:bool -> bool -> t
+  val create : include_cmis:bool -> bool -> t
 
   val find_loc : t -> ?after:bool -> int -> Parse_info.t option
 
@@ -48,16 +48,17 @@ val read_primitives : Toc.t -> in_channel -> string list
 
 val from_exe :
      ?includes:string list
-  -> ?toplevel:bool
+  -> linkall:bool
+  -> link_info:bool
+  -> include_cmis:bool
   -> ?exported_unit:string list
-  -> ?dynlink:bool
   -> ?debug:bool
   -> in_channel
   -> one
 
 val from_cmo :
      ?includes:string list
-  -> ?toplevel:bool
+  -> ?include_cmis:bool
   -> ?debug:bool
   -> Cmo_format.compilation_unit
   -> in_channel
@@ -65,7 +66,7 @@ val from_cmo :
 
 val from_cma :
      ?includes:string list
-  -> ?toplevel:bool
+  -> ?include_cmis:bool
   -> ?debug:bool
   -> Cmo_format.library
   -> in_channel

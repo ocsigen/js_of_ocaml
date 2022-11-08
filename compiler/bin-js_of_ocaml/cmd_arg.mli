@@ -42,7 +42,7 @@ type t =
   ; linkall : bool
   ; toplevel : bool
   ; export_file : string option
-  ; nocmis : bool
+  ; no_cmis : bool
   ; (* filesystem *)
     include_dirs : string list
   ; fs_files : string list

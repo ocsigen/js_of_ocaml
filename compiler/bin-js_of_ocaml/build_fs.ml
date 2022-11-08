@@ -77,7 +77,7 @@ function jsoo_create_file_extern(name,content){
         ~standalone:true
         ~wrap_with_fun:`Iife
         pfs_fmt
-        (Parse_bytecode.Debug.create ~toplevel:false false)
+        (Parse_bytecode.Debug.create ~include_cmis:false false)
         code)
 
 let info =
