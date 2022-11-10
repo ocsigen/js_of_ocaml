@@ -271,10 +271,17 @@ type poly3 =
 
 [%%expect
 {|
-Line _:
-Error: This expression has type poly3 but an expression was expected of type
-         [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ]
-       These two variant types have no intersection
+type poly3 =
+    [ `A
+    | `B of string
+    | `C of [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ] ]
+val poly3_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly3_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly3 =
+  <fun>
+val poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3 = <fun>
+val poly3_to_json : Buffer.t -> poly3 -> unit = <fun>
+val poly3_json : poly3 Deriving_Json.t = <abstr>
 |}]
 
 let () = test' tuple1_json "tuple1" (42, "42")
