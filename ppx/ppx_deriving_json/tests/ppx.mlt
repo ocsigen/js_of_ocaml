@@ -267,6 +267,10 @@ val poly2_json : poly2 Deriving_Json.t = <abstr>
 type poly3 =
   [ poly1
   | `C of [`p1 of poly1 | `p2 of poly2 | `p3 of poly3] ]
+
+and poly3_c = [`p1 of poly1 | `p2 of poly2 | `p3 of poly3]
+
+and poly3_sep = [ poly1 | `C of poly3_c]
 [@@deriving json]
 
 [%%expect
@@ -275,13 +279,29 @@ type poly3 =
     [ `A
     | `B of string
     | `C of [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ] ]
+and poly3_c = [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ]
+and poly3_sep = [ `A | `B of string | `C of poly3_c ]
 val poly3_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly3_c_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly3_sep_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
 val poly3_of_json_with_tag :
   Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly3 =
   <fun>
+val poly3_c_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly3_c =
+  <fun>
+val poly3_sep_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly3_sep =
+  <fun>
 val poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3 = <fun>
+val poly3_c_of_json : Deriving_Json_lexer.lexbuf -> poly3_c = <fun>
+val poly3_sep_of_json : Deriving_Json_lexer.lexbuf -> poly3_sep = <fun>
 val poly3_to_json : Buffer.t -> poly3 -> unit = <fun>
+val poly3_c_to_json : Buffer.t -> poly3_c -> unit = <fun>
+val poly3_sep_to_json : Buffer.t -> poly3_sep -> unit = <fun>
 val poly3_json : poly3 Deriving_Json.t = <abstr>
+val poly3_c_json : poly3_c Deriving_Json.t = <abstr>
+val poly3_sep_json : poly3_sep Deriving_Json.t = <abstr>
 |}]
 
 let () = test' tuple1_json "tuple1" (42, "42")
@@ -365,18 +385,18 @@ poly2 `C 42 = [0,67,42]
 |}]
 
 let () = test' poly3_json "poly3" (`C (`p3 (`C (`p1 `A))))
+let () = test' poly3_sep_json "poly3" (`C (`p3 (`C (`p1 `A))))
 
 [%%expect {|
-Line _, characters 15-25:
-Error: Unbound value poly3_json
-Hint: Did you mean poly1_json or poly2_json?
+poly3 = [0,67,[0,25027,[0,67,[0,25025,65]]]]
+poly3 = [0,67,[0,25027,[0,67,[0,25025,65]]]]
 |}]
 
 let () = test' poly3_json "poly3" (`A)
+let () = test' poly3_sep_json "poly3" (`A)
 [%%expect {|
-Line _, characters 15-25:
-Error: Unbound value poly3_json
-Hint: Did you mean poly1_json or poly2_json?
+poly3 = 65
+poly3 = 65
 |}]
 
 type inline_record =
