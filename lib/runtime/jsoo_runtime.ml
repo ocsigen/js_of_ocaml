@@ -102,6 +102,10 @@ module Sys = struct
     = "caml_mount_autoload"
 
   external unmount : string -> unit = "caml_unmount"
+
+  let version = Runtime_version.s
+
+  let git_version = Runtime_version.git_version
 end
 
 module Error : sig

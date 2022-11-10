@@ -14,3 +14,10 @@
   (with-stdout-to
    %{targets}
    (run ../gen_stubs/gen_stubs.exe %{deps}))))
+
+(rule
+ (targets runtime_version.ml)
+ (deps
+  (:input-file ../../version.ml.in))
+ (action
+  (copy %{input-file} %{targets})))
