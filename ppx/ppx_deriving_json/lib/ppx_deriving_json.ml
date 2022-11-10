@@ -497,7 +497,7 @@ and read_body_of_type ?decl y =
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _ } ->
       let e =
         match decl with
-        | Some decl ->
+        | Some ({ ptype_manifest = Some typ; _ } as decl) when typ = y ->
             let e = suffix_decl decl ~suffix:"of_json_with_tag"
             and l =
               let { Parsetree.ptype_params = l; _ } = decl
@@ -505,7 +505,7 @@ and read_body_of_type ?decl y =
               List.map ~f l
             in
             app e l
-        | None -> read_of_poly_variant l y ~loc
+        | Some _ | None -> read_of_poly_variant l y ~loc
       and tag = [%expr [%e lexer "read_vcase"] buf] in
       [%expr [%e e] buf [%e tag]]
   | { Parsetree.ptyp_desc = Ptyp_var v; _ } when poly ->
