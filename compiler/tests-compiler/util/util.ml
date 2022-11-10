@@ -175,13 +175,26 @@ let channel_to_string c_in =
   Buffer.contents buffer
 
 let exec_to_string_exn ~cmd =
+  let build_path_prefix_map = "BUILD_PATH_PREFIX_MAP=" in
   let cwd = Sys.getcwd () in
   let build_path =
     let open Js_of_ocaml_compiler.Build_path_prefix_map in
-    let str = encode_map [ Some { target = "/dune-root"; source = cwd } ] in
-    Format.sprintf "BUILD_PATH_PREFIX_MAP=%s" str
+    encode_map [ Some { target = "/dune-root"; source = cwd } ]
   in
-  let env = Array.concat [ Unix.environment (); [| build_path |] ] in
+  let env =
+    let prev, env =
+      Unix.environment ()
+      |> Array.to_list
+      |> List.partition ~f:(String.is_prefix ~prefix:build_path_prefix_map)
+    in
+    let prev =
+      List.filter_map ~f:(String.drop_prefix ~prefix:build_path_prefix_map) prev
+    in
+    let build_path =
+      build_path_prefix_map ^ String.concat ~sep:":" (build_path :: prev)
+    in
+    Array.of_list (build_path :: env)
+  in
   let proc_result_ok std_out =
     let open Unix in
     function
