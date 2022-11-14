@@ -78,10 +78,10 @@ let use ffp content =
   with e ->
     Sys.remove fname;
     raise e
-  [@@ocaml.warning "-32"] [@@if ocaml_version < (4, 14, 0)]
+  [@@if ocaml_version < (4, 14, 0)]
 
 let use ffp content = Toploop.use_silently ffp (String content)
-  [@@ocaml.warning "-32"] [@@if ocaml_version >= (4, 14, 0)]
+  [@@if ocaml_version >= (4, 14, 0)]
 
 let execute printval ?pp_code ?highlight_location pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
