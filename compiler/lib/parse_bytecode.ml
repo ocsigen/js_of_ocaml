@@ -2457,14 +2457,38 @@ let from_exe
 (* As input: list of primitives + size of global table *)
 let from_bytes primitives (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false false in
+  let ident_table =
+    let t = Hashtbl.create 17 in
+    if Debug.names debug_data
+    then
+      Symtable.iter_global_map
+        (fun id pos' -> Hashtbl.add t pos' id)
+        (Symtable.current_state ());
+    t
+  in
   let globals = make_globals 0 [||] primitives in
   let p = parse_bytecode code globals debug_data in
-  let gdata = Var.fresh () in
+  let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
+  let find_name i =
+    let value = (Meta.global_data ()).(i) in
+    let tag = Obj.tag value in
+    if tag = Obj.string_tag
+    then Some ("cst_" ^ Obj.magic value : string)
+    else
+      match Hashtbl.find ident_table i with
+      | exception Not_found -> None
+      | ident -> Some (Ident.name ident)
+  in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
         match var with
         | Some x when globals.is_const.(i) ->
+            (if Debug.names debug_data
+            then
+              match find_name i with
+              | None -> ()
+              | Some name -> Code.Var.name x name);
             need_gdata := true;
             Let (x, Field (gdata, i)) :: l
         | _ -> l)
