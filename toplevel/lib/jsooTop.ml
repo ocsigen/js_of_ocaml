@@ -20,17 +20,31 @@
 open Js_of_ocaml_compiler
 open Js_of_ocaml_compiler.Stdlib
 
-let new_directive name k = Hashtbl.add Toploop.directive_table name k
-  [@@alert "-deprecated"]
-
 let setup =
   lazy
     (Topdirs.dir_directory "/static/cmis";
-     new_directive "enable" (Toploop.Directive_string Config.Flag.enable);
-     new_directive "disable" (Toploop.Directive_string Config.Flag.disable);
-     new_directive "debug_on" (Toploop.Directive_string Debug.enable);
-     new_directive "debug_off" (Toploop.Directive_string Debug.disable);
-     new_directive "tailcall" (Toploop.Directive_string (Config.Param.set "tc")))
+     Toploop.add_directive
+       "enable"
+       (Toploop.Directive_string Config.Flag.enable)
+       { section = "js_of_ocaml"; doc = "Enable the given flag" };
+     Toploop.add_directive
+       "disable"
+       (Toploop.Directive_string Config.Flag.disable)
+       { section = "js_of_ocaml"; doc = "Disable the given flag" };
+     Toploop.add_directive
+       "debug_on"
+       (Toploop.Directive_string Debug.enable)
+       { section = "js_of_ocaml"; doc = "Enable debug for the given section" };
+     Toploop.add_directive
+       "debug_off"
+       (Toploop.Directive_string Debug.disable)
+       { section = "js_of_ocaml"; doc = "Disable debug for the given section" };
+     Toploop.add_directive
+       "tailcall"
+       (Toploop.Directive_string (Config.Param.set "tc"))
+       { section = "js_of_ocaml"
+       ; doc = "Set the depth of tail calls before going through a trampoline"
+       })
 
 let refill_lexbuf s p ppf buffer len =
   if !p = String.length s
