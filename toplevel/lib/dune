@@ -5,8 +5,7 @@
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-compiler.dynlink
-  js_of_ocaml
   compiler-libs.bytecomp
   compiler-libs.toplevel)
  (preprocess
-  (pps ppx_optcomp_light js_of_ocaml-ppx)))
+  (pps ppx_optcomp_light)))
