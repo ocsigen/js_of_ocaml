@@ -13,9 +13,7 @@ bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
   "dune" {>= "3.2"}
   "ocaml" {>= "4.04"}
-  "js_of_ocaml" {= version}
   "js_of_ocaml-compiler" {= version}
-  "js_of_ocaml-ppx" {= version}
   "ocamlfind" {>= "1.5.1"}
   "cohttp-lwt-unix" {with-test}
   "graphics" {with-test}

@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml
 open Js_of_ocaml_compiler
 open Js_of_ocaml_compiler.Stdlib
 
@@ -52,17 +51,23 @@ let refill_lexbuf s p ppf buffer len =
     p := !p + len'';
     len''
 
-let toploop_use_silently ffp name = Toploop.use_silently ffp name
+let use ffp content =
+  let fname, oc =
+    Filename.open_temp_file ~mode:[ Open_binary ] "jsoo_toplevel" "fake_stdin"
+  in
+  output_string oc content;
+  close_out oc;
+  try
+    let b = Toploop.use_silently ffp fname in
+    Sys.remove fname;
+    b
+  with e ->
+    Sys.remove fname;
+    raise e
   [@@ocaml.warning "-32"] [@@if ocaml_version < (4, 14, 0)]
 
-let toploop_use_silently ffp name = Toploop.use_silently ffp (File name)
+let use ffp content = Toploop.use_silently ffp (String content)
   [@@ocaml.warning "-32"] [@@if ocaml_version >= (4, 14, 0)]
-
-let use ffp content =
-  let name = "/dev/fake_stdin" in
-  if Sys.file_exists name then Sys.remove name;
-  Sys_js.create_file ~name ~content;
-  toploop_use_silently ffp name
 
 let execute printval ?pp_code ?highlight_location pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
