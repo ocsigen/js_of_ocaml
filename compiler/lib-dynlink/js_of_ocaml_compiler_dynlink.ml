@@ -15,26 +15,10 @@ let split_primitives p =
 
 let () =
   let global = J.pure_js_expr "globalThis" in
-  let initial_primitive_count =
-    Array.length (split_primitives (Symtable.data_primitive_names ()))
-  in
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : bytes array) : unit -> J.t =
     let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
     let prims = split_primitives (Symtable.data_primitive_names ()) in
-    let unbound_primitive p =
-      try
-        ignore (J.eval_string p);
-        false
-      with _ -> true
-    in
-    let stubs = ref [] in
-    Array.iteri prims ~f:(fun i p ->
-        if i >= initial_primitive_count && unbound_primitive p
-        then
-          stubs :=
-            Format.sprintf "function %s(){caml_failwith(\"%s not implemented\")}" p p
-            :: !stubs);
     let output_program = Driver.from_string prims s in
     let b = Buffer.create 100 in
     output_program (Pretty_print.to_buffer b);
@@ -42,10 +26,7 @@ let () =
     Format.(pp_print_flush err_formatter ());
     flush stdout;
     flush stderr;
-    let js =
-      let s = Buffer.contents b in
-      String.concat ~sep:"" !stubs ^ s
-    in
+    let js = Buffer.contents b in
     let res : string -> unit -> J.t =
       Obj.magic (J.get global (J.string "toplevelEval"))
     in
