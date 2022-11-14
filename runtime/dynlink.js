@@ -42,15 +42,16 @@ function caml_dynlink_close_lib (idx) {
 //Requires: caml_jsstring_of_string
 function caml_dynlink_lookup_symbol (idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
-  console.log("Dynlink: look for symbol ", name);
+  console.log("Dynlink: looking for symbol", name);
   if(current_libs[idx] && current_libs[idx][name])
-    return current_libs[idx][name];
+    return {name: name, symbol: current_libs[idx][name]};
   return 0;
 }
 
 //Provides: caml_dynlink_add_primitive
 //Requires: caml_global_data
 function caml_dynlink_add_primitive (dll_addr) {
+  globalThis.jsoo_runtime[dll_addr.name] = dll_addr.symbol;
   return caml_global_data.prim_count++;
 }
 

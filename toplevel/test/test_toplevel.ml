@@ -12,5 +12,17 @@ let () =
     ~highlight_location:(fun _ -> ())
     fmt
     {|
+external parseInt : float -> int = "parseInt"
+let f = 3.14
+let () = Printf.printf "parseInt(%f) = %d\n" f (parseInt f);;
+|}
+
+let () =
+  Js_of_ocaml_toplevel.JsooTop.execute
+    true
+    ~pp_code:fmt
+    ~highlight_location:(fun _ -> ())
+    fmt
+    {|
 let () = print_endline "hello";;
 1+;;|}
