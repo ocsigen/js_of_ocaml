@@ -1,4 +1,12 @@
 
+external parseInt : float -> int = "parseInt"
+let f = 3.14
+let () = Printf.printf "parseInt(%f) = %d\n" f (parseInt f);;
+Dynlink: looking for symbol parseInt
+parseInt(3.140000) = 3
+external parseInt : float -> int = "parseInt"
+val f : float = 3.14
+
 let () = print_endline "hello";;
 hello
 1+;;
