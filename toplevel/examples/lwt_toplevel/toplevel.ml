@@ -131,10 +131,10 @@ let setup_toplevel () =
   exec' "#enable \"pretty\";;";
   exec' "#disable \"shortvar\";;";
   Ppx_support.init ();
-  let[@alert "-deprecated"] new_directive n k = Hashtbl.add Toploop.directive_table n k in
-  new_directive
+  Toploop.add_directive
     "load_js"
-    (Toploop.Directive_string (fun name -> Js.Unsafe.global##load_script_ name));
+    (Toploop.Directive_string (fun name -> Js.Unsafe.global##load_script_ name))
+    { section = "js_of_ocaml-toplevel-example"; doc = "Load the given javascript file" };
   Sys.interactive := true;
   ()
 
