@@ -237,17 +237,12 @@ module Ident = struct
 
   type 'a tbl = 'a Ident.tbl
 
-  let rec table_contents_rec sz t rem =
+  let rec table_contents_rec t rem =
     match t with
     | Empty -> rem
     | Node (l, v, r, _) ->
-        table_contents_rec
-          sz
-          l
-          ((sz - v.data, Ident.name v.ident, v.ident) :: table_contents_rec sz r rem)
+        table_contents_rec l ((v.data, v.ident) :: table_contents_rec r rem)
 
-  let table_contents sz (t : 'a tbl) =
-    List.sort
-      ~cmp:(fun (i, _, _) (j, _, _) -> compare i j)
-      (table_contents_rec sz (Obj.magic (t : 'a tbl) : 'a tbl') [])
+  let table_contents (t : 'a tbl) =
+    table_contents_rec (Obj.magic (t : 'a tbl) : 'a tbl') []
 end

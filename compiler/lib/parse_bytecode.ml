@@ -31,6 +31,11 @@ type bytecode = string
 let predefined_exceptions =
   Runtimedef.builtin_exceptions |> Array.to_list |> List.mapi ~f:(fun i name -> i, name)
 
+let new_closure_repr =
+  match Ocaml_version.v with
+  | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
+  | `V4_12 | `V4_13 | `V4_14 | `V5_00 -> true
+
 (* Read and manipulate debug section *)
 module Debug : sig
   type t
@@ -45,7 +50,9 @@ module Debug : sig
 
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
 
-  val find : t -> Code.Addr.t -> (int * string * Ident.t) list * Env.summary
+  val find : t -> Code.Addr.t -> (int * Ident.t) list * Env.summary
+
+  val find_rec : t -> Code.Addr.t -> (int * Ident.t) list
 
   val find_loc : t -> ?after:bool -> int -> Parse_info.t option
 
@@ -233,9 +240,23 @@ end = struct
   let find { events_by_pc; _ } pc =
     try
       let { event; _ } = Int_table.find events_by_pc pc in
-      ( Ocaml_compiler.Ident.table_contents event.ev_stacksize event.ev_compenv.ce_stack
-      , event.ev_typenv )
+      let l =
+        Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_stack
+        |> List.map ~f:(fun (i, ident) -> event.ev_stacksize - i, ident)
+        |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+      in
+
+      l, event.ev_typenv
     with Not_found -> [], Env.Env_empty
+
+  let find_rec { events_by_pc; _ } pc =
+    try
+      let { event; _ } = Int_table.find events_by_pc pc in
+      Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_rec
+      |> List.map ~f:(fun (i, ident) ->
+             (if new_closure_repr then i / 3 else i / 2), ident)
+      |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+    with Not_found -> []
 
   let mem { events_by_pc; _ } = Int_table.mem events_by_pc
 
@@ -680,13 +701,13 @@ module State = struct
   let rec name_rec debug i l s summary =
     match l, s with
     | [], _ -> ()
-    | (j, nm, ident) :: lrem, Var v :: srem when i = j ->
+    | (j, ident) :: lrem, Var v :: srem when i = j ->
         (match Ocaml_compiler.find_loc_in_summary ident summary with
         | None -> ()
         | Some loc -> Var.loc v (pi_of_loc debug loc));
-        Var.name v nm;
+        Var.name v (Ident.name ident);
         name_rec debug (i + 1) lrem srem summary
-    | (j, _nm, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
+    | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
     | _ -> assert false
 
   let name_vars st debug pc =
@@ -768,11 +789,6 @@ let tagged_blocks = ref Addr.Set.empty
 let compiled_blocks = ref Addr.Map.empty
 
 let method_cache_id = ref 1
-
-let new_closure_repr =
-  match Ocaml_version.v with
-  | `V4_04 | `V4_06 | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 | `V5_00 -> true
 
 let clo_offset_3 = if new_closure_repr then 3 else 2
 
@@ -1072,8 +1088,15 @@ and compile infos pc state instrs =
         let vals, state = State.grab nvars state in
         let state = ref state in
         let vars = ref [] in
+        let rec_names = ref (Debug.find_rec infos.debug (pc + 3 + gets code (pc + 3))) in
         for i = 0 to nfuncs - 1 do
           let x, st = State.fresh_var !state in
+          (match !rec_names with
+          | (j, ident) :: rest ->
+              assert (j = i);
+              Var.name x (Ident.name ident);
+              rec_names := rest
+          | [] -> ());
           vars := (i, x) :: !vars;
           state := State.push st
         done;
