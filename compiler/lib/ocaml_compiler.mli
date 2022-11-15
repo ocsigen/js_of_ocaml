@@ -39,5 +39,5 @@ end
 module Ident : sig
   type 'a tbl = 'a Ident.tbl
 
-  val table_contents : int -> int Ident.tbl -> (int * string * Ident.t) list
+  val table_contents : int Ident.tbl -> (int * Ident.t) list
 end
