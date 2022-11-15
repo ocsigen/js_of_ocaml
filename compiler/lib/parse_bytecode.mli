@@ -76,6 +76,10 @@ val from_channel :
      in_channel
   -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
-val from_string : string array -> string -> Code.program * Debug.t
+val from_string :
+     prims:string array
+  -> debug:Instruct.debug_event list array
+  -> string
+  -> Code.program * Debug.t
 
 val predefined_exceptions : unit -> Code.program

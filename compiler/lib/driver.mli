@@ -32,7 +32,12 @@ val f :
   -> Code.program
   -> unit
 
-val from_string : string array -> string -> Pretty_print.t -> unit
+val from_string :
+     prims:string array
+  -> debug:Instruct.debug_event list array
+  -> string
+  -> Pretty_print.t
+  -> unit
 
 val profiles : (int * profile) list
 

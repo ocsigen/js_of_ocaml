@@ -16,10 +16,11 @@ let split_primitives p =
 let () =
   let global = J.pure_js_expr "globalThis" in
   (* this needs to stay synchronized with toplevel.js *)
-  let toplevel_compile (s : bytes array) : unit -> J.t =
+  let toplevel_compile (s : bytes array) (debug : Instruct.debug_event list array) :
+      unit -> J.t =
     let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
     let prims = split_primitives (Symtable.data_primitive_names ()) in
-    let output_program = Driver.from_string prims s in
+    let output_program = Driver.from_string ~prims ~debug s in
     let b = Buffer.create 100 in
     output_program (Pretty_print.to_buffer b);
     Format.(pp_print_flush std_formatter ());
