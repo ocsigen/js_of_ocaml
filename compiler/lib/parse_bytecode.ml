@@ -53,6 +53,14 @@ module Debug : sig
 
   val mem : t -> Code.Addr.t -> bool
 
+  val read_event :
+       paths:string list
+    -> crcs:(string, string option) Hashtbl.t
+    -> orig:int
+    -> t
+    -> Instruct.debug_event
+    -> unit
+
   val read :
     t -> crcs:(string * string option) list -> includes:string list -> in_channel -> unit
 
@@ -125,6 +133,67 @@ end = struct
     | Some _ as x -> x
     | None -> Fs.find_in_path paths (name ^ ".ml")
 
+  let read_event
+      ~paths
+      ~crcs
+      ~orig
+      { events_by_pc; units; pos_fname_to_source; names; enabled; include_cmis = _ }
+      ev =
+    let pos_fname =
+      match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
+      | "_none_" -> None
+      | x -> Some x
+    in
+    let ev_module = ev.ev_module in
+    let unit =
+      try Hashtbl.find units (ev_module, pos_fname)
+      with Not_found ->
+        let crc = try Hashtbl.find crcs ev_module with Not_found -> None in
+        let source : path option =
+          (* First search the source based on [pos_fname] because the
+             filename of the source might be unreleased to the
+             module name. (e.g. pos_fname = list.ml, module = Stdlib__list) *)
+          let from_pos_fname =
+            match pos_fname with
+            | None -> None
+            | Some pos_fname -> (
+                match Fs.find_in_path paths pos_fname with
+                | Some _ as x -> x
+                | None -> Fs.find_in_path paths (Filename.basename pos_fname))
+          in
+          match from_pos_fname with
+          | None -> find_ml_in_paths paths ev_module
+          | Some _ as x -> x
+        in
+        let source =
+          match source with
+          | None -> None
+          | Some source -> Some (Fs.absolute_path source)
+        in
+        if debug_sourcemap ()
+        then
+          Format.eprintf
+            "module:%s - source:%s - name:%s\n%!"
+            ev_module
+            (match source with
+            | None -> "NONE"
+            | Some x -> x)
+            (match pos_fname with
+            | None -> "NONE"
+            | Some x -> x);
+        let u = { module_name = ev_module; crc; source; paths } in
+        (match pos_fname, source with
+        | None, _ | _, None -> ()
+        | Some pos_fname, Some source ->
+            String_table.add pos_fname_to_source pos_fname source);
+        Hashtbl.add units (ev_module, pos_fname) u;
+        u
+    in
+    relocate_event orig ev;
+    if enabled || names
+    then Int_table.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
+    ()
+
   let read_event_list =
     let rewrite_path path =
       if Filename.is_relative path
@@ -135,11 +204,7 @@ end = struct
         | None -> path
     in
     let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
-    fun { events_by_pc; units; pos_fname_to_source; names; enabled; include_cmis = _ }
-        ~crcs
-        ~includes
-        ~orig
-        ic ->
+    fun debug ~crcs ~includes ~orig ic ->
       let crcs =
         let t = Hashtbl.create 17 in
         List.iter crcs ~f:(fun (m, crc) -> Hashtbl.add t m crc);
@@ -147,61 +212,7 @@ end = struct
       in
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
-      List.iter evl ~f:(fun ev ->
-          let pos_fname =
-            match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
-            | "_none_" -> None
-            | x -> Some x
-          in
-          let ev_module = ev.ev_module in
-          let unit =
-            try Hashtbl.find units (ev_module, pos_fname)
-            with Not_found ->
-              let crc = try Hashtbl.find crcs ev_module with Not_found -> None in
-              let source : path option =
-                (* First search the source based on [pos_fname] because the
-                   filename of the source might be unreleased to the
-                   module name. (e.g. pos_fname = list.ml, module = Stdlib__list) *)
-                let from_pos_fname =
-                  match pos_fname with
-                  | None -> None
-                  | Some pos_fname -> (
-                      match Fs.find_in_path paths pos_fname with
-                      | Some _ as x -> x
-                      | None -> Fs.find_in_path paths (Filename.basename pos_fname))
-                in
-                match from_pos_fname with
-                | None -> find_ml_in_paths paths ev_module
-                | Some _ as x -> x
-              in
-              let source =
-                match source with
-                | None -> None
-                | Some source -> Some (Fs.absolute_path source)
-              in
-              if debug_sourcemap ()
-              then
-                Format.eprintf
-                  "module:%s - source:%s - name:%s\n%!"
-                  ev_module
-                  (match source with
-                  | None -> "NONE"
-                  | Some x -> x)
-                  (match pos_fname with
-                  | None -> "NONE"
-                  | Some x -> x);
-              let u = { module_name = ev_module; crc; source; paths } in
-              (match pos_fname, source with
-              | None, _ | _, None -> ()
-              | Some pos_fname, Some source ->
-                  String_table.add pos_fname_to_source pos_fname source);
-              Hashtbl.add units (ev_module, pos_fname) u;
-              u
-          in
-          relocate_event orig ev;
-          if enabled || names
-          then Int_table.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
-          ())
+      List.iter evl ~f:(read_event ~paths ~crcs ~orig debug)
 
   let find_source { pos_fname_to_source; _ } pos_fname =
     match pos_fname with
@@ -675,7 +686,7 @@ module State = struct
         | Some loc -> Var.loc v (pi_of_loc debug loc));
         Var.name v nm;
         name_rec debug (i + 1) lrem srem summary
-    | (j, _, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
+    | (j, _nm, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
     | _ -> assert false
 
   let name_vars st debug pc =
@@ -2455,8 +2466,13 @@ let from_exe
   { code; cmis; debug = debug_data }
 
 (* As input: list of primitives + size of global table *)
-let from_bytes primitives (code : bytecode) =
-  let debug_data = Debug.create ~include_cmis:false false in
+let from_bytes ~prims ~debug (code : bytecode) =
+  let debug_data = Debug.create ~include_cmis:false true in
+  if Debug.names debug_data
+  then
+    Array.iter debug ~f:(fun l ->
+        List.iter l ~f:(fun ev ->
+            Debug.read_event ~paths:[] ~crcs:(Hashtbl.create 17) ~orig:0 debug_data ev));
   let ident_table =
     let t = Hashtbl.create 17 in
     if Debug.names debug_data
@@ -2466,7 +2482,7 @@ let from_bytes primitives (code : bytecode) =
         (Symtable.current_state ());
     t
   in
-  let globals = make_globals 0 [||] primitives in
+  let globals = make_globals 0 [||] prims in
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
@@ -2500,7 +2516,7 @@ let from_bytes primitives (code : bytecode) =
   in
   prepend p body, debug_data
 
-let from_string primitives (code : string) = from_bytes primitives code
+let from_string ~prims ~debug (code : string) = from_bytes ~prims ~debug code
 
 module Reloc = struct
   let gen_patch_int buff pos n =

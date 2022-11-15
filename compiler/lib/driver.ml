@@ -543,8 +543,8 @@ let f
     d
     p
 
-let from_string prims s formatter =
-  let p, d = Parse_bytecode.from_string prims s in
+let from_string ~prims ~debug s formatter =
+  let p, d = Parse_bytecode.from_string ~prims ~debug s in
   full
     ~standalone:false
     ~wrap_with_fun:`Anonymous
