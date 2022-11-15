@@ -1,4 +1,4 @@
-# dev (2022-??) - ??
+# 4.1.0 (2022-11-15) - Lille
 ## Features/Changes
 * Compiler: initial support for OCaml 5 (#1265,#1303)
 * Compiler: bump magic number to match the 5.0.0~alpha0 release (#1288)
