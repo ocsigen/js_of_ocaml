@@ -157,6 +157,13 @@ let stats (h, t) =
     | None -> ()
   done
 
+let escape_name_for_gnuplot s =
+  let b = Buffer.create (String.length s) in
+  String.iter s ~f:(function
+      | '_' -> Buffer.add_string b {|\\\_|}
+      | c -> Buffer.add_char b c);
+  Buffer.contents b
+
 let text_output _no_header (h, t) =
   Format.printf "-";
   List.iter h ~f:(fun v ->
@@ -236,10 +243,15 @@ let gnuplot_output ch no_header (h, t) =
       | Some (nm, _) -> nm
       | None -> ""
     in
-    Printf.fprintf ch "- \"%s\"\n" nm;
+    Printf.fprintf ch "- \"%s\"\n" (escape_name_for_gnuplot nm);
     List.iter t ~f:(fun (nm, l) ->
         let v, ii = List.nth l i in
-        Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii));
+        Printf.fprintf
+          ch
+          "\"%s\" %f %f\n"
+          (escape_name_for_gnuplot nm)
+          v
+          (if ii <> ii then 0. else ii));
     Printf.fprintf ch "e\n"
   done
 
