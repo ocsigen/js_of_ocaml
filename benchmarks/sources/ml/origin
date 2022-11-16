@@ -1,0 +1,35 @@
+From the ocaml comppiler codebase
+=================================
+almabench.ml ./testsuite/tests/misc-unsafe/almabench.ml
+bdd.ml ./testsuite/tests/misc/bdd.ml
+boyer.ml ./testsuite/tests/misc/boyer.ml
+fft.ml ./testsuite/tests/misc-unsafe/fft.ml
+fib.ml ./testsuite/tests/misc/fib.ml
+hamming.ml ./testsuite/tests/misc/hamming.ml
+kb.ml ./testsuite/tests/misc-kb/kb.ml
+nucleic.ml ./testsuite/tests/misc/nucleic.ml
+quicksort.ml ./testsuite/tests/misc-unsafe/quicksort.ml
+soli.ml ./testsuite/tests/misc-unsafe/soli.ml
+takc.ml ./testsuite/tests/misc/takc.ml
+taku.ml ./testsuite/tests/misc/taku.ml
+
+From the ocaml comppiler codebase
+(rewritten without exceptions for control flow)
+==============================================
+kb_no_exc.ml
+boyer_no_exc.ml
+
+
+From benchmarksgame
+===================
+binary_trees.ml https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/binarytrees.html#binarytrees
+fannkuch_redux_2.ml https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/fannkuchredux.html#fannkuchredux
+fannkuch_redux.ml https://benchmarksgame-team.pages.debian.net/benchmarksgame/description/fannkuchredux.html#fannkuchredux
+
+Misc
+====
+loop.ml
+raytrace.ml https://chromium.googlesource.com/v8/v8/+/4.3.18/benchmarks/raytrace.js
+splay.ml https://github.com/chromium/octane/blob/master/splay.js
+
+
