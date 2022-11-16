@@ -86,7 +86,9 @@ __missingsizes: __precomp
 # then to add data for precompiled programs
 time.svg: __run
 	$(REPORT) -config report-time.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit loop \
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
@@ -95,9 +97,12 @@ size.svg: size.gpl
 
 size.gpl: __run __missingsizes
 	$(REPORT) -config report-size.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
-	 -omit boyer_no_exc -omit kb_no_exc \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
 	 -append boulderdash \
 	 -append canvas \
 	 -append cubes \
@@ -115,16 +120,21 @@ size.gpl: __run __missingsizes
 
 time-optim.svg: __run
 	$(REPORT) -config report-time-optim.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
+	 -omit loop \
 	 -max 4 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim.svg: __run __missingsizes
 	$(REPORT) -config report-size-optim.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop  \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
-	 -omit boyer_no_exc -omit kb_no_exc \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
 	 -append boulderdash \
 	 -append canvas \
 	 -append cubes \
@@ -140,13 +150,17 @@ size-optim.svg: __run __missingsizes
 
 compiletime.svg: __run __precomp __missingcompiletimes
 	$(REPORT) -config report-compiletime.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit loop \
 	 -max 2 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
 	 > $@
 
 nativejs.svg: __run
 	$(REPORT) -config report-nativejs.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit loop \
 	 -max 2.8 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
