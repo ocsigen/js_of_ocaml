@@ -1,7 +1,14 @@
 (env
  (dev
   (flags
-   (:standard -w +a-4-40-41-42-44-48-58-66-70))))
+   (:standard -w +a-4-40-41-42-44-48-58-66-70)))
+ (bench_no_debug
+  (flags
+   (:standard \ -g))
+  (ocamlc_flags
+   (:standard \ -g))
+  (link_flags
+   (:standard \ -g))))
 
 (rule
  (targets version.ml.in)

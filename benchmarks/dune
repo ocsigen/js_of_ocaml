@@ -4,8 +4,8 @@
    (:standard -w -32-34-38-69))))
 
 (executables
- (names report run)
- (libraries unix))
+ (names report run stripdebug)
+ (libraries unix compiler-libs.bytecomp))
 
 (alias
  (name default)

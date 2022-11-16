@@ -44,6 +44,8 @@ benchmarks/__run
 benchmarks/build
 benchmarks/results
 benchmarks/config
+benchmarks/programs
+
 
 doc-dev
 _wikidoc
