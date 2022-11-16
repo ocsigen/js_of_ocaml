@@ -199,7 +199,6 @@ let _ =
   let compile_only = ref false in
   let full = ref false in
   let conf_file = ref "run.config" in
-  let do_ocamljs = ref true in
   let nobyteopt = ref false in
   let param = ref Param.default in
   let fast_run () = param := Param.fast !param in
@@ -212,7 +211,6 @@ let _ =
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
     ; "-verbose", Arg.Unit verbose, " verbose"
-    ; "-noocamljs", Arg.Clear do_ocamljs, " do not run ocamljs"
     ; ( "-nobyteopt"
       , Arg.Set nobyteopt
       , " do not run benchs on bytecode and native programs" )
@@ -222,7 +220,6 @@ let _ =
     (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let run_ocamljs = !do_ocamljs && Sys.command "ocamljs 2> /dev/null" = 0 in
   let conf_file = !conf_file in
   let compile_only = !compile_only in
   let nobyteopt = !nobyteopt in
@@ -239,11 +236,9 @@ let _ =
   compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
   compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
   compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
-  if run_ocamljs then compile "ocamljs" src Spec.ml code Spec.ocamljs;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
   compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
-  if run_ocamljs then compile "ocamljs -unsafe" src Spec.ml code Spec.ocamljs_unsafe;
   Format.eprintf "Sizes@.";
   ml_size param src Spec.ml sizes Spec.ml;
   file_size param code Spec.byte sizes Spec.byte;
@@ -260,7 +255,6 @@ let _ =
   gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;
   gen_size param code Spec.js_of_ocaml_compact sizes Spec.js_of_ocaml_compact;
   gen_size param code Spec.js_of_ocaml_call sizes Spec.js_of_ocaml_call;
-  if run_ocamljs then compr_file_size param code Spec.ocamljs sizes Spec.ocamljs;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
   if not nobyteopt
@@ -277,8 +271,6 @@ let _ =
         ; Some Spec.js_of_ocaml_deadcode
         ; Some Spec.js_of_ocaml_compact
         ; Some Spec.js_of_ocaml_call
-        ; (if run_ocamljs then Some Spec.ocamljs else None)
-        ; (if run_ocamljs then Some Spec.ocamljs_unsafe else None)
         ] )
     else
       ( (match interpreters with
