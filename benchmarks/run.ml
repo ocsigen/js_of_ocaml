@@ -244,6 +244,7 @@ let _ =
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
   compile_jsoo "" code Spec.byte code Spec.js_of_ocaml;
+  compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
   compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
   compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
   compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
@@ -268,6 +269,7 @@ let _ =
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "runtime");
   gen_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "generated");
+  gen_size param code Spec.js_of_ocaml_o3 sizes Spec.js_of_ocaml_o3;
   gen_size param code Spec.js_of_ocaml_inline sizes Spec.js_of_ocaml_inline;
   gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;
   gen_size param code Spec.js_of_ocaml_compact sizes Spec.js_of_ocaml_compact;
@@ -283,6 +285,7 @@ let _ =
     then
       ( interpreters
       , [ Some Spec.js_of_ocaml
+        ; Some Spec.js_of_ocaml_o3
         ; Some Spec.js_of_ocaml_unsafe
         ; Some Spec.js_of_ocaml_inline
         ; Some Spec.js_of_ocaml_deadcode
