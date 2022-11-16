@@ -243,6 +243,8 @@ let gen_missing js missing =
     report_missing_primitives missing);
   (Statement (Variable_statement miss), N) :: js
 
+let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
+
 let link ~standalone ~linkall (js : Javascript.source_elements) : Linker.output =
   if not standalone
   then { runtime_code = js; always_required_codes = [] }
@@ -251,6 +253,17 @@ let link ~standalone ~linkall (js : Javascript.source_elements) : Linker.output 
     if times () then Format.eprintf "Start Linking...@.";
     let traverse = new Js_traverse.free in
     let js = traverse#program js in
+    let js =
+      if mark_start_of_generated_code ()
+      then
+        let open Javascript in
+        ( Statement
+            (Expression_statement
+               (EStr ("--MARK--" ^ "start-of-jsoo-gen" ^ "--MARK--", `Utf8)))
+        , N )
+        :: js
+      else js
+    in
     let free = traverse#get_free_name in
     let prim = Primitive.get_external () in
     let prov = Linker.get_provided () in
