@@ -70,16 +70,12 @@ __missingcompiletimes:
 
 __missingsizes: __precomp
 	for i in $(missingsizes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
-	if [ ! -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
 	if [ ! -f results/sizes/ml/ocamlc ] ; then echo 800771 > results/sizes/ml/ocamlc ; fi
-	if [ ! -f results/sizes/ml/ocsigen_server ] ; then echo 0 > results/sizes/ml/ocsigen_server ; fi
 	if [ ! -f results/sizes/ml/js_of_ocaml ] ; then echo 171361 > results/sizes/ml/js_of_ocaml ; fi
 	if [ ! -f results/sizes/ml/boulderdash ] ; then echo 12920 > results/sizes/ml/boulderdash ; fi
-	if [ ! -f results/sizes/ml/canvas ] ; then echo 740 > results/sizes/ml/canvas ; fi
 	if [ ! -f results/sizes/ml/cubes ] ; then echo 3773 > results/sizes/ml/cubes ; fi
 	if [ ! -f results/sizes/ml/minesweeper ] ; then echo 7106 > results/sizes/ml/minesweeper ; fi
 	if [ ! -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
-	if [ ! -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
 	touch __missingsizes
 
 # To generate SVG, we first need to run the benchs,
@@ -104,15 +100,11 @@ size.gpl: __run __missingsizes
 	 -omit kb_no_exc \
 	 -omit loop \
 	 -append boulderdash \
-	 -append canvas \
 	 -append cubes \
 	 -append minesweeper \
 	 -append planet \
-	 -append sudoku \
 	 -append js_of_ocaml \
-	 -append ocsigen_server \
 	 -append ocamlc \
-	 -append unison \
 	 -max 3 -ylabel Size -script \
 	 -svg 7 650 150 \
 	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 23.75,1.80\nplot/smg' \
@@ -136,15 +128,11 @@ size-optim.svg: __run __missingsizes
 	 -omit kb_no_exc \
 	 -omit loop \
 	 -append boulderdash \
-	 -append canvas \
 	 -append cubes \
 	 -append minesweeper \
 	 -append planet \
-	 -append sudoku \
 	 -append js_of_ocaml \
-	 -append ocsigen_server \
 	 -append ocamlc \
-	 -append unison \
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
@@ -187,3 +175,14 @@ _noperf:
 
 clean: _noperf
 	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes
+
+
+copy-extra-bc:
+	mkdir -p programs
+	dune exec ./stripdebug.exe -- $(shell which ocamlc.byte) programs/ocamlc
+	dune build --profile bench_no_debug ../compiler/bin-js_of_ocaml/js_of_ocaml.bc ../examples/
+	cp -f ../_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.bc programs/js_of_ocaml
+	cp -f ../_build/default/examples/boulderdash/boulderdash.bc programs/boulderdash
+	cp -f ../_build/default/examples/cubes/cubes.bc programs/cubes
+	cp -f ../_build/default/examples/minesweeper/main.bc programs/minesweeper
+	cp -f ../_build/default/examples/planet/planet.bc programs/planet
