@@ -143,6 +143,8 @@ module Spec : sig
 
   val js_of_ocaml : t
 
+  val js_of_ocaml_o3 : t
+
   val byte_unsafe : t
 
   val opt_unsafe : t
@@ -199,6 +201,8 @@ end = struct
   let opt = create "opt" ""
 
   let js_of_ocaml = create "js_of_ocaml" ".js"
+
+  let js_of_ocaml_o3 = create "o3" ".js"
 
   let byte_unsafe = create "unsafe/byte" ""
 
