@@ -46,7 +46,7 @@ let debugs : (string * bool ref) list ref = ref []
 
 let available () = List.map !debugs ~f:fst
 
-let find s =
+let find ?(even_if_quiet = false) s =
   let state =
     try List.assoc s !debugs
     with Not_found ->
@@ -56,7 +56,7 @@ let find s =
   in
   fun () ->
     if String.equal s "times" then take_snapshot ();
-    (not !quiet) && !state
+    (even_if_quiet || not !quiet) && !state
 
 let enable s =
   try List.assoc s !debugs := true

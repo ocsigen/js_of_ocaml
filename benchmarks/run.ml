@@ -152,12 +152,19 @@ let compr_file_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
       Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst)
 
-(* let runtime_size = *)
-(*   compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s") *)
+let runtime_size param =
+  compile_no_ext param ~comptime:false (fun ~src ~dst ->
+      Format.sprintf
+        {|awk -vRS="--MARK--start-of-jsoo-gen--MARK--" '{print length($0)}' %s | head -n1  > %s|}
+        src
+        dst)
 
 let gen_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "tail -1 %s | wc -c > %s" src dst)
+      Format.sprintf
+        {|awk -vRS="--MARK--start-of-jsoo-gen--MARK--" '{print length($0)}' %s | tail -n1 > %s|}
+        src
+        dst)
 
 (****)
 
@@ -227,7 +234,12 @@ let _ =
   let param = !param in
   let interpreters = read_config conf_file in
   let compile = compile param ~comptime:true in
-  let compile_jsoo opts = compile (Format.sprintf "js_of_ocaml -q %s" opts) in
+  let compile_jsoo opts =
+    compile
+      (Format.sprintf
+         "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s"
+         opts)
+  in
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
@@ -249,7 +261,12 @@ let _ =
     Spec.js_of_ocaml
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "gzipped");
-  (* runtime_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "runtime"); *)
+  runtime_size
+    param
+    code
+    Spec.js_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml "runtime");
   gen_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "generated");
   gen_size param code Spec.js_of_ocaml_inline sizes Spec.js_of_ocaml_inline;
   gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;

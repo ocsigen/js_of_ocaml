@@ -17,7 +17,7 @@
  *)
 val available : unit -> string list
 
-val find : string -> unit -> bool
+val find : ?even_if_quiet:bool -> string -> unit -> bool
 
 val enable : string -> unit
 
