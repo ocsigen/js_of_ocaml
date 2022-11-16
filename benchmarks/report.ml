@@ -181,9 +181,9 @@ let gnuplot_output ch no_header (h, t) =
       Printf.fprintf
         ch
         "set terminal svg size %d %d font 'Arial,%d'\n"
-        !svgfontsize
         !svgwidth
-        !svgheight;
+        !svgheight
+        !svgfontsize;
     if !edgecaption
     then Printf.fprintf ch "set key tmargin horizontal Left left reverse\n";
     Printf.fprintf
@@ -236,7 +236,7 @@ let gnuplot_output ch no_header (h, t) =
       | Some (nm, _) -> nm
       | None -> ""
     in
-    Printf.fprintf ch "- - \"%s\"\n" nm;
+    Printf.fprintf ch "- \"%s\"\n" nm;
     List.iter t ~f:(fun (nm, l) ->
         let v, ii = List.nth l i in
         Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii));
