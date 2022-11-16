@@ -105,9 +105,9 @@ size.gpl: __run __missingsizes
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -max 3 -ylabel Size -script \
+	 -max 4.5 -ylabel Size -script \
 	 -svg 7 650 150 \
-	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 23.75,1.80\nplot/smg' \
+	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 19.83,2.87\nplot/smg' \
 	 > $@
 
 time-optim.svg: __run
