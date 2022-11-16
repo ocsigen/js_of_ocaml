@@ -70,16 +70,16 @@ __missingcompiletimes:
 
 __missingsizes: __precomp
 	for i in $(missingsizes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
-	if [ -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
-	if [ -f results/sizes/ml/ocamlc ] ; then echo 800771 > results/sizes/ml/ocamlc ; fi
-	if [ -f results/sizes/ml/ocsigen_server ] ; then echo 0 > results/sizes/ml/ocsigen_server ; fi
-	if [ -f results/sizes/ml/js_of_ocaml ] ; then echo 171361 > results/sizes/ml/js_of_ocaml ; fi
-	if [ -f results/sizes/ml/boulderdash ] ; then echo 12920 > results/sizes/ml/boulderdash ; fi
-	if [ -f results/sizes/ml/canvas ] ; then echo 740 > results/sizes/ml/canvas ; fi
-	if [ -f results/sizes/ml/cubes ] ; then echo 3773 > results/sizes/ml/cubes ; fi
-	if [ -f results/sizes/ml/minesweeper ] ; then echo 7106 > results/sizes/ml/minesweeper ; fi
-	if [ -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
-	if [ -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
+	if [ ! -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
+	if [ ! -f results/sizes/ml/ocamlc ] ; then echo 800771 > results/sizes/ml/ocamlc ; fi
+	if [ ! -f results/sizes/ml/ocsigen_server ] ; then echo 0 > results/sizes/ml/ocsigen_server ; fi
+	if [ ! -f results/sizes/ml/js_of_ocaml ] ; then echo 171361 > results/sizes/ml/js_of_ocaml ; fi
+	if [ ! -f results/sizes/ml/boulderdash ] ; then echo 12920 > results/sizes/ml/boulderdash ; fi
+	if [ ! -f results/sizes/ml/canvas ] ; then echo 740 > results/sizes/ml/canvas ; fi
+	if [ ! -f results/sizes/ml/cubes ] ; then echo 3773 > results/sizes/ml/cubes ; fi
+	if [ ! -f results/sizes/ml/minesweeper ] ; then echo 7106 > results/sizes/ml/minesweeper ; fi
+	if [ ! -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
+	if [ ! -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
 	touch __missingsizes
 
 # To generate SVG, we first need to run the benchs,
