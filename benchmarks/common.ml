@@ -143,8 +143,6 @@ module Spec : sig
 
   val js_of_ocaml : t
 
-  val ocamljs : t
-
   val byte_unsafe : t
 
   val opt_unsafe : t
@@ -158,8 +156,6 @@ module Spec : sig
   val js_of_ocaml_compact : t
 
   val js_of_ocaml_call : t
-
-  val ocamljs_unsafe : t
 end = struct
   type t =
     { dir : string
@@ -204,8 +200,6 @@ end = struct
 
   let js_of_ocaml = create "js_of_ocaml" ".js"
 
-  let ocamljs = create "ocamljs" ".js"
-
   let byte_unsafe = create "unsafe/byte" ""
 
   let opt_unsafe = create "unsafe/opt" ""
@@ -219,8 +213,6 @@ end = struct
   let js_of_ocaml_compact = create "notcompact" ".js"
 
   let js_of_ocaml_call = create "nooptcall" ".js"
-
-  let ocamljs_unsafe = create "unsafe/ocamljs" ".js"
 end
 
 let rec mkdir d =
