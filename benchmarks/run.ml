@@ -99,7 +99,9 @@ let need_more ~print (param : Param.t) l =
 let warm_up (param : Param.t) cmd =
   let t = ref 0. in
   while !t < param.warm_up_time do
-    let t' = time ~verbose:param.verbose cmd in
+    let t' =
+      time ~verbose:param.verbose (Printf.sprintf "timeout %f %s" param.max_duration cmd)
+    in
     if t' > param.max_duration
     then failwith (Printf.sprintf "Warmup took too long %.1fs" t');
     t := !t +. t'
