@@ -27,8 +27,6 @@ let nreference = ref (-1)
 
 let maximum = ref (-1.)
 
-let gnuplot = ref true
-
 let table = ref false
 
 let omitted = ref []

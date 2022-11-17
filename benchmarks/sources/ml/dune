@@ -44,3 +44,9 @@
   splay.exe
   takc.exe
   taku.exe))
+
+
+(env
+ (_
+  (flags
+   (:standard -w -32-34-38-69))))
