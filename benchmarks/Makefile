@@ -109,6 +109,8 @@ size.gpl: __run __missingsizes
 	 -svg 7 650 150 \
 	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 19.83,2.87\nplot/smg' \
 	 > $@
+# You'll need to adjust the perl invocation above to align the "Generated code" caption
+
 
 time-optim.svg: __run
 	$(REPORT) -config report-time-optim.config \
@@ -155,6 +157,13 @@ nativejs.svg: __run
 
 %.pdf: %.svg
 	inkscape -D --export-pdf="$@" -w 210 -h 297 $<
+
+
+nativejs.png: nativejs.svg
+	inkscape -D -o "$@" -w 500 $<
+
+%.png: %.svg
+	inkscape -D -o "$@" -w 1024 $<
 
 _perf:
 	for i in /sys/devices/system/cpu/cpu* ; \
