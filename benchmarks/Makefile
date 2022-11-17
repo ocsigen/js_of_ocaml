@@ -116,7 +116,7 @@ time-optim.svg: __run
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
-	 -max 4 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim.svg: __run __missingsizes
