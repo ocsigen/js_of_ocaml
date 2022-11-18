@@ -93,7 +93,7 @@ jobs:
 
       - name: synchronize doc
         if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-        uses: JamesIves/github-pages-deploy-action@4.2.1
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: wikidoc
           folder: doc-dev
