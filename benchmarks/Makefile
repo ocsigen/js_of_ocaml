@@ -4,12 +4,17 @@ GRAPHSNOPR = time.pdf time-optim.pdf nativejs.pdf
 # graphs with precompiled programs:
 GRAPHSPR = size.pdf size-optim.pdf compiletime.pdf
 
+# graphs showing the impact of supporting effects
+GRAPHSEFF = time-effects.pdf size-effects.pdf
+
 # For full benchs:
-all: _perf graphsnopr graphspr _noperf
+all: _perf graphsnopr graphspr graphseff _noperf
 
 graphsnopr: _noprecomp $(GRAPHSNOPR)
 
 graphspr: __precomp $(GRAPHSPR)
+
+graphseff: $(GRAPHSEFF)
 
 # For fast benchs:
 test: _perf fastrun $(GRAPHS) _noperf
@@ -41,6 +46,11 @@ __run:
 	make _noprecomp
 	$(RUN) -all
 	touch __run
+
+__run_effects:
+	make _noprecomp
+	$(RUN) -fast -nobyteopt -effects
+	touch __run_effects
 
 fastrun:
 	make _noprecomp
@@ -135,6 +145,26 @@ size-optim.svg: __run __missingsizes
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
+	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+time-effects.svg: __run_effects
+	$(REPORT) -config report-time-effects.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit loop \
+	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-effects.svg: __run_effects
+	$(REPORT) -config report-size-effects.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 

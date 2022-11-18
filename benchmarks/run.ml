@@ -34,7 +34,7 @@ module Param = struct
     { warm_up_time = 1.0
     ; min_measures = 10
     ; max_confidence = 0.03
-    ; max_duration = 5.
+    ; max_duration = 20.
     ; verbose = false
     }
 
@@ -207,6 +207,7 @@ let read_config file =
 let _ =
   let compile_only = ref false in
   let full = ref false in
+  let effects = ref false in
   let conf_file = ref "run.config" in
   let nobyteopt = ref false in
   let param = ref Param.default in
@@ -216,6 +217,7 @@ let _ =
   let options =
     [ "-compile", Arg.Set compile_only, " only compiles"
     ; "-all", Arg.Set full, " run all benchmarks"
+    ; "-effects", Arg.Set effects, " only run with and without effect handler support"
     ; "-config", Arg.Set_string conf_file, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
@@ -233,14 +235,16 @@ let _ =
   let compile_only = !compile_only in
   let nobyteopt = !nobyteopt in
   let full = !full in
+  let effects = !effects in
   let param = !param in
   let interpreters = read_config conf_file in
   let compile = compile param ~comptime:true in
-  let compile_jsoo opts =
+  let compile_jsoo ?(effects = false) opts =
     compile
       (Format.sprintf
-         "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s"
-         opts)
+         "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s %s"
+         opts
+         (if effects then "--enable=effects" else "--disable=effects"))
   in
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
@@ -252,6 +256,7 @@ let _ =
   compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
   compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
   compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
+  compile_jsoo ~effects:true "" code Spec.byte code Spec.js_of_ocaml_effects;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
   compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
@@ -278,6 +283,7 @@ let _ =
   gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;
   gen_size param code Spec.js_of_ocaml_compact sizes Spec.js_of_ocaml_compact;
   gen_size param code Spec.js_of_ocaml_call sizes Spec.js_of_ocaml_call;
+  gen_size param code Spec.js_of_ocaml_effects sizes Spec.js_of_ocaml_effects;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
   if not nobyteopt
@@ -296,7 +302,14 @@ let _ =
         ; Some Spec.js_of_ocaml_deadcode
         ; Some Spec.js_of_ocaml_compact
         ; Some Spec.js_of_ocaml_call
+        ; Some Spec.js_of_ocaml_effects
         ] )
+    else if effects
+    then
+      ( (match interpreters with
+        | i :: _ -> [ i ]
+        | [] -> [])
+      , [ Some Spec.js_of_ocaml; Some Spec.js_of_ocaml_effects ] )
     else
       ( (match interpreters with
         | i :: _ -> [ i ]
