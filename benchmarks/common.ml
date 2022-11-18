@@ -160,6 +160,8 @@ module Spec : sig
   val js_of_ocaml_compact : t
 
   val js_of_ocaml_call : t
+
+  val js_of_ocaml_effects : t
 end = struct
   type t =
     { dir : string
@@ -221,6 +223,8 @@ end = struct
   let js_of_ocaml_compact = create "notcompact" ".js"
 
   let js_of_ocaml_call = create "nooptcall" ".js"
+
+  let js_of_ocaml_effects = create "effects" ".js"
 end
 
 let rec mkdir d =
