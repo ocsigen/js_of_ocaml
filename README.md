@@ -1,6 +1,8 @@
 # Js_of_ocaml (jsoo)
 
 [![Build Status](https://github.com/ocsigen/js_of_ocaml/workflows/build/badge.svg?branch=master)](https://github.com/ocsigen/js_of_ocaml/actions)
+[![Update Web site - build](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml)
+[![Update Web site - deploy](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment)
 
 Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it
 possible to run pure OCaml programs in JavaScript environment like browsers and
