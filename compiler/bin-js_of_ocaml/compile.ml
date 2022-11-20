@@ -274,11 +274,11 @@ let run
         List.iter cma.lib_units ~f:(fun cmo ->
             let output_file =
               match output_file with
-              | `Stdout, false -> `Name (gen_unit_filename "./" cmo)
-              | `Name x, false -> `Name (gen_unit_filename (Filename.dirname x) cmo)
+              | `Stdout, false -> gen_unit_filename "./" cmo
+              | `Name x, false -> gen_unit_filename (Filename.dirname x) cmo
               | `Name x, true
                 when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
-                  `Name (gen_unit_filename x cmo)
+                  gen_unit_filename x cmo
               | `Stdout, true | `Name _, true ->
                   failwith "use [-o dirname/] or remove [--keep-unit-names]"
             in
@@ -293,7 +293,7 @@ let run
             in
             if times ()
             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
-            output_partial code output_file)
+            output_partial code (`Name output_file))
     | `Cma cma ->
         let t1 = Timer.make () in
         let code =
