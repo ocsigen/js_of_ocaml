@@ -1437,6 +1437,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
           assert (Addr.Set.cardinal handler_frontier_cont <= 1);
           let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
           if debug () then Format.eprintf "@[<2>try {@,";
+          if Addr.Map.mem pc1 handler_interm then decr_preds st pc1;
           let body =
             prefix
             @ compile_branch
@@ -1444,7 +1445,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                 []
                 (pc1, args1)
                 None
-                Addr.Set.empty
+                backs
                 try_catch_frontier
                 handler_interm
           in
@@ -1454,7 +1455,10 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             let m = Subst.build_mapping args2 block2.params in
             try Var.Map.find x m with Not_found -> x
           in
-          let handler = compile_block st [] pc2 try_catch_frontier handler_interm in
+          if Addr.Map.mem pc2 handler_interm then decr_preds st pc2;
+          let handler =
+            compile_branch st [] (pc2, args2) None backs try_catch_frontier handler_interm
+          in
           if debug () then Format.eprintf "}@]@ ";
           Addr.Set.iter (decr_preds st) handler_frontier;
 
@@ -1528,6 +1532,8 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             colapse_frontier st new_frontier interm
           in
           assert (Addr.Set.cardinal frontier_cont <= 1);
+          List.iter succs ~f:(fun (pc, _) ->
+              if Addr.Map.mem pc new_interm then decr_preds st pc);
           (* Beware evaluation order! *)
           let cond =
             compile_conditional
@@ -1616,7 +1622,7 @@ and colapse_frontier st new_frontier interm =
        of the frontier. *)
     Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;
     (* Put a limit: we are going to remove other branches
-       to the members of the frontier (in compile_conditional),
+       to the members of the frontier (in compile_block),
        but they should remain in the frontier. *)
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
@@ -1695,7 +1701,6 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
   binds @ snd (loop cx dtree)
 
 and compile_conditional st queue pc last handler backs frontier interm succs =
-  List.iter succs ~f:(fun (pc, _) -> if Addr.Map.mem pc interm then decr_preds st pc);
   (if debug ()
   then
     match last with
