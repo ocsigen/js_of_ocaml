@@ -1360,231 +1360,213 @@ and compile_block st queue (pc : Addr.t) frontier interm =
   if (not (List.is_empty queue))
      && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
   then flush_all queue (compile_block st [] pc frontier interm)
-  else (
-    if pc >= 0
-    then (
-      if Addr.Set.mem pc st.visited_blocks
-      then (
-        Format.eprintf "Trying to compile a block twice !!!! %d@." pc;
-        assert false);
-      st.visited_blocks <- Addr.Set.add pc st.visited_blocks);
-    if debug ()
-    then (
-      if Addr.Set.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
-      Format.eprintf "block %d;@ @?" pc);
-    (if Addr.Set.mem pc st.loops
-    then
-      let lab =
-        match st.loop_stack with
-        | (_, (l, _)) :: _ -> J.Label.succ l
-        | [] -> J.Label.zero
-      in
-      st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack);
-    let succs = Hashtbl.find st.succs pc in
-    let backs = Hashtbl.find st.backs pc in
-    (* Remove limit *)
-    if pc < 0 then List.iter succs ~f:(fun pc -> unprotect_preds st pc);
-    let succs = List.map succs ~f:(fun pc -> pc, dominance_frontier st pc) in
-    if pc < 0
-       && List.for_all succs ~f:(fun (pc, front) ->
-              Addr.Set.cardinal front = 1 && Addr.Set.choose front = pc)
-    then (
-      Format.eprintf "Something is wrong. Stopping now to prevent infinite loop.@.";
-      assert false);
-    let grey =
-      List.fold_right
-        ~f:(fun (_, frontier) grey -> Addr.Set.union frontier grey)
-        succs
-        ~init:Addr.Set.empty
-    in
-    (* TODO: Check that we are inside the [frontier] *)
-    let new_frontier = resolve_nodes interm grey in
-    let block = Addr.Map.find pc st.blocks in
-    let seq, queue =
-      translate_instrs st.ctx queue (source_location st.ctx pc) block.body
-    in
-    let body =
-      seq
-      @
-      match block.branch with
-      | Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3s) ->
-          (* FIX: document this *)
-          let exn_frontier = dominance_frontier st pc2 in
-          (* We need to make sure that pc3 is live (indeed, the
-             continuation may have been optimized away by inlining) *)
-          let pc3s = Addr.Set.filter (fun pc -> Hashtbl.mem st.succs pc) pc3s in
-          (* no need to limit body for simple flow with no
-             instruction.  eg return and branch *)
-          let rec limit pc =
-            if Addr.Set.mem pc exn_frontier
-            then false
-            else
-              match Addr.Map.find pc st.blocks with
-              | { body = []; branch = Return _; _ } -> false
-              | { body = []; branch = Poptrap ((pc', _), _); _ }
-              | { body = []; branch = Branch (pc', _); _ } -> limit pc'
-              | _ -> true
-          in
-          let handler_frontier = Addr.Set.filter limit pc3s in
-          (* TODO: Check that we are inside the [frontier/new_frontier] *)
-          let handler_frontier =
-            resolve_nodes interm (Addr.Set.union exn_frontier handler_frontier)
-          in
-          Addr.Set.iter (incr_preds st) handler_frontier;
-          let prefix, handler_frontier_cont, handler_interm =
-            colapse_frontier st handler_frontier interm
-          in
-          assert (Addr.Set.cardinal handler_frontier_cont <= 1);
-          let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
-          if debug () then Format.eprintf "@[<2>try {@,";
-          if Addr.Map.mem pc1 handler_interm then decr_preds st pc1;
-          let body =
-            prefix
-            @ compile_branch
-                st
-                []
-                (pc1, args1)
-                None
-                backs
-                try_catch_frontier
-                handler_interm
-          in
-          if debug () then Format.eprintf "} catch {@,";
-          let x =
-            let block2 = Addr.Map.find pc2 st.blocks in
-            let m = Subst.build_mapping args2 block2.params in
-            try Var.Map.find x m with Not_found -> x
-          in
-          if Addr.Map.mem pc2 handler_interm then decr_preds st pc2;
-          let handler =
-            compile_branch st [] (pc2, args2) None backs try_catch_frontier handler_interm
-          in
-          if debug () then Format.eprintf "}@]@ ";
-          Addr.Set.iter (decr_preds st) handler_frontier;
-
-          let exn_escape =
-            match Addr.Set.choose handler_frontier_cont with
-            | exception Not_found -> None
-            | pc ->
-                let x' = Var.fork x in
-                let found = ref false in
-                let map_var y =
-                  if Code.Var.equal x y
+  else
+    match Addr.Set.mem pc st.loops with
+    | false -> compile_block_no_loop st queue pc frontier interm
+    | true -> (
+        if debug () then Format.eprintf "@[<2>for(;;){@,";
+        let lab =
+          match st.loop_stack with
+          | (_, (l, _)) :: _ -> J.Label.succ l
+          | [] -> J.Label.zero
+        in
+        st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack;
+        let body = compile_block_no_loop st queue pc frontier interm in
+        let for_loop =
+          ( J.For_statement
+              ( J.Left None
+              , None
+              , None
+              , Js_simpl.block
+                  (if Addr.Set.cardinal frontier > 0
                   then (
-                    found := true;
-                    x')
-                  else y
-                in
-                let subst_block pc blocks =
-                  Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
-                in
-                let blocks =
-                  Code.traverse
-                    { fold = Code.fold_children }
-                    subst_block
-                    pc
-                    st.blocks
-                    st.blocks
-                in
-                if !found then st.blocks <- blocks;
-                if !found then Some x' else None
-          in
-          let after =
-            match Addr.Set.choose handler_frontier_cont with
-            | exception Not_found -> []
-            | pc ->
-                if Addr.Set.mem pc frontier
-                then []
-                else compile_block st [] pc frontier interm
-          in
-          let handler =
-            if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
-            then
-              ( J.Expression_statement
-                  (J.EBin
-                     ( J.Eq
-                     , J.EVar (J.V x)
-                     , ecall
-                         (Share.get_prim
-                            (runtime_fun st.ctx)
-                            "caml_wrap_exception"
-                            st.ctx.Ctx.share)
-                         [ J.EVar (J.V x) ]
-                         J.N ))
-              , J.N )
-              :: handler
-            else handler
-          in
-          let handler =
-            match exn_escape with
-            | Some x' ->
-                handler
-                @ [ J.Variable_statement [ J.V x', Some (EVar (J.V x), J.N) ], J.N ]
-            | None -> handler
-          in
-          flush_all
-            queue
-            (( J.Try_statement (body, Some (J.V x, handler), None)
-             , source_location st.ctx pc )
-            :: after)
-      | _ -> (
-          let prefix, frontier_cont, new_interm =
-            colapse_frontier st new_frontier interm
-          in
-          assert (Addr.Set.cardinal frontier_cont <= 1);
-          List.iter succs ~f:(fun (pc, _) ->
-              if Addr.Map.mem pc new_interm then decr_preds st pc);
-          (* Beware evaluation order! *)
-          let cond =
-            compile_conditional
-              st
-              queue
-              pc
-              block.branch
-              block.handler
-              backs
-              frontier_cont
-              new_interm
-              succs
-          in
-          prefix
-          @ cond
-          @
-          match Addr.Set.choose frontier_cont with
-          | exception Not_found -> []
-          | pc ->
-              if Addr.Set.mem pc frontier
-              then []
-              else compile_block st [] pc frontier interm)
-    in
-    if Addr.Set.mem pc st.loops
-    then
-      let label =
-        match st.loop_stack with
-        | (_, (l, used)) :: r ->
-            st.loop_stack <- r;
-            if !used then Some l else None
-        | [] -> assert false
+                    if debug () then Format.eprintf "@ break; }@]";
+                    body @ [ J.Break_statement None, J.N ])
+                  else (
+                    if debug () then Format.eprintf "}@]";
+                    body)) )
+          , source_location st.ctx pc )
+        in
+        let label =
+          match st.loop_stack with
+          | (_, (l, used)) :: r ->
+              st.loop_stack <- r;
+              if !used then Some l else None
+          | [] -> assert false
+        in
+        match label with
+        | None -> [ for_loop ]
+        | Some label -> [ J.Labelled_statement (label, for_loop), J.N ])
+
+and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
+  if pc >= 0
+  then (
+    if Addr.Set.mem pc st.visited_blocks
+    then (
+      Format.eprintf "Trying to compile a block twice !!!! %d@." pc;
+      assert false);
+    st.visited_blocks <- Addr.Set.add pc st.visited_blocks);
+  if debug () then Format.eprintf "block %d;@ @?" pc;
+  let succs = Hashtbl.find st.succs pc in
+  let backs = Hashtbl.find st.backs pc in
+  (* Remove limit *)
+  if pc < 0 then List.iter succs ~f:(fun pc -> unprotect_preds st pc);
+  let succs = List.map succs ~f:(fun pc -> pc, dominance_frontier st pc) in
+  if pc < 0
+     && List.for_all succs ~f:(fun (pc, front) ->
+            Addr.Set.cardinal front = 1 && Addr.Set.choose front = pc)
+  then (
+    Format.eprintf "Something is wrong. Stopping now to prevent infinite loop.@.";
+    assert false);
+  let grey =
+    List.fold_right
+      ~f:(fun (_, frontier) grey -> Addr.Set.union frontier grey)
+      succs
+      ~init:Addr.Set.empty
+  in
+  (* TODO: Check that we are inside the [frontier] *)
+  let new_frontier = resolve_nodes interm grey in
+  let block = Addr.Map.find pc st.blocks in
+  let seq, queue = translate_instrs st.ctx queue (source_location st.ctx pc) block.body in
+  seq
+  @
+  match block.branch with
+  | Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3s) ->
+      (* FIX: document this *)
+      let exn_frontier = dominance_frontier st pc2 in
+      (* We need to make sure that pc3 is live (indeed, the
+         continuation may have been optimized away by inlining) *)
+      let pc3s = Addr.Set.filter (fun pc -> Hashtbl.mem st.succs pc) pc3s in
+      (* no need to limit body for simple flow with no
+         instruction.  eg return and branch *)
+      let rec limit pc =
+        if Addr.Set.mem pc exn_frontier
+        then false
+        else
+          match Addr.Map.find pc st.blocks with
+          | { body = []; branch = Return _; _ } -> false
+          | { body = []; branch = Poptrap ((pc', _), _); _ }
+          | { body = []; branch = Branch (pc', _); _ } -> limit pc'
+          | _ -> true
       in
-      let st =
-        ( J.For_statement
-            ( J.Left None
-            , None
-            , None
-            , Js_simpl.block
-                (if Addr.Set.cardinal frontier > 0
-                then (
-                  if debug () then Format.eprintf "@ break; }@]";
-                  body @ [ J.Break_statement None, J.N ])
-                else (
-                  if debug () then Format.eprintf "}@]";
-                  body)) )
-        , source_location st.ctx pc )
+      let handler_frontier = Addr.Set.filter limit pc3s in
+      (* TODO: Check that we are inside the [frontier/new_frontier] *)
+      let handler_frontier =
+        resolve_nodes interm (Addr.Set.union exn_frontier handler_frontier)
       in
-      match label with
-      | None -> [ st ]
-      | Some label -> [ J.Labelled_statement (label, st), J.N ]
-    else body)
+      Addr.Set.iter (incr_preds st) handler_frontier;
+      let prefix, handler_frontier_cont, handler_interm =
+        colapse_frontier st handler_frontier interm
+      in
+      assert (Addr.Set.cardinal handler_frontier_cont <= 1);
+      let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
+      if debug () then Format.eprintf "@[<2>try {@,";
+      if Addr.Map.mem pc1 handler_interm then decr_preds st pc1;
+      let body =
+        prefix
+        @ compile_branch st [] (pc1, args1) None backs try_catch_frontier handler_interm
+      in
+      if debug () then Format.eprintf "} catch {@,";
+      let x =
+        let block2 = Addr.Map.find pc2 st.blocks in
+        let m = Subst.build_mapping args2 block2.params in
+        try Var.Map.find x m with Not_found -> x
+      in
+      if Addr.Map.mem pc2 handler_interm then decr_preds st pc2;
+      let handler =
+        compile_branch st [] (pc2, args2) None backs try_catch_frontier handler_interm
+      in
+      if debug () then Format.eprintf "}@]@ ";
+      Addr.Set.iter (decr_preds st) handler_frontier;
+
+      let exn_escape =
+        match Addr.Set.choose handler_frontier_cont with
+        | exception Not_found -> None
+        | pc ->
+            let x' = Var.fork x in
+            let found = ref false in
+            let map_var y =
+              if Code.Var.equal x y
+              then (
+                found := true;
+                x')
+              else y
+            in
+            let subst_block pc blocks =
+              Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
+            in
+            let blocks =
+              Code.traverse
+                { fold = Code.fold_children }
+                subst_block
+                pc
+                st.blocks
+                st.blocks
+            in
+            if !found then st.blocks <- blocks;
+            if !found then Some x' else None
+      in
+      let after =
+        match Addr.Set.choose handler_frontier_cont with
+        | exception Not_found -> []
+        | pc ->
+            if Addr.Set.mem pc frontier
+            then []
+            else compile_block st [] pc frontier interm
+      in
+      let handler =
+        if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
+        then
+          ( J.Expression_statement
+              (J.EBin
+                 ( J.Eq
+                 , J.EVar (J.V x)
+                 , ecall
+                     (Share.get_prim
+                        (runtime_fun st.ctx)
+                        "caml_wrap_exception"
+                        st.ctx.Ctx.share)
+                     [ J.EVar (J.V x) ]
+                     J.N ))
+          , J.N )
+          :: handler
+        else handler
+      in
+      let handler =
+        match exn_escape with
+        | Some x' ->
+            handler @ [ J.Variable_statement [ J.V x', Some (EVar (J.V x), J.N) ], J.N ]
+        | None -> handler
+      in
+      flush_all
+        queue
+        ((J.Try_statement (body, Some (J.V x, handler), None), source_location st.ctx pc)
+        :: after)
+  | _ -> (
+      let prefix, frontier_cont, new_interm = colapse_frontier st new_frontier interm in
+      assert (Addr.Set.cardinal frontier_cont <= 1);
+      List.iter succs ~f:(fun (pc, _) ->
+          if Addr.Map.mem pc new_interm then decr_preds st pc);
+      (* Beware evaluation order! *)
+      let cond =
+        compile_conditional
+          st
+          queue
+          pc
+          block.branch
+          block.handler
+          backs
+          frontier_cont
+          new_interm
+          succs
+      in
+      prefix
+      @ cond
+      @
+      match Addr.Set.choose frontier_cont with
+      | exception Not_found -> []
+      | pc ->
+          if Addr.Set.mem pc frontier then [] else compile_block st [] pc frontier interm)
 
 and colapse_frontier st new_frontier interm =
   if Addr.Set.cardinal new_frontier > 1
