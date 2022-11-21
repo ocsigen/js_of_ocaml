@@ -1385,6 +1385,12 @@ and compile_block st queue (pc : Addr.t) frontier interm =
     (* Remove limit *)
     if pc < 0 then List.iter succs ~f:(fun pc -> unprotect_preds st pc);
     let succs = List.map succs ~f:(fun pc -> pc, dominance_frontier st pc) in
+    if pc < 0
+       && List.for_all succs ~f:(fun (pc, front) ->
+              Addr.Set.cardinal front = 1 && Addr.Set.choose front = pc)
+    then (
+      Format.eprintf "Something is wrong. Stopping now to prevent infinite loop.@.";
+      assert false);
     let grey =
       List.fold_right
         ~f:(fun (_, frontier) grey -> Addr.Set.union frontier grey)
