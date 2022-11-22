@@ -42,8 +42,6 @@ let prevent_inline = some_name
     {|
     function _a_(_b_)
      {try
-       {try
-         {throw Stdlib[8]}
-        catch(_e_){_e_ = caml_wrap_exception(_e_);var _c_=_e_}}
+       {try {throw Stdlib[8]}catch(_e_){var _c_=caml_wrap_exception(_e_)}}
       catch(_d_){_d_ = caml_wrap_exception(_d_);throw _d_}
       throw _c_} |}]
