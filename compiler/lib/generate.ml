@@ -1445,7 +1445,6 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
         else
           match Addr.Map.find pc st.blocks with
           | { body = []; branch = Return _; _ } -> false
-          | { body = []; branch = Poptrap (pc', _); _ }
           | { body = []; branch = Branch (pc', _); _ } -> limit pc'
           | _ -> true
       in
