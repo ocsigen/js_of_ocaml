@@ -1477,33 +1477,30 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
       in
       if debug () then Format.eprintf "}@]@ ";
       Addr.Set.iter (decr_preds st) handler_frontier;
-
+      (* TODO: Cleanup exn_escape *)
       let exn_escape =
         match Addr.Set.choose handler_frontier_cont with
         | exception Not_found -> None
-        | pc ->
-            let x' = Var.fork x in
-            let found = ref false in
-            let map_var y =
-              if Code.Var.equal x y
-              then (
-                found := true;
-                x')
-              else y
+        | pc -> (
+            let exception Escape in
+            let find_in_block pc () =
+              let map_var y =
+                if Code.Var.equal x y then raise Escape;
+                y
+              in
+              let (_ : Code.block) = Subst.block map_var (Addr.Map.find pc st.blocks) in
+              ()
             in
-            let subst_block pc blocks =
-              Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
+            (* We don't want to traverse backward edges. we rely on
+               [st.succs] instead of [Code.fold_children]. *)
+            let fold _blocs pc f acc =
+              let succs = Hashtbl.find st.succs pc in
+              List.fold_left succs ~init:acc ~f:(fun acc pc -> f pc acc)
             in
-            let blocks =
-              Code.traverse
-                { fold = Code.fold_children }
-                subst_block
-                pc
-                st.blocks
-                st.blocks
-            in
-            if !found then st.blocks <- blocks;
-            if !found then Some x' else None
+            try
+              Code.traverse { fold } find_in_block pc st.blocks ();
+              None
+            with Escape -> Some (Var.fork x))
       in
       let after =
         match Addr.Set.choose handler_frontier_cont with
@@ -1513,33 +1510,33 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
             then []
             else compile_block st [] pc frontier interm
       in
-      let handler =
-        if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
-        then
-          ( J.Expression_statement
-              (J.EBin
-                 ( J.Eq
-                 , J.EVar (J.V x)
-                 , ecall
-                     (Share.get_prim
-                        (runtime_fun st.ctx)
-                        "caml_wrap_exception"
-                        st.ctx.Ctx.share)
-                     [ J.EVar (J.V x) ]
-                     J.N ))
-          , J.N )
-          :: handler
-        else handler
+      let wrap_exn x =
+        ecall
+          (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share)
+          [ J.EVar (J.V x) ]
+          J.N
+      in
+      let should_wrap_exn = st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap () in
+      let handler_var =
+        match exn_escape with
+        | None -> x
+        | Some x' -> x'
       in
       let handler =
-        match exn_escape with
-        | Some x' ->
-            handler @ [ J.Variable_statement [ J.V x', Some (EVar (J.V x), J.N) ], J.N ]
-        | None -> handler
+        match should_wrap_exn, exn_escape with
+        | true, Some x' ->
+            (J.Variable_statement [ J.V x, Some (wrap_exn x', J.N) ], J.N) :: handler
+        | false, Some x' ->
+            (J.Variable_statement [ J.V x, Some (EVar (J.V x'), J.N) ], J.N) :: handler
+        | true, None ->
+            (J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), wrap_exn x)), J.N)
+            :: handler
+        | false, None -> handler
       in
       flush_all
         queue
-        ((J.Try_statement (body, Some (J.V x, handler), None), source_location st.ctx pc)
+        (( J.Try_statement (body, Some (J.V handler_var, handler), None)
+         , source_location st.ctx pc )
         :: after)
   | _ -> (
       let prefix, frontier_cont, new_interm = colapse_frontier st new_frontier interm in
