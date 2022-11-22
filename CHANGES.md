@@ -1,4 +1,11 @@
 # dev (202?-??) - ??
+## Features/Changes
+* Compiler: small refactoring in code generation
+* Misc: fix and update benchmarks
+* Misc: upgrade CI
+* Toplevel: recover more names when generating code during toplevel evaluation
+
+## Bug fixes
 
 # 4.1.0 (2022-11-15) - Lille
 ## Features/Changes
