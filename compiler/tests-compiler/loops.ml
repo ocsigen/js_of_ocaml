@@ -256,3 +256,210 @@ let f t x =
             return _b_?1:2}}
         return - 2}
       return other(t,x)} |}]
+
+let%expect_test "loop-and-switch" =
+  let program =
+    compile_and_parse
+      {|
+let inspect x=
+let rec loop_rec x = match x with
+| 0 -> 1
+| 2 -> let n = Random.int 2 in n + n
+| 3 -> let n = Random.int 2 in loop_rec n
+| n -> 2
+in
+let rec loop x =
+match x with
+| 0 -> 1
+| 1 -> loop_rec 2 + 2
+| n -> loop (n + 1)
+in loop x
+
+|}
+  in
+  print_fun_decl program (Some "inspect");
+  [%expect
+    {|
+    function inspect(x)
+     {var x$2=x;
+      for(;;)
+       {if(0 === x$2)return 1;
+        if(1 === x$2)
+         {var x$0=2;
+          for(;;)
+           {var switch$0=0;
+            if(3 < x$0 >>> 0)
+             switch$0 = 1;
+            else
+             switch(x$0)
+              {case 0:var _a_=1;break;
+               case 2:var n=caml_call1(Stdlib_Random[5],2),_a_=n + n | 0;break;
+               case 3:var x$1=caml_call1(Stdlib_Random[5],2),x$0=x$1;continue;
+               default:switch$0 = 1}
+            if(switch$0)var _a_=2;
+            return _a_ + 2 | 0}}
+        var x$3=x$2 + 1 | 0,x$2=x$3;
+        continue}} |}]
+
+let%expect_test "buffer.add_substitute" =
+  let program =
+    compile_and_parse
+      {|
+let add_substitute =
+  let closing = function
+    | '(' -> ')'
+    | '{' -> '}'
+    | _ -> assert false
+  in
+  (* opening and closing: open and close characters, typically ( and )
+     k: balance of opening and closing chars
+     s: the string where we are searching
+     start: the index where we start the search. *)
+  let advance_to_closing opening closing k s start =
+    let rec advance k i lim =
+      if i >= lim
+      then raise Not_found
+      else if s.[i] = opening
+      then advance (k + 1) (i + 1) lim
+      else if s.[i] = closing
+      then if k = 0 then i else advance (k - 1) (i + 1) lim
+      else advance k (i + 1) lim
+    in
+    advance k start (String.length s)
+  in
+  let advance_to_non_alpha s start =
+    let rec advance i lim =
+      if i >= lim
+      then lim
+      else
+        match s.[i] with
+        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> advance (i + 1) lim
+        | _ -> i
+    in
+    advance start (String.length s)
+  in
+  (* We are just at the beginning of an ident in s, starting at start. *)
+  let find_ident s start lim =
+    if start >= lim
+    then raise Not_found
+    else
+      match s.[start] with
+      (* Parenthesized ident ? *)
+      | ('(' | '{') as c ->
+          let new_start = start + 1 in
+          let stop = advance_to_closing c (closing c) 0 s new_start in
+          String.sub s new_start (stop - start - 1), stop + 1
+      (* Regular ident *)
+      | _ ->
+          let stop = advance_to_non_alpha s (start + 1) in
+          String.sub s start (stop - start), stop
+  in
+  let add_char = Buffer.add_char in
+  let add_string = Buffer.add_string in
+  (* Substitute $ident, $(ident), or ${ident} in s,
+      according to the function mapping f. *)
+  let add_substitute b f s =
+    let lim = String.length s in
+    let rec subst previous i =
+      if i < lim
+      then (
+        match s.[i] with
+        | '$' as current when previous = '\\' ->
+            add_char b current;
+            subst ' ' (i + 1)
+        | '$' ->
+            let j = i + 1 in
+            let ident, next_i = find_ident s j lim in
+            add_string b (f ident);
+            subst ' ' next_i
+        | current when previous == '\\' ->
+            add_char b '\\';
+            add_char b current;
+            subst ' ' (i + 1)
+        | '\\' as current -> subst current (i + 1)
+        | current ->
+            add_char b current;
+            subst current (i + 1))
+      else if previous = '\\'
+      then add_char b previous
+    in
+    subst ' ' 0
+  in
+  add_substitute
+|}
+  in
+  print_fun_decl program (Some "add_substitute");
+  [%expect
+    {|
+    function add_substitute(b,f,s)
+     {var lim$1=caml_ml_string_length(s),previous=32,i$7=0;
+      for(;;)
+       {if(i$7 < lim$1)
+         {var current=caml_string_get(s,i$7);
+          if(36 === current)
+           {if(92 === previous)
+             {caml_call2(add_char,b,current);
+              var i$8=i$7 + 1 | 0,previous=32,i$7=i$8;
+              continue}
+            var start=i$7 + 1 | 0;
+            if(lim$1 <= start)throw Stdlib[8];
+            var opening=caml_string_get(s,start),switch$0=0;
+            if(40 !== opening && 123 !== opening)
+             {var i$6=start + 1 | 0,lim$0=caml_ml_string_length(s),i$3=i$6;
+              for(;;)
+               {if(lim$0 <= i$3)
+                 var stop=lim$0;
+                else
+                 {var match=caml_string_get(s,i$3),switch$1=0;
+                  if(91 <= match)
+                   {if(97 <= match)
+                     {if(! (123 <= match))switch$1 = 1}
+                    else
+                     if(95 === match)switch$1 = 1}
+                  else
+                   if(58 <= match)
+                    {if(65 <= match)switch$1 = 1}
+                   else
+                    if(48 <= match)switch$1 = 1;
+                  if(switch$1){var i$4=i$3 + 1 | 0,i$3=i$4;continue}
+                  var stop=i$3}
+                var
+                 match$0=
+                  [0,caml_call3(Stdlib_String[15],s,start,stop - start | 0),stop];
+                switch$0 = 1;
+                break}}
+            if(! switch$0)
+             {var i$5=start + 1 | 0,k$2=0;
+              if(40 === opening)
+               var _b_=41;
+              else
+               {if(123 !== opening)throw [0,Assert_failure,_a_];var _b_=125}
+              var lim=caml_ml_string_length(s),k=k$2,i=i$5;
+              for(;;)
+               {if(lim <= i)throw Stdlib[8];
+                if(caml_string_get(s,i) === opening)
+                 {var i$0=i + 1 | 0,k$0=k + 1 | 0,k=k$0,i=i$0;continue}
+                if(caml_string_get(s,i) !== _b_){var i$2=i + 1 | 0,i=i$2;continue}
+                if(0 !== k){var i$1=i + 1 | 0,k$1=k - 1 | 0,k=k$1,i=i$1;continue}
+                var
+                 match$0=
+                  [0,
+                   caml_call3(Stdlib_String[15],s,i$5,(i - start | 0) - 1 | 0),
+                   i + 1 | 0];
+                break}}
+            var next_i=match$0[2],ident=match$0[1];
+            caml_call2(add_string,b,caml_call1(f,ident));
+            var previous=32,i$7=next_i;
+            continue}
+          if(92 === previous)
+           {caml_call2(add_char,b,92);
+            caml_call2(add_char,b,current);
+            var i$9=i$7 + 1 | 0,previous=32,i$7=i$9;
+            continue}
+          if(92 === current)
+           {var i$10=i$7 + 1 | 0,previous=current,i$7=i$10;continue}
+          caml_call2(add_char,b,current);
+          var i$11=i$7 + 1 | 0,previous=current,i$7=i$11;
+          continue}
+        var _c_=92 === previous?1:0;
+        return _c_?caml_call2(add_char,b,previous):_c_}} |}]
