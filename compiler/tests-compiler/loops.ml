@@ -238,8 +238,9 @@ let f t x =
       if(val$0 && ! val$0[2])
        {var x$1=val$0[1],x$0=x$1;
         for(;;)
-         {try
-           {var switch$0=0,val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$0 = 1}
+         {var switch$0=0;
+          try
+           {var val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$0 = 1}
           catch(_c_)
            {_c_ = caml_wrap_exception(_c_);
             if(_c_ !== Stdlib[3])throw _c_;
