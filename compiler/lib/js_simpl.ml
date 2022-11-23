@@ -135,6 +135,39 @@ let simplify_condition = function
       J.ECond (J.EBin (J.Band, y, J.ENum n), e1, e2)
   | cond -> cond
 
+let rec depth = function
+  | J.Block b -> depth_block b + 1
+  | Variable_statement _ -> 1
+  | Empty_statement -> 1
+  | Expression_statement _ -> 1
+  | If_statement (_, (t, _), None) -> depth t + 1
+  | If_statement (_, (t, _), Some (f, _)) -> max (depth t) (depth f) + 1
+  | Do_while_statement ((s, _), _) -> depth s + 1
+  | While_statement (_, (s, _)) -> depth s + 1
+  | For_statement (_, _, _, (s, _)) -> depth s + 1
+  | ForIn_statement (_, _, (s, _)) -> depth s + 1
+  | Continue_statement _ -> 1
+  | Break_statement _ -> 1
+  | Return_statement _ -> 1
+  (* | With_statement of expression * statement *)
+  | Labelled_statement (_, (s, _)) -> depth s
+  | Switch_statement (_, c1, None, c2) ->
+      max
+        (depth_block (List.concat_map ~f:snd c1))
+        (depth_block (List.concat_map ~f:snd c2))
+  | Switch_statement (_, c1, Some l, c2) ->
+      max
+        (max
+           (depth_block (List.concat_map ~f:snd c1))
+           (depth_block (List.concat_map ~f:snd c2)))
+        (depth_block l)
+  | Throw_statement _ -> 1
+  | Try_statement (b, _, None) -> depth_block b + 1
+  | Try_statement (b, _, Some b2) -> max (depth_block b) (depth_block b2) + 1
+  | Debugger_statement -> 1
+
+and depth_block b = List.fold_left b ~init:0 ~f:(fun acc (s, _) -> max acc (depth s))
+
 let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match fst iftrue, fst iffalse with
@@ -159,6 +192,14 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
           let e2 = expression_of_statement iffalse in
           [ J.Return_statement (Some (J.ECond (e, e1, e2))), loc ]
         with Not_expression ->
+          let truestop, falsestop =
+            if truestop && falsestop
+            then
+              let dtrue = depth (fst iftrue) in
+              let dfalse = depth (fst iffalse) in
+              if dtrue <= dfalse then true, false else false, true
+            else truestop, falsestop
+          in
           if truestop
           then (J.If_statement (e, iftrue, None), loc) :: unblock iffalse
           else if falsestop
