@@ -155,11 +155,10 @@ let%expect_test _ =
         [0,function(i,f){return function(param){return f(i)}}(i,f),_f_];
         var _g_=i + 1 | 0;
         if(3 !== i){var i=_g_;continue}
-        var
-         _c_=indirect[1],
-         _d_=function(f){return caml_call1(f,0)},
-         indirect$0=caml_call2(Stdlib_List[19],_d_,_c_),
-         direct$0=direct[1];
-        if(runtime.caml_equal(indirect$0,direct$0))return 0;
-        throw [0,Assert_failure,_b_]}}
+        break}
+      var _c_=indirect[1];
+      function _d_(f){return caml_call1(f,0)}
+      var indirect$0=caml_call2(Stdlib_List[19],_d_,_c_),direct$0=direct[1];
+      if(runtime.caml_equal(indirect$0,direct$0))return 0;
+      throw [0,Assert_failure,_b_]}
     //end|}]

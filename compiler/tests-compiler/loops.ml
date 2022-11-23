@@ -68,7 +68,6 @@ let rec fun_with_loop acc = function
     {|
     function fun_with_loop(acc,param)
      {var acc$0=acc,param$0=param;
-      a:
       for(;;)
        {if(! param$0)
          {var
@@ -81,15 +80,16 @@ let rec fun_with_loop acc = function
           for(;;)
            {a$0[1] = [0,1,a$0[1]];
             var _b_=i$0 + 1 | 0;
-            if(10 === i$0)return a$0[1];
-            var i$0=_b_}}
+            if(10 !== i$0){var i$0=_b_;continue}
+            break}
+          return a$0[1]}
         var xs=param$0[2],a=[0,acc$0],i=0;
         for(;;)
          {a[1] = [0,1,a[1]];
           var _a_=i + 1 | 0;
           if(10 !== i){var i=_a_;continue}
-          var acc$1=[0,x,a[1]],acc$0=acc$1,param$0=xs;
-          continue a}}}
+          break}
+        var acc$1=[0,x,a[1]],acc$0=acc$1,param$0=xs}}
     //end
  |}]
 
@@ -113,19 +113,17 @@ let for_for_while () =
     {|
     function for_for_while(param)
      {var k=1;
-      a:
       for(;;)
        {var j=1;
-        b:
         for(;;)
-         for(;;)
-          {if(10 > runtime.caml_mul(k,j)){id[1]++;continue}
-           var _b_=j + 1 | 0;
-           if(10 !== j){var j=_b_;continue b}
-           var _a_=k + 1 | 0;
-           if(10 === k)return 0;
-           var k=_a_;
-           continue a}}}
+         {for(;;){if(10 > runtime.caml_mul(k,j)){id[1]++;continue}break}
+          var _b_=j + 1 | 0;
+          if(10 !== j){var j=_b_;continue}
+          break}
+        var _a_=k + 1 | 0;
+        if(10 !== k){var k=_a_;continue}
+        break}
+      return 0}
     //end |}]
 
 let%expect_test "for-for-while-try" =
@@ -148,21 +146,27 @@ let for_for_while () =
   [%expect
     {|
     function for_for_while(param)
-     {var k=1;
-      a:
+     {var switch$0=0,k=1;
       for(;;)
-       {var j=1;
-        b:
+       {var switch$1=0,j=1;
         for(;;)
-         for(;;)
-          {if(10 > caml_div(k,j))
-            {try {caml_div(k,j)}catch(_c_){throw Stdlib[8]}id[1]++;continue}
-           var _b_=j + 1 | 0;
-           if(10 !== j){var j=_b_;continue b}
-           var _a_=k + 1 | 0;
-           if(10 === k)return 0;
-           var k=_a_;
-           continue a}}}
+         {var switch$2=0;
+          for(;;)
+           {if(10 <= caml_div(k,j))
+             switch$2 = 1;
+            else
+             {var switch$3=0;
+              try {caml_div(k,j);switch$3 = 1}catch(_c_){}
+              if(switch$3){id[1]++;continue}}
+            break}
+          if(switch$2)
+           {var _b_=j + 1 | 0;if(10 !== j){var j=_b_;continue}switch$1 = 1}
+          break}
+        if(switch$1)
+         {var _a_=k + 1 | 0;if(10 !== k){var k=_a_;continue}switch$0 = 1}
+        break}
+      if(switch$0)return 0;
+      throw Stdlib[8]}
     //end |}]
 
 let%expect_test "loop seq.ml" =
@@ -223,8 +227,7 @@ let f t x =
   |}
   in
   print_fun_decl program (Some "f");
-  [%expect
-    {|
+  [%expect{|
     function f(t,x)
      {try
        {var val$0=caml_call2(Stdlib_Hashtbl[6],t,x)}
@@ -233,24 +236,28 @@ let f t x =
         if(_c_ === Stdlib[8])return - 1;
         throw _c_}
       if(val$0 && ! val$0[2])
-       {var x$1=val$0[1],x$0=x$1;
+       {var x$1=val$0[1],switch$0=0,x$0=x$1;
         for(;;)
-         {var switch$0=0;
+         {var switch$1=0;
           try
-           {var val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$0 = 1}
-          catch(_e_)
-           {var _a_=caml_wrap_exception(_e_);
-            if(_a_ !== Stdlib[3])throw _a_;
-            var _d_=0}
-          if(switch$0)
-           {var switch$1=0;
-            if(val && ! val[2])
-             {var y=val[1],_b_=y === (x$0 + 1 | 0)?1:0;
-              if(! _b_){var x$0=y;continue}
-              var _d_=_b_;
-              switch$1 = 1}
-            if(! switch$1)var _d_=0}
-          return _d_?1:2}}
+           {var val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$1 = 1}
+          catch(_e_){var _a_=caml_wrap_exception(_e_);switch$0 = 1}
+          if(switch$1 && val)
+           if(val[2])
+            switch$0 = 2;
+           else
+            {var y=val[1],_b_=y === (x$0 + 1 | 0)?1:0;
+             if(! _b_){var x$0=y;continue}
+             switch$0 = 3}
+          break}
+        var switch$2=0;
+        switch(switch$0)
+         {case 1:if(_a_ !== Stdlib[3])throw _a_;var _d_=0;break;
+          case 2:switch$2 = 1;break;
+          case 3:var _d_=_b_;break;
+          default:switch$2 = 1}
+        if(switch$2)var _d_=0;
+        return _d_?1:2}
       return - 2}
     //end |}]
 
@@ -278,23 +285,28 @@ in loop x
   [%expect
     {|
     function inspect(x)
-     {var x$1=x;
+     {var switch$0=0,x$1=x;
       for(;;)
-       {if(0 === x$1)return 1;
-        if(1 !== x$1){var x$2=x$1 + 1 | 0,x$1=x$2;continue}
-        var x$0=2;
-        for(;;)
-         {var switch$0=0;
-          if(3 < x$0 >>> 0)
-           switch$0 = 1;
-          else
-           switch(x$0)
-            {case 0:var _a_=1;break;
-             case 2:var n=caml_call1(Stdlib_Random[5],2),_a_=n + n | 0;break;
-             case 3:var n$0=caml_call1(Stdlib_Random[5],2),x$0=n$0;continue;
-             default:switch$0 = 1}
-          if(switch$0)var _a_=2;
-          return _a_ + 2 | 0}}}
+       {if(0 === x$1)
+         switch$0 = 1;
+        else
+         if(1 !== x$1){var x$2=x$1 + 1 | 0,x$1=x$2;continue}
+        break}
+      if(switch$0)return 1;
+      var switch$1=0,x$0=2;
+      for(;;)
+       {if(3 >= x$0 >>> 0)
+         switch(x$0)
+          {case 0:switch$1 = 1;break;
+           case 2:switch$1 = 2;break;
+           case 3:var n$0=caml_call1(Stdlib_Random[5],2),x$0=n$0;continue
+           }
+        break}
+      switch(switch$1)
+       {case 1:var _a_=1;break;
+        case 2:var n=caml_call1(Stdlib_Random[5],2),_a_=n + n | 0;break;
+        default:var _a_=2}
+      return _a_ + 2 | 0}
     //end |}]
 
 let%expect_test "buffer.add_substitute" =
@@ -388,79 +400,107 @@ let add_substitute =
   [%expect
     {|
     function add_substitute(b,f,s)
-     {var lim$1=caml_ml_string_length(s),previous=32,i$4=0;
+     {var lim$1=caml_ml_string_length(s),switch$0=0,previous=32,i$4=0;
       for(;;)
-       {if(i$4 >= lim$1)
-         {var _b_=92 === previous?1:0;
-          return _b_?caml_call2(add_char,b,previous):_b_}
-        var previous$0=caml_string_get(s,i$4);
-        if(36 !== previous$0)
-         {if(92 === previous)
-           {caml_call2(add_char,b,92);
+       {if(i$4 < lim$1)
+         {var previous$0=caml_string_get(s,i$4);
+          if(36 !== previous$0)
+           {if(92 === previous)
+             {caml_call2(add_char,b,92);
+              caml_call2(add_char,b,previous$0);
+              var i$6=i$4 + 1 | 0,previous=32,i$4=i$6;
+              continue}
+            if(92 === previous$0)
+             {var i$7=i$4 + 1 | 0,previous=previous$0,i$4=i$7;continue}
             caml_call2(add_char,b,previous$0);
-            var i$6=i$4 + 1 | 0,previous=32,i$4=i$6;
+            var i$8=i$4 + 1 | 0,previous=previous$0,i$4=i$8;
             continue}
-          if(92 === previous$0)
-           {var i$7=i$4 + 1 | 0,previous=previous$0,i$4=i$7;continue}
-          caml_call2(add_char,b,previous$0);
-          var i$8=i$4 + 1 | 0,previous=previous$0,i$4=i$8;
-          continue}
-        if(92 === previous)
-         {caml_call2(add_char,b,previous$0);
-          var i$5=i$4 + 1 | 0,previous=32,i$4=i$5;
-          continue}
-        var start$0=i$4 + 1 | 0;
-        if(lim$1 <= start$0)throw Stdlib[8];
-        var opening=caml_string_get(s,start$0),switch$0=0;
-        if(40 !== opening && 123 !== opening)
-         {var start=start$0 + 1 | 0,lim$0=caml_ml_string_length(s),i$2=start;
-          for(;;)
-           {if(lim$0 <= i$2)
-             var stop$0=lim$0;
-            else
-             {var match=caml_string_get(s,i$2),switch$1=0;
-              if(91 <= match)
-               {if(97 <= match)
-                 {if(123 > match)switch$1 = 1}
-                else
-                 if(95 === match)switch$1 = 1}
-              else
-               if(58 <= match)
-                {if(65 <= match)switch$1 = 1}
-               else
-                if(48 <= match)switch$1 = 1;
-              if(switch$1){var i$3=i$2 + 1 | 0,i$2=i$3;continue}
-              var stop$0=i$2}
-            var
-             match$0=
-              [0,
-               caml_call3(Stdlib_String[15],s,start$0,stop$0 - start$0 | 0),
-               stop$0];
-            switch$0 = 1;
-            break}}
-        if(! switch$0)
-         {var new_start=start$0 + 1 | 0,k$2=0;
-          if(40 === opening)
-           var closing=41;
+          if(92 === previous)
+           {caml_call2(add_char,b,previous$0);
+            var i$5=i$4 + 1 | 0,previous=32,i$4=i$5;
+            continue}
+          var start$0=i$4 + 1 | 0;
+          if(lim$1 <= start$0)
+           switch$0 = 2;
           else
-           {if(123 !== opening)throw [0,Assert_failure,_a_];var closing=125}
-          var lim=caml_ml_string_length(s),k=k$2,stop=new_start;
-          for(;;)
-           {if(lim <= stop)throw Stdlib[8];
-            if(caml_string_get(s,stop) === opening)
-             {var i=stop + 1 | 0,k$0=k + 1 | 0,k=k$0,stop=i;continue}
-            if(caml_string_get(s,stop) !== closing)
-             {var i$1=stop + 1 | 0,stop=i$1;continue}
-            if(0 !== k)
-             {var i$0=stop + 1 | 0,k$1=k - 1 | 0,k=k$1,stop=i$0;continue}
-            var
-             match$0=
-              [0,
-               caml_call3
-                (Stdlib_String[15],s,new_start,(stop - start$0 | 0) - 1 | 0),
-               stop + 1 | 0];
-            break}}
-        var next_i=match$0[2],ident=match$0[1];
-        caml_call2(add_string,b,caml_call1(f,ident));
-        var previous=32,i$4=next_i}}
+           {var opening=caml_string_get(s,start$0),switch$1=0;
+            if(40 !== opening && 123 !== opening)
+             {var
+               start=start$0 + 1 | 0,
+               lim$0=caml_ml_string_length(s),
+               switch$2=0,
+               i$2=start;
+              for(;;)
+               {if(lim$0 <= i$2)
+                 switch$2 = 1;
+                else
+                 {var match=caml_string_get(s,i$2),switch$3=0;
+                  if(91 <= match)
+                   {if(97 <= match)
+                     {if(123 <= match)switch$3 = 1}
+                    else
+                     if(95 !== match)switch$3 = 1}
+                  else
+                   if(58 <= match)
+                    {if(65 > match){switch$2 = 2;switch$3 = 1}}
+                   else
+                    if(48 > match)switch$3 = 1;
+                  if(! switch$3){var i$3=i$2 + 1 | 0,i$2=i$3;continue}}
+                break}
+              var switch$4=0;
+              switch(switch$2)
+               {case 1:var stop$0=lim$0;break;
+                case 2:switch$4 = 1;break;
+                default:switch$4 = 1}
+              if(switch$4)var stop$0=i$2;
+              var
+               match$0=
+                [0,
+                 caml_call3(Stdlib_String[15],s,start$0,stop$0 - start$0 | 0),
+                 stop$0];
+              switch$1 = 1}
+            var switch$5=0;
+            if(switch$1)
+             switch$5 = 1;
+            else
+             {var new_start=start$0 + 1 | 0,switch$6=0,k$2=0;
+              if(40 === opening)
+               {var closing=41;switch$6 = 1}
+              else
+               if(123 === opening){var closing=125;switch$6 = 1}else switch$0 = 3;
+              if(switch$6)
+               {var lim=caml_ml_string_length(s),switch$7=0,k=k$2,stop=new_start;
+                for(;;)
+                 {if(lim > stop)
+                   {if(caml_string_get(s,stop) === opening)
+                     {var i=stop + 1 | 0,k$0=k + 1 | 0,k=k$0,stop=i;continue}
+                    if(caml_string_get(s,stop) !== closing)
+                     {var i$1=stop + 1 | 0,stop=i$1;continue}
+                    if(0 !== k)
+                     {var i$0=stop + 1 | 0,k$1=k - 1 | 0,k=k$1,stop=i$0;continue}
+                    switch$7 = 1}
+                  break}
+                if(switch$7)
+                 {var
+                   match$0=
+                    [0,
+                     caml_call3
+                      (Stdlib_String[15],s,new_start,(stop - start$0 | 0) - 1 | 0),
+                     stop + 1 | 0];
+                  switch$5 = 1}}}
+            if(switch$5)
+             {var next_i=match$0[2],ident=match$0[1];
+              caml_call2(add_string,b,caml_call1(f,ident));
+              var previous=32,i$4=next_i;
+              continue}}}
+        else
+         switch$0 = 1;
+        break}
+      switch(switch$0)
+       {case 1:
+         var _b_=92 === previous?1:0;
+         return _b_?caml_call2(add_char,b,previous):_b_;
+        case 2:throw Stdlib[8];
+        case 0:throw Stdlib[8];
+        default:throw [0,Assert_failure,_a_]}}
     //end |}]

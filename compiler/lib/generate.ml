@@ -843,6 +843,58 @@ let build_graph ctx pc =
   loop pc Addr.Set.empty [];
   Hashtbl.add preds pc 1;
   let () =
+    (* Create an artificial frontier when for-loops are not longer necessary *)
+    let loopback = Hashtbl.create 17 in
+    let rec loop pc loop_headers =
+      match Hashtbl.find loopback pc with
+      | x -> x
+      | exception Not_found ->
+          let loop_headers =
+            if Addr.Set.mem pc !loops then Addr.Set.add pc loop_headers else loop_headers
+          in
+          let backs = Hashtbl.find backs pc in
+          let all_backs =
+            List.fold_left (Hashtbl.find succs pc) ~init:backs ~f:(fun acc pc ->
+                Addr.Set.union acc (loop pc loop_headers))
+            |> Addr.Set.inter loop_headers
+          in
+          Hashtbl.replace loopback pc all_backs;
+          all_backs
+    in
+    ignore (loop pc Addr.Set.empty);
+    let compute_exit_loop pc_loop =
+      let visited = Hashtbl.create 18 in
+      let rec find pc_loops pc acc =
+        if Hashtbl.mem visited pc
+        then acc
+        else if Addr.Set.cardinal (Addr.Set.inter pc_loops (Hashtbl.find loopback pc)) = 0
+        then Addr.Set.add pc acc
+        else
+          let pc_loops =
+            if Addr.Set.mem pc !loops then Addr.Set.add pc pc_loops else pc_loops
+          in
+          let block = Addr.Map.find pc blocks in
+          let succs =
+            match block.branch with
+            | Pushtrap ((_pc1, _), _, (pc_exn, _), _) ->
+                Addr.Set.add pc_exn (Hashtbl.find poptrap pc) |> Addr.Set.elements
+            | _ -> Hashtbl.find succs pc
+          in
+          List.fold_left succs ~init:acc ~f:(fun acc pc' -> find pc_loops pc' acc)
+      in
+      find (Addr.Set.singleton pc_loop) pc_loop Addr.Set.empty
+    in
+    let get_ancestor pc =
+      Hashtbl.fold (fun k l acc -> if List.mem pc ~set:l then k :: acc else acc) succs []
+    in
+    Addr.Set.iter
+      (fun pc_loop ->
+        let set = compute_exit_loop pc_loop in
+        let preds = get_ancestor pc_loop in
+        List.iter preds ~f:(fun pc_loop_anc -> add_cf_frontier pc_loop_anc set))
+      !loops
+  in
+  let () =
     (* Create an artificial frontier when we pop an exception handler *)
     let rec keep_front pc =
       if Hashtbl.find preds pc > 1
@@ -1576,6 +1628,10 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
     | false -> compile_block_no_loop st queue pc loop_stack frontier interm
     | true ->
         if debug () then Format.eprintf "@[<hv 2>for(;;) {@,";
+        let grey = dominance_frontier st pc in
+        let exit_prefix, exit_cont, exit_interm, merge_node =
+          colapse_frontier "for-loop" st grey interm
+        in
         let never_body, body =
           let lab =
             match loop_stack with
@@ -1585,7 +1641,13 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
           let lab_used = ref false in
           let loop_stack = (pc, (lab, lab_used)) :: loop_stack in
           let never_body, body =
-            compile_block_no_loop st queue pc loop_stack frontier interm
+            compile_block_no_loop
+              st
+              queue
+              pc
+              loop_stack
+              (Addr.Set.union frontier exit_cont)
+              exit_interm
           in
           let body =
             let rec remove_tailing_continue acc = function
@@ -1618,7 +1680,10 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
           in
           never_body, [ for_loop ]
         in
-        never_body, body
+        let never_after, after =
+          compile_merge_node st exit_cont loop_stack frontier interm merge_node
+        in
+        never_body || never_after, exit_prefix @ body @ after
 
 (* Compile block. Loops have already been handled. *)
 and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =

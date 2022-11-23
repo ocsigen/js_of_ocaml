@@ -156,7 +156,6 @@ let ()  = M.myfun M.x
     {|
     function myfun(x)
      {var x$0=x;
-      a:
       for(;;)
        {if(! x$0)return 0;
         var
@@ -206,6 +205,7 @@ let ()  = M.myfun M.x
              match$1=sort(n2,l2$0),
              tl$0=match$1[2],
              s2=match$1[1],
+             switch$0=0,
              l1=s1,
              l2=s2,
              accu=0;
@@ -216,11 +216,12 @@ let ()  = M.myfun M.x
                   if(0 < caml_int_compare(h1,h2))
                    {var accu$0=[0,h2,accu],l2=t2,accu=accu$0;continue}
                   var accu$1=[0,h1,accu],l1=t1,accu=accu$1;
-                  continue}
-                var _c_=rev_append(l1,accu)}
+                  continue}}
               else
-               var _c_=rev_append(l2,accu);
-              return [0,_c_,tl$0]}},
+               switch$0 = 1;
+              break}
+            var _c_=switch$0?rev_append(l2,accu):rev_append(l1,accu);
+            return [0,_c_,tl$0]},
          sort=
           function(n,l)
            {if(2 === n)
@@ -266,6 +267,7 @@ let ()  = M.myfun M.x
              match$1=rev_sort(n2,l2$0),
              tl$0=match$1[2],
              s2=match$1[1],
+             switch$0=0,
              l1=s1,
              l2=s2,
              accu=0;
@@ -276,19 +278,20 @@ let ()  = M.myfun M.x
                   if(0 < caml_int_compare(h1,h2))
                    {var accu$0=[0,h1,accu],l1=t1,accu=accu$0;continue}
                   var accu$1=[0,h2,accu],l2=t2,accu=accu$1;
-                  continue}
-                var _a_=rev_append(l1,accu)}
+                  continue}}
               else
-               var _a_=rev_append(l2,accu);
-              return [0,_a_,tl$0]}},
+               switch$0 = 1;
+              break}
+            var _a_=switch$0?rev_append(l2,accu):rev_append(l1,accu);
+            return [0,_a_,tl$0]},
          len=0,
          param=l;
         for(;;)
          {if(param)
            {var l$0=param[2],len$0=len + 1 | 0,len=len$0,param=l$0;continue}
-          if(2 <= len)sort(len,l);
-          var x$0=next;
-          continue a}}}
+          break}
+        if(2 <= len)sort(len,l);
+        var x$0=next}}
     //end |}]
 
 let%expect_test _ =
@@ -345,8 +348,9 @@ let ()  = M.run ()
               default:return 1 - (1 - even(1))}};
         even(i);
         var _a_=i + 1 | 0;
-        if(4 === i)return 0;
-        var i=_a_}}
+        if(4 !== i){var i=_a_;continue}
+        break}
+      return 0}
     //end |}]
 
 let%expect_test _ =
@@ -437,10 +441,10 @@ let ()  = M.run ()
         even(i);
         var _e_=i + 1 | 0;
         if(4 !== i){var i=_e_;continue}
-        var
-         _c_=caml_call1(Stdlib_List[9],delayed[1]),
-         _d_=function(f){return caml_call1(f,0)};
-        return caml_call2(Stdlib_List[17],_d_,_c_)}}
+        break}
+      var _c_=caml_call1(Stdlib_List[9],delayed[1]);
+      function _d_(f){return caml_call1(f,0)}
+      return caml_call2(Stdlib_List[17],_d_,_c_)}
     //end |}]
 
 let%expect_test _ =
@@ -504,7 +508,6 @@ let ()  = M.run ()
     {|
     function run(param)
      {var i=0;
-      a:
       for(;;)
        {var
          closures=
@@ -547,10 +550,11 @@ let ()  = M.run ()
         for(;;)
          {if(759635106 > param$0[1])
            {var f=param$0[2],param$0=caml_call1(f,0);continue}
-          var _g_=i + 1 | 0;
-          if(4 !== i){var i=_g_;continue a}
-          var
-           _e_=caml_call1(Stdlib_List[9],delayed[1]),
-           _f_=function(f){return caml_call1(f,0)};
-          return caml_call2(Stdlib_List[17],_f_,_e_)}}}
+          break}
+        var _g_=i + 1 | 0;
+        if(4 !== i){var i=_g_;continue}
+        break}
+      var _e_=caml_call1(Stdlib_List[9],delayed[1]);
+      function _f_(f){return caml_call1(f,0)}
+      return caml_call2(Stdlib_List[17],_f_,_e_)}
     //end |}]
