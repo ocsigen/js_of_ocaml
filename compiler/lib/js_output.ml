@@ -218,7 +218,7 @@ struct
     | Bxor -> 6, 6, 6
     | Band -> 7, 7, 7
     | EqEq | NotEq | EqEqEq | NotEqEq -> 8, 8, 9
-    | Gt | Ge | Lt | Le | InstanceOf | In -> 9, 9, 10
+    | Gt | GtInt | Ge | GeInt | Lt | LtInt | Le | LeInt | InstanceOf | In -> 9, 9, 10
     | Lsl | Lsr | Asr -> 10, 10, 11
     | Plus | Minus -> 11, 11, 12
     | Mul | Div | Mod -> 12, 12, 13
@@ -246,10 +246,10 @@ struct
     | BandEq -> "&="
     | BxorEq -> "^="
     | BorEq -> "|="
-    | Lt -> "<"
-    | Le -> "<="
-    | Gt -> ">"
-    | Ge -> ">="
+    | Lt | LtInt -> "<"
+    | Le | LeInt -> "<="
+    | Gt | GtInt -> ">"
+    | Ge | GeInt -> ">="
     | Lsl -> "<<"
     | Lsr -> ">>>"
     | Asr -> ">>"

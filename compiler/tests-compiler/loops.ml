@@ -420,7 +420,7 @@ let add_substitute =
                  {var match=caml_string_get(s,i$3),switch$1=0;
                   if(91 <= match)
                    {if(97 <= match)
-                     {if(! (123 <= match))switch$1 = 1}
+                     {if(123 > match)switch$1 = 1}
                     else
                      if(95 === match)switch$1 = 1}
                   else

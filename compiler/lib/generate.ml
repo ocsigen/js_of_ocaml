@@ -1260,11 +1260,11 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | Lt, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue
+            bool (J.EBin (J.LtInt, cx, cy)), or_p px py, queue
         | Le, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Le, cx, cy)), or_p px py, queue
+            bool (J.EBin (J.LeInt, cx, cy)), or_p px py, queue
         | Eq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
@@ -1279,7 +1279,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         | Ult, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.Lt, unsigned cx, unsigned cy)), or_p px py, queue
+            bool (J.EBin (J.LtInt, unsigned cx, unsigned cy)), or_p px py, queue
         | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
             assert false
       in
@@ -1621,8 +1621,8 @@ and compile_decision_tree st _queue backs frontier interm succs loc cx dtree =
           match cond with
           | IsTrue -> cx
           | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
-          | CLt n -> J.EBin (J.Lt, int32 n, cx)
-          | CLe n -> J.EBin (J.Le, int32 n, cx)
+          | CLt n -> J.EBin (J.LtInt, int32 n, cx)
+          | CLe n -> J.EBin (J.LeInt, int32 n, cx)
         in
         ( never1 && never2
         , Js_simpl.if_statement

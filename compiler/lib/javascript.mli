@@ -112,6 +112,10 @@ and binop =
   | Le
   | Gt
   | Ge
+  | LtInt
+  | LeInt
+  | GtInt
+  | GeInt
   | InstanceOf
   | In
   | Lsl

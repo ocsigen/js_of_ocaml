@@ -44,6 +44,16 @@ let rec enot_rec e =
         | J.NotEq -> J.EBin (J.EqEq, e1, e2), 0
         | J.EqEqEq -> J.EBin (J.NotEqEq, e1, e2), 0
         | J.NotEqEq -> J.EBin (J.EqEqEq, e1, e2), 0
+        | J.LtInt ->
+            (* not (a < b) *)
+            (* a >= b *)
+            J.EBin (J.GeInt, e1, e2), 0
+        | J.GtInt ->
+            (* not (a > b) *)
+            (* a <= b *)
+            J.EBin (J.LeInt, e1, e2), 0
+        | J.LeInt -> J.EBin (J.GtInt, e1, e2), 0
+        | J.GeInt -> J.EBin (J.LtInt, e1, e2), 0
         (* Disabled: this is not correct!
            {[ !(x < 0) ]} and {[ x >= 0 ]} give different result when x = nan
            {[
