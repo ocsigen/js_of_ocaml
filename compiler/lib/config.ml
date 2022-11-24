@@ -66,6 +66,8 @@ module Flag = struct
 
   let inline = o ~name:"inline" ~default:true
 
+  let effects = o ~name:"effects" ~default:false
+
   let staticeval = o ~name:"staticeval" ~default:true
 
   let share_constant = o ~name:"share" ~default:true

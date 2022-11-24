@@ -143,6 +143,7 @@ module Fragment = struct
     ; always : bool
     ; code : Javascript.program
     ; js_string : bool option
+    ; effects : bool option
     ; fragment_target : Target_env.t option
     ; aliases : StringSet.t
     }
@@ -227,6 +228,7 @@ module Fragment = struct
                 ; always = false
                 ; code
                 ; js_string = None
+                ; effects = None
                 ; fragment_target = None
                 ; aliases = StringSet.empty
                 }
@@ -268,6 +270,15 @@ module Fragment = struct
                         if Option.is_some fragment.js_string
                         then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
                         { fragment with js_string = Some b }
+                    | (`Ifnot "effects" | `If "effects") as i ->
+                        let b =
+                          match i with
+                          | `If _ -> true
+                          | `Ifnot _ -> false
+                        in
+                        if Option.is_some fragment.effects
+                        then Format.eprintf "Duplicated effects in %s\n" (loc pi);
+                        { fragment with effects = Some b }
                     | `If name when Option.is_some (Target_env.of_string name) ->
                         if Option.is_some fragment.fragment_target
                         then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
@@ -396,6 +407,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; always
       ; code
       ; js_string
+      ; effects
       ; fragment_target
       ; aliases
       } -> (
@@ -404,7 +416,14 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
         | Some true, false | Some false, true -> true
         | None, _ | Some true, true | Some false, false -> false
       in
-      if (not version_constraint_ok) || ignore_because_of_js_string
+      let ignore_because_of_effects =
+        match effects, Config.Flag.effects () with
+        | Some true, false | Some false, true -> true
+        | None, _ | Some true, true | Some false, false -> false
+      in
+      if (not version_constraint_ok)
+         || ignore_because_of_js_string
+         || ignore_because_of_effects
       then `Ignored
       else
         match provides with
