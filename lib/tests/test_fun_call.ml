@@ -37,10 +37,10 @@ let s x =
   in
   Js.to_string (Js.Unsafe.fun_call to_string [| Js.Unsafe.inject x |])
 
-let call_and_log f str =
+let call_and_log f ?(cont = (Obj.magic Fun.id : _ -> _)) str =
   let call = Js.Unsafe.eval_string str in
   let r = Js.Unsafe.fun_call call [| Js.Unsafe.inject f |] in
-  Printf.printf "Result: %s" (s r)
+  Printf.printf "Result: %s" (s (cont r))
 
 let cb1 a = Printf.printf "got %s, done\n" (s a)
 
@@ -150,13 +150,15 @@ let%expect_test "wrap_callback_strict" =
     Result: function#0 |}];
   call_and_log
     (Js.Unsafe.callback_with_arity 2 cb3)
-    {| (function(f){ return f(1,2,3)(4) }) |};
+    ~cont:(fun g -> g 4)
+    {| (function(f){ return f(1,2,3) }) |};
   [%expect {|
     got 1, 2, 4, done
     Result: 0 |}];
   call_and_log
     (Js.Unsafe.callback_with_arity 2 cb3)
-    {| (function(f){ return f(1,2)(3) }) |};
+    ~cont:(fun g -> g 3)
+    {| (function(f){ return f(1,2) }) |};
   [%expect {|
     got 1, 2, 3, done
     Result: 0 |}];
@@ -292,13 +294,15 @@ let%expect_test "wrap_meth_callback_strict" =
     Result: function#0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
-    {| (function(f){ return f.apply("this",[1,2,3])(4) }) |};
+    ~cont:(fun g -> g 4)
+    {| (function(f){ return f.apply("this",[1,2,3]) }) |};
   [%expect {|
     got this, 1, 2, 4, done
     Result: 0 |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
-    {| (function(f){ return f.apply("this",[1,2])(3) }) |};
+    ~cont:(fun g -> g 3)
+    {| (function(f){ return f.apply("this",[1,2]) }) |};
   [%expect {|
     got this, 1, 2, 3, done
     Result: 0 |}];
@@ -348,20 +352,19 @@ let%expect_test "partial application, extra arguments set to undefined" =
 (* caml_call_gen *)
 
 let%expect_test _ =
-  call_and_log cb3 {| (function(f){ return f(1) }) |};
+  call_and_log cb3 ~cont:(fun g -> g 1) {| (function(f){ return f }) |};
   [%expect {|
-    got 1, undefined, undefined, done
-    Result: 0 |}]
+    Result: function#0 |}]
 
 let%expect_test _ =
-  call_and_log cb3 {| (function(f){ return f(1,2,3,4) }) |};
+  call_and_log cb3 ~cont:(fun g -> g 1 2 3 4) {| (function(f){ return f }) |};
   [%expect {|
     got 1, 2, 3, done
     Result: 0 |}]
 
 let%expect_test _ =
   let f cb =
-    try call_and_log (cb 1) {| (function(f){ return f(1,2,3) }) |} with
+    try call_and_log (cb 1) ~cont:(fun g -> g 1 2 3) {| (function(f){ return f }) |} with
     | Invalid_argument s | Failure s -> Printf.printf "Error: %s" s
     | _ -> Printf.printf "Error: unknown"
   in

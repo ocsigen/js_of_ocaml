@@ -66,7 +66,8 @@ module Js = struct
 
     let global = pure_js_expr "globalThis"
 
-    external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
+    external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+      = "caml_js_wrap_callback_unsafe"
 
     external callback_with_arguments :
       (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback

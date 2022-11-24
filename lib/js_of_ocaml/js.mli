@@ -944,7 +944,8 @@ module Unsafe : sig
   val global : < .. > t
   (** Javascript global object *)
 
-  external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
+  external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+    = "caml_js_wrap_callback_unsafe"
   (** Wrap an OCaml function so that it can be invoked from
         Javascript. Contrary to [Js.wrap_callback], partial
         application and over-application are not supported: missing

@@ -64,10 +64,10 @@ function caml_named_value(nm) {
 var caml_global_data = [0];
 
 //Provides: caml_register_global (const, shallow, const)
-//Requires: caml_global_data
+//Requires: caml_global_data, caml_callback
 function caml_register_global (n, v, name_opt) {
   if(name_opt && globalThis.toplevelReloc)
-    n = globalThis.toplevelReloc(name_opt);
+    n = caml_callback(globalThis.toplevelReloc, [name_opt]);
   caml_global_data[n + 1] = v;
   if(name_opt) caml_global_data[name_opt] = v;
 }
