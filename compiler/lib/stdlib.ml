@@ -263,6 +263,14 @@ module List = struct
           aux f (rev_append xs acc) l
     in
     aux f [] l
+
+  let split_last xs =
+    let rec aux acc = function
+      | [] -> None
+      | [ x ] -> Some (rev acc, x)
+      | x :: xs -> aux (x :: acc) xs
+    in
+    aux [] xs
 end
 
 let ( @ ) = List.append
@@ -736,4 +744,17 @@ module Filename = struct
     with exc ->
       Sys.remove f_tmp;
       raise exc
+end
+
+module Fun = struct
+  include Fun
+
+  let memoize f =
+    let h = Hashtbl.create 4 in
+    fun x ->
+      try Hashtbl.find h x
+      with Not_found ->
+        let r = f x in
+        Hashtbl.add h x r;
+        r
 end
