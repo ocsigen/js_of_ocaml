@@ -63,4 +63,5 @@ let%expect_test "conditional" =
           else
            if(f){var x=6;switch$0 = 1}else{var x=100;switch$0 = 1}
       if(! switch$0)var x=- 1;
-      return x + 2 | 0} |}]
+      return x + 2 | 0}
+    //end |}]

@@ -57,7 +57,8 @@ let%expect_test "static eval of string get" =
     {|
     function Loader(globalThis)
      {var jsoo_exports={};jsoo_exports["x"] = 3;return jsoo_exports}
-    if(typeof module === "object" && module.exports)module["exports"] = Loader; |}];
+    if(typeof module === "object" && module.exports)module["exports"] = Loader;
+    //end |}];
   let program =
     compile_and_parse_whole_program
       ~flags:[ "--wrap-with-fun"; "Loader"; "--target-env"; "browser"; "--no-extern-fs" ]
@@ -71,7 +72,8 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     function Loader(globalThis){var jsoo_exports={};return jsoo_exports}
-    if(typeof module === "object" && module.exports)module["exports"] = Loader; |}];
+    if(typeof module === "object" && module.exports)module["exports"] = Loader;
+    //end |}];
   let program =
     compile_and_parse_whole_program
       ~flags:[ "--target-env"; "browser"; "--no-extern-fs" ]
@@ -90,7 +92,8 @@ let%expect_test "static eval of string get" =
          jsoo_exports=
           typeof module === "object" && module.exports || globalThis;
         jsoo_exports["x"] = 3}
-      (globalThis)); |}];
+      (globalThis));
+    //end |}];
   let program =
     compile_and_parse_whole_program
       ~flags:[ "--target-env"; "browser"; "--no-extern-fs" ]
@@ -101,5 +104,7 @@ let%expect_test "static eval of string get" =
       let () = if false then set (pure_js_expr "jsoo_exports") (pure_js_expr "'x'") x  |}
   in
   print_program (clean program);
-  [%expect {|
-    (function(Object){}(Object));(function(globalThis){}(globalThis)); |}]
+  [%expect
+    {|
+    (function(Object){}(Object));(function(globalThis){}(globalThis));
+    //end |}]

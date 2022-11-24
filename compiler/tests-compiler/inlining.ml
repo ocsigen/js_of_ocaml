@@ -29,4 +29,6 @@ let%expect_test "inline recursive function" =
   [%expect
     {|
     function f(param){for(;;)continue}
-    function g(param){return f(0)} |}]
+    //end
+    function g(param){return f(0)}
+    //end |}]

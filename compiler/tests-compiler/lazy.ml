@@ -39,4 +39,5 @@ let%expect_test "static eval of string get" =
        _b_=do_the_lazy_rec(n - 1 | 0),
        _c_=runtime.caml_obj_tag(lz),
        _d_=250 === _c_?lz[1]:246 === _c_?caml_call1(CamlinternalLazy[2],lz):lz;
-      return [0,_d_,_b_]} |}]
+      return [0,_d_,_b_]}
+    //end |}]

@@ -45,7 +45,8 @@ let%expect_test "rec-fun" =
         var
          _a_=caml_call1(Stdlib_List[9],acc$0),
          _b_=caml_call1(Stdlib_List[9],_a_);
-        return caml_call1(Stdlib_List[9],_b_)}} |}]
+        return caml_call1(Stdlib_List[9],_b_)}}
+    //end |}]
 
 let%expect_test "rec-fun-2" =
   let program =
@@ -94,6 +95,7 @@ let rec fun_with_loop acc = function
          _d_=caml_call1(Stdlib_List[9],acc$0),
          _e_=caml_call1(Stdlib_List[9],_d_);
         return caml_call1(Stdlib_List[9],_e_)}}
+    //end
  |}]
 
 let%expect_test "for-for-while" =
@@ -129,7 +131,8 @@ let for_for_while () =
              if(10 !== k){var k=_a_;continue a}
              return 0}
            id[1]++;
-           continue}}} |}]
+           continue}}}
+    //end |}]
 
 let%expect_test "for-for-while-try" =
   let program =
@@ -166,7 +169,8 @@ let for_for_while () =
              return 0}
            try {caml_div(k,j)}catch(_c_){throw Stdlib[8]}
            id[1]++;
-           continue}}} |}]
+           continue}}}
+    //end |}]
 
 let%expect_test "loop seq.ml" =
   let program =
@@ -202,7 +206,8 @@ let rec equal eq xs ys =
            {var ys$1=match$0[2],xs$1=match[2],xs$0=xs$1,ys$0=ys$1;continue}}
         else
          if(! match$0)return 1;
-        return 0}} |}]
+        return 0}}
+    //end |}]
 
 let%expect_test "try-catch inside loop" =
   let program =
@@ -255,7 +260,8 @@ let f t x =
               if(switch$1)var _b_=0}
             return _b_?1:2}}
         return - 2}
-      return other(t,x)} |}]
+      return other(t,x)}
+    //end |}]
 
 let%expect_test "loop-and-switch" =
   let program =
@@ -299,7 +305,8 @@ in loop x
             if(switch$0)var _a_=2;
             return _a_ + 2 | 0}}
         var x$3=x$2 + 1 | 0,x$2=x$3;
-        continue}} |}]
+        continue}}
+    //end |}]
 
 let%expect_test "buffer.add_substitute" =
   let program =
@@ -462,4 +469,5 @@ let add_substitute =
           var i$11=i$7 + 1 | 0,previous=current,i$7=i$11;
           continue}
         var _c_=92 === previous?1:0;
-        return _c_?caml_call2(add_char,b,previous):_c_}} |}]
+        return _c_?caml_call2(add_char,b,previous):_c_}}
+    //end |}]

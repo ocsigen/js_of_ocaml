@@ -45,8 +45,11 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     var ex = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,- 10));
+    //end
     var ax = call_with_char(103);
-    var bx = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,30)); |}]
+    //end
+    var bx = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,30));
+    //end |}]
 
 let%expect_test "static eval of string get" =
   let program =
@@ -74,8 +77,11 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     var ex = call_with_char(caml_string_get(constant,- 10));
+    //end
     var ax = call_with_char(103);
-    var bx = call_with_char(caml_string_get(constant,30)); |}]
+    //end
+    var bx = call_with_char(caml_string_get(constant,30));
+    //end |}]
 
 let%expect_test "static eval of Sys.backend_type" =
   let program =
@@ -95,7 +101,8 @@ let%expect_test "static eval of Sys.backend_type" =
   in
   print_fun_decl program (Some "myfun");
   [%expect {|
-    function myfun(param){return 42} |}]
+    function myfun(param){return 42}
+    //end |}]
 
 let%expect_test "static eval of string get" =
   let program =
@@ -149,4 +156,5 @@ let%expect_test "static eval of string get" =
             var prec=r,param$0=next$0;
             continue}
           return prec$0}}
-      return 0} |}]
+      return 0}
+    //end |}]

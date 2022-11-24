@@ -360,6 +360,9 @@ let program_to_string ?(compact = false) p =
   let pp = Jsoo.Pretty_print.to_buffer buffer in
   Jsoo.Pretty_print.set_compact pp compact;
   Jsoo.Js_output.program pp p;
+  (* This final comment should help to keep merge-confict inside
+     {| .. |}, allowing to resolve confict with [dune promote]. *)
+  Buffer.add_string buffer "//end\n";
   Buffer.contents buffer
 
 let expression_to_string ?(compact = false) e =

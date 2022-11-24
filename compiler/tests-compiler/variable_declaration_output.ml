@@ -48,14 +48,20 @@ let%expect_test _ =
   [%expect
     {|
     var ex = [0,5,"hello","the \xe2\x80\xa2 and \xe2\x80\xba characters"];
+    //end
     var sx = [0,
      "hello2",
      runtime.caml_jsstring_of_string
       ("the \xe2\x80\xa2 and \xe2\x80\xba characters (2)")];
+    //end
     var ax = [0,1,2,3,4];
+    //end
     var bx = [254,1.,2.,3.,4.];
+    //end
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
-    var symbol_op = [0,symbol_bind,symbol_map,symbol]; |}]
+    //end
+    var symbol_op = [0,symbol_bind,symbol_map,symbol];
+    //end |}]
 
 let%expect_test _ =
   let program =
@@ -88,11 +94,17 @@ let%expect_test _ =
      5,
      caml_string_of_jsbytes("hello"),
      caml_string_of_jsbytes("the \xe2\x80\xa2 and \xe2\x80\xba characters")];
+    //end
     var sx = [0,cst_hello2,runtime.caml_jsstring_of_string(cst_the_and_characters_2)];
+    //end
     var ax = [0,1,2,3,4];
+    //end
     var bx = [254,1.,2.,3.,4.];
+    //end
     var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
-    var symbol_op = [0,symbol_bind,symbol_map,symbol]; |}]
+    //end
+    var symbol_op = [0,symbol_bind,symbol_map,symbol];
+    //end |}]
 
 let%expect_test _ =
   let compile ~enable s =
@@ -132,7 +144,8 @@ let%expect_test _ =
           switch$1 = 0;
           if(! _c_ || _c_[1])switch$1 = 1;
           if(switch$1)return 4}}
-      return 1} |}];
+      return 1}
+    //end |}];
   with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
   [%expect
     {|
@@ -151,4 +164,5 @@ let%expect_test _ =
          {var _c_=param[2],switch$1=0;
           if(! _c_ || _c_[1])switch$1 = 1;
           if(switch$1)return 4}}
-      return 1} |}]
+      return 1}
+    //end |}]

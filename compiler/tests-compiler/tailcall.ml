@@ -64,7 +64,8 @@ let%expect_test _ =
        try
         {odd(5000);var _d_=log_success(0);return _d_}
        catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}
-      throw [0,Assert_failure,_b_]} |}]
+      throw [0,Assert_failure,_b_]}
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -102,4 +103,5 @@ let%expect_test _ =
        try
         {odd(5000);var _d_=log_success(0);return _d_}
        catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}
-      throw [0,Assert_failure,_b_]} |}]
+      throw [0,Assert_failure,_b_]}
+    //end |}]
