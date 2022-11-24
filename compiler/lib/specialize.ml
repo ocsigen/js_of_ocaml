@@ -53,7 +53,11 @@ let specialize_instr info (acc, free_pc, extra) i =
       match function_cardinality info f [] with
       | None -> i :: acc, free_pc, extra
       | Some n when n = n' -> Let (x, Apply (f, l, true)) :: acc, free_pc, extra
-      | Some n when n < n' ->
+      | Some n when n < n' && not (Config.Flag.effects ()) ->
+          (* We skip this optimization for now since it generates a
+             function application which is not at the very end of a
+             block (which is required for the code transformation used
+             to deal with effect handlers). *)
           let v = Code.Var.fresh () in
           let args, rest = List.take n l in
           ( Let (v, Apply (f, args, true)) :: Let (x, Apply (v, rest, false)) :: acc
