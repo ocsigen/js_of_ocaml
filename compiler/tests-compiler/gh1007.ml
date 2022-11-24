@@ -555,6 +555,5 @@ let ()  = M.run ()
              _e_=caml_call1(Stdlib_List[9],delayed[1]),
              _f_=function(f){return caml_call1(f,0)};
             return caml_call2(Stdlib_List[17],_f_,_e_)}
-          var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2;
-          continue}}}
+          var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2}}}
     //end |}]

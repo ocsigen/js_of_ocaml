@@ -1372,6 +1372,14 @@ and compile_block st queue (pc : Addr.t) frontier interm =
         in
         st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack;
         let body = compile_block_no_loop st queue pc frontier interm in
+        let body =
+          let rec remove_tailing_continue acc = function
+            | [] -> body
+            | [ (J.Continue_statement None, _) ] -> List.rev acc
+            | x :: xs -> remove_tailing_continue (x :: acc) xs
+          in
+          remove_tailing_continue [] body
+        in
         let for_loop =
           ( J.For_statement
               ( J.Left None
