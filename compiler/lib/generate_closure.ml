@@ -271,9 +271,16 @@ end
 
 let rewrite_tc free_pc blocks closures_map component =
   let open Config.Param in
-  match tailcall_optim () with
-  | TcNone -> Ident.f free_pc blocks closures_map component
-  | TcTrampoline -> Trampoline.f free_pc blocks closures_map component
+  let trampoline =
+    (not (Config.Flag.effects ()))
+    &&
+    match tailcall_optim () with
+    | TcTrampoline -> true
+    | TcNone -> false
+  in
+  if trampoline
+  then Trampoline.f free_pc blocks closures_map component
+  else Ident.f free_pc blocks closures_map component
 
 let rewrite_mutable
     free_pc
@@ -455,3 +462,9 @@ let f p : Code.program =
   in
   Code.invariant p;
   p
+
+let f p =
+  let t = Timer.make () in
+  let p' = f p in
+  if Debug.find "times" () then Format.eprintf "  generate closures: %a@." Timer.print t;
+  p'

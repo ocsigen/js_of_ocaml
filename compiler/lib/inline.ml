@@ -252,7 +252,7 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
                   let outer = { outer with size = outer.size + f_size } in
                   [], (outer, Branch (free_pc + 1, args), blocks, free_pc + 2)
                 else i :: rem, state)
-        | Let (x, Closure (l, (pc, []))) -> (
+        | Let (x, Closure (l, (pc, []))) when not (Config.Flag.effects ()) -> (
             let block = Addr.Map.find pc blocks in
             match block with
             | { body = [ Let (y, Prim (Extern prim, args)) ]
