@@ -37,6 +37,8 @@ module Flag : sig
 
   val staticeval : unit -> bool
 
+  val effects : unit -> bool
+
   val genprim : unit -> bool
 
   val strictmode : unit -> bool
