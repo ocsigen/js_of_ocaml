@@ -28,7 +28,7 @@ let%expect_test "inline recursive function" =
   print_fun_decl program (Some "g");
   [%expect
     {|
-    function f(param){for(;;)continue}
+    function f(param){for(;;);}
     //end
     function g(param){return f(0)}
     //end |}]

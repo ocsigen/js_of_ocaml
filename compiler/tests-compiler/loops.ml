@@ -130,8 +130,7 @@ let for_for_while () =
              var _a_=k + 1 | 0;
              if(10 !== k){var k=_a_;continue a}
              return 0}
-           id[1]++;
-           continue}}}
+           id[1]++}}}
     //end |}]
 
 let%expect_test "for-for-while-try" =
@@ -168,8 +167,7 @@ let for_for_while () =
              if(10 !== k){var k=_a_;continue a}
              return 0}
            try {caml_div(k,j)}catch(_c_){throw Stdlib[8]}
-           id[1]++;
-           continue}}}
+           id[1]++}}}
     //end |}]
 
 let%expect_test "loop seq.ml" =
@@ -304,8 +302,7 @@ in loop x
                default:switch$0 = 1}
             if(switch$0)var _a_=2;
             return _a_ + 2 | 0}}
-        var x$3=x$2 + 1 | 0,x$2=x$3;
-        continue}}
+        var x$3=x$2 + 1 | 0,x$2=x$3}}
     //end |}]
 
 let%expect_test "buffer.add_substitute" =
