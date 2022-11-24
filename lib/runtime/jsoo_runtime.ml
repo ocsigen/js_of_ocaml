@@ -59,6 +59,9 @@ module Js = struct
 
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
+  external callback : ('b -> 'a) -> ('b, 'a) meth_callback
+    = "caml_js_wrap_callback_unsafe"
+
   external callback_with_arguments :
     (t js_array -> 'b) -> ('c, t js_array -> 'b) meth_callback
     = "caml_js_wrap_callback_arguments"

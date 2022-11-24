@@ -152,6 +152,10 @@ void caml_js_wrap_callback_strict () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_wrap_callback_strict!\n");
   exit(1);
 }
+void caml_js_wrap_callback_unsafe () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_wrap_callback_unsafe!\n");
+  exit(1);
+}
 void caml_js_wrap_meth_callback () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_wrap_meth_callback!\n");
   exit(1);

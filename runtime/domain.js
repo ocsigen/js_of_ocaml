@@ -64,12 +64,13 @@ var caml_domain_id = 0;
 //Provides: caml_domain_spawn
 //Requires: caml_ml_mutex_unlock
 //Requires: caml_domain_id
+//Requires: caml_callback
 var caml_domain_latest_idx = 1
 function caml_domain_spawn(f,mutex){
     var id = caml_domain_latest_idx++;
     var old = caml_domain_id;
     caml_domain_id = id;
-    f(0);
+    caml_callback(f,[0]);
     caml_domain_id = old;
     caml_ml_mutex_unlock(mutex);
     return id;
