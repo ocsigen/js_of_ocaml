@@ -588,6 +588,23 @@ let rec traverse' { fold } f pc visited blocks acc =
 
 let traverse fold f pc blocks acc = snd (traverse' fold f pc Addr.Set.empty blocks acc)
 
+let rec preorder_traverse' { fold } f pc visited blocks acc =
+  if not (Addr.Set.mem pc visited)
+  then
+    let visited = Addr.Set.add pc visited in
+    let acc = f pc acc in
+    fold
+      blocks
+      pc
+      (fun pc (visited, acc) ->
+        let visited, acc = preorder_traverse' { fold } f pc visited blocks acc in
+        visited, acc)
+      (visited, acc)
+  else visited, acc
+
+let preorder_traverse fold f pc blocks acc =
+  snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
+
 let eq p1 p2 =
   p1.start = p2.start
   && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks
