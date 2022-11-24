@@ -83,6 +83,7 @@ let fun2 () =
         var i=_c_}
       if(switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
       return i}
+    //end
     function fun2(param)
      {try
        {var switch$0=0,i$0=caml_call1(Stdlib_Random[5],2);switch$0 = 1}
@@ -92,4 +93,5 @@ let fun2 () =
         if(_b_[1] === A){var _a_=_b_[2];if(2 === _a_){var i=_a_;switch$1 = 1}}
         if(! switch$1)throw _b_}
       if(switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
-      return i} |}]
+      return i}
+    //end |}]

@@ -61,23 +61,32 @@ module M1 = struct
     [%expect
       {|
     function f(g){return caml_call2(f_prime(g),3,4)}
+    //end
     function f_prime(g){return caml_call2(g,1,2)}
+    //end
     function g(param)
      {return f
               (function(a,b,c,d)
                 {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
+    //end
     function h(param)
      {return f
               (function(a,b,c,d)
                 {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
+    //end
     function k(a,b,c,d)
      {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)}
+    //end
     function l(_g_,_h_){return k(_b_,_a_,_g_,_h_)}
+    //end
     function m(_e_,_f_){return k(_d_,_c_,_e_,_f_)}
+    //end
     function caml_call1(f,a0)
      {return f.length == 1?f(a0):runtime.caml_call_gen(f,[a0])}
+    //end
     function caml_call2(f,a0,a1)
      {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
+    //end
     |}]
 end
 
@@ -107,9 +116,13 @@ module M2 = struct
       function f(param,a,b,c,d,e,f)
        {caml_call1(Stdlib[44],(((a + b | 0) + c | 0) + d | 0) + e | 0);
         return caml_call1(Stdlib[47],0)}
+      //end
       function f_prime(f){return caml_call1(f,1)}
+      //end
       function f_prime_prime(f){return caml_call1(f,0)}
-      function g(a,b,c,d,e,f){return caml_call1(Stdlib[2],cst_printed_g)} |}]
+      //end
+      function g(a,b,c,d,e,f){return caml_call1(Stdlib[2],cst_printed_g)}
+      //end |}]
 
   let%expect_test _ =
     compile_and_run code;

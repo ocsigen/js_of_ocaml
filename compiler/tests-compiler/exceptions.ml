@@ -36,7 +36,8 @@ let prevent_inline = some_name
      {try
        {try {throw Stdlib[8]}catch(x){x = caml_wrap_exception(x);var i=x}}
       catch(i$0){i$0 = caml_wrap_exception(i$0);var i=i$0}
-      throw i} |}];
+      throw i}
+    //end |}];
   print_fun_decl (program ~debug:false) None;
   [%expect
     {|
@@ -44,4 +45,5 @@ let prevent_inline = some_name
      {try
        {try {throw Stdlib[8]}catch(_e_){var _c_=caml_wrap_exception(_e_)}}
       catch(_d_){_d_ = caml_wrap_exception(_d_);throw _d_}
-      throw _c_} |}]
+      throw _c_}
+    //end |}]

@@ -290,7 +290,8 @@ let ()  = M.myfun M.x
             if(2 <= len)sort(len,l);
             var x$0=next;
             continue a}}
-        return 0}} |}]
+        return 0}}
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -347,7 +348,8 @@ let ()  = M.run ()
         even(i);
         var _a_=i + 1 | 0;
         if(4 !== i){var i=_a_;continue}
-        return 0}} |}]
+        return 0}}
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -440,7 +442,8 @@ let ()  = M.run ()
         var
          _c_=caml_call1(Stdlib_List[9],delayed[1]),
          _d_=function(f){return caml_call1(f,0)};
-        return caml_call2(Stdlib_List[17],_d_,_c_)}} |}]
+        return caml_call2(Stdlib_List[17],_d_,_c_)}}
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -553,4 +556,5 @@ let ()  = M.run ()
              _f_=function(f){return caml_call1(f,0)};
             return caml_call2(Stdlib_List[17],_f_,_e_)}
           var f=param$1[2],param$2=caml_call1(f,0),param$1=param$2;
-          continue}}} |}]
+          continue}}}
+    //end |}]
