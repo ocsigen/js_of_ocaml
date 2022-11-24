@@ -345,7 +345,33 @@ let split_blocks (p : Code.program) =
   in
   Addr.Map.fold split_block p.blocks p
 
+let skip_empty_blocks (p : Code.program) : Code.program =
+  let shortcuts = Hashtbl.create 16 in
+  let rec resolve l (pc, _) =
+    if List.mem pc ~set:l then raise Not_found;
+    let cont = Hashtbl.find shortcuts pc in
+    try resolve (pc :: l) cont with Not_found -> cont
+  in
+  Addr.Map.iter
+    (fun pc block ->
+      match block with
+      | { params = []; body = []; branch = Branch cont; _ } ->
+          Hashtbl.add shortcuts pc cont
+      | _ -> ())
+    p.blocks;
+  let blocks =
+    Addr.Map.map
+      (fun block ->
+        match block.branch with
+        | Branch cont -> (
+            try { block with branch = Branch (resolve [] cont) } with Not_found -> block)
+        | _ -> block)
+      p.blocks
+  in
+  { p with blocks }
+
 let f (p : Code.program) =
+  let p = skip_empty_blocks p in
   let p = split_blocks p in
   let closure_continuation =
     (* Provide a name for the continuation of a closure (before CPS
