@@ -223,6 +223,9 @@ val fold_children : 'c fold_blocs
 val traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
+val preorder_traverse :
+  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+
 val prepend : program -> instr list -> program
 
 val empty : program
