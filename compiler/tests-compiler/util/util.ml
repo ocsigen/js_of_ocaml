@@ -174,7 +174,7 @@ let channel_to_string c_in =
   (try loop () with End_of_file -> ());
   Buffer.contents buffer
 
-let exec_to_string_exn ~cmd =
+let exec_to_string_exn ~fail ~cmd =
   let build_path_prefix_map = "BUILD_PATH_PREFIX_MAP=" in
   let cwd = Sys.getcwd () in
   let build_path =
@@ -212,21 +212,32 @@ let exec_to_string_exn ~cmd =
   let ((proc_in, _, proc_err) as proc_full) = Unix.open_process_full cmd env in
   let results = channel_to_string proc_in in
   let results' = channel_to_string proc_err in
-  proc_result_ok
-    (String.concat
-       ~sep:"\n"
-       (List.filter
-          ~f:(function
-            | "" -> false
-            | _ -> true)
-          [ results'; results ]))
-    (Unix.close_process_full proc_full)
+  let exit_status = Unix.close_process_full proc_full in
+  let res =
+    proc_result_ok
+      (String.concat
+         ~sep:"\n"
+         (List.filter
+            ~f:(function
+              | "" -> false
+              | _ -> true)
+            [ results'; results ]))
+      exit_status
+  in
+  match exit_status with
+  | WEXITED n when n <> 0 && fail ->
+      print_endline res;
+      raise_notrace (Failure "non-zero exit code")
+  | _ -> res
 
 let run_javascript file =
-  exec_to_string_exn ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
+  exec_to_string_exn
+    ~fail:false
+    ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
 
 let run_bytecode file =
   exec_to_string_exn
+    ~fail:false
     ~cmd:(Format.sprintf "%s %s" ocamlrun (Filetype.path_of_bc_file file))
 
 let swap_extention filename ~ext =
@@ -280,7 +291,7 @@ let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
 
-  let stdout = exec_to_string_exn ~cmd in
+  let stdout = exec_to_string_exn ~fail:true ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
@@ -296,7 +307,7 @@ let jsoo_minify ?(flags = []) ~pretty file =
   in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
 
-  let stdout = exec_to_string_exn ~cmd in
+  let stdout = exec_to_string_exn ~fail:true ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
@@ -313,6 +324,7 @@ let compile_ocaml_to_cmo ?(debug = true) file =
   let out_file = swap_extention file ~ext:"cmo" in
   let (stdout : string) =
     exec_to_string_exn
+      ~fail:true
       ~cmd:
         (Format.sprintf
            "%s -c %s %s -o %s"
@@ -329,6 +341,7 @@ let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
   let out_file = swap_extention file ~ext:"bc" in
   let (stdout : string) =
     exec_to_string_exn
+      ~fail:true
       ~cmd:
         (Format.sprintf
            "%s -no-check-prims %s %s %s -o %s"
@@ -345,6 +358,7 @@ let compile_lib list name =
   let out_file = swap_extention name ~ext:"cma" in
   let (stdout : string) =
     exec_to_string_exn
+      ~fail:true
       ~cmd:
         (Format.sprintf
            "%s -g -a %s -o %s"
