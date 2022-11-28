@@ -30,9 +30,9 @@ let iter_cont_free_vars f (_, l) = List.iter ~f l
 let iter_expr_free_vars f e =
   match e with
   | Constant _ -> ()
-  | Apply (x, l, _) ->
+  | Apply { f = x; args; _ } ->
       f x;
-      List.iter ~f l
+      List.iter ~f args
   | Block (_, a, _) -> Array.iter ~f a
   | Field (x, _) -> f x
   | Closure _ -> ()

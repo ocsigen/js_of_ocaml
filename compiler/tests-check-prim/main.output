@@ -139,6 +139,8 @@ caml_mod
 
 From +jslib.js:
 caml_is_js
+caml_stack_check_depth
+caml_stack_depth
 caml_trampoline
 caml_trampoline_return
 caml_wrap_exception

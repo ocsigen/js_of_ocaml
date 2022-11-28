@@ -165,8 +165,13 @@ let simple blocks cont mapping =
         -> (
           match exp with
           | Constant (Float _ | Int64 _ | Int _ | NativeString _) -> `Exp exp
-          | Apply (f, args, true) ->
-              `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
+          | Apply { f; args; exact = true } ->
+              `Exp
+                (Apply
+                   { f = map_var mapping f
+                   ; args = List.map args ~f:(map_var mapping)
+                   ; exact = true
+                   })
           | Prim (prim, args) ->
               `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
           | Block (tag, args, aon) ->
@@ -195,7 +200,7 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
       ~init:([], (outer, block.branch, blocks, free_pc))
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply (f, args, true)) when Var.Map.mem f closures -> (
+        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f closures -> (
             let outer, branch, blocks, free_pc = state in
             let ( params
                 , clos_cont

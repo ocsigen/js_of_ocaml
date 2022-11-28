@@ -357,7 +357,7 @@ let rec do_not_raise pc visited blocks =
         | Let (_, e) -> (
             match e with
             | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
-            | Apply (_, _, _) -> raise May_raise
+            | Apply _ -> raise May_raise
             | Prim (Extern name, _) when Primitive.is_pure name -> ()
             | Prim (Extern _, _) -> raise May_raise
             | Prim (_, _) -> ()));

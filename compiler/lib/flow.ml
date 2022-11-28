@@ -192,7 +192,7 @@ let rec block_escape st x =
 let expr_escape st _x e =
   match e with
   | Constant _ | Closure _ | Block _ | Field _ -> ()
-  | Apply (_, l, _) -> List.iter l ~f:(fun x -> block_escape st x)
+  | Apply { args; _ } -> List.iter args ~f:(fun x -> block_escape st x)
   | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
   | Prim (Extern name, l) ->
       let ka =

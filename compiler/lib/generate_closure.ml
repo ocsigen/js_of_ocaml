@@ -51,8 +51,8 @@ let rec collect_apply pc blocks visited tc =
       match block.branch with
       | Return x -> (
           match List.last block.body with
-          | Some (Let (y, Apply (z, _, true))) when Code.Var.compare x y = 0 ->
-              Some (add_multi z pc tc)
+          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.compare x y = 0 ->
+              Some (add_multi f pc tc)
           | None -> None
           | Some _ -> None)
       | _ -> None
@@ -97,7 +97,7 @@ module Trampoline = struct
     match counter with
     | None ->
         { params = []
-        ; body = [ Let (return, Apply (f, args, true)) ]
+        ; body = [ Let (return, Apply { f; args; exact = true }) ]
         ; branch = Return return
         }
     | Some counter ->
@@ -105,7 +105,7 @@ module Trampoline = struct
         { params = []
         ; body =
             [ Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
-            ; Let (return, Apply (f, counter_plus_1 :: args, true))
+            ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
             ]
         ; branch = Return return
         }
@@ -132,12 +132,12 @@ module Trampoline = struct
       ; body =
           (match counter with
           | None ->
-              [ Let (result1, Apply (f, args, true))
+              [ Let (result1, Apply { f; args; exact = true })
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ]
           | Some counter ->
               [ Let (counter, Constant (Int 0l))
-              ; Let (result1, Apply (f, counter :: args, true))
+              ; Let (result1, Apply { f; args = counter :: args; exact = true })
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ])
       ; branch = Return result2
@@ -208,7 +208,7 @@ module Trampoline = struct
                     let bounce_call_pc = free_pc + 1 in
                     let free_pc = free_pc + 2 in
                     match List.rev block.body with
-                    | Let (x, Apply (f, args, true)) :: rem_rev ->
+                    | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
                         assert (Var.equal f ci.f_name);
                         let blocks =
                           Addr.Map.add
@@ -327,7 +327,7 @@ let rewrite_mutable
         let blocks = Addr.Map.add new_pc new_block blocks in
         let body =
           [ Let (closure, Closure (args, (new_pc, [])))
-          ; Let (x, Apply (closure, vars, true))
+          ; Let (x, Apply { f = closure; args = vars; exact = true })
           ]
         in
         free_pc, blocks, body
@@ -372,7 +372,7 @@ let rewrite_mutable
         let blocks = Addr.Map.add new_pc new_block blocks in
         let body =
           [ Let (closure, Closure (args, (new_pc, [])))
-          ; Let (closure', Apply (closure, vars, true))
+          ; Let (closure', Apply { f = closure; args = vars; exact = true })
           ]
           @ List.mapi closures_extern ~f:(fun i x ->
                 match x with
