@@ -51,6 +51,15 @@ function caml_trampoline_return(f,args) {
   return {joo_tramp:f,joo_args:args};
 }
 
+//Provides:caml_stack_depth
+var caml_stack_depth = 0;
+
+//Provides:caml_stack_check_depth
+//Requires:caml_stack_depth
+function caml_stack_check_depth() {
+    return --caml_stack_depth > 0;
+}
+
 //Provides: caml_callback
 //Requires:caml_call_gen
 var caml_callback = caml_call_gen;

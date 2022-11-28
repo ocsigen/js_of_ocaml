@@ -76,15 +76,27 @@ let rec map_last f l =
 
 (****)
 
+type application_description =
+  { arity : int
+  ; exact : bool
+  ; cps : bool
+  }
+
 module Share = struct
+  module AppMap = Map.Make (struct
+    type t = application_description
+
+    let compare = Poly.compare
+  end)
+
   type 'a aux =
     { strings : 'a StringMap.t
-    ; applies : 'a IntMap.t
+    ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
     }
 
   let empty_aux =
-    { prims = StringMap.empty; strings = StringMap.empty; applies = IntMap.empty }
+    { prims = StringMap.empty; strings = StringMap.empty; applies = AppMap.empty }
 
   type t =
     { count : int aux
@@ -106,8 +118,8 @@ module Share = struct
     if Primitive.exists s then { t with prims = StringMap.add s (-1) t.prims } else t
 
   let add_apply i t =
-    let n = try IntMap.find i t.applies with Not_found -> 0 in
-    { t with applies = IntMap.add i (n + 1) t.applies }
+    let n = try AppMap.find i t.applies with Not_found -> 0 in
+    { t with applies = AppMap.add i (n + 1) t.applies }
 
   let add_code_string s share =
     let share = add_string s share in
@@ -139,10 +151,31 @@ module Share = struct
     let count =
       Addr.Map.fold
         (fun _ block share ->
+          let tailcall_name =
+            (* Systematic tail-call optimization is only enabled when
+               supporting effects *)
+            if Config.Flag.effects ()
+            then
+              match block.branch with
+              | Return _ -> (
+                  match List.last block.body with
+                  | Some (Let (x, _)) -> Some x
+                  | _ -> None)
+              | _ -> None
+            else None
+          in
           List.fold_left block.body ~init:share ~f:(fun share i ->
               match i with
               | Let (_, Constant c) -> get_constant c share
-              | Let (_, Apply (_, args, false)) -> add_apply (List.length args) share
+              | Let (x, Apply { args; exact; _ }) ->
+                  let cps =
+                    match tailcall_name with
+                    | Some y -> Var.equal x y
+                    | None -> false
+                  in
+                  if (not exact) || cps
+                  then add_apply { arity = List.length args; exact; cps } share
+                  else share
               | Let (_, Prim (Extern "%closure", [ Pc (NativeString name) ])) ->
                   let name = Primitive.resolve name in
                   let share =
@@ -208,15 +241,26 @@ module Share = struct
         else gen s
       with Not_found -> gen s
 
-  let get_apply gen n t =
+  let get_apply gen desc t =
     if not t.alias_apply
-    then gen n
+    then gen desc
     else
-      try J.EVar (IntMap.find n t.vars.applies)
+      try J.EVar (AppMap.find desc t.vars.applies)
       with Not_found ->
-        let x = Var.fresh_n (Printf.sprintf "caml_call%d" n) in
+        let x =
+          let { arity; exact; cps } = desc in
+          Var.fresh_n
+            (Printf.sprintf
+               "caml_%scall%d"
+               (match exact, cps with
+               | true, false -> assert false
+               | true, true -> "cps_exact_"
+               | false, false -> ""
+               | false, true -> "cps_")
+               arity)
+        in
         let v = J.V x in
-        t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
+        t.vars <- { t.vars with applies = AppMap.add desc v t.vars.applies };
         J.EVar v
 end
 
@@ -858,22 +902,45 @@ let parallel_renaming params args continuation queue =
 
 (****)
 
-let apply_fun_raw ctx f params =
+let apply_fun_raw ctx f params exact cps =
   let n = List.length params in
-  J.ECond
-    ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
-    , ecall f params J.N
-    , ecall
-        (runtime_fun ctx "caml_call_gen")
-        [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
-        J.N )
+  let apply_directly = ecall f params J.N in
+  let apply =
+    (* We skip the arity check when we know that we have the right
+       number of parameters, since this test is expensive. *)
+    if exact
+    then apply_directly
+    else
+      J.ECond
+        ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
+        , apply_directly
+        , ecall
+            (runtime_fun ctx "caml_call_gen")
+            [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
+            J.N )
+  in
+  if cps
+  then (
+    assert (Config.Flag.effects ());
+    (* When supporting effect, we systematically perform tailcall
+       optimization. To implement it, we check the stack depth and
+       bounce to a trampoline if needed, to avoid a stack overflow.
+       The trampoline then performs the call in an shorter stack. *)
+    J.ECond
+      ( ecall (runtime_fun ctx "caml_stack_check_depth") [] J.N
+      , apply
+      , ecall
+          (runtime_fun ctx "caml_trampoline_return")
+          [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
+          J.N ))
+  else apply
 
-let generate_apply_fun ctx n =
+let generate_apply_fun ctx { arity; exact; cps } =
   let f' = Var.fresh_n "f" in
   let f = J.V f' in
   let params =
     Array.to_list
-      (Array.init n ~f:(fun i ->
+      (Array.init arity ~f:(fun i ->
            let a = Var.fresh_n (Printf.sprintf "a%d" i) in
            J.V a))
   in
@@ -882,14 +949,27 @@ let generate_apply_fun ctx n =
   J.EFun
     ( None
     , f :: params
-    , [ J.Statement (J.Return_statement (Some (apply_fun_raw ctx f' params'))), J.N ]
+    , [ ( J.Statement (J.Return_statement (Some (apply_fun_raw ctx f' params' exact cps)))
+        , J.N )
+      ]
     , J.N )
 
-let apply_fun ctx f params loc =
-  if Config.Flag.inline_callgen ()
-  then apply_fun_raw ctx f params
+let apply_fun ctx f params exact cps loc =
+  (* We always go through an intermediate function when doing CPS
+     calls. This function first checks the stack depth to prevent
+     a stack overflow. This makes the code smaller than inlining
+     the test, and we expect the performance impact to be low
+     since the function should get inlined by the JavaScript
+     engines. *)
+  if Config.Flag.inline_callgen () || (exact && not cps)
+  then apply_fun_raw ctx f params exact cps
   else
-    let y = Share.get_apply (generate_apply_fun ctx) (List.length params) ctx.Ctx.share in
+    let y =
+      Share.get_apply
+        (generate_apply_fun ctx)
+        { arity = List.length params; exact; cps }
+        ctx.Ctx.share
+    in
     ecall y (f :: params) loc
 
 (****)
@@ -1057,31 +1137,21 @@ let throw_statement ctx cx k loc =
         , loc )
       ]
 
-let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
+let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_list =
+  let cps = in_tail_position && Config.Flag.effects () in
   match e with
-  | Apply (x, l, true) ->
-      let (px, cx), queue = access_queue queue x in
+  | Apply { f; args; exact } ->
       let args, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
             cx :: args, or_p prop prop', queue)
-          l
-          ~init:([], or_p px mutator_p, queue)
-      in
-      (ecall cx args loc, prop, queue), []
-  | Apply (x, l, false) ->
-      let args, prop, queue =
-        List.fold_right
-          ~f:(fun x (args, prop, queue) ->
-            let (prop', cx), queue = access_queue queue x in
-            cx :: args, or_p prop prop', queue)
-          l
+          args
           ~init:([], mutator_p, queue)
       in
-      let (prop', f), queue = access_queue queue x in
+      let (prop', f), queue = access_queue queue f in
       let prop = or_p prop prop' in
-      let e = apply_fun ctx f args loc in
+      let e = apply_fun ctx f args exact cps loc in
       (e, prop, queue), []
   | Block (tag, a, array_or_not) ->
       let contents, prop, queue =
@@ -1327,7 +1397,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       in
       res, []
 
-and translate_instr ctx expr_queue loc instr =
+and translate_instr ctx expr_queue loc instr in_tail_position =
   match instr with
   | Assign (x, y) ->
       let (_py, cy), expr_queue = access_queue expr_queue y in
@@ -1336,7 +1406,9 @@ and translate_instr ctx expr_queue loc instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
-      let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
+      let (ce, prop, expr_queue), instrs =
+        translate_expr ctx expr_queue loc in_tail_position e 0
+      in
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
@@ -1396,12 +1468,17 @@ and translate_instr ctx expr_queue loc instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
 
-and translate_instrs ctx expr_queue loc instr =
+and translate_instrs ctx expr_queue loc instr last =
   match instr with
   | [] -> [], expr_queue
   | instr :: rem ->
-      let st, expr_queue = translate_instr ctx expr_queue loc instr in
-      let instrs, expr_queue = translate_instrs ctx expr_queue loc rem in
+      let in_tail_position =
+        match rem, last with
+        | [], Return _ -> true
+        | _ -> false
+      in
+      let st, expr_queue = translate_instr ctx expr_queue loc instr in_tail_position in
+      let instrs, expr_queue = translate_instrs ctx expr_queue loc rem last in
       st @ instrs, expr_queue
 
 and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
@@ -1482,7 +1559,9 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
   (* TODO: Check that we are inside the [frontier] *)
   let new_frontier = Interm.resolve_nodes interm grey in
   let block = Addr.Map.find pc st.blocks in
-  let seq, queue = translate_instrs st.ctx queue (source_location st.ctx pc) block.body in
+  let seq, queue =
+    translate_instrs st.ctx queue (source_location st.ctx pc) block.body block.branch
+  in
   match block.branch with
   | Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3s) ->
       (* FIX: document this *)
@@ -1939,8 +2018,10 @@ let generate_shared_value ctx =
   if not (Config.Flag.inline_callgen ())
   then
     let applies =
-      List.map (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) ~f:(fun (n, v) ->
-          match generate_apply_fun ctx n with
+      List.map
+        (Share.AppMap.bindings ctx.Ctx.share.Share.vars.Share.applies)
+        ~f:(fun (desc, v) ->
+          match generate_apply_fun ctx desc with
           | J.EFun (_, param, body, nid) ->
               J.Function_declaration (v, param, body, nid), J.U
           | _ -> assert false)

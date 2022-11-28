@@ -156,8 +156,11 @@ type prim_arg =
   | Pc of constant
 
 type expr =
-  | Apply of Var.t * Var.t list * bool
-  (* if true, then # of arguments = # of parameters *)
+  | Apply of
+      { f : Var.t
+      ; args : Var.t list
+      ; exact : bool (* if true, then # of arguments = # of parameters *)
+      }
   | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont

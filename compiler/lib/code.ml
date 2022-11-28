@@ -308,7 +308,11 @@ type prim_arg =
   | Pc of constant
 
 type expr =
-  | Apply of Var.t * Var.t list * bool
+  | Apply of
+      { f : Var.t
+      ; args : Var.t list
+      ; exact : bool
+      }
   | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont
@@ -435,10 +439,10 @@ module Print = struct
 
   let expr f e =
     match e with
-    | Apply (g, l, exact) ->
+    | Apply { f = g; args; exact } ->
         if exact
-        then Format.fprintf f "%a!(%a)" Var.print g var_list l
-        else Format.fprintf f "%a(%a)" Var.print g var_list l
+        then Format.fprintf f "%a!(%a)" Var.print g var_list args
+        else Format.fprintf f "%a(%a)" Var.print g var_list args
     | Block (t, a, _) ->
         Format.fprintf f "{tag=%d" t;
         for i = 0 to Array.length a - 1 do
@@ -641,7 +645,7 @@ let invariant { blocks; start; _ } =
         defs.(Var.idx x) <- true)
     in
     let check_expr = function
-      | Apply (_, _, _) -> ()
+      | Apply _ -> ()
       | Block (_, _, _) -> ()
       | Field (_, _) -> ()
       | Closure (l, cont) ->
