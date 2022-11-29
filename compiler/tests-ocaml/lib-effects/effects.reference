@@ -1,0 +1,18 @@
+5
+42
+42
+>> 42 0
+[t1] Sending 0
+[t2] Sending 1
+[t2] received 0
+[t1] received 1
+Hello, world! Coucou! Hello, world!
+Discontinued
+Unhandled
+Saw unhandled exception
+One-shot
+OCaml
+Send 42
+Recv: 42
+Send 43
+Recv: 43

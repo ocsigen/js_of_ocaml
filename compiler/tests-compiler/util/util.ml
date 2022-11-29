@@ -282,7 +282,7 @@ let compile_to_javascript ?(flags = []) ?(effects = false) ~pretty ~sourcemap fi
     List.flatten
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
-      ; (if effects then [] else [ "--disable=effects" ])
+      ; (if effects then [ "--enable=effects" ] else [ "--disable=effects" ])
       ; flags
       ]
   in

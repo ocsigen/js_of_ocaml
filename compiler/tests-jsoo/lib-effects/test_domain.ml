@@ -33,10 +33,10 @@ let er = ref Not_found
 
 let%expect_test _ =
   handle (fun () -> print_int (Effect.perform A));
-  [%expect{| 42 |}]
+  [%expect {| 42 |}]
 
 let%expect_test _ =
   let f () = Effect.perform A in
   handle (fun () ->
       if Random.int 2 < 1 then print_int (1 + f ()) else print_int (f () + 1));
-  [%expect{| 43 |}]
+  [%expect {| 43 |}]
