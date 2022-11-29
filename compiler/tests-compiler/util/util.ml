@@ -276,12 +276,13 @@ let extract_sourcemap file =
       Some (Js_of_ocaml_compiler.Source_map_io.of_string content)
   | _ -> None
 
-let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
+let compile_to_javascript ?(flags = []) ?(effects = false) ~pretty ~sourcemap file =
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
+      ; (if effects then [] else [ "--disable=effects" ])
       ; flags
       ]
   in
@@ -313,12 +314,22 @@ let jsoo_minify ?(flags = []) ~pretty file =
      something weird happens, we'll get the results here *)
   Filetype.js_file_of_path out_file
 
-let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
-  Filetype.path_of_bc_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
+let compile_bc_to_javascript ?flags ?effects ?(pretty = true) ?(sourcemap = true) file =
+  Filetype.path_of_bc_file file
+  |> compile_to_javascript ?flags ?effects ~pretty ~sourcemap
 
-let compile_cmo_to_javascript ?(flags = []) ?(pretty = true) ?(sourcemap = true) file =
+let compile_cmo_to_javascript
+    ?(flags = [])
+    ?effects
+    ?(pretty = true)
+    ?(sourcemap = true)
+    file =
   Filetype.path_of_cmo_file file
-  |> compile_to_javascript ~flags:([ "--disable"; "header" ] @ flags) ~pretty ~sourcemap
+  |> compile_to_javascript
+       ?effects
+       ~flags:([ "--disable"; "header" ] @ flags)
+       ~pretty
+       ~sourcemap
 
 let compile_ocaml_to_cmo ?(debug = true) file =
   let file = Filetype.path_of_ocaml_file file in
@@ -463,13 +474,13 @@ let compile_and_parse_whole_program ?(debug = true) ?flags ?unix s =
       |> compile_bc_to_javascript ?flags ~pretty:true ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse ?(debug = true) ?flags s =
+let compile_and_parse ?(debug = true) ?effects ?flags s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
-      |> compile_cmo_to_javascript ?flags ~pretty:true ~sourcemap:debug
+      |> compile_cmo_to_javascript ?flags ?effects ~pretty:true ~sourcemap:debug
       |> parse_js)
 
 let normalize_path s =

@@ -34,6 +34,7 @@ val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
 val compile_cmo_to_javascript :
      ?flags:string list
+  -> ?effects:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.cmo_file
@@ -41,6 +42,7 @@ val compile_cmo_to_javascript :
 
 val compile_bc_to_javascript :
      ?flags:string list
+  -> ?effects:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.bc_file
@@ -67,7 +69,8 @@ val compile_and_run : ?debug:bool -> ?flags:string list -> ?unix:bool -> string 
 
 val compile_and_run_bytecode : ?unix:bool -> string -> unit
 
-val compile_and_parse : ?debug:bool -> ?flags:string list -> string -> Javascript.program
+val compile_and_parse :
+  ?debug:bool -> ?effects:bool -> ?flags:string list -> string -> Javascript.program
 
 val compile_and_parse_whole_program :
   ?debug:bool -> ?flags:string list -> ?unix:bool -> string -> Javascript.program
