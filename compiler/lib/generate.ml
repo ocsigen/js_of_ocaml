@@ -798,7 +798,7 @@ let dominance_frontier st pc =
     if not (Addr.Set.equal o n)
     then
       Format.eprintf
-        "Dominance frontier mismatch: legacy = %s vs %s = new@."
+        "Dominance frontier mismatch: legacy = %s vs %s = new@,"
         (string_of_set o)
         (string_of_set n));
   dominance_frontier_time := !dominance_frontier_time +. Timer.get start;
@@ -1408,7 +1408,7 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
     match Addr.Set.mem pc st.loops with
     | false -> compile_block_no_loop st queue pc loop_stack frontier interm
     | true -> (
-        if debug () then Format.eprintf "@[<2>for(;;){@,";
+        if debug () then Format.eprintf "@[<hv 2>for(;;){@,";
         let lab =
           match loop_stack with
           | (_, (l, _)) :: _ -> J.Label.succ l
@@ -1435,10 +1435,10 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
               , Js_simpl.block
                   (if never_body
                   then (
-                    if debug () then Format.eprintf "}@]";
+                    if debug () then Format.eprintf "}@]@,";
                     body)
                   else (
-                    if debug () then Format.eprintf "@ break; }@]";
+                    if debug () then Format.eprintf "break;@;}@]@,";
                     body @ [ J.Break_statement None, J.N ])) )
           , source_location st.ctx pc )
         in
@@ -1455,7 +1455,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       Format.eprintf "Trying to compile a block twice !!!! %d@." pc;
       assert false);
     st.visited_blocks := Addr.Set.add pc !(st.visited_blocks));
-  if debug () then Format.eprintf "block %d;@ @?" pc;
+  if debug () then Format.eprintf "block %d;@," pc;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   (* Remove limit *)
@@ -1506,7 +1506,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       in
       assert (Addr.Set.cardinal handler_frontier_cont <= 1);
       let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
-      if debug () then Format.eprintf "@[<2>try {@,";
+      if debug () then Format.eprintf "@[<hv 2>try {@;";
       if Interm.mem pc1 handler_interm then decr_preds st pc1;
       let never_body, body =
         compile_branch
@@ -1519,7 +1519,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
           handler_interm
       in
       let body = prefix @ body in
-      if debug () then Format.eprintf "} catch {@,";
+      if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
       let x =
         let block2 = Addr.Map.find pc2 st.blocks in
         let m = Subst.build_mapping args2 block2.params in
@@ -1536,7 +1536,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
           try_catch_frontier
           handler_interm
       in
-      if debug () then Format.eprintf "}@]@ ";
+      if debug () then Format.eprintf "}@]@,";
       Addr.Set.iter (decr_preds st) handler_frontier;
       (* TODO: Cleanup exn_escape *)
       let exn_escape =
@@ -1636,7 +1636,7 @@ and colapse_frontier st new_frontier interm =
       !(st.last_interm_idx)
     in
     if debug ()
-    then Format.eprintf "colapse frontier into %d: %s@." idx (string_of_set new_frontier);
+    then Format.eprintf "colapse frontier into %d: %s@," idx (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
     let a =
       Addr.Set.elements new_frontier
@@ -1644,7 +1644,7 @@ and colapse_frontier st new_frontier interm =
       |> List.sort ~cmp:(fun (_, (c1 : int)) (_, (c2 : int)) -> compare c2 c1)
       |> List.map ~f:fst
     in
-    if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
+    if debug () then Format.eprintf "var %a;@," Code.Var.print x;
     let switch =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
@@ -1677,7 +1677,11 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
      in function [DTree.fold_cont] above. *)
   let rec loop cx : _ -> bool * _ = function
     | DTree.Empty -> assert false
-    | DTree.Branch cont -> compile_branch st [] cont loop_stack backs frontier interm
+    | DTree.Branch cont ->
+        if debug () then Format.eprintf "@[<hv 2>case {@;";
+        let never, code = compile_branch st [] cont loop_stack backs frontier interm in
+        if debug () then Format.eprintf "}@]@;";
+        never, code
     | DTree.If (cond, cont1, cont2) ->
         let never1, iftrue = loop cx cont1 in
         let never2, iffalse = loop cx cont2 in
@@ -1735,11 +1739,11 @@ and compile_conditional st queue pc last loop_stack backs frontier interm =
   then
     match last with
     | Branch _ | Poptrap _ | Pushtrap _ -> ()
-    | Return _ -> Format.eprintf "ret"
-    | Raise _ -> Format.eprintf "raise"
-    | Stop -> Format.eprintf "stop"
-    | Cond _ -> Format.eprintf "@[<hv 2>cond{@,"
-    | Switch _ -> Format.eprintf "@[<hv 2>switch{@,");
+    | Return _ -> Format.eprintf "ret;@;"
+    | Raise _ -> Format.eprintf "raise;@;"
+    | Stop -> Format.eprintf "stop;@;"
+    | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
+    | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
   let loc = source_location st.ctx pc in
   let res =
     match last with
@@ -1841,7 +1845,7 @@ and compile_conditional st queue pc last loop_stack backs frontier interm =
   then
     match last with
     | Branch _ | Poptrap _ | Pushtrap _ | Return _ | Raise _ | Stop -> ()
-    | Switch _ | Cond _ -> Format.eprintf "}@]@ ");
+    | Switch _ | Cond _ -> Format.eprintf "}@]@;");
   res
 
 and compile_argument_passing ctx queue (pc, args) _backs continuation =
@@ -1870,19 +1874,19 @@ and compile_branch st queue ((pc, _) as cont) loop_stack backs frontier interm :
         if debug ()
         then
           if Option.is_none label
-          then Format.eprintf "continue;@ "
-          else Format.eprintf "continue (%d);@ " pc;
+          then Format.eprintf "continue;@,"
+          else Format.eprintf "continue (%d);@," pc;
         true, flush_all queue [ J.Continue_statement label, J.N ])
       else if Addr.Set.mem pc frontier || Interm.mem pc interm
       then (
-        if debug () then Format.eprintf "(br %d)@ " pc;
+        if debug () then Format.eprintf "(br %d)@;" pc;
         false, flush_all queue (compile_branch_selection pc interm))
       else compile_block st queue pc loop_stack frontier interm)
 
 and compile_branch_selection pc interm =
   try
     let { Interm.pc; var = x; value = i; default } = Interm.find pc interm in
-    if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
+    if debug () then Format.eprintf "%a=%d;@;" Code.Var.print x i;
     let branch = compile_branch_selection pc interm in
     if default
     then branch
@@ -1893,7 +1897,7 @@ and compile_closure ctx (pc, args) =
   let st = build_graph ctx pc in
   let current_blocks = !(st.visited_blocks) in
   st.visited_blocks := Addr.Set.empty;
-  if debug () then Format.eprintf "@[<hov 2>closure{@,";
+  if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let backs = Addr.Set.empty in
   let loop_stack = [] in
   let _never, res =
@@ -1904,7 +1908,7 @@ and compile_closure ctx (pc, args) =
     let missing = Addr.Set.diff current_blocks !(st.visited_blocks) in
     Format.eprintf "Some blocks not compiled %s!@." (string_of_set missing);
     assert false);
-  if debug () then Format.eprintf "}@]@ ";
+  if debug () then Format.eprintf "}@]@;";
   List.map res ~f:(fun (st, loc) -> J.Statement st, loc)
 
 let generate_shared_value ctx =
@@ -1938,9 +1942,10 @@ let generate_shared_value ctx =
   else [ strings ]
 
 let compile_program ctx pc =
+  if debug () then Format.eprintf "@[<v 2>";
   let res = compile_closure ctx (pc, []) in
   let res = generate_shared_value ctx @ res in
-  if debug () then Format.eprintf "@.@.";
+  if debug () then Format.eprintf "@]@.";
   res
 
 let f (p : Code.program) ~exported_runtime ~live_vars ~should_export debug =
