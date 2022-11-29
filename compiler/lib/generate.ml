@@ -200,6 +200,7 @@ module Share = struct
         ; "caml_wrap_exception"
         ; "caml_list_of_js_array"
         ; "caml_exn_with_js_backtrace"
+        ; "jsoo_effect_not_supported"
         ]
         ~init:count
         ~f:(fun acc x -> add_special_prim_if_exists x acc)
@@ -272,10 +273,18 @@ module Ctx = struct
     ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : (Code.Var.t * bool ref) option
     ; should_export : bool
+    ; effect_warning : bool ref
     }
 
   let initial ~exported_runtime ~should_export blocks live share debug =
-    { blocks; live; share; debug; exported_runtime; should_export }
+    { blocks
+    ; live
+    ; share
+    ; debug
+    ; exported_runtime
+    ; should_export
+    ; effect_warning = ref false
+    }
 end
 
 let var x = J.EVar (J.V x)
@@ -1348,6 +1357,18 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
+        | Extern ("%resume" | "%perform" | "%reperform"), _ ->
+            if Config.Flag.effects () then assert false;
+            if not !(ctx.effect_warning)
+            then (
+              warn
+                "Warning: your program contains effect handlers; you should probably run \
+                 js_of_ocaml with option '--enable=effects'@.";
+              ctx.effect_warning := true);
+            let name = "jsoo_effect_not_supported" in
+            let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
+            let prim_kind = kind (Primitive.kind name) in
+            ecall prim [] loc, prim_kind, queue
         | Extern name, l -> (
             let name = Primitive.resolve name in
             match internal_prim name with

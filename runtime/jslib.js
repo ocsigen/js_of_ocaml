@@ -52,17 +52,65 @@ function caml_trampoline_return(f,args) {
 }
 
 //Provides:caml_stack_depth
+//If: effects
 var caml_stack_depth = 0;
 
 //Provides:caml_stack_check_depth
+//If: effects
 //Requires:caml_stack_depth
 function caml_stack_check_depth() {
     return --caml_stack_depth > 0;
 }
 
 //Provides: caml_callback
+//If: !effects
 //Requires:caml_call_gen
 var caml_callback = caml_call_gen;
+
+//Provides: caml_callback
+//If: effects
+//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
+//Requires: caml_raise_constant
+function caml_callback(f,args) {
+  function uncaught_effect_handler(eff,k,ms) {
+    // Resumes the continuation k by raising exception Unhandled.
+    caml_resume_stack(k[1],ms);
+    var exn = caml_named_value("Effect.Unhandled");
+    if(exn) caml_raise_with_arg(exn, eff);
+    else {
+      exn = [248,caml_string_of_jsbytes("Effect.Unhandled"), caml_fresh_oo_id(0)];
+      caml_raise_constant(exn);
+    }
+  }
+  var saved_stack_depth = caml_stack_depth;
+  var saved_exn_stack = caml_exn_stack;
+  var saved_fiber_stack = caml_fiber_stack;
+  try {
+    caml_exn_stack = 0;
+    caml_fiber_stack =
+      {h:[0, 0, 0, uncaught_effect_handler], r:{k:0, x:0, e:0}};
+    var res = {joo_tramp: f,
+               joo_args: args.concat(function (x){return x;})};
+    do {
+      caml_stack_depth = 40;
+      try {
+        res = caml_call_gen(res.joo_tramp, res.joo_args);
+      } catch (e) {
+        /* Handle exception coming from JavaScript or from the runtime. */
+        if (!caml_exn_stack.length) throw e;
+        var handler = caml_exn_stack[1];
+        caml_exn_stack = caml_exn_stack[2];
+        res = {joo_tramp: handler,
+               joo_args: [caml_wrap_exception(e)]};
+      }
+    } while(res && res.joo_args)
+  } finally {
+    caml_stack_depth = saved_stack_depth;
+    caml_exn_stack = saved_exn_stack;
+    caml_fiber_stack = saved_fiber_stack;
+  }
+  return res;
+}
 
 //Provides: caml_is_js
 function caml_is_js() {
@@ -320,8 +368,17 @@ function caml_js_wrap_meth_callback_unsafe(f) {
 }
 
 //Provides: caml_js_function_arity
+//If: !effects
 function caml_js_function_arity(f) {
   return f.length
+}
+
+//Provides: caml_js_function_arity
+//If: effects
+function caml_js_function_arity(f) {
+  // Functions have an additional continuation parameter. This should
+  // not be visible when calling them from JavaScript
+  return f.length - 1
 }
 
 //Provides: caml_js_equals mutable (const, const)

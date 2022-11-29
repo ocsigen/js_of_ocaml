@@ -216,7 +216,6 @@ var caml_custom_ops =
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_custom_ops
-
 function caml_input_value_from_reader(reader, ofs) {
   var _magic = reader.read32u ()
   var _block_len = reader.read32u ();
@@ -461,7 +460,7 @@ var caml_legacy_custom_code = true
 //Requires: caml_is_ml_bytes, caml_ml_bytes_length, caml_bytes_unsafe_get
 //Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
 //Requires: MlObjectTable, caml_list_to_js_array, caml_legacy_custom_code, caml_custom_ops
-//Requires: caml_invalid_argument,caml_string_of_jsbytes
+//Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -562,6 +561,8 @@ var caml_output_val = function (){
         if (v[0] == 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
+        if (caml_is_continuation_tag(v[0]))
+          caml_invalid_argument("output_value: continuation value");
         if (v.length > 1 && memo(v)) return;
         if (v[0] < 16 && v.length - 1 < 8)
           writer.write (8, 0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1)<<4));

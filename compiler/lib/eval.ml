@@ -233,6 +233,8 @@ let eval_instr info i =
       [ Let (jsoo, Constant (String "js_of_ocaml"))
       ; Let (x, Block (0, [| jsoo |], NotArray))
       ]
+  | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
+      [ i ] (* We need that the arguments to this primitives remain variables *)
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
       let res =

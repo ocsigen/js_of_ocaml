@@ -11,7 +11,6 @@ caml_dynlink_close_lib
 caml_dynlink_get_current_libs
 caml_dynlink_lookup_symbol
 caml_dynlink_open_lib
-caml_get_continuation_callstack
 caml_get_current_environment
 caml_get_section_table
 caml_int64_add_native
@@ -172,8 +171,10 @@ caml_hash_mix_bigstring
 From +domain.js:
 caml_ml_domain_set_name
 
-From +fail.js:
-caml_return_exn_constant
+From +effect.js:
+caml_pop_trap
+caml_push_trap
+jsoo_effect_not_supported
 
 From +fs.js:
 caml_ba_map_file
@@ -249,10 +250,8 @@ caml_mod
 From +jslib.js:
 caml_is_js
 caml_stack_check_depth
-caml_stack_depth
 caml_trampoline
 caml_trampoline_return
-caml_wrap_exception
 
 From +marshal.js:
 BigStringReader

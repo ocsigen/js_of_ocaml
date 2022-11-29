@@ -18,6 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_call_gen (const, shallow)
+//If: !effects
 //Weakdef
 function caml_call_gen(f, args) {
   if(f.fun)
@@ -41,6 +42,42 @@ function caml_call_gen(f, args) {
       for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
       return caml_call_gen(f, nargs)
     }
+  }
+}
+
+//Provides: caml_call_gen (const, shallow)
+//If: effects
+//Weakdef
+function caml_call_gen(f, args) {
+  if (f.fun)
+    return caml_call_gen(f.fun, args);
+  if (typeof f !== "function") return args[args.length-1](f);
+  var n = f.length | 0;
+  if (n === 0) return f.apply(null, args);
+  var argsLen = args.length | 0;
+  var d = n - argsLen | 0;
+  if (d == 0) {
+    return f.apply(null, args);
+  } else if (d < 0) {
+    var rest = args.slice(n - 1);
+    var k = args [argsLen - 1];
+    args = args.slice(0, n);
+    args[n - 1] = function (g) {
+      var args = rest.slice();
+      args[args.length - 1] = k;
+      return caml_call_gen(g, args); };
+    return f.apply(null, args);
+  } else {
+    argsLen--;
+    var k = args [argsLen];
+    return k (function () {
+      var extra_args = (arguments.length == 0)?1:arguments.length;
+      var nargs = new Array(argsLen + extra_args);
+      for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
+      for(var i = 0; i < arguments.length; i++ )
+        nargs[argsLen + i] = arguments[i];
+      return caml_call_gen(f, nargs)
+    });
   }
 }
 

@@ -17,6 +17,7 @@
 
 ///////////// Hashtbl
 
+
 //Provides: caml_hash_univ_param mutable
 //Requires: caml_is_ml_string, caml_is_ml_bytes
 //Requires: caml_ml_bytes_content
@@ -46,7 +47,7 @@ function caml_hash_univ_param (count, limit, obj) {
       count --;
       var content = caml_ml_bytes_content(obj);
       if(typeof content === "string") {
-	for (var b = content, l = b.length, i = 0; i < l; i++)
+        for (var b = content, l = b.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
       } else { /* ARRAY */
         for (var a = content, l = a.length, i = 0; i < l; i++)
@@ -187,6 +188,7 @@ function caml_hash_mix_string(h, v) {
 //Requires: caml_hash_mix_int, caml_hash_mix_final
 //Requires: caml_hash_mix_float, caml_hash_mix_string, caml_hash_mix_bytes, caml_custom_ops
 //Requires: caml_hash_mix_jsbytes
+//Requires: caml_is_continuation_tag
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
   sz = limit;
@@ -215,6 +217,11 @@ function caml_hash (count, limit, seed, obj) {
         queue[--rd] = v[1];
         break;
       default:
+        if(caml_is_continuation_tag(v[0])) {
+          /* All continuations hash to the same value,
+             since we have no idea how to distinguish them. */
+          break;
+        }
         var tag = ((v.length - 1) << 10) | v[0];
         h = caml_hash_mix_int(h, tag);
         for (i = 1, len = v.length; i < len; i++) {
