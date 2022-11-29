@@ -369,10 +369,10 @@ let ops =
      ; RERAISE, KStop 0, "RERAISE"
      ; RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE"
      ; GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR"
-     ; PERFORM, if_v500 KNullary, "PERFORM"
-     ; RESUME, if_v500 KNullary, "RESUME"
-     ; RESUMETERM, if_v500 KUnary, "RESUMETERM"
-     ; REPERFORMTERM, if_v500 KUnary, "REPERFORMTERM"
+     ; PERFORM, if_v500 KNullaryCall, "PERFORM"
+     ; RESUME, if_v500 KNullaryCall, "RESUME"
+     ; RESUMETERM, if_v500 (KStop 1), "RESUMETERM"
+     ; REPERFORMTERM, if_v500 (KStop 1), "REPERFORMTERM"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in

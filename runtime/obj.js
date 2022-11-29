@@ -209,3 +209,16 @@ function caml_lazy_reset_to_lazy(o) {
 function caml_lazy_read_result(o) {
   return (caml_obj_tag(o) == 250)?o[1]:o;
 }
+
+
+//Provides: caml_is_continuation_tag
+//Version: < 5
+function caml_is_continuation_tag(t) {
+  return 0;
+}
+
+//Provides: caml_is_continuation_tag
+//Version: >= 5
+function caml_is_continuation_tag(t) {
+  return (t == 245) ? 1 : 0;
+}

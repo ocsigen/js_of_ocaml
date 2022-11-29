@@ -334,7 +334,8 @@ end = struct
   let rec scan debug blocks code pc len =
     if pc < len
     then
-      match (get_instr_exn code pc).kind with
+      let instr = get_instr_exn code pc in
+      match instr.kind with
       | KNullary -> scan debug blocks code (pc + 1) len
       | KUnary -> scan debug blocks code (pc + 2) len
       | KBinary -> scan debug blocks code (pc + 3) len
@@ -342,10 +343,31 @@ end = struct
           let blocks =
             if Debug.mem debug (pc + 1) then Addr.Set.add pc blocks else blocks
           in
+          let blocks =
+            (* The code transformation used to deal with effect
+               handlers expects that function applications and effect
+               primitives are at the very end of a block. *)
+            if Config.Flag.effects ()
+               &&
+               match instr.code with
+               | APPLY1 | APPLY2 | APPLY3 | PERFORM | RESUME -> true
+               | _ -> false
+            then Addr.Set.add (pc + 1) blocks
+            else blocks
+          in
           scan debug blocks code (pc + 1) len
       | KUnaryCall ->
           let blocks =
             if Debug.mem debug (pc + 2) then Addr.Set.add pc blocks else blocks
+          in
+          let blocks =
+            if Config.Flag.effects ()
+               &&
+               match instr.code with
+               | APPLY -> true
+               | _ -> false
+            then Addr.Set.add (pc + 2) blocks
+            else blocks
           in
           scan debug blocks code (pc + 2) len
       | KBinaryCall ->
@@ -2120,63 +2142,65 @@ and compile infos pc state instrs =
           :: instrs)
     | STOP -> instrs, Stop, state
     | RESUME ->
-        let _stack = State.accu state in
-        let _func = State.peek 0 state in
-        let _arg = State.peek 1 state in
-        let state = State.pop 2 state in
-        let ret, state = State.fresh_var state in
+        let stack = State.accu state in
+        let func = State.peek 0 state in
+        let arg = State.peek 1 state in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = resume(%a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            stack
+            Var.print
+            func
+            Var.print
+            arg;
         compile
           infos
           (pc + 1)
-          state
-          (Let
-             ( ret
-             , Prim
-                 (Extern "caml_failwith", [ Pc (NativeString "RESUME not implemented") ])
-             )
-          :: instrs)
-    | PERFORM ->
-        let _eff = State.accu state in
-        let ret, state = State.fresh_var state in
-        compile
-          infos
-          (pc + 1)
-          state
-          (Let
-             ( ret
-             , Prim
-                 (Extern "caml_failwith", [ Pc (NativeString "PERFORM not implemented") ])
-             )
-          :: instrs)
+          (State.pop 2 state)
+          (Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])) :: instrs)
     | RESUMETERM ->
-        let n = getu code (pc + 1) in
-        let _stack = State.accu state in
-        let _func = State.peek 0 state in
-        let _arg = State.peek 1 state in
-        let state = State.pop n state in
-        let ret, state = State.fresh_var state in
-        ( Let
-            ( ret
-            , Prim
-                ( Extern "caml_failwith"
-                , [ Pc (NativeString "RESUMETERM not implemented") ] ) )
-          :: instrs
-        , Return ret
+        let stack = State.accu state in
+        let func = State.peek 0 state in
+        let arg = State.peek 1 state in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then
+          Format.printf
+            "return resume(%a, %a, %a)@."
+            Var.print
+            stack
+            Var.print
+            func
+            Var.print
+            arg;
+        ( Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])) :: instrs
+        , Return x
         , state )
+    | PERFORM ->
+        let eff = State.accu state in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then Format.printf "%a = perform(%a)@." Var.print x Var.print eff;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let (x, Prim (Extern "%perform", [ Pv eff ])) :: instrs)
     | REPERFORMTERM ->
-        let n = getu code (pc + 1) in
-        let _eff = State.accu state in
-        let _cont = State.peek 0 state in
-        let _cont_tail = State.peek 1 state in
-        let state = State.pop n state in
-        let ret, state = State.fresh_var state in
-        ( Let
-            ( ret
-            , Prim
-                ( Extern "caml_failwith"
-                , [ Pc (NativeString "REPERFORMTERM not implemented") ] ) )
-          :: instrs
-        , Return ret
+        let eff = State.accu state in
+        let stack = State.peek 0 state in
+        (* We don't need [State.peek 1 state] *)
+        let state = State.pop 2 state in
+        let x, state = State.fresh_var state in
+        if debug_parser ()
+        then Format.printf "return reperform(%a, %a)@." Var.print eff Var.print stack;
+        ( Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack ])) :: instrs
+        , Return x
         , state )
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 

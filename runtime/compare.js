@@ -62,6 +62,7 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
 //Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
 //Requires: caml_compare_val_number_custom
 //Requires: caml_jsbytes_of_string
+//Requires: caml_is_continuation_tag
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
@@ -215,6 +216,10 @@ function caml_compare_val (a, b, total) {
       case 246: // Lazy_tag
       case 254: // Double_array
       default: // Block with other tag
+        if(caml_is_continuation_tag(tag_a)) {
+          caml_invalid_argument("compare: continuation value");
+          break;
+        }
         if (a.length != b.length) return (a.length < b.length)?-1:1;
         if (a.length > 1) stack.push(a, b, 1);
         break;
