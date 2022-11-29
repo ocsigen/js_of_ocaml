@@ -35,9 +35,9 @@ let () =
     res (js : string)
   in
   let toplevel_eval (x : string) : unit -> J.t =
-    let f : J.t -> J.t = J.eval_string x in
+    let f : J.t = J.eval_string x in
     fun () ->
-      let res = f global in
+      let res = J.fun_call f [| global |] in
       Format.(pp_print_flush std_formatter ());
       Format.(pp_print_flush err_formatter ());
       flush stdout;

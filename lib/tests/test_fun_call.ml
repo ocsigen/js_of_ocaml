@@ -19,7 +19,7 @@
 open Js_of_ocaml
 
 let s x =
-  let to_string : _ -> _ =
+  let to_string =
     Js.Unsafe.eval_string
       {|
 (function(x){
@@ -35,11 +35,11 @@ let s x =
 })
 |}
   in
-  Js.to_string (to_string x)
+  Js.to_string (Js.Unsafe.fun_call to_string [| Js.Unsafe.inject x |])
 
 let call_and_log f str =
-  let call : _ -> _ = Js.Unsafe.eval_string str in
-  let r = call f in
+  let call = Js.Unsafe.eval_string str in
+  let r = Js.Unsafe.fun_call call [| Js.Unsafe.inject f |] in
   Printf.printf "Result: %s" (s r)
 
 let cb1 a = Printf.printf "got %s, done\n" (s a)

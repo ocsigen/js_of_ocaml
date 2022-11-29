@@ -20,7 +20,7 @@
 open Js_of_ocaml
 
 let s x =
-  let to_string : _ -> _ =
+  let to_string =
     Js.Unsafe.eval_string
       {|
 (function(x){
@@ -38,7 +38,7 @@ let s x =
 })
 |}
   in
-  Js.to_string (to_string x)
+  Js.to_string (Js.Unsafe.fun_call to_string [| Js.Unsafe.inject x |])
 
 let%expect_test _ =
   let o = object%js end in
