@@ -90,6 +90,8 @@
    %{bin:js_of_ocaml}
    compile
    --pretty
+   --enable
+   effects
    --Werror
    --target-env
    browser

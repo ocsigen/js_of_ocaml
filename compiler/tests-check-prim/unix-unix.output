@@ -172,6 +172,7 @@ From +domain.js:
 caml_ml_domain_set_name
 
 From +effect.js:
+caml_perform_effect
 caml_pop_trap
 caml_push_trap
 jsoo_effect_not_supported
