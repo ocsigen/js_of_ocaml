@@ -29,9 +29,8 @@ class type json =
 
     method stringify : 'a. 'a -> js_string t meth
 
-    (* Beware that this is only works when the function argument
-       expects exactly two arguments (no curryfication is performed). *)
-    method stringify_ : 'a 'b 'c 'd. 'a -> (js_string t -> 'c -> 'd) -> js_string t meth
+    method stringify_ :
+      'a 'b 'c 'd. 'a -> ('b, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
   end
 
 let json : json Js.t = Unsafe.global##._JSON
@@ -74,4 +73,4 @@ let output_reviver _key (value : Unsafe.any) : Obj.t =
     Obj.repr (array [| 255; value##.lo; value##.mi; value##.hi |])
   else Obj.repr value
 
-let output obj = json##stringify_ obj output_reviver
+let output obj = json##stringify_ obj (Js.wrap_callback output_reviver)
