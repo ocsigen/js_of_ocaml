@@ -6,6 +6,7 @@
 * Toplevel: recover more names when generating code during toplevel evaluation
 
 ## Bug fixes
+* Runime: Gc.finalise_last should not be eliminated
 
 # 4.1.0 (2022-11-15) - Lille
 ## Features/Changes
