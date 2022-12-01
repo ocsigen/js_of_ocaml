@@ -16,6 +16,7 @@ Runtime: fix caml_read_file_content
 * Compiler: add support for effect handlers (--enable=effects)
 * Compiler: small refactoring in code generation
 * Compiler: check build info compatibility when linking js file.
+* Compiler: rewrite control flow compilation logic
 * Misc: fix and update benchmarks
 * Misc: upgrade CI
 * Toplevel: recover more names when generating code during toplevel evaluation

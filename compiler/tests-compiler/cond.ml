@@ -49,8 +49,7 @@ let%expect_test "conditional" =
       else
        if(b)
         {var switch$1=0;
-         if(! c && ! d)
-          if(e || f)switch$1 = 1;else{var x=2;switch$0 = 1;switch$1 = 1}}
+         if(c || d)switch$1 = 1;else if(! e && ! f){var x=2;switch$0 = 1}}
        else
         if(c)
          {if(! d && ! e && ! f){var x=3;switch$0 = 1}}

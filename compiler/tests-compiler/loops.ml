@@ -252,10 +252,9 @@ let f t x =
               if(val && ! val[2])
                {var y=val[1],_a_=y === (x + 1 | 0)?1:0;
                 if(! _a_){var x=y;continue}
-                var _b_=_a_}
-              else
-               switch$1 = 1;
-              if(switch$1)var _b_=0}
+                var _b_=_a_;
+                switch$1 = 1}
+              if(! switch$1)var _b_=0}
             return _b_?1:2}}
         return - 2}
       return other(t,x)}

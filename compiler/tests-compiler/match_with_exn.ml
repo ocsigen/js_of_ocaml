@@ -90,8 +90,11 @@ let fun2 () =
       catch(_b_)
        {_b_ = caml_wrap_exception(_b_);
         var switch$1=0;
-        if(_b_[1] === A){var _a_=_b_[2];if(2 === _a_){var i=_a_;switch$1 = 1}}
-        if(! switch$1)throw _b_}
+        if(_b_[1] === A)
+         {var _a_=_b_[2];if(2 === _a_)var i=_a_;else switch$1 = 1}
+        else
+         switch$1 = 1;
+        if(switch$1)throw _b_}
       if(switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
       return i}
     //end |}]
