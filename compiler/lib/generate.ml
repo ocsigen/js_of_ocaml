@@ -475,6 +475,55 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 
 (****)
 
+module Interm : sig
+  type elt =
+    { pc : Addr.t
+    ; var : Var.t
+    ; value : int
+    ; default : bool
+    }
+
+  type t
+
+  val empty : t
+
+  val mem : Addr.t -> t -> bool
+
+  val find : Addr.t -> t -> elt
+
+  val add : t -> idx:Addr.t -> var:Var.t -> (Addr.t * int * bool) list -> t
+
+  val resolve_nodes : t -> Addr.Set.t -> Addr.Set.t
+end = struct
+  type elt =
+    { pc : Addr.t
+    ; var : Var.t
+    ; value : int
+    ; default : bool
+    }
+
+  type t = elt Addr.Map.t
+
+  let empty = Addr.Map.empty
+
+  let mem pc t = Addr.Map.mem pc t
+
+  let find pc t = Addr.Map.find pc t
+
+  let add t ~idx ~var members =
+    List.fold_left members ~init:t ~f:(fun acc (pc, value, default) ->
+        Addr.Map.add pc { pc = idx; var; value; default } acc)
+
+  let rec resolve_node interm pc =
+    try
+      let int = find pc interm in
+      resolve_node interm int.pc
+    with Not_found -> pc
+
+  let resolve_nodes interm s =
+    Addr.Set.fold (fun pc s' -> Addr.Set.add (resolve_node interm pc) s') s Addr.Set.empty
+end
+
 type state =
   { succs : (Addr.t, int list) Hashtbl.t
   ; backs : (Addr.t, Addr.Set.t) Hashtbl.t
@@ -754,12 +803,6 @@ let dominance_frontier st pc =
         (string_of_set n));
   dominance_frontier_time := !dominance_frontier_time +. Timer.get start;
   frontier
-
-let rec resolve_node interm pc =
-  try resolve_node interm (fst (Addr.Map.find pc interm)) with Not_found -> pc
-
-let resolve_nodes interm s =
-  Addr.Set.fold (fun pc s' -> Addr.Set.add (resolve_node interm pc) s') s Addr.Set.empty
 
 (****)
 
@@ -1431,7 +1474,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       ~init:Addr.Set.empty
   in
   (* TODO: Check that we are inside the [frontier] *)
-  let new_frontier = resolve_nodes interm grey in
+  let new_frontier = Interm.resolve_nodes interm grey in
   let block = Addr.Map.find pc st.blocks in
   let seq, queue = translate_instrs st.ctx queue (source_location st.ctx pc) block.body in
   match block.branch with
@@ -1455,7 +1498,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       let handler_frontier = Addr.Set.filter limit pc3s in
       (* TODO: Check that we are inside the [frontier/new_frontier] *)
       let handler_frontier =
-        resolve_nodes interm (Addr.Set.union exn_frontier handler_frontier)
+        Interm.resolve_nodes interm (Addr.Set.union exn_frontier handler_frontier)
       in
       Addr.Set.iter (incr_preds st) handler_frontier;
       let prefix, handler_frontier_cont, handler_interm =
@@ -1464,7 +1507,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       assert (Addr.Set.cardinal handler_frontier_cont <= 1);
       let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
       if debug () then Format.eprintf "@[<2>try {@,";
-      if Addr.Map.mem pc1 handler_interm then decr_preds st pc1;
+      if Interm.mem pc1 handler_interm then decr_preds st pc1;
       let never_body, body =
         compile_branch
           st
@@ -1482,7 +1525,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
         let m = Subst.build_mapping args2 block2.params in
         try Var.Map.find x m with Not_found -> x
       in
-      if Addr.Map.mem pc2 handler_interm then decr_preds st pc2;
+      if Interm.mem pc2 handler_interm then decr_preds st pc2;
       let never_handler, handler =
         compile_branch
           st
@@ -1562,7 +1605,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       let prefix, frontier_cont, new_interm = colapse_frontier st new_frontier interm in
       assert (Addr.Set.cardinal frontier_cont <= 1);
       List.iter succs ~f:(fun (pc, _) ->
-          if Addr.Map.mem pc new_interm then decr_preds st pc);
+          if Interm.mem pc new_interm then decr_preds st pc);
       (* Beware evaluation order! *)
       let never_cond, cond =
         compile_conditional
@@ -1620,11 +1663,13 @@ and colapse_frontier st new_frontier interm =
     Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
     Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
     Hashtbl.add st.backs idx Addr.Set.empty;
+    let interm =
+      Interm.add interm ~idx ~var:x (List.map pc_i ~f:(fun (pc, i) -> pc, i, default = i))
+    in
     (* The [dominance_frontier_cache] is invalidated by [incr_preds] and [protect_preds] *)
     ( [ J.Variable_statement [ J.V x, Some (int default, J.N) ], J.N ]
     , Addr.Set.singleton idx
-    , List.fold_right pc_i ~init:interm ~f:(fun (pc, i) interm ->
-          Addr.Map.add pc (idx, (x, i, default = i)) interm) ))
+    , interm ))
   else [], new_frontier, interm
 
 and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
@@ -1828,7 +1873,7 @@ and compile_branch st queue ((pc, _) as cont) loop_stack backs frontier interm :
           then Format.eprintf "continue;@ "
           else Format.eprintf "continue (%d);@ " pc;
         true, flush_all queue [ J.Continue_statement label, J.N ])
-      else if Addr.Set.mem pc frontier || Addr.Map.mem pc interm
+      else if Addr.Set.mem pc frontier || Interm.mem pc interm
       then (
         if debug () then Format.eprintf "(br %d)@ " pc;
         false, flush_all queue (compile_branch_selection pc interm))
@@ -1836,7 +1881,7 @@ and compile_branch st queue ((pc, _) as cont) loop_stack backs frontier interm :
 
 and compile_branch_selection pc interm =
   try
-    let pc, (x, i, default) = Addr.Map.find pc interm in
+    let { Interm.pc; var = x; value = i; default } = Interm.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
     let branch = compile_branch_selection pc interm in
     if default
@@ -1852,7 +1897,7 @@ and compile_closure ctx (pc, args) =
   let backs = Addr.Set.empty in
   let loop_stack = [] in
   let _never, res =
-    compile_branch st [] (pc, args) loop_stack backs Addr.Set.empty Addr.Map.empty
+    compile_branch st [] (pc, args) loop_stack backs Addr.Set.empty Interm.empty
   in
   if Addr.Set.cardinal !(st.visited_blocks) <> Addr.Set.cardinal current_blocks
   then (
