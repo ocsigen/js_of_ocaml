@@ -37,11 +37,7 @@ open! Stdlib
 
 let debug = Debug.find "gen"
 
-let debug_dominance_frontier = Debug.find "gen-frontier"
-
 let times = Debug.find "times"
-
-let dominance_frontier_time = ref 0.
 
 open Code
 module J = Javascript
@@ -773,51 +769,34 @@ let build_graph ctx pc =
   ; blocks
   }
 
-let dominance_frontier_ref_implem st pc =
-  let rec loop st pc visited grey =
-    let n = get_preds st pc in
-    let v = try Addr.Map.find pc visited with Not_found -> 0 in
-    if v < n
-    then
-      let v = v + 1 in
-      let visited = Addr.Map.add pc v visited in
-      if v = n
-      then
-        let grey = Addr.Set.remove pc grey in
-        let s = Hashtbl.find st.succs pc in
-        List.fold_right s ~init:(visited, grey) ~f:(fun pc' (visited, grey) ->
-            loop st pc' visited grey)
-      else visited, if v = 1 then Addr.Set.add pc grey else grey
-    else visited, grey
-  in
-  let _visited, frontier = loop st pc Addr.Map.empty Addr.Set.empty in
-  frontier
+let rec frontier_of_pc st pc =
+  match Hashtbl.find st.dominance_frontier_cache pc with
+  | d -> d
+  | exception Not_found ->
+      let visited = frontier_of_succs st (Hashtbl.find st.succs pc) in
+      Hashtbl.replace st.dominance_frontier_cache pc visited;
+      visited
 
-let dominance_frontier_opt st pc =
-  let rec frontier st pc =
-    match Hashtbl.find st.dominance_frontier_cache pc with
-    | d -> d
-    | exception Not_found ->
-        let visited = ref Addr.Map.empty in
-        let q = Queue.create () in
-        let succs = Hashtbl.find st.succs pc in
-        List.iter ~f:(fun x -> Queue.add (Addr.Map.singleton x 1) q) succs;
-        while not (Queue.is_empty q) do
-          visited :=
-            Addr.Map.merge
-              (fun k a b ->
-                let sum = Option.value ~default:0 a + Option.value ~default:0 b in
-                if get_preds st k = sum
-                then (
-                  Queue.add (frontier st k) q;
-                  None)
-                else Some sum)
-              !visited
-              (Queue.take q)
-        done;
-        Hashtbl.replace st.dominance_frontier_cache pc !visited;
+and frontier_of_succs st succs =
+  let visited = ref Addr.Map.empty in
+  let q = Queue.create () in
+  List.iter ~f:(fun x -> Queue.add (Addr.Map.singleton x 1) q) succs;
+  while not (Queue.is_empty q) do
+    visited :=
+      Addr.Map.merge
+        (fun k a b ->
+          let sum = Option.value ~default:0 a + Option.value ~default:0 b in
+          if get_preds st k = sum
+          then (
+            Queue.add (frontier_of_pc st k) q;
+            None)
+          else Some sum)
         !visited
-  in
+        (Queue.take q)
+  done;
+  !visited
+
+let dominance_frontier st pc =
   if get_preds st pc > 1
   then Addr.Set.singleton pc
   else (
@@ -825,37 +804,8 @@ let dominance_frontier_opt st pc =
     then (
       st.dominance_frontier_invalid <- false;
       Hashtbl.clear st.dominance_frontier_cache);
-    let grey = frontier st pc in
+    let grey = frontier_of_pc st pc in
     Addr.Map.fold (fun k _ acc -> Addr.Set.add k acc) grey Addr.Set.empty)
-
-type dominance_frontier_mode =
-  | New
-  | Old
-
-let dominance_frontier_mode = New
-
-let dominance_frontier st pc =
-  let start = Timer.make () in
-  let frontier =
-    match dominance_frontier_mode with
-    | Old -> dominance_frontier_ref_implem st pc
-    | New -> dominance_frontier_opt st pc
-  in
-  (if debug_dominance_frontier ()
-  then
-    let o, n =
-      match dominance_frontier_mode with
-      | Old -> frontier, dominance_frontier_opt st pc
-      | New -> dominance_frontier_ref_implem st pc, frontier
-    in
-    if not (Addr.Set.equal o n)
-    then
-      Format.eprintf
-        "Dominance frontier mismatch: legacy = %s vs %s = new@,"
-        (string_of_set o)
-        (string_of_set n));
-  dominance_frontier_time := !dominance_frontier_time +. Timer.get start;
-  frontier
 
 (****)
 
@@ -2064,13 +2014,8 @@ let f (p : Code.program) ~exported_runtime ~live_vars ~should_export debug =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
   let ctx = Ctx.initial ~exported_runtime ~should_export p.blocks live_vars share debug in
-  dominance_frontier_time := 0.;
   let p = compile_program ctx p.start in
-  if times ()
-  then (
-    Format.eprintf "  code gen.: %a@." Timer.print t';
-    Format.eprintf "     dominance_frontier: %.2f@." !dominance_frontier_time);
-  dominance_frontier_time := 0.;
+  if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
 
 let init () =
