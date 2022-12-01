@@ -480,11 +480,10 @@ type state =
   ; backs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; preds : (Addr.t, int) Hashtbl.t
   ; loops : Addr.Set.t
-  ; mutable loop_stack : (Addr.t * (J.Label.t * bool ref)) list
-  ; mutable visited_blocks : Addr.Set.t
+  ; visited_blocks : Addr.Set.t ref
   ; mutable dominance_frontier_invalid : bool
   ; dominance_frontier_cache : (Addr.t, int Addr.Map.t) Hashtbl.t
-  ; mutable interm_idx : int
+  ; last_interm_idx : int ref
   ; ctx : Ctx.t
   ; mutable blocks : Code.block Addr.Map.t
   }
@@ -660,15 +659,14 @@ let build_graph ctx pc =
           | n -> Hashtbl.add preds pc' (succ n)))
   in
   loop pc Addr.Set.empty;
-  { visited_blocks = !visited_blocks
+  { visited_blocks
   ; dominance_frontier_cache
   ; dominance_frontier_invalid = false
   ; loops = !loops
-  ; loop_stack = []
   ; succs
   ; backs
   ; preds
-  ; interm_idx = -2
+  ; last_interm_idx = ref (-1)
   ; ctx
   ; blocks
   }
@@ -1357,24 +1355,27 @@ and translate_instrs ctx expr_queue loc instr =
       let instrs, expr_queue = translate_instrs ctx expr_queue loc rem in
       st @ instrs, expr_queue
 
-and compile_block st queue (pc : Addr.t) frontier interm =
+and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
   if (not (List.is_empty queue))
      && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
   then
-    let never, code = compile_block st [] pc frontier interm in
+    let never, code = compile_block st [] pc loop_stack frontier interm in
     never, flush_all queue code
   else
     match Addr.Set.mem pc st.loops with
-    | false -> compile_block_no_loop st queue pc frontier interm
+    | false -> compile_block_no_loop st queue pc loop_stack frontier interm
     | true -> (
         if debug () then Format.eprintf "@[<2>for(;;){@,";
         let lab =
-          match st.loop_stack with
+          match loop_stack with
           | (_, (l, _)) :: _ -> J.Label.succ l
           | [] -> J.Label.zero
         in
-        st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack;
-        let never_body, body = compile_block_no_loop st queue pc frontier interm in
+        let lab_used = ref false in
+        let loop_stack = (pc, (lab, lab_used)) :: loop_stack in
+        let never_body, body =
+          compile_block_no_loop st queue pc loop_stack frontier interm
+        in
         let body =
           let rec remove_tailing_continue acc = function
             | [] -> body
@@ -1398,25 +1399,19 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                     body @ [ J.Break_statement None, J.N ])) )
           , source_location st.ctx pc )
         in
-        let label =
-          match st.loop_stack with
-          | (_, (l, used)) :: r ->
-              st.loop_stack <- r;
-              if !used then Some l else None
-          | [] -> assert false
-        in
+        let label = if !lab_used then Some lab else None in
         match label with
         | None -> never_body, [ for_loop ]
         | Some label -> never_body, [ J.Labelled_statement (label, for_loop), J.N ])
 
-and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
+and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
   if pc >= 0
   then (
-    if Addr.Set.mem pc st.visited_blocks
+    if Addr.Set.mem pc !(st.visited_blocks)
     then (
       Format.eprintf "Trying to compile a block twice !!!! %d@." pc;
       assert false);
-    st.visited_blocks <- Addr.Set.add pc st.visited_blocks);
+    st.visited_blocks := Addr.Set.add pc !(st.visited_blocks));
   if debug () then Format.eprintf "block %d;@ @?" pc;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
@@ -1471,7 +1466,14 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
       if debug () then Format.eprintf "@[<2>try {@,";
       if Addr.Map.mem pc1 handler_interm then decr_preds st pc1;
       let never_body, body =
-        compile_branch st [] (pc1, args1) backs try_catch_frontier handler_interm
+        compile_branch
+          st
+          []
+          (pc1, args1)
+          loop_stack
+          backs
+          try_catch_frontier
+          handler_interm
       in
       let body = prefix @ body in
       if debug () then Format.eprintf "} catch {@,";
@@ -1482,7 +1484,14 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
       in
       if Addr.Map.mem pc2 handler_interm then decr_preds st pc2;
       let never_handler, handler =
-        compile_branch st [] (pc2, args2) backs try_catch_frontier handler_interm
+        compile_branch
+          st
+          []
+          (pc2, args2)
+          loop_stack
+          backs
+          try_catch_frontier
+          handler_interm
       in
       if debug () then Format.eprintf "}@]@ ";
       Addr.Set.iter (decr_preds st) handler_frontier;
@@ -1517,7 +1526,7 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
         | pc ->
             if Addr.Set.mem pc frontier
             then false, []
-            else compile_block st [] pc frontier interm
+            else compile_block st [] pc loop_stack frontier interm
       in
       let wrap_exn x =
         ecall
@@ -1556,7 +1565,15 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
           if Addr.Map.mem pc new_interm then decr_preds st pc);
       (* Beware evaluation order! *)
       let never_cond, cond =
-        compile_conditional st queue pc block.branch backs frontier_cont new_interm
+        compile_conditional
+          st
+          queue
+          pc
+          block.branch
+          loop_stack
+          backs
+          frontier_cont
+          new_interm
       in
       let never_after, after =
         match Addr.Set.choose frontier_cont with
@@ -1564,19 +1581,19 @@ and compile_block_no_loop st queue (pc : Addr.t) frontier interm =
         | pc ->
             if Addr.Set.mem pc frontier
             then false, []
-            else compile_block st [] pc frontier interm
+            else compile_block st [] pc loop_stack frontier interm
       in
       never_cond || never_after, seq @ prefix @ cond @ after
 
 and colapse_frontier st new_frontier interm =
   if Addr.Set.cardinal new_frontier > 1
   then (
+    let idx =
+      decr st.last_interm_idx;
+      !(st.last_interm_idx)
+    in
     if debug ()
-    then
-      Format.eprintf
-        "colapse frontier into %d: %s@."
-        st.interm_idx
-        (string_of_set new_frontier);
+    then Format.eprintf "colapse frontier into %d: %s@." idx (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
     let a =
       Addr.Set.elements new_frontier
@@ -1585,8 +1602,6 @@ and colapse_frontier st new_frontier interm =
       |> List.map ~f:fst
     in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
-    let idx = st.interm_idx in
-    st.interm_idx <- idx - 1;
     let switch =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
@@ -1612,12 +1627,12 @@ and colapse_frontier st new_frontier interm =
           Addr.Map.add pc (idx, (x, i, default = i)) interm) ))
   else [], new_frontier, interm
 
-and compile_decision_tree st backs frontier interm loc cx dtree =
+and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop cx : _ -> bool * _ = function
     | DTree.Empty -> assert false
-    | DTree.Branch cont -> compile_branch st [] cont backs frontier interm
+    | DTree.Branch cont -> compile_branch st [] cont loop_stack backs frontier interm
     | DTree.If (cond, cont1, cont2) ->
         let never1, iftrue = loop cx cont1 in
         let never2, iffalse = loop cx cont2 in
@@ -1670,7 +1685,7 @@ and compile_decision_tree st backs frontier interm loc cx dtree =
   let never, code = loop cx dtree in
   never, binds @ code
 
-and compile_conditional st queue pc last backs frontier interm =
+and compile_conditional st queue pc last loop_stack backs frontier interm =
   (if debug ()
   then
     match last with
@@ -1694,15 +1709,23 @@ and compile_conditional st queue pc last backs frontier interm =
           if st.ctx.Ctx.should_export then Some (s_var Constant.exports) else None
         in
         true, flush_all queue [ J.Return_statement e_opt, loc ]
-    | Branch cont -> compile_branch st queue cont backs frontier interm
+    | Branch cont -> compile_branch st queue cont loop_stack backs frontier interm
     | Pushtrap _ -> assert false
     | Poptrap cont ->
-        let never, code = compile_branch st [] cont backs frontier interm in
+        let never, code = compile_branch st [] cont loop_stack backs frontier interm in
         never, flush_all queue code
     | Cond (x, c1, c2) ->
         let (_px, cx), queue = access_queue queue x in
         let never, b =
-          compile_decision_tree st backs frontier interm loc cx (DTree.build_if c1 c2)
+          compile_decision_tree
+            st
+            loop_stack
+            backs
+            frontier
+            interm
+            loc
+            cx
+            (DTree.build_if c1 c2)
         in
         never, flush_all queue b
     | Switch (x, [||], a2) ->
@@ -1710,6 +1733,7 @@ and compile_conditional st queue pc last backs frontier interm =
         let never, code =
           compile_decision_tree
             st
+            loop_stack
             backs
             frontier
             interm
@@ -1721,7 +1745,15 @@ and compile_conditional st queue pc last backs frontier interm =
     | Switch (x, a1, [||]) ->
         let (_px, cx), queue = access_queue queue x in
         let never, code =
-          compile_decision_tree st backs frontier interm loc cx (DTree.build_switch a1)
+          compile_decision_tree
+            st
+            loop_stack
+            backs
+            frontier
+            interm
+            loc
+            cx
+            (DTree.build_switch a1)
         in
         never, flush_all queue code
     | Switch (x, a1, a2) ->
@@ -1730,6 +1762,7 @@ and compile_conditional st queue pc last backs frontier interm =
         let never1, b1 =
           compile_decision_tree
             st
+            loop_stack
             backs
             frontier
             interm
@@ -1740,6 +1773,7 @@ and compile_conditional st queue pc last backs frontier interm =
         let never2, b2 =
           compile_decision_tree
             st
+            loop_stack
             backs
             frontier
             interm
@@ -1772,12 +1806,13 @@ and compile_argument_passing ctx queue (pc, args) _backs continuation =
     let block = Addr.Map.find pc ctx.Ctx.blocks in
     parallel_renaming block.params args continuation queue
 
-and compile_branch st queue ((pc, _) as cont) backs frontier interm : bool * _ =
+and compile_branch st queue ((pc, _) as cont) loop_stack backs frontier interm : bool * _
+    =
   compile_argument_passing st.ctx queue cont backs (fun queue ->
       if Addr.Set.mem pc backs
       then (
         let label =
-          match st.loop_stack with
+          match loop_stack with
           | [] -> assert false
           | (pc', _) :: rem ->
               if pc = pc'
@@ -1797,7 +1832,7 @@ and compile_branch st queue ((pc, _) as cont) backs frontier interm : bool * _ =
       then (
         if debug () then Format.eprintf "(br %d)@ " pc;
         false, flush_all queue (compile_branch_selection pc interm))
-      else compile_block st queue pc frontier interm)
+      else compile_block st queue pc loop_stack frontier interm)
 
 and compile_branch_selection pc interm =
   try
@@ -1811,15 +1846,17 @@ and compile_branch_selection pc interm =
 
 and compile_closure ctx (pc, args) =
   let st = build_graph ctx pc in
-  let current_blocks = st.visited_blocks in
-  st.visited_blocks <- Addr.Set.empty;
+  let current_blocks = !(st.visited_blocks) in
+  st.visited_blocks := Addr.Set.empty;
   if debug () then Format.eprintf "@[<hov 2>closure{@,";
+  let backs = Addr.Set.empty in
+  let loop_stack = [] in
   let _never, res =
-    compile_branch st [] (pc, args) Addr.Set.empty Addr.Set.empty Addr.Map.empty
+    compile_branch st [] (pc, args) loop_stack backs Addr.Set.empty Addr.Map.empty
   in
-  if Addr.Set.cardinal st.visited_blocks <> Addr.Set.cardinal current_blocks
+  if Addr.Set.cardinal !(st.visited_blocks) <> Addr.Set.cardinal current_blocks
   then (
-    let missing = Addr.Set.diff current_blocks st.visited_blocks in
+    let missing = Addr.Set.diff current_blocks !(st.visited_blocks) in
     Format.eprintf "Some blocks not compiled %s!@." (string_of_set missing);
     assert false);
   if debug () then Format.eprintf "}@]@ ";
