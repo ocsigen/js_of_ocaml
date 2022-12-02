@@ -758,6 +758,7 @@ let build_graph ctx pc =
           | n -> Hashtbl.replace preds pc' (succ n)))
   in
   loop pc Addr.Set.empty;
+  Hashtbl.add preds pc 1;
   { visited_blocks
   ; dominance_frontier_cache
   ; seen
@@ -1511,6 +1512,20 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
   then (
     Format.eprintf "Trying to compile a block twice !!!! %d@." pc;
     assert false);
+  let seen = get_seen st pc and pred = get_preds st pc in
+  if seen > pred
+  then (
+    Format.eprintf "This block has too many incoming edges. !!!! %d@." pc;
+    assert false);
+  if seen < pred
+  then (
+    Format.eprintf
+      "Trying to compile %d, but some (%d) of its predecessors have not been compiled \
+       yet. !!!!."
+      pc
+      (pred - seen);
+    assert false);
+  assert (seen = pred);
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   if debug () then Format.eprintf "block %d; frontier: %s;@," pc (string_of_set frontier);
   let block = Addr.Map.find pc st.blocks in
@@ -1555,6 +1570,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       in
       let inner_fronter = Addr.Set.union frontier handler_frontier_cont in
       if debug () then Format.eprintf "@[<hv 2>try {@;";
+      incr_seen st pc1;
       let never_body, body =
         compile_branch st [] (pc1, args1) loop_stack backs inner_fronter handler_interm
       in
@@ -1564,6 +1580,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
         let m = Subst.build_mapping args2 block2.params in
         try Var.Map.find x m with Not_found -> x
       in
+      incr_seen st pc2;
       let never_handler, handler =
         compile_branch st [] (pc2, args2) loop_stack backs inner_fronter handler_interm
       in
@@ -1644,8 +1661,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       let prefix, frontier_cont, new_interm, merge_node =
         colapse_frontier "default" st new_frontier interm
       in
-      List.iter (get_succs st pc) ~f:(fun pc ->
-          if Interm.mem pc new_interm then incr_seen st pc);
+      List.iter (get_succs st pc) ~f:(fun pc -> incr_seen st pc);
       (* Beware evaluation order! *)
       let never_cond, cond =
         compile_conditional
@@ -1988,6 +2004,7 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let backs = Addr.Set.empty in
   let loop_stack = [] in
+  incr_seen st pc;
   let _never, res =
     compile_branch st [] (pc, args) loop_stack backs Addr.Set.empty Interm.empty
   in
