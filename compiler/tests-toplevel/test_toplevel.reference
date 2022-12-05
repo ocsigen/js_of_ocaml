@@ -1,1 +1,5 @@
 hello
+Line 3, characters 2-4:
+Error: Syntax error
+Line 4, characters 0-16:
+Error: Unbound module Missing_module
