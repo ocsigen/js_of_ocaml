@@ -52,12 +52,12 @@ let load_resource scheme ~prefix ~path:suffix =
   Lwt.async (fun () -> load_resource_aux filename url);
   Some ""
 
-let setup_pseudo_fs () =
+let setup_pseudo_fs ~load_cmis_from_server =
   Sys_js.mount ~path:"/dev/" (fun ~prefix:_ ~path:_ -> None);
   Sys_js.mount ~path:"/http/" (load_resource "http://");
   Sys_js.mount ~path:"/https/" (load_resource "https://");
   Sys_js.mount ~path:"/ftp/" (load_resource "ftp://");
-  Sys_js.mount ~path:"/home/" (load_resource "filesys/")
+  if load_cmis_from_server then Sys_js.mount ~path:"/home/" (load_resource "filesys/")
 
 let exec' s =
   let res : bool = JsooTop.use Format.std_formatter s in
@@ -466,7 +466,7 @@ let run _ =
   Sys_js.set_channel_filler stdin readline;
   setup_share_button ~output;
   setup_examples ~container ~textbox;
-  setup_pseudo_fs ();
+  setup_pseudo_fs ~load_cmis_from_server:false;
   setup_toplevel ();
   setup_js_preview ();
   setup_printers ();
