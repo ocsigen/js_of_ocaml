@@ -751,7 +751,7 @@ let build_graph ctx pc =
           | n -> Hashtbl.replace preds pc' (succ n)))
   in
   loop pc Addr.Set.empty;
-  Hashtbl.add preds pc 1;
+  Hashtbl.add preds pc 0;
   { visited_blocks
   ; dominance_frontier_cache
   ; seen
@@ -1997,7 +1997,6 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let backs = Addr.Set.empty in
   let loop_stack = [] in
-  incr_seen st pc;
   let _never, res =
     compile_branch st [] (pc, args) loop_stack backs Addr.Set.empty Interm.empty
   in
