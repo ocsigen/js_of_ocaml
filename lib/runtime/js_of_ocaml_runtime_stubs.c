@@ -232,3 +232,7 @@ void debugger () {
   fprintf(stderr, "Unimplemented Javascript primitive debugger!\n");
   exit(1);
 }
+void jsoo_use_js_string () {
+  fprintf(stderr, "Unimplemented Javascript primitive jsoo_use_js_string!\n");
+  exit(1);
+}
