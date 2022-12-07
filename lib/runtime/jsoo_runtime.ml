@@ -106,7 +106,11 @@ module Sys = struct
 
   external unmount : string -> unit = "caml_unmount"
 
-  external use_js_string : unit -> bool = "jsoo_use_js_string"
+  module Config = struct
+    external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
+
+    external effects : unit -> bool = "caml_jsoo_flags_effects"
+  end
 
   let version = Runtime_version.s
 

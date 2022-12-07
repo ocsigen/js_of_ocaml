@@ -176,6 +176,14 @@ void caml_jsbytes_of_string () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_jsbytes_of_string!\n");
   exit(1);
 }
+void caml_jsoo_flags_effects () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_jsoo_flags_effects!\n");
+  exit(1);
+}
+void caml_jsoo_flags_use_js_string () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_jsoo_flags_use_js_string!\n");
+  exit(1);
+}
 void caml_jsstring_of_string () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_jsstring_of_string!\n");
   exit(1);
@@ -234,9 +242,5 @@ void caml_unmount () {
 }
 void debugger () {
   fprintf(stderr, "Unimplemented Javascript primitive debugger!\n");
-  exit(1);
-}
-void jsoo_use_js_string () {
-  fprintf(stderr, "Unimplemented Javascript primitive jsoo_use_js_string!\n");
   exit(1);
 }

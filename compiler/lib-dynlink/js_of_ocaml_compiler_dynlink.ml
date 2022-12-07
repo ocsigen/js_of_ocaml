@@ -15,7 +15,8 @@ let split_primitives p =
 
 let () =
   let global = J.pure_js_expr "globalThis" in
-  Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.use_js_string ());
+  Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
+  Config.Flag.set "effects" (Jsoo_runtime.Sys.Config.effects ());
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : bytes array) (debug : Instruct.debug_event list array) :
       unit -> J.t =
