@@ -19,6 +19,8 @@
 module Flag : sig
   val available : unit -> string list
 
+  val find : string -> bool
+
   val deadcode : unit -> bool
 
   val optcall : unit -> bool

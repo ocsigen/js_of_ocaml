@@ -55,10 +55,21 @@ function caml_is_js() {
   return 1;
 }
 
+//Provides: jsoo_wrap_exn
+var jsoo_wrap_exn = FLAG("excwrap");
+
 //Provides: caml_wrap_exception const (const)
+//Requires: caml_really_wrap_exception
+//Requires: jsoo_wrap_exn
+function caml_wrap_exception(e) {
+  if(jsoo_wrap_exn) return caml_really_wrap_exception(e);
+  return e
+}
+
+//Provides: caml_really_wrap_exception const (const)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 //Requires: caml_return_exn_constant
-function caml_wrap_exception(e) {
+function caml_really_wrap_exception(e) {
   if(e instanceof Array) return e;
   //Stack_overflow: chrome, safari
   if(globalThis.RangeError

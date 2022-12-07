@@ -34,6 +34,10 @@ module Flag = struct
     in
     fun () -> !state
 
+  let find s =
+    try !(List.assoc s !optims)
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+
   let disable s =
     try List.assoc s !optims := false
     with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
