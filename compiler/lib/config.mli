@@ -21,6 +21,8 @@ module Flag : sig
 
   val find : string -> bool
 
+  val set : string -> bool -> unit
+
   val deadcode : unit -> bool
 
   val optcall : unit -> bool

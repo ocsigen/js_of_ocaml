@@ -103,6 +103,8 @@ module Sys = struct
 
   external unmount : string -> unit = "caml_unmount"
 
+  external use_js_string : unit -> bool = "jsoo_use_js_string"
+
   let version = Runtime_version.s
 
   let git_version = Runtime_version.git_version

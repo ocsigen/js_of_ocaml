@@ -55,6 +55,11 @@ function caml_is_js() {
   return 1;
 }
 
+//Provides: jsoo_use_js_string
+function jsoo_use_js_string(unit){
+  return FLAG("use-js-string")
+}
+
 //Provides: jsoo_wrap_exn
 var jsoo_wrap_exn = FLAG("excwrap");
 
