@@ -117,9 +117,14 @@ function caml_is_js() {
   return 1;
 }
 
-//Provides: jsoo_use_js_string
-function jsoo_use_js_string(unit){
+//Provides: caml_jsoo_flags_use_js_string
+function caml_jsoo_flags_use_js_string(unit){
   return FLAG("use-js-string")
+}
+
+//Provides: caml_jsoo_flags_effects
+function caml_jsoo_flags_effects(unit){
+  return FLAG("effects")
 }
 
 //Provides: caml_wrap_exception const (const)
