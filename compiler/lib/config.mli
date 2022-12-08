@@ -65,6 +65,8 @@ module Flag : sig
 
   val check_magic : unit -> bool
 
+  val header : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit
