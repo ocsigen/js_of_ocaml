@@ -41,6 +41,7 @@ let block_deps info vars deps blocks fun_name pc =
               add_dep deps x g;
               add_dep deps g x)
             (Var.Tbl.get info.Flow.info_known_origins f)
+      | Code.Let (x, Prim (Extern ("%perform" | "%resume"), _)) -> add_var vars x
       | _ -> ())
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -76,9 +77,12 @@ let cps_needed info rev_deps st x =
                  | Expr _ -> false
                  | _ -> true)
                (Var.Tbl.get info.Flow.info_known_origins f)
-      | Flow.Expr (Closure _) -> info.Flow.info_possibly_mutable.(idx)
+      | Flow.Expr (Closure _) | Flow.Expr (Prim (Extern "%closure", _)) ->
+          info.Flow.info_possibly_mutable.(idx)
+      | Flow.Expr (Prim (Extern ("%perform" | "%resume"), _)) -> true
       | _ -> false)
   in
+  (*
   if res && not (Var.Tbl.get st x)
   then
     Format.eprintf
@@ -93,6 +97,7 @@ let cps_needed info rev_deps st x =
            "apply" (*Var.Tbl.get info.Flow.info_maybe_unknown f*)
        | Flow.Expr (Closure _) -> "closure" (*info.Flow.info_possibly_mutable.(idx)*)
        | _ -> "other");
+*)
   res
 
 let annot st xi =
@@ -118,6 +123,4 @@ let f (p, info) =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   let rev_deps = G.invert () g in
-  let st = Solver.f () g (cps_needed info rev_deps) in
-  Print.program (fun _ xi -> annot st xi) p;
-  p, info
+  Solver.f () g (cps_needed info rev_deps)

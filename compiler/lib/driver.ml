@@ -131,7 +131,6 @@ let o1 : 'a -> 'a =
   +> deadcode
   +> phi
   +> flow
-  +> Fun_style_analysis.f
   +> specialize
   +> identity
 

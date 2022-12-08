@@ -38,43 +38,86 @@
 open! Stdlib
 open Code
 
-type graph =
+type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
-  ; exn_handlers : (Addr.t, unit) Hashtbl.t
+  ; predecessor_count : (Addr.t, int) Hashtbl.t
+  ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
+  ; block_order : (Addr.t, int) Hashtbl.t
+  ; exn_handlers : (Addr.t, unit) Hashtbl.t
   }
+
+let add_edge g src dst =
+  Hashtbl.replace
+    g
+    src
+    (Addr.Set.add dst (try Hashtbl.find g src with Not_found -> Addr.Set.empty))
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
+  let predecessor_count = Hashtbl.create 16 in
+  let loop_headers = Hashtbl.create 16 in
   let exn_handlers = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
-  let rec traverse pc =
+  let update_pred_count pc =
+    Hashtbl.replace
+      predecessor_count
+      pc
+      (1 + try Hashtbl.find predecessor_count pc with Not_found -> 0)
+  in
+  let rec traverse ancestors exn_handler_stack pc =
     if not (Hashtbl.mem visited pc)
     then (
       Hashtbl.add visited pc ();
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
-      (match (Addr.Map.find pc blocks).branch with
+      Hashtbl.add succs pc successors;
+      Addr.Set.iter
+        (fun pc' ->
+          if Addr.Set.mem pc' ancestors
+          then Hashtbl.replace loop_headers pc' ()
+          else update_pred_count pc')
+        successors;
+      let block = Addr.Map.find pc blocks in
+      (match block.branch with
       | Pushtrap (_, _, (pc', _), _) -> Hashtbl.add exn_handlers pc' ()
       | _ -> ());
-      Hashtbl.add succs pc successors;
-      Addr.Set.iter traverse successors;
+      let exn_handler_stack =
+        match block.branch with
+        | Pushtrap ((pc, _), _, _, _) -> pc :: exn_handler_stack
+        | Poptrap (pc, _) -> (
+            match exn_handler_stack with
+            | pc' :: rem ->
+                add_edge succs pc' pc;
+                update_pred_count pc;
+                rem
+            | [] -> assert false)
+        | _ -> exn_handler_stack
+      in
+      let ancestors = Addr.Set.add pc ancestors in
+      Addr.Set.iter (fun pc -> traverse ancestors exn_handler_stack pc) successors;
       l := pc :: !l)
   in
-  traverse pc;
-  { succs; exn_handlers; reverse_post_order = !l }
+  traverse Addr.Set.empty [] pc;
+  let block_order = Hashtbl.create 16 in
+  List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
+  { succs
+  ; predecessor_count
+  ; loop_headers
+  ; reverse_post_order = !l
+  ; block_order
+  ; exn_handlers
+  }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Hashtbl.create 16 in
-  let order = Hashtbl.create 16 in
-  List.iteri g.reverse_post_order ~f:(fun i pc -> Hashtbl.add order pc i);
   let rec inter pc pc' =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find order pc < Hashtbl.find order pc'
+    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
     then inter pc (Hashtbl.find dom pc')
     else inter (Hashtbl.find dom pc) pc'
   in
@@ -93,8 +136,97 @@ let dominator_tree g =
           let d = Hashtbl.find dom pc' in
           assert (inter pc d = d))
         l);
-
   dom
+
+let reverse_tree g =
+  let g' = Hashtbl.create 16 in
+  Hashtbl.iter (fun child parent -> add_edge g' parent child) g;
+  g'
+
+let is_merge_node cfg pc = Hashtbl.find cfg.predecessor_count pc > 1
+
+(*
+   The continuation of an application potentially with effect should
+   be transformed.
+   If we transform a block, we need to transform the merge nodes
+   below.
+   If we transform a block in a [try ... with ...] body or in a loop,
+   we need to transform the initial block of the body / the loop.
+*)
+let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
+  let dom_tree = reverse_tree idom in
+  let transformation_needed = Hashtbl.create 16 in
+  let is_continuation = Hashtbl.create 16 in
+  let mark_needed pc = Hashtbl.replace transformation_needed pc () in
+  let mark_continuation pc x = Hashtbl.replace is_continuation pc x in
+  let rec traverse pc ~try_blocks ~frontier ~transform_on_visit =
+    (* [try_blocks] is the set of initial blocks of try blocks we are in.
+       [frontier] is a superset of the dominance frontier. *)
+    let try_header =
+      let block = Addr.Map.find pc blocks in
+      match block.branch with
+      | Branch (dst, _) -> (
+          match List.last block.body with
+          | Some (Let (x, (Apply _ | Prim _))) when Var.Tbl.get cps_needed x ->
+              (* If the blocks ends with a CPS call, its
+                 continuation needs to be transformed *)
+              mark_needed dst;
+              (* We need to transform the head of try blocks as well *)
+              List.iter ~f:mark_needed try_blocks;
+              mark_continuation dst x;
+              None
+          | _ -> None)
+      | Pushtrap ((pc1, _), x, (pc2, _), _) ->
+          mark_continuation pc2 x;
+          Some (pc1, pc2)
+      | _ -> None
+    in
+    let merge_node_children =
+      let children = try Hashtbl.find dom_tree pc with Not_found -> Addr.Set.empty in
+      Addr.Set.filter (fun pc -> is_merge_node cfg pc) children
+    in
+    let frontier =
+      let frontier = Addr.Set.union merge_node_children frontier in
+      if Hashtbl.mem cfg.loop_headers pc then Addr.Set.add pc frontier else frontier
+    in
+    let successors = Hashtbl.find cfg.succs pc in
+    let transform_on_visit =
+      if Hashtbl.mem transformation_needed pc then frontier else transform_on_visit
+    in
+    Addr.Set.iter
+      (fun pc' ->
+        traverse_branch pc' ~try_header ~try_blocks ~frontier ~transform_on_visit)
+      successors;
+    (* Traverse merge node children *)
+    let l = Addr.Set.elements merge_node_children in
+    let l =
+      List.sort
+        ~cmp:(fun pc pc' ->
+          compare (Hashtbl.find cfg.block_order pc) (Hashtbl.find cfg.block_order pc'))
+        l
+    in
+    ignore
+      (List.fold_left l ~init:frontier ~f:(fun frontier pc' ->
+           let frontier = Addr.Set.remove pc' frontier in
+           traverse pc' ~try_blocks ~frontier ~transform_on_visit;
+           frontier))
+  and traverse_branch pc ~try_header ~try_blocks ~frontier ~transform_on_visit =
+    if Addr.Set.mem pc frontier
+    then (if Addr.Set.mem pc transform_on_visit then mark_needed pc)
+    else
+      let try_blocks =
+        match try_header with
+        | Some (pc1, pc2) when pc1 = pc -> pc1 :: pc2 :: try_blocks
+        | _ -> try_blocks
+      in
+      traverse pc ~try_blocks ~frontier ~transform_on_visit
+  in
+  traverse
+    start
+    ~try_blocks:[]
+    ~frontier:Addr.Set.empty
+    ~transform_on_visit:Addr.Set.empty;
+  transformation_needed, is_continuation
 
 (* Each block is turned into a function which is defined in the
    dominator of the block. [closure_of_jump] provides the name of the
@@ -373,6 +505,8 @@ let skip_empty_blocks (p : Code.program) : Code.program =
 let f (p : Code.program) =
   let p = skip_empty_blocks p in
   let p = split_blocks p in
+  let cps_needed = Flow.f p |> Fun_style_analysis.f in
+
   let closure_continuation =
     (* Provide a name for the continuation of a closure (before CPS
        transform), which can be referred from all the blocks it contains *)
@@ -387,9 +521,32 @@ let f (p : Code.program) =
   let p =
     Code.fold_closures
       p
-      (fun _ _ (start, _) ({ blocks; free_pc; _ } as p) ->
+      (fun name_opt _ (start, _) ({ blocks; free_pc; _ } as p) ->
         let cfg = build_graph blocks start in
         let idom = dominator_tree cfg in
+        let () =
+          if match name_opt with
+             | None -> true
+             | Some name_opt -> Var.Tbl.get cps_needed name_opt
+          then (
+            let transformation_needed, _ =
+              compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start
+            in
+            Format.eprintf "===============@.";
+            Code.preorder_traverse
+              { fold = Code.fold_children }
+              (fun pc _ ->
+                if Hashtbl.mem transformation_needed pc then Format.eprintf "CPS@.";
+                let block = Addr.Map.find pc blocks in
+                Code.Print.block
+                  (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
+                  pc
+                  block)
+              start
+              blocks
+              ())
+        in
+
         let closure_jc = jump_closures cfg idom in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
