@@ -285,8 +285,7 @@ let ()  = M.myfun M.x
          param=l;
         for(;;)
          {if(param)
-           {var param$0=param[2],len$0=len + 1 | 0,len=len$0,param=param$0;
-            continue}
+           {var l$0=param[2],len$0=len + 1 | 0,len=len$0,param=l$0;continue}
           if(2 <= len)sort(len,l);
           var x$0=next;
           continue a}}}

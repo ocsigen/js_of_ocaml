@@ -35,12 +35,7 @@ let%expect_test "rec-fun" =
      {var acc$0=acc,param$0=param;
       for(;;)
        {if(param$0)
-         {var
-           param$1=param$0[2],
-           x=param$0[1],
-           acc$1=[0,x,acc$0],
-           acc$0=acc$1,
-           param$0=param$1;
+         {var xs=param$0[2],x=param$0[1],acc$1=[0,x,acc$0],acc$0=acc$1,param$0=xs;
           continue}
         var
          _a_=caml_call1(Stdlib_List[9],acc$0),
@@ -395,32 +390,31 @@ let add_substitute =
   [%expect
     {|
     function add_substitute(b,f,s)
-     {var lim$1=caml_ml_string_length(s),previous=32,i$7=0;
+     {var lim$1=caml_ml_string_length(s),previous=32,i$5=0;
       for(;;)
-       {if(i$7 >= lim$1)
-         {var _c_=92 === previous?1:0;
-          return _c_?caml_call2(add_char,b,previous):_c_}
-        var current=caml_string_get(s,i$7);
-        if(36 !== current)
+       {if(i$5 >= lim$1)
+         {var _e_=92 === previous?1:0;return _e_?caml_call2(_b_,b,previous):_e_}
+        var previous$0=caml_string_get(s,i$5);
+        if(36 !== previous$0)
          {if(92 === previous)
-           {caml_call2(add_char,b,92);
-            caml_call2(add_char,b,current);
-            var i$9=i$7 + 1 | 0,previous=32,i$7=i$9;
+           {caml_call2(_b_,b,92);
+            caml_call2(_b_,b,previous$0);
+            var i$7=i$5 + 1 | 0,previous=32,i$5=i$7;
             continue}
-          if(92 === current)
-           {var i$10=i$7 + 1 | 0,previous=current,i$7=i$10;continue}
-          caml_call2(add_char,b,current);
-          var i$11=i$7 + 1 | 0,previous=current,i$7=i$11;
+          if(92 === previous$0)
+           {var i$8=i$5 + 1 | 0,previous=previous$0,i$5=i$8;continue}
+          caml_call2(_b_,b,previous$0);
+          var i$9=i$5 + 1 | 0,previous=previous$0,i$5=i$9;
           continue}
         if(92 === previous)
-         {caml_call2(add_char,b,current);
-          var i$8=i$7 + 1 | 0,previous=32,i$7=i$8;
+         {caml_call2(_b_,b,previous$0);
+          var i$6=i$5 + 1 | 0,previous=32,i$5=i$6;
           continue}
-        var start=i$7 + 1 | 0;
-        if(lim$1 <= start)throw Stdlib[8];
-        var opening=caml_string_get(s,start),switch$0=0;
+        var start$1=i$5 + 1 | 0;
+        if(lim$1 <= start$1)throw Stdlib[8];
+        var opening=caml_string_get(s,start$1),switch$0=0;
         if(40 !== opening && 123 !== opening)
-         {var i$6=start + 1 | 0,lim$0=caml_ml_string_length(s),i$3=i$6;
+         {var start$0=start$1 + 1 | 0,lim$0=caml_ml_string_length(s),i$3=start$0;
           for(;;)
            {if(lim$0 <= i$3)
              var stop=lim$0;
@@ -440,29 +434,29 @@ let add_substitute =
               var stop=i$3}
             var
              match$0=
-              [0,caml_call3(Stdlib_String[15],s,start,stop - start | 0),stop];
+              [0,caml_call3(Stdlib_String[15],s,start$1,stop - start$1 | 0),stop];
             switch$0 = 1;
             break}}
         if(! switch$0)
-         {var i$5=start + 1 | 0,k$2=0;
+         {var start=start$1 + 1 | 0,k$2=0;
           if(40 === opening)
-           var _b_=41;
+           var _d_=41;
           else
-           {if(123 !== opening)throw [0,Assert_failure,_a_];var _b_=125}
-          var lim=caml_ml_string_length(s),k=k$2,i=i$5;
+           {if(123 !== opening)throw [0,Assert_failure,_a_];var _d_=125}
+          var lim=caml_ml_string_length(s),k=k$2,i=start;
           for(;;)
            {if(lim <= i)throw Stdlib[8];
             if(caml_string_get(s,i) === opening)
              {var i$0=i + 1 | 0,k$0=k + 1 | 0,k=k$0,i=i$0;continue}
-            if(caml_string_get(s,i) !== _b_){var i$2=i + 1 | 0,i=i$2;continue}
+            if(caml_string_get(s,i) !== _d_){var i$2=i + 1 | 0,i=i$2;continue}
             if(0 !== k){var i$1=i + 1 | 0,k$1=k - 1 | 0,k=k$1,i=i$1;continue}
             var
              match$0=
               [0,
-               caml_call3(Stdlib_String[15],s,i$5,(i - start | 0) - 1 | 0),
+               caml_call3(Stdlib_String[15],s,start,(i - start$1 | 0) - 1 | 0),
                i + 1 | 0];
             break}}
         var next_i=match$0[2],ident=match$0[1];
-        caml_call2(add_string,b,caml_call1(f,ident));
-        var previous=32,i$7=next_i}}
+        caml_call2(_c_,b,caml_call1(f,ident));
+        var previous=32,i$5=next_i}}
     //end |}]

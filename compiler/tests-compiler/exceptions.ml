@@ -32,7 +32,7 @@ let prevent_inline = some_name
   print_fun_decl (program ~debug:true) None;
   [%expect
     {|
-    function some_name(param)
+    function prevent_inline(param)
      {try
        {try {throw Stdlib[8]}catch(x){x = caml_wrap_exception(x);var i=x}}
       catch(i$0){i$0 = caml_wrap_exception(i$0);var i=i$0}

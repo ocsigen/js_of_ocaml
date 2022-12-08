@@ -2209,8 +2209,7 @@ let parse_bytecode code globals debug_data =
   Code.Var.reset ();
   let blocks = Blocks.analyse debug_data code in
   let blocks =
-    (* Disabled. [pc] might not be an appropriate place to split blocks *)
-    if false && Debug.enabled debug_data
+    if Debug.enabled debug_data
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks
   in
