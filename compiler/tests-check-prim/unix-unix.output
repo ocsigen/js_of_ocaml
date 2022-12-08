@@ -261,11 +261,9 @@ caml_input_value_to_outside_heap
 
 From +jslib.js:
 caml_is_js
-caml_really_wrap_exception
 caml_trampoline
 caml_trampoline_return
 caml_wrap_exception
-jsoo_wrap_exn
 
 From +marshal.js:
 BigStringReader

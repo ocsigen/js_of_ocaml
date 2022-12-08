@@ -981,6 +981,11 @@ let assign_op = function
     when Poly.(exp = exp') -> Some (EBin (translate_assign_op unop, exp, y))
   | _ -> None
 
+let opt_cons b l =
+  match b with
+  | Some b -> b :: l
+  | None -> l
+
 class simpl =
   object (m)
     inherit map as super
@@ -1017,6 +1022,8 @@ class simpl =
       let s = super#statements s in
       List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
           match st with
+          | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
+          | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
           | If_statement
               (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
             -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
