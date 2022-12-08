@@ -91,6 +91,8 @@ module Flag = struct
   let check_magic = o ~name:"check-magic-number" ~default:true
 
   let compact_vardecl = o ~name:"vardecl" ~default:false
+
+  let header = o ~name:"header" ~default:true
 end
 
 module Param = struct

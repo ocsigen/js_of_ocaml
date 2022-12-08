@@ -316,8 +316,9 @@ let jsoo_minify ?(flags = []) ~pretty file =
 let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
   Filetype.path_of_bc_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
 
-let compile_cmo_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
-  Filetype.path_of_cmo_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
+let compile_cmo_to_javascript ?(flags = []) ?(pretty = true) ?(sourcemap = true) file =
+  Filetype.path_of_cmo_file file
+  |> compile_to_javascript ~flags:([ "--disable"; "header" ] @ flags) ~pretty ~sourcemap
 
 let compile_ocaml_to_cmo ?(debug = true) file =
   let file = Filetype.path_of_ocaml_file file in
