@@ -60,39 +60,31 @@ function jsoo_use_js_string(unit){
   return FLAG("use-js-string")
 }
 
-//Provides: jsoo_wrap_exn
-var jsoo_wrap_exn = FLAG("excwrap");
-
 //Provides: caml_wrap_exception const (const)
-//Requires: caml_really_wrap_exception
-//Requires: jsoo_wrap_exn
-function caml_wrap_exception(e) {
-  if(jsoo_wrap_exn) return caml_really_wrap_exception(e);
-  return e
-}
-
-//Provides: caml_really_wrap_exception const (const)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 //Requires: caml_return_exn_constant
-function caml_really_wrap_exception(e) {
-  if(e instanceof Array) return e;
-  //Stack_overflow: chrome, safari
-  if(globalThis.RangeError
-     && e instanceof globalThis.RangeError
-     && e.message
-     && e.message.match(/maximum call stack/i))
-    return caml_return_exn_constant(caml_global_data.Stack_overflow);
-  //Stack_overflow: firefox
-  if(globalThis.InternalError
-     && e instanceof globalThis.InternalError
-     && e.message
-     && e.message.match(/too much recursion/i))
-    return caml_return_exn_constant(caml_global_data.Stack_overflow);
-  //Wrap Error in Js.Error exception
-  if(e instanceof globalThis.Error && caml_named_value("jsError"))
-    return [0,caml_named_value("jsError"),e];
-  //fallback: wrapped in Failure
-  return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
+function caml_wrap_exception(e) {
+  if (FLAG("excwrap")) {
+    if(e instanceof Array) return e;
+    //Stack_overflow: chrome, safari
+    if(globalThis.RangeError
+       && e instanceof globalThis.RangeError
+       && e.message
+       && e.message.match(/maximum call stack/i))
+      return caml_return_exn_constant(caml_global_data.Stack_overflow);
+    //Stack_overflow: firefox
+    if(globalThis.InternalError
+       && e instanceof globalThis.InternalError
+       && e.message
+       && e.message.match(/too much recursion/i))
+      return caml_return_exn_constant(caml_global_data.Stack_overflow);
+    //Wrap Error in Js.Error exception
+    if(e instanceof globalThis.Error && caml_named_value("jsError"))
+      return [0,caml_named_value("jsError"),e];
+    //fallback: wrapped in Failure
+    return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
+  } else
+    return e;
 }
 
 // Experimental
