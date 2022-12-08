@@ -1,12 +1,16 @@
 # dev (202?-??) - ??
 ## Features/Changes
 * Compiler: small refactoring in code generation
+* Compiler: check build info compatibility when linking js file.
 * Misc: fix and update benchmarks
 * Misc: upgrade CI
 * Toplevel: recover more names when generating code during toplevel evaluation
+* Runtime: wrapping exception or not is now controled in the runtime.
+
 
 ## Bug fixes
 * Runime: Gc.finalise_last should not be eliminated
+* Toplevel: Make sure the toplevel uses the correct memory representaion for strings
 
 # 4.1.0 (2022-11-15) - Lille
 ## Features/Changes
