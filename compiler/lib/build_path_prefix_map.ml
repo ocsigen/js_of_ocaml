@@ -100,7 +100,7 @@ let decode_map str =
         | Ok str -> Some str
         | Error err -> raise (Shortcut err))
   in
-  let pairs = Stdlib.String.split_char ~sep:':' str in
+  let pairs = String.split_char ~sep:':' str in
   match List.map ~f:decode_or_empty pairs with
   | exception Shortcut err -> Error err
   | map -> Ok map

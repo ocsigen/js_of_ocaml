@@ -55,7 +55,7 @@ let specialize_instr info (acc, free_pc, extra) i =
       | Some n when n = n' -> Let (x, Apply (f, l, true)) :: acc, free_pc, extra
       | Some n when n < n' ->
           let v = Code.Var.fresh () in
-          let args, rest = Stdlib.List.take n l in
+          let args, rest = List.take n l in
           ( Let (v, Apply (f, args, true)) :: Let (x, Apply (v, rest, false)) :: acc
           , free_pc
           , extra )
