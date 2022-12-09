@@ -54,11 +54,7 @@ let specialize_instr info (acc, free_pc, extra) i =
       | None -> i :: acc, free_pc, extra
       | Some n when n = n' ->
           Let (x, Apply { f; args; exact = true }) :: acc, free_pc, extra
-      | Some n when n < n' && not (Config.Flag.effects ()) ->
-          (* We skip this optimization for now since it generates a
-             function application which is not at the very end of a
-             block (which is required for the code transformation used
-             to deal with effect handlers). *)
+      | Some n when n < n' ->
           let v = Code.Var.fresh () in
           let args, rest = List.take n args in
           ( Let (v, Apply { f; args; exact = true })

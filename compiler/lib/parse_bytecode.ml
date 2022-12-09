@@ -334,8 +334,7 @@ end = struct
   let rec scan debug blocks code pc len =
     if pc < len
     then
-      let instr = get_instr_exn code pc in
-      match instr.kind with
+      match (get_instr_exn code pc).kind with
       | KNullary -> scan debug blocks code (pc + 1) len
       | KUnary -> scan debug blocks code (pc + 2) len
       | KBinary -> scan debug blocks code (pc + 3) len
@@ -343,31 +342,10 @@ end = struct
           let blocks =
             if Debug.mem debug (pc + 1) then Addr.Set.add pc blocks else blocks
           in
-          let blocks =
-            (* The code transformation used to deal with effect
-               handlers expects that function applications and effect
-               primitives are at the very end of a block. *)
-            if Config.Flag.effects ()
-               &&
-               match instr.code with
-               | APPLY1 | APPLY2 | APPLY3 | PERFORM | RESUME -> true
-               | _ -> false
-            then Addr.Set.add (pc + 1) blocks
-            else blocks
-          in
           scan debug blocks code (pc + 1) len
       | KUnaryCall ->
           let blocks =
             if Debug.mem debug (pc + 2) then Addr.Set.add pc blocks else blocks
-          in
-          let blocks =
-            if Config.Flag.effects ()
-               &&
-               match instr.code with
-               | APPLY -> true
-               | _ -> false
-            then Addr.Set.add (pc + 2) blocks
-            else blocks
           in
           scan debug blocks code (pc + 2) len
       | KBinaryCall ->

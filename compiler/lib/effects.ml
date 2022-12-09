@@ -311,7 +311,7 @@ let cps_instr ~st (instr : instr) : instr =
             , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
             )
       | _ -> assert false)
-  | Let (_, Apply _) -> assert false
+  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform"), _))) -> assert false
   | _ -> instr
 
 let cps_block ~st ~(k : Runtime.cont) pc block =
@@ -432,7 +432,58 @@ let cps_block ~st ~(k : Runtime.cont) pc block =
 
   { params = block.params; body; branch = last }
 
+let split_blocks (p : Code.program) =
+  (* Ensure that function applications and effect primitives are in
+     tail position *)
+  let split_block pc block p =
+    let is_split_point i r branch =
+      match i with
+      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform"), _))) -> (
+          (not (List.is_empty r))
+          ||
+          match branch with
+          | Branch _ -> false
+          | Return x' -> (
+              (not (Var.equal x x'))
+              ||
+              match i with
+              | Let (_, Prim (Extern "%perform", _)) -> true
+              | _ -> false)
+          | _ -> true)
+      | _ -> false
+    in
+    let rec split (p : Code.program) pc block accu l branch =
+      match l with
+      | [] ->
+          let block = { block with body = List.rev (l @ accu) } in
+          { p with blocks = Addr.Map.add pc block p.blocks }
+      | (Let (x', e) as i) :: r when is_split_point i r branch ->
+          let x = Var.fork x' in
+          let pc' = p.free_pc in
+          let block' = { params = [ x' ]; body = []; branch = block.branch } in
+          let block =
+            { block with
+              body = List.rev (Let (x, e) :: accu)
+            ; branch = Branch (pc', [ x ])
+            }
+          in
+          let p = { p with blocks = Addr.Map.add pc block p.blocks; free_pc = pc' + 1 } in
+          split p pc' block' [] r branch
+      | i :: r -> split p pc block (i :: accu) r branch
+    in
+    let rec should_split l branch =
+      match l with
+      | [] -> false
+      | i :: r -> is_split_point i r branch || should_split r branch
+    in
+    if should_split block.body block.branch
+    then split p pc block [] block.body block.branch
+    else p
+  in
+  Addr.Map.fold split_block p.blocks p
+
 let f (p : Code.program) =
+  let p = split_blocks p in
   let closure_continuation =
     (* Provide a name for the continuation of a closure (before CPS
        transform), which can be referred from all the blocks it contains *)
