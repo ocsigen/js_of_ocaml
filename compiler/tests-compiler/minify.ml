@@ -129,3 +129,28 @@ function f (e){ return a; }
           1: var
           2: a="toto";function
           3: f(b){return a} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+a = function () { return 0 }
+try { throw 1; } catch (xx) { a(0) }
+|}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: a = function () { return 0 }
+          3: try { throw 1; } catch (xx) { a(0) }
+        $ cat "test.min.js"
+          1: a=function(){return 0};try{throw 1}catch(a){a(0)} |}])
