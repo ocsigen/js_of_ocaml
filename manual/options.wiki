@@ -34,6 +34,7 @@
 
 |= Option name |= Default |= Description                           |
 | pretty       | false    | Pretty print the javascript output     |
+| effects      | false    | Enable support for effect handlers     |
 | debuginfo    | false    | Output debug information (location)    |
 | deadcode     | true     | Deadcode elimination                   |
 | inline       | true     | Code inlining                          |

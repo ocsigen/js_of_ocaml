@@ -94,6 +94,8 @@ optimized:
   [More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call
   optimization.
 
+Effect handlers are supported with the `--enable=effects` flag.
+
 ## Data representation
 
 Data representation differs from the usual one. Most notably, integers are 32
