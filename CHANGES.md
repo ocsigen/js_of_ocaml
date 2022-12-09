@@ -11,6 +11,7 @@
 ## Bug fixes
 * Runime: Gc.finalise_last should not be eliminated
 * Toplevel: Make sure the toplevel uses the correct memory representaion for strings
+* Compiler: fix minifier, missing constraint on try-catch blocks.
 
 # 4.1.0 (2022-11-15) - Lille
 ## Features/Changes
