@@ -44,6 +44,14 @@ jobs:
             ocaml-compiler: 4.14.x
             skip-test: false
             skip-doc: true
+          - os: ubuntu-latest
+            ocaml-compiler: ocaml-variants.5.0.0+trunk
+            skip-test: false
+            skip-doc: true
+          - os: macos-latest
+            ocaml-compiler: ocaml-variants.5.0.0+trunk
+            skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 

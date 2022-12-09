@@ -1,5 +1,14 @@
 (executables
- (names hfun htbl)
+ (names hfun)
+ (modules hfun)
+ (libraries)
+ (modes js))
+
+(executables
+ (names htbl)
+ (modules htbl)
+ (enabled_if
+  (< %{ocaml_version} 5))
  (libraries)
  (modes js))
 
@@ -19,6 +28,8 @@
 
 (rule
  (target htbl.referencejs)
+ (enabled_if
+  (< %{ocaml_version} 5))
  (deps htbl.bc.js ../../../LICENSE)
  (action
   (with-stdout-to
@@ -27,6 +38,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (< %{ocaml_version} 5))
  (deps htbl.reference htbl.referencejs)
  (action
   (diff htbl.reference htbl.referencejs)))
