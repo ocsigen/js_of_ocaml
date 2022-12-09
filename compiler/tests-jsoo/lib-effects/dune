@@ -11,6 +11,8 @@
 
 (library
  (name jsoo_testsuite_effect)
+ (enabled_if
+  (>= %{ocaml_version} 5))
  (inline_tests
   ;; This requires the unreleased dune 3.7 to work
   (enabled_if false)

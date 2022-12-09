@@ -50,7 +50,7 @@ type enabled_if =
   | Any
 
 let lib_enabled_if = function
-  | "obj" -> GE5
+  | "obj" | "effects" -> GE5
   | _ -> Any
 
 let test_enabled_if = function
