@@ -29,7 +29,7 @@ let create () =
   in
 
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
-  ; "effects", "false"
+  ; "effects", string_of_bool (Config.Flag.effects ())
   ; "version", version
   ]
   |> List.fold_left ~init:StringMap.empty ~f:(fun acc (k, v) -> StringMap.add k v acc)
