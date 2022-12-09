@@ -181,6 +181,8 @@ caml_recommended_domain_count
 
 From +effect.js:
 caml_alloc_stack
+caml_continuation_use_and_update_handler_noexc
+caml_continuation_use_noexc
 caml_ml_condition_broadcast
 caml_ml_condition_new
 caml_ml_condition_signal

@@ -23,3 +23,14 @@ function caml_ml_condition_signal(t){
     return 0;
 }
 
+//Provides: caml_continuation_use_and_update_handler_noexc
+//Requires: caml_failwith
+function caml_continuation_use_and_update_handler_noexc(){
+  caml_failwith("caml_continuation_use_and_update_handler_noexc not implemented");
+}
+
+//Provides: caml_continuation_use_noexc
+//Requires: caml_failwith
+function caml_continuation_use_noexc(){
+ caml_failwith("caml_continuation_use_noexc not implemented");
+}

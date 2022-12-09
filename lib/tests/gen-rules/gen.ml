@@ -46,15 +46,11 @@ let prefix : string =
          | c -> c)
 
 type enabled_if =
-  | LT5
+  | TL5
   | Any
 
-let lib_enabled_if = function
-  | "obj" -> LT5
-  | _ -> Any
-
-let test_enabled_if = function
-  | "obj" | "gh1320" | "lazy" -> LT5
+let enabled_if = function
+  | "test_sys" -> TL5
   | _ -> Any
 
 let () =
@@ -70,25 +66,16 @@ let () =
  (name %s_%d)
  (enabled_if %s)
  (modules %s)
- (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
- (inline_tests
-  (enabled_if %s)
-  (flags -allow-output-patterns)
-  (deps
-   (file %%{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
-   (file %%{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
- (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js))
  (preprocess
-  (pps ppx_expect)))
+  (pps ppx_js_internal ppx_expect)))
 |}
            prefix
            basename
            basename
            (Hashtbl.hash prefix mod 100)
-           (match lib_enabled_if basename with
+           (match enabled_if basename with
            | Any -> "true"
-           | LT5 -> "(< %{ocaml_version} 5)")
-           basename
-           (match test_enabled_if basename with
-           | Any -> "true"
-           | LT5 -> "(< %{ocaml_version} 5)"))
+           | TL5 -> "(< %{ocaml_version} 5)")
+           basename)

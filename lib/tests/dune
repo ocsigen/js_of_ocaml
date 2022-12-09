@@ -1,7 +1,14 @@
-(library
- (name jsoo_lib_expect_tests)
- (libraries js_of_ocaml unix)
- (inline_tests
-  (modes js))
- (preprocess
-  (pps ppx_js_internal ppx_expect)))
+(include dune.inc)
+
+(rule
+ (deps
+  (glob_files *.ml))
+ (action
+  (with-stdout-to
+   dune.inc.gen
+   (run gen-rules/gen.exe jsoo_lib_expect_tests))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff dune.inc dune.inc.gen)))
