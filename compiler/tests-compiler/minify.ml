@@ -153,4 +153,4 @@ try { throw 1; } catch (xx) { a(0) }
           2: a = function () { return 0 }
           3: try { throw 1; } catch (xx) { a(0) }
         $ cat "test.min.js"
-          1: a=function(){return 0};try{throw 1}catch(a){a(0)} |}])
+          1: a=function(){return 0};try{throw 1}catch(b){a(0)} |}])
