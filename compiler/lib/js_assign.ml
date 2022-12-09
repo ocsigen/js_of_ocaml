@@ -30,7 +30,7 @@ module type Strategy = sig
 
   val create : int -> t
 
-  val record_block : t -> Js_traverse.t -> catch:bool -> Javascript.ident list -> unit
+  val record_block : t -> Js_traverse.t -> Js_traverse.block -> unit
 
   val allocate_variables : t -> count:int Javascript.IdentMap.t -> string array
 end
@@ -137,7 +137,8 @@ while compiling the OCaml toplevel:
       n3 := !n3 + weight i
     in
     let nm ~origin n =
-      name.(origin) <- Var.to_string ~origin:(Var.of_idx origin) (Var.of_idx n)
+      let n = Var.to_string ~origin:(Var.of_idx origin) (Var.of_idx n) in
+      name.(origin) <- n
     in
     let total = ref 0 in
     let bad = ref 0 in
@@ -178,7 +179,7 @@ while compiling the OCaml toplevel:
       Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3);
     name
 
-  let add_constraints global u ?(offset = 0) params =
+  let add_constraints global u ~offset params =
     let constr = global.constr in
     let c = make_alloc_table () in
     S.iter
@@ -206,10 +207,11 @@ while compiling the OCaml toplevel:
     done;
     global.constraints <- u :: global.constraints
 
-  let record_block state scope ~catch params =
-    let offset = if catch then 5 else 0 in
+  let record_block state scope (block : Js_traverse.block) =
     let all = S.union scope.Js_traverse.def scope.Js_traverse.use in
-    add_constraints state all ~offset params
+    match block with
+    | Catch v -> add_constraints state all ~offset:5 [ v ]
+    | Params p -> add_constraints state all ~offset:0 p
 end
 
 module Preserve : Strategy = struct
@@ -228,13 +230,12 @@ module Preserve : Strategy = struct
 
   let create size = { size; scopes = [] }
 
-  let record_block t scope ~catch param =
+  let record_block t scope (b : Js_traverse.block) =
     let defs =
-      match catch, param with
-      | true, [ V x ] -> S.singleton x
-      | true, [ S _ ] -> S.empty
-      | true, _ -> assert false
-      | false, _ -> scope.Js_traverse.def
+      match b with
+      | Catch (V x) -> S.singleton x
+      | Catch (S _) -> S.empty
+      | Params _ -> scope.Js_traverse.def
     in
     t.scopes <- (defs, scope) :: t.scopes
 
@@ -288,9 +289,9 @@ class traverse record_block =
   object (m)
     inherit Js_traverse.free as super
 
-    method! block ?(catch = false) params =
-      record_block m#state ~catch params;
-      super#block params
+    method! block b =
+      record_block m#state b;
+      super#block b
   end
 
 let program' (module Strategy : Strategy) p =
@@ -298,7 +299,7 @@ let program' (module Strategy : Strategy) p =
   let state = Strategy.create nv in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
-  mapper#block [];
+  mapper#block (Params []);
   if S.cardinal mapper#get_free <> 0
   then
     if true

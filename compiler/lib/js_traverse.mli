@@ -65,13 +65,17 @@ type t =
   ; use : Code.Var.Set.t
   }
 
+type block =
+  | Catch of ident
+  | Params of ident list
+
 class type freevar =
   object ('a)
     inherit mapper
 
     method merge_info : 'a -> unit
 
-    method block : ?catch:bool -> ident list -> unit
+    method block : block -> unit
 
     method def_var : ident -> unit
 
