@@ -77,6 +77,8 @@ functions are optimized:
   * trampolines are used otherwise.
 <<a_manual chapter="tailcall" |More about tail call optimization>>.
 
+Effect handlers are fully supported with the {{{--enable=effects}}} flag. This is not the default for now since the generated code is slower, larger and less readable.
+
 Data representation differs from the usual one. Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), which is their
 natural size in JavaScript, and floats are not boxed.  As a

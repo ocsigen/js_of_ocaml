@@ -154,7 +154,7 @@ time-effects.svg: __run_effects
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
-	 -max 2.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 -max 5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-effects.svg: __run_effects
