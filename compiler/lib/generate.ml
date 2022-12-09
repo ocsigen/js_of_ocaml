@@ -921,7 +921,13 @@ let apply_fun_raw ctx f params exact cps =
     then apply_directly
     else
       J.ECond
-        ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
+        ( J.EBin
+            ( J.EqEq
+            , J.EBin
+                ( J.Or
+                , J.EDot (f, "l")
+                , J.EBin (J.Eq, J.EDot (f, "l"), J.EDot (f, "length")) )
+            , int n )
         , apply_directly
         , ecall
             (runtime_fun ctx "caml_call_gen")
