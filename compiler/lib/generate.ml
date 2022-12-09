@@ -981,8 +981,17 @@ let apply_fun_raw ctx f params exact cps =
     if exact
     then apply_directly
     else
+      let l = Utf8_string.of_string_exn "l" in
       J.ECond
-        ( J.EBin (J.EqEq, J.EDot (f, Utf8_string.of_string_exn "length"), int n)
+        ( J.EBin
+            ( J.EqEq
+            , J.EBin
+                ( J.Or
+                , J.EDot (f, l)
+                , J.EBin
+                    (J.Eq, J.EDot (f, l), J.EDot (f, Utf8_string.of_string_exn "length"))
+                )
+            , int n )
         , apply_directly
         , ecall
             (runtime_fun ctx "caml_call_gen")
