@@ -93,15 +93,30 @@ function caml_resume_stack(stack, k) {
 //Provides: caml_pop_fiber
 //Requires: caml_exn_stack, caml_fiber_stack
 //If: effects
-function caml_pop_fiber(k) {
-  // Move to the parent fiber, returning the one-level stack
-  // corresponding to the current fiber and the parent's low-level
-  // continuation
-  var stack = [0, k, caml_exn_stack, caml_fiber_stack.h, 0];
+function caml_pop_fiber() {
+  // Move to the parent fiber, returning the parent's low-level continuation
   var rem = caml_fiber_stack.r;
   caml_exn_stack = rem.x;
   caml_fiber_stack = rem.e;
-  return [0, stack, rem.k];
+  return rem.k;
+}
+
+//Provides: caml_perform_effect
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
+//If: effects
+function caml_perform_effect(eff, cont, k0) {
+  // Allocate a continuation if we don't already have one
+  if (!cont) cont = [245 /*continuation*/, 0];
+  // Get current effect handler
+  var handler = caml_fiber_stack.h[3];
+  // Cons the current fiber onto the continuation:
+  //   cont := Cons (k, exn_stack, handlers, !cont)
+  cont[1] = [0,k0,caml_exn_stack,caml_fiber_stack.h,cont[1]];
+  // Move to parent fiber and execute the effect handler there
+  // The handler is defined in Stdlib.Effect, so we know that the arity matches
+  var k1 = caml_pop_fiber();
+  return caml_stack_check_depth()?handler(eff,cont,k1,k1)
+         :caml_trampoline_return(handler,[eff,cont,k1,k1]);
 }
 
 //Provides: caml_alloc_stack
@@ -111,14 +126,14 @@ function caml_alloc_stack(hv, hx, hf) {
   function hval(x) {
     // Call [hv] in the parent fiber
     var f=caml_fiber_stack.h[1];
-    var ks=caml_pop_fiber(0)[2];
-    return f(x, ks);
+    var k=caml_pop_fiber();
+    return f(x, k);
   }
   function hexn(e) {
     // Call [hx] in the parent fiber
     var f=caml_fiber_stack.h[2];
-    var ks=caml_pop_fiber(0)[2];
-    return f(e, ks);
+    var k=caml_pop_fiber();
+    return f(e, k);
   }
   return [0, hval, [0, hexn, 0], [0, hv, hx, hf], 0];
 }

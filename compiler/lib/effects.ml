@@ -148,110 +148,6 @@ let allocate_closure ~st ~params ~body ~branch =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-module Runtime : sig
-  (* Manipulation of the execution context and of reified
-     continuations. See [runtime/effect.js] for details. *)
-
-  type cont = Var.t (* Low-level continuation (one-argument function) *)
-
-  type continuation = Var.t (* Reified continuation *)
-
-  type stack = Var.t (* Reified stack of fibers *)
-
-  val pop_fiber : cont -> instr list * stack * cont
-  (** [pop_fiber k] returns [(instrs, stack, k')], where [instrs] is
-      the list of instructions necessary to pop the topmost fiber,
-      binding the corresponding one-level stack to [stack] and the
-      low-level continuation of the next fiber to [k']. *)
-
-  val resume_stack : stack -> cont -> instr list * cont
-  (** [resume_stack stack k] returns [(instr, k')], where [instrs] is
-      the list of instructions necessary to updates the execution
-      context with the stack of fibers in [stack] (so as to resume a
-      continuation), binding the low-level continuation of the
-      innermost fiber to [k'] *)
-
-  val cons_fiber : stack -> continuation -> instr list
-  (** [cons_fiber stack cont] returns the list of instructions
-      necessary to append a one-level stack [stack] to the stack of
-      fibers of the continuation. *)
-
-  val get_effect_handler : stack -> instr list * Var.t
-  (** [get_effect_handler stack] returns [(instrs, handler)], where
-      [instrs] is the list of instructions necessary to bind the
-      topmost effect handler in [stack] to [handler]. *)
-
-  val continuation_of_stack : stack -> instr list * continuation
-  (** [continuation_of_stack stack] returns [(instrs, handler)], where
-      [instrs] is the list of instructions necessary to allocate a
-      continuation corresponding to stack [stack] and bind it to
-      [continuation] *)
-
-  val push_trap : cont -> instr list
-  (** [push_trap exn_handler] returns the list of instructions
-      necessary to push the exception handler [exn_handler] to the
-      stack of exception handlers. *)
-
-  val pop_trap : unit -> instr list * cont
-  (** [pop_trap exn_handler] returns [(instrs, exn_handler)], where
-      [instrs] is the list of instructions necessary to remove and
-      return the topmost element of the stack of exception handlers,
-      and bind it to [exn_handler]. *)
-end = struct
-  type cont = Var.t
-
-  type continuation = Var.t
-
-  type stack = Var.t
-
-  let pop_fiber k =
-    let res = Var.fresh () in
-    let stack = Var.fresh_n "stack" in
-    let k' = Var.fresh_n "cont" in
-    ( [ Let (res, Prim (Extern "caml_pop_fiber", [ Pv k ]))
-      ; Let (stack, Field (res, 0))
-      ; Let (k', Field (res, 1))
-      ]
-    , stack
-    , k' )
-
-  let resume_stack stack k =
-    let k' = Var.fresh_n "cont" in
-    [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ], k'
-
-  let cons_fiber fiber continuation =
-    (* Assumes a one-level stack (the last component of [fiber] is empty). *)
-    (* let Cons (k, exn_stack, handlers, Empty) = fiber in
-       continuation := Cons (k, exn_stack, handlers, !continuation) *)
-    let stack = Var.fresh () in
-    let k = Var.fresh () and exn_stack = Var.fresh () and b = Var.fresh () in
-    let handlers = Var.fresh () in
-    [ Let (stack, Field (continuation, 0))
-    ; Let (k, Field (fiber, 0))
-    ; Let (exn_stack, Field (fiber, 1))
-    ; Let (handlers, Field (fiber, 2))
-    ; Let (b, Block (0, [| k; exn_stack; handlers; stack |], NotArray))
-    ; Set_field (continuation, 0, b)
-    ]
-
-  let get_effect_handler stack =
-    (* let Cons (_, _, h, _) = stack in h.effc *)
-    let a = Var.fresh () in
-    let handler = Var.fresh_n "effect_handler" in
-    [ Let (a, Field (stack, 2)); Let (handler, Field (a, 2)) ], handler
-
-  let continuation_of_stack stack =
-    let continuation = Var.fresh_n "continuation" in
-    [ Let (continuation, Block (245, [| stack |], NotArray)) ], continuation
-
-  let push_trap exn_handler =
-    [ Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ])) ]
-
-  let pop_trap () =
-    let exn_handler = Var.fresh_n "raise" in
-    [ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ], exn_handler
-end
-
 let cps_branch ~st (pc, args) =
   let ret = Var.fresh () in
   [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ], Return ret
@@ -263,15 +159,17 @@ let cps_jump_cont ~st cont =
   in
   call_block, []
 
-let cps_last ~st (last : last) ~(k : Runtime.cont) : instr list * last =
+let cps_last ~st (last : last) ~k : instr list * last =
   match last with
   | Return x ->
       let ret = Var.fresh () in
       [ Let (ret, Apply { f = k; args = [ x ]; exact = true }) ], Return ret
   | Raise (x, _) ->
-      let pop_instrs, exn_handler = Runtime.pop_trap () in
       let ret = Var.fresh () in
-      ( pop_instrs @ [ Let (ret, Apply { f = exn_handler; args = [ x ]; exact = true }) ]
+      let exn_handler = Var.fresh_n "raise" in
+      ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
+        ; Let (ret, Apply { f = exn_handler; args = [ x ]; exact = true })
+        ]
       , Return ret )
   | Stop -> [], Stop
   | Branch cont -> cps_branch ~st cont
@@ -287,16 +185,18 @@ let cps_last ~st (last : last) ~(k : Runtime.cont) : instr list * last =
         (* Construct handler closure *)
         allocate_closure ~st ~params:[ x ] ~body:[] ~branch:(Branch handler_cont)
       in
-      let push = Runtime.push_trap exn_handler in
       let ret = Var.fresh () in
       ( constr_handler
-        @ push
-        @ [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ]
+        @ [ Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+          ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
+          ]
       , Return ret )
   | Poptrap (pc, args) ->
-      let pop, _ = Runtime.pop_trap () in
       let ret = Var.fresh () in
-      ( pop @ [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ]
+      let exn_handler = Var.fresh () in
+      ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
+        ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
+        ]
       , Return ret )
 
 let cps_instr ~st (instr : instr) : instr =
@@ -311,10 +211,11 @@ let cps_instr ~st (instr : instr) : instr =
             , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
             )
       | _ -> assert false)
-  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform"), _))) -> assert false
+  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+      assert false
   | _ -> instr
 
-let cps_block ~st ~(k : Runtime.cont) pc block =
+let cps_block ~st ~k pc block =
   let alloc_jump_closures =
     match Addr.Map.find pc st.jc.closures_of_alloc_site with
     | to_allocate ->
@@ -325,41 +226,40 @@ let cps_block ~st ~(k : Runtime.cont) pc block =
     | exception Not_found -> []
   in
 
+  let rewrite_instr e =
+    match e with
+    | Apply { f; args; exact } ->
+        Some (fun ~x ~k -> [ Let (x, Apply { f; args = args @ [ k ]; exact }) ])
+    | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
+        Some
+          (fun ~x ~k ->
+            let k' = Var.fresh_n "cont" in
+            [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ]))
+            ; Let (x, Apply { f; args = [ arg; k' ]; exact = false })
+            ])
+    | Prim (Extern "%perform", [ Pv effect ]) ->
+        Some
+          (fun ~x ~k ->
+            [ Let
+                (x, Prim (Extern "caml_perform_effect", [ Pv effect; Pc (Int 0l); Pv k ]))
+            ])
+    | Prim (Extern "%reperform", [ Pv eff; Pv continuation ]) ->
+        Some
+          (fun ~x ~k ->
+            [ Let
+                (x, Prim (Extern "caml_perform_effect", [ Pv eff; Pv continuation; Pv k ]))
+            ])
+    | _ -> None
+  in
+
   let rewritten_block =
     match List.split_last block.body, block.branch with
     | Some (body_prefix, Let (x, e)), Return ret ->
-        let rewritten_instrs =
-          match e with
-          | Apply { f; args; exact } ->
-              Some [ Let (x, Apply { f; args = args @ [ k ]; exact }) ]
-          | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
-              let resume, k' = Runtime.resume_stack stack k in
-              Some (resume @ [ Let (x, Apply { f; args = [ arg; k' ]; exact = false }) ])
-          | Prim (Extern "%reperform", [ Pv eff; Pv continuation ]) ->
-              (* We execute the effect handler of the current fiber in
-                 the parent fiber. *)
-              let pop, fiber, k' = Runtime.pop_fiber k in
-              let cons_fiber = Runtime.cons_fiber fiber continuation in
-              let read_handler, handler = Runtime.get_effect_handler fiber in
-              Some
-                (pop
-                @ cons_fiber
-                @ read_handler
-                @ [ Let
-                      ( x
-                      , Apply
-                          { f = handler
-                          ; args = [ eff; continuation; k'; k' ]
-                          ; exact = false
-                          } )
-                  ])
-          | _ -> None
-        in
-        Option.map rewritten_instrs ~f:(fun instrs ->
+        Option.map (rewrite_instr e) ~f:(fun instrs ->
             assert (List.is_empty alloc_jump_closures);
             assert (Var.equal x ret);
-            body_prefix, instrs, block.branch)
-    | Some (body_prefix, Let (x, e)), Branch cont -> (
+            body_prefix, instrs ~x ~k, block.branch)
+    | Some (body_prefix, Let (x, e)), Branch cont ->
         let allocate_continuation f =
           let constr_cont, k' =
             (* Construct continuation: it binds the return value [x],
@@ -376,44 +276,12 @@ let cps_block ~st ~(k : Runtime.cont) pc block =
               ~branch:(Return ret)
           in
           let ret = Var.fresh () in
-          Some (body_prefix, constr_cont @ f ret k', Return ret)
+          body_prefix, constr_cont @ f ~x:ret ~k:k', Return ret
         in
-        match e with
-        | Apply { f; args; exact; _ } ->
-            allocate_continuation
-            @@ fun ret k' -> [ Let (ret, Apply { f; args = args @ [ k' ]; exact }) ]
-        | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
-            allocate_continuation
-            @@ fun ret k' ->
-            (* Resume the continuation [stack] and invoke function [f]
-               in this context *)
-            let resume, k'' = Runtime.resume_stack stack k' in
-            resume @ [ Let (ret, Apply { f; args = [ arg; k'' ]; exact = false }) ]
-        | Prim (Extern "%perform", [ Pv effect ]) ->
-            allocate_continuation
-            @@ fun ret k' ->
-            (* Create a continuation from the current fiber and
-               execute the effect handler in the parent fiber. *)
-            let pop, fiber, k'' = Runtime.pop_fiber k' in
-            let allocate_continuation, continuation =
-              Runtime.continuation_of_stack fiber
-            in
-            let read_handler, handler = Runtime.get_effect_handler fiber in
-            pop
-            @ allocate_continuation
-            @ read_handler
-            @ [ Let
-                  ( ret
-                  , Apply
-                      { f = handler
-                      ; args = [ effect; continuation; k''; k'' ]
-                      ; exact = false
-                      } )
-              ]
-        | _ -> None)
-    | None, _
+        Option.map (rewrite_instr e) ~f:allocate_continuation
     | Some (_, (Set_field _ | Offset_ref _ | Array_set _ | Assign _)), _
-    | _, (Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _) -> None
+    | Some _, (Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _)
+    | None, _ -> None
   in
 
   let body, last =
@@ -438,24 +306,19 @@ let split_blocks (p : Code.program) =
   let split_block pc block p =
     let is_split_point i r branch =
       match i with
-      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform"), _))) -> (
+      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) -> (
           (not (List.is_empty r))
           ||
           match branch with
           | Branch _ -> false
-          | Return x' -> (
-              (not (Var.equal x x'))
-              ||
-              match i with
-              | Let (_, Prim (Extern "%perform", _)) -> true
-              | _ -> false)
+          | Return x' -> not (Var.equal x x')
           | _ -> true)
       | _ -> false
     in
     let rec split (p : Code.program) pc block accu l branch =
       match l with
       | [] ->
-          let block = { block with body = List.rev (l @ accu) } in
+          let block = { block with body = List.rev accu } in
           { p with blocks = Addr.Map.add pc block p.blocks }
       | (Let (x', e) as i) :: r when is_split_point i r branch ->
           let x = Var.fork x' in
