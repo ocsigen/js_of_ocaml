@@ -462,13 +462,17 @@ let empty =
 
 (* def/used/free variable *)
 
+type block =
+  | Catch of ident
+  | Params of ident list
+
 class type freevar =
   object ('a)
     inherit mapper
 
     method merge_info : 'a -> unit
 
-    method block : ?catch:bool -> Javascript.ident list -> unit
+    method block : block -> unit
 
     method state : t
 
@@ -561,7 +565,7 @@ class free =
                 ident
             | None -> None
           in
-          tbody#block params;
+          tbody#block (Params params);
           m#merge_info tbody;
           EFun (ident, params, body, nid)
       | _ -> super#expression x
@@ -572,13 +576,13 @@ class free =
           let tbody = {<state_ = empty; level = succ level>} in
           let () = List.iter params ~f:tbody#def_var in
           let body = tbody#sources body in
-          tbody#block params;
+          tbody#block (Params params);
           m#def_var id;
           m#merge_info tbody;
           Function_declaration (id, params, body, nid)
       | Statement _ -> super#source x
 
-    method block ?catch:_ _ = ()
+    method block _ = ()
 
     method variable_declaration ((id, _) as d) =
       m#def_var id;
@@ -595,7 +599,7 @@ class free =
             | None -> None
             | Some (id, block) ->
                 let block = tbody#statements block in
-                tbody#block ~catch:true [ id ];
+                tbody#block (Catch id);
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
                 (* .. except the use of 'id' since its scope is limited
@@ -752,10 +756,11 @@ class compact_vardecl =
           Try_statement (b, w, f)
       | s -> s
 
-    method block ?(catch = false) params =
-      ignore catch;
-      List.iter params ~f:m#except;
-      super#block params
+    method block block =
+      (match block with
+      | Catch e -> m#except e
+      | Params p -> List.iter p ~f:m#except);
+      super#block block
 
     method merge_info from =
       super#merge_info from;
