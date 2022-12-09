@@ -26,7 +26,7 @@ type t =
 
 let all = [ Isomorphic; Browser; Nodejs ]
 
-let equal (x : t) y = Stdlib.Poly.equal x y
+let equal (x : t) y = Poly.equal x y
 
 let to_string = function
   | Browser -> "browser"
