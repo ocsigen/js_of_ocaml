@@ -91,7 +91,7 @@ while compiling the OCaml toplevel:
     BitSet.set a.used i;
     if a.first_free = i then a.first_free <- BitSet.next_free a.used a.first_free
 
-  let is_available l i = List.for_all l ~f:(fun a -> BitSet.mem a.used i)
+  let is_available l i = List.for_all l ~f:(fun a -> not (BitSet.mem a.used i))
 
   let first_available l =
     let rec find_rec n l =

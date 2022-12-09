@@ -97,7 +97,7 @@ console.log("xx =", xx);
       3: f(){a=2;try{throw 1}catch(a){var
       4: a=3}return a}function
       5: g(){var
-      6: a=2;return a}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
+      6: b=2;return b}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
     xx = 1
     f() = 2
     xx = 1
