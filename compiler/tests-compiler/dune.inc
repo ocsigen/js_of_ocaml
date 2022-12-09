@@ -66,9 +66,11 @@
 (library
  ;; compiler/tests-compiler/effects.ml
  (name effects_15)
+ (enabled_if (>= %{ocaml_version} 5))
  (modules effects)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
+  (enabled_if true)
   (flags -allow-output-patterns)
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)

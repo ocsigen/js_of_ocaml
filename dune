@@ -2,6 +2,13 @@
  (dev
   (flags
    (:standard -w +a-4-40-41-42-44-48-58-66-70)))
+ (using-effects
+  (js_of_ocaml
+   (compilation_mode separate)
+   (flags
+    (:standard --enable effects))
+   (build_runtime_flags
+    (:standard --enable effects))))
  (bench_no_debug
   (flags
    (:standard \ -g))
