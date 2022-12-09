@@ -44,19 +44,19 @@ let%expect_test _ =
   Util.print_program program;
   [%expect
     {|
-    Function parameter properly assigned: 1/5
+    Function parameter properly assigned: 5/5
     short variable count: 12/12
     short variable occurrences: 26/26
-    (function(d)
+    (function(a)
        {"use strict";
-        var e=d.jsoo_runtime;
-        function b(b,f)
-         {function c(b){return e.caml_div(b,0)}
-          var a=b < f?1:2;
-          try {var g=c(b),d=g}catch(a){var d=c(a)}
-          return d}
-        var c=[0,b];
-        e.caml_register_global(0,c,"Test");
+        var f=a.jsoo_runtime;
+        function b(a,b)
+         {function d(a){return f.caml_div(a,0)}
+          var c=a < b?1:2;
+          try {var g=d(a),e=g}catch(c){var e=d(c)}
+          return e}
+        var d=[0,b];
+        f.caml_register_global(0,d,"Test");
         0;
         return}
       (globalThis));
