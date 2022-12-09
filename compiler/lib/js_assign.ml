@@ -114,69 +114,6 @@ while compiling the OCaml toplevel:
 
   let create nv = { constr = Array.make nv []; parameters = [| [] |]; constraints = [] }
 
-  (* let output_debug_information t count =
-   *
-   *
-   *   let weight v = (IdentMap.find (V v) count) in
-   *
-   *   let usage =
-   *     List.fold_left
-   *       (fun u s ->
-   *          S.fold
-   *            (fun v u -> VM.add v (try 1 + VM.find v u with Not_found -> 1) u)
-   *            s u)
-   *       VM.empty t.constraints
-   *   in
-   *
-   *   let l = List.map fst (VM.bindings usage) in
-   *
-   *   let ch = open_out "/tmp/weights.txt" in
-   *   List.iter
-   *     (fun v ->
-   *        Printf.fprintf ch "%d / %d / %d\n" (weight v)
-   *          (VM.find v usage) (Var.idx v))
-   *     l;
-   *   close_out ch;
-   *
-   *   let ch = open_out "/tmp/problem.txt" in
-   *   Printf.fprintf ch "Maximize\n";
-   *   let a = Array.of_list l in
-   *   Printf.fprintf ch "  ";
-   *   for i = 0 to Array.length a - 1 do
-   *     let v = a.(i) in
-   *     let w = weight v in
-   *     if i > 0 then Printf.fprintf ch " + ";
-   *     Printf.fprintf ch "%d x%d" w (Var.idx v)
-   *   done;
-   *   Printf.fprintf ch "\n";
-   *   Printf.fprintf ch "Subject To\n";
-   *   List.iter
-   *     (fun s ->
-   *        if S.cardinal s > 0 then begin
-   *          Printf.fprintf ch "  ";
-   *          let a = Array.of_list (S.elements s) in
-   *          for i = 0 to Array.length a - 1 do
-   *            if i > 0 then Printf.fprintf ch " + ";
-   *            Printf.fprintf ch "x%d" (Var.idx a.(i))
-   *          done;
-   *          Printf.fprintf ch "<= 54\n"
-   *        end)
-   *     t.constraints;
-   *   Printf.fprintf ch "Binary\n  ";
-   *   List.iter (fun v -> Printf.fprintf ch " x%d" (Var.idx v)) l;
-   *   Printf.fprintf ch "\nEnd\n";
-   *   close_out ch;
-   *
-   *   let ch = open_out "/tmp/problem2" in
-   *   let var x = string_of_int (Var.idx x) in
-   *   let a = List.map (fun v -> (var v, weight v)) l in
-   *   let b =
-   *     List.map (fun s -> List.map var (S.elements s)) t.constraints in
-   *   let c = List.map var l in
-   *   output_value ch
-   *     ((a, b, c) : (string * int) list * string list list * string list);
-   *   close_out ch *)
-
   let allocate_variables t ~count =
     let weight v = try IdentMap.find (V (Var.of_idx v)) count with Not_found -> 0 in
     let constr = t.constr in
@@ -370,7 +307,6 @@ let program' (module Strategy : Strategy) p =
       Format.eprintf "Some variables escaped (#%d)" (S.cardinal mapper#get_free);
       S.iter (fun s -> Format.eprintf "%s@." (Var.to_string s)) mapper#get_free);
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
-  (* if debug () then output_debug_information state coloring#get_count; *)
   let color = function
     | V v ->
         let name = names.(Var.idx v) in
