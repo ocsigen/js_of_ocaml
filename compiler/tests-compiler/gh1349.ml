@@ -52,8 +52,8 @@ let%expect_test _ =
         var f=a.jsoo_runtime;
         function b(a,b)
          {function d(a){return f.caml_div(a,0)}
-          var c=a < b?1:2;
-          try {var g=d(a),e=g}catch(c){var e=d(c)}
+          var g=a < b?1:2;
+          try {var c=d(a),e=c}catch(c){var e=d(g)}
           return e}
         var d=[0,b];
         f.caml_register_global(0,d,"Test");

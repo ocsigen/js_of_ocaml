@@ -209,6 +209,11 @@ while compiling the OCaml toplevel:
 
   let record_block state scope (block : Js_traverse.block) =
     let all = S.union scope.Js_traverse.def scope.Js_traverse.use in
+    let all =
+      match block with
+      | Catch (V v) -> S.add v all
+      | Catch (S _) | Params _ -> all
+    in
     match block with
     | Catch v -> add_constraints state all ~offset:5 [ v ]
     | Params p -> add_constraints state all ~offset:0 p
