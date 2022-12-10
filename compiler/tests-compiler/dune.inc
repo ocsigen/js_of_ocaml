@@ -240,6 +240,22 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/gh1354.ml
+ (name gh1354_15)
+ (enabled_if true)
+ (modules gh1354)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (flags -allow-output-patterns)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/gl507.ml
  (name gl507_15)
  (enabled_if true)
