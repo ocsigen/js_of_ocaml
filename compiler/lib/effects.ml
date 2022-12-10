@@ -167,7 +167,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
       match block.branch with
       | Branch (dst, _) -> (
           match List.last block.body with
-          | Some (Let (x, (Apply _ | Prim _))) when Var.Tbl.get cps_needed x ->
+          | Some (Let (x, (Apply _ | Prim _))) when Var.Set.mem x cps_needed ->
               (* If the blocks ends with a CPS call, its
                  continuation needs to be transformed *)
               mark_needed dst;
@@ -527,7 +527,7 @@ let f (p : Code.program) =
         let () =
           if match name_opt with
              | None -> true
-             | Some name_opt -> Var.Tbl.get cps_needed name_opt
+             | Some name -> Var.Set.mem name cps_needed
           then (
             let transformation_needed, _ =
               compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start

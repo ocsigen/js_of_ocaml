@@ -17,7 +17,7 @@ it so that we do not have to convert it to CPS:
 
 open Code
 
-let add_var = Var.ISet.add
+let add_var s x = s := Var.Set.add x !s
 
 (* x depends on y *)
 let add_dep deps x y =
@@ -45,6 +45,7 @@ let block_deps info vars deps blocks fun_name pc =
       | _ -> ())
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
+module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 
 module Domain = struct
   type t = bool
@@ -54,19 +55,16 @@ module Domain = struct
   let bot = false
 end
 
-module Solver = G.Solver (Domain)
+module Solver = G'.Solver (Domain)
 
-let fold_children g f x acc =
-  let acc = ref acc in
-  g.G.iter_children (fun y -> acc := f y !acc) x;
-  !acc
+let fold_children g f x acc = g.G'.fold_children (fun y acc -> f y acc) x acc
 
 let cps_needed info rev_deps st x =
   let res =
     let idx = Var.idx x in
     fold_children
       rev_deps
-      (fun y acc -> acc || Var.Tbl.get st y)
+      (fun y acc -> acc || Var.Map.find y st)
       x
       (match info.Flow.info_defs.(idx) with
       | Flow.Expr (Apply { f; _ }) ->
@@ -102,12 +100,12 @@ let cps_needed info rev_deps st x =
 
 let annot st xi =
   match (xi : Code.Print.xinstr) with
-  | Instr (Let (x, _)) when Var.Tbl.get st x -> "*"
+  | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
 
 let f (p, info) =
   let nv = Var.count () in
-  let vars = Var.ISet.empty () in
+  let vars = ref Var.Set.empty in
   let deps = Array.make nv Var.Set.empty in
   Code.fold_closures
     p
@@ -120,7 +118,10 @@ let f (p, info) =
         ())
     ();
   let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
+    { G'.domain = !vars
+    ; fold_children = (fun f x r -> Var.Set.fold f deps.(Var.idx x) r)
+    }
   in
-  let rev_deps = G.invert () g in
-  Solver.f () g (cps_needed info rev_deps)
+  let rev_deps = G'.invert g in
+  let res = Solver.f g (cps_needed info rev_deps) in
+  Var.Map.fold (fun x v s -> if v then Var.Set.add x s else s) res Var.Set.empty
