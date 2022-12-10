@@ -32,6 +32,25 @@ module type XML =
      and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
      and type elt = Dom.node Js.t
 
+class type ['a, 'b] weakMap =
+  object
+    method set : 'a -> 'b -> unit Js.meth
+
+    method get : 'a -> 'b Js.Optdef.t Js.meth
+  end
+
+let retain =
+  let map : (Dom.node Js.t, Obj.t Js.js_array Js.t) weakMap Js.t =
+    let weakMap = Js.Unsafe.global##._WeakMap in
+    new%js weakMap
+  in
+  fun (type a) node ~(keepme : a) ->
+    let prev =
+      Js.Optdef.case (map##get node) (fun () -> new%js Js.array_empty) (fun x -> x)
+    in
+    let (_ : int) = prev##push (Obj.repr keepme) in
+    map##set node prev
+
 module Xml = struct
   module W = Xml_wrap.NoWrap
 
@@ -180,8 +199,7 @@ module Xml = struct
         let n = Js.string n' in
         match att with
         | Attr a ->
-            (* Note that once we have weak pointers working, we'll need to React.S.retain *)
-            let (_ : unit React.S.t) =
+            let (keepme : unit React.S.t) =
               React.S.map
                 (function
                   | Some v -> (
@@ -200,7 +218,7 @@ module Xml = struct
                               Js.Unsafe.set node name Js.null)))
                 a
             in
-            ()
+            retain (node :> Dom.node Js.t) ~keepme
         | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
         | MouseEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
         | KeyboardEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
@@ -359,8 +377,8 @@ module Util = struct
 
   let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
     removeChildren dom;
-    (* Note that once we have weak pointers working, we'll need to React.S.retain *)
-    let _s : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes () in
+    let keepme : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes () in
+    retain (dom : Dom.node Js.t) ~keepme;
     ()
 end
 
@@ -436,7 +454,8 @@ module R = struct
 
     let pcdata s =
       let e = Dom_html.document##createTextNode (Js.string "") in
-      let _ = React.S.map (fun s -> e##.data := Js.string s) s in
+      let keepme = React.S.map (fun s -> e##.data := Js.string s) s in
+      retain (e :> Dom.node Js.t) ~keepme;
       (e :> Dom.node Js.t)
 
     let encodedpcdata s = pcdata s
