@@ -10,6 +10,7 @@
 
 ## Bug fixes
 * Runime: Gc.finalise_last should not be eliminated
+* Tyxml: reactive dom needed a fix after #1268 (#1353)
 * Toplevel: Make sure the toplevel uses the correct memory representaion for strings
 * Compiler: fix minifier, missing constraint on try-catch blocks.
 * Compiler: Miscompilation of code involving references and exceptions (#1354, #1356)
@@ -35,7 +36,7 @@
 * Lib: add normalize in js_string (ES6)
 * Lib: more complete transition event bindings
 * Lib: remove support for old browser-specific transition events
-* Runtime: Implement weak semantic for weak and ephemeron
+* Runtime: Implement weak semantic for weak and ephemeron (#1268)
 * Runtime: Implement Gc.finalise_last
 * Runtime: Implement buffer for in_channels
 * Runtime: add support for unix_opendir, unix_readdir, unix_closedir, win_findfirst, win_findnext, win_findclose
