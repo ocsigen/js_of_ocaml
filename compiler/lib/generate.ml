@@ -1329,6 +1329,12 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
 
 and translate_instr ctx expr_queue loc instr =
   match instr with
+  | Assign (x, y) ->
+      let (_py, cy), expr_queue = access_queue expr_queue y in
+      flush_queue
+        expr_queue
+        mutator_p
+        [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
       let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =
@@ -1508,6 +1514,13 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       let try_catch_frontier = Addr.Set.union new_frontier handler_frontier_cont in
       if debug () then Format.eprintf "@[<hv 2>try {@;";
       if Interm.mem pc1 handler_interm then decr_preds st pc1;
+      (* Parameters of the exception handler are assigned here, not in
+         handler body. Indeed, they correspond to variables that are
+         going to be modified by an instruction Assign. *)
+      let _, assign_handler_variables =
+        compile_argument_passing st.ctx [] (pc2, args2) Addr.Set.empty (fun _ ->
+            false, [])
+      in
       let never_body, body =
         compile_branch
           st
@@ -1518,23 +1531,13 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
           try_catch_frontier
           handler_interm
       in
-      let body = prefix @ body in
+      let body = assign_handler_variables @ prefix @ body in
       if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
-      let x =
-        let block2 = Addr.Map.find pc2 st.blocks in
-        let m = Subst.build_mapping args2 block2.params in
-        try Var.Map.find x m with Not_found -> x
-      in
+      (*Phisimpl should have eliminated this argument *)
+      assert (not (List.mem x ~set:args2));
       if Interm.mem pc2 handler_interm then decr_preds st pc2;
       let never_handler, handler =
-        compile_branch
-          st
-          []
-          (pc2, args2)
-          loop_stack
-          backs
-          try_catch_frontier
-          handler_interm
+        compile_block st [] pc2 loop_stack try_catch_frontier handler_interm
       in
       if debug () then Format.eprintf "}@]@,";
       Addr.Set.iter (decr_preds st) handler_frontier;

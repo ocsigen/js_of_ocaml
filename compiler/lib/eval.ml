@@ -353,7 +353,7 @@ let rec do_not_raise pc visited blocks =
     let visited = Addr.Set.add pc visited in
     let b = Addr.Map.find pc blocks in
     List.iter b.body ~f:(function
-        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) -> ()
+        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
         | Let (_, e) -> (
             match e with
             | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()

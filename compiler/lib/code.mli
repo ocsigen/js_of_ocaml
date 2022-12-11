@@ -166,6 +166,7 @@ type expr =
 
 type instr =
   | Let of Var.t * expr
+  | Assign of Var.t * Var.t
   | Set_field of Var.t * int * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t

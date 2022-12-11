@@ -78,6 +78,7 @@ and mark_reachable st pc =
     List.iter block.body ~f:(fun i ->
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
+        | Assign _ -> ()
         | Set_field (x, _, y) ->
             mark_var st x;
             mark_var st y
@@ -107,6 +108,7 @@ and mark_reachable st pc =
 let live_instr st i =
   match i with
   | Let (x, e) -> st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
+  | Assign (x, _) -> st.live.(Var.idx x) > 0
   | Set_field _ | Offset_ref _ | Array_set _ -> true
 
 let rec filter_args st pl al =
@@ -192,6 +194,7 @@ let f ({ blocks; _ } as p : Code.program) =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
+          | Assign (x, y) -> add_def defs x (Var y)
           | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()

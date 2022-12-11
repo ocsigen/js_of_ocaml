@@ -109,6 +109,9 @@ let program_deps { blocks; _ } =
               add_var vars x;
               add_expr_def defs x e;
               expr_deps blocks vars deps defs x e
+          | Assign (x, y) ->
+              add_dep deps x y;
+              add_assign_def vars defs x y
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
@@ -237,6 +240,7 @@ let program_escape defs known_origins { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) -> expr_escape st x e
+          | Assign _ -> ()
           | Set_field (x, _, y) | Array_set (x, _, y) ->
               Var.Set.iter
                 (fun y -> possibly_mutable.(Var.idx y) <- true)
