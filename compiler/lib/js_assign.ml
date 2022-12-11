@@ -316,6 +316,11 @@ let program' (module Strategy : Strategy) p =
   let color = function
     | V v ->
         let name = names.(Var.idx v) in
+        let name =
+          match name with
+          | "" -> "escape"
+          | n -> n
+        in
         assert (not (String.is_empty name));
         ident ~var:v name
     | x -> x

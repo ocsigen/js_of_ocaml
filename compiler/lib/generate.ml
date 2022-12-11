@@ -1329,6 +1329,12 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
 
 and translate_instr ctx expr_queue loc instr =
   match instr with
+  | Assign (x, y) ->
+      let (_py, cy), expr_queue = access_queue expr_queue y in
+      flush_queue
+        expr_queue
+        mutator_p
+        [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
       let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =

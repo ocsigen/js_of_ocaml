@@ -34,6 +34,7 @@ let pure_expr pure_funs e =
 let pure_instr pure_funs i =
   match i with
   | Let (_, e) -> pure_expr pure_funs e
+  | Assign _ -> false
   | Set_field _ | Offset_ref _ | Array_set _ -> false
 
 (****)

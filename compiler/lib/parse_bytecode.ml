@@ -539,7 +539,10 @@ module State = struct
     | Var x -> Format.fprintf f "%a" Var.print x
     | Dummy -> Format.fprintf f "???"
 
-  type handler = { block_pc : Addr.t }
+  type handler =
+    { block_pc : Addr.t
+    ; stack : elt list
+    }
 
   type t =
     { accu : elt
@@ -628,7 +631,9 @@ module State = struct
         state
 
   let push_handler state =
-    { state with handlers = { block_pc = state.current_pc } :: state.handlers }
+    { state with
+      handlers = { block_pc = state.current_pc; stack = state.stack } :: state.handlers
+    }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
@@ -865,13 +870,25 @@ and compile infos pc state instrs =
         compile infos (pc + 2) (State.pop n state) instrs
     | ASSIGN ->
         let n = getu code (pc + 1) in
+        let accu = State.accu state in
         let state = State.assign state n in
+        let stack_size = List.length state.stack in
+        let l =
+          List.fold_left state.handlers ~init:[] ~f:(fun acc (handler : State.handler) ->
+              let handler_stack_size = List.length handler.stack in
+              let diff = stack_size - handler_stack_size in
+              if n >= diff
+              then
+                let dest = State.elt_to_var (List.nth handler.stack (n - diff)) in
+                Assign (dest, accu) :: acc
+              else acc)
+        in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         (* We switch to a different block as this may have
            changed the exception handler continuation *)
         compile_block infos.blocks infos.debug code (pc + 2) state;
-        Let (x, const 0l) :: instrs, Branch (pc + 2, State.stack_vars state), state
+        l @ (Let (x, const 0l) :: instrs), Branch (pc + 2, State.stack_vars state), state
     | ENVACC1 -> compile infos (pc + 1) (State.env_acc 1 state) instrs
     | ENVACC2 -> compile infos (pc + 1) (State.env_acc 2 state) instrs
     | ENVACC3 -> compile infos (pc + 1) (State.env_acc 3 state) instrs
@@ -1891,7 +1908,8 @@ and compile infos pc state instrs =
         let y = State.accu state in
         let z, state = State.fresh_var state in
         let x, state = State.fresh_var state in
-        if debug_parser () then Format.printf "%a = %a + %ld@." Var.print x Var.print y n;
+        if debug_parser ()
+        then Format.printf "%a ======= %a + %ld@." Var.print x Var.print y n;
         compile
           infos
           (pc + 2)

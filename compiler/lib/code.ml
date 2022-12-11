@@ -317,6 +317,7 @@ type expr =
 
 type instr =
   | Let of Var.t * expr
+  | Assign of Var.t * Var.t
   | Set_field of Var.t * int * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
@@ -452,6 +453,7 @@ module Print = struct
   let instr f i =
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
+    | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
     | Set_field (x, i, y) -> Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
@@ -635,6 +637,7 @@ let invariant { blocks; start; _ } =
       | Let (x, e) ->
           define x;
           check_expr e
+      | Assign _ -> ()
       | Set_field (_, _i, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()

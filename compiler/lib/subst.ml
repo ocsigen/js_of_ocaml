@@ -41,6 +41,7 @@ let expr s e =
 let instr s i =
   match i with
   | Let (x, e) -> Let (x, expr s e)
+  | Assign (x, y) -> Assign (s x, s y)
   | Set_field (x, n, y) -> Set_field (s x, n, s y)
   | Offset_ref (x, n) -> Offset_ref (s x, n)
   | Array_set (x, y, z) -> Array_set (s x, s y, s z)
