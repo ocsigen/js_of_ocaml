@@ -97,6 +97,7 @@ type st =
   { index : int
   ; mutable lowlink : int
   ; mutable in_stack : bool
+  ; mutable revisited : bool
   }
 
 let find_loops p =
@@ -105,7 +106,7 @@ let find_loops p =
   let state = ref Addr.Map.empty in
   let stack = Stack.create () in
   let rec traverse pc =
-    let st = { index = !index; lowlink = !index; in_stack = true } in
+    let st = { index = !index; lowlink = !index; in_stack = true; revisited = false } in
     state := Addr.Map.add pc st !state;
     incr index;
     Stack.push pc stack;
@@ -115,7 +116,10 @@ let find_loops p =
       (fun pc' () ->
         try
           let st' = Addr.Map.find pc' !state in
-          if st'.in_stack then st.lowlink <- min st.lowlink st'.index
+          if st'.in_stack
+          then (
+            st'.revisited <- true;
+            st.lowlink <- min st.lowlink st'.index)
         with Not_found ->
           traverse pc';
           let st' = Addr.Map.find pc' !state in
@@ -132,7 +136,9 @@ let find_loops p =
       do
         ()
       done;
-      if List.length !l > 1
+      (* If we revisit the top element of the stack, then we have a loop.
+         This work even for loops of size 1 *)
+      if st.revisited
       then List.iter !l ~f:(fun pc' -> in_loop := Addr.Map.add pc' pc !in_loop))
   in
   Code.fold_closures p (fun _ _ (pc, _) () -> traverse pc) ();
