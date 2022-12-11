@@ -56,9 +56,10 @@ with Exit ->
          Stdlib=global_data.Stdlib,
          Stdlib_Format=global_data.Stdlib__Format,
          _c_=[0,[4,0,0,0,[17,4,0]],runtime.caml_string_of_jsbytes("%d@.")],
+         _b_=0,
          _a_=0;
         try
-         {var _b_=_a_;0;_b_ = _a_ + 1 | 0;throw Stdlib[3]}
+         {0;_b_ = _a_ + 1 | 0;throw Stdlib[3]}
         catch(_d_)
          {_d_ = caml_wrap_exception(_d_);
           if(_d_ !== Stdlib[3])throw _d_;
@@ -120,14 +121,16 @@ with Exit ->
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[17,4,0]]]],
            caml_string_of_jsbytes("%d %d@.")],
+         _c_=0,
          _a_=0,
          _b_=0;
         try
-         {var _c_=_a_,_e_=_a_ + 1 | 0;
+         {var _e_=_a_ + 1 | 0;
           0;
           _c_ = _e_;
+          var _f_=_e_;
           try
-           {var _f_=_e_,_h_=_e_ + 1 | 0;0;_f_ = _h_;_c_ = _h_;throw Stdlib[3]}
+           {var _h_=_e_ + 1 | 0;0;_f_ = _h_;_c_ = _h_;throw Stdlib[3]}
           catch(_j_)
            {caml_call3(Stdlib_Format[131],_g_,_f_ | 0,_b_);throw Stdlib[3]}}
         catch(_i_)
@@ -184,11 +187,12 @@ with Exit ->
          Stdlib_Format=global_data.Stdlib__Format,
          _e_=[0,[4,0,0,0,[17,4,0]],caml_string_of_jsbytes("%d@.")],
          _c_=[0,[4,0,0,0,[17,4,0]],caml_string_of_jsbytes("%d@.")],
+         _b_=0,
          _a_=0;
         try
-         {var _b_=_a_;
+         {var _d_=_a_;
           try
-           {var _d_=_a_,_f_=_a_ + 1 | 0;0;_d_ = _f_;_b_ = _f_;throw Stdlib[3]}
+           {var _f_=_a_ + 1 | 0;0;_d_ = _f_;_b_ = _f_;throw Stdlib[3]}
           catch(_h_){caml_call2(Stdlib_Format[131],_e_,_d_);throw Stdlib[3]}}
         catch(_g_)
          {_g_ = caml_wrap_exception(_g_);

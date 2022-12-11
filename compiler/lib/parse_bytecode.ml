@@ -541,7 +541,7 @@ module State = struct
 
   type handler =
     { block_pc : Addr.t
-    ; handler_pc : Addr.t
+    ; stack : elt list
     }
 
   type t =
@@ -630,9 +630,9 @@ module State = struct
         Var.propagate_name x y;
         state
 
-  let push_handler state handler_pc =
+  let push_handler state =
     { state with
-      handlers = { block_pc = state.current_pc; handler_pc } :: state.handlers
+      handlers = { block_pc = state.current_pc; stack = state.stack } :: state.handlers
     }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
@@ -875,18 +875,11 @@ and compile infos pc state instrs =
         let stack_size = List.length state.stack in
         let l =
           List.fold_left state.handlers ~init:[] ~f:(fun acc (handler : State.handler) ->
-              let stack =
-                let state, _, _ =
-                  try Addr.Map.find handler.handler_pc !compiled_blocks
-                  with Not_found -> assert false
-                in
-                state.stack
-              in
-              let handler_stack_size = List.length stack in
+              let handler_stack_size = List.length handler.stack in
               let diff = stack_size - handler_stack_size in
               if n >= diff
               then
-                let dest = State.elt_to_var (List.nth stack (n - diff)) in
+                let dest = State.elt_to_var (List.nth handler.stack (n - diff)) in
                 Assign (dest, accu) :: acc
               else acc)
         in
@@ -1507,15 +1500,34 @@ and compile infos pc state instrs =
         if debug_parser () then Format.printf "%a = !%a@." Var.print x Var.print y;
         compile infos (pc + 1) state (Let (x, Prim (Not, [ Pv y ])) :: instrs)
     | PUSHTRAP ->
-        let addr = pc + 1 + gets code (pc + 1) in
-        let x, state' = State.fresh_var state in
-        compile_block infos.blocks infos.debug code addr state';
+        (* We insert an intermediate block that binds the handler's
+           context, so that it is also in the scope of the body. Then,
+           when a mutable variable is assigned in the body, we can
+           update this context. *)
+        let interm_addr = pc + 1 in
+        let handler_ctx_state = State.start_block interm_addr state in
+        let body_addr = pc + 2 in
+        let handler_addr = pc + 1 + gets code (pc + 1) in
+        let x, handler_state = State.fresh_var handler_ctx_state in
+        tagged_blocks := Addr.Set.add interm_addr !tagged_blocks;
+        compiled_blocks :=
+          Addr.Map.add
+            interm_addr
+            ( handler_ctx_state
+            , []
+            , Pushtrap
+                ( (body_addr, State.stack_vars state)
+                , x
+                , (handler_addr, State.stack_vars handler_state)
+                , Addr.Set.empty ) )
+            !compiled_blocks;
+        compile_block infos.blocks infos.debug code handler_addr handler_state;
         compile_block
           infos.blocks
           infos.debug
           code
-          (pc + 2)
-          { (State.push_handler state addr) with
+          body_addr
+          { (State.push_handler handler_ctx_state) with
             State.stack =
               (* See interp.c *)
               State.Dummy
@@ -1524,13 +1536,7 @@ and compile infos pc state instrs =
               :: State.Dummy
               :: state.State.stack
           };
-        ( instrs
-        , Pushtrap
-            ( (pc + 2, State.stack_vars state)
-            , x
-            , (addr, State.stack_vars state')
-            , Addr.Set.empty )
-        , state )
+        instrs, Branch (interm_addr, State.stack_vars state), state
     | POPTRAP ->
         let addr = pc + 1 in
         let handler_addr = State.addr_of_current_handler state in
