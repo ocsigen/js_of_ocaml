@@ -541,7 +541,7 @@ module State = struct
 
   type handler =
     { block_pc : Addr.t
-    ; stack : elt list
+    ; handler_pc : Addr.t
     }
 
   type t =
@@ -630,9 +630,9 @@ module State = struct
         Var.propagate_name x y;
         state
 
-  let push_handler state =
+  let push_handler state handler_pc =
     { state with
-      handlers = { block_pc = state.current_pc; stack = state.stack } :: state.handlers
+      handlers = { block_pc = state.current_pc; handler_pc } :: state.handlers
     }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
@@ -875,11 +875,18 @@ and compile infos pc state instrs =
         let stack_size = List.length state.stack in
         let l =
           List.fold_left state.handlers ~init:[] ~f:(fun acc (handler : State.handler) ->
-              let handler_stack_size = List.length handler.stack in
+              let stack =
+                let state, _, _ =
+                  try Addr.Map.find handler.handler_pc !compiled_blocks
+                  with Not_found -> assert false
+                in
+                state.stack
+              in
+              let handler_stack_size = List.length stack in
               let diff = stack_size - handler_stack_size in
               if n >= diff
               then
-                let dest = State.elt_to_var (List.nth handler.stack (n - diff)) in
+                let dest = State.elt_to_var (List.nth stack (n - diff)) in
                 Assign (dest, accu) :: acc
               else acc)
         in
@@ -1508,7 +1515,7 @@ and compile infos pc state instrs =
           infos.debug
           code
           (pc + 2)
-          { (State.push_handler state) with
+          { (State.push_handler state addr) with
             State.stack =
               (* See interp.c *)
               State.Dummy

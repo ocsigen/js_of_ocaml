@@ -53,7 +53,7 @@ let iter_instr_free_vars f i =
       f x;
       f y;
       f z
-  | Assign (_, _) -> ()
+  | Assign (_, y) -> f y
 
 let iter_last_free_var f l =
   match l with
