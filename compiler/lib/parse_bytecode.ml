@@ -539,7 +539,10 @@ module State = struct
     | Var x -> Format.fprintf f "%a" Var.print x
     | Dummy -> Format.fprintf f "???"
 
-  type handler = { block_pc : Addr.t }
+  type handler =
+    { block_pc : Addr.t
+    ; handler_pc : Addr.t
+    }
 
   type t =
     { accu : elt
@@ -627,8 +630,10 @@ module State = struct
         Var.propagate_name x y;
         state
 
-  let push_handler state =
-    { state with handlers = { block_pc = state.current_pc } :: state.handlers }
+  let push_handler state handler_pc =
+    { state with
+      handlers = { block_pc = state.current_pc; handler_pc } :: state.handlers
+    }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
@@ -865,13 +870,44 @@ and compile infos pc state instrs =
         compile infos (pc + 2) (State.pop n state) instrs
     | ASSIGN ->
         let n = getu code (pc + 1) in
+        let accu = State.accu state in
         let state = State.assign state n in
+        let stack_size = List.length state.stack in
+        let l =
+          (* If the assigned variable is used in an exception handler,
+             we register that from now on the parameter [dest] should
+             be bound to the value of [accu] when entering the
+             exception handler.
+             For the optimization phases, [Assign (dest, acccu)] is
+             interpreted as: [accu] is a possible value for parameter
+             [dest]. For code generation, this is implemented as an
+             assignment.
+             For this to make sense, the intermediate code generated
+             for [PUSHTRAP] is such that [dest] is in scope at this
+             point but is only used in the exception handler.
+          *)
+          List.fold_left state.handlers ~init:[] ~f:(fun acc (handler : State.handler) ->
+              let stack =
+                let state, _, _ =
+                  try Addr.Map.find handler.handler_pc !compiled_blocks
+                  with Not_found -> assert false
+                in
+                state.stack
+              in
+              let handler_stack_size = List.length stack in
+              let diff = stack_size - handler_stack_size in
+              if n >= diff
+              then
+                let dest = State.elt_to_var (List.nth stack (n - diff)) in
+                Assign (dest, accu) :: acc
+              else acc)
+        in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         (* We switch to a different block as this may have
            changed the exception handler continuation *)
         compile_block infos.blocks infos.debug code (pc + 2) state;
-        Let (x, const 0l) :: instrs, Branch (pc + 2, State.stack_vars state), state
+        Let (x, const 0l) :: (l @ instrs), Branch (pc + 2, State.stack_vars state), state
     | ENVACC1 -> compile infos (pc + 1) (State.env_acc 1 state) instrs
     | ENVACC2 -> compile infos (pc + 1) (State.env_acc 2 state) instrs
     | ENVACC3 -> compile infos (pc + 1) (State.env_acc 3 state) instrs
@@ -1491,7 +1527,7 @@ and compile infos pc state instrs =
           infos.debug
           code
           (pc + 2)
-          { (State.push_handler state) with
+          { (State.push_handler state addr) with
             State.stack =
               (* See interp.c *)
               State.Dummy

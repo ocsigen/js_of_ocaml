@@ -55,14 +55,14 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
-         _b_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
+         _c_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
          _a_=0;
         try
-         {_a_ + 1 | 0;0;throw Stdlib[3]}
-        catch(_c_)
-         {_c_ = caml_wrap_exception(_c_);
-          if(_c_ !== Stdlib[3])throw _c_;
-          caml_call2(Stdlib_Printf[3],_b_,_a_ | 0);
+         {var _b_=_a_;_b_ = _a_ + 1 | 0;0;throw Stdlib[3]}
+        catch(_d_)
+         {_d_ = caml_wrap_exception(_d_);
+          if(_d_ !== Stdlib[3])throw _d_;
+          caml_call2(Stdlib_Printf[3],_c_,_b_ | 0);
           var Test=[0];
           runtime.caml_register_global(3,Test,"Test");
           0;
@@ -71,7 +71,7 @@ with Exit ->
     //end |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
-    0 |}]
+    1 |}]
 
 let%expect_test _ =
   let prog =
@@ -112,26 +112,27 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
-         _e_=
+         _g_=
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
            caml_string_of_jsbytes("%d %d\n")],
-         _c_=
+         _d_=
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
            caml_string_of_jsbytes("%d %d\n")],
          _a_=0,
          _b_=0;
         try
-         {var _d_=_a_ + 1 | 0;
+         {var _c_=_a_,_e_=_a_ + 1 | 0;
+          _c_ = _e_;
           0;
           try
-           {_d_ + 1 | 0;0;throw Stdlib[3]}
-          catch(_g_){caml_call3(Stdlib_Printf[3],_e_,_d_ | 0,_b_);throw Stdlib[3]}}
-        catch(_f_)
-         {_f_ = caml_wrap_exception(_f_);
-          if(_f_ !== Stdlib[3])throw _f_;
-          caml_call3(Stdlib_Printf[3],_c_,_a_ | 0,_b_);
+           {var _f_=_e_,_h_=_e_ + 1 | 0;_f_ = _h_;_c_ = _h_;0;throw Stdlib[3]}
+          catch(_j_){caml_call3(Stdlib_Printf[3],_g_,_f_ | 0,_b_);throw Stdlib[3]}}
+        catch(_i_)
+         {_i_ = caml_wrap_exception(_i_);
+          if(_i_ !== Stdlib[3])throw _i_;
+          caml_call3(Stdlib_Printf[3],_d_,_c_ | 0,_b_);
           var Test=[0];
           runtime.caml_register_global(4,Test,"Test");
           0;
@@ -140,8 +141,8 @@ with Exit ->
     //end |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
-    1 0
-    0 0|}]
+    2 0
+    2 0|}]
 
 let%expect_test _ =
   let prog =
@@ -180,17 +181,18 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
+         _e_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
          _c_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
-         _b_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
          _a_=0;
         try
-         {try
-           {_a_ + 1 | 0;0;throw Stdlib[3]}
-          catch(_e_){caml_call2(Stdlib_Printf[3],_c_,_a_);throw Stdlib[3]}}
-        catch(_d_)
-         {_d_ = caml_wrap_exception(_d_);
-          if(_d_ !== Stdlib[3])throw _d_;
-          caml_call2(Stdlib_Printf[3],_b_,_a_);
+         {var _b_=_a_;
+          try
+           {var _d_=_a_,_f_=_a_ + 1 | 0;_d_ = _f_;_b_ = _f_;0;throw Stdlib[3]}
+          catch(_h_){caml_call2(Stdlib_Printf[3],_e_,_d_);throw Stdlib[3]}}
+        catch(_g_)
+         {_g_ = caml_wrap_exception(_g_);
+          if(_g_ !== Stdlib[3])throw _g_;
+          caml_call2(Stdlib_Printf[3],_c_,_b_);
           var Test=[0];
           runtime.caml_register_global(4,Test,"Test");
           0;
@@ -199,5 +201,5 @@ with Exit ->
     //end |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
-    0
-    0 |}]
+    1
+    1 |}]

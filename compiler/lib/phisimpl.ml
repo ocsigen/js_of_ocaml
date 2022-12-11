@@ -67,6 +67,9 @@ let program_deps { blocks; _ } =
           | Let (x, e) ->
               add_var vars x;
               expr_deps blocks vars deps defs x e
+          | Assign (x, y) ->
+              add_dep deps x y;
+              add_def vars defs x y
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()

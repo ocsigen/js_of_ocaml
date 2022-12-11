@@ -53,6 +53,7 @@ let iter_instr_free_vars f i =
       f x;
       f y;
       f z
+  | Assign (_, y) -> f y
 
 let iter_last_free_var f l =
   match l with
@@ -78,7 +79,7 @@ let iter_block_free_vars f block =
 let iter_instr_bound_vars f i =
   match i with
   | Let (x, _) -> f x
-  | Set_field _ | Offset_ref _ | Array_set _ -> ()
+  | Set_field _ | Offset_ref _ | Array_set _ | Assign _ -> ()
 
 let iter_last_bound_vars f l =
   match l with
