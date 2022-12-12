@@ -54,7 +54,7 @@ let lib_enabled_if = function
   | _ -> Any
 
 let test_enabled_if = function
-  | "obj" | "gh1320" | "lazy" -> LT5
+  | "obj" | "lazy" -> LT5
   | _ -> Any
 
 let () =

@@ -27,7 +27,7 @@ let app f x = f x
 let myfun () =
   for i = 1 to 4 do
     let rec f x = if x = 0 then 1 else i * app g (x - 1) and g x = app f x in
-    Format.eprintf "%d@." (g i)
+    Printf.eprintf "%d\n" (g i)
   done
 
 let () = myfun ()
@@ -56,7 +56,7 @@ let () = myfun ()
          closures$0=closures(i),
          g=closures$0[1],
          _b_=g(i);
-        caml_call2(Stdlib_Format[131],_a_,_b_);
+        caml_call2(Stdlib_Printf[3],_a_,_b_);
         var _c_=i + 1 | 0;
         if(4 === i)return 0;
         var i=_c_}}
