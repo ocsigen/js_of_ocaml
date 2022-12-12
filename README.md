@@ -120,7 +120,7 @@ comparison, and hashing functions can yield results different from usual:
 | array | block with tag 0 (e.g. `[\|1;2\|] => [0,1,2]`) |
 | tuple | block with tag 0 (e.g. `(1,2) => [0,1,2]`) |
 | record | block (e.g. `{x=1;y=2} => [0,1,2]`) |
-| contructor with arguments | block (e.g. `C (1, 2) => [tag,1,2]`) |
+| constructor with arguments | block (e.g. `C (1, 2) => [tag,1,2]`) |
 | module | block |
 | exception and extensible variant | block or immediate |
 | function | function |
