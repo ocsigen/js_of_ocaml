@@ -1,9 +1,11 @@
 Missing
 -------
 
-From unix.bc:
+From main.bc:
 caml_alloc_dummy_function
 caml_alloc_dummy_infix
+caml_continuation_use
+caml_drop_continuation
 caml_dynlink_add_primitive
 caml_dynlink_close_lib
 caml_dynlink_get_current_libs
@@ -25,120 +27,14 @@ caml_invoke_traced_function
 caml_realloc_global
 caml_reify_bytecode
 caml_reset_afl_instrumentation
+caml_runtime_events_pause
+caml_runtime_events_resume
+caml_runtime_events_start
 caml_signbit
 caml_static_release_bytecode
 caml_terminfo_rows
-caml_unix_map_file_bytecode
 debugger
 is_digit_normalized
-unix_accept
-unix_access
-unix_alarm
-unix_bind
-unix_chdir
-unix_chmod
-unix_chown
-unix_chroot
-unix_clear_close_on_exec
-unix_clear_nonblock
-unix_close
-unix_connect
-unix_dup
-unix_dup2
-unix_environment
-unix_environment_unsafe
-unix_error_message
-unix_execv
-unix_execve
-unix_execvp
-unix_execvpe
-unix_exit
-unix_fchmod
-unix_fchown
-unix_fork
-unix_fstat
-unix_fstat_64
-unix_fsync
-unix_ftruncate
-unix_ftruncate_64
-unix_getaddrinfo
-unix_getcwd
-unix_getegid
-unix_geteuid
-unix_getgid
-unix_getgrgid
-unix_getgrnam
-unix_getgroups
-unix_gethostbyaddr
-unix_gethostbyname
-unix_gethostname
-unix_getitimer
-unix_getlogin
-unix_getnameinfo
-unix_getpeername
-unix_getpid
-unix_getppid
-unix_getprotobyname
-unix_getprotobynumber
-unix_getpwnam
-unix_getservbyname
-unix_getservbyport
-unix_getsockname
-unix_getsockopt
-unix_inchannel_of_filedescr
-unix_initgroups
-unix_kill
-unix_link
-unix_listen
-unix_lockf
-unix_lseek
-unix_lseek_64
-unix_mkfifo
-unix_nice
-unix_open
-unix_outchannel_of_filedescr
-unix_pipe
-unix_putenv
-unix_read
-unix_realpath
-unix_recv
-unix_recvfrom
-unix_rename
-unix_select
-unix_send
-unix_sendto
-unix_set_close_on_exec
-unix_set_nonblock
-unix_setgid
-unix_setgroups
-unix_setitimer
-unix_setsid
-unix_setsockopt
-unix_setuid
-unix_shutdown
-unix_sigpending
-unix_sigprocmask
-unix_sigsuspend
-unix_single_write
-unix_sleep
-unix_socket
-unix_socketpair
-unix_spawn
-unix_string_of_inet_addr
-unix_tcdrain
-unix_tcflow
-unix_tcflush
-unix_tcgetattr
-unix_tcsendbreak
-unix_tcsetattr
-unix_times
-unix_truncate
-unix_truncate_64
-unix_umask
-unix_utimes
-unix_wait
-unix_waitpid
-unix_write
 
 Unused
 -------
@@ -164,30 +60,9 @@ caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
 From +domain.js:
-caml_atomic_cas
-caml_atomic_exchange
-caml_atomic_fetch_add
-caml_atomic_load
-caml_domain_dls
-caml_domain_dls_get
-caml_domain_dls_set
-caml_domain_id
-caml_domain_spawn
-caml_ml_domain_cpu_relax
-caml_ml_domain_id
 caml_ml_domain_set_name
-caml_ml_domain_unique_token
-caml_recommended_domain_count
 
 From +effect.js:
-caml_alloc_stack
-caml_continuation_use_and_update_handler_noexc
-caml_continuation_use_noexc
-caml_get_continuation_callstack
-caml_ml_condition_broadcast
-caml_ml_condition_new
-caml_ml_condition_signal
-caml_ml_condition_wait
 jsoo_effect_not_supported
 
 From +fail.js:
@@ -201,6 +76,11 @@ jsoo_create_file
 jsoo_create_file_extern
 
 From +gc.js:
+caml_eventlog_pause
+caml_eventlog_resume
+caml_gc_huge_fallback_count
+caml_get_major_bucket
+caml_get_major_credit
 caml_memprof_set
 
 From +graphics.js:
@@ -254,14 +134,10 @@ caml_gr_window_id
 
 From +hash.js:
 caml_hash_univ_param
-caml_string_hash
 
 From +ints.js:
 caml_div
 caml_mod
-
-From +io.js:
-caml_input_value_to_outside_heap
 
 From +jslib.js:
 caml_is_js
@@ -277,7 +153,6 @@ caml_marshal_constants
 From +mlBytes.js:
 caml_array_of_bytes
 caml_array_of_string
-caml_new_string
 caml_string_set16
 caml_string_set32
 caml_string_set64
@@ -287,17 +162,10 @@ From +nat.js:
 compare_nat_real
 
 From +obj.js:
-caml_lazy_read_result
-caml_lazy_reset_to_lazy
-caml_lazy_update_to_forcing
-caml_lazy_update_to_forward
-caml_obj_compare_and_swap
 caml_obj_is_block
-caml_obj_is_shared
-caml_obj_update_tag
-
-From +prng.js:
-caml_lxm_next
+caml_obj_make_forward
+caml_obj_set_tag
+caml_obj_truncate
 
 From +stdlib.js:
 caml_is_printable
@@ -313,13 +181,6 @@ re_search_backward
 re_search_forward
 re_string_match
 
-From +sync.js:
-MlMutex
-caml_ml_mutex_lock
-caml_ml_mutex_new
-caml_ml_mutex_try_lock
-caml_ml_mutex_unlock
-
 From +sys.js:
 caml_fatal_uncaught_exception
 caml_format_exception
@@ -328,6 +189,7 @@ caml_register_channel_for_spacetime
 caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
+caml_sys_const_naked_pointers_checked
 
 From +unix.js:
 caml_unix_cleanup
