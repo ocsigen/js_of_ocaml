@@ -1,5 +1,6 @@
 # dev (202?-??) - ??
 ## Features/Changes
+* Compiler: add support for effect handlers (--enable=effects)
 * Compiler: small refactoring in code generation
 * Compiler: check build info compatibility when linking js file.
 * Misc: fix and update benchmarks
