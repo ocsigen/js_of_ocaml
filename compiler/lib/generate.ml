@@ -595,7 +595,6 @@ type state =
   ; last_interm_idx : int ref
   ; ctx : Ctx.t
   ; blocks : Code.block Addr.Map.t
-  ; cf_frontier : Addr.Set.t Addr.Map.t
   }
 
 let get_preds st pc = Hashtbl.find st.preds pc
@@ -739,7 +738,6 @@ let build_graph ctx pc =
   let backs = Hashtbl.create 17 in
   let preds = Hashtbl.create 17 in
   let seen = Hashtbl.create 17 in
-  let cf_frontier = ref Addr.Map.empty in
   let blocks = ctx.Ctx.blocks in
   let dominance_frontier_cache = Hashtbl.create 17 in
   let incr_prec pc =
@@ -748,8 +746,9 @@ let build_graph ctx pc =
     | n -> Hashtbl.replace preds pc (succ n)
   in
   let add_cf_frontier pc front =
+    let prev = Hashtbl.find succs pc in
     Addr.Set.iter incr_prec front;
-    cf_frontier := Addr.Map.add pc front !cf_frontier
+    Hashtbl.replace succs pc (Addr.Set.elements front @ prev)
   in
   let rec loop pc anc pushtrap =
     if not (Addr.Set.mem pc !visited_blocks)
@@ -770,8 +769,8 @@ let build_graph ctx pc =
             | Pushtrap ((pc1, _), _, (pc2, _), _remove) ->
                 if pc' = pc1
                 then (
-                  Hashtbl.add poptrap pc1 Addr.Set.empty;
-                  pc1 :: pushtrap)
+                  Hashtbl.add poptrap pc Addr.Set.empty;
+                  pc :: pushtrap)
                 else (
                   assert (pc' = pc2);
                   pushtrap)
@@ -802,13 +801,12 @@ let build_graph ctx pc =
         | _ -> true
     in
     Hashtbl.iter
-      (fun pc_push pc3 ->
+      (fun pc_pushtrap pc3 ->
         let pc3 = Addr.Set.filter keep_front pc3 in
-        add_cf_frontier pc_push pc3)
+        add_cf_frontier pc_pushtrap pc3)
       poptrap
   in
   { visited_blocks
-  ; cf_frontier = !cf_frontier
   ; dominance_frontier_cache
   ; seen
   ; loops = !loops
@@ -832,12 +830,7 @@ and frontier_of_succs st succs =
   let visited = ref Addr.Map.empty in
   let q = Queue.create () in
   let incr pc n = Queue.add (Addr.Map.singleton pc n) q in
-  List.iter succs ~f:(fun pc ->
-      incr pc 1;
-      try
-        let s = Addr.Map.find pc st.cf_frontier in
-        Addr.Set.iter (fun pc -> incr pc 1) s
-      with Not_found -> ());
+  List.iter succs ~f:(fun pc -> incr pc 1);
   while not (Queue.is_empty q) do
     visited :=
       Addr.Map.merge
@@ -1617,8 +1610,6 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
       (Addr.Set.union frontier frontier_cont)
       new_interm
   in
-  (try Addr.Set.iter (incr_seen st) (Addr.Map.find pc st.cf_frontier)
-   with Not_found -> ());
   let never_after, after =
     compile_merge_node st frontier_cont loop_stack frontier interm merge_node
   in
