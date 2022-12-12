@@ -65,7 +65,8 @@ val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string option -> unit
 
-val compile_and_run : ?debug:bool -> ?flags:string list -> ?unix:bool -> string -> unit
+val compile_and_run :
+  ?debug:bool -> ?effects:bool -> ?flags:string list -> ?unix:bool -> string -> unit
 
 val compile_and_run_bytecode : ?unix:bool -> string -> unit
 

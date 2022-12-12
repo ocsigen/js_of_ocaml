@@ -93,4 +93,6 @@ module Param : sig
 
   (* | TcWhile *)
   val tailcall_optim : unit -> tc
+
+  val lambda_lifting_threshold : unit -> int
 end

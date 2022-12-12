@@ -159,4 +159,11 @@ module Param = struct
       ~name:"tc"
       ~desc:"Set tailcall optimisation"
       (enum [ "trampoline", TcTrampoline; (* default *) "none", TcNone ])
+
+  let lambda_lifting_threshold =
+    (* When we reach this depth, we start looking for functions to be lifted *)
+    p
+      ~name:"lifting-threshold"
+      ~desc:"Set threshold for lifting deeply nested functions"
+      (int 50)
 end
