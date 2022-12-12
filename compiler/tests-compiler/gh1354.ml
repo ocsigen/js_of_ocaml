@@ -59,7 +59,7 @@ with Exit ->
          _b_=0,
          _a_=0;
         try
-         {_b_ = _a_ + 1 | 0;0;throw Stdlib[3]}
+         {0;_b_ = _a_ + 1 | 0;throw Stdlib[3]}
         catch(_d_)
          {_d_ = caml_wrap_exception(_d_);
           if(_d_ !== Stdlib[3])throw _d_;
@@ -126,11 +126,11 @@ with Exit ->
          _b_=0;
         try
          {var _e_=_a_ + 1 | 0;
-          _c_ = _e_;
           0;
+          _c_ = _e_;
           var _f_=_e_;
           try
-           {var _h_=_e_ + 1 | 0;_f_ = _h_;_c_ = _h_;0;throw Stdlib[3]}
+           {var _h_=_e_ + 1 | 0;0;_f_ = _h_;_c_ = _h_;throw Stdlib[3]}
           catch(_j_){caml_call3(Stdlib_Printf[3],_g_,_f_ | 0,_b_);throw Stdlib[3]}}
         catch(_i_)
          {_i_ = caml_wrap_exception(_i_);
@@ -191,7 +191,7 @@ with Exit ->
         try
          {var _d_=_a_;
           try
-           {var _f_=_a_ + 1 | 0;_d_ = _f_;_b_ = _f_;0;throw Stdlib[3]}
+           {var _f_=_a_ + 1 | 0;0;_d_ = _f_;_b_ = _f_;throw Stdlib[3]}
           catch(_h_){caml_call2(Stdlib_Printf[3],_e_,_d_);throw Stdlib[3]}}
         catch(_g_)
          {_g_ = caml_wrap_exception(_g_);

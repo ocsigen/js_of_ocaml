@@ -873,7 +873,8 @@ and compile infos pc state instrs =
         let accu = State.accu state in
         let state = State.assign state n in
         let stack_size = List.length state.stack in
-        let l =
+        let x, state = State.fresh_var state in
+        let instrs =
           (* If the assigned variable is used in an exception handler,
              we register that from now on the parameter [dest] should
              be bound to the value of [accu] when entering the
@@ -886,7 +887,10 @@ and compile infos pc state instrs =
              for [PUSHTRAP] is such that [dest] is in scope at this
              point but is only used in the exception handler.
           *)
-          List.fold_left state.handlers ~init:[] ~f:(fun acc (handler : State.handler) ->
+          List.fold_left
+            state.handlers
+            ~init:(Let (x, const 0l) :: instrs)
+            ~f:(fun acc (handler : State.handler) ->
               let handler_stack_size = List.length handler.stack in
               let diff = stack_size - handler_stack_size in
               if n >= diff
@@ -895,9 +899,8 @@ and compile infos pc state instrs =
                 Assign (dest, accu) :: acc
               else acc)
         in
-        let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
-        compile infos (pc + 2) state (Let (x, const 0l) :: (l @ instrs))
+        compile infos (pc + 2) state instrs
     | ENVACC1 -> compile infos (pc + 1) (State.env_acc 1 state) instrs
     | ENVACC2 -> compile infos (pc + 1) (State.env_acc 2 state) instrs
     | ENVACC3 -> compile infos (pc + 1) (State.env_acc 3 state) instrs
