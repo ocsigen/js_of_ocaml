@@ -455,13 +455,13 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?debug ?flags ?unix s =
+let compile_and_run ?debug ?effects ?flags ?unix s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_bc ?debug ?unix
-      |> compile_bc_to_javascript ?flags ?sourcemap:debug
+      |> compile_bc_to_javascript ?flags ?effects ?sourcemap:debug
       |> run_javascript
       |> print_endline)
 
