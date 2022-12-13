@@ -22,7 +22,7 @@ open Util
 let%expect_test "static eval of string get" =
   let program =
     compile_and_parse
-      ~flags:[ "--enable"; "use-js-string" ]
+      ~use_js_string:true
       {|
     let lr = ref []
     let black_box v = lr := (Obj.repr v) :: !lr
@@ -54,7 +54,7 @@ let%expect_test "static eval of string get" =
 let%expect_test "static eval of string get" =
   let program =
     compile_and_parse
-      ~flags:[ "--disable"; "use-js-string" ]
+      ~use_js_string:false
       {|
     let lr = ref []
     let black_box v = lr := (Obj.repr v) :: !lr
