@@ -44,7 +44,6 @@ type control_flow_graph =
   ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
   ; block_order : (Addr.t, int) Hashtbl.t
-  ; exn_handlers : (Addr.t, unit) Hashtbl.t
   }
 
 let add_edge g src dst =
@@ -57,7 +56,6 @@ let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
   let predecessor_count = Hashtbl.create 16 in
   let loop_headers = Hashtbl.create 16 in
-  let exn_handlers = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
   let update_pred_count pc =
@@ -66,7 +64,7 @@ let build_graph blocks pc =
       pc
       (1 + try Hashtbl.find predecessor_count pc with Not_found -> 0)
   in
-  let rec traverse ancestors exn_handler_stack pc =
+  let rec traverse ancestors pc =
     if not (Hashtbl.mem visited pc)
     then (
       Hashtbl.add visited pc ();
@@ -79,35 +77,13 @@ let build_graph blocks pc =
           then Hashtbl.replace loop_headers pc' ()
           else update_pred_count pc')
         successors;
-      let block = Addr.Map.find pc blocks in
-      (match block.branch with
-      | Pushtrap (_, _, (pc', _), _) -> Hashtbl.add exn_handlers pc' ()
-      | _ -> ());
-      let exn_handler_stack =
-        match block.branch with
-        | Pushtrap ((pc, _), _, _, _) -> pc :: exn_handler_stack
-        | Poptrap (pc, _) -> (
-            match exn_handler_stack with
-            | pc' :: rem ->
-                add_edge succs pc' pc;
-                update_pred_count pc;
-                rem
-            | [] -> assert false)
-        | _ -> exn_handler_stack
-      in
-      Addr.Set.iter (fun pc -> traverse ancestors exn_handler_stack pc) successors;
+      Addr.Set.iter (fun pc -> traverse ancestors pc) successors;
       l := pc :: !l)
   in
-  traverse Addr.Set.empty [] pc;
+  traverse Addr.Set.empty pc;
   let block_order = Hashtbl.create 16 in
   List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
-  { succs
-  ; predecessor_count
-  ; loop_headers
-  ; reverse_post_order = !l
-  ; block_order
-  ; exn_handlers
-  }
+  { succs; predecessor_count; loop_headers; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
@@ -176,9 +152,9 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
               mark_continuation dst x;
               None
           | _ -> None)
-      | Pushtrap ((pc1, _), x, (pc2, _), _) ->
+      | Pushtrap (_, x, (pc2, _), _) ->
           mark_continuation pc2 x;
-          Some (pc1, pc2)
+          Some pc2
       | _ -> None
     in
     let merge_node_children =
@@ -216,7 +192,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
     else
       let try_blocks =
         match try_header with
-        | Some (pc1, pc2) when pc1 = pc -> pc1 :: pc2 :: try_blocks
+        | Some pc' when pc' <> pc -> pc' :: try_blocks
         | _ -> try_blocks
       in
       traverse pc ~try_blocks ~frontier ~transform_on_visit
@@ -239,10 +215,10 @@ type jump_closures =
   ; closures_of_alloc_site : (Var.t * Addr.t) list Addr.Map.t
   }
 
-let jump_closures g idom : jump_closures =
+let jump_closures blocks_to_transform idom : jump_closures =
   Hashtbl.fold
     (fun node idom_node jc ->
-      if Hashtbl.mem g.exn_handlers node
+      if not (Addr.Set.mem node blocks_to_transform)
       then jc
       else
         let cname = Var.fresh () in
@@ -266,6 +242,7 @@ type st =
   ; closure_continuation : Addr.t -> Var.t
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
+  ; is_continuation : (Addr.t, Var.t) Hashtbl.t
   }
 
 let add_block st block =
@@ -286,7 +263,15 @@ let cps_branch ~st (pc, args) =
   if Addr.Set.mem pc st.blocks_to_transform
   then
     let ret = Var.fresh () in
-    [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ], Return ret
+    let args, instr =
+      if List.is_empty args && Hashtbl.mem st.is_continuation pc
+      then
+        let x = Var.fresh () in
+        [ x ], [ Let (x, Constant (Int 0l)) ]
+      else args, []
+    in
+    ( instr @ [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ]
+    , Return ret )
   else [], Branch (pc, args)
 
 let cps_jump_cont ~st ((pc, _) as cont) =
@@ -326,21 +311,24 @@ let cps_last ~st (last : last) ~k : instr list * last =
          to create a single block per continuation *)
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap ((pc, args), x, handler_cont, _) ->
-      if Addr.Set.mem pc st.blocks_to_transform
+  | Pushtrap ((pc, args), _x, (handler_pc, _), _) ->
+      if Addr.Set.mem handler_pc st.blocks_to_transform
       then
-        let constr_handler, exn_handler =
-          (* Construct handler closure *)
-          allocate_closure ~st ~params:[ x ] ~body:[] ~branch:(Branch handler_cont)
+        let exn_handler = closure_of_pc ~st handler_pc in
+        let push_trap =
+          Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
         in
-        let ret = Var.fresh () in
-        ( constr_handler
-          @ [ Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+        if Addr.Set.mem pc st.blocks_to_transform
+        then
+          let ret = Var.fresh () in
+          ( [ push_trap
             ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
             ]
-        , Return ret )
+          , Return ret )
+        else [ push_trap ], Branch (pc, args)
       else [], last
   | Poptrap (pc, args) ->
+      (*ZZZ Need to know whether the matching Pushtrap is transformed! *)
       if Addr.Set.mem pc st.blocks_to_transform
       then
         let ret = Var.fresh () in
@@ -373,7 +361,12 @@ let cps_block ~st ~k pc block =
     | to_allocate ->
         List.map to_allocate ~f:(fun (cname, jump_pc) ->
             let jump_block = Addr.Map.find jump_pc st.blocks in
-            let fresh_params = List.map jump_block.params ~f:(fun _ -> Var.fresh ()) in
+            let fresh_params =
+              if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
+              then [ Var.fresh () ]
+              else List.map jump_block.params ~f:(fun _ -> Var.fresh ())
+            in
+
             Let (cname, Closure (fresh_params, (jump_pc, fresh_params))))
     | exception Not_found -> []
   in
@@ -418,12 +411,22 @@ let cps_block ~st ~k pc block =
             let pc, args = cont in
             let ret = Var.fresh () in
             let f' = closure_of_pc ~st pc in
-            allocate_closure
-              ~st
-              ~params:[ x ]
-              ~body:
-                (alloc_jump_closures @ [ Let (ret, Apply { f = f'; args; exact = true }) ])
-              ~branch:(Return ret)
+            assert (Hashtbl.mem st.is_continuation pc);
+            match args with
+            | [] | [ _ ] -> alloc_jump_closures, f'
+            | _ ->
+                (* let args =
+                     match args with
+                     | [] -> [ x ]
+                     | _ -> args
+                   in*)
+                allocate_closure
+                  ~st
+                  ~params:[ x ]
+                  ~body:
+                    (alloc_jump_closures
+                    @ [ Let (ret, Apply { f = f'; args; exact = true }) ])
+                  ~branch:(Return ret)
           in
           let ret = Var.fresh () in
           body_prefix, constr_cont @ f ~x:ret ~k:k', Return ret
@@ -446,7 +449,15 @@ let cps_block ~st ~k pc block =
         in
         body, last
   in
-  { params = block.params; body; branch = last }
+  { params =
+      (if List.is_empty block.params
+          && Hashtbl.mem st.is_continuation pc
+          && Addr.Set.mem pc st.blocks_to_transform
+      then [ Hashtbl.find st.is_continuation pc ]
+      else block.params)
+  ; body
+  ; branch = last
+  }
 
 let transform_block ~st ~k pc block =
   match k with
@@ -555,11 +566,12 @@ let f (p : Code.program) =
           | None -> true
           | Some name -> Var.Set.mem name cps_needed
         in
-        let blocks_to_transform =
+        let blocks_to_transform, is_continuation =
           if function_need_cps
-          then fst (compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start)
-          else Addr.Set.empty
+          then compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start
+          else Addr.Set.empty, Hashtbl.create 1
         in
+        (*
         Format.eprintf "=============== %b@." function_need_cps;
         Code.preorder_traverse
           { fold = Code.fold_children }
@@ -570,7 +582,8 @@ let f (p : Code.program) =
           start
           blocks
           ();
-        let closure_jc = jump_closures cfg idom in
+ *)
+        let closure_jc = jump_closures blocks_to_transform idom in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
           ; blocks
@@ -578,6 +591,7 @@ let f (p : Code.program) =
           ; closure_continuation
           ; cps_needed
           ; blocks_to_transform
+          ; is_continuation
           }
         in
         let k = if function_need_cps then Some (closure_continuation start) else None in
