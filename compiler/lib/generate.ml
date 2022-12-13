@@ -1877,66 +1877,20 @@ and compile_conditional st queue pc last loop_stack backs frontier interm =
           compile_branch st [] e1 loop_stack backs frontier interm
         in
         let exn_var, handler =
-          let exn_is_live = st.ctx.Ctx.live.(Var.idx x) > 0 in
-          let x =
-            let pc2, args2 = e1 in
-            let block2 = Addr.Map.find pc2 st.blocks in
-            let m = Subst.build_mapping args2 block2.params in
-            try Var.Map.find x m with Not_found -> x
-          in
-          (* TODO: Cleanup exn_escape *)
-          let exn_escape =
-            if not exn_is_live
-            then None
-            else
-              match Addr.Set.elements frontier with
-              | [] -> None
-              | l -> (
-                  let exception Escape in
-                  let find_in_block pc () =
-                    if pc >= 0
-                    then
-                      let map_var y =
-                        if Code.Var.equal x y then raise Escape;
-                        y
-                      in
-                      let (_ : Code.block) =
-                        Subst.block map_var (Addr.Map.find pc st.blocks)
-                      in
-                      ()
-                  in
-                  (* We don't want to traverse backward edges. we rely on
-                     [st.succs] instead of [Code.fold_children]. *)
-                  let fold _blocs pc f acc =
-                    List.fold_left (get_succs st pc) ~init:acc ~f:(fun acc pc -> f pc acc)
-                  in
-                  try
-                    List.iter l ~f:(fun pc ->
-                        Code.traverse { fold } find_in_block pc st.blocks ());
-                    None
-                  with Escape -> Some (Var.fork x))
-          in
+          assert (not (List.mem x ~set:(snd e1)));
           let wrap_exn x =
             ecall
               (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share)
               [ J.EVar (J.V x) ]
               J.N
           in
-          let handler_var =
-            match exn_escape with
-            | None -> x
-            | Some x' -> x'
-          in
-          let handler =
-            match exn_is_live, exn_escape with
-            | false, _ -> handler
-            | true, Some x' ->
-                (J.Variable_statement [ J.V x, Some (wrap_exn x', J.N) ], J.N) :: handler
-            | true, None ->
-                (J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), wrap_exn x)), J.N)
-                :: handler
-          in
-          handler_var, handler
+          match st.ctx.Ctx.live.(Var.idx x) with
+          | 0 -> x, handler
+          | _ ->
+              let handler_var = Code.Var.fork x in
+              ( handler_var
+              , (J.Variable_statement [ J.V x, Some (wrap_exn handler_var, J.N) ], J.N)
+                :: handler )
         in
         ( never_body && never_handler
         , flush_all

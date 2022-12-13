@@ -76,12 +76,12 @@ let fun2 () =
      {var switch$0=0;
       try
        {var i$0=caml_call1(Stdlib_Random[5],2)}
-      catch(_d_)
-       {_d_ = caml_wrap_exception(_d_);
+      catch(_f_)
+       {var _d_=caml_wrap_exception(_f_);
         if(_d_[1] !== A)throw _d_;
-        var _c_=_d_[2];
-        if(2 !== _c_)return _c_ + 2 | 0;
-        var i=_c_;
+        var _e_=_d_[2];
+        if(2 !== _e_)return _e_ + 2 | 0;
+        var i=_e_;
         switch$0 = 1}
       if(! switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
       return i}
@@ -90,14 +90,13 @@ let fun2 () =
      {var switch$0=0;
       try
        {var i$0=caml_call1(Stdlib_Random[5],2)}
-      catch(_b_)
-       {_b_ = caml_wrap_exception(_b_);
-        var switch$1=0;
-        if(_b_[1] === A)
-         {var _a_=_b_[2];if(2 === _a_){var i=_a_;switch$0 = 1}else switch$1 = 1}
+      catch(_c_)
+       {var _a_=caml_wrap_exception(_c_),switch$1=0;
+        if(_a_[1] === A)
+         {var _b_=_a_[2];if(2 === _b_){var i=_b_;switch$0 = 1}else switch$1 = 1}
         else
          switch$1 = 1;
-        if(switch$1)throw _b_}
+        if(switch$1)throw _a_}
       if(! switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
       return i}
     //end |}]

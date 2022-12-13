@@ -233,27 +233,29 @@ let f t x =
     function f(t,x)
      {try
        {var val$0=caml_call2(Stdlib_Hashtbl[6],t,x)}
-      catch(_d_)
-       {_d_ = caml_wrap_exception(_d_);if(_d_ === Stdlib[8])return - 1;throw _d_}
+      catch(_f_)
+       {var _c_=caml_wrap_exception(_f_);
+        if(_c_ === Stdlib[8])return - 1;
+        throw _c_}
       if(val$0 && ! val$0[2])
        {var x$1=val$0[1],x$0=x$1;
         for(;;)
          {var switch$0=0;
           try
            {var val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$0 = 1}
-          catch(_c_)
-           {_c_ = caml_wrap_exception(_c_);
-            if(_c_ !== Stdlib[3])throw _c_;
-            var _b_=0}
+          catch(_e_)
+           {var _a_=caml_wrap_exception(_e_);
+            if(_a_ !== Stdlib[3])throw _a_;
+            var _d_=0}
           if(switch$0)
            {var switch$1=0;
             if(val && ! val[2])
-             {var y=val[1],_a_=y === (x$0 + 1 | 0)?1:0;
-              if(! _a_){var x$0=y;continue}
-              var _b_=_a_;
+             {var y=val[1],_b_=y === (x$0 + 1 | 0)?1:0;
+              if(! _b_){var x$0=y;continue}
+              var _d_=_b_;
               switch$1 = 1}
-            if(! switch$1)var _b_=0}
-          return _b_?1:2}}
+            if(! switch$1)var _d_=0}
+          return _d_?1:2}}
       return - 2}
     //end |}]
 
