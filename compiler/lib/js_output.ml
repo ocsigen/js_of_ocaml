@@ -148,7 +148,7 @@ struct
         output_debug_info_ident f name (Some pi);
         PP.string f name
     | S { name; var = None; loc = U | N } -> PP.string f name
-    | V _v -> assert false
+    | V v -> PP.string f ("<" ^ Code.Var.to_string v ^ ">")
 
   let opt_identifier f i =
     match i with

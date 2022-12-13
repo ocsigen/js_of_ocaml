@@ -151,9 +151,9 @@ end = struct
   let to_string ?origin i = Var_printer.to_string printer ?origin i
 
   let print f x = Format.fprintf f "v%d" x
+  (* let print f x = Format.fprintf f "v%d(%s)" x (to_string x) *)
 
   (* Format.fprintf f "%s" (to_string x) *)
-
   let name i nm = Var_printer.name printer i nm
 
   let loc i pi = Hashtbl.add locations i pi

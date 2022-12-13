@@ -264,6 +264,8 @@ module Preserve : Strategy = struct
         let _assigned =
           S.fold
             (fun var assigned ->
+              if not (String.is_empty names.(Var.idx var))
+              then Format.eprintf "v%d ==> %s@." (Var.idx var) names.(Var.idx var);
               assert (String.is_empty names.(Var.idx var));
               let name =
                 match Var.get_name var with
@@ -307,9 +309,10 @@ let program' (module Strategy : Strategy) p =
   mapper#block (Params []);
   if S.cardinal mapper#get_free <> 0
   then
-    if true
+    if false
     then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
     else (
+      Js_output.program (Pretty_print.to_out_channel stderr) p;
       Format.eprintf "Some variables escaped (#%d)" (S.cardinal mapper#get_free);
       S.iter (fun s -> Format.eprintf "%s@." (Var.to_string s)) mapper#get_free);
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
