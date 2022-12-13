@@ -23,7 +23,7 @@
 
 let%expect_test _ =
   Util.compile_and_run
-    ~flags:[ "--enable"; "use-js-string" ]
+    ~use_js_string:true
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -39,7 +39,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   Util.compile_and_run
-    ~flags:[ "--enable"; "use-js-string" ]
+    ~use_js_string:true
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -58,7 +58,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   Util.compile_and_run
-    ~flags:[ "--disable"; "use-js-string" ]
+    ~use_js_string:false
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -74,7 +74,7 @@ let%expect_test _ =
 
 let%expect_test _ =
   Util.compile_and_run
-    ~flags:[ "--disable"; "use-js-string" ]
+    ~use_js_string:false
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =

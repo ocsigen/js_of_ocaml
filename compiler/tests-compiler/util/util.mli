@@ -35,6 +35,7 @@ val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 val compile_cmo_to_javascript :
      ?flags:string list
   -> ?effects:bool
+  -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.cmo_file
@@ -43,6 +44,7 @@ val compile_cmo_to_javascript :
 val compile_bc_to_javascript :
      ?flags:string list
   -> ?effects:bool
+  -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.bc_file
@@ -66,14 +68,31 @@ val print_var_decl : Javascript.program -> string -> unit
 val print_fun_decl : Javascript.program -> string option -> unit
 
 val compile_and_run :
-  ?debug:bool -> ?effects:bool -> ?flags:string list -> ?unix:bool -> string -> unit
+     ?debug:bool
+  -> ?flags:string list
+  -> ?effects:bool
+  -> ?use_js_string:bool
+  -> ?unix:bool
+  -> string
+  -> unit
 
 val compile_and_run_bytecode : ?unix:bool -> string -> unit
 
 val compile_and_parse :
-  ?debug:bool -> ?effects:bool -> ?flags:string list -> string -> Javascript.program
+     ?debug:bool
+  -> ?flags:string list
+  -> ?effects:bool
+  -> ?use_js_string:bool
+  -> string
+  -> Javascript.program
 
 val compile_and_parse_whole_program :
-  ?debug:bool -> ?flags:string list -> ?unix:bool -> string -> Javascript.program
+     ?debug:bool
+  -> ?flags:string list
+  -> ?effects:bool
+  -> ?use_js_string:bool
+  -> ?unix:bool
+  -> string
+  -> Javascript.program
 
 val normalize_path : string -> string

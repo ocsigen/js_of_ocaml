@@ -22,7 +22,7 @@ open Util
 let%expect_test _ =
   let program =
     compile_and_parse
-      ~flags:[ "--enable"; "use-js-string" ]
+      ~use_js_string:true
       {|
     type js_string
     external js_string : string -> js_string = "caml_jsstring_of_string"
@@ -66,7 +66,7 @@ let%expect_test _ =
 let%expect_test _ =
   let program =
     compile_and_parse
-      ~flags:[ "--disable"; "use-js-string" ]
+      ~use_js_string:false
       {|
     type js_string
     external js_string : string -> js_string = "caml_jsstring_of_string"
