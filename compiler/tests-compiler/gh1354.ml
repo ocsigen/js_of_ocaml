@@ -56,14 +56,14 @@ with Exit ->
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
          _b_=0,
-         _c_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
+         _d_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
          _a_=0;
         try
          {0;_b_ = _a_ + 1 | 0;throw Stdlib[3]}
-        catch(_d_)
-         {_d_ = caml_wrap_exception(_d_);
-          if(_d_ !== Stdlib[3])throw _d_;
-          caml_call2(Stdlib_Printf[3],_c_,_b_ | 0);
+        catch(_e_)
+         {var _c_=caml_wrap_exception(_e_);
+          if(_c_ !== Stdlib[3])throw _c_;
+          caml_call2(Stdlib_Printf[3],_d_,_b_ | 0);
           var Test=[0];
           runtime.caml_register_global(3,Test,"Test");
           0;
@@ -114,28 +114,28 @@ with Exit ->
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
          _c_=0,
-         _g_=
+         _h_=
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
            caml_string_of_jsbytes("%d %d\n")],
-         _d_=
+         _e_=
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
            caml_string_of_jsbytes("%d %d\n")],
          _a_=0,
          _b_=0;
         try
-         {var _e_=_a_ + 1 | 0;
+         {var _f_=_a_ + 1 | 0;
           0;
-          _c_ = _e_;
-          var _f_=_e_;
+          _c_ = _f_;
+          var _g_=_f_;
           try
-           {var _h_=_e_ + 1 | 0;0;_f_ = _h_;_c_ = _h_;throw Stdlib[3]}
-          catch(_j_){caml_call3(Stdlib_Printf[3],_g_,_f_ | 0,_b_);throw Stdlib[3]}}
-        catch(_i_)
-         {_i_ = caml_wrap_exception(_i_);
-          if(_i_ !== Stdlib[3])throw _i_;
-          caml_call3(Stdlib_Printf[3],_d_,_c_ | 0,_b_);
+           {var _i_=_f_ + 1 | 0;0;_g_ = _i_;_c_ = _i_;throw Stdlib[3]}
+          catch(_k_){caml_call3(Stdlib_Printf[3],_h_,_g_ | 0,_b_);throw Stdlib[3]}}
+        catch(_j_)
+         {var _d_=caml_wrap_exception(_j_);
+          if(_d_ !== Stdlib[3])throw _d_;
+          caml_call3(Stdlib_Printf[3],_e_,_c_ | 0,_b_);
           var Test=[0];
           runtime.caml_register_global(4,Test,"Test");
           0;
@@ -185,18 +185,18 @@ with Exit ->
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
          _b_=0,
-         _e_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
-         _c_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
+         _f_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
+         _d_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
          _a_=0;
         try
-         {var _d_=_a_;
+         {var _e_=_a_;
           try
-           {var _f_=_a_ + 1 | 0;0;_d_ = _f_;_b_ = _f_;throw Stdlib[3]}
-          catch(_h_){caml_call2(Stdlib_Printf[3],_e_,_d_);throw Stdlib[3]}}
-        catch(_g_)
-         {_g_ = caml_wrap_exception(_g_);
-          if(_g_ !== Stdlib[3])throw _g_;
-          caml_call2(Stdlib_Printf[3],_c_,_b_);
+           {var _g_=_a_ + 1 | 0;0;_e_ = _g_;_b_ = _g_;throw Stdlib[3]}
+          catch(_i_){caml_call2(Stdlib_Printf[3],_f_,_e_);throw Stdlib[3]}}
+        catch(_h_)
+         {var _c_=caml_wrap_exception(_h_);
+          if(_c_ !== Stdlib[3])throw _c_;
+          caml_call2(Stdlib_Printf[3],_d_,_b_);
           var Test=[0];
           runtime.caml_register_global(4,Test,"Test");
           0;

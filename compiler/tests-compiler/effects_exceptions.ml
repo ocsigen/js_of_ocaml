@@ -44,32 +44,32 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
 
     function exceptions(s,cont)
      {try
-       {var _f_=runtime.caml_int_of_string(s),n=_f_}
-      catch(_j_)
-       {_j_ = caml_wrap_exception(_j_);
-        if(_j_[1] !== Stdlib[7])
-         {var raise$1=caml_pop_trap();return caml_cps_exact_call1(raise$1,_j_)}
-        var n=0,_a_=0}
+       {var _h_=runtime.caml_int_of_string(s),n=_h_}
+      catch(_l_)
+       {var _a_=caml_wrap_exception(_l_);
+        if(_a_[1] !== Stdlib[7])
+         {var raise$1=caml_pop_trap();return caml_cps_exact_call1(raise$1,_a_)}
+        var n=0,_b_=0}
       try
-       {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _e_=7,m=_e_}
-      catch(_i_)
-       {_i_ = caml_wrap_exception(_i_);
-        if(_i_ !== Stdlib[8])
-         {var raise$0=caml_pop_trap();return caml_cps_exact_call1(raise$0,_i_)}
-        var m=0,_b_=0}
+       {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _g_=7,m=_g_}
+      catch(_k_)
+       {var _c_=caml_wrap_exception(_k_);
+        if(_c_ !== Stdlib[8])
+         {var raise$0=caml_pop_trap();return caml_cps_exact_call1(raise$0,_c_)}
+        var m=0,_d_=0}
       runtime.caml_push_trap
-       (function(_h_)
-         {if(_h_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
+       (function(_j_)
+         {if(_j_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
           var raise=caml_pop_trap();
-          return caml_cps_exact_call1(raise,_h_)});
+          return caml_cps_exact_call1(raise,_j_)});
       if(caml_string_equal(s,cst))
-       {var _c_=Stdlib[8],raise=caml_pop_trap();
-        return caml_cps_exact_call1(raise,_c_)}
-      var _d_=Stdlib[79];
+       {var _e_=Stdlib[8],raise=caml_pop_trap();
+        return caml_cps_exact_call1(raise,_e_)}
+      var _f_=Stdlib[79];
       return caml_cps_call2
-              (_d_,
+              (_f_,
                cst_toto,
-               function(_g_)
+               function(_i_)
                 {caml_pop_trap();
-                 return caml_cps_exact_call1(cont,[0,[0,_g_,n,m]])})}
+                 return caml_cps_exact_call1(cont,[0,[0,_i_,n,m]])})}
     //end |}]
