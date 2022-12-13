@@ -37,6 +37,15 @@ let to_ident s =
       | '0' .. '9' as c -> c
       | _ -> '_')
 
+let rec list_product l =
+  match l with
+  | [] -> [ [] ]
+  | (key, values) :: xs ->
+      let tail = list_product xs in
+      List.concat_map values ~f:(fun v -> List.map tail ~f:(fun l -> (key, v) :: l))
+
+let bool = [ true; false ]
+
 let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
@@ -45,12 +54,11 @@ let () =
       let fragments =
         List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in
+      let variants = list_product [ "use-js-string", bool; "effects", bool ] in
       (* load all files to make sure they are valid *)
-      List.iter [ true; false ] ~f:(fun js_string ->
-          (if js_string
-          then Js_of_ocaml_compiler.Config.Flag.enable
-          else Js_of_ocaml_compiler.Config.Flag.disable)
-            "use-js-string";
+      List.iter variants ~f:(fun setup ->
+          List.iter setup ~f:(fun (name, b) ->
+              Js_of_ocaml_compiler.Config.Flag.set name b);
           List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
               Js_of_ocaml_compiler.Linker.reset ();
               List.iter fragments ~f:(fun (filename, frags) ->
