@@ -41,7 +41,14 @@ let block_deps info vars deps blocks fun_name pc =
               add_dep deps x g;
               add_dep deps g x)
             (Var.Tbl.get info.Flow.info_known_origins f)
-      | Code.Let (x, Prim (Extern ("%perform" | "%resume"), _)) -> add_var vars x
+      | Code.Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
+          add_var vars x;
+          match fun_name with
+          | None -> ()
+          | Some fun_name ->
+              add_var vars fun_name;
+              add_dep deps fun_name x)
+      | Code.Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -72,12 +79,12 @@ let cps_needed info rev_deps st x =
           || Var.Set.exists
                (fun g ->
                  match info.Flow.info_defs.(Var.idx g) with
-                 | Expr _ -> false
+                 | Expr (Closure _ | Prim (Extern "%closure", _)) -> false
                  | _ -> true)
                (Var.Tbl.get info.Flow.info_known_origins f)
       | Flow.Expr (Closure _) | Flow.Expr (Prim (Extern "%closure", _)) ->
           info.Flow.info_possibly_mutable.(idx)
-      | Flow.Expr (Prim (Extern ("%perform" | "%resume"), _)) -> true
+      | Flow.Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> true
       | _ -> false)
   in
   (*

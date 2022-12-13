@@ -72,6 +72,7 @@ let build_graph blocks pc =
       Hashtbl.add visited pc ();
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
       Hashtbl.add succs pc successors;
+      let ancestors = Addr.Set.add pc ancestors in
       Addr.Set.iter
         (fun pc' ->
           if Addr.Set.mem pc' ancestors
@@ -94,7 +95,6 @@ let build_graph blocks pc =
             | [] -> assert false)
         | _ -> exn_handler_stack
       in
-      let ancestors = Addr.Set.add pc ancestors in
       Addr.Set.iter (fun pc -> traverse ancestors exn_handler_stack pc) successors;
       l := pc :: !l)
   in
@@ -155,9 +155,9 @@ let is_merge_node cfg pc = Hashtbl.find cfg.predecessor_count pc > 1
 *)
 let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
   let dom_tree = reverse_tree idom in
-  let transformation_needed = Hashtbl.create 16 in
+  let transformation_needed = ref Addr.Set.empty in
   let is_continuation = Hashtbl.create 16 in
-  let mark_needed pc = Hashtbl.replace transformation_needed pc () in
+  let mark_needed pc = transformation_needed := Addr.Set.add pc !transformation_needed in
   let mark_continuation pc x = Hashtbl.replace is_continuation pc x in
   let rec traverse pc ~try_blocks ~frontier ~transform_on_visit =
     (* [try_blocks] is the set of initial blocks of try blocks we are in.
@@ -191,7 +191,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
     in
     let successors = Hashtbl.find cfg.succs pc in
     let transform_on_visit =
-      if Hashtbl.mem transformation_needed pc then frontier else transform_on_visit
+      if Addr.Set.mem pc !transformation_needed then frontier else transform_on_visit
     in
     Addr.Set.iter
       (fun pc' ->
@@ -226,7 +226,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
     ~try_blocks:[]
     ~frontier:Addr.Set.empty
     ~transform_on_visit:Addr.Set.empty;
-  transformation_needed, is_continuation
+  !transformation_needed, is_continuation
 
 (* Each block is turned into a function which is defined in the
    dominator of the block. [closure_of_jump] provides the name of the
@@ -264,6 +264,8 @@ type st =
   ; blocks : Code.block Addr.Map.t
   ; jc : jump_closures
   ; closure_continuation : Addr.t -> Var.t
+  ; cps_needed : Var.Set.t
+  ; blocks_to_transform : Addr.Set.t
   }
 
 let add_block st block =
@@ -281,28 +283,40 @@ let allocate_closure ~st ~params ~body ~branch =
   [ Let (name, Closure (params, (pc, []))) ], name
 
 let cps_branch ~st (pc, args) =
-  let ret = Var.fresh () in
-  [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ], Return ret
+  if Addr.Set.mem pc st.blocks_to_transform
+  then
+    let ret = Var.fresh () in
+    [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ], Return ret
+  else [], Branch (pc, args)
 
-let cps_jump_cont ~st cont =
-  let call_block =
-    let body, branch = cps_branch ~st cont in
-    add_block st { params = []; body; branch }
-  in
-  call_block, []
+let cps_jump_cont ~st ((pc, _) as cont) =
+  if Addr.Set.mem pc st.blocks_to_transform
+  then
+    let call_block =
+      let body, branch = cps_branch ~st cont in
+      add_block st { params = []; body; branch }
+    in
+    call_block, []
+  else cont
 
 let cps_last ~st (last : last) ~k : instr list * last =
   match last with
-  | Return x ->
-      let ret = Var.fresh () in
-      [ Let (ret, Apply { f = k; args = [ x ]; exact = true }) ], Return ret
-  | Raise (x, _) ->
-      let ret = Var.fresh () in
-      let exn_handler = Var.fresh_n "raise" in
-      ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
-        ; Let (ret, Apply { f = exn_handler; args = [ x ]; exact = true })
-        ]
-      , Return ret )
+  | Return x -> (
+      match k with
+      | None -> [], last
+      | Some k ->
+          let ret = Var.fresh () in
+          [ Let (ret, Apply { f = k; args = [ x ]; exact = true }) ], Return ret)
+  | Raise (x, _) -> (
+      match k with
+      | None -> [], last
+      | Some _ ->
+          let ret = Var.fresh () in
+          let exn_handler = Var.fresh_n "raise" in
+          ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
+            ; Let (ret, Apply { f = exn_handler; args = [ x ]; exact = true })
+            ]
+          , Return ret ))
   | Stop -> [], Stop
   | Branch cont -> cps_branch ~st cont
   | Cond (x, cont1, cont2) ->
@@ -313,27 +327,33 @@ let cps_last ~st (last : last) ~k : instr list * last =
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
   | Pushtrap ((pc, args), x, handler_cont, _) ->
-      let constr_handler, exn_handler =
-        (* Construct handler closure *)
-        allocate_closure ~st ~params:[ x ] ~body:[] ~branch:(Branch handler_cont)
-      in
-      let ret = Var.fresh () in
-      ( constr_handler
-        @ [ Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+      if Addr.Set.mem pc st.blocks_to_transform
+      then
+        let constr_handler, exn_handler =
+          (* Construct handler closure *)
+          allocate_closure ~st ~params:[ x ] ~body:[] ~branch:(Branch handler_cont)
+        in
+        let ret = Var.fresh () in
+        ( constr_handler
+          @ [ Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+            ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
+            ]
+        , Return ret )
+      else [], last
+  | Poptrap (pc, args) ->
+      if Addr.Set.mem pc st.blocks_to_transform
+      then
+        let ret = Var.fresh () in
+        let exn_handler = Var.fresh () in
+        ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
           ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
           ]
-      , Return ret )
-  | Poptrap (pc, args) ->
-      let ret = Var.fresh () in
-      let exn_handler = Var.fresh () in
-      ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
-        ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
-        ]
-      , Return ret )
+        , Return ret )
+      else [], last
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
-  | Let (x, Closure (params, (pc, args))) ->
+  | Let (x, Closure (params, (pc, args))) when Var.Set.mem x st.cps_needed ->
       Let (x, Closure (params @ [ st.closure_continuation pc ], (pc, args)))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
@@ -343,8 +363,8 @@ let cps_instr ~st (instr : instr) : instr =
             , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
             )
       | _ -> assert false)
-  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-      assert false
+  | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _)))
+    when Var.Set.mem x st.cps_needed -> assert false
   | _ -> instr
 
 let cps_block ~st ~k pc block =
@@ -357,10 +377,9 @@ let cps_block ~st ~k pc block =
             Let (cname, Closure (fresh_params, (jump_pc, fresh_params))))
     | exception Not_found -> []
   in
-
-  let rewrite_instr e =
+  let rewrite_instr x e =
     match e with
-    | Apply { f; args; exact } ->
+    | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
         Some (fun ~x ~k -> [ Let (x, Apply { f; args = args @ [ k ]; exact }) ])
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
@@ -383,11 +402,10 @@ let cps_block ~st ~k pc block =
             ])
     | _ -> None
   in
-
   let rewritten_block =
     match List.split_last block.body, block.branch with
     | Some (body_prefix, Let (x, e)), Return ret ->
-        Option.map (rewrite_instr e) ~f:(fun instrs ->
+        Option.map (rewrite_instr x e) ~f:(fun instrs ->
             assert (List.is_empty alloc_jump_closures);
             assert (Var.equal x ret);
             body_prefix, instrs ~x ~k, block.branch)
@@ -410,18 +428,17 @@ let cps_block ~st ~k pc block =
           let ret = Var.fresh () in
           body_prefix, constr_cont @ f ~x:ret ~k:k', Return ret
         in
-        Option.map (rewrite_instr e) ~f:allocate_continuation
+        Option.map (rewrite_instr x e) ~f:allocate_continuation
     | Some (_, (Set_field _ | Offset_ref _ | Array_set _ | Assign _)), _
     | Some _, (Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _)
     | None, _ -> None
   in
-
   let body, last =
     match rewritten_block with
     | Some (body_prefix, last_instrs, last) ->
         List.map body_prefix ~f:(fun i -> cps_instr ~st i) @ last_instrs, last
     | None ->
-        let last_instrs, last = cps_last ~st block.branch ~k in
+        let last_instrs, last = cps_last ~st block.branch ~k:(Some k) in
         let body =
           List.map block.body ~f:(fun i -> cps_instr ~st i)
           @ alloc_jump_closures
@@ -429,8 +446,17 @@ let cps_block ~st ~k pc block =
         in
         body, last
   in
-
   { params = block.params; body; branch = last }
+
+let transform_block ~st ~k pc block =
+  match k with
+  | Some k -> cps_block ~st ~k pc block
+  | _ ->
+      let last_instrs, last = cps_last ~st block.branch ~k in
+      { params = block.params
+      ; body = List.map block.body ~f:(fun i -> cps_instr ~st i) @ last_instrs
+      ; branch = last
+      }
 
 let split_blocks (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
@@ -524,43 +550,42 @@ let f (p : Code.program) =
       (fun name_opt _ (start, _) ({ blocks; free_pc; _ } as p) ->
         let cfg = build_graph blocks start in
         let idom = dominator_tree cfg in
-        let () =
-          if match name_opt with
-             | None -> true
-             | Some name -> Var.Set.mem name cps_needed
-          then (
-            let transformation_needed, _ =
-              compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start
-            in
-            Format.eprintf "===============@.";
-            Code.preorder_traverse
-              { fold = Code.fold_children }
-              (fun pc _ ->
-                if Hashtbl.mem transformation_needed pc then Format.eprintf "CPS@.";
-                let block = Addr.Map.find pc blocks in
-                Code.Print.block
-                  (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
-                  pc
-                  block)
-              start
-              blocks
-              ())
+        let function_need_cps =
+          match name_opt with
+          | None -> true
+          | Some name -> Var.Set.mem name cps_needed
         in
-
+        let blocks_to_transform =
+          if function_need_cps
+          then fst (compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start)
+          else Addr.Set.empty
+        in
+        Format.eprintf "=============== %b@." function_need_cps;
+        Code.preorder_traverse
+          { fold = Code.fold_children }
+          (fun pc _ ->
+            if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
+            let block = Addr.Map.find pc blocks in
+            Code.Print.block (fun _ xi -> Fun_style_analysis.annot cps_needed xi) pc block)
+          start
+          blocks
+          ();
         let closure_jc = jump_closures cfg idom in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
           ; blocks
           ; jc = closure_jc
           ; closure_continuation
+          ; cps_needed
+          ; blocks_to_transform
           }
         in
-        let k = closure_continuation start in
+        let k = if function_need_cps then Some (closure_continuation start) else None in
         let blocks =
           Code.traverse
             { fold = Code.fold_children }
             (fun pc blocks ->
-              Addr.Map.add pc (cps_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
+              Addr.Map.add pc (transform_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
             start
             st.blocks
             st.blocks
