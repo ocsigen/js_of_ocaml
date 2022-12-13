@@ -212,9 +212,6 @@ caml_gr_text_size
 caml_gr_wait_event
 caml_gr_window_id
 
-From +hash.js:
-caml_hash_univ_param
-
 From +ints.js:
 caml_div
 caml_mod

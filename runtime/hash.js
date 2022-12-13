@@ -23,6 +23,7 @@
 //Requires: caml_ml_bytes_content
 //Requires: caml_int64_to_bytes, caml_int64_bits_of_float, caml_custom_ops
 //Requires: caml_ml_bytes_length, caml_jsbytes_of_string
+//Version: < 4.12
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
