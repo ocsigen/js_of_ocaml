@@ -331,10 +331,13 @@ let the_cond_of info x =
 
 let eval_branch info = function
   | Cond (x, ftrue, ffalse) as b -> (
-      match the_cond_of info x with
-      | Zero -> Branch ffalse
-      | Non_zero -> Branch ftrue
-      | Unknown -> b)
+      if Poly.(ftrue = ffalse)
+      then Branch ftrue
+      else
+        match the_cond_of info x with
+        | Zero -> Branch ffalse
+        | Non_zero -> Branch ftrue
+        | Unknown -> b)
   | Switch (x, const, tags) as b -> (
       (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
          The proper fix would be to remove the deadcode entirely.
