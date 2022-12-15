@@ -40,7 +40,7 @@ let%expect_test "static eval of string get" =
        var _d_=lz[1];
       else
        {var switch$0=0;
-        if(246 === _c_ || 244 === _c_)switch$0 = 1;else var _d_=lz;
-        if(switch$0)var _d_=caml_call1(CamlinternalLazy[2],lz)}
+        if(246 !== _c_ && 244 !== _c_){var _d_=lz;switch$0 = 1}
+        if(! switch$0)var _d_=caml_call1(CamlinternalLazy[2],lz)}
       return [0,_d_,_b_]}
     //end |}]
