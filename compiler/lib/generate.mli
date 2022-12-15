@@ -22,6 +22,7 @@ val f :
      Code.program
   -> exported_runtime:bool
   -> live_vars:int array
+  -> tail_calls:Code.Var.Set.t
   -> should_export:bool
   -> Parse_bytecode.Debug.t
   -> Javascript.program

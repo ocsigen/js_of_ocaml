@@ -243,6 +243,7 @@ type st =
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, Var.t) Hashtbl.t
+  ; tail_calls : Var.Set.t ref
   }
 
 let add_block st block =
@@ -253,25 +254,28 @@ let add_block st block =
 let closure_of_pc ~st pc =
   try Addr.Map.find pc st.jc.closure_of_jump with Not_found -> assert false
 
-let allocate_closure ~st ~params ~body ~branch =
+let allocate_closure ~st ~params ~body:(body, branch) =
   let block = { params = []; body; branch } in
   let pc = add_block st block in
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
+let tail_call ~st ?(instrs = []) ~f ?(exact = true) args =
+  let ret = Var.fresh () in
+  st.tail_calls := Var.Set.add ret !(st.tail_calls);
+  instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
+
 let cps_branch ~st (pc, args) =
   if Addr.Set.mem pc st.blocks_to_transform
   then
-    let ret = Var.fresh () in
-    let args, instr =
+    let args, instrs =
       if List.is_empty args && Hashtbl.mem st.is_continuation pc
       then
         let x = Var.fresh () in
         [ x ], [ Let (x, Constant (Int 0l)) ]
       else args, []
     in
-    ( instr @ [ Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true }) ]
-    , Return ret )
+    tail_call ~st ~instrs ~f:(closure_of_pc ~st pc) args
   else [], Branch (pc, args)
 
 let cps_jump_cont ~st ((pc, _) as cont) =
@@ -289,19 +293,17 @@ let cps_last ~st (last : last) ~k : instr list * last =
   | Return x -> (
       match k with
       | None -> [], last
-      | Some k ->
-          let ret = Var.fresh () in
-          [ Let (ret, Apply { f = k; args = [ x ]; exact = true }) ], Return ret)
+      | Some k -> tail_call ~st ~f:k [ x ])
   | Raise (x, _) -> (
       match k with
       | None -> [], last
       | Some _ ->
-          let ret = Var.fresh () in
           let exn_handler = Var.fresh_n "raise" in
-          ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
-            ; Let (ret, Apply { f = exn_handler; args = [ x ]; exact = true })
-            ]
-          , Return ret ))
+          tail_call
+            ~st
+            ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+            ~f:exn_handler
+            [ x ])
   | Stop -> [], Stop
   | Branch cont -> cps_branch ~st cont
   | Cond (x, cont1, cont2) ->
@@ -319,24 +321,19 @@ let cps_last ~st (last : last) ~k : instr list * last =
           Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
         in
         if Addr.Set.mem pc st.blocks_to_transform
-        then
-          let ret = Var.fresh () in
-          ( [ push_trap
-            ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
-            ]
-          , Return ret )
+        then tail_call ~st ~instrs:[ push_trap ] ~f:(closure_of_pc ~st pc) args
         else [ push_trap ], Branch (pc, args)
       else [], last
   | Poptrap (pc, args) ->
       (*ZZZ Need to know whether the matching Pushtrap is transformed! *)
       if Addr.Set.mem pc st.blocks_to_transform
       then
-        let ret = Var.fresh () in
         let exn_handler = Var.fresh () in
-        ( [ Let (exn_handler, Prim (Extern "caml_pop_trap", []))
-          ; Let (ret, Apply { f = closure_of_pc ~st pc; args; exact = true })
-          ]
-        , Return ret )
+        tail_call
+          ~st
+          ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+          ~f:(closure_of_pc ~st pc)
+          args
       else [], last
 
 let cps_instr ~st (instr : instr) : instr =
@@ -373,35 +370,47 @@ let cps_block ~st ~k pc block =
   let rewrite_instr x e =
     match e with
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
-        Some (fun ~x ~k -> [ Let (x, Apply { f; args = args @ [ k ]; exact }) ])
+        Some (fun ~k -> tail_call ~st ~f ~exact (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
-          (fun ~x ~k ->
+          (fun ~k ->
             let k' = Var.fresh_n "cont" in
-            [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ]))
-            ; Let (x, Apply { f; args = [ arg; k' ]; exact = false })
-            ])
+            tail_call
+              ~st
+              ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
+              ~f
+              ~exact:false
+              [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
         Some
-          (fun ~x ~k ->
-            [ Let
-                (x, Prim (Extern "caml_perform_effect", [ Pv effect; Pc (Int 0l); Pv k ]))
-            ])
+          (fun ~k ->
+            let x = Var.fresh () in
+            ( [ Let
+                  ( x
+                  , Prim (Extern "caml_perform_effect", [ Pv effect; Pc (Int 0l); Pv k ])
+                  )
+              ]
+            , Return x ))
     | Prim (Extern "%reperform", [ Pv eff; Pv continuation ]) ->
         Some
-          (fun ~x ~k ->
-            [ Let
-                (x, Prim (Extern "caml_perform_effect", [ Pv eff; Pv continuation; Pv k ]))
-            ])
+          (fun ~k ->
+            let x = Var.fresh () in
+            ( [ Let
+                  ( x
+                  , Prim (Extern "caml_perform_effect", [ Pv eff; Pv continuation; Pv k ])
+                  )
+              ]
+            , Return x ))
     | _ -> None
   in
   let rewritten_block =
     match List.split_last block.body, block.branch with
     | Some (body_prefix, Let (x, e)), Return ret ->
-        Option.map (rewrite_instr x e) ~f:(fun instrs ->
+        Option.map (rewrite_instr x e) ~f:(fun f ->
             assert (List.is_empty alloc_jump_closures);
             assert (Var.equal x ret);
-            body_prefix, instrs ~x ~k, block.branch)
+            let instrs, branch = f ~k in
+            body_prefix, instrs, branch)
     | Some (body_prefix, Let (x, e)), Branch cont ->
         let allocate_continuation f =
           let constr_cont, k' =
@@ -409,27 +418,18 @@ let cps_block ~st ~k pc block =
                allocates closures for dominated blocks and jumps to the
                next block. *)
             let pc, args = cont in
-            let ret = Var.fresh () in
             let f' = closure_of_pc ~st pc in
             assert (Hashtbl.mem st.is_continuation pc);
             match args with
             | [] | [ _ ] -> alloc_jump_closures, f'
             | _ ->
-                (* let args =
-                     match args with
-                     | [] -> [ x ]
-                     | _ -> args
-                   in*)
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:
-                    (alloc_jump_closures
-                    @ [ Let (ret, Apply { f = f'; args; exact = true }) ])
-                  ~branch:(Return ret)
+                  ~body:(tail_call ~st ~instrs:alloc_jump_closures ~f:f' args)
           in
-          let ret = Var.fresh () in
-          body_prefix, constr_cont @ f ~x:ret ~k:k', Return ret
+          let instrs, branch = f ~k:k' in
+          body_prefix, constr_cont @ instrs, branch
         in
         Option.map (rewrite_instr x e) ~f:allocate_continuation
     | Some (_, (Set_field _ | Offset_ref _ | Array_set _ | Assign _)), _
@@ -555,6 +555,7 @@ let f (p : Code.program) =
         Hashtbl.add tbl pc k;
         k
   in
+  let tail_calls = ref Var.Set.empty in
   let p =
     Code.fold_closures
       p
@@ -592,6 +593,7 @@ let f (p : Code.program) =
           ; cps_needed
           ; blocks_to_transform
           ; is_continuation
+          ; tail_calls
           }
         in
         let k = if function_need_cps then Some (closure_continuation start) else None in
@@ -628,7 +630,7 @@ let f (p : Code.program) =
       }
       p.blocks
   in
-  { start = new_start; blocks; free_pc = new_start + 1 }
+  { start = new_start; blocks; free_pc = new_start + 1 }, !tail_calls
 
 let f p =
   let t = Timer.make () in

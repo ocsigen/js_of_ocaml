@@ -87,8 +87,8 @@ let effects p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
-    Effects.f p |> Lambda_lifting.f)
-  else p
+    Effects.f p |> fun (p, s) -> Lambda_lifting.f p, s)
+  else p, Code.Var.Set.empty
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -154,10 +154,10 @@ let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
 let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
-let generate d ~exported_runtime ~wrap_with_fun (p, live_vars) =
+let generate d ~exported_runtime ~wrap_with_fun ((p, live_vars), tail_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
-  Generate.f p ~exported_runtime ~live_vars ~should_export d
+  Generate.f p ~exported_runtime ~live_vars ~tail_calls ~should_export d
 
 let header formatter ~custom_header =
   match custom_header with
@@ -529,8 +529,7 @@ let full
     +> specialize_js_once
     +> profile
     +> effects
-    +> Generate_closure.f
-    +> deadcode'
+    +> fun (p, s) -> (Generate_closure.f +> deadcode') p, s
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun
