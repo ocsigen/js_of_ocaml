@@ -1,4 +1,7 @@
 (env
+ (using-effects
+  (flags
+   (:standard -w -38)))
  (_
   (flags
    (:standard -w -38))
@@ -35,8 +38,16 @@
   test5
   test6
   test_lazy
-  unhandled_unlinked
   used_cont)
+ (modules
+  (:standard \ unhandled_unlinked))
+ (modes js))
+
+(executables
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (names unhandled_unlinked)
+ (modules unhandled_unlinked)
  (modes js))
 
 (rule
@@ -366,7 +377,9 @@
 (rule
  (target unhandled_unlinked.referencejs)
  (enabled_if
-  (>= %{ocaml_version} 5))
+  (and
+   (>= %{ocaml_version} 5)
+   (<> %{profile} using-effects)))
  (deps unhandled_unlinked.bc.js)
  (action
   (with-accepted-exit-codes
@@ -378,7 +391,9 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5))
+  (and
+   (>= %{ocaml_version} 5)
+   (<> %{profile} using-effects)))
  (deps unhandled_unlinked.reference unhandled_unlinked.referencejs)
  (action
   (diff unhandled_unlinked.reference unhandled_unlinked.referencejs)))
