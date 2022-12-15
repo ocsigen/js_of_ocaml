@@ -37,7 +37,7 @@
   (:standard -rectypes -linkall))
  (modes byte)
  (modules
-  (:standard \ test_dynlink examples))
+  (:standard \ test_dynlink examples effects_flags))
  (preprocess
   (pps js_of_ocaml-ppx)))
 
@@ -83,6 +83,17 @@
    js_of_ocaml-tyxml
    js_of_ocaml-toplevel)))
 
+(executable
+ (name effects_flags)
+ (modules effects_flags))
+
+(rule
+ (target effects_flags.sexp)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./effects_flags.exe))))
+
 (rule
  (targets toplevel.js)
  (action
@@ -90,8 +101,7 @@
    %{bin:js_of_ocaml}
    compile
    --pretty
-   --enable
-   effects
+   %{read-strings:effects_flags.sexp}
    --Werror
    --target-env
    browser

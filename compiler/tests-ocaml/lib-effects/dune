@@ -1,4 +1,7 @@
 (env
+ (using-effects
+  (flags
+   (:standard -w -38)))
  (_
   (flags
    (:standard -w -38))
