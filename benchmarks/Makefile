@@ -5,7 +5,7 @@ GRAPHSNOPR = time.pdf time-optim.pdf nativejs.pdf
 GRAPHSPR = size.pdf size-optim.pdf compiletime.pdf
 
 # graphs showing the impact of supporting effects
-GRAPHSEFF = time-effects.pdf size-effects.pdf
+GRAPHSEFF = time-effects.pdf size-effects.pdf size-bzip2-effects.pdf
 
 # For full benchs:
 all: _perf graphsnopr graphspr graphseff _noperf
@@ -14,7 +14,7 @@ graphsnopr: _noprecomp $(GRAPHSNOPR)
 
 graphspr: __precomp $(GRAPHSPR)
 
-graphseff: $(GRAPHSEFF)
+graphseff: __precomp $(GRAPHSEFF)
 
 # For fast benchs:
 test: _perf fastrun $(GRAPHS) _noperf
@@ -48,7 +48,6 @@ __run:
 	touch __run
 
 __run_effects:
-	make _noprecomp
 	$(RUN) -fast -nobyteopt -effects
 	touch __run_effects
 
@@ -165,7 +164,47 @@ size-effects.svg: __run_effects
 	 -omit boyer_no_exc \
 	 -omit kb_no_exc \
 	 -omit loop \
-	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 2 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+size-gzipped-effects.svg: __run_effects
+	$(REPORT) -config report-size-gzipped-effects.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 1.2 -min 0.8 -svg 7 650 150 -edgecaption -ylabel Size \
+	 > $@
+
+size-bzip2-effects.svg: __run_effects
+	$(REPORT) -config report-size-bzip2-effects.config \
+	 -omit binary_trees \
+	 -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc \
+	 -omit kb_no_exc \
+	 -omit loop \
+	 -append boulderdash \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append js_of_ocaml \
+	 -append ocamlc \
+	 -max 1.1 -min 0.95 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
 compiletime.svg: __run __precomp __missingcompiletimes

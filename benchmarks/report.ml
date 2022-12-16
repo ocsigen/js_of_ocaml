@@ -27,6 +27,8 @@ let nreference = ref (-1)
 
 let maximum = ref (-1.)
 
+let minimum = ref 0.
+
 let table = ref false
 
 let omitted = ref []
@@ -201,7 +203,7 @@ let gnuplot_output ch no_header (h, t) =
       (if !errors then " lw 1" else "");
     if !ylabel <> "" then Printf.fprintf ch "set ylabel \"%s\"\n" !ylabel;
     if !maximum > 0.
-    then Printf.fprintf ch "set yrange [0:%f]\n" !maximum
+    then Printf.fprintf ch "set yrange [%f:%f]\n" !minimum !maximum
     else Printf.fprintf ch "set yrange [0:]\n");
   (* labels *)
   for i = 0 to n - 1 do
@@ -360,6 +362,7 @@ let _ =
   let options =
     [ "-ref", Arg.Set_int nreference, "<col> use column <col> as the baseline"
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
+    ; "-min", Arg.Set_float minimum, "<m> truncate graph below level <min>"
     ; "-table", Arg.Set table, " output a text table"
     ; ( "-omit"
       , Arg.String (fun s -> omitted := split_on_char s ~sep:',' @ !omitted)
