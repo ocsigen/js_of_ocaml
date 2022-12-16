@@ -524,12 +524,19 @@ let fold_closures p f accu =
 let prepend ({ start; blocks; free_pc } as p) body =
   match body with
   | [] -> p
-  | _ ->
-      let new_start = free_pc in
-      let branch = if Addr.Map.mem start blocks then Branch (start, []) else Stop in
-      let blocks = Addr.Map.add new_start { params = []; body; branch } blocks in
-      let free_pc = free_pc + 1 in
-      { start = new_start; blocks; free_pc }
+  | _ -> (
+      match Addr.Map.find start blocks with
+      | block ->
+          { p with
+            blocks = Addr.Map.add start { block with body = body @ block.body } blocks
+          }
+      | exception Not_found ->
+          let new_start = free_pc in
+          let blocks =
+            Addr.Map.add new_start { params = []; body; branch = Stop } blocks
+          in
+          let free_pc = free_pc + 1 in
+          { start = new_start; blocks; free_pc })
 
 let empty_block = { params = []; body = []; branch = Stop }
 

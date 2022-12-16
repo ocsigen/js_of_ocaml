@@ -46,7 +46,8 @@ Printf.printf "%d\n" (f 3)
                      [0,
                       [4,0,0,0,[12,10,0]],
                       runtime.caml_string_of_jsbytes("%d\n")];
-                   function _b_(){return caml_cps_exact_call0(_i_())}
+                   function _b_()
+                    {var f$0=f();return caml_cps_exact_call0(_h_(f$0,3))}
                    function h(x,y)
                     {function h(z,cont)
                       {return caml_cps_exact_call1(cont,(x + y | 0) + z | 0)}
@@ -60,24 +61,21 @@ Printf.printf "%d\n" (f 3)
                       {var g$0=g(x);return caml_cps_exact_call2(g$0,5,cont)}
                      return f}
                    function _c_()
-                    {return function(_p_)
+                    {return function(_o_)
                       {var Test=[0];
                        runtime.caml_register_global(2,Test,"Test");
                        return}}
                    function _d_()
-                    {return function(_o_){return caml_cps_exact_call1(_c_(),_o_)}}
-                   function _e_(_m_,_n_)
-                    {return function(){return caml_cps_call3(_m_,_a_,_n_,_d_())}}
+                    {return function(_n_){return caml_cps_exact_call1(_c_(),_n_)}}
+                   function _e_(_l_,_m_)
+                    {return function(){return caml_cps_call3(_l_,_a_,_m_,_d_())}}
                    function _f_()
-                    {return function(_l_)
-                      {return caml_cps_exact_call0(_e_(Stdlib_Printf[2],_l_))}}
+                    {return function(_k_)
+                      {return caml_cps_exact_call0(_e_(Stdlib_Printf[2],_k_))}}
                    function _g_()
-                    {return function(_k_){return caml_cps_exact_call1(_f_(),_k_)}}
-                   function _h_(f,_j_)
-                    {return function(){return caml_cps_exact_call2(f,_j_,_g_())}}
-                   function _i_()
-                    {return function()
-                      {var f$0=f();return caml_cps_exact_call0(_h_(f$0,3))}}
+                    {return function(_j_){return caml_cps_exact_call1(_f_(),_j_)}}
+                   function _h_(f,_i_)
+                    {return function(){return caml_cps_exact_call2(f,_i_,_g_())}}
                    return caml_cps_exact_call0(_b_)},
                  [])}
       (globalThis));

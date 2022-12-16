@@ -55,8 +55,8 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
-         _c_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
          _b_=0,
+         _c_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")],
          _a_=0;
         try
          {0;_b_ = _a_ + 1 | 0;throw Stdlib[3]}
@@ -113,6 +113,7 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
+         _c_=0,
          _g_=
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
@@ -121,7 +122,6 @@ with Exit ->
           [0,
            [4,0,0,0,[12,32,[4,0,0,0,[12,10,0]]]],
            caml_string_of_jsbytes("%d %d\n")],
-         _c_=0,
          _a_=0,
          _b_=0;
         try
@@ -184,9 +184,9 @@ with Exit ->
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
          Stdlib_Printf=global_data.Stdlib__Printf,
+         _b_=0,
          _e_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
          _c_=[0,[4,0,0,0,[12,10,0]],caml_string_of_jsbytes("%d\n")],
-         _b_=0,
          _a_=0;
         try
          {var _d_=_a_;
