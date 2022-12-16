@@ -64,4 +64,4 @@ val the_int : info -> Code.prim_arg -> int32 option
 
 val update_def : info -> Code.Var.t -> Code.expr -> unit
 
-val f : ?skip_param:bool -> Code.program -> Code.program * info
+val f : ?pessimistic:bool -> ?skip_param:bool -> Code.program -> Code.program * info

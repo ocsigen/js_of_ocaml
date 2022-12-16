@@ -174,6 +174,7 @@ type mutability_state =
   ; known_origins : Code.Var.Set.t Code.Var.Tbl.t
   ; may_escape : bool array
   ; possibly_mutable : bool array
+  ; pessimistic : bool
   }
 
 let rec block_escape st x =
@@ -196,12 +197,15 @@ let expr_escape st _x e =
   | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
   | Prim (Extern name, l) ->
       let ka =
-        match Primitive.kind_args name with
-        | Some l -> l
-        | None -> (
-            match Primitive.kind name with
-            | `Mutable | `Mutator -> []
-            | `Pure -> List.map l ~f:(fun _ -> `Const))
+        if st.pessimistic
+        then []
+        else
+          match Primitive.kind_args name with
+          | Some l -> l
+          | None -> (
+              match Primitive.kind name with
+              | `Mutable | `Mutator -> []
+              | `Pure -> List.map l ~f:(fun _ -> `Const))
       in
       let rec loop args ka =
         match args, ka with
@@ -230,11 +234,11 @@ let expr_escape st _x e =
       in
       loop l ka
 
-let program_escape defs known_origins { blocks; _ } =
+let program_escape ?(pessimistic = false) defs known_origins { blocks; _ } =
   let nv = Var.count () in
   let may_escape = Array.make nv false in
   let possibly_mutable = Array.make nv false in
-  let st = { defs; known_origins; may_escape; possibly_mutable } in
+  let st = { defs; known_origins; may_escape; possibly_mutable; pessimistic } in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -394,7 +398,7 @@ let build_subst info vars =
 
 (****)
 
-let f ?skip_param p =
+let f ?pessimistic ?skip_param p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
@@ -404,7 +408,7 @@ let f ?skip_param p =
   let known_origins = solver1 vars deps defs in
   if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
   let t3 = Timer.make () in
-  let possibly_mutable = program_escape defs known_origins p in
+  let possibly_mutable = program_escape ?pessimistic defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
   let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in

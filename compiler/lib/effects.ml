@@ -165,7 +165,10 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
       match block.branch with
       | Branch (dst, _) -> (
           match List.last block.body with
-          | Some (Let (x, (Apply _ | Prim _))) when Var.Set.mem x cps_needed ->
+          | Some
+              (Let
+                (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
+            when Var.Set.mem x cps_needed ->
               (* If the blocks ends with a CPS call, its
                  continuation needs to be transformed *)
               mark_needed dst;
@@ -568,7 +571,7 @@ let f (p : Code.program) =
   let p, _ = Deadcode.f p in
   let p = skip_empty_blocks p in
   let p = split_blocks p in
-  let cps_needed = Flow.f p |> Fun_style_analysis.f in
+  let cps_needed = Flow.f ~pessimistic:true p |> Fun_style_analysis.f in
 
   let closure_continuation =
     (* Provide a name for the continuation of a closure (before CPS
