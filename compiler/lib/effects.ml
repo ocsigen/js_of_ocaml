@@ -38,14 +38,20 @@
 open! Stdlib
 open Code
 
+type simple_branch =
+  | Simple
+  | No
+
 type graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
+  ; simple_branch : (Addr.t, simple_branch) Hashtbl.t
   ; exn_handlers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
   }
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
+  let simple_branch = Hashtbl.create 16 in
   let exn_handlers = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
@@ -58,11 +64,17 @@ let build_graph blocks pc =
       | Pushtrap (_, _, (pc', _), _) -> Hashtbl.add exn_handlers pc' ()
       | _ -> ());
       Hashtbl.add succs pc successors;
+      (match (Addr.Map.find pc blocks).branch with
+      | Branch (pc, _) -> (
+          match Hashtbl.find simple_branch pc with
+          | exception Not_found -> Hashtbl.add simple_branch pc Simple
+          | Simple | No -> Hashtbl.replace simple_branch pc No)
+      | _ -> Addr.Set.iter (fun pc -> Hashtbl.replace simple_branch pc No) successors);
       Addr.Set.iter traverse successors;
       l := pc :: !l)
   in
   traverse pc;
-  { succs; exn_handlers; reverse_post_order = !l }
+  { succs; simple_branch; exn_handlers; reverse_post_order = !l }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
@@ -132,6 +144,7 @@ type st =
   ; blocks : Code.block Addr.Map.t
   ; jc : jump_closures
   ; closure_continuation : Addr.t -> Var.t
+  ; cfg : graph
   }
 
 let add_block st block =
@@ -289,13 +302,30 @@ let cps_block ~st ~k pc block =
     | Some (body_prefix, last_instrs, last) ->
         List.map body_prefix ~f:(fun i -> cps_instr ~st i) @ last_instrs, last
     | None ->
-        let last_instrs, last = cps_last ~st block.branch ~k in
-        let body =
-          List.map block.body ~f:(fun i -> cps_instr ~st i)
-          @ alloc_jump_closures
-          @ last_instrs
+        let ignore_cps =
+          match block.branch with
+          | Branch (pc, _) -> (
+              match Hashtbl.find st.cfg.simple_branch pc with
+              | Simple -> true
+              | No -> false
+              | exception Not_found -> false)
+          | _ -> false
         in
-        body, last
+
+        if ignore_cps
+        then
+          let body =
+            List.map block.body ~f:(fun i -> cps_instr ~st i) @ alloc_jump_closures
+          in
+          body, block.branch
+        else
+          let last_instrs, last = cps_last ~st block.branch ~k in
+          let body =
+            List.map block.body ~f:(fun i -> cps_instr ~st i)
+            @ alloc_jump_closures
+            @ last_instrs
+          in
+          body, last
   in
 
   { params = block.params; body; branch = last }
@@ -370,6 +400,7 @@ let f (p : Code.program) =
           ; blocks
           ; jc = closure_jc
           ; closure_continuation
+          ; cfg
           }
         in
         let k = closure_continuation start in
