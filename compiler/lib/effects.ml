@@ -452,7 +452,8 @@ let cps_block ~st ~k pc block =
             let f' = closure_of_pc ~st pc in
             assert (Hashtbl.mem st.is_continuation pc);
             match args with
-            | [] | [ _ ] -> alloc_jump_closures, f'
+            | [] -> alloc_jump_closures, f'
+            | [ x' ] when Var.equal x x' -> alloc_jump_closures, f'
             | _ ->
                 allocate_closure
                   ~st
