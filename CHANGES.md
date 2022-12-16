@@ -1,4 +1,4 @@
-# dev (202?-??) - ??
+# 5.0.0 (2022-12-??) - ??
 ## Features/Changes
 * Compiler: add support for effect handlers (--enable=effects)
 * Compiler: small refactoring in code generation
@@ -7,7 +7,6 @@
 * Misc: upgrade CI
 * Toplevel: recover more names when generating code during toplevel evaluation
 * Runtime: wrapping exception or not is now controled in the runtime.
-
 
 ## Bug fixes
 * Runime: Gc.finalise_last should not be eliminated

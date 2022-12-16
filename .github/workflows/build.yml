@@ -38,7 +38,7 @@ jobs:
             ocaml-compiler: 4.14.x
             skip-effects: true
             skip-test: false
-            skip-doc: false
+            skip-doc: true
           - os: macos-latest
             ocaml-compiler: 4.14.x
             skip-effects: true
@@ -53,7 +53,7 @@ jobs:
             ocaml-compiler: 5.0.x
             skip-effects: false
             skip-test: false
-            skip-doc: true
+            skip-doc: false
           - os: macos-latest
             ocaml-compiler: 5.0.x
             skip-effects: true
