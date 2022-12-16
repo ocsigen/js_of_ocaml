@@ -14,21 +14,39 @@ it so that we do not have to convert it to CPS:
 - Three levels: CPS, undecided, direct
 - For each undecided call site, duplicate the corresponding functions
 *)
-
+open Stdlib
 open Code
 
 let add_var s x = s := Var.Set.add x !s
 
 (* x depends on y *)
 let add_dep deps x y =
-  let idx = Var.idx y in
-  deps.(idx) <- Var.Set.add x deps.(idx)
+  if not (Var.Map.mem x !deps) then deps := Var.Map.add x Var.Set.empty !deps;
+  deps :=
+    Var.Map.add
+      y
+      (Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
+      !deps
 
-let block_deps info vars deps blocks fun_name pc =
+let rec list_iter ~f = function
+  | [] -> ()
+  | [ a ] -> f true a
+  | a :: l ->
+      f false a;
+      list_iter ~f l
+
+let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   let block = Code.Addr.Map.find pc blocks in
-  Stdlib.List.iter block.Code.body ~f:(fun i ->
+  list_iter block.Code.body ~f:(fun is_last i ->
       match i with
       | Code.Let (x, Apply { f; _ }) ->
+          let tail_call =
+            is_last
+            &&
+            match block.Code.branch with
+            | Return x' -> Var.equal x x'
+            | _ -> false
+          in
           add_var vars x;
           (match fun_name with
           | None -> ()
@@ -38,6 +56,11 @@ let block_deps info vars deps blocks fun_name pc =
           Var.Set.iter
             (fun g ->
               add_var vars g;
+              (if tail_call
+              then
+                match fun_name with
+                | None -> ()
+                | Some fun_name -> add_dep tail_deps fun_name g);
               add_dep deps x g;
               add_dep deps g x)
             (Var.Tbl.get info.Flow.info_known_origins f)
@@ -51,13 +74,12 @@ let block_deps info vars deps blocks fun_name pc =
       | Code.Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
-module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 
 module Domain = struct
   type t = bool
 
-  let equal (x : bool) y = x = y
+  let equal = Bool.equal
 
   let bot = false
 end
@@ -66,8 +88,10 @@ module Solver = G'.Solver (Domain)
 
 let fold_children g f x acc = g.G'.fold_children (fun y acc -> f y acc) x acc
 
-let cps_needed info rev_deps st x =
+let cps_needed ~info ~in_loop ~rev_deps st x =
   let res =
+    Var.Set.mem x in_loop
+    ||
     let idx = Var.idx x in
     fold_children
       rev_deps
@@ -105,30 +129,57 @@ let cps_needed info rev_deps st x =
 *)
   res
 
+module SCC = Strongly_connected_components.Make (struct
+  type t = Var.t
+
+  module Set = Var.Set
+  module Map = Var.Map
+end)
+
 let annot st xi =
   match (xi : Code.Print.xinstr) with
   | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
 
 let f (p, info) =
-  let nv = Var.count () in
   let vars = ref Var.Set.empty in
-  let deps = Array.make nv Var.Set.empty in
+  let deps = ref Var.Map.empty in
+  let tail_deps = ref Var.Map.empty in
   Code.fold_closures
     p
-    (fun name _ (pc, _) _ ->
+    (fun fun_name _ (pc, _) _ ->
       Code.traverse
         { fold = Code.fold_children }
-        (fun pc () -> block_deps info vars deps p.blocks name pc)
+        (fun pc () ->
+          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
         pc
         p.blocks
         ())
     ();
+  let scc = SCC.component_graph !tail_deps in
+  let in_loop =
+    Array.fold_left
+      ~f:(fun s (c, _) ->
+        match c with
+        | SCC.No_loop _ -> s
+        | Has_loop l ->
+            (*
+            Format.eprintf "LOOP ";
+            List.iter ~f:(fun x -> Format.eprintf " v%d" (Var.idx x)) l;
+            Format.eprintf "@.";
+*)
+            List.fold_left ~f:(fun s x -> Var.Set.add x s) l ~init:s)
+      ~init:Var.Set.empty
+      scc
+  in
   let g =
     { G'.domain = !vars
-    ; fold_children = (fun f x r -> Var.Set.fold f deps.(Var.idx x) r)
+    ; fold_children =
+        (fun f x r ->
+          Var.Set.fold f (try Var.Map.find x !deps with Not_found -> Var.Set.empty) r)
     }
   in
   let rev_deps = G'.invert g in
-  let res = Solver.f g (cps_needed info rev_deps) in
+  let res = Solver.f g (cps_needed ~info ~in_loop ~rev_deps) in
+
   Var.Map.fold (fun x v s -> if v then Var.Set.add x s else s) res Var.Set.empty
