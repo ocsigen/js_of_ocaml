@@ -154,6 +154,10 @@ let compr_file_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
       Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst)
 
+let bzip2_file_size param =
+  compile_no_ext param ~comptime:false (fun ~src ~dst ->
+      Format.sprintf "sed 's/^ *//g' %s | bzip2 -c | wc -c > %s" src dst)
+
 let runtime_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
       Format.sprintf
@@ -270,6 +274,24 @@ let _ =
     Spec.js_of_ocaml
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "gzipped");
+  compr_file_size
+    param
+    code
+    Spec.js_of_ocaml_effects
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml_effects "gzipped");
+  bzip2_file_size
+    param
+    code
+    Spec.js_of_ocaml_effects
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml_effects "bzip2");
+  bzip2_file_size
+    param
+    code
+    Spec.js_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml "bzip2");
   runtime_size
     param
     code
