@@ -386,15 +386,13 @@ let cps_block ~st ~k pc block =
     match Addr.Map.find pc st.jc.closures_of_alloc_site with
     | to_allocate ->
         List.map to_allocate ~f:(fun (cname, jump_pc) ->
-            let jump_block = Addr.Map.find jump_pc st.blocks in
-            if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
-            then
-              Let
-                ( cname
-                , Closure ([ Hashtbl.find st.is_continuation jump_pc ], (jump_pc, [])) )
-            else
-              let fresh_params = List.map jump_block.params ~f:(fun _ -> Var.fresh ()) in
-              Let (cname, Closure (fresh_params, (jump_pc, fresh_params))))
+            let params =
+              let jump_block = Addr.Map.find jump_pc st.blocks in
+              if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
+              then [ Hashtbl.find st.is_continuation jump_pc ]
+              else jump_block.params
+            in
+            Let (cname, Closure (params, (jump_pc, []))))
     | exception Not_found -> []
   in
   let rewrite_instr x e =
@@ -485,7 +483,7 @@ let cps_block ~st ~k pc block =
             && Addr.Set.mem pc st.blocks_to_transform
         then [ Hashtbl.find st.is_continuation pc ]
         else*)
-      block.params
+      (if Addr.Set.mem pc st.blocks_to_transform then [] else block.params)
   ; body
   ; branch = last
   }
