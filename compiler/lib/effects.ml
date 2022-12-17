@@ -278,6 +278,7 @@ type st =
   ; is_continuation : (Addr.t, [ `Single of Var.t | `Multiple ]) Hashtbl.t
   ; tail_calls : Var.Set.t ref
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
+  ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; live_vars : int array
   }
 
@@ -295,9 +296,9 @@ let allocate_closure ~st ~params ~body:(body, branch) =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-let tail_call ~st ?(instrs = []) ~f ?(exact = true) args =
+let tail_call ~st ?(instrs = []) ~f ?(check = true) ?(exact = true) args =
   let ret = Var.fresh () in
-  st.tail_calls := Var.Set.add ret !(st.tail_calls);
+  if check then st.tail_calls := Var.Set.add ret !(st.tail_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
 let cps_branch ~st (pc, args) =
@@ -310,7 +311,12 @@ let cps_branch ~st (pc, args) =
         [ x ], [ Let (x, Constant (Int 0l)) ]
       else args, []
     in
-    tail_call ~st ~instrs ~f:(closure_of_pc ~st pc) args
+    tail_call
+      ~st
+      ~instrs
+      ~check:(Hashtbl.mem st.loop_headers pc)
+      ~f:(closure_of_pc ~st pc)
+      args
   else [], Branch (pc, args)
 
 let cps_jump_cont ~st ((pc, _) as cont) =
@@ -675,6 +681,7 @@ let f (p : Code.program) =
           ; is_continuation
           ; tail_calls
           ; matching_exn_handler = cfg.matching_exn_handler
+          ; loop_headers = cfg.loop_headers
           ; live_vars
           }
         in
