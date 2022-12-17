@@ -32,8 +32,6 @@
    ... with] at the top of stack can have access to the current
    exception handler and resume the execution from there; see the
    definition of runtime function [caml_callback]).
-
-   We rely on inlining to eliminate some administrative redexes.
 *)
 open! Stdlib
 open Code
@@ -180,6 +178,13 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
               mark_continuation dst x;
               None
           | _ -> None)
+      | Return _ ->
+          List.iter ~f:mark_needed try_blocks;
+          None
+      | Raise _ ->
+          (*ZZZ ??? *)
+          List.iter ~f:mark_needed try_blocks;
+          None
       | Pushtrap (_, x, (pc2, _), _) ->
           mark_continuation pc2 x;
           Some pc2
@@ -351,7 +356,9 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
         in
         if Addr.Set.mem pc st.blocks_to_transform
-        then tail_call ~st ~instrs:[ push_trap ] ~f:(closure_of_pc ~st pc) args
+        then
+          let body, branch = cps_branch ~st (pc, args) in
+          push_trap :: body, branch
         else [ push_trap ], Branch (pc, args)
       else [], last
   | Poptrap (pc', args) ->
@@ -362,13 +369,18 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           [ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
         in
         if Addr.Set.mem pc' st.blocks_to_transform
-        then tail_call ~st ~instrs ~f:(closure_of_pc ~st pc') args
+        then
+          let body, branch = cps_branch ~st (pc', args) in
+          instrs @ body, branch
         else instrs, Branch (pc', args)
       else if Addr.Set.mem pc' st.blocks_to_transform
-      then (
-        (assert false : unit);
+      then
+        let pc'' =
+          let body, branch = cps_branch ~st (pc', args) in
+          add_block st { params = []; body; branch }
+        in
         (*ZZZ pop trap + cps call*)
-        [], Poptrap (pc', args))
+        [], Poptrap (pc'', [])
       else [], last
 
 let cps_instr ~st (instr : instr) : instr =
@@ -467,10 +479,17 @@ let cps_block ~st ~k pc block =
                    | `Multiple -> st.live_vars.(Var.idx x) = 0 -> alloc_jump_closures, f'
             | [ x' ] when Var.equal x x' -> alloc_jump_closures, f'
             | _ ->
+                let args, instrs =
+                  if List.is_empty args
+                  then
+                    let x = Var.fresh () in
+                    [ x ], alloc_jump_closures @ [ Let (x, Constant (Int 0l)) ]
+                  else args, alloc_jump_closures
+                in
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs:alloc_jump_closures ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -580,7 +599,7 @@ let skip_empty_blocks (p : Code.program) : Code.program =
                 Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
             | Pushtrap (cont1, x, cont2, s) ->
                 Pushtrap (resolve cont1, x, resolve cont2, s)
-            | Poptrap cont -> Poptrap cont (*ZZZ (resolve cont)*)
+            | Poptrap cont -> Poptrap (resolve cont)
             | Return _ | Raise _ | Stop -> block.branch)
         })
       p.blocks
