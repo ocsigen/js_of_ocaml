@@ -36,6 +36,8 @@
 open! Stdlib
 open Code
 
+let debug = Debug.find "effects"
+
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; predecessor_count : (Addr.t, int) Hashtbl.t
@@ -575,22 +577,31 @@ let split_blocks ~cps_needed (p : Code.program) =
   in
   Addr.Map.fold split_block p.blocks p
 
-let skip_empty_blocks (p : Code.program) : Code.program =
+let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
   let shortcuts = Hashtbl.create 16 in
-  let rec resolve_rec l ((pc, _) as cont) =
+  let rec resolve_rec l ((pc, args) as cont) =
     if List.mem pc ~set:l
     then cont
     else
       match Hashtbl.find_opt shortcuts pc with
-      | Some cont -> resolve_rec (pc :: l) cont
+      | Some (params, cont) ->
+          let pc', args' = resolve_rec (pc :: l) cont in
+          let s = Subst.from_map (Subst.build_mapping params args) in
+          pc', List.map ~f:s args'
       | None -> cont
   in
   let resolve cont = resolve_rec [] cont in
   Addr.Map.iter
     (fun pc block ->
       match block with
-      | { params = []; body = []; branch = Branch cont; _ } ->
-          Hashtbl.add shortcuts pc cont
+      | { params; body = []; branch = Branch cont; _ } ->
+          (*ZZZ quadratic *)
+          if List.for_all
+               ~f:(fun x ->
+                 live_vars.(Var.idx x) = 1
+                 && List.exists ~f:(fun y -> Var.equal x y) (snd cont))
+               params
+          then Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
     p.blocks;
   let blocks =
@@ -621,15 +632,13 @@ No argument:
 *)
 
 let f (p : Code.program) =
-  let p = skip_empty_blocks p in
+  if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
+  let p = skip_empty_blocks ~live_vars p in
   let p, info = Flow.f ~pessimistic:true p in
   let cps_needed = Fun_style_analysis.f (p, info) in
   let p = split_blocks ~cps_needed p in
-
-  (*
-  Code.Print.program (fun _ _ -> "") p;
-*)
+  if debug () then Code.Print.program (fun _ _ -> "") p;
   let closure_continuation =
     (* Provide a name for the continuation of a closure (before CPS
        transform), which can be referred from all the blocks it contains *)
@@ -658,18 +667,21 @@ let f (p : Code.program) =
           then compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start
           else Addr.Set.empty, Hashtbl.create 1
         in
-        (*
-        Format.eprintf "=============== %b@." function_need_cps;
-        Code.preorder_traverse
-          { fold = Code.fold_children }
-          (fun pc _ ->
-            if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
-            let block = Addr.Map.find pc blocks in
-            Code.Print.block (fun _ xi -> Fun_style_analysis.annot cps_needed xi) pc block)
-          start
-          blocks
-          ();
- *)
+        if debug ()
+        then (
+          Format.eprintf "=============== %b@." function_need_cps;
+          Code.preorder_traverse
+            { fold = Code.fold_children }
+            (fun pc _ ->
+              if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
+              let block = Addr.Map.find pc blocks in
+              Code.Print.block
+                (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
+                pc
+                block)
+            start
+            blocks
+            ());
         let closure_jc = jump_closures blocks_to_transform idom in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
