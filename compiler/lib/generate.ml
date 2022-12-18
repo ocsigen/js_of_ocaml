@@ -985,8 +985,8 @@ let apply_fun_raw ctx f params exact cps =
       J.ECond
         ( J.EBin
             ( J.EqEq
-            , J.EBin
-                ( J.Or
+            , J.ECond
+                ( J.EBin (J.Ge, J.EDot (f, l), int 0)
                 , J.EDot (f, l)
                 , J.EBin
                     (J.Eq, J.EDot (f, l), J.EDot (f, Utf8_string.of_string_exn "length"))
