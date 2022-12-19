@@ -1,4 +1,4 @@
-# 5.0.0 (2022-12-??) - ??
+# 5.0.0 (2022-12-20) - Lille
 ## Features/Changes
 * Compiler: add support for effect handlers (--enable=effects)
 * Compiler: small refactoring in code generation
