@@ -159,3 +159,73 @@ let _ = pong 111 87 2 3
 let _ = pong 28 57 5 3
 
 let _ = start ()
+
+(** Effect handler *)
+
+module Txn : sig
+  type 'a t
+
+  val atomically : (unit -> unit) -> unit
+
+  val ref : 'a -> 'a t
+
+  val ( ! ) : 'a t -> 'a
+
+  val ( := ) : 'a t -> 'a -> unit
+end = struct
+  open Effect
+  open Effect.Deep
+
+  type 'a t = 'a ref
+
+  type _ Effect.t += Update : 'a t * 'a -> unit Effect.t
+
+  let atomically f =
+    let comp =
+      match_with
+        f
+        ()
+        { retc = (fun x _ -> x)
+        ; exnc =
+            (fun e rb ->
+              rb ();
+              raise e)
+        ; effc =
+            (fun (type a) (e : a Effect.t) ->
+              match e with
+              | Update (r, v) ->
+                  Some
+                    (fun (k : (a, _) continuation) rb ->
+                      let old_v = !r in
+                      r := v;
+                      continue k () (fun () ->
+                          r := old_v;
+                          rb ()))
+              | _ -> None)
+        }
+    in
+    comp (fun () -> ())
+
+  let ref = ref
+
+  let ( ! ) = ( ! )
+
+  let ( := ) r v = perform (Update (r, v))
+end
+
+let example () =
+  let open Txn in
+  let exception Res of int in
+  let r = ref 10 in
+  Printf.printf "T0: %d\n" !r;
+  try
+    atomically (fun () ->
+        r := 20;
+        r := 21;
+        Printf.printf "T1: Before abort %d\n" !r;
+        raise (Res !r) |> ignore;
+        Printf.printf "T1: After abort %d\n" !r;
+        r := 30)
+  with Res v ->
+    Printf.printf "T0: T1 aborted with %d\n" v;
+    Printf.printf "T0: %d\n" !r
