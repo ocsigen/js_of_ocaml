@@ -13,3 +13,54 @@ functions.
 We hope to improve on this by transforming the code only partially to
 continuation-passing style, and by trying alternative compilation
 strategies.
+
+
+=== Dune integration ===
+
+We're still working on dune support for compiling js_of_ocaml programs
+with effect handlers enabled.
+
+For now, here are two possible setups.
+
+=== Whole dune workspace setup ===
+
+Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of the workspace
+{{{
+(env
+ (_
+  (js_of_ocaml
+   (flags (:standard --enable effects))
+   (build_runtime_flags (:standard --enable effects)))))
+}}}
+
+With this setup, one can use both separate and whole program compilation.
+
+
+=== Sub directory setup ===
+
+If you want to enable effect handlers for some binaries only, you'll
+have to give-up separate compilation for now using the following in
+your {{{dune}}} file.
+
+{{{
+(env
+ (_
+  (js_of_ocaml
+   (compilation_mode whole_program))))
+}}}
+
+Then pass the rights {{{js_of_ocaml}}} flags to the executable stanza
+
+{{{
+(executable
+  (name main)
+  (js_of_ocaml (flags (:standard --enable effects)))
+)
+}}}
+
+Trying to use separate compilation would result in a error while attempting to link the final js file.
+{{{
+js_of_ocaml: Error: Incompatible build info detected while linking.
+ - test6.bc.runtime.js: effects=false
+ - .cmphash.eobjs/byte/dune__exe.cmo.js: effects=true
+}}}
