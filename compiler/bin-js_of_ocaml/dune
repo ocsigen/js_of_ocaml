@@ -14,7 +14,9 @@
    ;; Only link js_of_ocaml-compiler.findlib-support if it exists
    (js_of_ocaml-compiler.findlib-support -> findlib_support.empty.ml)
    (-> findlib_support.empty.ml)))
- (modes byte native)
+ (modes
+  byte
+  (best exe))
  (flags
   (:standard -safe-string)))
 

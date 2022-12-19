@@ -3,7 +3,9 @@
  (enabled_if
   (>= %{ocaml_version} 5))
  (libraries)
- (modes js native))
+ (modes
+  js
+  (best exe)))
 
 (rule
  (alias runtest)

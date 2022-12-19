@@ -1,6 +1,8 @@
 (executables
  (names cat md5)
- (modes native js))
+ (modes
+  js
+  (best exe)))
 
 (rule
  (target cat-native.stdout)

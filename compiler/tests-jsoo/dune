@@ -6,7 +6,7 @@
   (names bigarray_stubs))
  (inline_tests
   (flags -allow-output-patterns)
-  (modes js native))
+  (modes js best))
  (preprocess
   (pps ppx_expect)))
 
