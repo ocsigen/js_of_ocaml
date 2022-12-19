@@ -118,5 +118,8 @@ let%expect_test _ =
     save
     T1: Before abort 21
     before raise
-    inner exception: Stack overflow
-    outer exception: Failure("TypeError: a is not a function") |}]
+    restore
+    restore
+    raise
+    T0: T1 aborted with 21
+    T0: 10 |}]

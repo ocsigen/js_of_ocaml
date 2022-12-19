@@ -8,6 +8,6 @@
   ;; This requires the unreleased dune 3.7 to work
   (enabled_if true)
   (flags -allow-output-patterns)
-  (modes js))
+  (modes js best))
  (preprocess
   (pps ppx_expect)))
