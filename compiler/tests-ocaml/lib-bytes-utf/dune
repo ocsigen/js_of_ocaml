@@ -3,7 +3,9 @@
  (libraries)
  (flags
   (:standard \ -strict-sequence))
- (modes js native))
+ (modes
+  js
+  (best exe)))
 
 (rule
  (target test.referencejs)

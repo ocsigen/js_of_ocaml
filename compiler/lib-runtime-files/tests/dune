@@ -2,7 +2,6 @@
  (name jsoo_lib_runtime_test)
  (libraries js_of_ocaml-compiler.runtime-files)
  (inline_tests
-  (flags -allow-output-patterns)
-  (modes native))
+  (flags -allow-output-patterns))
  (preprocess
   (pps ppx_expect)))

@@ -3,7 +3,9 @@
  (libraries)
  (flags
   (:standard \ -strict-formats))
- (modes js native))
+ (modes
+  js
+  (best exe)))
 
 (rule
  (target pr6534.referencejs)

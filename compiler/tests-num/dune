@@ -1,7 +1,9 @@
 (executable
  (name main)
  (libraries num)
- (modes native js)
+ (modes
+  js
+  (best exe))
  (flags
   (:standard -linkall -w -3-7-33-35-37 -safe-string -no-strict-sequence)))
 
