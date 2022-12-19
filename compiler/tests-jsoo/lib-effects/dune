@@ -1,22 +1,13 @@
-(env
- (_
-  (js_of_ocaml
-   (flags
-    (:standard --enable effects))
-   ;; separate compilation doesn't work when using
-   ;; features such as 'effects' or 'use-js-string'
-   ;; because dune doesn't know that it should compile
-   ;; multiple versions of the dependencies
-   (compilation_mode whole_program))))
-
 (library
  (name jsoo_testsuite_effect)
  (enabled_if
-  (>= %{ocaml_version} 5))
+  (and
+   (>= %{ocaml_version} 5)
+   (= %{profile} using-effects)))
  (inline_tests
   ;; This requires the unreleased dune 3.7 to work
-  (enabled_if false)
+  (enabled_if true)
   (flags -allow-output-patterns)
-  (modes js best))
+  (modes js))
  (preprocess
   (pps ppx_expect)))
