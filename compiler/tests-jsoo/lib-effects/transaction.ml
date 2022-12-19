@@ -37,32 +37,6 @@ module Txn : TXN = struct
 
   type _ Effect.t += Update : 'a t * 'a -> unit Effect.t
 
-  let _atomically f =
-    let comp =
-      match_with
-        f
-        ()
-        { retc = (fun x _ -> x)
-        ; exnc =
-            (fun e rb ->
-              rb ();
-              raise e)
-        ; effc =
-            (fun (type a) (e : a Effect.t) ->
-              match e with
-              | Update (r, v) ->
-                  Some
-                    (fun (k : (a, _) continuation) rb ->
-                      let old_v = !r in
-                      r := v;
-                      continue k () (fun () ->
-                          r := old_v;
-                          rb ()))
-              | _ -> None)
-        }
-    in
-    comp (fun () -> ())
-
   let atomically f =
     let comp =
       match_with
@@ -71,23 +45,17 @@ module Txn : TXN = struct
         { retc = (fun x _ -> x)
         ; exnc =
             (fun e rb ->
-              print_endline "before raise";
               rb ();
-              print_endline "raise";
               raise e)
         ; effc =
             (fun (type a) (e : a Effect.t) ->
               match e with
               | Update (r, v) ->
-                  print_endline "udpate";
                   Some
                     (fun (k : (a, _) continuation) rb ->
-                      print_endline "save";
-
                       let old_v = !r in
                       r := v;
                       continue k () (fun () ->
-                          print_endline "restore";
                           r := old_v;
                           rb ()))
               | _ -> None)
@@ -125,17 +93,8 @@ let%expect_test _ =
              printf "T0: %d\n" !r
          | e -> printf "inner exception: %s\n" (Printexc.to_string e))
    with e -> printf "outer exception: %s\n" (Printexc.to_string e));
-  [%expect
-    {|
+  [%expect {|
     T0: 10
-    udpate
-    save
-    udpate
-    save
     T1: Before abort 21
-    before raise
-    restore
-    restore
-    raise
     T0: T1 aborted with 21
     T0: 10 |}]
