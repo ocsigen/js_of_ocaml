@@ -219,10 +219,13 @@ module Xml = struct
                 a
             in
             retain (node :> Dom.node Js.t) ~keepme
-        | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
-        | MouseEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
-        | KeyboardEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
-        | TouchEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev)))
+        | Event h -> Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+        | MouseEvent h ->
+            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+        | KeyboardEvent h ->
+            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev)))
+        | TouchEvent h ->
+            Js.Unsafe.set node n (Js.wrap_callback (fun ev -> Js.bool (h ev))))
       l
 
   let leaf ?(a = []) name =
