@@ -262,14 +262,9 @@ let main () : unit =
 
 let%expect_test _ =
   ignore (IntCell.run ~init:0 (fun () -> StrCell.run ~init:"" main));
-  [%expect.unreachable]
-  [@@expect.uncaught_exn
-    {|
-  (Failure "TypeError: a is not a function")
-  Trailing output
-  ---------------
-  0
-  42
-  21
-  Hello...
-  ...World! |}]
+  [%expect {|
+    0
+    42
+    21
+    Hello...
+    ...World! |}]

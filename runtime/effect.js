@@ -120,20 +120,20 @@ function caml_perform_effect(eff, cont, k0) {
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack
+//Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen
 //If: effects
 function caml_alloc_stack(hv, hx, hf) {
   function hval(x) {
     // Call [hv] in the parent fiber
     var f=caml_fiber_stack.h[1];
     var k=caml_pop_fiber();
-    return f(x, k);
+    return caml_call_gen(f, [x, k]);
   }
   function hexn(e) {
     // Call [hx] in the parent fiber
     var f=caml_fiber_stack.h[2];
     var k=caml_pop_fiber();
-    return f(e, k);
+    return caml_call_gen(f, [e, k]);
   }
   return [0, hval, [0, hexn, 0], [0, hv, hx, hf], 0];
 }
