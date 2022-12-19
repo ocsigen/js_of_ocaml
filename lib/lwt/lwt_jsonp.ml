@@ -38,10 +38,13 @@ let raw_call name uri error_cb user_cb =
     Js.Opt.iter script##.parentNode (fun parent -> Dom.removeChild parent script)
   in
   let executed = ref false in
-  Js.Unsafe.set Dom_html.window (Js.string name) (fun x ->
-      executed := true;
-      finalize ();
-      user_cb x);
+  Js.Unsafe.set
+    Dom_html.window
+    (Js.string name)
+    (Js.wrap_callback (fun x ->
+         executed := true;
+         finalize ();
+         user_cb x));
   script##.src := Js.string uri;
   script##._type := Js.string "text/javascript";
   script##.async := Js._true;
