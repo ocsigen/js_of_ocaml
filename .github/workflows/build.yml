@@ -50,12 +50,12 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: ocaml-variants.5.0.0+trunk
+            ocaml-compiler: 5.0.x
             skip-effects: false
             skip-test: false
             skip-doc: true
           - os: macos-latest
-            ocaml-compiler: ocaml-variants.5.0.0+trunk
+            ocaml-compiler: 5.0.x
             skip-effects: true
             skip-test: false
             skip-doc: true
