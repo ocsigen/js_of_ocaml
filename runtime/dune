@@ -3,9 +3,6 @@
  (package js_of_ocaml-compiler)
  (files
   bigarray.js
-  bigstring-base_bigstring.js
-  bigstring-core_kernel.js
-  bigstring-cstruct.js
   bigstring.js
   dynlink.js
   fs.js

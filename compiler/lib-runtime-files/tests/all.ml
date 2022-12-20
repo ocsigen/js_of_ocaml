@@ -14,9 +14,6 @@ let%expect_test _ =
     +array.js
     +backtrace.js
     +bigarray.js
-    +bigstring-base_bigstring.js
-    +bigstring-core_kernel.js
-    +bigstring-cstruct.js
     +bigstring.js
     +compare.js
     +domain.js
@@ -59,7 +56,6 @@ let%expect_test _ =
     +array.js
     +backtrace.js
     +bigarray.js
-    +bigstring-cstruct.js
     +bigstring.js
     +compare.js
     +domain.js
@@ -94,10 +90,7 @@ let%expect_test _ =
     +unix.js
     +weak.js |}];
   printl extra;
-  [%expect
-    {|
-    +bigstring-base_bigstring.js
-    +bigstring-core_kernel.js
+  [%expect {|
     +dynlink.js
     +stdlib_modern.js
     +toplevel.js |}]

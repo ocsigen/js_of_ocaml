@@ -23,7 +23,6 @@ let runtime =
     ; backtrace
     ; bigarray
     ; bigstring
-    ; bigstring_cstruct
     ; compare
     ; fail
     ; format
