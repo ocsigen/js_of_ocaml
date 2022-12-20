@@ -322,7 +322,7 @@ function jsoo_create_file(name,content) {
 
 
 //Provides: caml_read_file_content
-//Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes, caml_string_of_bytes
+//Requires: resolve_fs_device, caml_raise_no_such_file, caml_string_of_array
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_read_file_content (name) {
   var name = (typeof name == "string")?caml_string_of_jsbytes(name):name;
@@ -330,9 +330,9 @@ function caml_read_file_content (name) {
   if(root.device.exists(root.rest)) {
     var file = root.device.open(root.rest,{rdonly:1});
     var len  = file.length();
-    var buf  = caml_create_bytes(len);
+    var buf = new Uint8Array(len);
     file.read(0,buf,0,len);
-    return caml_string_of_bytes(buf)
+    return caml_string_of_array(buf)
   }
   caml_raise_no_such_file(caml_jsbytes_of_string(name));
 }

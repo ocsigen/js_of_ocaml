@@ -101,3 +101,13 @@ let%expect_test _ =
   print_digest (Digest.channel c size);
   [%expect {| 573705548ab0d6c8a2193579611511a2 |}];
   ()
+
+let%expect_test _ =
+  print_digest (Digest.string content);
+  [%expect {| dd5da7fa373a2b2257d361aaf76845a0 |}];
+  let c = open_out_bin "/static/temp0" in
+  output_string c content;
+  close_out c;
+  let content' = Sys_js.read_file ~name:"/static/temp0" in
+  assert (content' = content);
+  [%expect {||}]
