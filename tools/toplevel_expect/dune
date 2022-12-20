@@ -6,8 +6,6 @@
  (targets toplevel_expect_test.ml)
  (deps
   ../select/select.exe
-  toplevel_expect_test.ml-4.04
-  toplevel_expect_test.ml-4.05
   toplevel_expect_test.ml-4.08
   toplevel_expect_test.ml-4.09
   toplevel_expect_test.ml-4.10

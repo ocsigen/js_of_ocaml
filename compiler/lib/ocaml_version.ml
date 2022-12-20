@@ -66,9 +66,6 @@ let rec compare v v' =
 
 let v =
   match current with
-  | 4 :: (4 | 5) :: _ -> `V4_04
-  | 4 :: 6 :: _ -> `V4_06
-  | 4 :: 7 :: _ -> `V4_07
   | 4 :: 8 :: _ -> `V4_08
   | 4 :: 9 :: _ -> `V4_09
   | 4 :: 10 :: _ -> `V4_10
@@ -79,7 +76,7 @@ let v =
   | 5 :: 0 :: _ -> `V5_00
   | _ ->
       if compare current [ 4; 4 ] < 0
-      then failwith "OCaml version unsupported. Upgrade to OCaml 4.04 or newer."
+      then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
       else (
         assert (compare current [ 5; 1 ] >= 0);
         failwith "OCaml version unsupported. Upgrade js_of_ocaml.")

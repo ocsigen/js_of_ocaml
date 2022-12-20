@@ -20,7 +20,7 @@
 (** Minimal version of ppx_optcomp
     It only support the following attribute
     {[
-      [@if ocaml_version < (4,8,0)]
+      [@if ocaml_version < (4,12,0)]
     ]}
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
