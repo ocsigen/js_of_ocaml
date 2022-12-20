@@ -80,6 +80,12 @@ let build_graph blocks pc =
                 Hashtbl.add matching_exn_handler pc pc';
                 rem
             | [] -> assert false)
+        | Raise _ -> (
+            match exn_handler_stack with
+            | pc' :: rem ->
+                Hashtbl.add matching_exn_handler pc pc';
+                rem
+            | [] -> exn_handler_stack)
         | _ -> exn_handler_stack
       in
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
@@ -181,10 +187,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
               None
           | _ -> None)
       | Return _ ->
-          List.iter ~f:mark_needed try_blocks;
-          None
-      | Raise _ ->
-          (*ZZZ ??? *)
+          (*ZZZ Can this actually happen?*)
           List.iter ~f:mark_needed try_blocks;
           None
       | Pushtrap (_, x, (pc2, _), _) ->
@@ -340,13 +343,19 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
   | Raise (x, _) -> (
       match k with
       | None -> [], last
-      | Some _ ->
-          let exn_handler = Var.fresh_n "raise" in
-          tail_call
-            ~st
-            ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
-            ~f:exn_handler
-            [ x ])
+      | Some _ -> (
+          match Hashtbl.find_opt st.matching_exn_handler pc with
+          | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
+              (* We are within a try ... with which is not
+                 transformed. We must raise an exception normally *)
+              [], last
+          | _ ->
+              let exn_handler = Var.fresh_n "raise" in
+              tail_call
+                ~st
+                ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+                ~f:exn_handler
+                [ x ]))
   | Stop -> [], Stop
   | Branch cont -> cps_branch ~st cont
   | Cond (x, cont1, cont2) ->
