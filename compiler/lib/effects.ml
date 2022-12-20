@@ -274,7 +274,7 @@ type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
   ; blocks : Code.block Addr.Map.t
   ; jc : jump_closures
-  ; closure_continuation : Addr.t -> Var.t
+  ; closure_info : (Addr.t, Var.t * Code.cont) Hashtbl.t
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Single of Var.t | `Multiple ]) Hashtbl.t
@@ -393,8 +393,9 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
-  | Let (x, Closure (params, (pc, args))) when Var.Set.mem x st.cps_needed ->
-      Let (x, Closure (params @ [ st.closure_continuation pc ], (pc, args)))
+  | Let (x, Closure (params, (pc, _))) when Var.Set.mem x st.cps_needed ->
+      let k, cont = Hashtbl.find st.closure_info pc in
+      Let (x, Closure (params @ [ k ], cont))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
       | Pc (Int a) ->
@@ -631,6 +632,25 @@ No argument:
  - otherwise ==> use variable name
 *)
 
+let fold_closures_innermost_first { start; blocks; _ } f accu =
+  let rec traverse blocks pc f accu =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc accu ->
+        let block = Addr.Map.find pc blocks in
+        List.fold_left block.body ~init:accu ~f:(fun accu i ->
+            match i with
+            | Let (x, Closure (params, cont)) ->
+                let accu = traverse blocks (fst cont) f accu in
+                f (Some x) params cont accu
+            | _ -> accu))
+      pc
+      blocks
+      accu
+  in
+  let accu = traverse blocks start f accu in
+  f None [] (start, []) accu
+
 let f (p : Code.program) =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
@@ -639,23 +659,20 @@ let f (p : Code.program) =
   let cps_needed = Fun_style_analysis.f (p, info) in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
-  let closure_continuation =
-    (* Provide a name for the continuation of a closure (before CPS
-       transform), which can be referred from all the blocks it contains *)
-    let tbl = Hashtbl.create 4 in
-    fun pc ->
-      try Hashtbl.find tbl pc
-      with Not_found ->
-        let k = Var.fresh_n "cont" in
-        Hashtbl.add tbl pc k;
-        k
-  in
+  let closure_info = Hashtbl.create 16 in
   let tail_calls = ref Var.Set.empty in
   let p =
-    Code.fold_closures
+    fold_closures_innermost_first
       p
-      (fun name_opt _ (start, _) ({ blocks; free_pc; _ } as p) ->
-        let cfg = build_graph blocks start in
+      (fun name_opt _ (start, args) ({ blocks; free_pc; _ } as p) ->
+        let start' = free_pc in
+        let blocks' =
+          Addr.Map.add
+            free_pc
+            { params = []; body = []; branch = Branch (start, args) }
+            blocks
+        in
+        let cfg = build_graph blocks' start' in
         let idom = dominator_tree cfg in
         let function_need_cps =
           match name_opt with
@@ -664,7 +681,13 @@ let f (p : Code.program) =
         in
         let blocks_to_transform, is_continuation =
           if function_need_cps
-          then compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start
+          then
+            compute_transformed_blocks
+              ~cfg
+              ~idom
+              ~cps_needed
+              ~blocks:blocks'
+              ~start:start'
           else Addr.Set.empty, Hashtbl.create 1
         in
         if debug ()
@@ -683,11 +706,18 @@ let f (p : Code.program) =
             blocks
             ());
         let closure_jc = jump_closures blocks_to_transform idom in
+        let function_cont, blocks, free_pc =
+          if not (Addr.Map.mem start' closure_jc.closures_of_alloc_site)
+          then (start, args), blocks, free_pc
+          else
+            let block = { params = []; body = []; branch = Branch (start, args) } in
+            (start', []), Addr.Map.add start' block blocks, free_pc + 1
+        in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
           ; blocks
           ; jc = closure_jc
-          ; closure_continuation
+          ; closure_info
           ; cps_needed
           ; blocks_to_transform
           ; is_continuation
@@ -697,12 +727,20 @@ let f (p : Code.program) =
           ; live_vars
           }
         in
-        let k = if function_need_cps then Some (closure_continuation start) else None in
+
+        let k = Var.fresh_n "cont" in
+        Hashtbl.add closure_info start (k, function_cont);
+        let start = fst function_cont in
+
+        let k_opt = if function_need_cps then Some k else None in
         let blocks =
           Code.traverse
             { fold = Code.fold_children }
             (fun pc blocks ->
-              Addr.Map.add pc (transform_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
+              Addr.Map.add
+                pc
+                (transform_block ~st ~k:k_opt pc (Addr.Map.find pc blocks))
+                blocks)
             start
             st.blocks
             st.blocks
@@ -723,7 +761,8 @@ let f (p : Code.program) =
       new_start
       { params = []
       ; body =
-          [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
+          [ Let
+              (main, Closure ([ fst (Hashtbl.find closure_info p.start) ], (p.start, [])))
           ; Let (args, Prim (Extern "%js_array", []))
           ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
           ]

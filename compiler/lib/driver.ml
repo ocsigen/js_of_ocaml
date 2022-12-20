@@ -28,11 +28,8 @@ let should_export = function
   | `Named _ | `Anonymous -> true
 
 let tailcall p =
-  if Config.Flag.effects ()
-  then p
-  else (
-    if debug () then Format.eprintf "Tail-call optimization...@.";
-    Tailcall.f p)
+  if debug () then Format.eprintf "Tail-call optimization...@.";
+  Tailcall.f p
 
 let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
