@@ -199,24 +199,10 @@ type desc =
   }
 
 let ops =
-  let if_v407 =
-    match Ocaml_version.v with
-    | `V4_04 | `V4_06 -> fun _ -> K_will_not_happen
-    | `V4_07 | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 | `V5_00 ->
-        fun k -> k
-  in
   let if_v500 =
     match Ocaml_version.v with
-    | `V4_04
-    | `V4_06
-    | `V4_07
-    | `V4_08
-    | `V4_09
-    | `V4_10
-    | `V4_11
-    | `V4_12
-    | `V4_13
-    | `V4_14 -> fun _ -> K_will_not_happen
+    | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 ->
+        fun _ -> K_will_not_happen
     | `V5_00 -> fun k -> k
   in
   let instrs =
@@ -368,7 +354,7 @@ let ops =
      ; BREAK, K_will_not_happen, "BREAK"
      ; RERAISE, KStop 0, "RERAISE"
      ; RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE"
-     ; GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR"
+     ; GETSTRINGCHAR, KNullary, "GETSTRINGCHAR"
      ; PERFORM, if_v500 KNullaryCall, "PERFORM"
      ; RESUME, if_v500 KNullaryCall, "RESUME"
      ; RESUMETERM, if_v500 (KStop 1), "RESUMETERM"

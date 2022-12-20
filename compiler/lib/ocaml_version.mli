@@ -25,10 +25,7 @@ val compare : t -> t -> int
 val split : string -> t
 
 val v :
-  [ `V4_04 (* OCaml 4.04 / OCaml 4.05 *)
-  | `V4_06 (* OCaml 4.06 *)
-  | `V4_07 (* OCaml 4.07 *)
-  | `V4_08 (* OCaml 4.08 *)
+  [ `V4_08 (* OCaml 4.08 *)
   | `V4_09 (* OCaml 4.09 *)
   | `V4_10 (* OCaml 4.10 *)
   | `V4_11 (* OCaml 4.11 *)

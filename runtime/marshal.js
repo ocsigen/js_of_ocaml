@@ -446,20 +446,12 @@ MlObjectTable.prototype.recall = function(v) {
     ? undefined : this.objs.length - i;   /* index is relative */
 }
 
-//Provides: caml_legacy_custom_code
-//Version: >= 4.08
-var caml_legacy_custom_code = false
-
-//Provides: caml_legacy_custom_code
-//Version: < 4.08
-var caml_legacy_custom_code = true
-
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: caml_is_ml_bytes, caml_ml_bytes_length, caml_bytes_unsafe_get
 //Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable, caml_list_to_js_array, caml_legacy_custom_code, caml_custom_ops
+//Requires: MlObjectTable, caml_list_to_js_array, caml_custom_ops
 //Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
@@ -525,13 +517,7 @@ var caml_output_val = function (){
         var sz_32_64 = [0,0];
         if(!ops.serialize)
           caml_invalid_argument("output_value: abstract value (Custom)");
-        if(caml_legacy_custom_code) {
-          writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
-          for (var i = 0; i < name.length; i++)
-            writer.write (8, name.charCodeAt(i));
-          writer.write(8, 0);
-          ops.serialize(writer, v, sz_32_64);
-        } else if(ops.fixed_length == undefined){
+        if(ops.fixed_length == undefined){
           writer.write (8, 0x18 /*cst.CODE_CUSTOM_LEN*/);
           for (var i = 0; i < name.length; i++)
             writer.write (8, name.charCodeAt(i));

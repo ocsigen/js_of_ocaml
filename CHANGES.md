@@ -1,3 +1,10 @@
+# dev (20??-??) - ??
+## Features/Changes
+* Misc: bump min ocaml version to 4.08
+
+## Bug fixes
+
+
 # 5.0.1 (2022-12-20) - Lille
 ## Features/Changes
 

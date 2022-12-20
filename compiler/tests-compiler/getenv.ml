@@ -66,9 +66,7 @@ let%expect_test _ =
   compile_and_run
     ~flags:[ "--setenv"; "D=±" ]
     {|
-  (if Sys.ocaml_version >= "4.07"
-  then
-    match Sys.getenv "D" with
+  (match Sys.getenv "D" with
     | "\u{00b1}" -> ()
     | _ -> print_endline "BUG")|};
   [%expect {||}]

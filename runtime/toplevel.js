@@ -47,19 +47,8 @@ function caml_get_section_table () {
   return caml_global_data.toc;
 }
 
-
 //Provides: caml_reify_bytecode
 //Requires: caml_failwith,caml_callback
-//Version: < 4.08
-function caml_reify_bytecode (code, _sz) {
-  if(globalThis.toplevelCompile)
-    return caml_callback(globalThis.toplevelCompile, [[0,code], [0]]);
-  else caml_failwith("Toplevel not initialized (toplevelCompile)")
-}
-
-//Provides: caml_reify_bytecode
-//Requires: caml_failwith,caml_callback
-//Version: >= 4.08
 function caml_reify_bytecode (code, debug,_digest) {
   if(globalThis.toplevelCompile)
     return [0, 0, caml_callback(globalThis.toplevelCompile, [code,debug])];
