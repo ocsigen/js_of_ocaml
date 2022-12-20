@@ -126,11 +126,6 @@ From +bigarray.js:
 caml_ba_create_from
 caml_ba_init
 
-From +bigstring-cstruct.js:
-caml_blit_bigstring_to_bigstring
-caml_blit_bigstring_to_string
-caml_blit_string_to_bigstring
-
 From +bigstring.js:
 caml_bigstring_blit_ba_to_ba
 caml_bigstring_blit_ba_to_bytes
