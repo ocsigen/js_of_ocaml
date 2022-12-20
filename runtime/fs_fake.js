@@ -302,13 +302,14 @@ MlFakeFile.prototype.read = function(offset,buf,pos,len){
 function MlFakeFd_out(fd,flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
   this.log = (function (s) { return 0 });
+  this.flags = flags;
+  if (!console) return;
   if(fd == 1 && typeof console.log == "function")
     this.log = console.log;
   else if(fd == 2 && typeof console.error == "function")
     this.log = console.error;
   else if(typeof console.log == "function")
     this.log = console.log
-  this.flags = flags;
 }
 MlFakeFd_out.prototype.length = function() { return 0 }
 MlFakeFd_out.prototype.write = function (offset,buf,pos,len) {
