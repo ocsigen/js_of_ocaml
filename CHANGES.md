@@ -1,3 +1,9 @@
+# dev (202?-??-??) - ??
+## Features/Changes
+
+## Bug fixes
+Runtime: fix caml_read_file_content
+
 # 5.0.0 (2022-12-20) - Lille
 ## Features/Changes
 * Compiler: add support for effect handlers (--enable=effects)
