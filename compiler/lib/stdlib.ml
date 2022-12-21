@@ -1146,3 +1146,7 @@ module Fun = struct
         Hashtbl.add h x r;
         r
 end
+
+let generated_name = function
+  | "param" | "match" | "switcher" -> true
+  | s -> String.is_prefix ~prefix:"cst_" s

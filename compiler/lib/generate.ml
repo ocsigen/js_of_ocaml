@@ -1498,8 +1498,8 @@ and translate_instr ctx expr_queue loc instr in_tail_position =
         (* "switcher" is emitted by the OCaml compiler when compiling
            pattern matching, it does not help much to keep it in the
            generated js, let's drop it *)
-        | Some "switcher" -> false
-        | Some s -> not (String.is_prefix s ~prefix:"jsoo_")
+        | Some "" -> false
+        | Some s -> (not (generated_name s)) && not (String.is_prefix s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
       | 0, _ ->
