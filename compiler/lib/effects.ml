@@ -490,6 +490,13 @@ let cps_block ~st ~k pc block =
             let pc, args = cont in
             let f' = closure_of_pc ~st pc in
             assert (Hashtbl.mem st.is_continuation pc);
+            (*
+No argument:
+ - merge node ==> dummy parameter (variable is not live)
+ - loop header, forward edge ==> dummy parameter, allocate closure (if variable is live)
+ - loop header, backward edge ==> dummy parameter (variable is not live)
+ - otherwise ==> use variable name
+*)
             match args with
             | []
               when match Hashtbl.find st.is_continuation pc with
@@ -545,133 +552,11 @@ let transform_block ~st ~k pc block =
       ; branch = last
       }
 
-let split_blocks ~cps_needed (p : Code.program) =
-  (* Ensure that function applications and effect primitives are in
-     tail position *)
-  let split_block pc block p =
-    let is_split_point i r branch =
-      match i with
-      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-          ((not (List.is_empty r))
-          ||
-          match branch with
-          | Branch _ -> false
-          | Return x' -> not (Var.equal x x')
-          | _ -> true)
-          && Var.Set.mem x cps_needed
-      | _ -> false
-    in
-    let rec split (p : Code.program) pc block accu l branch =
-      match l with
-      | [] ->
-          let block = { block with body = List.rev accu } in
-          { p with blocks = Addr.Map.add pc block p.blocks }
-      | (Let (x, e) as i) :: r when is_split_point i r branch ->
-          let pc' = p.free_pc in
-          let block' = { params = []; body = []; branch = block.branch } in
-          let block =
-            { block with body = List.rev (Let (x, e) :: accu); branch = Branch (pc', []) }
-          in
-          let p = { p with blocks = Addr.Map.add pc block p.blocks; free_pc = pc' + 1 } in
-          split p pc' block' [] r branch
-      | i :: r -> split p pc block (i :: accu) r branch
-    in
-    let rec should_split l branch =
-      match l with
-      | [] -> false
-      | i :: r -> is_split_point i r branch || should_split r branch
-    in
-    if should_split block.body block.branch
-    then split p pc block [] block.body block.branch
-    else p
-  in
-  Addr.Map.fold split_block p.blocks p
-
-let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
-  let shortcuts = Hashtbl.create 16 in
-  let rec resolve_rec l ((pc, args) as cont) =
-    if List.mem pc ~set:l
-    then cont
-    else
-      match Hashtbl.find_opt shortcuts pc with
-      | Some (params, cont) ->
-          let pc', args' = resolve_rec (pc :: l) cont in
-          let s = Subst.from_map (Subst.build_mapping params args) in
-          pc', List.map ~f:s args'
-      | None -> cont
-  in
-  let resolve cont = resolve_rec [] cont in
-  Addr.Map.iter
-    (fun pc block ->
-      match block with
-      | { params; body = []; branch = Branch cont; _ } ->
-          (*ZZZ quadratic *)
-          if List.for_all
-               ~f:(fun x ->
-                 live_vars.(Var.idx x) = 1
-                 && List.exists ~f:(fun y -> Var.equal x y) (snd cont))
-               params
-          then Hashtbl.add shortcuts pc (params, cont)
-      | _ -> ())
-    p.blocks;
-  let blocks =
-    Addr.Map.map
-      (fun block ->
-        { block with
-          branch =
-            (match block.branch with
-            | Branch cont -> Branch (resolve cont)
-            | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
-            | Switch (x, a1, a2) ->
-                Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
-            | Pushtrap (cont1, x, cont2, s) ->
-                Pushtrap (resolve cont1, x, resolve cont2, s)
-            | Poptrap cont -> Poptrap (resolve cont)
-            | Return _ | Raise _ | Stop -> block.branch)
-        })
-      p.blocks
-  in
-  { p with blocks }
-
-(*
-No argument:
- - merge node ==> dummy parameter (variable is not live)
- - loop header, forward edge ==> dummy parameter, allocate closure (if variable is live)
- - loop header, backward edge ==> dummy parameter (variable is not live)
- - otherwise ==> use variable name
-*)
-
-let fold_closures_innermost_first { start; blocks; _ } f accu =
-  let rec traverse blocks pc f accu =
-    Code.traverse
-      { fold = Code.fold_children }
-      (fun pc accu ->
-        let block = Addr.Map.find pc blocks in
-        List.fold_left block.body ~init:accu ~f:(fun accu i ->
-            match i with
-            | Let (x, Closure (params, cont)) ->
-                let accu = traverse blocks (fst cont) f accu in
-                f (Some x) params cont accu
-            | _ -> accu))
-      pc
-      blocks
-      accu
-  in
-  let accu = traverse blocks start f accu in
-  f None [] (start, []) accu
-
-let f (p : Code.program) =
-  if debug () then Code.Print.program (fun _ _ -> "") p;
-  let p, live_vars = Deadcode.f p in
-  let p = skip_empty_blocks ~live_vars p in
-  let p, info = Flow.f ~pessimistic:true p in
-  let cps_needed = Fun_style_analysis.f (p, info) in
-  let p = split_blocks ~cps_needed p in
-  if debug () then Code.Print.program (fun _ _ -> "") p;
+let cps_transform ~live_vars ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
   let tail_calls = ref Var.Set.empty in
   let p =
-    fold_closures_innermost_first
+    Code.fold_closures_innermost_first
       p
       (fun name_opt _ (start, args) ({ blocks; free_pc; _ } as p) ->
         let start' = free_pc in
@@ -736,11 +621,9 @@ let f (p : Code.program) =
           ; live_vars
           }
         in
-
         let k = Var.fresh_n "cont" in
         Hashtbl.add closure_info start (k, function_cont);
         let start = fst function_cont in
-
         let k_opt = if function_need_cps then Some k else None in
         let blocks =
           Code.traverse
@@ -759,7 +642,112 @@ let f (p : Code.program) =
         { p with blocks; free_pc })
       p
   in
+  let k, _ = Hashtbl.find closure_info p.start in
+  p, !tail_calls, k
 
+(****)
+
+let split_blocks ~cps_needed (p : Code.program) =
+  (* Ensure that function applications and effect primitives are in
+     tail position *)
+  let split_block pc block p =
+    let is_split_point i r branch =
+      match i with
+      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+          ((not (List.is_empty r))
+          ||
+          match branch with
+          | Branch _ -> false
+          | Return x' -> not (Var.equal x x')
+          | _ -> true)
+          && Var.Set.mem x cps_needed
+      | _ -> false
+    in
+    let rec split (p : Code.program) pc block accu l branch =
+      match l with
+      | [] ->
+          let block = { block with body = List.rev accu } in
+          { p with blocks = Addr.Map.add pc block p.blocks }
+      | (Let (x, e) as i) :: r when is_split_point i r branch ->
+          let pc' = p.free_pc in
+          let block' = { params = []; body = []; branch = block.branch } in
+          let block =
+            { block with body = List.rev (Let (x, e) :: accu); branch = Branch (pc', []) }
+          in
+          let p = { p with blocks = Addr.Map.add pc block p.blocks; free_pc = pc' + 1 } in
+          split p pc' block' [] r branch
+      | i :: r -> split p pc block (i :: accu) r branch
+    in
+    let rec should_split l branch =
+      match l with
+      | [] -> false
+      | i :: r -> is_split_point i r branch || should_split r branch
+    in
+    if should_split block.body block.branch
+    then split p pc block [] block.body block.branch
+    else p
+  in
+  Addr.Map.fold split_block p.blocks p
+
+(****)
+
+let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
+  let shortcuts = Hashtbl.create 16 in
+  let rec resolve_rec l ((pc, args) as cont) =
+    if List.mem pc ~set:l
+    then cont
+    else
+      match Hashtbl.find_opt shortcuts pc with
+      | Some (params, cont) ->
+          let pc', args' = resolve_rec (pc :: l) cont in
+          let s = Subst.from_map (Subst.build_mapping params args) in
+          pc', List.map ~f:s args'
+      | None -> cont
+  in
+  let resolve cont = resolve_rec [] cont in
+  Addr.Map.iter
+    (fun pc block ->
+      match block with
+      | { params; body = []; branch = Branch cont; _ } ->
+          (*ZZZ quadratic *)
+          if List.for_all
+               ~f:(fun x ->
+                 live_vars.(Var.idx x) = 1
+                 && List.exists ~f:(fun y -> Var.equal x y) (snd cont))
+               params
+          then Hashtbl.add shortcuts pc (params, cont)
+      | _ -> ())
+    p.blocks;
+  let blocks =
+    Addr.Map.map
+      (fun block ->
+        { block with
+          branch =
+            (match block.branch with
+            | Branch cont -> Branch (resolve cont)
+            | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
+            | Switch (x, a1, a2) ->
+                Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
+            | Pushtrap (cont1, x, cont2, s) ->
+                Pushtrap (resolve cont1, x, resolve cont2, s)
+            | Poptrap cont -> Poptrap (resolve cont)
+            | Return _ | Raise _ | Stop -> block.branch)
+        })
+      p.blocks
+  in
+  { p with blocks }
+
+(****)
+
+let f (p : Code.program) =
+  if debug () then Code.Print.program (fun _ _ -> "") p;
+  let p, live_vars = Deadcode.f p in
+  let p = skip_empty_blocks ~live_vars p in
+  let p, info = Flow.f ~pessimistic:true p in
+  let cps_needed = Fun_style_analysis.f (p, info) in
+  let p = split_blocks ~cps_needed p in
+  if debug () then Code.Print.program (fun _ _ -> "") p;
+  let p, tail_calls, k = cps_transform ~live_vars ~cps_needed p in
   (* Call [caml_callback] to set up the execution context. *)
   let new_start = p.free_pc in
   let blocks =
@@ -770,8 +758,7 @@ let f (p : Code.program) =
       new_start
       { params = []
       ; body =
-          [ Let
-              (main, Closure ([ fst (Hashtbl.find closure_info p.start) ], (p.start, [])))
+          [ Let (main, Closure ([ k ], (p.start, [])))
           ; Let (args, Prim (Extern "%js_array", []))
           ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
           ]
@@ -779,7 +766,7 @@ let f (p : Code.program) =
       }
       p.blocks
   in
-  { start = new_start; blocks; free_pc = new_start + 1 }, !tail_calls
+  { start = new_start; blocks; free_pc = new_start + 1 }, tail_calls
 
 let f p =
   let t = Timer.make () in
