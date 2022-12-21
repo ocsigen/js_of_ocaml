@@ -158,6 +158,10 @@ let f p =
   let t' = Timer.make () in
   let subst = solver1 vars deps defs in
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+  Array.iteri subst ~f:(fun idx y ->
+      match y with
+      | None -> ()
+      | Some y -> Code.Var.propagate_name (Var.of_idx idx) y);
   let p = Subst.program (Subst.from_array subst) p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   p

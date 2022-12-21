@@ -75,16 +75,16 @@ let fun2 () =
     function fun1(param)
      {var switch$0=0;
       try
-       {var i$0=caml_call1(Stdlib_Random[5],2)}
-      catch(_f_)
-       {var _d_=caml_wrap_exception(_f_);
+       {var i$1=caml_call1(Stdlib_Random[5],2)}
+      catch(_e_)
+       {var _d_=caml_wrap_exception(_e_);
         if(_d_[1] !== A)throw _d_;
-        var _e_=_d_[2];
-        if(2 !== _e_)return _e_ + 2 | 0;
-        var i=_e_;
+        var i=_d_[2];
+        if(2 !== i)return i + 2 | 0;
+        var i$0=i;
         switch$0 = 1}
-      if(! switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
-      return i}
+      if(! switch$0){if(0 !== i$1)return i$1 + 1 | 0;var i$0=i$1}
+      return i$0}
     //end
     function fun2(param)
      {var switch$0=0;

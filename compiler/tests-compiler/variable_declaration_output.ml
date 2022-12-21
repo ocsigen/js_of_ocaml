@@ -92,7 +92,7 @@ let%expect_test _ =
      caml_string_of_jsbytes("hello"),
      caml_string_of_jsbytes("the \xe2\x80\xa2 and \xe2\x80\xba characters")];
     //end
-    var sx = [0,cst_hello2,"the • and › characters (2)"];
+    var sx = [0,caml_string_of_jsbytes("hello2"),"the • and › characters (2)"];
     //end
     var ax = [0,1,2,3,4];
     //end
