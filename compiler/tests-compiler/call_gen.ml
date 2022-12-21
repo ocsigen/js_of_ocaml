@@ -82,10 +82,14 @@ module M1 = struct
     function m(_e_,_f_){return k(_d_,_c_,_e_,_f_)}
     //end
     function caml_call1(f,a0)
-     {return f.length == 1?f(a0):runtime.caml_call_gen(f,[a0])}
+     {return (f.l >= 0?f.l:f.l = f.length) == 1
+              ?f(a0)
+              :runtime.caml_call_gen(f,[a0])}
     //end
     function caml_call2(f,a0,a1)
-     {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
+     {return (f.l >= 0?f.l:f.l = f.length) == 2
+              ?f(a0,a1)
+              :runtime.caml_call_gen(f,[a0,a1])}
     //end
     |}]
 end
