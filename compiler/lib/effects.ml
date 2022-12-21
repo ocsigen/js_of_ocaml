@@ -38,6 +38,22 @@ open Code
 
 let debug = Debug.find "effects"
 
+let get_edges g src = try Hashtbl.find g src with Not_found -> Addr.Set.empty
+
+let add_edge g src dst = Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
+
+let reverse_graph g =
+  let g' = Hashtbl.create 16 in
+  Hashtbl.iter
+    (fun child parents -> Addr.Set.iter (fun parent -> add_edge g' parent child) parents)
+    g;
+  g'
+
+let reverse_tree g =
+  let g' = Hashtbl.create 16 in
+  Hashtbl.iter (fun child parent -> add_edge g' parent child) g;
+  g'
+
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; predecessor_count : (Addr.t, int) Hashtbl.t
@@ -46,12 +62,6 @@ type control_flow_graph =
   ; block_order : (Addr.t, int) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   }
-
-let add_edge g src dst =
-  Hashtbl.replace
-    g
-    src
-    (Addr.Set.add dst (try Hashtbl.find g src with Not_found -> Addr.Set.empty))
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
@@ -140,10 +150,23 @@ let dominator_tree g =
         l);
   dom
 
-let reverse_tree g =
-  let g' = Hashtbl.create 16 in
-  Hashtbl.iter (fun child parent -> add_edge g' parent child) g;
-  g'
+let dominance_frontier idom g =
+  let preds = reverse_graph g.succs in
+  let frontiers = Hashtbl.create 16 in
+  Hashtbl.iter
+    (fun pc preds ->
+      if Addr.Set.cardinal preds > 1
+      then
+        let dom = Hashtbl.find idom pc in
+        let rec loop runner =
+          if runner <> dom
+          then (
+            add_edge frontiers runner pc;
+            loop (Hashtbl.find idom runner))
+        in
+        Addr.Set.iter loop preds)
+    preds;
+  frontiers
 
 let is_merge_node cfg pc = Hashtbl.find cfg.predecessor_count pc > 1
 
@@ -196,7 +219,7 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
       | _ -> None
     in
     let merge_node_children =
-      let children = try Hashtbl.find dom_tree pc with Not_found -> Addr.Set.empty in
+      let children = get_edges dom_tree pc in
       Addr.Set.filter (fun pc -> is_merge_node cfg pc) children
     in
     let frontier =
@@ -739,12 +762,92 @@ let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
 
 (****)
 
+let current_loop frontiers in_loop pc =
+  let frontier = get_edges frontiers pc in
+  match in_loop with
+  | Some header when Addr.Set.mem header frontier -> in_loop
+  | _ -> if Addr.Set.mem pc frontier then Some pc else None
+
+let wrap p cps_needed x f args accu =
+  let arg_array = Var.fresh () in
+  ( p
+  , Var.Set.remove x cps_needed
+  , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+    ]
+    :: accu )
+
+let wrap_primitive (p : Code.program) cps_needed x e accu =
+  let f = Var.fresh () in
+  let closure_pc = p.free_pc in
+  ( { p with
+      free_pc = p.free_pc + 1
+    ; blocks =
+        Addr.Map.add
+          closure_pc
+          (let y = Var.fresh () in
+           { params = []; body = [ Let (y, e) ]; branch = Return y })
+          p.blocks
+    }
+  , Var.Set.remove x (Var.Set.add f cps_needed)
+  , let args = Var.fresh () in
+    [ Let (f, Closure ([], (closure_pc, [])))
+    ; Let (args, Prim (Extern "%js_array", []))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv args ]))
+    ]
+    :: accu )
+
+let rewrite_toplevel_instr (p, cps_needed, accu) instr =
+  match instr with
+  | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
+      wrap p cps_needed x f args accu
+  | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
+      wrap_primitive p cps_needed x e accu
+  | _ -> p, cps_needed, [ instr ] :: accu
+
+let rewrite_toplevel p cps_needed =
+  let { start; blocks; _ } = p in
+  let cfg = build_graph blocks start in
+  let idom = dominator_tree cfg in
+  let frontiers = dominance_frontier idom cfg in
+  let rec traverse visited (p : Code.program) cps_needed in_loop pc =
+    if Addr.Set.mem pc visited
+    then visited, p, cps_needed
+    else
+      let visited = Addr.Set.add pc visited in
+      let in_loop = current_loop frontiers in_loop pc in
+      let p, cps_needed =
+        match in_loop with
+        | None ->
+            let block = Addr.Map.find pc p.blocks in
+            let p, cps_needed, body_rev =
+              List.fold_left
+                ~f:rewrite_toplevel_instr
+                ~init:(p, cps_needed, [])
+                block.body
+            in
+            let body = List.concat @@ List.rev body_rev in
+            { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
+        | Some _ -> p, cps_needed
+      in
+      Code.fold_children
+        blocks
+        pc
+        (fun pc (visited, p, cps_needed) -> traverse visited p cps_needed in_loop pc)
+        (visited, p, cps_needed)
+  in
+  let _, p, cps_needed = traverse Addr.Set.empty p cps_needed None start in
+  p, cps_needed
+
+(****)
+
 let f (p : Code.program) =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
   let p = skip_empty_blocks ~live_vars p in
   let p, info = Flow.f ~pessimistic:true p in
   let cps_needed = Fun_style_analysis.f (p, info) in
+  let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, tail_calls, k = cps_transform ~live_vars ~cps_needed p in

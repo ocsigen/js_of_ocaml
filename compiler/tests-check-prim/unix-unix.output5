@@ -167,10 +167,10 @@ From +domain.js:
 caml_ml_domain_set_name
 
 From +effect.js:
+caml_perform_effect
+caml_pop_trap
+caml_push_trap
 jsoo_effect_not_supported
-
-From +fail.js:
-caml_return_exn_constant
 
 From +fs.js:
 caml_ba_map_file
@@ -242,9 +242,9 @@ caml_mod
 
 From +jslib.js:
 caml_is_js
+caml_stack_check_depth
 caml_trampoline
 caml_trampoline_return
-caml_wrap_exception
 
 From +marshal.js:
 BigStringReader
