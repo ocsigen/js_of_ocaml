@@ -35,7 +35,9 @@ Printf.printf "%d\n" (f 3)
                   :runtime.caml_trampoline_return(f,[a0,a1])}
         function caml_cps_call3(f,a0,a1,a2)
          {return runtime.caml_stack_check_depth()
-                  ?f.length == 3?f(a0,a1,a2):runtime.caml_call_gen(f,[a0,a1,a2])
+                  ?(f.l >= 0?f.l:f.l = f.length) == 3
+                    ?f(a0,a1,a2)
+                    :runtime.caml_call_gen(f,[a0,a1,a2])
                   :runtime.caml_trampoline_return(f,[a0,a1,a2])}
         return runtime.caml_callback
                 (function(cont)
