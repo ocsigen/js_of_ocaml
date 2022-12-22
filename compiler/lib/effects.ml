@@ -601,8 +601,62 @@ let split_blocks (p : Code.program) =
 
 (****)
 
+let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
+  let shortcuts = Hashtbl.create 16 in
+  let rec resolve_rec visited ((pc, args) as cont) =
+    if Addr.Set.mem pc visited
+    then cont
+    else
+      match Hashtbl.find_opt shortcuts pc with
+      | Some (params, cont) ->
+          let pc', args' = resolve_rec (Addr.Set.add pc visited) cont in
+          let s = Subst.from_map (Subst.build_mapping params args) in
+          pc', List.map ~f:s args'
+      | None -> cont
+  in
+  let resolve cont = resolve_rec Addr.Set.empty cont in
+  Addr.Map.iter
+    (fun pc block ->
+      match block with
+      | { params; body = []; branch = Branch cont; _ } ->
+          let args =
+            List.fold_left
+              ~f:(fun args x -> Var.Set.add x args)
+              ~init:Var.Set.empty
+              (snd cont)
+          in
+          (* We can skip an empty block if its parameters are only
+             used as argument to the continuation *)
+          if List.for_all
+               ~f:(fun x -> live_vars.(Var.idx x) = 1 && Var.Set.mem x args)
+               params
+          then Hashtbl.add shortcuts pc (params, cont)
+      | _ -> ())
+    p.blocks;
+  let blocks =
+    Addr.Map.map
+      (fun block ->
+        { block with
+          branch =
+            (match block.branch with
+            | Branch cont -> Branch (resolve cont)
+            | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
+            | Switch (x, a1, a2) ->
+                Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
+            | Pushtrap (cont1, x, cont2, s) ->
+                Pushtrap (resolve cont1, x, resolve cont2, s)
+            | Poptrap cont -> Poptrap (resolve cont)
+            | Return _ | Raise _ | Stop -> block.branch)
+        })
+      p.blocks
+  in
+  { p with blocks }
+
+(****)
+
 let f (p, live_vars) =
   let t = Timer.make () in
+  let p = remove_empty_blocks ~live_vars p in
   let p = split_blocks p in
   let p = rewrite_toplevel p in
   let p = cps_transform ~live_vars p in
