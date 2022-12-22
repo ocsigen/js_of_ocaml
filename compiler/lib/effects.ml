@@ -96,6 +96,8 @@ let dominator_tree g =
 
   dom
 
+(****)
+
 (* Each block is turned into a function which is defined in the
    dominator of the block. [closure_of_jump] provides the name of the
    function correspoding to each block. [closures_of_alloc_site]
@@ -302,6 +304,69 @@ let cps_block ~st ~k pc block =
 
   { params = []; body; branch = last }
 
+let cps_transform p =
+  let closure_continuation =
+    (* Provide a name for the continuation of a closure (before CPS
+       transform), which can be referred from all the blocks it contains *)
+    let tbl = Hashtbl.create 4 in
+    fun pc ->
+      try Hashtbl.find tbl pc
+      with Not_found ->
+        let k = Var.fresh_n "cont" in
+        Hashtbl.add tbl pc k;
+        k
+  in
+  let p =
+    Code.fold_closures
+      p
+      (fun _ _ (start, _) ({ blocks; free_pc; _ } as p) ->
+        let cfg = build_graph blocks start in
+        let idom = dominator_tree cfg in
+        let closure_jc = jump_closures cfg idom in
+        let st =
+          { new_blocks = Addr.Map.empty, free_pc
+          ; blocks
+          ; jc = closure_jc
+          ; closure_continuation
+          }
+        in
+        let k = closure_continuation start in
+        let blocks =
+          Code.traverse
+            { fold = Code.fold_children }
+            (fun pc blocks ->
+              Addr.Map.add pc (cps_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
+            start
+            st.blocks
+            st.blocks
+        in
+        let new_blocks, free_pc = st.new_blocks in
+        let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
+        { p with blocks; free_pc })
+      p
+  in
+  (* Call [caml_callback] to set up the execution context. *)
+  let new_start = p.free_pc in
+  let blocks =
+    let main = Var.fresh () in
+    let args = Var.fresh () in
+    let res = Var.fresh () in
+    Addr.Map.add
+      new_start
+      { params = []
+      ; body =
+          [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
+          ; Let (args, Prim (Extern "%js_array", []))
+          ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+          ]
+      ; branch = Return res
+      }
+      p.blocks
+  in
+  { start = new_start; blocks; free_pc = new_start + 1 }
+
+(****)
+
 let split_blocks (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
      tail position *)
@@ -343,71 +408,11 @@ let split_blocks (p : Code.program) =
   in
   Addr.Map.fold split_block p.blocks p
 
-let f (p : Code.program) =
-  let p = split_blocks p in
-  let closure_continuation =
-    (* Provide a name for the continuation of a closure (before CPS
-       transform), which can be referred from all the blocks it contains *)
-    let tbl = Hashtbl.create 4 in
-    fun pc ->
-      try Hashtbl.find tbl pc
-      with Not_found ->
-        let k = Var.fresh_n "cont" in
-        Hashtbl.add tbl pc k;
-        k
-  in
-  let p =
-    Code.fold_closures
-      p
-      (fun _ _ (start, _) ({ blocks; free_pc; _ } as p) ->
-        let cfg = build_graph blocks start in
-        let idom = dominator_tree cfg in
-        let closure_jc = jump_closures cfg idom in
-        let st =
-          { new_blocks = Addr.Map.empty, free_pc
-          ; blocks
-          ; jc = closure_jc
-          ; closure_continuation
-          }
-        in
-        let k = closure_continuation start in
-        let blocks =
-          Code.traverse
-            { fold = Code.fold_children }
-            (fun pc blocks ->
-              Addr.Map.add pc (cps_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
-            start
-            st.blocks
-            st.blocks
-        in
-        let new_blocks, free_pc = st.new_blocks in
-        let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
-        { p with blocks; free_pc })
-      p
-  in
-
-  (* Call [caml_callback] to set up the execution context. *)
-  let new_start = p.free_pc in
-  let blocks =
-    let main = Var.fresh () in
-    let args = Var.fresh () in
-    let res = Var.fresh () in
-    Addr.Map.add
-      new_start
-      { params = []
-      ; body =
-          [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
-          ; Let (args, Prim (Extern "%js_array", []))
-          ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-          ]
-      ; branch = Return res
-      }
-      p.blocks
-  in
-  { start = new_start; blocks; free_pc = new_start + 1 }
+(****)
 
 let f p =
   let t = Timer.make () in
-  let r = f p in
+  let p = split_blocks p in
+  let p = cps_transform p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
-  r
+  p
