@@ -74,13 +74,13 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                                 return caml_cps_exact_call2
                                         (g,
                                          _f_,
-                                         function(_i_)
-                                          {var _g_=i + 1 | 0;
-                                           if(5 !== i)return caml_cps_exact_call1(_e_,_g_);
-                                           var _h_=0;
+                                         function(_g_)
+                                          {var _h_=i + 1 | 0;
+                                           if(5 !== i)return caml_cps_exact_call1(_e_,_h_);
+                                           var _i_=0;
                                            return caml_cps_exact_call2
                                                    (g,
-                                                    _h_,
+                                                    _i_,
                                                     function(_j_)
                                                      {var Test=[0];
                                                       runtime.caml_register_global(2,Test,"Test");
