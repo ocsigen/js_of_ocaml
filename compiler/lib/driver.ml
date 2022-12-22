@@ -87,7 +87,14 @@ let effects p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
-    Effects.f p |> inline |> deadcode |> phi |> flow |> fst |> Lambda_lifting.f)
+    Deadcode.f p
+    |> Effects.f
+    |> inline
+    |> deadcode
+    |> phi
+    |> flow
+    |> fst
+    |> Lambda_lifting.f)
   else p
 
 let print p =
