@@ -231,34 +231,30 @@ let f t x =
   [%expect
     {|
     function f(t,x)
-     {function other(t,x$0)
-       {try
-         {var val$0=caml_call2(Stdlib_Hashtbl[6],t,x$0)}
-        catch(_d_)
-         {_d_ = caml_wrap_exception(_d_);
-          if(_d_ === Stdlib[8])return - 1;
-          throw _d_}
-        if(val$0 && ! val$0[2])
-         {var x$1=val$0[1],x=x$1;
-          for(;;)
-           {try
-             {var switch$0=0,val=caml_call2(Stdlib_Hashtbl[6],t,x);switch$0 = 1}
-            catch(_c_)
-             {_c_ = caml_wrap_exception(_c_);
-              if(_c_ !== Stdlib[3])throw _c_;
-              var _b_=0}
-            if(switch$0)
-             {var switch$1=0;
-              if(val && ! val[2])
-               {var y=val[1],_a_=y === (x + 1 | 0)?1:0;
-                if(! _a_){var x=y;continue}
-                var _b_=_a_}
-              else
-               switch$1 = 1;
-              if(switch$1)var _b_=0}
-            return _b_?1:2}}
-        return - 2}
-      return other(t,x)}
+     {try
+       {var val$0=caml_call2(Stdlib_Hashtbl[6],t,x)}
+      catch(_d_)
+       {_d_ = caml_wrap_exception(_d_);if(_d_ === Stdlib[8])return - 1;throw _d_}
+      if(val$0 && ! val$0[2])
+       {var x$1=val$0[1],x$0=x$1;
+        for(;;)
+         {try
+           {var switch$0=0,val=caml_call2(Stdlib_Hashtbl[6],t,x$0);switch$0 = 1}
+          catch(_c_)
+           {_c_ = caml_wrap_exception(_c_);
+            if(_c_ !== Stdlib[3])throw _c_;
+            var _b_=0}
+          if(switch$0)
+           {var switch$1=0;
+            if(val && ! val[2])
+             {var y=val[1],_a_=y === (x$0 + 1 | 0)?1:0;
+              if(! _a_){var x$0=y;continue}
+              var _b_=_a_}
+            else
+             switch$1 = 1;
+            if(switch$1)var _b_=0}
+          return _b_?1:2}}
+      return - 2}
     //end |}]
 
 let%expect_test "loop-and-switch" =
