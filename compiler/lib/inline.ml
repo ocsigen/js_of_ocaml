@@ -23,14 +23,13 @@ open Code
 
 type prop =
   { size : int
-  ; try_catch : bool
   ; optimizable : bool
   }
 
 let optimizable blocks pc _ =
   Code.traverse
     { fold = Code.fold_children }
-    (fun pc { size; try_catch; optimizable } ->
+    (fun pc { size; optimizable } ->
       let b = Addr.Map.find pc blocks in
       let this_size =
         match b with
@@ -41,13 +40,6 @@ let optimizable blocks pc _ =
             | Cond _ -> 2
             | Switch (_, a1, a2) -> Array.length a1 + Array.length a2
             | _ -> 0)
-      in
-      let try_catch =
-        try_catch
-        ||
-        match b with
-        | { branch = Pushtrap _; _ } | { branch = Poptrap _; _ } -> true
-        | _ -> false
       in
       let optimizable =
         optimizable
@@ -64,10 +56,10 @@ let optimizable blocks pc _ =
                    true
                | _ -> true)
       in
-      { try_catch; optimizable; size = size + this_size })
+      { optimizable; size = size + this_size })
     pc
     blocks
-    { try_catch = false; optimizable = true; size = 0 }
+    { optimizable = true; size = 0 }
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k -> (
@@ -202,10 +194,7 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
         match i with
         | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f closures -> (
             let outer, branch, blocks, free_pc = state in
-            let ( params
-                , clos_cont
-                , { size = f_size; optimizable = f_optimizable; try_catch = f_try_catch }
-                ) =
+            let params, clos_cont, { size = f_size; optimizable = f_optimizable } =
               Var.Map.find f closures
             in
             match simple blocks clos_cont [ params, args ] with
@@ -222,15 +211,9 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
             | `Fail ->
                 if live_vars.(Var.idx f) = 1
                    && Bool.equal outer.optimizable f_optimizable
-                   && Bool.equal outer.try_catch f_try_catch
+                      (* Inlining the code of an optimizable function could
+                         make this code unoptimized. (wrt to Jit compilers) *)
                    && f_size < Config.Param.inlining_limit ()
-                   (* Inlining the code of an optimizable function could
-                      make this code unoptimized. (wrt to Jit compilers)
-
-                      At the moment, V8 doesn't optimize function
-                      containing try..catch.  We disable inlining if the
-                      inner and outer functions don't have the same
-                      "try_catch" property *)
                 then
                   let blocks, cont_pc =
                     match rem, branch with
