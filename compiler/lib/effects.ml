@@ -49,14 +49,8 @@ let reverse_graph g =
     g;
   g'
 
-let reverse_tree g =
-  let g' = Hashtbl.create 16 in
-  Hashtbl.iter (fun child parent -> add_edge g' parent child) g;
-  g'
-
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
-  ; predecessor_count : (Addr.t, int) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
   ; block_order : (Addr.t, int) Hashtbl.t
@@ -65,17 +59,10 @@ type control_flow_graph =
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
-  let predecessor_count = Hashtbl.create 16 in
   let loop_headers = Hashtbl.create 16 in
   let matching_exn_handler = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
-  let update_pred_count pc =
-    Hashtbl.replace
-      predecessor_count
-      pc
-      (1 + try Hashtbl.find predecessor_count pc with Not_found -> 0)
-  in
   let rec traverse ancestors exn_handler_stack pc =
     if not (Hashtbl.mem visited pc)
     then (
@@ -103,9 +90,7 @@ let build_graph blocks pc =
       let ancestors = Addr.Set.add pc ancestors in
       Addr.Set.iter
         (fun pc' ->
-          if Addr.Set.mem pc' ancestors
-          then Hashtbl.replace loop_headers pc' ()
-          else update_pred_count pc')
+          if Addr.Set.mem pc' ancestors then Hashtbl.replace loop_headers pc' ())
         successors;
       Addr.Set.iter (fun pc -> traverse ancestors exn_handler_stack pc) successors;
       l := pc :: !l)
@@ -113,13 +98,7 @@ let build_graph blocks pc =
   traverse Addr.Set.empty [] pc;
   let block_order = Hashtbl.create 16 in
   List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
-  { succs
-  ; predecessor_count
-  ; loop_headers
-  ; reverse_post_order = !l
-  ; block_order
-  ; matching_exn_handler
-  }
+  { succs; loop_headers; reverse_post_order = !l; block_order; matching_exn_handler }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
@@ -150,7 +129,7 @@ let dominator_tree g =
         l);
   dom
 
-let dominance_frontier idom g =
+let dominance_frontier g idom =
   let preds = reverse_graph g.succs in
   let frontiers = Hashtbl.create 16 in
   Hashtbl.iter
@@ -168,8 +147,6 @@ let dominance_frontier idom g =
     preds;
   frontiers
 
-let is_merge_node cfg pc = Hashtbl.find cfg.predecessor_count pc > 1
-
 (*
    The continuation of an application potentially with effect should
    be transformed.
@@ -179,90 +156,56 @@ let is_merge_node cfg pc = Hashtbl.find cfg.predecessor_count pc > 1
    we need to transform the initial block of the body / the loop.
 *)
 let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
-  let dom_tree = reverse_tree idom in
+  let frontiers = dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
   let is_continuation = Hashtbl.create 16 in
-  let mark_needed pc = transformation_needed := Addr.Set.add pc !transformation_needed in
+  let rec mark_needed pc =
+    if not (Addr.Set.mem pc !transformation_needed)
+    then (
+      transformation_needed := Addr.Set.add pc !transformation_needed;
+      Addr.Set.iter mark_needed (get_edges frontiers pc))
+  in
   let mark_continuation pc x =
     Hashtbl.add
       is_continuation
       pc
       (if Hashtbl.mem is_continuation pc then `Multiple else `Single x)
   in
-  let rec traverse pc ~try_blocks ~frontier ~transform_on_visit =
-    (* [try_blocks] is the set of initial blocks of try blocks we are in.
-       [frontier] is a superset of the dominance frontier. *)
-    let try_header =
-      let block = Addr.Map.find pc blocks in
-      match block.branch with
-      | Branch (dst, _) -> (
-          match List.last block.body with
-          | Some
-              (Let
-                (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
-            when Var.Set.mem x cps_needed ->
-              (* If the blocks ends with a CPS call, its
-                 continuation needs to be transformed *)
-              mark_needed dst;
-              (* We need to transform the head of try blocks as well *)
-              List.iter ~f:mark_needed try_blocks;
-              mark_continuation dst x;
-              None
-          | _ -> None)
-      | Return _ ->
-          (*ZZZ Can this actually happen?*)
-          List.iter ~f:mark_needed try_blocks;
-          None
-      | Pushtrap (_, x, (pc2, _), _) ->
-          mark_continuation pc2 x;
-          Some pc2
-      | _ -> None
-    in
-    let merge_node_children =
-      let children = get_edges dom_tree pc in
-      Addr.Set.filter (fun pc -> is_merge_node cfg pc) children
-    in
-    let frontier =
-      let frontier = Addr.Set.union merge_node_children frontier in
-      if Hashtbl.mem cfg.loop_headers pc then Addr.Set.add pc frontier else frontier
-    in
-    let successors = Hashtbl.find cfg.succs pc in
-    let transform_on_visit =
-      if Addr.Set.mem pc !transformation_needed then frontier else transform_on_visit
-    in
-    Addr.Set.iter
-      (fun pc' ->
-        traverse_branch pc' ~try_header ~try_blocks ~frontier ~transform_on_visit)
-      successors;
-    (* Traverse merge node children *)
-    let l = Addr.Set.elements merge_node_children in
-    let l =
-      List.sort
-        ~cmp:(fun pc pc' ->
-          compare (Hashtbl.find cfg.block_order pc) (Hashtbl.find cfg.block_order pc'))
-        l
-    in
-    ignore
-      (List.fold_left l ~init:frontier ~f:(fun frontier pc' ->
-           let frontier = Addr.Set.remove pc' frontier in
-           traverse pc' ~try_blocks ~frontier ~transform_on_visit;
-           frontier))
-  and traverse_branch pc ~try_header ~try_blocks ~frontier ~transform_on_visit =
-    if Addr.Set.mem pc frontier
-    then (if Addr.Set.mem pc transform_on_visit then mark_needed pc)
+  let rec traverse visited ~try_blocks pc =
+    if Addr.Set.mem pc visited
+    then visited
     else
+      let visited = Addr.Set.add pc visited in
       let try_blocks =
-        match try_header with
-        | Some pc' when pc' <> pc -> pc' :: try_blocks
+        let block = Addr.Map.find pc blocks in
+        match block.branch with
+        | Branch (dst, _) -> (
+            match List.last block.body with
+            | Some
+                (Let
+                  (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
+              when Var.Set.mem x cps_needed ->
+                (* If the blocks ends with a CPS call, its
+                   continuation needs to be transformed *)
+                mark_needed dst;
+                (* We need to transform the head of try blocks as well *)
+                List.iter ~f:mark_needed try_blocks;
+                mark_continuation dst x;
+                try_blocks
+            | _ -> try_blocks)
+        | Pushtrap (_, x, (pc2, _), _) ->
+            mark_continuation pc2 x;
+            pc2 :: try_blocks
+        | Poptrap _ -> List.tl try_blocks
         | _ -> try_blocks
       in
-      traverse pc ~try_blocks ~frontier ~transform_on_visit
+      Code.fold_children
+        blocks
+        pc
+        (fun pc visited -> traverse visited ~try_blocks pc)
+        visited
   in
-  traverse
-    start
-    ~try_blocks:[]
-    ~frontier:Addr.Set.empty
-    ~transform_on_visit:Addr.Set.empty;
+  ignore @@ traverse Addr.Set.empty ~try_blocks:[] start;
   !transformation_needed, is_continuation
 
 (* Each block is turned into a function which is defined in the
@@ -809,7 +752,7 @@ let rewrite_toplevel p cps_needed =
   let { start; blocks; _ } = p in
   let cfg = build_graph blocks start in
   let idom = dominator_tree cfg in
-  let frontiers = dominance_frontier idom cfg in
+  let frontiers = dominance_frontier cfg idom in
   let rec traverse visited (p : Code.program) cps_needed in_loop pc =
     if Addr.Set.mem pc visited
     then visited, p, cps_needed
