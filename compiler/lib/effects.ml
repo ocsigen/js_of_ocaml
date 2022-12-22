@@ -53,7 +53,6 @@ type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
-  ; block_order : (Addr.t, int) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   }
 
@@ -96,19 +95,19 @@ let build_graph blocks pc =
       l := pc :: !l)
   in
   traverse Addr.Set.empty [] pc;
-  let block_order = Hashtbl.create 16 in
-  List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
-  { succs; loop_headers; reverse_post_order = !l; block_order; matching_exn_handler }
+  { succs; loop_headers; reverse_post_order = !l; matching_exn_handler }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Hashtbl.create 16 in
+  let order = Hashtbl.create 16 in
+  List.iteri g.reverse_post_order ~f:(fun i pc -> Hashtbl.add order pc i);
   let rec inter pc pc' =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+    else if Hashtbl.find order pc < Hashtbl.find order pc'
     then inter pc (Hashtbl.find dom pc')
     else inter (Hashtbl.find dom pc) pc'
   in
