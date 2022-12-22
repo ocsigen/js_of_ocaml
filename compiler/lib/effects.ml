@@ -362,7 +362,6 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           let body, branch = cps_branch ~st (pc', args) in
           add_block st { params = []; body; branch }
         in
-        (*ZZZ pop trap + cps call*)
         [], Poptrap (pc'', [])
       else [], last
 
@@ -480,7 +479,7 @@ No argument:
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~check:false ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -550,6 +549,11 @@ let cps_transform ~live_vars ~cps_needed p =
               ~start:start'
           else Addr.Set.empty, Hashtbl.create 1
         in
+        let function_need_cps =
+          if Option.is_none name_opt
+          then Addr.Set.cardinal blocks_to_transform > 0
+          else function_need_cps
+        in
         if debug ()
         then (
           Format.eprintf "=============== %b@." function_need_cps;
@@ -588,7 +592,7 @@ let cps_transform ~live_vars ~cps_needed p =
           }
         in
         let k = Var.fresh_n "cont" in
-        Hashtbl.add closure_info start (k, function_cont);
+        if function_need_cps then Hashtbl.add closure_info start (k, function_cont);
         let start = fst function_cont in
         let k_opt = if function_need_cps then Some k else None in
         let blocks =
@@ -608,8 +612,8 @@ let cps_transform ~live_vars ~cps_needed p =
         { p with blocks; free_pc })
       p
   in
-  let k, _ = Hashtbl.find closure_info p.start in
-  p, !tail_calls, k
+  let k_opt = Option.map ~f:fst (Hashtbl.find_opt closure_info p.start) in
+  p, !tail_calls, k_opt
 
 (****)
 
@@ -794,25 +798,28 @@ let f (p : Code.program) =
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, tail_calls, k = cps_transform ~live_vars ~cps_needed p in
-  (* Call [caml_callback] to set up the execution context. *)
-  let new_start = p.free_pc in
-  let blocks =
-    let main = Var.fresh () in
-    let args = Var.fresh () in
-    let res = Var.fresh () in
-    Addr.Map.add
-      new_start
-      { params = []
-      ; body =
-          [ Let (main, Closure ([ k ], (p.start, [])))
-          ; Let (args, Prim (Extern "%js_array", []))
-          ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-          ]
-      ; branch = Return res
-      }
-      p.blocks
-  in
-  { start = new_start; blocks; free_pc = new_start + 1 }, tail_calls
+  match k with
+  | None -> p, tail_calls
+  | Some k ->
+      (* Call [caml_callback] to set up the execution context. *)
+      let new_start = p.free_pc in
+      let blocks =
+        let main = Var.fresh () in
+        let args = Var.fresh () in
+        let res = Var.fresh () in
+        Addr.Map.add
+          new_start
+          { params = []
+          ; body =
+              [ Let (main, Closure ([ k ], (p.start, [])))
+              ; Let (args, Prim (Extern "%js_array", []))
+              ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+              ]
+          ; branch = Return res
+          }
+          p.blocks
+      in
+      { start = new_start; blocks; free_pc = new_start + 1 }, tail_calls
 
 let f p =
   let t = Timer.make () in
