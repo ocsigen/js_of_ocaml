@@ -616,6 +616,87 @@ let cps_transform ~live_vars ~cps_needed p =
 
 (****)
 
+let current_loop_header frontiers in_loop pc =
+  (* We remain in a loop while the loop header is in the dominance frontier.
+     We enter a loop when the block is in its dominance frontier. *)
+  let frontier = get_edges frontiers pc in
+  match in_loop with
+  | Some header when Addr.Set.mem header frontier -> in_loop
+  | _ -> if Addr.Set.mem pc frontier then Some pc else None
+
+let wrap_call p cps_needed x f args accu =
+  let arg_array = Var.fresh () in
+  ( p
+  , Var.Set.remove x cps_needed
+  , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+    ]
+    :: accu )
+
+let wrap_primitive (p : Code.program) cps_needed x e accu =
+  let f = Var.fresh () in
+  let closure_pc = p.free_pc in
+  ( { p with
+      free_pc = p.free_pc + 1
+    ; blocks =
+        Addr.Map.add
+          closure_pc
+          (let y = Var.fresh () in
+           { params = []; body = [ Let (y, e) ]; branch = Return y })
+          p.blocks
+    }
+  , Var.Set.remove x (Var.Set.add f cps_needed)
+  , let args = Var.fresh () in
+    [ Let (f, Closure ([], (closure_pc, [])))
+    ; Let (args, Prim (Extern "%js_array", []))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv args ]))
+    ]
+    :: accu )
+
+let rewrite_toplevel_instr (p, cps_needed, accu) instr =
+  match instr with
+  | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
+      wrap_call p cps_needed x f args accu
+  | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
+      wrap_primitive p cps_needed x e accu
+  | _ -> p, cps_needed, [ instr ] :: accu
+
+(* Wrap function calls inside [call_back] at toplevel to avoid
+   unncessary function nestings. This is not done inside loops since
+   using repeadtedly [call_back] can be costly. *)
+let rewrite_toplevel p cps_needed =
+  let { start; blocks; _ } = p in
+  let cfg = build_graph blocks start in
+  let idom = dominator_tree cfg in
+  let frontiers = dominance_frontier cfg idom in
+  let rec traverse visited (p : Code.program) cps_needed in_loop pc =
+    if Addr.Set.mem pc visited
+    then visited, p, cps_needed
+    else
+      let visited = Addr.Set.add pc visited in
+      let in_loop = current_loop_header frontiers in_loop pc in
+      let p, cps_needed =
+        if Option.is_none in_loop
+        then
+          let block = Addr.Map.find pc p.blocks in
+          let p, cps_needed, body_rev =
+            List.fold_left ~f:rewrite_toplevel_instr ~init:(p, cps_needed, []) block.body
+          in
+          let body = List.concat @@ List.rev body_rev in
+          { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
+        else p, cps_needed
+      in
+      Code.fold_children
+        blocks
+        pc
+        (fun pc (visited, p, cps_needed) -> traverse visited p cps_needed in_loop pc)
+        (visited, p, cps_needed)
+  in
+  let _, p, cps_needed = traverse Addr.Set.empty p cps_needed None start in
+  p, cps_needed
+
+(****)
+
 let split_blocks ~cps_needed (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
      tail position *)
@@ -662,27 +743,32 @@ let split_blocks ~cps_needed (p : Code.program) =
 
 let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
   let shortcuts = Hashtbl.create 16 in
-  let rec resolve_rec l ((pc, args) as cont) =
-    if List.mem pc ~set:l
+  let rec resolve_rec visited ((pc, args) as cont) =
+    if Addr.Set.mem pc visited
     then cont
     else
       match Hashtbl.find_opt shortcuts pc with
       | Some (params, cont) ->
-          let pc', args' = resolve_rec (pc :: l) cont in
+          let pc', args' = resolve_rec (Addr.Set.add pc visited) cont in
           let s = Subst.from_map (Subst.build_mapping params args) in
           pc', List.map ~f:s args'
       | None -> cont
   in
-  let resolve cont = resolve_rec [] cont in
+  let resolve cont = resolve_rec Addr.Set.empty cont in
   Addr.Map.iter
     (fun pc block ->
       match block with
       | { params; body = []; branch = Branch cont; _ } ->
-          (*ZZZ quadratic *)
+          let args =
+            List.fold_left
+              ~f:(fun args x -> Var.Set.add x args)
+              ~init:Var.Set.empty
+              (snd cont)
+          in
+          (* We can skip a block if its parameters are only used as
+             argument to the continuation *)
           if List.for_all
-               ~f:(fun x ->
-                 live_vars.(Var.idx x) = 1
-                 && List.exists ~f:(fun y -> Var.equal x y) (snd cont))
+               ~f:(fun x -> live_vars.(Var.idx x) = 1 && Var.Set.mem x args)
                params
           then Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
@@ -705,85 +791,6 @@ let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
       p.blocks
   in
   { p with blocks }
-
-(****)
-
-let current_loop frontiers in_loop pc =
-  let frontier = get_edges frontiers pc in
-  match in_loop with
-  | Some header when Addr.Set.mem header frontier -> in_loop
-  | _ -> if Addr.Set.mem pc frontier then Some pc else None
-
-let wrap p cps_needed x f args accu =
-  let arg_array = Var.fresh () in
-  ( p
-  , Var.Set.remove x cps_needed
-  , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
-    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
-    ]
-    :: accu )
-
-let wrap_primitive (p : Code.program) cps_needed x e accu =
-  let f = Var.fresh () in
-  let closure_pc = p.free_pc in
-  ( { p with
-      free_pc = p.free_pc + 1
-    ; blocks =
-        Addr.Map.add
-          closure_pc
-          (let y = Var.fresh () in
-           { params = []; body = [ Let (y, e) ]; branch = Return y })
-          p.blocks
-    }
-  , Var.Set.remove x (Var.Set.add f cps_needed)
-  , let args = Var.fresh () in
-    [ Let (f, Closure ([], (closure_pc, [])))
-    ; Let (args, Prim (Extern "%js_array", []))
-    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv args ]))
-    ]
-    :: accu )
-
-let rewrite_toplevel_instr (p, cps_needed, accu) instr =
-  match instr with
-  | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
-      wrap p cps_needed x f args accu
-  | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
-      wrap_primitive p cps_needed x e accu
-  | _ -> p, cps_needed, [ instr ] :: accu
-
-let rewrite_toplevel p cps_needed =
-  let { start; blocks; _ } = p in
-  let cfg = build_graph blocks start in
-  let idom = dominator_tree cfg in
-  let frontiers = dominance_frontier cfg idom in
-  let rec traverse visited (p : Code.program) cps_needed in_loop pc =
-    if Addr.Set.mem pc visited
-    then visited, p, cps_needed
-    else
-      let visited = Addr.Set.add pc visited in
-      let in_loop = current_loop frontiers in_loop pc in
-      let p, cps_needed =
-        match in_loop with
-        | None ->
-            let block = Addr.Map.find pc p.blocks in
-            let p, cps_needed, body_rev =
-              List.fold_left
-                ~f:rewrite_toplevel_instr
-                ~init:(p, cps_needed, [])
-                block.body
-            in
-            let body = List.concat @@ List.rev body_rev in
-            { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
-        | Some _ -> p, cps_needed
-      in
-      Code.fold_children
-        blocks
-        pc
-        (fun pc (visited, p, cps_needed) -> traverse visited p cps_needed in_loop pc)
-        (visited, p, cps_needed)
-  in
-  let _, p, cps_needed = traverse Addr.Set.empty p cps_needed None start in
-  p, cps_needed
 
 (****)
 
