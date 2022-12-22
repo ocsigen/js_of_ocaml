@@ -61,19 +61,19 @@ Printf.printf "%d\n" (f 3)
                       {var g$0=g(x);return caml_cps_exact_call2(g$0,5,cont)}
                      return f}
                    function _c_()
-                    {return function(_o_)
+                    {return function()
                       {var Test=[0];
                        runtime.caml_register_global(2,Test,"Test");
                        return}}
                    function _d_()
-                    {return function(_n_){return caml_cps_exact_call1(_c_(),_n_)}}
+                    {return function(_n_){return caml_cps_exact_call0(_c_())}}
                    function _e_(_l_,_m_)
-                    {return function(){return caml_cps_call3(_l_,_a_,_m_,_d_())}}
-                   function _f_()
-                    {return function(_k_)
-                      {return caml_cps_exact_call0(_e_(Stdlib_Printf[2],_k_))}}
+                    {return function(){return caml_cps_call3(_m_,_a_,_l_,_d_())}}
+                   function _f_(_k_)
+                    {return function()
+                      {return caml_cps_exact_call0(_e_(_k_,Stdlib_Printf[2]))}}
                    function _g_()
-                    {return function(_j_){return caml_cps_exact_call1(_f_(),_j_)}}
+                    {return function(_j_){return caml_cps_exact_call0(_f_(_j_))}}
                    function _h_(f,_i_)
                     {return function(){return caml_cps_exact_call2(f,_i_,_g_())}}
                    return caml_cps_exact_call0(_b_)},

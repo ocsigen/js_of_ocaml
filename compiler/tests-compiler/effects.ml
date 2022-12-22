@@ -60,8 +60,8 @@ let fff () =
                _d_,
                _c_,
                _b_,
-               function(_g_)
-                {var _f_=Stdlib_Printf[2];
+               function(_f_)
+                {var _g_=Stdlib_Printf[2];
                  return caml_cps_call2
-                         (_f_,_a_,function(_h_){return caml_cps_call2(_h_,_g_,cont)})})}
+                         (_g_,_a_,function(_h_){return caml_cps_call2(_h_,_f_,cont)})})}
     //end |}]

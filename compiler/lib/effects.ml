@@ -221,8 +221,7 @@ let cps_block ~st ~k pc block =
     | to_allocate ->
         List.map to_allocate ~f:(fun (cname, jump_pc) ->
             let jump_block = Addr.Map.find jump_pc st.blocks in
-            let fresh_params = List.map jump_block.params ~f:(fun _ -> Var.fresh ()) in
-            Let (cname, Closure (fresh_params, (jump_pc, fresh_params))))
+            Let (cname, Closure (jump_block.params, (jump_pc, []))))
     | exception Not_found -> []
   in
 
@@ -298,7 +297,7 @@ let cps_block ~st ~k pc block =
         body, last
   in
 
-  { params = block.params; body; branch = last }
+  { params = []; body; branch = last }
 
 let split_blocks (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
@@ -320,15 +319,11 @@ let split_blocks (p : Code.program) =
       | [] ->
           let block = { block with body = List.rev accu } in
           { p with blocks = Addr.Map.add pc block p.blocks }
-      | (Let (x', e) as i) :: r when is_split_point i r branch ->
-          let x = Var.fork x' in
+      | (Let (x, e) as i) :: r when is_split_point i r branch ->
           let pc' = p.free_pc in
-          let block' = { params = [ x' ]; body = []; branch = block.branch } in
+          let block' = { params = []; body = []; branch = block.branch } in
           let block =
-            { block with
-              body = List.rev (Let (x, e) :: accu)
-            ; branch = Branch (pc', [ x ])
-            }
+            { block with body = List.rev (Let (x, e) :: accu); branch = Branch (pc', []) }
           in
           let p = { p with blocks = Addr.Map.add pc block p.blocks; free_pc = pc' + 1 } in
           split p pc' block' [] r branch
