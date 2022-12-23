@@ -97,7 +97,7 @@ function caml_callback(f,args) {
         res = caml_call_gen(res.joo_tramp, res.joo_args);
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
-        if (!caml_exn_stack.length) throw e;
+        if (!caml_exn_stack) throw e;
         var handler = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
         res = {joo_tramp: handler,
