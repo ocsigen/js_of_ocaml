@@ -491,10 +491,11 @@ let cps_transform ~live_vars p =
         Hashtbl.add tbl pc k;
         k
   in
+  let wrap_toplevel = ref true in
   let p =
     Code.fold_closures
       p
-      (fun _ _ (start, _) ({ blocks; free_pc; _ } as p) ->
+      (fun name_opt _ (start, _) ({ blocks; free_pc; _ } as p) ->
         let cfg = build_graph blocks start in
         let idom = dominator_tree cfg in
         let blocks_to_transform, matching_exn_handler, is_continuation =
@@ -512,12 +513,31 @@ let cps_transform ~live_vars p =
           ; live_vars
           }
         in
-        let k = closure_continuation start in
+        let function_needs_cps =
+          match name_opt with
+          | Some _ -> true
+          | None ->
+              (* We are handling the toplevel code. If it performs no
+                 CPS call, we can leave it in direct style and we
+                 don't need to wrap it within a [caml_callback]. *)
+              let need_cps = not (Addr.Set.is_empty blocks_to_transform) in
+              wrap_toplevel := need_cps;
+              need_cps
+        in
         let blocks =
+          let transform_block =
+            if function_needs_cps
+            then
+              let k = closure_continuation start in
+              fun pc block -> cps_block ~st ~k pc block
+            else
+              fun _ block ->
+              { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
+          in
           Code.traverse
             { fold = Code.fold_children }
             (fun pc blocks ->
-              Addr.Map.add pc (cps_block ~st ~k pc (Addr.Map.find pc blocks)) blocks)
+              Addr.Map.add pc (transform_block pc (Addr.Map.find pc blocks)) blocks)
             start
             st.blocks
             st.blocks
@@ -527,25 +547,28 @@ let cps_transform ~live_vars p =
         { p with blocks; free_pc })
       p
   in
-  (* Call [caml_callback] to set up the execution context. *)
-  let new_start = p.free_pc in
-  let blocks =
-    let main = Var.fresh () in
-    let args = Var.fresh () in
-    let res = Var.fresh () in
-    Addr.Map.add
-      new_start
-      { params = []
-      ; body =
-          [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
-          ; Let (args, Prim (Extern "%js_array", []))
-          ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-          ]
-      ; branch = Return res
-      }
-      p.blocks
-  in
-  { start = new_start; blocks; free_pc = new_start + 1 }
+  if not !wrap_toplevel
+  then p
+  else
+    (* Call [caml_callback] to set up the execution context. *)
+    let new_start = p.free_pc in
+    let blocks =
+      let main = Var.fresh () in
+      let args = Var.fresh () in
+      let res = Var.fresh () in
+      Addr.Map.add
+        new_start
+        { params = []
+        ; body =
+            [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
+            ; Let (args, Prim (Extern "%js_array", []))
+            ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+            ]
+        ; branch = Return res
+        }
+        p.blocks
+    in
+    { start = new_start; blocks; free_pc = new_start + 1 }
 
 (****)
 
