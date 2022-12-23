@@ -43,39 +43,33 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     {|
 
     function exceptions(s,cont)
-     {function _b_(n)
-       {function _e_(m)
-         {caml_push_trap
-           (function(_j_)
-             {if(_j_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
-              var raise=caml_pop_trap();
-              return caml_cps_exact_call1(raise,_j_)});
-          if(caml_string_equal(s,cst))
-           {var _g_=Stdlib[8],raise=caml_pop_trap();
-            return caml_cps_exact_call1(raise,_g_)}
-          var _h_=Stdlib[79];
-          return caml_cps_call2
-                  (_h_,
-                   cst_toto,
-                   function(_i_)
-                    {caml_pop_trap();
-                     return caml_cps_exact_call1(cont,[0,[0,_i_,n,m]])})}
-        caml_push_trap
-         (function(_f_)
-           {if(_f_ === Stdlib[8])return caml_cps_exact_call1(_e_,0);
-            var raise=caml_pop_trap();
-            return caml_cps_exact_call1(raise,_f_)});
-        if(caml_string_equal(s,cst$0))
-         {var _d_=Stdlib[8],raise=caml_pop_trap();
-          return caml_cps_exact_call1(raise,_d_)}
-        caml_pop_trap();
-        return caml_cps_exact_call1(_e_,7)}
-      caml_push_trap
-       (function(_c_)
-         {if(_c_[1] === Stdlib[7])return caml_cps_exact_call1(_b_,0);
+     {try
+       {var _d_=runtime.caml_int_of_string(s),n=_d_}
+      catch(_h_)
+       {_h_ = caml_wrap_exception(_h_);
+        if(_h_[1] !== Stdlib[7])
+         {var raise$1=caml_pop_trap();return caml_cps_exact_call1(raise$1,_h_)}
+        var n=0}
+      try
+       {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _c_=7,m=_c_}
+      catch(_g_)
+       {_g_ = caml_wrap_exception(_g_);
+        if(_g_ !== Stdlib[8])
+         {var raise$0=caml_pop_trap();return caml_cps_exact_call1(raise$0,_g_)}
+        var m=0}
+      runtime.caml_push_trap
+       (function(_f_)
+         {if(_f_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
           var raise=caml_pop_trap();
-          return caml_cps_exact_call1(raise,_c_)});
-      var _a_=runtime.caml_int_of_string(s);
-      caml_pop_trap();
-      return caml_cps_exact_call1(_b_,_a_)}
+          return caml_cps_exact_call1(raise,_f_)});
+      if(caml_string_equal(s,cst))
+       {var _a_=Stdlib[8],raise=caml_pop_trap();
+        return caml_cps_exact_call1(raise,_a_)}
+      var _b_=Stdlib[79];
+      return caml_cps_call2
+              (_b_,
+               cst_toto,
+               function(_e_)
+                {caml_pop_trap();
+                 return caml_cps_exact_call1(cont,[0,[0,_e_,n,m]])})}
     //end |}]
