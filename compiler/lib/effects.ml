@@ -294,26 +294,20 @@ let cps_jump_cont ~st ((pc, _) as cont) =
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> (
-      match k with
-      | None -> [], last
-      | Some k -> tail_call ~st ~f:k [ x ])
+  | Return x -> tail_call ~st ~f:k [ x ]
   | Raise (x, _) -> (
-      match k with
-      | None -> [], last
-      | Some _ -> (
-          match Hashtbl.find_opt st.matching_exn_handler pc with
-          | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
-              (* We are within a try ... with which is not
-                 transformed. We should raise an exception normally *)
-              [], last
-          | _ ->
-              let exn_handler = Var.fresh_n "raise" in
-              tail_call
-                ~st
-                ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
-                ~f:exn_handler
-                [ x ]))
+      match Hashtbl.find_opt st.matching_exn_handler pc with
+      | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
+          (* We are within a try ... with which is not
+             transformed. We should raise an exception normally *)
+          [], last
+      | _ ->
+          let exn_handler = Var.fresh_n "raise" in
+          tail_call
+            ~st
+            ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+            ~f:exn_handler
+            [ x ])
   | Stop -> [], Stop
   | Branch cont -> cps_branch ~st cont
   | Cond (x, cont1, cont2) ->
@@ -481,7 +475,7 @@ let cps_block ~st ~k pc block =
     | Some (body_prefix, last_instrs, last) ->
         List.map body_prefix ~f:(fun i -> cps_instr ~st i) @ last_instrs, last
     | None ->
-        let last_instrs, last = cps_last ~st pc block.branch ~k:(Some k) in
+        let last_instrs, last = cps_last ~st pc block.branch ~k in
         let body =
           List.map block.body ~f:(fun i -> cps_instr ~st i)
           @ alloc_jump_closures
@@ -493,16 +487,6 @@ let cps_block ~st ~k pc block =
   ; body
   ; branch = last
   }
-
-let transform_block ~st ~k pc block =
-  match k with
-  | Some k -> cps_block ~st ~k pc block
-  | _ ->
-      let last_instrs, last = cps_last ~st pc block.branch ~k in
-      { params = block.params
-      ; body = List.map block.body ~f:(fun i -> cps_instr ~st i) @ last_instrs
-      ; branch = last
-      }
 
 let cps_transform ~live_vars ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
@@ -580,16 +564,19 @@ let cps_transform ~live_vars ~cps_needed p =
         in
         let k = Var.fresh_n "cont" in
         if function_need_cps then Hashtbl.add closure_info start (k, function_cont);
-        let start = fst function_cont in
-        let k_opt = if function_need_cps then Some k else None in
         let blocks =
+          let transform_block =
+            if function_need_cps
+            then fun pc block -> cps_block ~st ~k pc block
+            else
+              fun _ block ->
+              { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
+          in
+          let start = fst function_cont in
           Code.traverse
             { fold = Code.fold_children }
             (fun pc blocks ->
-              Addr.Map.add
-                pc
-                (transform_block ~st ~k:k_opt pc (Addr.Map.find pc blocks))
-                blocks)
+              Addr.Map.add pc (transform_block pc (Addr.Map.find pc blocks)) blocks)
             start
             st.blocks
             st.blocks
@@ -599,10 +586,9 @@ let cps_transform ~live_vars ~cps_needed p =
         { p with blocks; free_pc })
       p
   in
-  let k_opt = Option.map ~f:fst (Hashtbl.find_opt closure_info p.start) in
-  match k_opt with
+  match Hashtbl.find_opt closure_info p.start with
   | None -> p, !tail_calls
-  | Some k ->
+  | Some (k, _) ->
       (* Call [caml_callback] to set up the execution context. *)
       let new_start = p.free_pc in
       let blocks =
