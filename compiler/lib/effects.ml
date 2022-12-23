@@ -53,37 +53,17 @@ type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
-  ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   }
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
   let loop_headers = Hashtbl.create 16 in
-  let matching_exn_handler = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
-  let rec traverse ancestors exn_handler_stack pc =
+  let rec traverse ancestors pc =
     if not (Hashtbl.mem visited pc)
     then (
       Hashtbl.add visited pc ();
-      let exn_handler_stack =
-        let block = Addr.Map.find pc blocks in
-        match block.branch with
-        | Pushtrap (_, _, (pc, _), _) -> pc :: exn_handler_stack
-        | Poptrap _ -> (
-            match exn_handler_stack with
-            | pc' :: rem ->
-                Hashtbl.add matching_exn_handler pc pc';
-                rem
-            | [] -> assert false)
-        | Raise _ -> (
-            match exn_handler_stack with
-            | pc' :: rem ->
-                Hashtbl.add matching_exn_handler pc pc';
-                rem
-            | [] -> exn_handler_stack)
-        | _ -> exn_handler_stack
-      in
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
       Hashtbl.add succs pc successors;
       let ancestors = Addr.Set.add pc ancestors in
@@ -91,11 +71,11 @@ let build_graph blocks pc =
         (fun pc' ->
           if Addr.Set.mem pc' ancestors then Hashtbl.replace loop_headers pc' ())
         successors;
-      Addr.Set.iter (fun pc -> traverse ancestors exn_handler_stack pc) successors;
+      Addr.Set.iter (fun pc -> traverse ancestors pc) successors;
       l := pc :: !l)
   in
-  traverse Addr.Set.empty [] pc;
-  { succs; loop_headers; reverse_post_order = !l; matching_exn_handler }
+  traverse Addr.Set.empty pc;
+  { succs; loop_headers; reverse_post_order = !l }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
@@ -146,19 +126,22 @@ let dominance_frontier g idom =
     preds;
   frontiers
 
+(****)
+
 (*
-   The continuation of an application potentially with effect should
-   be transformed.
-   If we transform a block, we need to transform the merge nodes
-   below.
-   If we transform a block in a [try ... with ...] body or in a loop,
-   we need to transform the initial block of the body / the loop.
+We establish the list of blocks that needs to be CPS-transformed. We
+also mark blocks that correspond to function continuations or
+exception handlers. And we keep track of the exception handler
+associated to each Poptrap, and possibly Raise.
 *)
-let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
+let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
   let frontiers = dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
+  let matching_exn_handler = Hashtbl.create 16 in
   let is_continuation = Hashtbl.create 16 in
   let rec mark_needed pc =
+    (* If a block is transformed, all the blocks in its dominance
+       frontier needs to be transformed as well. *)
     if not (Addr.Set.mem pc !transformation_needed)
     then (
       transformation_needed := Addr.Set.add pc !transformation_needed;
@@ -170,42 +153,50 @@ let compute_transformed_blocks ~cfg ~idom ~cps_needed ~blocks ~start =
       pc
       (if Hashtbl.mem is_continuation pc then `Multiple else `Single x)
   in
-  let rec traverse visited ~try_blocks pc =
+  let rec traverse visited ~englobing_exn_handlers pc =
     if Addr.Set.mem pc visited
     then visited
     else
       let visited = Addr.Set.add pc visited in
-      let try_blocks =
-        let block = Addr.Map.find pc blocks in
+      let block = Addr.Map.find pc blocks in
+      (match block.branch with
+      | Branch (dst, _) -> (
+          match List.last block.body with
+          | Some
+              (Let
+                (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
+            when Var.Set.mem x cps_needed ->
+              (* The block after a function application that needs to
+                 be turned to CPS or an effect primitive needs to be
+                 transformed. *)
+              mark_needed dst;
+              (* We need to transform the englobing exception handlers
+                 as well *)
+              List.iter ~f:mark_needed englobing_exn_handlers;
+              mark_continuation dst x
+          | _ -> ())
+      | Pushtrap (_, x, (handler_pc, _), _) -> mark_continuation handler_pc x
+      | Poptrap _ | Raise _ -> (
+          match englobing_exn_handlers with
+          | handler_pc :: _ -> Hashtbl.add matching_exn_handler pc handler_pc
+          | _ -> ())
+      | _ -> ());
+      let englobing_exn_handlers =
         match block.branch with
-        | Branch (dst, _) -> (
-            match List.last block.body with
-            | Some
-                (Let
-                  (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
-              when Var.Set.mem x cps_needed ->
-                (* If the blocks ends with a CPS call, its
-                   continuation needs to be transformed *)
-                mark_needed dst;
-                (* We need to transform the head of try blocks as well *)
-                List.iter ~f:mark_needed try_blocks;
-                mark_continuation dst x;
-                try_blocks
-            | _ -> try_blocks)
-        | Pushtrap (_, x, (pc2, _), _) ->
-            mark_continuation pc2 x;
-            pc2 :: try_blocks
-        | Poptrap _ -> List.tl try_blocks
-        | _ -> try_blocks
+        | Pushtrap (_, _, (handler_pc, _), _) -> handler_pc :: englobing_exn_handlers
+        | Poptrap _ -> List.tl englobing_exn_handlers
+        | _ -> englobing_exn_handlers
       in
       Code.fold_children
         blocks
         pc
-        (fun pc visited -> traverse visited ~try_blocks pc)
+        (fun pc visited -> traverse visited ~englobing_exn_handlers pc)
         visited
   in
-  ignore @@ traverse Addr.Set.empty ~try_blocks:[] start;
-  !transformation_needed, is_continuation
+  ignore @@ traverse Addr.Set.empty ~englobing_exn_handlers:[] start;
+  !transformation_needed, matching_exn_handler, is_continuation
+
+(****)
 
 (* Each block is turned into a function which is defined in the
    dominator of the block. [closure_of_jump] provides the name of the
@@ -277,6 +268,8 @@ let cps_branch ~st (pc, args) =
     let args, instrs =
       if List.is_empty args && Hashtbl.mem st.is_continuation pc
       then
+        (* We are jumping to a block that is also used as a continuation.
+           We pass it a dummy argument. *)
         let x = Var.fresh () in
         [ x ], [ Let (x, Constant (Int 0l)) ]
       else args, []
@@ -312,7 +305,7 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           match Hashtbl.find_opt st.matching_exn_handler pc with
           | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
               (* We are within a try ... with which is not
-                 transformed. We must raise an exception normally *)
+                 transformed. We should raise an exception normally *)
               [], last
           | _ ->
               let exn_handler = Var.fresh_n "raise" in
@@ -330,39 +323,25 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
          to create a single block per continuation *)
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap ((pc, args), _x, (handler_pc, _), _) ->
+  | Pushtrap ((pc, args), _, (handler_pc, _), _) ->
       if Addr.Set.mem handler_pc st.blocks_to_transform
-      then
+      then (
+        assert (Hashtbl.mem st.is_continuation handler_pc);
         let exn_handler = closure_of_pc ~st handler_pc in
         let push_trap =
           Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
         in
-        if Addr.Set.mem pc st.blocks_to_transform
-        then
-          let body, branch = cps_branch ~st (pc, args) in
-          push_trap :: body, branch
-        else [ push_trap ], Branch (pc, args)
+        let body, branch = cps_branch ~st (pc, args) in
+        push_trap :: body, branch)
       else [], last
   | Poptrap (pc', args) ->
-      if Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
+      if try Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
+         with Not_found -> false
       then
-        let instrs =
-          let exn_handler = Var.fresh () in
-          [ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
-        in
-        if Addr.Set.mem pc' st.blocks_to_transform
-        then
-          let body, branch = cps_branch ~st (pc', args) in
-          instrs @ body, branch
-        else instrs, Branch (pc', args)
-      else if Addr.Set.mem pc' st.blocks_to_transform
-      then
-        let pc'' =
-          let body, branch = cps_branch ~st (pc', args) in
-          add_block st { params = []; body; branch }
-        in
-        [], Poptrap (pc'', [])
-      else [], last
+        let exn_handler = Var.fresh () in
+        let body, branch = cps_branch ~st (pc', args) in
+        [ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ] @ body, branch
+      else [], Poptrap (cps_jump_cont ~st (pc', args))
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
@@ -390,6 +369,10 @@ let cps_block ~st ~k pc block =
               let jump_block = Addr.Map.find jump_pc st.blocks in
               if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
               then
+                (* If the block is the continuation of a single application,
+                   the return value [x] may be used later on, so we
+                   use it as parameter. Otherwise, it is not going to
+                   be used and we just use a dummy parameter. *)
                 let x =
                   match Hashtbl.find st.is_continuation jump_pc with
                   | `Single x -> x
@@ -454,23 +437,28 @@ let cps_block ~st ~k pc block =
             let pc, args = cont in
             let f' = closure_of_pc ~st pc in
             assert (Hashtbl.mem st.is_continuation pc);
-            (*
-No argument:
- - merge node ==> dummy parameter (variable is not live)
- - loop header, forward edge ==> dummy parameter, allocate closure (if variable is live)
- - loop header, backward edge ==> dummy parameter (variable is not live)
- - otherwise ==> use variable name
-*)
             match args with
             | []
               when match Hashtbl.find st.is_continuation pc with
                    | `Single _ -> true
-                   | `Multiple -> st.live_vars.(Var.idx x) = 0 -> alloc_jump_closures, f'
+                   | `Multiple -> st.live_vars.(Var.idx x) = 0 ->
+                (* When the continuation is used at only one place, we
+                   can directly use it. In case of multiple forward
+                   jumps, the variable [x] is not going to be used, so
+                   we fall in this case as well. This is also the case
+                   for backward jumps. When entering a loop, the
+                   variable might be used in the loop, but cannot be
+                   used as parameter of the loop (since backward jumps
+                   will pass a wrong value). So we use an intermediate
+                   function to bind it. *)
+                alloc_jump_closures, f'
             | [ x' ] when Var.equal x x' -> alloc_jump_closures, f'
             | _ ->
                 let args, instrs =
                   if List.is_empty args
                   then
+                    (* We use a dummy argument since the continuation
+                       expects at least one argument. *)
                     let x = Var.fresh () in
                     [ x ], alloc_jump_closures @ [ Let (x, Constant (Int 0l)) ]
                   else args, alloc_jump_closures
@@ -537,16 +525,16 @@ let cps_transform ~live_vars ~cps_needed p =
           | None -> true
           | Some name -> Var.Set.mem name cps_needed
         in
-        let blocks_to_transform, is_continuation =
+        let blocks_to_transform, matching_exn_handler, is_continuation =
           if function_need_cps
           then
-            compute_transformed_blocks
+            compute_needed_transformations
               ~cfg
               ~idom
               ~cps_needed
               ~blocks:blocks'
               ~start:start'
-          else Addr.Set.empty, Hashtbl.create 1
+          else Addr.Set.empty, Hashtbl.create 1, Hashtbl.create 1
         in
         let function_need_cps =
           if Option.is_none name_opt
@@ -585,7 +573,7 @@ let cps_transform ~live_vars ~cps_needed p =
           ; blocks_to_transform
           ; is_continuation
           ; tail_calls
-          ; matching_exn_handler = cfg.matching_exn_handler
+          ; matching_exn_handler
           ; loop_headers = cfg.loop_headers
           ; live_vars
           }
@@ -612,7 +600,28 @@ let cps_transform ~live_vars ~cps_needed p =
       p
   in
   let k_opt = Option.map ~f:fst (Hashtbl.find_opt closure_info p.start) in
-  p, !tail_calls, k_opt
+  match k_opt with
+  | None -> p, !tail_calls
+  | Some k ->
+      (* Call [caml_callback] to set up the execution context. *)
+      let new_start = p.free_pc in
+      let blocks =
+        let main = Var.fresh () in
+        let args = Var.fresh () in
+        let res = Var.fresh () in
+        Addr.Map.add
+          new_start
+          { params = []
+          ; body =
+              [ Let (main, Closure ([ k ], (p.start, [])))
+              ; Let (args, Prim (Extern "%js_array", []))
+              ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+              ]
+          ; branch = Return res
+          }
+          p.blocks
+      in
+      { start = new_start; blocks; free_pc = new_start + 1 }, !tail_calls
 
 (****)
 
@@ -741,7 +750,7 @@ let split_blocks ~cps_needed (p : Code.program) =
 
 (****)
 
-let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
+let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
   let shortcuts = Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
     if Addr.Set.mem pc visited
@@ -797,35 +806,13 @@ let skip_empty_blocks ~live_vars (p : Code.program) : Code.program =
 let f (p : Code.program) =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
-  let p = skip_empty_blocks ~live_vars p in
+  let p = remove_empty_blocks ~live_vars p in
   let p, info = Flow.f ~pessimistic:true p in
   let cps_needed = Fun_style_analysis.f (p, info) in
   let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
-  let p, tail_calls, k = cps_transform ~live_vars ~cps_needed p in
-  match k with
-  | None -> p, tail_calls
-  | Some k ->
-      (* Call [caml_callback] to set up the execution context. *)
-      let new_start = p.free_pc in
-      let blocks =
-        let main = Var.fresh () in
-        let args = Var.fresh () in
-        let res = Var.fresh () in
-        Addr.Map.add
-          new_start
-          { params = []
-          ; body =
-              [ Let (main, Closure ([ k ], (p.start, [])))
-              ; Let (args, Prim (Extern "%js_array", []))
-              ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-              ]
-          ; branch = Return res
-          }
-          p.blocks
-      in
-      { start = new_start; blocks; free_pc = new_start + 1 }, tail_calls
+  cps_transform ~live_vars ~cps_needed p
 
 let f p =
   let t = Timer.make () in
