@@ -25,7 +25,7 @@ function caml_call_gen(f, args) {
     return caml_call_gen(f.fun, args);
   //FIXME, can happen with too many arguments
   if(typeof f !== "function") return f;
-  var n = f.length | 0;
+  var n = (f.l >= 0)?f.l:(f.l = f.length);
   if(n === 0) return f.apply(null,args);
   var argsLen = args.length | 0;
   var d = n - argsLen | 0;
@@ -76,7 +76,7 @@ function caml_call_gen(f, args) {
   if (f.fun)
     return caml_call_gen(f.fun, args);
   if (typeof f !== "function") return args[args.length-1](f);
-  var n = f.length | 0;
+  var n = (f.l >= 0)?f.l:(f.l = f.length);
   if (n === 0) return f.apply(null, args);
   var argsLen = args.length | 0;
   var d = n - argsLen | 0;

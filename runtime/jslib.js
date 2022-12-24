@@ -375,7 +375,7 @@ function caml_js_wrap_meth_callback_unsafe(f) {
 //Provides: caml_js_function_arity
 //If: !effects
 function caml_js_function_arity(f) {
-  return f.length
+  return (f.l >= 0)?f.l:(f.l = f.length)
 }
 
 //Provides: caml_js_function_arity
@@ -383,7 +383,7 @@ function caml_js_function_arity(f) {
 function caml_js_function_arity(f) {
   // Functions have an additional continuation parameter. This should
   // not be visible when calling them from JavaScript
-  return f.length - 1
+  return ((f.l >= 0)?f.l:(f.l = f.length)) - 1
 }
 
 //Provides: caml_js_equals mutable (const, const)
