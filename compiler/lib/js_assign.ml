@@ -309,12 +309,13 @@ let program' (module Strategy : Strategy) p =
   mapper#block (Params []);
   if S.cardinal mapper#get_free <> 0
   then
-    if false
+    if not (debug ())
     then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
     else (
       Js_output.program (Pretty_print.to_out_channel stderr) p;
-      Format.eprintf "Some variables escaped (#%d)" (S.cardinal mapper#get_free);
-      S.iter (fun s -> Format.eprintf "%s@." (Var.to_string s)) mapper#get_free);
+      Format.eprintf "Some variables escaped:";
+      S.iter (fun s -> Format.eprintf " %s" (Var.to_string s)) mapper#get_free;
+      Format.eprintf "@.");
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
   let color = function
     | V v ->
