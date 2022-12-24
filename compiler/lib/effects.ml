@@ -148,10 +148,12 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       Addr.Set.iter mark_needed (get_edges frontiers pc))
   in
   let mark_continuation pc x =
-    Hashtbl.add
-      is_continuation
-      pc
-      (if Hashtbl.mem is_continuation pc then `Multiple else `Single x)
+    if not (Hashtbl.mem is_continuation pc)
+    then
+      Hashtbl.add
+        is_continuation
+        pc
+        (if Addr.Set.mem pc (get_edges frontiers pc) then `Loop else `Param x)
   in
   let rec traverse visited ~englobing_exn_handlers pc =
     if Addr.Set.mem pc visited
@@ -236,7 +238,7 @@ type st =
   ; closure_info : (Addr.t, Var.t * Code.cont) Hashtbl.t
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
-  ; is_continuation : (Addr.t, [ `Single of Var.t | `Multiple ]) Hashtbl.t
+  ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; tail_calls : Var.Set.t ref
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
@@ -318,15 +320,15 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
   | Pushtrap ((pc, args), _, (handler_pc, _), _) ->
+      assert (Hashtbl.mem st.is_continuation handler_pc);
       if Addr.Set.mem handler_pc st.blocks_to_transform
-      then (
-        assert (Hashtbl.mem st.is_continuation handler_pc);
+      then
         let exn_handler = closure_of_pc ~st handler_pc in
         let push_trap =
           Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
         in
         let body, branch = cps_branch ~st (pc, args) in
-        push_trap :: body, branch)
+        push_trap :: body, branch
       else [], last
   | Poptrap (pc', args) ->
       if try Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
@@ -363,14 +365,12 @@ let cps_block ~st ~k pc block =
               let jump_block = Addr.Map.find jump_pc st.blocks in
               if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
               then
-                (* If the block is the continuation of a single application,
-                   the return value [x] may be used later on, so we
-                   use it as parameter. Otherwise, it is not going to
-                   be used and we just use a dummy parameter. *)
+                (* For loops, we may need to allocate a closure to bind [x],
+                   so we have to use a fresh variable here *)
                 let x =
                   match Hashtbl.find st.is_continuation jump_pc with
-                  | `Single x -> x
-                  | _ -> Var.fresh ()
+                  | `Param x -> x
+                  | `Loop -> Var.fresh ()
                 in
                 [ x ]
               else jump_block.params
@@ -434,17 +434,11 @@ let cps_block ~st ~k pc block =
             match args with
             | []
               when match Hashtbl.find st.is_continuation pc with
-                   | `Single _ -> true
-                   | `Multiple -> st.live_vars.(Var.idx x) = 0 ->
-                (* When the continuation is used at only one place, we
-                   can directly use it. In case of multiple forward
-                   jumps, the variable [x] is not going to be used, so
-                   we fall in this case as well. This is also the case
-                   for backward jumps. When entering a loop, the
-                   variable might be used in the loop, but cannot be
-                   used as parameter of the loop (since backward jumps
-                   will pass a wrong value). So we use an intermediate
-                   function to bind it. *)
+                   | `Param _ -> true
+                   | `Loop -> st.live_vars.(Var.idx x) = 0 ->
+                (* When entering a loop, we have to allocate a closure
+                   to bind [x] if it is used in the loop body. In
+                   other cases, we can just call the continuation. *)
                 alloc_jump_closures, f'
             | [ x' ] when Var.equal x x' -> alloc_jump_closures, f'
             | _ ->
@@ -504,13 +498,13 @@ let cps_transform ~live_vars ~cps_needed p =
         in
         let cfg = build_graph blocks' start' in
         let idom = dominator_tree cfg in
-        let function_need_cps =
+        let function_needs_cps =
           match name_opt with
           | None -> true
           | Some name -> Var.Set.mem name cps_needed
         in
         let blocks_to_transform, matching_exn_handler, is_continuation =
-          if function_need_cps
+          if function_needs_cps
           then
             compute_needed_transformations
               ~cfg
@@ -520,26 +514,11 @@ let cps_transform ~live_vars ~cps_needed p =
               ~start:start'
           else Addr.Set.empty, Hashtbl.create 1, Hashtbl.create 1
         in
-        let function_need_cps =
+        let function_needs_cps =
           if Option.is_none name_opt
           then Addr.Set.cardinal blocks_to_transform > 0
-          else function_need_cps
+          else function_needs_cps
         in
-        if debug ()
-        then (
-          Format.eprintf "=============== %b@." function_need_cps;
-          Code.preorder_traverse
-            { fold = Code.fold_children }
-            (fun pc _ ->
-              if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
-              let block = Addr.Map.find pc blocks in
-              Code.Print.block
-                (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
-                pc
-                block)
-            start
-            blocks
-            ());
         let closure_jc = jump_closures blocks_to_transform idom in
         let function_cont, blocks, free_pc =
           if not (Addr.Map.mem start' closure_jc.closures_of_alloc_site)
@@ -563,10 +542,25 @@ let cps_transform ~live_vars ~cps_needed p =
           }
         in
         let k = Var.fresh_n "cont" in
-        if function_need_cps then Hashtbl.add closure_info start (k, function_cont);
+        if function_needs_cps then Hashtbl.add closure_info start (k, function_cont);
+        if debug ()
+        then (
+          Format.eprintf "======== %b@." function_needs_cps;
+          Code.preorder_traverse
+            { fold = Code.fold_children }
+            (fun pc _ ->
+              if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
+              let block = Addr.Map.find pc blocks in
+              Code.Print.block
+                (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
+                pc
+                block)
+            start
+            blocks
+            ());
         let blocks =
           let transform_block =
-            if function_need_cps
+            if function_needs_cps
             then fun pc block -> cps_block ~st ~k pc block
             else
               fun _ block ->
