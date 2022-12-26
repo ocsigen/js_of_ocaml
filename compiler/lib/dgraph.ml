@@ -273,8 +273,8 @@ let t3 = Timer.make () in
       (*
 let t3 = Timer.get t3 in
       Format.eprintf "YYY %.2f %.2f %.2f@." t1 t2 t3;
-      Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
 *)
+      Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
       res
   end
 end

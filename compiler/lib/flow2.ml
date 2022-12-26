@@ -24,11 +24,21 @@ x = Apply (f, [a, b,c])
 ===> x is the result of f (if number of parameters match)
      bind parameters of f to a,b,c
 If f changes, needs to update
+
+
+First step: propagate forward possible known values.
+Second step: propagate backward whether the value escape, whether it may be modified.
+Third step: propagate forward whether we know all possible values of a variable
+
+Domain:
+   set of functions
+     or
+   set of blocks
 *)
 
 open! Stdlib
 
-let debug = Debug.find "flow"
+let debug = Debug.find "flow2"
 
 let times = Debug.find "times"
 
@@ -65,7 +75,6 @@ let add_var = Var.ISet.add
 type def =
   | Phi of Var.Set.t
   | Expr of Code.expr
-  | Param
 
 type info =
   { info_defs : def array
@@ -94,14 +103,13 @@ let add_assign_def vars defs x y =
   add_var vars x;
   let idx = Var.idx x in
   match defs.(idx) with
-  | Expr _ | Param -> assert false
+  | Expr _ -> assert false
   | Phi s -> defs.(idx) <- Phi (Var.Set.add y s)
 
 let add_param_def vars defs x =
   add_var vars x;
   let idx = Var.idx x in
-  assert (is_undefined defs.(idx) || Poly.(defs.(idx) = Param));
-  defs.(idx) <- Param
+  assert (is_undefined defs.(idx))
 
 (* x depends on y *)
 let add_dep deps x y =
@@ -163,11 +171,22 @@ let program_deps { blocks; _ } =
     blocks;
   vars, deps, defs
 
+(*
+type approx =
+  | Top
+  | Functions of Var.Set.t
+  | Blocks of Var.Set.t
+  | Bottom
+
+let join
+*)
+
 let var_set_lift f s = Var.Set.fold (fun y s -> Var.Set.union (f y) s) s Var.Set.empty
+
+let h = Hashtbl.create 16
 
 let propagate1 deps rets defs st x =
   match defs.(Var.idx x) with
-  | Param -> Var.Set.singleton x
   | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
@@ -180,29 +199,34 @@ let propagate1 deps rets defs st x =
                   let t = a.(n) in
                   add_dep deps x t;
                   Var.Tbl.get st t
-              | Phi _ | Param | Expr _ -> Var.Set.empty)
+              | Phi _ | Expr _ -> Var.Set.empty)
             (Var.Tbl.get st y)
       | Apply { f; args; _ } ->
           var_set_lift
             (fun g ->
               match defs.(Var.idx g) with
               | Expr (Closure (params, _)) when List.length args = List.length params ->
-                  (* ZZZ map args to params *)
-                  List.iter2
-                    ~f:(fun x y ->
-                      add_dep deps x y;
-                      let idx = Var.idx x in
-                      match defs.(idx) with
-                      | Expr _ | Param -> assert false
-                      | Phi s -> defs.(idx) <- Phi (Var.Set.add y s))
-                    params
-                    args;
-                  var_set_lift
-                    (fun y ->
-                      add_dep deps x y;
-                      Var.Tbl.get st y)
-                    (Var.Map.find g rets)
-              | Phi _ | Param | Expr _ -> Var.Set.empty)
+                  (*
+                  Format.eprintf "ZZZ %d => %d@." (Var.idx x) (Var.idx g);*)
+                  (* ZZZ Only if g has not yet been associated to x *)
+                  if not (Hashtbl.mem h (x, g))
+                  then (
+                    Hashtbl.add h (x, g) ();
+                    List.iter2
+                      ~f:(fun x y ->
+                        add_dep deps x y;
+                        let idx = Var.idx x in
+                        match defs.(idx) with
+                        | Expr _ -> assert false
+                        | Phi s ->
+                            ();
+                            (* ZZZ need to recompute x *)
+                            defs.(idx) <- Phi (Var.Set.add y s))
+                      params
+                      args;
+                    Var.Set.iter (fun y -> add_dep deps x y) (Var.Map.find g rets));
+                  var_set_lift (fun y -> Var.Tbl.get st y) (Var.Map.find g rets)
+              | Phi _ | Expr _ -> Var.Set.empty)
             (Var.Tbl.get st f))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -318,9 +342,8 @@ let program_escape ?(pessimistic = false) defs known_origins { blocks; _ } =
 
 (****)
 
-let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
+let propagate2 defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
-  | Param -> skip_param
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
@@ -334,7 +357,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
                      n >= Array.length a
                      || possibly_mutable.(Var.idx z)
                      || Var.Tbl.get st a.(n)
-                 | Phi _ | Param | Expr _ -> true)
+                 | Phi _ | Expr _ -> true)
                (Var.Tbl.get known_origins y))
 
 module Domain2 = struct
@@ -347,11 +370,11 @@ end
 
 module Solver2 = G.Solver (Domain2)
 
-let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
+let solver2 vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
 
 let get_approx { info_defs = _; info_known_origins; info_maybe_unknown; _ } f top join x =
   let s = Var.Tbl.get info_known_origins x in
@@ -414,47 +437,9 @@ let the_native_string_of info x =
   | Some (NativeString i) -> Some i
   | _ -> None
 
-(*XXX Maybe we could iterate? *)
-let direct_approx info x =
-  match info.info_defs.(Var.idx x) with
-  | Expr (Field (y, n)) ->
-      get_approx
-        info
-        (fun z ->
-          if info.info_possibly_mutable.(Var.idx z)
-          then None
-          else
-            match info.info_defs.(Var.idx z) with
-            | Expr (Block (_, a, _)) when n < Array.length a -> Some a.(n)
-            | _ -> None)
-        None
-        (fun u v ->
-          match u, v with
-          | Some n, Some m when Var.compare n m = 0 -> u
-          | _ -> None)
-        y
-  | _ -> None
-
-let build_subst info vars =
-  let nv = Var.count () in
-  let subst = Array.make nv None in
-  Var.ISet.iter
-    (fun x ->
-      let u = Var.Tbl.get info.info_maybe_unknown x in
-      (if not u
-      then
-        let s = Var.Tbl.get info.info_known_origins x in
-        if Var.Set.cardinal s = 1 then subst.(Var.idx x) <- Some (Var.Set.choose s));
-      if Option.is_none subst.(Var.idx x) then subst.(Var.idx x) <- direct_approx info x;
-      match subst.(Var.idx x) with
-      | None -> ()
-      | Some y -> Var.propagate_name x y)
-    vars;
-  subst
-
 (****)
 
-let f ?pessimistic ?skip_param p =
+let f ?pessimistic p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
@@ -468,7 +453,7 @@ let f ?pessimistic ?skip_param p =
   let possibly_mutable = program_escape ?pessimistic defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
-  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
   if debug ()
   then
@@ -481,7 +466,26 @@ let f ?pessimistic ?skip_param p =
             "%a: {%a} / %s@."
             Var.print
             x
-            Code.Print.var_list
+            (fun f l ->
+              let rec list pr f l =
+                match l with
+                | [] -> ()
+                | [ x ] -> pr f x
+                | x :: r -> Format.fprintf f "%a, %a" pr x (list pr) r
+              in
+              list
+                (fun f x ->
+                  Var.print f x;
+                  Format.fprintf
+                    f
+                    "%s"
+                    (match defs.(Var.idx x) with
+                    | Expr (Closure _) -> "C"
+                    | Expr (Block _) -> "B"
+                    | Expr (Constant (Int _)) -> "I"
+                    | _ -> "?"))
+                f
+                l)
             (Var.Set.elements s)
             (if Var.Tbl.get maybe_unknown x then "any" else "known"))
       vars;
@@ -493,8 +497,6 @@ let f ?pessimistic ?skip_param p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
-  let s = build_subst info vars in
-  let p = Subst.program (Subst.from_array s) p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
   Code.invariant p;
