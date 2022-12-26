@@ -1,10 +1,34 @@
+(* Js_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
 (*
+Closure must be in CPS if it contains any calling point in CPS
+
+Closure might be in CPS if
+  it is called from CPS calling point => two-way dep
+  or it is used in unknown context  ==> possibly mutable
+
 Closure in CPS if contains any calling point in CPS
                       => one-way dep
    or if called from CPS calling point => two-way dep
    or used in unknown context  ==> possibly mutable
 
-Calling point in CPS if function unknown
+Calling point must be in CPS if function unknown
                         ==> known_origins = false
     or function in CPS
                        ==> dep
@@ -17,6 +41,35 @@ it so that we do not have to convert it to CPS:
 open Stdlib
 open Code
 
+module Domain = struct
+  type t =
+    | CPS
+    | Undecided
+    | Direct
+
+  let equal = Poly.equal
+
+  let bot = Direct
+
+  module Syntax = struct
+    let ( || ) v v' =
+      match v, v' with
+      | CPS, _ | _, CPS -> CPS
+      | Undecided, _ | _, Undecided -> Undecided
+      | Direct, Direct -> Direct
+
+    let ( && ) v v' =
+      match v, v' with
+      | Direct, _ | _, Direct -> Direct
+      | Undecided, _ | _, Undecided -> Undecided
+      | CPS, CPS -> CPS
+
+    let cps_if b = if b then CPS else Direct
+
+    let undecided_if b = if b then Undecided else Direct
+  end
+end
+
 let add_var s x = s := Var.Set.add x !s
 
 (* x depends on y *)
@@ -28,6 +81,22 @@ let add_dep deps x y =
       (Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
       !deps
 
+let add_rel rels x y v =
+  rels :=
+    Var.Map.update
+      x
+      (fun m ->
+        Some
+          (Var.Map.update
+             y
+             (fun w ->
+               Some
+                 (match w with
+                 | None -> v
+                 | Some w -> v || w))
+             (Option.value ~default:Var.Map.empty m)))
+      !rels
+
 let rec list_iter ~f = function
   | [] -> ()
   | [ a ] -> f true a
@@ -35,15 +104,15 @@ let rec list_iter ~f = function
       f false a;
       list_iter ~f l
 
-let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
-  let block = Code.Addr.Map.find pc blocks in
-  list_iter block.Code.body ~f:(fun is_last i ->
+let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
+  let block = Addr.Map.find pc blocks in
+  list_iter block.body ~f:(fun is_last i ->
       match i with
-      | Code.Let (x, Apply { f; _ }) ->
+      | Let (x, Apply { f; _ }) ->
           let tail_call =
             is_last
             &&
-            match block.Code.branch with
+            match block.branch with
             | Return x' -> Var.equal x x'
             | _ -> false
           in
@@ -52,7 +121,8 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
           | None -> ()
           | Some fun_name ->
               add_var vars fun_name;
-              add_dep deps fun_name x);
+              add_dep deps fun_name x;
+              add_rel rels fun_name x true);
           Var.Set.iter
             (fun g ->
               add_var vars g;
@@ -62,72 +132,64 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                 | None -> ()
                 | Some fun_name -> add_dep tail_deps fun_name g);
               add_dep deps x g;
-              add_dep deps g x)
+              add_dep deps g x;
+              add_rel rels x g true;
+              add_rel rels g x false)
             (Var.Tbl.get info.Flow.info_known_origins f)
-      | Code.Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
+      | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
           match fun_name with
           | None -> ()
           | Some fun_name ->
               add_var vars fun_name;
-              add_dep deps fun_name x)
-      | Code.Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
+              add_dep deps fun_name x;
+              add_rel rels fun_name x true)
+      | Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
 module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
-
-module Domain = struct
-  type t = bool
-
-  let equal = Bool.equal
-
-  let bot = false
-end
-
 module Solver = G'.Solver (Domain)
 
-let fold_children g f x acc = g.G'.fold_children (fun y acc -> f y acc) x acc
-
-let cps_needed ~info ~in_loop ~rev_deps st x =
-  let res =
-    Var.Set.mem x in_loop
-    ||
-    let idx = Var.idx x in
-    fold_children
-      rev_deps
-      (fun y acc -> acc || Var.Map.find y st)
-      x
-      (match info.Flow.info_defs.(idx) with
-      | Flow.Expr (Apply { f; _ }) ->
-          Var.Tbl.get info.Flow.info_maybe_unknown f
-          || Var.Set.exists
-               (fun g ->
-                 match info.Flow.info_defs.(Var.idx g) with
-                 | Expr (Closure _ | Prim (Extern "%closure", _)) -> false
-                 | _ -> true)
-               (Var.Tbl.get info.Flow.info_known_origins f)
-      | Flow.Expr (Closure _) | Flow.Expr (Prim (Extern "%closure", _)) ->
-          info.Flow.info_possibly_mutable.(idx)
-      | Flow.Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> true
-      | _ -> false)
-  in
-  (*
-  if res && not (Var.Tbl.get st x)
-  then
-    Format.eprintf
-      "===> %a (%b / %b %s)@."
-      Code.Var.print
-      x
-      (Var.Tbl.get info.Flow.info_maybe_unknown x)
-      info.Flow.info_possibly_mutable.(Var.idx x)
-      (let idx = Var.idx x in
-       match info.Flow.info_defs.(idx) with
-       | Flow.Expr (Apply { f = _f; _ }) ->
-           "apply" (*Var.Tbl.get info.Flow.info_maybe_unknown f*)
-       | Flow.Expr (Closure _) -> "closure" (*info.Flow.info_possibly_mutable.(idx)*)
-       | _ -> "other");
-*)
-  res
+let cps_needed ~info ~in_loop ~rels st x =
+  let open Domain.Syntax in
+  cps_if (Var.Set.mem x in_loop)
+  ||
+  let idx = Var.idx x in
+  Var.Map.fold
+    (fun y clamp acc ->
+      acc
+      ||
+      let v = Var.Map.find y st in
+      if Var.idx x = 5839
+      then
+        Format.eprintf
+          "ZZZZZ v%d:%s (%b)@."
+          (Var.idx y)
+          (match v with
+          | Domain.CPS -> "CPS"
+          | Undecided -> "Undecided"
+          | Direct -> "Direct")
+          clamp;
+      if not clamp then v && Domain.Undecided else v)
+    (try Var.Map.find x rels with Not_found -> Var.Map.empty)
+    Domain.bot
+  ||
+  match info.Flow.info_defs.(idx) with
+  | Flow.Expr (Apply { f; _ }) ->
+      cps_if (Var.Tbl.get info.Flow.info_maybe_unknown f)
+      || Var.Set.fold
+           (fun g acc ->
+             acc
+             ||
+             match info.Flow.info_defs.(Var.idx g) with
+             | Expr (Closure _ | Prim (Extern "%closure", _)) -> Domain.bot
+             | _ -> Domain.CPS)
+           (Var.Tbl.get info.Flow.info_known_origins f)
+           Domain.bot
+  | Flow.Expr (Closure _) | Flow.Expr (Prim (Extern "%closure", _)) ->
+      undecided_if info.Flow.info_possibly_mutable.(idx)
+  | Flow.Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> Domain.CPS
+  | _ -> Domain.bot
 
 module SCC = Strongly_connected_components.Make (struct
   type t = Var.t
@@ -137,21 +199,22 @@ module SCC = Strongly_connected_components.Make (struct
 end)
 
 let annot st xi =
-  match (xi : Code.Print.xinstr) with
+  match (xi : Print.xinstr) with
   | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
 
 let f (p, info) =
   let vars = ref Var.Set.empty in
   let deps = ref Var.Map.empty in
+  let rels = ref Var.Map.empty in
   let tail_deps = ref Var.Map.empty in
-  Code.fold_closures
+  fold_closures
     p
     (fun fun_name _ (pc, _) _ ->
-      Code.traverse
+      traverse
         { fold = Code.fold_children }
         (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
+          block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks:p.blocks ~fun_name pc)
         pc
         p.blocks
         ())
@@ -179,7 +242,29 @@ let f (p, info) =
           Var.Set.fold f (try Var.Map.find x !deps with Not_found -> Var.Set.empty) r)
     }
   in
-  let rev_deps = G'.invert g in
-  let res = Solver.f g (cps_needed ~info ~in_loop ~rev_deps) in
+  let res = Solver.f g (cps_needed ~info ~in_loop ~rels:!rels) in
 
-  Var.Map.fold (fun x v s -> if v then Var.Set.add x s else s) res Var.Set.empty
+  Code.Print.program
+    (fun _ xi ->
+      match (xi : Print.xinstr) with
+      | Instr (Let (x, _)) -> (
+          match try Var.Map.find x res with Not_found -> Direct with
+          | Domain.CPS -> "*"
+          | Undecided ->
+              if Var.Set.is_empty
+                   (try Var.Map.find x !deps with Not_found -> Var.Set.empty)
+              then "0"
+              else if info.Flow.info_possibly_mutable.(Var.idx x)
+              then "^"
+              else "+"
+          | Direct -> " ")
+      | _ -> " ")
+    p;
+
+  Var.Map.fold
+    (fun x v s ->
+      match v with
+      | Domain.CPS | Domain.Undecided -> Var.Set.add x s
+      | Domain.Direct -> s)
+    res
+    Var.Set.empty
