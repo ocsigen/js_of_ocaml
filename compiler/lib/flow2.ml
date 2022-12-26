@@ -171,15 +171,34 @@ let program_deps { blocks; _ } =
     blocks;
   vars, deps, defs
 
-(*
-type approx =
-  | Top
-  | Functions of Var.Set.t
-  | Blocks of Var.Set.t
-  | Bottom
+module D = struct
+  type approx =
+    | Top
+    | Closures of Var.Set.t
+    | Blocks of Var.Set.t
+    | Other
+    | Bottom
 
-let join
-*)
+  let join x y =
+    match x, y with
+    | Top, _ | _, Top | Blocks _, Closures _ | Closures _, Blocks _ -> Top
+    | Closures s, Closures s' -> Closures (Var.Set.union s s')
+    | Blocks b, Blocks b' -> Blocks (Var.Set.union b b')
+    | Bottom, _ -> y
+    | _, Bottom -> x
+    | Other, _ -> y
+    | _, Other -> x
+
+  let join_set f s = Var.Set.fold (fun x a -> join (f x) a) s Bottom
+
+  let inject x e =
+    match e with
+    | Constant _ -> Other
+    | Prim _ -> Top
+    | Closure _ -> Closures (Var.Set.singleton x)
+    | Block _ -> Blocks (Var.Set.singleton x)
+    | _ -> assert false
+end
 
 let var_set_lift f s = Var.Set.fold (fun y s -> Var.Set.union (f y) s) s Var.Set.empty
 
@@ -187,56 +206,69 @@ let h = Hashtbl.create 16
 
 let propagate1 deps rets defs st x =
   match defs.(Var.idx x) with
-  | Phi s -> var_set_lift (fun y -> Var.Tbl.get st y) s
+  | Phi s -> D.join_set (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
-      | Constant _ | Prim _ | Closure _ | Block _ -> Var.Set.singleton x
-      | Field (y, n) ->
-          var_set_lift
-            (fun z ->
-              match defs.(Var.idx z) with
-              | Expr (Block (_, a, _)) when n < Array.length a ->
-                  let t = a.(n) in
-                  add_dep deps x t;
-                  Var.Tbl.get st t
-              | Phi _ | Expr _ -> Var.Set.empty)
-            (Var.Tbl.get st y)
-      | Apply { f; args; _ } ->
-          var_set_lift
-            (fun g ->
-              match defs.(Var.idx g) with
-              | Expr (Closure (params, _)) when List.length args = List.length params ->
-                  (*
+      | Constant _ | Prim _ | Closure _ | Block _ -> D.inject x e
+      | Field (y, n) -> (
+          match Var.Tbl.get st y with
+          | Blocks s ->
+              D.join_set
+                (fun z ->
+                  match defs.(Var.idx z) with
+                  | Expr (Block (_, a, _)) when n < Array.length a ->
+                      let t = a.(n) in
+                      add_dep deps x t;
+                      Var.Tbl.get st t
+                  | Phi _ | Expr _ -> Bottom)
+                s
+          | Bottom -> Bottom
+          | _ -> Top)
+      | Apply { f; args; _ } -> (
+          match Var.Tbl.get st f with
+          | Closures s ->
+              D.join_set
+                (fun g ->
+                  match defs.(Var.idx g) with
+                  | Expr (Closure (params, _)) when List.length args = List.length params
+                    ->
+                      (*
                   Format.eprintf "ZZZ %d => %d@." (Var.idx x) (Var.idx g);*)
-                  (* ZZZ Only if g has not yet been associated to x *)
-                  if not (Hashtbl.mem h (x, g))
-                  then (
-                    Hashtbl.add h (x, g) ();
-                    List.iter2
-                      ~f:(fun x y ->
-                        add_dep deps x y;
-                        let idx = Var.idx x in
-                        match defs.(idx) with
-                        | Expr _ -> assert false
-                        | Phi s ->
-                            ();
-                            (* ZZZ need to recompute x *)
-                            defs.(idx) <- Phi (Var.Set.add y s))
-                      params
-                      args;
-                    Var.Set.iter (fun y -> add_dep deps x y) (Var.Map.find g rets));
-                  var_set_lift (fun y -> Var.Tbl.get st y) (Var.Map.find g rets)
-              | Phi _ | Expr _ -> Var.Set.empty)
-            (Var.Tbl.get st f))
+                      (* ZZZ Only if g has not yet been associated to x *)
+                      if not (Hashtbl.mem h (x, g))
+                      then (
+                        Hashtbl.add h (x, g) ();
+                        List.iter2
+                          ~f:(fun x y ->
+                            add_dep deps x y;
+                            let idx = Var.idx x in
+                            match defs.(idx) with
+                            | Expr _ -> assert false
+                            | Phi s ->
+                                ();
+                                (* ZZZ need to recompute x *)
+                                defs.(idx) <- Phi (Var.Set.add y s))
+                          params
+                          args;
+                        Var.Set.iter (fun y -> add_dep deps x y) (Var.Map.find g rets));
+                      D.join_set (fun y -> Var.Tbl.get st y) (Var.Map.find g rets)
+                  | Phi _ | Expr _ -> D.Bottom)
+                s
+          | _ -> D.Top))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
 module Domain1 = struct
-  type t = Var.Set.t
+  type t = D.approx
 
-  let equal = Var.Set.equal
+  let equal x y =
+    match x, y with
+    | D.Top, D.Top | Bottom, Bottom | Other, Other -> true
+    | Closures s, Closures s' -> Var.Set.equal s s'
+    | Blocks s, Blocks s' -> Var.Set.equal s s'
+    | _ -> false
 
-  let bot = Var.Set.empty
+  let bot = D.Bottom
 end
 
 module Solver1 = G.Solver (Domain1)
@@ -439,9 +471,10 @@ let the_native_string_of info x =
 
 (****)
 
-let f ?pessimistic p =
+let f ?pessimistic:_ p =
   Code.invariant p;
-  let t = Timer.make () in
+  (*  let t = Timer.make () in*)
+  Format.eprintf "vvvvv";
   let t1 = Timer.make () in
   let vars, deps, defs = program_deps p in
   let rets = return_values p in
@@ -449,46 +482,35 @@ let f ?pessimistic p =
   let t2 = Timer.make () in
   let known_origins = solver1 vars deps rets defs in
   if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
+  (*
   let t3 = Timer.make () in
   let possibly_mutable = program_escape ?pessimistic defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
   let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
+*)
   if debug ()
   then
     Var.ISet.iter
       (fun x ->
         let s = Var.Tbl.get known_origins x in
-        if not (Var.Set.is_empty s) (*&& Var.Set.choose s <> x*)
+        if not (Poly.( = ) s Bottom) (*&& Var.Set.choose s <> x*)
         then
           Format.eprintf
-            "%a: {%a} / %s@."
+            "%a: %a@."
             Var.print
             x
-            (fun f l ->
-              let rec list pr f l =
-                match l with
-                | [] -> ()
-                | [ x ] -> pr f x
-                | x :: r -> Format.fprintf f "%a, %a" pr x (list pr) r
-              in
-              list
-                (fun f x ->
-                  Var.print f x;
-                  Format.fprintf
-                    f
-                    "%s"
-                    (match defs.(Var.idx x) with
-                    | Expr (Closure _) -> "C"
-                    | Expr (Block _) -> "B"
-                    | Expr (Constant (Int _)) -> "I"
-                    | _ -> "?"))
-                f
-                l)
-            (Var.Set.elements s)
-            (if Var.Tbl.get maybe_unknown x then "any" else "known"))
+            (fun f a ->
+              match a with
+              | D.Bottom -> Format.fprintf f "bot"
+              | Top -> Format.fprintf f "top"
+              | Closures s -> Format.fprintf f "F{%a}" Print.var_list (Var.Set.elements s)
+              | Blocks s -> Format.fprintf f "B{%a}" Print.var_list (Var.Set.elements s)
+              | Other -> Format.fprintf f "other")
+            s)
       vars;
+  (*
   let t5 = Timer.make () in
   let info =
     { info_defs = defs
@@ -499,5 +521,6 @@ let f ?pessimistic p =
   in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  Code.invariant p;
   p, info
+*)
+  ()
