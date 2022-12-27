@@ -233,7 +233,13 @@ struct
         let x = pop w in
         let a = NTbl.get v x in
         incr m;
-        let b = f (fun y -> push y w) v x in
+        let b =
+          f
+            (fun ~deps y ->
+              if deps then g.iter_children (fun z -> push z w) y else push y w)
+            v
+            x
+        in
         NTbl.set v x b;
         if not (D.equal a b)
         then (
