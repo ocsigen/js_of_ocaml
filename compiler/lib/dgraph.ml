@@ -83,7 +83,7 @@ struct
         let x = pop w in
         let a = NMap.find x v in
         incr m;
-        let b = f v x in
+        let b = f push v x in
         let v = NMap.add x b v in
         if not (D.equal a b)
         then (
@@ -110,7 +110,7 @@ struct
       assert (NSet.equal g.domain visited);
       stack
 
-    let f g f =
+    let f' g f =
       n := 0;
       m := 0;
       (*
@@ -140,6 +140,8 @@ let t3 = Timer.get t3 in
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
 *)
       res
+
+    let f g f = f' g (fun _ v x -> f v x)
   end
 end
 
@@ -231,7 +233,7 @@ struct
         let x = pop w in
         let a = NTbl.get v x in
         incr m;
-        let b = f v x in
+        let b = f (fun y -> push y w) v x in
         NTbl.set v x b;
         if not (D.equal a b)
         then (
@@ -253,7 +255,7 @@ struct
       NSet.iter (fun x -> traverse g to_visit stack x) g.domain;
       { stack; set = to_visit }
 
-    let f size g f =
+    let f' size g f =
       n := 0;
       m := 0;
       (*
@@ -276,5 +278,7 @@ let t3 = Timer.get t3 in
 *)
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
       res
+
+    let f size g f = f' size g (fun _ v x -> f v x)
   end
 end

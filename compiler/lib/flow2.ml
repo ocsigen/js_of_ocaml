@@ -193,18 +193,17 @@ module D = struct
 
   let inject x e =
     match e with
-    | Constant _ -> Other
-    | Prim _ -> Top
+    (*    | Constant (Int _) -> Other*)
+    | Constant _ | Prim _ -> Top
     | Closure _ -> Closures (Var.Set.singleton x)
+    (*    | Block (n, _, _) when n <> 0 -> Top*)
     | Block _ -> Blocks (Var.Set.singleton x)
     | _ -> assert false
 end
 
-let var_set_lift f s = Var.Set.fold (fun y s -> Var.Set.union (f y) s) s Var.Set.empty
-
 let h = Hashtbl.create 16
 
-let propagate1 deps rets defs st x =
+let propagate1 deps rets defs push st x =
   match defs.(Var.idx x) with
   | Phi s -> D.join_set (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
@@ -222,8 +221,8 @@ let propagate1 deps rets defs st x =
                       Var.Tbl.get st t
                   | Phi _ | Expr _ -> Bottom)
                 s
-          | Bottom -> Bottom
-          | _ -> Top)
+          | Top -> Top
+          | _ -> Bottom)
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st f with
           | Closures s ->
@@ -245,7 +244,7 @@ let propagate1 deps rets defs st x =
                             match defs.(idx) with
                             | Expr _ -> assert false
                             | Phi s ->
-                                ();
+                                push x;
                                 (* ZZZ need to recompute x *)
                                 defs.(idx) <- Phi (Var.Set.add y s))
                           params
@@ -254,7 +253,8 @@ let propagate1 deps rets defs st x =
                       D.join_set (fun y -> Var.Tbl.get st y) (Var.Map.find g rets)
                   | Phi _ | Expr _ -> D.Bottom)
                 s
-          | _ -> D.Top))
+          | Top -> D.Top
+          | _ -> Bottom))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -277,7 +277,7 @@ let solver1 vars deps rets defs =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver1.f () g (propagate1 deps rets defs)
+  Solver1.f' () g (propagate1 deps rets defs)
 
 (****)
 

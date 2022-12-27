@@ -94,5 +94,7 @@ end)
 
   module Solver (D : DOMAIN) : sig
     val f : NTbl.size -> t -> (D.t NTbl.t -> N.t -> D.t) -> D.t NTbl.t
+
+    val f' : NTbl.size -> t -> ((N.t -> unit) -> D.t NTbl.t -> N.t -> D.t) -> D.t NTbl.t
   end
 end
