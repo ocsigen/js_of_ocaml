@@ -237,11 +237,14 @@ module D = struct
 
   let inject x e =
     match e with
-    (*    | Constant (Int _) -> Other*)
+    (*
+    | Constant (Int _) -> Other
     | Constant _ | Prim _ -> Top
+*)
+    | Constant _ | Prim _ -> Bottom (*Closures (Var.Set.singleton x)*)
     | Closure _ -> Closures (Var.Set.singleton x)
     (*    | Block (n, _, _) when n <> 0 -> Top*)
-    | Block _ -> Blocks (Var.Set.singleton x)
+    | Block _ -> Closures (Var.Set.singleton x)
     | _ -> assert false
 end
 
@@ -261,7 +264,7 @@ let propagate1 deps rets defs update st x =
       | Constant _ | Closure _ | Block _ -> D.inject x e
       | Field (y, n) -> (
           match Var.Tbl.get st y with
-          | Blocks s ->
+          | Closures s ->
               D.join_set
                 ~defs
                 ~update
