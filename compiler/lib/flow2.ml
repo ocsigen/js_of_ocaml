@@ -18,12 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-ZZZ Raise ==> escape
-ZZZ Return escape if function escape
-Set_field, ...
-*)
-
 open! Stdlib
 
 let debug = Debug.find "flow2"
@@ -63,10 +57,16 @@ let add_var = Var.ISet.add
 type def =
   | Phi of Var.Set.t
   | Unknown
-  | Expr of
-      { e : Code.expr
-      ; mutable escape : bool
-      }
+  | Expr of Code.expr
+
+type state =
+  { vars : Var.ISet.t
+  ; deps : Var.Set.t array
+  ; defs : def array
+  ; may_escape : bool array
+  ; possibly_mutable : bool array
+  ; return_values : Var.Set.t Var.Map.t
+  }
 
 let undefined = Phi Var.Set.empty
 
@@ -75,44 +75,44 @@ let is_undefined d =
   | Phi s -> Var.Set.is_empty s
   | _ -> false
 
-let add_expr_def defs x e =
+let add_expr_def st x e =
   let idx = Var.idx x in
-  assert (is_undefined defs.(idx));
-  defs.(idx) <- Expr { e; escape = false }
+  assert (is_undefined st.defs.(idx));
+  st.defs.(idx) <- Expr e
 
-let add_assign_def vars defs x y =
-  add_var vars x;
+let add_assign_def st x y =
+  add_var st.vars x;
   let idx = Var.idx x in
-  match defs.(idx) with
+  match st.defs.(idx) with
   | Expr _ -> assert false
-  | Phi s -> defs.(idx) <- Phi (Var.Set.add y s)
+  | Phi s -> st.defs.(idx) <- Phi (Var.Set.add y s)
   | Unknown -> ()
 
-let add_param_def vars defs x =
-  add_var vars x;
+let add_param_def st x =
+  add_var st.vars x;
   let idx = Var.idx x in
-  assert (is_undefined defs.(idx))
+  assert (is_undefined st.defs.(idx))
 
 (* x depends on y *)
-let add_dep deps x y =
+let add_dep st x y =
   let idx = Var.idx y in
-  deps.(idx) <- Var.Set.add x deps.(idx)
+  st.deps.(idx) <- Var.Set.add x st.deps.(idx)
 
-let rec arg_deps vars deps defs params args =
+let rec arg_deps st params args =
   match params, args with
   | x :: params, y :: args ->
-      add_dep deps x y;
-      add_assign_def vars defs x y;
-      arg_deps vars deps defs params args
+      add_dep st x y;
+      add_assign_def st x y;
+      arg_deps st params args
   | _ -> ()
 
-let cont_deps blocks vars deps defs (pc, args) =
+let cont_deps blocks st (pc, args) =
   let block = Addr.Map.find pc blocks in
-  arg_deps vars deps defs block.params args
+  arg_deps st block.params args
 
 let h = Hashtbl.create 16
 
-let expr_deps blocks vars deps defs rets x e =
+let expr_deps blocks st x e =
   match e with
   | Constant _ -> ()
   | Prim (_, l) ->
@@ -120,216 +120,256 @@ let expr_deps blocks vars deps defs rets x e =
         ~f:(fun a ->
           match a with
           | Pc _ -> ()
-          | Pv y -> add_dep deps x y)
+          | Pv y -> add_dep st x y)
         l
   | Apply { f; args; _ } -> (
-      add_dep deps x f;
-      match defs.(Var.idx f) with
-      | Expr { e = Closure (params, _); escape }
-        when List.length args = List.length params ->
+      add_dep st x f;
+      match st.defs.(Var.idx f) with
+      | Expr (Closure (params, _)) when List.length args = List.length params ->
           Hashtbl.add h (x, f) ();
-          List.iter2
-            ~f:(fun x y ->
-              add_dep deps x y;
-              let idx = Var.idx x in
-              match defs.(idx) with
-              | Expr _ -> assert false
-              | Phi s -> defs.(idx) <- (if escape then Unknown else Phi (Var.Set.add y s))
-              | Unknown -> ())
-            params
-            args;
-          Var.Set.iter (fun y -> add_dep deps x y) (Var.Map.find f rets)
+          if st.may_escape.(Var.idx f)
+          then
+            List.iter
+              ~f:(fun x ->
+                let idx = Var.idx x in
+                st.defs.(idx) <- Unknown)
+              params
+          else
+            List.iter2
+              ~f:(fun x y ->
+                add_dep st x y;
+                let idx = Var.idx x in
+                match st.defs.(idx) with
+                | Expr _ -> assert false
+                | Phi s -> st.defs.(idx) <- Phi (Var.Set.add y s)
+                | Unknown -> ())
+              params
+              args;
+          Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
       | _ -> ())
   | Closure (l, cont) ->
-      List.iter l ~f:(fun x -> add_param_def vars defs x);
-      cont_deps blocks vars deps defs cont
-  | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
-  | Field (y, _) -> add_dep deps x y
+      List.iter l ~f:(fun x -> add_param_def st x);
+      cont_deps blocks st cont
+  | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep st x y)
+  | Field (y, _) -> add_dep st x y
 
-let program_deps rets { blocks; _ } =
-  let nv = Var.count () in
-  let vars = Var.ISet.empty () in
-  let deps = Array.make nv Var.Set.empty in
-  let defs = Array.make nv undefined in
+let escape st x =
+  let idx = Var.idx x in
+  st.may_escape.(idx) <- true;
+  st.possibly_mutable.(idx) <- true
+
+let program_deps st { blocks; _ } =
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) ->
-              add_var vars x;
-              add_expr_def defs x e;
-              expr_deps blocks vars deps defs rets x e
+              add_var st.vars x;
+              add_expr_def st x e;
+              expr_deps blocks st x e
           | Assign (x, y) ->
-              add_dep deps x y;
-              add_assign_def vars defs x y
-          | Set_field _ | Array_set _ | Offset_ref _ -> ());
+              add_dep st x y;
+              add_assign_def st x y
+          | Set_field (x, _, y) | Array_set (x, _, y) ->
+              st.possibly_mutable.(Var.idx x) <- true;
+              escape st y
+          | Offset_ref _ -> ());
       match block.branch with
-      | Return _ | Raise _ | Stop -> ()
-      | Branch cont | Poptrap cont -> cont_deps blocks vars deps defs cont
+      | Return _ | Stop -> ()
+      | Raise (x, _) -> escape st x
+      | Branch cont | Poptrap cont -> cont_deps blocks st cont
       | Cond (_, cont1, cont2) ->
-          cont_deps blocks vars deps defs cont1;
-          cont_deps blocks vars deps defs cont2
+          cont_deps blocks st cont1;
+          cont_deps blocks st cont2
       | Switch (_, a1, a2) ->
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
+          Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
+          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont)
       | Pushtrap (cont, x, cont_h, _) ->
-          add_var vars x;
+          add_var st.vars x;
           let idx = Var.idx x in
-          defs.(idx) <- Unknown;
-          cont_deps blocks vars deps defs cont_h;
-          cont_deps blocks vars deps defs cont)
-    blocks;
-  vars, deps, defs
+          st.defs.(idx) <- Unknown;
+          cont_deps blocks st cont_h;
+          cont_deps blocks st cont)
+    blocks
 
 module D = struct
   type approx =
     | Top
-    | Closures of Var.Set.t
-    | Blocks of Var.Set.t
-    | Other
-    | Bottom
+    | Values of Var.Set.t
 
-  let var_escape ~update ~defs x =
-    match defs.(Var.idx x) with
-    | Expr ({ e = Block _; escape } as d) ->
-        if not escape
-        then (
-          d.escape <- true;
-          (*ZZZ All fields in e escape *)
-          update ~deps:true x)
-    | Expr ({ e = Closure (params, _); escape } as d) ->
-        if not escape
-        then (
-          d.escape <- true;
+  let rec var_escape ~update ~st ~st' x =
+    let idx = Var.idx x in
+    if not st.may_escape.(idx)
+    then (
+      st.may_escape.(idx) <- true;
+      st.possibly_mutable.(idx) <- true;
+      match st.defs.(idx) with
+      | Expr (Block (_, a, _)) ->
+          Array.iter ~f:(fun y -> escape ~update ~st ~st' (Var.Tbl.get st' y)) a;
+          update ~deps:true x
+      | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
-              defs.(Var.idx y) <- Unknown;
+              st.defs.(Var.idx y) <- Unknown;
               update ~deps:false y)
-            params)
-    | _ -> ()
+            params;
+          Var.Set.iter
+            (fun y ->
+              let idx = Var.idx y in
+              st.may_escape.(idx) <- true;
+              st.possibly_mutable.(idx) <- true;
+              escape ~update ~st ~st' (Var.Tbl.get st' y))
+            (Var.Map.find x st.return_values)
+      | _ -> ())
 
-  let escape ~update ~defs a =
+  and escape ~update ~st ~st' a =
     match a with
-    | Top | Other | Bottom -> ()
-    | Closures s | Blocks s -> Var.Set.iter (fun x -> var_escape ~update ~defs x) s
+    | Top -> ()
+    | Values s -> Var.Set.iter (fun x -> var_escape ~update ~st ~st' x) s
 
-  let join ~update ~defs x y =
+  let join ~update ~st ~st' x y =
     match x, y with
     | Top, _ ->
-        escape ~update ~defs y;
+        escape ~update ~st ~st' y;
         Top
     | _, Top ->
-        escape ~update ~defs x;
+        escape ~update ~st ~st' x;
         Top
-    | Blocks _, Closures _ | Closures _, Blocks _ ->
-        escape ~update ~defs x;
-        escape ~update ~defs y;
-        Top
-    | Closures s, Closures s' -> Closures (Var.Set.union s s')
-    | Blocks b, Blocks b' -> Blocks (Var.Set.union b b')
-    | Bottom, _ -> y
-    | _, Bottom -> x
-    | Other, _ -> y
-    | _, Other -> x
+    | Values s, Values s' -> Values (Var.Set.union s s')
 
-  let join_set ~update ~defs f s =
-    Var.Set.fold (fun x a -> join ~update ~defs (f x) a) s Bottom
+  let bottom = Values Var.Set.empty
+
+  let join_set ~update ~st ~st' f s =
+    Var.Set.fold (fun x a -> join ~update ~st ~st' (f x) a) s bottom
 
   let inject x e =
     match e with
-    (*
-    | Constant (Int _) -> Other
-    | Constant _ | Prim _ -> Top
-*)
-    | Constant _ | Prim _ -> Bottom (*Closures (Var.Set.singleton x)*)
-    | Closure _ -> Closures (Var.Set.singleton x)
-    (*    | Block (n, _, _) when n <> 0 -> Top*)
-    | Block _ -> Closures (Var.Set.singleton x)
-    | _ -> assert false
+    | Constant _ -> bottom
+    | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> bottom
+    | Prim (Extern _, _) -> Top
+    | Closure _ | Block _ | Prim (Array_get, _) -> Values (Var.Set.singleton x)
+    | Field _ | Apply _ -> assert false
 end
 
-let propagate1 deps rets defs update st x =
-  match defs.(Var.idx x) with
-  | Phi s -> D.join_set ~defs ~update (fun y -> Var.Tbl.get st y) s
-  | Expr { e; _ } -> (
+let mark_mutable st a =
+  match a with
+  | D.Top -> ()
+  | Values s -> Var.Set.iter (fun y -> st.possibly_mutable.(Var.idx y) <- true) s
+
+let propagate1 st update st' x =
+  match st.defs.(Var.idx x) with
+  | Phi s ->
+      if st.may_escape.(Var.idx x) then D.escape ~update ~st ~st' (Var.Tbl.get st' x);
+      if st.possibly_mutable.(Var.idx x) then mark_mutable st (Var.Tbl.get st' x);
+      D.join_set ~update ~st ~st' (fun y -> Var.Tbl.get st' y) s
+  | Expr e -> (
       match e with
+      | Constant _ -> D.bottom
+      | Closure _ -> Values (Var.Set.singleton x)
+      | Block (_, a, _) ->
+          if st.possibly_mutable.(Var.idx x)
+          then Array.iter ~f:(fun y -> D.escape ~update ~st ~st' (Var.Tbl.get st' y)) a;
+          Values (Var.Set.singleton x)
+      | Field (y, n) -> (
+          match Var.Tbl.get st' y with
+          | Values s ->
+              D.join_set
+                ~update
+                ~st
+                ~st'
+                (fun z ->
+                  match st.defs.(Var.idx z) with
+                  | Expr (Block (_, a, _)) when n < Array.length a ->
+                      if st.possibly_mutable.(Var.idx z)
+                      then Top
+                      else
+                        let t = a.(n) in
+                        add_dep st x t;
+                        Var.Tbl.get st' t
+                  | Phi _ | Expr _ -> D.bottom
+                  | Unknown -> Top)
+                s
+          | Top -> Top)
+      | Prim (Array_get, [ Pv y; _; _ ]) -> (
+          match Var.Tbl.get st' y with
+          | Values s ->
+              D.join_set
+                ~update
+                ~st
+                ~st'
+                (fun z ->
+                  match st.defs.(Var.idx z) with
+                  | Expr (Block (_, a, _)) ->
+                      if st.possibly_mutable.(Var.idx z)
+                      then Top
+                      else (
+                        Array.iter ~f:(fun t -> add_dep st x t) a;
+                        Array.fold_left
+                          ~f:(fun acc t ->
+                            D.join ~update ~st ~st' (Var.Tbl.get st' t) acc)
+                          ~init:D.bottom
+                          a)
+                  | Phi _ | Expr _ -> D.bottom
+                  | Unknown -> Top)
+                s
+          | Top -> Top)
       | Prim (_, l) ->
+          (*ZZZ Refine *)
           List.iter
             ~f:(fun a ->
               match a with
               | Pc _ -> ()
-              | Pv y -> D.var_escape ~defs ~update y)
+              | Pv y -> D.escape ~update ~st ~st' (Var.Tbl.get st' y))
             l;
           D.inject x e
-      | Constant _ | Closure _ | Block _ -> D.inject x e
-      | Field (y, n) -> (
-          match Var.Tbl.get st y with
-          | Closures s ->
-              D.join_set
-                ~defs
-                ~update
-                (fun z ->
-                  match defs.(Var.idx z) with
-                  | Expr { e = Block (_, a, _); escape } when n < Array.length a ->
-                      if escape
-                      then Top
-                      else
-                        let t = a.(n) in
-                        add_dep deps x t;
-                        Var.Tbl.get st t
-                  | Phi _ | Expr _ -> Bottom
-                  | Unknown -> Top)
-                s
-          | Top -> Top
-          | _ -> Bottom)
       | Apply { f; args; _ } -> (
-          match Var.Tbl.get st f with
-          | Closures s ->
+          match Var.Tbl.get st' f with
+          | Values s ->
               D.join_set
-                ~defs
                 ~update
+                ~st
+                ~st'
                 (fun g ->
-                  match defs.(Var.idx g) with
-                  | Expr { e = Closure (params, _); escape }
-                    when List.length args = List.length params ->
-                      (*
-                  Format.eprintf "ZZZ %d => %d@." (Var.idx x) (Var.idx g);*)
-                      (* ZZZ Only if g has not yet been associated to x *)
+                  match st.defs.(Var.idx g) with
+                  | Expr (Closure (params, _)) when List.length args = List.length params
+                    ->
                       if not (Hashtbl.mem h (x, g))
                       then (
                         Hashtbl.add h (x, g) ();
-                        if escape
+                        if st.may_escape.(Var.idx g)
                         then
                           List.iter
                             ~f:(fun x ->
                               let idx = Var.idx x in
-                              defs.(idx) <- Unknown;
+                              st.defs.(idx) <- Unknown;
                               update ~deps:false x)
                             params
                         else
                           List.iter2
                             ~f:(fun x y ->
-                              add_dep deps x y;
+                              add_dep st x y;
                               let idx = Var.idx x in
-                              match defs.(idx) with
+                              match st.defs.(idx) with
                               | Expr _ -> assert false
                               | Phi s ->
                                   update ~deps:false x;
-                                  defs.(idx) <- Phi (Var.Set.add y s)
+                                  st.defs.(idx) <- Phi (Var.Set.add y s)
                               | Unknown -> ())
                             params
                             args;
-                        Var.Set.iter (fun y -> add_dep deps x y) (Var.Map.find g rets));
+                        Var.Set.iter
+                          (fun y -> add_dep st x y)
+                          (Var.Map.find g st.return_values));
                       D.join_set
-                        ~defs
                         ~update
-                        (fun y -> Var.Tbl.get st y)
-                        (Var.Map.find g rets)
-                  | Phi _ | Expr _ -> D.Bottom
+                        ~st
+                        ~st'
+                        (fun y -> Var.Tbl.get st' y)
+                        (Var.Map.find g st.return_values)
+                  | Phi _ | Expr _ -> D.bottom
                   | Unknown -> Top)
                 s
-          | Top -> D.Top
-          | _ -> Bottom))
+          | Top -> D.Top))
   | Unknown -> Top
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -339,21 +379,22 @@ module Domain1 = struct
 
   let equal x y =
     match x, y with
-    | D.Top, D.Top | Bottom, Bottom | Other, Other -> true
-    | Closures s, Closures s' -> Var.Set.equal s s'
-    | Blocks s, Blocks s' -> Var.Set.equal s s'
-    | _ -> false
+    | D.Top, D.Top -> true
+    | Values s, Values s' -> Var.Set.equal s s'
+    | Top, Values _ | Values _, Top -> false
 
-  let bot = D.Bottom
+  let bot = D.bottom
 end
 
 module Solver1 = G.Solver (Domain1)
 
-let solver1 vars deps rets defs =
+let solver1 st =
   let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
+    { G.domain = st.vars
+    ; G.iter_children = (fun f x -> Var.Set.iter f st.deps.(Var.idx x))
+    }
   in
-  Solver1.f' () g (propagate1 deps rets defs)
+  Solver1.f' () g (propagate1 st)
 
 (****)
 
@@ -363,25 +404,24 @@ let f ?pessimistic:_ p =
   Format.eprintf "vvvvv";
   let t1 = Timer.make () in
   let rets = return_values p in
-  let vars, deps, defs = program_deps rets p in
+  let nv = Var.count () in
+  let vars = Var.ISet.empty () in
+  let deps = Array.make nv Var.Set.empty in
+  let defs = Array.make nv undefined in
+  let may_escape = Array.make nv false in
+  let possibly_mutable = Array.make nv false in
+  let st = { vars; deps; defs; return_values = rets; may_escape; possibly_mutable } in
+  program_deps st p;
   if times () then Format.eprintf "    flow analysis 1: %a@." Timer.print t1;
   let t2 = Timer.make () in
-  let known_origins = solver1 vars deps rets defs in
+  let known_origins = solver1 st in
   if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
-  (*
-  let t3 = Timer.make () in
-  let possibly_mutable = program_escape ?pessimistic defs known_origins p in
-  if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
-  let t4 = Timer.make () in
-  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
-  if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
-*)
   if debug ()
   then
     Var.ISet.iter
       (fun x ->
         let s = Var.Tbl.get known_origins x in
-        if not (Poly.( = ) s Bottom) (*&& Var.Set.choose s <> x*)
+        if not (Poly.( = ) s D.bottom) (*&& Var.Set.choose s <> x*)
         then
           Format.eprintf
             "%a: %a@."
@@ -389,11 +429,8 @@ let f ?pessimistic:_ p =
             x
             (fun f a ->
               match a with
-              | D.Bottom -> Format.fprintf f "bot"
-              | Top -> Format.fprintf f "top"
-              | Closures s -> Format.fprintf f "C{%a}" Print.var_list (Var.Set.elements s)
-              | Blocks s -> Format.fprintf f "B{%a}" Print.var_list (Var.Set.elements s)
-              | Other -> Format.fprintf f "other")
+              | D.Top -> Format.fprintf f "top"
+              | Values s -> Format.fprintf f "{%a}" Print.var_list (Var.Set.elements s))
             s)
       vars;
   ()
