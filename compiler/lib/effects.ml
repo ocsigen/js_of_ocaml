@@ -787,9 +787,9 @@ let f (p : Code.program) =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
   let p = remove_empty_blocks ~live_vars p in
-  let _ = Flow2.f ~pessimistic:true p in
-  let p, info = Flow.f ~pessimistic:true p in
-  let cps_needed = Fun_style_analysis.f (p, info) in
+  let info = Flow2.f p in
+  (*  let p, info = Flow.f ~pessimistic:true p in*)
+  let cps_needed = Fun_style_analysis.f p info in
   let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;

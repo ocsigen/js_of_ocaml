@@ -108,7 +108,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
   list_iter block.body ~f:(fun is_last i ->
       match i with
-      | Let (x, Apply { f; _ }) ->
+      | Let (x, Apply { f; _ }) -> (
           let tail_call =
             is_last
             &&
@@ -123,19 +123,22 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
               add_var vars fun_name;
               add_dep deps fun_name x;
               add_rel rels fun_name x true);
-          Var.Set.iter
-            (fun g ->
-              add_var vars g;
-              (if tail_call
-              then
-                match fun_name with
-                | None -> ()
-                | Some fun_name -> add_dep tail_deps fun_name g);
-              add_dep deps x g;
-              add_dep deps g x;
-              add_rel rels x g true;
-              add_rel rels g x false)
-            (Var.Tbl.get info.Flow.info_known_origins f)
+          match Var.Tbl.get info.Flow2.info_approximation f with
+          | Top -> ()
+          | Values s ->
+              Var.Set.iter
+                (fun g ->
+                  add_var vars g;
+                  (if tail_call
+                  then
+                    match fun_name with
+                    | None -> ()
+                    | Some fun_name -> add_dep tail_deps fun_name g);
+                  add_dep deps x g;
+                  add_dep deps g x;
+                  add_rel rels x g true;
+                  add_rel rels g x false)
+                s)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
           match fun_name with
@@ -174,21 +177,23 @@ let cps_needed ~info ~in_loop ~rels st x =
     (try Var.Map.find x rels with Not_found -> Var.Map.empty)
     Domain.bot
   ||
-  match info.Flow.info_defs.(idx) with
-  | Flow.Expr (Apply { f; _ }) ->
-      cps_if (Var.Tbl.get info.Flow.info_maybe_unknown f)
-      || Var.Set.fold
-           (fun g acc ->
-             acc
-             ||
-             match info.Flow.info_defs.(Var.idx g) with
-             | Expr (Closure _ | Prim (Extern "%closure", _)) -> Domain.bot
-             | _ -> Domain.CPS)
-           (Var.Tbl.get info.Flow.info_known_origins f)
-           Domain.bot
-  | Flow.Expr (Closure _) | Flow.Expr (Prim (Extern "%closure", _)) ->
-      undecided_if info.Flow.info_possibly_mutable.(idx)
-  | Flow.Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> Domain.CPS
+  match info.Flow2.info_defs.(idx) with
+  | Expr (Apply { f; _ }) -> (
+      match Var.Tbl.get info.Flow2.info_approximation f with
+      | Top -> CPS
+      | Values s ->
+          Var.Set.fold
+            (fun g acc ->
+              acc
+              ||
+              match info.Flow2.info_defs.(Var.idx g) with
+              | Expr (Closure _ | Prim (Extern "%closure", _)) -> Domain.bot
+              | _ -> Domain.CPS)
+            s
+            Domain.bot)
+  | Expr (Closure _) | Expr (Prim (Extern "%closure", _)) ->
+      undecided_if info.Flow2.info_may_escape.(idx)
+  | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> Domain.CPS
   | _ -> Domain.bot
 
 module SCC = Strongly_connected_components.Make (struct
@@ -203,7 +208,7 @@ let annot st xi =
   | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
 
-let f (p, info) =
+let f p info =
   let vars = ref Var.Set.empty in
   let deps = ref Var.Map.empty in
   let rels = ref Var.Map.empty in

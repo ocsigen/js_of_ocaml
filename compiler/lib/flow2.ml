@@ -98,17 +98,17 @@ let add_dep st x y =
   let idx = Var.idx y in
   st.deps.(idx) <- Var.Set.add x st.deps.(idx)
 
-let rec arg_deps st params args =
+let rec arg_deps st pc params args =
   match params, args with
   | x :: params, y :: args ->
       add_dep st x y;
       add_assign_def st x y;
-      arg_deps st params args
+      arg_deps st pc params args
   | _ -> ()
 
 let cont_deps blocks st (pc, args) =
   let block = Addr.Map.find pc blocks in
-  arg_deps st block.params args
+  arg_deps st pc block.params args
 
 let h = Hashtbl.create 16
 
@@ -286,11 +286,13 @@ let propagate1 st update st' x =
                         let t = a.(n) in
                         add_dep st x t;
                         Var.Tbl.get st' t
-                  | Phi _ | Expr _ -> D.bottom
-                  | Unknown -> Top)
+                  | Phi _ -> D.bottom
+                  | Unknown | Expr _ -> Top)
                 s
           | Top -> Top)
-      | Prim (Array_get, [ Pv y; _; _ ]) -> (
+      | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get st' y
+      | Prim (Array_get, [ Pv y; _; _ ])
+      | Prim (Extern "caml_array_unsafe_get", [ Pv y; _ ]) -> (
           match Var.Tbl.get st' y with
           | Values s ->
               D.join_set
@@ -313,6 +315,7 @@ let propagate1 st update st' x =
                   | Unknown -> Top)
                 s
           | Top -> Top)
+      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> D.bottom
       | Prim (_, l) ->
           (*ZZZ Refine *)
           List.iter
@@ -366,7 +369,10 @@ let propagate1 st update st' x =
                         ~st'
                         (fun y -> Var.Tbl.get st' y)
                         (Var.Map.find g st.return_values)
-                  | Phi _ | Expr _ -> D.bottom
+                  | Phi _ -> D.bottom
+                  | Expr _ ->
+                      D.escape ~update ~st ~st' (Var.Tbl.get st' g);
+                      Top
                   | Unknown -> Top)
                 s
           | Top -> D.Top))
@@ -398,10 +404,17 @@ let solver1 st =
 
 (****)
 
-let f ?pessimistic:_ p =
+type info =
+  { info_defs : def array
+  ; info_approximation : D.approx Var.Tbl.t
+  ; info_may_escape : bool array
+  ; info_possibly_mutable : bool array
+  }
+
+let f p =
   Code.invariant p;
   (*  let t = Timer.make () in*)
-  Format.eprintf "vvvvv";
+  Format.eprintf "vvvvv@.";
   let t1 = Timer.make () in
   let rets = return_values p in
   let nv = Var.count () in
@@ -414,23 +427,28 @@ let f ?pessimistic:_ p =
   program_deps st p;
   if times () then Format.eprintf "    flow analysis 1: %a@." Timer.print t1;
   let t2 = Timer.make () in
-  let known_origins = solver1 st in
+  let approximation = solver1 st in
   if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
   if debug ()
   then
     Var.ISet.iter
       (fun x ->
-        let s = Var.Tbl.get known_origins x in
+        let s = Var.Tbl.get approximation x in
         if not (Poly.( = ) s D.bottom) (*&& Var.Set.choose s <> x*)
         then
           Format.eprintf
-            "%a: %a@."
+            "%a: %b %a@."
             Var.print
             x
+            may_escape.(Var.idx x)
             (fun f a ->
               match a with
               | D.Top -> Format.fprintf f "top"
               | Values s -> Format.fprintf f "{%a}" Print.var_list (Var.Set.elements s))
             s)
       vars;
-  ()
+  { info_defs = defs
+  ; info_approximation = approximation
+  ; info_may_escape = may_escape
+  ; info_possibly_mutable = possibly_mutable
+  }

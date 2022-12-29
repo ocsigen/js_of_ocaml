@@ -283,8 +283,8 @@ let t3 = Timer.make () in
       (*
 let t3 = Timer.get t3 in
       Format.eprintf "YYY %.2f %.2f %.2f@." t1 t2 t3;
-*)
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
+*)
       res
 
     let f size g f = f' size g (fun _ v x -> f v x)
