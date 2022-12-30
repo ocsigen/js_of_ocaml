@@ -296,7 +296,7 @@ let cps_jump_cont ~st ((pc, _) as cont) =
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> tail_call ~st ~f:k [ x ]
+  | Return x -> tail_call ~check:false ~st ~f:k [ x ]
   | Raise (x, _) -> (
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
