@@ -243,6 +243,7 @@ type st =
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; live_vars : int array
+  ; flow_info : Flow2.info
   }
 
 let add_block st block =
@@ -262,6 +263,7 @@ let allocate_closure ~st ~params ~body:(body, branch) =
 let tail_call ~st ?(instrs = []) ~f ?(check = true) ?(exact = true) args =
   let ret = Var.fresh () in
   if check then st.tail_calls := Var.Set.add ret !(st.tail_calls);
+  let exact = exact || Flow2.exact_call st.flow_info f (List.length args - 1) in
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
 let cps_branch ~st (pc, args) =
@@ -354,6 +356,9 @@ let cps_instr ~st (instr : instr) : instr =
       | _ -> assert false)
   | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _)))
     when Var.Set.mem x st.cps_needed -> assert false
+  | Let (x, Apply { f; args; exact })
+    when (not exact) && Flow2.exact_call st.flow_info f (List.length args) ->
+      Let (x, Apply { f; args; exact = true })
   | _ -> instr
 
 let cps_block ~st ~k pc block =
@@ -482,7 +487,7 @@ let cps_block ~st ~k pc block =
   ; branch = last
   }
 
-let cps_transform ~live_vars ~cps_needed p =
+let cps_transform ~flow_info ~live_vars ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
   let tail_calls = ref Var.Set.empty in
   let p =
@@ -539,6 +544,7 @@ let cps_transform ~live_vars ~cps_needed p =
           ; matching_exn_handler
           ; loop_headers = cfg.loop_headers
           ; live_vars
+          ; flow_info
           }
         in
         let k = Var.fresh_n "cont" in
@@ -793,7 +799,7 @@ let f (p : Code.program) =
   let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
-  cps_transform ~live_vars ~cps_needed p
+  cps_transform ~flow_info:info ~live_vars ~cps_needed p
 
 let f p =
   let t = Timer.make () in

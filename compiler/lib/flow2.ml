@@ -461,3 +461,15 @@ let f p =
   ; info_may_escape = may_escape
   ; info_possibly_mutable = possibly_mutable
   }
+
+let exact_call info f n =
+  match Var.Tbl.get info.info_approximation f with
+  | Top -> false
+  | Values s ->
+      Var.Set.for_all
+        (fun g ->
+          match info.info_defs.(Var.idx g) with
+          | Expr (Closure (params, _)) -> List.length params = n
+          | Expr (Block _) -> true
+          | Expr _ | Phi _ -> assert false)
+        s
