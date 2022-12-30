@@ -126,6 +126,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
           match Var.Tbl.get info.Flow2.info_approximation f with
           | Top -> ()
           | Values s ->
+              let n = Var.Set.cardinal s in
               Var.Set.iter
                 (fun g ->
                   add_var vars g;
@@ -137,7 +138,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
                   add_dep deps x g;
                   add_dep deps g x;
                   add_rel rels x g true;
-                  add_rel rels g x false)
+                  add_rel rels g x (n > 1))
                 s)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -250,7 +251,7 @@ let f p info =
               if Var.Set.is_empty
                    (try Var.Map.find x !deps with Not_found -> Var.Set.empty)
               then "0"
-              else if info.Flow.info_possibly_mutable.(Var.idx x)
+              else if info.Flow2.info_may_escape.(Var.idx x)
               then "^"
               else "+"
           | Direct -> " ")

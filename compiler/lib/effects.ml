@@ -356,8 +356,8 @@ let cps_instr ~st (instr : instr) : instr =
       | _ -> assert false)
   | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _)))
     when Var.Set.mem x st.cps_needed -> assert false
-  | Let (x, Apply { f; args; exact })
-    when (not exact) && Flow2.exact_call st.flow_info f (List.length args) ->
+  | Let (x, Apply { f; args; _ }) ->
+      assert (Flow2.exact_call st.flow_info f (List.length args));
       Let (x, Apply { f; args; exact = true })
   | _ -> instr
 
@@ -395,7 +395,7 @@ let cps_block ~st ~k pc block =
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
               ~f
-              ~exact:false
+              ~exact:(Flow2.exact_call st.flow_info f 1)
               [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
         Some

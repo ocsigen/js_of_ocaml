@@ -365,13 +365,15 @@ Overapplied:
    the value of this expression depends on the return values
    get the return values and apply the extra parameters to them
 Underapplied:
-   
+   match known args to params; 
 *)
                       Format.eprintf
-                        "ZZZ params:%d args:%d %b@."
+                        "ZZZ params:%d args:%d %b %a@."
                         (List.length params)
                         (List.length args)
-                        (List.length params > List.length args);
+                        (List.length params > List.length args)
+                        Var.print
+                        g;
                       (*ZZZ Arguments escape ? *)
                       (* Partially applied or over applied *)
                       List.iter
