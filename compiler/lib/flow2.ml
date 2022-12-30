@@ -55,8 +55,10 @@ let return_values p =
 let add_var = Var.ISet.add
 
 type def =
-  | Phi of Var.Set.t
-  | Unknown
+  | Phi of
+      { known : Var.Set.t
+      ; others : bool
+      }
   | Expr of Code.expr
 
 type state =
@@ -68,11 +70,11 @@ type state =
   ; return_values : Var.Set.t Var.Map.t
   }
 
-let undefined = Phi Var.Set.empty
+let undefined = Phi { known = Var.Set.empty; others = false }
 
 let is_undefined d =
   match d with
-  | Phi s -> Var.Set.is_empty s
+  | Phi { known; others } -> (not others) && Var.Set.is_empty known
   | _ -> false
 
 let add_expr_def st x e =
@@ -85,8 +87,7 @@ let add_assign_def st x y =
   let idx = Var.idx x in
   match st.defs.(idx) with
   | Expr _ -> assert false
-  | Phi s -> st.defs.(idx) <- Phi (Var.Set.add y s)
-  | Unknown -> ()
+  | Phi { known; others } -> st.defs.(idx) <- Phi { known = Var.Set.add y known; others }
 
 let add_param_def st x =
   add_var st.vars x;
@@ -127,24 +128,18 @@ let expr_deps blocks st x e =
       match st.defs.(Var.idx f) with
       | Expr (Closure (params, _)) when List.length args = List.length params ->
           Hashtbl.add h (x, f) ();
-          if st.may_escape.(Var.idx f)
-          then
-            List.iter
-              ~f:(fun x ->
-                let idx = Var.idx x in
-                st.defs.(idx) <- Unknown)
-              params
-          else
-            List.iter2
-              ~f:(fun x y ->
-                add_dep st x y;
-                let idx = Var.idx x in
-                match st.defs.(idx) with
-                | Expr _ -> assert false
-                | Phi s -> st.defs.(idx) <- Phi (Var.Set.add y s)
-                | Unknown -> ())
-              params
-              args;
+          let escape = st.may_escape.(Var.idx f) in
+          List.iter2
+            ~f:(fun x y ->
+              add_dep st x y;
+              let idx = Var.idx x in
+              match st.defs.(idx) with
+              | Expr _ -> assert false
+              | Phi { known; others } ->
+                  st.defs.(idx) <-
+                    Phi { known = Var.Set.add y known; others = others || escape })
+            params
+            args;
           Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
       | _ -> ())
   | Closure (l, cont) ->
@@ -187,7 +182,7 @@ let program_deps st { blocks; _ } =
       | Pushtrap (cont, x, cont_h, _) ->
           add_var st.vars x;
           let idx = Var.idx x in
-          st.defs.(idx) <- Unknown;
+          st.defs.(idx) <- Phi { known = Var.Set.empty; others = true };
           cont_deps blocks st cont_h;
           cont_deps blocks st cont)
     blocks
@@ -210,7 +205,9 @@ module D = struct
       | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
-              st.defs.(Var.idx y) <- Unknown;
+              (match st.defs.(Var.idx y) with
+              | Phi { known; _ } -> st.defs.(Var.idx y) <- Phi { known; others = true }
+              | Expr _ -> assert false);
               update ~deps:false y)
             params;
           Var.Set.iter
@@ -241,14 +238,6 @@ module D = struct
 
   let join_set ~update ~st ~st' f s =
     Var.Set.fold (fun x a -> join ~update ~st ~st' (f x) a) s bottom
-
-  let inject x e =
-    match e with
-    | Constant _ -> bottom
-    | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> bottom
-    | Prim (Extern _, _) -> Top
-    | Closure _ | Block _ | Prim (Array_get, _) -> Values (Var.Set.singleton x)
-    | Field _ | Apply _ -> assert false
 end
 
 let mark_mutable st a =
@@ -258,10 +247,11 @@ let mark_mutable st a =
 
 let propagate1 st update st' x =
   match st.defs.(Var.idx x) with
-  | Phi s ->
+  | Phi { known; others } ->
       if st.may_escape.(Var.idx x) then D.escape ~update ~st ~st' (Var.Tbl.get st' x);
       if st.possibly_mutable.(Var.idx x) then mark_mutable st (Var.Tbl.get st' x);
-      D.join_set ~update ~st ~st' (fun y -> Var.Tbl.get st' y) s
+      let s = D.join_set ~update ~st ~st' (fun y -> Var.Tbl.get st' y) known in
+      if others then D.join ~update ~st ~st' Top s else s
   | Expr e -> (
       match e with
       | Constant _ -> D.bottom
@@ -286,8 +276,8 @@ let propagate1 st update st' x =
                         let t = a.(n) in
                         add_dep st x t;
                         Var.Tbl.get st' t
-                  | Phi _ -> D.bottom
-                  | Unknown | Expr _ -> Top)
+                  | Expr (Block _) | Expr (Closure _) -> D.bottom
+                  | Phi _ | Expr _ -> assert false)
                 s
           | Top -> Top)
       | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get st' y
@@ -311,8 +301,8 @@ let propagate1 st update st' x =
                             D.join ~update ~st ~st' (Var.Tbl.get st' t) acc)
                           ~init:D.bottom
                           a)
-                  | Phi _ | Expr _ -> D.bottom
-                  | Unknown -> Top)
+                  | Expr (Closure _) -> D.bottom
+                  | Phi _ | Expr _ -> assert false)
                 s
           | Top -> Top)
       | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> D.bottom
@@ -324,7 +314,7 @@ let propagate1 st update st' x =
               | Pc _ -> ()
               | Pv y -> D.escape ~update ~st ~st' (Var.Tbl.get st' y))
             l;
-          D.inject x e
+          Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st' f with
           | Values s ->
@@ -339,27 +329,22 @@ let propagate1 st update st' x =
                       if not (Hashtbl.mem h (x, g))
                       then (
                         Hashtbl.add h (x, g) ();
-                        if st.may_escape.(Var.idx g)
-                        then
-                          List.iter
-                            ~f:(fun x ->
-                              let idx = Var.idx x in
-                              st.defs.(idx) <- Unknown;
-                              update ~deps:false x)
-                            params
-                        else
-                          List.iter2
-                            ~f:(fun x y ->
-                              add_dep st x y;
-                              let idx = Var.idx x in
-                              match st.defs.(idx) with
-                              | Expr _ -> assert false
-                              | Phi s ->
-                                  update ~deps:false x;
-                                  st.defs.(idx) <- Phi (Var.Set.add y s)
-                              | Unknown -> ())
-                            params
-                            args;
+                        let escape = st.may_escape.(Var.idx g) in
+                        List.iter2
+                          ~f:(fun x y ->
+                            add_dep st x y;
+                            let idx = Var.idx x in
+                            match st.defs.(idx) with
+                            | Expr _ -> assert false
+                            | Phi { known; others } ->
+                                update ~deps:false x;
+                                st.defs.(idx) <-
+                                  Phi
+                                    { known = Var.Set.add y known
+                                    ; others = others || escape
+                                    })
+                          params
+                          args;
                         Var.Set.iter
                           (fun y -> add_dep st x y)
                           (Var.Map.find g st.return_values));
@@ -369,14 +354,21 @@ let propagate1 st update st' x =
                         ~st'
                         (fun y -> Var.Tbl.get st' y)
                         (Var.Map.find g st.return_values)
-                  | Phi _ -> D.bottom
-                  | Expr _ ->
+                  | Expr (Closure _) ->
+                      (*ZZZ Arguments escape ? *)
+                      (* Partially applied or over applied *)
+                      List.iter
+                        ~f:(fun y -> D.escape ~update ~st ~st' (Var.Tbl.get st' y))
+                        args;
                       D.escape ~update ~st ~st' (Var.Tbl.get st' g);
                       Top
-                  | Unknown -> Top)
+                  | Expr (Block _) -> D.bottom
+                  | Phi _ | Expr _ -> assert false)
                 s
-          | Top -> D.Top))
-  | Unknown -> Top
+          | Top ->
+              List.iter ~f:(fun y -> D.escape ~update ~st ~st' (Var.Tbl.get st' y)) args;
+
+              D.Top))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
