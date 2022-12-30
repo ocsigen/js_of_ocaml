@@ -99,17 +99,22 @@ let add_dep st x y =
   let idx = Var.idx y in
   st.deps.(idx) <- Var.Set.add x st.deps.(idx)
 
-let rec arg_deps st pc params args =
+let rec arg_deps st ?ignore params args =
   match params, args with
   | x :: params, y :: args ->
-      add_dep st x y;
-      add_assign_def st x y;
-      arg_deps st pc params args
+      if not
+           (match ignore with
+           | Some y' -> Var.equal y y'
+           | _ -> false)
+      then (
+        add_dep st x y;
+        add_assign_def st x y);
+      arg_deps st params args
   | _ -> ()
 
-let cont_deps blocks st (pc, args) =
+let cont_deps blocks st ?ignore (pc, args) =
   let block = Addr.Map.find pc blocks in
-  arg_deps st pc block.params args
+  arg_deps st ?ignore block.params args
 
 let h = Hashtbl.create 16
 
@@ -173,9 +178,9 @@ let program_deps st { blocks; _ } =
       | Return _ | Stop -> ()
       | Raise (x, _) -> escape st x
       | Branch cont | Poptrap cont -> cont_deps blocks st cont
-      | Cond (_, cont1, cont2) ->
+      | Cond (x, cont1, cont2) ->
           cont_deps blocks st cont1;
-          cont_deps blocks st cont2
+          cont_deps blocks st ~ignore:x cont2
       | Switch (_, a1, a2) ->
           Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
           Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont)
