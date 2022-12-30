@@ -1492,11 +1492,7 @@ and compile infos pc state instrs =
         let offset = gets code (pc + 1) in
         let x = State.accu state in
         let args = State.stack_vars state in
-        let y, state' = State.fresh_var state in
-        let args' = State.stack_vars state' in
-        ( Let (y, const 0l) :: instrs
-        , Cond (x, (pc + 2, args), (pc + offset + 1, args'))
-        , state )
+        instrs, Cond (x, (pc + 2, args), (pc + offset + 1, args)), state
     | SWITCH ->
         if debug_parser () then Format.printf "switch ...@.";
         let sz = getu code (pc + 1) in
