@@ -359,7 +359,19 @@ let propagate1 st update st' x =
                         ~st'
                         (fun y -> Var.Tbl.get st' y)
                         (Var.Map.find g st.return_values)
-                  | Expr (Closure _) ->
+                  | Expr (Closure (params, _)) ->
+                      (*
+Overapplied:
+   the value of this expression depends on the return values
+   get the return values and apply the extra parameters to them
+Underapplied:
+   
+*)
+                      Format.eprintf
+                        "ZZZ params:%d args:%d %b@."
+                        (List.length params)
+                        (List.length args)
+                        (List.length params > List.length args);
                       (*ZZZ Arguments escape ? *)
                       (* Partially applied or over applied *)
                       List.iter
