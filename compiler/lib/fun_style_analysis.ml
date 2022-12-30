@@ -163,16 +163,6 @@ let cps_needed ~info ~in_loop ~rels st x =
       acc
       ||
       let v = Var.Map.find y st in
-      if Var.idx x = 5839
-      then
-        Format.eprintf
-          "ZZZZZ v%d:%s (%b)@."
-          (Var.idx y)
-          (match v with
-          | Domain.CPS -> "CPS"
-          | Undecided -> "Undecided"
-          | Direct -> "Direct")
-          clamp;
       if not clamp then v && Domain.Undecided else v)
     (try Var.Map.find x rels with Not_found -> Var.Map.empty)
     Domain.bot
