@@ -46,14 +46,9 @@ let fff () =
      {var
        _b_=
         [0,
-         function(e,cont)
-          {return e === E
-                   ?caml_cps_exact_call1
-                     (cont,
-                      [0,function(k,cont){return caml_cps_exact_call1(cont,11)}])
-                   :caml_cps_exact_call1(cont,0)}],
+         function(e,cont){return e === E?cont([0,function(k){return 11}]):cont(0)}],
        _c_=10;
-      function _d_(x,cont){return caml_cps_exact_call1(cont,x)}
+      function _d_(x,cont){return cont(x)}
       var _e_=Stdlib_Effect[3][5];
       return caml_cps_call4
               (_e_,
