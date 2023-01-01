@@ -69,6 +69,7 @@ type state =
   ; may_escape : bool array
   ; possibly_mutable : bool array
   ; return_values : Var.Set.t Var.Map.t
+  ; known_case : (Var.t, int list) Hashtbl.t
   }
 
 let undefined = Phi { known = Var.Set.empty; others = false }
@@ -184,9 +185,25 @@ let program_deps st { blocks; _ } =
       | Cond (x, cont1, cont2) ->
           cont_deps blocks st cont1;
           cont_deps blocks st ~ignore:x cont2
-      | Switch (_, a1, a2) ->
+      | Switch (x, a1, a2) ->
           Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont)
+          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont);
+          let h = Hashtbl.create 16 in
+          Array.iteri
+            ~f:(fun i (pc, _) ->
+              Hashtbl.replace h pc (i :: (try Hashtbl.find h pc with Not_found -> [])))
+            a2;
+          Hashtbl.iter
+            (fun pc tags ->
+              let block = Addr.Map.find pc blocks in
+              List.iter
+                ~f:(fun i ->
+                  match i with
+                  | Let (y, Field (x', _)) when Var.equal x x' ->
+                      Hashtbl.add st.known_case y tags
+                  | _ -> ())
+                block.body)
+            h
       | Pushtrap (cont, x, cont_h, _) ->
           add_var st.vars x;
           let idx = Var.idx x in
@@ -198,7 +215,10 @@ let program_deps st { blocks; _ } =
 module D = struct
   type approx =
     | Top
-    | Values of Var.Set.t
+    | Values of
+        { known : Var.Set.t
+        ; others : bool
+        }
 
   let rec value_escape ~update ~st ~st' x =
     let idx = Var.idx x in
@@ -232,7 +252,7 @@ module D = struct
   and escape ~update ~st ~st' a =
     match a with
     | Top -> ()
-    | Values s -> Var.Set.iter (fun x -> value_escape ~update ~st ~st' x) s
+    | Values { known; _ } -> Var.Set.iter (fun x -> value_escape ~update ~st ~st' x) known
 
   let join ~update ~st ~st' x y =
     match x, y with
@@ -242,106 +262,145 @@ module D = struct
     | _, Top ->
         escape ~update ~st ~st' x;
         Top
-    | Values s, Values s' -> Values (Var.Set.union s s')
+    | Values { known; others }, Values { known = known'; others = others' } ->
+        Values { known = Var.Set.union known known'; others = others || others' }
 
-  let bottom = Values Var.Set.empty
+  let bottom = Values { known = Var.Set.empty; others = false }
 
-  let join_set ~update ~st ~st' f s =
-    Var.Set.fold (fun x a -> join ~update ~st ~st' (f x) a) s bottom
+  let others = Values { known = Var.Set.empty; others = true }
 
-  let mark_mutable ~update ~st ~st' a =
+  let singleton x = Values { known = Var.Set.singleton x; others = false }
+
+  let join_set ~update ~st ~st' ?others:(o = false) f s =
+    Var.Set.fold
+      (fun x a -> join ~update ~st ~st' (f x) a)
+      s
+      (if o then others else bottom)
+
+  let mark_mutable ~update:_ ~st ~st':_ a =
     match a with
     | Top -> ()
-    | Values s ->
+    | Values { known; _ } ->
         Var.Set.iter
           (fun x ->
             if not st.possibly_mutable.(Var.idx x)
-            then (
-              st.possibly_mutable.(Var.idx x) <- true;
-              match st.defs.(Var.idx x) with
-              | Expr (Block (_, a, _)) ->
-                  Array.iter ~f:(fun y -> variable_escape ~update ~st ~st' y) a;
-                  update ~deps:true x
-              | _ -> ()))
-          s
+            then st.possibly_mutable.(Var.idx x) <- true)
+          known
 end
 
 let propagate1 st update st' x =
   let approx =
     match st.defs.(Var.idx x) with
     | Phi { known; others } ->
-        let s = D.join_set ~update ~st ~st' (fun y -> Var.Tbl.get st' y) known in
-        if others then D.join ~update ~st ~st' Top s else s
+        D.join_set ~update ~st ~st' ~others (fun y -> Var.Tbl.get st' y) known
     | Expr e -> (
         match e with
         | Constant _ -> D.bottom
-        | Closure _ -> Values (Var.Set.singleton x)
-        | Block (_, a, _) ->
-            if st.possibly_mutable.(Var.idx x)
-            then Array.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) a;
-            Values (Var.Set.singleton x)
+        | Closure _ -> D.singleton x
+        | Block _ -> D.singleton x
         | Field (y, n) -> (
             match Var.Tbl.get st' y with
-            | Values s ->
+            | Values { known; others } ->
                 D.join_set
+                  ~others
                   ~update
                   ~st
                   ~st'
                   (fun z ->
                     match st.defs.(Var.idx z) with
-                    | Expr (Block (_, a, _)) when n < Array.length a ->
+                    | Expr (Block (t, a, _))
+                      when n < Array.length a
+                           &&
+                           try List.mem t ~set:(Hashtbl.find st.known_case x)
+                           with Not_found -> true ->
+                        let t = a.(n) in
+                        add_dep st x t;
+                        let a = Var.Tbl.get st' t in
                         if st.possibly_mutable.(Var.idx z)
-                        then Top
-                        else
-                          let t = a.(n) in
-                          add_dep st x t;
-                          Var.Tbl.get st' t
+                        then D.join ~update ~st ~st' D.others a
+                        else a
                     | Expr (Block _) | Expr (Closure _) -> D.bottom
                     | Phi _ | Expr _ -> assert false)
-                  s
+                  known
             | Top -> Top)
         | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get st' y
         | Prim (Array_get, [ Pv y; _; _ ])
         | Prim (Extern "caml_array_unsafe_get", [ Pv y; _ ]) -> (
             match Var.Tbl.get st' y with
-            | Values s ->
+            | Values { known; others } ->
                 D.join_set
                   ~update
                   ~st
                   ~st'
+                  ~others
                   (fun z ->
                     match st.defs.(Var.idx z) with
                     | Expr (Block (_, a, _)) ->
-                        if st.possibly_mutable.(Var.idx z)
-                        then Top
-                        else (
-                          Array.iter ~f:(fun t -> add_dep st x t) a;
+                        Array.iter ~f:(fun t -> add_dep st x t) a;
+                        let approx =
                           Array.fold_left
                             ~f:(fun acc t ->
                               D.join ~update ~st ~st' (Var.Tbl.get st' t) acc)
                             ~init:D.bottom
-                            a)
+                            a
+                        in
+                        if st.possibly_mutable.(Var.idx z)
+                        then D.join ~update ~st ~st' D.others approx
+                        else approx
                     | Expr (Closure _) -> D.bottom
                     | Phi _ | Expr _ -> assert false)
-                  s
+                  known
             | Top -> Top)
-        | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> D.bottom
-        | Prim (_, l) ->
-            (*ZZZ Refine *)
-            List.iter
-              ~f:(fun a ->
-                match a with
-                | Pc _ -> ()
-                | Pv y -> D.variable_escape ~update ~st ~st' y)
-              l;
-            Top
+        | Prim ((Array_get | Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+            D.bottom
+        | Prim (Extern name, l) ->
+            let ka =
+              match Primitive.kind_args name with
+              | Some l -> l
+              | None -> (
+                  match Primitive.kind name with
+                  | `Mutable | `Mutator -> []
+                  | `Pure -> List.map l ~f:(fun _ -> `Const))
+            in
+            let rec loop args ka =
+              match args, ka with
+              | [], _ -> ()
+              | Pc _ :: ax, [] -> loop ax []
+              | Pv a :: ax, [] ->
+                  D.variable_escape ~update ~st ~st' a;
+                  loop ax []
+              | a :: ax, k :: kx ->
+                  (match a, k with
+                  | _, `Const | Pc _, _ -> ()
+                  | Pv v, `Shallow_const -> (
+                      match st.defs.(Var.idx v) with
+                      | Expr (Block (_, a, _)) ->
+                          Array.iter a ~f:(fun x -> D.variable_escape ~update ~st ~st' x)
+                      | _ -> D.variable_escape ~update ~st ~st' v)
+                  | Pv v, `Object_literal -> (
+                      match st.defs.(Var.idx v) with
+                      | Expr (Block (_, a, _)) ->
+                          Array.iter a ~f:(fun x ->
+                              match st.defs.(Var.idx x) with
+                              | Expr (Block (_, [| _k; v |], _)) ->
+                                  D.variable_escape ~update ~st ~st' v
+                              | _ -> D.variable_escape ~update ~st ~st' x)
+                      | _ -> D.variable_escape ~update ~st ~st' v)
+                  | Pv v, `Mutable -> D.variable_escape ~update ~st ~st' v);
+                  loop ax kx
+            in
+            loop l ka;
+            D.others
         | Apply { f; args; _ } -> (
             match Var.Tbl.get st' f with
-            | Values s ->
+            | Values { known; others } ->
+                if others
+                then List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
                 D.join_set
                   ~update
                   ~st
                   ~st'
+                  ~others
                   (fun g ->
                     match st.defs.(Var.idx g) with
                     | Expr (Closure (params, _))
@@ -395,20 +454,44 @@ Underapplied:
                         (* Partially applied or over applied *)
                         List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
                         D.variable_escape ~update ~st ~st' g;
-                        Top
+                        D.others
                     | Expr (Block _) -> D.bottom
                     | Phi _ | Expr _ -> assert false)
-                  s
+                  known
             | Top ->
                 List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
 
                 D.Top))
   in
   (match st.variable_may_escape.(Var.idx x) with
-  | `Escape -> D.escape ~update ~st ~st' approx
+  | `Escape ->
+      (*      Format.eprintf "ESCAPE %a@." Var.print x;*)
+      D.escape ~update ~st ~st' approx
   | `Mutable -> D.mark_mutable ~update ~st ~st' approx
   | `No -> ());
   approx
+
+let propagate1 st update st' x =
+  let res = propagate1 st update st' x in
+  (*
+  (match res, Var.Tbl.get st' x with
+  | Values s, Values s' ->
+      Format.eprintf
+        "%a (%b) : %a@."
+        Var.print
+        x
+        (Var.Set.equal s s')
+        Print.var_list
+        (Var.Set.elements s)
+  | _ -> ());
+ *)
+  match res with
+  | Values { known; _ } when Var.Set.cardinal known < 200 -> res
+  | Values _ ->
+      (*      Format.eprintf "TOP %a@." Var.print x;*)
+      D.escape ~update ~st ~st' res;
+      Top (*top x*)
+  | Top -> Top
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -418,7 +501,8 @@ module Domain1 = struct
   let equal x y =
     match x, y with
     | D.Top, D.Top -> true
-    | Values s, Values s' -> Var.Set.equal s s'
+    | Values { known; others }, Values { known = known'; others = others' } ->
+        Var.Set.equal known known' && Bool.equal others others'
     | Top, Values _ | Values _, Top -> false
 
   let bot = D.bottom
@@ -464,6 +548,7 @@ let f p =
     ; variable_may_escape
     ; may_escape
     ; possibly_mutable
+    ; known_case = Hashtbl.create 16
     }
   in
   program_deps st p;
@@ -479,14 +564,31 @@ let f p =
         if not (Poly.( = ) s D.bottom) (*&& Var.Set.choose s <> x*)
         then
           Format.eprintf
-            "%a: %b %a@."
+            "%a: %a@."
             Var.print
             x
-            may_escape.(Var.idx x)
             (fun f a ->
               match a with
               | D.Top -> Format.fprintf f "top"
-              | Values s -> Format.fprintf f "{%a}" Print.var_list (Var.Set.elements s))
+              | Values { known; others } ->
+                  Format.fprintf
+                    f
+                    "{%a/%b}"
+                    (Format.pp_print_list
+                       ~pp_sep:(fun f () -> Format.fprintf f ", ")
+                       (fun f x ->
+                         Format.fprintf
+                           f
+                           "%a(%s)"
+                           Var.print
+                           x
+                           (match st.defs.(Var.idx x) with
+                           | Expr (Closure _) -> "C"
+                           | Expr (Block _) ->
+                               "B" ^ if st.may_escape.(Var.idx x) then "X" else ""
+                           | _ -> "O")))
+                    (Var.Set.elements known)
+                    others)
             s)
       vars;
   { info_defs = defs
@@ -497,12 +599,12 @@ let f p =
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with
-  | Top -> false
-  | Values s ->
+  | Top | Values { others = true; _ } -> false
+  | Values { known; others = false } ->
       Var.Set.for_all
         (fun g ->
           match info.info_defs.(Var.idx g) with
           | Expr (Closure (params, _)) -> List.length params = n
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
-        s
+        known

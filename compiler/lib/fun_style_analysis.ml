@@ -125,8 +125,8 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
               add_rel rels fun_name x true);
           match Var.Tbl.get info.Flow2.info_approximation f with
           | Top -> ()
-          | Values s ->
-              let n = Var.Set.cardinal s in
+          | Values { known; _ } ->
+              let n = Var.Set.cardinal known in
               Var.Set.iter
                 (fun g ->
                   add_var vars g;
@@ -139,7 +139,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
                   add_dep deps g x;
                   add_rel rels x g true;
                   add_rel rels g x (n > 1))
-                s)
+                known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
           match fun_name with
@@ -155,8 +155,9 @@ module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 module Solver = G'.Solver (Domain)
 
 let cps_needed ~info ~in_loop ~rels st x =
+  let ( &&& ) = ( && ) in
   let open Domain.Syntax in
-  cps_if (Var.Set.mem x in_loop)
+  cps_if (false &&& Var.Set.mem x in_loop)
   ||
   let idx = Var.idx x in
   Var.Map.fold
@@ -171,8 +172,8 @@ let cps_needed ~info ~in_loop ~rels st x =
   match info.Flow2.info_defs.(idx) with
   | Expr (Apply { f; _ }) -> (
       match Var.Tbl.get info.Flow2.info_approximation f with
-      | Top -> CPS
-      | Values s ->
+      | Top | Values { others = true; _ } -> CPS
+      | Values { known; others = false } ->
           Var.Set.fold
             (fun g acc ->
               acc
@@ -180,7 +181,7 @@ let cps_needed ~info ~in_loop ~rels st x =
               match info.Flow2.info_defs.(Var.idx g) with
               | Expr (Closure _ | Prim (Extern "%closure", _)) -> Domain.bot
               | _ -> Domain.CPS)
-            s
+            known
             Domain.bot)
   | Expr (Closure _) | Expr (Prim (Extern "%closure", _)) ->
       undecided_if info.Flow2.info_may_escape.(idx)
@@ -222,11 +223,10 @@ let f p info =
         match c with
         | SCC.No_loop _ -> s
         | Has_loop l ->
-            (*
-            Format.eprintf "LOOP ";
-            List.iter ~f:(fun x -> Format.eprintf " v%d" (Var.idx x)) l;
-            Format.eprintf "@.";
-*)
+            (* Format.eprintf "LOOP ";
+               List.iter ~f:(fun x -> Format.eprintf " %a" Var.print x) l;
+               Format.eprintf "@.";
+            *)
             List.fold_left ~f:(fun s x -> Var.Set.add x s) l ~init:s)
       ~init:Var.Set.empty
       scc
