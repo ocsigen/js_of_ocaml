@@ -36,6 +36,8 @@
 open! Stdlib
 open Code
 
+let debug = Debug.find "effects"
+
 let get_edges g src = try Hashtbl.find g src with Not_found -> Addr.Set.empty
 
 let add_edge g src dst = Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
@@ -524,6 +526,18 @@ let cps_transform ~live_vars p =
               wrap_toplevel := need_cps;
               need_cps
         in
+        if debug ()
+        then (
+          Format.eprintf "======== %b@." function_needs_cps;
+          Code.preorder_traverse
+            { fold = Code.fold_children }
+            (fun pc _ ->
+              if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
+              let block = Addr.Map.find pc blocks in
+              Code.Print.block (fun _ _ -> "") pc block)
+            start
+            blocks
+            ());
         let blocks =
           let transform_block =
             if function_needs_cps
