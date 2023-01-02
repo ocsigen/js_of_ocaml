@@ -242,7 +242,7 @@ type st =
   ; tail_calls : Var.Set.t ref
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; loop_headers : (Addr.t, unit) Hashtbl.t
-  ; live_vars : int array
+  ; live_vars : Deadcode.variable_uses
   ; flow_info : Flow2.info
   }
 
