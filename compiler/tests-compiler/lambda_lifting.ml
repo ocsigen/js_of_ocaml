@@ -20,7 +20,7 @@ Printf.printf "%d\n" (f 3)
     {|
     (function(globalThis)
        {"use strict";
-        var runtime=globalThis.jsoo_runtime;
+        var runtime=globalThis.jsoo_runtime,caml_callback=runtime.caml_callback;
         function caml_cps_exact_call0(f)
          {return runtime.caml_stack_check_depth()
                   ?f()
@@ -33,11 +33,7 @@ Printf.printf "%d\n" (f 3)
          {return runtime.caml_stack_check_depth()
                   ?f(a0,a1)
                   :runtime.caml_trampoline_return(f,[a0,a1])}
-        function caml_cps_call3(f,a0,a1,a2)
-         {return runtime.caml_stack_check_depth()
-                  ?f.length == 3?f(a0,a1,a2):runtime.caml_call_gen(f,[a0,a1,a2])
-                  :runtime.caml_trampoline_return(f,[a0,a1,a2])}
-        return runtime.caml_callback
+        return caml_callback
                 (function(cont)
                   {var
                     global_data=runtime.caml_get_global_data(),
@@ -47,7 +43,7 @@ Printf.printf "%d\n" (f 3)
                       [4,0,0,0,[12,10,0]],
                       runtime.caml_string_of_jsbytes("%d\n")];
                    function _b_()
-                    {var f$0=f();return caml_cps_exact_call0(_h_(f$0,3))}
+                    {var f$0=f();return caml_cps_exact_call0(_f_(f$0,3))}
                    function h(x,y)
                     {function h(z,cont)
                       {return caml_cps_exact_call1(cont,(x + y | 0) + z | 0)}
@@ -65,17 +61,16 @@ Printf.printf "%d\n" (f 3)
                       {var Test=[0];
                        runtime.caml_register_global(2,Test,"Test");
                        return}}
-                   function _d_()
-                    {return function(_n_){return caml_cps_exact_call0(_c_())}}
-                   function _e_(_l_,_m_)
-                    {return function(){return caml_cps_call3(_m_,_a_,_l_,_d_())}}
-                   function _f_(_k_)
+                   function _d_(_i_,_j_)
                     {return function()
-                      {return caml_cps_exact_call0(_e_(_k_,Stdlib_Printf[2]))}}
-                   function _g_()
-                    {return function(_j_){return caml_cps_exact_call0(_f_(_j_))}}
-                   function _h_(f,_i_)
-                    {return function(){return caml_cps_exact_call2(f,_i_,_g_())}}
+                      {caml_callback(_j_,[_a_,_i_]);
+                       return caml_cps_exact_call0(_c_())}}
+                   function _e_(_h_)
+                    {return function()
+                      {return caml_cps_exact_call0(_d_(_h_,Stdlib_Printf[2]))}}
+                   function _f_(f,_g_)
+                    {return function()
+                      {return caml_cps_exact_call0(_e_(caml_callback(f,[_g_])))}}
                    return caml_cps_exact_call0(_b_)},
                  [])}
       (globalThis));

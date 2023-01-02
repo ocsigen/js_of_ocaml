@@ -38,7 +38,18 @@
 open! Stdlib
 open Code
 
-type graph =
+let get_edges g src = try Hashtbl.find g src with Not_found -> Addr.Set.empty
+
+let add_edge g src dst = Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
+
+let reverse_graph g =
+  let g' = Hashtbl.create 16 in
+  Hashtbl.iter
+    (fun child parents -> Addr.Set.iter (fun parent -> add_edge g' parent child) parents)
+    g;
+  g'
+
+type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; exn_handlers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
@@ -93,8 +104,25 @@ let dominator_tree g =
           let d = Hashtbl.find dom pc' in
           assert (inter pc d = d))
         l);
-
   dom
+
+let dominance_frontier g idom =
+  let preds = reverse_graph g.succs in
+  let frontiers = Hashtbl.create 16 in
+  Hashtbl.iter
+    (fun pc preds ->
+      if Addr.Set.cardinal preds > 1
+      then
+        let dom = Hashtbl.find idom pc in
+        let rec loop runner =
+          if runner <> dom
+          then (
+            add_edge frontiers runner pc;
+            loop (Hashtbl.find idom runner))
+        in
+        Addr.Set.iter loop preds)
+    preds;
+  frontiers
 
 (****)
 
@@ -367,6 +395,84 @@ let cps_transform p =
 
 (****)
 
+let current_loop_header frontiers in_loop pc =
+  (* We remain in a loop while the loop header is in the dominance frontier.
+     We enter a loop when the block is in its dominance frontier. *)
+  let frontier = get_edges frontiers pc in
+  match in_loop with
+  | Some header when Addr.Set.mem header frontier -> in_loop
+  | _ -> if Addr.Set.mem pc frontier then Some pc else None
+
+let wrap_call p x f args accu =
+  let arg_array = Var.fresh () in
+  ( p
+  , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+    ]
+    :: accu )
+
+let wrap_primitive (p : Code.program) x e accu =
+  let f = Var.fresh () in
+  let closure_pc = p.free_pc in
+  ( { p with
+      free_pc = p.free_pc + 1
+    ; blocks =
+        Addr.Map.add
+          closure_pc
+          (let y = Var.fresh () in
+           { params = []; body = [ Let (y, e) ]; branch = Return y })
+          p.blocks
+    }
+  , let args = Var.fresh () in
+    [ Let (f, Closure ([], (closure_pc, [])))
+    ; Let (args, Prim (Extern "%js_array", []))
+    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv args ]))
+    ]
+    :: accu )
+
+let rewrite_toplevel_instr (p, accu) instr =
+  match instr with
+  | Let (x, Apply { f; args; _ }) -> wrap_call p x f args accu
+  | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
+      wrap_primitive p x e accu
+  | _ -> p, [ instr ] :: accu
+
+(* Wrap function calls inside [caml_callback] at toplevel to avoid
+   unncessary function nestings. This is not done inside loops since
+   using repeatedly [caml_callback] can be costly. *)
+let rewrite_toplevel p =
+  let { start; blocks; _ } = p in
+  let cfg = build_graph blocks start in
+  let idom = dominator_tree cfg in
+  let frontiers = dominance_frontier cfg idom in
+  let rec traverse visited (p : Code.program) in_loop pc =
+    if Addr.Set.mem pc visited
+    then visited, p
+    else
+      let visited = Addr.Set.add pc visited in
+      let in_loop = current_loop_header frontiers in_loop pc in
+      let p =
+        if Option.is_none in_loop
+        then
+          let block = Addr.Map.find pc p.blocks in
+          let p, body_rev =
+            List.fold_left ~f:rewrite_toplevel_instr ~init:(p, []) block.body
+          in
+          let body = List.concat @@ List.rev body_rev in
+          { p with blocks = Addr.Map.add pc { block with body } p.blocks }
+        else p
+      in
+      Code.fold_children
+        blocks
+        pc
+        (fun pc (visited, p) -> traverse visited p in_loop pc)
+        (visited, p)
+  in
+  let _, p = traverse Addr.Set.empty p None start in
+  p
+
+(****)
+
 let split_blocks (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
      tail position *)
@@ -413,6 +519,7 @@ let split_blocks (p : Code.program) =
 let f p =
   let t = Timer.make () in
   let p = split_blocks p in
+  let p = rewrite_toplevel p in
   let p = cps_transform p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   p
