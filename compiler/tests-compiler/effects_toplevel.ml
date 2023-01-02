@@ -39,6 +39,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        {"use strict";
         var
          runtime=globalThis.jsoo_runtime,
+         caml_callback=runtime.caml_callback,
          caml_string_of_jsbytes=runtime.caml_string_of_jsbytes;
         function caml_cps_exact_call1(f,a0)
          {return runtime.caml_stack_check_depth()
@@ -52,7 +53,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
          {return runtime.caml_stack_check_depth()
                   ?f(a0,a1)
                   :runtime.caml_trampoline_return(f,[a0,a1])}
-        return runtime.caml_callback
+        return caml_callback
                 (function(cont)
                   {var
                     global_data=runtime.caml_get_global_data(),
@@ -63,29 +64,21 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                       caml_string_of_jsbytes("abc")];
                    function g(param,cont)
                     {return caml_cps_call2(Stdlib_Printf[2],_a_,cont)}
-                   var _b_=0;
-                   return caml_cps_exact_call2
-                           (g,
-                            _b_,
-                            function(_d_)
-                             {var _c_=1;
-                              function _e_(i)
-                               {var _f_=0;
-                                return caml_cps_exact_call2
-                                        (g,
-                                         _f_,
-                                         function(_g_)
-                                          {var _h_=i + 1 | 0;
-                                           if(5 !== i)return caml_cps_exact_call1(_e_,_h_);
-                                           var _i_=0;
-                                           return caml_cps_exact_call2
-                                                   (g,
-                                                    _i_,
-                                                    function(_j_)
-                                                     {var Test=[0];
-                                                      runtime.caml_register_global(2,Test,"Test");
-                                                      return})})}
-                              return caml_cps_exact_call1(_e_,_c_)})},
+                   caml_callback(g,[0]);
+                   var _b_=1;
+                   function _c_(i)
+                    {var _d_=0;
+                     return caml_cps_exact_call2
+                             (g,
+                              _d_,
+                              function(_e_)
+                               {var _f_=i + 1 | 0;
+                                if(5 !== i)return caml_cps_exact_call1(_c_,_f_);
+                                caml_callback(g,[0]);
+                                var Test=[0];
+                                runtime.caml_register_global(2,Test,"Test");
+                                return})}
+                   return caml_cps_exact_call1(_c_,_b_)},
                  [])}
       (globalThis));
     //end |}]
