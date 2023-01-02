@@ -268,7 +268,7 @@ end
 module Ctx = struct
   type t =
     { blocks : block Addr.Map.t
-    ; live : int array
+    ; live : Deadcode.variable_uses
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : (Code.Var.t * bool ref) option

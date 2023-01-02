@@ -233,7 +233,7 @@ type st =
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
-  ; live_vars : int array
+  ; live_vars : Deadcode.variable_uses
   }
 
 let add_block st block =
