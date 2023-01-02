@@ -29,9 +29,11 @@ type def =
   | Expr of expr
   | Var of Var.t
 
+type variable_uses = int array
+
 type t =
   { blocks : block Addr.Map.t
-  ; live : int array
+  ; live : variable_uses
   ; defs : def list array
   ; mutable reachable_blocks : Addr.Set.t
   ; pure_funs : Var.Set.t
@@ -179,9 +181,7 @@ let rec add_arg_dep defs params args =
 let add_cont_dep blocks defs (pc, args) =
   match try Some (Addr.Map.find pc blocks) with Not_found -> None with
   | Some block -> add_arg_dep defs block.params args
-  | None -> ()
-
-(* Dead continuation *)
+  | None -> () (* Dead continuation *)
 
 let f ({ blocks; _ } as p : Code.program) =
   let t = Timer.make () in

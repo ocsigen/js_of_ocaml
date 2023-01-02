@@ -18,4 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Code.program -> Code.program * int array
+type variable_uses =
+  int array (* For each variable, indicates how many times it is used. *)
+
+val f : Code.program -> Code.program * variable_uses
