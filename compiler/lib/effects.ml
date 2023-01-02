@@ -376,6 +376,15 @@ let cps_block ~st ~k pc block =
   in
 
   let rewrite_instr e =
+    let perform_effect ~effect ~continuation =
+      Some
+        (fun ~k ->
+          let e =
+            Prim (Extern "caml_perform_effect", [ Pv effect; continuation; Pv k ])
+          in
+          let x = Var.fresh () in
+          [ Let (x, e) ], Return x)
+    in
     match e with
     | Apply { f; args; exact } -> Some (fun ~k -> tail_call ~exact ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
@@ -388,26 +397,9 @@ let cps_block ~st ~k pc block =
               ~f
               [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
-        Some
-          (fun ~k ->
-            let x = Var.fresh () in
-
-            ( [ Let
-                  ( x
-                  , Prim (Extern "caml_perform_effect", [ Pv effect; Pc (Int 0l); Pv k ])
-                  )
-              ]
-            , Return x ))
-    | Prim (Extern "%reperform", [ Pv eff; Pv continuation ]) ->
-        Some
-          (fun ~k ->
-            let x = Var.fresh () in
-            ( [ Let
-                  ( x
-                  , Prim (Extern "caml_perform_effect", [ Pv eff; Pv continuation; Pv k ])
-                  )
-              ]
-            , Return x ))
+        perform_effect ~effect ~continuation:(Pc (Int 0l))
+    | Prim (Extern "%reperform", [ Pv effect; continuation ]) ->
+        perform_effect ~effect ~continuation
     | _ -> None
   in
 
