@@ -61,12 +61,19 @@ type def =
       }
   | Expr of Code.expr
 
+(*
+Status:
+   escape/const (recursive)
+   mutable (local)
+   escape (recursive)
+*)
 type state =
   { vars : Var.ISet.t
   ; deps : Var.Set.t array
   ; defs : def array
-  ; variable_may_escape : [ `Escape | `Mutable | `No ] array
-  ; may_escape : bool array
+  ; variable_may_escape : [ `Escape | `Escape_constant | `No ] array
+  ; variable_possibly_mutable : bool array
+  ; may_escape : [ `Escape | `Escape_constant | `No ] array
   ; possibly_mutable : bool array
   ; return_values : Var.Set.t Var.Map.t
   ; known_case : (Var.t, int list) Hashtbl.t
@@ -153,14 +160,9 @@ let expr_deps blocks st x e =
   | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep st x y)
   | Field (y, _) -> add_dep st x y
 
-let do_escape st x =
-  let idx = Var.idx x in
-  st.variable_may_escape.(idx) <- `Escape
+let do_escape st x = st.variable_may_escape.(Var.idx x) <- `Escape
 
-let possibly_mutable st x =
-  let idx = Var.idx x in
-  if Poly.(st.variable_may_escape.(idx) = `No)
-  then st.variable_may_escape.(idx) <- `Mutable
+let possibly_mutable st x = st.variable_possibly_mutable.(Var.idx x) <- true
 
 let program_deps st { blocks; _ } =
   Addr.Map.iter
@@ -220,47 +222,55 @@ module D = struct
         ; others : bool
         }
 
-  let rec value_escape ~update ~st ~st' x =
+  let higher_escape_status s s' =
+    match s, s' with
+    | `Escape, `Escape -> false
+    | `Escape, (`Escape_constant | `No) -> true
+    | `Escape_constant, (`Escape | `Escape_constant) -> false
+    | `Escape_constant, `No -> true
+    | `No, (`Escape | `Escape_constant | `No) -> false
+
+  let rec value_escape ~update ~st ~st' s x =
     let idx = Var.idx x in
-    if not st.may_escape.(idx)
+    if higher_escape_status s st.may_escape.(idx)
     then (
-      st.may_escape.(idx) <- true;
-      st.possibly_mutable.(idx) <- true;
+      st.may_escape.(idx) <- s;
+      if Poly.equal s `Escape then st.possibly_mutable.(idx) <- true;
       match st.defs.(idx) with
       | Expr (Block (_, a, _)) ->
-          Array.iter ~f:(fun y -> variable_escape ~update ~st ~st' y) a;
-          update ~deps:true x
+          Array.iter ~f:(fun y -> variable_escape ~update ~st ~st' s y) a;
+          if Poly.equal s `Escape then update ~deps:true x
       | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
               | Phi { known; _ } -> st.defs.(Var.idx y) <- Phi { known; others = true }
               | Expr _ -> assert false);
-              update ~deps:false y)
+              if Poly.equal s `Escape then update ~deps:false y)
             params;
           Var.Set.iter
-            (fun y -> variable_escape ~update ~st ~st' y)
+            (fun y -> variable_escape ~update ~st ~st' s y)
             (Var.Map.find x st.return_values)
       | _ -> ())
 
-  and variable_escape ~update ~st ~st' x =
-    if Poly.(st.variable_may_escape.(Var.idx x) <> `Escape)
-    then (
-      do_escape st x;
-      escape ~update ~st ~st' (Var.Tbl.get st' x))
+  and variable_escape ~update ~st ~st' s x =
+    if higher_escape_status s st.variable_may_escape.(Var.idx x)
+    then st.variable_may_escape.(Var.idx x) <- s;
+    approx_escape ~update ~st ~st' s (Var.Tbl.get st' x)
 
-  and escape ~update ~st ~st' a =
+  and approx_escape ~update ~st ~st' s a =
     match a with
     | Top -> ()
-    | Values { known; _ } -> Var.Set.iter (fun x -> value_escape ~update ~st ~st' x) known
+    | Values { known; _ } ->
+        Var.Set.iter (fun x -> value_escape ~update ~st ~st' s x) known
 
   let join ~update ~st ~st' x y =
     match x, y with
     | Top, _ ->
-        escape ~update ~st ~st' y;
+        approx_escape ~update ~st ~st' `Escape y;
         Top
     | _, Top ->
-        escape ~update ~st ~st' x;
+        approx_escape ~update ~st ~st' `Escape x;
         Top
     | Values { known; others }, Values { known = known'; others = others' } ->
         Values { known = Var.Set.union known known'; others = others || others' }
@@ -324,7 +334,7 @@ let propagate1 st update st' x =
                   known
             | Top -> Top)
         | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get st' y
-        | Prim (Array_get, [ Pv y; _; _ ])
+        | Prim (Array_get, [ Pv y; _ ])
         | Prim (Extern "caml_array_unsafe_get", [ Pv y; _ ]) -> (
             match Var.Tbl.get st' y with
             | Values { known; others } ->
@@ -367,26 +377,28 @@ let propagate1 st update st' x =
               | [], _ -> ()
               | Pc _ :: ax, [] -> loop ax []
               | Pv a :: ax, [] ->
-                  D.variable_escape ~update ~st ~st' a;
+                  D.variable_escape ~update ~st ~st' `Escape a;
                   loop ax []
               | a :: ax, k :: kx ->
                   (match a, k with
-                  | _, `Const | Pc _, _ -> ()
+                  | Pc _, _ -> ()
+                  | Pv v, `Const -> D.variable_escape ~update ~st ~st' `Escape_constant v
                   | Pv v, `Shallow_const -> (
                       match st.defs.(Var.idx v) with
                       | Expr (Block (_, a, _)) ->
-                          Array.iter a ~f:(fun x -> D.variable_escape ~update ~st ~st' x)
-                      | _ -> D.variable_escape ~update ~st ~st' v)
+                          Array.iter a ~f:(fun x ->
+                              D.variable_escape ~update ~st ~st' `Escape x)
+                      | _ -> D.variable_escape ~update ~st ~st' `Escape v)
                   | Pv v, `Object_literal -> (
                       match st.defs.(Var.idx v) with
                       | Expr (Block (_, a, _)) ->
                           Array.iter a ~f:(fun x ->
                               match st.defs.(Var.idx x) with
                               | Expr (Block (_, [| _k; v |], _)) ->
-                                  D.variable_escape ~update ~st ~st' v
-                              | _ -> D.variable_escape ~update ~st ~st' x)
-                      | _ -> D.variable_escape ~update ~st ~st' v)
-                  | Pv v, `Mutable -> D.variable_escape ~update ~st ~st' v);
+                                  D.variable_escape ~update ~st ~st' `Escape v
+                              | _ -> D.variable_escape ~update ~st ~st' `Escape x)
+                      | _ -> D.variable_escape ~update ~st ~st' `Escape v)
+                  | Pv v, `Mutable -> D.variable_escape ~update ~st ~st' `Escape v);
                   loop ax kx
             in
             loop l ka;
@@ -395,7 +407,10 @@ let propagate1 st update st' x =
             match Var.Tbl.get st' f with
             | Values { known; others } ->
                 if others
-                then List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
+                then
+                  List.iter
+                    ~f:(fun y -> D.variable_escape ~update ~st ~st' `Escape y)
+                    args;
                 D.join_set
                   ~update
                   ~st
@@ -420,7 +435,7 @@ let propagate1 st update st' x =
                                   st.defs.(idx) <-
                                     Phi
                                       { known = Var.Set.add y known
-                                      ; others = others || escape
+                                      ; others = others || Poly.equal escape `Escape
                                       })
                             params
                             args;
@@ -452,23 +467,25 @@ Underapplied:
 *)
                         (*ZZZ Arguments escape ? *)
                         (* Partially applied or over applied *)
-                        List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
-                        D.variable_escape ~update ~st ~st' g;
+                        List.iter
+                          ~f:(fun y -> D.variable_escape ~update ~st ~st' `Escape y)
+                          args;
+                        D.variable_escape ~update ~st ~st' `Escape g;
                         D.others
                     | Expr (Block _) -> D.bottom
                     | Phi _ | Expr _ -> assert false)
                   known
             | Top ->
-                List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' y) args;
+                List.iter ~f:(fun y -> D.variable_escape ~update ~st ~st' `Escape y) args;
 
                 D.Top))
   in
   (match st.variable_may_escape.(Var.idx x) with
-  | `Escape ->
+  | (`Escape | `Escape_constant) as s ->
       (*      Format.eprintf "ESCAPE %a@." Var.print x;*)
-      D.escape ~update ~st ~st' approx
-  | `Mutable -> D.mark_mutable ~update ~st ~st' approx
+      D.approx_escape ~update ~st ~st' s approx
   | `No -> ());
+  if st.variable_possibly_mutable.(Var.idx x) then D.mark_mutable ~update ~st ~st' approx;
   approx
 
 let propagate1 st update st' x =
@@ -489,8 +506,8 @@ let propagate1 st update st' x =
   | Values { known; _ } when Var.Set.cardinal known < 200 -> res
   | Values _ ->
       (*      Format.eprintf "TOP %a@." Var.print x;*)
-      D.escape ~update ~st ~st' res;
-      Top (*top x*)
+      D.approx_escape ~update ~st ~st' `Escape res;
+      Top
   | Top -> Top
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -538,7 +555,8 @@ let f p =
   let deps = Array.make nv Var.Set.empty in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv `No in
-  let may_escape = Array.make nv false in
+  let variable_possibly_mutable = Array.make nv false in
+  let may_escape = Array.make nv `No in
   let possibly_mutable = Array.make nv false in
   let st =
     { vars
@@ -546,6 +564,7 @@ let f p =
     ; defs
     ; return_values = rets
     ; variable_may_escape
+    ; variable_possibly_mutable
     ; may_escape
     ; possibly_mutable
     ; known_case = Hashtbl.create 16
@@ -585,7 +604,11 @@ let f p =
                            (match st.defs.(Var.idx x) with
                            | Expr (Closure _) -> "C"
                            | Expr (Block _) ->
-                               "B" ^ if st.may_escape.(Var.idx x) then "X" else ""
+                               "B"
+                               ^
+                               if Poly.equal st.may_escape.(Var.idx x) `Escape
+                               then "X"
+                               else ""
                            | _ -> "O")))
                     (Var.Set.elements known)
                     others)
@@ -593,7 +616,7 @@ let f p =
       vars;
   { info_defs = defs
   ; info_approximation = approximation
-  ; info_may_escape = may_escape
+  ; info_may_escape = Array.map ~f:(fun s -> Poly.(s <> `No)) may_escape
   ; info_possibly_mutable = possibly_mutable
   }
 
