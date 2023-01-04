@@ -801,7 +801,12 @@ let _ =
       if instanceof e array_constructor then None else Some (to_string e##toString))
 
 let export_js (field : js_string t) x =
-  Unsafe.set (Unsafe.pure_js_expr "jsoo_exports") field x
+  Unsafe.set
+    (Unsafe.pure_js_expr "jsoo_exports")
+    field
+    (if String.equal (Js.to_string (typeof (Obj.magic x))) "function"
+    then Obj.magic (wrap_callback (Obj.magic x))
+    else x)
 
 let export field x = export_js (string field) x
 
