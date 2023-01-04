@@ -1,15 +1,15 @@
 function shouldRaise(f) {
   try {
     f();
-    throw new Error ("should have raised");
   } catch (e) { console.log("OK"); return }
+  throw new Error ("should have raised");
 }
 function shouldNotRaise(f) {
   try {
     f();
     console.log("OK");
     return
-  } catch (e) { throw new Error ("should have raised"); }
+  } catch (e) { throw new Error ("should not have raised"); }
 }
 
 // a0, a1 and b are three separate instances.
