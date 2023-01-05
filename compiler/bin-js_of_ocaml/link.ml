@@ -22,10 +22,12 @@ open Js_of_ocaml_compiler
 open Cmdliner
 
 type t =
-  { source_map : (string option * Source_map.t) option
+  { common : Jsoo_cmdline.Arg.t
+  ; source_map : (string option * Source_map.t) option
   ; js_files : string list
   ; output_file : string option
   ; resolve_sourcemap_url : bool
+  ; linkall : bool
   }
 
 let options =
@@ -53,13 +55,19 @@ let options =
     let doc = "Link JavaScript files [$(docv)]." in
     Arg.(value & pos_all string [] & info [] ~docv:"JS_FILES" ~doc)
   in
+  let linkall =
+    let doc = "Link all compilation units." in
+    Arg.(value & flag & info [ "linkall" ] ~doc)
+  in
   let build_t
+      common
       sourcemap
       sourcemap_inline_in_js
       sourcemap_root
       output_file
       resolve_sourcemap_url
-      js_files =
+      js_files
+      linkall =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let source_map =
       if sourcemap || sourcemap_inline_in_js
@@ -82,28 +90,31 @@ let options =
             } )
       else None
     in
-    `Ok { output_file; js_files; source_map; resolve_sourcemap_url }
+    `Ok { common; output_file; js_files; source_map; resolve_sourcemap_url; linkall }
   in
   let t =
     Term.(
       const build_t
+      $ Jsoo_cmdline.Arg.t
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_root
       $ output_file
       $ resolve_sourcemap_url
-      $ js_files)
+      $ js_files
+      $ linkall)
   in
   Term.ret t
 
-let f { output_file; source_map; resolve_sourcemap_url; js_files } =
+let f { common; output_file; source_map; resolve_sourcemap_url; js_files; linkall } =
+  Jsoo_cmdline.Arg.eval common;
   let with_output f =
     match output_file with
     | None -> f stdout
     | Some file -> Filename.gen_file file f
   in
   with_output (fun output ->
-      Link_js.link ~output ~files:js_files ~source_map ~resolve_sourcemap_url)
+      Link_js.link ~output ~linkall ~files:js_files ~source_map ~resolve_sourcemap_url)
 
 let info =
   Info.make

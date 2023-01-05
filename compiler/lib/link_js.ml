@@ -56,7 +56,7 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
       close_in ic;
       Source_map (Source_map_io.of_string content)
 
-let link ~output ~files ~resolve_sourcemap_url ~source_map =
+let link ~output ~linkall:_ ~files ~resolve_sourcemap_url ~source_map =
   let sm = ref [] in
   let line_offset = ref 0 in
   let build_info = ref None in
