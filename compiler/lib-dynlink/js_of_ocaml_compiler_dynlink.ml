@@ -22,9 +22,10 @@ let () =
       unit -> J.t =
     let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
     let prims = split_primitives (Symtable.data_primitive_names ()) in
-    let output_program = Driver.from_string ~prims ~debug s in
     let b = Buffer.create 100 in
-    output_program (Pretty_print.to_buffer b);
+    let fmt = Pretty_print.to_buffer b in
+    Driver.configure fmt;
+    Driver.from_string ~prims ~debug s fmt;
     Format.(pp_print_flush std_formatter ());
     Format.(pp_print_flush err_formatter ());
     flush stdout;

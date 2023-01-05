@@ -2798,4 +2798,11 @@ let predefined_exceptions () =
     |> List.concat
   in
   let block = { params = []; body; branch = Stop } in
-  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }
+  let unit_info =
+    { Unit_info.provides = StringSet.of_list (List.map ~f:snd predefined_exceptions)
+    ; requires = StringSet.empty
+    ; force_link = true
+    ; effects_without_cps = false
+    }
+  in
+  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info

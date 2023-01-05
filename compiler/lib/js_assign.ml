@@ -306,11 +306,13 @@ let program' (module Strategy : Strategy) p =
   let p = mapper#program p in
   mapper#block (Params []);
   if S.cardinal mapper#get_free <> 0
-  then
+  then (
     if not (debug ())
     then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
-    else (
-      Js_output.program (Pretty_print.to_out_channel stderr) p;
+    else
+      let (_ : Source_map.t option) =
+        Js_output.program (Pretty_print.to_out_channel stderr) p
+      in
       Format.eprintf "Some variables escaped:";
       S.iter (fun s -> Format.eprintf " %s" (Var.to_string s)) mapper#get_free;
       Format.eprintf "@.");

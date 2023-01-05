@@ -25,7 +25,18 @@ val f :
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> ?linkall:bool
-  -> ?source_map:string option * Source_map.t
+  -> ?source_map:Source_map.t
+  -> ?custom_header:string
+  -> Pretty_print.t
+  -> Parse_bytecode.Debug.t
+  -> Code.program
+  -> Source_map.t option
+
+val f' :
+     ?standalone:bool
+  -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?profile:profile
+  -> ?linkall:bool
   -> ?custom_header:string
   -> Pretty_print.t
   -> Parse_bytecode.Debug.t
@@ -38,6 +49,8 @@ val from_string :
   -> string
   -> Pretty_print.t
   -> unit
+
+val configure : Pretty_print.t -> unit
 
 val profiles : (int * profile) list
 

@@ -59,24 +59,26 @@ let%expect_test _ =
       $ cat "test.ml"
         1: let id x = x
       $ cat "test.js"
-        1: (function(globalThis)
-        2:    {"use strict";
-        3:     var runtime=globalThis.jsoo_runtime;
-        4:     function id(x){return x}
-        5:     var Test=[0,id];
-        6:     runtime.caml_register_global(0,Test,"Test");
-        7:     return}
-        8:   (globalThis));
-        9:
-       10: //# sourceMappingURL=test.map
-      null:-1:-1 -> 3:4
-      /dune-root/test.ml:1:4 -> 4:13
-      /dune-root/test.ml:1:7 -> 4:16
-      /dune-root/test.ml:1:11 -> 4:19
-      /dune-root/test.ml:1:7 -> 4:26
-      /dune-root/test.ml:1:12 -> 4:27
-      /dune-root/test.ml:1:4 -> 5:16
-      null:-1:-1 -> 7:10
+        1:
+        2: //# unitInfo: Provides: Test
+        3: (function(globalThis)
+        4:    {"use strict";
+        5:     var runtime=globalThis.jsoo_runtime;
+        6:     function id(x){return x}
+        7:     var Test=[0,id];
+        8:     runtime.caml_register_global(0,Test,"Test");
+        9:     return}
+       10:   (globalThis));
+       11:
+       12: //# sourceMappingURL=test.map
+      null:-1:-1 -> 5:4
+      /dune-root/test.ml:1:4 -> 6:13
+      /dune-root/test.ml:1:7 -> 6:16
+      /dune-root/test.ml:1:11 -> 6:19
+      /dune-root/test.ml:1:7 -> 6:26
+      /dune-root/test.ml:1:12 -> 6:27
+      /dune-root/test.ml:1:4 -> 7:16
+      null:-1:-1 -> 9:10
     |}]
 
 let%expect_test _ =
@@ -133,7 +135,7 @@ let%expect_test _ =
     ; mappings = [ gen (3, 3) (5, 5) 0 ]
     }
   in
-  let m = Source_map.merge [ 0, s1; 20, s2 ] in
+  let m = Source_map.merge [ s1; Source_map.filter_map s2 ~f:(fun x -> Some (x + 20)) ] in
   (match m with
   | None -> ()
   | Some sm ->

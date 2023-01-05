@@ -490,6 +490,25 @@ module String = struct
       in
       loop 0
 
+  let is_suffix ~suffix s =
+    let len_a = length suffix in
+    let len_s = length s in
+    if len_a > len_s
+    then false
+    else
+      let max_idx_a = len_a - 1 in
+      let rec loop i =
+        if i > max_idx_a
+        then true
+        else if not
+                  (Char.equal
+                     (unsafe_get suffix (len_a - 1 - i))
+                     (unsafe_get s (len_s - 1 - i)))
+        then false
+        else loop (i + 1)
+      in
+      loop 0
+
   let drop_prefix ~prefix s =
     let plen = String.length prefix in
     if plen > String.length s

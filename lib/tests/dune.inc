@@ -1,4 +1,9 @@
 
+(env
+ (_
+  (js_of_ocaml
+    (link_flags (:standard --linkall)))))
+
 (library
  ;; lib/tests/test_css_angle.ml
  (name test_css_angle_75)

@@ -47,40 +47,16 @@ open Javascript
 module PP = Pretty_print
 
 module Make (D : sig
-  val source_map : Source_map.t option
+  val push_mapping : Pretty_print.pos -> Source_map.map -> unit
+
+  val get_file_index : string -> int
+
+  val get_name_index : string -> int
+
+  val source_map_enabled : bool
 end) =
 struct
-  let temp_mappings = ref []
-
-  let push_mapping, get_file_index, get_name_index, source_map_enabled =
-    let idx_files = ref 0 in
-    let idx_names = ref 0 in
-    let files = Hashtbl.create 17 in
-    let names = Hashtbl.create 17 in
-    match D.source_map with
-    | None -> (fun _ _ -> ()), (fun _ -> -1), (fun _ -> -1), false
-    | Some sm ->
-        List.iter (List.rev sm.Source_map.sources) ~f:(fun f ->
-            Hashtbl.add files f !idx_files;
-            incr idx_files);
-        ( (fun pos m -> temp_mappings := (pos, m) :: !temp_mappings)
-        , (fun file ->
-            try Hashtbl.find files file
-            with Not_found ->
-              let pos = !idx_files in
-              Hashtbl.add files file pos;
-              incr idx_files;
-              sm.Source_map.sources <- file :: sm.Source_map.sources;
-              pos)
-        , (fun name ->
-            try Hashtbl.find names name
-            with Not_found ->
-              let pos = !idx_names in
-              Hashtbl.add names name pos;
-              incr idx_names;
-              sm.Source_map.names <- name :: sm.Source_map.names;
-              pos)
-        , true )
+  open D
 
   let debug_enabled = Config.Flag.debuginfo ()
 
@@ -1204,14 +1180,76 @@ let need_space a b =
   | '+', '+' -> true
   | _, _ -> false
 
+let hashtbl_to_list htb =
+  Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
+  |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
+  |> List.map ~f:fst
+
 let program f ?source_map p =
-  let smo =
+  let temp_mappings = ref [] in
+  let files = Hashtbl.create 17 in
+  let names = Hashtbl.create 17 in
+  let contents : string option list ref option =
     match source_map with
-    | None -> None
-    | Some (_, sm) -> Some sm
+    | None | Some { Source_map.sources_content = None; _ } -> None
+    | Some { Source_map.sources_content = Some _; _ } -> Some (ref [])
+  in
+  let push_mapping, get_file_index, get_name_index, source_map_enabled =
+    let source_map_enabled =
+      match source_map with
+      | None -> false
+      | Some sm ->
+          let rec loop s sc =
+            match s, sc with
+            | [], _ -> ()
+            | x :: xs, [] ->
+                Hashtbl.add files x (Hashtbl.length files);
+                Option.iter contents ~f:(fun r -> r := None :: !r);
+                loop xs []
+            | x :: xs, y :: ys ->
+                Hashtbl.add files x (Hashtbl.length files);
+                Option.iter contents ~f:(fun r -> r := y :: !r);
+                loop xs ys
+          in
+          loop sm.sources (Option.value ~default:[] sm.sources_content);
+          List.iter sm.Source_map.names ~f:(fun f ->
+              Hashtbl.add names f (Hashtbl.length names));
+          true
+    in
+    let find_source file =
+      match Builtins.find file with
+      | Some f -> Some (Builtins.File.content f)
+      | None ->
+          if Sys.file_exists file
+          then
+            let content = Fs.read_file file in
+            Some content
+          else None
+    in
+    ( (fun pos m -> temp_mappings := (pos, m) :: !temp_mappings)
+    , (fun file ->
+        try Hashtbl.find files file
+        with Not_found ->
+          let pos = Hashtbl.length files in
+          Hashtbl.add files file pos;
+          Option.iter contents ~f:(fun r -> r := find_source file :: !r);
+          pos)
+    , (fun name ->
+        try Hashtbl.find names name
+        with Not_found ->
+          let pos = Hashtbl.length names in
+          Hashtbl.add names name pos;
+          pos)
+    , source_map_enabled )
   in
   let module O = Make (struct
-    let source_map = smo
+    let push_mapping = push_mapping
+
+    let get_name_index = get_name_index
+
+    let get_file_index = get_file_index
+
+    let source_map_enabled = source_map_enabled
   end) in
   PP.set_needed_space_function f need_space;
   if Config.Flag.effects () then PP.set_adjust_indentation_function f (fun n -> n mod 40);
@@ -1219,63 +1257,39 @@ let program f ?source_map p =
   O.program f p;
   PP.end_group f;
   PP.newline f;
-  (match source_map with
-  | None -> ()
-  | Some (out_file, sm) ->
-      let sm =
-        { sm with
-          Source_map.sources = List.rev sm.Source_map.sources
-        ; Source_map.names = List.rev sm.Source_map.names
-        }
-      in
-      let sources = sm.Source_map.sources in
-      let sources_content =
-        match sm.Source_map.sources_content with
-        | None -> None
-        | Some [] ->
-            Some
-              (List.map sources ~f:(fun file ->
-                   match Builtins.find file with
-                   | Some f -> Some (Builtins.File.content f)
-                   | None ->
-                       if Sys.file_exists file
-                       then
-                         let content = Fs.read_file file in
-                         Some content
-                       else None))
-        | Some _ -> assert false
-      in
-      let sources =
-        List.map sources ~f:(fun filename ->
-            match Builtins.find filename with
-            | None -> filename
-            | Some _ -> Filename.concat "/builtin" filename)
-      in
-      let mappings =
-        List.map !O.temp_mappings ~f:(fun (pos, m) ->
-            { m with
-              (* [p_line] starts at zero, [gen_line] at 1 *)
-              Source_map.gen_line = pos.PP.p_line + 1
-            ; Source_map.gen_col = pos.PP.p_col
-            })
-      in
-      let sm = { sm with Source_map.sources; sources_content; mappings } in
-      let urlData =
-        match out_file with
-        | None ->
-            let data = Source_map_io.to_string sm in
-            "data:application/json;base64," ^ Base64.encode_exn data
-        | Some out_file ->
-            Source_map_io.to_file sm out_file;
-            Filename.basename out_file
-      in
-      PP.newline f;
-      PP.string f (Printf.sprintf "//# sourceMappingURL=%s\n" urlData));
-  if stats ()
+  let sm =
+    match source_map with
+    | None -> None
+    | Some sm ->
+        let sources = hashtbl_to_list files in
+        let names = hashtbl_to_list names in
+        let sources_content =
+          match contents with
+          | None -> None
+          | Some r -> Some (List.rev !r)
+        in
+        let sources =
+          List.map sources ~f:(fun filename ->
+              match Builtins.find filename with
+              | None -> filename
+              | Some _ -> Filename.concat "/builtin" filename)
+        in
+        let mappings =
+          List.rev_append_map !temp_mappings sm.mappings ~f:(fun (pos, m) ->
+              { m with
+                (* [p_line] starts at zero, [gen_line] at 1 *)
+                Source_map.gen_line = pos.PP.p_line + 1
+              ; Source_map.gen_col = pos.PP.p_col
+              })
+        in
+        Some { sm with Source_map.sources; names; sources_content; mappings }
+  in
+  (if stats ()
   then
     let size i = Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
     let _percent n d =
       Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. float_of_int d)
     in
     let total_s = PP.total f in
-    Format.eprintf "total size : %s@." (size total_s)
+    Format.eprintf "total size : %s@." (size total_s));
+  sm

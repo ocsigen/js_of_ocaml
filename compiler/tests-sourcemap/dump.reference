@@ -1,27 +1,9 @@
 sourcemap for test.bc.js
-d.ml:1:4 -> 13:    function <>f(x){return x / 2 | 0}
-d.ml:1:6 -> 15:    function f(<>x){return x / 2 | 0}
-d.ml:1:10 -> 18:    function f(x){<>return x / 2 | 0}
-d.ml:1:6 -> 25:    function f(x){return <>x / 2 | 0}
-d.ml:1:15 -> 34:    function f(x){return x / 2 | 0<>}
-d.ml:1:4 -> 21:    var Testlib_D=[0,<>f];
-b.ml:1:4 -> 13:    function <>f$0(x){return x - 1 | 0}
-b.ml:1:6 -> 17:    function f$0(<>x){return x - 1 | 0}
-b.ml:1:10 -> 20:    function f$0(x){<>return x - 1 | 0}
-b.ml:1:6 -> 27:    function f$0(x){return <>x - 1 | 0}
-b.ml:1:15 -> 36:    function f$0(x){return x - 1 | 0<>}
-b.ml:1:4 -> 21:    var Testlib_B=[0,<>f$0];
-c.ml:1:4 -> 13:    function <>f$1(x){return (x - 1 | 0) * 2 | 0}
-c.ml:1:6 -> 17:    function f$1(<>x){return (x - 1 | 0) * 2 | 0}
-c.ml:1:10 -> 20:    function f$1(x){<>return (x - 1 | 0) * 2 | 0}
-c.ml:1:6 -> 28:    function f$1(x){return (<>x - 1 | 0) * 2 | 0}
-c.ml:1:19 -> 46:    function f$1(x){return (x - 1 | 0) * 2 | 0<>}
-c.ml:1:4 -> 21:    var Testlib_C=[0,<>f$1];
-a.ml:1:4 -> 13:    function <>f$2(x){return x + 1 | 0}
-a.ml:1:6 -> 17:    function f$2(<>x){return x + 1 | 0}
-a.ml:1:10 -> 20:    function f$2(x){<>return x + 1 | 0}
-a.ml:1:6 -> 27:    function f$2(x){return <>x + 1 | 0}
-a.ml:1:15 -> 36:    function f$2(x){return x + 1 | 0<>}
-a.ml:1:4 -> 21:    var Testlib_A=[0,<>f$2];
+b.ml:1:4 -> 13:    function <>f(x){return x - 1 | 0}
+b.ml:1:6 -> 15:    function f(<>x){return x - 1 | 0}
+b.ml:1:10 -> 18:    function f(x){<>return x - 1 | 0}
+b.ml:1:6 -> 25:    function f(x){return <>x - 1 | 0}
+b.ml:1:15 -> 34:    function f(x){return x - 1 | 0<>}
+b.ml:1:4 -> 21:    var Testlib_B=[0,<>f];
 a.ml:-1:-1 -> 4:    <>var runtime=globalThis.jsoo_runtime;
 a.ml:-1:-1 -> 44:    throw [0,Int,caml_call1(Testlib_B[1],2)]<>}
