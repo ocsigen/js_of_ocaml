@@ -155,9 +155,8 @@ module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 module Solver = G'.Solver (Domain)
 
 let cps_needed ~info ~in_loop ~rels st x =
-  let ( &&& ) = ( && ) in
   let open Domain.Syntax in
-  cps_if (false &&& Var.Set.mem x in_loop)
+  cps_if (Var.Set.mem x in_loop)
   ||
   let idx = Var.idx x in
   Var.Map.fold

@@ -104,7 +104,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         var m=0,_t_=0}
       runtime.caml_push_trap
        (function(_z_)
-         {if(_z_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
+         {if(_z_ === Stdlib[8])return cont(0);
           var raise=caml_pop_trap();
           return caml_cps_exact_call1(raise,_z_)});
       if(caml_string_equal(s,cst))
@@ -114,28 +114,24 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_cps_call2
               (_v_,
                cst_toto,
-               function(_y_)
-                {caml_pop_trap();
-                 return caml_cps_exact_call1(cont,[0,[0,_y_,n,m]])})}
+               function(_y_){caml_pop_trap();return cont([0,[0,_y_,n,m]])})}
     //end
     function cond1(b,cont)
-     {function _r_(ic){return caml_cps_exact_call1(cont,[0,ic,7])}
+     {function _r_(ic){return cont([0,ic,7])}
       return b
               ?caml_cps_call2(Stdlib[79],cst_toto$0,_r_)
               :caml_cps_call2(Stdlib[79],cst_titi,_r_)}
     //end
     function cond2(b,cont)
-     {function _p_(_q_){return caml_cps_exact_call1(cont,7)}
+     {function _p_(_q_){return cont(7)}
       return b
               ?caml_cps_call2(Stdlib_Format[137],_a_,_p_)
               :caml_cps_call2(Stdlib_Format[137],_b_,_p_)}
     //end
     function cond3(b,cont)
      {var x=[0,0];
-      function _n_(_o_){return caml_cps_exact_call1(cont,x[1])}
-      return b
-              ?(x[1] = 1,caml_cps_exact_call1(_n_,0))
-              :caml_cps_call2(Stdlib_Format[137],_c_,_n_)}
+      function _n_(_o_){return cont(x[1])}
+      return b?(x[1] = 1,_n_(0)):caml_cps_call2(Stdlib_Format[137],_c_,_n_)}
     //end
     function loop1(b,cont)
      {var all=[0,0],_j_=Stdlib[79];
@@ -153,7 +149,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                               return b
                                       ?caml_cps_call2(Stdlib[53],line,_k_)
                                       :caml_cps_exact_call1(_k_,0)})}
-                 return caml_cps_exact_call1(_k_,0)})}
+                 return _k_(0)})}
     //end
     function loop2(param,cont)
      {var all=[0,0],_e_=Stdlib[79];

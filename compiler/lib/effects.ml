@@ -183,16 +183,18 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
           | handler_pc :: _ -> Hashtbl.add matching_exn_handler pc handler_pc
           | _ -> ())
       | _ -> ());
-      let englobing_exn_handlers =
-        match block.branch with
-        | Pushtrap (_, _, (handler_pc, _), _) -> handler_pc :: englobing_exn_handlers
-        | Poptrap _ -> List.tl englobing_exn_handlers
-        | _ -> englobing_exn_handlers
-      in
       Code.fold_children
         blocks
         pc
-        (fun pc visited -> traverse visited ~englobing_exn_handlers pc)
+        (fun pc visited ->
+          let englobing_exn_handlers =
+            match block.branch with
+            | Pushtrap (_, _, (handler_pc, _), _) when pc <> handler_pc ->
+                handler_pc :: englobing_exn_handlers
+            | Poptrap _ -> List.tl englobing_exn_handlers
+            | _ -> englobing_exn_handlers
+          in
+          traverse visited ~englobing_exn_handlers pc)
         visited
   in
   ignore @@ traverse Addr.Set.empty ~englobing_exn_handlers:[] start;
@@ -214,20 +216,20 @@ type jump_closures =
 let jump_closures blocks_to_transform idom : jump_closures =
   Hashtbl.fold
     (fun node idom_node jc ->
-      if not (Addr.Set.mem node blocks_to_transform)
-      then jc
-      else
-        let cname = Var.fresh () in
-        { closure_of_jump = Addr.Map.add node cname jc.closure_of_jump
-        ; closures_of_alloc_site =
-            Addr.Map.add
-              idom_node
-              ((cname, node)
-              ::
-              (try Addr.Map.find idom_node jc.closures_of_alloc_site
-               with Not_found -> []))
-              jc.closures_of_alloc_site
-        })
+      match Addr.Set.mem node blocks_to_transform with
+      | false -> jc
+      | true ->
+          let cname = Var.fresh () in
+          { closure_of_jump = Addr.Map.add node cname jc.closure_of_jump
+          ; closures_of_alloc_site =
+              Addr.Map.add
+                idom_node
+                ((cname, node)
+                ::
+                (try Addr.Map.find idom_node jc.closures_of_alloc_site
+                 with Not_found -> []))
+                jc.closures_of_alloc_site
+          })
     idom
     { closure_of_jump = Addr.Map.empty; closures_of_alloc_site = Addr.Map.empty }
 
@@ -260,45 +262,45 @@ let allocate_closure ~st ~params ~body:(body, branch) =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-let tail_call ~st ?(instrs = []) ~f ?(check = true) ?(exact = true) args =
+let tail_call ~st ?(instrs = []) ~f ~check ~exact args =
   let ret = Var.fresh () in
   if check then st.tail_calls := Var.Set.add ret !(st.tail_calls);
-  let exact = exact || Flow2.exact_call st.flow_info f (List.length args - 1) in
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
 let cps_branch ~st (pc, args) =
-  if Addr.Set.mem pc st.blocks_to_transform
-  then
-    let args, instrs =
-      if List.is_empty args && Hashtbl.mem st.is_continuation pc
-      then
-        (* We are jumping to a block that is also used as a continuation.
-           We pass it a dummy argument. *)
-        let x = Var.fresh () in
-        [ x ], [ Let (x, Constant (Int 0l)) ]
-      else args, []
-    in
-    tail_call
-      ~st
-      ~instrs
-      ~check:(Hashtbl.mem st.loop_headers pc)
-      ~f:(closure_of_pc ~st pc)
-      args
-  else [], Branch (pc, args)
+  match Addr.Set.mem pc st.blocks_to_transform with
+  | false -> [], Branch (pc, args)
+  | true ->
+      let args, instrs =
+        if List.is_empty args && Hashtbl.mem st.is_continuation pc
+        then
+          (* We are jumping to a block that is also used as a continuation.
+             We pass it a dummy argument. *)
+          let x = Var.fresh () in
+          [ x ], [ Let (x, Constant (Int 0l)) ]
+        else args, []
+      in
+      tail_call
+        ~st
+        ~instrs
+        ~check:(Hashtbl.mem st.loop_headers pc)
+        ~exact:true
+        ~f:(closure_of_pc ~st pc)
+        args
 
 let cps_jump_cont ~st ((pc, _) as cont) =
-  if Addr.Set.mem pc st.blocks_to_transform
-  then
-    let call_block =
-      let body, branch = cps_branch ~st cont in
-      add_block st { params = []; body; branch }
-    in
-    call_block, []
-  else cont
+  match Addr.Set.mem pc st.blocks_to_transform with
+  | false -> cont
+  | true ->
+      let call_block =
+        let body, branch = cps_branch ~st cont in
+        add_block st { params = []; body; branch }
+      in
+      call_block, []
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> tail_call ~check:false ~st ~f:k [ x ]
+  | Return x -> tail_call ~st ~check:false ~exact:true ~f:k [ x ]
   | Raise (x, _) -> (
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
@@ -310,6 +312,8 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           tail_call
             ~st
             ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+            ~check:true
+            ~exact:true
             ~f:exn_handler
             [ x ])
   | Stop -> [], Stop
@@ -321,25 +325,26 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
          to create a single block per continuation *)
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap ((pc, args), _, (handler_pc, _), _) ->
+  | Pushtrap ((pc, args), _, (handler_pc, _), _) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
-      if Addr.Set.mem handler_pc st.blocks_to_transform
-      then
-        let exn_handler = closure_of_pc ~st handler_pc in
-        let push_trap =
-          Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
-        in
-        let body, branch = cps_branch ~st (pc, args) in
-        push_trap :: body, branch
-      else [], last
-  | Poptrap (pc', args) ->
-      if try Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
-         with Not_found -> false
-      then
-        let exn_handler = Var.fresh () in
-        let body, branch = cps_branch ~st (pc', args) in
-        [ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ] @ body, branch
-      else [], Poptrap (cps_jump_cont ~st (pc', args))
+      match Addr.Set.mem handler_pc st.blocks_to_transform with
+      | false -> [], last
+      | true ->
+          let exn_handler = closure_of_pc ~st handler_pc in
+          let push_trap =
+            Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+          in
+          let body, branch = cps_branch ~st (pc, args) in
+          push_trap :: body, branch)
+  | Poptrap (pc', args) -> (
+      match
+        Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
+      with
+      | false -> [], Poptrap (cps_jump_cont ~st (pc', args))
+      | true ->
+          let exn_handler = Var.fresh () in
+          let body, branch = cps_branch ~st (pc', args) in
+          Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
@@ -368,10 +373,21 @@ let cps_block ~st ~k pc block =
         List.map to_allocate ~f:(fun (cname, jump_pc) ->
             let params =
               let jump_block = Addr.Map.find jump_pc st.blocks in
+              (* For a function to be used as a continuation, it needs
+                 exactly one parameter. So, we add a parameter if
+                 needed. *)
               if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
               then
-                (* For loops, we may need to allocate a closure to bind [x],
-                   so we have to use a fresh variable here *)
+                (* We reuse the name of the value of the tail call of
+                   one a the previous blocks. When there is a single
+                   previous block, this is exactly what we want. For a
+                   merge node, the variable is not used so we can just
+                   as well use it. For a loop, we don't want the
+                   return value of a call right before entering the
+                   loop to be overriden by the value returned by the
+                   last call in the loop. So, we may need to use an
+                   additional closure to bind it, and we have to use a
+                   fresh variable here *)
                 let x =
                   match Hashtbl.find st.is_continuation jump_pc with
                   | `Param x -> x
@@ -384,9 +400,25 @@ let cps_block ~st ~k pc block =
     | exception Not_found -> []
   in
   let rewrite_instr x e =
+    let perform_effect ~effect ~continuation =
+      Some
+        (fun ~k ->
+          let e =
+            Prim (Extern "caml_perform_effect", [ Pv effect; continuation; Pv k ])
+          in
+          let x = Var.fresh () in
+          [ Let (x, e) ], Return x)
+    in
     match e with
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
-        Some (fun ~k -> tail_call ~st ~f ~exact (args @ [ k ]))
+        Some
+          (fun ~k ->
+            tail_call
+              ~st
+              ~check:true
+              ~exact:(exact || Flow2.exact_call st.flow_info f (List.length args))
+              ~f
+              (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
@@ -394,29 +426,14 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~f
+              ~check:true
               ~exact:(Flow2.exact_call st.flow_info f 1)
+              ~f
               [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
-        Some
-          (fun ~k ->
-            let x = Var.fresh () in
-            ( [ Let
-                  ( x
-                  , Prim (Extern "caml_perform_effect", [ Pv effect; Pc (Int 0l); Pv k ])
-                  )
-              ]
-            , Return x ))
-    | Prim (Extern "%reperform", [ Pv eff; Pv continuation ]) ->
-        Some
-          (fun ~k ->
-            let x = Var.fresh () in
-            ( [ Let
-                  ( x
-                  , Prim (Extern "caml_perform_effect", [ Pv eff; Pv continuation; Pv k ])
-                  )
-              ]
-            , Return x ))
+        perform_effect ~effect ~continuation:(Pc (Int 0l))
+    | Prim (Extern "%reperform", [ Pv effect; continuation ]) ->
+        perform_effect ~effect ~continuation
     | _ -> None
   in
   let rewritten_block =
@@ -459,7 +476,7 @@ let cps_block ~st ~k pc block =
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs ~check:false ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~check:false ~exact:true ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -789,7 +806,8 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 
 (****)
 
-let f (p : Code.program) =
+let f p =
+  let t = Timer.make () in
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p, live_vars = Deadcode.f p in
   let p = remove_empty_blocks ~live_vars p in
@@ -799,10 +817,6 @@ let f (p : Code.program) =
   let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
-  cps_transform ~flow_info:info ~live_vars ~cps_needed p
-
-let f p =
-  let t = Timer.make () in
-  let r = f p in
+  let p = cps_transform ~flow_info:info ~live_vars ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
-  r
+  p

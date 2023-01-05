@@ -59,7 +59,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         var m=0,_b_=0}
       runtime.caml_push_trap
        (function(_h_)
-         {if(_h_ === Stdlib[8])return caml_cps_exact_call1(cont,0);
+         {if(_h_ === Stdlib[8])return cont(0);
           var raise=caml_pop_trap();
           return caml_cps_exact_call1(raise,_h_)});
       if(caml_string_equal(s,cst))
@@ -69,7 +69,5 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_cps_call2
               (_d_,
                cst_toto,
-               function(_g_)
-                {caml_pop_trap();
-                 return caml_cps_exact_call1(cont,[0,[0,_g_,n,m]])})}
+               function(_g_){caml_pop_trap();return cont([0,[0,_g_,n,m]])})}
     //end |}]

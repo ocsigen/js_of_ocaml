@@ -47,7 +47,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   :runtime.caml_trampoline_return(f,[a0])}
         function caml_cps_call2(f,a0,a1)
          {return runtime.caml_stack_check_depth()
-                  ?f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])
+                  ?(f.l >= 0?f.l:f.l = f.length) == 2
+                    ?f(a0,a1)
+                    :runtime.caml_call_gen(f,[a0,a1])
                   :runtime.caml_trampoline_return(f,[a0,a1])}
         function caml_cps_exact_call2(f,a0,a1)
          {return runtime.caml_stack_check_depth()
