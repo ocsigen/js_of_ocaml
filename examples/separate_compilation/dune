@@ -5,9 +5,35 @@
 
 (rule
  (targets module2.cmo module2.cmi)
- (deps module1.cmi)
+ (deps module1.cmi lib1_mod1.cmi)
  (action
   (run ocamlc -g -c %{dep:module2.ml})))
+
+(rule
+ (targets lib1.cma)
+ (action
+  (run ocamlc -g -a %{dep:lib1_mod1.cmo} %{dep:lib1_mod2.cmo} -o lib1.cma)))
+
+(rule
+ (targets lib1_mod1.cmo lib1_mod1.cmi)
+ (action
+  (run ocamlc -g -c %{dep:lib1_mod1.ml})))
+
+(rule
+ (targets lib1_mod2.cmo lib1_mod2.cmi)
+ (action
+  (run ocamlc -g -c %{dep:lib1_mod2.ml})))
+
+(rule
+ (targets lib1.cma.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{dep:lib1.cma}
+   -o
+   %{targets})))
 
 (rule
  (targets module1.js)
@@ -32,7 +58,7 @@
    %{targets})))
 
 (rule
- (targets stdlib.js)
+ (targets stdlib.cma.js)
  (action
   (run
    %{bin:js_of_ocaml}
@@ -65,20 +91,35 @@
    %{bin:js_of_ocaml}
    link
    %{dep:myruntime.js}
-   %{dep:stdlib.js}
+   %{dep:stdlib.cma.js}
+   %{dep:lib1.cma.js}
    %{dep:module1.js}
    %{dep:module2.js}
    %{dep:std_exit.js}
    -o
    %{targets})))
 
+(rule
+ (target bin.referencejs)
+ (deps bin.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./bin.js))))
+
+(rule
+ (alias runtest)
+ (deps bin.reference bin.referencejs)
+ (action
+  (diff bin.reference bin.referencejs)))
+
 (alias
  (name default)
  (deps
   myruntime.js
-  stdlib.js
+  stdlib.cma.js
   std_exit.js
-  module1.js
   module2.js
+  module1.js
   bin.js
   index.html))
