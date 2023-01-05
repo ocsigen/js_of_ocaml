@@ -18,6 +18,10 @@
  *)
 open! Stdlib
 
+let times = Debug.find "times"
+
+let _debug = Debug.find "link"
+
 let sourceMappingURL = "//# sourceMappingURL="
 
 let sourceMappingURL_base64 = "//# sourceMappingURL=data:application/json;base64,"
@@ -28,19 +32,19 @@ type action =
   | Build_info of Build_info.t
   | Source_map of Source_map.t
 
+let prefix_kind line =
+  match String.is_prefix ~prefix:sourceMappingURL line with
+  | false -> (
+      match Build_info.parse line with
+      | Some bi -> `Build_info bi
+      | None -> `Other)
+  | true -> (
+      match String.is_prefix ~prefix:sourceMappingURL_base64 line with
+      | true -> `Json_base64 (String.length sourceMappingURL_base64)
+      | false -> `Url (String.length sourceMappingURL))
+
 let action ~resolve_sourcemap_url ~drop_source_map file line =
-  let prefix_kind =
-    match String.is_prefix ~prefix:sourceMappingURL line with
-    | false -> (
-        match Build_info.parse line with
-        | Some bi -> `Build_info bi
-        | None -> `Other)
-    | true -> (
-        match String.is_prefix ~prefix:sourceMappingURL_base64 line with
-        | true -> `Json_base64 (String.length sourceMappingURL_base64)
-        | false -> `Url (String.length sourceMappingURL))
-  in
-  match prefix_kind, drop_source_map with
+  match prefix_kind line, drop_source_map with
   | `Other, (true | false) -> Keep
   | `Build_info bi, _ -> Build_info bi
   | (`Json_base64 _ | `Url _), true -> Drop
@@ -65,8 +69,8 @@ let link ~output ~linkall:_ ~files ~resolve_sourcemap_url ~source_map =
     incr line_offset
   in
   try
-    List.iter
-      ~f:(fun file ->
+    let t = Timer.make () in
+    List.iter files ~f:(fun file ->
         let build_info_for_file = ref None in
         let ic = open_in file in
         (try
@@ -102,12 +106,13 @@ let link ~output ~linkall:_ ~files ~resolve_sourcemap_url ~source_map =
         | None, Some build_info_for_file -> build_info := Some (file, build_info_for_file)
         | Some (first_file, bi), Some build_info_for_file ->
             build_info :=
-              Some (first_file, Build_info.merge first_file bi file build_info_for_file))
-      files;
+              Some (first_file, Build_info.merge first_file bi file build_info_for_file));
+    if times () then Format.eprintf " emit: %a@." Timer.print t;
+    let t = Timer.make () in
     match source_map with
     | None -> ()
-    | Some (file, init_sm) -> (
-        match Source_map.merge ((0, init_sm) :: List.rev !sm) with
+    | Some (file, init_sm) ->
+        (match Source_map.merge ((0, init_sm) :: List.rev !sm) with
         | None -> ()
         | Some sm -> (
             (* preserve some info from [init_sm] *)
@@ -126,7 +131,8 @@ let link ~output ~linkall:_ ~files ~resolve_sourcemap_url ~source_map =
             | Some file ->
                 Source_map_io.to_file sm file;
                 let s = sourceMappingURL ^ Filename.basename file in
-                output_string output s))
+                output_string output s));
+        if times () then Format.eprintf " sourcemap: %a@." Timer.print t
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"
