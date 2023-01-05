@@ -28,7 +28,7 @@ let print ~compact source =
   let lexed = Parse_js.Lexer.of_lexbuf lexbuf in
   let parsed = Parse_js.parse lexed in
   Config.Flag.enable "debuginfo";
-  Js_output.program pp parsed;
+  let _ = Js_output.program pp parsed in
   print_endline (Buffer.contents buffer)
 
 let%expect_test "spread operator survives round-trip" =

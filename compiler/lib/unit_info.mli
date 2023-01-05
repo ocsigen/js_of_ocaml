@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2013 Hugo Heuzard
+ * Copyright (C) 2022 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,33 +17,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type map =
-  { gen_line : int
-  ; gen_col : int
-  ; ori_source : int
-  ; ori_line : int
-  ; ori_col : int
-  ; ori_name : int option
-  }
-
-type mapping = map list
+open! Stdlib
 
 type t =
-  { version : int
-  ; file : string
-  ; sourceroot : string option
-  ; mutable sources : string list
-  ; mutable sources_content : string option list option
-  ; mutable names : string list
-  ; mutable mappings : mapping
+  { provides : StringSet.t
+  ; requires : StringSet.t
+  ; force_link : bool
+  ; effects_without_cps : bool
   }
 
-val filter_map : t -> f:(int -> int option) -> t
+val of_cmo : Cmo_format.compilation_unit -> t
 
-val merge : t list -> t option
+val union : t -> t -> t
 
-val mapping_of_string : string -> mapping
+val empty : t
 
-val string_of_mapping : mapping -> string
+val prefix : string
 
-val empty : filename:string -> t
+val to_string : t -> string
+
+val parse : t -> string -> t option

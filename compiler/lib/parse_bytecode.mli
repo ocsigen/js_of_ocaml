@@ -82,4 +82,4 @@ val from_string :
   -> string
   -> Code.program * Debug.t
 
-val predefined_exceptions : unit -> Code.program
+val predefined_exceptions : unit -> Code.program * Unit_info.t

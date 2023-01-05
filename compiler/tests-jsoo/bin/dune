@@ -1,6 +1,12 @@
+(env
+ (_
+  (js_of_ocaml
+   (link_flags
+    (:standard \ --linkall)))))
+
 (executables
  (names error1 error2 error3)
- (modes js))
+ (modes byte js))
 
 (rule
  (target error1.actual)

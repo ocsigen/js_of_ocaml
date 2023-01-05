@@ -23,6 +23,7 @@ val f :
   -> exported_runtime:bool
   -> live_vars:Deadcode.variable_uses
   -> should_export:bool
+  -> warn_on_unhandled_effect:bool
   -> Parse_bytecode.Debug.t
   -> Javascript.program
 

@@ -31,7 +31,7 @@ let print_macro_transformed source =
       in
       let parsed = Util.parse_js source in
       let transformed = Jsoo.Macro.f parsed in
-      Jsoo.Js_output.program pp transformed;
+      let _ = Jsoo.Js_output.program pp transformed in
       print_endline (Buffer.contents buffer))
 
 let print_macro_transformed source =

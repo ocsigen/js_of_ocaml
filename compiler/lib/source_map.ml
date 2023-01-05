@@ -197,8 +197,8 @@ let mapping_of_string str =
   in
   readline 0 0 []
 
-let maps ~gen_line_offset ~sources_offset ~names_offset x =
-  let gen_line = x.gen_line + gen_line_offset in
+let maps ~sources_offset ~names_offset x =
+  let gen_line = x.gen_line in
   let ori_source = x.ori_source + sources_offset in
   let ori_name =
     match x.ori_name with
@@ -207,13 +207,38 @@ let maps ~gen_line_offset ~sources_offset ~names_offset x =
   in
   { x with gen_line; ori_source; ori_name }
 
+let filter_map sm ~f =
+  let a = Array.of_list sm.mappings in
+  Array.stable_sort
+    ~cmp:(fun t1 t2 ->
+      match compare t1.gen_line t2.gen_line with
+      | 0 -> compare t1.gen_col t2.gen_col
+      | n -> n)
+    a;
+  let l = Array.to_list a |> List.group ~f:(fun a b -> a.gen_line = b.gen_line) in
+
+  let rec loop acc mapping =
+    match mapping with
+    | [] -> List.rev acc
+    | x :: xs ->
+        let gen_line = (List.hd x).gen_line in
+        let acc =
+          match f gen_line with
+          | None -> acc
+          | Some gen_line -> List.rev_append_map x ~f:(fun x -> { x with gen_line }) acc
+        in
+        loop acc xs
+  in
+  let mappings = loop [] l in
+  { sm with mappings }
+
 let merge = function
   | [] -> None
   | _ :: _ as l ->
       let rec loop acc_rev ~sources_offset ~names_offset l =
         match l with
         | [] -> acc_rev
-        | (gen_line_offset, sm) :: rest ->
+        | sm :: rest ->
             let acc_rev =
               { acc_rev with
                 sources = List.rev_append sm.sources acc_rev.sources
@@ -224,7 +249,7 @@ let merge = function
                   | None, _ | _, None -> None)
               ; mappings =
                   List.rev_append_map
-                    ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
+                    ~f:(maps ~sources_offset ~names_offset)
                     sm.mappings
                     acc_rev.mappings
               }

@@ -276,14 +276,21 @@ module Ctx = struct
     ; effect_warning : bool ref
     }
 
-  let initial ~exported_runtime ~should_export blocks live share debug =
+  let initial
+      ~warn_on_unhandled_effect
+      ~exported_runtime
+      ~should_export
+      blocks
+      live
+      share
+      debug =
     { blocks
     ; live
     ; share
     ; debug
     ; exported_runtime
     ; should_export
-    ; effect_warning = ref false
+    ; effect_warning = ref (not warn_on_unhandled_effect)
     }
 end
 
@@ -2057,13 +2064,28 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@]@.";
   res
 
-let f (p : Code.program) ~exported_runtime ~live_vars ~should_export debug =
+let f
+    (p : Code.program)
+    ~exported_runtime
+    ~live_vars
+    ~should_export
+    ~warn_on_unhandled_effect
+    debug =
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
-  let ctx = Ctx.initial ~exported_runtime ~should_export p.blocks live_vars share debug in
+  let ctx =
+    Ctx.initial
+      ~warn_on_unhandled_effect
+      ~exported_runtime
+      ~should_export
+      p.blocks
+      live_vars
+      share
+      debug
+  in
   dominance_frontier_time := 0.;
   let p = compile_program ctx p.start in
   if times ()
