@@ -51,43 +51,37 @@ let reverse_graph g =
 
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
-  ; loop_headers : (Addr.t, unit) Hashtbl.t
   ; reverse_post_order : Addr.t list
+  ; block_order : (Addr.t, int) Hashtbl.t
   }
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
-  let loop_headers = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
-  let rec traverse ancestors pc =
+  let rec traverse pc =
     if not (Hashtbl.mem visited pc)
     then (
       Hashtbl.add visited pc ();
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
       Hashtbl.add succs pc successors;
-      let ancestors = Addr.Set.add pc ancestors in
-      Addr.Set.iter
-        (fun pc' ->
-          if Addr.Set.mem pc' ancestors then Hashtbl.replace loop_headers pc' ())
-        successors;
-      Addr.Set.iter (fun pc -> traverse ancestors pc) successors;
+      Addr.Set.iter (fun pc -> traverse pc) successors;
       l := pc :: !l)
   in
-  traverse Addr.Set.empty pc;
-  { succs; loop_headers; reverse_post_order = !l }
+  traverse pc;
+  let block_order = Hashtbl.create 16 in
+  List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
+  { succs; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Hashtbl.create 16 in
-  let order = Hashtbl.create 16 in
-  List.iteri g.reverse_post_order ~f:(fun i pc -> Hashtbl.add order pc i);
   let rec inter pc pc' =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find order pc < Hashtbl.find order pc'
+    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
     then inter pc (Hashtbl.find dom pc')
     else inter (Hashtbl.find dom pc) pc'
   in
@@ -243,7 +237,7 @@ type st =
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; tail_calls : Var.Set.t ref
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
-  ; loop_headers : (Addr.t, unit) Hashtbl.t
+  ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Flow2.info
   }
@@ -267,7 +261,7 @@ let tail_call ~st ?(instrs = []) ~f ~check ~exact args =
   if check then st.tail_calls := Var.Set.add ret !(st.tail_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
-let cps_branch ~st (pc, args) =
+let cps_branch ~st ~src (pc, args) =
   match Addr.Set.mem pc st.blocks_to_transform with
   | false -> [], Branch (pc, args)
   | true ->
@@ -283,17 +277,17 @@ let cps_branch ~st (pc, args) =
       tail_call
         ~st
         ~instrs
-        ~check:(Hashtbl.mem st.loop_headers pc)
+        ~check:(Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc)
         ~exact:true
         ~f:(closure_of_pc ~st pc)
         args
 
-let cps_jump_cont ~st ((pc, _) as cont) =
+let cps_jump_cont ~st ~src ((pc, _) as cont) =
   match Addr.Set.mem pc st.blocks_to_transform with
   | false -> cont
   | true ->
       let call_block =
-        let body, branch = cps_branch ~st cont in
+        let body, branch = cps_branch ~st ~src cont in
         add_block st { params = []; body; branch }
       in
       call_block, []
@@ -317,15 +311,15 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
             ~f:exn_handler
             [ x ])
   | Stop -> [], Stop
-  | Branch cont -> cps_branch ~st cont
+  | Branch cont -> cps_branch ~st ~src:pc cont
   | Cond (x, cont1, cont2) ->
-      [], Cond (x, cps_jump_cont ~st cont1, cps_jump_cont ~st cont2)
+      [], Cond (x, cps_jump_cont ~st ~src:pc cont1, cps_jump_cont ~st ~src:pc cont2)
   | Switch (x, c1, c2) ->
       (* To avoid code duplication during JavaScript generation, we need
          to create a single block per continuation *)
-      let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
+      let cps_jump_cont = Fun.memoize (cps_jump_cont ~st ~src:pc) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap ((pc, args), _, (handler_pc, _), _) -> (
+  | Pushtrap (body_cont, _, (handler_pc, _), _) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
       | false -> [], last
@@ -334,16 +328,16 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           let push_trap =
             Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
           in
-          let body, branch = cps_branch ~st (pc, args) in
+          let body, branch = cps_branch ~st ~src:pc body_cont in
           push_trap :: body, branch)
-  | Poptrap (pc', args) -> (
+  | Poptrap cont -> (
       match
         Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
       with
-      | false -> [], Poptrap (cps_jump_cont ~st (pc', args))
+      | false -> [], Poptrap (cps_jump_cont ~st ~src:pc cont)
       | true ->
           let exn_handler = Var.fresh () in
-          let body, branch = cps_branch ~st (pc', args) in
+          let body, branch = cps_branch ~st ~src:pc cont in
           Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
 
 let cps_instr ~st (instr : instr) : instr =
@@ -559,7 +553,7 @@ let cps_transform ~flow_info ~live_vars ~cps_needed p =
           ; is_continuation
           ; tail_calls
           ; matching_exn_handler
-          ; loop_headers = cfg.loop_headers
+          ; block_order = cfg.block_order
           ; live_vars
           ; flow_info
           }
