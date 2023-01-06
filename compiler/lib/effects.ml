@@ -225,6 +225,8 @@ let jump_closures blocks_to_transform idom : jump_closures =
     idom
     { closure_of_jump = Addr.Map.empty; closures_of_alloc_site = Addr.Map.empty }
 
+type cps_calls = Var.Set.t
+
 type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
   ; blocks : Code.block Addr.Map.t
@@ -234,6 +236,7 @@ type st =
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
+  ; cps_calls : cps_calls ref
   }
 
 let add_block st block =
@@ -250,8 +253,9 @@ let allocate_closure ~st ~params ~body:(body, branch) =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-let tail_call ?(instrs = []) ~exact ~f args =
+let tail_call ~st ?(instrs = []) ~exact ~f args =
   let ret = Var.fresh () in
+  st.cps_calls := Var.Set.add ret !(st.cps_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
 let cps_branch ~st (pc, args) =
@@ -267,7 +271,7 @@ let cps_branch ~st (pc, args) =
           [ x ], [ Let (x, Constant (Int 0l)) ]
         else args, []
       in
-      tail_call ~instrs ~exact:true ~f:(closure_of_pc ~st pc) args
+      tail_call ~st ~instrs ~exact:true ~f:(closure_of_pc ~st pc) args
 
 let cps_jump_cont ~st ((pc, _) as cont) =
   match Addr.Set.mem pc st.blocks_to_transform with
@@ -281,7 +285,7 @@ let cps_jump_cont ~st ((pc, _) as cont) =
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> tail_call ~exact:true ~f:k [ x ]
+  | Return x -> tail_call ~st ~exact:true ~f:k [ x ]
   | Raise (x, _) -> (
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
@@ -291,6 +295,7 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
       | _ ->
           let exn_handler = Var.fresh_n "raise" in
           tail_call
+            ~st
             ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
             ~exact:true
             ~f:exn_handler
@@ -386,12 +391,13 @@ let cps_block ~st ~k pc block =
           [ Let (x, e) ], Return x)
     in
     match e with
-    | Apply { f; args; exact } -> Some (fun ~k -> tail_call ~exact ~f (args @ [ k ]))
+    | Apply { f; args; exact } -> Some (fun ~k -> tail_call ~st ~exact ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
             let k' = Var.fresh_n "cont" in
             tail_call
+              ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
               ~exact:false
               ~f
@@ -443,7 +449,7 @@ let cps_block ~st ~k pc block =
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~instrs ~exact:true ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~exact:true ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -485,6 +491,7 @@ let cps_transform ~live_vars p =
         Hashtbl.add tbl pc k;
         k
   in
+  let cps_calls = ref Var.Set.empty in
   let wrap_toplevel = ref true in
   let p =
     Code.fold_closures
@@ -505,6 +512,7 @@ let cps_transform ~live_vars p =
           ; is_continuation
           ; matching_exn_handler
           ; live_vars
+          ; cps_calls
           }
         in
         let function_needs_cps =
@@ -553,28 +561,31 @@ let cps_transform ~live_vars p =
         { p with blocks; free_pc })
       p
   in
-  if not !wrap_toplevel
-  then p
-  else
-    (* Call [caml_callback] to set up the execution context. *)
-    let new_start = p.free_pc in
-    let blocks =
-      let main = Var.fresh () in
-      let args = Var.fresh () in
-      let res = Var.fresh () in
-      Addr.Map.add
-        new_start
-        { params = []
-        ; body =
-            [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
-            ; Let (args, Prim (Extern "%js_array", []))
-            ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-            ]
-        ; branch = Return res
-        }
-        p.blocks
-    in
-    { start = new_start; blocks; free_pc = new_start + 1 }
+  let p =
+    if not !wrap_toplevel
+    then p
+    else
+      (* Call [caml_callback] to set up the execution context. *)
+      let new_start = p.free_pc in
+      let blocks =
+        let main = Var.fresh () in
+        let args = Var.fresh () in
+        let res = Var.fresh () in
+        Addr.Map.add
+          new_start
+          { params = []
+          ; body =
+              [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
+              ; Let (args, Prim (Extern "%js_array", []))
+              ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+              ]
+          ; branch = Return res
+          }
+          p.blocks
+      in
+      { start = new_start; blocks; free_pc = new_start + 1 }
+  in
+  p, !cps_calls
 
 (****)
 
@@ -757,6 +768,6 @@ let f (p, live_vars) =
   let p = remove_empty_blocks ~live_vars p in
   let p = split_blocks p in
   let p = rewrite_toplevel p in
-  let p = cps_transform ~live_vars p in
+  let p, cps_calls = cps_transform ~live_vars p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
-  p
+  p, cps_calls
