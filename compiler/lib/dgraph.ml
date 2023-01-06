@@ -58,22 +58,22 @@ struct
 
     let m = ref 0
 
-    type stack =
-      { stack : N.t Stack.t
+    type queue =
+      { queue : N.t Queue.t
       ; mutable set : NSet.t
       }
 
-    let is_empty st = Stack.is_empty st.stack
+    let is_empty st = Queue.is_empty st.queue
 
     let pop st =
-      let x = Stack.pop st.stack in
+      let x = Queue.pop st.queue in
       st.set <- NSet.remove x st.set;
       x
 
     let push x st =
       if not (NSet.mem x st.set)
       then (
-        Stack.push x st.stack;
+        Queue.push x st.queue;
         st.set <- NSet.add x st.set)
 
     let rec iterate g f v w =
@@ -83,7 +83,7 @@ struct
         let x = pop w in
         let a = NMap.find x v in
         incr m;
-        let b = f push v x in
+        let b = f v x in
         let v = NMap.add x b v in
         if not (D.equal a b)
         then (
@@ -91,26 +91,28 @@ struct
           iterate g f v w)
         else iterate g f v w
 
-    let rec traverse g visited stack x =
+    let rec traverse g visited lst x =
       if not (NSet.mem x visited)
       then (
         let visited = NSet.add x visited in
         let visited =
-          g.fold_children (fun y visited -> traverse g visited stack y) x visited
+          g.fold_children (fun y visited -> traverse g visited lst y) x visited
         in
-        Stack.push x stack;
+        lst := x :: !lst;
         visited)
       else visited
 
     let traverse_all g =
-      let stack = Stack.create () in
+      let lst = ref [] in
       let visited =
-        NSet.fold (fun x visited -> traverse g visited stack x) g.domain NSet.empty
+        NSet.fold (fun x visited -> traverse g visited lst x) g.domain NSet.empty
       in
       assert (NSet.equal g.domain visited);
-      stack
+      let queue = Queue.create () in
+      List.iter ~f:(fun x -> Queue.push x queue) !lst;
+      queue
 
-    let f' g f =
+    let f g f =
       n := 0;
       m := 0;
       (*
@@ -128,7 +130,7 @@ let t1 = Timer.make () in
 let t1 = Timer.get t1 in
 let t2 = Timer.make () in
 *)
-      let w = { set = g.domain; stack = traverse_all g } in
+      let w = { set = g.domain; queue = traverse_all g } in
       (*
 let t2 = Timer.get t2 in
 let t3 = Timer.make () in
@@ -140,8 +142,6 @@ let t3 = Timer.get t3 in
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
 *)
       res
-
-    let f g f = f' g (fun _ v x -> f v x)
   end
 end
 
@@ -208,7 +208,7 @@ struct
 
     let m = ref 0
 
-    type stack =
+    type queue =
       { queue : N.t Queue.t
       ; set : NSet.t
       }
