@@ -95,4 +95,6 @@ module Param : sig
   val tailcall_optim : unit -> tc
 
   val lambda_lifting_threshold : unit -> int
+
+  val lambda_lifting_baseline : unit -> int
 end

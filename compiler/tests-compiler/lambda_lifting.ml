@@ -11,7 +11,9 @@ in
 Printf.printf "%d\n" (f 3)
     |}
   in
-  let flags = [ "--no-inline"; "--set=lifting-threshold=1" ] in
+  let flags =
+    [ "--no-inline"; "--set=lifting-threshold=1"; "--set=lifting-baseline=0" ]
+  in
   Util.compile_and_run ~effects:true ~flags prog;
   [%expect {|15 |}];
   let program = Util.compile_and_parse ~effects:true ~flags prog in
@@ -33,13 +35,15 @@ Printf.printf "%d\n" (f 3)
          global_data=runtime.caml_get_global_data(),
          Stdlib_Printf=global_data.Stdlib__Printf,
          _c_=[0,[4,0,0,0,[12,10,0]],runtime.caml_string_of_jsbytes("%d\n")];
-        function f(x,cont)
-         {function g(y,cont){var h$0=h(y);return caml_cps_exact_call2(h$0,7,cont)}
-          function h(y)
-           {function h(z,cont)
-             {return caml_cps_exact_call1(cont,(x + y | 0) + z | 0)}
-            return h}
-          return caml_cps_exact_call2(g,5,cont)}
+        function f(x,cont){var g$0=g(x);return caml_cps_exact_call2(g$0,5,cont)}
+        function h(x,y)
+         {function h(z,cont)
+           {return caml_cps_exact_call1(cont,(x + y | 0) + z | 0)}
+          return h}
+        function g(x)
+         {function g(y,cont)
+           {var h$0=h(x,y);return caml_cps_exact_call2(h$0,7,cont)}
+          return g}
         var _a_=3,_b_=caml_callback(f,[_a_]),_d_=Stdlib_Printf[2];
         caml_callback(_d_,[_c_,_b_]);
         var Test=[0];
