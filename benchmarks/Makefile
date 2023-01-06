@@ -153,6 +153,11 @@ time-effects.svg: __run_effects
 	 -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit loop \
+	 -omit boulderdash \
+	 -omit cubes \
+	 -omit minesweeper \
+	 -omit planet \
+	 -omit ocamlc \
 	 -max 5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
