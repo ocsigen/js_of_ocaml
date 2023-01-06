@@ -166,4 +166,11 @@ module Param = struct
       ~name:"lifting-threshold"
       ~desc:"Set threshold for lifting deeply nested functions"
       (int 50)
+
+  let lambda_lifting_baseline =
+    (* Level at which functions are lifted *)
+    p
+      ~name:"lifting-baseline"
+      ~desc:"Set baseline for lifting deeply nested functions"
+      (int 1)
 end

@@ -69,8 +69,6 @@ open Code
 
 let debug = Debug.find "lifting"
 
-let baseline = 1 (* Depth to which the functions are lifted *)
-
 let rec compute_depth program pc =
   Code.preorder_traverse
     { fold = Code.fold_children }
@@ -88,6 +86,7 @@ let rec compute_depth program pc =
 
 let collect_free_vars program var_depth depth pc =
   let vars = ref Var.Set.empty in
+  let baseline = Config.Param.lambda_lifting_baseline () in
   let rec traverse pc =
     Code.preorder_traverse
       { fold = Code.fold_children }
@@ -122,6 +121,7 @@ let mark_bound_variables var_depth block depth =
       | _ -> ())
 
 let rec traverse var_depth (program, functions) pc depth limit =
+  let baseline = Config.Param.lambda_lifting_baseline () in
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc (program, functions) ->
@@ -228,6 +228,7 @@ let f program =
   let var_depth = Array.make nv (-1) in
   let program, functions =
     let threshold = Config.Param.lambda_lifting_threshold () in
+    let baseline = Config.Param.lambda_lifting_baseline () in
     traverse var_depth (program, []) program.start 0 (baseline + threshold)
   in
   assert (List.is_empty functions);
