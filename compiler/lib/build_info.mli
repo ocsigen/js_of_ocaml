@@ -20,7 +20,15 @@ open! Stdlib
 
 type t
 
-val create : unit -> t
+type kind =
+  [ `Runtime
+  | `Exe
+  | `Cmo
+  | `Cma
+  | `Unknown
+  ]
+
+val create : kind -> t
 
 val to_string : t -> string
 
@@ -34,3 +42,5 @@ exception
     }
 
 val merge : string -> t -> string -> t -> t
+
+val kind : t -> kind
