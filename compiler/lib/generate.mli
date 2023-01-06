@@ -22,7 +22,7 @@ val f :
      Code.program
   -> exported_runtime:bool
   -> live_vars:Deadcode.variable_uses
-  -> tail_calls:Code.Var.Set.t
+  -> cps_calls:Code.Var.Set.t
   -> should_export:bool
   -> Parse_bytecode.Debug.t
   -> Javascript.program

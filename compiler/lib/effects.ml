@@ -65,7 +65,7 @@ let build_graph blocks pc =
       Hashtbl.add visited pc ();
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
       Hashtbl.add succs pc successors;
-      Addr.Set.iter (fun pc -> traverse pc) successors;
+      Addr.Set.iter traverse successors;
       l := pc :: !l)
   in
   traverse pc;
@@ -227,6 +227,8 @@ let jump_closures blocks_to_transform idom : jump_closures =
     idom
     { closure_of_jump = Addr.Map.empty; closures_of_alloc_site = Addr.Map.empty }
 
+type cps_calls = Var.Set.t
+
 type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
   ; blocks : Code.block Addr.Map.t
@@ -235,11 +237,11 @@ type st =
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
-  ; tail_calls : Var.Set.t ref
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Flow2.info
+  ; cps_calls : cps_calls ref
   }
 
 let add_block st block =
@@ -256,9 +258,10 @@ let allocate_closure ~st ~params ~body:(body, branch) =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-let tail_call ~st ?(instrs = []) ~f ~check ~exact args =
+let tail_call ~st ?(instrs = []) ~exact ~check ~f args =
+  assert (exact || check);
   let ret = Var.fresh () in
-  if check then st.tail_calls := Var.Set.add ret !(st.tail_calls);
+  if check then st.cps_calls := Var.Set.add ret !(st.cps_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
 let cps_branch ~st ~src (pc, args) =
@@ -274,13 +277,10 @@ let cps_branch ~st ~src (pc, args) =
           [ x ], [ Let (x, Constant (Int 0l)) ]
         else args, []
       in
-      tail_call
-        ~st
-        ~instrs
-        ~check:(Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc)
-        ~exact:true
-        ~f:(closure_of_pc ~st pc)
-        args
+      (* We check the stack depth only for backward edges (so, at
+         least once per loop iteration) *)
+      let check = Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc in
+      tail_call ~st ~instrs ~exact:true ~check ~f:(closure_of_pc ~st pc) args
 
 let cps_jump_cont ~st ~src ((pc, _) as cont) =
   match Addr.Set.mem pc st.blocks_to_transform with
@@ -294,7 +294,11 @@ let cps_jump_cont ~st ~src ((pc, _) as cont) =
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> tail_call ~st ~check:false ~exact:true ~f:k [ x ]
+  | Return x ->
+      (* Is the number of successive 'returns' is unbounded is CPS, it
+         means that we have an unbounded of calls in direct style
+         (even with tail call optimization) *)
+      tail_call ~st ~exact:true ~check:false ~f:k [ x ]
   | Raise (x, _) -> (
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
@@ -306,8 +310,8 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           tail_call
             ~st
             ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
-            ~check:true
             ~exact:true
+            ~check:false
             ~f:exn_handler
             [ x ])
   | Stop -> [], Stop
@@ -409,8 +413,8 @@ let cps_block ~st ~k pc block =
           (fun ~k ->
             tail_call
               ~st
-              ~check:true
               ~exact:(exact || Flow2.exact_call st.flow_info f (List.length args))
+              ~check:true
               ~f
               (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
@@ -420,8 +424,8 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~check:true
               ~exact:(Flow2.exact_call st.flow_info f 1)
+              ~check:true
               ~f
               [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
@@ -470,7 +474,7 @@ let cps_block ~st ~k pc block =
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs ~check:false ~exact:true ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~exact:true ~check:false ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -500,7 +504,7 @@ let cps_block ~st ~k pc block =
 
 let cps_transform ~flow_info ~live_vars ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
-  let tail_calls = ref Var.Set.empty in
+  let cps_calls = ref Var.Set.empty in
   let p =
     Code.fold_closures_innermost_first
       p
@@ -551,7 +555,7 @@ let cps_transform ~flow_info ~live_vars ~cps_needed p =
           ; cps_needed
           ; blocks_to_transform
           ; is_continuation
-          ; tail_calls
+          ; cps_calls
           ; matching_exn_handler
           ; block_order = cfg.block_order
           ; live_vars
@@ -598,7 +602,7 @@ let cps_transform ~flow_info ~live_vars ~cps_needed p =
       p
   in
   match Hashtbl.find_opt closure_info p.start with
-  | None -> p, !tail_calls
+  | None -> p, !cps_calls
   | Some (k, _) ->
       (* Call [caml_callback] to set up the execution context. *)
       let new_start = p.free_pc in
@@ -618,7 +622,7 @@ let cps_transform ~flow_info ~live_vars ~cps_needed p =
           }
           p.blocks
       in
-      { start = new_start; blocks; free_pc = new_start + 1 }, !tail_calls
+      { start = new_start; blocks; free_pc = new_start + 1 }, !cps_calls
 
 (****)
 
@@ -800,10 +804,9 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 
 (****)
 
-let f p =
+let f (p, live_vars) =
   let t = Timer.make () in
   if debug () then Code.Print.program (fun _ _ -> "") p;
-  let p, live_vars = Deadcode.f p in
   let p = remove_empty_blocks ~live_vars p in
   let info = Flow2.f p in
   (*  let p, info = Flow.f ~pessimistic:true p in*)

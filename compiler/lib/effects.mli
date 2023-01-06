@@ -16,4 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Code.program -> Code.program * Code.Var.Set.t (* tail calls *)
+type cps_calls = Code.Var.Set.t
+
+val f : Code.program * Deadcode.variable_uses -> Code.program * cps_calls

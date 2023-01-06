@@ -80,18 +80,20 @@ let phi p =
   if debug () then Format.eprintf "Variable passing simplification...@.";
   Phisimpl.f p
 
+let ( +> ) f g x = g (f x)
+
+let map_fst f (x, y) = f x, y
+
 let effects p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
-    Effects.f p |> fun (p, s) -> Lambda_lifting.f p, s)
-  else p, Code.Var.Set.empty
+    p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
+  else p, (Code.Var.Set.empty : Effects.cps_calls)
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   p
-
-let ( +> ) f g x = g (f x)
 
 let rec loop max name round i (p : 'a) : 'a =
   let p' = round p in
@@ -151,10 +153,10 @@ let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
 let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
-let generate d ~exported_runtime ~wrap_with_fun ((p, live_vars), tail_calls) =
+let generate d ~exported_runtime ~wrap_with_fun ((p, live_vars), cps_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
-  Generate.f p ~exported_runtime ~live_vars ~tail_calls ~should_export d
+  Generate.f p ~exported_runtime ~live_vars ~cps_calls ~should_export d
 
 let header formatter ~custom_header =
   match custom_header with
@@ -526,7 +528,7 @@ let full
     +> specialize_js_once
     +> profile
     +> effects
-    +> fun (p, s) -> (Generate_closure.f +> deadcode') p, s
+    +> map_fst (Generate_closure.f +> deadcode')
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun

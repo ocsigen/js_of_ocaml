@@ -143,7 +143,7 @@ module Share = struct
         | _ -> t)
 
   let get
-      ~tail_calls
+      ~cps_calls
       ?alias_strings
       ?(alias_prims = false)
       ?(alias_apply = true)
@@ -160,7 +160,7 @@ module Share = struct
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
-                  let cps = Var.Set.mem x tail_calls in
+                  let cps = Var.Set.mem x cps_calls in
                   if (not exact) || cps
                   then add_apply { arity = List.length args; exact; cps } share
                   else share
@@ -262,10 +262,10 @@ module Ctx = struct
     ; exported_runtime : (Code.Var.t * bool ref) option
     ; should_export : bool
     ; effect_warning : bool ref
-    ; tail_calls : Var.Set.t
+    ; cps_calls : Effects.cps_calls
     }
 
-  let initial ~exported_runtime ~should_export blocks live tail_calls share debug =
+  let initial ~exported_runtime ~should_export blocks live cps_calls share debug =
     { blocks
     ; live
     ; share
@@ -273,7 +273,7 @@ module Ctx = struct
     ; exported_runtime
     ; should_export
     ; effect_warning = ref false
-    ; tail_calls
+    ; cps_calls
     }
 end
 
@@ -1145,7 +1145,7 @@ let throw_statement ctx cx k loc =
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
-      let cps = Var.Set.mem x ctx.Ctx.tail_calls in
+      let cps = Var.Set.mem x ctx.Ctx.cps_calls in
       let args, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -2046,14 +2046,14 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@]@.";
   res
 
-let f (p : Code.program) ~exported_runtime ~live_vars ~tail_calls ~should_export debug =
+let f (p : Code.program) ~exported_runtime ~live_vars ~cps_calls ~should_export debug =
   let t' = Timer.make () in
-  let share = Share.get ~tail_calls ~alias_prims:exported_runtime p in
+  let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
   let ctx =
-    Ctx.initial ~exported_runtime ~should_export p.blocks live_vars tail_calls share debug
+    Ctx.initial ~exported_runtime ~should_export p.blocks live_vars cps_calls share debug
   in
   dominance_frontier_time := 0.;
   let p = compile_program ctx p.start in
