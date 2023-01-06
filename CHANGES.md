@@ -3,6 +3,7 @@
 * Misc: bump min ocaml version to 4.08
 * Misc: remove some old runtime files to support some external libs
 * Effects: improved CPS transform, resulting in lower compilation time and smaller generated code
+* Compiler: separate compilation now drops unused units when linking (similar to ocamlc). (#1378)
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
