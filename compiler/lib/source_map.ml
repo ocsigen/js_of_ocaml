@@ -34,10 +34,10 @@ type t =
   { version : int
   ; file : string
   ; sourceroot : string option
-  ; mutable sources : string list
-  ; mutable sources_content : string option list option
-  ; mutable names : string list
-  ; mutable mappings : mapping
+  ; sources : string list
+  ; sources_content : string option list option
+  ; names : string list
+  ; mappings : mapping
   }
 
 let empty ~filename =
