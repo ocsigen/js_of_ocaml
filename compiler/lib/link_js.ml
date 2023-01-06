@@ -179,7 +179,7 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
 module Units : sig
   val read : Line_reader.t -> Unit_info.t -> Unit_info.t
 
-  val scan_file : string -> Unit_info.t list
+  val scan_file : string -> Build_info.t option * Unit_info.t list
 end = struct
   let rec read ic uinfo =
     match Line_reader.peek ic with
@@ -204,16 +204,31 @@ end = struct
     in
     find_next ic
 
+  let find_build_info ic =
+    let rec find_next ic =
+      match Line_reader.peek ic with
+      | None -> None
+      | Some line -> (
+          match prefix_kind line with
+          | `Json_base64 _ | `Url _ | `Other ->
+              Line_reader.drop ic;
+              find_next ic
+          | `Build_info bi -> Some bi
+          | `Unit -> None)
+    in
+    find_next ic
+
   let scan_file file =
     let ic = Line_reader.open_ file in
-    let rec scan_all acc =
+    let rec scan_all ic acc =
       match find_unit_info ic with
       | None -> List.rev acc
-      | Some x -> scan_all (x :: acc)
+      | Some x -> scan_all ic (x :: acc)
     in
-    let units = scan_all [] in
+    let build_info = find_build_info ic in
+    let units = scan_all ic [] in
     Line_reader.close ic;
-    units
+    build_info, units
 end
 
 let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
@@ -225,14 +240,21 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
       files
       ~init:(StringSet.empty, StringSet.empty, StringSet.empty)
       ~f:(fun file acc ->
-        let units = Units.scan_file file in
-        let cma_file = String.is_suffix file ~suffix:".cma.js" in
+        let build_info, units = Units.scan_file file in
+        let cmo_file =
+          match build_info with
+          | Some bi -> (
+              match Build_info.kind bi with
+              | `Cmo -> true
+              | `Cma | `Exe | `Runtime | `Unknown -> false)
+          | None -> false
+        in
         List.fold_right
           units
           ~init:acc
           ~f:(fun (info : Unit_info.t) (requires, to_link, all) ->
             let all = StringSet.union all info.provides in
-            if (not cma_file)
+            if cmo_file
                || linkall
                || info.force_link
                || not (StringSet.is_empty (StringSet.inter requires info.provides))

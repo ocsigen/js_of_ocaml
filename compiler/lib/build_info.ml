@@ -19,18 +19,45 @@
 
 open! Stdlib
 
+type kind =
+  [ `Runtime
+  | `Exe
+  | `Cmo
+  | `Cma
+  | `Unknown
+  ]
+
+let all = [ `Runtime; `Exe; `Cmo; `Cma; `Unknown ]
+
+let string_of_kind = function
+  | `Runtime -> "runtime"
+  | `Exe -> "exe"
+  | `Cmo -> "cmo"
+  | `Cma -> "cma"
+  | `Unknown -> "unknown"
+
+let kind_of_string s =
+  match List.find_opt all ~f:(fun k -> String.equal s (string_of_kind k)) with
+  | None -> `Unknown
+  | Some k -> k
+
 type t = string StringMap.t
 
-let create () =
+let kind t =
+  match StringMap.find "kind" t with
+  | exception Not_found -> `Unknown
+  | s -> kind_of_string s
+
+let create kind =
   let version =
     match Compiler_version.git_version with
     | "" -> Compiler_version.s
     | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
   in
-
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
   ; "effects", string_of_bool (Config.Flag.effects ())
   ; "version", version
+  ; "kind", string_of_kind kind
   ]
   |> List.fold_left ~init:StringMap.empty ~f:(fun acc (k, v) -> StringMap.add k v acc)
 
@@ -91,6 +118,8 @@ let merge fname1 info1 fname2 info2 =
     StringMap.merge
       (fun k v1 v2 ->
         match k, v1, v2 with
+        | "kind", v1, v2 ->
+            if Option.equal String.equal v1 v2 then v1 else Some (string_of_kind `Unknown)
         | ("effects" | "use-js-string" | "version"), Some v1, Some v2
           when String.equal v1 v2 -> Some v1
         | (("effects" | "use-js-string" | "version") as key), v1, v2 ->
