@@ -80,7 +80,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                                 var Test=[0];
                                 runtime.caml_register_global(2,Test,"Test");
                                 return})}
-                   return caml_cps_exact_call1(_c_,_b_)},
+                   return _c_(_b_)},
                  [])}
       (globalThis));
     //end |}]
