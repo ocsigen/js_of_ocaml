@@ -152,7 +152,12 @@ module Share = struct
         | Pc c -> get_constant c t
         | _ -> t)
 
-  let get ?alias_strings ?(alias_prims = false) ?(alias_apply = true) { blocks; _ } : t =
+  let get
+      ~cps_calls
+      ?alias_strings
+      ?(alias_prims = false)
+      ?(alias_apply = true)
+      { blocks; _ } : t =
     let alias_strings =
       match alias_strings with
       | None -> Config.Flag.use_js_string () && not (Config.Flag.share_constant ())
@@ -161,28 +166,11 @@ module Share = struct
     let count =
       Addr.Map.fold
         (fun _ block share ->
-          let tailcall_name =
-            (* Systematic tail-call optimization is only enabled when
-               supporting effects *)
-            if Config.Flag.effects ()
-            then
-              match block.branch with
-              | Return _ -> (
-                  match List.last block.body with
-                  | Some (Let (x, _)) -> Some x
-                  | _ -> None)
-              | _ -> None
-            else None
-          in
           List.fold_left block.body ~init:share ~f:(fun share i ->
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
-                  let cps =
-                    match tailcall_name with
-                    | Some y -> Var.equal x y
-                    | None -> false
-                  in
+                  let cps = Var.Set.mem x cps_calls in
                   if (not exact) || cps
                   then add_apply { arity = List.length args; exact; cps } share
                   else share
@@ -301,6 +289,7 @@ module Ctx = struct
     ; exported_runtime : (Code.Var.t * bool ref) option
     ; should_export : bool
     ; effect_warning : bool ref
+    ; cps_calls : Effects.cps_calls
     }
 
   let initial
@@ -309,6 +298,7 @@ module Ctx = struct
       ~should_export
       blocks
       live
+      cps_calls
       share
       debug =
     { blocks
@@ -318,6 +308,7 @@ module Ctx = struct
     ; exported_runtime
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
+    ; cps_calls
     }
 end
 
@@ -1218,10 +1209,10 @@ let throw_statement ctx cx k loc =
         , loc )
       ]
 
-let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_list =
-  let cps = in_tail_position && Config.Flag.effects () in
+let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
+      let cps = Var.Set.mem x ctx.Ctx.cps_calls in
       let args, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -1498,7 +1489,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
       in
       res, []
 
-and translate_instr ctx expr_queue loc instr in_tail_position =
+and translate_instr ctx expr_queue loc instr =
   match instr with
   | Assign (x, y) ->
       let (_py, cy), expr_queue = access_queue expr_queue y in
@@ -1507,9 +1498,7 @@ and translate_instr ctx expr_queue loc instr in_tail_position =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
-      let (ce, prop, expr_queue), instrs =
-        translate_expr ctx expr_queue loc in_tail_position e 0
-      in
+      let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
@@ -1573,12 +1562,7 @@ and translate_instrs ctx expr_queue loc instr last =
   match instr with
   | [] -> [], expr_queue
   | instr :: rem ->
-      let in_tail_position =
-        match rem, last with
-        | [], Return _ -> true
-        | _ -> false
-      in
-      let st, expr_queue = translate_instr ctx expr_queue loc instr in_tail_position in
+      let st, expr_queue = translate_instr ctx expr_queue loc instr in
       let instrs, expr_queue = translate_instrs ctx expr_queue loc rem last in
       st @ instrs, expr_queue
 
@@ -2110,11 +2094,12 @@ let f
     (p : Code.program)
     ~exported_runtime
     ~live_vars
+    ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
     debug =
   let t' = Timer.make () in
-  let share = Share.get ~alias_prims:exported_runtime p in
+  let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
@@ -2125,6 +2110,7 @@ let f
       ~should_export
       p.blocks
       live_vars
+      cps_calls
       share
       debug
   in
