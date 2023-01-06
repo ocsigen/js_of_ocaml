@@ -287,14 +287,16 @@ module D = struct
       s
       (if o then others else bottom)
 
-  let mark_mutable ~update:_ ~st ~st':_ a =
+  let mark_mutable ~update ~st ~st':_ a =
     match a with
     | Top -> ()
     | Values { known; _ } ->
         Var.Set.iter
           (fun x ->
             if not st.possibly_mutable.(Var.idx x)
-            then st.possibly_mutable.(Var.idx x) <- true)
+            then (
+              st.possibly_mutable.(Var.idx x) <- true;
+              update ~deps:true x))
           known
 end
 
@@ -592,7 +594,7 @@ let f p =
               | Values { known; others } ->
                   Format.fprintf
                     f
-                    "{%a/%b}"
+                    "{%a/%b} mut:%b vmut:%b"
                     (Format.pp_print_list
                        ~pp_sep:(fun f () -> Format.fprintf f ", ")
                        (fun f x ->
@@ -611,7 +613,9 @@ let f p =
                                else ""
                            | _ -> "O")))
                     (Var.Set.elements known)
-                    others)
+                    others
+                    st.possibly_mutable.(Var.idx x)
+                    st.variable_possibly_mutable.(Var.idx x))
             s)
       vars;
   { info_defs = defs
