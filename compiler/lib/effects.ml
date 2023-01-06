@@ -52,6 +52,7 @@ let reverse_graph g =
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; reverse_post_order : Addr.t list
+  ; block_order : (Addr.t, int) Hashtbl.t
   }
 
 let build_graph blocks pc =
@@ -68,19 +69,19 @@ let build_graph blocks pc =
       l := pc :: !l)
   in
   traverse pc;
-  { succs; reverse_post_order = !l }
+  let block_order = Hashtbl.create 16 in
+  List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
+  { succs; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Hashtbl.create 16 in
-  let order = Hashtbl.create 16 in
-  List.iteri g.reverse_post_order ~f:(fun i pc -> Hashtbl.add order pc i);
   let rec inter pc pc' =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find order pc < Hashtbl.find order pc'
+    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
     then inter pc (Hashtbl.find dom pc')
     else inter (Hashtbl.find dom pc) pc'
   in
@@ -235,6 +236,7 @@ type st =
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
+  ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; cps_calls : cps_calls ref
   }
@@ -253,12 +255,13 @@ let allocate_closure ~st ~params ~body:(body, branch) =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))) ], name
 
-let tail_call ~st ?(instrs = []) ~exact ~f args =
+let tail_call ~st ?(instrs = []) ~exact ~check ~f args =
+  assert (exact || check);
   let ret = Var.fresh () in
-  st.cps_calls := Var.Set.add ret !(st.cps_calls);
+  if check then st.cps_calls := Var.Set.add ret !(st.cps_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
-let cps_branch ~st (pc, args) =
+let cps_branch ~st ~src (pc, args) =
   match Addr.Set.mem pc st.blocks_to_transform with
   | false -> [], Branch (pc, args)
   | true ->
@@ -271,21 +274,28 @@ let cps_branch ~st (pc, args) =
           [ x ], [ Let (x, Constant (Int 0l)) ]
         else args, []
       in
-      tail_call ~st ~instrs ~exact:true ~f:(closure_of_pc ~st pc) args
+      (* We check the stack depth only for backward edges (so, at
+         least once per loop iteration) *)
+      let check = Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc in
+      tail_call ~st ~instrs ~exact:true ~check ~f:(closure_of_pc ~st pc) args
 
-let cps_jump_cont ~st ((pc, _) as cont) =
+let cps_jump_cont ~st ~src ((pc, _) as cont) =
   match Addr.Set.mem pc st.blocks_to_transform with
   | false -> cont
   | true ->
       let call_block =
-        let body, branch = cps_branch ~st cont in
+        let body, branch = cps_branch ~st ~src cont in
         add_block st { params = []; body; branch }
       in
       call_block, []
 
 let cps_last ~st pc (last : last) ~k : instr list * last =
   match last with
-  | Return x -> tail_call ~st ~exact:true ~f:k [ x ]
+  | Return x ->
+      (* Is the number of successive 'returns' is unbounded is CPS, it
+         means that we have an unbounded of calls in direct style
+         (even with tail call optimization) *)
+      tail_call ~st ~exact:true ~check:false ~f:k [ x ]
   | Raise (x, _) -> (
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
@@ -298,18 +308,19 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
             ~st
             ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
             ~exact:true
+            ~check:false
             ~f:exn_handler
             [ x ])
   | Stop -> [], Stop
-  | Branch cont -> cps_branch ~st cont
+  | Branch cont -> cps_branch ~st ~src:pc cont
   | Cond (x, cont1, cont2) ->
-      [], Cond (x, cps_jump_cont ~st cont1, cps_jump_cont ~st cont2)
+      [], Cond (x, cps_jump_cont ~st ~src:pc cont1, cps_jump_cont ~st ~src:pc cont2)
   | Switch (x, c1, c2) ->
       (* To avoid code duplication during JavaScript generation, we need
          to create a single block per continuation *)
-      let cps_jump_cont = Fun.memoize (cps_jump_cont ~st) in
+      let cps_jump_cont = Fun.memoize (cps_jump_cont ~st ~src:pc) in
       [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap ((pc, args), _, (handler_pc, _), _) -> (
+  | Pushtrap (body_cont, _, (handler_pc, _), _) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
       | false -> [], last
@@ -318,16 +329,16 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           let push_trap =
             Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
           in
-          let body, branch = cps_branch ~st (pc, args) in
+          let body, branch = cps_branch ~st ~src:pc body_cont in
           push_trap :: body, branch)
-  | Poptrap (pc', args) -> (
+  | Poptrap cont -> (
       match
         Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
       with
-      | false -> [], Poptrap (cps_jump_cont ~st (pc', args))
+      | false -> [], Poptrap (cps_jump_cont ~st ~src:pc cont)
       | true ->
           let exn_handler = Var.fresh () in
-          let body, branch = cps_branch ~st (pc', args) in
+          let body, branch = cps_branch ~st ~src:pc cont in
           Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
 
 let cps_instr ~st (instr : instr) : instr =
@@ -391,7 +402,8 @@ let cps_block ~st ~k pc block =
           [ Let (x, e) ], Return x)
     in
     match e with
-    | Apply { f; args; exact } -> Some (fun ~k -> tail_call ~st ~exact ~f (args @ [ k ]))
+    | Apply { f; args; exact } ->
+        Some (fun ~k -> tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
@@ -400,6 +412,7 @@ let cps_block ~st ~k pc block =
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
               ~exact:false
+              ~check:true
               ~f
               [ arg; k' ])
     | Prim (Extern "%perform", [ Pv effect ]) ->
@@ -449,7 +462,7 @@ let cps_block ~st ~k pc block =
                 allocate_closure
                   ~st
                   ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs ~exact:true ~f:f' args)
+                  ~body:(tail_call ~st ~instrs ~exact:true ~check:false ~f:f' args)
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
@@ -511,6 +524,7 @@ let cps_transform ~live_vars p =
           ; blocks_to_transform
           ; is_continuation
           ; matching_exn_handler
+          ; block_order = cfg.block_order
           ; live_vars
           ; cps_calls
           }
