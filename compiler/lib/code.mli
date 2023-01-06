@@ -231,6 +231,9 @@ type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 
+val fold_closures_innermost_first :
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
+
 val fold_children : 'c fold_blocs
 
 val traverse :
