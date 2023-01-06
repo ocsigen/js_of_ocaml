@@ -22,6 +22,7 @@ val f :
      Code.program
   -> exported_runtime:bool
   -> live_vars:Deadcode.variable_uses
+  -> cps_calls:Effects.cps_calls
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
   -> Parse_bytecode.Debug.t
