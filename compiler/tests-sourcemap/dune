@@ -1,0 +1,32 @@
+(env
+ (_
+  (js_of_ocaml
+   (compilation_mode separate))))
+
+(executable
+ (name test)
+ (modules test)
+ (modes js)
+ (libraries testlib))
+
+(library
+ (name testlib)
+ (modules a b c d))
+
+(executable
+ (name dump_sourcemap)
+ (modules dump_sourcemap)
+ (libraries js_of_ocaml-compiler))
+
+(rule
+ (target dump)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./dump_sourcemap.exe %{dep:test.bc.js}))))
+
+(rule
+ (alias runtest)
+ (deps dump.reference dump)
+ (action
+  (diff dump.reference dump)))

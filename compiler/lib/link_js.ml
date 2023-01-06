@@ -70,9 +70,9 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
         let build_info_for_file = ref None in
         let ic = open_in file in
         (try
+           let start_line = !line_offset in
            output_string output (Printf.sprintf "//# 1 %S" file);
            new_line ();
-           let start_line = !line_offset in
            while true do
              let line = input_line ic in
              match

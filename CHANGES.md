@@ -6,6 +6,7 @@
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
+- Sourcemap: fix incorrect sourcemap with separate compilation
 
 # 5.0.1 (2022-12-20) - Lille
 ## Features/Changes
