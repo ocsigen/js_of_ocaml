@@ -21,7 +21,7 @@
 open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
-let _ =
+let () =
   Sys.catch_break true;
   let argv = Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv in
   let argv =
