@@ -23,7 +23,7 @@ let times = Debug.find "times"
 
 let debug_mem = Debug.find "mem"
 
-let _ = Sys.catch_break true
+let () = Sys.catch_break true
 
 let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
