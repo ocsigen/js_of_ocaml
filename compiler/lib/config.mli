@@ -69,6 +69,8 @@ module Flag : sig
 
   val header : unit -> bool
 
+  val auto_link : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

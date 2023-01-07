@@ -90,6 +90,8 @@
   (run
    %{bin:js_of_ocaml}
    link
+   --enable
+   auto-link
    %{dep:myruntime.js}
    %{dep:stdlib.cma.js}
    %{dep:lib1.cma.js}

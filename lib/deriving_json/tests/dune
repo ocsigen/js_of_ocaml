@@ -1,9 +1,3 @@
-(env
- (_
-  (js_of_ocaml
-   (link_flags
-    (:standard --linkall)))))
-
 (library
  (name deriving_expect_tests)
  (libraries unix js_of_ocaml js_of_ocaml.deriving)

@@ -254,7 +254,8 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
           ~init:acc
           ~f:(fun (info : Unit_info.t) (requires, to_link, all) ->
             let all = StringSet.union all info.provides in
-            if cmo_file
+            if (not (Config.Flag.auto_link ()))
+               || cmo_file
                || linkall
                || info.force_link
                || not (StringSet.is_empty (StringSet.inter requires info.provides))
