@@ -1,6 +1,8 @@
 (env
  (_
   (js_of_ocaml
+   (link_flags
+    (:standard --enable auto-link))
    (compilation_mode separate))))
 
 (executable

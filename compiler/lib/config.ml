@@ -95,6 +95,11 @@ module Flag = struct
   let compact_vardecl = o ~name:"vardecl" ~default:false
 
   let header = o ~name:"header" ~default:true
+
+  (* change the default once dune properly forward linkall flags.
+     Probably starting with dune.3.7 with
+     https://github.com/ocaml/dune/pull/6832 *)
+  let auto_link = o ~name:"auto-link" ~default:false
 end
 
 module Param = struct

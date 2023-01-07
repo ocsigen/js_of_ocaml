@@ -54,12 +54,6 @@ let enabled_if = function
   | _ -> Any
 
 let () =
-  Printf.printf {|
-(env
- (_
-  (js_of_ocaml
-    (link_flags (:standard --linkall)))))
-|};
   Array.to_list (Sys.readdir ".")
   |> List.filter ~f:is_implem
   |> List.sort ~cmp:compare
