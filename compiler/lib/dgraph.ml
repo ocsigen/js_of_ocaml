@@ -226,26 +226,19 @@ struct
         Queue.push x st.queue;
         NSet.remove st.set x)
 
-    let rec iterate g f v w =
+    let rec iterate g ~update f v w =
       if is_empty w
       then v
       else
         let x = pop w in
         let a = NTbl.get v x in
         incr m;
-        let b =
-          f
-            (fun ~deps y ->
-              if deps then g.iter_children (fun z -> push z w) y else push y w)
-            v
-            x
-        in
-        NTbl.set v x b;
+        let b = f ~update v x in
         if not (D.equal a b)
         then (
-          g.iter_children (fun y -> push y w) x;
-          iterate g f v w)
-        else iterate g f v w
+          NTbl.set v x b;
+          g.iter_children (fun y -> push y w) x);
+        iterate g ~update f v w
 
     let rec traverse g to_visit lst x =
       if NSet.mem to_visit x
@@ -279,7 +272,10 @@ let t2 = Timer.make () in
 let t2 = Timer.get t2 in
 let t3 = Timer.make () in
 *)
-      let res = iterate g f v w in
+      let update ~children x =
+        if children then g.iter_children (fun y -> push y w) x else push x w
+      in
+      let res = iterate g ~update f v w in
       (*
 let t3 = Timer.get t3 in
       Format.eprintf "YYY %.2f %.2f %.2f@." t1 t2 t3;
@@ -287,6 +283,6 @@ let t3 = Timer.get t3 in
 *)
       res
 
-    let f size g f = f' size g (fun _ v x -> f v x)
+    let f size g f = f' size g (fun ~update:_ v x -> f v x)
   end
 end

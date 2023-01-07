@@ -98,7 +98,7 @@ end)
     val f' :
          NTbl.size
       -> t
-      -> ((deps:bool -> N.t -> unit) -> D.t NTbl.t -> N.t -> D.t)
+      -> (update:(children:bool -> N.t -> unit) -> D.t NTbl.t -> N.t -> D.t)
       -> D.t NTbl.t
   end
 end

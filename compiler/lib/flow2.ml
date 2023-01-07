@@ -239,14 +239,14 @@ module D = struct
       match st.defs.(idx) with
       | Expr (Block (_, a, _)) ->
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~st' s y) a;
-          if Poly.equal s `Escape then update ~deps:true x
+          if Poly.equal s `Escape then update ~children:true x
       | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
               | Phi { known; _ } -> st.defs.(Var.idx y) <- Phi { known; others = true }
               | Expr _ -> assert false);
-              if Poly.equal s `Escape then update ~deps:false y)
+              if Poly.equal s `Escape then update ~children:false y)
             params;
           Var.Set.iter
             (fun y -> variable_escape ~update ~st ~st' s y)
@@ -296,11 +296,11 @@ module D = struct
             if not st.possibly_mutable.(Var.idx x)
             then (
               st.possibly_mutable.(Var.idx x) <- true;
-              update ~deps:true x))
+              update ~children:true x))
           known
 end
 
-let propagate1 st update st' x =
+let propagate1 st ~update st' x =
   let approx =
     match st.defs.(Var.idx x) with
     | Phi { known; others } ->
@@ -433,7 +433,7 @@ let propagate1 st update st' x =
                               match st.defs.(idx) with
                               | Expr _ -> assert false
                               | Phi { known; others } ->
-                                  update ~deps:false x;
+                                  update ~children:false x;
                                   st.defs.(idx) <-
                                     Phi
                                       { known = Var.Set.add y known
@@ -490,8 +490,8 @@ Underapplied:
   if st.variable_possibly_mutable.(Var.idx x) then D.mark_mutable ~update ~st ~st' approx;
   approx
 
-let propagate1 st update st' x =
-  let res = propagate1 st update st' x in
+let propagate1 st ~update st' x =
+  let res = propagate1 st ~update st' x in
   (*
   (match res, Var.Tbl.get st' x with
   | Values s, Values s' ->
