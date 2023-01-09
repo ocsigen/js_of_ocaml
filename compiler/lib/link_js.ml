@@ -235,12 +235,12 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
   let t = Timer.make () in
   let oc = Line_writer.of_channel output in
   let warn_effects = ref false in
+  let files = List.map files ~f:(fun file -> file, Units.scan_file file) in
   let missing, to_link, all =
     List.fold_right
       files
       ~init:(StringSet.empty, StringSet.empty, StringSet.empty)
-      ~f:(fun file acc ->
-        let build_info, units = Units.scan_file file in
+      ~f:(fun (_file, (build_info, units)) acc ->
         let cmo_file =
           match build_info with
           | Some bi -> (
@@ -278,119 +278,114 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
   if times () then Format.eprintf "  scan: %a@." Timer.print t;
   let sm = ref [] in
   let build_info = ref None in
-  try
-    let t = Timer.make () in
-    List.iter files ~f:(fun file ->
-        let build_info_for_file = ref None in
-        let sm_for_file = ref None in
-        let ic = Line_reader.open_ file in
-        let skip ic = Line_reader.drop ic in
-        let reloc = ref [] in
-        let copy ic oc =
-          let line = Line_reader.next ic in
-          Line_writer.write ~source:ic oc line;
-          reloc := (Line_reader.lnum ic, Line_writer.lnum oc) :: !reloc
-        in
-        let rec read () =
-          match Line_reader.peek ic with
-          | None -> ()
-          | Some line ->
-              (match
-                 action
-                   ~resolve_sourcemap_url
-                   ~drop_source_map:Poly.(source_map = None)
-                   file
-                   line
-               with
-              | Keep -> copy ic oc
-              | Build_info bi ->
-                  (match !build_info_for_file with
-                  | None -> build_info_for_file := Some bi
-                  | Some bi' ->
-                      build_info_for_file := Some (Build_info.merge file bi' file bi));
-                  copy ic oc
-              | Drop -> skip ic
-              | Unit ->
-                  let u = Units.read ic Unit_info.empty in
-                  if StringSet.cardinal (StringSet.inter u.Unit_info.provides to_link) > 0
+  let t = Timer.make () in
+  List.iter files ~f:(fun (file, (build_info_for_file, _units)) ->
+      let sm_for_file = ref None in
+      let ic = Line_reader.open_ file in
+      let skip ic = Line_reader.drop ic in
+      let reloc = ref [] in
+      let copy ic oc =
+        let line = Line_reader.next ic in
+        Line_writer.write ~source:ic oc line;
+        reloc := (Line_reader.lnum ic, Line_writer.lnum oc) :: !reloc
+      in
+      let rec read () =
+        match Line_reader.peek ic with
+        | None -> ()
+        | Some line ->
+            (match
+               action
+                 ~resolve_sourcemap_url
+                 ~drop_source_map:Poly.(source_map = None)
+                 file
+                 line
+             with
+            | Keep | Build_info _ -> copy ic oc
+            | Drop -> skip ic
+            | Unit ->
+                let u = Units.read ic Unit_info.empty in
+                if StringSet.cardinal (StringSet.inter u.Unit_info.provides to_link) > 0
+                then (
+                  if u.effects_without_cps && not !warn_effects
                   then (
-                    if u.effects_without_cps && not !warn_effects
-                    then (
-                      warn_effects := true;
-                      warn
-                        "Warning: your program contains effect handlers; you should \
-                         probably run js_of_ocaml with option '--enable=effects'@.");
-                    if debug ()
-                    then
-                      Format.eprintf
-                        "Copy %s@."
-                        (String.concat ~sep:"," (StringSet.elements u.provides)))
-                  else (
-                    if debug ()
-                    then
-                      Format.eprintf
-                        "Skip %s@."
-                        (String.concat ~sep:"," (StringSet.elements u.provides));
-                    while
-                      match Line_reader.peek ic with
-                      | None -> false
-                      | Some line -> (
-                          match prefix_kind line with
-                          | `Other -> true
-                          | `Json_base64 _ | `Url _ | `Build_info _ | `Unit -> false)
-                    do
-                      skip ic
-                    done)
-              | Source_map x ->
-                  Line_reader.drop ic;
-                  sm_for_file := Some x);
-              read ()
-        in
-        read ();
-        Line_writer.write oc "";
-        Line_reader.close ic;
-        (match !sm_for_file with
-        | None -> ()
-        | Some x -> sm := (x, !reloc) :: !sm);
-        match !build_info, !build_info_for_file with
-        | None, None -> ()
-        | Some _, None -> ()
-        | None, Some build_info_for_file -> build_info := Some (file, build_info_for_file)
-        | Some (first_file, bi), Some build_info_for_file ->
-            build_info :=
-              Some (first_file, Build_info.merge first_file bi file build_info_for_file));
-    if times () then Format.eprintf "  emit: %a@." Timer.print t;
-    let t = Timer.make () in
-    match source_map with
-    | None -> ()
-    | Some (file, init_sm) ->
-        let sm =
-          List.rev_map !sm ~f:(fun (sm, reloc) ->
-              let tbl = Hashtbl.create 17 in
-              List.iter reloc ~f:(fun (a, b) -> Hashtbl.add tbl a b);
-              Source_map.filter_map sm ~f:(Hashtbl.find_opt tbl))
-        in
-        (match Source_map.merge (init_sm :: sm) with
-        | None -> ()
-        | Some sm -> (
-            (* preserve some info from [init_sm] *)
-            let sm =
-              { sm with
-                version = init_sm.version
-              ; file = init_sm.file
-              ; sourceroot = init_sm.sourceroot
-              }
-            in
-            match file with
-            | None ->
-                let data = Source_map_io.to_string sm in
-                let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
-                Line_writer.write oc s
-            | Some file ->
-                Source_map_io.to_file sm file;
-                let s = sourceMappingURL ^ Filename.basename file in
-                Line_writer.write oc s));
-        if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
+                    warn_effects := true;
+                    warn
+                      "Warning: your program contains effect handlers; you should \
+                       probably run js_of_ocaml with option '--enable=effects'@.");
+                  if debug ()
+                  then
+                    Format.eprintf
+                      "Copy %s@."
+                      (String.concat ~sep:"," (StringSet.elements u.provides)))
+                else (
+                  if debug ()
+                  then
+                    Format.eprintf
+                      "Skip %s@."
+                      (String.concat ~sep:"," (StringSet.elements u.provides));
+                  while
+                    match Line_reader.peek ic with
+                    | None -> false
+                    | Some line -> (
+                        match prefix_kind line with
+                        | `Other -> true
+                        | `Json_base64 _ | `Url _ | `Build_info _ | `Unit -> false)
+                  do
+                    skip ic
+                  done)
+            | Source_map x ->
+                Line_reader.drop ic;
+                sm_for_file := Some x);
+            read ()
+      in
+      read ();
+      Line_writer.write oc "";
+      Line_reader.close ic;
+      (match !sm_for_file with
+      | None -> ()
+      | Some x -> sm := (x, !reloc) :: !sm);
+      match !build_info, build_info_for_file with
+      | None, None -> ()
+      | Some _, None -> ()
+      | None, Some build_info_for_file -> build_info := Some (file, build_info_for_file)
+      | Some (first_file, bi), Some build_info_for_file ->
+          build_info :=
+            Some (first_file, Build_info.merge first_file bi file build_info_for_file));
+  if times () then Format.eprintf "  emit: %a@." Timer.print t;
+  let t = Timer.make () in
+  match source_map with
+  | None -> ()
+  | Some (file, init_sm) ->
+      let sm =
+        List.rev_map !sm ~f:(fun (sm, reloc) ->
+            let tbl = Hashtbl.create 17 in
+            List.iter reloc ~f:(fun (a, b) -> Hashtbl.add tbl a b);
+            Source_map.filter_map sm ~f:(Hashtbl.find_opt tbl))
+      in
+      (match Source_map.merge (init_sm :: sm) with
+      | None -> ()
+      | Some sm -> (
+          (* preserve some info from [init_sm] *)
+          let sm =
+            { sm with
+              version = init_sm.version
+            ; file = init_sm.file
+            ; sourceroot = init_sm.sourceroot
+            }
+          in
+          match file with
+          | None ->
+              let data = Source_map_io.to_string sm in
+              let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
+              Line_writer.write oc s
+          | Some file ->
+              Source_map_io.to_file sm file;
+              let s = sourceMappingURL ^ Filename.basename file in
+              Line_writer.write oc s));
+      if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
+
+let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
+  try link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"
