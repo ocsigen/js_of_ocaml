@@ -38,36 +38,15 @@ it so that we do not have to convert it to CPS:
 - Three levels: CPS, undecided, direct
 - For each undecided call site, duplicate the corresponding functions
 *)
-open Stdlib
+open! Stdlib
 open Code
 
 module Domain = struct
-  type t =
-    | CPS
-    | Undecided
-    | Direct
+  type t = bool
 
-  let equal = Poly.equal
+  let equal = Bool.equal
 
-  let bot = Direct
-
-  module Syntax = struct
-    let ( || ) v v' =
-      match v, v' with
-      | CPS, _ | _, CPS -> CPS
-      | Undecided, _ | _, Undecided -> Undecided
-      | Direct, Direct -> Direct
-
-    let ( && ) v v' =
-      match v, v' with
-      | Direct, _ | _, Direct -> Direct
-      | Undecided, _ | _, Undecided -> Undecided
-      | CPS, CPS -> CPS
-
-    let cps_if b = if b then CPS else Direct
-
-    let undecided_if b = if b then Undecided else Direct
-  end
+  let bot = false
 end
 
 let add_var s x = s := Var.Set.add x !s
@@ -81,20 +60,11 @@ let add_dep deps x y =
       (Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
       !deps
 
-let add_rel rels x y v =
+let add_rel rels x y =
   rels :=
     Var.Map.update
       x
-      (fun m ->
-        Some
-          (Var.Map.update
-             y
-             (fun w ->
-               Some
-                 (match w with
-                 | None -> v
-                 | Some w -> v || w))
-             (Option.value ~default:Var.Map.empty m)))
+      (fun m -> Some (Var.Set.add y (Option.value ~default:Var.Set.empty m)))
       !rels
 
 let rec list_iter ~f = function
@@ -122,23 +92,22 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
           | Some fun_name ->
               add_var vars fun_name;
               add_dep deps fun_name x;
-              add_rel rels fun_name x true);
-          match Var.Tbl.get info.Flow2.info_approximation f with
+              add_rel rels fun_name x);
+          match Var.Tbl.get info.Global_flow.info_approximation f with
           | Top -> ()
-          | Values { known; _ } ->
-              let n = Var.Set.cardinal known in
+          | Values { known; others } ->
               Var.Set.iter
                 (fun g ->
                   add_var vars g;
-                  (if tail_call
+                  (if tail_call && not others
                   then
                     match fun_name with
                     | None -> ()
                     | Some fun_name -> add_dep tail_deps fun_name g);
                   add_dep deps x g;
                   add_dep deps g x;
-                  add_rel rels x g true;
-                  add_rel rels g x (n > 1))
+                  add_rel rels x g;
+                  add_rel rels g x)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -147,7 +116,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
           | Some fun_name ->
               add_var vars fun_name;
               add_dep deps fun_name x;
-              add_rel rels fun_name x true)
+              add_rel rels fun_name x)
       | Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
@@ -155,37 +124,32 @@ module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 module Solver = G'.Solver (Domain)
 
 let cps_needed ~info ~in_loop ~rels st x =
-  let open Domain.Syntax in
-  cps_if (Var.Set.mem x in_loop)
+  Var.Set.mem x in_loop
   ||
   let idx = Var.idx x in
-  Var.Map.fold
-    (fun y clamp acc ->
-      acc
-      ||
-      let v = Var.Map.find y st in
-      if not clamp then v && Domain.Undecided else v)
-    (try Var.Map.find x rels with Not_found -> Var.Map.empty)
-    Domain.bot
+  Var.Set.fold
+    (fun y acc -> acc || Var.Map.find y st)
+    (try Var.Map.find x rels with Not_found -> Var.Set.empty)
+    false
   ||
-  match info.Flow2.info_defs.(idx) with
+  match info.Global_flow.info_defs.(idx) with
   | Expr (Apply { f; _ }) -> (
-      match Var.Tbl.get info.Flow2.info_approximation f with
-      | Top | Values { others = true; _ } -> CPS
+      match Var.Tbl.get info.Global_flow.info_approximation f with
+      | Top | Values { others = true; _ } -> true
       | Values { known; others = false } ->
           Var.Set.fold
             (fun g acc ->
               acc
               ||
-              match info.Flow2.info_defs.(Var.idx g) with
-              | Expr (Closure _ | Prim (Extern "%closure", _)) -> Domain.bot
-              | _ -> Domain.CPS)
+              match info.Global_flow.info_defs.(Var.idx g) with
+              | Expr (Closure _ | Prim (Extern "%closure", _)) -> false
+              | _ -> true)
             known
-            Domain.bot)
+            false)
   | Expr (Closure _) | Expr (Prim (Extern "%closure", _)) ->
-      undecided_if info.Flow2.info_may_escape.(idx)
-  | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> Domain.CPS
-  | _ -> Domain.bot
+      info.Global_flow.info_may_escape.(idx)
+  | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> true
+  | _ -> false
 
 module SCC = Strongly_connected_components.Make (struct
   type t = Var.t
@@ -222,9 +186,10 @@ let f p info =
         match c with
         | SCC.No_loop _ -> s
         | Has_loop l ->
-            (* Format.eprintf "LOOP ";
-               List.iter ~f:(fun x -> Format.eprintf " %a" Var.print x) l;
-               Format.eprintf "@.";
+            (*
+            Format.eprintf "LOOP ";
+            List.iter ~f:(fun x -> Format.eprintf " %a" Var.print x) l;
+            Format.eprintf "@.";
             *)
             List.fold_left ~f:(fun s x -> Var.Set.add x s) l ~init:s)
       ~init:Var.Set.empty
@@ -238,28 +203,12 @@ let f p info =
     }
   in
   let res = Solver.f g (cps_needed ~info ~in_loop ~rels:!rels) in
-  (*
   Code.Print.program
     (fun _ xi ->
       match (xi : Print.xinstr) with
-      | Instr (Let (x, _)) -> (
-          match try Var.Map.find x res with Not_found -> Direct with
-          | Domain.CPS -> "*"
-          | Undecided ->
-              if Var.Set.is_empty
-                   (try Var.Map.find x !deps with Not_found -> Var.Set.empty)
-              then "0"
-              else if info.Flow2.info_may_escape.(Var.idx x)
-              then "^"
-              else "+"
-          | Direct -> " ")
+      | Instr (Let (x, _)) ->
+          if try Var.Map.find x res with Not_found -> false then "*" else " "
       | _ -> " ")
     p;
-*)
-  Var.Map.fold
-    (fun x v s ->
-      match v with
-      | Domain.CPS | Domain.Undecided -> Var.Set.add x s
-      | Domain.Direct -> s)
-    res
-    Var.Set.empty
+  (* *)
+  Var.Map.fold (fun x v s -> if v then Var.Set.add x s else s) res Var.Set.empty

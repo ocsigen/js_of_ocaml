@@ -240,7 +240,7 @@ type st =
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
-  ; flow_info : Flow2.info
+  ; flow_info : Global_flow.info
   ; cps_calls : cps_calls ref
   }
 
@@ -360,7 +360,7 @@ let cps_instr ~st (instr : instr) : instr =
   | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _)))
     when Var.Set.mem x st.cps_needed -> assert false
   | Let (x, Apply { f; args; _ }) ->
-      assert (Flow2.exact_call st.flow_info f (List.length args));
+      assert (Global_flow.exact_call st.flow_info f (List.length args));
       Let (x, Apply { f; args; exact = true })
   | _ -> instr
 
@@ -413,7 +413,7 @@ let cps_block ~st ~k pc block =
           (fun ~k ->
             tail_call
               ~st
-              ~exact:(exact || Flow2.exact_call st.flow_info f (List.length args))
+              ~exact:(exact || Global_flow.exact_call st.flow_info f (List.length args))
               ~check:true
               ~f
               (args @ [ k ]))
@@ -424,7 +424,7 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~exact:(Flow2.exact_call st.flow_info f 1)
+              ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~check:true
               ~f
               [ arg; k' ])
@@ -808,7 +808,7 @@ let f (p, live_vars) =
   let t = Timer.make () in
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p = remove_empty_blocks ~live_vars p in
-  let info = Flow2.f p in
+  let info = Global_flow.f p in
   (*  let p, info = Flow.f ~pessimistic:true p in*)
   let cps_needed = Fun_style_analysis.f p info in
   let p, cps_needed = rewrite_toplevel p cps_needed in

@@ -18,4 +18,4 @@
 
 val annot : Code.Var.Set.t -> Code.Print.xinstr -> string
 
-val f : Code.program -> Flow2.info -> Code.Var.Set.t
+val f : Code.program -> Global_flow.info -> Code.Var.Set.t
