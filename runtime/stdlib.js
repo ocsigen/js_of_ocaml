@@ -35,15 +35,13 @@ function caml_call_gen(f, args) {
     return caml_call_gen(f.apply(null,args.slice(0,n)),args.slice(n));
   }
   else {
-    var g = function (){
+    return function (){
       var extra_args = (arguments.length == 0)?1:arguments.length;
       var nargs = new Array(args.length+extra_args);
       for(var i = 0; i < args.length; i++ ) nargs[i] = args[i];
       for(var i = 0; i < arguments.length; i++ ) nargs[args.length+i] = arguments[i];
       return caml_call_gen(f, nargs)
-    };
-    g.l = d;
-    return g;
+    }
   }
 }
 
@@ -72,16 +70,14 @@ function caml_call_gen(f, args) {
   } else {
     argsLen--;
     var k = args [argsLen];
-    var g = function (){
+    return k (function () {
       var extra_args = (arguments.length == 0)?1:arguments.length;
       var nargs = new Array(argsLen + extra_args);
       for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
       for(var i = 0; i < arguments.length; i++ )
         nargs[argsLen + i] = arguments[i];
       return caml_call_gen(f, nargs)
-    };
-    g.l = d;
-    return k(g);
+    });
   }
 }
 
