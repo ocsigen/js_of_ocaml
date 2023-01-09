@@ -90,9 +90,14 @@ let instr_of_name_content prim ~name ~content =
     | `create_file -> "jsoo_create_file"
     | `create_file_extern -> "jsoo_create_file_extern"
   in
+  assert (String.is_valid_utf_8 name);
   Let
     ( Var.fresh ()
-    , Prim (Extern prim, [ Pc (NativeString name); Pc (NativeString content) ]) )
+    , Prim
+        ( Extern prim
+        , [ Pc (NativeString (Code.Native_string.of_string name))
+          ; Pc (NativeString (Code.Native_string.of_bytestring content))
+          ] ) )
 
 let embed_file ~name ~filename =
   instr_of_name_content `create_file_extern ~name ~content:(Fs.read_file filename)

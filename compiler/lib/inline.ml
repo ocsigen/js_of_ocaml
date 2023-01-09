@@ -251,9 +251,7 @@ let inline live_vars closures pc (outer, blocks, free_pc) =
                 if Code.Var.compare y y' = 0
                    && Primitive.has_arity prim len
                    && args_equal l args
-                then
-                  ( Let (x, Prim (Extern "%closure", [ Pc (NativeString prim) ])) :: rem
-                  , state )
+                then Let (x, Prim (Extern "%closure", [ Pc (String prim) ])) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)

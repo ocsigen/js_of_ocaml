@@ -619,6 +619,80 @@ module String = struct
   let capitalize_ascii s = apply1 Char.uppercase_ascii s
 
   let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
+
+  let[@inline] not_in_x80_to_xBF b = b lsr 6 <> 0b10
+
+  let[@inline] not_in_xA0_to_xBF b = b lsr 5 <> 0b101
+
+  let[@inline] not_in_x80_to_x9F b = b lsr 5 <> 0b100
+
+  let[@inline] not_in_x90_to_xBF b = b < 0x90 || 0xBF < b
+
+  let[@inline] not_in_x80_to_x8F b = b lsr 4 <> 0x8
+
+  external unsafe_get_uint8 : string -> int -> int = "%string_unsafe_get"
+
+  let is_valid_utf_8 b =
+    let rec loop max b i =
+      if i > max
+      then true
+      else
+        let get = unsafe_get_uint8 in
+        match Char.unsafe_chr (get b i) with
+        | '\x00' .. '\x7F' -> loop max b (i + 1)
+        | '\xC2' .. '\xDF' ->
+            let last = i + 1 in
+            if last > max || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xE0' ->
+            let last = i + 2 in
+            if last > max
+               || not_in_xA0_to_xBF (get b (i + 1))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
+            let last = i + 2 in
+            if last > max
+               || not_in_x80_to_xBF (get b (i + 1))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xED' ->
+            let last = i + 2 in
+            if last > max
+               || not_in_x80_to_x9F (get b (i + 1))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xF0' ->
+            let last = i + 3 in
+            if last > max
+               || not_in_x90_to_xBF (get b (i + 1))
+               || not_in_x80_to_xBF (get b (i + 2))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xF1' .. '\xF3' ->
+            let last = i + 3 in
+            if last > max
+               || not_in_x80_to_xBF (get b (i + 1))
+               || not_in_x80_to_xBF (get b (i + 2))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | '\xF4' ->
+            let last = i + 3 in
+            if last > max
+               || not_in_x80_to_x8F (get b (i + 1))
+               || not_in_x80_to_xBF (get b (i + 2))
+               || not_in_x80_to_xBF (get b last)
+            then false
+            else loop max b (last + 1)
+        | _ -> false
+    in
+    loop (length b - 1) b 0
 end
 
 module Int = struct

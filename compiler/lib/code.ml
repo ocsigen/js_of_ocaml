@@ -257,9 +257,27 @@ type array_or_not =
   | NotArray
   | Unknown
 
+module Native_string = struct
+  type t =
+    | Byte of string
+    | Utf of string
+
+  let of_string x =
+    assert (String.is_valid_utf_8 x);
+    Utf x
+
+  let of_bytestring x = Byte x
+
+  let equal a b =
+    match a, b with
+    | Byte x, Byte y -> String.equal x y
+    | Utf x, Utf y -> String.equal x y
+    | Utf _, Byte _ | Byte _, Utf _ -> false
+end
+
 type constant =
   | String of string
-  | NativeString of string
+  | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
   | Int64 of int64
@@ -269,7 +287,7 @@ type constant =
 let rec constant_equal a b =
   match a, b with
   | String a, String b -> Some (String.equal a b)
-  | NativeString a, NativeString b -> Some (String.equal a b)
+  | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | Tuple (ta, a, _), Tuple (tb, b, _) ->
       if ta <> tb || Array.length a <> Array.length b
       then Some false
@@ -364,7 +382,8 @@ module Print = struct
   let rec constant f x =
     match x with
     | String s -> Format.fprintf f "%S" s
-    | NativeString s -> Format.fprintf f "%Sj" s
+    | NativeString (Byte s) -> Format.fprintf f "%Sj" s
+    | NativeString (Utf s) -> Format.fprintf f "%Sj" s
     | Float fl -> Format.fprintf f "%.12g" fl
     | Float_array a ->
         Format.fprintf f "[|";

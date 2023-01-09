@@ -58,7 +58,7 @@ val the_const_of : info -> Code.prim_arg -> Code.constant option
 
 val the_string_of : info -> Code.prim_arg -> string option
 
-val the_native_string_of : info -> Code.prim_arg -> string option
+val the_native_string_of : info -> Code.prim_arg -> Code.Native_string.t option
 
 val the_int : info -> Code.prim_arg -> int32 option
 
