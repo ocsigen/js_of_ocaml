@@ -22,6 +22,8 @@ open! Stdlib
 type t =
   { provides : StringSet.t
   ; requires : StringSet.t
+  ; primitives : string list
+  ; crcs : Digest.t option StringMap.t
   ; force_link : bool
   ; effects_without_cps : bool
   }

@@ -279,7 +279,18 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
   let sm = ref [] in
   let build_info = ref None in
   let t = Timer.make () in
-  List.iter files ~f:(fun (file, (build_info_for_file, _units)) ->
+  let sym = ref Ocaml_compiler.Symtable.GlobalMap.empty in
+  let sym_js = ref [] in
+  List.iter files ~f:(fun (_, (_, units)) ->
+      List.iter units ~f:(fun (u : Unit_info.t) ->
+          StringSet.iter
+            (fun s ->
+              ignore
+                (Ocaml_compiler.Symtable.GlobalMap.enter sym (Ident.create_persistent s)
+                  : int);
+              sym_js := s :: !sym_js)
+            u.Unit_info.provides));
+  List.iter files ~f:(fun (file, (build_info_for_file, units)) ->
       let sm_for_file = ref None in
       let ic = Line_reader.open_ file in
       let skip ic = Line_reader.drop ic in
@@ -341,6 +352,33 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
       read ();
       Line_writer.write oc "";
       Line_reader.close ic;
+      let is_runtime =
+        match build_info_for_file with
+        | Some bi -> (
+            match Build_info.kind bi with
+            | `Runtime -> true
+            | `Cma | `Exe | `Cmo | `Unknown -> false)
+        | None -> false
+      in
+      if is_runtime
+      then (
+        let primitives =
+          List.fold_left units ~init:[] ~f:(fun acc (u : Unit_info.t) ->
+              acc @ u.primitives)
+        in
+        let code = Parse_bytecode.link_info ~symtable:!sym ~primitives ~crcs:[] in
+        let b = Buffer.create 100 in
+        let fmt = Pretty_print.to_buffer b in
+        Driver.configure fmt;
+        Driver.f'
+          ~standalone:false
+          ~linkall:false
+          ~wrap_with_fun:`Iife
+          fmt
+          (Parse_bytecode.Debug.create ~include_cmis:false false)
+          code;
+        let content = Buffer.contents b in
+        String.split_on_char ~sep:'\n' content |> List.iter ~f:(Line_writer.write oc));
       (match !sm_for_file with
       | None -> ()
       | Some x -> sm := (x, !reloc) :: !sm);

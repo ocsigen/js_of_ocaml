@@ -22,6 +22,8 @@ open! Stdlib
 type t =
   { provides : StringSet.t
   ; requires : StringSet.t
+  ; primitives : string list
+  ; crcs : Digest.t option StringMap.t
   ; force_link : bool
   ; effects_without_cps : bool
   }
@@ -29,6 +31,8 @@ type t =
 let empty =
   { provides = StringSet.empty
   ; requires = StringSet.empty
+  ; primitives = []
+  ; crcs = StringMap.empty
   ; force_link = false
   ; effects_without_cps = false
   }
@@ -44,16 +48,38 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
            | _ -> false)
   in
   let force_link = cmo.cu_force_link in
-  { provides; requires; force_link; effects_without_cps }
+  let crcs =
+    List.fold_left cmo.cu_imports ~init:StringMap.empty ~f:(fun acc (s, o) ->
+        StringMap.add s o acc)
+  in
+  { provides; requires; primitives = []; force_link; effects_without_cps; crcs }
 
 let union t1 t2 =
   let provides = StringSet.union t1.provides t2.provides in
   let requires = StringSet.union t1.requires t2.requires in
   let requires = StringSet.diff requires provides in
+  let primitives = t1.primitives @ t2.primitives in
+  let crcs =
+    StringMap.merge
+      (fun _ v1 v2 ->
+        match v1, v2 with
+        | None, x -> x
+        | x, None -> x
+        | Some None, Some x -> Some x
+        | Some x, Some None -> Some x
+        | Some (Some x), Some (Some y) ->
+            if String.equal x y
+            then Some (Some x)
+            else failwith (Printf.sprintf "Inconsistent assumption blah.."))
+      t1.crcs
+      t2.crcs
+  in
   { provides
   ; requires
+  ; primitives
   ; force_link = t1.force_link || t2.force_link
   ; effects_without_cps = t1.effects_without_cps || t2.effects_without_cps
+  ; crcs
   }
 
 let prefix = "//# unitInfo:"
@@ -63,6 +89,9 @@ let to_string t =
   ; (if StringSet.equal empty.requires t.requires
     then []
     else [ prefix; "Requires:"; String.concat ~sep:", " (StringSet.elements t.requires) ])
+  ; (if List.equal ~eq:String.equal empty.primitives t.primitives
+    then []
+    else [ prefix; "Primitives:"; String.concat ~sep:", " t.primitives ])
   ; (if Bool.equal empty.force_link t.force_link
     then []
     else [ prefix; "Force_link:"; string_of_bool t.force_link ])
@@ -76,13 +105,14 @@ let to_string t =
   |> String.concat ~sep:"\n"
   |> fun x -> x ^ "\n"
 
-let parse_stringset s =
+let parse_stringlist s =
   String.split_on_char ~sep:',' s
   |> List.filter_map ~f:(fun s ->
          match String.trim s with
          | "" -> None
          | s -> Some s)
-  |> StringSet.of_list
+
+let parse_stringset s = parse_stringlist s |> StringSet.of_list
 
 let parse acc s =
   match String.drop_prefix ~prefix s with
@@ -101,6 +131,8 @@ let parse acc s =
             { acc with
               requires = StringSet.union acc.requires (parse_stringset requires)
             }
+      | Some ("Primitives", primitives) ->
+          Some { acc with primitives = acc.primitives @ parse_stringlist primitives }
       | Some ("Force_link", flink) ->
           Some
             { acc with force_link = bool_of_string (String.trim flink) || acc.force_link }

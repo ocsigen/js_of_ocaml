@@ -83,3 +83,9 @@ val from_string :
   -> Code.program * Debug.t
 
 val predefined_exceptions : unit -> Code.program * Unit_info.t
+
+val link_info :
+     symtable:Ocaml_compiler.Symtable.GlobalMap.t
+  -> primitives:string list
+  -> crcs:(string * Digest.t option) list
+  -> Code.program

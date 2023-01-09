@@ -35,7 +35,22 @@
    (-> ppx_support.disabled.ml)))
  (flags
   (:standard -rectypes -linkall))
- (modes byte)
+ (modes byte js)
+ (js_of_ocaml
+  (build_runtime_flags
+   (:standard
+    +toplevel.js
+    +dynlink.js
+    --file
+    %{dep:examples.ml}
+    --file
+    %{dep:test_dynlink.cmo}
+    --file
+    %{dep:test_dynlink.js}))
+  (flags
+   (:standard
+    --toplevel
+    (:include effects_flags.sexp))))
  (modules
   (:standard \ test_dynlink examples effects_flags))
  (preprocess
@@ -92,7 +107,14 @@
  (action
   (with-stdout-to
    %{target}
-   (run ./effects_flags.exe))))
+   (run ./effects_flags.exe sexp))))
+
+(rule
+ (target effects_flags.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./effects_flags.exe txt))))
 
 (rule
  (targets toplevel.js)
@@ -101,7 +123,7 @@
    %{bin:js_of_ocaml}
    compile
    --pretty
-   %{read-strings:effects_flags.sexp}
+   %{read-strings:effects_flags.txt}
    --Werror
    --target-env
    browser
@@ -123,3 +145,7 @@
 (alias
  (name default)
  (deps toplevel.js index.html))
+
+(alias
+ (name separate)
+ (deps toplevel.bc.js))

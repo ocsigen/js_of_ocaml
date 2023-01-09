@@ -2416,9 +2416,17 @@ let from_exe
   let body =
     if link_info
     then
+      let symtable_js =
+        Ocaml_compiler.Symtable.GlobalMap.fold
+          (fun i p acc -> (Ident.name i, p) :: acc)
+          symbols
+          []
+        |> Array.of_list
+      in
       (* Include linking information *)
       let toc =
         [ "SYMB", Obj.repr symbols
+        ; "SYJS", Obj.repr symtable_js
         ; "CRCS", Obj.repr crcs
         ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
         ]
@@ -2797,8 +2805,51 @@ let predefined_exceptions () =
   let unit_info =
     { Unit_info.provides = StringSet.of_list (List.map ~f:snd predefined_exceptions)
     ; requires = StringSet.empty
+    ; crcs = StringMap.empty
     ; force_link = true
     ; effects_without_cps = false
+    ; primitives = []
     }
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
+
+let link_info ~symtable ~primitives ~crcs =
+  let gdata = Code.Var.fresh_n "global_data" in
+  let symtable_js =
+    Ocaml_compiler.Symtable.GlobalMap.fold
+      (fun i p acc -> (Ident.name i, p) :: acc)
+      symtable
+      []
+    |> Array.of_list
+  in
+  let body = [] in
+  let body =
+    (* Include linking information *)
+    let toc =
+      [ "SYMB", Obj.repr symtable
+      ; "SYJS", Obj.repr symtable_js
+      ; "CRCS", Obj.repr crcs
+      ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
+      ]
+    in
+    let infos =
+      [ "toc", Constants.parse (Obj.repr toc)
+      ; "prim_count", Int (Int32.of_int (List.length primitives))
+      ]
+    in
+    let body =
+      List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
+          let c = Var.fresh () in
+          Let (c, Constant const)
+          :: Let
+               ( Var.fresh ()
+               , Prim
+                   ( Extern "caml_js_set"
+                   , [ Pv gdata; Pc (NativeString (Native_string.of_string name)); Pv c ]
+                   ) )
+          :: rem)
+    in
+    Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+  in
+  let block = { params = []; body; branch = Stop } in
+  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }
