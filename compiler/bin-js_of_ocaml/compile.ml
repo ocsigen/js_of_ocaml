@@ -246,8 +246,11 @@ let run
     output code ~source_map ~standalone:false ~linkall:false output_file
   in
   (if runtime_only
-  then
+  then (
+    let prims = Primitive.get_external () |> StringSet.elements in
+    assert (List.length prims > 0);
     let code, uinfo = Parse_bytecode.predefined_exceptions () in
+    let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
     let code : Parse_bytecode.one =
       { code
       ; cmis = StringSet.empty
@@ -261,7 +264,7 @@ let run
       (fun ~source_map ((_, fmt) as output_file) ->
         Pretty_print.string fmt "\n";
         Pretty_print.string fmt (Unit_info.to_string uinfo);
-        output code ~source_map ~standalone:true ~linkall:true output_file)
+        output code ~source_map ~standalone:true ~linkall:true output_file))
   else
     let kind, ic, close_ic, include_dirs =
       match input_file with

@@ -24,6 +24,8 @@ module Symtable : sig
   module GlobalMap : sig
     type t
 
+    val empty : t
+
     val filter_global_map : (Ident.t -> bool) -> t -> t
 
     val find : Ident.t -> t -> int
@@ -31,6 +33,8 @@ module Symtable : sig
     val iter : (Ident.t -> int -> unit) -> t -> unit
 
     val fold : (Ident.t -> int -> 'a -> 'a) -> t -> 'a -> 'a
+
+    val enter : t ref -> Ident.t -> int
   end
 
   val reloc_ident : string -> int

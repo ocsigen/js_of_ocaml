@@ -97,6 +97,12 @@ let int_num_bits =
 module List = struct
   include ListLabels
 
+  let rec equal ~eq a b =
+    match a, b with
+    | [], [] -> true
+    | x :: xs, y :: ys -> eq x y && equal ~eq xs ys
+    | [], _ :: _ | _ :: _, [] -> false
+
   let rec find_map ~f = function
     | [] -> None
     | x :: l -> (

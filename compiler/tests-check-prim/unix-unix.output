@@ -293,6 +293,7 @@ From +prng.js:
 caml_lxm_next
 
 From +stdlib.js:
+caml_build_symbols
 caml_is_printable
 caml_maybe_print_stats
 caml_register_global

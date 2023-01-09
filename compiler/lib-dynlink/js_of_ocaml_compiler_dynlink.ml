@@ -13,6 +13,8 @@ let split_primitives p =
   in
   Array.of_list (split 0 0)
 
+external get_section_table : unit -> (string * Obj.t) list = "caml_get_section_table"
+
 let () =
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
@@ -46,9 +48,19 @@ let () =
       flush stderr;
       res
   in
+  let toc = get_section_table () in
+  let sym =
+    let t : Ocaml_compiler.Symtable.GlobalMap.t = Obj.obj (List.assoc "SYMB" toc) in
+    Ocaml_compiler.Symtable.GlobalMap.fold
+      (fun i n acc -> StringMap.add (Ident.name i) n acc)
+      t
+      StringMap.empty
+  in
   let toplevel_reloc (name : J.t) : int =
     let name = J.to_string name in
-    Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name
+    match StringMap.find_opt name sym with
+    | Some i -> i
+    | None -> Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name
   in
   J.set global (J.string "toplevelCompile") (Obj.magic toplevel_compile) (*XXX HACK!*);
   J.set global (J.string "toplevelEval") (Obj.magic toplevel_eval);

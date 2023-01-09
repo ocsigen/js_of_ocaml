@@ -144,11 +144,47 @@ function caml_named_value(nm) {
 //Provides: caml_global_data
 var caml_global_data = [0];
 
+//Provides: caml_build_symbols
+//Requires: caml_jsstring_of_string
+function caml_build_symbols(toc) {
+  var symb;
+  while(toc) {
+    if(caml_jsstring_of_string(toc[1][1]) == "SYJS") {
+      symb = toc[1][2];
+      break;
+    }
+    else toc = toc[2]
+  }
+  var r = {};
+  if(symb) {
+    for(var i = 1; i < symb.length; i++){
+      r[caml_jsstring_of_string(symb[i][1])] = symb[i][2]
+    }
+  }
+  return r;
+}
+
 //Provides: caml_register_global (const, shallow, const)
-//Requires: caml_global_data, caml_callback
+//Requires: caml_global_data, caml_callback, caml_build_symbols
+//Requires: caml_failwith
 function caml_register_global (n, v, name_opt) {
-  if(name_opt && globalThis.toplevelReloc)
-    n = caml_callback(globalThis.toplevelReloc, [name_opt]);
+  if (name_opt) {
+    var name = name_opt;
+    if(globalThis.toplevelReloc) {
+      n = caml_callback(globalThis.toplevelReloc, [name]);
+    }
+    else if (caml_global_data.toc) {
+      if(!caml_global_data.symbols) {
+        caml_global_data.symbols = caml_build_symbols(caml_global_data.toc)
+      }
+      var nid = caml_global_data.symbols[name]
+      if(nid >= 0)
+        n = nid
+      else {
+        caml_failwith("caml_register_global: cannot locate " + name);
+      }
+    }
+  }
   caml_global_data[n + 1] = v;
   if(name_opt) caml_global_data[name_opt] = v;
 }

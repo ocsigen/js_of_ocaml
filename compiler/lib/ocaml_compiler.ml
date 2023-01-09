@@ -105,9 +105,20 @@ module Symtable = struct
 
   let reloc_ident name =
     let buf = Bytes.create 4 in
-    Symtable.patch_object [| buf |] [ Reloc_setglobal (Ident.create_persistent name), 0 ];
+    let () =
+      try
+        Symtable.patch_object
+          [| buf |]
+          [ Reloc_getglobal (Ident.create_persistent name), 0 ]
+      with _ ->
+        Symtable.patch_object
+          [| buf |]
+          [ Reloc_setglobal (Ident.create_persistent name), 0 ]
+    in
+
     let get i = Char.code (Bytes.get buf i) in
-    get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24)
+    let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
+    n
 end
 
 module Ident = struct

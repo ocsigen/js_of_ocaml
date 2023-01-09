@@ -42,8 +42,9 @@ function caml_get_current_environment() {
 //Provides: caml_get_section_table
 //Requires: caml_global_data, caml_failwith
 function caml_get_section_table () {
-  if(!caml_global_data.toc)
+  if(!caml_global_data.toc) {
     caml_failwith("Program not compiled with --toplevel");
+  }
   return caml_global_data.toc;
 }
 

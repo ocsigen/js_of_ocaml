@@ -86,8 +86,9 @@ let wrap_with_fun_conv =
   in
   Arg.conv (conv, printer)
 
+let toplevel_section = "OPTIONS (TOPLEVEL)"
+
 let options =
-  let toplevel_section = "OPTIONS (TOPLEVEL)" in
   let filesystem_section = "OPTIONS (FILESYSTEM)" in
   let js_files =
     let doc =
@@ -433,6 +434,18 @@ let options_runtime_only =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
   in
+  let toplevel =
+    let doc =
+      "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided). \
+       Exported compilation units can be configured with '--export'.  Note you you'll \
+       also need to link against js_of_ocaml-toplevel."
+    in
+    Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
+  in
+  let no_cmis =
+    let doc = "Do not include cmis when compiling toplevel." in
+    Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
+  in
   let target_env =
     let doc = "Runtime compile target." in
     let options = List.map ~f:(fun env -> Target_env.to_string env, env) Target_env.all in
@@ -504,6 +517,8 @@ let options_runtime_only =
   in
   let build_t
       common
+      toplevel
+      no_cmis
       set_param
       set_env
       wrap_with_fun
@@ -570,7 +585,7 @@ let options_runtime_only =
       ; dynlink = false
       ; linkall = false
       ; target_env
-      ; toplevel = false
+      ; toplevel
       ; export_file = None
       ; include_dirs
       ; runtime_files
@@ -579,7 +594,7 @@ let options_runtime_only =
       ; fs_files
       ; fs_output
       ; fs_external
-      ; no_cmis = true
+      ; no_cmis
       ; output_file
       ; input_file = None
       ; source_map
@@ -590,6 +605,8 @@ let options_runtime_only =
     Term.(
       const build_t
       $ Jsoo_cmdline.Arg.t
+      $ toplevel
+      $ no_cmis
       $ set_param
       $ set_env
       $ wrap_with_function

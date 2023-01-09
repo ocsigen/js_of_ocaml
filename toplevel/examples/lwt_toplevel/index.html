@@ -153,11 +153,14 @@
       var fields = hash.split(/&/);
       var prefix = "";
       var version = "";
+      var main = "toplevel.js";
       for(var f in fields){
         var data = fields[f].split(/=/);
         if(data[0] == "version"){
           version = data[1].replace(/%20|%2B/g,"+");
-          break;
+        }
+        else if (data[0] == "separate"){
+          main = "toplevel.bc.js";
         }
       }
       function load_script(url){
@@ -167,7 +170,7 @@
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
       load_script("exported-unit.cmis.js");
-      load_script("toplevel.js");
+      load_script(main);
 
     </script>
   </head>
