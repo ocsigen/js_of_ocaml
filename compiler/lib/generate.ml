@@ -127,7 +127,10 @@ module Share = struct
     then share
     else add_prim "caml_string_of_jsbytes" share
 
-  let add_code_native_string s share = add_string s share
+  let add_code_native_string (s : Code.Native_string.t) share =
+    match s with
+    | Byte _ -> share
+    | Utf s -> if String.is_ascii s then add_string s share else share
 
   let rec get_constant c t =
     match c with
@@ -176,7 +179,7 @@ module Share = struct
                   if (not exact) || cps
                   then add_apply { arity = List.length args; exact; cps } share
                   else share
-              | Let (_, Prim (Extern "%closure", [ Pc (NativeString name) ])) ->
+              | Let (_, Prim (Extern "%closure", [ Pc (String name) ])) ->
                   let name = Primitive.resolve name in
                   let share =
                     if Primitive.exists name then add_prim name share else share
@@ -352,6 +355,8 @@ let runtime_fun ctx name =
 
 let str_js s = J.EStr (s, `Bytes)
 
+let str_js_utf8 s = J.EStr (s, `Utf8)
+
 let ecall f args loc = J.ECall (f, List.map args ~f:(fun x -> x, `Not_spread), loc)
 
 (****)
@@ -397,7 +402,16 @@ let rec constant_rec ~ctx x level instrs =
       let e = Share.get_string str_js s ctx.Ctx.share in
       let e = ocaml_string ~ctx ~loc:J.N e in
       e, instrs
-  | NativeString s -> Share.get_string str_js s ctx.Ctx.share, instrs
+  | NativeString s -> (
+      match s with
+      | Byte x -> Share.get_string str_js x ctx.Ctx.share, instrs
+      | Utf x ->
+          let b = Buffer.create (String.length x) in
+          String.iter x ~f:(function
+              | '\\' -> Buffer.add_string b "\\\\"
+              | c -> Buffer.add_char b c);
+          let x = Buffer.contents b in
+          Share.get_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
@@ -1261,7 +1275,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
                 ~init:([], const_p, queue)
             in
             J.EArr (List.map args ~f:(fun x -> Some x)), prop, queue
-        | Extern "%closure", [ Pc (NativeString name) ] ->
+        | Extern "%closure", [ Pc (String name) ] ->
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             prim, const_p, queue
         | Extern "%closure", _ -> assert false
@@ -1288,7 +1302,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
                 ~init:([], mutator_p, queue)
             in
             ecall cf args loc, or_p pf prop, queue
-        | Extern "%caml_js_opt_meth_call", o :: Pc (NativeString m) :: l ->
+        | Extern "%caml_js_opt_meth_call", o :: Pc (NativeString (Utf m)) :: l ->
             let (po, co), queue = access_queue' ~ctx queue o in
             let args, prop, queue =
               List.fold_right
@@ -1313,14 +1327,16 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             ( J.ENew (cc, if List.is_empty args then None else Some args)
             , or_p pc prop
             , queue )
-        | Extern "caml_js_get", [ Pv o; Pc (NativeString f) ] when J.is_ident f ->
+        | Extern "caml_js_get", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident f ->
             let (po, co), queue = access_queue queue o in
             J.EDot (co, f), or_p po mutable_p, queue
-        | Extern "caml_js_set", [ Pv o; Pc (NativeString f); v ] when J.is_ident f ->
+        | Extern "caml_js_set", [ Pv o; Pc (NativeString (Utf f)); v ] when J.is_ident f
+          ->
             let (po, co), queue = access_queue queue o in
             let (pv, cv), queue = access_queue' ~ctx queue v in
             J.EBin (J.Eq, J.EDot (co, f), cv), or_p (or_p po pv) mutator_p, queue
-        | Extern "caml_js_delete", [ Pv o; Pc (NativeString f) ] when J.is_ident f ->
+        | Extern "caml_js_delete", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident f
+          ->
             let (po, co), queue = access_queue queue o in
             J.EUn (J.Delete, J.EDot (co, f)), or_p po mutator_p, queue
         (*
@@ -1331,14 +1347,14 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
            | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
            ]}
         *)
-        | Extern "%overrideMod", [ Pc (NativeString m); Pc (NativeString f) ] ->
+        | Extern "%overrideMod", [ Pc (String m); Pc (String f) ] ->
             runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p, queue
         | Extern "%overrideMod", _ -> assert false
         | Extern "%caml_js_opt_object", fields ->
             let rec build_fields queue l =
               match l with
               | [] -> const_p, [], queue
-              | Pc (NativeString nm) :: x :: r ->
+              | Pc (NativeString (Utf nm)) :: x :: r ->
                   let (prop, cx), queue = access_queue' ~ctx queue x in
                   let prop', r', queue = build_fields queue r in
                   or_p prop prop', (J.PNS nm, cx) :: r', queue
@@ -1364,6 +1380,8 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
+        | Extern "caml_jsstring_of_string", [ Pc (String m) ] ->
+            str_js_utf8 m, const_p, queue
         | Extern ("%resume" | "%perform" | "%reperform"), _ ->
             if Config.Flag.effects () then assert false;
             if not !(ctx.effect_warning)

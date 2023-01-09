@@ -730,11 +730,8 @@ let register_global ?(force = false) g i rem =
       match g.named_value.(i) with
       | None -> []
       | Some name ->
-          if String.is_ascii name
-          then (
-            Code.Var.name (access_global g i) name;
-            [ Pc (NativeString name) ])
-          else []
+          Code.Var.name (access_global g i) name;
+          [ Pc (NativeString (Native_string.of_string name)) ]
     in
     Let
       ( Var.fresh ()
@@ -2243,7 +2240,7 @@ let override_global =
   | `V4_13 | `V4_14 | `V5_00 -> []
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
-        Prim (Extern "%overrideMod", [ Pc (NativeString name); Pc (NativeString func) ])
+        Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
       in
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
@@ -2435,14 +2432,18 @@ let from_exe
       in
       let body =
         List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
-            assert (String.is_ascii name);
+            assert (String.is_valid_utf_8 name);
             need_gdata := true;
             let c = Var.fresh () in
             Let (c, Constant const)
             :: Let
                  ( Var.fresh ()
-                 , Prim (Extern "caml_js_set", [ Pv gdata; Pc (NativeString name); Pv c ])
-                 )
+                 , Prim
+                     ( Extern "caml_js_set"
+                     , [ Pv gdata
+                       ; Pc (NativeString (Code.Native_string.of_string name))
+                       ; Pv c
+                       ] ) )
             :: rem)
       in
       if !need_gdata
@@ -2668,18 +2669,13 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
             | Some name ->
                 Var.name x name;
                 need_gdata := true;
-                if String.is_ascii name
-                then
-                  Let
-                    (x, Prim (Extern "caml_js_get", [ Pv gdata; Pc (NativeString name) ]))
-                  :: l
-                else
-                  let name_js = Var.fresh () in
-                  Let
-                    ( name_js
-                    , Prim (Extern "caml_jsstring_of_string", [ Pc (String name) ]) )
-                  :: Let (x, Prim (Extern "caml_js_get", [ Pv gdata; Pv name_js ]))
-                  :: l)
+                Let
+                  ( x
+                  , Prim
+                      ( Extern "caml_js_get"
+                      , [ Pv gdata; Pc (NativeString (Native_string.of_string name)) ] )
+                  )
+                :: l)
         | _ -> l)
   in
   let body =
@@ -2773,13 +2769,13 @@ let predefined_exceptions () =
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
-        assert (String.is_ascii name);
+        assert (String.is_valid_utf_8 name);
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
         let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
         [ Let (v_name, Constant (String name))
-        ; Let (v_name_js, Constant (NativeString name))
+        ; Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
         ; Let
             ( v_index
             , Constant

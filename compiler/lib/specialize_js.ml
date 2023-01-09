@@ -65,7 +65,7 @@ let specialize_instr info i =
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])) -> (
       match the_string_of info m with
-      | Some m when String.is_ascii m -> (
+      | Some m when Javascript.is_ident m -> (
           match the_def_of info a with
           | Some (Block (_, a, _)) ->
               let a = Array.map a ~f:(fun x -> Pv x) in
@@ -73,7 +73,9 @@ let specialize_instr info i =
                 ( x
                 , Prim
                     ( Extern "%caml_js_opt_meth_call"
-                    , o :: Pc (NativeString m) :: Array.to_list a ) )
+                    , o
+                      :: Pc (NativeString (Native_string.of_string m))
+                      :: Array.to_list a ) )
           | _ -> i)
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_new", [ c; a ])) -> (
@@ -95,8 +97,9 @@ let specialize_instr info i =
               | Some (Block (_, [| k; v |], _)) ->
                   let k =
                     match the_string_of info (Pv k) with
-                    | Some s when String.is_ascii s -> Pc (NativeString s)
-                    | _ -> raise Exit
+                    | Some s when String.is_valid_utf_8 s ->
+                        Pc (NativeString (Native_string.of_string s))
+                    | Some _ | None -> raise Exit
                   in
                   [ k; Pv v ]
               | _ -> raise Exit)
@@ -117,8 +120,9 @@ let specialize_instr info i =
       | _ -> i)
   | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) -> (
       match the_string_of info y with
-      | Some s when String.is_ascii s -> Let (x, Constant (NativeString s))
-      | _ -> i)
+      | Some s when String.is_valid_utf_8 s ->
+          Let (x, Constant (NativeString (Native_string.of_string s)))
+      | Some _ | None -> i)
   | Let (x, Prim (Extern "%int_mul", [ y; z ])) -> (
       match the_int info y, the_int info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->

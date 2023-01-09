@@ -140,9 +140,19 @@ type array_or_not =
   | NotArray
   | Unknown
 
+module Native_string : sig
+  type t = private
+    | Byte of string
+    | Utf of string
+
+  val of_string : string -> t
+
+  val of_bytestring : string -> t
+end
+
 type constant =
   | String of string
-  | NativeString of string
+  | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
   | Int64 of int64
