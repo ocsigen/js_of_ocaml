@@ -50,9 +50,7 @@ with Exit ->
          runtime=globalThis.jsoo_runtime,
          caml_wrap_exception=runtime.caml_wrap_exception;
         function caml_call2(f,a0,a1)
-         {return (f.l >= 0?f.l:f.l = f.length) == 2
-                  ?f(a0,a1)
-                  :runtime.caml_call_gen(f,[a0,a1])}
+         {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
         var
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
@@ -110,9 +108,7 @@ with Exit ->
          caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
          caml_wrap_exception=runtime.caml_wrap_exception;
         function caml_call3(f,a0,a1,a2)
-         {return (f.l >= 0?f.l:f.l = f.length) == 3
-                  ?f(a0,a1,a2)
-                  :runtime.caml_call_gen(f,[a0,a1,a2])}
+         {return f.length == 3?f(a0,a1,a2):runtime.caml_call_gen(f,[a0,a1,a2])}
         var
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,
@@ -183,9 +179,7 @@ with Exit ->
          caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
          caml_wrap_exception=runtime.caml_wrap_exception;
         function caml_call2(f,a0,a1)
-         {return (f.l >= 0?f.l:f.l = f.length) == 2
-                  ?f(a0,a1)
-                  :runtime.caml_call_gen(f,[a0,a1])}
+         {return f.length == 2?f(a0,a1):runtime.caml_call_gen(f,[a0,a1])}
         var
          global_data=runtime.caml_get_global_data(),
          Stdlib=global_data.Stdlib,

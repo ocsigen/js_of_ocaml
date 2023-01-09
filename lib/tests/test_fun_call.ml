@@ -147,7 +147,7 @@ let%expect_test "wrap_callback_strict" =
     (Js.Unsafe.callback_with_arity 2 cb3)
     {| (function(f){ return f(1,2,3) }) |};
   [%expect {|
-    Result: function#1#1 |}];
+    Result: function#0#undefined |}];
   call_and_log
     (Js.Unsafe.callback_with_arity 2 cb3)
     ~cont:(fun g -> g 4)
@@ -164,7 +164,7 @@ let%expect_test "wrap_callback_strict" =
     Result: 0 |}];
   call_and_log (Js.Unsafe.callback_with_arity 2 cb3) {| (function(f){ return f(1,2) }) |};
   [%expect {|
-    Result: function#1#1 |}]
+    Result: function#0#undefined |}]
 
 let%expect_test "wrap_callback_strict" =
   call_and_log
@@ -291,7 +291,7 @@ let%expect_test "wrap_meth_callback_strict" =
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2,3]) }) |};
   [%expect {|
-    Result: function#1#1 |}];
+    Result: function#0#undefined |}];
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     ~cont:(fun g -> g 4)
@@ -309,7 +309,7 @@ let%expect_test "wrap_meth_callback_strict" =
   call_and_log
     (Js.Unsafe.meth_callback_with_arity 2 cb4)
     {| (function(f){ return f.apply("this",[1,2]) }) |};
-  [%expect {| Result: function#1#1 |}]
+  [%expect {| Result: function#0#undefined |}]
 
 let%expect_test "wrap_meth_callback_strict" =
   call_and_log
@@ -354,7 +354,7 @@ let%expect_test "partial application, extra arguments set to undefined" =
 let%expect_test _ =
   call_and_log cb3 ~cont:(fun g -> g 1) {| (function(f){ return f }) |};
   [%expect {|
-    Result: function#2#2 |}]
+    Result: function#0#undefined |}]
 
 let%expect_test _ =
   call_and_log cb3 ~cont:(fun g -> g 1 2 3 4) {| (function(f){ return f }) |};
@@ -369,7 +369,7 @@ let%expect_test _ =
     | _ -> Printf.printf "Error: unknown"
   in
   f cb5;
-  [%expect {| Result: function#1#1 |}];
+  [%expect {| Result: function#0#undefined |}];
   f cb4;
   [%expect {|
     got 1, 1, 2, 3, done
@@ -399,7 +399,7 @@ let%expect_test _ =
     Result: 0 |}];
   f (Obj.magic cb4);
   [%expect {|
-    Result: function#1#1 |}];
+    Result: function#0#undefined |}];
   f (Obj.magic cb5);
   [%expect {|
-    Result: function#2#2 |}]
+    Result: function#0#undefined |}]

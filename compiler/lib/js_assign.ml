@@ -264,8 +264,6 @@ module Preserve : Strategy = struct
         let _assigned =
           S.fold
             (fun var assigned ->
-              if not (String.is_empty names.(Var.idx var))
-              then Format.eprintf "v%d ==> %s@." (Var.idx var) names.(Var.idx var);
               assert (String.is_empty names.(Var.idx var));
               let name =
                 match Var.get_name var with

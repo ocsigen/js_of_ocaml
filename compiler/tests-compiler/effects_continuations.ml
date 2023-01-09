@@ -44,13 +44,13 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
 
          (* Conditional whose result is not used *)
          let cond2 b =
-           if b then Format.eprintf "toto" else Format.eprintf "toto";
+           if b then Printf.eprintf "toto" else Printf.eprintf "toto";
            7
 
          (* A dummy argument is used to call the continuation in the
             [then] clause *)
          let cond3 b =
-           let x= ref 0 in if b then x := 1 else Format.eprintf "toto";
+           let x= ref 0 in if b then x := 1 else Printf.eprintf "toto";
            !x
 
          (* Two continuation functions are created. One to bind [ic] before
@@ -66,11 +66,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
            done
 
          (* There is a single continuation for the loop since the result of
-            [Format.eprintf] is ignored. *)
+            [Printf.eprintf] is ignored. *)
          let loop2 () =
            let all = ref [] in
            let ic = open_in "/static/examples.ml" in
-           Format.eprintf "titi";
+           Printf.eprintf "titi";
            while true do
              let line = input_line ic in
              all := line :: !all;
@@ -92,24 +92,21 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        {var _x_=runtime.caml_int_of_string(s),n=_x_}
       catch(_B_)
        {_B_ = caml_wrap_exception(_B_);
-        if(_B_[1] !== Stdlib[7])
-         {var raise$1=caml_pop_trap();return caml_cps_exact_call1(raise$1,_B_)}
+        if(_B_[1] !== Stdlib[7]){var raise$1=caml_pop_trap();return raise$1(_B_)}
         var n=0,_s_=0}
       try
        {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _w_=7,m=_w_}
       catch(_A_)
        {_A_ = caml_wrap_exception(_A_);
-        if(_A_ !== Stdlib[8])
-         {var raise$0=caml_pop_trap();return caml_cps_exact_call1(raise$0,_A_)}
+        if(_A_ !== Stdlib[8]){var raise$0=caml_pop_trap();return raise$0(_A_)}
         var m=0,_t_=0}
       runtime.caml_push_trap
        (function(_z_)
          {if(_z_ === Stdlib[8])return cont(0);
           var raise=caml_pop_trap();
-          return caml_cps_exact_call1(raise,_z_)});
+          return raise(_z_)});
       if(caml_string_equal(s,cst))
-       {var _u_=Stdlib[8],raise=caml_pop_trap();
-        return caml_cps_exact_call1(raise,_u_)}
+       {var _u_=Stdlib[8],raise=caml_pop_trap();return raise(_u_)}
       var _v_=Stdlib[79];
       return caml_cps_call2
               (_v_,
@@ -125,13 +122,13 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function cond2(b,cont)
      {function _p_(_q_){return cont(7)}
       return b
-              ?caml_cps_call2(Stdlib_Format[137],_a_,_p_)
-              :caml_cps_call2(Stdlib_Format[137],_b_,_p_)}
+              ?caml_cps_call2(Stdlib_Printf[3],_a_,_p_)
+              :caml_cps_call2(Stdlib_Printf[3],_b_,_p_)}
     //end
     function cond3(b,cont)
      {var x=[0,0];
       function _n_(_o_){return cont(x[1])}
-      return b?(x[1] = 1,_n_(0)):caml_cps_call2(Stdlib_Format[137],_c_,_n_)}
+      return b?(x[1] = 1,_n_(0)):caml_cps_call2(Stdlib_Printf[3],_c_,_n_)}
     //end
     function loop1(b,cont)
      {var all=[0,0],_j_=Stdlib[79];
@@ -157,7 +154,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
               (_e_,
                cst_static_examples_ml$0,
                function(ic)
-                {var _f_=Stdlib_Format[137];
+                {var _f_=Stdlib_Printf[3];
                  function _g_(_i_)
                   {var _h_=Stdlib[83];
                    return caml_cps_call2
