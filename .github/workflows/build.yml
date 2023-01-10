@@ -115,6 +115,8 @@ jobs:
           target-folder: doc/dev/
 
   build-win-ocaml5:
+    runs-on: windows-latest
+    steps:
       - name: Set git to use LF
         run: |
           git config --global core.autocrlf false
