@@ -1357,7 +1357,8 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
               | Pc (NativeString (Utf nm)) :: x :: r ->
                   let (prop, cx), queue = access_queue' ~ctx queue x in
                   let prop', r', queue = build_fields queue r in
-                  or_p prop prop', (J.PNS nm, cx) :: r', queue
+                  let p_name = if J.is_ident nm then J.PNI nm else J.PNS nm in
+                  or_p prop prop', (p_name, cx) :: r', queue
               | _ -> assert false
             in
             let prop, fields, queue = build_fields queue fields in

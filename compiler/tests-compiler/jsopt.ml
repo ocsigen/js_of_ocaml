@@ -128,7 +128,7 @@ let%expect_test "object" =
   print_var_decl program "obj_literal";
   [%expect
     {|
-    var obj_literal = ({"aaa":97,"bbb":"test","cc dd":2,"npiπ":5});
+    var obj_literal = ({aaa:97,bbb:"test","cc dd":2,"npiπ":5});
     //end |}]
 
 let%expect_test "get" =
