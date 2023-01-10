@@ -102,7 +102,10 @@ let specialize_instr info i =
                     | Some _ | None -> raise Exit
                   in
                   [ k; Pv v ]
-              | _ -> raise Exit)
+              | Some (Constant (Tuple (0, [| String k; v |], (NotArray | Unknown))))
+                when String.is_valid_utf_8 k ->
+                  [ Pc (NativeString (Native_string.of_string k)); Pc v ]
+              | Some _ | None -> raise Exit)
         in
         Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
       with Exit -> i)

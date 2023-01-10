@@ -215,14 +215,17 @@ let expr_escape st _x e =
             | _, `Const | Pc _, _ -> ()
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
+                | Expr (Constant (Tuple _)) -> ()
                 | Expr (Block (_, a, _)) -> Array.iter a ~f:(fun x -> block_escape st x)
                 | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
                 match st.defs.(Var.idx v) with
+                | Expr (Constant (Tuple _)) -> ()
                 | Expr (Block (_, a, _)) ->
                     Array.iter a ~f:(fun x ->
                         match st.defs.(Var.idx x) with
                         | Expr (Block (_, [| _k; v |], _)) -> block_escape st v
+                        | Expr (Constant _) -> ()
                         | _ -> block_escape st x)
                 | _ -> block_escape st v)
             | Pv v, `Mutable -> block_escape st v);
