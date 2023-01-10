@@ -368,6 +368,22 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/jsopt.ml
+ (name jsopt_15)
+ (enabled_if true)
+ (modules jsopt)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (flags -allow-output-patterns)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/lambda_lifting.ml
  (name lambda_lifting_15)
  (enabled_if true)
