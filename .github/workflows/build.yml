@@ -134,7 +134,7 @@ jobs:
       - name: Use OCaml 5.0.x
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 5.0.x
+          ocaml-compiler: 5.0.0
           dune-cache: false
           opam-depext: true
           opam-depext-flags: --with-test
