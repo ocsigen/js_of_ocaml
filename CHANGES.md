@@ -5,6 +5,8 @@
 * Effects: improved CPS transform, resulting in lower compilation time and smaller generated code
 * Compiler: separate compilation can now drops unused units when linking (similar to ocamlc). (#1378)
   Feature is disabled by default while dune rules are being fixed. Enable with --enable=auto-link.
+* Compiler: specialize string to js-string conversion for all valid utf8 strings (previously just ascii)
+* Compiler: use identifier for object literals when possible
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
