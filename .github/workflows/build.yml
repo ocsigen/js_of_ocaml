@@ -114,6 +114,42 @@ jobs:
           clean: true
           target-folder: doc/dev/
 
+  build-win-ocaml5:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.ignorecase false
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Use OCaml 5.0.x
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 5.0.x
+          dune-cache: false
+          opam-depext: true
+          opam-depext-flags: --with-test
+          opam-repositories: |
+            dra27: https://github.com/dra27/opam-repository.git#windows-5.0
+            default: https://github.com/fdopen/opam-repository-mingw.git#opam2
+
+      - run: opam install . --with-test
+
+      - run: opam exec -- make all
+
+      - run: opam exec -- make tests
+
+      - run: opam exec -- dune build @all @runtest --profile using-effects
+
+      - run: opam exec -- git diff --exit-code
+
   lint-fmt:
     runs-on: ubuntu-latest
     steps:
