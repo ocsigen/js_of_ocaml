@@ -249,7 +249,7 @@ let add_block st block =
 let closure_of_pc ~st pc =
   try Addr.Map.find pc st.jc.closure_of_jump with Not_found -> assert false
 
-let allocate_closure ~st ~params ~body:(body, branch) =
+let allocate_closure ~st ~params ~body ~branch =
   let block = { params = []; body; branch } in
   let pc = add_block st block in
   let name = Var.fresh () in
@@ -436,45 +436,31 @@ let cps_block ~st ~k pc block =
     | Some (body_prefix, Let (x, e)), Branch cont ->
         let allocate_continuation f =
           let constr_cont, k' =
-            (* Construct continuation: it binds the return value [x],
-               allocates closures for dominated blocks and jumps to the
-               next block. *)
-            let pc, args = cont in
-            let f' = closure_of_pc ~st pc in
-            assert (Hashtbl.mem st.is_continuation pc);
-            match args with
-            | []
-              when match Hashtbl.find st.is_continuation pc with
-                   | `Param _ -> true
-                   | `Loop -> st.live_vars.(Var.idx x) = 0 ->
-                (* When entering a loop, we have to allocate a closure
-                   to bind [x] if it is used in the loop body. In
-                   other cases, we can just call the continuation. *)
-                alloc_jump_closures, f'
-            | [ x' ]
-              when Var.equal x x'
-                   &&
-                   match Hashtbl.find st.is_continuation pc with
-                   | `Param _ -> true
-                   | `Loop -> st.live_vars.(Var.idx x) = 1 ->
-                (* When entering a loop, we have to allocate a closure
-                   to bind [x] if it is used in the loop body. In
-                   other cases, we can just call the continuation. *)
-                alloc_jump_closures, f'
-            | _ ->
-                let args, instrs =
-                  if List.is_empty args
-                  then
-                    (* We use a dummy argument since the continuation
-                       expects at least one argument. *)
-                    let x = Var.fresh () in
-                    [ x ], alloc_jump_closures @ [ Let (x, Constant (Int 0l)) ]
-                  else args, alloc_jump_closures
-                in
-                allocate_closure
-                  ~st
-                  ~params:[ x ]
-                  ~body:(tail_call ~st ~instrs ~exact:true ~check:false ~f:f' args)
+            (* We need to allocate an additional closure if [cont]
+               does not correspond to a continuation that binds [x].
+               This closure binds the return value [x], allocates
+               closures for dominated blocks and jumps to the next
+               block. When entering a loop, we also have to allocate a
+               closure to bind [x] if it is used in the loop body. In
+               other cases, we can just pass the closure corresponding
+               to the next block. *)
+            let pc', args = cont in
+            if (match args with
+               | [] -> true
+               | [ x' ] -> Var.equal x x'
+               | _ -> false)
+               &&
+               match Hashtbl.find st.is_continuation pc' with
+               | `Param _ -> true
+               | `Loop -> st.live_vars.(Var.idx x) = List.length args
+            then alloc_jump_closures, closure_of_pc ~st pc'
+            else
+              let body, branch = cps_branch ~st ~src:pc cont in
+              allocate_closure
+                ~st
+                ~params:[ x ]
+                ~body:(alloc_jump_closures @ body)
+                ~branch
           in
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
