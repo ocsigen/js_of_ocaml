@@ -250,3 +250,28 @@ let%expect_test "meth_call2" =
     //end
     function meth_call_c(o,x){return caml_js_meth_call(o,cst_npi,[0,x])}
     //end |}]
+
+let%expect_test "jstring / bytestring " =
+  let program =
+    compile_and_parse
+      {|
+      let s1 = Js.string "a"
+      let s2 = Js.bytestring "a"
+      let s3 = Js.string "npiπ"
+      let s4 = Js.bytestring "npiπ"
+      |}
+  in
+  print_var_decl program "s1";
+  print_var_decl program "s2";
+  print_var_decl program "s3";
+  print_var_decl program "s4";
+  [%expect
+    {|
+    var s1 = "a";
+    //end
+    var s2 = "a";
+    //end
+    var s3 = "npiπ";
+    //end
+    var s4 = "npi\xcf\x80";
+    //end |}]
