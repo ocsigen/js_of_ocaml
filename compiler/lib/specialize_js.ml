@@ -126,6 +126,10 @@ let specialize_instr info i =
       | Some s when String.is_valid_utf_8 s ->
           Let (x, Constant (NativeString (Native_string.of_string s)))
       | Some _ | None -> i)
+  | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])) -> (
+      match the_string_of info y with
+      | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
+      | None -> i)
   | Let (x, Prim (Extern "%int_mul", [ y; z ])) -> (
       match the_int info y, the_int info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->
