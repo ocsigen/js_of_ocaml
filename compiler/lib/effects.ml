@@ -582,7 +582,7 @@ let cps_transform ~flow_info ~live_vars ~cps_needed p =
               if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
               let block = Addr.Map.find pc blocks in
               Code.Print.block
-                (fun _ xi -> Fun_style_analysis.annot cps_needed xi)
+                (fun _ xi -> Partial_cps_analysis.annot cps_needed xi)
                 pc
                 block)
             start
@@ -818,8 +818,7 @@ let f (p, live_vars) =
   if debug () then Code.Print.program (fun _ _ -> "") p;
   let p = remove_empty_blocks ~live_vars p in
   let info = Global_flow.f p in
-  (*  let p, info = Flow.f ~pessimistic:true p in*)
-  let cps_needed = Fun_style_analysis.f p info in
+  let cps_needed = Partial_cps_analysis.f p info in
   let p, cps_needed = rewrite_toplevel p cps_needed in
   let p = split_blocks ~cps_needed p in
   if debug () then Code.Print.program (fun _ _ -> "") p;
