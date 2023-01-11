@@ -91,12 +91,17 @@ module Share = struct
 
   type 'a aux =
     { strings : 'a StringMap.t
+    ; utf_strings : 'a StringMap.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
     }
 
   let empty_aux =
-    { prims = StringMap.empty; strings = StringMap.empty; applies = AppMap.empty }
+    { prims = StringMap.empty
+    ; strings = StringMap.empty
+    ; utf_strings = StringMap.empty
+    ; applies = AppMap.empty
+    }
 
   type t =
     { count : int aux
@@ -109,6 +114,10 @@ module Share = struct
   let add_string s t =
     let n = try StringMap.find s t.strings with Not_found -> 0 in
     { t with strings = StringMap.add s (n + 1) t.strings }
+
+  let add_utf_string s t =
+    let n = try StringMap.find s t.utf_strings with Not_found -> 0 in
+    { t with utf_strings = StringMap.add s (n + 1) t.utf_strings }
 
   let add_prim s t =
     let n = try StringMap.find s t.prims with Not_found -> 0 in
@@ -129,8 +138,8 @@ module Share = struct
 
   let add_code_native_string (s : Code.Native_string.t) share =
     match s with
-    | Byte _ -> share
-    | Utf s -> if String.is_ascii s then add_string s share else share
+    | Byte s -> add_string s share
+    | Utf s -> add_utf_string s share
 
   let rec get_constant c t =
     match c with
@@ -223,6 +232,23 @@ module Share = struct
             let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
             let v = J.V x in
             t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
+            J.EVar v)
+        else gen s
+      with Not_found -> gen s
+
+  let get_utf_string gen s t =
+    if not t.alias_strings
+    then gen s
+    else
+      try
+        let c = StringMap.find s t.count.utf_strings in
+        if c > 1
+        then (
+          try J.EVar (StringMap.find s t.vars.utf_strings)
+          with Not_found ->
+            let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
+            let v = J.V x in
+            t.vars <- { t.vars with utf_strings = StringMap.add s v t.vars.utf_strings };
             J.EVar v)
         else gen s
       with Not_found -> gen s
@@ -355,7 +381,13 @@ let runtime_fun ctx name =
 
 let str_js s = J.EStr (s, `Bytes)
 
-let str_js_utf8 s = J.EStr (s, `Utf8)
+let str_js_utf8 s =
+  let b = Buffer.create (String.length s) in
+  String.iter s ~f:(function
+      | '\\' -> Buffer.add_string b "\\\\"
+      | c -> Buffer.add_char b c);
+  let s = Buffer.contents b in
+  J.EStr (s, `Utf8)
 
 let ecall f args loc = J.ECall (f, List.map args ~f:(fun x -> x, `Not_spread), loc)
 
@@ -405,13 +437,7 @@ let rec constant_rec ~ctx x level instrs =
   | NativeString s -> (
       match s with
       | Byte x -> Share.get_string str_js x ctx.Ctx.share, instrs
-      | Utf x ->
-          let b = Buffer.create (String.length x) in
-          String.iter x ~f:(function
-              | '\\' -> Buffer.add_string b "\\\\"
-              | c -> Buffer.add_char b c);
-          let x = Buffer.contents b in
-          Share.get_string str_js_utf8 x ctx.Ctx.share, instrs)
+      | Utf x -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
@@ -2057,6 +2083,9 @@ let generate_shared_value ctx =
            @ List.map
                (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
                ~f:(fun (s, v) -> v, Some (str_js s, J.N))
+           @ List.map
+               (StringMap.bindings ctx.Ctx.share.Share.vars.Share.utf_strings)
+               ~f:(fun (s, v) -> v, Some (str_js_utf8 s, J.N))
            @ List.map
                (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
                ~f:(fun (s, v) -> v, Some (runtime_fun ctx s, J.N))))
