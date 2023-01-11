@@ -39,6 +39,9 @@ it so that we do not have to convert it to CPS:
 - For each undecided call site, duplicate the corresponding functions
 *)
 open! Stdlib
+
+let times = Debug.find "times"
+
 open Code
 
 module Domain = struct
@@ -55,17 +58,12 @@ let add_var s x = s := Var.Set.add x !s
 let add_dep deps x y =
   if not (Var.Map.mem x !deps) then deps := Var.Map.add x Var.Set.empty !deps;
   deps :=
-    Var.Map.add
-      y
-      (Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
-      !deps
-
-let add_rel rels x y =
-  rels :=
+    (*Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
+          !deps*)
     Var.Map.update
-      x
-      (fun m -> Some (Var.Set.add y (Option.value ~default:Var.Set.empty m)))
-      !rels
+      y
+      (fun s -> Some (Var.Set.add x (Option.value ~default:Var.Set.empty s)))
+      !deps
 
 let rec list_iter ~f = function
   | [] -> ()
@@ -74,7 +72,7 @@ let rec list_iter ~f = function
       f false a;
       list_iter ~f l
 
-let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
+let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
   list_iter block.body ~f:(fun is_last i ->
       match i with
@@ -91,8 +89,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
           | None -> ()
           | Some fun_name ->
               add_var vars fun_name;
-              add_dep deps fun_name x;
-              add_rel rels fun_name x);
+              add_dep deps fun_name x);
           match Var.Tbl.get info.Global_flow.info_approximation f with
           | Top -> ()
           | Values { known; others } ->
@@ -105,9 +102,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
                     | None -> ()
                     | Some fun_name -> add_dep tail_deps fun_name g);
                   add_dep deps x g;
-                  add_dep deps g x;
-                  add_rel rels x g;
-                  add_rel rels g x)
+                  add_dep deps g x)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -115,22 +110,20 @@ let block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks ~fun_name pc =
           | None -> ()
           | Some fun_name ->
               add_var vars fun_name;
-              add_dep deps fun_name x;
-              add_rel rels fun_name x)
+              add_dep deps fun_name x)
       | Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
 module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
 module Solver = G'.Solver (Domain)
 
-let cps_needed ~info ~in_loop ~rels st x =
+let fold_children g f x acc = g.G'.fold_children (fun y acc -> f y acc) x acc
+
+let cps_needed ~info ~in_loop ~rev_deps st x =
   Var.Set.mem x in_loop
   ||
   let idx = Var.idx x in
-  Var.Set.fold
-    (fun y acc -> acc || Var.Map.find y st)
-    (try Var.Map.find x rels with Not_found -> Var.Set.empty)
-    false
+  fold_children rev_deps (fun y acc -> acc || Var.Map.find y st) x false
   ||
   match info.Global_flow.info_defs.(idx) with
   | Expr (Apply { f; _ }) -> (
@@ -164,9 +157,10 @@ let annot st xi =
   | _ -> " "
 
 let f p info =
+  let t = Timer.make () in
+  let t1 = Timer.make () in
   let vars = ref Var.Set.empty in
   let deps = ref Var.Map.empty in
-  let rels = ref Var.Map.empty in
   let tail_deps = ref Var.Map.empty in
   fold_closures
     p
@@ -174,7 +168,7 @@ let f p info =
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~rels ~blocks:p.blocks ~fun_name pc)
+          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
         pc
         p.blocks
         ())
@@ -202,7 +196,12 @@ let f p info =
           Var.Set.fold f (try Var.Map.find x !deps with Not_found -> Var.Set.empty) r)
     }
   in
-  let res = Solver.f g (cps_needed ~info ~in_loop ~rels:!rels) in
+  let rev_deps = G'.invert g in
+  if times () then Format.eprintf "    fun analysis (initialize): %a@." Timer.print t1;
+  let t2 = Timer.make () in
+  let res = Solver.f g (cps_needed ~info ~in_loop ~rev_deps) in
+  if times () then Format.eprintf "    fun analysis (solve): %a@." Timer.print t2;
+  if times () then Format.eprintf "  fun analysis: %a@." Timer.print t;
   Code.Print.program
     (fun _ xi ->
       match (xi : Print.xinstr) with
