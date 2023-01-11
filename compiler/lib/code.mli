@@ -100,6 +100,8 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
 
   module ISet : sig
