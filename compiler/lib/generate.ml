@@ -1407,8 +1407,6 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
-        | Extern "caml_jsstring_of_string", [ Pc (String m) ] ->
-            str_js_utf8 m, const_p, queue
         | Extern ("%resume" | "%perform" | "%reperform"), _ ->
             if Config.Flag.effects () then assert false;
             if not !(ctx.effect_warning)
