@@ -448,7 +448,16 @@ let cps_block ~st ~k pc block =
                    to bind [x] if it is used in the loop body. In
                    other cases, we can just call the continuation. *)
                 alloc_jump_closures, f'
-            | [ x' ] when Var.equal x x' -> alloc_jump_closures, f'
+            | [ x' ]
+              when Var.equal x x'
+                   &&
+                   match Hashtbl.find st.is_continuation pc with
+                   | `Param _ -> true
+                   | `Loop -> st.live_vars.(Var.idx x) = 1 ->
+                (* When entering a loop, we have to allocate a closure
+                   to bind [x] if it is used in the loop body. In
+                   other cases, we can just call the continuation. *)
+                alloc_jump_closures, f'
             | _ ->
                 let args, instrs =
                   if List.is_empty args
