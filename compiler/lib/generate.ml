@@ -1339,7 +1339,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
                 ~init:([], mutator_p, queue)
             in
             ecall (J.EDot (co, m)) args loc, or_p po prop, queue
-        | Extern "%caml_js_opt_meth_call", _ :: Pc (String _) :: _ -> assert false
+        | Extern "%caml_js_opt_meth_call", _ -> assert false
         | Extern "%caml_js_opt_new", c :: l ->
             let (pc, cc), queue = access_queue' ~ctx queue c in
             let args, prop, queue =
