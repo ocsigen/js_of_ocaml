@@ -52,14 +52,16 @@ module Domain = struct
   let bot = false
 end
 
-let add_var s x = s := Var.Set.add x !s
+let add_var = Var.ISet.add
 
 (* x depends on y *)
 let add_dep deps x y =
+  let idx = Var.idx y in
+  deps.(idx) <- Var.Set.add x deps.(idx)
+
+let add_dep' deps x y =
   if not (Var.Map.mem x !deps) then deps := Var.Map.add x Var.Set.empty !deps;
   deps :=
-    (*Var.Set.add x (try Var.Map.find y !deps with Not_found -> Var.Set.empty))
-          !deps*)
     Var.Map.update
       y
       (fun s -> Some (Var.Set.add x (Option.value ~default:Var.Set.empty s)))
@@ -77,13 +79,6 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   list_iter block.body ~f:(fun is_last i ->
       match i with
       | Let (x, Apply { f; _ }) -> (
-          let tail_call =
-            is_last
-            &&
-            match block.branch with
-            | Return x' -> Var.equal x x'
-            | _ -> false
-          in
           add_var vars x;
           (match fun_name with
           | None -> ()
@@ -93,14 +88,22 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
           match Var.Tbl.get info.Global_flow.info_approximation f with
           | Top -> ()
           | Values { known; others } ->
+              let known_tail_call =
+                (not others)
+                && is_last
+                &&
+                match block.branch with
+                | Return x' -> Var.equal x x'
+                | _ -> false
+              in
               Var.Set.iter
                 (fun g ->
                   add_var vars g;
-                  (if tail_call && not others
+                  (if known_tail_call
                   then
                     match fun_name with
                     | None -> ()
-                    | Some fun_name -> add_dep tail_deps fun_name g);
+                    | Some fun_name -> add_dep' tail_deps fun_name g);
                   add_dep deps x g;
                   add_dep deps g x)
                 known)
@@ -114,16 +117,32 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
       | Let (x, (Closure _ | Prim (Extern "%closure", _))) -> add_var vars x
       | _ -> ())
 
-module G' = Dgraph.Make (Var) (Var.Set) (Var.Map)
+let program_deps ~info ~vars ~tail_deps ~deps p =
+  fold_closures
+    p
+    (fun fun_name _ (pc, _) _ ->
+      traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
+        pc
+        p.blocks
+        ())
+    ()
+
+module G' = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G'.Solver (Domain)
 
-let fold_children g f x acc = g.G'.fold_children (fun y acc -> f y acc) x acc
+let fold_children g f x acc =
+  let acc = ref acc in
+  g.G'.iter_children (fun y -> acc := f y !acc) x;
+  !acc
 
 let cps_needed ~info ~in_loop ~rev_deps st x =
   Var.Set.mem x in_loop
   ||
   let idx = Var.idx x in
-  fold_children rev_deps (fun y acc -> acc || Var.Map.find y st) x false
+  fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
   ||
   match info.Global_flow.info_defs.(idx) with
   | Expr (Apply { f; _ }) -> (
@@ -151,6 +170,22 @@ module SCC = Strongly_connected_components.Make (struct
   module Map = Var.Map
 end)
 
+let find_loops tail_deps =
+  let scc = SCC.component_graph !tail_deps in
+  Array.fold_left
+    ~f:(fun s (c, _) ->
+      match c with
+      | SCC.No_loop _ -> s
+      | Has_loop l ->
+          (*
+            Format.eprintf "LOOP ";
+            List.iter ~f:(fun x -> Format.eprintf " %a" Var.print x) l;
+            Format.eprintf "@.";
+            *)
+          List.fold_left ~f:(fun s x -> Var.Set.add x s) l ~init:s)
+    ~init:Var.Set.empty
+    scc
+
 let annot st xi =
   match (xi : Print.xinstr) with
   | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
@@ -159,55 +194,23 @@ let annot st xi =
 let f p info =
   let t = Timer.make () in
   let t1 = Timer.make () in
-  let vars = ref Var.Set.empty in
-  let deps = ref Var.Map.empty in
+  let nv = Var.count () in
+  let vars = Var.ISet.empty () in
+  let deps = Array.make nv Var.Set.empty in
   let tail_deps = ref Var.Map.empty in
-  fold_closures
-    p
-    (fun fun_name _ (pc, _) _ ->
-      traverse
-        { fold = Code.fold_children }
-        (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
-        pc
-        p.blocks
-        ())
-    ();
-  let scc = SCC.component_graph !tail_deps in
-  let in_loop =
-    Array.fold_left
-      ~f:(fun s (c, _) ->
-        match c with
-        | SCC.No_loop _ -> s
-        | Has_loop l ->
-            (*
-            Format.eprintf "LOOP ";
-            List.iter ~f:(fun x -> Format.eprintf " %a" Var.print x) l;
-            Format.eprintf "@.";
-            *)
-            List.fold_left ~f:(fun s x -> Var.Set.add x s) l ~init:s)
-      ~init:Var.Set.empty
-      scc
-  in
-  let g =
-    { G'.domain = !vars
-    ; fold_children =
-        (fun f x r ->
-          Var.Set.fold f (try Var.Map.find x !deps with Not_found -> Var.Set.empty) r)
-    }
-  in
-  let rev_deps = G'.invert g in
+  program_deps ~info ~vars ~tail_deps ~deps p;
   if times () then Format.eprintf "    fun analysis (initialize): %a@." Timer.print t1;
   let t2 = Timer.make () in
-  let res = Solver.f g (cps_needed ~info ~in_loop ~rev_deps) in
-  if times () then Format.eprintf "    fun analysis (solve): %a@." Timer.print t2;
+  let in_loop = find_loops tail_deps in
+  if times () then Format.eprintf "    fun analysis (tail calls): %a@." Timer.print t2;
+  let t3 = Timer.make () in
+  let g =
+    { G'.domain = vars; iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
+  in
+  let rev_deps = G'.invert () g in
+  let res = Solver.f () g (cps_needed ~info ~in_loop ~rev_deps) in
+  if times () then Format.eprintf "    fun analysis (solve): %a@." Timer.print t3;
+  let s = ref Var.Set.empty in
+  Var.Tbl.iter (fun x v -> if v then s := Var.Set.add x !s) res;
   if times () then Format.eprintf "  fun analysis: %a@." Timer.print t;
-  Code.Print.program
-    (fun _ xi ->
-      match (xi : Print.xinstr) with
-      | Instr (Let (x, _)) ->
-          if try Var.Map.find x res with Not_found -> false then "*" else " "
-      | _ -> " ")
-    p;
-  (* *)
-  Var.Map.fold (fun x v s -> if v then Var.Set.add x s else s) res Var.Set.empty
+  !s

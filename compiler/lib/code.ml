@@ -107,6 +107,8 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
 
   module ISet : sig
@@ -150,8 +152,8 @@ end = struct
 
   let to_string ?origin i = Var_printer.to_string printer ?origin i
 
-(*  let print f x = Format.fprintf f "v%d" x*)
- let print f x = Format.fprintf f "v%d(%s)" x (to_string x) 
+  (*  let print f x = Format.fprintf f "v%d" x*)
+  let print f x = Format.fprintf f "v%d(%s)" x (to_string x)
 
   (* Format.fprintf f "%s" (to_string x) *)
   let name i nm = Var_printer.name printer i nm
@@ -213,6 +215,11 @@ end = struct
     let set t x v = t.(x) <- v
 
     let make () v = Array.make (count ()) v
+
+    let iter f t =
+      for i = 0 to Array.length t - 1 do
+        f i t.(i)
+      done
   end
 
   module ISet = struct
