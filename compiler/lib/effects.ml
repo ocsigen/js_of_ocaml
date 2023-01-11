@@ -232,7 +232,7 @@ type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
   ; blocks : Code.block Addr.Map.t
   ; jc : jump_closures
-  ; closure_continuation : Addr.t -> Var.t
+  ; closure_info : (Addr.t, Var.t * Code.cont) Hashtbl.t
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
@@ -343,8 +343,11 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
-  | Let (x, Closure (params, (pc, args))) ->
-      Let (x, Closure (params @ [ st.closure_continuation pc ], (pc, args)))
+  | Let (x, Closure (params, (pc, _))) ->
+      (* Add the continuation parameter, and change the initial block if
+         needed *)
+      let k, cont = Hashtbl.find st.closure_info pc in
+      Let (x, Closure (params @ [ k ], cont))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
       | Pc (Int a) ->
@@ -502,34 +505,41 @@ let cps_block ~st ~k pc block =
   }
 
 let cps_transform ~live_vars p =
-  let closure_continuation =
-    (* Provide a name for the continuation of a closure (before CPS
-       transform), which can be referred from all the blocks it contains *)
-    let tbl = Hashtbl.create 4 in
-    fun pc ->
-      try Hashtbl.find tbl pc
-      with Not_found ->
-        let k = Var.fresh_n "cont" in
-        Hashtbl.add tbl pc k;
-        k
-  in
+  let closure_info = Hashtbl.create 16 in
   let cps_calls = ref Var.Set.empty in
-  let wrap_toplevel = ref true in
   let p =
-    Code.fold_closures
+    Code.fold_closures_innermost_first
       p
-      (fun name_opt _ (start, _) ({ blocks; free_pc; _ } as p) ->
-        let cfg = build_graph blocks start in
+      (fun name_opt _ (start, args) ({ blocks; free_pc; _ } as p) ->
+        (* We speculatively add a block at the beginning of the
+           function. In case of tail-recursion optimization, the
+           function implementing the loop body may have to be placed
+           there. *)
+        let initial_start = start in
+        let start', blocks' =
+          ( free_pc
+          , Addr.Map.add
+              free_pc
+              { params = []; body = []; branch = Branch (start, args) }
+              blocks )
+        in
+        let cfg = build_graph blocks' start' in
         let idom = dominator_tree cfg in
         let blocks_to_transform, matching_exn_handler, is_continuation =
-          compute_needed_transformations ~cfg ~idom ~blocks ~start
+          compute_needed_transformations ~cfg ~idom ~blocks:blocks' ~start:start'
         in
         let closure_jc = jump_closures blocks_to_transform idom in
+        let start, args, blocks, free_pc =
+          (* Insert an initial block if needed. *)
+          if Addr.Map.mem start' closure_jc.closures_of_alloc_site
+          then start', [], blocks', free_pc + 1
+          else start, args, blocks, free_pc
+        in
         let st =
           { new_blocks = Addr.Map.empty, free_pc
           ; blocks
           ; jc = closure_jc
-          ; closure_continuation
+          ; closure_info
           ; blocks_to_transform
           ; is_continuation
           ; matching_exn_handler
@@ -545,9 +555,7 @@ let cps_transform ~live_vars p =
               (* We are handling the toplevel code. If it performs no
                  CPS call, we can leave it in direct style and we
                  don't need to wrap it within a [caml_callback]. *)
-              let need_cps = not (Addr.Set.is_empty blocks_to_transform) in
-              wrap_toplevel := need_cps;
-              need_cps
+              not (Addr.Set.is_empty blocks_to_transform)
         in
         if debug ()
         then (
@@ -564,9 +572,10 @@ let cps_transform ~live_vars p =
         let blocks =
           let transform_block =
             if function_needs_cps
-            then
-              let k = closure_continuation start in
-              fun pc block -> cps_block ~st ~k pc block
+            then (
+              let k = Var.fresh_n "cont" in
+              Hashtbl.add closure_info initial_start (k, (start, args));
+              fun pc block -> cps_block ~st ~k pc block)
             else
               fun _ block ->
               { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
@@ -585,28 +594,28 @@ let cps_transform ~live_vars p =
       p
   in
   let p =
-    if not !wrap_toplevel
-    then p
-    else
-      (* Call [caml_callback] to set up the execution context. *)
-      let new_start = p.free_pc in
-      let blocks =
-        let main = Var.fresh () in
-        let args = Var.fresh () in
-        let res = Var.fresh () in
-        Addr.Map.add
-          new_start
-          { params = []
-          ; body =
-              [ Let (main, Closure ([ closure_continuation p.start ], (p.start, [])))
-              ; Let (args, Prim (Extern "%js_array", []))
-              ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
-              ]
-          ; branch = Return res
-          }
-          p.blocks
-      in
-      { start = new_start; blocks; free_pc = new_start + 1 }
+    match Hashtbl.find_opt closure_info p.start with
+    | None -> p
+    | Some (k, _) ->
+        (* Call [caml_callback] to set up the execution context. *)
+        let new_start = p.free_pc in
+        let blocks =
+          let main = Var.fresh () in
+          let args = Var.fresh () in
+          let res = Var.fresh () in
+          Addr.Map.add
+            new_start
+            { params = []
+            ; body =
+                [ Let (main, Closure ([ k ], (p.start, [])))
+                ; Let (args, Prim (Extern "%js_array", []))
+                ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+                ]
+            ; branch = Return res
+            }
+            p.blocks
+        in
+        { start = new_start; blocks; free_pc = new_start + 1 }
   in
   p, !cps_calls
 
