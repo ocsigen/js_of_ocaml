@@ -157,7 +157,7 @@ module Share = struct
   let get ?alias_strings ?(alias_prims = false) ?(alias_apply = true) { blocks; _ } : t =
     let alias_strings =
       match alias_strings with
-      | None -> Config.Flag.use_js_string ()
+      | None -> Config.Flag.use_js_string () && not (Config.Flag.share_constant ())
       | Some x -> x
     in
     let count =
