@@ -240,6 +240,7 @@ type st =
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
   ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
+  ; flow_info : Global_flow.info
   ; cps_calls : cps_calls ref
   }
 
@@ -361,6 +362,7 @@ let cps_instr ~st (instr : instr) : instr =
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with
          the right number of parameter *)
+      assert (Global_flow.exact_call st.flow_info f (List.length args));
       Let (x, Apply { f; args; exact = true })
   | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       assert false
@@ -412,7 +414,12 @@ let cps_block ~st ~k pc block =
     in
     match e with
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
-        Some (fun ~k -> tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
+        Some
+          (fun ~k ->
+            let exact =
+              exact || Global_flow.exact_call st.flow_info f (List.length args)
+            in
+            tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
@@ -420,7 +427,7 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~exact:false
+              ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~check:true
               ~f
               [ arg; k' ])
@@ -496,7 +503,7 @@ let cps_block ~st ~k pc block =
   ; branch = last
   }
 
-let cps_transform ~live_vars ~cps_needed p =
+let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
   let cps_calls = ref Var.Set.empty in
   let p =
@@ -553,6 +560,7 @@ let cps_transform ~live_vars ~cps_needed p =
           ; is_continuation
           ; matching_exn_handler
           ; block_order = cfg.block_order
+          ; flow_info
           ; live_vars
           ; cps_calls
           }
@@ -818,6 +826,6 @@ let f (p, live_vars) =
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in
   let p = split_blocks ~cps_needed p in
-  let p = cps_transform ~live_vars ~cps_needed p in
+  let p = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   p
