@@ -23,7 +23,7 @@ let%expect_test _ =
   let program =
     compile_and_parse
       ~debug:false
-      ~flags:[ "--enable"; "use-js-string" ]
+      ~use_js_string:true
       {|
 external string_length : string -> int = "%string_length"
 external bytes_create : int -> bytes = "caml_create_bytes"
@@ -46,19 +46,30 @@ let here () =
 let (_ : string) = here ()
     |}
   in
-  print_fun_decl program None;
+  print_program program;
   [%expect
     {|
-    function _b_(_c_)
-     {return caml_string_concat
-              (cst_a,caml_string_concat(cst_a,caml_string_concat(cst_b,cst_b)))}
+    (function(globalThis)
+       {"use strict";
+        var
+         runtime=globalThis.jsoo_runtime,
+         cst_a="a",
+         cst_b="b",
+         caml_string_concat=runtime.caml_string_concat,
+         _a_=caml_string_concat;
+        function _b_(_c_){return cst_a + (cst_a + (cst_b + cst_b))}
+        _b_(0);
+        var Test=[0,_a_,_b_];
+        runtime.caml_register_global(2,Test,"Test");
+        return}
+      (globalThis));
     //end |}]
 
 let%expect_test _ =
   let program =
     compile_and_parse
       ~debug:false
-      ~flags:[ "--disable"; "use-js-string" ]
+      ~use_js_string:false
       {|
 external string_length : string -> int = "%string_length"
 external bytes_create : int -> bytes = "caml_create_bytes"
@@ -82,10 +93,25 @@ let here () =
 let (_ : string) = here ()
     |}
   in
-  print_fun_decl program None;
+  print_program program;
   [%expect
     {|
-    function _b_(_c_)
-     {return caml_string_concat
-              (cst_a,caml_string_concat(cst_a,caml_string_concat(cst_b,cst_b)))}
+    (function(globalThis)
+       {"use strict";
+        var
+         runtime=globalThis.jsoo_runtime,
+         caml_string_concat=runtime.caml_string_concat,
+         caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
+         cst_a=caml_string_of_jsbytes("a"),
+         cst_b=caml_string_of_jsbytes("b"),
+         _a_=caml_string_concat;
+        function _b_(_c_)
+         {return caml_string_concat
+                  (cst_a,
+                   caml_string_concat(cst_a,caml_string_concat(cst_b,cst_b)))}
+        _b_(0);
+        var Test=[0,_a_,_b_];
+        runtime.caml_register_global(2,Test,"Test");
+        return}
+      (globalThis));
     //end |}]

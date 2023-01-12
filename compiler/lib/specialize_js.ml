@@ -155,17 +155,17 @@ let specialize_instrs info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
-    | Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ]))
-      :: Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ]))
-      :: Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ]))
+    | (Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])) as len1)
+      :: (Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])) as len2)
+      :: (Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])) as len3)
       :: Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ]))
       :: Let
-           ( _
+           ( u1
            , Prim
                ( Extern "caml_blit_string"
                , [ Pv a'; Pc (Int 0l); Pv bytes'; Pc (Int 0l); Pv alen'' ] ) )
       :: Let
-           ( _
+           ( u2
            , Prim
                ( Extern "caml_blit_string"
                , [ Pv b'; Pc (Int 0l); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
@@ -177,7 +177,13 @@ let specialize_instrs info l =
            && all_equal [ alen; alen'; alen''; alen''' ]
            && all_equal [ blen; blen'; blen'' ]
            && all_equal [ bytes; bytes'; bytes''; bytes''' ] ->
-        Let (res, Prim (Extern "%string_concat", [ Pv a; Pv b ]))
+        len1
+        :: len2
+        :: len3
+        :: Let (u1, Constant (Int 0l))
+        :: Let (u2, Constant (Int 0l))
+        :: Let (res, Prim (Extern "%string_concat", [ Pv a; Pv b ]))
+        :: Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ]))
         :: aux info checks rest acc
     | i :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
