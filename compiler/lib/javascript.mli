@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+
 module Num : sig
   type t
 
@@ -70,7 +72,7 @@ type location =
 
 (* A.3 Expressions *)
 
-type identifier = string
+type identifier = Utf8_string.t
 
 type ident_string =
   { name : identifier
@@ -151,7 +153,7 @@ and property_name_and_value_list = (property_name * expression) list
 
 and property_name =
   | PNI of identifier
-  | PNS of string
+  | PNS of Utf8_string.t
   | PNN of Num.t
 
 and expression =
@@ -165,10 +167,8 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression
-  | EStr of string * [ `Bytes | `Utf8 ]
-  (* A string can either be composed of a sequence of bytes, or be
-         UTF-8 encoded. In the second case, the string may contain
-         escape sequences. *)
+  | EStr of Utf8_string.t
+  (* A UTF-8 encoded string that may contain escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
@@ -246,6 +246,8 @@ and source_element =
 val compare_ident : ident -> ident -> int
 
 val is_ident : string -> bool
+
+val is_ident' : Utf8_string.t -> bool
 
 val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
 

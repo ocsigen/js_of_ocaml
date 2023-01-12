@@ -186,7 +186,7 @@ rule main = parse
       try
         Hashtbl.find keyword_table s
       with
-        | Not_found -> T_IDENTIFIER s
+        | Not_found -> T_IDENTIFIER (Utf8_string.of_string_exn s)
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -223,6 +223,13 @@ rule main = parse
       let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       let to_ = lexbuf.Lexing.lex_curr_p.pos_cnum in
+      let s =
+          if String.is_valid_utf_8 s
+          then Utf8_string.of_string_exn s
+          else (
+            Format.eprintf "LEXER: invalid utf8 string.@.";
+            Utf8_string.of_string_exn (String.fix_utf_8 s))
+      in
       T_STRING (s, to_ - 1 - from))
     }
   | "/" { T_DIV }

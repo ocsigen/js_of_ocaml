@@ -457,6 +457,94 @@ module Char = struct
     | _ -> c
 end
 
+module Uchar = struct
+  include Uchar
+
+  module Utf_decode : sig
+    type utf_decode [@@immediate]
+    (** The type for UTF decode results. Values of this type represent
+    the result of a Unicode Transformation Format decoding attempt. *)
+
+    val utf_decode_is_valid : utf_decode -> bool
+    (** [utf_decode_is_valid d] is [true] if and only if [d] holds a valid
+    decode. *)
+
+    val utf_decode_uchar : utf_decode -> t
+    (** [utf_decode_uchar d] is the Unicode character decoded by [d] if
+    [utf_decode_is_valid d] is [true] and {!Uchar.rep} otherwise. *)
+
+    val utf_decode_length : utf_decode -> int
+    (** [utf_decode_length d] is the number of elements from the source
+    that were consumed by the decode [d]. This is always strictly
+    positive and smaller or equal to [4]. The kind of source elements
+    depends on the actual decoder; for the decoders of the standard
+    library this function always returns a length in bytes. *)
+
+    val utf_decode : int -> t -> utf_decode
+    (** [utf_decode n u] is a valid UTF decode for [u] that consumed [n]
+    elements from the source for decoding. [n] must be positive and
+    smaller or equal to [4] (this is not checked by the module). *)
+
+    val utf_decode_invalid : int -> utf_decode
+    (** [utf_decode_invalid n] is an invalid UTF decode that consumed [n]
+    elements from the source to error. [n] must be positive and
+    smaller or equal to [4] (this is not checked by the module). The
+    resulting decode has {!rep} as the decoded Unicode character. *)
+
+    val utf_8_byte_length : t -> int
+    (** [utf_8_byte_length u] is the number of bytes needed to encode
+    [u] in UTF-8. *)
+
+    val utf_16_byte_length : t -> int
+    (** [utf_16_byte_length u] is the number of bytes needed to encode
+    [u] in UTF-16. *)
+  end = struct
+    (* UTF codecs tools *)
+
+    type utf_decode = int
+    (* This is an int [0xDUUUUUU] decomposed as follows:
+       - [D] is four bits for decode information, the highest bit is set if the
+         decode is valid. The three lower bits indicate the number of elements
+         from the source that were consumed by the decode.
+       - [UUUUUU] is the decoded Unicode character or the Unicode replacement
+         character U+FFFD if for invalid decodes. *)
+
+    let rep = 0xFFFD
+
+    let valid_bit = 27
+
+    let decode_bits = 24
+
+    let[@inline] utf_decode_is_valid d = d lsr valid_bit = 1
+
+    let[@inline] utf_decode_length d = (d lsr decode_bits) land 0b111
+
+    let[@inline] utf_decode_uchar d = unsafe_of_int (d land 0xFFFFFF)
+
+    let[@inline] utf_decode n u = ((8 lor n) lsl decode_bits) lor to_int u
+
+    let[@inline] utf_decode_invalid n = (n lsl decode_bits) lor rep
+
+    let utf_8_byte_length u =
+      match to_int u with
+      | u when u < 0 -> assert false
+      | u when u <= 0x007F -> 1
+      | u when u <= 0x07FF -> 2
+      | u when u <= 0xFFFF -> 3
+      | u when u <= 0x10FFFF -> 4
+      | _ -> assert false
+
+    let utf_16_byte_length u =
+      match to_int u with
+      | u when u < 0 -> assert false
+      | u when u <= 0xFFFF -> 2
+      | u when u <= 0x10FFFF -> 4
+      | _ -> assert false
+  end
+
+  include Utf_decode
+end
+
 module Bytes = struct
   include BytesLabels
 
@@ -630,7 +718,184 @@ module String = struct
 
   let[@inline] not_in_x80_to_x8F b = b lsr 4 <> 0x8
 
+  let[@inline] utf_8_uchar_2 b0 b1 = ((b0 land 0x1F) lsl 6) lor (b1 land 0x3F)
+
+  let[@inline] utf_8_uchar_3 b0 b1 b2 =
+    ((b0 land 0x0F) lsl 12) lor ((b1 land 0x3F) lsl 6) lor (b2 land 0x3F)
+
+  let[@inline] utf_8_uchar_4 b0 b1 b2 b3 =
+    ((b0 land 0x07) lsl 18)
+    lor ((b1 land 0x3F) lsl 12)
+    lor ((b2 land 0x3F) lsl 6)
+    lor (b3 land 0x3F)
+
+  external get_uint8 : string -> int -> int = "%string_safe_get"
+
   external unsafe_get_uint8 : string -> int -> int = "%string_unsafe_get"
+
+  let dec_invalid = Uchar.utf_decode_invalid
+
+  let[@inline] dec_ret n u = Uchar.utf_decode n (Uchar.unsafe_of_int u)
+
+  let get_utf_8_uchar b i =
+    let b0 = get_uint8 b i in
+    (* raises if [i] is not a valid index. *)
+    let get = unsafe_get_uint8 in
+    let max = length b - 1 in
+    match Char.unsafe_chr b0 with
+    (* See The Unicode Standard, Table 3.7 *)
+    | '\x00' .. '\x7F' -> dec_ret 1 b0
+    | '\xC2' .. '\xDF' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x80_to_xBF b1 then dec_invalid 1 else dec_ret 2 (utf_8_uchar_2 b0 b1)
+    | '\xE0' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_xA0_to_xBF b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+    | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x80_to_xBF b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+    | '\xED' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x80_to_x9F b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else dec_ret 3 (utf_8_uchar_3 b0 b1 b2)
+    | '\xF0' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x90_to_xBF b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else
+                let i = i + 1 in
+                if i > max
+                then dec_invalid 3
+                else
+                  let b3 = get b i in
+                  if not_in_x80_to_xBF b3
+                  then dec_invalid 3
+                  else dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+    | '\xF1' .. '\xF3' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x80_to_xBF b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else
+                let i = i + 1 in
+                if i > max
+                then dec_invalid 3
+                else
+                  let b3 = get b i in
+                  if not_in_x80_to_xBF b3
+                  then dec_invalid 3
+                  else dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+    | '\xF4' ->
+        let i = i + 1 in
+        if i > max
+        then dec_invalid 1
+        else
+          let b1 = get b i in
+          if not_in_x80_to_x8F b1
+          then dec_invalid 1
+          else
+            let i = i + 1 in
+            if i > max
+            then dec_invalid 2
+            else
+              let b2 = get b i in
+              if not_in_x80_to_xBF b2
+              then dec_invalid 2
+              else
+                let i = i + 1 in
+                if i > max
+                then dec_invalid 3
+                else
+                  let b3 = get b i in
+                  if not_in_x80_to_xBF b3
+                  then dec_invalid 3
+                  else dec_ret 4 (utf_8_uchar_4 b0 b1 b2 b3)
+    | _ -> dec_invalid 1
+
+  let fold_utf_8 s ~f acc =
+    let rec loop i s ~pos ~f acc =
+      if String.length s = pos
+      then acc
+      else
+        let r = get_utf_8_uchar s pos in
+        let l = Uchar.utf_decode_length r in
+        let acc = f acc i (Uchar.utf_decode_uchar r) in
+        loop (i + 1) s ~pos:(pos + l) ~f acc
+    in
+    loop 0 s ~pos:0 ~f acc
+
+  let fix_utf_8 s =
+    let b = Buffer.create (String.length s) in
+    fold_utf_8 s () ~f:(fun () _i u -> Buffer.add_utf_8_uchar b u);
+    Buffer.contents b
 
   let is_valid_utf_8 b =
     let rec loop max b i =
@@ -695,6 +960,23 @@ module String = struct
     loop (length b - 1) b 0
 end
 
+module Utf8_string : sig
+  type t = private Utf8 of string [@@ocaml.unboxed]
+
+  val of_string_exn : string -> t
+
+  val compare : t -> t -> int
+end = struct
+  type t = Utf8 of string [@@ocaml.unboxed]
+
+  let of_string_exn s =
+    if String.is_valid_utf_8 s
+    then Utf8 s
+    else invalid_arg "Utf8_string.of_string: invalid utf8 string"
+
+  let compare (Utf8 x) (Utf8 y) = String.compare x y
+end
+
 module Int = struct
   type t = int
 
@@ -709,6 +991,8 @@ module IntSet = Set.Make (Int)
 module IntMap = Map.Make (Int)
 module StringSet = Set.Make (String)
 module StringMap = Map.Make (String)
+module Utf8_string_set = Set.Make (Utf8_string)
+module Utf8_string_map = Map.Make (Utf8_string)
 
 module BitSet : sig
   type t

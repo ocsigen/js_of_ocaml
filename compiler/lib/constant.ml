@@ -20,6 +20,12 @@ open! Stdlib
 
 let global_object = "globalThis"
 
+let global_object_ = Utf8_string.of_string_exn global_object
+
 let old_global_object = "joo_global_object"
 
+let old_global_object_ = Utf8_string.of_string_exn old_global_object
+
 let exports = "jsoo_exports"
+
+let exports_ = Utf8_string.of_string_exn exports

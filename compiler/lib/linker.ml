@@ -20,6 +20,12 @@
 
 open! Stdlib
 
+let to_stringset utf8_string_set =
+  Utf8_string_set.fold
+    (fun (Utf8_string.Utf8 x) acc -> StringSet.add x acc)
+    utf8_string_set
+    StringSet.empty
+
 let loc pi =
   match pi with
   | { Parse_info.src = Some src; line; _ } | { Parse_info.name = Some src; line; _ } ->
@@ -34,7 +40,8 @@ end = struct
   let rec find p ~name =
     match p with
     | [] -> None
-    | ( Javascript.Function_declaration (Javascript.S { Javascript.name = n; _ }, l, _, _)
+    | ( Javascript.Function_declaration
+          (Javascript.S { Javascript.name = Utf8 n; _ }, l, _, _)
       , _ )
       :: _
       when String.equal name n -> Some (List.length l)
@@ -52,8 +59,9 @@ end = struct
         let open Javascript in
         (match x with
         | ECall
-            (EVar (S { name = "caml_named_value"; _ }), [ (EStr (v, _), `Not_spread) ], _)
-          -> all := StringSet.add v !all
+            ( EVar (S { name = Utf8 "caml_named_value"; _ })
+            , [ (EStr (Utf8 v), `Not_spread) ]
+            , _ ) -> all := StringSet.add v !all
         | _ -> ());
         self#expression x
     end
@@ -73,18 +81,25 @@ module Check = struct
       method merge_info from =
         let def = from#get_def_name in
         let use = from#get_use_name in
-        let diff = StringSet.diff def use in
-        let diff = StringSet.remove name diff in
+        let diff = Utf8_string_set.diff def use in
         let diff =
-          StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff
+          Utf8_string_set.fold
+            (fun (Utf8_string.Utf8 s) acc ->
+              if String.is_prefix s ~prefix:"_" || String.equal s name
+              then acc
+              else s :: acc)
+            diff
+            []
         in
-        if not (StringSet.is_empty diff)
-        then
-          warn
-            "WARN unused for primitive %s at %s:@. %s@."
-            name
-            (loc pi)
-            (String.concat ~sep:", " (StringSet.elements diff));
+
+        (match diff with
+        | [] -> ()
+        | l ->
+            warn
+              "WARN unused for primitive %s at %s:@. %s@."
+              name
+              (loc pi)
+              (String.concat ~sep:", " l));
         super#merge_info from
     end
 
@@ -95,7 +110,7 @@ module Check = struct
       else new Js_traverse.free
     in
     let _code = free#program code in
-    let freename = free#get_free_name in
+    let freename = to_stringset free#get_free_name in
     let freename =
       List.fold_left requires ~init:freename ~f:(fun freename x ->
           StringSet.remove x freename)
@@ -113,7 +128,8 @@ module Check = struct
          instead@."
         (loc pi);
     let freename = StringSet.remove Constant.old_global_object freename in
-    if not (StringSet.mem name free#get_def_name)
+    let defname = to_stringset free#get_def_name in
+    if not (StringSet.mem name defname)
     then
       warn
         "warning: primitive code does not define value with the expected name: %s (%s)@."
@@ -512,7 +528,7 @@ let check_deps () =
     (fun id (code, requires) ->
       let traverse = new Js_traverse.free in
       let _js = traverse#program code in
-      let free = traverse#get_free_name in
+      let free = to_stringset traverse#get_free_name in
       let requires = List.fold_right requires ~init:StringSet.empty ~f:StringSet.add in
       let real = StringSet.inter free provided in
       let missing = StringSet.diff real requires in

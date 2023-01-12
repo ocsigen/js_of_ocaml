@@ -27,7 +27,7 @@ let one = J.ENum (J.Num.of_int32 1l)
 (* JavaScript engines recognize the pattern 'typeof x==="number"'; if the string is
    shared, less efficient code is generated. *)
 let type_of_is_number binop e =
-  J.EBin (binop, J.EUn (J.Typeof, e), J.EStr ("number", `Bytes))
+  J.EBin (binop, J.EUn (J.Typeof, e), J.EStr (Utf8_string.of_string_exn "number"))
 
 let is_block e = type_of_is_number J.NotEqEq e
 
@@ -49,7 +49,7 @@ module Array = struct
   let make = Block.make
 
   let length e =
-    let underlying = J.EDot (e, "length") in
+    let underlying = J.EDot (e, Utf8_string.of_string_exn "length") in
     J.EBin (J.Minus, underlying, one)
 
   let field e i =

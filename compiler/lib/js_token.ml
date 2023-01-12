@@ -35,7 +35,7 @@ type t =
   | T_THROW
   | T_THIS
   | T_SWITCH
-  | T_STRING of (string * int)
+  | T_STRING of (Utf8_string.t * int)
   | T_STRICT_NOT_EQUAL
   | T_STRICT_EQUAL
   | T_SEMICOLON
@@ -77,7 +77,7 @@ type t =
   | T_INCR
   | T_IN
   | T_IF
-  | T_IDENTIFIER of string
+  | T_IDENTIFIER of Utf8_string.t
   | T_GREATER_THAN_EQUAL
   | T_GREATER_THAN
   | T_FUNCTION
@@ -123,8 +123,8 @@ let to_string = function
   | TComment s -> s
   | TCommentLineDirective s -> s
   | T_NUMBER s -> s
-  | T_IDENTIFIER s -> s
-  | T_STRING (s, _) -> Printf.sprintf "%S" s
+  | T_IDENTIFIER (Utf8 s) -> s
+  | T_STRING (Utf8 s, _) -> Printf.sprintf "%S" s
   | T_REGEX s -> s
   | EOF -> ""
   | T_DEBUGGER -> "debugger"

@@ -49,8 +49,8 @@ let p pos = Pi (pi pos)
 
 (* Tokens with a value *)
 %token<string> T_NUMBER
-%token<string> T_IDENTIFIER
-%token<string * int> T_STRING
+%token<Stdlib.Utf8_string.t> T_IDENTIFIER
+%token<Stdlib.Utf8_string.t * int> T_STRING
 %token<string> T_REGEX
 
 (* Keywords tokens *)
@@ -388,12 +388,12 @@ primary_expression:
  | e=function_expression { e }
 
 primary_expression_no_statement:
- | T_THIS         { (EVar (var (p $symbolstartpos) "this")) }
+ | T_THIS         { (EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "this"))) }
  | variable_with_loc { let i = $1 in (EVar i) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let n = $1 in (ENum (Num.of_string_unsafe n)) }
- | T_STRING          { let (s, _len) = $1 in (EStr (s, `Utf8)) }
+ | T_STRING          { let (s, _len) = $1 in (EStr s) }
  | r=regex_literal                { r }
  | a=array_literal                { a }
  | T_LPAREN e=expression T_RPAREN { (e) }
@@ -490,7 +490,7 @@ member_expression_no_statement:
 (*----------------------------*)
 
 null_literal:
- | T_NULL { (EVar (var (p $symbolstartpos) "null")) }
+ | T_NULL { (EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "null"))) }
 
 boolean_literal:
  | T_TRUE  { (EBool true) }
@@ -568,44 +568,49 @@ arguments:
 
 identifier_or_kw:
    | T_IDENTIFIER { $1 }
-   | T_CATCH { "catch" }
-   | T_FINALLY { "finally" }
-   | T_IN { "in" }
-   | T_INSTANCEOF { "instanceof" }
-   | T_ELSE { "else" }
-   | T_BREAK { "break" }
-   | T_CASE { "case" }
-   | T_CONTINUE { "continue" }
-   | T_DEFAULT { "default" }
-   | T_DELETE { "delete" }
-   | T_DO { "do" }
-   | T_FOR { "for" }
-   | T_FUNCTION { "function" }
-   | T_IF { "if" }
-   | T_NEW { "new" }
-   | T_RETURN { "return" }
-   | T_SWITCH { "switch" }
-   | T_THIS { "this" }
-   | T_THROW { "throw" }
-   | T_TRY { "try" }
-   | T_TYPEOF { "typeof" }
-   | T_VAR { "var" }
-   | T_VOID { "void" }
-   | T_WHILE { "while" }
-   | T_WITH { "with" }
-   | T_NULL { "null" }
-   | T_FALSE { "false" }
-   | T_TRUE { "true" }
-   | T_DEBUGGER { "debugger" }
+   | T_CATCH { Stdlib.Utf8_string.of_string_exn "catch" }
+   | T_FINALLY { Stdlib.Utf8_string.of_string_exn "finally" }
+   | T_IN { Stdlib.Utf8_string.of_string_exn "in" }
+   | T_INSTANCEOF { Stdlib.Utf8_string.of_string_exn "instanceof" }
+   | T_ELSE { Stdlib.Utf8_string.of_string_exn "else" }
+   | T_BREAK { Stdlib.Utf8_string.of_string_exn "break" }
+   | T_CASE { Stdlib.Utf8_string.of_string_exn "case" }
+   | T_CONTINUE { Stdlib.Utf8_string.of_string_exn "continue" }
+   | T_DEFAULT { Stdlib.Utf8_string.of_string_exn "default" }
+   | T_DELETE { Stdlib.Utf8_string.of_string_exn "delete" }
+   | T_DO { Stdlib.Utf8_string.of_string_exn "do" }
+   | T_FOR { Stdlib.Utf8_string.of_string_exn "for" }
+   | T_FUNCTION { Stdlib.Utf8_string.of_string_exn "function" }
+   | T_IF { Stdlib.Utf8_string.of_string_exn "if" }
+   | T_NEW { Stdlib.Utf8_string.of_string_exn "new" }
+   | T_RETURN { Stdlib.Utf8_string.of_string_exn "return" }
+   | T_SWITCH { Stdlib.Utf8_string.of_string_exn "switch" }
+   | T_THIS { Stdlib.Utf8_string.of_string_exn "this" }
+   | T_THROW { Stdlib.Utf8_string.of_string_exn "throw" }
+   | T_TRY { Stdlib.Utf8_string.of_string_exn "try" }
+   | T_TYPEOF { Stdlib.Utf8_string.of_string_exn "typeof" }
+   | T_VAR { Stdlib.Utf8_string.of_string_exn "var" }
+   | T_VOID { Stdlib.Utf8_string.of_string_exn "void" }
+   | T_WHILE { Stdlib.Utf8_string.of_string_exn "while" }
+   | T_WITH { Stdlib.Utf8_string.of_string_exn "with" }
+   | T_NULL { Stdlib.Utf8_string.of_string_exn "null" }
+   | T_FALSE { Stdlib.Utf8_string.of_string_exn "false" }
+   | T_TRUE { Stdlib.Utf8_string.of_string_exn "true" }
+   | T_DEBUGGER { Stdlib.Utf8_string.of_string_exn "debugger" }
 
 variable:
  | i=variable_with_loc { i }
 
 variable_with_loc:
- | i=T_IDENTIFIER { let name = i in var (p $symbolstartpos) name }
+  | i=T_IDENTIFIER {
+          let name = i in
+          var (p $symbolstartpos) name
+        }
 
 label:
- | T_IDENTIFIER { Label.of_string ($1) }
+  | T_IDENTIFIER {
+    let Utf8 name = $1 in
+    Label.of_string name }
 
 property_name:
  | i=identifier_or_kw { PNI i }

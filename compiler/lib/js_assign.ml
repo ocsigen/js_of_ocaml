@@ -247,11 +247,12 @@ module Preserve : Strategy = struct
   let allocate_variables t ~count:_ =
     let names = Array.make t.size "" in
     List.iter t.scopes ~f:(fun (defs, state) ->
-        let assigned =
+        let assigned : StringSet.t =
           List.fold_left
-            ~f:StringSet.union
-            ~init:StringSet.empty
-            [ state.Js_traverse.def_name; state.Js_traverse.use_name; Reserved.keyword ]
+            ~f:(fun acc (set : Utf8_string_set.t) ->
+              Utf8_string_set.fold (fun (Utf8 x) acc -> StringSet.add x acc) set acc)
+            ~init:Reserved.keyword
+            [ state.Js_traverse.def_name; state.Js_traverse.use_name ]
         in
         let assigned =
           S.fold
@@ -321,7 +322,7 @@ let program' (module Strategy : Strategy) p =
     | V v ->
         let name = names.(Var.idx v) in
         assert (not (String.is_empty name));
-        ident ~var:v name
+        ident ~var:v (Utf8_string.of_string_exn name)
     | x -> x
   in
   (new Js_traverse.subst color)#program p

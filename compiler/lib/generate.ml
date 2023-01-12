@@ -90,7 +90,7 @@ module Share = struct
   end)
 
   type 'a aux =
-    { strings : 'a StringMap.t
+    { byte_strings : 'a StringMap.t
     ; utf_strings : 'a StringMap.t
     ; applies : 'a AppMap.t
     ; prims : 'a StringMap.t
@@ -98,7 +98,7 @@ module Share = struct
 
   let empty_aux =
     { prims = StringMap.empty
-    ; strings = StringMap.empty
+    ; byte_strings = StringMap.empty
     ; utf_strings = StringMap.empty
     ; applies = AppMap.empty
     }
@@ -111,9 +111,9 @@ module Share = struct
     ; alias_apply : bool
     }
 
-  let add_string s t =
-    let n = try StringMap.find s t.strings with Not_found -> 0 in
-    { t with strings = StringMap.add s (n + 1) t.strings }
+  let add_byte_string s t =
+    let n = try StringMap.find s t.byte_strings with Not_found -> 0 in
+    { t with byte_strings = StringMap.add s (n + 1) t.byte_strings }
 
   let add_utf_string s t =
     let n = try StringMap.find s t.utf_strings with Not_found -> 0 in
@@ -131,15 +131,17 @@ module Share = struct
     { t with applies = AppMap.add i (n + 1) t.applies }
 
   let add_code_string s share =
-    let share = add_string s share in
+    let share =
+      if String.is_ascii s then add_utf_string s share else add_byte_string s share
+    in
     if Config.Flag.use_js_string ()
     then share
     else add_prim "caml_string_of_jsbytes" share
 
   let add_code_native_string (s : Code.Native_string.t) share =
     match s with
-    | Byte s -> add_string s share
-    | Utf s -> add_utf_string s share
+    | Utf (Utf8 s) -> add_utf_string s share
+    | Byte s -> add_byte_string s share
 
   let rec get_constant c t =
     match c with
@@ -219,19 +221,19 @@ module Share = struct
     in
     { count; vars = empty_aux; alias_strings; alias_prims; alias_apply }
 
-  let get_string gen s t =
+  let get_byte_string gen s t =
     if not t.alias_strings
     then gen s
     else
       try
-        let c = StringMap.find s t.count.strings in
+        let c = StringMap.find s t.count.byte_strings in
         if c > 1
         then (
-          try J.EVar (StringMap.find s t.vars.strings)
+          try J.EVar (StringMap.find s t.vars.byte_strings)
           with Not_found ->
             let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
             let v = J.V x in
-            t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
+            t.vars <- { t.vars with byte_strings = StringMap.add s v t.vars.byte_strings };
             J.EVar v)
         else gen s
       with Not_found -> gen s
@@ -370,16 +372,30 @@ let source_location ctx ?after pc =
 
 let float_const f = J.ENum (J.Num.of_float f)
 
-let s_var name = J.EVar (J.ident name)
+let s_var name = J.EVar (J.ident (Utf8_string.of_string_exn name))
 
 let runtime_fun ctx name =
   match ctx.Ctx.exported_runtime with
   | Some (runtime, runtime_needed) ->
       runtime_needed := true;
+      let name = Utf8_string.of_string_exn name in
       J.EDot (J.EVar (J.V runtime), name)
   | None -> s_var name
 
-let str_js s = J.EStr (s, `Bytes)
+let array_conv = Array.init 16 ~f:(fun i -> "0123456789abcdef".[i])
+
+let str_js_byte s =
+  let b = Buffer.create (String.length s) in
+  String.iter s ~f:(function
+      | '\\' -> Buffer.add_string b "\\\\"
+      | '\128' .. '\255' as c ->
+          let c = Char.code c in
+          Buffer.add_string b "\\x";
+          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
+          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
+      | c -> Buffer.add_char b c);
+  let s = Buffer.contents b in
+  J.EStr (Utf8_string.of_string_exn s)
 
 let str_js_utf8 s =
   let b = Buffer.create (String.length s) in
@@ -387,7 +403,7 @@ let str_js_utf8 s =
       | '\\' -> Buffer.add_string b "\\\\"
       | c -> Buffer.add_char b c);
   let s = Buffer.contents b in
-  J.EStr (s, `Utf8)
+  J.EStr (Utf8_string.of_string_exn s)
 
 let ecall f args loc = J.ECall (f, List.map args ~f:(fun x -> x, `Not_spread), loc)
 
@@ -431,13 +447,17 @@ let ocaml_string ~ctx ~loc s =
 let rec constant_rec ~ctx x level instrs =
   match x with
   | String s ->
-      let e = Share.get_string str_js s ctx.Ctx.share in
+      let e =
+        if String.is_ascii s
+        then Share.get_utf_string str_js_byte s ctx.Ctx.share
+        else Share.get_byte_string str_js_byte s ctx.Ctx.share
+      in
       let e = ocaml_string ~ctx ~loc:J.N e in
       e, instrs
   | NativeString s -> (
       match s with
-      | Byte x -> Share.get_string str_js x ctx.Ctx.share, instrs
-      | Utf x -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
+      | Byte x -> Share.get_byte_string str_js_byte x ctx.Ctx.share, instrs
+      | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
@@ -968,7 +988,7 @@ let apply_fun_raw ctx f params exact cps =
     then apply_directly
     else
       J.ECond
-        ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
+        ( J.EBin (J.EqEq, J.EDot (f, Utf8_string.of_string_exn "length"), int n)
         , apply_directly
         , ecall
             (runtime_fun ctx "caml_call_gen")
@@ -1076,16 +1096,18 @@ let register_tern_prim name f =
       | _ -> assert false)
 
 let register_un_math_prim name prim =
+  let prim = Utf8_string.of_string_exn prim in
   register_un_prim name `Pure (fun cx loc ->
       ecall (J.EDot (s_var "Math", prim)) [ cx ] loc)
 
 let register_bin_math_prim name prim =
+  let prim = Utf8_string.of_string_exn prim in
   register_bin_prim name `Pure (fun cx cy loc ->
       ecall (J.EDot (s_var "Math", prim)) [ cx; cy ] loc)
 
 let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
-      let s = J.EBin (J.Plus, str_js "", cx) in
+      let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
       ocaml_string ~ctx ~loc s);
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
@@ -1121,7 +1143,7 @@ let _ =
       J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable (fun cx loc ->
-      J.ECall (J.EDot (cx, "slice"), [], loc));
+      J.ECall (J.EDot (cx, Utf8_string.of_string_exn "slice"), [], loc));
   register_un_prim "caml_int_of_float" `Pure (fun cx _loc -> to_int cx);
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
@@ -1316,7 +1338,9 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
                 l
                 ~init:([], mutator_p, queue)
             in
-            ecall (J.EDot (cf, "call")) (co :: args) loc, or_p (or_p pf po) prop, queue
+            ( ecall (J.EDot (cf, Utf8_string.of_string_exn "call")) (co :: args) loc
+            , or_p (or_p pf po) prop
+            , queue )
         | Extern "%caml_js_opt_fun_call", f :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let args, prop, queue =
@@ -1353,15 +1377,15 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             ( J.ENew (cc, if List.is_empty args then None else Some args)
             , or_p pc prop
             , queue )
-        | Extern "caml_js_get", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident f ->
+        | Extern "caml_js_get", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident' f ->
             let (po, co), queue = access_queue queue o in
             J.EDot (co, f), or_p po mutable_p, queue
-        | Extern "caml_js_set", [ Pv o; Pc (NativeString (Utf f)); v ] when J.is_ident f
+        | Extern "caml_js_set", [ Pv o; Pc (NativeString (Utf f)); v ] when J.is_ident' f
           ->
             let (po, co), queue = access_queue queue o in
             let (pv, cv), queue = access_queue' ~ctx queue v in
             J.EBin (J.Eq, J.EDot (co, f), cv), or_p (or_p po pv) mutator_p, queue
-        | Extern "caml_js_delete", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident f
+        | Extern "caml_js_delete", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident' f
           ->
             let (po, co), queue = access_queue queue o in
             J.EUn (J.Delete, J.EDot (co, f)), or_p po mutator_p, queue
@@ -1383,7 +1407,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
               | Pc (NativeString (Utf nm)) :: x :: r ->
                   let (prop, cx), queue = access_queue' ~ctx queue x in
                   let prop', r', queue = build_fields queue r in
-                  let p_name = if J.is_ident nm then J.PNI nm else J.PNS nm in
+                  let p_name = if J.is_ident' nm then J.PNI nm else J.PNS nm in
                   or_p prop prop', (p_name, cx) :: r', queue
               | _ -> assert false
             in
@@ -1399,7 +1423,10 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
             let args = Array.to_list (Array.init i ~f:(fun _ -> J.V (Var.fresh ()))) in
             let f = J.V (Var.fresh ()) in
             let call =
-              ecall (J.EDot (J.EVar f, "fun")) (List.map args ~f:(fun v -> J.EVar v)) loc
+              ecall
+                (J.EDot (J.EVar f, Utf8_string.of_string_exn "fun"))
+                (List.map args ~f:(fun v -> J.EVar v))
+                loc
             in
             let e =
               J.EFun
@@ -2076,11 +2103,16 @@ let generate_shared_value ctx =
             | None -> []
             | Some (_, { contents = false }) -> []
             | Some (v, _) ->
-                [ J.V v, Some (J.EDot (s_var Constant.global_object, "jsoo_runtime"), J.N)
+                [ ( J.V v
+                  , Some
+                      ( J.EDot
+                          ( s_var Constant.global_object
+                          , Utf8_string.of_string_exn "jsoo_runtime" )
+                      , J.N ) )
                 ])
            @ List.map
-               (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
-               ~f:(fun (s, v) -> v, Some (str_js s, J.N))
+               (StringMap.bindings ctx.Ctx.share.Share.vars.Share.byte_strings)
+               ~f:(fun (s, v) -> v, Some (str_js_byte s, J.N))
            @ List.map
                (StringMap.bindings ctx.Ctx.share.Share.vars.Share.utf_strings)
                ~f:(fun (s, v) -> v, Some (str_js_utf8 s, J.N))
