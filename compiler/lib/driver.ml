@@ -166,8 +166,6 @@ let header formatter ~custom_header =
 
 let debug_linker = Debug.find "linker"
 
-let global_object = Constant.global_object
-
 let extra_js_files =
   lazy
     (List.fold_left (Builtins.all ()) ~init:[] ~f:(fun acc file ->
@@ -203,29 +201,33 @@ let report_missing_primitives missing =
 
 let gen_missing js missing =
   let open Javascript in
+  let ident_s n = ident (Utf8_string.of_string_exn n) in
   let miss =
     StringSet.fold
       (fun prim acc ->
+        let prim = Utf8_string.of_string_exn prim in
         let p = ident prim in
         ( p
         , Some
             ( ECond
                 ( EBin
                     ( NotEqEq
-                    , EDot (EVar (ident global_object), prim)
-                    , EVar (ident "undefined") )
-                , EDot (EVar (ident global_object), prim)
+                    , EDot (EVar (ident Constant.global_object_), prim)
+                    , EVar (ident_s "undefined") )
+                , EDot (EVar (ident Constant.global_object_), prim)
                 , EFun
                     ( None
                     , []
                     , [ ( Statement
                             (Expression_statement
                                (ECall
-                                  ( EVar (ident "caml_failwith")
+                                  ( EVar (ident_s "caml_failwith")
                                   , [ ( EBin
                                           ( Plus
-                                          , EStr (prim, `Utf8)
-                                          , EStr (" not implemented", `Utf8) )
+                                          , EStr prim
+                                          , EStr
+                                              (Utf8_string.of_string_exn
+                                                 " not implemented") )
                                       , `Not_spread )
                                     ]
                                   , N )))
@@ -263,12 +265,17 @@ let link ~standalone ~linkall (js : Javascript.source_elements) : Linker.output 
         let open Javascript in
         ( Statement
             (Expression_statement
-               (EStr ("--MARK--" ^ "start-of-jsoo-gen" ^ "--MARK--", `Utf8)))
+               (EStr
+                  (Utf8_string.of_string_exn
+                     ("--MARK--" ^ "start-of-jsoo-gen" ^ "--MARK--"))))
         , N )
         :: js
       else js
     in
     let free = traverse#get_free_name in
+    let free : StringSet.t =
+      Utf8_string_set.fold (fun (Utf8 x) acc -> StringSet.add x acc) free StringSet.empty
+    in
     let prim = Primitive.get_external () in
     let prov = Linker.get_provided () in
     let all_external = StringSet.union prim prov in
@@ -292,10 +299,19 @@ let link ~standalone ~linkall (js : Javascript.source_elements) : Linker.output 
       then
         let open Javascript in
         let all = Linker.all linkinfos in
-        let all = List.map all ~f:(fun name -> PNI name, EVar (ident name)) in
+        let all =
+          List.map all ~f:(fun name ->
+              let name = Utf8_string.of_string_exn name in
+              PNI name, EVar (ident name))
+        in
         ( Statement
             (Expression_statement
-               (EBin (Eq, EDot (EVar (ident global_object), "jsoo_runtime"), EObj all)))
+               (EBin
+                  ( Eq
+                  , EDot
+                      ( EVar (ident Constant.global_object_)
+                      , Utf8_string.of_string_exn "jsoo_runtime" )
+                  , EObj all )))
         , N )
         :: js
       else js
@@ -308,6 +324,9 @@ let check_js js =
   let traverse = new Js_traverse.free in
   let js = traverse#program js in
   let free = traverse#get_free_name in
+  let free : StringSet.t =
+    Utf8_string_set.fold (fun (Utf8 x) acc -> StringSet.add x acc) free StringSet.empty
+  in
   let prim = Primitive.get_external () in
   let prov = Linker.get_provided () in
   let all_external = StringSet.union prim prov in
@@ -336,7 +355,7 @@ let coloring js =
   let traverse = new Js_traverse.free in
   let js = traverse#program js in
   let free = traverse#get_free_name in
-  Var_printer.add_reserved (StringSet.elements free);
+  Utf8_string_set.iter (fun (Utf8 x) -> Var_printer.add_reserved x) free;
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
@@ -384,26 +403,27 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       o#get_free_name
     in
     let export_shim js =
-      if StringSet.mem Constant.exports freenames
+      if Utf8_string_set.mem Constant.exports_ freenames
       then
         if should_export wrap_with_fun
-        then var Constant.exports (J.EObj []) :: js
+        then var Constant.exports_ (J.EObj []) :: js
         else
           let export_node =
             let s =
               Printf.sprintf
                 {|((typeof module === 'object' && module.exports) || %s)|}
-                global_object
+                Constant.global_object
             in
             let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
             Parse_js.parse_expr lex
           in
-          var Constant.exports export_node :: js
+          var Constant.exports_ export_node :: js
       else js
     in
     let old_global_object_shim js =
-      if StringSet.mem Constant.old_global_object freenames
-      then var Constant.old_global_object (J.EVar (J.ident global_object)) :: js
+      if Utf8_string_set.mem Constant.old_global_object_ freenames
+      then
+        var Constant.old_global_object_ (J.EVar (J.ident Constant.global_object_)) :: js
       else js
     in
 
@@ -412,14 +432,22 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
     let mk f =
       let js = export_shim js in
       let js = old_global_object_shim js in
-      let js = if use_strict then expr (J.EStr ("use strict", `Utf8)) :: js else js in
-      f [ J.ident global_object ] js
+      let js =
+        if use_strict
+        then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
+        else js
+      in
+      f [ J.ident Constant.global_object_ ] js
     in
     match wrap_with_fun with
     | `Anonymous -> expr (mk efun)
-    | `Named name -> mk (sfun (J.ident name))
+    | `Named name ->
+        let name = Utf8_string.of_string_exn name in
+        mk (sfun (J.ident name))
     | `Iife ->
-        expr (J.ECall (mk efun, [ J.EVar (J.ident global_object), `Not_spread ], J.N))
+        expr
+          (J.ECall
+             (mk efun, [ J.EVar (J.ident Constant.global_object_), `Not_spread ], J.N))
   in
   let always_required_js =
     (* consider adding a comments in the generated file with original
@@ -438,6 +466,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   let js =
     match wrap_with_fun, standalone with
     | `Named name, (true | false) ->
+        assert (J.is_ident name);
         let export_node =
           let s =
             Printf.sprintf

@@ -69,8 +69,12 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
     in
     let free = new Js_traverse.free in
     let (_ : Javascript.program) = free#program p in
-    let toplevel_def_and_use = StringSet.union free#get_def_name free#get_use_name in
-    let () = Var_printer.add_reserved (StringSet.elements toplevel_def_and_use) in
+    let toplevel_def_and_use =
+      Utf8_string_set.union free#get_def_name free#get_use_name
+    in
+    Utf8_string_set.iter
+      (fun (Utf8_string.Utf8 x) -> Var_printer.add_reserved x)
+      toplevel_def_and_use;
     let true_ () = true in
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =

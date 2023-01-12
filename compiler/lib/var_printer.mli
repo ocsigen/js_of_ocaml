@@ -27,7 +27,7 @@ end
 
 type t
 
-val add_reserved : string list -> unit
+val add_reserved : string -> unit
 
 val get_reserved : unit -> StringSet.t
 

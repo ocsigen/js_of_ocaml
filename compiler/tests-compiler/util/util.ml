@@ -419,7 +419,8 @@ class find_variable_declaration r n =
 
     method! variable_declaration v =
       (match v with
-      | Jsoo.Javascript.S { name; _ }, _ when String.equal name n -> r := v :: !r
+      | Jsoo.Javascript.S { name = Utf8 name; _ }, _ when String.equal name n ->
+          r := v :: !r
       | _ -> ());
       super#variable_declaration v
   end
@@ -443,7 +444,8 @@ class find_function_declaration r n =
           let record =
             match fd, n with
             | _, None -> true
-            | (Jsoo.Javascript.S { name; _ }, _, _, _), Some n -> String.equal name n
+            | (Jsoo.Javascript.S { name = Utf8 name; _ }, _, _, _), Some n ->
+                String.equal name n
             | _ -> false
           in
           if record then r := fd :: !r

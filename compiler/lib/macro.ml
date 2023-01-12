@@ -26,9 +26,9 @@ class macro_mapper =
     method expression x =
       let module J = Javascript in
       match x with
-      | J.ECall (J.EVar (J.S { name; _ }), args, _) -> (
+      | J.ECall (J.EVar (J.S { name = Utf8 name; _ }), args, _) -> (
           match name, args with
-          | "FLAG", [ (J.EStr (s, `Utf8), `Not_spread) ] ->
+          | "FLAG", [ (J.EStr (Utf8 s), `Not_spread) ] ->
               let i = if Config.Flag.find s then 1l else 0l in
               J.ENum (J.Num.of_int32 i)
           | "BLOCK", (J.ENum tag, `Not_spread) :: (_ :: _ as args)
@@ -46,7 +46,7 @@ class macro_mapper =
           | "FIELD", [ _; (J.EUn (J.Neg, _), `Not_spread) ] ->
               failwith "Negative field indexes are not allowed"
           | "ISBLOCK", [ (e, `Not_spread) ] -> Mlvalue.is_block (m#expression e)
-          | ("BLOCK" | "TAG" | "LENGTH" | "FIELD" | "ISBLOCK" | "FLAG"), _ ->
+          | (("BLOCK" | "TAG" | "LENGTH" | "FIELD" | "ISBLOCK" | "FLAG") as name), _ ->
               failwith
                 (Format.sprintf "macro %s called with inappropriate arguments" name)
           | _ -> super#expression x)

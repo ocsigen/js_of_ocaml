@@ -124,7 +124,7 @@ type location =
   | N
   | U
 
-type identifier = string
+type identifier = Utf8_string.t
 
 type ident_string =
   { name : identifier
@@ -206,7 +206,7 @@ and property_name_and_value_list = (property_name * expression) list
 
 and property_name =
   | PNI of identifier
-  | PNS of string
+  | PNS of Utf8_string.t
   | PNN of Num.t
 
 and expression =
@@ -220,7 +220,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression
-  | EStr of string * [ `Bytes | `Utf8 ]
+  | EStr of Utf8_string.t
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
@@ -296,7 +296,7 @@ and source_element =
 let compare_ident t1 t2 =
   match t1, t2 with
   | V v1, V v2 -> Code.Var.compare v1 v2
-  | S { name = s1; var = v1; loc = _ }, S { name = s2; var = v2; loc = _ } -> (
+  | S { name = Utf8 s1; var = v1; loc = _ }, S { name = Utf8 s2; var = v2; loc = _ } -> (
       (* ignore locations *)
       match String.compare s1 s2 with
       | 0 -> Option.compare Code.Var.compare v1 v2
@@ -316,8 +316,6 @@ let is_ident =
         | _ -> 0)
   in
   fun s ->
-    (not (StringSet.mem s Reserved.keyword))
-    &&
     try
       for i = 0 to String.length s - 1 do
         let code = l.(Char.code s.[i]) in
@@ -329,7 +327,11 @@ let is_ident =
       true
     with Not_an_ident -> false
 
-let ident ?(loc = N) ?var name = S { name; var; loc }
+let is_ident' (Utf8_string.Utf8 s) = is_ident s
+
+let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
+  if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
+  S { name; var; loc }
 
 module IdentSet = Set.Make (struct
   type t = ident

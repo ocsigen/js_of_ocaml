@@ -117,13 +117,13 @@ struct
       | Some _ -> ()
 
   let ident f = function
-    | S { name; var = Some v; _ } ->
+    | S { name = Utf8 name; var = Some v; _ } ->
         output_debug_info_ident f name (Code.Var.get_loc v);
         PP.string f name
-    | S { name; var = None; loc = Pi pi } ->
+    | S { name = Utf8 name; var = None; loc = Pi pi } ->
         output_debug_info_ident f name (Some pi);
         PP.string f name
-    | S { name; var = None; loc = U | N } -> PP.string f name
+    | S { name = Utf8 name; var = None; loc = U | N } -> PP.string f name
     | V v ->
         assert (Debug.find "shortvar" ());
         PP.string f ("<" ^ Code.Var.to_string v ^ ">")
@@ -291,7 +291,7 @@ struct
 
   let array_conv = Array.init 16 ~f:(fun i -> "0123456789abcdef".[i])
 
-  let pp_string f ?(quote = '"') ?(utf = false) s =
+  let pp_string f ?(quote = '"') s =
     let l = String.length s in
     let b = Buffer.create (String.length s + 2) in
     Buffer.add_char b quote;
@@ -308,14 +308,8 @@ struct
       | '\012' -> Buffer.add_string b "\\f"
       (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
       | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
-      | '\\' when not utf -> Buffer.add_string b "\\\\"
       | '\r' -> Buffer.add_string b "\\r"
       | '\000' .. '\031' | '\127' ->
-          let c = Char.code c in
-          Buffer.add_string b "\\x";
-          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
-          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
-      | '\128' .. '\255' when not utf ->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
@@ -387,9 +381,9 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EStr (s, kind) ->
+    | EStr (Utf8 s) ->
         let quote = best_string_quote s in
-        pp_string f ~utf:Poly.(kind = `Utf8) ~quote s
+        pp_string f ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
     | ENum num ->
         let s = Num.to_string num in
@@ -548,7 +542,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EDot (e, nm) ->
+    | EDot (e, Utf8 nm) ->
         if l > 15
         then (
           PP.start_group f 1;
@@ -641,10 +635,10 @@ struct
 
   and property_name f n =
     match n with
-    | PNI s -> PP.string f s
-    | PNS s ->
+    | PNI (Utf8 s) -> PP.string f s
+    | PNS (Utf8 s) ->
         let quote = best_string_quote s in
-        pp_string f ~utf:true ~quote s
+        pp_string f ~quote s
     | PNN v -> expression 0 f (ENum v)
 
   and property_name_and_value_list f l =

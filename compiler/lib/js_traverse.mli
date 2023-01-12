@@ -59,8 +59,8 @@ class subst :
      end
 
 type t =
-  { use_name : StringSet.t
-  ; def_name : StringSet.t
+  { use_name : Utf8_string_set.t
+  ; def_name : Utf8_string_set.t
   ; def : Code.Var.Set.t
   ; use : Code.Var.Set.t
   }
@@ -85,15 +85,15 @@ class type freevar =
 
     method get_count : int IdentMap.t
 
-    method get_free_name : StringSet.t
+    method get_free_name : Utf8_string_set.t
 
     method get_free : Code.Var.Set.t
 
-    method get_def_name : StringSet.t
+    method get_def_name : Utf8_string_set.t
 
     method get_def : Code.Var.Set.t
 
-    method get_use_name : StringSet.t
+    method get_use_name : Utf8_string_set.t
 
     method get_use : Code.Var.Set.t
   end

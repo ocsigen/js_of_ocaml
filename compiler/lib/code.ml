@@ -260,18 +260,16 @@ type array_or_not =
 module Native_string = struct
   type t =
     | Byte of string
-    | Utf of string
+    | Utf of Utf8_string.t
 
-  let of_string x =
-    assert (String.is_valid_utf_8 x);
-    Utf x
+  let of_string x = Utf (Utf8_string.of_string_exn x)
 
-  let of_bytestring x = Byte x
+  let of_bytestring x = if String.is_ascii x then of_string x else Byte x
 
   let equal a b =
     match a, b with
     | Byte x, Byte y -> String.equal x y
-    | Utf x, Utf y -> String.equal x y
+    | Utf (Utf8 x), Utf (Utf8 y) -> String.equal x y
     | Utf _, Byte _ | Byte _, Utf _ -> false
 end
 
@@ -383,7 +381,7 @@ module Print = struct
     match x with
     | String s -> Format.fprintf f "%S" s
     | NativeString (Byte s) -> Format.fprintf f "%Sj" s
-    | NativeString (Utf s) -> Format.fprintf f "%Sj" s
+    | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
     | Float fl -> Format.fprintf f "%.12g" fl
     | Float_array a ->
         Format.fprintf f "[|";

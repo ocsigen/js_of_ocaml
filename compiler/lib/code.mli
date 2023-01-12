@@ -143,7 +143,7 @@ type array_or_not =
 module Native_string : sig
   type t = private
     | Byte of string
-    | Utf of string
+    | Utf of Utf8_string.t
 
   val of_string : string -> t
 

@@ -15,6 +15,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
+open Stdlib
+
 module Annot : sig
   type t = string * Primitive.t
 end
@@ -31,7 +34,7 @@ type t =
   | T_THROW
   | T_THIS
   | T_SWITCH
-  | T_STRING of (string * int)
+  | T_STRING of (Utf8_string.t * int)
   | T_STRICT_NOT_EQUAL
   | T_STRICT_EQUAL
   | T_SEMICOLON
@@ -73,7 +76,7 @@ type t =
   | T_INCR
   | T_IN
   | T_IF
-  | T_IDENTIFIER of string
+  | T_IDENTIFIER of Utf8_string.t
   | T_GREATER_THAN_EQUAL
   | T_GREATER_THAN
   | T_FUNCTION

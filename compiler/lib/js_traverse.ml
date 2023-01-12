@@ -368,8 +368,10 @@ class map_for_share_constant =
           EBin (op, e1, EUn (Typeof, super#expression e2))
       (* Some js bundler get confused when the argument
          of 'require' is not a literal *)
-      | ECall (EVar (S { var = None; name = "require"; _ }), [ (EStr _, `Not_spread) ], _)
-        -> e
+      | ECall
+          ( EVar (S { var = None; name = Utf8 "requires"; _ })
+          , [ (EStr _, `Not_spread) ]
+          , _ ) -> e
       | _ -> super#expression e
 
     (* do not replace constant in switch case *)
@@ -403,12 +405,7 @@ class share_constant =
     method expression e =
       let e =
         match e with
-        | EStr (s, `Utf8) when (not (String.has_backslash s)) && String.is_ascii s ->
-            let e = EStr (s, `Bytes) in
-            let n = try Hashtbl.find count e with Not_found -> 0 in
-            Hashtbl.replace count e (n + 1);
-            e
-        | EStr (_, _) | ENum _ ->
+        | EStr _ | ENum _ ->
             let n = try Hashtbl.find count e with Not_found -> 0 in
             Hashtbl.replace count e (n + 1);
             e
@@ -423,7 +420,7 @@ class share_constant =
         (fun x n ->
           let shareit =
             match x with
-            | EStr (s, _) when n > 1 ->
+            | EStr (Utf8 s) when n > 1 ->
                 if String.length s < 20
                 then Some ("str_" ^ s)
                 else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
@@ -451,14 +448,18 @@ class share_constant =
 module S = Code.Var.Set
 
 type t =
-  { use_name : StringSet.t
-  ; def_name : StringSet.t
+  { use_name : Utf8_string_set.t
+  ; def_name : Utf8_string_set.t
   ; def : S.t
   ; use : S.t
   }
 
 let empty =
-  { def = S.empty; use = S.empty; use_name = StringSet.empty; def_name = StringSet.empty }
+  { def = S.empty
+  ; use = S.empty
+  ; use_name = Utf8_string_set.empty
+  ; def_name = Utf8_string_set.empty
+  }
 
 (* def/used/free variable *)
 
@@ -482,15 +483,15 @@ class type freevar =
 
     method get_count : int Javascript.IdentMap.t
 
-    method get_free_name : StringSet.t
+    method get_free_name : Utf8_string_set.t
 
     method get_free : Code.Var.Set.t
 
-    method get_def_name : StringSet.t
+    method get_def_name : Utf8_string_set.t
 
     method get_def : Code.Var.Set.t
 
-    method get_use_name : StringSet.t
+    method get_use_name : Utf8_string_set.t
 
     method get_use : Code.Var.Set.t
   end
@@ -513,7 +514,7 @@ class free =
 
     method get_def = m#state.def
 
-    method get_free_name = StringSet.diff m#state.use_name m#state.def_name
+    method get_free_name = Utf8_string_set.diff m#state.use_name m#state.def_name
 
     method get_def_name = m#state.def_name
 
@@ -526,7 +527,7 @@ class free =
       let free = from#get_free in
       state_ <-
         { state_ with
-          use_name = StringSet.union state_.use_name free_name
+          use_name = Utf8_string_set.union state_.use_name free_name
         ; use = S.union state_.use free
         }
 
@@ -535,7 +536,7 @@ class free =
       count := IdentMap.add x (succ n) !count;
       match x with
       | S { name; _ } ->
-          state_ <- { state_ with use_name = StringSet.add name state_.use_name }
+          state_ <- { state_ with use_name = Utf8_string_set.add name state_.use_name }
       | V v -> state_ <- { state_ with use = S.add v state_.use }
 
     method def_var x =
@@ -543,7 +544,7 @@ class free =
       count := IdentMap.add x (succ n) !count;
       match x with
       | S { name; _ } ->
-          state_ <- { state_ with def_name = StringSet.add name state_.def_name }
+          state_ <- { state_ with def_name = Utf8_string_set.add name state_.def_name }
       | V v -> state_ <- { state_ with def = S.add v state_.def }
 
     method expression x =
@@ -558,8 +559,8 @@ class free =
           let ident =
             match ident with
             | Some (V v) when not (S.mem v tbody#state.use) -> None
-            | Some (S { name; _ }) when not (StringSet.mem name tbody#state.use_name) ->
-                None
+            | Some (S { name; _ })
+              when not (Utf8_string_set.mem name tbody#state.use_name) -> None
             | Some id ->
                 tbody#def_var id;
                 ident
@@ -606,16 +607,16 @@ class free =
                    to 'block' *)
                 let clean set sets =
                   match id with
-                  | S { name; _ } -> set, StringSet.remove name sets
+                  | S { name; _ } -> set, Utf8_string_set.remove name sets
                   | V i -> S.remove i set, sets
                 in
                 let def, def_name = tbody#state.def, tbody#state.def_name in
                 let use, use_name = clean tbody#state.use tbody#state.use_name in
                 state_ <-
                   { use = S.union state_.use use
-                  ; use_name = StringSet.union state_.use_name use_name
+                  ; use_name = Utf8_string_set.union state_.use_name use_name
                   ; def = S.union state_.def def
-                  ; def_name = StringSet.union state_.def_name def_name
+                  ; def_name = Utf8_string_set.union state_.def_name def_name
                   };
                 Some (id, block)
           in
@@ -640,7 +641,8 @@ class rename_variable =
       let declared_names = ref StringSet.empty in
       let decl_var x =
         match x with
-        | S { name; _ } -> declared_names := StringSet.add name !declared_names
+        | S { name = Utf8 name; _ } ->
+            declared_names := StringSet.add name !declared_names
         | _ -> ()
       in
       Option.iter ~f:decl_var ident;
@@ -668,7 +670,8 @@ class rename_variable =
     method ident x =
       match x with
       | V _ -> x
-      | S { name; _ } -> ( try V (StringMap.find name subst) with Not_found -> x)
+      | S { name = Utf8 name; _ } -> (
+          try V (StringMap.find name subst) with Not_found -> x)
 
     method expression e =
       match e with
@@ -683,7 +686,7 @@ class rename_variable =
 
     method statement s =
       match s with
-      | Try_statement (b, Some ((S { name; _ } as id), block), final)
+      | Try_statement (b, Some ((S { name = Utf8 name; _ } as id), block), final)
         when not (StringSet.mem name decl) ->
           (* If [name] is declared in [block] but not outside, then
              we cannot replace [id] by a fresh variable. As a fast
@@ -768,7 +771,10 @@ class compact_vardecl =
         S.fold (fun e acc -> IdentSet.add (V e) acc) from#state.def IdentSet.empty
       in
       let all =
-        StringSet.fold (fun e acc -> IdentSet.add (ident e) acc) from#state.def_name all
+        Utf8_string_set.fold
+          (fun e acc -> IdentSet.add (ident e) acc)
+          from#state.def_name
+          all
       in
       insert_ <- IdentSet.diff all from#exc
 
