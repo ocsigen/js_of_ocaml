@@ -128,7 +128,7 @@ also mark blocks that correspond to function continuations or
 exception handlers. And we keep track of the exception handler
 associated to each Poptrap, and possibly Raise.
 *)
-let compute_needed_transformations ~cfg ~idom ~blocks ~start =
+let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
   let frontiers = dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
   let matching_exn_handler = Hashtbl.create 16 in
@@ -161,9 +161,10 @@ let compute_needed_transformations ~cfg ~idom ~blocks ~start =
           | Some
               (Let
                 (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
-            ->
-              (* The block after a function application or an effect
-                 primitive needs to be transformed. *)
+            when Var.Set.mem x cps_needed ->
+              (* The block after a function application that needs to
+                 be turned to CPS or an effect primitive needs to be
+                 transformed. *)
               mark_needed dst;
               (* We need to transform the englobing exception handlers
                  as well *)
@@ -233,6 +234,7 @@ type st =
   ; blocks : Code.block Addr.Map.t
   ; jc : jump_closures
   ; closure_info : (Addr.t, Var.t * Code.cont) Hashtbl.t
+  ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
   ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
   ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
@@ -343,7 +345,7 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
-  | Let (x, Closure (params, (pc, _))) ->
+  | Let (x, Closure (params, (pc, _))) when Var.Set.mem x st.cps_needed ->
       (* Add the continuation parameter, and change the initial block if
          needed *)
       let k, cont = Hashtbl.find st.closure_info pc in
@@ -356,6 +358,10 @@ let cps_instr ~st (instr : instr) : instr =
             , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
             )
       | _ -> assert false)
+  | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
+      (* At the moment, we turn into CPS any function not called with
+         the right number of parameter *)
+      Let (x, Apply { f; args; exact = true })
   | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       assert false
   | _ -> instr
@@ -394,7 +400,7 @@ let cps_block ~st ~k pc block =
     | exception Not_found -> []
   in
 
-  let rewrite_instr e =
+  let rewrite_instr x e =
     let perform_effect ~effect ~continuation =
       Some
         (fun ~k ->
@@ -405,7 +411,7 @@ let cps_block ~st ~k pc block =
           [ Let (x, e) ], Return x)
     in
     match e with
-    | Apply { f; args; exact } ->
+    | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
         Some (fun ~k -> tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
@@ -428,7 +434,7 @@ let cps_block ~st ~k pc block =
   let rewritten_block =
     match List.split_last block.body, block.branch with
     | Some (body_prefix, Let (x, e)), Return ret ->
-        Option.map (rewrite_instr e) ~f:(fun f ->
+        Option.map (rewrite_instr x e) ~f:(fun f ->
             assert (List.is_empty alloc_jump_closures);
             assert (Var.equal x ret);
             let instrs, branch = f ~k in
@@ -465,7 +471,7 @@ let cps_block ~st ~k pc block =
           let instrs, branch = f ~k:k' in
           body_prefix, constr_cont @ instrs, branch
         in
-        Option.map (rewrite_instr e) ~f:allocate_continuation
+        Option.map (rewrite_instr x e) ~f:allocate_continuation
     | Some (_, (Set_field _ | Offset_ref _ | Array_set _ | Assign _)), _
     | Some _, (Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _)
     | None, _ -> None
@@ -490,7 +496,7 @@ let cps_block ~st ~k pc block =
   ; branch = last
   }
 
-let cps_transform ~live_vars p =
+let cps_transform ~live_vars ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
   let cps_calls = ref Var.Set.empty in
   let p =
@@ -511,8 +517,24 @@ let cps_transform ~live_vars p =
         in
         let cfg = build_graph blocks' start' in
         let idom = dominator_tree cfg in
+        let should_compute_needed_transformations =
+          match name_opt with
+          | Some name -> Var.Set.mem name cps_needed
+          | None ->
+              (* We are handling the toplevel code. There may remain
+                 some CPS calls at toplevel. *)
+              true
+        in
         let blocks_to_transform, matching_exn_handler, is_continuation =
-          compute_needed_transformations ~cfg ~idom ~blocks:blocks' ~start:start'
+          if should_compute_needed_transformations
+          then
+            compute_needed_transformations
+              ~cfg
+              ~idom
+              ~cps_needed
+              ~blocks:blocks'
+              ~start:start'
+          else Addr.Set.empty, Hashtbl.create 1, Hashtbl.create 1
         in
         let closure_jc = jump_closures blocks_to_transform idom in
         let start, args, blocks, free_pc =
@@ -526,6 +548,7 @@ let cps_transform ~live_vars p =
           ; blocks
           ; jc = closure_jc
           ; closure_info
+          ; cps_needed
           ; blocks_to_transform
           ; is_continuation
           ; matching_exn_handler
@@ -536,7 +559,7 @@ let cps_transform ~live_vars p =
         in
         let function_needs_cps =
           match name_opt with
-          | Some _ -> true
+          | Some _ -> should_compute_needed_transformations
           | None ->
               (* We are handling the toplevel code. If it performs no
                  CPS call, we can leave it in direct style and we
@@ -551,7 +574,10 @@ let cps_transform ~live_vars p =
             (fun pc _ ->
               if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
               let block = Addr.Map.find pc blocks in
-              Code.Print.block (fun _ _ -> "") pc block)
+              Code.Print.block
+                (fun _ xi -> Partial_cps_analysis.annot cps_needed xi)
+                pc
+                block)
             start
             blocks
             ());
@@ -615,15 +641,16 @@ let current_loop_header frontiers in_loop pc =
   | Some header when Addr.Set.mem header frontier -> in_loop
   | _ -> if Addr.Set.mem pc frontier then Some pc else None
 
-let wrap_call p x f args accu =
+let wrap_call ~cps_needed p x f args accu =
   let arg_array = Var.fresh () in
   ( p
+  , Var.Set.remove x cps_needed
   , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
     ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
     ]
     :: accu )
 
-let wrap_primitive (p : Code.program) x e accu =
+let wrap_primitive ~cps_needed p x e accu =
   let f = Var.fresh () in
   let closure_pc = p.free_pc in
   ( { p with
@@ -635,6 +662,7 @@ let wrap_primitive (p : Code.program) x e accu =
            { params = []; body = [ Let (y, e) ]; branch = Return y })
           p.blocks
     }
+  , Var.Set.remove x (Var.Set.add f cps_needed)
   , let args = Var.fresh () in
     [ Let (f, Closure ([], (closure_pc, [])))
     ; Let (args, Prim (Extern "%js_array", []))
@@ -642,62 +670,64 @@ let wrap_primitive (p : Code.program) x e accu =
     ]
     :: accu )
 
-let rewrite_toplevel_instr (p, accu) instr =
+let rewrite_toplevel_instr (p, cps_needed, accu) instr =
   match instr with
-  | Let (x, Apply { f; args; _ }) -> wrap_call p x f args accu
+  | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
+      wrap_call ~cps_needed p x f args accu
   | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
-      wrap_primitive p x e accu
-  | _ -> p, [ instr ] :: accu
+      wrap_primitive ~cps_needed p x e accu
+  | _ -> p, cps_needed, [ instr ] :: accu
 
 (* Wrap function calls inside [caml_callback] at toplevel to avoid
    unncessary function nestings. This is not done inside loops since
    using repeatedly [caml_callback] can be costly. *)
-let rewrite_toplevel p =
+let rewrite_toplevel ~cps_needed p =
   let { start; blocks; _ } = p in
   let cfg = build_graph blocks start in
   let idom = dominator_tree cfg in
   let frontiers = dominance_frontier cfg idom in
-  let rec traverse visited (p : Code.program) in_loop pc =
+  let rec traverse visited (p : Code.program) cps_needed in_loop pc =
     if Addr.Set.mem pc visited
-    then visited, p
+    then visited, p, cps_needed
     else
       let visited = Addr.Set.add pc visited in
       let in_loop = current_loop_header frontiers in_loop pc in
-      let p =
+      let p, cps_needed =
         if Option.is_none in_loop
         then
           let block = Addr.Map.find pc p.blocks in
-          let p, body_rev =
-            List.fold_left ~f:rewrite_toplevel_instr ~init:(p, []) block.body
+          let p, cps_needed, body_rev =
+            List.fold_left ~f:rewrite_toplevel_instr ~init:(p, cps_needed, []) block.body
           in
           let body = List.concat @@ List.rev body_rev in
-          { p with blocks = Addr.Map.add pc { block with body } p.blocks }
-        else p
+          { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
+        else p, cps_needed
       in
       Code.fold_children
         blocks
         pc
-        (fun pc (visited, p) -> traverse visited p in_loop pc)
-        (visited, p)
+        (fun pc (visited, p, cps_needed) -> traverse visited p cps_needed in_loop pc)
+        (visited, p, cps_needed)
   in
-  let _, p = traverse Addr.Set.empty p None start in
-  p
+  let _, p, cps_needed = traverse Addr.Set.empty p cps_needed None start in
+  p, cps_needed
 
 (****)
 
-let split_blocks (p : Code.program) =
+let split_blocks ~cps_needed (p : Code.program) =
   (* Ensure that function applications and effect primitives are in
      tail position *)
   let split_block pc block p =
     let is_split_point i r branch =
       match i with
-      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) -> (
-          (not (List.is_empty r))
+      | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+          ((not (List.is_empty r))
           ||
           match branch with
           | Branch _ -> false
           | Return x' -> not (Var.equal x x')
           | _ -> true)
+          && Var.Set.mem x cps_needed
       | _ -> false
     in
     let rec split (p : Code.program) pc block accu l branch =
@@ -784,8 +814,10 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 let f (p, live_vars) =
   let t = Timer.make () in
   let p = remove_empty_blocks ~live_vars p in
-  let p = split_blocks p in
-  let p = rewrite_toplevel p in
-  let p, cps_calls = cps_transform ~live_vars p in
+  let flow_info = Global_flow.f p in
+  let cps_needed = Partial_cps_analysis.f p flow_info in
+  let p, cps_needed = rewrite_toplevel ~cps_needed p in
+  let p = split_blocks ~cps_needed p in
+  let p, cps_calls = cps_transform ~live_vars ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   p, cps_calls
