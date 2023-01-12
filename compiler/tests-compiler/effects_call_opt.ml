@@ -58,70 +58,37 @@ let%expect_test "test-compiler/lib-effects/effects_call_opt.ml" =
   [%expect
     {|
     function test1(param,cont)
-     {function f(g,x,cont){return caml_cps_call2(g,x,cont)}
-      var _t_=7;
-      function _u_(x,cont){return cont(x + 1 | 0)}
-      return caml_cps_exact_call3
-              (f,
-               _u_,
-               _t_,
-               function(_v_)
-                {var _w_=4.;
-                 function _x_(x,cont){return cont(x * 2.)}
-                 return caml_cps_exact_call3
-                         (f,_x_,_w_,function(_y_){return cont(0)})})}
+     {function f(g,x){return g(x)}
+      var _k_=7;
+      f(function(x){return x + 1 | 0},_k_);
+      var _l_=4.;
+      f(function(x){return x * 2.},_l_);
+      return cont(0)}
     //end
     function test2(param,cont)
      {function f(g,x,cont){return caml_cps_call2(g,x,cont)}
-      var _o_=7;
-      function _p_(x,cont){return cont(x + 1 | 0)}
+      var _f_=7;
+      function _g_(x,cont){return cont(x + 1 | 0)}
       return caml_cps_exact_call3
               (f,
-               _p_,
-               _o_,
-               function(_q_)
-                {function _r_(x,cont)
+               _g_,
+               _f_,
+               function(_h_)
+                {function _i_(x,cont)
                   {return caml_cps_call3(Stdlib[28],x,cst_a$0,cont)}
                  return caml_cps_exact_call3
-                         (f,_r_,cst_a,function(_s_){return cont(0)})})}
+                         (f,_i_,cst_a,function(_j_){return cont(0)})})}
     //end
     function test3(x,cont)
-     {function F(symbol,cont)
-       {function f(x,cont){return cont(x + 1 | 0)}return cont([0,f])}
-      var _g_=[0];
-      return caml_cps_exact_call2
-              (F,
-               _g_,
-               function(M1)
-                {var _h_=[0];
-                 return caml_cps_exact_call2
-                         (F,
-                          _h_,
-                          function(M2)
-                           {var _i_=2,_j_=M2[1];
-                            return caml_cps_call2
-                                    (_j_,
-                                     _i_,
-                                     function(_k_)
-                                      {var _l_=1,_m_=M1[1];
-                                       return caml_cps_call2
-                                               (_m_,_l_,function(_n_){return cont([0,_n_,_k_])})})})})}
+     {function F(symbol){function f(x){return x + 1 | 0}return [0,f]}
+      var M1=F([0]),M2=F([0]),_e_=M2[1](2);
+      return cont([0,M1[1](1),_e_])}
     //end
     function test4(x,cont)
-     {function F(symbol,cont)
+     {function F(symbol)
        {function f(x,cont){return caml_cps_call3(Stdlib_Printf[2],_a_,x,cont)}
-        return cont([0,f])}
-      var _b_=[0];
-      return caml_cps_exact_call2
-              (F,
-               _b_,
-               function(M1)
-                {var _c_=[0];
-                 return caml_cps_exact_call2
-                         (F,
-                          _c_,
-                          function(M2)
-                           {var _d_=1,_e_=M1[1];
-                            return caml_cps_call2
-                                    (_e_,_d_,function(_f_){return caml_cps_call2(M2[1],2,cont)})})})}
+        return [0,f]}
+      var M1=F([0]),M2=F([0]),_b_=1,_c_=M1[1];
+      return caml_cps_call2
+              (_c_,_b_,function(_d_){return caml_cps_call2(M2[1],2,cont)})}
     //end |}]
