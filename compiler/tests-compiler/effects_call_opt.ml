@@ -66,7 +66,7 @@ let%expect_test "test-compiler/lib-effects/effects_call_opt.ml" =
       return cont(0)}
     //end
     function test2(param,cont)
-     {function f(g,x,cont){return caml_cps_call2(g,x,cont)}
+     {function f(g,x,cont){return caml_cps_exact_call2(g,x,cont)}
       var _f_=7;
       function _g_(x,cont){return cont(x + 1 | 0)}
       return caml_cps_exact_call3
@@ -89,6 +89,6 @@ let%expect_test "test-compiler/lib-effects/effects_call_opt.ml" =
        {function f(x,cont){return caml_cps_call3(Stdlib_Printf[2],_a_,x,cont)}
         return [0,f]}
       var M1=F([0]),M2=F([0]),_b_=1,_c_=M1[1];
-      return caml_cps_call2
-              (_c_,_b_,function(_d_){return caml_cps_call2(M2[1],2,cont)})}
+      return caml_cps_exact_call2
+              (_c_,_b_,function(_d_){return caml_cps_exact_call2(M2[1],2,cont)})}
     //end |}]
