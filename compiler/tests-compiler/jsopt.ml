@@ -110,7 +110,8 @@ module Js = struct
 end
 |}
 
-let compile_and_parse s = compile_and_parse (header ^ "\n" ^ s)
+let compile_and_parse ?flags ?use_js_string s =
+  compile_and_parse ?flags ?use_js_string (header ^ "\n" ^ s)
 
 let%expect_test "object" =
   let program =
@@ -274,4 +275,258 @@ let%expect_test "jstring / bytestring " =
     var s3 = "npiπ";
     //end
     var s4 = "npi\xcf\x80";
+    //end |}]
+
+let string_sharing_prog =
+  {|
+      let s1 = Js.string "abcdef"
+      let s2 = Js.bytestring "abcdef"
+      let s3 = "abcdef"
+      let s4 = Js.string "npiπ"
+      let s5 = Js.bytestring "npiπ"
+      let s6 = "npiπ"
+      let s7 = Js.string "abc\\def"
+      let s8 = Js.bytestring "abc\\def"
+      let s9 = "abc\\def"
+      let s1_bis = Js.string "abcdef"
+      let s2_bis = Js.bytestring "abcdef"
+      let s3_bis = "abcdef"
+      let s4_bis = Js.string "npiπ"
+      let s5_bis = Js.bytestring "npiπ"
+      let s6_bis = "npiπ"
+      let s7_bis = Js.string "abc\\def"
+      let s8_bis = Js.bytestring "abc\\def"
+      let s9_bis = "abc\\def"
+      |}
+
+let%expect_test "string sharing" =
+  let program ~share ~js_string =
+    compile_and_parse
+      ~flags:[ (if share then "--enable" else "--disable"); "share" ]
+      ~use_js_string:js_string
+      string_sharing_prog
+  in
+  print_program (program ~share:true ~js_string:true);
+  [%expect
+    {|
+    (function(globalThis)
+       {"use strict";
+        var
+         str_abcdef="abcdef",
+         runtime=globalThis.jsoo_runtime,
+         cst_abc_def="abc\\def",
+         cst_abcdef=str_abcdef,
+         cst_npi="npi\xcf\x80",
+         cst_abc_def$0="abc\\def",
+         cst_abcdef$0=str_abcdef,
+         cst_npi$0="npiπ",
+         s3=cst_abcdef,
+         s6=cst_npi,
+         s9=cst_abc_def,
+         s3_bis=cst_abcdef,
+         s6_bis=cst_npi,
+         s9_bis=cst_abc_def,
+         Js=[0],
+         s1=cst_abcdef$0,
+         s2=cst_abcdef,
+         s4=cst_npi$0,
+         s5=cst_npi,
+         s7=cst_abc_def$0,
+         s8=cst_abc_def,
+         s1_bis=cst_abcdef$0,
+         s2_bis=cst_abcdef,
+         s4_bis=cst_npi$0,
+         s5_bis=cst_npi,
+         s7_bis=cst_abc_def$0,
+         s8_bis=cst_abc_def,
+         Test=
+          [0,
+           Js,
+           s1,
+           s2,
+           s3,
+           s4,
+           s5,
+           s6,
+           s7,
+           s8,
+           s9,
+           s1_bis,
+           s2_bis,
+           s3_bis,
+           s4_bis,
+           s5_bis,
+           s6_bis,
+           s7_bis,
+           s8_bis,
+           s9_bis];
+        runtime.caml_register_global(18,Test,"Test");
+        return}
+      (globalThis));
+    //end |}];
+  print_program (program ~share:false ~js_string:true);
+  [%expect
+    {|
+    (function(globalThis)
+       {"use strict";
+        var
+         runtime=globalThis.jsoo_runtime,
+         cst_abc_def="abc\\def",
+         cst_abcdef="abcdef",
+         cst_npi="npi\xcf\x80",
+         cst_abc_def$0="abc\\def",
+         cst_abcdef$0="abcdef",
+         cst_npi$0="npiπ",
+         s3=cst_abcdef,
+         s6=cst_npi,
+         s9=cst_abc_def,
+         s3_bis=cst_abcdef,
+         s6_bis=cst_npi,
+         s9_bis=cst_abc_def,
+         Js=[0],
+         s1=cst_abcdef$0,
+         s2=cst_abcdef,
+         s4=cst_npi$0,
+         s5=cst_npi,
+         s7=cst_abc_def$0,
+         s8=cst_abc_def,
+         s1_bis=cst_abcdef$0,
+         s2_bis=cst_abcdef,
+         s4_bis=cst_npi$0,
+         s5_bis=cst_npi,
+         s7_bis=cst_abc_def$0,
+         s8_bis=cst_abc_def,
+         Test=
+          [0,
+           Js,
+           s1,
+           s2,
+           s3,
+           s4,
+           s5,
+           s6,
+           s7,
+           s8,
+           s9,
+           s1_bis,
+           s2_bis,
+           s3_bis,
+           s4_bis,
+           s5_bis,
+           s6_bis,
+           s7_bis,
+           s8_bis,
+           s9_bis];
+        runtime.caml_register_global(18,Test,"Test");
+        return}
+      (globalThis));
+    //end |}];
+  print_program (program ~share:true ~js_string:false);
+  [%expect
+    {|
+    (function(globalThis)
+       {"use strict";
+        var
+         str_abc_def$0="abc\\def",
+         str_npi$0="npiπ",
+         str_abc_def="abc\\def",
+         str_npi="npi\xcf\x80",
+         str_abcdef="abcdef",
+         runtime=globalThis.jsoo_runtime,
+         caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
+         s3=caml_string_of_jsbytes(str_abcdef),
+         s6=caml_string_of_jsbytes(str_npi),
+         s9=caml_string_of_jsbytes(str_abc_def$0),
+         s3_bis=caml_string_of_jsbytes(str_abcdef),
+         s6_bis=caml_string_of_jsbytes(str_npi),
+         s9_bis=caml_string_of_jsbytes(str_abc_def$0),
+         Js=[0],
+         s1=str_abcdef,
+         s2=str_abcdef,
+         s4=str_npi$0,
+         s5=str_npi,
+         s7=str_abc_def,
+         s8=str_abc_def$0,
+         s1_bis=str_abcdef,
+         s2_bis=str_abcdef,
+         s4_bis=str_npi$0,
+         s5_bis=str_npi,
+         s7_bis=str_abc_def,
+         s8_bis=str_abc_def$0,
+         Test=
+          [0,
+           Js,
+           s1,
+           s2,
+           s3,
+           s4,
+           s5,
+           s6,
+           s7,
+           s8,
+           s9,
+           s1_bis,
+           s2_bis,
+           s3_bis,
+           s4_bis,
+           s5_bis,
+           s6_bis,
+           s7_bis,
+           s8_bis,
+           s9_bis];
+        runtime.caml_register_global(18,Test,"Test");
+        return}
+      (globalThis));
+    //end |}];
+  print_program (program ~share:false ~js_string:false);
+  [%expect
+    {|
+    (function(globalThis)
+       {"use strict";
+        var
+         runtime=globalThis.jsoo_runtime,
+         caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
+         s3=caml_string_of_jsbytes("abcdef"),
+         s6=caml_string_of_jsbytes("npi\xcf\x80"),
+         s9=caml_string_of_jsbytes("abc\\def"),
+         s3_bis=caml_string_of_jsbytes("abcdef"),
+         s6_bis=caml_string_of_jsbytes("npi\xcf\x80"),
+         s9_bis=caml_string_of_jsbytes("abc\\def"),
+         Js=[0],
+         s1="abcdef",
+         s2="abcdef",
+         s4="npiπ",
+         s5="npi\xcf\x80",
+         s7="abc\\def",
+         s8="abc\\def",
+         s1_bis="abcdef",
+         s2_bis="abcdef",
+         s4_bis="npiπ",
+         s5_bis="npi\xcf\x80",
+         s7_bis="abc\\def",
+         s8_bis="abc\\def",
+         Test=
+          [0,
+           Js,
+           s1,
+           s2,
+           s3,
+           s4,
+           s5,
+           s6,
+           s7,
+           s8,
+           s9,
+           s1_bis,
+           s2_bis,
+           s3_bis,
+           s4_bis,
+           s5_bis,
+           s6_bis,
+           s7_bis,
+           s8_bis,
+           s9_bis];
+        runtime.caml_register_global(18,Test,"Test");
+        return}
+      (globalThis));
     //end |}]
