@@ -25,7 +25,7 @@ blocks, to track functions across modules.
 
 open! Stdlib
 
-let debug = Debug.find "flow2"
+let debug = Debug.find "global-flow"
 
 let times = Debug.find "times"
 
