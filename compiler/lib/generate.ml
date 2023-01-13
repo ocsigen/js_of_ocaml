@@ -423,6 +423,7 @@ let ocaml_string ~ctx ~loc s =
 let rec constant_rec ~ctx x level instrs =
   match x with
   | Null -> s_var "null", instrs
+  | Undefined -> s_var "undefined", instrs
   | String s ->
       let e =
         if String.is_ascii s
@@ -1233,6 +1234,19 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
                   let prop', r', queue = build_fields queue r in
                   let p_name = if J.is_ident' nm then J.PNI nm else J.PNS nm in
                   or_p prop prop', J.Property (p_name, cx) :: r', queue
+              | _ -> assert false
+            in
+            let prop, fields, queue = build_fields queue fields in
+            J.EObj fields, prop, queue
+        | Extern "%caml_js_opt_object_undef", fields ->
+            let rec build_fields queue l =
+              match l with
+              | [] -> const_p, [], queue
+              | Pc (NativeString (Utf nm)) :: Pc (Int omit) :: x :: r ->
+                  let (prop, cx), queue = access_queue' ~ctx queue x in
+                  let prop', r', queue = build_fields queue r in
+                  let p_name = if J.is_ident' nm then J.PNI nm else J.PNS nm in
+                  or_p prop prop', (p_name, cx) :: r', queue
               | _ -> assert false
             in
             let prop, fields, queue = build_fields queue fields in

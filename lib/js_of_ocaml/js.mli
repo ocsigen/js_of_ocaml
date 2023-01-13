@@ -951,6 +951,11 @@ module Unsafe : sig
         [obj a] creates a Javascript object whose fields are given by
         the array [a] *)
 
+  external obj_undef : (string * bool * any) array -> 'a = "caml_js_object_undef"
+  (** Creates a Javascript literal object.  The expression
+        [obj a] creates a Javascript object whose fields are given by
+        the array [a] *)
+
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
   (** Asserts that an expression is pure, and can therefore be
         optimized away by the compiler if unused. *)

@@ -142,6 +142,52 @@ let specialize_instr info i =
         in
         Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
       with Exit -> i)
+  | Let (x, Prim (Extern "caml_js_object_undef", [ a ])) -> (
+      try
+        let a =
+          match the_def_of info a with
+          | Some (Block (_, a, _)) -> a
+          | _ -> raise Exit
+        in
+        let a =
+          Array.map a ~f:(fun x ->
+              match the_def_of info (Pv x) with
+              | Some (Block (_, [| k; omit; v |], _)) ->
+                  let omit =
+                    match the_int info (Pv omit) with
+                    | Some 0l -> Pc (Int 0l)
+                    | Some 1l -> Pc (Int 1l)
+                    | _ -> Pv omit
+                  in
+                  let drop =
+                    match omit with
+                    | Pc (Int 1l) -> (
+                        match the_const_of info (Pv v) with
+                        | Some Undefined -> true
+                        | _ -> false)
+                    | _ -> false
+                  in
+                  if drop
+                  then []
+                  else
+                    let k =
+                      match the_string_of info (Pv k) with
+                      | Some s when String.is_valid_utf_8 s ->
+                          Pc (NativeString (Native_string.of_string s))
+                      | Some _ | None -> raise Exit
+                    in
+                    [ k; omit; Pv v ]
+              | Some
+                  (Constant
+                    (Tuple (0, [| String _; Int 1l; Undefined |], (NotArray | Unknown))))
+                -> []
+              | Some (Constant (Tuple (0, [| String k; omit; v |], (NotArray | Unknown))))
+                when String.is_valid_utf_8 k ->
+                  [ Pc (NativeString (Native_string.of_string k)); Pc omit; Pc v ]
+              | Some _ | None -> raise Exit)
+        in
+        Let (x, Prim (Extern "%caml_js_opt_object_undef", List.flatten (Array.to_list a)))
+      with Exit -> i)
   | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])) -> (
       match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_get", [ o; Pc (NativeString s) ]))

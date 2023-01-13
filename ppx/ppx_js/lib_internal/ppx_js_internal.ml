@@ -97,6 +97,8 @@ let tuple ?loc ?attrs = function
 
 let ocaml_str ?loc ?attrs s = Exp.constant ?loc ?attrs (Const.string s)
 
+let ocaml_bool ?loc ?attrs b = Exp.constant ?loc ?attrs (Const.int (if b then 1 else 0))
+
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
 *)
@@ -483,6 +485,7 @@ module Prop_kind = struct
     | `Writeonly
     | `Readwrite
     | `Optdef
+    | `Optdef_omit
     ]
 
   let prop_type constr ty =
@@ -492,13 +495,14 @@ module Prop_kind = struct
       | `Writeonly -> "writeonly_prop"
       | `Readwrite -> "prop"
       | `Optdef -> "optdef_prop"
+      | `Optdef_omit -> "optdef_prop"
     in
     Js.type_ constr [ ty ]
 
   let wrap_arg_type constr ty =
     match constr with
     | `Readonly | `Writeonly | `Readwrite -> ty
-    | `Optdef -> Js.type_ "optdef" [ ty ]
+    | `Optdef | `Optdef_omit -> Js.type_ "optdef" [ ty ]
 end
 
 type field_desc =
@@ -571,6 +575,7 @@ let preprocess_literal_object mappper fields :
           | Mutable, [] -> `Readwrite
           | Immutable, [ `Readonly ] -> `Readonly
           | (Immutable | Mutable), [ `Optdef ] -> `Optdef
+          | (Immutable | Mutable), [ `Optdef_omit ] -> `Optdef_omit
           | (Immutable | Mutable), [ `Writeonly ] -> `Writeonly
           | (Immutable | Mutable), [ `Readwrite ] -> `Readwrite
           | (Immutable | Mutable), [ `Unkown s ] ->
@@ -678,18 +683,42 @@ let literal_object self_id (fields : field_desc list) =
         in
         args, Js.type_ "t" [ tres ])
       (fun args ->
-        Js.unsafe
-          "obj"
-          [ Exp.array
-              (List.map2 fields args ~f:(fun f arg ->
-                   tuple
-                     [ ocaml_str (unescape (name f).txt)
-                     ; inject_arg
-                         (match f with
-                         | Val _ -> arg
-                         | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ])
-                     ]))
-          ])
+        if List.for_all fields ~f:(function
+               | Val (_, `Optdef_omit, _, _) -> false
+               | Val _ -> true
+               | Meth _ -> true)
+        then
+          Js.unsafe
+            "obj"
+            [ Exp.array
+                (List.map2 fields args ~f:(fun f arg ->
+                     tuple
+                       [ ocaml_str (unescape (name f).txt)
+                       ; inject_arg
+                           (match f with
+                           | Val _ -> arg
+                           | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ])
+                       ]))
+            ]
+        else
+          Js.unsafe
+            "obj_undef"
+            [ Exp.array
+                (List.map2 fields args ~f:(fun f arg ->
+                     let omit =
+                       match f with
+                       | Val (_, `Optdef_omit, _, _) -> true
+                       | _ -> false
+                     in
+                     tuple
+                       [ ocaml_str (unescape (name f).txt)
+                       ; inject_arg (ocaml_bool omit)
+                       ; inject_arg
+                           (match f with
+                           | Val _ -> arg
+                           | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ])
+                       ]))
+            ])
       (List.map fields ~f:(function
           | Val _ -> Arg.make ()
           | Meth (_, _, _, _, _fun_ty) -> Arg.make ()))

@@ -437,3 +437,17 @@ function caml_js_object (a) {
   }
   return o;
 }
+
+//Provides: caml_js_object_undef (object_literal)
+//Requires: caml_jsstring_of_string
+function caml_js_object_undef (a) {
+  var o = {};
+  for (var i = 1; i < a.length; i++) {
+    var p = a[i];
+    var omit_undef = p[2]
+    var v = p[3];
+    if(v == undefined && omit_undef) continue;
+    o[caml_jsstring_of_string(p[1])] = v;
+  }
+  return o;
+}
