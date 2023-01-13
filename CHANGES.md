@@ -7,6 +7,7 @@
   Feature is disabled by default while dune rules are being fixed. Enable with --enable=auto-link.
 * Compiler: specialize string to js-string conversion for all valid utf8 strings (previously just ascii)
 * Compiler: use identifier for object literals when possible
+* Compiler: Cache function arity (the length prop of a function is slow with v8)
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
