@@ -545,6 +545,17 @@ module Uchar = struct
   include Utf_decode
 end
 
+module Buffer = struct
+  include Buffer
+
+  let array_conv = Array.init 16 (fun i -> "0123456789abcdef".[i])
+
+  let add_char_hex b (c : Char.t) =
+    let c = Char.code c in
+    Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
+    Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
+end
+
 module Bytes = struct
   include BytesLabels
 

@@ -289,8 +289,6 @@ struct
     done;
     if !simple < !double then '\'' else '"'
 
-  let array_conv = Array.init 16 ~f:(fun i -> "0123456789abcdef".[i])
-
   let pp_string f ?(quote = '"') s =
     let l = String.length s in
     let b = Buffer.create (String.length s + 2) in
@@ -310,10 +308,8 @@ struct
       | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
       | '\r' -> Buffer.add_string b "\\r"
       | '\000' .. '\031' | '\127' ->
-          let c = Char.code c in
           Buffer.add_string b "\\x";
-          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
-          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
+          Buffer.add_char_hex b c
       | _ ->
           if Char.equal c quote
           then (
