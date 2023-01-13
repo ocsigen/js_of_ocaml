@@ -158,7 +158,7 @@ time-effects.svg: __run_effects
 	 -omit minesweeper \
 	 -omit planet \
 	 -omit ocamlc \
-	 -max 5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
+	 -min 0.5 -max 1.5 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-effects.svg: __run_effects
@@ -175,7 +175,7 @@ size-effects.svg: __run_effects
 	 -append planet \
 	 -append js_of_ocaml \
 	 -append ocamlc \
-	 -max 2 -svg 7 650 150 -edgecaption -ylabel Size \
+	 -min 0.8 -max 1.25 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
 size-gzipped-effects.svg: __run_effects
