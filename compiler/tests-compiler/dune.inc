@@ -80,6 +80,22 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/effects_call_opt.ml
+ (name effects_call_opt_15)
+ (enabled_if true)
+ (modules effects_call_opt)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (flags -allow-output-patterns)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/effects_continuations.ml
  (name effects_continuations_15)
  (enabled_if true)
