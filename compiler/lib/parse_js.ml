@@ -51,7 +51,7 @@ let parse_aux the_parser lexbuf =
         let checkpoint =
           I.offer
             checkpoint
-            (Js_token.EOF, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
+            (Js_token.T_EOF, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
         in
         loop_error prev checkpoint
     | I.Shifting _ | I.AboutToReduce _ -> loop_error prev (I.resume checkpoint)
@@ -85,7 +85,7 @@ let parse_aux the_parser lexbuf =
         let inputneeded = checkpoint in
         let token, prev_with_comment =
           match prev with
-          | ((Js_token.EOF, _) as prev) :: _ -> prev, prev_with_comment
+          | ((Js_token.T_EOF, _) as prev) :: _ -> prev, prev_with_comment
           | _ ->
               let rec read_one prev_with_comment (lexbuf : Lexing.lexbuf) =
                 match Js_lexer.main lexbuf with
@@ -176,7 +176,7 @@ let parse_aux the_parser lexbuf =
           match prev with
           | [] | (T_VIRTUAL_SEMICOLON, _) :: _ -> false
           | (T_RCURLY, _) :: _ -> true
-          | (EOF, _) :: _ -> true
+          | (T_EOF, _) :: _ -> true
           | offending :: before :: _ when fol [ before ] offending -> true
           | _ -> false
         in

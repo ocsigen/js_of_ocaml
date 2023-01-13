@@ -153,7 +153,7 @@ rule main = parse
   | "<<" { T_LSHIFT; }
   | ">>=" { T_RSHIFT_ASSIGN; }
   | ">>>=" { T_RSHIFT3_ASSIGN; }
-  | "..." { T_SPREAD; }
+  | "..." { T_ELLIPSIS; }
   | ">>>" { T_RSHIFT3; }
   | ">>" { T_RSHIFT; }
   | "+=" { T_PLUS_ASSIGN; }
@@ -195,21 +195,21 @@ rule main = parse
 
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
-      T_NUMBER s
+      T_NUMBER (NORMAL,s)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
-      T_NUMBER s
+      T_NUMBER (NORMAL, s)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
-      T_NUMBER s
+      T_NUMBER (NORMAL, s)
     }
   | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
-      T_NUMBER s
+      T_NUMBER (NORMAL,s)
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -230,7 +230,7 @@ rule main = parse
             Format.eprintf "LEXER: invalid utf8 string.@.";
             Utf8_string.of_string_exn (String.fix_utf_8 s))
       in
-      T_STRING (s, to_ - 1 - from))
+      T_STRING (s,to_ - 1 - from))
     }
   | "/" { T_DIV }
   | "/=" { T_DIV_ASSIGN }
@@ -238,10 +238,10 @@ rule main = parse
   (* eof *)
   (* ----------------------------------------------------------------------- *)
 
-  | eof { EOF }
+  | eof { T_EOF }
 
   | _ {
-      TUnknown (tok lexbuf)
+      T_ERROR (tok lexbuf)
     }
 (*****************************************************************************)
 
@@ -281,36 +281,36 @@ and main_regexp = parse
   | '/' {
       with_pos lexbuf (fun () ->
       let buf = Buffer.create 127 in
-      Buffer.add_string buf (Lexing.lexeme lexbuf);
-      regexp buf lexbuf;
-      T_REGEX (Buffer.contents buf)) }
+      let buf_flags = Buffer.create 2 in
+      regexp buf buf_flags lexbuf;
+      T_REGEXP (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), Buffer.contents buf_flags)) }
 
-and regexp buf = parse
+and regexp buf buf_flags = parse
   | '\\' (_ as x) { Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
-                    regexp buf lexbuf }
-  | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
-  | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
-  | ([^ '\n'] as x)       { Buffer.add_char buf x; regexp buf lexbuf }
+                    regexp buf buf_flags lexbuf }
+  | '/' { regexp_maybe_ident buf_flags lexbuf }
+  | '[' { Buffer.add_char buf '['; regexp_class buf buf_flags lexbuf }
+  | ([^ '\n'] as x)       { Buffer.add_char buf x; regexp buf buf_flags lexbuf }
   | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp@.";
            update_loc lexbuf ~line:1 ~absolute:false 0;
            ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp@."; ()}
 
-and regexp_class buf = parse
+and regexp_class buf buf_flags = parse
   | ']' { Buffer.add_char buf ']';
-             regexp buf lexbuf }
+             regexp buf buf_flags lexbuf }
   | '\\' (_ as x) { Buffer.add_char buf '\\';
                     Buffer.add_char buf x;
-                    regexp_class buf lexbuf }
-  | ([^ '\n'] as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
+                    regexp_class buf buf_flags lexbuf }
+  | ([^ '\n'] as x) { Buffer.add_char buf x; regexp_class buf buf_flags lexbuf }
   | '\n' { Format.eprintf "LEXER: WEIRD newline in regexp_class@.";
            update_loc lexbuf ~line:1 ~absolute:false 0;
            ()}
   | eof { Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ()}
 
-and regexp_maybe_ident buf = parse
-  | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }
+and regexp_maybe_ident buf_flags = parse
+  | ['A'-'Z''a'-'z']* { Buffer.add_string buf_flags (tok lexbuf) }
 
 (*****************************************************************************)
 
