@@ -32,17 +32,22 @@ let%expect_test "static eval of string get" =
     let clean_statement st =
       let open Js_of_ocaml_compiler.Javascript in
       match st with
-      | Function_declaration (name, param, body, loc1), loc2 ->
-          let body = List.filter use_jsoo_exports body in
-          Function_declaration (name, param, body, loc1), loc2
+      | Function_declaration (name, param, body, loc1), loc2 -> (
+          match List.filter use_jsoo_exports body with
+          | [] -> None
+          | body -> Some (Function_declaration (name, param, body, loc1), loc2))
       | ( Statement (Expression_statement (ECall (EFun (name, param, body, loc1), a, l)))
-        , loc ) ->
-          let body = List.filter use_jsoo_exports body in
-          ( Statement (Expression_statement (ECall (EFun (name, param, body, loc1), a, l)))
-          , loc )
-      | Statement _, _ -> st
+        , loc ) -> (
+          match List.filter use_jsoo_exports body with
+          | [] -> None
+          | body ->
+              Some
+                ( Statement
+                    (Expression_statement (ECall (EFun (name, param, body, loc1), a, l)))
+                , loc ))
+      | Statement _, _ -> Some st
     in
-    List.map clean_statement program
+    List.filter_map clean_statement program
   in
   let program =
     compile_and_parse_whole_program
@@ -87,7 +92,6 @@ let%expect_test "static eval of string get" =
   print_program (clean program);
   [%expect
     {|
-    (function(Object){}(Object));
     (function(globalThis)
        {var
          jsoo_exports=
@@ -105,7 +109,5 @@ let%expect_test "static eval of string get" =
       let () = if false then set (pure_js_expr "jsoo_exports") (pure_js_expr "'x'") x  |}
   in
   print_program (clean program);
-  [%expect
-    {|
-    (function(Object){}(Object));(function(globalThis){}(globalThis));
+  [%expect {|
     //end |}]
