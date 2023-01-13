@@ -108,6 +108,10 @@ void caml_js_new () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_new!\n");
   exit(1);
 }
+void caml_js_nullable () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_nullable!\n");
+  exit(1);
+}
 void caml_js_object () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_object!\n");
   exit(1);

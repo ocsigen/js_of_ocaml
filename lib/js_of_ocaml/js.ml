@@ -54,6 +54,8 @@ module Js = struct
 
     external obj : (string * any) array -> 'a = "caml_js_object"
 
+    external obj_undef : (string * bool * any) array -> 'a = "caml_js_object_undef"
+
     external equals : 'a -> 'b -> bool = "caml_js_equals"
 
     external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
