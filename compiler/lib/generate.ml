@@ -378,17 +378,13 @@ let runtime_fun ctx name =
       J.EDot (J.EVar (J.V runtime), name)
   | None -> s_var name
 
-let array_conv = Array.init 16 ~f:(fun i -> "0123456789abcdef".[i])
-
 let str_js_byte s =
   let b = Buffer.create (String.length s) in
   String.iter s ~f:(function
       | '\\' -> Buffer.add_string b "\\\\"
       | '\128' .. '\255' as c ->
-          let c = Char.code c in
           Buffer.add_string b "\\x";
-          Buffer.add_char b (Array.unsafe_get array_conv (c lsr 4));
-          Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
+          Buffer.add_char_hex b c
       | c -> Buffer.add_char b c);
   let s = Buffer.contents b in
   J.EStr (Utf8_string.of_string_exn s)
