@@ -37,6 +37,8 @@ let pi pos = (Parse_info.t_of_pos pos)
 
 let p pos = Pi (pi pos)
 
+let utf8_s = Stdlib.Utf8_string.of_string_exn
+
 %}
 
 (*************************************************************************)
@@ -48,17 +50,40 @@ let p pos = Pi (pi pos)
 (*-----------------------------------------*)
 
 (* Tokens with a value *)
-%token<string> T_NUMBER
+%token<Js_token.number_type * string> T_NUMBER
+%token<Js_token.bigint_type * string> T_BIGINT
 %token<Stdlib.Utf8_string.t> T_IDENTIFIER
 %token<Stdlib.Utf8_string.t * int> T_STRING
-%token<string> T_REGEX
-
+%token<Stdlib.Utf8_string.t * string> T_REGEXP
+%token<Stdlib.Utf8_string.t> T_TEMPLATE_PART
 (* Keywords tokens *)
 %token
 T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
 T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
 T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
 T_DEBUGGER
+T_ASYNC
+T_AWAIT
+T_YIELD
+T_LET
+T_CONST
+T_CLASS
+T_SUPER
+T_EXPORT
+T_PACKAGE
+T_INTERFACE
+T_IMPLEMENTS
+T_DECLARE
+T_TYPE
+T_PUBLIC
+T_PRIVATE
+T_OPAQUE
+T_PROTECTED
+T_EXTENDS
+T_STATIC
+T_ENUM
+T_IMPORT
+T_OF
 
 %token T_ELSE
 
@@ -71,7 +96,7 @@ T_LPAREN T_RPAREN
 T_LBRACKET T_RBRACKET
 T_SEMICOLON
 T_COMMA
-T_SPREAD
+T_ELLIPSIS
 T_PERIOD
 
 (* Operators *)
@@ -79,6 +104,8 @@ T_PERIOD
 T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
 T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
 T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
+T_OR_ASSIGN T_AND_ASSIGN T_EXP_ASSIGN
+T_EXP T_NULLISH_ASSIGN T_PLING_PERIOD T_PLING_PLING T_AT T_POUND
 
 %token 
 T_PLING T_COLON
@@ -94,20 +121,20 @@ T_LSHIFT T_RSHIFT T_RSHIFT3
 T_PLUS T_MINUS
 T_DIV T_MULT T_MOD
 T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
-
+T_ARROW
 (*-----------------------------------------*)
 (* 2 extra tokens:                         *)
 (*-----------------------------------------*)
 
 %token T_VIRTUAL_SEMICOLON
 %token <Js_token.Annot.t> TAnnot
-%token <string> TUnknown
+%token <string> T_ERROR
 %token <string> TComment
 %token <string> TCommentLineDirective
 
 
 (* classic *)
-%token EOF
+%token T_EOF
 
 (*-----------------------------------------*)
 (* 2 priorities                            *)
@@ -145,10 +172,10 @@ T_IN T_INSTANCEOF
 (*************************************************************************)
 
 program:
- | l=source_element_with_annot* EOF { l }
+ | l=source_element_with_annot* T_EOF { l }
 
 standalone_expression:
- | e=expression EOF { e }
+ | e=expression T_EOF { e }
 
 annot:
   | a=TAnnot { a, pi $symbolstartpos }
@@ -393,7 +420,7 @@ primary_expression_no_statement:
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let n = $1 in (ENum (Num.of_string_unsafe n)) }
- | T_STRING          { let (s, _len) = $1 in (EStr s) }
+ | s=T_STRING          { (EStr (fst s)) }
  | r=regex_literal                { r }
  | a=array_literal                { a }
  | T_LPAREN e=expression T_RPAREN { (e) }
@@ -497,20 +524,12 @@ boolean_literal:
  | T_FALSE { (EBool false) }
 
 numeric_literal:
- | T_NUMBER { let f = $1 in (f) }
+ | T_NUMBER { let _,f = $1 in (f) }
 
 regex_literal:
- | T_REGEX {
-   let s = $1 in
-   let len = String.length s in
-   let regexp, option =
-     if s.[len - 1] = '/'
-     then String.sub s 1 (len - 2),None
-     else
-       let i = String.rindex s '/' in
-       String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
-   in
-   (ERegexp (regexp, option)) }
+ | r=T_REGEXP {
+   let (Utf8 s, f) = r in
+   (ERegexp (s, if String.equal f "" then None else Some f)) }
 
 (*----------------------------*)
 (* 2 array                    *)
@@ -552,7 +571,7 @@ object_key_value:
 (*----------------------------*)
 
 arg:
- | T_SPREAD arg=assignment_expression { arg, `Spread }
+ | T_ELLIPSIS arg=assignment_expression { arg, `Spread }
  | arg=assignment_expression { arg, `Not_spread }
 
 arguments:
@@ -567,36 +586,58 @@ arguments:
 (*************************************************************************)
 
 identifier_or_kw:
-   | T_IDENTIFIER { $1 }
-   | T_CATCH { Stdlib.Utf8_string.of_string_exn "catch" }
-   | T_FINALLY { Stdlib.Utf8_string.of_string_exn "finally" }
-   | T_IN { Stdlib.Utf8_string.of_string_exn "in" }
-   | T_INSTANCEOF { Stdlib.Utf8_string.of_string_exn "instanceof" }
-   | T_ELSE { Stdlib.Utf8_string.of_string_exn "else" }
-   | T_BREAK { Stdlib.Utf8_string.of_string_exn "break" }
-   | T_CASE { Stdlib.Utf8_string.of_string_exn "case" }
-   | T_CONTINUE { Stdlib.Utf8_string.of_string_exn "continue" }
-   | T_DEFAULT { Stdlib.Utf8_string.of_string_exn "default" }
-   | T_DELETE { Stdlib.Utf8_string.of_string_exn "delete" }
-   | T_DO { Stdlib.Utf8_string.of_string_exn "do" }
-   | T_FOR { Stdlib.Utf8_string.of_string_exn "for" }
-   | T_FUNCTION { Stdlib.Utf8_string.of_string_exn "function" }
-   | T_IF { Stdlib.Utf8_string.of_string_exn "if" }
-   | T_NEW { Stdlib.Utf8_string.of_string_exn "new" }
-   | T_RETURN { Stdlib.Utf8_string.of_string_exn "return" }
-   | T_SWITCH { Stdlib.Utf8_string.of_string_exn "switch" }
-   | T_THIS { Stdlib.Utf8_string.of_string_exn "this" }
-   | T_THROW { Stdlib.Utf8_string.of_string_exn "throw" }
-   | T_TRY { Stdlib.Utf8_string.of_string_exn "try" }
-   | T_TYPEOF { Stdlib.Utf8_string.of_string_exn "typeof" }
-   | T_VAR { Stdlib.Utf8_string.of_string_exn "var" }
-   | T_VOID { Stdlib.Utf8_string.of_string_exn "void" }
-   | T_WHILE { Stdlib.Utf8_string.of_string_exn "while" }
-   | T_WITH { Stdlib.Utf8_string.of_string_exn "with" }
-   | T_NULL { Stdlib.Utf8_string.of_string_exn "null" }
-   | T_FALSE { Stdlib.Utf8_string.of_string_exn "false" }
-   | T_TRUE { Stdlib.Utf8_string.of_string_exn "true" }
-   | T_DEBUGGER { Stdlib.Utf8_string.of_string_exn "debugger" }
+  | T_IDENTIFIER { $1 }
+  | T_ASYNC { utf8_s "async" }
+  | T_AWAIT { utf8_s "await" }
+  | T_BREAK { utf8_s "break" }
+  | T_CASE { utf8_s "case" }
+  | T_CATCH { utf8_s "catch" }
+  | T_CLASS { utf8_s "class" }
+  | T_CONST { utf8_s "const" }
+  | T_CONTINUE { utf8_s "continue" }
+  | T_DEBUGGER { utf8_s "debugger" }
+  | T_DECLARE { utf8_s "declare" }
+  | T_DEFAULT { utf8_s "default" }
+  | T_DELETE { utf8_s "delete" }
+  | T_DO { utf8_s "do" }
+  | T_ELSE { utf8_s "else" }
+  | T_ENUM { utf8_s "enum" }
+  | T_EXPORT { utf8_s "export" }
+  | T_EXTENDS { utf8_s "extends" }
+  | T_FALSE { utf8_s "false" }
+  | T_FINALLY { utf8_s "finally" }
+  | T_FOR { utf8_s "for" }
+  | T_FUNCTION { utf8_s "function" }
+  | T_IF { utf8_s "if" }
+  | T_IMPLEMENTS { utf8_s "implements" }
+  | T_IMPORT { utf8_s "import" }
+  | T_IN { utf8_s "in" }
+  | T_INSTANCEOF { utf8_s "instanceof" }
+  | T_INTERFACE { utf8_s "interface" }
+  | T_LET { utf8_s "let" }
+  | T_NEW { utf8_s "new" }
+  | T_NULL { utf8_s "null" }
+  | T_OF { utf8_s "of" }
+  | T_OPAQUE { utf8_s "opaque" }
+  | T_PACKAGE { utf8_s "package" }
+  | T_PRIVATE { utf8_s "private" }
+  | T_PROTECTED { utf8_s "protected" }
+  | T_PUBLIC { utf8_s "public" }
+  | T_RETURN { utf8_s "return" }
+  | T_STATIC { utf8_s "static" }
+  | T_SUPER { utf8_s "super" }
+  | T_SWITCH { utf8_s "switch" }
+  | T_THIS { utf8_s "this" }
+  | T_THROW { utf8_s "throw" }
+  | T_TRUE { utf8_s "true" }
+  | T_TRY { utf8_s "try" }
+  | T_TYPE { utf8_s "type" }
+  | T_TYPEOF { utf8_s "typeof" }
+  | T_VAR { utf8_s "var" }
+  | T_VOID { utf8_s "void" }
+  | T_WHILE { utf8_s "while" }
+  | T_WITH { utf8_s "with" }
+  | T_YIELD { utf8_s "yield" }
 
 variable:
  | i=variable_with_loc { i }
