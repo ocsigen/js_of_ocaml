@@ -30,7 +30,7 @@
   --unused-token
   TCommentLineDirective
   --unused-token
-  TUnknown))
+  T_ERROR))
 
 (menhir
  (modules annot_parser)

@@ -180,7 +180,7 @@ let parse_print_token ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.EOF, _) ] | [] -> ()
+    | [ (Js_token.T_EOF, _) ] | [] -> ()
     | (tok, pos) :: xs ->
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
