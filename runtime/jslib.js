@@ -74,7 +74,7 @@ var caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
+//Requires:caml_stack_depth, caml_cps_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
 //Requires: caml_raise_constant
 function caml_callback(f,args) {
   function uncaught_effect_handler(eff,k,ms) {
@@ -99,7 +99,7 @@ function caml_callback(f,args) {
     do {
       caml_stack_depth = 40;
       try {
-        res = res.joo_exact?res.joo_tramp.apply(null, res.joo_args):caml_call_gen(res.joo_tramp, res.joo_args);
+        res = res.joo_exact?res.joo_tramp.apply(null, res.joo_args):caml_cps_call_gen(res.joo_tramp, res.joo_args);
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
         if (!caml_exn_stack) throw e;

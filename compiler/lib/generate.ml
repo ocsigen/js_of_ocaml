@@ -985,7 +985,7 @@ let apply_fun_raw ctx f params exact cps =
             , int n )
         , apply_directly
         , ecall
-            (runtime_fun ctx "caml_call_gen")
+            (runtime_fun ctx (if cps then "caml_cps_call_gen" else "caml_call_gen"))
             [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
             J.N )
   in
@@ -1022,7 +1022,9 @@ let apply_fun_raw ctx f params exact cps =
                       [ ecall f (fst (List.take (n - 1) params)) J.N ]
                       J.N
                   , ecall
-                      (runtime_fun ctx "caml_call_gen")
+                      (runtime_fun
+                         ctx
+                         (if cps then "caml_cps_call_gen" else "caml_call_gen"))
                       [ f; J.EArr (List.map params ~f:(fun x -> Some x)) ]
                       J.N )
               in

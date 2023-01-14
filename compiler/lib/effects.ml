@@ -366,8 +366,13 @@ let cps_instr ~st (instr : instr) rem =
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with
          the right number of parameter *)
-      assert (Global_flow.exact_call st.flow_info f (List.length args));
-      Let (x, Apply { f; args; exact = true }) :: rem
+      (*      assert ();*)
+      Let
+        ( x
+        , Apply
+            { f; args; exact = Global_flow.exact_call st.flow_info f (List.length args) }
+        )
+      :: rem
   | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       assert false
   | _ -> instr :: rem

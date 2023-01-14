@@ -18,7 +18,6 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_call_gen (const, shallow)
-//If: !effects
 //Weakdef
 function caml_call_gen(f, args) {
   if(f.fun)
@@ -69,10 +68,10 @@ function caml_call_gen(f, args) {
   }
 }
 
-//Provides: caml_call_gen (const, shallow)
+//Provides: caml_cps_call_gen (const, shallow)
 //If: effects
 //Weakdef
-function caml_call_gen(f, args) {
+function caml_cps_call_gen(f, args) {
   while (f.fun) f = f.fun;
   if (typeof f !== "function") return args[args.length-1](f);
   var n = (f.l >= 0)?f.l:(f.l = f.length);
@@ -88,7 +87,7 @@ function caml_call_gen(f, args) {
       args[n - 1] = function (g) {
         var args = rest.slice();
         args[args.length - 1] = k;
-        return caml_call_gen(g, args); };
+        return caml_cps_call_gen(g, args); };
       return f.apply(null, args);
     } else {
       argsLen--;
@@ -122,7 +121,7 @@ function caml_call_gen(f, args) {
           for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
           for(var i = 0; i < arguments.length; i++ )
             nargs[argsLen + i] = arguments[i];
-          return caml_call_gen(f, nargs)
+          return caml_cps_call_gen(f, nargs)
         };
       }}
       g.l = d + 1;
@@ -141,7 +140,7 @@ function caml_call_gen(f, args) {
         var g = f.apply(null, args);
         var args = rest.slice();
         args[args.length - 1] = k;
-        return caml_call_gen(g, args);
+        return caml_cps_call_gen(g, args);
       } else {
         argsLen--;
         var k = args [argsLen];
@@ -153,7 +152,7 @@ function caml_call_gen(f, args) {
             for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
             for(var i = 0; i < arguments.length; i++ )
               nargs[argsLen + i] = arguments[i];
-            return caml_call_gen(f, nargs)
+            return caml_cps_call_gen(f, nargs)
           };
         }}
         g.l = d + 1;

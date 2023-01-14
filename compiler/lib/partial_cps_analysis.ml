@@ -148,8 +148,22 @@ let cps_needed ~info ~in_loop ~rev_deps st x =
          must be in CPS *)
       match Var.Tbl.get info.Global_flow.info_approximation f with
       | Top -> true
-      | Values { others; _ } ->
-          others || not (Global_flow.exact_call info f (List.length args)))
+      | Values { others; known } ->
+          if (not others) && not (Global_flow.exact_call info f (List.length args))
+          then (
+            Format.eprintf "AAA %a (%d):" Var.print x (List.length args);
+            Var.Set.iter
+              (fun g ->
+                match info.info_defs.(Var.idx g) with
+                | Expr (Closure (params, _)) ->
+                    Format.eprintf " %a(%d)" Var.print g (List.length params)
+                | Expr (Block _) -> ()
+                | Expr _ | Phi _ -> assert false)
+              known;
+            Format.eprintf "@.");
+          (* ZZZ under applied? *)
+          others
+          (*|| not (Global_flow.exact_call info f (List.length args))*))
   | Expr (Closure _) ->
       (* If a function escapes, it must be in CPS *)
       false
