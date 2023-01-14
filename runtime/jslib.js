@@ -51,6 +51,11 @@ function caml_trampoline_return(f,args) {
   return {joo_tramp:f,joo_args:args};
 }
 
+//Provides:caml_trampoline_exact_return
+function caml_trampoline_exact_return(f,args) {
+  return {joo_tramp:f,joo_args:args,joo_exact:true};
+}
+
 //Provides:caml_stack_depth
 //If: effects
 var caml_stack_depth = 0;
@@ -94,14 +99,15 @@ function caml_callback(f,args) {
     do {
       caml_stack_depth = 40;
       try {
-        res = caml_call_gen(res.joo_tramp, res.joo_args);
+        res = res.joo_exact?res.joo_tramp.apply(null, res.joo_args):caml_call_gen(res.joo_tramp, res.joo_args);
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
         if (!caml_exn_stack) throw e;
         var handler = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
         res = {joo_tramp: handler,
-               joo_args: [caml_wrap_exception(e)]};
+               joo_args: [caml_wrap_exception(e)],
+               joo_exact: true};
       }
     } while(res && res.joo_args)
   } finally {

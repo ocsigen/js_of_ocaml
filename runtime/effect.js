@@ -164,6 +164,9 @@ function caml_continuation_use_and_update_handler_noexc(cont, hval, hexn, heff) 
 //Provides: caml_get_continuation_callstack
 function caml_get_continuation_callstack () { return [0]; }
 
+//Provides: caml_cps_function (const)
+function caml_cps_function (f) { f.cps = true; return f; }
+
 //Provides: caml_ml_condition_new
 function caml_ml_condition_new(unit){
     return {condition:1};

@@ -80,10 +80,12 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                     | Some f -> add_tail_dep tail_deps f g);
                   (* If a called function is in CPS, then the call
                      point is in CPS *)
-                  add_dep deps x g;
+                  add_dep deps x g
+                  (*
                   (* Conversally, if a call point is in CPS then all
                      called functions must be in CPS *)
-                  add_dep deps g x)
+                  add_dep deps g x
+*))
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -127,6 +129,12 @@ let fold_children g f x acc =
   !acc
 
 let cps_needed ~info ~in_loop ~rev_deps st x =
+  (*
+  rev_deps.G'.iter_children
+    (fun y ->
+      if Var.Tbl.get st y then Format.eprintf "ZZZ %a ==> %a@." Var.print y Var.print x)
+    x;
+*)
   (* Mutually recursive functions are turned into CPS for tail
      optimization *)
   Var.Set.mem x in_loop
@@ -135,15 +143,17 @@ let cps_needed ~info ~in_loop ~rev_deps st x =
   fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
   ||
   match info.Global_flow.info_defs.(idx) with
-  | Expr (Apply { f; _ }) -> (
+  | Expr (Apply { f; args; _ }) -> (
       (* If we don't know all possible functions at a call point, it
          must be in CPS *)
       match Var.Tbl.get info.Global_flow.info_approximation f with
       | Top -> true
-      | Values { others; _ } -> others)
+      | Values { others; _ } ->
+          others || not (Global_flow.exact_call info f (List.length args)))
   | Expr (Closure _) ->
       (* If a function escapes, it must be in CPS *)
-      info.Global_flow.info_may_escape.(idx)
+      false
+      (*      info.Global_flow.info_may_escape.(idx)*)
   | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
       (* Effects primitives are in CPS *)
       true

@@ -344,13 +344,16 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           let body, branch = cps_branch ~st ~src:pc cont in
           Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
 
-let cps_instr ~st (instr : instr) : instr =
+let cps_instr ~st (instr : instr) rem =
   match instr with
   | Let (x, Closure (params, (pc, _))) when Var.Set.mem x st.cps_needed ->
       (* Add the continuation parameter, and change the initial block if
          needed *)
       let k, cont = Hashtbl.find st.closure_info pc in
-      Let (x, Closure (params @ [ k ], cont))
+      let f = Var.fresh () in
+      Let (f, Closure (params @ [ k ], cont))
+      :: Let (x, Prim (Extern "caml_cps_function", [ Pv f ]))
+      :: rem
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
       | Pc (Int a) ->
@@ -358,15 +361,16 @@ let cps_instr ~st (instr : instr) : instr =
             ( x
             , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
             )
+          :: rem
       | _ -> assert false)
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with
          the right number of parameter *)
       assert (Global_flow.exact_call st.flow_info f (List.length args));
-      Let (x, Apply { f; args; exact = true })
+      Let (x, Apply { f; args; exact = true }) :: rem
   | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       assert false
-  | _ -> instr
+  | _ -> instr :: rem
 
 let cps_block ~st ~k pc block =
   let alloc_jump_closures =
@@ -413,11 +417,23 @@ let cps_block ~st ~k pc block =
           [ Let (x, e) ], Return x)
     in
     match e with
-    | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
+    | Apply { f; args; _ } when Var.Set.mem x st.cps_needed ->
         Some
           (fun ~k ->
             let exact =
-              exact || Global_flow.exact_call st.flow_info f (List.length args)
+              let n = List.length args in
+              match Var.Tbl.get st.flow_info.info_approximation f with
+              | Top | Values { others = true; _ } -> false
+              | Values { known; others = false } ->
+                  Var.Set.for_all
+                    (fun g ->
+                      Var.Set.mem g st.cps_needed
+                      &&
+                      match st.flow_info.info_defs.(Var.idx g) with
+                      | Expr (Closure (params, _)) -> List.length params = n
+                      | Expr (Block _) -> true
+                      | Expr _ | Phi _ -> assert false)
+                    known
             in
             tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
@@ -427,7 +443,7 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~exact:(Global_flow.exact_call st.flow_info f 1)
+              ~exact:false (*ZZZ(Global_flow.exact_call st.flow_info f 1)*)
               ~check:true
               ~f
               [ arg; k' ])
@@ -487,13 +503,18 @@ let cps_block ~st ~k pc block =
   let body, last =
     match rewritten_block with
     | Some (body_prefix, last_instrs, last) ->
-        List.map body_prefix ~f:(fun i -> cps_instr ~st i) @ last_instrs, last
+        ( List.fold_right
+            body_prefix
+            ~f:(fun i rem -> cps_instr ~st i rem)
+            ~init:last_instrs
+        , last )
     | None ->
         let last_instrs, last = cps_last ~st pc block.branch ~k in
         let body =
-          List.map block.body ~f:(fun i -> cps_instr ~st i)
-          @ alloc_jump_closures
-          @ last_instrs
+          List.fold_right
+            block.body
+            ~f:(fun i rem -> cps_instr ~st i rem)
+            ~init:(alloc_jump_closures @ last_instrs)
         in
         body, last
   in
@@ -598,7 +619,11 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               fun pc block -> cps_block ~st ~k pc block)
             else
               fun _ block ->
-              { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
+              { block with
+                body =
+                  List.fold_right block.body ~init:[] ~f:(fun i rem ->
+                      cps_instr ~st i rem)
+              }
           in
           Code.traverse
             { fold = Code.fold_children }
@@ -620,6 +645,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         (* Call [caml_callback] to set up the execution context. *)
         let new_start = p.free_pc in
         let blocks =
+          let f = Var.fresh () in
           let main = Var.fresh () in
           let args = Var.fresh () in
           let res = Var.fresh () in
@@ -627,7 +653,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             new_start
             { params = []
             ; body =
-                [ Let (main, Closure ([ k ], (p.start, [])))
+                [ Let (f, Closure ([ k ], (p.start, [])))
+                ; Let (main, Prim (Extern "caml_cps_function", [ Pv f ]))
                 ; Let (args, Prim (Extern "%js_array", []))
                 ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
                 ]
