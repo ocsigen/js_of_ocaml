@@ -70,22 +70,25 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                 | Return x' -> Var.equal x x'
                 | _ -> false
               in
-              Var.Set.iter
-                (fun g ->
-                  add_var vars g;
-                  (if known_tail_call
-                  then
-                    match fun_name with
-                    | None -> ()
-                    | Some f -> add_tail_dep tail_deps f g);
-                  (* If a called function is in CPS, then the call
-                     point is in CPS *)
-                  add_dep deps x g
-                  (*
+              IntMap.iter
+                (fun _ v ->
+                  Var.Set.iter
+                    (fun g ->
+                      add_var vars g;
+                      (if known_tail_call
+                      then
+                        match fun_name with
+                        | None -> ()
+                        | Some f -> add_tail_dep tail_deps f g);
+                      (* If a called function is in CPS, then the call
+                         point is in CPS *)
+                      add_dep deps x g
+                      (*
                   (* Conversally, if a call point is in CPS then all
                      called functions must be in CPS *)
                   add_dep deps g x
 *))
+                    v)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -152,13 +155,16 @@ let cps_needed ~info ~in_loop ~rev_deps st x =
           if (not others) && not (Global_flow.exact_call info f (List.length args))
           then (
             Format.eprintf "AAA %a (%d):" Var.print x (List.length args);
-            Var.Set.iter
-              (fun g ->
-                match info.info_defs.(Var.idx g) with
-                | Expr (Closure (params, _)) ->
-                    Format.eprintf " %a(%d)" Var.print g (List.length params)
-                | Expr (Block _) -> ()
-                | Expr _ | Phi _ -> assert false)
+            IntMap.iter
+              (fun i v ->
+                Var.Set.iter
+                  (fun g ->
+                    match info.info_defs.(Var.idx g) with
+                    | Expr (Closure (params, _)) ->
+                        Format.eprintf " %a@%d(%d)" Var.print g i (List.length params)
+                    | Expr (Block _) -> ()
+                    | Expr _ | Phi _ -> assert false)
+                  v)
               known;
             Format.eprintf "@.");
           (* ZZZ under applied? *)

@@ -430,14 +430,17 @@ let cps_block ~st ~k pc block =
               match Var.Tbl.get st.flow_info.info_approximation f with
               | Top | Values { others = true; _ } -> false
               | Values { known; others = false } ->
-                  Var.Set.for_all
-                    (fun g ->
-                      Var.Set.mem g st.cps_needed
-                      &&
-                      match st.flow_info.info_defs.(Var.idx g) with
-                      | Expr (Closure (params, _)) -> List.length params = n
-                      | Expr (Block _) -> true
-                      | Expr _ | Phi _ -> assert false)
+                  IntMap.for_all
+                    (fun i v ->
+                      Var.Set.for_all
+                        (fun g ->
+                          Var.Set.mem g st.cps_needed
+                          &&
+                          match st.flow_info.info_defs.(Var.idx g) with
+                          | Expr (Closure (params, _)) -> List.length params = n + i
+                          | Expr (Block _) -> true
+                          | Expr _ | Phi _ -> assert false)
+                        v)
                     known
             in
             tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
