@@ -373,8 +373,10 @@ let cps_instr ~st (instr : instr) rem =
             { f; args; exact = Global_flow.exact_call st.flow_info f (List.length args) }
         )
       :: rem
-  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-      assert false
+  (*ZZZZZ
+    | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+        assert false
+  *)
   | _ -> instr :: rem
 
 let cps_block ~st ~k pc block =
