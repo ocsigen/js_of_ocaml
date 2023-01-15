@@ -1279,27 +1279,24 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
         | Extern "caml_js_var", [ Pc (String nm) ]
         | Extern ("caml_js_expr" | "caml_pure_js_expr"), [ Pc (String nm) ] -> (
             try
-              let lexbuf = Lexing.from_string nm in
-              let lexbuf =
+              let pos =
                 match loc with
-                | J.N | J.U -> lexbuf
+                | J.N | J.U -> None
                 | J.Pi pi -> (
                     (* [pi] is the position of the call, not the
                        string.  We don't have enough information to
                        recover the start column *)
                     match pi.src with
                     | Some pos_fname ->
-                        { lexbuf with
-                          lex_curr_p =
-                            { pos_fname
-                            ; pos_lnum = pi.line
-                            ; pos_cnum = pi.idx
-                            ; pos_bol = pi.idx
-                            }
-                        }
-                    | None -> lexbuf)
+                        Some
+                          { Lexing.pos_fname
+                          ; pos_lnum = pi.line
+                          ; pos_cnum = pi.idx
+                          ; pos_bol = pi.idx
+                          }
+                    | None -> None)
               in
-              let lex = Parse_js.Lexer.of_lexbuf lexbuf in
+              let lex = Parse_js.Lexer.of_string ?pos nm in
               let e = Parse_js.parse_expr lex in
               e, const_p, queue
             with Parse_js.Parsing_error pi ->

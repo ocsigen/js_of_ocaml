@@ -18,40 +18,103 @@
 
 open! Stdlib
 
-module Lexer = struct
-  type t = Lexing.lexbuf
+module Lexer : sig
+  type t
+
+  val of_file : string -> t
+
+  val of_channel : in_channel -> t
+
+  val of_string : ?pos:Lexing.position -> ?filename:string -> string -> t
+
+  val curr_pos : t -> Lexing.position
+
+  val stash : t -> unit
+
+  val rollback : t -> unit
+
+  val token : t -> Js_token.t * (Lexing.position * Lexing.position)
+
+  val regexp : t -> Js_token.t * (Lexing.position * Lexing.position)
+
+  val dummy_pos : Lexing.position
+end = struct
+  type t =
+    { l : Lexing.lexbuf
+    ; mutable curr : (Js_token.t * (Lexing.position * Lexing.position)) option
+    ; mutable stashed : (Js_token.t * (Lexing.position * Lexing.position)) list
+    }
+
+  let dummy_pos = { Lexing.pos_fname = ""; pos_lnum = 0; pos_cnum = 0; pos_bol = 0 }
+
+  let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
+
+  let create l = { l; curr = None; stashed = [] }
 
   let of_file file : t =
     let ic = open_in file in
     let lexbuf = Lexing.from_channel ic in
-    { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = file } }
+    create { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = file } }
 
-  let of_channel ci : t = Lexing.from_channel ci
+  let of_channel ci : t = create (Lexing.from_channel ci)
 
-  let of_lexbuf lexbuf : t = lexbuf
+  let of_string ?(pos = zero_pos) ?filename s =
+    let l = Lexing.from_string s in
+    Lexing.set_position l pos;
+    Option.iter filename ~f:(Lexing.set_filename l);
+    create l
+
+  let curr_pos lexbuf = lexbuf.l.Lexing.lex_curr_p
+
+  let token (t : t) =
+    match t.stashed with
+    | [] ->
+        let tok = Js_lexer.main t.l in
+        let c = tok, (t.l.Lexing.lex_start_p, t.l.Lexing.lex_curr_p) in
+        t.curr <- Some c;
+        c
+    | c :: xs ->
+        t.stashed <- xs;
+        t.curr <- Some c;
+        c
+
+  let regexp (t : t) =
+    match t.stashed with
+    | [] ->
+        let tok = Js_lexer.main_regexp t.l in
+        let c = tok, (t.l.lex_start_p, t.l.lex_curr_p) in
+        t.curr <- Some c;
+        c
+    | c :: xs ->
+        t.stashed <- xs;
+        t.curr <- Some c;
+        c
+
+  let rollback (t : t) =
+    t.l.Lexing.lex_curr_p <- t.l.Lexing.lex_start_p;
+    t.l.Lexing.lex_curr_pos <- t.l.Lexing.lex_start_pos
+
+  let stash (t : t) =
+    match t.curr with
+    | None -> ()
+    | Some (tok, p) -> t.stashed <- (tok, p) :: t.stashed
 end
 
 exception Parsing_error of Parse_info.t
 
-let parse_aux the_parser lexbuf =
-  let init = the_parser lexbuf.Lexing.lex_start_p in
-  let reset lexbuf =
-    lexbuf.Lexing.lex_curr_p <- lexbuf.Lexing.lex_start_p;
-    lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_start_pos
-  in
-  let fol prev (_, tok_pi) =
+let parse_aux the_parser (lexbuf : Lexer.t) =
+  let init = the_parser (Lexer.curr_pos lexbuf) in
+  let fol prev (_, (c, _)) =
     match prev with
     | [] -> true
-    | (_, p_pi) :: _ -> p_pi.Parse_info.line <> tok_pi.Parse_info.line
+    | (_, (_, p)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
   in
   let rec loop_error prev checkpoint =
     let module I = Js_parser.MenhirInterpreter in
     match checkpoint with
     | I.InputNeeded _env ->
         let checkpoint =
-          I.offer
-            checkpoint
-            (Js_token.T_EOF, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
+          I.offer checkpoint (Js_token.T_EOF, Lexer.curr_pos lexbuf, Lexer.curr_pos lexbuf)
         in
         loop_error prev checkpoint
     | I.Shifting _ | I.AboutToReduce _ -> loop_error prev (I.resume checkpoint)
@@ -87,28 +150,24 @@ let parse_aux the_parser lexbuf =
           match prev with
           | ((Js_token.T_EOF, _) as prev) :: _ -> prev, prev_with_comment
           | _ ->
-              let rec read_one prev_with_comment (lexbuf : Lexing.lexbuf) =
-                match Js_lexer.main lexbuf with
-                | TCommentLineDirective _ as tok ->
-                    let pi = Parse_info.t_of_pos lexbuf.lex_start_p in
-                    read_one ((tok, pi) :: prev_with_comment) lexbuf
-                | TComment s as tok ->
-                    let pi = Parse_info.t_of_pos lexbuf.lex_start_p in
-                    if fol prev_with_comment (tok, pi)
+              let rec read_one prev_with_comment (lexbuf : Lexer.t) =
+                match Lexer.token lexbuf with
+                | (TCommentLineDirective _ as tok), pos ->
+                    read_one ((tok, pos) :: prev_with_comment) lexbuf
+                | (TComment s as tok), pos ->
+                    if fol prev_with_comment (tok, pos)
                     then
                       match parse_annot s with
-                      | None -> read_one ((tok, pi) :: prev_with_comment) lexbuf
+                      | None -> read_one ((tok, pos) :: prev_with_comment) lexbuf
                       | Some annot ->
                           let tok = Js_token.TAnnot (s, annot) in
-                          (tok, pi), prev_with_comment
-                    else read_one ((tok, pi) :: prev_with_comment) lexbuf
-                | TAnnot _ -> assert false
-                | t ->
-                    let pi = Parse_info.t_of_pos lexbuf.lex_start_p in
-                    (t, pi), prev_with_comment
+                          (tok, pos), prev_with_comment
+                    else read_one ((tok, pos) :: prev_with_comment) lexbuf
+                | TAnnot _, _pos -> assert false
+                | t, pos -> (t, pos), prev_with_comment
               in
               let t, prev_with_comment = read_one prev_with_comment lexbuf in
-              let t, pi =
+              let t, pos =
                 match prev, t with
                 (* restricted productions
                  * 7.9.1 - 3
@@ -124,35 +183,31 @@ let parse_aux the_parser lexbuf =
                   , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _) as t) ) -> t
                 | ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW), _) :: _, t when fol prev t
                   ->
-                    reset lexbuf;
-                    T_VIRTUAL_SEMICOLON, Parse_info.zero
+                    Lexer.stash lexbuf;
+                    T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos)
                 (* The practical effect of these restricted productions is as follows:
                  * When a ++ or -- token is encountered where the parser would treat it
                  * as a postfix operator, and at least one LineTerminator occurred between
                  * the preceding token and the ++ or -- token, then a semicolon is automatically
                  * inserted before the ++ or -- token. *)
-                | _, ((T_DECR, pi) as tok) when not (fol prev tok) ->
-                    Js_token.T_DECR_NB, pi
-                | _, ((T_INCR, pi) as tok) when not (fol prev tok) ->
-                    Js_token.T_INCR_NB, pi
-                | _, (((T_DIV | T_DIV_ASSIGN), _) as tok) ->
-                    if I.acceptable checkpoint (fst tok) lexbuf.Lexing.lex_start_p
+                | _, ((T_DECR, pos) as tok) when not (fol prev tok) ->
+                    Js_token.T_DECR_NB, pos
+                | _, ((T_INCR, pos) as tok) when not (fol prev tok) ->
+                    Js_token.T_INCR_NB, pos
+                | _, ((((T_DIV | T_DIV_ASSIGN) as t), ((start_pos, _) as _pos)) as tok) ->
+                    if I.acceptable checkpoint t start_pos
                     then tok
                     else (
-                      reset lexbuf;
-                      let t = Js_lexer.main_regexp lexbuf in
-                      let pi = Parse_info.t_of_pos lexbuf.lex_start_p in
-                      t, pi)
+                      Lexer.rollback lexbuf;
+                      let t, pos = Lexer.regexp lexbuf in
+                      t, pos)
                 | _, t -> t
               in
-              (t, pi), prev_with_comment
+              (t, pos), prev_with_comment
         in
         let last_checkpoint = prev, prev_with_comment, inputneeded in
-        let checkpoint =
-          I.offer
-            checkpoint
-            (fst token, lexbuf.Lexing.lex_start_p, lexbuf.Lexing.lex_curr_p)
-        in
+        let t, pos = token in
+        let checkpoint = I.offer checkpoint (t, fst pos, snd pos) in
         loop (token :: prev) (token :: prev_with_comment) (last_checkpoint, checkpoint)
     | I.Shifting _ | I.AboutToReduce _ ->
         loop prev prev_with_comment (last_checkpoint, I.resume checkpoint)
@@ -182,10 +237,10 @@ let parse_aux the_parser lexbuf =
         in
         let drop_annot_or_error () =
           match prev with
-          | (TAnnot (s, _), i) :: _ ->
+          | (TAnnot (s, _), pos) :: _ ->
               let prev, prev_with_comment, checkpoint = last_checkpoint in
               let t = Js_token.TComment s in
-              loop prev ((t, i) :: prev_with_comment) (last_checkpoint, checkpoint)
+              loop prev ((t, pos) :: prev_with_comment) (last_checkpoint, checkpoint)
           | _ -> loop_error prev (I.resume checkpoint)
         in
         match insert_virtual_semmit with
@@ -195,14 +250,14 @@ let parse_aux the_parser lexbuf =
             if I.acceptable
                  checkpoint
                  Js_token.T_VIRTUAL_SEMICOLON
-                 lexbuf.Lexing.lex_curr_p
+                 (Lexer.curr_pos lexbuf)
             then (
-              reset lexbuf;
-              let t = Js_token.T_VIRTUAL_SEMICOLON, Parse_info.zero in
+              Lexer.stash lexbuf;
+              let t = Js_token.T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos) in
+
               let checkpoint =
-                I.offer
-                  checkpoint
-                  (fst t, lexbuf.Lexing.lex_curr_p, lexbuf.Lexing.lex_curr_p)
+                let t, pos = t in
+                I.offer checkpoint (t, fst pos, snd pos)
               in
               loop (t :: prev) (t :: prev_with_comment) (last_checkpoint, checkpoint))
             else drop_annot_or_error ())
@@ -213,13 +268,13 @@ let parse_aux the_parser lexbuf =
       let pi =
         match tok with
         | [] -> Parse_info.zero
-        | (_, pi) :: _ -> pi
+        | (_, (p, _)) :: _ -> Parse_info.t_of_pos p
       in
       raise (Parsing_error pi)
 
 let parse' lex =
   let p, t_rev = parse_aux Js_parser.Incremental.program lex in
-  p, List.rev t_rev
+  p, List.rev_map t_rev ~f:(fun (t, (p, _)) -> t, Parse_info.t_of_pos p)
 
 let parse lex =
   let p, _ = parse_aux Js_parser.Incremental.program lex in

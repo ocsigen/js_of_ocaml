@@ -312,16 +312,11 @@ module Fragment = struct
   let parse_builtin builtin =
     let filename = Builtins.File.name builtin in
     let content = Builtins.File.content builtin in
-    let lexbuf = Lexing.from_string content in
-    let lexbuf =
-      { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = filename } }
-    in
-    let lex = Parse_js.Lexer.of_lexbuf lexbuf in
+    let lex = Parse_js.Lexer.of_string ~filename content in
     parse_from_lex ~filename lex
 
   let parse_string string =
-    let lexbuf = Lexing.from_string string in
-    let lex = Parse_js.Lexer.of_lexbuf lexbuf in
+    let lex = Parse_js.Lexer.of_string string in
     parse_from_lex ~filename:"<dummy>" lex
 
   let parse_file f =

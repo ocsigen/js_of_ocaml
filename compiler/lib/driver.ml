@@ -414,7 +414,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
                 {|((typeof module === 'object' && module.exports) || %s)|}
                 Constant.global_object
             in
-            let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+            let lex = Parse_js.Lexer.of_string s in
             Parse_js.parse_expr lex
           in
           var Constant.exports_ export_node :: js
@@ -477,7 +477,7 @@ if (typeof module === 'object' && module.exports) {
 |}
               name
           in
-          let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+          let lex = Parse_js.Lexer.of_string s in
           Parse_js.parse lex
         in
         js @ export_node
@@ -504,7 +504,7 @@ if (typeof module === 'object' && module.exports) {
 }(Object));
 |}
           in
-          let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+          let lex = Parse_js.Lexer.of_string s in
           Parse_js.parse lex
         in
         e @ js
