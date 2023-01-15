@@ -127,9 +127,8 @@ let%expect_test "object" =
 |}
   in
   print_var_decl program "obj_literal";
-  [%expect
-    {|
-    var obj_literal = ({aaa:97,bbb:"test","cc dd":2,"npiπ":5});
+  [%expect {|
+    var obj_literal = ({aaa:97,bbb:"test","cc dd":2,npiπ:5});
     //end |}]
 
 let%expect_test "get" =
@@ -153,7 +152,7 @@ let%expect_test "get" =
     //end
     function get_b(o){return o["a b"]}
     //end
-    function get_c(o){return o["npiπ"]}
+    function get_c(o){return o.npiπ}
     //end |}]
 
 let%expect_test "set" =
@@ -177,7 +176,7 @@ let%expect_test "set" =
     //end
     function set_b(o,x){return o["a b"] = x}
     //end
-    function set_c(o,x){return o["npiπ"] = x}
+    function set_c(o,x){return o.npiπ = x}
     //end |}]
 
 let%expect_test "delete" =
@@ -201,7 +200,7 @@ let%expect_test "delete" =
     //end
     function delete_b(o){return delete o["a b"]}
     //end
-    function delete_c(o){return delete o["npiπ"]}
+    function delete_c(o){return delete o.npiπ}
     //end |}]
 
 let%expect_test "meth_call1" =
@@ -247,9 +246,9 @@ let%expect_test "meth_call2" =
     {|
     function meth_call_a(o,x){return o.aaa(x)}
     //end
-    function meth_call_b(o,x){return caml_js_meth_call(o,cst_a_b,[0,x])}
+    function meth_call_b(o,x){return runtime.caml_js_meth_call(o,cst_a_b,[0,x])}
     //end
-    function meth_call_c(o,x){return caml_js_meth_call(o,cst_npi,[0,x])}
+    function meth_call_c(o,x){return o.npiπ(x)}
     //end |}]
 
 let%expect_test "jstring / bytestring " =

@@ -304,28 +304,7 @@ let compare_ident t1 t2 =
   | S _, V _ -> -1
   | V _, S _ -> 1
 
-exception Not_an_ident
-
-let is_ident =
-  let l =
-    Array.init 256 ~f:(fun i ->
-        let c = Char.chr i in
-        match c with
-        | 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' -> 1
-        | '0' .. '9' -> 2
-        | _ -> 0)
-  in
-  fun s ->
-    try
-      for i = 0 to String.length s - 1 do
-        let code = l.(Char.code s.[i]) in
-        if i = 0
-        then (if code <> 1 then raise Not_an_ident)
-        else if code < 1
-        then raise Not_an_ident
-      done;
-      true
-    with Not_an_ident -> false
+let is_ident = Flow_lexer.is_valid_identifier_name
 
 let is_ident' (Utf8_string.Utf8 s) = is_ident s
 
