@@ -156,13 +156,8 @@ end
 
 let parse_js file =
   let content = file |> Filetype.read_js |> Filetype.string_of_js_text in
-  let lexbuf = Lexing.from_string content in
-  let lexbuf =
-    { lexbuf with
-      lex_curr_p = { lexbuf.lex_curr_p with pos_fname = Filetype.path_of_js_file file }
-    }
-  in
-  Jsoo.Parse_js.Lexer.of_lexbuf lexbuf |> Jsoo.Parse_js.parse
+  let filename = Filetype.path_of_js_file file in
+  Jsoo.Parse_js.Lexer.of_string ~filename content |> Jsoo.Parse_js.parse
 
 let channel_to_string c_in =
   let good_round_number = 1024 in

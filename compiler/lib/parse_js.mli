@@ -22,7 +22,7 @@ module Lexer : sig
 
   val of_file : string -> t
 
-  val of_lexbuf : Lexing.lexbuf -> t
+  val of_string : ?pos:Lexing.position -> ?filename:string -> string -> t
 
   val of_channel : in_channel -> t
 end

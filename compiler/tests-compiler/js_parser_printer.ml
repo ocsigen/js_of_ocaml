@@ -24,8 +24,7 @@ let print ~compact source =
   let buffer = Buffer.create (String.length source) in
   let pp = Pretty_print.to_buffer buffer in
   Pretty_print.set_compact pp compact;
-  let lexbuf = Lexing.from_string source in
-  let lexed = Parse_js.Lexer.of_lexbuf lexbuf in
+  let lexed = Parse_js.Lexer.of_string source in
   let parsed = Parse_js.parse lexed in
   Config.Flag.enable "debuginfo";
   let _ = Js_output.program pp parsed in
@@ -177,7 +176,7 @@ let check_vs_string s toks =
   loop 0 toks
 
 let parse_print_token ?(extra = false) s =
-  let lex = Parse_js.Lexer.of_lexbuf (Lexing.from_string s) in
+  let lex = Parse_js.Lexer.of_string s in
   let _p, tokens =
     try Parse_js.parse' lex
     with Parse_js.Parsing_error pi as e ->
