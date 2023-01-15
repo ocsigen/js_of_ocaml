@@ -39,65 +39,80 @@ module Lexer : sig
 
   val dummy_pos : Lexing.position
 end = struct
+  type elt = Js_token.t * (Lexing.position * Lexing.position) * Flow_lexer.Lex_env.t
+
   type t =
-    { l : Lexing.lexbuf
-    ; mutable curr : (Js_token.t * (Lexing.position * Lexing.position)) option
-    ; mutable stashed : (Js_token.t * (Lexing.position * Lexing.position)) list
+    { l : Sedlexing.lexbuf
+    ; mutable env : Flow_lexer.Lex_env.t
+    ; mutable curr : elt option
+    ; mutable stashed : elt list
     }
 
   let dummy_pos = { Lexing.pos_fname = ""; pos_lnum = 0; pos_cnum = 0; pos_bol = 0 }
 
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
-  let create l = { l; curr = None; stashed = [] }
+  let create l = { l; env = Flow_lexer.Lex_env.create l; curr = None; stashed = [] }
 
   let of_file file : t =
     let ic = open_in file in
-    let lexbuf = Lexing.from_channel ic in
-    create { lexbuf with lex_curr_p = { lexbuf.lex_curr_p with pos_fname = file } }
+    let lexbuf = Sedlexing.Utf8.from_channel ic in
+    Sedlexing.set_filename lexbuf file;
+    create lexbuf
 
-  let of_channel ci : t = create (Lexing.from_channel ci)
+  let of_channel ci : t = create (Sedlexing.Utf8.from_channel ci)
 
   let of_string ?(pos = zero_pos) ?filename s =
-    let l = Lexing.from_string s in
-    Lexing.set_position l pos;
-    Option.iter filename ~f:(Lexing.set_filename l);
+    let l = Sedlexing.Utf8.from_string s in
+    let pos =
+      match filename with
+      | None -> pos
+      | Some pos_fname -> { pos with pos_fname }
+    in
+    Sedlexing.set_position l pos;
+    Option.iter filename ~f:(Sedlexing.set_filename l);
     create l
 
-  let curr_pos lexbuf = lexbuf.l.Lexing.lex_curr_p
+  let curr_pos lexbuf = snd (Sedlexing.lexing_positions lexbuf.l)
 
   let token (t : t) =
     match t.stashed with
     | [] ->
-        let tok = Js_lexer.main t.l in
-        let c = tok, (t.l.Lexing.lex_start_p, t.l.Lexing.lex_curr_p) in
+        let env, res = Flow_lexer.token t.env in
+        t.env <- env;
+        let tok = Flow_lexer.Lex_result.token res in
+        let pos = Flow_lexer.Lex_result.loc res in
+        let c = tok, pos, env in
         t.curr <- Some c;
-        c
-    | c :: xs ->
+        tok, pos
+    | ((tok, pos, env) as c) :: xs ->
         t.stashed <- xs;
+        t.env <- env;
         t.curr <- Some c;
-        c
+        tok, pos
 
   let regexp (t : t) =
     match t.stashed with
     | [] ->
-        let tok = Js_lexer.main_regexp t.l in
-        let c = tok, (t.l.lex_start_p, t.l.lex_curr_p) in
+        let env, res = Flow_lexer.regexp t.env in
+        t.env <- env;
+        let tok = Flow_lexer.Lex_result.token res in
+        let pos = Flow_lexer.Lex_result.loc res in
+        let c = tok, pos, env in
         t.curr <- Some c;
-        c
-    | c :: xs ->
+        tok, pos
+    | ((tok, pos, env) as c) :: xs ->
         t.stashed <- xs;
+        t.env <- env;
         t.curr <- Some c;
-        c
+        tok, pos
 
-  let rollback (t : t) =
-    t.l.Lexing.lex_curr_p <- t.l.Lexing.lex_start_p;
-    t.l.Lexing.lex_curr_pos <- t.l.Lexing.lex_start_pos
+  let rollback (t : t) = Sedlexing.rollback t.l
 
   let stash (t : t) =
     match t.curr with
     | None -> ()
-    | Some (tok, p) -> t.stashed <- (tok, p) :: t.stashed
+    | Some (tok, p, env) -> t.stashed <- (tok, p, env) :: t.stashed
 end
 
 exception Parsing_error of Parse_info.t
@@ -107,7 +122,8 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
   let fol prev (_, (c, _)) =
     match prev with
     | [] -> true
-    | (_, (_, p)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
+    (* line_comment end_position is on the next line, FIXME *)
+    | (_, (p, _)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
   in
   let rec loop_error prev checkpoint =
     let module I = Js_parser.MenhirInterpreter in

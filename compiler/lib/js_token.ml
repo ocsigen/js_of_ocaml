@@ -27,7 +27,7 @@ type t =
   | T_NUMBER of (number_type * string)
   | T_BIGINT of (bigint_type * string)
   | T_STRING of (Utf8_string.t * int)
-  | T_TEMPLATE_PART of Utf8_string.t
+  | T_TEMPLATE_PART of (Utf8_string.t * bool)
   | T_IDENTIFIER of Utf8_string.t
   | T_REGEXP of (Utf8_string.t * string)
   (* /pattern/flags *)
@@ -292,7 +292,7 @@ let to_string = function
   | T_EXP -> "**"
   | T_EOF -> ""
   | T_BIGINT (_, raw) -> raw
-  | T_TEMPLATE_PART (Utf8 s) -> s
+  | T_TEMPLATE_PART (Utf8 s, _) -> s
 
 let to_string_extra x =
   to_string x
