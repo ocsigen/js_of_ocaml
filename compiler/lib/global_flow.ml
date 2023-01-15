@@ -163,6 +163,7 @@ let expr_deps blocks st x e =
           | Pc _ -> ()
           | Pv y -> add_dep st x y)
         l
+  | Prim (Extern "caml_js_wrap_callback_strict", _) -> ()
   | Prim (Extern name, l) ->
       (* Set the escape status of the arguments *)
       let ka =
