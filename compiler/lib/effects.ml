@@ -344,7 +344,7 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
           let body, branch = cps_branch ~st ~src:pc cont in
           Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
 
-let cps_instr ~st (instr : instr) rem =
+let cps_instr ~st ~wrap (instr : instr) rem =
   match instr with
   | Let (x, Closure (params, (pc, _))) when Var.Set.mem x st.cps_needed ->
       (* Add the continuation parameter, and change the initial block if
@@ -373,10 +373,14 @@ let cps_instr ~st (instr : instr) rem =
             { f; args; exact = Global_flow.exact_call st.flow_info f (List.length args) }
         )
       :: rem
-  (*ZZZZZ
-    | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-        assert false
-  *)
+  | Let (x, Apply { f; args; _ }) when wrap ->
+      (*ZZZ wrap resume/... also + should have a mode where wrapping is allowed *)
+      let arg_array = Var.fresh () in
+      Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
+      :: Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+      :: rem
+  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+      assert false
   | _ -> instr :: rem
 
 let cps_block ~st ~k pc block =
@@ -515,7 +519,7 @@ let cps_block ~st ~k pc block =
     | Some (body_prefix, last_instrs, last) ->
         ( List.fold_right
             body_prefix
-            ~f:(fun i rem -> cps_instr ~st i rem)
+            ~f:(fun i rem -> cps_instr ~st ~wrap:false i rem)
             ~init:last_instrs
         , last )
     | None ->
@@ -523,7 +527,7 @@ let cps_block ~st ~k pc block =
         let body =
           List.fold_right
             block.body
-            ~f:(fun i rem -> cps_instr ~st i rem)
+            ~f:(fun i rem -> cps_instr ~st ~wrap:false i rem)
             ~init:(alloc_jump_closures @ last_instrs)
         in
         body, last
@@ -632,7 +636,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               { block with
                 body =
                   List.fold_right block.body ~init:[] ~f:(fun i rem ->
-                      cps_instr ~st i rem)
+                      cps_instr ~st ~wrap:true i rem)
               }
           in
           Code.traverse

@@ -160,7 +160,9 @@ let cps_needed ~info ~in_loop ~rev_deps ~might_have_effect_handlers st x =
   (* Mutually recursive functions are turned into CPS for tail
      optimization *)
   Var.Set.mem x in_loop
-  || Var.Tbl.get might_have_effect_handlers x
+  || (match info.Global_flow.info_defs.(Var.idx x) with
+     | Expr (Closure _) -> Var.Tbl.get might_have_effect_handlers x
+     | _ -> true)
      && fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
   ||
   match info.Global_flow.info_defs.(Var.idx x) with
