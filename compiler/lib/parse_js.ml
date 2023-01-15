@@ -270,7 +270,6 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
             then (
               Lexer.stash lexbuf;
               let t = Js_token.T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos) in
-
               let checkpoint =
                 let t, pos = t in
                 I.offer checkpoint (t, fst pos, snd pos)
