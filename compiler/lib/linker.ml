@@ -215,24 +215,26 @@ module Fragment = struct
           pi.Parse_info.line
           pi.Parse_info.col
     in
-    let rec collect_without_annot acc = function
-      | [] -> List.rev acc, []
-      | (x, []) :: program -> collect_without_annot (x :: acc) program
-      | (_, _ :: _) :: _ as program -> List.rev acc, program
+    let blocks =
+      let groups : Javascript.program_with_annots list =
+        List.group program ~f:(fun x pred ->
+            match x, pred with
+            | (_, []), (_, _) -> true
+            | _ -> false)
+      in
+      List.map groups ~f:(fun l ->
+          match l with
+          | [] -> assert false
+          | (c, annots) :: rest ->
+              let rest =
+                List.map rest ~f:(fun (c, a) ->
+                    assert (List.is_empty a);
+                    c)
+              in
+              annots, c :: rest)
     in
-    let rec collect acc program =
-      match program with
-      | [] -> List.rev acc
-      | (x, []) :: program ->
-          let code, program = collect_without_annot [ x ] program in
-          collect (([], code) :: acc) program
-      | (x, annots) :: program ->
-          let code, program = collect_without_annot [ x ] program in
-          collect ((annots, code) :: acc) program
-    in
-    let blocks = collect [] program in
     let res =
-      List.rev_map blocks ~f:(fun (annot, code) ->
+      List.map blocks ~f:(fun (annot, code) ->
           match annot with
           | [] -> Always_include code
           | annot ->
