@@ -76,7 +76,7 @@ let%expect_test "preserve number literals" =
     {|
      var x = 0xf_fff;
      var x = 0Xffff;
-     var y = 0o7_1923;
+     var y = 0o7_1223;
      var y = 0O7123;
      var y = 0b1_1001;
      var y = 0B11001;
@@ -92,7 +92,7 @@ let%expect_test "preserve number literals" =
     {|
     /*<< 2 5>>*/  /*<< 2 11>>*/ var x=0xf_fff;
     /*<< 3 5>>*/  /*<< 3 11>>*/ var x=0Xffff;
-    /*<< 4 5>>*/  /*<< 4 11>>*/ var y=0o7_1923;
+    /*<< 4 5>>*/  /*<< 4 11>>*/ var y=0o7_1223;
     /*<< 5 5>>*/  /*<< 5 11>>*/ var y=0O7123;
     /*<< 6 5>>*/  /*<< 6 11>>*/ var y=0b1_1001;
     /*<< 7 5>>*/  /*<< 7 11>>*/ var y=0B11001;
@@ -393,7 +393,7 @@ function UnexpectedVirtualElement(data) {
     {|
      2: 0:function, 9:UnexpectedVirtualElement (identifier), 33:(, 34:data (identifier), 38:), 40:{,
      3: 4:var, 8:err (identifier), 12:=, 14:new, 18:Error (identifier), 23:(, 24:), 25:;,
-     5: 4:err (identifier), 7:., 8:type (identifier), 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
+     5: 4:err (identifier), 7:., 8:type, 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
      6: 4:err (identifier), 7:., 8:message (identifier), 16:=,
      7: 8:"The parent vnode is:\\n", 33:+,
      8: 8:errorString (identifier), 19:(, 20:data (identifier), 24:., 25:parentVnode (identifier), 36:), 0:; (virtual),

@@ -316,8 +316,9 @@ module Fragment = struct
     parse_from_lex ~filename lex
 
   let parse_string string =
-    let lex = Parse_js.Lexer.of_string string in
-    parse_from_lex ~filename:"<dummy>" lex
+    let filename = "<string>" in
+    let lex = Parse_js.Lexer.of_string ~filename string in
+    parse_from_lex ~filename lex
 
   let parse_file f =
     let file =

@@ -6,6 +6,7 @@
   compiler-libs.common
   compiler-libs.bytecomp
   menhirLib
+  sedlex
   (select
    source_map_io.ml
    from
@@ -14,7 +15,7 @@
  (flags
   (:standard -w -7-37 -safe-string))
  (preprocess
-  (pps ppx_optcomp_light)))
+  (pps ppx_optcomp_light sedlex.ppx)))
 
 (ocamllex js_lexer annot_lexer)
 
