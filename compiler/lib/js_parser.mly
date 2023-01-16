@@ -278,16 +278,16 @@ for_in_statement:
    { ForIn_statement (Right left, right, body) }
 
 initializer_no_in:
- | T_ASSIGN assignment_expression_no_in { $2, p $symbolstartpos }
+ | T_ASSIGN e=assignment_expression_no_in { e, p $symbolstartpos }
 
 continue_statement:
- | T_CONTINUE label? { (Continue_statement ($2)) }
+ | T_CONTINUE l=label? { (Continue_statement (l)) }
 
 break_statement:
- | T_BREAK label? { (Break_statement ($2)) }
+ | T_BREAK l=label? { (Break_statement (l)) }
 
 return_statement:
- | T_RETURN expression? { (Return_statement $2) }
+ | T_RETURN e=expression? { (Return_statement e) }
 
 with_statement:
  | T_WITH parenthesised(expression) statement { assert false }
@@ -303,17 +303,17 @@ switch_statement:
       in switch }
 
 throw_statement:
- | T_THROW expression { (Throw_statement $2) }
+ | T_THROW e=expression { (Throw_statement e) }
 
 try_statement:
- | T_TRY block catch finally? { (Try_statement ($2, Some $3, $4)) }
- | T_TRY block       finally { (Try_statement ($2, None, Some $3)) }
+ | T_TRY b=block c=catch f=finally? { (Try_statement (b, Some c, f)) }
+ | T_TRY b=block       f=finally { (Try_statement (b, None, Some f)) }
 
 catch:
  | T_CATCH pair=pair(parenthesised(variable), block) { pair }
 
 finally:
- | T_FINALLY block { $2 }
+ | T_FINALLY b=block { b }
 
 (*----------------------------*)
 (* 2 auxiliary statements     *)
@@ -347,12 +347,12 @@ function_expression:
 
 expression:
  | assignment_expression { $1 }
- | expression T_COMMA assignment_expression { ESeq ($1, $3) }
+ | e1=expression T_COMMA e2=assignment_expression { ESeq (e1, e2) }
 
 assignment_expression:
  | conditional_expression { $1 }
- | left_hand_side_expression assignment_operator assignment_expression
-   { EBin ($2, $1, $3) }
+ | e1=left_hand_side_expression op=assignment_operator e2=assignment_expression
+   { EBin (op, e1, e2) }
 
 left_hand_side_expression:
  | new_expression  { $1 }
@@ -386,26 +386,26 @@ pre_in_expression:
    { EBin (op, left, right) }
 
 call_expression:
- | member_expression arguments
-     { let e = $1 in (ECall(e, $2, p $symbolstartpos)) }
- | call_expression arguments
-     { let (e) = $1 in (ECall(e, $2, p $symbolstartpos)) }
- | call_expression T_LBRACKET expression T_RBRACKET
-     { let (e) = $1 in (EAccess (e, $3)) }
- | call_expression T_PERIOD identifier_or_kw
-     { let (e) = $1 in (EDot (e, $3)) }
+ | e=member_expression a=arguments
+     { (ECall(e, a, p $symbolstartpos)) }
+ | e=call_expression a=arguments
+     { (ECall(e, a, p $symbolstartpos)) }
+ | e=call_expression T_LBRACKET e2=expression T_RBRACKET
+     { (EAccess (e, e2)) }
+ | e=call_expression T_PERIOD i=identifier_or_kw
+     { (EDot (e, i)) }
 
 new_expression:
- | member_expression    { $1 }
- | T_NEW new_expression { (ENew ($2,None)) }
+ | e=member_expression    { e }
+ | T_NEW e=new_expression { (ENew (e,None)) }
 
 member_expression:
  | e=primary_expression
      { e }
- | member_expression T_LBRACKET e2=expression T_RBRACKET
-     { let (e1) = $1 in (EAccess (e1,e2)) }
- | member_expression T_PERIOD i=identifier_or_kw
-     { let (e1) = $1 in (EDot(e1,i)) }
+ | e1=member_expression T_LBRACKET e2=expression T_RBRACKET
+     { (EAccess (e1,e2)) }
+ | e1=member_expression T_PERIOD i=identifier_or_kw
+     { (EDot(e1,i)) }
  | T_NEW e1=member_expression a=arguments
      { (ENew(e1, Some a)) }
 
@@ -416,10 +416,10 @@ primary_expression:
 
 primary_expression_no_statement:
  | T_THIS         { (EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "this"))) }
- | variable_with_loc { let i = $1 in (EVar i) }
+ | i=variable_with_loc { (EVar i) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
- | numeric_literal   { let n = $1 in (ENum (Num.of_string_unsafe n)) }
+ | n=numeric_literal   { (ENum (Num.of_string_unsafe n)) }
  | s=T_STRING          { (EStr (fst s)) }
  | r=regex_literal                { r }
  | a=array_literal                { a }
@@ -431,12 +431,12 @@ primary_expression_no_statement:
 
 expression_no_in:
  | assignment_expression_no_in { $1 }
- | expression_no_in T_COMMA assignment_expression_no_in { ESeq ($1, $3) }
+ | e1=expression_no_in T_COMMA e2=assignment_expression_no_in { ESeq (e1, e2) }
 
 assignment_expression_no_in:
  | conditional_expression_no_in { $1 }
- | left_hand_side_expression assignment_operator assignment_expression_no_in
-     { EBin($2,$1,$3) }
+ | e1=left_hand_side_expression op=assignment_operator e2=assignment_expression_no_in
+     { EBin(op,e1,e2) }
 
 conditional_expression_no_in:
  | post_in_expression_no_in { $1 }
@@ -455,12 +455,12 @@ post_in_expression_no_in:
 
 expression_no_statement:
  | assignment_expression_no_statement { $1 }
- | expression_no_statement T_COMMA assignment_expression { ESeq($1,$3) }
+ | e1=expression_no_statement T_COMMA e2=assignment_expression { ESeq(e1,e2) }
 
 assignment_expression_no_statement:
  | conditional_expression_no_statement { $1 }
- | left_hand_side_expression_no_statement assignment_operator assignment_expression
-   { EBin ($2,$1,$3) }
+ | e1=left_hand_side_expression_no_statement op=assignment_operator e2=assignment_expression
+   { EBin (op,e1,e2) }
 
 conditional_expression_no_statement:
  | post_in_expression_no_statement { $1 }
@@ -490,25 +490,25 @@ left_hand_side_expression_no_statement:
 
 new_expression_no_statement:
  | member_expression_no_statement { $1 }
- | T_NEW new_expression { (ENew ($2,None)) }
+ | T_NEW e=new_expression { (ENew (e,None)) }
 
 call_expression_no_statement:
- | member_expression_no_statement arguments
-   { let ( e) = $1 in ( ECall(e, $2, p $symbolstartpos)) }
- | call_expression_no_statement arguments
-   { let ( e) = $1 in ( ECall(e, $2, p $symbolstartpos)) }
- | call_expression_no_statement T_LBRACKET expression T_RBRACKET
-   { let ( e) = $1 in ( EAccess(e, $3)) }
- | call_expression_no_statement T_PERIOD identifier_or_kw
-   { let ( e) = $1 in ( EDot(e,$3)) }
+ | e=member_expression_no_statement e2=arguments
+   { ( ECall(e, e2, p $symbolstartpos)) }
+ | e=call_expression_no_statement a=arguments
+   { ( ECall(e, a, p $symbolstartpos)) }
+ | e=call_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
+   { ( EAccess(e, e2)) }
+ | e=call_expression_no_statement T_PERIOD i=identifier_or_kw
+   { ( EDot(e,i)) }
 
 member_expression_no_statement:
  | e=primary_expression_no_statement
    { e }
- | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
-   { let ( e1) = $1 in ( EAccess(e1, e2)) }
- | member_expression_no_statement T_PERIOD i=identifier_or_kw
-   { let ( e1) = $1 in ( EDot(e1,i)) }
+ | e1=member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
+   { ( EAccess(e1, e2)) }
+ | e1=member_expression_no_statement T_PERIOD i=identifier_or_kw
+   { ( EDot(e1,i)) }
  | T_NEW e=member_expression a=arguments
    { (ENew(e,Some a)) }
 
@@ -536,22 +536,22 @@ regex_literal:
 (*----------------------------*)
 
 array_literal:
- | T_LBRACKET elison T_RBRACKET
-     { (EArr $2) }
+ | T_LBRACKET e=elison T_RBRACKET
+     { (EArr e) }
  | T_LBRACKET        T_RBRACKET
      { (EArr []) }
- | T_LBRACKET element_list T_RBRACKET
-     { (EArr $2) }
- | T_LBRACKET element_list_rev elison_rev T_RBRACKET
-     { (EArr (List.rev_append $2 (List.rev $3))) }
+ | T_LBRACKET l=element_list T_RBRACKET
+     { (EArr l) }
+ | T_LBRACKET l=element_list_rev last=elison_rev T_RBRACKET
+     { (EArr (List.rev_append l (List.rev last))) }
 
 element_list:
  | element_list_rev { List.rev $1 }
 
 element_list_rev:
- | elison_rev assignment_expression { (Some $2)::$1 }
- |            assignment_expression { [Some $1] }
- | element_list_rev elison assignment_expression { (Some $3) :: (List.rev_append $2 $1) }
+ | empty=elison_rev e=assignment_expression { (Some e)::empty }
+ | e=assignment_expression { [Some e] }
+ | fst=element_list_rev empty=elison e=assignment_expression { (Some e) :: (List.rev_append empty fst) }
 
 object_literal:
  | block=curly_block(empty)

@@ -30,7 +30,31 @@
   --unused-token
   TCommentLineDirective
   --unused-token
-  T_ERROR))
+  T_ERROR
+  --unused-token
+  T_AT
+  --unused-token
+  T_POUND
+  --unused-token
+  T_PLING_PERIOD
+  --unused-token
+  T_PLING_PLING
+  --unused-token
+  T_OR_ASSIGN
+  --unused-token
+  T_AND_ASSIGN
+  --unused-token
+  T_NULLISH_ASSIGN
+  --unused-token
+  T_EXP
+  --unused-token
+  T_EXP_ASSIGN
+  --unused-token
+  T_ARROW
+  --unused-token
+  T_BIGINT
+  --unused-token
+  T_TEMPLATE_PART))
 
 (menhir
  (modules annot_parser)
