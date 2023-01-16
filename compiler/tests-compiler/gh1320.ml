@@ -22,7 +22,7 @@
 let%expect_test _ =
   let prog =
     {|
-let app f x = f x
+let app f x = try f x with e -> raise e
 
 let myfun () =
   for i = 1 to 4 do
@@ -54,11 +54,11 @@ let () = myfun ()
          },
        g = function(x){return app(f$0, x);};
       let f$0 = f, g$0 = g;
-      var _b_ = g(i);
-      caml_call2(Stdlib_Printf[3], _a_, _b_);
-      var _c_ = i + 1 | 0;
+      var _c_ = app(f, i);
+      caml_call2(Stdlib_Printf[3], _a_, _c_);
+      var _b_ = i + 1 | 0;
       if(4 === i) return 0;
-      i = _c_;
+      i = _b_;
      }
     }
     //end |}]
