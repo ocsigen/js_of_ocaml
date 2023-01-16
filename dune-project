@@ -24,6 +24,7 @@
   (ppxlib (>= 0.15.0))
   (re :with-test)
   (cmdliner (>= 1.1.0))
+  sedlex
   menhir
   menhirLib
   menhirSdk
