@@ -60,7 +60,7 @@ end = struct
        && String.for_all s ~f:(function
               | '0' .. '7' -> true
               | _ -> false)
-    then (* octal notation *)
+    then (* legacy octal notation *)
       Int32.of_string ("0o" ^ s)
     else Int32.of_string s
 

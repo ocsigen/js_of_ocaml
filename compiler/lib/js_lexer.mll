@@ -87,6 +87,8 @@ let with_pos lexbuf f =
 
 let NEWLINE = ("\r"|"\n"|"\r\n")
 let hexa = ['0'-'9''a'-'f''A'-'F']
+let octal = ['0'-'9']
+let bin = ['0'-'1']
 let inputCharacter = [^ '\r' '\n' ]
 (*****************************************************************************)
 
@@ -193,13 +195,28 @@ rule main = parse
   (* Constant *)
   (* ----------------------------------------------------------------------- *)
 
-  | "0" ['X''x'] hexa+ {
+  | '0'['0'-'7']+ {
+      let s = tok lexbuf in
+      T_NUMBER (LEGACY_OCTAL, s)
+    }
+
+  | '0'['0'-'7']+['8''9'] ['0'-'9']* {
+      let s = tok lexbuf in
+      T_NUMBER (LEGACY_NON_OCTAL, s)
+    }
+  | '0' ['X''x'] hexa (hexa|['_']hexa)*  {
       let s = tok lexbuf in
       T_NUMBER (NORMAL,s)
     }
-  | '0'['0'-'7']+ {
+
+  | '0'['O''o'] octal (octal|['_']octal)* {
       let s = tok lexbuf in
-      T_NUMBER (NORMAL, s)
+      T_NUMBER (OCTAL, s)
+    }
+
+  | '0'['B''b'] bin (bin|['_']bin)* {
+      let s = tok lexbuf in
+      T_NUMBER (BINARY, s)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
