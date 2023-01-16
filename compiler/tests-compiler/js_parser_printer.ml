@@ -152,11 +152,22 @@ let check_vs_string s toks =
       then ()
       else Printf.printf "pos: %d, expecting %S, found %S\n" pos str sub
   in
-  let rec loop pos = function
+  let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop pos rest
+    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
     | ((Js_token.T_STRING (_, len) as x), pi) :: rest ->
         let { Parse_info.idx; _ } = pi in
+        let idx = idx - offset in
+        let offset, len =
+          let bytes = ref 0 in
+          for _ = 0 to len - 1 do
+            let r = String.get_utf_8_uchar s (idx + !bytes) in
+            bytes := !bytes + Uchar.utf_decode_length r
+          done;
+          let bytes = !bytes in
+          let offset = offset + (len - bytes) in
+          offset, bytes
+        in
         let _str = Js_token.to_string x in
         space pos idx;
         let quote_start = s.[idx] in
@@ -165,15 +176,16 @@ let check_vs_string s toks =
         | '"', '"' | '\'', '\'' -> ()
         | a, b ->
             Printf.printf "pos:%d+%d, expecting quotes, found %C+%C\n" idx (idx + len) a b);
-        loop (idx + len + 1) rest
+        loop offset (idx + len + 1) rest
     | (x, pi) :: rest ->
         let { Parse_info.idx; _ } = pi in
+        let idx = idx - offset in
         let str = Js_token.to_string x in
         space pos idx;
         text idx str;
-        loop (idx + String.length str) rest
+        loop offset (idx + String.length str) rest
   in
-  loop 0 toks
+  loop 0 0 toks
 
 let parse_print_token ?(extra = false) s =
   let lex = Parse_js.Lexer.of_string s in
@@ -205,6 +217,21 @@ let%expect_test "tokens" =
 |};
   [%expect {| 2: 4:var, 8:a, 10:=, 12:42, 14:;, |}]
 
+let%expect_test "string" =
+  parse_print_token
+    {|
+    var a = "asf";
+    var a = "munpiπππqtex";
+    var a = "munpiπππqtex";
+    var a = "munpiπππqtex";
+|};
+  [%expect
+    {|
+    2: 4:var, 8:a, 10:=, 12:"asf", 17:;,
+    3: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;,
+    4: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;,
+    5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
+
 let%expect_test "multiline string" =
   parse_print_token {|
     42;
@@ -212,14 +239,11 @@ let%expect_test "multiline string" =
     ";
     42
 |};
-  [%expect
-    {|
-    LEXER: WEIRD newline in quoted string
-
-     2: 4:42, 6:;,
-     3: 4:"\n    ",
-     4: 5:;,
-     5: 4:42, 0:;, |}];
+  [%expect {|
+    2: 4:42, 6:;,
+    3: 4:"\n    ",
+    4: 5:;,
+    5: 4:42, 0:;, |}];
   parse_print_token {|
     42;
     "\
@@ -238,16 +262,12 @@ let%expect_test "multiline string" =
     ";
     42
 |};
-  [%expect
-    {|
-    LEXER: WEIRD newline in quoted string
-    LEXER: WEIRD newline in quoted string
-
-     2: 4:42, 6:;,
-     3: 4:"\n\n    ",
-     5: 5:;,
-     6: 4:42, 0:;, |}];
-  [%expect {| |}]
+  [%expect {|
+    2: 4:42, 6:;,
+    3: 4:"\n\n    ",
+    5: 5:;,
+    6: 4:42, 0:;, |}];
+  [%expect {||}]
 
 let%expect_test "multiline comments" =
   parse_print_token {|

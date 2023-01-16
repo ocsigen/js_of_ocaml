@@ -20,3 +20,5 @@
 val main : Lexing.lexbuf -> Js_token.t
 
 val main_regexp : Lexing.lexbuf -> Js_token.t
+
+val drop_line : Lexing.lexbuf -> unit

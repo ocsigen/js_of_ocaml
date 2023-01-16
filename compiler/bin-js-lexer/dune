@@ -1,0 +1,3 @@
+(executable
+ (name cmp)
+ (libraries js_of_ocaml-compiler))

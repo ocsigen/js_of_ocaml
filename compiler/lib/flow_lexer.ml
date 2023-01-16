@@ -480,12 +480,18 @@ let rec comment env buf lexbuf =
       let env = illegal env (loc_of_lexbuf env lexbuf) in
       env, end_pos_of_lexbuf env lexbuf
 
+let drop_line env =
+  let lexbuf = env.Lex_env.lex_lb in
+  match%sedlex lexbuf with
+  | Star (Compl (eof | line_terminator_sequence_start)) -> ()
+  | _ -> assert false
+
 let rec line_comment env buf lexbuf =
   match%sedlex lexbuf with
   | eof -> env, end_pos_of_lexbuf env lexbuf
   | line_terminator_sequence ->
+      Sedlexing.rollback lexbuf;
       let { Loc.line; column } = end_pos_of_lexbuf env lexbuf in
-      let env = new_line env lexbuf in
       let len = Sedlexing.lexeme_length lexbuf in
       let end_pos = { Loc.line; column = column - len } in
       env, end_pos
@@ -560,12 +566,11 @@ let rec string_quote env q buf lexbuf =
       let env = new_line env lexbuf in
       string_quote env q buf lexbuf
   | '\\' ->
-      Buffer.add_string buf "\\";
       let env, str = string_escape env lexbuf in
+      if String.get q 0 <> String.get str 0 then Buffer.add_string buf "\\";
       Buffer.add_string buf str;
       string_quote env q buf lexbuf
   | '\n' ->
-      Format.eprintf "LEXER: WEIRD newline in quoted string@.";
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
       let env = illegal env (loc_of_lexbuf env lexbuf) in
