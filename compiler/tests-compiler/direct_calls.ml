@@ -24,13 +24,13 @@ let%expect_test "direct calls without --enable effects" =
       {|
          (* Arity of the argument of a function / direct call *)
          let test1 () =
-           let f g x = g x in
+           let f g x = try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x *. 2.) 4.)
 
          (* Arity of the argument of a function / CPS call *)
          let test2 () =
-           let f g x = g x in
+           let f g x = try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x ^ "a") "a")
 
@@ -57,14 +57,26 @@ let%expect_test "direct calls without --enable effects" =
   [%expect
     {|
     function test1(param){
-     function f(g, x){return caml_call1(g, x);}
+     function f(g, x){
+      try{caml_call1(g, x); return;}
+      catch(e$0){
+       var e = caml_wrap_exception(e$0);
+       throw caml_maybe_attach_backtrace(e, 0);
+      }
+     }
      f(function(x){return x + 1 | 0;}, 7);
      f(function(x){return x * 2.;}, 4.);
      return 0;
     }
     //end
     function test2(param){
-     function f(g, x){return caml_call1(g, x);}
+     function f(g, x){
+      try{caml_call1(g, x); return;}
+      catch(e$0){
+       var e = caml_wrap_exception(e$0);
+       throw caml_maybe_attach_backtrace(e, 0);
+      }
+     }
      f(function(x){return x + 1 | 0;}, 7);
      f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
      return 0;
@@ -94,13 +106,13 @@ let%expect_test "direct calls with --enable effects" =
       {|
          (* Arity of the argument of a function / direct call *)
          let test1 () =
-           let f g x = g x in
+           let f g x = try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x *. 2.) 4.)
 
          (* Arity of the argument of a function / CPS call *)
          let test2 () =
-           let f g x = g x in
+           let f g x = try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x ^ "a") "a")
 
@@ -127,14 +139,28 @@ let%expect_test "direct calls with --enable effects" =
   [%expect
     {|
     function test1(param, cont){
-     function f(g, x){return g(undef);}
+     function f(g, x){
+      try{g(undef); return;}
+      catch(e$0){
+       var e = caml_wrap_exception(e$0);
+       throw caml_maybe_attach_backtrace(e, 0);
+      }
+     }
      f(function(x){return;}, undef);
      f(function(x){return;}, undef);
      return cont(0);
     }
     //end
     function test2(param, cont){
-     function f(g, x, cont){return caml_cps_exact_call2(g, x, cont);}
+     function f(g, x, cont){
+      runtime.caml_push_trap
+       (function(e){
+         var raise = caml_pop_trap(), e$0 = caml_maybe_attach_backtrace(e, 0);
+         return raise(e$0);
+        });
+      return caml_cps_exact_call2
+              (g, x, function(_f_){caml_pop_trap(); return cont(undef);});
+     }
      return caml_cps_exact_call3
              (f,
               function(x, cont){return cont(undef);},

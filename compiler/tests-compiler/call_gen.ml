@@ -22,7 +22,7 @@ open Util
 module M1 = struct
   let code =
     {|
-  let f_prime g = g 1 2
+  let f_prime g = try g 1 2 with e -> raise e
   let f g = f_prime g 3 4
   (* [g] will be unknown as long as [f] is not inlined. *)
   let g () = f (fun a b c d -> print_int (a + b + c + d))
@@ -62,7 +62,13 @@ module M1 = struct
       {|
     function f(g){return caml_call2(f_prime(g), 3, 4);}
     //end
-    function f_prime(g){return caml_call2(g, 1, 2);}
+    function f_prime(g){
+     try{var _i_ = caml_call2(g, 1, 2); return _i_;}
+     catch(e$0){
+      var e = caml_wrap_exception(e$0);
+      throw caml_maybe_attach_backtrace(e, 0);
+     }
+    }
     //end
     function g(param){
      return f

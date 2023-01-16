@@ -29,7 +29,7 @@ let%expect_test "static eval of string get" =
 
     let constant = "abcdefghijklmnopqrstuvwxyz"
 
-    let call_with_char c = black_box c
+    let call_with_char c = try black_box c with _ -> assert false
 
     let ex = call_with_char constant.[-10] ;;
     black_box ex
@@ -61,7 +61,7 @@ let%expect_test "static eval of string get" =
 
     let constant = "abcdefghijklmnopqrstuvwxyz"
 
-    let call_with_char c = black_box c
+    let call_with_char c = try black_box c with _ -> assert false
 
     let ex = call_with_char constant.[-10] ;;
     black_box ex

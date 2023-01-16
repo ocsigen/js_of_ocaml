@@ -30,5 +30,31 @@ let%expect_test "inline recursive function" =
     {|
     function f(param){for(;;) ;}
     //end
-    function g(param){return f(0);}
+    function g(param){for(;;) ;}
     //end |}]
+
+let%expect_test "inline small function exposing more tc" =
+  let program =
+    compile_and_parse
+      {|
+    let ( >>= ) x f = match x with `Ok v -> f v | `Error _ as e -> e
+
+    let f g x =
+      x >>= fun x ->
+      g x >>= fun y ->
+      y
+  |}
+  in
+  print_fun_decl program (Some "f");
+  print_fun_decl program (Some "g");
+  [%expect
+    {|
+    function f(g, x){
+     if(106380200 <= x[1]) return x;
+     var v$0 = x[2], x$0 = caml_call1(g, v$0);
+     if(106380200 <= x$0[1]) return x$0;
+     var v = x$0[2];
+     return v;
+    }
+    //end
+    not found |}]
