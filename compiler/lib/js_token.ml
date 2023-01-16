@@ -91,12 +91,11 @@ type t =
   | T_PUBLIC
   | T_YIELD
   | T_DEBUGGER
-  | T_DECLARE
-  | T_TYPE
-  | T_OPAQUE
   | T_OF
   | T_ASYNC
   | T_AWAIT
+  | T_GET
+  | T_SET
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
@@ -144,12 +143,16 @@ type t =
   | T_BIT_NOT
   | T_INCR
   | T_DECR
+  | T_FROM
+  | T_TARGET
+  | T_META
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
   | T_VIRTUAL_SEMICOLON
   | T_DECR_NB
   | T_INCR_NB
+  | T_LPAREN_ARROW
   | TAnnot of Annot.t
   | TComment of string
   | TCommentLineDirective of string
@@ -277,12 +280,14 @@ let to_string = function
   | T_PROTECTED -> "protected"
   | T_PUBLIC -> "public"
   | T_YIELD -> "yield"
-  | T_DECLARE -> "declare"
-  | T_TYPE -> "type"
-  | T_OPAQUE -> "opaque"
   | T_OF -> "of"
   | T_ASYNC -> "async"
   | T_AWAIT -> "await"
+  | T_GET -> "get"
+  | T_SET -> "set"
+  | T_FROM -> "from"
+  | T_TARGET -> "target"
+  | T_META -> "meta"
   | T_EXP_ASSIGN -> "**="
   | T_NULLISH_ASSIGN -> "??="
   | T_AND_ASSIGN -> "&&="
@@ -293,6 +298,7 @@ let to_string = function
   | T_EOF -> ""
   | T_BIGINT (_, raw) -> raw
   | T_TEMPLATE_PART (Utf8 s, _) -> s
+  | T_LPAREN_ARROW -> "("
 
 let to_string_extra x =
   to_string x
@@ -306,6 +312,7 @@ let to_string_extra x =
   | T_VIRTUAL_SEMICOLON -> " (virtual)"
   | TAnnot _ -> "(annot)"
   | T_ERROR _ -> "(error)"
+  | T_LPAREN_ARROW -> "(arrow)"
   | _ -> ""
 
 let is_keyword s =
@@ -319,7 +326,6 @@ let is_keyword s =
   | "const" -> Some T_CONST
   | "continue" -> Some T_CONTINUE
   | "debugger" -> Some T_DEBUGGER
-  | "declare" -> Some T_DECLARE
   | "default" -> Some T_DEFAULT
   | "delete" -> Some T_DELETE
   | "do" -> Some T_DO
@@ -341,7 +347,6 @@ let is_keyword s =
   | "new" -> Some T_NEW
   | "null" -> Some T_NULL
   | "of" -> Some T_OF
-  | "opaque" -> Some T_OPAQUE
   | "package" -> Some T_PACKAGE
   | "private" -> Some T_PRIVATE
   | "protected" -> Some T_PROTECTED
@@ -354,11 +359,15 @@ let is_keyword s =
   | "throw" -> Some T_THROW
   | "true" -> Some T_TRUE
   | "try" -> Some T_TRY
-  | "type" -> Some T_TYPE
   | "typeof" -> Some T_TYPEOF
   | "var" -> Some T_VAR
   | "void" -> Some T_VOID
   | "while" -> Some T_WHILE
   | "with" -> Some T_WITH
   | "yield" -> Some T_YIELD
+  | "get" -> Some T_GET
+  | "set" -> Some T_SET
+  | "from" -> Some T_FROM
+  | "target" -> Some T_TARGET
+  | "meta" -> Some T_META
   | _ -> None

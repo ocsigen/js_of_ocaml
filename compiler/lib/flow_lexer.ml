@@ -9,18 +9,11 @@ open Js_token
 
 module Loc = struct
   (* line numbers are 1-indexed; column numbers are 0-indexed *)
-  type position =
-    { line : int
-    ; column : int
-    }
 
-  (* start is inclusive; end is exclusive *)
-  (* If you are modifying this record, go look at ALoc.ml and make sure you understand the
-   * representation there. *)
   type t =
     { source : string option
-    ; start : position
-    ; _end : position
+    ; start : Lexing.position
+    ; _end : Lexing.position
     }
   [@@ocaml.warning "-69"]
 end
@@ -42,27 +35,16 @@ module Parse_error = struct
 end
 
 module Lex_env = struct
-  (* bol = Beginning Of Line *)
-  type bol =
-    { line : int
-    ; offset : int
-    }
-
   type lex_state = { lex_errors_acc : (Loc.t * Parse_error.t) list } [@@ocaml.unboxed]
 
   type t =
     { lex_source : string option
     ; lex_lb : Sedlexing.lexbuf
-    ; lex_bol : bol
     ; lex_state : lex_state
     }
   [@@ocaml.warning "-69"]
 
-  let line env = env.lex_bol.line
-
   let source env = env.lex_source
-
-  let bol_offset env = env.lex_bol.offset
 
   let empty_lex_state = { lex_errors_acc = [] }
 
@@ -73,11 +55,7 @@ module Lex_env = struct
       | "" -> None
       | s -> Some s
     in
-    { lex_source
-    ; lex_lb
-    ; lex_bol = { line = 1; offset = 0 }
-    ; lex_state = empty_lex_state
-    }
+    { lex_source; lex_lb; lex_state = empty_lex_state }
 end
 
 module Lex_result = struct
@@ -199,13 +177,13 @@ let codepoint_escape = [%sedlex.regexp? "\\u{", Plus hex_digit, '}']
 
 let js_id_start = [%sedlex.regexp? '$' | '_' | id_start]
 
-let js_id_continue = [%sedlex.regexp? '$' | '_' | id_continue]
+let js_id_continue = [%sedlex.regexp? '$' | '_' | id_continue | 0x200C | 0x200D]
 
 let js_id_start_with_escape =
-  [%sedlex.regexp? '$' | '_' | id_start | unicode_escape | codepoint_escape]
+  [%sedlex.regexp? js_id_start | unicode_escape | codepoint_escape]
 
 let js_id_continue_with_escape =
-  [%sedlex.regexp? '$' | '_' | id_continue | unicode_escape | codepoint_escape]
+  [%sedlex.regexp? js_id_continue | unicode_escape | codepoint_escape]
 
 exception Not_an_ident
 
@@ -238,19 +216,9 @@ let is_valid_identifier_name s =
   | js_id_start, Star js_id_continue, eof -> true
   | _ -> false
 
-let pos_at_offset env offset =
-  { Loc.line = Lex_env.line env; column = offset - Lex_env.bol_offset env }
-
-let loc_of_offsets env start_offset end_offset =
-  { Loc.source = Lex_env.source env
-  ; start = pos_at_offset env start_offset
-  ; _end = pos_at_offset env end_offset
-  }
-
 let loc_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
-  let start_offset = Sedlexing.lexeme_start lexbuf in
-  let end_offset = Sedlexing.lexeme_end lexbuf in
-  loc_of_offsets env start_offset end_offset
+  let start_offset, stop_offset = Sedlexing.lexing_positions lexbuf in
+  { Loc.source = Lex_env.source env; start = start_offset; _end = stop_offset }
 
 let lex_error (env : Lex_env.t) loc err : Lex_env.t =
   let lex_errors_acc = (loc, err) :: env.lex_state.lex_errors_acc in
@@ -258,11 +226,6 @@ let lex_error (env : Lex_env.t) loc err : Lex_env.t =
 
 let illegal (env : Lex_env.t) (loc : Loc.t) =
   lex_error env loc (Parse_error.Unexpected "token ILLEGAL")
-
-let new_line env lexbuf =
-  let offset = Sedlexing.lexeme_end lexbuf in
-  let lex_bol = { Lex_env.line = Lex_env.line env + 1; offset } in
-  { env with Lex_env.lex_bol }
 
 let decode_identifier =
   let sub_lexeme lexbuf trim_start trim_end =
@@ -364,7 +327,6 @@ type result =
 let rec comment env buf lexbuf =
   match%sedlex lexbuf with
   | line_terminator_sequence ->
-      let env = new_line env lexbuf in
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | "*/" ->
@@ -442,7 +404,6 @@ let string_escape env lexbuf =
       env, str
   | line_terminator_sequence ->
       let str = lexeme lexbuf in
-      let env = new_line env lexbuf in
       env, str
   | any ->
       let str = lexeme lexbuf in
@@ -460,9 +421,7 @@ let rec string_quote env q buf lexbuf =
       else (
         Buffer.add_string buf q';
         string_quote env q buf lexbuf)
-  | '\\', line_terminator_sequence ->
-      let env = new_line env lexbuf in
-      string_quote env q buf lexbuf
+  | '\\', line_terminator_sequence -> string_quote env q buf lexbuf
   | '\\' ->
       let env, str = string_escape env lexbuf in
       if String.get q 0 <> String.get str 0 then Buffer.add_string buf "\\";
@@ -472,7 +431,6 @@ let rec string_quote env q buf lexbuf =
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
       let env = illegal env (loc_of_lexbuf env lexbuf) in
-      let env = new_line env lexbuf in
       string_quote env q buf lexbuf
   (* env, end_pos_of_lexbuf env lexbuf *)
   | eof ->
@@ -511,14 +469,12 @@ let rec template_part env cooked raw literal lexbuf =
       Buffer.add_string raw "\r\n";
       Buffer.add_string literal "\r\n";
       Buffer.add_string cooked "\n";
-      let env = new_line env lexbuf in
       template_part env cooked raw literal lexbuf
   | "\n" | "\r" ->
       let lf = lexeme lexbuf in
       Buffer.add_string raw lf;
       Buffer.add_string literal lf;
       Buffer.add_char cooked '\n';
-      let env = new_line env lexbuf in
       template_part env cooked raw literal lexbuf
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl (eof | '`' | '$' | '\\' | '\r' | '\n')) | any ->
@@ -531,9 +487,7 @@ let rec template_part env cooked raw literal lexbuf =
 
 let token (env : Lex_env.t) lexbuf : result =
   match%sedlex lexbuf with
-  | line_terminator_sequence ->
-      let env = new_line env lexbuf in
-      Continue env
+  | line_terminator_sequence -> Continue env
   | Plus whitespace -> Continue env
   | "/*" ->
       let buf = Buffer.create 127 in
@@ -789,7 +743,6 @@ let rec regexp_class env buf lexbuf =
   | line_terminator_sequence ->
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
-      let env = new_line env lexbuf in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl (eof | '\\' | ']' | line_terminator_sequence_start)) | any ->
@@ -807,7 +760,6 @@ let rec regexp_body env buf lexbuf =
   | '\\', line_terminator_sequence ->
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
-      let env = new_line env lexbuf in
       env, ""
   | '\\', any ->
       let s = lexeme lexbuf in
@@ -827,7 +779,6 @@ let rec regexp_body env buf lexbuf =
   | line_terminator_sequence ->
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
-      let env = new_line env lexbuf in
       env, ""
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl (eof | '\\' | '/' | '[' | line_terminator_sequence_start)) | any ->
@@ -839,9 +790,7 @@ let rec regexp_body env buf lexbuf =
 let regexp env lexbuf =
   match%sedlex lexbuf with
   | eof -> Token (env, T_EOF)
-  | line_terminator_sequence ->
-      let env = new_line env lexbuf in
-      Continue env
+  | line_terminator_sequence -> Continue env
   | Plus whitespace -> Continue env
   | "//" ->
       let buf = Buffer.create 127 in

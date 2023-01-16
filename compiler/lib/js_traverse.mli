@@ -16,11 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 open Javascript
 
 class type mapper =
   object
+    method loc : Javascript.location -> Javascript.location
+
     method expression : expression -> expression
 
     method expression_o : expression option -> expression option
@@ -32,8 +34,15 @@ class type mapper =
     method initialiser_o :
       (expression * location) option -> (expression * location) option
 
+    method for_binding :
+         Javascript.variable_declaration_kind
+      -> Javascript.for_binding
+      -> Javascript.for_binding
+
     method variable_declaration :
-      Javascript.variable_declaration -> Javascript.variable_declaration
+         Javascript.variable_declaration_kind
+      -> Javascript.variable_declaration
+      -> Javascript.variable_declaration
 
     method statement : statement -> statement
 
@@ -41,13 +50,13 @@ class type mapper =
 
     method statement_o : (statement * location) option -> (statement * location) option
 
-    method source : source_element -> source_element
-
-    method sources : source_elements -> source_elements
-
     method ident : ident -> ident
 
+    method param : formal_parameter -> formal_parameter
+
     method program : program -> program
+
+    method function_body : statement_list -> statement_list
   end
 
 class map : mapper
@@ -59,15 +68,15 @@ class subst :
      end
 
 type t =
-  { use_name : Utf8_string_set.t
-  ; def_name : Utf8_string_set.t
-  ; def : Code.Var.Set.t
-  ; use : Code.Var.Set.t
+  { use : IdentSet.t
+  ; def_var : IdentSet.t
+  ; def_local : IdentSet.t
   }
 
 type block =
-  | Catch of ident
-  | Params of ident list
+  | Catch of formal_parameter
+  | Params of formal_parameter list
+  | Normal
 
 class type freevar =
   object ('a)
@@ -75,9 +84,13 @@ class type freevar =
 
     method merge_info : 'a -> unit
 
+    method merge_block_info : 'a -> unit
+
     method block : block -> unit
 
     method def_var : ident -> unit
+
+    method def_local : Javascript.ident -> unit
 
     method use_var : ident -> unit
 
@@ -85,17 +98,11 @@ class type freevar =
 
     method get_count : int IdentMap.t
 
-    method get_free_name : Utf8_string_set.t
+    method get_free : IdentSet.t
 
-    method get_free : Code.Var.Set.t
+    method get_def : IdentSet.t
 
-    method get_def_name : Utf8_string_set.t
-
-    method get_def : Code.Var.Set.t
-
-    method get_use_name : Utf8_string_set.t
-
-    method get_use : Code.Var.Set.t
+    method get_use : IdentSet.t
   end
 
 class free : freevar

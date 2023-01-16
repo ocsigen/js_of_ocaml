@@ -70,10 +70,13 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
     let free = new Js_traverse.free in
     let (_ : Javascript.program) = free#program p in
     let toplevel_def_and_use =
-      Utf8_string_set.union free#get_def_name free#get_use_name
+      let state = free#state in
+      Javascript.IdentSet.union state.def_var state.use
     in
-    Utf8_string_set.iter
-      (fun (Utf8_string.Utf8 x) -> Var_printer.add_reserved x)
+    Javascript.IdentSet.iter
+      (function
+        | V _ -> ()
+        | S { name = Utf8_string.Utf8 x; _ } -> Var_printer.add_reserved x)
       toplevel_def_and_use;
     let true_ () = true in
     let open Config in

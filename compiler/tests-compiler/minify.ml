@@ -154,3 +154,62 @@ try { throw 1; } catch (xx) { a(0) }
           3: try { throw 1; } catch (xx) { a(0) }
         $ cat "test.min.js"
           1: a=function(){return 0};try{throw 1}catch(b){a(0)} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+a = function (yyyy) {
+try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
+|}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: a = function (yyyy) {
+          3: try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
+        $ cat "test.min.js"
+          1: a=function(b){try{var
+          2: e=3,d=2;throw 1}catch(c){const
+          3: b=a(0)}}; |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+a = function (aaa,b,c,yyy) {
+        if (true) { let xxx = 2; var y = 3; return xxx + xxx }
+        else { let xxx = 3; let aaa = xxx; return xxx * yyy }
+        }
+|}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: a = function (aaa,b,c,yyy) {
+          3:         if (true) { let xxx = 2; var y = 3; return xxx + xxx }
+          4:         else { let xxx = 3; let aaa = xxx; return xxx * yyy }
+          5:         }
+        $ cat "test.min.js"
+          1: a=function(b,c,d,e){if(true){let
+          2: b=2;var
+          3: f=3;return b+b}else{let
+          4: b=3,c=b;return b*e}}; |}])

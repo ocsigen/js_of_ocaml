@@ -31,6 +31,9 @@ exception Parsing_error of Parse_info.t
 
 val parse : Lexer.t -> Javascript.program
 
-val parse' : Lexer.t -> Javascript.program_with_annots * (Js_token.t * Parse_info.t) list
+val parse' :
+     Lexer.t
+  -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
+     * (Js_token.t * Parse_info.t) list
 
 val parse_expr : Lexer.t -> Javascript.expression

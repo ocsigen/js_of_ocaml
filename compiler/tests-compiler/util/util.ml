@@ -172,7 +172,7 @@ let channel_to_string c_in =
   (try loop () with End_of_file -> ());
   Buffer.contents buffer
 
-let exec_to_string_exn ~fail ~cmd =
+let exec_to_string_exn ?input ~fail ~cmd () =
   let build_path_prefix_map = "BUILD_PATH_PREFIX_MAP=" in
   let cwd = Sys.getcwd () in
   let build_path =
@@ -204,7 +204,12 @@ let exec_to_string_exn ~fail ~cmd =
     | WSTOPPED i ->
         Format.sprintf "%s\nprocess stopped with signal number %d\n %s\n" std_out i cmd
   in
-  let ((proc_in, _, proc_err) as proc_full) = Unix.open_process_full cmd env in
+  let ((proc_in, oc, proc_err) as proc_full) = Unix.open_process_full cmd env in
+  (match input with
+  | None -> ()
+  | Some s ->
+      output_string oc s;
+      close_out oc);
   let results = channel_to_string proc_in in
   let results' = channel_to_string proc_err in
   let exit_status = Unix.close_process_full proc_full in
@@ -229,11 +234,22 @@ let run_javascript file =
   exec_to_string_exn
     ~fail:false
     ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
+    ()
+
+let check_javascript file =
+  exec_to_string_exn
+    ~fail:false
+    ~cmd:(Format.sprintf "%s --check %s" node (Filetype.path_of_js_file file))
+    ()
+
+let check_javascript_source source =
+  exec_to_string_exn ~input:source ~fail:false ~cmd:(Format.sprintf "%s --check" node) ()
 
 let run_bytecode file =
   exec_to_string_exn
     ~fail:false
     ~cmd:(Format.sprintf "%s %s" ocamlrun (Filetype.path_of_bc_file file))
+    ()
 
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
@@ -296,11 +312,16 @@ let compile_to_javascript
   in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
 
-  let stdout = exec_to_string_exn ~fail:true ~cmd in
+  let stdout = exec_to_string_exn ~fail:true ~cmd () in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
-  Filetype.js_file_of_path out_file
+  let jsfile = Filetype.js_file_of_path out_file in
+  let stdout = check_javascript jsfile in
+  print_string stdout;
+  (* this print shouldn't do anything, so if
+     something weird happens, we'll get the results here *)
+  jsfile
 
 let jsoo_minify ?(flags = []) ~pretty file =
   let file = Filetype.path_of_js_file file in
@@ -312,7 +333,7 @@ let jsoo_minify ?(flags = []) ~pretty file =
   in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
 
-  let stdout = exec_to_string_exn ~fail:true ~cmd in
+  let stdout = exec_to_string_exn ~fail:true ~cmd () in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
@@ -356,6 +377,7 @@ let compile_ocaml_to_cmo ?(debug = true) file =
            (if debug then "-g" else "")
            file
            out_file)
+      ()
   in
   print_string stdout;
   Filetype.cmo_file_of_path out_file
@@ -374,6 +396,7 @@ let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
            (if unix then "-I +unix unix.cma" else "")
            file
            out_file)
+      ()
   in
   print_string stdout;
   Filetype.bc_file_of_path out_file
@@ -389,6 +412,7 @@ let compile_lib list name =
            ocamlc
            (String.concat ~sep:" " (List.map ~f:Filetype.path_of_cmo_file list))
            out_file)
+      ()
   in
   print_string stdout;
   Filetype.cmo_file_of_path out_file
@@ -405,19 +429,19 @@ let program_to_string ?(compact = false) p =
 
 let expression_to_string ?(compact = false) e =
   let module J = Jsoo.Javascript in
-  let p = [ J.Statement (J.Expression_statement e), J.N ] in
+  let p = [ J.Expression_statement e, J.N ] in
   program_to_string ~compact p
 
 class find_variable_declaration r n =
   object
     inherit Jsoo.Js_traverse.map as super
 
-    method! variable_declaration v =
+    method! variable_declaration k v =
       (match v with
-      | Jsoo.Javascript.S { name = Utf8 name; _ }, _ when String.equal name n ->
+      | DIdent (Jsoo.Javascript.S { name = Utf8 name; _ }, _) when String.equal name n ->
           r := v :: !r
       | _ -> ());
-      super#variable_declaration v
+      super#variable_declaration k v
   end
 
 let print_var_decl program n =
@@ -426,26 +450,34 @@ let print_var_decl program n =
   ignore (o#program program);
   print_string (Format.sprintf "var %s = " n);
   match !r with
-  | [ (_, Some (expression, _)) ] -> print_string (expression_to_string expression)
+  | [ DIdent (_, Some (expression, _)) ] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
 class find_function_declaration r n =
   object
     inherit Jsoo.Js_traverse.map as super
 
-    method! source s =
+    method! statement s =
+      let open Jsoo.Javascript in
       (match s with
-      | Function_declaration fd ->
-          let record =
-            match fd, n with
-            | _, None -> true
-            | (Jsoo.Javascript.S { name = Utf8 name; _ }, _, _, _), Some n ->
-                String.equal name n
-            | _ -> false
-          in
-          if record then r := fd :: !r
-      | Statement _ -> ());
-      super#source s
+      | Variable_statement (_, l) ->
+          List.iter l ~f:(function
+              | DIdent
+                  ((S { name = Utf8 name; _ } as id), Some (EFun (_, k, pl, b, loc), _))
+                -> (
+                  let fd = id, k, pl, b, loc in
+                  match n with
+                  | None -> r := fd :: !r
+                  | Some n -> if String.equal name n then r := fd :: !r else ())
+              | _ -> ())
+      | Function_declaration fd -> (
+          match fd, n with
+          | _, None -> r := fd :: !r
+          | (S { name = Utf8 name; _ }, _, _, _, _), Some n ->
+              if String.equal name n then r := fd :: !r else ()
+          | _ -> ())
+      | _ -> ());
+      super#statement s
   end
 
 let print_program p = print_string (program_to_string p)
@@ -486,6 +518,7 @@ let compile_and_run ?debug ?(flags = []) ?effects ?use_js_string ?unix s =
           bytecode_file
         |> run_javascript
       in
+      print_endline output_without_stdlib_modern;
       let output_with_stdlib_modern =
         compile_bc_to_javascript
           ~flags:(flags @ [ "+stdlib_modern.js" ])
@@ -495,7 +528,6 @@ let compile_and_run ?debug ?(flags = []) ?effects ?use_js_string ?unix s =
           bytecode_file
         |> run_javascript
       in
-      print_endline output_without_stdlib_modern;
       if not (String.equal output_without_stdlib_modern output_with_stdlib_modern)
       then (
         print_endline "Output was different with stdlib_modern.js:";

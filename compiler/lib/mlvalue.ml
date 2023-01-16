@@ -36,20 +36,22 @@ let is_immediate e = type_of_is_number J.EqEqEq e
 module Block = struct
   let make ~tag ~args =
     J.EArr
-      (List.map ~f:(fun x -> Some x) (J.ENum (J.Num.of_int32 (Int32.of_int tag)) :: args))
+      (List.map
+         ~f:(fun x -> J.Element x)
+         (J.ENum (J.Num.of_int32 (Int32.of_int tag)) :: args))
 
-  let tag e = J.EAccess (e, zero)
+  let tag e = J.EAccess (e, ANormal, zero)
 
   let field e idx =
     let adjusted = J.ENum (J.Num.of_int32 (Int32.of_int (idx + 1))) in
-    J.EAccess (e, adjusted)
+    J.EAccess (e, ANormal, adjusted)
 end
 
 module Array = struct
   let make = Block.make
 
   let length e =
-    let underlying = J.EDot (e, Utf8_string.of_string_exn "length") in
+    let underlying = J.EDot (e, ANormal, Utf8_string.of_string_exn "length") in
     J.EBin (J.Minus, underlying, one)
 
   let field e i =
@@ -57,9 +59,9 @@ module Array = struct
     | J.ENum n ->
         let idx = J.Num.to_int32 n in
         let adjusted = J.ENum (J.Num.of_int32 (Int32.add idx 1l)) in
-        J.EAccess (e, adjusted)
+        J.EAccess (e, ANormal, adjusted)
     | J.EUn (J.Neg, _) -> failwith "Negative field indexes are not allowed"
     | _ ->
         let adjusted = J.EBin (J.Plus, one, i) in
-        J.EAccess (e, adjusted)
+        J.EAccess (e, ANormal, adjusted)
 end

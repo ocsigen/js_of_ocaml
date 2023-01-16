@@ -139,7 +139,12 @@ type ident =
 (* A.3 Expressions *)
 and array_litteral = element_list
 
-and element_list = expression option list
+and element_list = element list
+
+and element =
+  | ElementHole
+  | Element of expression
+  | ElementSpread of expression
 
 and binop =
   | Eq
@@ -155,7 +160,9 @@ and binop =
   | BxorEq
   | BorEq
   | Or
+  | OrEq
   | And
+  | AndEq
   | Bor
   | Bxor
   | Band
@@ -181,6 +188,10 @@ and binop =
   | Mul
   | Div
   | Mod
+  | Exp
+  | ExpEq
+  | Coalesce
+  | CoalesceEq
 
 and unop =
   | Not
@@ -194,15 +205,23 @@ and unop =
   | DecrA
   | IncrB
   | DecrB
+  | Await
 
-and spread =
-  [ `Spread
-  | `Not_spread
-  ]
+and arguments = argument list
 
-and arguments = (expression * spread) list
+and argument =
+  | Arg of expression
+  | ArgSpread of expression
 
-and property_name_and_value_list = (property_name * expression) list
+and property_list = property list
+
+and property =
+  | PropertySpread of expression
+  | PropertyGet of identifier * formal_parameter_list * function_body
+  | PropertySet of identifier * formal_parameter_list * function_body
+  | PropertyMethod of identifier * function_expression
+  | Property of property_name * expression
+  | PropertyComputed of expression * expression
 
 and property_name =
   | PNI of identifier
@@ -214,37 +233,50 @@ and expression =
   | ECond of expression * expression * expression
   | EBin of binop * expression * expression
   | EUn of unop * expression
-  | ECall of expression * arguments * location
-  | EAccess of expression * expression
-  | EDot of expression * identifier
+  | ECall of expression * access_kind * arguments * location
+  | EAccess of expression * access_kind * expression
+  | EDot of expression * access_kind * identifier
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression
+  | EArrow of arrow_expression
   | EStr of Utf8_string.t
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
-  | EObj of property_name_and_value_list
+  | EObj of property_list
   | ERegexp of string * string option
+  | EYield of expression option
+
+and access_kind =
+  | ANormal
+  | ANullish
 
 (****)
 
 (* A.4 Statements *)
 and statement =
   | Block of block
-  | Variable_statement of variable_declaration list
+  | Variable_statement of variable_declaration_kind * variable_declaration list
+  | Function_declaration of function_declaration
   | Empty_statement
   | Expression_statement of expression
   | If_statement of expression * (statement * location) * (statement * location) option
   | Do_while_statement of (statement * location) * expression
   | While_statement of expression * (statement * location)
   | For_statement of
-      (expression option, variable_declaration list) either
+      (expression option, variable_declaration_kind * variable_declaration list) either
       * expression option
       * expression option
       * (statement * location)
   | ForIn_statement of
-      (expression, variable_declaration) either * expression * (statement * location)
+      (expression, variable_declaration_kind * for_binding) either
+      * expression
+      * (statement * location)
+  | ForOf_statement of
+      (expression, variable_declaration_kind * for_binding) either
+      * expression
+      * (statement * location)
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
@@ -253,7 +285,7 @@ and statement =
   | Switch_statement of
       expression * case_clause list * statement_list option * case_clause list
   | Throw_statement of expression
-  | Try_statement of block * (ident * block) option * block option
+  | Try_statement of block * (formal_parameter option * block) option * block option
   | Debugger_statement
 
 and ('left, 'right) either =
@@ -264,7 +296,14 @@ and block = statement_list
 
 and statement_list = (statement * location) list
 
-and variable_declaration = ident * initialiser option
+and variable_declaration =
+  | DIdent of ident * initialiser option
+  | DPattern of binding_pattern * initialiser
+
+and variable_declaration_kind =
+  | Var
+  | Let
+  | Const
 
 and case_clause = expression * statement_list
 
@@ -273,24 +312,52 @@ and initialiser = expression * location
 (****)
 
 (* A.5 Functions and programs *)
-and function_declaration = ident * formal_parameter_list * function_body * location
+and function_declaration =
+  ident * function_kind * formal_parameter_list * function_body * location
 
-and function_expression = ident option * formal_parameter_list * function_body * location
+and function_expression =
+  ident option * function_kind * formal_parameter_list * function_body * location
 
-and formal_parameter_list = ident list
+and arrow_expression = function_kind * formal_parameter_list * function_body * location
 
-and function_body = source_elements
+and function_kind =
+  { async : bool
+  ; generator : bool
+  }
 
-and program = source_elements
+and formal_parameter_list = formal_parameter list
 
-and program_with_annots =
-  ((source_element * location) * (Js_token.Annot.t * Parse_info.t) list) list
+and formal_parameter =
+  | PPattern of binding_pattern * (expression * location) option
+  | PIdent of
+      { id : ident
+      ; default : (expression * location) option
+      }
+  | PIdentSpread of ident
 
-and source_elements = (source_element * location) list
+and for_binding =
+  | ForBindIdent of ident
+  | ForBindPattern of binding_pattern
 
-and source_element =
-  | Statement of statement
-  | Function_declaration of function_declaration
+and binding_pattern =
+  | Object_binding of binding_property list
+  | Array_binding of binding_array_elt list
+  | Id of ident
+
+and binding_property =
+  | Prop_binding of property_name * binding_pattern * (expression * location) option
+  | Prop_rest of ident
+
+and binding_array_elt =
+  | Elt_binding of binding_pattern * (expression * location) option
+  | Elt_hole
+  | Elt_rest of ident
+
+and function_body = statement_list
+
+and program = statement_list
+
+and program_with_annots = (statement_list * (Js_token.Annot.t * Parse_info.t) list) list
 
 let compare_ident t1 t2 =
   match t1, t2 with
@@ -311,7 +378,36 @@ let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
   if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
   S { name; var; loc }
 
+let param' id = PIdent { id; default = None }
+
+let param ?loc ?var name = param' (ident ?loc ?var name)
+
 let ident_unsafe ?(loc = N) ?var name = S { name; var; loc }
+
+let rec bound_idents_of_param p =
+  match p with
+  | PIdent { id; _ } -> [ id ]
+  | PIdentSpread id -> [ id ]
+  | PPattern (p, _) -> bound_idents_of_pattern p
+
+and bound_idents_of_params p = List.concat_map p ~f:bound_idents_of_param
+
+and bound_idents_of_pattern p =
+  match p with
+  | Id id -> [ id ]
+  | Object_binding l ->
+      List.concat_map l ~f:(function
+          | Prop_rest i -> [ i ]
+          | Prop_binding (_, p, _) -> bound_idents_of_pattern p)
+  | Array_binding l ->
+      List.concat_map l ~f:(function
+          | Elt_binding (p, _) -> bound_idents_of_pattern p
+          | Elt_hole -> []
+          | Elt_rest i -> [ i ])
+
+and bound_idents_of_variable_declaration = function
+  | DIdent (id, _) -> [ id ]
+  | DPattern (p, _) -> bound_idents_of_pattern p
 
 module IdentSet = Set.Make (struct
   type t = ident
@@ -324,3 +420,12 @@ module IdentMap = Map.Make (struct
 
   let compare = compare_ident
 end)
+
+let dot e l = EDot (e, ANormal, l)
+
+let variable_declaration l =
+  Variable_statement (Var, List.map l ~f:(fun (i, e) -> DIdent (i, Some e)))
+
+let array l = EArr (List.map l ~f:(fun x -> Element x))
+
+let call f args loc = ECall (f, ANormal, List.map args ~f:(fun x -> Arg x), loc)

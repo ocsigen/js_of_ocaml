@@ -21,8 +21,11 @@
 open! Stdlib
 
 let to_stringset utf8_string_set =
-  Utf8_string_set.fold
-    (fun (Utf8_string.Utf8 x) acc -> StringSet.add x acc)
+  Javascript.IdentSet.fold
+    (fun x acc ->
+      match x with
+      | S { name = Utf8 x; _ } -> StringSet.add x acc
+      | V _ -> acc)
     utf8_string_set
     StringSet.empty
 
@@ -41,7 +44,7 @@ end = struct
     match p with
     | [] -> None
     | ( Javascript.Function_declaration
-          (Javascript.S { Javascript.name = Utf8 n; _ }, l, _, _)
+          (Javascript.S { Javascript.name = Utf8 n; _ }, _, l, _, _)
       , _ )
       :: _
       when String.equal name n -> Some (List.length l)
@@ -59,9 +62,8 @@ end = struct
         let open Javascript in
         (match x with
         | ECall
-            ( EVar (S { name = Utf8 "caml_named_value"; _ })
-            , [ (EStr (Utf8 v), `Not_spread) ]
-            , _ ) -> all := StringSet.add v !all
+            (EVar (S { name = Utf8 "caml_named_value"; _ }), _, [ Arg (EStr (Utf8 v)) ], _)
+          -> all := StringSet.add v !all
         | _ -> ());
         self#expression x
     end
@@ -79,15 +81,18 @@ module Check = struct
       inherit Js_traverse.free as super
 
       method merge_info from =
-        let def = from#get_def_name in
-        let use = from#get_use_name in
-        let diff = Utf8_string_set.diff def use in
+        let def = from#get_def in
+        let use = from#get_use in
+        let diff = Javascript.IdentSet.diff def use in
         let diff =
-          Utf8_string_set.fold
-            (fun (Utf8_string.Utf8 s) acc ->
-              if String.is_prefix s ~prefix:"_" || String.equal s name
-              then acc
-              else s :: acc)
+          Javascript.IdentSet.fold
+            (fun x acc ->
+              match x with
+              | S { name = Utf8_string.Utf8 s; _ } ->
+                  if String.is_prefix s ~prefix:"_" || String.equal s name
+                  then acc
+                  else s :: acc
+              | V _ -> acc)
             diff
             []
         in
@@ -110,7 +115,7 @@ module Check = struct
       else new Js_traverse.free
     in
     let _code = free#program code in
-    let freename = to_stringset free#get_free_name in
+    let freename = to_stringset free#get_free in
     let freename =
       List.fold_left requires ~init:freename ~f:(fun freename x ->
           StringSet.remove x freename)
@@ -128,7 +133,7 @@ module Check = struct
          instead@."
         (loc pi);
     let freename = StringSet.remove Constant.old_global_object freename in
-    let defname = to_stringset free#get_def_name in
+    let defname = to_stringset free#get_def in
     if not (StringSet.mem name defname)
     then
       warn
@@ -215,26 +220,8 @@ module Fragment = struct
           pi.Parse_info.line
           pi.Parse_info.col
     in
-    let blocks =
-      let groups : Javascript.program_with_annots list =
-        List.group program ~f:(fun x pred ->
-            match x, pred with
-            | (_, []), (_, _) -> true
-            | _ -> false)
-      in
-      List.map groups ~f:(fun l ->
-          match l with
-          | [] -> assert false
-          | (c, annots) :: rest ->
-              let rest =
-                List.map rest ~f:(fun (c, a) ->
-                    assert (List.is_empty a);
-                    c)
-              in
-              annots, c :: rest)
-    in
     let res =
-      List.map blocks ~f:(fun (annot, code) ->
+      List.map program ~f:(fun (annot, code) ->
           match annot with
           | [] -> Always_include code
           | annot ->
@@ -526,7 +513,7 @@ let check_deps () =
     (fun id (code, requires) ->
       let traverse = new Js_traverse.free in
       let _js = traverse#program code in
-      let free = to_stringset traverse#get_free_name in
+      let free = to_stringset traverse#get_free in
       let requires = List.fold_right requires ~init:StringSet.empty ~f:StringSet.add in
       let real = StringSet.inter free provided in
       let missing = StringSet.diff real requires in

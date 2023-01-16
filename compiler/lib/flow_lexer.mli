@@ -12,15 +12,10 @@ module Parse_error : sig
 end
 
 module Loc : sig
-  type position =
-    { line : int
-    ; column : int
-    }
-
   type t =
     { source : string option
-    ; start : position
-    ; _end : position
+    ; start : Lexing.position
+    ; _end : Lexing.position
     }
 end
 
