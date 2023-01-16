@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  *)
 
-[@@@warning "-39"] (* sedlex inserts some unnecessary `rec`s *)
-
 open Js_token
 
 module Loc = struct
@@ -15,7 +13,6 @@ module Loc = struct
     { line : int
     ; column : int
     }
-  [@@deriving eq, show]
 
   (* start is inclusive; end is exclusive *)
   (* If you are modifying this record, go look at ALoc.ml and make sure you understand the
@@ -25,7 +22,7 @@ module Loc = struct
     ; start : position
     ; _end : position
     }
-  [@@ocaml.warning "-69"] [@@deriving show]
+  [@@ocaml.warning "-69"]
 end
 
 module Parse_error = struct
@@ -188,7 +185,6 @@ module Parse_error = struct
     | WhitespaceInPrivateName
     | YieldAsIdentifierReference
     | YieldInFormalParameters
-  [@@deriving ord]
 end
 
 module Lex_env = struct
