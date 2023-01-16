@@ -122,8 +122,7 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
   let fol prev (_, (c, _)) =
     match prev with
     | [] -> true
-    (* line_comment end_position is on the next line, FIXME *)
-    | (_, (p, _)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
+    | (_, (_, p)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
   in
   let rec loop_error prev checkpoint =
     let module I = Js_parser.MenhirInterpreter in

@@ -305,4 +305,5 @@ let to_string_extra x =
   | T_DECR -> " (DECR)"
   | T_VIRTUAL_SEMICOLON -> " (virtual)"
   | TAnnot _ -> "(annot)"
+  | T_ERROR _ -> "(error)"
   | _ -> ""

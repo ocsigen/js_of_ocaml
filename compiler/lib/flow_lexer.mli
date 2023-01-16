@@ -23,6 +23,8 @@ module Lex_result : sig
   val loc : t -> Lexing.position * Lexing.position
 end
 
+val drop_line : Lex_env.t -> unit
+
 val regexp : Lex_env.t -> Lex_env.t * Lex_result.t
 
 val token : Lex_env.t -> Lex_env.t * Lex_result.t

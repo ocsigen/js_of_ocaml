@@ -282,7 +282,6 @@ and string_quote q buf = parse
     update_loc lexbuf ~line:1 ~absolute:false 0;
     string_quote q buf lexbuf }
   | NEWLINE {
-    Format.eprintf  "LEXER: WEIRD newline in quoted string@.";
     update_loc lexbuf ~line:1 ~absolute:false 0;
     Buffer.add_string buf (tok lexbuf);
     string_quote q buf lexbuf }
@@ -291,7 +290,7 @@ and string_quote q buf = parse
       string_quote q buf lexbuf
     }
   | (_ as x)       { Buffer.add_char buf x; string_quote q buf lexbuf }
-  | eof { Format.eprintf  "LEXER: WEIRD end of file in quoted string@."; ()}
+  | eof {()}
 
 (*****************************************************************************)
 and main_regexp = parse
@@ -347,3 +346,7 @@ and st_comment buf = parse
       Buffer.add_string buf s;
       st_comment buf lexbuf
     }
+
+
+and drop_line = parse
+  | inputCharacter* { () }
