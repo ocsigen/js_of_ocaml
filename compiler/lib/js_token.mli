@@ -90,12 +90,11 @@ type t =
   | T_PUBLIC
   | T_YIELD
   | T_DEBUGGER
-  | T_DECLARE
-  | T_TYPE
-  | T_OPAQUE
   | T_OF
   | T_ASYNC
   | T_AWAIT
+  | T_GET
+  | T_SET
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
@@ -143,12 +142,16 @@ type t =
   | T_BIT_NOT
   | T_INCR
   | T_DECR
+  | T_FROM
+  | T_TARGET
+  | T_META
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
   | T_VIRTUAL_SEMICOLON
   | T_DECR_NB
   | T_INCR_NB
+  | T_LPAREN_ARROW
   | TAnnot of Annot.t
   | TComment of string
   | TCommentLineDirective of string

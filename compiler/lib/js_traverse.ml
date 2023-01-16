@@ -22,6 +22,8 @@ open Javascript
 
 class type mapper =
   object
+    method loc : Javascript.location -> Javascript.location
+
     method expression : Javascript.expression -> Javascript.expression
 
     method expression_o : Javascript.expression option -> Javascript.expression option
@@ -36,8 +38,15 @@ class type mapper =
          (Javascript.expression * Javascript.location) option
       -> (Javascript.expression * Javascript.location) option
 
+    method for_binding :
+         Javascript.variable_declaration_kind
+      -> Javascript.for_binding
+      -> Javascript.for_binding
+
     method variable_declaration :
-      Javascript.variable_declaration -> Javascript.variable_declaration
+         Javascript.variable_declaration_kind
+      -> Javascript.variable_declaration
+      -> Javascript.variable_declaration
 
     method statement : Javascript.statement -> Javascript.statement
 
@@ -47,55 +56,79 @@ class type mapper =
 
     method statements : Javascript.statement_list -> Javascript.statement_list
 
-    method source : Javascript.source_element -> Javascript.source_element
-
-    method sources : Javascript.source_elements -> Javascript.source_elements
-
     method ident : Javascript.ident -> Javascript.ident
 
+    method param : formal_parameter -> formal_parameter
+
     method program : Javascript.program -> Javascript.program
+
+    method function_body : statement_list -> statement_list
   end
 
 (* generic js ast walk/map *)
 class map : mapper =
   object (m)
+    method loc i = i
+
     method ident i = i
 
-    method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, pc)
+    method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, m#loc pc)
 
-    method variable_declaration (id, eo) = m#ident id, m#initialiser_o eo
+    method variable_declaration _ x =
+      match x with
+      | DIdent (id, eo) -> DIdent (m#ident id, m#initialiser_o eo)
+      | DPattern (p, (e, l)) -> DPattern (m#binding_pattern p, (m#expression e, m#loc l))
+
+    method for_binding _ x =
+      match x with
+      | ForBindIdent i -> ForBindIdent (m#ident i)
+      | ForBindPattern p -> ForBindPattern (m#binding_pattern p)
 
     method statement s =
       match s with
       | Block b -> Block (m#statements b)
-      | Variable_statement l -> Variable_statement (List.map l ~f:m#variable_declaration)
+      | Variable_statement (k, l) ->
+          Variable_statement (k, List.map l ~f:(m#variable_declaration k))
+      | Function_declaration (id, k, params, body, nid) ->
+          Function_declaration
+            (m#ident id, k, List.map params ~f:m#param, m#function_body body, m#loc nid)
       | Empty_statement -> Empty_statement
       | Debugger_statement -> Debugger_statement
       | Expression_statement e -> Expression_statement (m#expression e)
       | If_statement (e, (s, loc), sopt) ->
-          If_statement (m#expression e, (m#statement s, loc), m#statement_o sopt)
+          If_statement (m#expression e, (m#statement s, m#loc loc), m#statement_o sopt)
       | Do_while_statement ((s, loc), e) ->
-          Do_while_statement ((m#statement s, loc), m#expression e)
+          Do_while_statement ((m#statement s, m#loc loc), m#expression e)
       | While_statement (e, (s, loc)) ->
-          While_statement (m#expression e, (m#statement s, loc))
+          While_statement (m#expression e, (m#statement s, m#loc loc))
       | For_statement (e1, e2, e3, (s, loc)) ->
           let e1 =
             match e1 with
             | Left o -> Left (m#expression_o o)
-            | Right l -> Right (List.map l ~f:(fun d -> m#variable_declaration d))
+            | Right (k, l) ->
+                Right (k, List.map l ~f:(fun d -> m#variable_declaration k d))
           in
-          For_statement (e1, m#expression_o e2, m#expression_o e3, (m#statement s, loc))
+          For_statement
+            (e1, m#expression_o e2, m#expression_o e3, (m#statement s, m#loc loc))
       | ForIn_statement (e1, e2, (s, loc)) ->
           let e1 =
             match e1 with
             | Left e -> Left (m#expression e)
-            | Right d -> Right (m#variable_declaration d)
+            | Right (k, d) -> Right (k, m#for_binding k d)
           in
-          ForIn_statement (e1, m#expression e2, (m#statement s, loc))
+          ForIn_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+      | ForOf_statement (e1, e2, (s, loc)) ->
+          let e1 =
+            match e1 with
+            | Left e -> Left (m#expression e)
+            | Right (k, d) -> Right (k, m#for_binding k d)
+          in
+          ForOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
       | Return_statement e -> Return_statement (m#expression_o e)
-      | Labelled_statement (l, (s, loc)) -> Labelled_statement (l, (m#statement s, loc))
+      | Labelled_statement (l, (s, loc)) ->
+          Labelled_statement (l, (m#statement s, m#loc loc))
       | Throw_statement e -> Throw_statement (m#expression e)
       | Switch_statement (e, l, def, l') ->
           Switch_statement
@@ -110,7 +143,7 @@ class map : mapper =
             ( m#statements b
             , (match catch with
               | None -> None
-              | Some (id, b) -> Some (m#ident id, m#statements b))
+              | Some (id, b) -> Some (Option.map ~f:m#param id, m#statements b))
             , match final with
               | None -> None
               | Some s -> Some (m#statements s) )
@@ -118,9 +151,14 @@ class map : mapper =
     method statement_o x =
       match x with
       | None -> None
-      | Some (s, loc) -> Some (m#statement s, loc)
+      | Some (s, loc) -> Some (m#statement s, m#loc loc)
 
     method switch_case e = m#expression e
+
+    method private argument a =
+      match a with
+      | Arg e -> Arg (m#expression e)
+      | ArgSpread e -> ArgSpread (m#expression e)
 
     method expression x =
       match x with
@@ -128,52 +166,106 @@ class map : mapper =
       | ECond (e1, e2, e3) -> ECond (m#expression e1, m#expression e2, m#expression e3)
       | EBin (b, e1, e2) -> EBin (b, m#expression e1, m#expression e2)
       | EUn (b, e1) -> EUn (b, m#expression e1)
-      | ECall (e1, e2, loc) ->
-          ECall
-            ( m#expression e1
-            , List.map e2 ~f:(fun (e, spread) -> m#expression e, spread)
-            , loc )
-      | EAccess (e1, e2) -> EAccess (m#expression e1, m#expression e2)
-      | EDot (e1, id) -> EDot (m#expression e1, id)
-      | ENew (e1, Some args) ->
-          ENew
-            ( m#expression e1
-            , Some (List.map args ~f:(fun (e, spread) -> m#expression e, spread)) )
+      | ECall (e1, ak, e2, loc) ->
+          ECall (m#expression e1, ak, List.map e2 ~f:m#argument, m#loc loc)
+      | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
+      | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
+      | ENew (e1, Some args) -> ENew (m#expression e1, Some (List.map args ~f:m#argument))
       | ENew (e1, None) -> ENew (m#expression e1, None)
       | EVar v -> EVar (m#ident v)
-      | EFun (idopt, params, body, nid) ->
+      | EFun (idopt, k, params, body, nid) ->
           let idopt =
             match idopt with
             | None -> None
             | Some i -> Some (m#ident i)
           in
-          EFun (idopt, List.map params ~f:m#ident, m#sources body, nid)
-      | EArr l -> EArr (List.map l ~f:(fun x -> m#expression_o x))
-      | EObj l -> EObj (List.map l ~f:(fun (i, e) -> i, m#expression e))
+          EFun (idopt, k, List.map params ~f:m#param, m#function_body body, m#loc nid)
+      | EArrow (k, params, body, nid) ->
+          EArrow (k, List.map params ~f:m#param, m#function_body body, m#loc nid)
+      | EArr l ->
+          EArr
+            (List.map l ~f:(function
+                | ElementHole -> ElementHole
+                | Element e -> Element (m#expression e)
+                | ElementSpread e -> ElementSpread (m#expression e)))
+      | EObj l ->
+          EObj
+            (List.map l ~f:(fun p ->
+                 match p with
+                 | PropertyComputed (p, e) ->
+                     PropertyComputed (m#expression p, m#expression e)
+                 | Property (i, e) -> Property (i, m#expression e)
+                 | PropertySet (n, a, b) ->
+                     PropertySet (n, List.map ~f:m#param a, m#statements b)
+                 | PropertyGet (n, a, b) ->
+                     PropertyGet (n, List.map ~f:m#param a, m#statements b)
+                 | PropertyMethod (n, (idopt, k, params, body, nid)) ->
+                     let idopt =
+                       match idopt with
+                       | None -> None
+                       | Some i -> Some (m#ident i)
+                     in
+                     PropertyMethod
+                       ( n
+                       , ( idopt
+                         , k
+                         , List.map params ~f:m#param
+                         , m#statements body
+                         , m#loc nid ) )
+                 | PropertySpread e -> PropertySpread (m#expression e)))
       | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
+      | EYield e -> EYield (m#expression_o e)
+
+    method param p =
+      match p with
+      | PIdentSpread id -> PIdentSpread (m#ident id)
+      | PIdent { id; default } ->
+          PIdent
+            { id = m#ident id
+            ; default = Option.map ~f:(fun (e, l) -> m#expression e, m#loc l) default
+            }
+      | PPattern (p, e) ->
+          PPattern
+            (m#binding_pattern p, Option.map ~f:(fun (e, l) -> m#expression e, m#loc l) e)
+
+    method private binding_pattern x =
+      match x with
+      | Object_binding l -> Object_binding (List.map ~f:m#binding_property l)
+      | Array_binding l -> Array_binding (List.map ~f:m#binding_array_elt l)
+      | Id i -> Id (m#ident i)
+
+    method private binding_array_elt x =
+      match x with
+      | Elt_hole -> Elt_hole
+      | Elt_rest i -> Elt_rest (m#ident i)
+      | Elt_binding (p, e) ->
+          Elt_binding
+            (m#binding_pattern p, Option.map ~f:(fun (e, l) -> m#expression e, m#loc l) e)
+
+    method private binding_property x =
+      match x with
+      | Prop_binding (i, p, e) ->
+          Prop_binding
+            ( i
+            , m#binding_pattern p
+            , Option.map e ~f:(fun (e, l) -> m#expression e, m#loc l) )
+      | Prop_rest i -> Prop_rest (m#ident i)
 
     method expression_o x =
       match x with
       | None -> None
       | Some s -> Some (m#expression s)
 
-    method initialiser (e, pc) = m#expression e, pc
+    method initialiser (e, pc) = m#expression e, m#loc pc
 
     method initialiser_o x =
       match x with
       | None -> None
       | Some i -> Some (m#initialiser i)
 
-    method source x =
-      match x with
-      | Statement s -> Statement (m#statement s)
-      | Function_declaration (id, params, body, nid) ->
-          Function_declaration
-            (m#ident id, List.map params ~f:m#ident, m#sources body, nid)
+    method program x = m#statements x
 
-    method sources x = List.map x ~f:(fun (s, loc) -> m#source s, loc)
-
-    method program x = m#sources x
+    method function_body x = m#statements x
   end
 
 class type iterator =
@@ -188,7 +280,11 @@ class type iterator =
 
     method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
 
-    method variable_declaration : Javascript.variable_declaration -> unit
+    method for_binding :
+      Javascript.variable_declaration_kind -> Javascript.for_binding -> unit
+
+    method variable_declaration :
+      Javascript.variable_declaration_kind -> Javascript.variable_declaration -> unit
 
     method statement : Javascript.statement -> unit
 
@@ -196,13 +292,13 @@ class type iterator =
 
     method statements : Javascript.statement_list -> unit
 
-    method source : Javascript.source_element -> unit
-
-    method sources : Javascript.source_elements -> unit
-
     method ident : Javascript.ident -> unit
 
+    method param : Javascript.formal_parameter -> unit
+
     method program : Javascript.program -> unit
+
+    method function_body : Javascript.statement_list -> unit
   end
 
 (* generic js ast iterator *)
@@ -212,14 +308,28 @@ class iter : iterator =
 
     method statements l = List.iter l ~f:(fun (s, _) -> m#statement s)
 
-    method variable_declaration (id, eo) =
-      m#ident id;
-      m#initialiser_o eo
+    method variable_declaration _k x =
+      match x with
+      | DIdent (id, eo) ->
+          m#ident id;
+          m#initialiser_o eo
+      | DPattern (p, (e, _)) ->
+          m#binding_pattern p;
+          m#expression e
+
+    method for_binding _ x =
+      match x with
+      | ForBindIdent i -> m#ident i
+      | ForBindPattern p -> m#binding_pattern p
 
     method statement s =
       match s with
       | Block b -> m#statements b
-      | Variable_statement l -> List.iter l ~f:m#variable_declaration
+      | Variable_statement (k, l) -> List.iter l ~f:(m#variable_declaration k)
+      | Function_declaration (id, _k, params, body, _) ->
+          m#ident id;
+          List.iter params ~f:m#param;
+          m#function_body body
       | Empty_statement -> ()
       | Debugger_statement -> ()
       | Expression_statement e -> m#expression e
@@ -236,14 +346,21 @@ class iter : iterator =
       | For_statement (e1, e2, e3, (s, _)) ->
           (match e1 with
           | Left o -> m#expression_o o
-          | Right l -> List.iter l ~f:(fun d -> m#variable_declaration d));
+          | Right (k, l) -> List.iter l ~f:(fun d -> m#variable_declaration k d));
           m#expression_o e2;
           m#expression_o e3;
           m#statement s
       | ForIn_statement (e1, e2, (s, _)) ->
           (match e1 with
           | Left e -> m#expression e
-          | Right d -> m#variable_declaration d);
+          | Right (k, d) -> m#for_binding k d);
+
+          m#expression e2;
+          m#statement s
+      | ForOf_statement (e1, e2, (s, _)) ->
+          (match e1 with
+          | Left e -> m#expression e
+          | Right (k, d) -> m#for_binding k d);
 
           m#expression e2;
           m#statement s
@@ -268,7 +385,7 @@ class iter : iterator =
           (match catch with
           | None -> ()
           | Some (id, b) ->
-              m#ident id;
+              Option.iter ~f:m#param id;
               m#statements b);
           match final with
           | None -> ()
@@ -280,6 +397,11 @@ class iter : iterator =
       | Some (s, _) -> m#statement s
 
     method switch_case e = m#expression e
+
+    method private argument a =
+      match a with
+      | Arg e -> m#expression e
+      | ArgSpread e -> m#expression e
 
     method expression x =
       match x with
@@ -294,27 +416,85 @@ class iter : iterator =
           m#expression e1;
           m#expression e2
       | EUn (_, e1) -> m#expression e1
-      | ECall (e1, e2, _) ->
+      | ECall (e1, _ak, e2, _) ->
           m#expression e1;
-          List.iter e2 ~f:(fun (e, _) -> m#expression e)
-      | EAccess (e1, e2) ->
+          List.iter e2 ~f:m#argument
+      | EAccess (e1, _ak, e2) ->
           m#expression e1;
           m#expression e2
-      | EDot (e1, _) -> m#expression e1
+      | EDot (e1, _ak, _) -> m#expression e1
       | ENew (e1, Some args) ->
           m#expression e1;
-          List.iter args ~f:(fun (e, _) -> m#expression e)
+          List.iter args ~f:m#argument
       | ENew (e1, None) -> m#expression e1
       | EVar v -> m#ident v
-      | EFun (idopt, params, body, _) ->
+      | EFun (idopt, _k, params, body, _) ->
           (match idopt with
           | None -> ()
           | Some i -> m#ident i);
-          List.iter params ~f:m#ident;
-          m#sources body
-      | EArr l -> List.iter l ~f:(fun x -> m#expression_o x)
-      | EObj l -> List.iter l ~f:(fun (_, e) -> m#expression e)
+          List.iter params ~f:m#param;
+          m#function_body body
+      | EArrow (_k, params, body, _) ->
+          List.iter params ~f:m#param;
+          m#function_body body
+      | EArr l ->
+          List.iter l ~f:(function
+              | ElementHole -> ()
+              | Element e -> m#expression e
+              | ElementSpread e -> m#expression e)
+      | EObj l ->
+          List.iter l ~f:(fun p ->
+              match p with
+              | PropertyComputed (p, e) ->
+                  m#expression p;
+                  m#expression e
+              | Property (_, e) -> m#expression e
+              | PropertySet (_, a, b) ->
+                  List.iter ~f:m#param a;
+                  m#statements b
+              | PropertyGet (_, a, b) ->
+                  List.iter ~f:m#param a;
+                  m#statements b
+              | PropertyMethod (_, (idopt, _k, params, body, _)) ->
+                  (match idopt with
+                  | None -> ()
+                  | Some i -> m#ident i);
+                  List.iter params ~f:m#param;
+                  m#statements body
+              | PropertySpread e -> m#expression e)
       | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
+      | EYield e -> m#expression_o e
+
+    method param p =
+      match p with
+      | PIdentSpread id -> m#ident id
+      | PIdent { id; default } ->
+          m#ident id;
+          Option.iter ~f:(fun (e, _) -> m#expression e) default
+      | PPattern (p, e) ->
+          m#binding_pattern p;
+          Option.iter ~f:(fun (e, _) -> m#expression e) e
+
+    method private binding_pattern x =
+      match x with
+      | Object_binding l -> List.iter ~f:m#binding_property l
+      | Array_binding l -> List.iter ~f:m#binding_array_elt l
+      | Id i -> m#ident i
+
+    method private binding_array_elt x =
+      match x with
+      | Elt_hole -> ()
+      | Elt_rest i -> m#ident i
+      | Elt_binding (p, e) ->
+          m#binding_pattern p;
+          Option.iter ~f:(fun (e, _) -> m#expression e) e
+
+    method private binding_property x =
+      match x with
+      | Prop_binding (_, p, e) ->
+          m#binding_pattern p;
+          Option.iter ~f:(fun (e, _) -> m#expression e) e
+      | Prop_rest i -> m#ident i
 
     method expression_o x =
       match x with
@@ -328,17 +508,9 @@ class iter : iterator =
       | None -> ()
       | Some i -> m#initialiser i
 
-    method source x =
-      match x with
-      | Statement s -> m#statement s
-      | Function_declaration (id, params, body, _) ->
-          m#ident id;
-          List.iter params ~f:m#ident;
-          m#sources body
+    method program x = m#statements x
 
-    method sources x = List.iter x ~f:(fun (s, _) -> m#source s)
-
-    method program x = m#sources x
+    method function_body x = m#statements x
   end
 
 (* var substitution *)
@@ -366,7 +538,8 @@ class map_for_share_constant =
          of 'require' is not a literal *)
       | ECall
           ( EVar (S { var = None; name = Utf8 "requires"; _ })
-          , [ (EStr _, `Not_spread) ]
+          , (ANormal | ANullish)
+          , [ Arg (EStr _) ]
           , _ ) -> e
       | _ -> super#expression e
 
@@ -376,12 +549,12 @@ class map_for_share_constant =
       | ENum _ | EStr _ -> e
       | _ -> m#expression e
 
-    method sources l =
+    method statements l =
       match l with
       | [] -> []
-      | ((Statement (Expression_statement (EStr _)), _) as prolog) :: rest ->
-          prolog :: List.map rest ~f:(fun (x, loc) -> m#source x, loc)
-      | rest -> List.map rest ~f:(fun (x, loc) -> m#source x, loc)
+      | ((Expression_statement (EStr _), _) as prolog) :: rest ->
+          prolog :: List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
+      | rest -> List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
   end
 
 class replace_expr f =
@@ -437,31 +610,24 @@ class share_constant =
       else
         let f = Hashtbl.find all in
         let p = (new replace_expr f)#program p in
-        let all = Hashtbl.fold (fun e v acc -> (v, Some (e, N)) :: acc) all [] in
-        (Statement (Variable_statement all), N) :: p
+        let all = Hashtbl.fold (fun e v acc -> DIdent (v, Some (e, N)) :: acc) all [] in
+        (Variable_statement (Var, all), N) :: p
   end
 
-module S = Code.Var.Set
-
 type t =
-  { use_name : Utf8_string_set.t
-  ; def_name : Utf8_string_set.t
-  ; def : S.t
-  ; use : S.t
+  { use : IdentSet.t
+  ; def_var : IdentSet.t
+  ; def_local : IdentSet.t
   }
 
-let empty =
-  { def = S.empty
-  ; use = S.empty
-  ; use_name = Utf8_string_set.empty
-  ; def_name = Utf8_string_set.empty
-  }
+let empty = { use = IdentSet.empty; def_var = IdentSet.empty; def_local = IdentSet.empty }
 
 (* def/used/free variable *)
 
 type block =
-  | Catch of ident
-  | Params of ident list
+  | Catch of formal_parameter
+  | Params of formal_parameter list
+  | Normal
 
 class type freevar =
   object ('a)
@@ -469,27 +635,25 @@ class type freevar =
 
     method merge_info : 'a -> unit
 
+    method merge_block_info : 'a -> unit
+
     method block : block -> unit
 
     method state : t
 
     method def_var : Javascript.ident -> unit
 
+    method def_local : Javascript.ident -> unit
+
     method use_var : Javascript.ident -> unit
 
     method get_count : int Javascript.IdentMap.t
 
-    method get_free_name : Utf8_string_set.t
+    method get_free : IdentSet.t
 
-    method get_free : Code.Var.Set.t
+    method get_def : IdentSet.t
 
-    method get_def_name : Utf8_string_set.t
-
-    method get_def : Code.Var.Set.t
-
-    method get_use_name : Utf8_string_set.t
-
-    method get_use : Code.Var.Set.t
+    method get_use : IdentSet.t
   end
 
 class free =
@@ -506,126 +670,218 @@ class free =
 
     method get_count = !count
 
-    method get_free = S.diff m#state.use m#state.def
+    method get_free =
+      IdentSet.diff m#state.use (IdentSet.union m#state.def_var m#state.def_local)
 
-    method get_def = m#state.def
-
-    method get_free_name = Utf8_string_set.diff m#state.use_name m#state.def_name
-
-    method get_def_name = m#state.def_name
-
-    method get_use_name = m#state.use_name
+    method get_def = IdentSet.union m#state.def_var m#state.def_local
 
     method get_use = m#state.use
 
     method merge_info from =
-      let free_name = from#get_free_name in
       let free = from#get_free in
+      state_ <- { state_ with use = IdentSet.union state_.use free }
+
+    method merge_block_info from =
+      let use =
+        let state = from#state in
+        IdentSet.diff state.use state.def_local
+      in
+      let def_var = from#state.def_var in
       state_ <-
-        { state_ with
-          use_name = Utf8_string_set.union state_.use_name free_name
-        ; use = S.union state_.use free
+        { use = IdentSet.union state_.use use
+        ; def_var = IdentSet.union state_.def_var def_var
+        ; def_local = state_.def_local
         }
 
     method use_var x =
       let n = try IdentMap.find x !count with Not_found -> 0 in
       count := IdentMap.add x (succ n) !count;
-      match x with
-      | S { name; _ } ->
-          state_ <- { state_ with use_name = Utf8_string_set.add name state_.use_name }
-      | V v -> state_ <- { state_ with use = S.add v state_.use }
+      state_ <- { state_ with use = IdentSet.add x state_.use }
 
     method def_var x =
       let n = try IdentMap.find x !count with Not_found -> 0 in
       count := IdentMap.add x (succ n) !count;
-      match x with
-      | S { name; _ } ->
-          state_ <- { state_ with def_name = Utf8_string_set.add name state_.def_name }
-      | V v -> state_ <- { state_ with def = S.add v state_.def }
+      state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
+
+    method def_local x =
+      let n = try IdentMap.find x !count with Not_found -> 0 in
+      count := IdentMap.add x (succ n) !count;
+      state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method expression x =
       match x with
       | EVar v ->
           m#use_var v;
           x
-      | EFun (ident, params, body, nid) ->
+      | EFun (ident, k, params, body, nid) ->
           let tbody = ({<state_ = empty; level = succ level>} :> 'test) in
-          let () = List.iter params ~f:tbody#def_var in
-          let body = tbody#sources body in
+          let ids = bound_idents_of_params params in
+          List.iter ids ~f:tbody#def_var;
+          let body = tbody#function_body body in
           let ident =
             match ident with
-            | Some (V v) when not (S.mem v tbody#state.use) -> None
-            | Some (S { name; _ })
-              when not (Utf8_string_set.mem name tbody#state.use_name) -> None
-            | Some id ->
-                tbody#def_var id;
-                ident
+            | Some i ->
+                if IdentSet.mem i tbody#state.use
+                then (
+                  tbody#def_var i;
+                  ident)
+                else None
             | None -> None
           in
           tbody#block (Params params);
           m#merge_info tbody;
-          EFun (ident, params, body, nid)
-      | _ -> super#expression x
-
-    method source x =
-      match x with
-      | Function_declaration (id, params, body, nid) ->
-          let tbody = {<state_ = empty; level = succ level>} in
-          let () = List.iter params ~f:tbody#def_var in
-          let body = tbody#sources body in
+          EFun (ident, k, params, body, nid)
+      | EArrow (k, params, body, nid) ->
+          let tbody = ({<state_ = empty; level = succ level>} :> 'test) in
+          let ids = bound_idents_of_params params in
+          List.iter ids ~f:tbody#def_var;
+          let body = tbody#function_body body in
           tbody#block (Params params);
-          m#def_var id;
           m#merge_info tbody;
-          Function_declaration (id, params, body, nid)
-      | Statement _ -> super#source x
+          EArrow (k, params, body, nid)
+      | _ -> super#expression x
 
     method block _ = ()
 
-    method variable_declaration ((id, _) as d) =
-      m#def_var id;
-      super#variable_declaration d
+    method variable_declaration k x =
+      let ids = bound_idents_of_variable_declaration x in
+      (match k with
+      | Let | Const -> List.iter ids ~f:m#def_local
+      | Var -> List.iter ids ~f:m#def_var);
+      super#variable_declaration k x
 
     method statement x =
       match x with
-      | Try_statement (b, w, f) ->
-          let b = m#statements b in
+      | Function_declaration (id, k, params, body, nid) ->
+          let tbody = {<state_ = empty; level = succ level>} in
+          let ids = bound_idents_of_params params in
+          List.iter ids ~f:tbody#def_var;
+          let body = tbody#function_body body in
+          tbody#block (Params params);
+          m#def_var id;
+          m#merge_info tbody;
+          Function_declaration (id, k, params, body, nid)
+      | Block b ->
           let same_level = level in
           let tbody = {<state_ = empty; level = same_level>} in
+          let b = tbody#statements b in
+          tbody#block Normal;
+          m#merge_block_info tbody;
+          Block b
+      | Try_statement (b, w, f) ->
+          let same_level = level in
+          let tb = {<state_ = empty; level = same_level>} in
+          let b = tb#statements b in
+          tb#block Normal;
+          m#merge_block_info tb;
           let w =
             match w with
             | None -> None
-            | Some (id, block) ->
-                let block = tbody#statements block in
-                tbody#block (Catch id);
+            | Some (None, block) ->
+                let tw = {<state_ = empty; level = same_level>} in
+                let block = tw#statements block in
+                tw#block Normal;
+                m#merge_block_info tw;
+                Some (None, block)
+            | Some (Some id, block) ->
+                let tw = {<state_ = empty; level = same_level>} in
+                let block = tw#statements block in
+                tw#block (Catch id);
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
                 (* .. except the use of 'id' since its scope is limited
                    to 'block' *)
-                let clean set sets =
-                  match id with
-                  | S { name; _ } -> set, Utf8_string_set.remove name sets
-                  | V i -> S.remove i set, sets
+                let ids = bound_idents_of_param id in
+                let clean set =
+                  List.fold_left ids ~init:set ~f:(fun set id -> IdentSet.remove id set)
                 in
-                let def, def_name = tbody#state.def, tbody#state.def_name in
-                let use, use_name = clean tbody#state.use tbody#state.use_name in
+                let def_var = tw#state.def_var in
+                let use = clean (IdentSet.diff tw#state.use tw#state.def_local) in
                 state_ <-
-                  { use = S.union state_.use use
-                  ; use_name = Utf8_string_set.union state_.use_name use_name
-                  ; def = S.union state_.def def
-                  ; def_name = Utf8_string_set.union state_.def_name def_name
+                  { use = IdentSet.union state_.use use
+                  ; def_var = IdentSet.union state_.def_var def_var
+                  ; def_local = state_.def_local
                   };
-                Some (id, block)
+                Some (Some id, block)
           in
           let f =
             match f with
             | None -> None
-            | Some block -> Some (m#statements block)
+            | Some block ->
+                let tf = {<state_ = empty; level = same_level>} in
+                let block = tf#statements block in
+                tf#block Normal;
+                m#merge_block_info tf;
+                Some block
           in
           Try_statement (b, w, f)
       | _ -> super#statement x
+
+    method for_binding k x =
+      (match x with
+      | ForBindIdent x -> (
+          match k with
+          | Let | Const -> m#def_local x
+          | Var -> m#def_var x)
+      | ForBindPattern x -> (
+          let ids = bound_idents_of_pattern x in
+          match k with
+          | Let | Const -> List.iter ids ~f:m#def_local
+          | Var -> List.iter ids ~f:m#def_var));
+      super#for_binding k x
   end
 
 class rename_variable =
+  let declared local_only ident params body =
+    let declared_names = ref StringSet.empty in
+    let decl_var x =
+      match x with
+      | S { name = Utf8 name; _ } -> declared_names := StringSet.add name !declared_names
+      | _ -> ()
+    in
+    Option.iter ~f:decl_var ident;
+    List.iter
+      ~f:(fun p ->
+        let ids = bound_idents_of_param p in
+        List.iter ids ~f:(fun x -> decl_var x))
+      params;
+    (object
+       inherit iter as super
+
+       method expression _ = ()
+
+       method statement x =
+         match x with
+         | Function_declaration (id, _, _, _, _) -> if not local_only then decl_var id
+         | _ -> super#statement x
+
+       method variable_declaration k l =
+         if (not local_only)
+            ||
+            match k with
+            | Let | Const -> true
+            | Var -> false
+         then
+           let ids = bound_idents_of_variable_declaration l in
+           List.iter ids ~f:decl_var
+
+       method for_binding k p =
+         if (not local_only)
+            ||
+            match k with
+            | Let | Const -> true
+            | Var -> false
+         then
+           match p with
+           | ForBindIdent i -> decl_var i
+           | ForBindPattern p ->
+               let ids = bound_idents_of_pattern p in
+               List.iter ids ~f:decl_var
+    end)
+      #statements
+      body;
+    !declared_names
+  in
   object (m)
     inherit map as super
 
@@ -633,35 +889,13 @@ class rename_variable =
 
     val decl = StringSet.empty
 
-    method private update_state ident params body =
-      let declared_names = ref StringSet.empty in
-      let decl_var x =
-        match x with
-        | S { name = Utf8 name; _ } ->
-            declared_names := StringSet.add name !declared_names
-        | _ -> ()
-      in
-      Option.iter ~f:decl_var ident;
-      List.iter ~f:decl_var params;
-      (object
-         inherit iter as super
-
-         method expression _ = ()
-
-         method source x =
-           match x with
-           | Function_declaration (id, _, _, _) -> decl_var id
-           | Statement _ -> super#source x
-
-         method variable_declaration (id, _) = decl_var id
-      end)
-        #sources
-        body;
+    method private update_state local_only ident params iter_body =
+      let declared_names = declared local_only ident params iter_body in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
-                  !declared_names
+                  declared_names
                   subst
-       ; decl = !declared_names>}
+       ; decl = declared_names>}
 
     method ident x =
       match x with
@@ -671,39 +905,72 @@ class rename_variable =
 
     method expression e =
       match e with
-      | EFun (ident, params, body, nid) ->
-          let m' = m#update_state ident params body in
+      | EFun (ident, k, params, body, nid) ->
+          let m' = m#update_state false ident params body in
           EFun
             ( Option.map ident ~f:m'#ident
-            , List.map params ~f:m'#ident
-            , m'#sources body
+            , k
+            , List.map params ~f:m'#param
+            , m'#function_body body
             , nid )
+      | EArrow (k, params, body, nid) ->
+          let m' = m#update_state false None params body in
+          EArrow (k, List.map params ~f:m'#param, m'#function_body body, nid)
       | _ -> super#expression e
 
     method statement s =
       match s with
-      | Try_statement (b, Some ((S { name = Utf8 name; _ } as id), block), final)
-        when not (StringSet.mem name decl) ->
-          (* If [name] is declared in [block] but not outside, then
-             we cannot replace [id] by a fresh variable. As a fast
-             approximation, we only use a fresh variable when [name]
-             is not declared. *)
-          Try_statement
-            ( m#statements b
-            , (let m' = {<subst = StringMap.add name (Code.Var.fresh_n name) subst>} in
-               Some (m'#ident id, m'#statements block))
-            , match final with
-              | None -> None
-              | Some s -> Some (m#statements s) )
-      | _ -> super#statement s
-
-    method source s =
-      match s with
-      | Function_declaration (id, params, body, nid) ->
-          let m' = m#update_state None params body in
+      | Function_declaration (id, k, params, body, nid) ->
+          let m' = m#update_state false None params body in
           Function_declaration
-            (m#ident id, List.map params ~f:m'#ident, m'#sources body, nid)
-      | _ -> super#source s
+            (m#ident id, k, List.map params ~f:m'#param, m'#function_body body, nid)
+      | Block l ->
+          let m' = m#update_state true None [] l in
+          Block (m'#statements l)
+      | Try_statement (block, catch, final) ->
+          let block =
+            let m' = m#update_state true None [] block in
+            m'#statements block
+          in
+          let final =
+            match final with
+            | None -> None
+            | Some final ->
+                let m' = m#update_state true None [] final in
+                Some (m'#statements final)
+          in
+          let catch =
+            match catch with
+            | None -> None
+            | Some (i, catch) ->
+                let i, l =
+                  match i with
+                  | None -> None, []
+                  | Some p ->
+                      let ids = bound_idents_of_param p in
+                      let l =
+                        List.filter ids ~f:(function
+                            | S { name = Utf8 name; _ } -> not (StringSet.mem name decl)
+                            | V _ -> false)
+                      in
+                      Some p, l
+                in
+                let m' =
+                  m#update_state
+                    true
+                    None
+                    (List.map l ~f:(fun id -> PIdent { id; default = None }))
+                    catch
+                in
+                let i =
+                  match i with
+                  | None -> None
+                  | Some i -> Some (m'#param i)
+                in
+                Some (i, m'#statements catch)
+          in
+          Try_statement (block, catch, final)
+      | _ -> super#statement s
   end
 
 class compact_vardecl =
@@ -717,10 +984,12 @@ class compact_vardecl =
     method exc = exc_
 
     method private translate l =
-      List.filter_map l ~f:(fun (id, eopt) ->
-          match eopt with
-          | None -> None
-          | Some (e, _) -> Some (EBin (Eq, EVar id, e)))
+      List.filter_map l ~f:(function
+          | DPattern _ -> None
+          | DIdent (id, eopt) -> (
+              match eopt with
+              | None -> None
+              | Some (e, _) -> Some (EBin (Eq, EVar id, e))))
 
     method private translate_st l =
       let l = m#translate l in
@@ -735,42 +1004,42 @@ class compact_vardecl =
       | [] -> None
       | x :: l -> Some (List.fold_left l ~init:x ~f:(fun acc e -> ESeq (acc, e)))
 
-    method private except e = exc_ <- IdentSet.add e exc_
+    method private except_param (p : formal_parameter) =
+      let s = bound_idents_of_param p |> IdentSet.of_list in
+      exc_ <- IdentSet.union s exc_
+
+    method private except_ident e = exc_ <- IdentSet.add e exc_
 
     method statement s =
       let s = super#statement s in
       match s with
-      | Variable_statement l -> m#translate_st l
-      | For_statement (Right l, e2, e3, s) ->
+      | Function_declaration (id, k, params, body, nid) ->
+          let all = IdentSet.diff insert_ exc_ in
+          let body = m#pack all body in
+          m#except_ident id;
+          Function_declaration (id, k, params, body, nid)
+      | Variable_statement (_, l) -> m#translate_st l
+      | For_statement (Right (Var, l), e2, e3, s) ->
           For_statement (Left (m#translate_ex l), e2, e3, s)
-      | ForIn_statement (Right (id, op), e2, s) ->
-          (match op with
-          | Some _ -> assert false
-          | None -> ());
-          ForIn_statement (Left (EVar id), e2, s)
       | Try_statement (b, w, f) ->
           (match w with
           | None -> ()
-          | Some (id, _) -> m#except id);
+          | Some (None, _) -> ()
+          | Some (Some id, _) -> m#except_param id);
           Try_statement (b, w, f)
       | s -> s
 
     method block block =
       (match block with
-      | Catch e -> m#except e
-      | Params p -> List.iter p ~f:m#except);
+      | Catch e -> m#except_param e
+      | Params p -> List.iter p ~f:m#except_param
+      | Normal -> ());
       super#block block
 
     method merge_info from =
       super#merge_info from;
       let all =
-        S.fold (fun e acc -> IdentSet.add (V e) acc) from#state.def IdentSet.empty
-      in
-      let all =
-        Utf8_string_set.fold
-          (fun e acc -> IdentSet.add (ident e) acc)
-          from#state.def_name
-          all
+        IdentSet.fold (fun e acc -> IdentSet.add e acc) from#state.def_var IdentSet.empty
       in
       insert_ <- IdentSet.diff all from#exc
 
@@ -781,60 +1050,53 @@ class compact_vardecl =
       in
       loop x
 
-    method private pack all sources =
+    method private pack (all : IdentSet.t) sources =
       let may_flush rem vars s instr =
         if List.is_empty vars
         then rem, [], s :: instr
-        else rem, [], s :: (Statement (Variable_statement (List.rev vars)), N) :: instr
+        else rem, [], s :: (Variable_statement (Var, List.rev vars), N) :: instr
       in
       let rem, vars, instr =
         List.fold_left sources ~init:(all, [], []) ~f:(fun (rem, vars, instr) (s, loc) ->
             match s with
-            | Statement (Expression_statement e) ->
+            | Expression_statement e ->
                 let l = m#split e in
                 List.fold_left l ~init:(rem, vars, instr) ~f:(fun (rem, vars, instr) e ->
                     match e with
                     | EBin (Eq, EVar id, exp) when IdentSet.mem id rem ->
-                        IdentSet.remove id rem, (id, Some (exp, N)) :: vars, instr
-                    | x ->
-                        may_flush rem vars (Statement (Expression_statement x), N) instr)
-            | Statement _ as s -> may_flush rem vars (s, loc) instr
-            | Function_declaration _ as x -> rem, vars, (x, loc) :: instr)
+                        IdentSet.remove id rem, DIdent (id, Some (exp, N)) :: vars, instr
+                    | x -> may_flush rem vars (Expression_statement x, N) instr)
+            | Function_declaration _ as x -> rem, vars, (x, loc) :: instr
+            | _ as s -> may_flush rem vars (s, loc) instr)
       in
       let instr =
         match vars with
         | [] -> List.rev instr
         | d ->
-            let d = Statement (Variable_statement (List.rev d)) in
+            let d = Variable_statement (Var, List.rev d) in
             List.rev ((d, N) :: instr)
       in
-      let l = IdentSet.fold (fun x acc -> (x, None) :: acc) rem [] in
+      let l = IdentSet.fold (fun x acc -> DIdent (x, None) :: acc) rem [] in
       match l, instr with
       | [], _ -> instr
-      | l, (Statement (Variable_statement l'), loc) :: rest ->
-          (Statement (Variable_statement (List.rev_append l l')), loc) :: rest
-      | l, _ -> (Statement (Variable_statement l), N) :: instr
-
-    method source x =
-      let x = super#source x in
-      match x with
-      | Function_declaration (id, params, body, nid) ->
-          let all = IdentSet.diff insert_ exc_ in
-          let body = m#pack all body in
-          m#except id;
-          Function_declaration (id, params, body, nid)
-      | Statement _ -> x
+      | l, (Variable_statement (Var, l'), loc) :: rest ->
+          (Variable_statement (Var, List.rev_append l l'), loc) :: rest
+      | l, _ -> (Variable_statement (Var, l), N) :: instr
 
     method expression x =
       let x = super#expression x in
       match x with
-      | EFun (ident, params, body, nid) ->
+      | EFun (ident, k, params, body, nid) ->
           let all = IdentSet.diff insert_ exc_ in
           let body = m#pack all body in
           (match ident with
-          | Some id -> m#except id
+          | Some id -> m#except_ident id
           | None -> ());
-          EFun (ident, params, body, nid)
+          EFun (ident, k, params, body, nid)
+      | EArrow (k, params, body, nid) ->
+          let all = IdentSet.diff insert_ exc_ in
+          let body = m#pack all body in
+          EArrow (k, params, body, nid)
       | _ -> x
 
     method statements l =
@@ -861,47 +1123,42 @@ class compact_vardecl =
       body
   end
 
+(* - Group variable_statement together *)
+(* - Remove unnecessary block *)
 class clean =
-  object (m)
+  object (_m)
     inherit map as super
 
     method statements l =
-      let rev_append_st x l =
-        match x with
-        | Block b, _ -> List.rev_append b l
-        | x -> x :: l
-      in
       let l = super#statements l in
-      let vars_rev, vars_loc, instr_rev =
-        List.fold_left
-          l
-          ~init:([], N, [])
-          ~f:(fun (vars_rev, vars_loc, instr_rev) (x, loc) ->
-            match x with
-            | Variable_statement l when Config.Flag.compact () ->
-                let vars_loc =
-                  match vars_loc with
-                  | Pi _ as x -> x
-                  | _ -> loc
-                in
-                List.rev_append l vars_rev, vars_loc, instr_rev
-            | Empty_statement | Expression_statement (EVar _) ->
-                vars_rev, vars_loc, instr_rev
-            | _ when List.is_empty vars_rev ->
-                [], vars_loc, rev_append_st (x, loc) instr_rev
-            | _ ->
-                ( []
-                , vars_loc
-                , rev_append_st
-                    (x, loc)
-                    ((Variable_statement (List.rev vars_rev), vars_loc) :: instr_rev) ))
-      in
-      let instr_rev =
-        match vars_rev with
-        | [] -> instr_rev
-        | vars_rev -> (Variable_statement (List.rev vars_rev), vars_loc) :: instr_rev
-      in
-      List.rev instr_rev
+      List.filter l ~f:(function
+          | (Empty_statement | Expression_statement (EVar _)), _ -> false
+          | _ -> true)
+      |> List.group ~f:(fun (x, _) (prev, _) ->
+             match prev, x with
+             | Variable_statement (k1, _), Variable_statement (k2, _) when Poly.(k1 = k2)
+               -> true
+             | _, _ -> false)
+      |> List.map ~f:(function
+             | (Variable_statement (k1, _), _) :: _ as l ->
+                 let loc =
+                   List.find_map l ~f:(fun (_, loc) ->
+                       match loc with
+                       | N | U -> None
+                       | Pi _ -> Some loc)
+                   |> function
+                   | None -> N
+                   | Some x -> x
+                 in
+
+                 ( Variable_statement
+                     ( k1
+                     , List.concat_map l ~f:(function
+                           | Variable_statement (_, l), _ -> l
+                           | _ -> assert false) )
+                 , loc )
+             | [ x ] -> x
+             | [] | _ :: _ :: _ -> assert false)
 
     method statement s =
       let s = super#statement s in
@@ -922,30 +1179,9 @@ class clean =
       | While_statement (cond, st) -> While_statement (cond, b st)
       | For_statement (p1, p2, p3, st) -> For_statement (p1, p2, p3, b st)
       | ForIn_statement (param, e, st) -> ForIn_statement (param, e, b st)
+      | ForOf_statement (param, e, st) -> ForOf_statement (param, e, b st)
       | Switch_statement (e, l, Some [], []) -> Switch_statement (e, l, None, [])
       | s -> s
-
-    method sources l =
-      let append_st st_rev sources_rev =
-        let st = m#statements (List.rev st_rev) in
-        let st = List.map st ~f:(fun (s, loc) -> Statement s, loc) in
-        List.rev_append st sources_rev
-      in
-      let st_rev, sources_rev =
-        List.fold_left l ~init:([], []) ~f:(fun (st_rev, sources_rev) (x, loc) ->
-            match x with
-            | Statement s -> (s, loc) :: st_rev, sources_rev
-            | Function_declaration _ as x when List.is_empty st_rev ->
-                [], (m#source x, loc) :: sources_rev
-            | Function_declaration _ as x ->
-                [], (m#source x, loc) :: append_st st_rev sources_rev)
-      in
-      let sources_rev =
-        match st_rev with
-        | [] -> sources_rev
-        | st_rev -> append_st st_rev sources_rev
-      in
-      List.rev sources_rev
   end
 
 let translate_assign_op = function
@@ -960,6 +1196,10 @@ let translate_assign_op = function
   | Mul -> StarEq
   | Plus -> PlusEq
   | Minus -> MinusEq
+  | And -> AndEq
+  | Or -> OrEq
+  | Exp -> ExpEq
+  | Coalesce -> CoalesceEq
   | _ -> assert false
 
 let is_one = function
@@ -984,7 +1224,12 @@ let assign_op = function
       | false, false -> None
       | true, _ -> Some (EBin (StarEq, exp, exp''))
       | _, true -> Some (EBin (StarEq, exp, exp')))
-  | exp, EBin (((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor) as unop), exp', y)
+  | ( exp
+    , EBin
+        ( ((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor | And | Or | Exp | Coalesce)
+          as unop)
+        , exp'
+        , y ) )
     when Poly.(exp = exp') -> Some (EBin (translate_assign_op unop, exp, y))
   | _ -> None
 
@@ -993,6 +1238,11 @@ let opt_cons b l =
   | Some b -> b :: l
   | None -> l
 
+(* - Split variable_statement *)
+(* - rewrite assign_op *)
+(* - rewrite function_expression into function_declaration *)
+(* - if simplification *)
+(* - arithmetic simplification *)
 class simpl =
   object (m)
     inherit map as super
@@ -1017,13 +1267,30 @@ class simpl =
           | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
-      | _ -> e
+      | e -> e
 
     method statement s =
       let s = super#statement s in
       match s with
       | Block [ x ] -> fst x
       | _ -> s
+
+    method program p = m#statements_top (m#statements p)
+
+    method function_body b = m#statements_top (m#statements b)
+
+    method private statements_top l =
+      (* In strict mode, functions inside blocks are scoped to that
+         block. Prior to ES2015, block-level functions were forbidden
+         in strict mode. *)
+      List.map l ~f:(function s, loc ->
+          (match s with
+          | Variable_statement
+              ( (Var | Let | Const)
+              , [ DIdent (addr, Some (EFun (None, k, params, body, loc'), loc)) ] ) ->
+              Function_declaration (addr, k, params, body, loc'), loc
+          | Variable_statement ((Var | Let | Const), ([] | _ :: _ :: _)) -> assert false
+          | s -> s, loc))
 
     method statements s =
       let s = super#statements s in
@@ -1040,43 +1307,16 @@ class simpl =
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
-          | Variable_statement l1 ->
+          | Variable_statement ((Var as k), l1) ->
               let x =
                 List.map l1 ~f:(function
-                    | ident, None -> Variable_statement [ ident, None ], loc
-                    | ident, Some (exp, pc) -> (
+                    | DPattern _ as d -> Variable_statement (k, [ d ]), loc
+                    | DIdent (_, None) as d -> Variable_statement (k, [ d ]), loc
+                    | DIdent (ident, Some (exp, _)) as d -> (
                         match assign_op (EVar ident, exp) with
                         | Some e -> Expression_statement e, loc
-                        | None -> Variable_statement [ ident, Some (exp, pc) ], loc))
+                        | None -> Variable_statement (k, [ d ]), loc))
               in
               x @ rem
           | _ -> (st, loc) :: rem)
-
-    method sources l =
-      let append_st st_rev sources_rev =
-        let st = m#statements (List.rev st_rev) in
-        let st =
-          List.map st ~f:(function
-              | ( Variable_statement
-                    [ (addr, Some (EFun (None, params, body, loc'), loc)) ]
-                , _ ) -> Function_declaration (addr, params, body, loc'), loc
-              | s, loc -> Statement s, loc)
-        in
-        List.rev_append st sources_rev
-      in
-      let st_rev, sources_rev =
-        List.fold_left l ~init:([], []) ~f:(fun (st_rev, sources_rev) x ->
-            match x with
-            | Statement s, loc -> (s, loc) :: st_rev, sources_rev
-            | (Function_declaration _ as x), loc when List.is_empty st_rev ->
-                [], (m#source x, loc) :: sources_rev
-            | (Function_declaration _ as x), loc ->
-                [], (m#source x, loc) :: append_st st_rev sources_rev)
-      in
-      let sources_rev =
-        match st_rev with
-        | [] -> sources_rev
-        | st_rev -> append_st st_rev sources_rev
-      in
-      List.rev sources_rev
   end

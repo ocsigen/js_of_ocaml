@@ -57,6 +57,10 @@ val extract_sourcemap : Filetype.js_file -> Js_of_ocaml_compiler.Source_map.t op
 
 val run_javascript : Filetype.js_file -> string
 
+val check_javascript : Filetype.js_file -> string
+
+val check_javascript_source : string -> string
+
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
 val print_file : string -> unit

@@ -187,6 +187,7 @@ while compiling the OCaml toplevel:
         let i = Var.idx v in
         constr.(i) <- c :: constr.(i))
       u;
+    let params = bound_idents_of_params params in
     let params = Array.of_list params in
     let len = Array.length params in
     let len_max = len + offset in
@@ -208,13 +209,30 @@ while compiling the OCaml toplevel:
     global.constraints <- u :: global.constraints
 
   let record_block state scope (block : Js_traverse.block) =
-    let all = S.union scope.Js_traverse.def scope.Js_traverse.use in
+    let all =
+      Javascript.IdentSet.union
+        (Javascript.IdentSet.union scope.Js_traverse.def_var scope.Js_traverse.def_local)
+        scope.Js_traverse.use
+    in
     let all =
       match block with
-      | Catch (V v) -> S.add v all
-      | Catch (S _) | Params _ -> all
+      | Normal -> all
+      | Params _ -> all
+      | Catch p ->
+          let ids = bound_idents_of_param p in
+          List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
+    in
+    let all =
+      Javascript.IdentSet.fold
+        (fun x acc ->
+          match x with
+          | V i -> S.add i acc
+          | S _ -> acc)
+        all
+        S.empty
     in
     match block with
+    | Normal -> add_constraints state all ~offset:0 []
     | Catch v -> add_constraints state all ~offset:5 [ v ]
     | Params p -> add_constraints state all ~offset:0 p
 end
@@ -238,29 +256,39 @@ module Preserve : Strategy = struct
   let record_block t scope (b : Js_traverse.block) =
     let defs =
       match b with
-      | Catch (V x) -> S.singleton x
-      | Catch (S _) -> S.empty
-      | Params _ -> scope.Js_traverse.def
+      | Catch p -> bound_idents_of_param p
+      | Normal -> Javascript.IdentSet.elements scope.Js_traverse.def_local
+      | Params _ ->
+          Javascript.IdentSet.elements
+            (IdentSet.union scope.Js_traverse.def_var scope.Js_traverse.def_local)
     in
+    let defs =
+      List.fold_left
+        ~init:S.empty
+        ~f:(fun acc x ->
+          match (x : Javascript.ident) with
+          | V i -> S.add i acc
+          | S _ -> acc)
+        defs
+    in
+
     t.scopes <- (defs, scope) :: t.scopes
 
   let allocate_variables t ~count:_ =
     let names = Array.make t.size "" in
     List.iter t.scopes ~f:(fun (defs, state) ->
-        let assigned : StringSet.t =
-          List.fold_left
-            ~f:(fun acc (set : Utf8_string_set.t) ->
-              Utf8_string_set.fold (fun (Utf8 x) acc -> StringSet.add x acc) set acc)
-            ~init:Reserved.keyword
-            [ state.Js_traverse.def_name; state.Js_traverse.use_name ]
-        in
         let assigned =
-          S.fold
+          IdentSet.fold
             (fun var acc ->
-              let name = names.(Var.idx var) in
-              if not (String.is_empty name) then StringSet.add name acc else acc)
-            (S.union state.Js_traverse.use state.Js_traverse.def)
-            assigned
+              match var with
+              | S { name = Utf8 s; _ } -> StringSet.add s acc
+              | V v ->
+                  let name = names.(Var.idx v) in
+                  if not (String.is_empty name) then StringSet.add name acc else acc)
+            (IdentSet.union
+               state.Js_traverse.use
+               (IdentSet.union state.Js_traverse.def_var state.Js_traverse.def_local))
+            Reserved.keyword
         in
         let _assigned =
           S.fold
@@ -305,17 +333,28 @@ let program' (module Strategy : Strategy) p =
   let state = Strategy.create nv in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
-  mapper#block (Params []);
-  if S.cardinal mapper#get_free <> 0
+  mapper#block Normal;
+  let free =
+    IdentSet.filter
+      (function
+        | V _ -> true
+        | S _ -> false)
+      mapper#get_free
+  in
+  if IdentSet.cardinal free <> 0
   then (
     if not (debug ())
-    then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
+    then failwith_ "Some variables escaped (#%d)" (IdentSet.cardinal free)
     else
       let (_ : Source_map.t option) =
         Js_output.program (Pretty_print.to_out_channel stderr) p
       in
       Format.eprintf "Some variables escaped:";
-      S.iter (fun s -> Format.eprintf " %s" (Var.to_string s)) mapper#get_free;
+      IdentSet.iter
+        (function
+          | S _ -> ()
+          | V v -> Format.eprintf " <%s>" (Var.to_string v))
+        free;
       Format.eprintf "@.");
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
   let color = function

@@ -24,28 +24,30 @@ let%expect_test "static eval of string get" =
     let open Js_of_ocaml_compiler in
     let traverse = new Js_traverse.free in
     let _ = traverse#program [ st ] in
-    let jsoo_exports = Stdlib.Utf8_string.of_string_exn "jsoo_exports" in
-    Stdlib.Utf8_string_set.mem jsoo_exports traverse#get_use_name
-    || Stdlib.Utf8_string_set.mem jsoo_exports traverse#get_def_name
+    let jsoo_exports =
+      Javascript.ident (Stdlib.Utf8_string.of_string_exn "jsoo_exports")
+    in
+    Javascript.IdentSet.mem jsoo_exports traverse#get_use
+    || Javascript.IdentSet.mem jsoo_exports traverse#get_def
   in
   let clean program =
     let clean_statement st =
       let open Js_of_ocaml_compiler.Javascript in
       match st with
-      | Function_declaration (name, param, body, loc1), loc2 -> (
+      | Function_declaration (name, k, param, body, loc1), loc2 -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
-          | body -> Some (Function_declaration (name, param, body, loc1), loc2))
-      | ( Statement (Expression_statement (ECall (EFun (name, param, body, loc1), a, l)))
+          | body -> Some (Function_declaration (name, k, param, body, loc1), loc2))
+      | ( Expression_statement (ECall (EFun (name, k, param, body, loc1), ANormal, a, l))
         , loc ) -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
           | body ->
               Some
-                ( Statement
-                    (Expression_statement (ECall (EFun (name, param, body, loc1), a, l)))
+                ( Expression_statement
+                    (ECall (EFun (name, k, param, body, loc1), ANormal, a, l))
                 , loc ))
-      | Statement _, _ -> Some st
+      | _, _ -> Some st
     in
     List.filter_map clean_statement program
   in

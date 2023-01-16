@@ -119,6 +119,7 @@ struct
   let ident f = function
     | S { name = Utf8 name; var = Some v; _ } ->
         output_debug_info_ident f name (Code.Var.get_loc v);
+        if false then PP.string f (Printf.sprintf "/* %d */" (Code.Var.idx v));
         PP.string f name
     | S { name = Utf8 name; var = None; loc = Pi pi } ->
         output_debug_info_ident f name (Some pi);
@@ -135,39 +136,46 @@ struct
         PP.space f;
         ident f i
 
-  let rec formal_parameter_list f l =
-    match l with
-    | [] -> ()
-    | [ i ] -> ident f i
-    | i :: r ->
-        ident f i;
-        PP.string f ",";
-        PP.break f;
-        formal_parameter_list f r
+  type prec =
+    | Expression (* 0  *)
+    | AssignementExpression (* 1  *)
+    | ConditionalExpression (* 2  *)
+    | CoalesceExpression
+    | LogicalORExpression (* 3  *)
+    | LogicalANDExpression (* 4  *)
+    | BitwiseORExpression (* 5  *)
+    | BitwiseXORExpression (* 6  *)
+    | BitwiseANDExpression (* 7  *)
+    | EqualityExpression (* 8  *)
+    | RelationalExpression (* 9  *)
+    | ShiftExpression (* 10 *)
+    | AdditiveExpression (* 11 *)
+    | MultiplicativeExpression (* 12 *)
+    | ExponentiationExpression
+    | UnaryExpression (* 13 *)
+    | PostfixExpression (* 14 *)
+    | LeftHandsideExpression (* 15 *)
+    | NewExpression (* 16 *)
+    | CallExpression (* 17 *)
+    | MemberExpression (* 16 *)
+    | FunctionExpression
+    | PrimaryExpression
 
-  (*
-  0 Expression
-  1 AssignementExpression
-  2 ConditionalExpression
-  3 LogicalORExpression
-  4 LogicalANDExpression
-  5 BitwiseORExpression
-  6 BitwiseXORExpression
-  7 BitwiseANDExpression
-  8 EqualityExpression
-  9 RelationalExpression
-  10 ShiftExpression
-  11 AdditiveExpression
-  12 MultiplicativeExpression
-  13 UnaryExpression
-  14 PostfixExpression
-  15 LeftHandsideExpression
-  NewExpression
-  CallExpression
-  16 MemberExpression
-  FunctionExpression
-  PrimaryExpression
-*)
+  module Prec = struct
+    let compare (a : prec) (b : prec) = Poly.compare a b
+
+    [@@@ocaml.warning "-32"]
+
+    let ( <= ) a b = compare a b <= 0
+
+    let ( >= ) a b = compare a b >= 0
+
+    let ( < ) a b = compare a b < 0
+
+    let ( > ) a b = compare a b > 0
+
+    let ( = ) a b = compare a b = 0
+  end
 
   let op_prec op =
     match op with
@@ -182,24 +190,26 @@ struct
     | LsrEq
     | BandEq
     | BxorEq
-    | BorEq -> 1, 13, 1
-    (*
-      | Or -> 3, 3, 4
-      | And -> 4, 4, 5
-      | Bor -> 5, 5, 6
-      | Bxor -> 6, 6, 7
-      | Band -> 7, 7, 8
-    *)
-    | Or -> 3, 3, 3
-    | And -> 4, 4, 4
-    | Bor -> 5, 5, 5
-    | Bxor -> 6, 6, 6
-    | Band -> 7, 7, 7
-    | EqEq | NotEq | EqEqEq | NotEqEq -> 8, 8, 9
-    | Gt | GtInt | Ge | GeInt | Lt | LtInt | Le | LeInt | InstanceOf | In -> 9, 9, 10
-    | Lsl | Lsr | Asr -> 10, 10, 11
-    | Plus | Minus -> 11, 11, 12
-    | Mul | Div | Mod -> 12, 12, 13
+    | BorEq
+    | OrEq
+    | AndEq
+    | ExpEq
+    | CoalesceEq -> AssignementExpression, AssignementExpression, AssignementExpression
+    | Coalesce -> CoalesceExpression, BitwiseORExpression, BitwiseORExpression
+    | Or -> LogicalORExpression, LogicalORExpression, LogicalORExpression
+    | And -> LogicalANDExpression, LogicalANDExpression, LogicalANDExpression
+    | Bor -> BitwiseORExpression, BitwiseORExpression, BitwiseORExpression
+    | Bxor -> BitwiseXORExpression, BitwiseXORExpression, BitwiseXORExpression
+    | Band -> BitwiseANDExpression, BitwiseANDExpression, BitwiseANDExpression
+    | EqEq | NotEq | EqEqEq | NotEqEq ->
+        EqualityExpression, EqualityExpression, RelationalExpression
+    | Gt | GtInt | Ge | GeInt | Lt | LtInt | Le | LeInt | InstanceOf | In ->
+        RelationalExpression, RelationalExpression, ShiftExpression
+    | Lsl | Lsr | Asr -> ShiftExpression, ShiftExpression, AdditiveExpression
+    | Plus | Minus -> AdditiveExpression, AdditiveExpression, MultiplicativeExpression
+    | Mul | Div | Mod ->
+        MultiplicativeExpression, MultiplicativeExpression, ExponentiationExpression
+    | Exp -> ExponentiationExpression, ExponentiationExpression, ExponentiationExpression
 
   let op_str op =
     match op with
@@ -210,7 +220,9 @@ struct
     | PlusEq -> "+="
     | MinusEq -> "-="
     | Or -> "||"
+    | OrEq -> "||="
     | And -> "&&"
+    | AndEq -> "&&="
     | Bor -> "|"
     | Bxor -> "^"
     | Band -> "&"
@@ -236,6 +248,10 @@ struct
     | Mul -> "*"
     | Div -> "/"
     | Mod -> "%"
+    | Exp -> "**"
+    | ExpEq -> "**="
+    | CoalesceEq -> "??="
+    | Coalesce -> "??"
     | InstanceOf | In -> assert false
 
   let unop_str op =
@@ -244,7 +260,7 @@ struct
     | Neg -> "-"
     | Pl -> "+"
     | Bnot -> "~"
-    | IncrA | IncrB | DecrA | DecrB | Typeof | Void | Delete -> assert false
+    | IncrA | IncrB | DecrA | DecrB | Typeof | Void | Delete | Await -> assert false
 
   let rec ends_with_if_without_else st =
     match fst st with
@@ -253,6 +269,7 @@ struct
     | While_statement (_, st)
     | For_statement (_, _, _, st)
     | ForIn_statement (_, _, st) -> ends_with_if_without_else st
+    | ForOf_statement (_, _, st) -> ends_with_if_without_else st
     | If_statement (_, _, None) -> true
     | Block _
     | Variable_statement _
@@ -265,17 +282,21 @@ struct
     | Do_while_statement _
     | Switch_statement _
     | Try_statement _
+    | Function_declaration _
     | Debugger_statement -> false
 
   let rec need_paren l e =
     match e with
-    | ESeq (e, _) -> l <= 0 && need_paren 0 e
-    | ECond (e, _, _) -> l <= 2 && need_paren 3 e
+    | EArrow _ -> Prec.(l <= AssignementExpression)
+    | ESeq (e, _) -> Prec.(l <= Expression) && need_paren Expression e
+    | ECond (e, _, _) -> Prec.(l <= Expression) && need_paren ConditionalExpression e
     | EBin (op, e, _) ->
         let out, lft, _rght = op_prec op in
-        l <= out && need_paren lft e
-    | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) -> l <= 15 && need_paren 15 e
-    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | ERegexp _ | EUn _ | ENew _ -> false
+        Prec.(l <= out) && need_paren lft e
+    | ECall (e, _, _, _) | EAccess (e, _, _) | EDot (e, _, _) ->
+        Prec.(l <= LeftHandsideExpression) && need_paren LeftHandsideExpression e
+    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | ERegexp _ | EUn _ | ENew _ | EYield _
+      -> false
     | EFun _ | EObj _ -> true
 
   let best_string_quote s =
@@ -319,60 +340,106 @@ struct
     Buffer.add_char b quote;
     PP.string f (Buffer.contents b)
 
-  let rec expression l f e =
+  let rec comma_list f f_elt l =
+    match l with
+    | [] -> ()
+    | [ x ] ->
+        PP.start_group f 0;
+        f_elt f x;
+        PP.end_group f
+    | x :: r ->
+        PP.start_group f 0;
+        f_elt f x;
+        PP.end_group f;
+        PP.string f ",";
+        PP.break f;
+        comma_list f f_elt r
+
+  let rec expression (l : prec) f e =
     match e with
     | EVar v -> ident f v
     | ESeq (e1, e2) ->
-        if l > 0
+        if Prec.(l > Expression)
         then (
           PP.start_group f 1;
           PP.string f "(");
-        expression 0 f e1;
+        expression Expression f e1;
         PP.string f ",";
         PP.break f;
-        expression 0 f e2;
-        if l > 0
+        expression Expression f e2;
+        if Prec.(l > Expression)
         then (
           PP.string f ")";
           PP.end_group f)
-    | EFun (i, l, b, pc) ->
+    | EFun (i, k, l, b, pc) ->
+        let prefix =
+          match k with
+          | { async = false; generator = false } -> "function"
+          | { async = true; generator = false } -> "async function"
+          | { async = true; generator = true } -> "async function*"
+          | { async = false; generator = true } -> "function*"
+        in
+        function_declaration f prefix ident i l b pc
+    | EArrow (k, l, b, pc) -> (
         PP.start_group f 1;
         PP.start_group f 0;
-        PP.start_group f 0;
-        PP.string f "function";
-        opt_identifier f i;
+        (match k with
+        | { async = true; generator = false } ->
+            PP.string f "async";
+            PP.space f
+        | { async = false; generator = false } -> ()
+        | { async = true | false; generator = true } -> assert false);
+        PP.break f;
+        (match l with
+        | [ (PIdent { default = None; _ } as x) ] -> formal_parameter f x
+        | [ PIdent { default = Some _; _ } ]
+        | [ PIdentSpread _ ]
+        | [ PPattern _ ]
+        | [] | _ :: _ :: _ ->
+            PP.start_group f 1;
+            PP.string f "(";
+            formal_parameter_list f l;
+            PP.string f ")";
+            PP.end_group f);
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
-        PP.string f "(";
-        formal_parameter_list f l;
-        PP.string f ")";
-        PP.end_group f;
-        PP.end_group f;
-        PP.break f;
-        PP.start_group f 1;
-        PP.string f "{";
-        function_body f b;
-        output_debug_info f pc;
-        PP.string f "}";
-        PP.end_group f;
-        PP.end_group f
-    | ECall (e, el, loc) ->
-        if l > 15
+        PP.string f "=>";
+        match b with
+        | [ (Return_statement (Some e), p) ] ->
+            function_body f [ Expression_statement e, p ];
+            PP.end_group f;
+            PP.end_group f
+        | [ (Block _, _) ] ->
+            function_body f b;
+            PP.end_group f;
+            PP.end_group f
+        | _ ->
+            PP.start_group f 1;
+            PP.string f "{";
+            function_body f b;
+            output_debug_info f pc;
+            PP.string f "}";
+            PP.end_group f;
+            PP.end_group f)
+    | ECall (e, access_kind, el, loc) ->
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
-        expression 15 f e;
+        expression LeftHandsideExpression f e;
         PP.break f;
         PP.start_group f 1;
-        PP.string f "(";
+        (match access_kind with
+        | ANormal -> PP.string f "("
+        | ANullish -> PP.string f "?.(");
         arguments f el;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        if l > 15
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.string f ")";
           PP.end_group f)
@@ -384,9 +451,11 @@ struct
         let s = Num.to_string num in
         let need_parent =
           if Num.is_neg num
-          then l > 13 (* Negative numbers may need to be parenthesized. *)
+          then
+            Prec.(l > UnaryExpression)
+            (* Negative numbers may need to be parenthesized. *)
           else
-            l = 15
+            Prec.(l = LeftHandsideExpression)
             (* Parenthesize as well when followed by a dot. *)
             && (not (Char.equal s.[0] 'I'))
             (* Infinity *)
@@ -396,111 +465,103 @@ struct
         if need_parent then PP.string f "(";
         PP.string f s;
         if need_parent then PP.string f ")"
-    | EUn (Typeof, e) ->
-        if l > 13
+    | EUn (((Typeof | Void | Delete | Await) as op), e) ->
+        let p = UnaryExpression in
+        if Prec.(l > p)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 0;
-        PP.string f "typeof";
+        let name =
+          match op with
+          | Typeof -> "typeof"
+          | Void -> "void"
+          | Delete -> "delete"
+          | Await -> "await"
+          | _ -> assert false
+        in
+        PP.string f name;
         PP.space f;
-        expression 13 f e;
+        expression p f e;
         PP.end_group f;
-        if l > 13
+        if Prec.(l > p)
         then (
           PP.string f ")";
           PP.end_group f)
-    | EUn (Void, e) ->
-        if l > 13
+    | EUn (((IncrB | DecrB) as op), e) ->
+        let p = UnaryExpression in
+        if Prec.(l > p)
         then (
           PP.start_group f 1;
           PP.string f "(");
-        PP.start_group f 0;
-        PP.string f "void";
-        PP.space f;
-        expression 13 f e;
-        PP.end_group f;
-        if l > 13
+        if Poly.(op = IncrB) then PP.string f "++" else PP.string f "--";
+        expression p f e;
+        if Prec.(l > p)
         then (
           PP.string f ")";
           PP.end_group f)
-    | EUn (Delete, e) ->
-        if l > 13
+    | EUn (((IncrA | DecrA) as op), e) ->
+        let p = PostfixExpression in
+        if Prec.(l > p)
         then (
           PP.start_group f 1;
           PP.string f "(");
-        PP.start_group f 0;
-        PP.string f "delete";
-        PP.space f;
-        expression 13 f e;
-        PP.end_group f;
-        if l > 13
-        then (
-          PP.string f ")";
-          PP.end_group f)
-    | EUn (((IncrA | DecrA | IncrB | DecrB) as op), e) ->
-        if l > 13
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
-        if Poly.(op = IncrA) || Poly.(op = DecrA) then expression 13 f e;
-        if Poly.(op = IncrA) || Poly.(op = IncrB)
-        then PP.string f "++"
-        else PP.string f "--";
-        if Poly.(op = IncrB) || Poly.(op = DecrB) then expression 13 f e;
-        if l > 13
+        expression p f e;
+        if Poly.(op = IncrA) then PP.string f "++" else PP.string f "--";
+        if Prec.(l > p)
         then (
           PP.string f ")";
           PP.end_group f)
     | EUn (op, e) ->
-        if l > 13
+        let p = UnaryExpression in
+        let need_parent = Prec.(l > p) in
+        if need_parent
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.string f (unop_str op);
         PP.space f;
-        expression 13 f e;
-        if l > 13
+        expression p f e;
+        if need_parent
         then (
           PP.string f ")";
           PP.end_group f)
-    | EBin (InstanceOf, e1, e2) ->
+    | EBin (((InstanceOf | In) as op), e1, e2) ->
         let out, lft, rght = op_prec InstanceOf in
-        if l > out
+        if Prec.(l > out)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 0;
         expression lft f e1;
         PP.space f;
-        PP.string f "instanceof";
+        let name =
+          match op with
+          | InstanceOf -> "instanceof"
+          | In -> "in"
+          | _ -> assert false
+        in
+        PP.string f name;
         PP.space f;
         expression rght f e2;
         PP.end_group f;
-        if l > out
-        then (
-          PP.string f ")";
-          PP.end_group f)
-    | EBin (In, e1, e2) ->
-        let out, lft, rght = op_prec InstanceOf in
-        if l > out
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
-        PP.start_group f 0;
-        expression lft f e1;
-        PP.space f;
-        PP.string f "in";
-        PP.space f;
-        expression rght f e2;
-        PP.end_group f;
-        if l > out
+        if Prec.(l > out)
         then (
           PP.string f ")";
           PP.end_group f)
     | EBin (op, e1, e2) ->
         let out, lft, rght = op_prec op in
-        if l > out
+        let lft =
+          (* it is impossible to write an ambiguous exponentiation
+             expression. That is, you cannot put a unary operator
+             (+/-/~/!/delete/void/typeof) immediately before the base
+             number *)
+          match e1, op with
+          | EUn (_, _), Exp -> PostfixExpression
+          | EBin (Coalesce, _, _), Coalesce -> CoalesceExpression
+          | _ -> lft
+        in
+        if Prec.(l > out)
         then (
           PP.start_group f 1;
           PP.string f "(");
@@ -509,7 +570,7 @@ struct
         PP.string f (op_str op);
         PP.space f;
         expression rght f e2;
-        if l > out
+        if Prec.(l > out)
         then (
           PP.string f ")";
           PP.end_group f)
@@ -519,62 +580,65 @@ struct
         element_list f el;
         PP.string f "]";
         PP.end_group f
-    | EAccess (e, e') ->
-        if l > 15
+    | EAccess (e, access_kind, e') ->
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
-        expression 15 f e;
+        expression LeftHandsideExpression f e;
         PP.break f;
         PP.start_group f 1;
-        PP.string f "[";
-        expression 0 f e';
+        (match access_kind with
+        | ANormal -> PP.string f "["
+        | ANullish -> PP.string f "?.[");
+        expression Expression f e';
         PP.string f "]";
         PP.end_group f;
         PP.end_group f;
-        if l > 15
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.string f ")";
           PP.end_group f)
-    | EDot (e, Utf8 nm) ->
-        if l > 15
+    | EDot (e, access_kind, Utf8 nm) ->
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
-        expression 15 f e;
-        PP.string f ".";
+        expression LeftHandsideExpression f e;
+        (match access_kind with
+        | ANormal -> PP.string f "."
+        | ANullish -> PP.string f "?.");
         PP.string f nm;
-        if l > 15
+        if Prec.(l > LeftHandsideExpression)
         then (
           PP.string f ")";
           PP.end_group f)
     | ENew (e, None) ->
-        (*FIX: should omit parentheses when possible*)
-        if l > 15
+        if Prec.(l > NewExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
         PP.string f "new";
         PP.space f;
-        expression 16 f e;
+        expression NewExpression f e;
         PP.break f;
         PP.string f "()";
         PP.end_group f;
-        if l > 15
+        if Prec.(l > NewExpression)
         then (
           PP.string f ")";
           PP.end_group f)
     | ENew (e, Some el) ->
-        if l > 15
+        if Prec.(l > CallExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
         PP.string f "new";
         PP.space f;
-        expression 16 f e;
+        expression CallExpression f e;
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
@@ -582,38 +646,38 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        if l > 15
+        if Prec.(l > CallExpression)
         then (
           PP.string f ")";
           PP.end_group f)
     | ECond (e, e1, e2) ->
-        if l > 2
+        if Prec.(l > ConditionalExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
         PP.start_group f 0;
-        expression 3 f e;
+        expression LogicalORExpression f e;
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
         PP.string f "?";
-        expression 1 f e1;
+        expression AssignementExpression f e1;
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
         PP.string f ":";
-        expression 1 f e2;
+        expression AssignementExpression f e2;
         PP.end_group f;
         PP.end_group f;
-        if l > 2
+        if Prec.(l > ConditionalExpression)
         then (
           PP.string f ")";
           PP.end_group f)
     | EObj lst ->
         PP.start_group f 1;
         PP.string f "{";
-        property_name_and_value_list f lst;
+        property_list f lst;
         PP.string f "}";
         PP.end_group f
     | ERegexp (s, opt) -> (
@@ -623,6 +687,19 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
+    | EYield e -> (
+        match e with
+        | None -> PP.string f "yield"
+        | Some e ->
+            PP.start_group f 7;
+            PP.string f "yield";
+            PP.non_breaking_space f;
+            PP.start_group f 0;
+            expression Expression f e;
+            PP.end_group f;
+            PP.end_group f
+            (* There MUST be a space between the return and its
+               argument. A line return will not work *))
 
   and property_name f n =
     match n with
@@ -630,83 +707,175 @@ struct
     | PNS (Utf8 s) ->
         let quote = best_string_quote s in
         pp_string f ~quote s
-    | PNN v -> expression 0 f (ENum v)
+    | PNN v -> expression Expression f (ENum v)
 
-  and property_name_and_value_list f l =
-    match l with
-    | [] -> ()
-    | [ (pn, e) ] ->
+  and property_list f l = comma_list f property l
+
+  and property f p =
+    match p with
+    | Property (pn, e) ->
         PP.start_group f 0;
         property_name f pn;
         PP.string f ":";
         PP.break f;
-        expression 1 f e;
+        expression AssignementExpression f e;
         PP.end_group f
-    | (pn, e) :: r ->
+    | PropertyComputed (p, e) ->
         PP.start_group f 0;
-        property_name f pn;
+        PP.string f "[";
+        expression Expression f p;
+        PP.string f "]";
         PP.string f ":";
         PP.break f;
-        expression 1 f e;
-        PP.end_group f;
-        PP.string f ",";
-        PP.break f;
-        property_name_and_value_list f r
+        expression AssignementExpression f e;
+        PP.end_group f
+    | PropertyGet (Utf8 i, a, b) | PropertySet (Utf8 i, a, b) ->
+        let prefix =
+          match p with
+          | PropertyGet _ -> "get"
+          | PropertySet _ -> "set"
+          | _ -> assert false
+        in
+        function_declaration f prefix PP.string (Some i) a b N
+    | PropertyMethod (Utf8 n, (_, k, l, b, loc')) ->
+        let n =
+          match k with
+          | { async = false; generator = false } -> n
+          | { async = false; generator = true } -> "*" ^ n
+          | { async = true; generator = false } -> "async " ^ n
+          | { async = true; generator = true } -> "async* " ^ n
+        in
+        function_declaration f "" PP.string (Some n) l b loc'
+    | PropertySpread e ->
+        PP.string f "...";
+        expression AssignementExpression f e
 
-  and element_list f el =
-    match el with
-    | [] -> ()
-    | [ e ] -> (
-        match e with
-        | None -> PP.string f ","
-        | Some e ->
-            PP.start_group f 0;
-            expression 1 f e;
+  and element_list f el = comma_list f element el
+
+  and element f (e : element) =
+    match e with
+    | ElementHole -> ()
+    | Element e ->
+        PP.start_group f 0;
+        expression AssignementExpression f e;
+        PP.end_group f
+    | ElementSpread e ->
+        PP.start_group f 0;
+        PP.string f "...";
+        expression AssignementExpression f e;
+        PP.end_group f
+
+  and formal_parameter f p =
+    match p with
+    | PIdentSpread id ->
+        PP.string f "...";
+        ident f id
+    | PIdent { id; default } -> (
+        match default with
+        | None -> ident f id
+        | Some (e, loc) ->
+            PP.start_group f 1;
+            output_debug_info f loc;
+            ident f id;
+            PP.string f "=";
+            PP.break f;
+            expression AssignementExpression f e;
             PP.end_group f)
-    | e :: r ->
-        (match e with
-        | None -> ()
-        | Some e ->
-            PP.start_group f 0;
-            expression 1 f e;
-            PP.end_group f);
-        PP.string f ",";
-        PP.break f;
-        element_list f r
+    | PPattern (p, e) -> (
+        match e with
+        | None -> pattern f p
+        | Some (e, loc) ->
+            PP.start_group f 1;
+            output_debug_info f loc;
+            pattern f p;
+            PP.string f "=";
+            PP.break f;
+            expression AssignementExpression f e;
+            PP.end_group f)
 
-  and function_body f b = source_elements f ~skip_last_semi:true b
+  and formal_parameter_list f l = comma_list f formal_parameter l
 
-  and arguments f l =
-    match l with
-    | [] -> ()
-    | [ (e, s) ] ->
-        PP.start_group f 0;
-        (match s with
-        | `Spread -> PP.string f "..."
-        | `Not_spread -> ());
-        expression 1 f e;
-        PP.end_group f
-    | (e, s) :: r ->
-        PP.start_group f 0;
-        (match s with
-        | `Spread -> PP.string f "..."
-        | `Not_spread -> ());
-        expression 1 f e;
-        PP.end_group f;
-        PP.string f ",";
-        PP.break f;
-        arguments f r
+  and function_body f b = statement_list f ~skip_last_semi:true b
 
-  and variable_declaration f (i, init) =
-    match init with
-    | None -> ident f i
-    | Some (e, pc) ->
+  and argument f a =
+    PP.start_group f 0;
+    (match a with
+    | Arg e -> expression AssignementExpression f e
+    | ArgSpread e ->
+        PP.string f "...";
+        expression AssignementExpression f e);
+    PP.end_group f
+
+  and arguments f l = comma_list f argument l
+
+  and variable_declaration f x =
+    match x with
+    | DIdent (i, None) -> ident f i
+    | DIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
-        output_debug_info f pc;
+        output_debug_info f loc;
         ident f i;
         PP.string f "=";
         PP.break f;
-        expression 1 f e;
+        expression AssignementExpression f e;
+        PP.end_group f
+    | DPattern (p, (e, loc)) ->
+        PP.start_group f 1;
+        output_debug_info f loc;
+        pattern f p;
+        PP.string f "=";
+        PP.break f;
+        expression AssignementExpression f e;
+        PP.end_group f
+
+  and binding_property f x =
+    match x with
+    | Prop_binding (pn, p, d) -> (
+        property_name f pn;
+        PP.string f ":";
+        PP.break f;
+        pattern f p;
+        match d with
+        | None -> ()
+        | Some (e, loc) ->
+            PP.string f "=";
+            PP.break f;
+            output_debug_info f loc;
+            expression AssignementExpression f e)
+    | Prop_rest i ->
+        ident f i;
+        PP.string f "..."
+
+  and binding_array_el f x =
+    match x with
+    | Elt_hole -> ()
+    | Elt_rest i ->
+        ident f i;
+        PP.string f "..."
+    | Elt_binding (p, e) -> (
+        pattern f p;
+        match e with
+        | None -> ()
+        | Some (e, loc) ->
+            PP.string f "=";
+            PP.break f;
+            output_debug_info f loc;
+            expression AssignementExpression f e)
+
+  and pattern f p =
+    match p with
+    | Id i -> ident f i
+    | Object_binding l ->
+        PP.start_group f 1;
+        PP.string f "{";
+        comma_list f binding_property l;
+        PP.string f "}";
+        PP.end_group f
+    | Array_binding l ->
+        PP.start_group f 1;
+        PP.string f "[";
+        comma_list f binding_array_el l;
+        PP.string f "]";
         PP.end_group f
 
   and variable_declaration_list_aux f l =
@@ -719,31 +888,49 @@ struct
         PP.break f;
         variable_declaration_list_aux f r
 
-  and variable_declaration_list close f = function
+  and variable_declaration_kind f kind =
+    match kind with
+    | Var -> PP.string f "var"
+    | Let -> PP.string f "let"
+    | Const -> PP.string f "const"
+
+  and variable_declaration_list kind close f = function
     | [] -> ()
-    | [ (i, None) ] ->
+    | [ DIdent (i, None) ] ->
         PP.start_group f 1;
-        PP.string f "var";
+        variable_declaration_kind f kind;
         PP.space f;
         ident f i;
-        if close then PP.string f ";";
-        PP.end_group f
-    | [ (i, Some (e, pc)) ] ->
+        if close then PP.string f ";"
+    | [ DIdent (i, Some (e, loc)) ] ->
         PP.start_group f 1;
-        output_debug_info f pc;
-        PP.string f "var";
+        output_debug_info f loc;
+        variable_declaration_kind f kind;
         PP.space f;
         ident f i;
         PP.string f "=";
         PP.break1 f;
         PP.start_group f 0;
-        expression 1 f e;
+        expression AssignementExpression f e;
+        if close then PP.string f ";";
+        PP.end_group f;
+        PP.end_group f
+    | [ DPattern (p, (e, loc)) ] ->
+        PP.start_group f 1;
+        output_debug_info f loc;
+        variable_declaration_kind f kind;
+        PP.space f;
+        pattern f p;
+        PP.string f "=";
+        PP.break1 f;
+        PP.start_group f 0;
+        expression AssignementExpression f e;
         if close then PP.string f ";";
         PP.end_group f;
         PP.end_group f
     | l ->
         PP.start_group f 1;
-        PP.string f "var";
+        variable_declaration_kind f kind;
         PP.space f;
         variable_declaration_list_aux f l;
         if close then PP.string f ";";
@@ -754,12 +941,28 @@ struct
     | None -> ()
     | Some e -> expression l f e
 
+  and for_binding f k v =
+    variable_declaration_kind f k;
+    PP.space f;
+    match v with
+    | ForBindIdent i -> ident f i
+    | ForBindPattern p -> pattern f p
+
   and statement ?(last = false) f (s, loc) =
     let last_semi () = if last then () else PP.string f ";" in
     output_debug_info f loc;
     match s with
     | Block b -> block f b
-    | Variable_statement l -> variable_declaration_list (not last) f l
+    | Variable_statement (k, l) -> variable_declaration_list k (not last) f l
+    | Function_declaration (i, k, l, b, loc') ->
+        let prefix =
+          match k with
+          | { async = false; generator = false } -> "function"
+          | { async = true; generator = false } -> "async function"
+          | { async = true; generator = true } -> "async function*"
+          | { async = false; generator = true } -> "function*"
+        in
+        function_declaration f prefix ident (Some i) l b loc'
     | Empty_statement -> PP.string f ";"
     | Debugger_statement ->
         PP.string f "debugger";
@@ -767,17 +970,17 @@ struct
     | Expression_statement e ->
         (* Parentheses are required when the expression
            starts syntactically with "{" or "function" *)
-        if need_paren 0 e
+        if need_paren Expression e
         then (
           PP.start_group f 1;
           PP.string f "(";
-          expression 0 f e;
+          expression Expression f e;
           PP.string f ")";
           last_semi ();
           PP.end_group f)
         else (
           PP.start_group f 0;
-          expression 0 f e;
+          expression Expression f e;
           last_semi ();
           PP.end_group f)
     | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
@@ -790,7 +993,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -812,7 +1015,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -834,7 +1037,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -850,7 +1053,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -871,7 +1074,7 @@ struct
         PP.break1 f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         last_semi ();
         PP.end_group f;
@@ -888,7 +1091,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         last_semi ();
         PP.end_group f;
@@ -901,14 +1104,14 @@ struct
         PP.start_group f 1;
         PP.string f "(";
         (match e1 with
-        | Left e -> opt_expression 0 f e
-        | Right l -> variable_declaration_list false f l);
+        | Left e -> opt_expression Expression f e
+        | Right (k, l) -> variable_declaration_list k false f l);
         PP.string f ";";
         PP.break f;
-        opt_expression 0 f e2;
+        opt_expression Expression f e2;
         PP.string f ";";
         PP.break f;
-        opt_expression 0 f e3;
+        opt_expression Expression f e3;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -925,13 +1128,36 @@ struct
         PP.start_group f 1;
         PP.string f "(";
         (match e1 with
-        | Left e -> expression 0 f e
-        | Right v -> variable_declaration_list false f [ v ]);
+        | Left e -> expression Expression f e
+        | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "in";
         PP.break f;
         PP.space f;
-        expression 0 f e2;
+        expression Expression f e2;
+        PP.string f ")";
+        PP.end_group f;
+        PP.end_group f;
+        PP.break f;
+        PP.start_group f 0;
+        statement ~last f s;
+        PP.end_group f;
+        PP.end_group f
+    | ForOf_statement (e1, e2, s) ->
+        PP.start_group f 1;
+        PP.start_group f 0;
+        PP.string f "for";
+        PP.break f;
+        PP.start_group f 1;
+        PP.string f "(";
+        (match e1 with
+        | Left e -> expression Expression f e
+        | Right (k, v) -> for_binding f k v);
+        PP.space f;
+        PP.string f "of";
+        PP.break f;
+        PP.space f;
+        expression Expression f e2;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -961,7 +1187,7 @@ struct
         | None ->
             PP.string f "return";
             last_semi ()
-        | Some (EFun (i, l, b, pc)) ->
+        | Some (EFun (i, { async = false; generator = false }, l, b, pc)) ->
             PP.start_group f 1;
             PP.start_group f 0;
             PP.start_group f 0;
@@ -989,7 +1215,7 @@ struct
             PP.string f "return";
             PP.non_breaking_space f;
             PP.start_group f 0;
-            expression 0 f e;
+            expression Expression f e;
             last_semi ();
             PP.end_group f;
             PP.end_group f
@@ -1008,7 +1234,7 @@ struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e;
+        expression Expression f e;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -1020,7 +1246,7 @@ struct
           PP.start_group f 1;
           PP.string f "case";
           PP.space f;
-          expression 0 f e;
+          expression Expression f e;
           PP.string f ":";
           PP.end_group f;
           PP.break f;
@@ -1057,7 +1283,7 @@ struct
         PP.string f "throw";
         PP.non_breaking_space f;
         PP.start_group f 0;
-        expression 0 f e;
+        expression Expression f e;
         last_semi ();
         PP.end_group f;
         PP.end_group f
@@ -1073,9 +1299,12 @@ struct
         | Some (i, b) ->
             PP.break f;
             PP.start_group f 1;
-            PP.string f "catch(";
-            ident f i;
-            PP.string f ")";
+            (match i with
+            | None -> PP.string f "catch"
+            | Some i ->
+                PP.string f "catch(";
+                formal_parameter f i;
+                PP.string f ")");
             PP.break f;
             block f b;
             PP.end_group f);
@@ -1106,44 +1335,37 @@ struct
     PP.string f "}";
     PP.end_group f
 
-  and source_element f ?skip_last_semi se =
-    match se with
-    | Statement s, loc -> statement f ?last:skip_last_semi (s, loc)
-    | Function_declaration (i, l, b, loc'), loc ->
-        output_debug_info f loc;
-        PP.start_group f 1;
-        PP.start_group f 0;
-        PP.start_group f 0;
-        PP.string f "function";
-        PP.space f;
-        ident f i;
-        PP.end_group f;
-        PP.break f;
-        PP.start_group f 1;
-        PP.string f "(";
-        formal_parameter_list f l;
-        PP.string f ")";
-        PP.end_group f;
-        PP.end_group f;
-        PP.break f;
-        PP.start_group f 1;
-        PP.string f "{";
-        function_body f b;
-        output_debug_info f loc';
-        PP.string f "}";
-        PP.end_group f;
-        PP.end_group f
+  and function_declaration :
+      type a. 'pp -> string -> ('pp -> a -> unit) -> a option -> _ list -> _ -> _ -> unit
+      =
+   fun f prefix (pp_name : _ -> a -> unit) (name : a option) l body loc ->
+    PP.start_group f 1;
+    PP.start_group f 0;
+    PP.start_group f 0;
+    PP.string f prefix;
+    (match name with
+    | None -> ()
+    | Some name ->
+        if not (String.is_empty prefix) then PP.space f;
+        pp_name f name);
+    PP.end_group f;
+    PP.break f;
+    PP.start_group f 1;
+    PP.string f "(";
+    formal_parameter_list f l;
+    PP.string f ")";
+    PP.end_group f;
+    PP.end_group f;
+    PP.break f;
+    PP.start_group f 1;
+    PP.string f "{";
+    function_body f body;
+    output_debug_info f loc;
+    PP.string f "}";
+    PP.end_group f;
+    PP.end_group f
 
-  and source_elements f ?skip_last_semi se =
-    match se with
-    | [] -> ()
-    | [ s ] -> source_element f ?skip_last_semi s
-    | s :: r ->
-        source_element f s;
-        PP.break f;
-        source_elements f ?skip_last_semi r
-
-  and program f s = source_elements f s
+  and program f s = statement_list f s
 end
 
 let part_of_ident =

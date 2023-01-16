@@ -20,15 +20,36 @@
 open Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
-let print ~compact source =
+let print ?(report = false) ?(invalid = false) ~compact source =
+  let stdout = Util.check_javascript_source source in
+  (match invalid, stdout with
+  | false, _ -> print_endline stdout
+  | true, "" -> print_endline "invalid file but node --check didn't complain"
+  | true, _ -> ());
   let buffer = Buffer.create (String.length source) in
   let pp = Pretty_print.to_buffer buffer in
   Pretty_print.set_compact pp compact;
   let lexed = Parse_js.Lexer.of_string source in
-  let parsed = Parse_js.parse lexed in
-  Config.Flag.enable "debuginfo";
-  let _ = Js_output.program pp parsed in
-  print_endline (Buffer.contents buffer)
+  try
+    let parsed = Parse_js.parse lexed in
+    Config.Flag.enable "debuginfo";
+    let _ = Js_output.program pp parsed in
+    let s = Buffer.contents buffer in
+    print_endline s;
+    let stdout = Util.check_javascript_source s in
+    (match invalid, stdout with
+    | false, _ -> print_endline stdout
+    | true, "" -> print_endline "invalid file but node --check didn't complain"
+    | true, _ -> ());
+    print_endline stdout
+  with Parse_js.Parsing_error pi as e ->
+    if report
+    then
+      Printf.printf
+        "cannot parse js (from l:%d, c:%d)@."
+        pi.Parse_info.line
+        pi.Parse_info.col
+    else raise e
 
 let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
@@ -106,14 +127,223 @@ let%expect_test "preserve number literals" =
     /*<< 15 5>>*/  /*<< 15 11>>*/ var t=1E+3; |}]
 
 let%expect_test "preserve number literals in property_name" =
-  print ~compact:false {|
-    var number_as_key = { 100000000000000000000 : 2 }; |};
+  print
+    ~compact:false
+    {|
+    var number_as_key = { 100000000000000000000 : 2 };
+    var number_as_key = { 100000000000000000000n : 2 };
+ |};
   [%expect
     {|
-    /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key={100000000000000000000:2}; |}]
+    /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key={100000000000000000000:2};
+    /*<< 3 4>>*/  /*<< 3 22>>*/ var number_as_key={100000000000000000000n:2}; |}]
+
+let%expect_test "ops" =
+  print
+    ~report:true
+    ~compact:false
+    {|
+    a += a;
+    b ||= true;
+    c **= b ** 2;
+    1 ** 2;
+    (-1) ** 2;
+    -(1 ** 2);
+    f ??= fw;
+    g = c || (a ?? b) || c;
+    g = (c || a) ?? (b || c);
+    g = c && (a ?? b) && c;
+    g = (c && a) ?? (b && c);
+    y = a ?? b ?? c ?? d
+
+    y = a?.b?.s?.[a] ?? c ?? d
+
+    a?.b
+    a?.[b]
+    a?.(b)
+ |};
+  (* FIXME: parsing & parens  *)
+  [%expect
+    {|
+    /*<< 2 4>>*/ a += a;
+    /*<< 3 4>>*/ b ||= true;
+    /*<< 4 4>>*/ c **= b ** 2;
+    /*<< 5 4>>*/ 1 ** 2;
+    /*<< 6 4>>*/ (- 1) ** 2;
+    /*<< 7 4>>*/ - (1 ** 2);
+    /*<< 8 4>>*/ f ??= fw;
+    /*<< 9 4>>*/ g = c || (a ?? b) || c;
+    /*<< 10 4>>*/ g = (c || a) ?? (b || c);
+    /*<< 11 4>>*/ g = c && (a ?? b) && c;
+    /*<< 12 4>>*/ g = (c && a) ?? (b && c);
+    /*<< 13 4>>*/ y = a ?? b ?? c ?? d;
+    /*<< 15 4>>*/ y = a?.b?.s?.[a] ?? c ?? d;
+    /*<< 17 4>>*/ a?.b;
+    /*<< 18 4>>*/ a?.[b];
+    /*<< 19 4>>*/  /*<< 19 4>>*/ a?.(b); |}]
+
+let%expect_test "arrow" =
+  print
+    ~report:true
+    ~compact:false
+    {|
+    var a = (x => x + 2)
+    var a = (() => 2);
+    var a = ((x) => x + 2);
+    var a = ((x,y) => x + y);
+
+    var a = (x => { x + 2 });
+    var a = (() => { 2 });
+    var a = ((x) => { x + 2 });
+
+    var a = ((x = 1 / 2) => x + 10 );
+
+    var a = ((x = /qwe/g ) => x + 10 );
+
+ |};
+
+  [%expect
+    {|
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var a=x=>x + 2;
+    /*<< 3 4>>*/  /*<< 3 10>>*/ var a=()=>2;
+    /*<< 4 4>>*/  /*<< 4 10>>*/ var a=x=>x + 2;
+    /*<< 5 4>>*/  /*<< 5 10>>*/ var a=(x,y)=>x + y;
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var a=x=> /*<< 7 18>>*/ { /*<< 7 20>>*/ x + 2};
+    /*<< 8 4>>*/  /*<< 8 10>>*/ var a=()=> /*<< 8 19>>*/ { /*<< 8 21>>*/ 2};
+    /*<< 9 4>>*/  /*<< 9 10>>*/ var a=x=> /*<< 9 20>>*/ { /*<< 9 22>>*/ x + 2};
+    /*<< 11 4>>*/  /*<< 11 10>>*/ var a=( /*<< 11 16>>*/ x=1 / 2)=>x + 10;
+    /*<< 13 4>>*/  /*<< 13 10>>*/ var a=( /*<< 13 16>>*/ x=/qwe/g)=>x + 10; |}]
+
+let%expect_test "trailing comma" =
+  (* GH#989 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+
+// Provides: rehb_new_face
+function rehb_new_face(
+  _fontName /*: string */,
+) {
+  return undefined;
+}
+
+// Provides: rehb_shape
+// Requires: caml_to_js_string
+function rehb_shape(_face /*: fk_face */, text /*: string */) {
+  var str = caml_to_js_string(text);
+  var ret = str.split("").map(function mapper(_char) {
+      return [/* <jsoo_empty> */ 0, /* glyphId */ 0, /* cluster */ 0];
+    });
+
+  // Adding the leading `0` to make it a jsoo compatible array
+  ret.unshift(0);
+  return ret;
+}
+ |};
+
+  [%expect
+    {|
+    /*<< 4 0>>*/ function rehb_new_face(_fontName)
+    { /*<< 7 2>>*/ return undefined /*<< 8 0>>*/ }
+    /*<< 12 0>>*/ function rehb_shape(_face,text)
+    { /*<< 13 2>>*/  /*<< 13 10>>*/ var
+      str=
+        /*<< 13 12>>*/ caml_to_js_string(text);
+      /*<< 14 2>>*/  /*<< 14 10>>*/ var
+      ret=
+        /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
+        (function mapper(_char){ /*<< 15 6>>*/ return [0,0,0] /*<< 14 30>>*/ });
+      /*<< 19 2>>*/  /*<< 19 2>>*/ ret.unshift(0);
+      /*<< 20 2>>*/ return ret /*<< 21 0>>*/ } |}]
+
+let%expect_test "rest parameters" =
+  (* GH#1031 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+      api_obj[key_module][key_func] = function(...args) {
+        return checkIfInitialized().then(function() {
+          return callWithProto(api_json[key_module][key_func], args);
+        });
+      };
+ |};
+
+  [%expect
+    {|
+     /*<< 2 6>>*/ api_obj[key_module][key_func]
+    =
+    function(...args)
+     { /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
+              (function()
+                { /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
+                         (api_json[key_module][key_func],args) /*<< 3 41>>*/ }) /*<< 2 38>>*/ }; |}]
+
+let%expect_test "async/await" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+         async function compile(src)
+         {
+           const glslangModule = await import(
+             "https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js"
+           );
+           const glslang = await glslangModule.default();
+           return glslang.compileGLSL(src, "compute");
+         }
+ |};
+
+  [%expect
+    {|
+    /*<< 2 9>>*/ async function compile(src)
+    { /*<< 4 11>>*/  /*<< 4 31>>*/ const
+      glslangModule=
+       await
+        /*<< 4 39>>*/ import
+        ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
+      /*<< 7 11>>*/  /*<< 7 25>>*/ const
+      glslang=
+       await  /*<< 7 33>>*/ glslangModule.default();
+      /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src,"compute") /*<< 2 9>>*/ } |}]
+
+let%expect_test "get/set property" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+     var x = {
+       get prop() { return 3 },
+       set prop(x) { return x == 2 },
+       a : 4,
+       b() { return 5},
+       *e() { return 5},
+       async e() { return 5},
+       async* e() { return 5},
+       ["field" + 1]: 3
+     };
+
+ |};
+
+  [%expect
+    {|
+    /*<< 2 5>>*/  /*<< 2 11>>*/ var
+    x=
+     {get prop(){ /*<< 3 20>>*/ return 3},
+      set prop(x){ /*<< 4 21>>*/ return x == 2},
+      a:4,
+      b(){ /*<< 6 13>>*/ return 5 /*<< 6 7>>*/ },
+      *e(){ /*<< 7 14>>*/ return 5 /*<< 7 7>>*/ },
+      async e(){ /*<< 8 19>>*/ return 5 /*<< 8 7>>*/ },
+      async* e(){ /*<< 9 20>>*/ return 5 /*<< 9 7>>*/ },
+      ["field" + 1]:3}; |}]
 
 let%expect_test "error reporting" =
-  (try print ~compact:false {|
+  (try
+     print ~invalid:true ~compact:false {|
     var x = 2;
     {
     var = 5;
@@ -191,7 +421,12 @@ let check_vs_string s toks =
   in
   loop 0 0 toks
 
-let parse_print_token ?(extra = false) s =
+let parse_print_token ?(invalid = false) ?(extra = false) s =
+  let stdout = Util.check_javascript_source s in
+  (match invalid, stdout with
+  | false, _ -> print_endline stdout
+  | true, "" -> print_endline "invalid file but node --check didn't complain"
+  | true, _ -> ());
   let lex = Parse_js.Lexer.of_string s in
   let _p, tokens =
     try Parse_js.parse' lex
@@ -216,17 +451,24 @@ let parse_print_token ?(extra = false) s =
   loop tokens
 
 let%expect_test "tokens" =
-  parse_print_token {|
+  parse_print_token
+    {|
     var a = 42;
     var \u{1ee62} = 42;
+    var a = x => x + 2
+    var a = () => 2
+
 |};
   [%expect
     {|
     2: 4:var, 8:a, 10:=, 12:42, 14:;,
-    3: 4:var, 8:\u{1ee62}, 18:=, 20:42, 22:;, |}]
+    3: 4:var, 8:\u{1ee62}, 18:=, 20:42, 22:;,
+    4: 4:var, 8:a, 10:=, 12:x, 14:=>, 17:x, 19:+, 21:2, 0:;,
+    5: 4:var, 8:a, 10:=, 12:(, 13:), 15:=>, 18:2, 0:;, |}]
 
 let%expect_test "invalid ident" =
   parse_print_token
+    ~invalid:true
     {|
     var \uD83B\uDE62 = 42; // invalid surrogate escape sequence
     var \u{1F42B} = 2; // U+1F42B is not a valid id
@@ -254,7 +496,7 @@ let%expect_test "string" =
     5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
 
 let%expect_test "multiline string" =
-  parse_print_token {|
+  parse_print_token ~invalid:true {|
     42;
     "
     ";
@@ -278,7 +520,7 @@ let%expect_test "multiline string" =
     3: 4:"    ",
     4: 5:;,
     5: 4:42, 0:;, |}];
-  parse_print_token {|
+  parse_print_token ~invalid:true {|
     42;
     "
 
@@ -345,21 +587,21 @@ let%expect_test "div_or_regexp" =
     {|
     1 / 2
     1 + /regexp/
+    (b) / denominator
     if(a) { e } /regexp/
+    if(b) /regexp/
     +{ } / denominator
     +{ } / denominator[a]
-    if(b) /regexp/
-    (b) / denominator
-|};
+    |};
   [%expect
     {|
     2: 4:1, 6:/, 8:2, 0:;,
-    3: 4:1, 6:+, 8:/regexp/, 0:;,
-    4: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 0:;, 14:}, 16:/regexp/,
-    5: 4:+, 5:{, 7:}, 9:/, 11:denominator,
-    6: 4:+, 5:{, 7:}, 9:/, 11:denominator, 22:[, 23:a, 24:], 0:;,
-    7: 4:if, 6:(, 7:b, 8:), 10:/regexp/,
-    8: 4:(, 5:b, 6:), 8:/, 10:denominator, 0:;, |}]
+    3: 4:1, 6:+, 8:/regexp/,
+    4: 4:(, 5:b, 6:), 8:/, 10:denominator, 0:;,
+    5: 4:if, 6:(, 7:a, 8:), 10:{, 12:e, 0:;, 14:}, 16:/regexp/, 0:;,
+    6: 4:if, 6:(, 7:b, 8:), 10:/regexp/,
+    7: 4:+, 5:{, 7:}, 9:/, 11:denominator,
+    8: 4:+, 5:{, 7:}, 9:/, 11:denominator, 22:[, 23:a, 24:], 0:;, |}]
 
 let%expect_test "virtual semicolon" =
   parse_print_token
@@ -369,7 +611,7 @@ let%expect_test "virtual semicolon" =
     return 2
     return
     2
-
+a:while(true){
     continue;
     continue a
     continue
@@ -379,7 +621,7 @@ let%expect_test "virtual semicolon" =
     break a
     break
     a
-
+}
     throw 2;
     throw 2
 
@@ -399,6 +641,7 @@ let%expect_test "virtual semicolon" =
      3: 4:return, 11:2, 0:; (virtual),
      4: 4:return, 0:; (virtual),
      5: 4:2, 0:; (virtual),
+     6: 0:a (identifier), 1::, 2:while, 7:(, 8:true, 12:), 13:{,
      7: 4:continue, 12:;,
      8: 4:continue, 13:a (identifier), 0:; (virtual),
      9: 4:continue, 0:; (virtual),
@@ -407,6 +650,7 @@ let%expect_test "virtual semicolon" =
     13: 4:break, 10:a (identifier), 0:; (virtual),
     14: 4:break, 0:; (virtual),
     15: 4:a (identifier), 0:; (virtual),
+    16: 0:},
     17: 4:throw, 10:2, 11:;,
     18: 4:throw, 10:2, 0:; (virtual),
     20: 4:{, 6:1, 0:; (virtual),
@@ -439,7 +683,7 @@ function UnexpectedVirtualElement(data) {
     {|
      2: 0:function, 9:UnexpectedVirtualElement (identifier), 33:(, 34:data (identifier), 38:), 40:{,
      3: 4:var, 8:err (identifier), 12:=, 14:new, 18:Error (identifier), 23:(, 24:), 25:;,
-     5: 4:err (identifier), 7:., 8:type, 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
+     5: 4:err (identifier), 7:., 8:type (identifier), 13:=, 15:"virtual-hyperscript.unexpected.virtual-element", 63:;,
      6: 4:err (identifier), 7:., 8:message (identifier), 16:=,
      7: 8:"The parent vnode is:\\n", 33:+,
      8: 8:errorString (identifier), 19:(, 20:data (identifier), 24:., 25:parentVnode (identifier), 36:), 0:; (virtual),
@@ -494,8 +738,8 @@ Event.prototype.initEvent = function _Event_initEvent(type, bubbles, cancelable)
 |};
   [%expect
     {|
-    2: 0:Event (identifier), 5:., 6:prototype (identifier), 15:., 16:initEvent (identifier), 26:=, 28:function, 37:_Event_initEvent (identifier), 53:(, 54:type, 58:,, 60:bubbles (identifier), 67:,, 69:cancelable (identifier), 79:), 81:{,
-    3: 4:this, 8:., 9:type, 14:=, 16:type, 0:; (virtual),
+    2: 0:Event (identifier), 5:., 6:prototype (identifier), 15:., 16:initEvent (identifier), 26:=, 28:function, 37:_Event_initEvent (identifier), 53:(, 54:type (identifier), 58:,, 60:bubbles (identifier), 67:,, 69:cancelable (identifier), 79:), 81:{,
+    3: 4:this, 8:., 9:type (identifier), 14:=, 16:type (identifier), 0:; (virtual),
     4: 4:this, 8:., 9:bubbles (identifier), 17:=, 19:bubbles (identifier), 0:; (virtual),
     5: 4:this, 8:., 9:cancelable (identifier), 20:=, 22:cancelable (identifier), 0:; (virtual),
     6: 0:}, 0:; (virtual), |}]

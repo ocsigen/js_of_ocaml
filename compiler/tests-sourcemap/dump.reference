@@ -5,5 +5,5 @@ b.ml:1:10 -> 18:    function f(x){<>return x - 1 | 0}
 b.ml:1:6 -> 25:    function f(x){return <>x - 1 | 0}
 b.ml:1:15 -> 34:    function f(x){return x - 1 | 0<>}
 b.ml:1:4 -> 21:    var Testlib_B=[0,<>f];
-a.ml:-1:-1 -> 4:    <>var runtime=globalThis.jsoo_runtime;
+a.ml:-1:-1 -> 4:    <>function caml_call1(f,a0)
 a.ml:-1:-1 -> 44:    throw [0,Int,caml_call1(Testlib_B[1],2)]<>}

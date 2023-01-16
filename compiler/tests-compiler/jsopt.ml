@@ -337,8 +337,8 @@ let%expect_test "string sharing" =
        {"use strict";
         var
          str_npi_xcf_x80="npi\xcf\x80",
-         str_npi="npiπ",
          str_abc_def="abc\\def",
+         str_npi="npiπ",
          str_abcdef="abcdef",
          runtime=globalThis.jsoo_runtime,
          s3=str_abcdef,
@@ -448,8 +448,8 @@ let%expect_test "string sharing" =
        {"use strict";
         var
          str_npi_xcf_x80="npi\xcf\x80",
-         str_npi="npiπ",
          str_abc_def="abc\\def",
+         str_npi="npiπ",
          str_abcdef="abcdef",
          runtime=globalThis.jsoo_runtime,
          caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,

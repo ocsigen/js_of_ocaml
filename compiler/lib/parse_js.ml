@@ -29,30 +29,22 @@ module Lexer : sig
 
   val curr_pos : t -> Lexing.position
 
-  val stash : t -> unit
-
-  val rollback : t -> unit
-
   val token : t -> Js_token.t * (Lexing.position * Lexing.position)
 
-  val regexp : t -> Js_token.t * (Lexing.position * Lexing.position)
+  val lex_as_regexp : t -> Js_token.t * (Lexing.position * Lexing.position)
 
   val dummy_pos : Lexing.position
 end = struct
-  type elt = Js_token.t * (Lexing.position * Lexing.position) * Flow_lexer.Lex_env.t
-
   type t =
     { l : Sedlexing.lexbuf
     ; mutable env : Flow_lexer.Lex_env.t
-    ; mutable curr : elt option
-    ; mutable stashed : elt list
     }
 
   let dummy_pos = { Lexing.pos_fname = ""; pos_lnum = 0; pos_cnum = 0; pos_bol = 0 }
 
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
-  let create l = { l; env = Flow_lexer.Lex_env.create l; curr = None; stashed = [] }
+  let create l = { l; env = Flow_lexer.Lex_env.create l }
 
   let of_file file : t =
     let ic = open_in file in
@@ -82,64 +74,91 @@ end = struct
         List.iter l ~f:(fun (loc, e) ->
             let loc =
               match loc.Flow_lexer.Loc.source with
-              | None -> Printf.sprintf "%d:%d" loc.start.line loc.start.column
-              | Some f -> Printf.sprintf "%s:%d:%d" f loc.start.line loc.start.column
+              | None ->
+                  Printf.sprintf
+                    "%d:%d"
+                    loc.start.pos_lnum
+                    (loc.start.pos_cnum - loc.start.pos_bol)
+              | Some f ->
+                  Printf.sprintf
+                    "%s:%d:%d"
+                    f
+                    loc.start.pos_lnum
+                    (loc.start.pos_cnum - loc.start.pos_bol)
             in
+
             Printf.eprintf
               "Lexer error: %s: %s\n"
               loc
               (Flow_lexer.Parse_error.to_string e))
 
   let token (t : t) =
-    match t.stashed with
-    | [] ->
-        let env, res = Flow_lexer.token t.env in
-        t.env <- env;
-        let tok = Flow_lexer.Lex_result.token res in
-        let pos = Flow_lexer.Lex_result.loc res in
-        report_errors res;
-        let c = tok, pos, env in
-        t.curr <- Some c;
-        tok, pos
-    | ((tok, pos, env) as c) :: xs ->
-        t.stashed <- xs;
-        t.env <- env;
-        t.curr <- Some c;
-        tok, pos
+    let env, res = Flow_lexer.token t.env in
+    t.env <- env;
+    let tok = Flow_lexer.Lex_result.token res in
+    let pos = Flow_lexer.Lex_result.loc res in
+    report_errors res;
+    tok, pos
 
-  let regexp (t : t) =
-    match t.stashed with
-    | [] ->
-        let env, res = Flow_lexer.regexp t.env in
-        t.env <- env;
-        let tok = Flow_lexer.Lex_result.token res in
-        let pos = Flow_lexer.Lex_result.loc res in
-        report_errors res;
-        let c = tok, pos, env in
-        t.curr <- Some c;
-        tok, pos
-    | ((tok, pos, env) as c) :: xs ->
-        t.stashed <- xs;
-        t.env <- env;
-        t.curr <- Some c;
-        tok, pos
-
-  let rollback (t : t) = Sedlexing.rollback t.l
-
-  let stash (t : t) =
-    match t.curr with
-    | None -> ()
-    | Some (tok, p, env) -> t.stashed <- (tok, p, env) :: t.stashed
+  let lex_as_regexp (t : t) =
+    Sedlexing.rollback t.l;
+    let env, res = Flow_lexer.regexp t.env in
+    t.env <- env;
+    let tok = Flow_lexer.Lex_result.token res in
+    let pos = Flow_lexer.Lex_result.loc res in
+    report_errors res;
+    tok, pos
 end
 
 exception Parsing_error of Parse_info.t
 
+let matching_token (o : Js_token.t) (c : Js_token.t) =
+  match o, c with
+  | T_LPAREN, T_RPAREN | T_LBRACKET, T_RBRACKET | T_LCURLY, T_RCURLY -> true
+  | _ -> false
+
+module Tokens : sig
+  type elt = Js_token.t * (Lexing.position * Lexing.position)
+
+  type +'a t
+
+  val add : elt -> 'a -> 'a t -> 'a t
+
+  val last : 'a t -> elt option
+
+  val last' : 'a t -> (elt * 'a t * 'a) option
+
+  val empty : 'a t
+
+  val all : 'a t -> (Js_token.t * Parse_info.t) list
+end = struct
+  type elt = Js_token.t * (Lexing.position * Lexing.position)
+
+  type 'a t = (elt * 'a) list
+
+  let empty = []
+
+  let add elt data t = (elt, data) :: t
+
+  let rec last = function
+    | [] -> None
+    | (((Js_token.TComment _ | TCommentLineDirective _), _), _) :: l -> last l
+    | (x, _) :: _ -> Some x
+
+  let rec last' = function
+    | [] -> None
+    | (((Js_token.TComment _ | TCommentLineDirective _), _), _) :: l -> last' l
+    | (x, data) :: l -> Some (x, l, data)
+
+  let all t_rev = List.rev_map t_rev ~f:(fun ((t, (p, _)), _) -> t, Parse_info.t_of_pos p)
+end
+
 let parse_aux the_parser (lexbuf : Lexer.t) =
   let init = the_parser (Lexer.curr_pos lexbuf) in
   let fol prev (_, (c, _)) =
-    match prev with
-    | [] -> true
-    | (_, (_, p)) :: _ -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
+    match Tokens.last prev with
+    | None -> true
+    | Some (_, (_, p)) -> c.Lexing.pos_lnum <> p.Lexing.pos_lnum
   in
   let rec loop_error prev checkpoint =
     let module I = Js_parser.MenhirInterpreter in
@@ -173,34 +192,43 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
         | Not_found -> None
         | _ -> None)
   in
-  let rec loop prev prev_with_comment (last_checkpoint, checkpoint) =
+  let rec loop prev buffer checkpoint =
     let module I = Js_parser.MenhirInterpreter in
     match checkpoint with
     | I.InputNeeded _env ->
-        let inputneeded = checkpoint in
-        let token, prev_with_comment =
-          match prev with
-          | ((Js_token.T_EOF, _) as prev) :: _ -> prev, prev_with_comment
+        let token, buffer, prev =
+          match Tokens.last prev with
+          | Some ((Js_token.T_EOF, _) as last) -> last, buffer, prev
           | _ ->
-              let rec read_one prev_with_comment (lexbuf : Lexer.t) =
-                match Lexer.token lexbuf with
-                | (TCommentLineDirective _ as tok), pos ->
-                    read_one ((tok, pos) :: prev_with_comment) lexbuf
-                | (TComment s as tok), pos ->
-                    if fol prev_with_comment (tok, pos)
+              let read_tok buffer lexbuf =
+                match buffer with
+                | [] -> buffer, Lexer.token lexbuf
+                | x :: xs -> xs, x
+              in
+              let rec read_one prev buffer (lexbuf : Lexer.t) =
+                let buffer, t = read_tok buffer lexbuf in
+                match t with
+                | (TCommentLineDirective _, _) as t ->
+                    let prev = Tokens.add t checkpoint prev in
+                    read_one prev buffer lexbuf
+                | (TComment s, loc) as t ->
+                    if fol prev t
                     then
                       match parse_annot s with
-                      | None -> read_one ((tok, pos) :: prev_with_comment) lexbuf
+                      | None ->
+                          let prev = Tokens.add t checkpoint prev in
+                          read_one prev buffer lexbuf
                       | Some annot ->
-                          let tok = Js_token.TAnnot (s, annot) in
-                          (tok, pos), prev_with_comment
-                    else read_one ((tok, pos) :: prev_with_comment) lexbuf
-                | TAnnot _, _pos -> assert false
-                | t, pos -> (t, pos), prev_with_comment
+                          let t = Js_token.TAnnot (s, annot), loc in
+                          t, buffer, prev
+                    else
+                      let prev = Tokens.add t checkpoint prev in
+                      read_one prev buffer lexbuf
+                | t -> t, buffer, prev
               in
-              let t, prev_with_comment = read_one prev_with_comment lexbuf in
-              let t, pos =
-                match prev, t with
+              let t, buffer, prev = read_one prev buffer lexbuf in
+              let (t, pos), buffer =
+                match Tokens.last prev, t with
                 (* restricted productions
                  * 7.9.1 - 3
                  * When, as the program is parsed from left to right, a token is encountered
@@ -211,41 +239,42 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
                  * and the restricted token is separated from the previous token by at least
                  * one LineTerminator, then a semicolon is automatically inserted before the
                  * restricted token. *)
-                | ( ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW), _) :: _
-                  , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _) as t) ) -> t
-                | ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW), _) :: _, t when fol prev t
-                  ->
-                    Lexer.stash lexbuf;
-                    T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos)
+                | ( Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _)
+                  , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _) as t) ) -> t, buffer
+                | Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _), t
+                  when fol prev t ->
+                    let buffer = t :: buffer in
+                    (T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos)), buffer
                 (* The practical effect of these restricted productions is as follows:
                  * When a ++ or -- token is encountered where the parser would treat it
                  * as a postfix operator, and at least one LineTerminator occurred between
                  * the preceding token and the ++ or -- token, then a semicolon is automatically
                  * inserted before the ++ or -- token. *)
                 | _, ((T_DECR, pos) as tok) when not (fol prev tok) ->
-                    Js_token.T_DECR_NB, pos
+                    (Js_token.T_DECR_NB, pos), buffer
                 | _, ((T_INCR, pos) as tok) when not (fol prev tok) ->
-                    Js_token.T_INCR_NB, pos
-                | _, ((((T_DIV | T_DIV_ASSIGN) as t), ((start_pos, _) as _pos)) as tok) ->
+                    (Js_token.T_INCR_NB, pos), buffer
+                | _, ((((T_DIV | T_DIV_ASSIGN) as t), ((start_pos, _) as _pos)) as tok)
+                  -> (
                     if I.acceptable checkpoint t start_pos
-                    then tok
-                    else (
-                      Lexer.rollback lexbuf;
-                      let t, pos = Lexer.regexp lexbuf in
-                      t, pos)
-                | _, t -> t
+                    then tok, buffer
+                    else
+                      match buffer with
+                      | [] -> Lexer.lex_as_regexp lexbuf, buffer
+                      | _ ->
+                          (* Trying to lex token differently, not allowed *) tok, buffer)
+                | _, t -> t, buffer
               in
-              (t, pos), prev_with_comment
+              (t, pos), buffer, prev
         in
-        let last_checkpoint = prev, prev_with_comment, inputneeded in
-        let t, pos = token in
-        let checkpoint = I.offer checkpoint (t, fst pos, snd pos) in
-        loop (token :: prev) (token :: prev_with_comment) (last_checkpoint, checkpoint)
-    | I.Shifting _ | I.AboutToReduce _ ->
-        loop prev prev_with_comment (last_checkpoint, I.resume checkpoint)
-    | I.Accepted v -> `Ok (v, prev_with_comment)
+        let t, (pos_start, pos_stop) = token in
+        let prev = Tokens.add token checkpoint prev in
+        let checkpoint = I.offer checkpoint (t, pos_start, pos_stop) in
+        loop prev buffer checkpoint
+    | I.Shifting _ | I.AboutToReduce _ -> loop prev buffer (I.resume checkpoint)
+    | I.Accepted v -> `Ok (v, prev)
     | I.Rejected -> `Error prev
-    | I.HandlingError _ -> (
+    | I.HandlingError _env -> (
         (* 7.9.1 - 1 *)
         (* When, as the program is parsed from left to right, a token (called the offending token)
            is encountered that is not allowed by any production of the grammar, then a semicolon
@@ -259,57 +288,108 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
         (* When, as the program is parsed from left to right, the end of the input stream of tokens *)
         (* is encountered and the parser is unable to parse the input token stream as a single *)
         (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
-        let insert_virtual_semmit =
-          match prev with
-          | [] | (T_VIRTUAL_SEMICOLON, _) :: _ -> false
-          | (T_RCURLY, _) :: _ -> true
-          | (T_EOF, _) :: _ -> true
-          | offending :: before :: _ when fol [ before ] offending -> true
-          | _ -> false
+        let kind =
+          match Tokens.last' prev with
+          | None | Some ((T_VIRTUAL_SEMICOLON, _), _, _) -> `None
+          | Some (((T_RCURLY, _) as tok), rest, checkpoint) ->
+              `Semi_colon (tok, rest, checkpoint)
+          | Some (((T_EOF, _) as tok), rest, checkpoint) ->
+              `Semi_colon (tok, rest, checkpoint)
+          | Some (((T_ARROW, _) as tok), prev, checkpoint) ->
+              `Arrow (tok, prev, checkpoint)
+          | Some (last, rest, checkpoint) ->
+              if fol rest last then `Semi_colon (last, rest, checkpoint) else `None
         in
         let drop_annot_or_error () =
-          match prev with
-          | (TAnnot (s, _), pos) :: _ ->
-              let prev, prev_with_comment, checkpoint = last_checkpoint in
-              let t = Js_token.TComment s in
-              loop prev ((t, pos) :: prev_with_comment) (last_checkpoint, checkpoint)
+          match Tokens.last' prev with
+          | Some ((TAnnot (s, _), pos), prev, checkpoint) ->
+              let t = Js_token.TComment s, pos in
+              let prev = Tokens.add t checkpoint prev in
+              loop prev buffer checkpoint
           | _ -> loop_error prev (I.resume checkpoint)
         in
-        match insert_virtual_semmit with
-        | false -> drop_annot_or_error ()
-        | true ->
-            let prev, prev_with_comment, checkpoint = last_checkpoint in
-            if I.acceptable
-                 checkpoint
-                 Js_token.T_VIRTUAL_SEMICOLON
-                 (Lexer.curr_pos lexbuf)
-            then (
-              Lexer.stash lexbuf;
+        match kind with
+        | `None -> drop_annot_or_error ()
+        | `Arrow (tok, prev, _checkpoint) -> (
+            (* Restart parsing from the openning parens, patching the
+               token to be T_LPAREN_ARROW to help the parser *)
+            let buffer = tok :: buffer in
+            let err () = loop_error prev (I.resume checkpoint) in
+            match Tokens.last' prev with
+            | Some (((T_RPAREN, _) as tok), prev, _) ->
+                let buffer = tok :: buffer in
+                let rec rewind stack buffer prev =
+                  match Tokens.last' prev with
+                  | None -> err ()
+                  | Some (((tok, loc) as tok'), prev, checkpoint) -> (
+                      match tok, stack with
+                      | (T_RPAREN | T_RCURLY | T_RBRACKET), _ ->
+                          let buffer = tok' :: buffer in
+                          let stack = tok :: stack in
+                          rewind stack buffer prev
+                      | ((T_LPAREN | T_LCURLY | T_LBRACKET) as o), c :: stack -> (
+                          if not (matching_token o c)
+                          then err ()
+                          else
+                            match stack with
+                            | [] ->
+                                let buffer = (Js_token.T_LPAREN_ARROW, loc) :: buffer in
+                                loop prev buffer checkpoint
+                            | _ ->
+                                let buffer = tok' :: buffer in
+                                rewind stack buffer prev)
+                      | _, stack ->
+                          let buffer = tok' :: buffer in
+                          rewind stack buffer prev)
+                in
+                rewind [ T_RPAREN ] buffer prev
+            | Some _ | None -> err ())
+        | `Semi_colon (tok, prev, checkpoint) ->
+            if I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos
+            then
+              let buffer = tok :: buffer in
               let t = Js_token.T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos) in
               let checkpoint =
                 let t, pos = t in
                 I.offer checkpoint (t, fst pos, snd pos)
               in
-              loop (t :: prev) (t :: prev_with_comment) (last_checkpoint, checkpoint))
+              let prev = Tokens.add t checkpoint prev in
+              loop prev buffer checkpoint
             else drop_annot_or_error ())
   in
-  match loop [] [] (([], [], init), init) with
+  match loop Tokens.empty [] init with
   | `Ok x -> x
-  | `Error tok ->
+  | `Error toks ->
       let pi =
-        match tok with
-        | [] -> Parse_info.zero
-        | (_, (p, _)) :: _ -> Parse_info.t_of_pos p
+        match Tokens.last toks with
+        | None -> Parse_info.zero
+        | Some (_, (p, _)) -> Parse_info.t_of_pos p
       in
       raise (Parsing_error pi)
 
 let parse' lex =
-  let p, t_rev = parse_aux Js_parser.Incremental.program lex in
-  p, List.rev_map t_rev ~f:(fun (t, (p, _)) -> t, Parse_info.t_of_pos p)
+  let p, toks = parse_aux Js_parser.Incremental.program lex in
+  let groups =
+    List.group p ~f:(fun a pred ->
+        match pred, a with
+        | `Item _, `Annot _ -> false
+        | `Annot _, `Annot _ -> true
+        | `Item _, `Item _ -> true
+        | `Annot _, `Item _ -> true)
+  in
+  let p =
+    List.map groups ~f:(fun g ->
+        List.partition_map g ~f:(function
+            | `Annot a -> `Fst a
+            | `Item i -> `Snd i))
+  in
+  p, Tokens.all toks
 
 let parse lex =
   let p, _ = parse_aux Js_parser.Incremental.program lex in
-  List.map p ~f:(fun (c, _) -> c)
+  List.filter_map p ~f:(function
+      | `Item i -> Some i
+      | `Annot _ -> None)
 
 let parse_expr lex =
   let expr, _ = parse_aux Js_parser.Incremental.standalone_expression lex in
