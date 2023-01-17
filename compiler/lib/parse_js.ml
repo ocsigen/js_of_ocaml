@@ -75,6 +75,21 @@ end = struct
 
   let curr_pos lexbuf = snd (Sedlexing.lexing_positions lexbuf.l)
 
+  let report_errors res =
+    match Flow_lexer.Lex_result.errors res with
+    | [] -> ()
+    | l ->
+        List.iter l ~f:(fun (loc, e) ->
+            let loc =
+              match loc.Flow_lexer.Loc.source with
+              | None -> Printf.sprintf "%d:%d" loc.start.line loc.start.column
+              | Some f -> Printf.sprintf "%s:%d:%d" f loc.start.line loc.start.column
+            in
+            Printf.eprintf
+              "Lexer error: %s: %s\n"
+              loc
+              (Flow_lexer.Parse_error.to_string e))
+
   let token (t : t) =
     match t.stashed with
     | [] ->
@@ -82,6 +97,7 @@ end = struct
         t.env <- env;
         let tok = Flow_lexer.Lex_result.token res in
         let pos = Flow_lexer.Lex_result.loc res in
+        report_errors res;
         let c = tok, pos, env in
         t.curr <- Some c;
         tok, pos
@@ -98,6 +114,7 @@ end = struct
         t.env <- env;
         let tok = Flow_lexer.Lex_result.token res in
         let pos = Flow_lexer.Lex_result.loc res in
+        report_errors res;
         let c = tok, pos, env in
         t.curr <- Some c;
         tok, pos

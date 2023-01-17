@@ -32,6 +32,13 @@ module Parse_error = struct
     | InvalidSciBigInt
     | InvalidFloatBigInt
     | UnterminatedRegExp
+
+  let to_string = function
+    | Unexpected unexpected -> Printf.sprintf "Unexpected %s" unexpected
+    | IllegalUnicodeEscape -> "Illegal Unicode escape"
+    | InvalidSciBigInt -> "A bigint literal cannot use exponential notation"
+    | InvalidFloatBigInt -> "A bigint literal must be an integer"
+    | UnterminatedRegExp -> "Invalid regular expression: missing /"
 end
 
 module Lex_env = struct

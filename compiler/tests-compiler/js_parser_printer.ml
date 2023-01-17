@@ -199,7 +199,7 @@ let parse_print_token ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.T_EOF, _) ] | [] -> ()
+    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
     | (tok, pos) :: xs ->
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
@@ -239,11 +239,13 @@ let%expect_test "multiline string" =
     ";
     42
 |};
-  [%expect {|
-    2: 4:42, 6:;,
-    3: 4:"\n    ",
-    4: 5:;,
-    5: 4:42, 0:;, |}];
+  [%expect
+    {|
+     2: 4:42, 6:;,
+     3: 4:"\n    ",
+     4: 5:;,
+     5: 4:42, 0:;,
+    Lexer error: 3:5: Unexpected token ILLEGAL |}];
   parse_print_token {|
     42;
     "\
@@ -262,11 +264,14 @@ let%expect_test "multiline string" =
     ";
     42
 |};
-  [%expect {|
-    2: 4:42, 6:;,
-    3: 4:"\n\n    ",
-    5: 5:;,
-    6: 4:42, 0:;, |}];
+  [%expect
+    {|
+     2: 4:42, 6:;,
+     3: 4:"\n\n    ",
+     5: 5:;,
+     6: 4:42, 0:;,
+    Lexer error: 3:5: Unexpected token ILLEGAL
+    Lexer error: 4:0: Unexpected token ILLEGAL |}];
   [%expect {||}]
 
 let%expect_test "multiline comments" =
