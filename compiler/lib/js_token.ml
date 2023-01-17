@@ -307,3 +307,58 @@ let to_string_extra x =
   | TAnnot _ -> "(annot)"
   | T_ERROR _ -> "(error)"
   | _ -> ""
+
+let is_keyword s =
+  match s with
+  | "async" -> Some T_ASYNC
+  | "await" -> Some T_AWAIT
+  | "break" -> Some T_BREAK
+  | "case" -> Some T_CASE
+  | "catch" -> Some T_CATCH
+  | "class" -> Some T_CLASS
+  | "const" -> Some T_CONST
+  | "continue" -> Some T_CONTINUE
+  | "debugger" -> Some T_DEBUGGER
+  | "declare" -> Some T_DECLARE
+  | "default" -> Some T_DEFAULT
+  | "delete" -> Some T_DELETE
+  | "do" -> Some T_DO
+  | "else" -> Some T_ELSE
+  | "enum" -> Some T_ENUM
+  | "export" -> Some T_EXPORT
+  | "extends" -> Some T_EXTENDS
+  | "false" -> Some T_FALSE
+  | "finally" -> Some T_FINALLY
+  | "for" -> Some T_FOR
+  | "function" -> Some T_FUNCTION
+  | "if" -> Some T_IF
+  | "implements" -> Some T_IMPLEMENTS
+  | "import" -> Some T_IMPORT
+  | "in" -> Some T_IN
+  | "instanceof" -> Some T_INSTANCEOF
+  | "interface" -> Some T_INTERFACE
+  | "let" -> Some T_LET
+  | "new" -> Some T_NEW
+  | "null" -> Some T_NULL
+  | "of" -> Some T_OF
+  | "opaque" -> Some T_OPAQUE
+  | "package" -> Some T_PACKAGE
+  | "private" -> Some T_PRIVATE
+  | "protected" -> Some T_PROTECTED
+  | "public" -> Some T_PUBLIC
+  | "return" -> Some T_RETURN
+  | "static" -> Some T_STATIC
+  | "super" -> Some T_SUPER
+  | "switch" -> Some T_SWITCH
+  | "this" -> Some T_THIS
+  | "throw" -> Some T_THROW
+  | "true" -> Some T_TRUE
+  | "try" -> Some T_TRY
+  | "type" -> Some T_TYPE
+  | "typeof" -> Some T_TYPEOF
+  | "var" -> Some T_VAR
+  | "void" -> Some T_VOID
+  | "while" -> Some T_WHILE
+  | "with" -> Some T_WITH
+  | "yield" -> Some T_YIELD
+  | _ -> None
