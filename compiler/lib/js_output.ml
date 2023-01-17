@@ -950,14 +950,16 @@ struct
         last_semi ()
     | Continue_statement (Some s) ->
         PP.string f "continue ";
-        PP.string f (Javascript.Label.to_string s);
+        let (Utf8 l) = Javascript.Label.to_string s in
+        PP.string f l;
         last_semi ()
     | Break_statement None ->
         PP.string f "break";
         last_semi ()
     | Break_statement (Some s) ->
         PP.string f "break ";
-        PP.string f (Javascript.Label.to_string s);
+        let (Utf8 l) = Javascript.Label.to_string s in
+        PP.string f l;
         last_semi ()
     | Return_statement e -> (
         match e with
@@ -999,7 +1001,8 @@ struct
             (* There MUST be a space between the return and its
                argument. A line return will not work *))
     | Labelled_statement (i, s) ->
-        PP.string f (Javascript.Label.to_string i);
+        let (Utf8 l) = Javascript.Label.to_string i in
+        PP.string f l;
         PP.string f ":";
         PP.break f;
         statement ~last f s

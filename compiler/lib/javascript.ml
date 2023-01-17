@@ -102,7 +102,7 @@ end
 module Label = struct
   type t =
     | L of int
-    | S of string
+    | S of Utf8_string.t
 
   let printer = Var_printer.create Var_printer.Alphabet.javascript
 
@@ -113,7 +113,7 @@ module Label = struct
     | S _ -> assert false
 
   let to_string = function
-    | L t -> Var_printer.to_string printer t
+    | L t -> Utf8_string.of_string_exn (Var_printer.to_string printer t)
     | S s -> s
 
   let of_string s = S s

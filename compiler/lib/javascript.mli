@@ -57,9 +57,9 @@ module Label : sig
 
   val succ : t -> t
 
-  val to_string : t -> string
+  val to_string : t -> Utf8_string.t
 
-  val of_string : string -> t
+  val of_string : Utf8_string.t -> t
 end
 
 type location =
