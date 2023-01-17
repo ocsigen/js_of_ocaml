@@ -225,7 +225,6 @@ and expression =
   | EBool of bool
   | ENum of Num.t
   | EObj of property_name_and_value_list
-  | EQuote of string
   | ERegexp of string * string option
 
 (****)

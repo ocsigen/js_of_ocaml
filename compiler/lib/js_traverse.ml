@@ -150,11 +150,7 @@ class map : mapper =
           EFun (idopt, List.map params ~f:m#ident, m#sources body, nid)
       | EArr l -> EArr (List.map l ~f:(fun x -> m#expression_o x))
       | EObj l -> EObj (List.map l ~f:(fun (i, e) -> i, m#expression e))
-      | (EStr _ as x)
-      | (EBool _ as x)
-      | (ENum _ as x)
-      | (EQuote _ as x)
-      | (ERegexp _ as x) -> x
+      | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
 
     method expression_o x =
       match x with
@@ -318,7 +314,7 @@ class iter : iterator =
           m#sources body
       | EArr l -> List.iter l ~f:(fun x -> m#expression_o x)
       | EObj l -> List.iter l ~f:(fun (_, e) -> m#expression e)
-      | EStr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ -> ()
+      | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
 
     method expression_o x =
       match x with
