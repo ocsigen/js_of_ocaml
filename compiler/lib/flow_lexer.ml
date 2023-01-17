@@ -27,164 +27,11 @@ end
 
 module Parse_error = struct
   type t =
-    | AccessorDataProperty
-    | AccessorGetSet
-    | AdjacentJSXElements
-    | AmbiguousDeclareModuleKind
-    | AmbiguousLetBracket
-    | AsyncFunctionAsStatement
-    | AwaitAsIdentifierReference
-    | ComputedShorthandProperty
-    | DeclareAsync
-    | DeclareClassElement
-    | DeclareClassFieldInitializer
-    | DeclareExportConst
-    | DeclareExportInterface
-    | DeclareExportLet
-    | DeclareExportType
-    | DeclareOpaqueTypeInitializer
-    | DuplicateConstructor
-    | DuplicateDeclareModuleExports
-    | DuplicateExport of string
-    | DuplicatePrivateFields of string
-    | ElementAfterRestElement
-    | EnumBigIntMemberNotInitialized of
-        { enum_name : string
-        ; member_name : string
-        }
-    | EnumBooleanMemberNotInitialized of
-        { enum_name : string
-        ; member_name : string
-        }
-    | EnumDuplicateMemberName of
-        { enum_name : string
-        ; member_name : string
-        }
-    | EnumInconsistentMemberValues of { enum_name : string }
-    | EnumInvalidEllipsis of { trailing_comma : bool }
-    | EnumInvalidExplicitType of
-        { enum_name : string
-        ; supplied_type : string option
-        }
-    | EnumInvalidExport
-    | EnumInvalidInitializerSeparator of { member_name : string }
-    | EnumInvalidMemberName of
-        { enum_name : string
-        ; member_name : string
-        }
-    | EnumInvalidMemberSeparator
-    | EnumNumberMemberNotInitialized of
-        { enum_name : string
-        ; member_name : string
-        }
-    | EnumStringMemberInconsistentlyInitailized of { enum_name : string }
-    | ExpectedJSXClosingTag of string
-    | ExpectedPatternFoundExpression
-    | ExportSpecifierMissingComma
-    | FunctionAsStatement of { in_strict_mode : bool }
-    | GeneratorFunctionAsStatement
-    | GetterArity
-    | GetterMayNotHaveThisParam
-    | IllegalBreak
-    | IllegalContinue
-    | IllegalReturn
-    | IllegalUnicodeEscape
-    | ImportSpecifierMissingComma
-    | ImportTypeShorthandOnlyInPureImport
-    | InexactInsideExact
-    | InexactInsideNonObject
-    | InvalidClassMemberName of
-        { name : string
-        ; static : bool
-        ; method_ : bool
-        ; private_ : bool
-        }
-    | InvalidFloatBigInt
-    | InvalidIndexedAccess of { has_bracket : bool }
-    | InvalidJSXAttributeValue
-    | InvalidLHSInAssignment
-    | InvalidLHSInExponentiation
-    | InvalidLHSInForIn
-    | InvalidLHSInForOf
-    | InvalidNonTypeImportInDeclareModule
-    | InvalidOptionalIndexedAccess
-    | InvalidRegExp
-    | InvalidRegExpFlags of string
-    | InvalidSciBigInt
-    | InvalidTupleOptionalSpread
-    | InvalidTupleVariance
-    | InvalidTypeof
-    | JSXAttributeValueEmptyExpression
-    | LiteralShorthandProperty
-    | MalformedUnicode
-    | MethodInDestructuring
-    | MissingTypeParam
-    | MissingTypeParamDefault
-    | MultipleDefaultsInSwitch
-    | NewlineAfterThrow
-    | NewlineBeforeArrow
-    | NoCatchOrFinally
-    | NoUninitializedConst
-    | NoUninitializedDestructuring
-    | NullishCoalescingUnexpectedLogical of string
-    | OptionalChainNew
-    | OptionalChainTemplate
-    | ParameterAfterRestParameter
-    | PrivateDelete
-    | PrivateNotInClass
-    | PropertyAfterRestElement
-    | Redeclaration of string * string
-    | SetterArity
-    | SetterMayNotHaveThisParam
-    | StrictCatchVariable
-    | StrictDelete
-    | StrictDuplicateProperty
-    | StrictFunctionName
-    | StrictLHSAssignment
-    | StrictLHSPostfix
-    | StrictLHSPrefix
-    | StrictModeWith
-    | StrictNonOctalLiteral
-    | StrictOctalLiteral
-    | StrictParamDupe
-    | StrictParamName
-    | StrictParamNotSimple
-    | StrictReservedWord
-    | StrictVarName
-    | SuperPrivate
-    | ThisParamAnnotationRequired
-    | ThisParamBannedInArrowFunctions
-    | ThisParamBannedInConstructor
-    | ThisParamMayNotBeOptional
-    | ThisParamMustBeFirst
-    | TrailingCommaAfterRestElement
-    | UnboundPrivate of string
     | Unexpected of string
-    | UnexpectedEOS
-    | UnexpectedExplicitInexactInObject
-    | UnexpectedOpaqueTypeAlias
-    | UnexpectedProto
-    | UnexpectedReserved
-    | UnexpectedReservedType
-    | UnexpectedSpreadType
-    | UnexpectedStatic
-    | UnexpectedSuper
-    | UnexpectedSuperCall
-    | UnexpectedTokenWithSuggestion of string * string
-    | UnexpectedTypeAlias
-    | UnexpectedTypeAnnotation
-    | UnexpectedTypeDeclaration
-    | UnexpectedTypeExport
-    | UnexpectedTypeImport
-    | UnexpectedTypeInterface
-    | UnexpectedVariance
-    | UnexpectedWithExpected of string * string
-    | UnknownLabel of string
-    | UnsupportedDecorator
+    | IllegalUnicodeEscape
+    | InvalidSciBigInt
+    | InvalidFloatBigInt
     | UnterminatedRegExp
-    | WhitespaceInPrivateName
-    | YieldAsIdentifierReference
-    | YieldInFormalParameters
 end
 
 module Lex_env = struct
@@ -201,7 +48,6 @@ module Lex_env = struct
     ; lex_lb : Sedlexing.lexbuf
     ; lex_bol : bol
     ; lex_state : lex_state
-    ; lex_last_loc : Loc.t
     }
   [@@ocaml.warning "-69"]
 
@@ -212,14 +58,6 @@ module Lex_env = struct
   let bol_offset env = env.lex_bol.offset
 
   let empty_lex_state = { lex_errors_acc = [] }
-
-  (* The lex_last_loc should initially be set to the beginning of the first line, so that
-     comments on the first line are reported as not being on a new line. *)
-  let initial_last_loc =
-    { Loc.source = None
-    ; start = { Loc.line = 1; column = 0 }
-    ; _end = { Loc.line = 1; column = 0 }
-    }
 
   let create lex_lb =
     let s, _ = Sedlexing.lexing_positions lex_lb in
@@ -232,7 +70,6 @@ module Lex_env = struct
     ; lex_lb
     ; lex_bol = { line = 1; offset = 0 }
     ; lex_state = empty_lex_state
-    ; lex_last_loc = initial_last_loc
     }
 end
 
@@ -241,7 +78,6 @@ module Lex_result = struct
     { lex_token : Js_token.t
     ; lex_loc : Lexing.position * Lexing.position
     ; lex_errors : (Loc.t * Parse_error.t) list
-    ; lex_comments : string list
     }
   [@@ocaml.warning "-69"]
 
@@ -249,9 +85,7 @@ module Lex_result = struct
 
   let loc result = result.lex_loc
 
-  let _comments result = result.lex_comments
-
-  let _errors result = result.lex_errors
+  let errors result = result.lex_errors
 end
 
 let lexeme = Sedlexing.Utf8.lexeme
@@ -402,25 +236,10 @@ let loc_of_offsets env start_offset end_offset =
   ; _end = pos_at_offset env end_offset
   }
 
-let start_pos_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
-  let start_offset = Sedlexing.lexeme_start lexbuf in
-  pos_at_offset env start_offset
-
-let end_pos_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
-  let end_offset = Sedlexing.lexeme_end lexbuf in
-  pos_at_offset env end_offset
-
 let loc_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
   let start_offset = Sedlexing.lexeme_start lexbuf in
   let end_offset = Sedlexing.lexeme_end lexbuf in
   loc_of_offsets env start_offset end_offset
-
-let loc_of_token env lex_token =
-  match lex_token with
-  (* | T_IDENTIFIER { loc; _ } | T_STRING (loc, _, _, _) -> loc
-     | T_TEMPLATE_PART (loc, _, _) -> loc
-       | T_REGEXP (loc, _, _) -> loc *)
-  | _ -> loc_of_lexbuf env env.lex_lb
 
 let lex_error (env : Lex_env.t) loc err : Lex_env.t =
   let lex_errors_acc = (loc, err) :: env.lex_state.lex_errors_acc in
@@ -493,7 +312,7 @@ let rec comment env buf lexbuf =
       comment env buf lexbuf
   | "*/" ->
       lexeme_to_buffer lexbuf buf;
-      env, end_pos_of_lexbuf env lexbuf
+      env
   | "*-/" ->
       Buffer.add_string buf "*-/";
       comment env buf lexbuf
@@ -503,7 +322,7 @@ let rec comment env buf lexbuf =
       comment env buf lexbuf
   | _ ->
       let env = illegal env (loc_of_lexbuf env lexbuf) in
-      env, end_pos_of_lexbuf env lexbuf
+      env
 
 let drop_line env =
   let lexbuf = env.Lex_env.lex_lb in
@@ -513,13 +332,10 @@ let drop_line env =
 
 let rec line_comment env buf lexbuf =
   match%sedlex lexbuf with
-  | eof -> env, end_pos_of_lexbuf env lexbuf
+  | eof -> env
   | line_terminator_sequence ->
       Sedlexing.rollback lexbuf;
-      let { Loc.line; column } = end_pos_of_lexbuf env lexbuf in
-      let len = Sedlexing.lexeme_length lexbuf in
-      let end_pos = { Loc.line; column = column - len } in
-      env, end_pos
+      env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl (eof | line_terminator_sequence_start)) | any ->
       lexeme_to_buffer lexbuf buf;
@@ -583,7 +399,7 @@ let rec string_quote env q buf lexbuf =
   | "'" | '"' ->
       let q' = lexeme lexbuf in
       if q = q'
-      then env, end_pos_of_lexbuf env lexbuf
+      then env
       else (
         Buffer.add_string buf q';
         string_quote env q buf lexbuf)
@@ -606,7 +422,7 @@ let rec string_quote env q buf lexbuf =
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
       let env = illegal env (loc_of_lexbuf env lexbuf) in
-      env, end_pos_of_lexbuf env lexbuf
+      env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl ("'" | '"' | '\\' | '\n' | eof)) | any ->
       lexeme_to_buffer lexbuf buf;
@@ -665,30 +481,28 @@ let token (env : Lex_env.t) lexbuf : result =
   | "/*" ->
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
-      let env, _end_pos = comment env buf lexbuf in
+      let env = comment env buf lexbuf in
       Comment (env, Buffer.contents buf)
   | "//" ->
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
-      let env, _end_pos = line_comment env buf lexbuf in
+      let env = line_comment env buf lexbuf in
       Comment (env, Buffer.contents buf)
   (* Support for the shebang at the beginning of a file. It is treated like a
    * comment at the beginning or an error elsewhere *)
   | "#!" ->
       if Sedlexing.lexeme_start lexbuf = 0
       then
-        let env, _ = line_comment env (Buffer.create 127) lexbuf in
+        let env = line_comment env (Buffer.create 127) lexbuf in
         Continue env
       else Token (env, T_ERROR "#!")
   (* Values *)
   | "'" | '"' ->
       let quote = lexeme lexbuf in
       let p1 = Sedlexing.lexeme_start lexbuf in
-      let start = start_pos_of_lexbuf env lexbuf in
       let buf = Buffer.create 127 in
-      let env, _end = string_quote env quote buf lexbuf in
+      let env = string_quote env quote buf lexbuf in
       let p2 = Sedlexing.lexeme_end lexbuf in
-      let _loc = { Loc.source = Lex_env.source env; start; _end } in
       Token
         ( env
         , T_STRING (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), p2 - p1 - 1)
@@ -698,11 +512,7 @@ let token (env : Lex_env.t) lexbuf : result =
       let raw = Buffer.create 127 in
       let literal = Buffer.create 127 in
       lexeme_to_buffer lexbuf literal;
-
-      let start = start_pos_of_lexbuf env lexbuf in
       let env, is_tail = template_part env cooked raw literal lexbuf in
-      let _end = end_pos_of_lexbuf env lexbuf in
-      let _loc = { Loc.source = Lex_env.source env; start; _end } in
       Token
         ( env
         , T_TEMPLATE_PART (Stdlib.Utf8_string.of_string_exn (Buffer.contents raw), is_tail)
@@ -977,23 +787,18 @@ let regexp env lexbuf =
       Continue env
   | Plus whitespace -> Continue env
   | "//" ->
-      let _start_pos = start_pos_of_lexbuf env lexbuf in
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
-      let env, _end_pos = line_comment env buf lexbuf in
+      let env = line_comment env buf lexbuf in
       Comment (env, Buffer.contents buf)
   | "/*" ->
-      let _start_pos = start_pos_of_lexbuf env lexbuf in
       let buf = Buffer.create 127 in
       lexeme_to_buffer lexbuf buf;
-      let env, _end_pos = comment env buf lexbuf in
+      let env = comment env buf lexbuf in
       Comment (env, Buffer.contents buf)
   | '/' ->
-      let start = start_pos_of_lexbuf env lexbuf in
       let buf = Buffer.create 127 in
       let env, flags = regexp_body env buf lexbuf in
-      let _end = end_pos_of_lexbuf env lexbuf in
-      let _loc = { Loc.source = Lex_env.source env; start; _end } in
       Token (env, T_REGEXP (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), flags))
   | any ->
       let env = illegal env (loc_of_lexbuf env lexbuf) in
@@ -1001,37 +806,31 @@ let regexp env lexbuf =
   | _ -> failwith "unreachable regexp"
 
 let wrap f =
+  let f env =
+    let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
+    let t = f env env.Lex_env.lex_lb in
+    let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
+    t, (start, stop)
+  in
   let rec helper comments env =
     Sedlexing.start env.Lex_env.lex_lb;
-    let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
-    match f env env.Lex_env.lex_lb with
-    | Token (env, t) ->
-        let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
-        let loc = loc_of_token env t in
-        let lex_comments = if comments = [] then [] else List.rev comments in
+    match f env with
+    | Token (env, t), lex_loc ->
         let lex_token = t in
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         if lex_errors_acc = []
-        then
-          ( { env with lex_last_loc = loc }
-          , { Lex_result.lex_token; lex_loc = start, stop; lex_comments; lex_errors = [] }
-          )
+        then env, { Lex_result.lex_token; lex_loc; lex_errors = [] }
         else
-          ( { env with lex_last_loc = loc; lex_state = Lex_env.empty_lex_state }
-          , { Lex_result.lex_token
-            ; lex_loc = start, stop
-            ; lex_comments
-            ; lex_errors = List.rev lex_errors_acc
-            } )
-    | Comment (env, comment) ->
-        let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
-        ( { env with lex_last_loc = env.lex_last_loc }
+          ( { env with lex_state = Lex_env.empty_lex_state }
+          , { Lex_result.lex_token; lex_loc; lex_errors = List.rev lex_errors_acc } )
+    | Comment (env, comment), lex_loc ->
+        let lex_errors_acc = env.lex_state.lex_errors_acc in
+        ( env
         , { Lex_result.lex_token = TComment comment
-          ; lex_loc = start, stop
-          ; lex_comments = []
-          ; lex_errors = []
+          ; lex_loc
+          ; lex_errors = List.rev lex_errors_acc
           } )
-    | Continue env -> helper comments env
+    | Continue env, _ -> helper comments env
   in
   fun env -> helper [] env
 
