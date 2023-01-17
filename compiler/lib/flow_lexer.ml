@@ -441,31 +441,39 @@ let decode_identifier =
       trim_start
       (Sedlexing.lexeme_length lexbuf - trim_start - trim_end)
   in
-  let rec id_char buf lexbuf =
+  let rec id_char env loc buf lexbuf =
     match%sedlex lexbuf with
     | unicode_escape ->
         let hex = sub_lexeme lexbuf 2 0 in
         let code = int_of_string ("0x" ^ hex) in
-        if not (Uchar.is_valid code) then failwith "invalid unicode";
+        let env =
+          if not (Uchar.is_valid code)
+          then lex_error env loc Parse_error.IllegalUnicodeEscape
+          else env
+        in
         Buffer.add_utf_8_uchar buf (Uchar.of_int code);
-        id_char buf lexbuf
+        id_char env loc buf lexbuf
     | codepoint_escape ->
         let hex = sub_lexeme lexbuf 3 1 in
         let code = int_of_string ("0x" ^ hex) in
-        if not (Uchar.is_valid code) then failwith "invalid unicode";
+        let env =
+          if not (Uchar.is_valid code)
+          then lex_error env loc Parse_error.IllegalUnicodeEscape
+          else env
+        in
         Buffer.add_utf_8_uchar buf (Uchar.of_int code);
-        id_char buf lexbuf
-    | eof -> Buffer.contents buf
+        id_char env loc buf lexbuf
+    | eof -> env, Buffer.contents buf
     (* match multi-char substrings that don't contain the start chars of the above patterns *)
     | Plus (Compl (eof | "\\")) | any ->
         lexeme_to_buffer lexbuf buf;
-        id_char buf lexbuf
+        id_char env loc buf lexbuf
     | _ -> failwith "unreachable id_char"
   in
-  fun raw ->
+  fun env loc raw ->
     let lexbuf = Sedlexing.Utf8.from_string raw in
     let buf = Buffer.create (String.length raw) in
-    id_char buf lexbuf
+    id_char env loc buf lexbuf
 
 let recover env lexbuf ~f =
   let env = illegal env (loc_of_lexbuf env lexbuf) in
@@ -818,7 +826,7 @@ let token (env : Lex_env.t) lexbuf : result =
       Sedlexing.rollback lexbuf;
       match%sedlex lexbuf with
       | "?" -> Token (env, T_PLING)
-      | _ -> failwith "expected ?")
+      | _ -> failwith "unreachable, expected ?")
   | "?." -> Token (env, T_PLING_PERIOD)
   | "??" -> Token (env, T_PLING_PLING)
   | "?" -> Token (env, T_PLING)
@@ -882,11 +890,15 @@ let token (env : Lex_env.t) lexbuf : result =
           if is_basic_ident raw
           then Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw))
           else
-            let decoded = decode_identifier raw in
-            (match Js_token.is_keyword decoded with
-            | None -> ()
-            | Some _ -> failwith "Keyword must not contain escaped characters");
-            if not (is_valid_identifier_name decoded) then failwith "Invalid identifier";
+            let env, decoded = decode_identifier env (loc_of_lexbuf env lexbuf) raw in
+            let env =
+              match Js_token.is_keyword decoded with
+              | None -> (
+                  match is_valid_identifier_name decoded with
+                  | true -> env
+                  | false -> illegal env (loc_of_lexbuf env lexbuf))
+              | Some _ -> illegal env (loc_of_lexbuf env lexbuf)
+            in
             Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded)))
   | eof -> Token (env, T_EOF)
   | any ->
