@@ -170,3 +170,5 @@ type token = t
 val to_string : t -> string
 
 val to_string_extra : t -> string
+
+val is_keyword : string -> t option

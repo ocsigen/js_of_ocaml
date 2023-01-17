@@ -530,8 +530,6 @@ class free =
     method use_var x =
       let n = try IdentMap.find x !count with Not_found -> 0 in
       count := IdentMap.add x (succ n) !count;
-      (* FIXME: S ident are raw Utf-8 ident (including escaped sequences).
-         They need to be normalized for the analysis to be correct. *)
       match x with
       | S { name; _ } ->
           state_ <- { state_ with use_name = Utf8_string_set.add name state_.use_name }

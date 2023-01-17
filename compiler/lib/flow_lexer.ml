@@ -409,6 +409,12 @@ let js_id_start =
 let js_id_continue =
   [%sedlex.regexp? '$' | '_' | id_continue | unicode_escape | codepoint_escape]
 
+let is_valid_identifier_name s =
+  let lexbuf = Sedlexing.Utf8.from_string s in
+  match%sedlex lexbuf with
+  | js_id_start, Star js_id_continue, eof -> true
+  | _ -> false
+
 let pos_at_offset env offset =
   { Loc.line = Lex_env.line env; column = offset - Lex_env.bol_offset env }
 
@@ -449,6 +455,62 @@ let new_line env lexbuf =
   let offset = Sedlexing.lexeme_end lexbuf in
   let lex_bol = { Lex_env.line = Lex_env.line env + 1; offset } in
   { env with Lex_env.lex_bol }
+
+let decode_identifier =
+  let sub_lexeme lexbuf trim_start trim_end =
+    Sedlexing.Utf8.sub_lexeme
+      lexbuf
+      trim_start
+      (Sedlexing.lexeme_length lexbuf - trim_start - trim_end)
+  in
+  let rec id_char buf lexbuf =
+    match%sedlex lexbuf with
+    | unicode_escape ->
+        let hex = sub_lexeme lexbuf 2 0 in
+        let code = int_of_string ("0x" ^ hex) in
+        if not (Uchar.is_valid code) then failwith "invalid unicode";
+        Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+        id_char buf lexbuf
+    | codepoint_escape ->
+        let hex = sub_lexeme lexbuf 3 1 in
+        let code = int_of_string ("0x" ^ hex) in
+        if not (Uchar.is_valid code) then failwith "invalid unicode";
+        Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+        id_char buf lexbuf
+    | eof -> Buffer.contents buf
+    (* match multi-char substrings that don't contain the start chars of the above patterns *)
+    | Plus (Compl (eof | "\\")) | any ->
+        lexeme_to_buffer lexbuf buf;
+        id_char buf lexbuf
+    | _ -> failwith "unreachable id_char"
+  in
+  fun raw ->
+    let lexbuf = Sedlexing.Utf8.from_string raw in
+    let buf = Buffer.create (String.length raw) in
+    id_char buf lexbuf
+
+exception Not_an_ident
+
+let is_basic_ident =
+  let l =
+    Array.init 256 (fun i ->
+        let c = Char.chr i in
+        match c with
+        | 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' -> 1
+        | '0' .. '9' -> 2
+        | _ -> 0)
+  in
+  fun s ->
+    try
+      for i = 0 to String.length s - 1 do
+        let code = l.(Char.code s.[i]) in
+        if i = 0
+        then (if code <> 1 then raise Not_an_ident)
+        else if code < 1
+        then raise Not_an_ident
+      done;
+      true
+    with Not_an_ident -> false
 
 let recover env lexbuf ~f =
   let env = illegal env (loc_of_lexbuf env lexbuf) in
@@ -859,60 +921,18 @@ let token (env : Lex_env.t) lexbuf : result =
   *)
   | js_id_start, Star js_id_continue -> (
       let raw = Sedlexing.Utf8.lexeme lexbuf in
-      (*let nenv, value = decode_identifier env raw in *)
-      match raw with
-      | "async" -> Token (env, T_ASYNC)
-      | "await" -> Token (env, T_AWAIT)
-      | "break" -> Token (env, T_BREAK)
-      | "case" -> Token (env, T_CASE)
-      | "catch" -> Token (env, T_CATCH)
-      | "class" -> Token (env, T_CLASS)
-      | "const" -> Token (env, T_CONST)
-      | "continue" -> Token (env, T_CONTINUE)
-      | "debugger" -> Token (env, T_DEBUGGER)
-      | "declare" -> Token (env, T_DECLARE)
-      | "default" -> Token (env, T_DEFAULT)
-      | "delete" -> Token (env, T_DELETE)
-      | "do" -> Token (env, T_DO)
-      | "else" -> Token (env, T_ELSE)
-      | "enum" -> Token (env, T_ENUM)
-      | "export" -> Token (env, T_EXPORT)
-      | "extends" -> Token (env, T_EXTENDS)
-      | "false" -> Token (env, T_FALSE)
-      | "finally" -> Token (env, T_FINALLY)
-      | "for" -> Token (env, T_FOR)
-      | "function" -> Token (env, T_FUNCTION)
-      | "if" -> Token (env, T_IF)
-      | "implements" -> Token (env, T_IMPLEMENTS)
-      | "import" -> Token (env, T_IMPORT)
-      | "in" -> Token (env, T_IN)
-      | "instanceof" -> Token (env, T_INSTANCEOF)
-      | "interface" -> Token (env, T_INTERFACE)
-      | "let" -> Token (env, T_LET)
-      | "new" -> Token (env, T_NEW)
-      | "null" -> Token (env, T_NULL)
-      | "of" -> Token (env, T_OF)
-      | "opaque" -> Token (env, T_OPAQUE)
-      | "package" -> Token (env, T_PACKAGE)
-      | "private" -> Token (env, T_PRIVATE)
-      | "protected" -> Token (env, T_PROTECTED)
-      | "public" -> Token (env, T_PUBLIC)
-      | "return" -> Token (env, T_RETURN)
-      | "static" -> Token (env, T_STATIC)
-      | "super" -> Token (env, T_SUPER)
-      | "switch" -> Token (env, T_SWITCH)
-      | "this" -> Token (env, T_THIS)
-      | "throw" -> Token (env, T_THROW)
-      | "true" -> Token (env, T_TRUE)
-      | "try" -> Token (env, T_TRY)
-      | "type" -> Token (env, T_TYPE)
-      | "typeof" -> Token (env, T_TYPEOF)
-      | "var" -> Token (env, T_VAR)
-      | "void" -> Token (env, T_VOID)
-      | "while" -> Token (env, T_WHILE)
-      | "with" -> Token (env, T_WITH)
-      | "yield" -> Token (env, T_YIELD)
-      | _ -> Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw)))
+      match Js_token.is_keyword raw with
+      | Some t -> Token (env, t)
+      | None ->
+          if is_basic_ident raw
+          then Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw))
+          else
+            let decoded = decode_identifier raw in
+            (match Js_token.is_keyword decoded with
+            | None -> ()
+            | Some _ -> failwith "Keyword must not contain escaped characters");
+            if not (is_valid_identifier_name decoded) then failwith "Invalid identifier";
+            Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded)))
   | eof -> Token (env, T_EOF)
   | any ->
       let env = illegal env (loc_of_lexbuf env lexbuf) in
@@ -1051,9 +1071,3 @@ let wrap f =
 let regexp = wrap regexp
 
 let token = wrap token
-
-let is_valid_identifier_name s =
-  let lexbuf = Sedlexing.Utf8.from_string s in
-  match%sedlex lexbuf with
-  | js_id_start, Star js_id_continue, eof -> true
-  | _ -> false
