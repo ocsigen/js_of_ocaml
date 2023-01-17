@@ -275,8 +275,7 @@ struct
         let out, lft, _rght = op_prec op in
         l <= out && need_paren lft e
     | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) -> l <= 15 && need_paren 15 e
-    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ | EUn _ | ENew _
-      -> false
+    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | ERegexp _ | EUn _ | ENew _ -> false
     | EFun _ | EObj _ -> true
 
   let best_string_quote s =
@@ -624,10 +623,6 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
-    | EQuote s ->
-        PP.string f "(";
-        PP.string f s;
-        PP.string f ")"
 
   and property_name f n =
     match n with

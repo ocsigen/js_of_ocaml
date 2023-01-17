@@ -78,7 +78,6 @@ let rec enot_rec e =
     | J.EArr _
     | J.ENum _
     | J.EObj _
-    | J.EQuote _
     | J.ERegexp _
     | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) -> J.EUn (J.Not, e), 1
   in
@@ -250,7 +249,7 @@ let rec get_variable acc = function
       |> List.fold_left ~init:acc ~f:get_variable
   | J.EVar (J.V v) -> Code.Var.Set.add v acc
   | J.EVar (J.S _) -> acc
-  | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc
+  | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.ERegexp _ -> acc
   | J.EArr a ->
       List.fold_left
         ~f:(fun acc i ->
