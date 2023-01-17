@@ -5,8 +5,21 @@
  * LICENSE file in the root directory of this source tree.
  *)
 
-module Loc : sig
+module Parse_error : sig
   type t
+end
+
+module Loc : sig
+  type position =
+    { line : int
+    ; column : int
+    }
+
+  type t =
+    { source : string option
+    ; start : position
+    ; _end : position
+    }
 end
 
 module Lex_env : sig
@@ -21,6 +34,8 @@ module Lex_result : sig
   val token : t -> Js_token.t
 
   val loc : t -> Lexing.position * Lexing.position
+
+  val errors : t -> (Loc.t * Parse_error.t) list
 end
 
 val drop_line : Lex_env.t -> unit
