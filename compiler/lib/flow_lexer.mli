@@ -7,6 +7,8 @@
 
 module Parse_error : sig
   type t
+
+  val to_string : t -> string
 end
 
 module Loc : sig
