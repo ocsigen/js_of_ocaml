@@ -120,14 +120,25 @@ let fold_children g f x acc =
   g.G.iter_children (fun y -> acc := f y !acc) x;
   !acc
 
-let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
+let might_have_effect_handlers ~info ~deps st x =
+  fold_children deps (fun y acc -> acc || Var.Tbl.get st y) x false
+  ||
+  match info.Global_flow.info_defs.(Var.idx x) with
+  | Expr (Closure _) ->
+      (* If a function escapes, it might be called within an effect handler *)
+      info.Global_flow.info_may_escape.(Var.idx x)
+  | _ -> false
+
+let cps_needed ~info ~in_mutual_recursion ~rev_deps ~might_have_effect_handlers st x =
   (* Mutually recursive functions are turned into CPS for tail
      optimization *)
   Var.Set.mem x in_mutual_recursion
+  || (true || match info.Global_flow.info_defs.(Var.idx x) with
+     | Expr (Closure _) -> Var.Tbl.get might_have_effect_handlers x
+     | _ -> true)
+     && fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
   ||
   let idx = Var.idx x in
-  fold_children rev_deps (fun y acc -> acc || Var.Tbl.get st y) x false
-  ||
   match info.Global_flow.info_defs.(idx) with
   | Expr (Apply { f; _ }) -> (
       (* If we don't know all possible functions at a call point, it
@@ -182,7 +193,15 @@ let f p info =
     { G.domain = vars; iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   let rev_deps = G.invert () g in
-  let res = Solver.f () g (cps_needed ~info ~in_mutual_recursion ~rev_deps) in
+  let might_have_effect_handlers =
+    Solver.f () rev_deps (might_have_effect_handlers ~info ~deps:g)
+  in
+  let res =
+    Solver.f
+      ()
+      g
+      (cps_needed ~info ~in_mutual_recursion ~rev_deps ~might_have_effect_handlers)
+  in
   if times () then Format.eprintf "      fun analysis (solve): %a@." Timer.print t3;
   let s = ref Var.Set.empty in
   Var.Tbl.iter (fun x v -> if v then s := Var.Set.add x !s) res;

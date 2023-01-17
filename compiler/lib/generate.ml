@@ -190,6 +190,7 @@ module Share = struct
         ; "caml_list_of_js_array"
         ; "caml_maybe_attach_backtrace"
         ; "jsoo_effect_not_supported"
+        ; "caml_callback"
         ]
         ~init:count
         ~f:(fun acc x -> add_special_prim_if_exists x acc)

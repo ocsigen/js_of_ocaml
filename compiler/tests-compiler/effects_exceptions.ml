@@ -53,86 +53,25 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        |}
   in
   print_fun_decl code (Some "exceptions");
-  [%expect
-    {|
-
-    function exceptions(s, cont){
-     try{var _p_ = runtime.caml_int_of_string(s), n = _p_;}
-     catch(_t_){
-      var _i_ = caml_wrap_exception(_t_);
-      if(_i_[1] !== Stdlib[7]){
-       var raise$1 = caml_pop_trap();
-       return raise$1(caml_maybe_attach_backtrace(_i_, 0));
-      }
-      var n = 0, _j_ = 0;
-     }
-     try{
-      if(caml_string_equal(s, cst$0))
-       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _o_ = 7, m = _o_;
-     }
-     catch(_s_){
-      var _k_ = caml_wrap_exception(_s_);
-      if(_k_ !== Stdlib[8]){
-       var raise$0 = caml_pop_trap();
-       return raise$0(caml_maybe_attach_backtrace(_k_, 0));
-      }
-      var m = 0, _l_ = 0;
-     }
-     caml_push_trap
-      (function(_r_){
-        if(_r_ === Stdlib[8]) return cont(0);
-        var raise = caml_pop_trap();
-        return raise(caml_maybe_attach_backtrace(_r_, 0));
-       });
-     if(caml_string_equal(s, cst)){
-      var _m_ = Stdlib[8], raise = caml_pop_trap();
-      return raise(caml_maybe_attach_backtrace(_m_, 1));
-     }
-     var _n_ = Stdlib[79];
-     return caml_cps_call2
-             (_n_,
-              cst_toto,
-              function(_q_){caml_pop_trap(); return cont([0, [0, _q_, n, m]]);});
-    }
-    //end |}];
+  [%expect.unreachable];
   print_fun_decl code (Some "handler_is_loop");
-  [%expect
-    {|
-    function handler_is_loop(f, g, l, cont){
-     caml_push_trap
-      (function(_g_){
-        function _h_(l){
-         return caml_cps_call2
-                 (g,
-                  l,
-                  function(match){
-                   if(72330306 <= match[1]){
-                    var l = match[2];
-                    return caml_cps_exact_call1(_h_, l);
-                   }
-                   var
-                    exn = match[2],
-                    raise = caml_pop_trap(),
-                    exn$0 = caml_maybe_attach_backtrace(exn, 1);
-                   return raise(exn$0);
-                  });
-        }
-        return _h_(l);
-       });
-     var _e_ = 0;
-     return caml_cps_call2
-             (f, _e_, function(_f_){caml_pop_trap(); return cont(_f_);});
-    }
-    //end |}];
+  [%expect.unreachable];
   print_fun_decl code (Some "handler_is_merge_node");
-  [%expect
-    {|
-    function handler_is_merge_node(g, cont){
-     function _b_(s){return caml_cps_call3(Stdlib[28], s, cst_aaa, cont);}
-     caml_push_trap(function(_d_){return _b_(cst$1);});
-     var _a_ = 0;
-     return caml_cps_call2
-             (g, _a_, function(_c_){caml_pop_trap(); return _b_(_c_);});
-    }
-    //end |}]
+  [%expect.unreachable]
+[@@expect.uncaught_exn {|
+  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
+     This is strongly discouraged as backtraces are fragile.
+     Please change this test to not include a backtrace. *)
+
+  (Failure "non-zero exit code")
+  Raised at Stdlib__Buffer.add_channel in file "buffer.ml", line 222, characters 18-35
+  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string.loop in file "compiler/tests-compiler/util/util.ml", line 169, characters 4-52
+  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string in file "compiler/tests-compiler/util/util.ml", line 172, characters 7-14
+
+  Trailing output
+  ---------------
+  /home/jerome/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
+  Error: File "compiler/lib/js_assign.ml", line 295, characters 14-20: Assertion failed
+
+  process exited with error code 125
+   /home/jerome/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe --pretty --sourcemap --enable=effects --disable=use-js-string --disable header test.cmo -o test.js |}]
