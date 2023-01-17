@@ -161,6 +161,7 @@ let expr_deps blocks st x e =
           | Pc _ -> ()
           | Pv y -> add_dep st x y)
         l
+  | Prim (Extern "caml_js_wrap_callback_strict", [ Pc (Int _); Pv f ]) -> add_dep st x f
   | Prim (Extern name, l) ->
       (* Set the escape status of the arguments *)
       let ka =
@@ -431,6 +432,31 @@ let propagate st ~update approx x =
                   | Phi _ | Expr _ -> assert false)
                 known
           | Top -> Top)
+      | Prim (Extern "caml_js_wrap_callback_strict", [ Pc (Int n); Pv f ]) ->
+          (match Var.Tbl.get approx f with
+          | Values { known; _ } ->
+              Var.Set.iter
+                (fun g ->
+                  match st.defs.(Var.idx g) with
+                  | Expr (Closure (params, _))
+                    when Int32.equal (Int32.of_int (List.length params)) n ->
+                      List.iter
+                        ~f:(fun y ->
+                          (match st.defs.(Var.idx y) with
+                          | Phi { known; _ } ->
+                              st.defs.(Var.idx y) <- Phi { known; others = true }
+                          | Expr _ -> assert false);
+                          update ~children:false y)
+                        params;
+                      Var.Set.iter
+                        (fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
+                        (Var.Map.find g st.return_values)
+                  | Expr (Closure _ | Block _) ->
+                      Domain.value_escape ~update ~st ~approx Escape x
+                  | Phi _ | Expr _ -> assert false)
+                known
+          | Top -> ());
+          Domain.others
       | Prim (Array_get, _) -> assert false
       | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
