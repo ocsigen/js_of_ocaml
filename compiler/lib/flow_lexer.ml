@@ -362,7 +362,32 @@ let js_id_start =
 let js_id_continue =
   [%sedlex.regexp? '$' | '_' | id_continue | unicode_escape | codepoint_escape]
 
+exception Not_an_ident
+
+let is_basic_ident =
+  let l =
+    Array.init 256 (fun i ->
+        let c = Char.chr i in
+        match c with
+        | 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' -> 1
+        | '0' .. '9' -> 2
+        | _ -> 0)
+  in
+  fun s ->
+    try
+      for i = 0 to String.length s - 1 do
+        let code = l.(Char.code s.[i]) in
+        if i = 0
+        then (if code <> 1 then raise Not_an_ident)
+        else if code < 1
+        then raise Not_an_ident
+      done;
+      true
+    with Not_an_ident -> false
+
 let is_valid_identifier_name s =
+  is_basic_ident s
+  ||
   let lexbuf = Sedlexing.Utf8.from_string s in
   match%sedlex lexbuf with
   | js_id_start, Star js_id_continue, eof -> true
@@ -441,29 +466,6 @@ let decode_identifier =
     let lexbuf = Sedlexing.Utf8.from_string raw in
     let buf = Buffer.create (String.length raw) in
     id_char buf lexbuf
-
-exception Not_an_ident
-
-let is_basic_ident =
-  let l =
-    Array.init 256 (fun i ->
-        let c = Char.chr i in
-        match c with
-        | 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' -> 1
-        | '0' .. '9' -> 2
-        | _ -> 0)
-  in
-  fun s ->
-    try
-      for i = 0 to String.length s - 1 do
-        let code = l.(Char.code s.[i]) in
-        if i = 0
-        then (if code <> 1 then raise Not_an_ident)
-        else if code < 1
-        then raise Not_an_ident
-      done;
-      true
-    with Not_an_ident -> false
 
 let recover env lexbuf ~f =
   let env = illegal env (loc_of_lexbuf env lexbuf) in
