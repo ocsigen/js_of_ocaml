@@ -649,9 +649,7 @@ variable_with_loc:
         }
 
 label:
-  | T_IDENTIFIER {
-    let Utf8 name = $1 in
-    Label.of_string name }
+  | T_IDENTIFIER { Label.of_string $1 }
 
 property_name:
  | i=identifier_or_kw { PNI i }
