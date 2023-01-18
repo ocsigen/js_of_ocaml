@@ -969,7 +969,10 @@ let apply_fun_raw ctx f params exact cps =
                 )
             , int n )
         , apply_directly
-        , J.call (runtime_fun ctx "caml_call_gen") [ f; J.array params ] J.N )
+        , J.call
+            (runtime_fun ctx (if cps then "caml_cps_call_gen" else "caml_call_gen"))
+            [ f; J.array params ]
+            J.N )
   in
   if cps
   then (

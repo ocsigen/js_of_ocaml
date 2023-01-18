@@ -66,10 +66,10 @@ function caml_call_gen(f, args) {
   }
 }
 
-//Provides: caml_call_gen (const, shallow)
+//Provides: caml_cps_call_gen (const, shallow)
 //If: effects
 //Weakdef
-function caml_call_gen(f, args) {
+function caml_cps_call_gen(f, args) {
   var n = (f.l >= 0)?f.l:(f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
@@ -83,7 +83,7 @@ function caml_call_gen(f, args) {
       if (typeof g !== "function") return k(g);
       var args = rest.slice();
       args[args.length - 1] = k;
-      return caml_call_gen(g, args); };
+      return caml_cps_call_gen(g, args); };
     return f.apply(null, args);
   } else {
     argsLen--;
@@ -117,7 +117,7 @@ function caml_call_gen(f, args) {
         for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
         for(var i = 0; i < arguments.length; i++ )
           nargs[argsLen + i] = arguments[i];
-        return caml_call_gen(f, nargs)
+        return caml_cps_call_gen(f, nargs)
       };
     }}
     g.l = d + 1;
