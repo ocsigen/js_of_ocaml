@@ -200,14 +200,11 @@ let exec_to_string_exn ~fail ~cmd =
     function
     | WEXITED 0 -> std_out
     | WEXITED i ->
-        Format.printf "process exited with error code %d\n %s\n" i cmd;
-        std_out
+        Format.sprintf "%s\nprocess exited with error code %d\n %s\n" std_out i cmd
     | WSIGNALED i ->
-        Format.printf "process signaled with signal number %d\n %s\n" i cmd;
-        std_out
+        Format.sprintf "%s\nprocess signaled with signal number %d\n %s\n" std_out i cmd
     | WSTOPPED i ->
-        Format.printf "process stopped with signal number %d\n %s\n" i cmd;
-        std_out
+        Format.sprintf "%s\nprocess stopped with signal number %d\n %s\n" std_out i cmd
   in
   let ((proc_in, _, proc_err) as proc_full) = Unix.open_process_full cmd env in
   let results = channel_to_string proc_in in
@@ -474,15 +471,39 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?debug ?flags ?effects ?use_js_string ?unix s =
+let compile_and_run ?debug ?(flags = []) ?effects ?use_js_string ?unix s =
   with_temp_dir ~f:(fun () ->
-      s
-      |> Filetype.ocaml_text_of_string
-      |> Filetype.write_ocaml ~name:"test.ml"
-      |> compile_ocaml_to_bc ?debug ?unix
-      |> compile_bc_to_javascript ?flags ?effects ?use_js_string ?sourcemap:debug
-      |> run_javascript
-      |> print_endline)
+      let bytecode_file =
+        s
+        |> Filetype.ocaml_text_of_string
+        |> Filetype.write_ocaml ~name:"test.ml"
+        |> compile_ocaml_to_bc ?debug ?unix
+      in
+      let output_without_stdlib_modern =
+        compile_bc_to_javascript
+          ~flags
+          ?effects
+          ?use_js_string
+          ?sourcemap:debug
+          bytecode_file
+        |> run_javascript
+      in
+      let output_with_stdlib_modern =
+        compile_bc_to_javascript
+          ~flags:(flags @ [ "+stdlib_modern.js" ])
+          ?effects
+          ?use_js_string
+          ?sourcemap:debug
+          bytecode_file
+        |> run_javascript
+      in
+      print_endline output_without_stdlib_modern;
+      if not (String.equal output_without_stdlib_modern output_with_stdlib_modern)
+      then (
+        print_endline "Output was different with stdlib_modern.js:";
+        print_endline "===========================================";
+        print_string output_with_stdlib_modern;
+        print_endline "==========================================="))
 
 let compile_and_parse_whole_program ?(debug = true) ?flags ?effects ?use_js_string ?unix s
     =
