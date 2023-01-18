@@ -19,18 +19,15 @@
 //Provides: caml_call_gen (const, shallow)
 //If: !effects
 function caml_call_gen(f, args) {
-  if(f.fun)
-    return caml_call_gen(f.fun, args);
-  //FIXME, can happen with too many arguments
-  if(typeof f !== "function") return f;
   var n = (f.l >= 0)?f.l:(f.l = f.length);
-  if(n === 0) return f(...args);
-  var argsLen = args.length | 0;
-  var d = n - argsLen | 0;
+  var argsLen = args.length;
+  var d = n - argsLen;
   if (d == 0)
     return f(...args);
   else if (d < 0) {
-    return caml_call_gen(f(...args.slice(0,n)),args.slice(n));
+    var g = f(...args.slice(0,n));
+    if(typeof g !== "function") return g;
+    return caml_call_gen(g,args.slice(n));
   }
   else {
     switch (d) {
@@ -70,14 +67,9 @@ function caml_call_gen(f, args) {
 //Provides: caml_call_gen (const, shallow)
 //If: effects
 function caml_call_gen(f, args) {
-  if(f.fun)
-    return caml_call_gen(f.fun, args);
-  //FIXME, can happen with too many arguments
-  if(typeof f !== "function") return args[args.length-1](f);
   var n = (f.l >= 0)?f.l:(f.l = f.length);
-  if(n === 0) return f(...args);
-  var argsLen = args.length | 0;
-  var d = n - argsLen | 0;
+  var argsLen = args.length;
+  var d = n - argsLen;
   if (d == 0)
     return f(...args);
   else if (d < 0) {
@@ -85,6 +77,7 @@ function caml_call_gen(f, args) {
     var k = args [argsLen - 1];
     args = args.slice(0, n);
     args[n - 1] = function (g) {
+      if(typeof g !== "function") return k(g);
       var args = rest.slice();
       args[args.length - 1] = k;
       return caml_call_gen(g, args); };
