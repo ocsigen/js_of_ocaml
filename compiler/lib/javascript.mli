@@ -250,6 +250,8 @@ val is_ident' : Utf8_string.t -> bool
 
 val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
 
+val ident_unsafe : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
+
 module IdentSet : Set.S with type elt = ident
 
 module IdentMap : Map.S with type key = ident

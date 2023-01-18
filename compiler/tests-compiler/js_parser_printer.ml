@@ -155,28 +155,32 @@ let check_vs_string s toks =
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
     | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
-    | ((Js_token.T_STRING (_, len) as x), pi) :: rest ->
-        let { Parse_info.idx; _ } = pi in
-        let idx = idx - offset in
-        let offset, len =
-          let bytes = ref 0 in
-          for _ = 0 to len - 1 do
-            let r = String.get_utf_8_uchar s (idx + !bytes) in
-            bytes := !bytes + Uchar.utf_decode_length r
+    | ((Js_token.T_STRING (_, codepoint_len) as x), pi) :: rest ->
+        let { Parse_info.idx = codepoint_idx; _ } = pi in
+        let bytes_idx = codepoint_idx - offset in
+        let bytes_len =
+          let bytes_len = ref 0 in
+          for _ = 0 to codepoint_len - 1 do
+            let r = String.get_utf_8_uchar s (bytes_idx + !bytes_len) in
+            bytes_len := !bytes_len + Uchar.utf_decode_length r
           done;
-          let bytes = !bytes in
-          let offset = offset + (len - bytes) in
-          offset, bytes
+          !bytes_len
         in
+        let offset = offset + (codepoint_len - bytes_len) in
         let _str = Js_token.to_string x in
-        space pos idx;
-        let quote_start = s.[idx] in
-        let quote_end = s.[idx + len] in
+        space pos bytes_idx;
+        let quote_start = s.[bytes_idx] in
+        let quote_end = s.[bytes_idx + bytes_len] in
         (match quote_start, quote_end with
         | '"', '"' | '\'', '\'' -> ()
         | a, b ->
-            Printf.printf "pos:%d+%d, expecting quotes, found %C+%C\n" idx (idx + len) a b);
-        loop offset (idx + len + 1) rest
+            Printf.printf
+              "pos:%d+%d, expecting quotes, found %C+%C\n"
+              bytes_idx
+              (bytes_idx + bytes_len)
+              a
+              b);
+        loop offset (bytes_idx + bytes_len + 1) rest
     | (x, pi) :: rest ->
         let { Parse_info.idx; _ } = pi in
         let idx = idx - offset in
@@ -214,8 +218,25 @@ let parse_print_token ?(extra = false) s =
 let%expect_test "tokens" =
   parse_print_token {|
     var a = 42;
+    var \u{1ee62} = 42;
 |};
-  [%expect {| 2: 4:var, 8:a, 10:=, 12:42, 14:;, |}]
+  [%expect
+    {|
+    2: 4:var, 8:a, 10:=, 12:42, 14:;,
+    3: 4:var, 8:\u{1ee62}, 18:=, 20:42, 22:;, |}]
+
+let%expect_test "invalid ident" =
+  parse_print_token
+    {|
+    var \uD83B\uDE62 = 42; // invalid surrogate escape sequence
+    var \u{1F42B} = 2; // U+1F42B is not a valid id
+|};
+  [%expect
+    {|
+     2: 4:var, 8:\uD83B\uDE62, 21:=, 23:42, 25:;, 27:// invalid surrogate escape sequence,
+     3: 4:var, 8:\u{1F42B}, 18:=, 20:2, 21:;, 23:// U+1F42B is not a valid id,
+    Lexer error: 2:8: Illegal Unicode escape
+    Lexer error: 3:8: Unexpected token ILLEGAL |}]
 
 let%expect_test "string" =
   parse_print_token

@@ -31,7 +31,7 @@
 
 open Javascript
 
-let var pi name = ident ~loc:(pi) name
+let var pi name = ident_unsafe ~loc:(pi) name
 
 let pi pos = (Parse_info.t_of_pos pos)
 
@@ -52,7 +52,7 @@ let utf8_s = Stdlib.Utf8_string.of_string_exn
 (* Tokens with a value *)
 %token<Js_token.number_type * string> T_NUMBER
 %token<Js_token.bigint_type * string> T_BIGINT
-%token<Stdlib.Utf8_string.t> T_IDENTIFIER
+%token<Stdlib.Utf8_string.t * string> T_IDENTIFIER
 %token<Stdlib.Utf8_string.t * int> T_STRING
 %token<Stdlib.Utf8_string.t * string> T_REGEXP
 %token<Stdlib.Utf8_string.t> T_TEMPLATE_PART
@@ -586,7 +586,9 @@ arguments:
 (*************************************************************************)
 
 identifier_or_kw:
-  | T_IDENTIFIER { $1 }
+  | T_IDENTIFIER {
+     let name, _raw = $1 in
+     name }
   | T_ASYNC { utf8_s "async" }
   | T_AWAIT { utf8_s "await" }
   | T_BREAK { utf8_s "break" }
@@ -644,12 +646,14 @@ variable:
 
 variable_with_loc:
   | i=T_IDENTIFIER {
-          let name = i in
+          let name, _raw = i in
           var (p $symbolstartpos) name
         }
 
 label:
-  | T_IDENTIFIER { Label.of_string $1 }
+  | T_IDENTIFIER {
+          let name, _raw = $1 in
+          Label.of_string name }
 
 property_name:
  | i=identifier_or_kw { PNI i }

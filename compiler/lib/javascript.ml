@@ -311,6 +311,8 @@ let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
   if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
   S { name; var; loc }
 
+let ident_unsafe ?(loc = N) ?var name = S { name; var; loc }
+
 module IdentSet = Set.Make (struct
   type t = ident
 

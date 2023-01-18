@@ -27,7 +27,7 @@ type t =
   | T_BIGINT of (bigint_type * string)
   | T_STRING of (Utf8_string.t * int)
   | T_TEMPLATE_PART of (Utf8_string.t * bool)
-  | T_IDENTIFIER of Utf8_string.t
+  | T_IDENTIFIER of (Utf8_string.t * string)
   | T_REGEXP of (Utf8_string.t * string)
   (* /pattern/flags *)
   (* Syntax *)
