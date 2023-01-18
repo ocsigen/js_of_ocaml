@@ -188,7 +188,7 @@ rule main = parse
       try
         Hashtbl.find keyword_table s
       with
-        | Not_found -> T_IDENTIFIER (Utf8_string.of_string_exn s)
+        | Not_found -> T_IDENTIFIER (Utf8_string.of_string_exn s, s)
     }
 
   (* ----------------------------------------------------------------------- *)

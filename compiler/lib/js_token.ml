@@ -28,7 +28,7 @@ type t =
   | T_BIGINT of (bigint_type * string)
   | T_STRING of (Utf8_string.t * int)
   | T_TEMPLATE_PART of (Utf8_string.t * bool)
-  | T_IDENTIFIER of Utf8_string.t
+  | T_IDENTIFIER of (Utf8_string.t * string)
   | T_REGEXP of (Utf8_string.t * string)
   (* /pattern/flags *)
   (* Syntax *)
@@ -174,7 +174,7 @@ let to_string = function
   | TComment s -> s
   | TCommentLineDirective s -> s
   | T_NUMBER (_, raw) -> raw
-  | T_IDENTIFIER (Utf8 s) -> s
+  | T_IDENTIFIER (Utf8 _, s) -> s
   | T_STRING (Utf8 s, _) -> Printf.sprintf "%S" s
   | T_REGEXP (Utf8 s, flags) -> Printf.sprintf "/%s/%s" s flags
   | T_DEBUGGER -> "debugger"

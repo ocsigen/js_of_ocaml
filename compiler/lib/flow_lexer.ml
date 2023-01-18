@@ -197,10 +197,14 @@ let unicode_escape = [%sedlex.regexp? "\\u", hex_quad]
 
 let codepoint_escape = [%sedlex.regexp? "\\u{", Plus hex_digit, '}']
 
-let js_id_start =
+let js_id_start = [%sedlex.regexp? '$' | '_' | id_start]
+
+let js_id_continue = [%sedlex.regexp? '$' | '_' | id_continue]
+
+let js_id_start_with_escape =
   [%sedlex.regexp? '$' | '_' | id_start | unicode_escape | codepoint_escape]
 
-let js_id_continue =
+let js_id_continue_with_escape =
   [%sedlex.regexp? '$' | '_' | id_continue | unicode_escape | codepoint_escape]
 
 exception Not_an_ident
@@ -267,27 +271,73 @@ let decode_identifier =
       trim_start
       (Sedlexing.lexeme_length lexbuf - trim_start - trim_end)
   in
+  let unicode_escape_code lexbuf =
+    let hex = sub_lexeme lexbuf 2 0 in
+    let code = int_of_string ("0x" ^ hex) in
+    code
+  in
+  let codepoint_escape_code lexbuf =
+    let hex = sub_lexeme lexbuf 3 1 in
+    let code = int_of_string ("0x" ^ hex) in
+    code
+  in
+  let is_high_surrogate c = 0xD800 <= c && c <= 0xDBFF in
+  let is_low_surrogate c = 0xDC00 <= c && c <= 0xDFFF in
+  let combine_surrogate hi lo =
+    (((hi land 0x3FF) lsl 10) lor (lo land 0x3FF)) + 0x10000
+  in
+  let low_surrogate env loc buf lexbuf lead =
+    let env = lex_error env loc Parse_error.IllegalUnicodeEscape in
+    match%sedlex lexbuf with
+    | unicode_escape ->
+        let code = unicode_escape_code lexbuf in
+        if is_low_surrogate code
+        then (
+          let code = combine_surrogate lead code in
+          Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+          env)
+        else lex_error env loc Parse_error.IllegalUnicodeEscape
+    | codepoint_escape ->
+        let code = codepoint_escape_code lexbuf in
+        if is_low_surrogate code
+        then (
+          let code = combine_surrogate lead code in
+          Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+          env)
+        else lex_error env loc Parse_error.IllegalUnicodeEscape
+    | _ -> lex_error env loc Parse_error.IllegalUnicodeEscape
+  in
   let rec id_char env loc buf lexbuf =
     match%sedlex lexbuf with
     | unicode_escape ->
-        let hex = sub_lexeme lexbuf 2 0 in
-        let code = int_of_string ("0x" ^ hex) in
+        let code = unicode_escape_code lexbuf in
         let env =
-          if not (Uchar.is_valid code)
-          then lex_error env loc Parse_error.IllegalUnicodeEscape
-          else env
+          if is_high_surrogate code
+          then low_surrogate env loc buf lexbuf code
+          else
+            let env =
+              if not (Uchar.is_valid code)
+              then lex_error env loc Parse_error.IllegalUnicodeEscape
+              else env
+            in
+            Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+            env
         in
-        Buffer.add_utf_8_uchar buf (Uchar.of_int code);
         id_char env loc buf lexbuf
     | codepoint_escape ->
-        let hex = sub_lexeme lexbuf 3 1 in
-        let code = int_of_string ("0x" ^ hex) in
+        let code = codepoint_escape_code lexbuf in
         let env =
-          if not (Uchar.is_valid code)
-          then lex_error env loc Parse_error.IllegalUnicodeEscape
-          else env
+          if is_high_surrogate code
+          then low_surrogate env loc buf lexbuf code
+          else
+            let env =
+              if not (Uchar.is_valid code)
+              then lex_error env loc Parse_error.IllegalUnicodeEscape
+              else env
+            in
+            Buffer.add_utf_8_uchar buf (Uchar.of_int code);
+            env
         in
-        Buffer.add_utf_8_uchar buf (Uchar.of_int code);
         id_char env loc buf lexbuf
     | eof -> env, Buffer.contents buf
     (* match multi-char substrings that don't contain the start chars of the above patterns *)
@@ -699,13 +749,13 @@ let token (env : Lex_env.t) lexbuf : result =
      3. \a is disallowed
      4. a世界 recognized
   *)
-  | js_id_start, Star js_id_continue -> (
+  | js_id_start_with_escape, Star js_id_continue_with_escape -> (
       let raw = Sedlexing.Utf8.lexeme lexbuf in
       match Js_token.is_keyword raw with
       | Some t -> Token (env, t)
       | None ->
           if is_basic_ident raw
-          then Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw))
+          then Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw, raw))
           else
             let env, decoded = decode_identifier env (loc_of_lexbuf env lexbuf) raw in
             let env =
@@ -716,7 +766,7 @@ let token (env : Lex_env.t) lexbuf : result =
                   | false -> illegal env (loc_of_lexbuf env lexbuf))
               | Some _ -> illegal env (loc_of_lexbuf env lexbuf)
             in
-            Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded)))
+            Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw)))
   | eof -> Token (env, T_EOF)
   | any ->
       let env = illegal env (loc_of_lexbuf env lexbuf) in

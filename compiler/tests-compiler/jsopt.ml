@@ -123,12 +123,26 @@ let%expect_test "object" =
           ; "bbb", Obj.magic (Js.string "test")
           ; "cc dd", Obj.magic 2
           ; "npiπ", Obj.magic 5
+          ; {u|\uD83D\uDC2B|u}, Obj.magic 3
+          ; {u|\u{1F42B}|u}, Obj.magic 1
+          ; {u|\u{1ee62}|u}, Obj.magic 1
+          ; "\u{1F42B}", Obj.magic 1
+          ; "\u{1ee62}", Obj.magic 1
          |]
 |}
   in
   print_var_decl program "obj_literal";
-  [%expect {|
-    var obj_literal = ({aaa:97,bbb:"test","cc dd":2,npiπ:5});
+  [%expect
+    {|
+    var obj_literal = ({aaa:97,
+      bbb:"test",
+      "cc dd":2,
+      npiπ:5,
+      "\uD83D\uDC2B":3,
+      "\u{1F42B}":1,
+      "\u{1ee62}":1,
+      "🐫":1,
+      𞹢:1});
     //end |}]
 
 let%expect_test "get" =
@@ -141,11 +155,18 @@ let%expect_test "get" =
         Js.get o (Js.string "a b")
        let get_c o =
         Js.get o (Js.string "npiπ")
+       let get_d o =
+        Js.get o (Js.string "\u{1F42B}")
+       let get_e o =
+        Js.get o (Js.string "\u{1ee62}")
+
       |}
   in
   print_fun_decl program (Some "get_a");
   print_fun_decl program (Some "get_b");
   print_fun_decl program (Some "get_c");
+  print_fun_decl program (Some "get_d");
+  print_fun_decl program (Some "get_e");
   [%expect
     {|
     function get_a(o){return o.aaa}
@@ -153,6 +174,10 @@ let%expect_test "get" =
     function get_b(o){return o["a b"]}
     //end
     function get_c(o){return o.npiπ}
+    //end
+    function get_d(o){return o["🐫"]}
+    //end
+    function get_e(o){return o.𞹢}
     //end |}]
 
 let%expect_test "set" =
