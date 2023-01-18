@@ -320,7 +320,10 @@ let f () =
     read dh;
     Unix.closedir dh;
     fail Unix.rewinddir dh;
-    fail Unix.readdir dh
+    fail Unix.readdir dh;
+    Sys.remove "aaa/bbb";
+    Sys.remove "aaa/ccc";
+    Sys.rmdir "aaa"
   with e -> print_endline  (Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
   [%expect
@@ -404,7 +407,11 @@ let f () =
     read dh;
     Unix.closedir dh;
     fail Unix.rewinddir dh;
-    fail Unix.readdir dh
+    fail Unix.readdir dh;
+    Sys.remove "bbb";
+    Sys.remove "ccc";
+    Sys.chdir "..";
+    Sys.rmdir "aaa"
   with e -> print_endline  (Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
   [%expect

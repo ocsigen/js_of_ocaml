@@ -26,6 +26,7 @@ let%expect_test _ =
   [%expect
     {|
 Warning: integer overflow: integer 0xffffffff (4294967295) truncated to 0xffffffff (-1); the generated code might be incorrect.
+Warning: integer overflow: integer 0xffffffff (4294967295) truncated to 0xffffffff (-1); the generated code might be incorrect.
 ffffffff |}];
   ()
 
