@@ -120,13 +120,13 @@ function caml_perform_effect(eff, cont, k0) {
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_pop_fiber, caml_fiber_stack, caml_cps_call_gen, caml_stack_check_depth, caml_trampoline_return
 //If: effects
 function caml_alloc_stack(hv, hx, hf) {
   function call(i, x) {
     var f=caml_fiber_stack.h[i];
     var args = [x, caml_pop_fiber()];
-    return caml_stack_check_depth()?caml_call_gen(f,args)
+    return caml_stack_check_depth()?caml_cps_call_gen(f,args)
            :caml_trampoline_return(f,args);
   }
   function hval(x) {

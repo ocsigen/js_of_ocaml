@@ -92,7 +92,7 @@ function caml_identity (x) { return x; }
 
 //Provides: caml_callback
 //If: effects
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_topmost_fiber, caml_identity
+//Requires:caml_stack_depth, caml_cps_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_topmost_fiber, caml_identity
 function caml_callback(f,initial_args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_exn_stack = caml_exn_stack;
@@ -107,7 +107,7 @@ function caml_callback(f,initial_args) {
     for (;;) {
       caml_stack_depth = 40;
       try {
-        var res = caml_call_gen(f, args);
+        var res = caml_cps_call_gen(f, args);
         if (!(res && res.joo_args)) return res;
         f = res.joo_tramp;
         args = res.joo_args;
