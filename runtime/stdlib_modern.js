@@ -62,7 +62,7 @@ function caml_call_gen(f, args) {
         return caml_call_gen(f, nargs)
       };
     }}
-    g.l = d + 1;
+    g.l = d;
     return g;
   }
 }
