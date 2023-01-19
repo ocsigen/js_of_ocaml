@@ -61,15 +61,6 @@ let list_group f g l =
   | [] -> []
   | a :: r -> list_group_rec f g r (f a) [ g a ] []
 
-(* like [List.map] except that it calls the function with
-   an additional argument to indicate whether we're mapping
-   over the last element of the list *)
-let rec map_last f l =
-  match l with
-  | [] -> assert false
-  | [ x ] -> [ f true x ]
-  | x :: xs -> f false x :: map_last f xs
-
 (****)
 
 type application_description =
@@ -1821,7 +1812,7 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
         let l =
           List.flatten
             (List.map l ~f:(fun (ints, br) ->
-                 map_last (fun last i -> int i, if last then br else []) ints))
+                 List.map_last ~f:(fun last i -> int i, if last then br else []) ints))
         in
         !all_never, [ J.Switch_statement (cx, l, Some last, []), loc ]
   in
