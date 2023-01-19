@@ -23,10 +23,10 @@ function caml_raise_constant (tag) { throw tag; }
 //Provides: caml_return_exn_constant (const)
 function caml_return_exn_constant (tag) { return tag; }
 
-//Provides: caml_raise_with_arg (const, const)
+//Provides: caml_raise_with_arg (const, mutable)
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
-//Provides: caml_raise_with_args (const, const)
+//Provides: caml_raise_with_args (const, mutable)
 function caml_raise_with_args (tag, args) { throw [0, tag].concat(args); }
 
 //Provides: caml_raise_with_string (const, const)
