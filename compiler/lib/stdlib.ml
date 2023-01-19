@@ -277,6 +277,26 @@ module List = struct
       | x :: xs -> aux (x :: acc) xs
     in
     aux [] xs
+
+  (* like [List.map] except that it calls the function with
+     an additional argument to indicate whether we're mapping
+     over the last element of the list *)
+  let rec map_last ~f l =
+    match l with
+    | [] -> assert false
+    | [ x ] -> [ f true x ]
+    | x :: xs -> f false x :: map_last ~f xs
+
+  (* like [List.iter] except that it calls the function with
+     an additional argument to indicate whether we're iterating
+     over the last element of the list *)
+  let rec iter_last ~f l =
+    match l with
+    | [] -> ()
+    | [ a ] -> f true a
+    | a :: l ->
+        f false a;
+        iter_last ~f l
 end
 
 let ( @ ) = List.append
