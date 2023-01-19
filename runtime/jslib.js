@@ -23,9 +23,9 @@
 //Requires: caml_callback
 function caml_js_pure_expr (f) { return caml_callback(f, [0]); }
 
-//Provides: caml_js_set (mutable, const, const)
+//Provides: caml_js_set (mutable, const, mutable)
 function caml_js_set(o,f,v) { o[f]=v;return 0}
-//Provides: caml_js_get (const, const)
+//Provides: caml_js_get (mutable, const)
 function caml_js_get(o,f) { return o[f]; }
 //Provides: caml_js_delete (mutable, const)
 function caml_js_delete(o,f) { delete o[f]; return 0}
@@ -127,7 +127,7 @@ function caml_jsoo_flags_effects(unit){
   return FLAG("effects")
 }
 
-//Provides: caml_wrap_exception const (const)
+//Provides: caml_wrap_exception const (mutable)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 //Requires: caml_return_exn_constant
 function caml_wrap_exception(e) {
@@ -194,7 +194,7 @@ function caml_js_to_array(a) {
   return b;
 }
 
-//Provides: caml_list_of_js_array const (const)
+//Provides: caml_list_of_js_array const (mutable)
 function caml_list_of_js_array(a){
   var l = 0;
   for(var i=a.length - 1; i>=0; i--){
@@ -204,7 +204,7 @@ function caml_list_of_js_array(a){
   return l
 }
 
-//Provides: caml_list_to_js_array const (const)
+//Provides: caml_list_to_js_array const (mutable)
 function caml_list_to_js_array(l){
   var a = [];
   for(; l !== 0; l = l[2]) {
@@ -213,7 +213,7 @@ function caml_list_to_js_array(l){
   return a;
 }
 
-//Provides: caml_js_var mutable (const)
+//Provides: caml_js_var mutable
 //Requires: caml_jsstring_of_string
 function caml_js_var(x) {
   var x = caml_jsstring_of_string(x);

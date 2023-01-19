@@ -134,7 +134,7 @@ function caml_call_gen(f, args) {
 //Provides: caml_named_values
 var caml_named_values = {};
 
-//Provides: caml_register_named_value (const,const)
+//Provides: caml_register_named_value (const,mutable)
 //Requires: caml_named_values, caml_jsbytes_of_string
 function caml_register_named_value(nm,v) {
   caml_named_values[caml_jsbytes_of_string(nm)] = v;

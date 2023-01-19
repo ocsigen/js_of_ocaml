@@ -62,7 +62,7 @@ function caml_obj_with_tag(tag,x) {
   return a;
 }
 
-//Provides: caml_obj_dup mutable (const)
+//Provides: caml_obj_dup mutable (mutable)
 function caml_obj_dup (x) {
   var l = x.length;
   var a = new Array(l);
@@ -100,7 +100,7 @@ function caml_obj_is_shared(x){
   return 1
 }
 
-//Provides: caml_lazy_make_forward const (const)
+//Provides: caml_lazy_make_forward const (mutable)
 function caml_lazy_make_forward (v) { return [250, v]; }
 
 ///////////// CamlinternalOO
