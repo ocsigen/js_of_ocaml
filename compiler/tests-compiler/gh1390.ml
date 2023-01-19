@@ -28,7 +28,7 @@ let%expect_test _ =
        x' := "OK";
        print_endline !x
     |};
-  [%expect {| BUG |}]
+  [%expect {| OK |}]
 
 let%expect_test _ =
   compile_and_run
