@@ -71,14 +71,14 @@ function caml_floatarray_blit(a1, i1, a2, i2, len) {
 }
 
 ///////////// Pervasive
-//Provides: caml_array_set (mutable, const, const)
+//Provides: caml_array_set (mutable, const, mutable)
 //Requires: caml_array_bound_error
 function caml_array_set (array, index, newval) {
   if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
   array[index+1]=newval; return 0;
 }
 
-//Provides: caml_array_get mutable (const, const)
+//Provides: caml_array_get mutable (mutable, const)
 //Requires: caml_array_bound_error
 function caml_array_get (array, index) {
   if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
@@ -93,14 +93,14 @@ function caml_array_fill(array, ofs, len, v){
   return 0;
 }
 
-//Provides: caml_check_bound (const, const)
+//Provides: caml_check_bound (mutable, const)
 //Requires: caml_array_bound_error
 function caml_check_bound (array, index) {
   if (index >>> 0 >= array.length - 1) caml_array_bound_error();
   return array;
 }
 
-//Provides: caml_make_vect const (const, const)
+//Provides: caml_make_vect const (const, mutable)
 //Requires: caml_array_bound_error
 function caml_make_vect (len, init) {
   if (len < 0) caml_array_bound_error();
