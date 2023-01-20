@@ -27,4 +27,5 @@ let%expect_test _ =
   |> print_endline;
   Sys.remove "empty.cma";
   Sys.remove "empty.js";
+  Sys.remove "empty.map";
   [%expect {| //# sourceMappingURL=empty.map |}]

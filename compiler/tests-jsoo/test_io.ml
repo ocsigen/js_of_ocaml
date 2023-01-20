@@ -99,4 +99,5 @@ let%expect_test _ =
   close_out oc;
   print_endline (file_contents fname);
   [%expect {| this is a test |}];
+  Sys.remove fname;
   ()
