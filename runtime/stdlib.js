@@ -18,7 +18,6 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_call_gen (const, shallow)
-//If: !effects
 //Weakdef
 function caml_call_gen(f, args) {
   var n = (f.l >= 0)?f.l:(f.l = f.length);

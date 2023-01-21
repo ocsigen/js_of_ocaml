@@ -991,7 +991,10 @@ let apply_fun_raw ctx f params exact cps =
     J.ECond
       ( J.call (runtime_fun ctx "caml_stack_check_depth") [] J.N
       , apply
-      , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] J.N ))
+      , J.call
+          (runtime_fun ctx "caml_trampoline_return")
+          [ f; J.array params; (if exact then one else zero) ]
+          J.N ))
   else apply
 
 let generate_apply_fun ctx { arity; exact; cps } =
