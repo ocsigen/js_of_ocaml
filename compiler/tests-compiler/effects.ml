@@ -42,6 +42,7 @@ let fff () =
   print_fun_decl program (Some "fff");
   [%expect
     {|
+<<<<<<< HEAD
     function fff(param, cont){
      var
       _b_ =
@@ -67,4 +68,19 @@ let fff () =
                         function(_h_){return caml_cps_call2(_h_, _f_, cont);});
               });
     }
+=======
+    function fff(param,cont)
+     {var _b_=[0,function(e){return e === E?[0,function(k){return 11}]:0}],_c_=10;
+      function _d_(x){return x}
+      var _e_=Stdlib_Effect[3][5];
+      return caml_cps_call4
+              (_e_,
+               _d_,
+               _c_,
+               _b_,
+               function(_f_)
+                {var _g_=Stdlib_Printf[2];
+                 return caml_cps_call2
+                         (_g_,_a_,function(_h_){return caml_cps_call2(_h_,_f_,cont)})})}
+>>>>>>> 2c677a751f (Escaping function do not have to be in CPS)
     //end |}]

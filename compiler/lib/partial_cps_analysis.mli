@@ -18,4 +18,6 @@
 
 val annot : Code.Var.Set.t -> Code.Print.xinstr -> string
 
+val exact_cps_call : Global_flow.info -> Code.Var.Set.t -> Code.Var.t -> int -> bool
+
 val f : Code.program -> Global_flow.info -> Code.Var.Set.t

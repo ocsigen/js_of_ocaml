@@ -66,62 +66,78 @@ function caml_call_gen(f, args) {
 }
 
 //Provides: caml_cps_call_gen (const, shallow)
+//Requires: caml_call_gen
 //If: effects
 //Weakdef
 function caml_cps_call_gen(f, args) {
   var n = (f.l >= 0)?f.l:(f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d == 0) {
-    return f.apply(null, args);
-  } else if (d < 0) {
-    var rest = args.slice(n - 1);
-    var k = args [argsLen - 1];
-    args = args.slice(0, n);
-    args[n - 1] = function (g) {
-      if (typeof g !== "function") return k(g);
-      var args = rest.slice();
-      args[args.length - 1] = k;
-      return caml_cps_call_gen(g, args); };
-    return f.apply(null, args);
+  if (f.cps) {
+    if (d == 0) {
+      return f.apply(null, args);
+    } else if (d < 0) {
+      var rest = args.slice(n - 1);
+      var k = args [argsLen - 1];
+      args[n - 1] = function (g) {
+        if (typeof g !== "function") return k(g);
+        var args = rest.slice();
+        args[args.length - 1] = k;
+        return caml_cps_call_gen(g, args); };
+      return f.apply(null, args);
+    }
   } else {
-    argsLen--;
-    var k = args [argsLen];
-    switch (d) {
-    case 1: {
-      var g = function (x, y){
-        var nargs = new Array(argsLen + 2);
-        for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
-        nargs[argsLen] = x;
-        nargs[argsLen + 1] = y;
-        return f.apply(null, nargs)
-      };
-      break;
+    d++;
+    if (d == 0) {
+      return args[n](f.apply(null, args));
+    } else if (d < 0) {
+      var rest = args.slice(n);
+      var k = args [argsLen - 1];
+      var g = f.apply(null, args);
+      if (typeof g !== "function") return k(g);
+      var args = rest;
+      args[args.length - 1] = k;
+      return caml_cps_call_gen(g, args);
     }
-    case 2: {
-      var g = function (x, y, z){
-        var nargs = new Array(argsLen + 3);
-        for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
-        nargs[argsLen] = x;
-        nargs[argsLen + 1] = y;
-        nargs[argsLen + 2] = z;
-        return f.apply(null, nargs)
-      };
-      break;
-    }
-    default: {
-      var g = function (){
-        var extra_args = (arguments.length == 0)?1:arguments.length;
-        var nargs = new Array(argsLen + extra_args);
-        for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
-        for(var i = 0; i < arguments.length; i++ )
-          nargs[argsLen + i] = arguments[i];
-        return caml_cps_call_gen(f, nargs)
-      };
-    }}
-    g.l = d + 1;
-    return k(g);
   }
+  argsLen--;
+  var k = args [argsLen];
+  switch (d) {
+  case 1: {
+    var g = function (x, y){
+      var nargs = new Array(argsLen + 2);
+      for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
+      nargs[argsLen] = x;
+      nargs[argsLen + 1] = y;
+      return f.cps?f.apply(null, nargs):y(f.apply(null, nargs))
+    };
+    break;
+  }
+  case 2: {
+    var g = function (x, y, z){
+      var nargs = new Array(argsLen + 3);
+      for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
+      nargs[argsLen] = x;
+      nargs[argsLen + 1] = y;
+      nargs[argsLen + 2] = z;
+      return f.cps?f.apply(null, nargs):z(f.apply(null, nargs))
+    };
+    break;
+  }
+  default: {
+    var g = function (){
+      var extra_args = (arguments.length == 0)?1:arguments.length;
+      var nargs = new Array(argsLen + extra_args);
+      for(var i = 0; i < argsLen; i++ ) nargs[i] = args[i];
+      for(var i = 0; i < arguments.length; i++ )
+        nargs[argsLen + i] = arguments[i];
+      return f.cps?f.apply(null, nargs):nargs[argsLen + extra_args - 1](f.apply(null, nargs))
+//      return caml_cps_call_gen(f, nargs);
+    };
+  }}
+  g.l = d + 1;
+  g.cps = true;
+  return k(g);
 }
 
 //Provides: caml_named_values

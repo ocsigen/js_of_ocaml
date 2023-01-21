@@ -191,6 +191,7 @@ module Share = struct
         ; "caml_maybe_attach_backtrace"
         ; "jsoo_effect_not_supported"
         ; "caml_callback"
+        ; "caml_cps_function"
         ]
         ~init:count
         ~f:(fun acc x -> add_special_prim_if_exists x acc)
@@ -988,9 +989,39 @@ let apply_fun_raw ctx f params exact cps =
        optimization. To implement it, we check the stack depth and
        bounce to a trampoline if needed, to avoid a stack overflow.
        The trampoline then performs the call in an shorter stack. *)
+    let l = Utf8_string.of_string_exn "l" in
     J.ECond
       ( J.call (runtime_fun ctx "caml_stack_check_depth") [] J.N
-      , apply
+      , (if exact
+        then apply
+        else
+          J.ECond
+            ( J.dot f (Utf8_string.of_string_exn "cps")
+            , apply
+            , let apply_direct =
+                J.ECond
+                  ( J.EBin
+                      ( J.EqEq
+                      , J.ECond
+                          ( J.EBin (J.Ge, J.dot f l, int 0)
+                          , J.dot f l
+                          , J.EBin
+                              ( J.Eq
+                              , J.dot f l
+                              , J.dot f (Utf8_string.of_string_exn "length") ) )
+                      , int (n - 1) )
+                  , J.call
+                      (List.nth params (n - 1))
+                      [ J.call f (fst (List.take (n - 1) params)) J.N ]
+                      J.N
+                  , J.call
+                      (runtime_fun
+                         ctx
+                         (if cps then "caml_cps_call_gen" else "caml_call_gen"))
+                      [ f; J.array params ]
+                      J.N )
+              in
+              apply_direct ))
       , J.call
           (runtime_fun ctx "caml_trampoline_return")
           [ f; J.array params; (if exact then one else zero) ]
