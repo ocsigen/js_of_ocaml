@@ -47,8 +47,8 @@ function caml_trampoline(res) {
 }
 
 //Provides:caml_trampoline_return
-function caml_trampoline_return(f,args) {
-  return {joo_tramp:f,joo_args:args};
+function caml_trampoline_return(f,args,exact) {
+  return {joo_tramp:f,joo_args:args,joo_exact:exact};
 }
 
 //Provides:caml_stack_depth
@@ -93,7 +93,7 @@ function caml_identity (x) { return x; }
 //Provides: caml_callback
 //If: effects
 //Requires:caml_stack_depth, caml_cps_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_topmost_fiber, caml_identity
-function caml_callback(f,initial_args) {
+function caml_callback(f,initial_args,exact) {
   var saved_stack_depth = caml_stack_depth;
   var saved_exn_stack = caml_exn_stack;
   var saved_fiber_stack = caml_fiber_stack;
@@ -107,16 +107,18 @@ function caml_callback(f,initial_args) {
     for (;;) {
       caml_stack_depth = 40;
       try {
-        var res = caml_cps_call_gen(f, args);
+        var res = exact?f.apply(null, args):caml_cps_call_gen(f, args);
         if (!(res && res.joo_args)) return res;
         f = res.joo_tramp;
         args = res.joo_args;
+        exact = res.joo_exact;
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
         if (!caml_exn_stack) throw e;
         f = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
         args = [caml_wrap_exception(e)];
+        exact = 1;
       }
     }
   } finally {

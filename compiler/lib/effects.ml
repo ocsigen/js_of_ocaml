@@ -285,10 +285,11 @@ let tail_call ~st ?(instrs = []) ~exact ~check ~f args =
   if check then st.cps_calls := Var.Set.add ret !(st.cps_calls);
   instrs @ [ Let (ret, Apply { f; args; exact }) ], Return ret
 
-let call_with_trampoline ~x ~f ~args ~rem =
+let call_with_trampoline ~x ~f ~args ~exact ~rem =
+  let exact = Pc (Int (if exact then 1l else 0l)) in
   let arg_array = Var.fresh () in
   Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
-  :: Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+  :: Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array; exact ]))
   :: rem
 
 let cps_branch ~st ~src (pc, args) =
@@ -453,7 +454,9 @@ let rec cps_instr ~st ~wrap instr rem =
          the right number of parameter *)
       assert (Global_flow.exact_call st.flow_info f (List.length args));
       Let (x, Apply { f; args; exact = true }) :: rem
-  | Let (x, Apply { f; args; _ }) when wrap -> call_with_trampoline ~x ~f ~args ~rem
+  | Let (x, Apply { f; args; exact }) when wrap ->
+      let exact = exact || Global_flow.exact_call st.flow_info f (List.length args) in
+      call_with_trampoline ~x ~f ~args ~exact ~rem
   | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) when wrap ->
       let f = Var.fresh () in
       let k = Var.fresh () in
@@ -464,7 +467,7 @@ let rec cps_instr ~st ~wrap instr rem =
            cps_block ~st ~k (-1) { params = []; body = [ Let (y, e) ]; branch = Return y })
       in
       Let (f, Closure ([ k ], (closure_pc, [])))
-      :: call_with_trampoline ~x ~f ~args:[] ~rem
+      :: call_with_trampoline ~x ~f ~args:[] ~exact:true ~rem
   | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       assert false
   | _ -> instr :: rem

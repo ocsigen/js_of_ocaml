@@ -45,7 +45,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
          Stdlib_Printf=global_data.Stdlib__Printf,
          _a_=
           [0,[11,caml_string_of_jsbytes("abc"),0],caml_string_of_jsbytes("abc")];
-        function g(param){return caml_callback(Stdlib_Printf[2],[_a_])}
+        function g(param){return caml_callback(Stdlib_Printf[2],[_a_],0)}
         g(0);
         var i=1;
         for(;;)
