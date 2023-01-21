@@ -73,10 +73,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                     | Some f -> add_tail_dep tail_deps f g);
                   (* If a called function is in CPS, then the call
                      point is in CPS *)
-                  add_dep deps x g;
-                  (* Conversally, if a call point is in CPS then all
-                     called functions must be in CPS *)
-                  add_dep deps g x)
+                  add_dep deps x g)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -146,13 +143,10 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps ~might_have_effect_handlers 
       match Var.Tbl.get info.Global_flow.info_approximation f with
       | Top -> true
       | Values { others; _ } -> others)
-  | Expr (Closure _) ->
-      (* If a function escapes, it must be in CPS *)
-      info.Global_flow.info_may_escape.(idx)
   | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
       (* Effects primitives are in CPS *)
       true
-  | Expr (Prim _ | Block _ | Constant _ | Field _) | Phi _ -> false
+  | Expr (Closure _ | Prim _ | Block _ | Constant _ | Field _) | Phi _ -> false
 
 module SCC = Strongly_connected_components.Make (struct
   type t = Var.t
@@ -175,6 +169,20 @@ let annot st xi =
   match (xi : Print.xinstr) with
   | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
+
+let exact_cps_call info cps_needed f n =
+  match Var.Tbl.get info.Global_flow.info_approximation f with
+  | Top | Values { others = true; _ } -> false
+  | Values { known; others = false } ->
+      Var.Set.for_all
+        (fun g ->
+          Var.Set.mem g cps_needed
+          &&
+          match info.info_defs.(Var.idx g) with
+          | Expr (Closure (params, _)) -> List.length params = n
+          | Expr (Block _) -> true
+          | Expr _ | Phi _ -> assert false)
+        known
 
 let f p info =
   let t = Timer.make () in

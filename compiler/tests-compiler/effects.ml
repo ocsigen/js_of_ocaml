@@ -43,13 +43,8 @@ let fff () =
   [%expect
     {|
     function fff(param,cont)
-     {var
-       _b_=
-        [0,
-         function(e,cont)
-          {return e === E?cont([0,function(k,cont){return cont(11)}]):cont(0)}],
-       _c_=10;
-      function _d_(x,cont){return cont(x)}
+     {var _b_=[0,function(e){return e === E?[0,function(k){return 11}]:0}],_c_=10;
+      function _d_(x){return x}
       var _e_=Stdlib_Effect[3][5];
       return caml_cps_call4
               (_e_,

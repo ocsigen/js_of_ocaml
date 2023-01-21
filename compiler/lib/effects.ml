@@ -439,7 +439,10 @@ let rec cps_instr ~st ~wrap instr rem =
       (* Add the continuation parameter, and change the initial block if
          needed *)
       let k, cont = Hashtbl.find st.closure_info pc in
-      Let (x, Closure (params @ [ k ], cont)) :: rem
+      let f = Var.fresh () in
+      Let (f, Closure (params @ [ k ], cont))
+      :: Let (x, Prim (Extern "caml_cps_function", [ Pv f ]))
+      :: rem
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
       | Pc (Int a) ->
@@ -449,13 +452,17 @@ let rec cps_instr ~st ~wrap instr rem =
             )
           :: rem
       | _ -> assert false)
-  | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
-      (* At the moment, we turn into CPS any function not called with
-         the right number of parameter *)
-      assert (Global_flow.exact_call st.flow_info f (List.length args));
-      Let (x, Apply { f; args; exact = true }) :: rem
-  | Let (x, Apply { f; args; exact }) when wrap ->
+  | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
       let exact = exact || Global_flow.exact_call st.flow_info f (List.length args) in
+      Let (x, Apply { f; args; exact }) :: rem
+  | Let (x, Apply { f; args; _ }) when wrap ->
+      let exact =
+        Partial_cps_analysis.exact_cps_call
+          st.flow_info
+          st.cps_needed
+          f
+          (List.length args)
+      in
       call_with_trampoline ~x ~f ~args ~exact ~rem
   | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) when wrap ->
       let f = Var.fresh () in
@@ -517,21 +524,28 @@ and cps_block ~st ~k pc block =
           [ Let (x, e) ], Return x)
     in
     match e with
-    | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
+    | Apply { f; args; _ } when Var.Set.mem x st.cps_needed ->
         Some
           (fun ~k ->
             let exact =
-              exact || Global_flow.exact_call st.flow_info f (List.length args)
+              Partial_cps_analysis.exact_cps_call
+                st.flow_info
+                st.cps_needed
+                f
+                (List.length args)
             in
             tail_call ~st ~exact ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
             let k' = Var.fresh_n "cont" in
+            let exact =
+              Partial_cps_analysis.exact_cps_call st.flow_info st.cps_needed f 1
+            in
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~exact:(Global_flow.exact_call st.flow_info f 1)
+              ~exact
               ~check:true
               ~f
               [ arg; k' ])

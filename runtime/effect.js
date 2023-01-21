@@ -146,6 +146,9 @@ function caml_alloc_stack(hv, hx, hf) {
   return 0;
 }
 
+//Provides: caml_cps_function (const)
+function caml_cps_function (f) { f.cps = true; return f; }
+
 //Provides: caml_continuation_use_noexc
 function caml_continuation_use_noexc(cont) {
   var stack=cont[1];

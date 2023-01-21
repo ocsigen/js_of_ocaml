@@ -470,6 +470,19 @@ class find_function_declaration r n =
                   match n with
                   | None -> r := fd :: !r
                   | Some n -> if String.equal name n then r := fd :: !r else ())
+              | DeclIdent
+                  ( (S { name = Utf8 name; _ } as id)
+                  , Some
+                      ( ECall
+                          ( EVar (Jsoo.Javascript.S { name = Utf8 "caml_cps_function"; _ })
+                          , _
+                          , [ Arg (EFun (None, fun_decl)) ]
+                          , _ )
+                      , _ ) ) -> (
+                  let fd = id, fun_decl in
+                  match n with
+                  | None -> r := fd :: !r
+                  | Some n -> if String.equal name n then r := fd :: !r else ())
               | _ -> ())
       | Function_declaration (name, fun_decl) -> (
           match name, n with
@@ -479,6 +492,22 @@ class find_function_declaration r n =
           | _ -> ())
       | _ -> ());
       super#statement s
+
+    (*
+    method! variable_declaration (id, eo) =
+      (match id, n, eo with
+      | ( Jsoo.Javascript.S { name = Utf8 name; _ }
+        , Some n
+        , Some
+            ( ECall
+                ( EVar (Jsoo.Javascript.S { name = Utf8 "caml_cps_function" })
+                , [ (EFun (None, params, body, loc), `Not_spread) ]
+                , _ )
+            , _ ) )
+        when String.equal name n -> r := (id, params, body, loc) :: !r
+      | _ -> ());
+      super#variable_declaration (id, eo)
+*)
   end
 
 let print_program p = print_string (program_to_string p)
