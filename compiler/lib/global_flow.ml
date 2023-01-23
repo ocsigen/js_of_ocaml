@@ -621,3 +621,25 @@ let exact_call info f n =
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
         known
+
+let function_arity info f =
+  match Var.Tbl.get info.info_approximation f with
+  | Top | Values { others = true; _ } -> None
+  | Values { known; others = false } -> (
+      match
+        Var.Set.fold
+          (fun g acc ->
+            match info.info_defs.(Var.idx g) with
+            | Expr (Closure (params, _)) -> (
+                let n = List.length params in
+                match acc with
+                | None -> Some (Some n)
+                | Some (Some n') when n <> n' -> Some None
+                | Some _ -> acc)
+            | Expr (Block _) -> acc
+            | Expr _ | Phi _ -> assert false)
+          known
+          None
+      with
+      | Some v -> v
+      | None -> None)

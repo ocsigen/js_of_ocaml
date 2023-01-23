@@ -21,36 +21,39 @@ open! Stdlib
 open Code
 open Flow
 
-let rec function_cardinality info x acc =
-  get_approx
-    info
-    (fun x ->
-      match info.info_defs.(Var.idx x) with
-      | Expr (Closure (l, _)) -> Some (List.length l)
-      | Expr (Prim (Extern "%closure", [ Pc (String prim) ])) -> (
-          try Some (Primitive.arity prim) with Not_found -> None)
-      | Expr (Apply { f; args; _ }) -> (
-          if List.mem f ~set:acc
-          then None
-          else
-            match function_cardinality info f (f :: acc) with
-            | Some n ->
-                let diff = n - List.length args in
-                if diff > 0 then Some diff else None
-            | None -> None)
-      | _ -> None)
-    None
-    (fun u v ->
-      match u, v with
-      | Some n, Some m when n = m -> u
-      | _ -> None)
-    x
+let function_arity info x =
+  let rec arity info x acc =
+    get_approx
+      info
+      (fun x ->
+        match info.info_defs.(Var.idx x) with
+        | Expr (Closure (l, _)) -> Some (List.length l)
+        | Expr (Prim (Extern "%closure", [ Pc (String prim) ])) -> (
+            try Some (Primitive.arity prim) with Not_found -> None)
+        | Expr (Apply { f; args; _ }) -> (
+            if List.mem f ~set:acc
+            then None
+            else
+              match arity info f (f :: acc) with
+              | Some n ->
+                  let diff = n - List.length args in
+                  if diff > 0 then Some diff else None
+              | None -> None)
+        | _ -> None)
+      None
+      (fun u v ->
+        match u, v with
+        | Some n, Some m when n = m -> u
+        | _ -> None)
+      x
+  in
+  arity info x []
 
-let specialize_instr info (acc, free_pc, extra) i =
+let specialize_instr function_arity (acc, free_pc, extra) i =
   match i with
-  | Let (x, Apply { f; args; _ }), loc when Config.Flag.optcall () -> (
+  | Let (x, Apply { f; args; exact }), loc when (not exact) && Config.Flag.optcall () -> (
       let n' = List.length args in
-      match function_cardinality info f [] with
+      match function_arity f with
       | None -> i :: acc, free_pc, extra
       | Some n when n = n' ->
           (Let (x, Apply { f; args; exact = true }), loc) :: acc, free_pc, extra
@@ -81,13 +84,13 @@ let specialize_instr info (acc, free_pc, extra) i =
       | _ -> i :: acc, free_pc, extra)
   | _ -> i :: acc, free_pc, extra
 
-let specialize_instrs info p =
+let specialize_instrs ~function_arity p =
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
         let body, free_pc, extra =
           List.fold_right block.body ~init:([], free_pc, []) ~f:(fun i acc ->
-              specialize_instr info acc i)
+              specialize_instr function_arity acc i)
         in
         let blocks =
           List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
@@ -99,4 +102,4 @@ let specialize_instrs info p =
   in
   { p with blocks; free_pc }
 
-let f info p = specialize_instrs info p
+let f = specialize_instrs
