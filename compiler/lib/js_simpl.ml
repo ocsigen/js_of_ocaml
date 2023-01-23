@@ -237,25 +237,3 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         iftrue'
         falsestop
   | _ -> if_statement_2 e loc iftrue truestop iffalse falsestop
-
-let rec get_variable acc = function
-  | J.ESeq (e1, e2) | J.EBin (_, e1, e2) | J.EAccess (e1, e2) ->
-      get_variable (get_variable acc e1) e2
-  | J.ECond (e1, e2, e3) -> get_variable (get_variable (get_variable acc e1) e2) e3
-  | J.EUn (_, e1) | J.EDot (e1, _) | J.ENew (e1, None) -> get_variable acc e1
-  | J.ECall (e1, el, _) | J.ENew (e1, Some el) ->
-      (e1, `Not_spread) :: el
-      |> List.map ~f:(fun (a, _) -> a)
-      |> List.fold_left ~init:acc ~f:get_variable
-  | J.EVar (J.V v) -> Code.Var.Set.add v acc
-  | J.EVar (J.S _) -> acc
-  | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.ERegexp _ -> acc
-  | J.EArr a ->
-      List.fold_left
-        ~f:(fun acc i ->
-          match i with
-          | None -> acc
-          | Some e1 -> get_variable acc e1)
-        ~init:acc
-        a
-  | J.EObj l -> List.fold_left ~f:(fun acc (_, e1) -> get_variable acc e1) ~init:acc l
