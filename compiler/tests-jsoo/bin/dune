@@ -1,8 +1,5 @@
 (executables
  (names error1 error2 error3)
- (js_of_ocaml
-  (link_flags
-   (:standard --enable auto-link)))
  (modes byte js))
 
 (rule

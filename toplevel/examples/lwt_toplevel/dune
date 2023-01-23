@@ -35,7 +35,7 @@
    (-> ppx_support.disabled.ml)))
  (flags
   (:standard -rectypes -linkall))
- (modes byte) ;; TODO: add [js] mode after switching to dune 3.7
+ (modes byte js)
  (js_of_ocaml
   (build_runtime_flags
    (:standard
