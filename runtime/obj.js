@@ -22,6 +22,12 @@ function caml_update_dummy (x, y) {
   var i = y.length; while (i--) x[i] = y[i]; return 0;
 }
 
+//Provides: caml_alloc_dummy_infix
+//Requires: caml_call_gen
+function caml_alloc_dummy_infix () {
+  return function f (x) { return caml_call_gen(f.fun, [x]) }
+}
+
 //Provides: caml_obj_is_block const (const)
 function caml_obj_is_block (x) { return +(x instanceof Array); }
 
