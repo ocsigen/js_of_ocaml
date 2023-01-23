@@ -950,7 +950,14 @@ let parallel_renaming params args continuation queue =
 
 let apply_fun_raw ctx f params exact cps =
   let n = List.length params in
-  let apply_directly = J.call f params J.N in
+  let apply_directly =
+    (* Make sure we are performing a regular call, not a (slower)
+       method call *)
+    match f with
+    | J.EAccess _ | J.EDot _ ->
+        J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) J.N
+    | _ -> J.call f params J.N
+  in
   let apply =
     (* We skip the arity check when we know that we have the right
        number of parameters, since this test is expensive. *)
