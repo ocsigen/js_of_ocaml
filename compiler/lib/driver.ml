@@ -49,7 +49,7 @@ let inline p =
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
-  Specialize.f info p
+  Specialize.f ~function_arity:(fun f -> Specialize.function_arity info f) p
 
 let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
@@ -90,6 +90,13 @@ let effects p =
     if debug () then Format.eprintf "Effects...@.";
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
+
+let exact_calls p =
+  if not (Config.Flag.effects ())
+  then
+    let info = Global_flow.f p in
+    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+  else p
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -565,7 +572,11 @@ let full
     p =
   let exported_runtime = not standalone in
   let opt =
-    specialize_js_once +> profile +> effects +> map_fst (Generate_closure.f +> deadcode')
+    specialize_js_once
+    +> profile
+    +> exact_calls
+    +> effects
+    +> map_fst (Generate_closure.f +> deadcode')
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone

@@ -40,3 +40,5 @@ type info =
 val f : Code.program -> info
 
 val exact_call : info -> Var.t -> int -> bool
+
+val function_arity : info -> Var.t -> int option
