@@ -12,6 +12,7 @@
 * Compiler: The js lexer is now utf8 aware, recognize and emit utf8 ident
 * Compiler: Update the js lexer with new number literal syntax
 * Compiler: update js parser to support most es6 feature (#1391)
+* Toplevel: Enable separate compilation of toplevels
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
