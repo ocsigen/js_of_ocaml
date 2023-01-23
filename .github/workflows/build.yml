@@ -81,6 +81,8 @@ jobs:
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
+      - run: opam pin add dune --dev
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
