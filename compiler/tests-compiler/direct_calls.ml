@@ -157,8 +157,8 @@ let%expect_test "direct calls with --enable effects" =
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F([0]), M2 = F([0]), _e_ = M2[1](2);
-     return cont([0, M1[1](1), _e_]);
+     var M1 = F([0]), M2 = F([0]), _e_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _e_]);
     }
     //end
     function test4(x, cont){
