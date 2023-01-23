@@ -3,7 +3,6 @@ Missing
 
 From unix.bc:
 caml_alloc_dummy_function
-caml_alloc_dummy_infix
 caml_dynlink_add_primitive
 caml_dynlink_close_lib
 caml_dynlink_get_current_libs

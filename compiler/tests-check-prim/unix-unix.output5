@@ -3,7 +3,6 @@ Missing
 
 From unix.bc:
 caml_alloc_dummy_function
-caml_alloc_dummy_infix
 caml_continuation_use
 caml_drop_continuation
 caml_dynlink_add_primitive
