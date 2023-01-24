@@ -271,24 +271,25 @@ let program_deps st { blocks; _ } =
 type approx =
   | Top
   | Values of
-      { known : Var.Set.t (* List of possible values (functions and blocks) *)
+      { known : Var.Set.t IntMap.t (* List of possible values (functions and blocks) *)
       ; others : bool (* Whether other functions or blocks are possible *)
       }
 
 module Domain = struct
   type t = approx
 
-  let bot = Values { known = Var.Set.empty; others = false }
+  let bot = Values { known = IntMap.empty; others = false }
 
-  let others = Values { known = Var.Set.empty; others = true }
+  let others = Values { known = IntMap.empty; others = true }
 
-  let singleton x = Values { known = Var.Set.singleton x; others = false }
+  let singleton ?(i = 0) x =
+    Values { known = IntMap.singleton i (Var.Set.singleton x); others = false }
 
   let equal x y =
     match x, y with
     | Top, Top -> true
     | Values { known; others }, Values { known = known'; others = others' } ->
-        Var.Set.equal known known' && Bool.equal others others'
+        IntMap.equal Var.Set.equal known known' && Bool.equal others others'
     | Top, Values _ | Values _, Top -> false
 
   let higher_escape_status s s' =
@@ -334,7 +335,9 @@ module Domain = struct
     match a with
     | Top -> ()
     | Values { known; _ } ->
-        Var.Set.iter (fun x -> value_escape ~update ~st ~approx s x) known
+        IntMap.iter
+          (fun _ v -> Var.Set.iter (fun x -> value_escape ~update ~st ~approx s x) v)
+          known
 
   let join ~update ~st ~approx x y =
     match x, y with
@@ -345,7 +348,10 @@ module Domain = struct
         approx_escape ~update ~st ~approx Escape x;
         Top
     | Values { known; others }, Values { known = known'; others = others' } ->
-        Values { known = Var.Set.union known known'; others = others || others' }
+        Values
+          { known = IntMap.union (fun _ v v' -> Some (Var.Set.union v v')) known known'
+          ; others = others || others'
+          }
 
   let join_set ~update ~st ~approx ?others:(o = false) f s =
     Var.Set.fold
@@ -363,8 +369,86 @@ module Domain = struct
             then (
               st.possibly_mutable.(Var.idx x) <- true;
               update ~children:true x))
-          known
+          (try IntMap.find 0 known with Not_found -> Var.Set.empty)
 end
+
+let rec list_drop n l =
+  if n = 0
+  then l
+  else
+    match l with
+    | [] -> assert false
+    | _ :: r -> list_drop (n - 1) r
+
+let rec apply_rec ~update ~st ~approx x args g params i =
+  (*  Format.eprintf "apply %d %d@." (List.length args) (List.length params);*)
+  match args, params with
+  | a :: args', p :: params' ->
+      let idx = Var.idx p in
+      (match st.defs.(idx) with
+      | Expr _ -> assert false
+      | Phi { known; others } ->
+          if not (Var.Set.mem a known)
+          then (
+            add_dep st p a;
+            update ~children:false p;
+            st.defs.(idx) <- Phi { known = Var.Set.add a known; others }));
+      apply_rec ~update ~st ~approx x args' g params' (i + 1)
+  | [], [] ->
+      Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find g st.return_values);
+      Domain.join_set
+        ~update
+        ~st
+        ~approx
+        (fun y -> Var.Tbl.get approx y)
+        (Var.Map.find g st.return_values)
+  | [], _ -> Domain.singleton ~i g
+  | _, [] ->
+      List.iter ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y) args;
+      Domain.variable_escape ~update ~st ~approx Escape g;
+      Domain.others
+(*
+      Domain.join_set
+        ~update
+        ~st
+        ~approx
+        (fun h -> apply ~update ~st ~approx (depth + 1) x args h)
+        (Var.Map.find g st.return_values)
+*)
+
+and apply ~update ~st ~approx x args f =
+  (*    Format.eprintf "APPLY(%d) %a %d %a@." depth Var.print x (List.length args) Var.print f;
+   *)
+  match Var.Tbl.get approx f with
+  | Values { known; others } ->
+      if others
+      then
+        List.iter ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y) args;
+      IntMap.fold
+        (fun i v acc ->
+          Domain.join
+            ~update
+            ~st
+            ~approx
+            acc
+            (Domain.join_set
+               ~update
+               ~st
+               ~approx
+               (fun g ->
+                 match st.defs.(Var.idx g) with
+                 | Expr (Closure (params, _)) ->
+                     (*
+                       Format.eprintf "ZZZ %d %d@." (List.length params) i;*)
+                     apply_rec ~update ~st ~approx x args g (list_drop i params) i
+                 | Expr (Block _) -> Domain.bot
+                 | Phi _ | Expr _ -> assert false)
+               v))
+        known
+        Domain.bot
+  | Top ->
+      List.iter ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y) args;
+      Top
 
 let propagate st ~update approx x =
   match st.defs.(Var.idx x) with
@@ -403,7 +487,7 @@ let propagate st ~update approx x =
                       else a
                   | Expr (Block _ | Closure _) -> Domain.bot
                   | Phi _ | Expr _ -> assert false)
-                known
+                (try IntMap.find 0 known with Not_found -> Var.Set.empty)
           | Top -> Top)
       | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get approx y
       | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
@@ -430,30 +514,33 @@ let propagate st ~update approx x =
                       else a
                   | Expr (Closure _) -> Domain.bot
                   | Phi _ | Expr _ -> assert false)
-                known
+                (try IntMap.find 0 known with Not_found -> Var.Set.empty)
           | Top -> Top)
       | Prim (Extern "caml_js_wrap_callback_strict", [ Pc (Int n); Pv f ]) ->
           (match Var.Tbl.get approx f with
           | Values { known; _ } ->
-              Var.Set.iter
-                (fun g ->
-                  match st.defs.(Var.idx g) with
-                  | Expr (Closure (params, _))
-                    when Int32.equal (Int32.of_int (List.length params)) n ->
-                      List.iter
-                        ~f:(fun y ->
-                          (match st.defs.(Var.idx y) with
-                          | Phi { known; _ } ->
-                              st.defs.(Var.idx y) <- Phi { known; others = true }
-                          | Expr _ -> assert false);
-                          update ~children:false y)
-                        params;
-                      Var.Set.iter
-                        (fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
-                        (Var.Map.find g st.return_values)
-                  | Expr (Closure _ | Block _) ->
-                      Domain.value_escape ~update ~st ~approx Escape x
-                  | Phi _ | Expr _ -> assert false)
+              IntMap.iter
+                (fun i v ->
+                  Var.Set.iter
+                    (fun g ->
+                      match st.defs.(Var.idx g) with
+                      | Expr (Closure (params, _))
+                        when List.length params = i + Int32.to_int n ->
+                          List.iter
+                            ~f:(fun y ->
+                              (match st.defs.(Var.idx y) with
+                              | Phi { known; _ } ->
+                                  st.defs.(Var.idx y) <- Phi { known; others = true }
+                              | Expr _ -> assert false);
+                              update ~children:false y)
+                            params (*ZZZ*);
+                          Var.Set.iter
+                            (fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
+                            (Var.Map.find g st.return_values)
+                      | Expr (Closure _ | Block _) ->
+                          Domain.value_escape ~update ~st ~approx Escape x
+                      | Phi _ | Expr _ -> assert false)
+                    v)
                 known
           | Top -> ());
           Domain.others
@@ -463,61 +550,13 @@ let propagate st ~update approx x =
              block *)
           Domain.bot
       | Prim (Extern _, _) -> Domain.others
-      | Apply { f; args; _ } -> (
-          match Var.Tbl.get approx f with
-          | Values { known; others } ->
-              if others
-              then
-                List.iter
-                  ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
-                  args;
-              Domain.join_set
-                ~update
-                ~st
-                ~approx
-                ~others
-                (fun g ->
-                  match st.defs.(Var.idx g) with
-                  | Expr (Closure (params, _)) when List.length args = List.length params
-                    ->
-                      if not (Hashtbl.mem st.applied_functions (x, g))
-                      then (
-                        Hashtbl.add st.applied_functions (x, g) ();
-                        List.iter2
-                          ~f:(fun p a ->
-                            add_assign_def st p a;
-                            update ~children:false p)
-                          params
-                          args;
-                        Var.Set.iter
-                          (fun y -> add_dep st x y)
-                          (Var.Map.find g st.return_values));
-                      Domain.join_set
-                        ~update
-                        ~st
-                        ~approx
-                        (fun y -> Var.Tbl.get approx y)
-                        (Var.Map.find g st.return_values)
-                  | Expr (Closure (_, _)) ->
-                      (* The funciton is partially applied or over applied *)
-                      List.iter
-                        ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
-                        args;
-                      Domain.variable_escape ~update ~st ~approx Escape g;
-                      Domain.others
-                  | Expr (Block _) -> Domain.bot
-                  | Phi _ | Expr _ -> assert false)
-                known
-          | Top ->
-              List.iter
-                ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
-                args;
-              Top))
+      | Apply { f; args; _ } -> apply ~update ~st ~approx x args f)
 
 let propagate st ~update approx x =
   let res = propagate st ~update approx x in
   match res with
-  | Values { known; _ } when Var.Set.cardinal known >= 200 ->
+  | Values { known; _ }
+    when IntMap.fold (fun _ v n -> n + Var.Set.cardinal v) known 0 >= 200 ->
       (* When the set of possible values get to large, we give up and
          just forget about it. This is crucial to make the analysis
          terminates in a reasonable amount of time. This happens when
@@ -606,12 +645,13 @@ let f p =
                     "{%a/%b} mut:%b vmut:%b esc:%s"
                     (Format.pp_print_list
                        ~pp_sep:(fun f () -> Format.fprintf f ", ")
-                       (fun f x ->
+                       (fun f (i, x) ->
                          Format.fprintf
                            f
-                           "%a(%s)"
+                           "%a@%d(%s)"
                            Var.print
                            x
+                           i
                            (match st.defs.(Var.idx x) with
                            | Expr (Closure _) -> "C"
                            | Expr (Block _) ->
@@ -621,7 +661,10 @@ let f p =
                                then "X"
                                else ""
                            | _ -> "O")))
-                    (Var.Set.elements known)
+                    (IntMap.fold
+                       (fun i v -> Var.Set.fold (fun x r -> (i, x) :: r) v)
+                       known
+                       [])
                     others
                     st.possibly_mutable.(Var.idx x)
                     st.variable_possibly_mutable.(Var.idx x)
@@ -640,10 +683,13 @@ let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with
   | Top | Values { others = true; _ } -> false
   | Values { known; others = false } ->
-      Var.Set.for_all
-        (fun g ->
-          match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _)) -> List.length params = n
-          | Expr (Block _) -> true
-          | Expr _ | Phi _ -> assert false)
+      IntMap.for_all
+        (fun i v ->
+          Var.Set.for_all
+            (fun g ->
+              match info.info_defs.(Var.idx g) with
+              | Expr (Closure (params, _)) -> List.length params = n + i
+              | Expr (Block _) -> true
+              | Expr _ | Phi _ -> assert false)
+            v)
         known

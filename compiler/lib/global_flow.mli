@@ -27,7 +27,7 @@ type def =
 type approx =
   | Top
   | Values of
-      { known : Var.Set.t (* List of possible values *)
+      { known : Var.Set.t Stdlib.IntMap.t (* List of possible values *)
       ; others : bool (* Whether other values are possible *)
       }
 

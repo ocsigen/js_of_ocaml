@@ -63,17 +63,20 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                 | Return x' -> Var.equal x x'
                 | _ -> false
               in
-              Var.Set.iter
-                (fun g ->
-                  add_var vars g;
-                  (if known_tail_call
-                  then
-                    match fun_name with
-                    | None -> ()
-                    | Some f -> add_tail_dep tail_deps f g);
-                  (* If a called function is in CPS, then the call
-                     point is in CPS *)
-                  add_dep deps x g)
+              IntMap.iter
+                (fun _ v ->
+                  Var.Set.iter
+                    (fun g ->
+                      add_var vars g;
+                      (if known_tail_call
+                      then
+                        match fun_name with
+                        | None -> ()
+                        | Some f -> add_tail_dep tail_deps f g);
+                      (* If a called function is in CPS, then the call
+                         point is in CPS *)
+                      add_dep deps x g)
+                    v)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -174,14 +177,17 @@ let exact_cps_call info cps_needed f n =
   match Var.Tbl.get info.Global_flow.info_approximation f with
   | Top | Values { others = true; _ } -> false
   | Values { known; others = false } ->
-      Var.Set.for_all
-        (fun g ->
-          Var.Set.mem g cps_needed
-          &&
-          match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _)) -> List.length params = n
-          | Expr (Block _) -> true
-          | Expr _ | Phi _ -> assert false)
+      IntMap.for_all
+        (fun i v ->
+          Var.Set.for_all
+            (fun g ->
+              Var.Set.mem g cps_needed
+              &&
+              match info.info_defs.(Var.idx g) with
+              | Expr (Closure (params, _)) -> List.length params = i + n
+              | Expr (Block _) -> true
+              | Expr _ | Phi _ -> assert false)
+            v)
         known
 
 let f p info =
