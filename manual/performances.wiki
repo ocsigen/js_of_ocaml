@@ -26,17 +26,17 @@ See how various js_of_ocaml options affect the generated size and execution time
 <<a_img src="performances/time-optim.png" | Relative execution times >>
 
 We show the performance impact of supporting effect handlers. The code
-is about 30% larger. The impact on compressed code is actually much lower
-since we are adding a lot of function definitions, which are rather
-verbose in JavaScript but compress well: the compressed code size
-hardly increases for large files compressed with {{{bzip2}}}.
-Code that involves a lot of function calls without allocation, such as
-{{{fib}}}, becomes much slower. The overhead is reasonable for
-code that performs a lot of allocations ({{{hamming}}}) or that
-performs some numeric computations ({{{almabench}}}, {{{fft}}}).
-Exception handling is faster ({{{boyer}}}).
+is about 20% larger. The impact on compressed code is actually much
+lower since we are adding a lot of function definitions, which are
+rather verbose in JavaScript but compress well: the compressed code
+size hardly increases for large files compressed with {{{bzip2}}}.
+Code that heavily uses {{{Lwt}}}, {{{Async}}} or {{{Incremental}}} can
+see a larger size increase (up to 45% larger, or 7% larger when
+compressed). There is almost no speed impact for small monomorphic
+programs. We estimate that the slowdown will usually be below 30%,
+though it can be larger for code that heavily use higher-order
+functions and polymorphism ({{{Lwt}}} code, for instance).
 
 <<a_img src="performances/size-effects.png" | Relative size >>
 <<a_img src="performances/size-bzip2-effects.png" | Relative size (compressed with bzip2) >>
 <<a_img src="performances/time-effects.png" | Relative execution times >>
-
