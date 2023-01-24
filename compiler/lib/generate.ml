@@ -411,17 +411,17 @@ let (e, expr_queue) = ... in
 flush_queue expr_queue e
 *)
 
-let const_p = 0
+let const_p = 0, Var.Set.empty
 
-let mutable_p = 1
+let mutable_p = 1, Var.Set.empty
 
-let mutator_p = 2
+let mutator_p = 2, Var.Set.empty
 
-let flush_p = 3
+let flush_p = 3, Var.Set.empty
 
-let or_p p q = max p q
+let or_p (p, s1) (q, s2) = max p q, Var.Set.union s1 s2
 
-let is_mutable p = p >= mutable_p
+let is_mutable (p, _) = p >= fst mutable_p
 
 let kind k =
   match k with
@@ -523,13 +523,13 @@ let access_queue queue x =
   try
     let elt = List.assoc x queue in
     if elt.cardinal = 1
-    then (elt.prop, elt.ce), List.remove_assoc x queue
+    then ((elt.prop, elt.deps), elt.ce), List.remove_assoc x queue
     else
-      ( (elt.prop, elt.ce)
+      ( ((elt.prop, elt.deps), elt.ce)
       , List.map queue ~f:(function
             | x', elt when Var.equal x x' -> x', { elt with cardinal = pred elt.cardinal }
             | x -> x) )
-  with Not_found -> (const_p, var x), queue
+  with Not_found -> ((fst const_p, Code.Var.Set.singleton x), var x), queue
 
 let access_queue' ~ctx queue x =
   match x with
@@ -547,7 +547,7 @@ let access_queue_may_flush queue v x =
       queue
       ~init:(Code.Var.Set.singleton v, [], [])
       ~f:(fun (deps, instrs, queue) ((y, elt) as eq) ->
-        if Code.Var.Set.exists (fun p -> Code.Var.Set.mem p deps) elt.deps
+        if not (Code.Var.Set.disjoint deps elt.deps)
         then
           ( Code.Var.Set.add y deps
           , (J.Variable_statement [ J.V y, Some (elt.ce, elt.loc) ], elt.loc) :: instrs
@@ -556,11 +556,11 @@ let access_queue_may_flush queue v x =
   in
   instrs, (tx, List.rev queue)
 
-let should_flush cond prop = cond <> const_p && cond + prop >= flush_p
+let should_flush (cond, _) prop = cond <> fst const_p && cond + prop >= fst flush_p
 
 let flush_queue expr_queue prop (l : J.statement_list) =
   let instrs, expr_queue =
-    if prop >= flush_p
+    if fst prop >= fst flush_p
     then expr_queue, []
     else List.partition ~f:(fun (_, elt) -> should_flush prop elt.prop) expr_queue
   in
@@ -578,12 +578,12 @@ let enqueue expr_queue prop x ce loc cardinal acc =
     then if is_mutable prop then flush_queue expr_queue prop [] else [], expr_queue
     else flush_queue expr_queue flush_p []
   in
-  let deps = Js_simpl.get_variable Code.Var.Set.empty ce in
+  let prop, deps = prop in
   let deps =
     List.fold_left expr_queue ~init:deps ~f:(fun deps (x', elt) ->
         if Code.Var.Set.mem x' deps then Code.Var.Set.union elt.deps deps else deps)
   in
-  instrs @ acc, (x, { prop; ce; loc; cardinal; deps }) :: expr_queue
+  instrs @ acc, (x, { prop; deps; ce; loc; cardinal }) :: expr_queue
 
 (****)
 
