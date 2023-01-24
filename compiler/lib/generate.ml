@@ -296,7 +296,6 @@ module Ctx = struct
   type t =
     { blocks : block Addr.Map.t
     ; live : Deadcode.variable_uses
-    ; free_vars : Code.Var.Set.t Code.Addr.Map.t
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : (Code.Var.t * bool ref) option
@@ -308,14 +307,12 @@ module Ctx = struct
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~free_vars
       blocks
       live
       share
       debug =
     { blocks
     ; live
-    ; free_vars
     ; share
     ; debug
     ; exported_runtime
@@ -1257,14 +1254,13 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~after:true pc in
       let clo = compile_closure ctx cont in
-      let deps = Code.Addr.Map.find pc ctx.free_vars in
       let clo =
         match clo with
         | (st, J.N) :: rem -> (st, J.U) :: rem
         | _ -> clo
       in
       let clo = J.EFun (None, List.map args ~f:(fun v -> J.V v), clo, loc) in
-      (clo, flush_p, deps, queue), []
+      (clo, flush_p, Var.Set.empty, queue), []
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, Code.Var.Set.empty, queue), instrs
@@ -2136,7 +2132,6 @@ let f
     ~should_export
     ~warn_on_unhandled_effect
     debug =
-  let free_vars = Freevars.f p in
   let t' = Timer.make () in
   let share = Share.get ~alias_prims:exported_runtime p in
   let exported_runtime =
@@ -2147,7 +2142,6 @@ let f
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~free_vars
       p.blocks
       live_vars
       share
