@@ -649,6 +649,20 @@ variable_with_loc:
           let name, _raw = i in
           var (p $symbolstartpos) name
         }
+  | ident_semi_keyword { var (p $symbolstartpos) (utf8_s (Js_token.to_string $1)) }
+
+(* add here keywords which are not considered reserved by ECMA *)
+ident_semi_keyword:
+ | T_OF { T_OF }
+ | T_TYPE { T_TYPE }
+ | T_DECLARE { T_DECLARE }
+ | T_PUBLIC { T_PUBLIC } | T_PRIVATE { T_PRIVATE } | T_PROTECTED { T_PROTECTED }
+ (* can have AS and ASYNC here but need to restrict arrow_function then *)
+ | T_ASYNC { T_ASYNC }
+ (* TODO: would like to add T_IMPORT here, but cause conflicts *)
+ | T_PACKAGE { T_PACKAGE }
+ | T_IMPLEMENTS { T_IMPLEMENTS }
+ | T_OPAQUE { T_OPAQUE }
 
 label:
   | T_IDENTIFIER {

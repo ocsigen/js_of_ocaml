@@ -481,3 +481,21 @@ c
     11: 0:},
     12: 0://Provides: test(annot),
     13: 0:c (identifier), 0:; (virtual), |}]
+
+let%expect_test _ =
+  parse_print_token
+    ~extra:true
+    {|
+Event.prototype.initEvent = function _Event_initEvent(type, bubbles, cancelable) {
+    this.type = type
+    this.bubbles = bubbles
+    this.cancelable = cancelable
+}
+|};
+  [%expect
+    {|
+    2: 0:Event (identifier), 5:., 6:prototype (identifier), 15:., 16:initEvent (identifier), 26:=, 28:function, 37:_Event_initEvent (identifier), 53:(, 54:type, 58:,, 60:bubbles (identifier), 67:,, 69:cancelable (identifier), 79:), 81:{,
+    3: 4:this, 8:., 9:type, 14:=, 16:type, 0:; (virtual),
+    4: 4:this, 8:., 9:bubbles (identifier), 17:=, 19:bubbles (identifier), 0:; (virtual),
+    5: 4:this, 8:., 9:cancelable (identifier), 20:=, 22:cancelable (identifier), 0:; (virtual),
+    6: 0:}, 0:; (virtual), |}]
