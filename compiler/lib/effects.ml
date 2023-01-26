@@ -51,6 +51,7 @@ let reverse_graph g =
 
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
+  ; preds : (Addr.t, Addr.Set.t) Hashtbl.t
   ; reverse_post_order : Addr.t list
   ; block_order : (Addr.t, int) Hashtbl.t
   }
@@ -71,7 +72,8 @@ let build_graph blocks pc =
   traverse pc;
   let block_order = Hashtbl.create 16 in
   List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
-  { succs; reverse_post_order = !l; block_order }
+  let preds = reverse_graph succs in
+  { succs; preds; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
@@ -102,8 +104,25 @@ let dominator_tree g =
         l);
   dom
 
+(* pc dominates pc' *)
+let rec dominates g idom pc pc' =
+  pc = pc'
+  || Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+     && dominates g idom pc (Hashtbl.find idom pc')
+
+(* pc has at least two forward edges moving into it *)
+let is_merge_node g pc =
+  let s = try Hashtbl.find g.preds pc with Not_found -> assert false in
+  let o = Hashtbl.find g.block_order pc in
+  let n =
+    Addr.Set.fold
+      (fun pc' n -> if Hashtbl.find g.block_order pc' < o then n + 1 else n)
+      s
+      0
+  in
+  n > 1
+
 let dominance_frontier g idom =
-  let preds = reverse_graph g.succs in
   let frontiers = Hashtbl.create 16 in
   Hashtbl.iter
     (fun pc preds ->
@@ -117,7 +136,7 @@ let dominance_frontier g idom =
             loop (Hashtbl.find idom runner))
         in
         Addr.Set.iter loop preds)
-    preds;
+    g.preds;
   frontiers
 
 (****)
@@ -232,6 +251,8 @@ type cps_calls = Var.Set.t
 type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
   ; blocks : Code.block Addr.Map.t
+  ; cfg : control_flow_graph
+  ; idom : (int, int) Hashtbl.t
   ; jc : jump_closures
   ; closure_info : (Addr.t, Var.t * Code.cont) Hashtbl.t
   ; cps_needed : Var.Set.t
@@ -292,14 +313,59 @@ let cps_jump_cont ~st ~src ((pc, _) as cont) =
       in
       call_block, []
 
-let cps_last ~st pc (last : last) ~k : instr list * last =
+let allocate_continuation ~st ~alloc_jump_closures ~split_closures pc x cont =
+  (* We need to allocate an additional closure if [cont]
+     does not correspond to a continuation that binds [x].
+     This closure binds the return value [x], allocates
+     closures for dominated blocks and jumps to the next
+     block. When entering a loop, we also have to allocate a
+     closure to bind [x] if it is used in the loop body. In
+     other cases, we can just pass the closure corresponding
+     to the next block. *)
+  let pc', args = cont in
+  if (match args with
+     | [] -> true
+     | [ x' ] -> Var.equal x x'
+     | _ -> false)
+     &&
+     match Hashtbl.find st.is_continuation pc' with
+     | `Param _ -> true
+     | `Loop -> st.live_vars.(Var.idx x) = List.length args
+  then alloc_jump_closures, closure_of_pc ~st pc'
+  else
+    let body, branch = cps_branch ~st ~src:pc cont in
+    let inner_closures, outer_closures =
+      (* For [Pushtrap], we need to separate the closures
+         corresponding to the exception handler body (that may make
+         use of [x]) from the other closures that may be used outside
+         of the exception handler. *)
+      if not split_closures
+      then alloc_jump_closures, []
+      else if is_merge_node st.cfg pc'
+      then [], alloc_jump_closures
+      else
+        List.partition
+          ~f:(fun i ->
+            match i with
+            | Let (_, Closure (_, (pc'', []))) -> dominates st.cfg st.idom pc' pc''
+            | _ -> assert false)
+          alloc_jump_closures
+    in
+    let body, branch =
+      allocate_closure ~st ~params:[ x ] ~body:(inner_closures @ body) ~branch
+    in
+    outer_closures @ body, branch
+
+let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
   match last with
   | Return x ->
+      assert (List.is_empty alloc_jump_closures);
       (* Is the number of successive 'returns' is unbounded is CPS, it
          means that we have an unbounded of calls in direct style
          (even with tail call optimization) *)
       tail_call ~st ~exact:true ~check:false ~f:k [ x ]
   | Raise (x, _) -> (
+      assert (List.is_empty alloc_jump_closures);
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
           (* We are within a try ... with which is not
@@ -314,35 +380,51 @@ let cps_last ~st pc (last : last) ~k : instr list * last =
             ~check:false
             ~f:exn_handler
             [ x ])
-  | Stop -> [], Stop
-  | Branch cont -> cps_branch ~st ~src:pc cont
+  | Stop ->
+      assert (List.is_empty alloc_jump_closures);
+      [], Stop
+  | Branch cont ->
+      let body, branch = cps_branch ~st ~src:pc cont in
+      alloc_jump_closures @ body, branch
   | Cond (x, cont1, cont2) ->
-      [], Cond (x, cps_jump_cont ~st ~src:pc cont1, cps_jump_cont ~st ~src:pc cont2)
+      ( alloc_jump_closures
+      , Cond (x, cps_jump_cont ~st ~src:pc cont1, cps_jump_cont ~st ~src:pc cont2) )
   | Switch (x, c1, c2) ->
       (* To avoid code duplication during JavaScript generation, we need
          to create a single block per continuation *)
       let cps_jump_cont = Fun.memoize (cps_jump_cont ~st ~src:pc) in
-      [], Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-  | Pushtrap (body_cont, _, (handler_pc, _), _) -> (
+      ( alloc_jump_closures
+      , Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont) )
+  | Pushtrap (body_cont, exn, ((handler_pc, _) as handler_cont), _) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
-      | false -> [], last
+      | false -> alloc_jump_closures, last
       | true ->
-          let exn_handler = closure_of_pc ~st handler_pc in
+          let constr_cont, exn_handler =
+            allocate_continuation
+              ~st
+              ~alloc_jump_closures
+              ~split_closures:true
+              pc
+              exn
+              handler_cont
+          in
           let push_trap =
             Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
           in
           let body, branch = cps_branch ~st ~src:pc body_cont in
-          push_trap :: body, branch)
+          constr_cont @ (push_trap :: body), branch)
   | Poptrap cont -> (
       match
         Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
       with
-      | false -> [], Poptrap (cps_jump_cont ~st ~src:pc cont)
+      | false -> alloc_jump_closures, Poptrap (cps_jump_cont ~st ~src:pc cont)
       | true ->
           let exn_handler = Var.fresh () in
           let body, branch = cps_branch ~st ~src:pc cont in
-          Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body, branch)
+          ( alloc_jump_closures
+            @ (Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body)
+          , branch ))
 
 let cps_instr ~st (instr : instr) : instr =
   match instr with
@@ -447,38 +529,18 @@ let cps_block ~st ~k pc block =
             let instrs, branch = f ~k in
             body_prefix, instrs, branch)
     | Some (body_prefix, Let (x, e)), Branch cont ->
-        let allocate_continuation f =
-          let constr_cont, k' =
-            (* We need to allocate an additional closure if [cont]
-               does not correspond to a continuation that binds [x].
-               This closure binds the return value [x], allocates
-               closures for dominated blocks and jumps to the next
-               block. When entering a loop, we also have to allocate a
-               closure to bind [x] if it is used in the loop body. In
-               other cases, we can just pass the closure corresponding
-               to the next block. *)
-            let pc', args = cont in
-            if (match args with
-               | [] -> true
-               | [ x' ] -> Var.equal x x'
-               | _ -> false)
-               &&
-               match Hashtbl.find st.is_continuation pc' with
-               | `Param _ -> true
-               | `Loop -> st.live_vars.(Var.idx x) = List.length args
-            then alloc_jump_closures, closure_of_pc ~st pc'
-            else
-              let body, branch = cps_branch ~st ~src:pc cont in
-              allocate_closure
+        Option.map (rewrite_instr x e) ~f:(fun f ->
+            let constr_cont, k' =
+              allocate_continuation
                 ~st
-                ~params:[ x ]
-                ~body:(alloc_jump_closures @ body)
-                ~branch
-          in
-          let instrs, branch = f ~k:k' in
-          body_prefix, constr_cont @ instrs, branch
-        in
-        Option.map (rewrite_instr x e) ~f:allocate_continuation
+                ~alloc_jump_closures
+                ~split_closures:false
+                pc
+                x
+                cont
+            in
+            let instrs, branch = f ~k:k' in
+            body_prefix, constr_cont @ instrs, branch)
     | Some (_, (Set_field _ | Offset_ref _ | Array_set _ | Assign _)), _
     | Some _, (Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _)
     | None, _ -> None
@@ -489,12 +551,8 @@ let cps_block ~st ~k pc block =
     | Some (body_prefix, last_instrs, last) ->
         List.map body_prefix ~f:(fun i -> cps_instr ~st i) @ last_instrs, last
     | None ->
-        let last_instrs, last = cps_last ~st pc block.branch ~k in
-        let body =
-          List.map block.body ~f:(fun i -> cps_instr ~st i)
-          @ alloc_jump_closures
-          @ last_instrs
-        in
+        let last_instrs, last = cps_last ~st ~alloc_jump_closures pc block.branch ~k in
+        let body = List.map block.body ~f:(fun i -> cps_instr ~st i) @ last_instrs in
         body, last
   in
 
@@ -553,6 +611,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         let st =
           { new_blocks = Addr.Map.empty, free_pc
           ; blocks
+          ; cfg
+          ; idom
           ; jc = closure_jc
           ; closure_info
           ; cps_needed

@@ -58,53 +58,55 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
 
     function exceptions(s,cont)
      {try
-       {var _n_=runtime.caml_int_of_string(s),n=_n_}
-      catch(_r_)
-       {var _g_=caml_wrap_exception(_r_);
-        if(_g_[1] !== Stdlib[7]){var raise$1=caml_pop_trap();return raise$1(_g_)}
-        var n=0,_h_=0}
+       {var _p_=runtime.caml_int_of_string(s),n=_p_}
+      catch(_t_)
+       {var _i_=caml_wrap_exception(_t_);
+        if(_i_[1] !== Stdlib[7]){var raise$1=caml_pop_trap();return raise$1(_i_)}
+        var n=0,_j_=0}
       try
-       {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _m_=7,m=_m_}
-      catch(_q_)
-       {var _i_=caml_wrap_exception(_q_);
-        if(_i_ !== Stdlib[8]){var raise$0=caml_pop_trap();return raise$0(_i_)}
-        var m=0,_j_=0}
+       {if(caml_string_equal(s,cst$0))throw Stdlib[8];var _o_=7,m=_o_}
+      catch(_s_)
+       {var _k_=caml_wrap_exception(_s_);
+        if(_k_ !== Stdlib[8]){var raise$0=caml_pop_trap();return raise$0(_k_)}
+        var m=0,_l_=0}
       caml_push_trap
-       (function(_p_)
-         {if(_p_ === Stdlib[8])return cont(0);
+       (function(_r_)
+         {if(_r_ === Stdlib[8])return cont(0);
           var raise=caml_pop_trap();
-          return raise(_p_)});
+          return raise(_r_)});
       if(caml_string_equal(s,cst))
-       {var _k_=Stdlib[8],raise=caml_pop_trap();return raise(_k_)}
-      var _l_=Stdlib[79];
+       {var _m_=Stdlib[8],raise=caml_pop_trap();return raise(_m_)}
+      var _n_=Stdlib[79];
       return caml_cps_call2
-              (_l_,
+              (_n_,
                cst_toto,
-               function(_o_){caml_pop_trap();return cont([0,[0,_o_,n,m]])})}
+               function(_q_){caml_pop_trap();return cont([0,[0,_q_,n,m]])})}
     //end |}];
   print_fun_decl code (Some "handler_is_loop");
   [%expect
     {|
     function handler_is_loop(f,g,l,cont)
-     {function _e_(l)
-       {return caml_cps_call2
-                (g,
-                 l,
-                 function(match)
-                  {if(72330306 <= match[1])
-                    {var l=match[2];return caml_cps_exact_call1(_e_,l)}
-                   var exn=match[2],raise=caml_pop_trap();
-                   return raise(exn)})}
-      caml_push_trap(_e_);
-      var _d_=0;
-      return caml_cps_call2(f,_d_,function(_f_){caml_pop_trap();return cont(_f_)})}
+     {caml_push_trap
+       (function(_g_)
+         {function _h_(l)
+           {return caml_cps_call2
+                    (g,
+                     l,
+                     function(match)
+                      {if(72330306 <= match[1])
+                        {var l=match[2];return caml_cps_exact_call1(_h_,l)}
+                       var exn=match[2],raise=caml_pop_trap();
+                       return raise(exn)})}
+          return _h_(l)});
+      var _e_=0;
+      return caml_cps_call2(f,_e_,function(_f_){caml_pop_trap();return cont(_f_)})}
     //end |}];
   print_fun_decl code (Some "handler_is_merge_node");
   [%expect
     {|
     function handler_is_merge_node(g,cont)
      {function _b_(s){return caml_cps_call3(Stdlib[28],s,cst_aaa,cont)}
-      caml_push_trap(_b_);
+      caml_push_trap(function(_d_){return _b_(cst$1)});
       var _a_=0;
       return caml_cps_call2(g,_a_,function(_c_){caml_pop_trap();return _b_(_c_)})}
     //end |}]
