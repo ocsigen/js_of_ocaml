@@ -140,6 +140,7 @@ struct
     | Expression (* 0  *)
     | AssignementExpression (* 1  *)
     | ConditionalExpression (* 2  *)
+    | ShortCircuitExpression
     | CoalesceExpression
     | LogicalORExpression (* 3  *)
     | LogicalANDExpression (* 4  *)
@@ -153,13 +154,11 @@ struct
     | MultiplicativeExpression (* 12 *)
     | ExponentiationExpression
     | UnaryExpression (* 13 *)
-    | PostfixExpression (* 14 *)
-    | LeftHandsideExpression (* 15 *)
-    | NewExpression (* 16 *)
-    | CallExpression (* 17 *)
+    | UpdateExpression (* 14 *)
+    | LeftHandSideExpression (* 15 *)
+    | NewExpression
+    | CallOrMemberExpression
     | MemberExpression (* 16 *)
-    | FunctionExpression
-    | PrimaryExpression
 
   module Prec = struct
     let compare (a : prec) (b : prec) = Poly.compare a b
@@ -194,7 +193,7 @@ struct
     | OrEq
     | AndEq
     | ExpEq
-    | CoalesceEq -> AssignementExpression, AssignementExpression, AssignementExpression
+    | CoalesceEq -> AssignementExpression, LeftHandSideExpression, AssignementExpression
     | Coalesce -> CoalesceExpression, BitwiseORExpression, BitwiseORExpression
     | Or -> LogicalORExpression, LogicalORExpression, LogicalORExpression
     | And -> LogicalANDExpression, LogicalANDExpression, LogicalANDExpression
@@ -209,7 +208,7 @@ struct
     | Plus | Minus -> AdditiveExpression, AdditiveExpression, MultiplicativeExpression
     | Mul | Div | Mod ->
         MultiplicativeExpression, MultiplicativeExpression, ExponentiationExpression
-    | Exp -> ExponentiationExpression, ExponentiationExpression, ExponentiationExpression
+    | Exp -> ExponentiationExpression, UpdateExpression, ExponentiationExpression
 
   let op_str op =
     match op with
@@ -285,19 +284,35 @@ struct
     | Function_declaration _
     | Debugger_statement -> false
 
-  let rec need_paren l e =
-    match e with
-    | EArrow _ -> Prec.(l <= AssignementExpression)
-    | ESeq (e, _) -> Prec.(l <= Expression) && need_paren Expression e
-    | ECond (e, _, _) -> Prec.(l <= Expression) && need_paren ConditionalExpression e
-    | EBin (op, e, _) ->
-        let out, lft, _rght = op_prec op in
-        Prec.(l <= out) && need_paren lft e
-    | ECall (e, _, _, _) | EAccess (e, _, _) | EDot (e, _, _) ->
-        Prec.(l <= LeftHandsideExpression) && need_paren LeftHandsideExpression e
-    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | ERegexp _ | EUn _ | ENew _ | EYield _
-      -> false
-    | EFun _ | EObj _ -> true
+  let starts_with ~obj ~funct ~let_identifier ~async_identifier l e =
+    let rec traverse l e =
+      match e with
+      | EObj _ -> obj
+      | EFun _ -> funct
+      | EVar (S { name = Utf8 "let"; _ }) -> let_identifier
+      | EVar (S { name = Utf8 "async"; _ }) -> async_identifier
+      | ESeq (e, _) -> Prec.(l <= Expression) && traverse Expression e
+      | ECond (e, _, _) ->
+          Prec.(l <= ConditionalExpression) && traverse ShortCircuitExpression e
+      | EBin (op, e, _) ->
+          let out, lft, _rght = op_prec op in
+          Prec.(l <= out) && traverse lft e
+      | EUn ((IncrA | DecrA), e) ->
+          Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
+      | ECall (e, _, _, _) | EAccess (e, _, _) | EDot (e, _, _) ->
+          traverse CallOrMemberExpression e
+      | EArrow _
+      | EVar _
+      | EStr _
+      | EArr _
+      | EBool _
+      | ENum _
+      | ERegexp _
+      | EUn _
+      | ENew _
+      | EYield _ -> false
+    in
+    traverse l e
 
   let best_string_quote s =
     let simple = ref 0 and double = ref 0 in
@@ -380,7 +395,11 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident i l b pc
-    | EArrow (k, l, b, pc) -> (
+    | EArrow (k, p, b, pc) ->
+        if Prec.(l > AssignementExpression)
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 1;
         PP.start_group f 0;
         (match k with
@@ -390,7 +409,7 @@ struct
         | { async = false; generator = false } -> ()
         | { async = true | false; generator = true } -> assert false);
         PP.break f;
-        (match l with
+        (match p with
         | [ (PIdent { default = None; _ } as x) ] -> formal_parameter f x
         | [ PIdent { default = Some _; _ } ]
         | [ PIdentSpread _ ]
@@ -398,38 +417,39 @@ struct
         | [] | _ :: _ :: _ ->
             PP.start_group f 1;
             PP.string f "(";
-            formal_parameter_list f l;
+            formal_parameter_list f p;
             PP.string f ")";
             PP.end_group f);
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
         PP.string f "=>";
-        match b with
-        | [ (Return_statement (Some e), p) ] ->
-            function_body f [ Expression_statement e, p ];
-            PP.end_group f;
-            PP.end_group f
-        | [ (Block _, _) ] ->
-            function_body f b;
-            PP.end_group f;
-            PP.end_group f
+        (match b with
+        | [ (Return_statement (Some e), _) ] ->
+            (* Should not starts with '{' *)
+            parenthesized_expression ~obj:true AssignementExpression f e
+        | [ (Block _, _) ] -> function_body f b
         | _ ->
             PP.start_group f 1;
             PP.string f "{";
             function_body f b;
             output_debug_info f pc;
-            PP.string f "}";
-            PP.end_group f;
-            PP.end_group f)
+            PP.string f "}");
+        PP.end_group f;
+        PP.end_group f;
+        if Prec.(l > AssignementExpression)
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | ECall (e, access_kind, el, loc) ->
-        if Prec.(l > LeftHandsideExpression)
+        (* Need parentheses also if within an expression [new e] *)
+        if Prec.(l = NewExpression || l > CallOrMemberExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
-        expression LeftHandsideExpression f e;
+        expression CallOrMemberExpression f e;
         PP.break f;
         PP.start_group f 1;
         (match access_kind with
@@ -439,7 +459,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        if Prec.(l > LeftHandsideExpression)
+        if Prec.(l = NewExpression || l > CallOrMemberExpression)
         then (
           PP.string f ")";
           PP.end_group f)
@@ -455,7 +475,7 @@ struct
             Prec.(l > UnaryExpression)
             (* Negative numbers may need to be parenthesized. *)
           else
-            Prec.(l = LeftHandsideExpression)
+            Prec.(l >= CallOrMemberExpression)
             (* Parenthesize as well when followed by a dot. *)
             && (not (Char.equal s.[0] 'I'))
             (* Infinity *)
@@ -489,24 +509,24 @@ struct
           PP.string f ")";
           PP.end_group f)
     | EUn (((IncrB | DecrB) as op), e) ->
-        let p = UnaryExpression in
+        let p = UpdateExpression in
         if Prec.(l > p)
         then (
           PP.start_group f 1;
           PP.string f "(");
         if Poly.(op = IncrB) then PP.string f "++" else PP.string f "--";
-        expression p f e;
+        expression UnaryExpression f e;
         if Prec.(l > p)
         then (
           PP.string f ")";
           PP.end_group f)
     | EUn (((IncrA | DecrA) as op), e) ->
-        let p = PostfixExpression in
+        let p = UpdateExpression in
         if Prec.(l > p)
         then (
           PP.start_group f 1;
           PP.string f "(");
-        expression p f e;
+        expression LeftHandSideExpression f e;
         if Poly.(op = IncrA) then PP.string f "++" else PP.string f "--";
         if Prec.(l > p)
         then (
@@ -552,12 +572,9 @@ struct
     | EBin (op, e1, e2) ->
         let out, lft, rght = op_prec op in
         let lft =
-          (* it is impossible to write an ambiguous exponentiation
-             expression. That is, you cannot put a unary operator
-             (+/-/~/!/delete/void/typeof) immediately before the base
-             number *)
+          (* We can have e sequence of coalesce: e1 ?? e2 ?? e3,
+             but each expressions should be a BitwiseORExpression *)
           match e1, op with
-          | EUn (_, _), Exp -> PostfixExpression
           | EBin (Coalesce, _, _), Coalesce -> CoalesceExpression
           | _ -> lft
         in
@@ -581,12 +598,13 @@ struct
         PP.string f "]";
         PP.end_group f
     | EAccess (e, access_kind, e') ->
-        if Prec.(l > LeftHandsideExpression)
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
         PP.start_group f 1;
-        expression LeftHandsideExpression f e;
+        let l' =
+          match l with
+          | NewExpression | MemberExpression -> MemberExpression
+          | _ -> CallOrMemberExpression
+        in
+        expression l' f e;
         PP.break f;
         PP.start_group f 1;
         (match access_kind with
@@ -595,25 +613,20 @@ struct
         expression Expression f e';
         PP.string f "]";
         PP.end_group f;
-        PP.end_group f;
-        if Prec.(l > LeftHandsideExpression)
-        then (
-          PP.string f ")";
-          PP.end_group f)
+        PP.end_group f
     | EDot (e, access_kind, Utf8 nm) ->
-        if Prec.(l > LeftHandsideExpression)
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
-        expression LeftHandsideExpression f e;
+        (* We keep tracks of whether call expression are allowed
+           without parentheses within this expression *)
+        let l' =
+          match l with
+          | NewExpression | MemberExpression -> MemberExpression
+          | _ -> CallOrMemberExpression
+        in
+        expression l' f e;
         (match access_kind with
         | ANormal -> PP.string f "."
         | ANullish -> PP.string f "?.");
-        PP.string f nm;
-        if Prec.(l > LeftHandsideExpression)
-        then (
-          PP.string f ")";
-          PP.end_group f)
+        PP.string f nm
     | ENew (e, None) ->
         if Prec.(l > NewExpression)
         then (
@@ -631,25 +644,17 @@ struct
           PP.string f ")";
           PP.end_group f)
     | ENew (e, Some el) ->
-        if Prec.(l > CallExpression)
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
         PP.start_group f 1;
         PP.string f "new";
         PP.space f;
-        expression CallExpression f e;
+        expression MemberExpression f e;
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
         arguments f el;
         PP.string f ")";
         PP.end_group f;
-        PP.end_group f;
-        if Prec.(l > CallExpression)
-        then (
-          PP.string f ")";
-          PP.end_group f)
+        PP.end_group f
     | ECond (e, e1, e2) ->
         if Prec.(l > ConditionalExpression)
         then (
@@ -657,7 +662,7 @@ struct
           PP.string f "(");
         PP.start_group f 1;
         PP.start_group f 0;
-        expression LogicalORExpression f e;
+        expression ShortCircuitExpression f e;
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
@@ -691,15 +696,23 @@ struct
         match e with
         | None -> PP.string f "yield"
         | Some e ->
+            if Prec.(l > AssignementExpression)
+            then (
+              PP.start_group f 1;
+              PP.string f "(");
             PP.start_group f 7;
             PP.string f "yield";
             PP.non_breaking_space f;
             PP.start_group f 0;
-            expression Expression f e;
+            expression AssignementExpression f e;
             PP.end_group f;
-            PP.end_group f
-            (* There MUST be a space between the return and its
-               argument. A line return will not work *))
+            PP.end_group f;
+            if Prec.(l > AssignementExpression)
+            then (
+              PP.start_group f 1;
+              PP.string f ")"
+              (* There MUST be a space between the yield and its
+                 argument. A line return will not work *)))
 
   and property_name f n =
     match n with
@@ -941,6 +954,29 @@ struct
     | None -> ()
     | Some e -> expression l f e
 
+  and parenthesized_expression
+      ?(last_semi = fun () -> ())
+      ?(obj = false)
+      ?(funct = false)
+      ?(let_identifier = false)
+      ?(async_identifier = false)
+      l
+      f
+      e =
+    if starts_with ~obj ~funct ~let_identifier ~async_identifier l e
+    then (
+      PP.start_group f 1;
+      PP.string f "(";
+      expression l f e;
+      PP.string f ")";
+      last_semi ();
+      PP.end_group f)
+    else (
+      PP.start_group f 0;
+      expression l f e;
+      last_semi ();
+      PP.end_group f)
+
   and for_binding f k v =
     variable_declaration_kind f k;
     PP.space f;
@@ -969,20 +1005,16 @@ struct
         last_semi ()
     | Expression_statement e ->
         (* Parentheses are required when the expression
-           starts syntactically with "{" or "function" *)
-        if need_paren Expression e
-        then (
-          PP.start_group f 1;
-          PP.string f "(";
-          expression Expression f e;
-          PP.string f ")";
-          last_semi ();
-          PP.end_group f)
-        else (
-          PP.start_group f 0;
-          expression Expression f e;
-          last_semi ();
-          PP.end_group f)
+           starts syntactically with "{", "function", "async function"
+           or "let [" *)
+        parenthesized_expression
+          ~last_semi
+          ~obj:true
+          ~funct:true
+          ~let_identifier:true
+          Expression
+          f
+          e
     | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
         (* Dangling else issue... *)
         statement ~last f (If_statement (e, (Block [ s1 ], N), s2), N)
@@ -1104,7 +1136,10 @@ struct
         PP.start_group f 1;
         PP.string f "(";
         (match e1 with
-        | Left e -> opt_expression Expression f e
+        | Left None -> ()
+        | Left (Some e) ->
+            (* Should not starts with "let [" *)
+            parenthesized_expression ~let_identifier:true Expression f e
         | Right (k, l) -> variable_declaration_list k false f l);
         PP.string f ";";
         PP.break f;
@@ -1128,7 +1163,9 @@ struct
         PP.start_group f 1;
         PP.string f "(";
         (match e1 with
-        | Left e -> expression Expression f e
+        | Left e ->
+            (* Should not starts with "let [" *)
+            parenthesized_expression ~let_identifier:true Expression f e
         | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "in";
@@ -1151,7 +1188,14 @@ struct
         PP.start_group f 1;
         PP.string f "(";
         (match e1 with
-        | Left e -> expression Expression f e
+        | Left e ->
+            (* Should not starts with "let" or "async of" *)
+            parenthesized_expression
+              ~let_identifier:true
+              ~async_identifier:true
+              Expression
+              f
+              e
         | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "of";
