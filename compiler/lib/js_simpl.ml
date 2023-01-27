@@ -69,6 +69,7 @@ let rec enot_rec e =
         J.EUn (J.Not, e), 0
     | J.EBool b -> J.EBool (not b), 0
     | J.ECall _
+    | J.ECallTemplate _
     | J.EAccess _
     | J.EDot _
     | J.ENew _
@@ -81,8 +82,12 @@ let rec enot_rec e =
     | J.EObj _
     | J.ERegexp _
     | J.EYield _
+    | J.ETemplate _
+    | J.EAssignTarget _
     | J.EUn (J.Await, _)
     | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) -> J.EUn (J.Not, e), 1
+    | J.CoverCallExpressionAndAsyncArrowHead _
+    | J.CoverParenthesizedExpressionAndArrowParameterList _ -> assert false
   in
   if cost <= 1 then res else J.EUn (J.Not, e), 1
 
@@ -116,18 +121,18 @@ exception Not_assignment
 
 let rec assignment_of_statement_list l =
   match l with
-  | [ (J.Variable_statement (Var, [ (DIdent _ as vd) ]), _) ] -> vd
-  | [ (J.Variable_statement (Var, [ (DPattern _ as vd) ]), _) ] -> vd
+  | [ (J.Variable_statement (Var, [ (DeclIdent _ as vd) ]), _) ] -> vd
+  | [ (J.Variable_statement (Var, [ (DeclPattern _ as vd) ]), _) ] -> vd
   | (J.Expression_statement e, _) :: rem -> (
       match assignment_of_statement_list rem with
-      | DIdent (x, Some (e', nid)) -> DIdent (x, Some (J.ESeq (e, e'), nid))
-      | DPattern (p, (e', nid)) -> DPattern (p, (J.ESeq (e, e'), nid))
-      | DIdent (_, None) -> assert false)
+      | DeclIdent (x, Some (e', nid)) -> DeclIdent (x, Some (J.ESeq (e, e'), nid))
+      | DeclIdent (_, None) -> assert false
+      | DeclPattern (p, (e', nid)) -> DeclPattern (p, (J.ESeq (e, e'), nid)))
   | _ -> raise Not_assignment
 
 let assignment_of_statement st =
   match fst st with
-  | J.Variable_statement (Var, [ (DIdent (_, Some _) as vd) ]) -> vd
+  | J.Variable_statement (Var, [ (DeclIdent (_, Some _) as vd) ]) -> vd
   | J.Block l -> assignment_of_statement_list l
   | _ -> raise Not_assignment
 
@@ -142,7 +147,7 @@ let simplify_condition = function
 
 let rec depth = function
   | J.Block b -> depth_block b + 1
-  | Function_declaration (_, _, _, b, _) -> depth_block b + 1
+  | Function_declaration (_, (_, _, b, _)) -> depth_block b + 1
   | Variable_statement _ -> 1
   | Empty_statement -> 1
   | Expression_statement _ -> 1
@@ -191,16 +196,17 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
         let vd1 = assignment_of_statement iftrue in
         let vd2 = assignment_of_statement iffalse in
         match vd1, vd2 with
-        | DIdent (x1, Some (e1, _)), DIdent (x2, Some (e2, _)) when Poly.(x1 = x2) ->
+        | DeclIdent (x1, Some (e1, _)), DeclIdent (x2, Some (e2, _)) when Poly.(x1 = x2)
+          ->
             let exp =
               if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
             in
-            [ J.Variable_statement (Var, [ DIdent (x1, Some (exp, loc)) ]), loc ]
-        | DPattern (p1, (e1, _)), DPattern (p2, (e2, _)) when Poly.(p1 = p2) ->
+            [ J.Variable_statement (Var, [ DeclIdent (x1, Some (exp, loc)) ]), loc ]
+        | DeclPattern (p1, (e1, _)), DeclPattern (p2, (e2, _)) when Poly.(p1 = p2) ->
             let exp =
               if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
             in
-            [ J.Variable_statement (Var, [ DPattern (p1, (exp, loc)) ]), loc ]
+            [ J.Variable_statement (Var, [ DeclPattern (p1, (exp, loc)) ]), loc ]
         | _ -> assert false
       with Not_assignment -> (
         try

@@ -29,6 +29,8 @@ class type mapper =
 
     method switch_case : expression -> expression
 
+    method fun_decl : Javascript.function_declaration -> Javascript.function_declaration
+
     method initialiser : expression * location -> expression * location
 
     method initialiser_o :
@@ -52,14 +54,50 @@ class type mapper =
 
     method ident : ident -> ident
 
-    method param : formal_parameter -> formal_parameter
+    method formal_parameter_list :
+      Javascript.formal_parameter_list -> Javascript.formal_parameter_list
 
     method program : program -> program
 
     method function_body : statement_list -> statement_list
   end
 
+class type iterator =
+  object
+    method early_error : Javascript.early_error -> unit
+
+    method expression : Javascript.expression -> unit
+
+    method expression_o : Javascript.expression option -> unit
+
+    method switch_case : Javascript.expression -> unit
+
+    method initialiser : Javascript.expression * Javascript.location -> unit
+
+    method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
+
+    method for_binding :
+      Javascript.variable_declaration_kind -> Javascript.for_binding -> unit
+
+    method variable_declaration :
+      Javascript.variable_declaration_kind -> Javascript.variable_declaration -> unit
+
+    method statement : Javascript.statement -> unit
+
+    method statement_o : (Javascript.statement * Javascript.location) option -> unit
+
+    method statements : Javascript.statement_list -> unit
+
+    method ident : Javascript.ident -> unit
+
+    method program : Javascript.program -> unit
+
+    method function_body : Javascript.statement_list -> unit
+  end
+
 class map : mapper
+
+class iter : iterator
 
 class subst :
   (ident -> ident)
@@ -75,7 +113,7 @@ type t =
 
 type block =
   | Catch of formal_parameter
-  | Params of formal_parameter list
+  | Params of formal_parameter_list
   | Normal
 
 class type freevar =

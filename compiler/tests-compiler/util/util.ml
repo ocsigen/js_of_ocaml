@@ -438,8 +438,8 @@ class find_variable_declaration r n =
 
     method! variable_declaration k v =
       (match v with
-      | DIdent (Jsoo.Javascript.S { name = Utf8 name; _ }, _) when String.equal name n ->
-          r := v :: !r
+      | DeclIdent (Jsoo.Javascript.S { name = Utf8 name; _ }, _) when String.equal name n
+        -> r := v :: !r
       | _ -> ());
       super#variable_declaration k v
   end
@@ -450,7 +450,8 @@ let print_var_decl program n =
   ignore (o#program program);
   print_string (Format.sprintf "var %s = " n);
   match !r with
-  | [ DIdent (_, Some (expression, _)) ] -> print_string (expression_to_string expression)
+  | [ DeclIdent (_, Some (expression, _)) ] ->
+      print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
 class find_function_declaration r n =
@@ -462,19 +463,18 @@ class find_function_declaration r n =
       (match s with
       | Variable_statement (_, l) ->
           List.iter l ~f:(function
-              | DIdent
-                  ((S { name = Utf8 name; _ } as id), Some (EFun (_, k, pl, b, loc), _))
+              | DeclIdent ((S { name = Utf8 name; _ } as id), Some (EFun (_, fun_decl), _))
                 -> (
-                  let fd = id, k, pl, b, loc in
+                  let fd = id, fun_decl in
                   match n with
                   | None -> r := fd :: !r
                   | Some n -> if String.equal name n then r := fd :: !r else ())
               | _ -> ())
-      | Function_declaration fd -> (
-          match fd, n with
-          | _, None -> r := fd :: !r
-          | (S { name = Utf8 name; _ }, _, _, _, _), Some n ->
-              if String.equal name n then r := fd :: !r else ()
+      | Function_declaration (name, fun_decl) -> (
+          match name, n with
+          | _, None -> r := (name, fun_decl) :: !r
+          | S { name = Utf8 s; _ }, Some n ->
+              if String.equal s n then r := (name, fun_decl) :: !r else ()
           | _ -> ())
       | _ -> ());
       super#statement s
@@ -488,7 +488,8 @@ let print_fun_decl program n =
   ignore (o#program program);
   let module J = Jsoo.Javascript in
   match !r with
-  | [ fd ] -> print_string (program_to_string [ J.Function_declaration fd, J.N ])
+  | [ (n, fd) ] ->
+      print_string (program_to_string [ J.Function_declaration (n, fd), J.N ])
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 

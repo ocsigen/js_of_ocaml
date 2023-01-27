@@ -179,7 +179,7 @@ while compiling the OCaml toplevel:
       Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3);
     name
 
-  let add_constraints global u ~offset params =
+  let add_constraints global u ~offset (params : ident list) =
     let constr = global.constr in
     let c = make_alloc_table () in
     S.iter
@@ -187,7 +187,6 @@ while compiling the OCaml toplevel:
         let i = Var.idx v in
         constr.(i) <- c :: constr.(i))
       u;
-    let params = bound_idents_of_params params in
     let params = Array.of_list params in
     let len = Array.length params in
     let len_max = len + offset in
@@ -218,8 +217,8 @@ while compiling the OCaml toplevel:
       match block with
       | Normal -> all
       | Params _ -> all
-      | Catch p ->
-          let ids = bound_idents_of_param p in
+      | Catch (p, _) ->
+          let ids = bound_idents_of_binding p in
           List.fold_left ids ~init:all ~f:(fun all i -> Javascript.IdentSet.add i all)
     in
     let all =
@@ -233,8 +232,8 @@ while compiling the OCaml toplevel:
     in
     match block with
     | Normal -> add_constraints state all ~offset:0 []
-    | Catch v -> add_constraints state all ~offset:5 [ v ]
-    | Params p -> add_constraints state all ~offset:0 p
+    | Catch (v, _) -> add_constraints state all ~offset:5 (bound_idents_of_binding v)
+    | Params p -> add_constraints state all ~offset:0 (bound_idents_of_params p)
 end
 
 module Preserve : Strategy = struct
@@ -256,7 +255,7 @@ module Preserve : Strategy = struct
   let record_block t scope (b : Js_traverse.block) =
     let defs =
       match b with
-      | Catch p -> bound_idents_of_param p
+      | Catch (p, _) -> bound_idents_of_binding p
       | Normal -> Javascript.IdentSet.elements scope.Js_traverse.def_local
       | Params _ ->
           Javascript.IdentSet.elements

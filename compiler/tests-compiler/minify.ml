@@ -213,3 +213,48 @@ a = function (aaa,b,c,yyy) {
           2: b=2;var
           3: f=3;return b+b}else{let
           4: b=3,c=b;return b*e}}; |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+        var long1 = 1;
+        let long2 = 2;
+        const long3 = 3;
+        function f () {
+          var long1 = 1;
+          let long2 = 2;
+          const long3 = 3;
+        }
+        |}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2:         var long1 = 1;
+          3:         let long2 = 2;
+          4:         const long3 = 3;
+          5:         function f () {
+          6:           var long1 = 1;
+          7:           let long2 = 2;
+          8:           const long3 = 3;
+          9:         }
+         10:
+        $ cat "test.min.js"
+          1: var
+          2: long1=1;let
+          3: a=2;const
+          4: b=3;function
+          5: f(){var
+          6: a=1;let
+          7: b=2;const
+          8: c=3} |}])

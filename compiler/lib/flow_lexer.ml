@@ -7,6 +7,13 @@
 
 open Js_token
 
+module Lex_mode = struct
+  type t =
+    | NORMAL
+    | BACKQUOTE
+    | REGEXP
+end
+
 module Loc = struct
   (* line numbers are 1-indexed; column numbers are 0-indexed *)
 
@@ -41,6 +48,7 @@ module Lex_env = struct
     { lex_source : string option
     ; lex_lb : Sedlexing.lexbuf
     ; lex_state : lex_state
+    ; lex_mode_stack : Lex_mode.t list
     }
   [@@ocaml.warning "-69"]
 
@@ -55,8 +63,23 @@ module Lex_env = struct
       | "" -> None
       | s -> Some s
     in
-    { lex_source; lex_lb; lex_state = empty_lex_state }
+    { lex_source
+    ; lex_lb
+    ; lex_state = empty_lex_state
+    ; lex_mode_stack = [ Lex_mode.NORMAL ]
+    }
 end
+
+let push_mode env mode =
+  { env with Lex_env.lex_mode_stack = mode :: env.Lex_env.lex_mode_stack }
+
+let pop_mode env =
+  { env with
+    Lex_env.lex_mode_stack =
+      (match env.Lex_env.lex_mode_stack with
+      | [] -> []
+      | _ :: xs -> xs)
+  }
 
 module Lex_result = struct
   type t =
@@ -424,7 +447,8 @@ let rec string_quote env q buf lexbuf =
   | '\\', line_terminator_sequence -> string_quote env q buf lexbuf
   | '\\' ->
       let env, str = string_escape env lexbuf in
-      if String.get q 0 <> String.get str 0 then Buffer.add_string buf "\\";
+      if String.equal str "" || String.get q 0 <> String.get str 0
+      then Buffer.add_string buf "\\";
       Buffer.add_string buf str;
       string_quote env q buf lexbuf
   | '\n' ->
@@ -443,47 +467,6 @@ let rec string_quote env q buf lexbuf =
       lexeme_to_buffer lexbuf buf;
       string_quote env q buf lexbuf
   | _ -> failwith "unreachable string_quote"
-
-let rec template_part env cooked raw literal lexbuf =
-  match%sedlex lexbuf with
-  | eof ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
-      env, true
-  | '`' ->
-      Buffer.add_char literal '`';
-      env, true
-  | "${" ->
-      Buffer.add_string literal "${";
-      env, false
-  | '\\' ->
-      Buffer.add_char raw '\\';
-      Buffer.add_char literal '\\';
-      let env, str = string_escape env lexbuf in
-      Buffer.add_string raw str;
-      Buffer.add_string literal str;
-      template_part env cooked raw literal lexbuf
-  (* ECMAScript 6th Syntax, 11.8.6.1 Static Semantics: TV's and TRV's
-   * Long story short, <LF> is 0xA, <CR> is 0xA, and <CR><LF> is 0xA
-   * *)
-  | "\r\n" ->
-      Buffer.add_string raw "\r\n";
-      Buffer.add_string literal "\r\n";
-      Buffer.add_string cooked "\n";
-      template_part env cooked raw literal lexbuf
-  | "\n" | "\r" ->
-      let lf = lexeme lexbuf in
-      Buffer.add_string raw lf;
-      Buffer.add_string literal lf;
-      Buffer.add_char cooked '\n';
-      template_part env cooked raw literal lexbuf
-  (* match multi-char substrings that don't contain the start chars of the above patterns *)
-  | Plus (Compl (eof | '`' | '$' | '\\' | '\r' | '\n')) | any ->
-      let c = lexeme lexbuf in
-      Buffer.add_string raw c;
-      Buffer.add_string literal c;
-      Buffer.add_string cooked c;
-      template_part env cooked raw literal lexbuf
-  | _ -> failwith "unreachable template_part"
 
 let token (env : Lex_env.t) lexbuf : result =
   match%sedlex lexbuf with
@@ -519,15 +502,8 @@ let token (env : Lex_env.t) lexbuf : result =
         , T_STRING (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), p2 - p1 - 1)
         )
   | '`' ->
-      let cooked = Buffer.create 127 in
-      let raw = Buffer.create 127 in
-      let literal = Buffer.create 127 in
-      lexeme_to_buffer lexbuf literal;
-      let env, is_tail = template_part env cooked raw literal lexbuf in
-      Token
-        ( env
-        , T_TEMPLATE_PART (Stdlib.Utf8_string.of_string_exn (Buffer.contents raw), is_tail)
-        )
+      let env = push_mode env BACKQUOTE in
+      Token (env, T_BACKQUOTE)
   | binbigint, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
@@ -632,8 +608,12 @@ let token (env : Lex_env.t) lexbuf : result =
           | _ -> failwith "unreachable token wholenumber")
   | wholenumber | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
   (* Syntax *)
-  | "{" -> Token (env, T_LCURLY)
-  | "}" -> Token (env, T_RCURLY)
+  | "{" ->
+      let env = push_mode env NORMAL in
+      Token (env, T_LCURLY)
+  | "}" ->
+      let env = pop_mode env in
+      Token (env, T_RCURLY)
   | "(" -> Token (env, T_LPAREN)
   | ")" -> Token (env, T_RPAREN)
   | "[" -> Token (env, T_LBRACKET)
@@ -811,6 +791,31 @@ let regexp env lexbuf =
       Token (env, T_ERROR (lexeme lexbuf))
   | _ -> failwith "unreachable regexp"
 
+(*****************************************************************************)
+(* Rule backquote *)
+(*****************************************************************************)
+
+let backquote env lexbuf =
+  match%sedlex lexbuf with
+  | '`' ->
+      let env = pop_mode env in
+      Token (env, T_BACKQUOTE)
+  | "${" ->
+      let env = push_mode env NORMAL in
+      Token (env, T_DOLLARCURLY)
+  | Plus (Compl ('`' | '$' | '\\')) -> Token (env, T_ENCAPSED_STRING (lexeme lexbuf))
+  | '$' -> Token (env, T_ENCAPSED_STRING (lexeme lexbuf))
+  | '\\' ->
+      let buf = Buffer.create 127 in
+      Buffer.add_char buf '\\';
+      let env, str = string_escape env lexbuf in
+      Buffer.add_string buf str;
+      Token (env, T_ENCAPSED_STRING (Buffer.contents buf))
+  | eof -> Token (env, T_EOF)
+  | _ ->
+      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      Token (env, T_ERROR (lexeme lexbuf))
+
 let wrap f =
   let f env =
     let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
@@ -843,3 +848,11 @@ let wrap f =
 let regexp = wrap regexp
 
 let token = wrap token
+
+let backquote = wrap backquote
+
+let lex env =
+  match env.Lex_env.lex_mode_stack with
+  | Lex_mode.NORMAL :: _ | [] -> token env
+  | Lex_mode.BACKQUOTE :: _ -> backquote env
+  | Lex_mode.REGEXP :: _ -> regexp env

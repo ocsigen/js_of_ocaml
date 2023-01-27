@@ -1,6 +1,6 @@
 (executable
-  (name run)
-  (libraries js_of_ocaml_compiler unix str))
+ (name run)
+ (libraries js_of_ocaml_compiler unix str))
 
 ;; $ git clone git@github.com:tc39/test262-parser-tests.git
 ;; $ dune exe compiler/tests-js-parser/run.exe test262-parser-tests/pass/*

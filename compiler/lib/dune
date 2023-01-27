@@ -35,9 +35,7 @@
   --unused-token
   T_AT
   --unused-token
-  T_POUND
-  --unused-token
-  T_TEMPLATE_PART))
+  T_POUND))
 
 (menhir
  (modules annot_parser)

@@ -93,7 +93,7 @@ end = struct
               (Flow_lexer.Parse_error.to_string e))
 
   let token (t : t) =
-    let env, res = Flow_lexer.token t.env in
+    let env, res = Flow_lexer.lex t.env in
     t.env <- env;
     let tok = Flow_lexer.Lex_result.token res in
     let pos = Flow_lexer.Lex_result.loc res in
@@ -288,18 +288,88 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
         (* When, as the program is parsed from left to right, the end of the input stream of tokens *)
         (* is encountered and the parser is unable to parse the input token stream as a single *)
         (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
+        let to_ident (t, loc) =
+          let name = Js_token.to_string t in
+          Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name), loc
+        in
+        let rec rewind stack buffer prev =
+          match Tokens.last' prev with
+          | None -> None
+          | Some (((tok, loc) as tok'), prev, checkpoint) -> (
+              match tok, stack with
+              | (T_RPAREN | T_RCURLY | T_RBRACKET), _ ->
+                  let buffer = tok' :: buffer in
+                  let stack = tok :: stack in
+                  rewind stack buffer prev
+              | ((T_LPAREN | T_LCURLY | T_LBRACKET) as o), c :: stack -> (
+                  if not (matching_token o c)
+                  then None
+                  else
+                    match stack with
+                    | [] -> Some (loc, prev, buffer, checkpoint)
+                    | _ ->
+                        let buffer = tok' :: buffer in
+                        rewind stack buffer prev)
+              | _, stack ->
+                  let buffer = tok' :: buffer in
+                  rewind stack buffer prev)
+        in
+        let end_of_do_whle prev =
+          match rewind [ T_RPAREN ] [] prev with
+          | None -> false
+          | Some (_, prev, _, _) -> (
+              match Tokens.last' prev with
+              | None -> false
+              | Some ((T_WHILE, _), prev, _checkpoint) -> (
+                  match Tokens.last' prev with
+                  | None -> false
+                  | Some ((T_SEMICOLON, _), prev, _checkpoint) -> (
+                      match Tokens.last' prev with
+                      | None -> false
+                      | Some ((T_DO, _), _, _) -> true
+                      | Some (_, _, _) -> false)
+                  | Some ((T_RCURLY, _), prev, _checkpoint) -> (
+                      match rewind [ T_RCURLY ] [] prev with
+                      | None -> false
+                      | Some (_, prev, _, _) -> (
+                          match Tokens.last' prev with
+                          | None -> false
+                          | Some ((T_DO, _), _, _) -> true
+                          | Some (_, _, _) -> false))
+                  | Some (_, _, _) -> false)
+              | Some (_, _, _) -> false)
+        in
         let kind =
           match Tokens.last' prev with
           | None | Some ((T_VIRTUAL_SEMICOLON, _), _, _) -> `None
-          | Some (((T_RCURLY, _) as tok), rest, checkpoint) ->
+          (* contextually allowed as identifiers, namely await and yield; *)
+          | Some ((((T_YIELD | T_AWAIT), _) as tok), rest, checkpoint)
+            when I.acceptable checkpoint (fst (to_ident tok)) Lexer.dummy_pos ->
+              `Replace (to_ident tok, rest, checkpoint)
+          | Some (((T_RCURLY, _) as tok), rest, checkpoint)
+            when I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos ->
               `Semi_colon (tok, rest, checkpoint)
-          | Some (((T_EOF, _) as tok), rest, checkpoint) ->
+          | Some (((T_EOF, _) as tok), rest, checkpoint)
+            when I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos ->
               `Semi_colon (tok, rest, checkpoint)
-          | Some (((T_ARROW, _) as tok), prev, checkpoint) ->
+          | Some (((T_ARROW, _) as tok), prev, checkpoint) when not (fol prev tok) ->
               `Arrow (tok, prev, checkpoint)
           | Some (last, rest, checkpoint) ->
-              if fol rest last then `Semi_colon (last, rest, checkpoint) else `None
+              if fol rest last
+                 && I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos
+              then `Semi_colon (last, rest, checkpoint)
+              else if match Tokens.last' rest with
+                      | Some ((T_RPAREN, _), rest, _) ->
+                          end_of_do_whle rest
+                          && I.acceptable
+                               checkpoint
+                               Js_token.T_VIRTUAL_SEMICOLON
+                               Lexer.dummy_pos
+                      | _ -> false
+              then `Semi_colon (last, rest, checkpoint)
+              else `None
         in
+
         let drop_annot_or_error () =
           match Tokens.last' prev with
           | Some ((TAnnot (s, _), pos), prev, checkpoint) ->
@@ -316,59 +386,57 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
             let buffer = tok :: buffer in
             let err () = loop_error prev (I.resume checkpoint) in
             match Tokens.last' prev with
-            | Some (((T_RPAREN, _) as tok), prev, _) ->
+            | Some (((T_RPAREN, _) as tok), prev, _) -> (
                 let buffer = tok :: buffer in
-                let rec rewind stack buffer prev =
-                  match Tokens.last' prev with
-                  | None -> err ()
-                  | Some (((tok, loc) as tok'), prev, checkpoint) -> (
-                      match tok, stack with
-                      | (T_RPAREN | T_RCURLY | T_RBRACKET), _ ->
-                          let buffer = tok' :: buffer in
-                          let stack = tok :: stack in
-                          rewind stack buffer prev
-                      | ((T_LPAREN | T_LCURLY | T_LBRACKET) as o), c :: stack -> (
-                          if not (matching_token o c)
-                          then err ()
-                          else
-                            match stack with
-                            | [] ->
-                                let buffer = (Js_token.T_LPAREN_ARROW, loc) :: buffer in
-                                loop prev buffer checkpoint
-                            | _ ->
-                                let buffer = tok' :: buffer in
-                                rewind stack buffer prev)
-                      | _, stack ->
-                          let buffer = tok' :: buffer in
-                          rewind stack buffer prev)
-                in
-                rewind [ T_RPAREN ] buffer prev
+                match rewind [ T_RPAREN ] buffer prev with
+                | None -> err ()
+                | Some (loc, prev, buffer, checkpoint) ->
+                    let buffer = (Js_token.T_LPAREN_ARROW, loc) :: buffer in
+                    loop prev buffer checkpoint)
             | Some _ | None -> err ())
+        | `Replace (t, prev, checkpoint) ->
+            let checkpoint =
+              let t, pos = t in
+              I.offer checkpoint (t, fst pos, snd pos)
+            in
+            let prev = Tokens.add t checkpoint prev in
+            loop prev buffer checkpoint
         | `Semi_colon (tok, prev, checkpoint) ->
-            if I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos
-            then
-              let buffer = tok :: buffer in
-              let t = Js_token.T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos) in
-              let checkpoint =
-                let t, pos = t in
-                I.offer checkpoint (t, fst pos, snd pos)
-              in
-              let prev = Tokens.add t checkpoint prev in
-              loop prev buffer checkpoint
-            else drop_annot_or_error ())
+            let buffer = tok :: buffer in
+            let t = Js_token.T_VIRTUAL_SEMICOLON, (Lexer.dummy_pos, Lexer.dummy_pos) in
+            let checkpoint =
+              let t, pos = t in
+              I.offer checkpoint (t, fst pos, snd pos)
+            in
+            let prev = Tokens.add t checkpoint prev in
+            loop prev buffer checkpoint)
   in
   match loop Tokens.empty [] init with
   | `Ok x -> x
   | `Error toks ->
-      let pi =
-        match Tokens.last toks with
+      let rec pi last =
+        match Tokens.last' last with
         | None -> Parse_info.zero
-        | Some (_, (p, _)) -> Parse_info.t_of_pos p
+        | Some ((_, (p, _)), rest, _) ->
+            if Poly.(p = Lexer.dummy_pos) then pi rest else Parse_info.t_of_pos p
       in
-      raise (Parsing_error pi)
+      raise (Parsing_error (pi toks))
+
+let fail_early =
+  object
+    inherit Js_traverse.iter
+
+    method early_error p = raise (Parsing_error p.loc)
+  end
+
+let check_program p =
+  List.iter p ~f:(function
+      | `Annot _ -> ()
+      | `Item p -> fail_early#program [ p ])
 
 let parse' lex =
   let p, toks = parse_aux Js_parser.Incremental.program lex in
+  check_program p;
   let groups =
     List.group p ~f:(fun a pred ->
         match pred, a with
@@ -387,10 +455,12 @@ let parse' lex =
 
 let parse lex =
   let p, _ = parse_aux Js_parser.Incremental.program lex in
+  check_program p;
   List.filter_map p ~f:(function
       | `Item i -> Some i
       | `Annot _ -> None)
 
 let parse_expr lex =
   let expr, _ = parse_aux Js_parser.Incremental.standalone_expression lex in
+  fail_early#expression expr;
   expr
