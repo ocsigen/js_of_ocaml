@@ -136,6 +136,8 @@ struct
         PP.space f;
         ident f i
 
+  let early_error _ = assert false
+
   type prec =
     | Expression (* 0  *)
     | AssignementExpression (* 1  *)
@@ -294,16 +296,19 @@ struct
       | ESeq (e, _) -> Prec.(l <= Expression) && traverse Expression e
       | ECond (e, _, _) ->
           Prec.(l <= ConditionalExpression) && traverse ShortCircuitExpression e
+      | EAssignTarget (ObjectBinding _) -> obj
+      | EAssignTarget (ArrayBinding _) -> false
       | EBin (op, e, _) ->
           let out, lft, _rght = op_prec op in
           Prec.(l <= out) && traverse lft e
       | EUn ((IncrA | DecrA), e) ->
           Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
-      | ECall (e, _, _, _) | EAccess (e, _, _) | EDot (e, _, _) ->
-          traverse CallOrMemberExpression e
+      | ECallTemplate (e, _, _) | ECall (e, _, _, _) | EAccess (e, _, _) | EDot (e, _, _)
+        -> traverse CallOrMemberExpression e
       | EArrow _
       | EVar _
       | EStr _
+      | ETemplate _
       | EArr _
       | EBool _
       | ENum _
@@ -311,6 +316,8 @@ struct
       | EUn _
       | ENew _
       | EYield _ -> false
+      | CoverCallExpressionAndAsyncArrowHead e
+      | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
     in
     traverse l e
 
@@ -370,6 +377,24 @@ struct
         PP.break f;
         comma_list f f_elt r
 
+  let comma_list_rest f f_elt l f_rest rest =
+    match l, rest with
+    | [], None -> ()
+    | [], Some rest ->
+        PP.start_group f 0;
+        PP.string f "...";
+        f_rest f rest;
+        PP.end_group f
+    | l, None -> comma_list f f_elt l
+    | l, Some r ->
+        comma_list f f_elt l;
+        PP.string f ",";
+        PP.break f;
+        PP.start_group f 0;
+        PP.string f "...";
+        f_rest f r;
+        PP.end_group f
+
   let rec expression (l : prec) f e =
     match e with
     | EVar v -> ident f v
@@ -386,7 +411,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EFun (i, k, l, b, pc) ->
+    | EFun (i, (k, l, b, pc)) ->
         let prefix =
           match k with
           | { async = false; generator = false } -> "function"
@@ -410,11 +435,9 @@ struct
         | { async = true | false; generator = true } -> assert false);
         PP.break f;
         (match p with
-        | [ (PIdent { default = None; _ } as x) ] -> formal_parameter f x
-        | [ PIdent { default = Some _; _ } ]
-        | [ PIdentSpread _ ]
-        | [ PPattern _ ]
-        | [] | _ :: _ :: _ ->
+        | { list = [ ((BindingIdent _, None) as x) ]; rest = None } ->
+            formal_parameter f x
+        | _ ->
             PP.start_group f 1;
             PP.string f "(";
             formal_parameter_list f p;
@@ -423,10 +446,13 @@ struct
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;
+        PP.break1 f;
         PP.string f "=>";
+        PP.break1 f;
         (match b with
-        | [ (Return_statement (Some e), _) ] ->
+        | [ (Return_statement (Some e), loc) ] ->
             (* Should not starts with '{' *)
+            output_debug_info f loc;
             parenthesized_expression ~obj:true AssignementExpression f e
         | [ (Block _, _) ] -> function_body f b
         | _ ->
@@ -434,7 +460,8 @@ struct
             PP.string f "{";
             function_body f b;
             output_debug_info f pc;
-            PP.string f "}");
+            PP.string f "}";
+            PP.end_group f);
         PP.end_group f;
         PP.end_group f;
         if Prec.(l > AssignementExpression)
@@ -463,9 +490,28 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
+    | ECallTemplate (e, t, loc) ->
+        (* Need parentheses also if within an expression [new e] *)
+        if Prec.(l = NewExpression || l > CallOrMemberExpression)
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
+        output_debug_info f loc;
+        PP.start_group f 1;
+        expression CallOrMemberExpression f e;
+        PP.break f;
+        PP.start_group f 1;
+        template f t;
+        PP.end_group f;
+        PP.end_group f;
+        if Prec.(l = NewExpression || l > CallOrMemberExpression)
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EStr (Utf8 s) ->
         let quote = best_string_quote s in
         pp_string f ~quote s
+    | ETemplate l -> template f l
     | EBool b -> PP.string f (if b then "true" else "false")
     | ENum num ->
         let s = Num.to_string num in
@@ -591,6 +637,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
+    | EAssignTarget p -> pattern f p
     | EArr el ->
         PP.start_group f 1;
         PP.string f "[";
@@ -713,6 +760,18 @@ struct
               PP.string f ")"
               (* There MUST be a space between the yield and its
                  argument. A line return will not work *)))
+    | CoverCallExpressionAndAsyncArrowHead e
+    | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
+
+  and template f l =
+    PP.string f "`";
+    List.iter l ~f:(function
+        | TStr (Utf8 s) -> PP.string f s
+        | TExp e ->
+            PP.string f "${";
+            expression AssignementExpression f e;
+            PP.string f "}");
+    PP.string f "`"
 
   and property_name f n =
     match n with
@@ -721,6 +780,10 @@ struct
         let quote = best_string_quote s in
         pp_string f ~quote s
     | PNN v -> expression Expression f (ENum v)
+    | PComputed e ->
+        PP.string f "[";
+        expression Expression f e;
+        PP.string f "]"
 
   and property_list f l = comma_list f property l
 
@@ -733,35 +796,37 @@ struct
         PP.break f;
         expression AssignementExpression f e;
         PP.end_group f
-    | PropertyComputed (p, e) ->
-        PP.start_group f 0;
-        PP.string f "[";
-        expression Expression f p;
-        PP.string f "]";
-        PP.string f ":";
-        PP.break f;
-        expression AssignementExpression f e;
-        PP.end_group f
-    | PropertyGet (Utf8 i, a, b) | PropertySet (Utf8 i, a, b) ->
+    | PropertyGet (n, (k, l, b, loc')) | PropertySet (n, (k, l, b, loc')) ->
+        (match k with
+        | { async = false; generator = false } -> ()
+        | _ -> assert false);
         let prefix =
           match p with
           | PropertyGet _ -> "get"
           | PropertySet _ -> "set"
           | _ -> assert false
         in
-        function_declaration f prefix PP.string (Some i) a b N
-    | PropertyMethod (Utf8 n, (_, k, l, b, loc')) ->
-        let n =
-          match k with
-          | { async = false; generator = false } -> n
-          | { async = false; generator = true } -> "*" ^ n
-          | { async = true; generator = false } -> "async " ^ n
-          | { async = true; generator = true } -> "async* " ^ n
+        function_declaration f prefix property_name (Some n) l b loc'
+    | PropertyMethod (n, (k, l, b, loc')) ->
+        let fpn f () =
+          (match k with
+          | { async = false; generator = false } -> ()
+          | { async = false; generator = true } ->
+              PP.string f "*";
+              PP.space f
+          | { async = true; generator = false } ->
+              PP.string f "async";
+              PP.space f
+          | { async = true; generator = true } ->
+              PP.string f "async*";
+              PP.space f);
+          property_name f n
         in
-        function_declaration f "" PP.string (Some n) l b loc'
+        function_declaration f "" fpn (Some ()) l b loc'
     | PropertySpread e ->
         PP.string f "...";
         expression AssignementExpression f e
+    | CoverInitializedName (e, _, _) -> early_error e
 
   and element_list f el = comma_list f element el
 
@@ -778,35 +843,10 @@ struct
         expression AssignementExpression f e;
         PP.end_group f
 
-  and formal_parameter f p =
-    match p with
-    | PIdentSpread id ->
-        PP.string f "...";
-        ident f id
-    | PIdent { id; default } -> (
-        match default with
-        | None -> ident f id
-        | Some (e, loc) ->
-            PP.start_group f 1;
-            output_debug_info f loc;
-            ident f id;
-            PP.string f "=";
-            PP.break f;
-            expression AssignementExpression f e;
-            PP.end_group f)
-    | PPattern (p, e) -> (
-        match e with
-        | None -> pattern f p
-        | Some (e, loc) ->
-            PP.start_group f 1;
-            output_debug_info f loc;
-            pattern f p;
-            PP.string f "=";
-            PP.break f;
-            expression AssignementExpression f e;
-            PP.end_group f)
+  and formal_parameter f e = binding_element f e
 
-  and formal_parameter_list f l = comma_list f formal_parameter l
+  and formal_parameter_list f { list; rest } =
+    comma_list_rest f formal_parameter list binding rest
 
   and function_body f b = statement_list f ~skip_last_semi:true b
 
@@ -823,8 +863,8 @@ struct
 
   and variable_declaration f x =
     match x with
-    | DIdent (i, None) -> ident f i
-    | DIdent (i, Some (e, loc)) ->
+    | DeclIdent (i, None) -> ident f i
+    | DeclIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
         output_debug_info f loc;
         ident f i;
@@ -832,7 +872,7 @@ struct
         PP.break f;
         expression AssignementExpression f e;
         PP.end_group f
-    | DPattern (p, (e, loc)) ->
+    | DeclPattern (p, (e, loc)) ->
         PP.start_group f 1;
         output_debug_info f loc;
         pattern f p;
@@ -843,51 +883,51 @@ struct
 
   and binding_property f x =
     match x with
-    | Prop_binding (pn, p, d) -> (
+    | Prop_binding (pn, e) ->
         property_name f pn;
         PP.string f ":";
         PP.break f;
-        pattern f p;
-        match d with
-        | None -> ()
-        | Some (e, loc) ->
-            PP.string f "=";
-            PP.break f;
-            output_debug_info f loc;
-            expression AssignementExpression f e)
-    | Prop_rest i ->
+        binding_element f e
+    | Prop_ident (i, None) -> ident f i
+    | Prop_ident (i, Some (e, loc)) ->
         ident f i;
-        PP.string f "..."
+        PP.string f "=";
+        PP.break f;
+        output_debug_info f loc;
+        expression AssignementExpression f e
 
-  and binding_array_el f x =
+  and binding_element f (b, (e : initialiser option)) =
+    match e with
+    | None -> binding f b
+    | Some (e, loc) ->
+        output_debug_info f loc;
+        binding f b;
+        PP.string f "=";
+        PP.break f;
+        expression AssignementExpression f e
+
+  and binding f x =
     match x with
-    | Elt_hole -> ()
-    | Elt_rest i ->
-        ident f i;
-        PP.string f "..."
-    | Elt_binding (p, e) -> (
-        pattern f p;
-        match e with
-        | None -> ()
-        | Some (e, loc) ->
-            PP.string f "=";
-            PP.break f;
-            output_debug_info f loc;
-            expression AssignementExpression f e)
+    | BindingIdent id -> ident f id
+    | BindingPattern p -> pattern f p
+
+  and binding_array_elt f x =
+    match x with
+    | None -> ()
+    | Some e -> binding_element f e
 
   and pattern f p =
     match p with
-    | Id i -> ident f i
-    | Object_binding l ->
+    | ObjectBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "{";
-        comma_list f binding_property l;
+        comma_list_rest f binding_property list ident rest;
         PP.string f "}";
         PP.end_group f
-    | Array_binding l ->
+    | ArrayBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "[";
-        comma_list f binding_array_el l;
+        comma_list_rest f binding_array_elt list binding rest;
         PP.string f "]";
         PP.end_group f
 
@@ -909,13 +949,13 @@ struct
 
   and variable_declaration_list kind close f = function
     | [] -> ()
-    | [ DIdent (i, None) ] ->
+    | [ DeclIdent (i, None) ] ->
         PP.start_group f 1;
         variable_declaration_kind f kind;
         PP.space f;
         ident f i;
         if close then PP.string f ";"
-    | [ DIdent (i, Some (e, loc)) ] ->
+    | [ DeclIdent (i, Some (e, loc)) ] ->
         PP.start_group f 1;
         output_debug_info f loc;
         variable_declaration_kind f kind;
@@ -928,7 +968,7 @@ struct
         if close then PP.string f ";";
         PP.end_group f;
         PP.end_group f
-    | [ DPattern (p, (e, loc)) ] ->
+    | [ DeclPattern (p, (e, loc)) ] ->
         PP.start_group f 1;
         output_debug_info f loc;
         variable_declaration_kind f kind;
@@ -980,9 +1020,7 @@ struct
   and for_binding f k v =
     variable_declaration_kind f k;
     PP.space f;
-    match v with
-    | ForBindIdent i -> ident f i
-    | ForBindPattern p -> pattern f p
+    binding f v
 
   and statement ?(last = false) f (s, loc) =
     let last_semi () = if last then () else PP.string f ";" in
@@ -990,7 +1028,7 @@ struct
     match s with
     | Block b -> block f b
     | Variable_statement (k, l) -> variable_declaration_list k (not last) f l
-    | Function_declaration (i, k, l, b, loc') ->
+    | Function_declaration (i, (k, l, b, loc')) ->
         let prefix =
           match k with
           | { async = false; generator = false } -> "function"
@@ -1231,7 +1269,7 @@ struct
         | None ->
             PP.string f "return";
             last_semi ()
-        | Some (EFun (i, { async = false; generator = false }, l, b, pc)) ->
+        | Some (EFun (i, ({ async = false; generator = false }, l, b, pc))) ->
             PP.start_group f 1;
             PP.start_group f 0;
             PP.start_group f 0;
@@ -1380,8 +1418,7 @@ struct
     PP.end_group f
 
   and function_declaration :
-      type a. 'pp -> string -> ('pp -> a -> unit) -> a option -> _ list -> _ -> _ -> unit
-      =
+      type a. 'pp -> string -> ('pp -> a -> unit) -> a option -> _ -> _ -> _ -> unit =
    fun f prefix (pp_name : _ -> a -> unit) (name : a option) l body loc ->
     PP.start_group f 1;
     PP.start_group f 0;

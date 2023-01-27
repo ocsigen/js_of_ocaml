@@ -216,20 +216,21 @@ let gen_missing js missing =
               , dot (EVar (ident Constant.global_object_)) prim
               , EFun
                   ( None
-                  , { async = false; generator = false }
-                  , []
-                  , [ ( Expression_statement
-                          (call
-                             (EVar (ident_s "caml_failwith"))
-                             [ EBin
-                                 ( Plus
-                                 , EStr prim
-                                 , EStr (Utf8_string.of_string_exn " not implemented") )
-                             ]
-                             N)
-                      , N )
-                    ]
-                  , N ) )
+                  , fun_
+                      []
+                      [ ( Expression_statement
+                            (call
+                               (EVar (ident_s "caml_failwith"))
+                               [ EBin
+                                   ( Plus
+                                   , EStr prim
+                                   , EStr (Utf8_string.of_string_exn " not implemented")
+                                   )
+                               ]
+                               N)
+                        , N )
+                      ]
+                      N ) )
           , N ) )
         :: acc)
       missing
@@ -435,14 +436,8 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       else js
     in
 
-    let efun args body =
-      J.EFun (None, { async = false; generator = false }, args, body, J.U)
-    in
-    let sfun name args body =
-      ( J.Function_declaration
-          (name, { async = false; generator = false }, args, body, J.U)
-      , J.U )
-    in
+    let efun args body = J.EFun (None, J.fun_ args body J.U) in
+    let sfun name args body = J.Function_declaration (name, J.fun_ args body J.U), J.U in
     let mk f =
       let js = export_shim js in
       let js = old_global_object_shim js in
@@ -451,7 +446,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
         then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
         else js
       in
-      f [ J.param Constant.global_object_ ] js
+      f [ J.ident Constant.global_object_ ] js
     in
     match wrap_with_fun with
     | `Anonymous -> expr (mk efun)

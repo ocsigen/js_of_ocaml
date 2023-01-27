@@ -20,6 +20,23 @@
 open Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
+let remove_loc p =
+  (object
+     inherit Js_traverse.map
+
+     method! loc _ = N
+  end)
+    #program
+    p
+
+let p_to_string p =
+  let buffer = Buffer.create 17 in
+  let pp = Pretty_print.to_buffer buffer in
+  Pretty_print.set_compact pp false;
+  let _ = Js_output.program pp p in
+  let s = Buffer.contents buffer in
+  s
+
 let print ?(report = false) ?(invalid = false) ~compact source =
   let stdout = Util.check_javascript_source source in
   (match invalid, stdout with
@@ -36,6 +53,11 @@ let print ?(report = false) ?(invalid = false) ~compact source =
     let _ = Js_output.program pp parsed in
     let s = Buffer.contents buffer in
     print_endline s;
+    (let lexed = Parse_js.Lexer.of_string s in
+     let parsed2 = Parse_js.parse lexed in
+     let p1 = remove_loc parsed in
+     let p2 = remove_loc parsed2 in
+     if not (Poly.equal p1 p2) then print_endline "<roundtrip issue>");
     let stdout = Util.check_javascript_source s in
     (match invalid, stdout with
     | false, _ -> print_endline stdout
@@ -200,19 +222,37 @@ let%expect_test "arrow" =
 
     var a = ((x = /qwe/g ) => x + 10 );
 
+
+    var a = x => y => x + y
+    var a = x => (y => x + y)
+
+    var a = async x => y
+    var a = async (a,b) => a + b
  |};
 
   [%expect
     {|
-    /*<< 2 4>>*/  /*<< 2 10>>*/ var a=x=>x + 2;
-    /*<< 3 4>>*/  /*<< 3 10>>*/ var a=()=>2;
-    /*<< 4 4>>*/  /*<< 4 10>>*/ var a=x=>x + 2;
-    /*<< 5 4>>*/  /*<< 5 10>>*/ var a=(x,y)=>x + y;
-    /*<< 7 4>>*/  /*<< 7 10>>*/ var a=x=> /*<< 7 18>>*/ { /*<< 7 20>>*/ x + 2};
-    /*<< 8 4>>*/  /*<< 8 10>>*/ var a=()=> /*<< 8 19>>*/ { /*<< 8 21>>*/ 2};
-    /*<< 9 4>>*/  /*<< 9 10>>*/ var a=x=> /*<< 9 20>>*/ { /*<< 9 22>>*/ x + 2};
-    /*<< 11 4>>*/  /*<< 11 10>>*/ var a=( /*<< 11 16>>*/ x=1 / 2)=>x + 10;
-    /*<< 13 4>>*/  /*<< 13 10>>*/ var a=( /*<< 13 16>>*/ x=/qwe/g)=>x + 10; |}]
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var a=x=> /*<< 2 18>>*/ x + 2;
+    /*<< 3 4>>*/  /*<< 3 10>>*/ var a=()=> /*<< 3 19>>*/ 2;
+    /*<< 4 4>>*/  /*<< 4 10>>*/ var a=x=> /*<< 4 20>>*/ x + 2;
+    /*<< 5 4>>*/  /*<< 5 10>>*/ var a=(x,y)=> /*<< 5 22>>*/ x + y;
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var a=x=>{ /*<< 7 20>>*/ x + 2 /*<< 7 13>>*/ };
+    /*<< 8 4>>*/  /*<< 8 10>>*/ var a=()=>{ /*<< 8 21>>*/ 2 /*<< 8 13>>*/ };
+    /*<< 9 4>>*/  /*<< 9 10>>*/ var a=x=>{ /*<< 9 22>>*/ x + 2 /*<< 9 13>>*/ };
+    /*<< 11 4>>*/  /*<< 11 10>>*/ var
+    a=
+     ( /*<< 11 16>>*/ x=1 / 2)=> /*<< 11 28>>*/ x + 10;
+    /*<< 13 4>>*/  /*<< 13 10>>*/ var
+    a=
+     ( /*<< 13 16>>*/ x=/qwe/g)=> /*<< 13 30>>*/ x + 10;
+    /*<< 16 4>>*/  /*<< 16 10>>*/ var
+    a=
+     x=> /*<< 16 17>>*/ y=> /*<< 16 22>>*/ x + y;
+    /*<< 17 4>>*/  /*<< 17 10>>*/ var
+    a=
+     x=> /*<< 17 17>>*/ y=> /*<< 17 23>>*/ x + y;
+    /*<< 19 4>>*/  /*<< 19 10>>*/ var a=async x=> /*<< 19 23>>*/ y;
+    /*<< 20 4>>*/  /*<< 20 10>>*/ var a=async (a,b)=> /*<< 20 27>>*/ a + b; |}]
 
 let%expect_test "trailing comma" =
   (* GH#989 *)
@@ -332,14 +372,78 @@ let%expect_test "get/set property" =
     {|
     /*<< 2 5>>*/  /*<< 2 11>>*/ var
     x=
-     {get prop(){ /*<< 3 20>>*/ return 3},
-      set prop(x){ /*<< 4 21>>*/ return x == 2},
+     {get prop(){ /*<< 3 20>>*/ return 3 /*<< 3 7>>*/ },
+      set prop(x){ /*<< 4 21>>*/ return x == 2 /*<< 4 7>>*/ },
       a:4,
       b(){ /*<< 6 13>>*/ return 5 /*<< 6 7>>*/ },
-      *e(){ /*<< 7 14>>*/ return 5 /*<< 7 7>>*/ },
+      * e(){ /*<< 7 14>>*/ return 5 /*<< 7 7>>*/ },
       async e(){ /*<< 8 19>>*/ return 5 /*<< 8 7>>*/ },
       async* e(){ /*<< 9 20>>*/ return 5 /*<< 9 7>>*/ },
       ["field" + 1]:3}; |}]
+
+let%expect_test "assignment pattern" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    var x, y, rest;
+    var [x,y] = [1,2]
+    var [x,y,...rest] = [1,2, ...o]
+
+    var {x,y} = {x:1,y:2}
+    var {x,y,...rest} = {x:1,y:2,...o};
+
+    [x,y] = [1,2];
+    [x,y,...rest] = [1,2];
+
+    ({x,y} = {x:1,y:2});
+    ({x,y,...rest} = {x:1,y:2});
+
+    for([a,b,{c,d=e,[f]:[g,h,a,i,j]}] in 3);
+
+    for([a,b,{c,d=e,[f]:[g,h,a,i,j]}] of 3);
+
+ |};
+
+  [%expect
+    {|
+    /*<< 2 4>>*/ var x,y,rest;
+    /*<< 3 4>>*/  /*<< 3 14>>*/ var [x,y]=[1,2];
+    /*<< 4 4>>*/  /*<< 4 22>>*/ var [x,y,...rest]=[1,2,...o];
+    /*<< 6 4>>*/  /*<< 6 14>>*/ var {x:x,y:y}={x:1,y:2};
+    /*<< 7 4>>*/  /*<< 7 22>>*/ var {x:x,y:y,...rest}={x:1,y:2,...o};
+    /*<< 9 4>>*/ [x,y] = [1,2];
+    /*<< 10 4>>*/ [x,y,...rest] = [1,2];
+    /*<< 12 4>>*/ ({x,y} = {x:1,y:2});
+    /*<< 13 4>>*/ ({x,y,...rest} = {x:1,y:2});
+    /*<< 15 4>>*/ for([a,b,{c,d= /*<< 15 17>>*/ e,[f]:[g,h,a,i,j]}] in 3)
+     /*<< 15 43>>*/ ;
+    /*<< 17 4>>*/ for([a,b,{c,d= /*<< 17 17>>*/ e,[f]:[g,h,a,i,j]}] of 3)
+     /*<< 17 43>>*/ ; |}]
+
+let%expect_test "string template" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    var s = `asdte`
+    var s = `asd ${ test } te`
+
+    var s = tag`asd ${ test } te`
+
+    var s = `asd ${ f(`space ${test} space`, 32) } te`
+ |};
+
+  [%expect
+    {|
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var s=`asdte`;
+    /*<< 3 4>>*/  /*<< 3 10>>*/ var s=`asd ${test} te`;
+    /*<< 5 4>>*/  /*<< 5 10>>*/ var s= /*<< 5 12>>*/ tag`asd ${test} te`;
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var
+    s=
+     `asd ${ /*<< 7 20>>*/ f(`space ${test} space`,32)} te`; |}]
 
 let%expect_test "error reporting" =
   (try
@@ -458,13 +562,22 @@ let%expect_test "tokens" =
     var a = x => x + 2
     var a = () => 2
 
+    var s = `asdte`
+    var s = `asd ${ test } te`
+    var s = tag`asd ${ test } te`
+
+    var s = `asd ${ f(`space ${test} space`, 32) } te`
 |};
   [%expect
     {|
-    2: 4:var, 8:a, 10:=, 12:42, 14:;,
-    3: 4:var, 8:\u{1ee62}, 18:=, 20:42, 22:;,
-    4: 4:var, 8:a, 10:=, 12:x, 14:=>, 17:x, 19:+, 21:2, 0:;,
-    5: 4:var, 8:a, 10:=, 12:(, 13:), 15:=>, 18:2, 0:;, |}]
+     2: 4:var, 8:a, 10:=, 12:42, 14:;,
+     3: 4:var, 8:\u{1ee62}, 18:=, 20:42, 22:;,
+     4: 4:var, 8:a, 10:=, 12:x, 14:=>, 17:x, 19:+, 21:2, 0:;,
+     5: 4:var, 8:a, 10:=, 12:(, 13:), 15:=>, 18:2, 0:;,
+     7: 4:var, 8:s, 10:=, 12:`, 13:asdte, 18:`, 0:;,
+     8: 4:var, 8:s, 10:=, 12:`, 13:asd , 17:${, 20:test, 25:}, 26: te, 29:`, 0:;,
+     9: 4:var, 8:s, 10:=, 12:tag, 15:`, 16:asd , 20:${, 23:test, 28:}, 29: te, 32:`, 0:;,
+    11: 4:var, 8:s, 10:=, 12:`, 13:asd , 17:${, 20:f, 21:(, 22:`, 23:space , 29:${, 31:test, 35:}, 36: space, 42:`, 43:,, 45:32, 47:), 49:}, 50: te, 53:`, 0:;, |}]
 
 let%expect_test "invalid ident" =
   parse_print_token
@@ -743,3 +856,18 @@ Event.prototype.initEvent = function _Event_initEvent(type, bubbles, cancelable)
     4: 4:this, 8:., 9:bubbles (identifier), 17:=, 19:bubbles (identifier), 0:; (virtual),
     5: 4:this, 8:., 9:cancelable (identifier), 20:=, 22:cancelable (identifier), 0:; (virtual),
     6: 0:}, 0:; (virtual), |}]
+
+let%expect_test _ =
+  parse_print_token
+    ~extra:true
+    {|
+var y = { async: 35}
+
+var y = async x => x
+var y = async => async
+|};
+  [%expect
+    {|
+    2: 0:var, 4:y (identifier), 6:=, 8:{, 10:async, 15::, 17:35, 19:}, 0:; (virtual),
+    4: 0:var, 4:y (identifier), 6:=, 8:async, 14:x (identifier), 16:=>, 19:x (identifier), 0:; (virtual),
+    5: 0:var, 4:y (identifier), 6:=, 8:async, 14:=>, 17:async, 0:; (virtual), |}]

@@ -44,10 +44,10 @@ end = struct
     match p with
     | [] -> None
     | ( Javascript.Function_declaration
-          (Javascript.S { Javascript.name = Utf8 n; _ }, _, l, _, _)
+          (Javascript.S { Javascript.name = Utf8 n; _ }, (_, { list; rest = None }, _, _))
       , _ )
       :: _
-      when String.equal name n -> Some (List.length l)
+      when String.equal name n -> Some (List.length list)
     | _ :: rem -> find rem ~name
 end
 

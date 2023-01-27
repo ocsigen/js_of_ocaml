@@ -34,18 +34,18 @@ let%expect_test "static eval of string get" =
     let clean_statement st =
       let open Js_of_ocaml_compiler.Javascript in
       match st with
-      | Function_declaration (name, k, param, body, loc1), loc2 -> (
+      | Function_declaration (name, (k, param, body, loc1)), loc2 -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
-          | body -> Some (Function_declaration (name, k, param, body, loc1), loc2))
-      | ( Expression_statement (ECall (EFun (name, k, param, body, loc1), ANormal, a, l))
+          | body -> Some (Function_declaration (name, (k, param, body, loc1)), loc2))
+      | ( Expression_statement (ECall (EFun (name, (k, param, body, loc1)), ANormal, a, l))
         , loc ) -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
           | body ->
               Some
                 ( Expression_statement
-                    (ECall (EFun (name, k, param, body, loc1), ANormal, a, l))
+                    (ECall (EFun (name, (k, param, body, loc1)), ANormal, a, l))
                 , loc ))
       | _, _ -> Some st
     in

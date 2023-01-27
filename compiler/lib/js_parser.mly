@@ -91,8 +91,7 @@ let utf8_s = Stdlib.Utf8_string.of_string_exn
 %token<Stdlib.Utf8_string.t * string> T_IDENTIFIER
 %token<Stdlib.Utf8_string.t * int> T_STRING
 %token<Stdlib.Utf8_string.t * string> T_REGEXP
-%token<Stdlib.Utf8_string.t> T_TEMPLATE_PART
-
+%token<string> T_ENCAPSED_STRING
 (*-----------------------------------------*)
 (* Keyword tokens *)
 (*-----------------------------------------*)
@@ -137,6 +136,8 @@ T_AT
 T_ELLIPSIS "..."
 T_POUND
 T_PLING_PLING
+T_DOLLARCURLY
+T_BACKQUOTE
 
 (* Operators *)
 %token
@@ -217,6 +218,15 @@ listc(X):
  | X              { [$1] }
  | listc(X) "," X { $1 @ [$3] }
 
+listc_with_empty_trail(X):
+ | e=elision               { (List.map (fun () -> None) e) }
+ | x=X e=elision           { Some x :: (List.map (fun () -> None) e) }
+ | listc_with_empty_trail(X) x=X e=elision { $1 @ [Some x] @ (List.map (fun () -> None) e) }
+
+listc_with_empty(X):
+  | X                           { [ Some $1 ] }
+  | listc_with_empty_trail(X)   { $1 }
+  | listc_with_empty_trail(X) X { $1 @ [Some $2 ] }
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
@@ -248,11 +258,11 @@ item:
 
 decl:
  | function_decl
-   { Function_declaration $1, p $symbolstartpos }
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | generator_decl
-   { Function_declaration $1, p $symbolstartpos }
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | async_decl
-   { Function_declaration $1, p $symbolstartpos }
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | lexical_decl    { $1, p $symbolstartpos }
 
 (*************************************************************************)
@@ -271,8 +281,8 @@ lexical_decl:
  | T_LET l=listc(variable_decl) sc { Variable_statement (Let, l)}
 
 variable_decl:
- | i=ident e=initializer_?               { DIdent (i,e) }
- | p=binding_pattern e=initializer_   { DPattern (p, e) }
+ | i=ident e=initializer_?            { DeclIdent (i,e) }
+ | p=binding_pattern e=initializer_   { DeclPattern (p, e) }
 
 initializer_:
  | "=" e=assignment_expr { e, p $symbolstartpos }
@@ -284,9 +294,9 @@ for_variable_decl:
  | T_LET l=listc(variable_decl_no_in)   { Let, l }
 
 variable_decl_no_in:
- | i=ident e=initializer_no_in              { DIdent (i,Some e) }
- | i=ident                                  { DIdent (i, None) }
- | p=binding_pattern e=initializer_no_in { DPattern (p, e) }
+ | i=ident e=initializer_no_in              { DeclIdent (i,Some e) }
+ | i=ident                                  { DeclIdent (i, None) }
+ | p=binding_pattern e=initializer_no_in { DeclPattern (p, e) }
 
 (* 'for ... in' and 'for ... of' declare only one variable *)
 for_single_variable_decl:
@@ -296,8 +306,8 @@ for_single_variable_decl:
  | T_LET  b=for_binding  { Let, b }
 
 for_binding:
- | i=ident               { ForBindIdent (i) }
- | p=binding_pattern     { ForBindPattern (p) }
+ | binding               { $1 }
+
 
 (*----------------------------*)
 (* pattern *)
@@ -307,23 +317,31 @@ binding_pattern:
  | object_binding_pattern { $1 }
  | array_binding_pattern  { $1 }
 
+binding:
+ | binding_pattern { BindingPattern $1 }
+ | ident           { BindingIdent $1 }
+
 object_binding_pattern:
- | "{" "}"                               { Object_binding [] }
- | "{" l=listc(binding_property) ","?  "}" { Object_binding l }
+ | "{" "}"                                { ObjectBinding (list []) }
+ | "{" r=binding_property_rest "}"         { ObjectBinding {list = []; rest = Some r } }
+ | "{" l=listc(binding_property) ","? "}" { ObjectBinding (list l) }
+ | "{" l=listc(binding_property) "," r=binding_property_rest "}"
+    { ObjectBinding {list=l;rest= Some r} }
 
 binding_property:
   | i=ident e=initializer_? { let id = match i with
                                    | S { name; _ } -> name
                                    | _ -> assert false in
-                           Prop_binding (PNI id, Id i, e) }
- | pn=property_name ":" e=binding_element { Prop_binding (pn, fst e, snd e) }
+                           Prop_binding (PNI id, (BindingIdent i, e)) }
+  | pn=property_name ":" e=binding_element { Prop_binding (pn, e) }
+
+binding_property_rest:
  (* can appear only at the end of a binding_property_list in ECMA *)
- | "..." id=ident      { Prop_rest id }
+ | "..." id=ident      { id }
 
 (* in theory used also for formal parameter as is *)
 binding_element:
- | i=ident         e=initializer_? { Id i, e }
- | p=binding_pattern    e=initializer_? { p, e }
+ | b=binding e=initializer_? { b, e }
 
 (* array destructuring *)
 
@@ -332,28 +350,19 @@ binding_element:
  * type like for the (call)argument type.
  *)
 array_binding_pattern:
- | "[" "]"                      { Array_binding [] }
- | "[" l=binding_element_list "]" { Array_binding l }
-
-binding_start_element:
- | ","                  { [Elt_hole] }
- | b=binding_element ","  { [Elt_binding (fst b, snd b)] }
-
-binding_start_list:
-(* always ends in a "," *)
- | binding_start_element                     { $1 }
- | binding_start_list binding_start_element  { $1 @ $2 }
+  | "[" "]"                      { ArrayBinding (list []) }
+  | "[" r=binding_element_rest "]"     { ArrayBinding {list = []; rest = Some r }}
+  | "[" l=binding_element_list "]" { ArrayBinding (list l) }
+  | "[" l=binding_element_list r=binding_element_rest "]"
+    { ArrayBinding {list=l;rest= Some r} }
 
 (* can't use listc() here, it's $1 not [$1] below *)
 binding_element_list:
- | binding_start_list                         { $1 }
- | binding_elision_element                    { [$1] }
- | binding_start_list binding_elision_element { $1 @ [$2] }
+  | l=listc_with_empty(binding_element) { l }
 
-binding_elision_element:
- | e=binding_element        { Elt_binding (fst e, snd e) }
- (* can appear only at the end of a binding_property_list in ECMA *)
- | "..." i=ident            { Elt_rest i  }
+binding_element_rest:
+ (* can appear only at the end of a array_binding_pattern in ECMA *)
+ | "..." binding            { $2 }
 
 (*************************************************************************)
 (* Function declarations (and exprs) *)
@@ -361,11 +370,11 @@ binding_elision_element:
 
 function_decl:
  | T_FUNCTION name=ident args=call_signature "{" b=function_body "}"
-    { (name, {async = false; generator = false}, args, b, p $startpos($6)) }
+    { (name, ({async = false; generator = false}, args, b, p $startpos($6))) }
 
 function_expr:
  | T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
-   { EFun (name, {async = false; generator = false}, args, b, p $symbolstartpos) }
+   { EFun (name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
 
 call_signature: "(" args=formal_parameter_list_opt ")"
   { args }
@@ -377,12 +386,17 @@ function_body: optl(stmt_list) { $1 }
 (*----------------------------*)
 
 formal_parameter_list_opt:
- | (*empty*)                   { [] }
- | formal_parameter_list ","?  { List.rev $1 }
+ | (*empty*)                                     { list [] }
+ | formal_parameter_list_rev ","?                    { list (List.rev $1) }
+ | r=function_rest_param                           { { list = []; rest = Some r } }
+ | formal_parameter_list_rev "," r=function_rest_param { { list = List.rev $1; rest = Some r } }
+
+function_rest_param:
+ | "..." binding { $2 }
 
 (* must be written in a left-recursive way (see conflicts.txt) *)
-formal_parameter_list:
- | formal_parameter_list "," formal_parameter { $3::$1 }
+formal_parameter_list_rev:
+ | formal_parameter_list_rev "," formal_parameter { $3::$1 }
  | formal_parameter                           { [$1] }
 
 (* The ECMA and Typescript grammars imposes more restrictions
@@ -391,13 +405,7 @@ formal_parameter_list:
  * We could also factorize with binding_element as done by ECMA.
  *)
 formal_parameter:
- | id=ident                { PIdent {id; default = None} }
- (* es6: default parameter *)
- | id=ident e=initializer_   { PIdent {id; default = Some e} }
-  (* until here this is mostly equivalent to the 'binding_element' rule *)
- | p=binding_pattern e=initializer_? { PPattern (p,e) }
- (* es6: spread *)
- | "..." id=ident          { PIdentSpread id }
+  | binding initializer_? { $1, $2 }
 
 (*************************************************************************)
 (* generators                                                *)
@@ -405,11 +413,11 @@ formal_parameter:
 
 generator_decl:
  | T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
-   { (name, {async = false; generator = true}, args, b, p $symbolstartpos) }
+   { (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 generator_expr:
  | T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
-   { EFun (name, {async = false; generator = true}, args, b, p $symbolstartpos) }
+   { EFun (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
 (* asynchronous functions                                                *)
@@ -417,11 +425,11 @@ generator_expr:
 
 async_decl:
  | T_ASYNC T_FUNCTION  name=ident args=call_signature "{" b=function_body "}"
-   { (name, {async = true; generator = false}, args, b, p $symbolstartpos) }
+   { (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 async_function_expr:
  | T_ASYNC T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
-   { EFun (name, {async = true; generator = false}, args, b, p $symbolstartpos) }
+   { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
 (* Stmt *)
@@ -469,7 +477,7 @@ if_stmt:
      { If_statement (c, t, None) }
 
 iteration_stmt:
- | T_DO body=stmt T_WHILE "(" condition=expr ")" sc 
+ | T_DO body=stmt T_WHILE "(" condition=expr ")" sc
     { Do_while_statement (body, condition) }
  | T_WHILE "(" condition=expr ")" body=stmt
      { While_statement (condition, body) }
@@ -480,12 +488,16 @@ iteration_stmt:
    { For_statement (Right l, c, incr, st) }
 
  | T_FOR "(" left=left_hand_side_expr T_IN right=expr ")" body=stmt
-   { ForIn_statement (Left left, right, body) }
+   { match assignment_pattern_of_expr None left with
+      | None -> ForIn_statement (Left left, right, body)
+      | Some b -> ForIn_statement (Left (EAssignTarget b), right, body) }
  | T_FOR "(" left=for_single_variable_decl T_IN right=expr ")" body=stmt
    { ForIn_statement (Right left, right, body) }
 
  | T_FOR "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
-   { ForOf_statement (Left left, right, body) }
+    { match assignment_pattern_of_expr None left with
+      | None -> ForOf_statement (Left left, right, body)
+      | Some b -> ForOf_statement (Left (EAssignTarget b), right, body) }
  | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
    { ForOf_statement (Right left, right, body) }
 
@@ -553,8 +565,13 @@ expr:
 assignment_expr:
  | conditional_expr(d1) { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr
-    { EBin (op, e1, e2) }
+    {
+      match assignment_pattern_of_expr (Some op) e1 with
+        | None -> EBin (op, e1, e2)
+        | Some pat -> EBin (op, EAssignTarget pat, e2)
+    }
  | arrow_function { $1 }
+ | async_arrow_function { $1 }
  | T_YIELD { EYield None }
  | T_YIELD e=assignment_expr { EYield (Some e) }
  | T_YIELD "*" e=assignment_expr { EYield (Some e) }
@@ -651,7 +668,9 @@ call_expr(x):
  | e=call_expr(x) "[" e2=expr "]"
      { (EAccess (e, ANormal,  e2)) }
  | e=call_expr(x) T_PLING_PERIOD "[" e2=expr "]"
-     { (EAccess (e, ANullish, e2)) }
+    { (EAccess (e, ANullish, e2)) }
+  | e=call_expr(x) t=template_literal
+    { ECallTemplate(e, t,p $symbolstartpos) }
  | e=call_expr(x) a=access i=method_name
     { EDot (e,a,i) }
 
@@ -674,6 +693,8 @@ member_expr(x):
      { (EDot(e1,ak,i)) }
  | T_NEW e1=member_expr(d1) a=arguments
      { (ENew(e1, Some a)) }
+ | e=member_expr(x) t=template_literal
+    { ECallTemplate(e, t, p $symbolstartpos) }
 
 primary_expr(x):
  | e=primary_expr_no_braces
@@ -698,9 +719,16 @@ primary_expr_no_braces:
  | n=numeric_literal     { ENum (Num.of_string_unsafe n) }
  | n=big_numeric_literal { ENum (Num.of_string_unsafe n) }
  | s=string_literal      { s }
+ | t=template_literal    { ETemplate t }
  | r=regex_literal       { r }
  | a=array_literal       { a }
- | "(" e=expr ")"        { e }
+ | e=coverParenthesizedExpressionAndArrowParameterList { e }
+
+coverParenthesizedExpressionAndArrowParameterList:
+ | "(" e=expr ","? ")" { e }
+ | "(" ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2))) }
+ | "(" "..." binding ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2)) ) }
+ | "(" expr "," "..." binding ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($4)) ) }
 
 (*----------------------------*)
 (* scalar *)
@@ -752,17 +780,12 @@ assignment_operator:
 (*----------------------------*)
 
 array_literal:
- | "[" e=optl(elision) "]" { (EArr e) }
- | "[" l=element_list_rev last=optl(elision) "]"
-     { (EArr (List.rev_append l (List.rev last))) }
-
-element_list_rev:
- | empty=optl(elision) e=element { e::empty }
- | l=element_list_rev "," e=element { e :: l }
- | l=element_list_rev "," empty=elision e=element { e :: (List.rev_append empty l) }
+  | "[" "]" { EArr [] }
+  | "[" l=listc_with_empty (element) "]"
+    { (EArr (List.map (function None -> ElementHole | Some x -> x) l)) }
 
 element:
- | assignment_expr { Element $1 }
+ | assignment_expr       { Element $1 }
  (* es6: spread operator: *)
  | "..." assignment_expr { ElementSpread $2 }
 
@@ -777,20 +800,20 @@ object_literal:
 property_name_and_value:
  | property_name ":" assignment_expr    { Property ($1, $3) }
  (* es6: *)
- | id=id                                   { Property (PNI id, EVar (var (p $symbolstartpos) id)) }
+ | id=id          { Property (PNI id, EVar (ident_unsafe id)) }
+ | ident initializer_  { CoverInitializedName (early_error (pi $startpos($2)), $1, $2)  }
  (* es6: spread operator: *)
  | "..." assignment_expr                { PropertySpread($2) }
- | T_GET name=id args=call_signature "{" b=function_body "}" { PropertyGet(name,args,b) }
- | T_SET name=id args=call_signature "{" b=function_body "}" { PropertySet(name,args,b) }
- | name=id args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, (None, {async = false; generator = false}, args, b, p $symbolstartpos)) }
- | T_ASYNC name=id args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, (None, {async = true; generator = false}, args, b, p $symbolstartpos)) }
- | "*" name=id args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, (None, {async = false; generator = true}, args, b, p $symbolstartpos)) }
- | T_ASYNC "*" name=id args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, (None, {async = true; generator = true}, args, b, p $symbolstartpos)) }
- | "[" p=assignment_expr "]" ":" e=assignment_expr { PropertyComputed (p,e) }
+ | T_GET name=property_name args=call_signature "{" b=function_body "}" { PropertyGet(name,({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | T_SET name=property_name args=call_signature "{" b=function_body "}" { PropertySet(name,({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | name=property_name args=call_signature "{" b=function_body "}" {
+      PropertyMethod(name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | T_ASYNC name=property_name args=call_signature "{" b=function_body "}" {
+      PropertyMethod(name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
+ | "*" name=property_name args=call_signature "{" b=function_body "}" {
+      PropertyMethod(name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
+ | T_ASYNC "*" name=property_name args=call_signature "{" b=function_body "}" {
+      PropertyMethod(name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 (*----------------------------*)
 (* function call *)
 (*----------------------------*)
@@ -812,7 +835,12 @@ argument:
 (* interpolated strings *)
 (*----------------------------*)
 
-(* TODO *)
+(* templated string (a.k.a interpolated strings) *)
+template_literal: T_BACKQUOTE encaps* T_BACKQUOTE  { $2 }
+
+encaps:
+ | T_ENCAPSED_STRING        { TStr (Stdlib.Utf8_string.of_string_exn $1) }
+ | T_DOLLARCURLY expr "}"   { TExp $2 }
 
 (*----------------------------*)
 (* arrow (short lambda) *)
@@ -820,20 +848,22 @@ argument:
 
 (* TODO conflict with as then in indent_keyword_bis *)
 arrow_function:
-  | i=ident T_ARROW b=arrow_body {  EArrow({async = false; generator = false}, [param' i],b, p $symbolstartpos) }
-  | "(" ")" T_ARROW b=arrow_body
-    { EArrow ({async = false; generator = false}, [],b, p $symbolstartpos) }
+  | i=ident T_ARROW b=arrow_body { EArrow({async = false; generator = false}, list [param' i],b, p $symbolstartpos) }
   | T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
     { EArrow ({async = false; generator = false}, a,b, p $symbolstartpos) }
+
+async_arrow_function:
+  | T_ASYNC i=ident T_ARROW b=arrow_body { EArrow({async = true; generator = false}, list [param' i],b, p $symbolstartpos) }
+  | T_ASYNC T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
+    { EArrow ({async = true; generator = false}, a,b, p $symbolstartpos) }
 
 
 (* was called consise body in spec *)
 arrow_body:
- | b=function_body { b }
- (* see conflicts.txt for why the %prec *)
- | e=assignment_expr_no_stmt (* %prec LOW_PRIORITY_RULE *) { [(Return_statement (Some e), N)] }
+ | "{" b=function_body "}" { b }
+ | e=assignment_expr_no_stmt { [(Return_statement (Some e), p $symbolstartpos)] }
  (* ugly *)
- | e=function_expr { [(Expression_statement e, N)] }
+ | e=function_expr { [(Expression_statement e, p $symbolstartpos)] }
 
 (*----------------------------*)
 (* no in                    *)
@@ -846,7 +876,11 @@ expr_no_in:
 assignment_expr_no_in:
  | conditional_expr_no_in { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr_no_in
-     { EBin(op,e1,e2) }
+    {
+      match assignment_pattern_of_expr (Some op) e1 with
+        | None -> EBin (op, e1, e2)
+        | Some pat -> EBin (op, EAssignTarget pat, e2)
+    }
 
 conditional_expr_no_in:
  | post_in_expr_no_in { $1 }
@@ -885,9 +919,14 @@ expr_no_stmt:
 assignment_expr_no_stmt:
  | conditional_expr(primary_no_stmt) { $1 }
  | e1=left_hand_side_expr_(primary_no_stmt) op=assignment_operator e2=assignment_expr
-   { EBin (op,e1,e2) }
+    {
+      match assignment_pattern_of_expr (Some op) e1 with
+      | None -> EBin (op, e1, e2)
+      | Some pat -> EBin (op, EAssignTarget pat, e2)
+    }
  (* es6: *)
  | arrow_function { $1 }
+ | async_arrow_function { $1 }
  (* es6: *)
  | T_YIELD { EYield None }
  | T_YIELD e=assignment_expr { EYield (Some e) }
@@ -902,15 +941,16 @@ primary_no_stmt: T_ERROR TComment { assert false }
 (* used for entities, parameters, labels, etc. *)
 id:
  | T_IDENTIFIER { fst $1 }
-  | ident_semi_keyword { utf8_s (Js_token.to_string $1) }
+ | ident_semi_keyword { utf8_s (Js_token.to_string $1) }
 
 ident:
-  | id { var (p $symbolstartpos) $1 }
+ | id { var (p $symbolstartpos) $1 }
 
 (* add here keywords which are not considered reserved by ECMA *)
 ident_semi_keyword:
  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
  (* can have AS and ASYNC here but need to restrict arrow_function then *)
+ | T_ASYNC
  | T_FROM
  | T_GET { T_GET }
  | T_META { T_META }
@@ -990,7 +1030,7 @@ property_name:
     let s, _len = s in PNS s }
  | n=numeric_literal  { PNN (Num.of_string_unsafe (n)) }
  | n=big_numeric_literal  { PNN (Num.of_string_unsafe (n)) }
-
+ | "[" p=assignment_expr "]" { PComputed p }
 (*************************************************************************)
 (* Misc *)
 (*************************************************************************)
@@ -999,5 +1039,5 @@ sc:
  | T_VIRTUAL_SEMICOLON { $1 }
 
 elision:
- | ","         { [ElementHole] }
- | elision "," { $1 @ [ElementHole] }
+ | ","         { [] }
+ | elision "," { () :: $1 }

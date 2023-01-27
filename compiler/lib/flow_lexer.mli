@@ -5,6 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  *)
 
+module Lex_mode : sig
+  type t =
+    | NORMAL
+    | BACKQUOTE
+    | REGEXP
+end
+
 module Parse_error : sig
   type t
 
@@ -40,5 +47,7 @@ val drop_line : Lex_env.t -> unit
 val regexp : Lex_env.t -> Lex_env.t * Lex_result.t
 
 val token : Lex_env.t -> Lex_env.t * Lex_result.t
+
+val lex : Lex_env.t -> Lex_env.t * Lex_result.t
 
 val is_valid_identifier_name : string -> bool

@@ -1014,10 +1014,10 @@ let generate_apply_fun ctx { arity; exact; cps } =
   let params' = List.map params ~f:(fun x -> J.EVar x) in
   J.EFun
     ( None
-    , { async = false; generator = false }
-    , List.map ~f:J.param' (f :: params)
-    , [ J.Return_statement (Some (apply_fun_raw ctx f' params' exact cps)), J.N ]
-    , J.N )
+    , J.fun_
+        (f :: params)
+        [ J.Return_statement (Some (apply_fun_raw ctx f' params' exact cps)), J.N ]
+        J.N )
 
 let apply_fun ctx f params exact cps loc =
   (* We always go through an intermediate function when doing CPS
@@ -1246,14 +1246,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
         | (st, J.N) :: rem -> (st, J.U) :: rem
         | _ -> clo
       in
-      let clo =
-        J.EFun
-          ( None
-          , { async = false; generator = false }
-          , List.map args ~f:(fun v -> J.param' (J.V v))
-          , clo
-          , loc )
-      in
+      let clo = J.EFun (None, J.fun_ (List.map args ~f:(fun v -> J.V v)) clo loc) in
       (clo, flush_p, queue), []
   | Constant c ->
       let js, instrs = constant ~ctx c level in
@@ -1422,12 +1415,7 @@ let rec translate_expr ctx queue loc in_tail_position e level : _ * J.statement_
                 loc
             in
             let e =
-              J.EFun
-                ( Some f
-                , { async = false; generator = false }
-                , List.map ~f:J.param' args
-                , [ J.Return_statement (Some call), J.N ]
-                , J.N )
+              J.EFun (Some f, J.fun_ args [ J.Return_statement (Some call), J.N ] J.N)
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
@@ -2085,8 +2073,7 @@ let generate_shared_value ctx =
         (Share.AppMap.bindings ctx.Ctx.share.Share.vars.Share.applies)
         ~f:(fun (desc, v) ->
           match generate_apply_fun ctx desc with
-          | J.EFun (_, k, param, body, nid) ->
-              J.Function_declaration (v, k, param, body, nid), J.U
+          | J.EFun (_, decl) -> J.Function_declaration (v, decl), J.U
           | _ -> assert false)
     in
     strings :: applies

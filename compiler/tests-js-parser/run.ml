@@ -1,7 +1,18 @@
 open Js_of_ocaml_compiler
 open Stdlib
 
-let files = Sys.argv |> Array.to_list |> List.tl
+let failure_expected = ref false
+
+let flags, files =
+  Sys.argv
+  |> Array.to_list
+  |> List.tl
+  |> List.partition ~f:(fun x -> Char.equal (String.get x 0) '-')
+
+let () =
+  List.iter flags ~f:(function
+      | "-fail" -> failure_expected := true
+      | f -> failwith ("unrecognised flag " ^ f))
 
 let unsupported_syntax = ref []
 
@@ -13,7 +24,6 @@ let rs =
   [ Str.regexp_string "class"
   ; Str.regexp_string "import"
   ; Str.regexp_string "export"
-  ; Str.regexp_string "`"
   ; Str.regexp_string "new.target"
   ; Str.regexp_string "with"
   ]
@@ -44,9 +54,9 @@ let p_to_string p =
 
 let () =
   List.iter files ~f:(fun filename ->
-      let add r = r := filename :: !r in
       let ic = open_in_bin filename in
       let content = In_channel.input_all ic in
+      let add r = r := (filename, content) :: !r in
       close_in ic;
       try
         let p1 = Parse_js.Lexer.of_string ~filename content |> Parse_js.parse in
@@ -81,15 +91,21 @@ let () =
   Printf.printf "  fail : %d\n" (List.length !fail);
   Printf.printf "  pass : %d\n" (List.length !pass);
   let l = !fail in
-  List.iter l ~f:(fun (f, (pi : Parse_info.t), c) ->
-      Printf.printf "failed to parse %s:%d:%d\n" f pi.line pi.col;
-      List.iteri (String.split_on_char ~sep:'\n' c) ~f:(fun i c ->
-          if i + 1 = pi.line
-          then (
-            let b = Buffer.create (String.length c) in
-            String.fold_utf_8 c () ~f:(fun () i u ->
-                if i = pi.col then Buffer.add_utf_8_uchar b (Uchar.of_int 0x274C);
-                Buffer.add_utf_8_uchar b u);
-            Printf.printf "%s\n" (Buffer.contents b))
-          else Printf.printf "%s\n" c);
-      Printf.printf "\n")
+  if !failure_expected
+  then
+    List.iter !pass ~f:(fun (f, c) ->
+        Printf.printf "succeded to parse %s\n" f;
+        Printf.printf "%s\n\n" c)
+  else
+    List.iter l ~f:(fun (f, (pi : Parse_info.t), c) ->
+        Printf.printf "failed to parse %s:%d:%d\n" f pi.line pi.col;
+        List.iteri (String.split_on_char ~sep:'\n' c) ~f:(fun i c ->
+            if i + 1 = pi.line
+            then (
+              let b = Buffer.create (String.length c) in
+              String.fold_utf_8 c () ~f:(fun () i u ->
+                  if i = pi.col then Buffer.add_utf_8_uchar b (Uchar.of_int 0x274C);
+                  Buffer.add_utf_8_uchar b u);
+              Printf.printf "%s\n" (Buffer.contents b))
+            else Printf.printf "%s\n" c);
+        Printf.printf "\n")

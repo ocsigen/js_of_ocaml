@@ -132,6 +132,11 @@ type ident_string =
   ; loc : location
   }
 
+type early_error =
+  { loc : Parse_info.t
+  ; reason : string option
+  }
+
 type ident =
   | S of ident_string
   | V of Code.Var.t
@@ -216,37 +221,49 @@ and argument =
 and property_list = property list
 
 and property =
-  | PropertySpread of expression
-  | PropertyGet of identifier * formal_parameter_list * function_body
-  | PropertySet of identifier * formal_parameter_list * function_body
-  | PropertyMethod of identifier * function_expression
   | Property of property_name * expression
-  | PropertyComputed of expression * expression
+  | PropertyGet of property_name * function_declaration
+  | PropertySet of property_name * function_declaration
+  | PropertyMethod of property_name * function_declaration
+  | PropertySpread of expression
+  | CoverInitializedName of early_error * ident * initialiser
 
 and property_name =
   | PNI of identifier
   | PNS of Utf8_string.t
   | PNN of Num.t
+  | PComputed of expression
 
 and expression =
   | ESeq of expression * expression
   | ECond of expression * expression * expression
+  | EAssignTarget of binding_pattern
   | EBin of binop * expression * expression
   | EUn of unop * expression
   | ECall of expression * access_kind * arguments * location
+  | ECallTemplate of expression * template * location
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
   | ENew of expression * arguments option
   | EVar of ident
-  | EFun of function_expression
-  | EArrow of arrow_expression
+  | EFun of ident option * function_declaration
+  | EArrow of function_declaration
   | EStr of Utf8_string.t
+  | ETemplate of template
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
   | EObj of property_list
   | ERegexp of string * string option
   | EYield of expression option
+  | CoverParenthesizedExpressionAndArrowParameterList of early_error
+  | CoverCallExpressionAndAsyncArrowHead of early_error
+
+and template = template_part list
+
+and template_part =
+  | TStr of Utf8_string.t
+  | TExp of expression
 
 and access_kind =
   | ANormal
@@ -258,7 +275,7 @@ and access_kind =
 and statement =
   | Block of block
   | Variable_statement of variable_declaration_kind * variable_declaration list
-  | Function_declaration of function_declaration
+  | Function_declaration of ident * function_declaration
   | Empty_statement
   | Expression_statement of expression
   | If_statement of expression * (statement * location) * (statement * location) option
@@ -297,8 +314,8 @@ and block = statement_list
 and statement_list = (statement * location) list
 
 and variable_declaration =
-  | DIdent of ident * initialiser option
-  | DPattern of binding_pattern * initialiser
+  | DeclIdent of binding_ident * initialiser option
+  | DeclPattern of binding_pattern * initialiser
 
 and variable_declaration_kind =
   | Var
@@ -310,48 +327,40 @@ and case_clause = expression * statement_list
 and initialiser = expression * location
 
 (****)
-
-(* A.5 Functions and programs *)
 and function_declaration =
-  ident * function_kind * formal_parameter_list * function_body * location
-
-and function_expression =
-  ident option * function_kind * formal_parameter_list * function_body * location
-
-and arrow_expression = function_kind * formal_parameter_list * function_body * location
+  function_kind * formal_parameter_list * function_body * location
 
 and function_kind =
   { async : bool
   ; generator : bool
   }
 
-and formal_parameter_list = formal_parameter list
+and ('a, 'b) list_with_rest =
+  { list : 'a list
+  ; rest : 'b option
+  }
 
-and formal_parameter =
-  | PPattern of binding_pattern * (expression * location) option
-  | PIdent of
-      { id : ident
-      ; default : (expression * location) option
-      }
-  | PIdentSpread of ident
+and formal_parameter_list = (formal_parameter, binding) list_with_rest
 
-and for_binding =
-  | ForBindIdent of ident
-  | ForBindPattern of binding_pattern
+and formal_parameter = binding_element
+
+and for_binding = binding
+
+and binding_element = binding * initialiser option
+
+and binding =
+  | BindingIdent of binding_ident
+  | BindingPattern of binding_pattern
 
 and binding_pattern =
-  | Object_binding of binding_property list
-  | Array_binding of binding_array_elt list
-  | Id of ident
+  | ObjectBinding of (binding_property, binding_ident) list_with_rest
+  | ArrayBinding of (binding_element option, binding) list_with_rest
+
+and binding_ident = ident
 
 and binding_property =
-  | Prop_binding of property_name * binding_pattern * (expression * location) option
-  | Prop_rest of ident
-
-and binding_array_elt =
-  | Elt_binding of binding_pattern * (expression * location) option
-  | Elt_hole
-  | Elt_rest of ident
+  | Prop_binding of property_name * binding_element
+  | Prop_ident of binding_ident * initialiser option
 
 and function_body = statement_list
 
@@ -378,36 +387,48 @@ let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
   if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
   S { name; var; loc }
 
-let param' id = PIdent { id; default = None }
+let param' id = BindingIdent id, None
 
 let param ?loc ?var name = param' (ident ?loc ?var name)
 
 let ident_unsafe ?(loc = N) ?var name = S { name; var; loc }
 
-let rec bound_idents_of_param p =
+let rec bound_idents_of_binding p =
   match p with
-  | PIdent { id; _ } -> [ id ]
-  | PIdentSpread id -> [ id ]
-  | PPattern (p, _) -> bound_idents_of_pattern p
+  | BindingIdent id -> [ id ]
+  | BindingPattern p -> bound_idents_of_pattern p
 
-and bound_idents_of_params p = List.concat_map p ~f:bound_idents_of_param
+and bound_idents_of_params { list; rest } =
+  List.concat_map list ~f:bound_idents_of_element
+  @
+  match rest with
+  | None -> []
+  | Some p -> bound_idents_of_binding p
 
 and bound_idents_of_pattern p =
   match p with
-  | Id id -> [ id ]
-  | Object_binding l ->
-      List.concat_map l ~f:(function
-          | Prop_rest i -> [ i ]
-          | Prop_binding (_, p, _) -> bound_idents_of_pattern p)
-  | Array_binding l ->
-      List.concat_map l ~f:(function
-          | Elt_binding (p, _) -> bound_idents_of_pattern p
-          | Elt_hole -> []
-          | Elt_rest i -> [ i ])
+  | ObjectBinding { list; rest } -> (
+      List.concat_map list ~f:(function
+          | Prop_ident (i, _) -> [ i ]
+          | Prop_binding (_, e) -> bound_idents_of_element e)
+      @
+      match rest with
+      | None -> []
+      | Some x -> [ x ])
+  | ArrayBinding { list; rest } -> (
+      List.concat_map list ~f:(function
+          | None -> []
+          | Some e -> bound_idents_of_element e)
+      @
+      match rest with
+      | None -> []
+      | Some x -> bound_idents_of_binding x)
 
 and bound_idents_of_variable_declaration = function
-  | DIdent (id, _) -> [ id ]
-  | DPattern (p, _) -> bound_idents_of_pattern p
+  | DeclIdent (id, _) -> [ id ]
+  | DeclPattern (p, _) -> bound_idents_of_pattern p
+
+and bound_idents_of_element (b, _) = bound_idents_of_binding b
 
 module IdentSet = Set.Make (struct
   type t = ident
@@ -424,8 +445,67 @@ end)
 let dot e l = EDot (e, ANormal, l)
 
 let variable_declaration l =
-  Variable_statement (Var, List.map l ~f:(fun (i, e) -> DIdent (i, Some e)))
+  Variable_statement (Var, List.map l ~f:(fun (i, e) -> DeclIdent (i, Some e)))
 
 let array l = EArr (List.map l ~f:(fun x -> Element x))
 
 let call f args loc = ECall (f, ANormal, List.map args ~f:(fun x -> Arg x), loc)
+
+let list list = { list; rest = None }
+
+let early_error ?reason loc = { loc; reason }
+
+let fun_ params body loc =
+  ( { async = false; generator = false }
+  , list (List.map params ~f:(fun x -> BindingIdent x, None))
+  , body
+  , loc )
+
+let rec assignment_pattern_of_expr x =
+  match x with
+  | EObj l ->
+      let rest, l =
+        match List.rev l with
+        | PropertySpread (EVar x) :: l -> Some x, List.rev l
+        | _ -> None, l
+      in
+      let list =
+        List.map l ~f:(function
+            | Property (PNI (Utf8 i), EVar (S { name = Utf8 i2; loc = N; _ } as ident))
+              when String.equal i i2 -> Prop_ident (ident, None)
+            | Property (n, e) -> Prop_binding (n, binding_element_of_expression e)
+            | CoverInitializedName (_, i, e) -> Prop_ident (i, Some e)
+            | _ -> raise Not_found)
+      in
+      ObjectBinding { list; rest }
+  | EArr l ->
+      let rest, l =
+        match List.rev l with
+        | ElementSpread e :: l -> Some (binding_of_expression e), List.rev l
+        | _ -> None, l
+      in
+      let list =
+        List.map l ~f:(function
+            | ElementHole -> None
+            | Element e -> Some (binding_element_of_expression e)
+            | ElementSpread _ -> raise Not_found)
+      in
+      ArrayBinding { list; rest }
+  | _ -> raise Not_found
+
+and binding_element_of_expression e =
+  match e with
+  | EBin (Eq, e1, e2) -> binding_of_expression e1, Some (e2, N)
+  | e -> binding_of_expression e, None
+
+and binding_of_expression e =
+  match e with
+  | EVar x -> BindingIdent x
+  | EObj _ as x -> BindingPattern (assignment_pattern_of_expr x)
+  | EArr _ as x -> BindingPattern (assignment_pattern_of_expr x)
+  | _ -> raise Not_found
+
+let assignment_pattern_of_expr op x =
+  match op with
+  | None | Some Eq -> ( try Some (assignment_pattern_of_expr x) with Not_found -> None)
+  | _ -> None

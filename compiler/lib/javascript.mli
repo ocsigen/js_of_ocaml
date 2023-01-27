@@ -80,6 +80,11 @@ type ident_string =
   ; loc : location
   }
 
+type early_error =
+  { loc : Parse_info.t
+  ; reason : string option
+  }
+
 type ident =
   | S of ident_string
   | V of Code.Var.t
@@ -163,38 +168,54 @@ and argument =
 and property_list = property list
 
 and property =
-  | PropertySpread of expression
-  | PropertyGet of identifier * formal_parameter_list * function_body
-  | PropertySet of identifier * formal_parameter_list * function_body
-  | PropertyMethod of identifier * function_expression
   | Property of property_name * expression
-  | PropertyComputed of expression * expression
+  | PropertyGet of property_name * function_declaration
+  | PropertySet of property_name * function_declaration
+  | PropertyMethod of property_name * function_declaration
+  | PropertySpread of expression
+  | CoverInitializedName of early_error * ident * initialiser
 
 and property_name =
   | PNI of identifier
   | PNS of Utf8_string.t
   | PNN of Num.t
+  | PComputed of expression
 
 and expression =
   | ESeq of expression * expression
   | ECond of expression * expression * expression
+  | EAssignTarget of binding_pattern
+  (* EAssignTarget is used on the LHS of assignment and in for-loops.
+     for({name} in o);
+     for([fst] in o);
+  *)
   | EBin of binop * expression * expression
   | EUn of unop * expression
   | ECall of expression * access_kind * arguments * location
+  | ECallTemplate of expression * template * location
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
   | ENew of expression * arguments option
   | EVar of ident
-  | EFun of function_expression
-  | EArrow of arrow_expression
+  | EFun of ident option * function_declaration
+  | EArrow of function_declaration
   | EStr of Utf8_string.t
   (* A UTF-8 encoded string that may contain escape sequences. *)
+  | ETemplate of template
   | EArr of array_litteral
   | EBool of bool
   | ENum of Num.t
   | EObj of property_list
   | ERegexp of string * string option
   | EYield of expression option
+  | CoverParenthesizedExpressionAndArrowParameterList of early_error
+  | CoverCallExpressionAndAsyncArrowHead of early_error
+
+and template = template_part list
+
+and template_part =
+  | TStr of Utf8_string.t
+  | TExp of expression
 
 and access_kind =
   | ANormal
@@ -206,7 +227,7 @@ and access_kind =
 and statement =
   | Block of block
   | Variable_statement of variable_declaration_kind * variable_declaration list
-  | Function_declaration of function_declaration
+  | Function_declaration of ident * function_declaration
   | Empty_statement
   | Expression_statement of expression
   | If_statement of expression * (statement * location) * (statement * location) option
@@ -247,8 +268,8 @@ and block = statement_list
 and statement_list = (statement * location) list
 
 and variable_declaration =
-  | DIdent of ident * initialiser option
-  | DPattern of binding_pattern * initialiser
+  | DeclIdent of binding_ident * initialiser option
+  | DeclPattern of binding_pattern * initialiser
 
 and variable_declaration_kind =
   | Var
@@ -260,48 +281,40 @@ and case_clause = expression * statement_list
 and initialiser = expression * location
 
 (****)
-
-(* A.5 Functions and programs *)
 and function_declaration =
-  ident * function_kind * formal_parameter_list * function_body * location
-
-and function_expression =
-  ident option * function_kind * formal_parameter_list * function_body * location
-
-and arrow_expression = function_kind * formal_parameter_list * function_body * location
-
-and formal_parameter_list = formal_parameter list
+  function_kind * formal_parameter_list * function_body * location
 
 and function_kind =
   { async : bool
   ; generator : bool
   }
 
-and formal_parameter =
-  | PPattern of binding_pattern * (expression * location) option
-  | PIdent of
-      { id : ident
-      ; default : (expression * location) option
-      }
-  | PIdentSpread of ident
+and ('a, 'b) list_with_rest =
+  { list : 'a list
+  ; rest : 'b option
+  }
 
-and for_binding =
-  | ForBindIdent of ident
-  | ForBindPattern of binding_pattern
+and formal_parameter_list = (formal_parameter, binding) list_with_rest
+
+and formal_parameter = binding_element
+
+and for_binding = binding
+
+and binding_element = binding * initialiser option
+
+and binding =
+  | BindingIdent of binding_ident
+  | BindingPattern of binding_pattern
 
 and binding_pattern =
-  | Object_binding of binding_property list
-  | Array_binding of binding_array_elt list
-  | Id of ident
+  | ObjectBinding of (binding_property, binding_ident) list_with_rest
+  | ArrayBinding of (binding_element option, binding) list_with_rest
+
+and binding_ident = ident
 
 and binding_property =
-  | Prop_binding of property_name * binding_pattern * (expression * location) option
-  | Prop_rest of ident
-
-and binding_array_elt =
-  | Elt_binding of binding_pattern * (expression * location) option
-  | Elt_hole
-  | Elt_rest of ident
+  | Prop_binding of property_name * binding_element
+  | Prop_ident of binding_ident * initialiser option
 
 and function_body = statement_list
 
@@ -323,13 +336,13 @@ val param' : ident -> formal_parameter
 
 val ident_unsafe : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
 
-val bound_idents_of_params : formal_parameter list -> ident list
-
-val bound_idents_of_param : formal_parameter -> ident list
+val bound_idents_of_params : formal_parameter_list -> ident list
 
 val bound_idents_of_variable_declaration : variable_declaration -> ident list
 
 val bound_idents_of_pattern : binding_pattern -> ident list
+
+val bound_idents_of_binding : binding -> ident list
 
 module IdentSet : Set.S with type elt = ident
 
@@ -342,3 +355,11 @@ val array : expression list -> expression
 val call : expression -> expression list -> location -> expression
 
 val variable_declaration : (ident * initialiser) list -> statement
+
+val list : 'a list -> ('a, _) list_with_rest
+
+val early_error : ?reason:string -> Parse_info.t -> early_error
+
+val fun_ : ident list -> statement_list -> location -> function_declaration
+
+val assignment_pattern_of_expr : binop option -> expression -> binding_pattern option

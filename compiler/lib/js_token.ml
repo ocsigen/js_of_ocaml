@@ -27,7 +27,6 @@ type t =
   | T_NUMBER of (number_type * string)
   | T_BIGINT of (bigint_type * string)
   | T_STRING of (Utf8_string.t * int)
-  | T_TEMPLATE_PART of (Utf8_string.t * bool)
   | T_IDENTIFIER of (Utf8_string.t * string)
   | T_REGEXP of (Utf8_string.t * string)
   (* /pattern/flags *)
@@ -146,6 +145,9 @@ type t =
   | T_FROM
   | T_TARGET
   | T_META
+  | T_BACKQUOTE
+  | T_DOLLARCURLY
+  | T_ENCAPSED_STRING of string
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
@@ -297,8 +299,10 @@ let to_string = function
   | T_EXP -> "**"
   | T_EOF -> ""
   | T_BIGINT (_, raw) -> raw
-  | T_TEMPLATE_PART (Utf8 s, _) -> s
   | T_LPAREN_ARROW -> "("
+  | T_BACKQUOTE -> "`"
+  | T_DOLLARCURLY -> "${"
+  | T_ENCAPSED_STRING s -> s
 
 let to_string_extra x =
   to_string x
@@ -313,6 +317,7 @@ let to_string_extra x =
   | TAnnot _ -> "(annot)"
   | T_ERROR _ -> "(error)"
   | T_LPAREN_ARROW -> "(arrow)"
+  | T_ENCAPSED_STRING _ -> "(encaps)"
   | _ -> ""
 
 let is_keyword s =
