@@ -169,11 +169,14 @@ and property_list = property list
 
 and property =
   | Property of property_name * expression
-  | PropertyGet of property_name * function_declaration
-  | PropertySet of property_name * function_declaration
-  | PropertyMethod of property_name * function_declaration
   | PropertySpread of expression
+  | PropertyMethod of property_name * method_
   | CoverInitializedName of early_error * ident * initialiser
+
+and method_ =
+  | MethodGet of function_declaration
+  | MethodSet of function_declaration
+  | Method of function_declaration
 
 and property_name =
   | PNI of identifier
@@ -198,6 +201,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of ident option * function_declaration
+  | EClass of ident option * class_declaration
   | EArrow of function_declaration
   | EStr of Utf8_string.t
   (* A UTF-8 encoded string that may contain escape sequences. *)
@@ -228,6 +232,7 @@ and statement =
   | Block of block
   | Variable_statement of variable_declaration_kind * variable_declaration list
   | Function_declaration of ident * function_declaration
+  | Class_declaration of ident * class_declaration
   | Empty_statement
   | Expression_statement of expression
   | If_statement of expression * (statement * location) * (statement * location) option
@@ -288,6 +293,20 @@ and function_kind =
   { async : bool
   ; generator : bool
   }
+
+and class_declaration =
+  { extends : expression option
+  ; body : class_element list
+  }
+
+and class_element =
+  | CEMethod of bool (* static *) * class_element_name * method_
+  | CEField of bool (* static *) * class_element_name * initialiser option
+  | CEStaticBLock of statement_list
+
+and class_element_name =
+  | PropName of property_name
+  | PrivName of ident
 
 and ('a, 'b) list_with_rest =
   { list : 'a list

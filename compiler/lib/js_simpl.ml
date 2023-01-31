@@ -84,6 +84,7 @@ let rec enot_rec e =
     | J.EYield _
     | J.ETemplate _
     | J.EAssignTarget _
+    | J.EClass _
     | J.EUn (J.Await, _)
     | J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) -> J.EUn (J.Not, e), 1
     | J.CoverCallExpressionAndAsyncArrowHead _
@@ -148,6 +149,7 @@ let simplify_condition = function
 let rec depth = function
   | J.Block b -> depth_block b + 1
   | Function_declaration (_, (_, _, b, _)) -> depth_block b + 1
+  | Class_declaration (_, cl) -> depth_class_block cl.body + 1
   | Variable_statement _ -> 1
   | Empty_statement -> 1
   | Expression_statement _ -> 1
@@ -179,6 +181,13 @@ let rec depth = function
   | Debugger_statement -> 1
 
 and depth_block b = List.fold_left b ~init:0 ~f:(fun acc (s, _) -> max acc (depth s))
+
+and depth_class_block b =
+  List.fold_left b ~init:0 ~f:(fun acc s ->
+      match s with
+      | J.CEMethod _ -> acc
+      | J.CEField _ -> acc
+      | J.CEStaticBLock b -> depth_block b + 2)
 
 let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in

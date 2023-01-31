@@ -21,11 +21,11 @@ let fail = ref []
 let pass = ref []
 
 let rs =
-  [ Str.regexp_string "class"
-  ; Str.regexp_string "import"
+  [ Str.regexp_string "import"
   ; Str.regexp_string "export"
-  ; Str.regexp_string "new.target"
   ; Str.regexp_string "with"
+  ; Str.regexp_string "<!--"
+  ; Str.regexp_string "-->"
   ]
 
 let has_unsupported_syntax c =

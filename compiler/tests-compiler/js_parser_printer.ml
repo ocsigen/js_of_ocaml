@@ -445,6 +445,100 @@ let%expect_test "string template" =
     s=
      `asd ${ /*<< 7 20>>*/ f(`space ${test} space`,32)} te`; |}]
 
+let%expect_test "from keyword" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+({key:"from",
+ value:
+   function from(field,get)
+     {if(!get)get=function get(x){return x;};
+      return this.compute([field],function(state){return get(state.field(field));});}}) |};
+  [%expect
+    {|
+    /*<< 2 0>>*/ ({key:"from",
+     value:
+     function from(field,get)
+      { /*<< 5 6>>*/ if(! get)
+         /*<< 5 14>>*/ get
+        =
+        function get(x){ /*<< 5 34>>*/ return x /*<< 5 18>>*/ };
+        /*<< 6 6>>*/ return  /*<< 6 13>>*/ this.compute
+               ([field],
+                function(state)
+                 { /*<< 6 50>>*/ return  /*<< 6 57>>*/ get
+                          ( /*<< 6 61>>*/ state.field(field)) /*<< 6 34>>*/ }) /*<< 4 3>>*/ }}); |}]
+
+let%expect_test "new.target" =
+  (* GH#1017 *)
+  print ~report:true ~compact:false {|
+    var s = new.target
+ |};
+
+  [%expect {|
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var s=new.target; |}]
+
+let%expect_test "super" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+class x extends p {
+    constructor() {
+      super(a,b,c);
+    }
+    foo() {
+
+      var s = super[d]
+      var s = super.d
+    }
+
+    static bar() {
+
+      var s = super[d]
+      var s = super.d
+    }
+   x = 3
+
+   static y = 5
+
+   #z = 6
+
+   static #t = 2
+
+   static { var x = 3 }
+}
+ |};
+
+  [%expect
+    {|
+     /*<< 2 0>>*/ class
+    x
+    extends
+    p{constructor(){ /*<< 4 6>>*/  /*<< 4 6>>*/ super(a,b,c) /*<< 3 4>>*/ }
+    foo()
+     { /*<< 8 6>>*/  /*<< 8 12>>*/ var s=super[d];
+       /*<< 9 6>>*/  /*<< 9 12>>*/ var s=super.d /*<< 6 4>>*/ }
+    static
+    bar()
+     { /*<< 14 6>>*/  /*<< 14 12>>*/ var s=super[d];
+       /*<< 15 6>>*/  /*<< 15 12>>*/ var s=super.d /*<< 12 11>>*/ }
+    x=
+     /*<< 17 5>>*/ 3
+    static
+    y=
+     /*<< 19 12>>*/ 5
+    #z=
+     /*<< 21 6>>*/ 6
+    static
+    #t=
+     /*<< 23 13>>*/ 2
+    static{ /*<< 25 12>>*/  /*<< 25 18>>*/ var x=3}
+    } |}]
+
 let%expect_test "error reporting" =
   (try
      print ~invalid:true ~compact:false {|

@@ -62,6 +62,9 @@ let pi pos = (Parse_info.t_of_pos pos)
 
 let p pos = Pi (pi pos)
 
+let vartok pos tok =
+  EVar (var (p pos) (Stdlib.Utf8_string.of_string_exn (Js_token.to_string tok)))
+
 let utf8_s = Stdlib.Utf8_string.of_string_exn
 
 %}
@@ -264,6 +267,8 @@ decl:
  | async_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | lexical_decl    { $1, p $symbolstartpos }
+ | class_decl
+   { let i,f = $1 in Class_declaration (i,f), p $symbolstartpos }
 
 (*************************************************************************)
 (* Variable decl *)
@@ -430,6 +435,56 @@ async_decl:
 async_function_expr:
  | T_ASYNC T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
+
+(*************************************************************************)
+(* Class declaration *)
+(*************************************************************************)
+
+class_decl: T_CLASS id=binding_id extends=extends_clause? body=class_body
+   { id, {extends; body}  }
+
+class_body: "{" class_element* "}" { List.flatten $2 }
+
+extends_clause: T_EXTENDS left_hand_side_expr { $2 }
+
+binding_id: ident { $1 }
+
+class_expr: T_CLASS i=binding_id? extends=extends_clause? body=class_body
+   { EClass (i, {extends; body}) }
+
+(*----------------------------*)
+(* Class elements *)
+(*----------------------------*)
+
+(* can't factorize with static_opt, or access_modifier_opt; ambiguities  *)
+class_element:
+ |          m=method_definition(class_property_name)
+    { let n,m = m in [ CEMethod (false, n, m) ] }
+ | T_STATIC m=method_definition(class_property_name)
+    { let n,m = m in [ CEMethod (true, n, m) ] }
+
+ |          n=class_property_name i=initializer_? sc
+    { [ CEField (false, n, i) ] }
+ | T_STATIC n=class_property_name i=initializer_? sc
+    { [ CEField (true, n, i) ] }
+ | T_STATIC b=block { [CEStaticBLock b] }
+ | sc    { [] }
+
+class_property_name:
+  | property_name { PropName $1 }
+  | T_POUND ident { PrivName $2 }
+
+method_definition(name):
+ | T_GET name=name args=call_signature "{" b=function_body "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | T_SET name=name args=call_signature "{" b=function_body "}" { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | name=name args=call_signature "{" b=function_body "}" {
+      name, Method(({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | T_ASYNC name=name args=call_signature "{" b=function_body "}" {
+      name, Method(({async = true; generator = false}, args, b, p $symbolstartpos)) }
+ | "*" name=name args=call_signature "{" b=function_body "}" {
+      name, Method(({async = false; generator = true}, args, b, p $symbolstartpos)) }
+ | T_ASYNC "*" name=name args=call_signature "{" b=function_body "}" {
+      name, Method(({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
 (* Stmt *)
@@ -656,7 +711,7 @@ pre_in_expr(x):
 
 call_expr(x):
  | T_IMPORT a=arguments
-     { (ECall(EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "import")), ANormal, a, p $symbolstartpos)) }
+     { (ECall(vartok $startpos($1) T_IMPORT, ANormal, a, p $symbolstartpos)) }
  | e=member_expr(x) a=arguments
      { (ECall(e, ANormal, a, p $symbolstartpos)) }
  | e=member_expr(x) T_PLING_PERIOD a=arguments
@@ -669,8 +724,9 @@ call_expr(x):
      { (EAccess (e, ANormal,  e2)) }
  | e=call_expr(x) T_PLING_PERIOD "[" e2=expr "]"
     { (EAccess (e, ANullish, e2)) }
-  | e=call_expr(x) t=template_literal
+ | e=call_expr(x) t=template_literal
     { ECallTemplate(e, t,p $symbolstartpos) }
+ | T_SUPER a=arguments { ECall(vartok $startpos($1) T_SUPER,ANormal, a, p $symbolstartpos) }
  | e=call_expr(x) a=access i=method_name
     { EDot (e,a,i) }
 
@@ -694,7 +750,13 @@ member_expr(x):
  | T_NEW e1=member_expr(d1) a=arguments
      { (ENew(e1, Some a)) }
  | e=member_expr(x) t=template_literal
-    { ECallTemplate(e, t, p $symbolstartpos) }
+     { ECallTemplate(e, t, p $symbolstartpos) }
+ | T_SUPER "[" e=expr "]"
+      { (EAccess (vartok $startpos($1) T_SUPER,ANormal, e)) }
+ | T_SUPER ak=access i=field_name
+     { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
+  | T_NEW "." T_TARGET
+     { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
 
 primary_expr(x):
  | e=primary_expr_no_braces
@@ -703,8 +765,9 @@ primary_expr(x):
 d1: primary_with_stmt { $1 }
 
 primary_with_stmt:
- | object_literal            { $1 }
+ | object_literal      { $1 }
  | function_expr       { $1 }
+ | class_expr          { $1 }
  (* es6: *)
  | generator_expr      { $1 }
  (* es7: *)
@@ -804,16 +867,8 @@ property_name_and_value:
  | ident initializer_  { CoverInitializedName (early_error (pi $startpos($2)), $1, $2)  }
  (* es6: spread operator: *)
  | "..." assignment_expr                { PropertySpread($2) }
- | T_GET name=property_name args=call_signature "{" b=function_body "}" { PropertyGet(name,({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | T_SET name=property_name args=call_signature "{" b=function_body "}" { PropertySet(name,({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | name=property_name args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | T_ASYNC name=property_name args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
- | "*" name=property_name args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
- | T_ASYNC "*" name=property_name args=call_signature "{" b=function_body "}" {
-      PropertyMethod(name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
+  | method_definition(property_name)
+    { let n, m = $1 in PropertyMethod(n,m) }
 (*----------------------------*)
 (* function call *)
 (*----------------------------*)
@@ -950,8 +1005,8 @@ ident:
 ident_semi_keyword:
  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
  (* can have AS and ASYNC here but need to restrict arrow_function then *)
- | T_ASYNC
- | T_FROM
+ | T_ASYNC { T_ASYNC }
+ | T_FROM { T_FROM }
  | T_GET { T_GET }
  | T_META { T_META }
  | T_OF { T_OF }

@@ -30,7 +30,11 @@ class type mapper =
 
     method switch_case : Javascript.expression -> Javascript.expression
 
+    method block : Javascript.statement_list -> Javascript.statement_list
+
     method fun_decl : Javascript.function_declaration -> Javascript.function_declaration
+
+    method class_decl : Javascript.class_declaration -> Javascript.class_declaration
 
     method initialiser :
          Javascript.expression * Javascript.location
@@ -100,13 +104,33 @@ class map : mapper =
     method fun_decl (k, params, body, nid) =
       k, m#formal_parameter_list params, m#function_body body, m#loc nid
 
+    method class_decl x =
+      { extends = Option.map x.extends ~f:m#expression
+      ; body = List.map x.body ~f:m#class_element
+      }
+
+    method private class_element x =
+      match x with
+      | CEMethod (s, n, meth) -> CEMethod (s, m#class_element_name n, m#method_ meth)
+      | CEField (s, n, i) -> CEField (s, m#class_element_name n, m#initialiser_o i)
+      | CEStaticBLock b -> CEStaticBLock (m#block b)
+
+    method private class_element_name x =
+      match x with
+      | PropName n -> PropName (m#property_name n)
+      | PrivName x -> PrivName (m#ident x)
+
+    method block l = m#statements l
+
     method statement s =
       match s with
-      | Block b -> Block (m#statements b)
+      | Block b -> Block (m#block b)
       | Variable_statement (k, l) ->
           Variable_statement (k, List.map l ~f:(m#variable_declaration k))
       | Function_declaration (id, fun_decl) ->
           Function_declaration (m#ident id, m#fun_decl fun_decl)
+      | Class_declaration (id, cl_decl) ->
+          Class_declaration (m#ident id, m#class_decl cl_decl)
       | Empty_statement -> Empty_statement
       | Debugger_statement -> Debugger_statement
       | Expression_statement e -> Expression_statement (m#expression e)
@@ -155,13 +179,13 @@ class map : mapper =
             , List.map l' ~f:(fun (e, s) -> m#switch_case e, m#statements s) )
       | Try_statement (b, catch, final) ->
           Try_statement
-            ( m#statements b
+            ( m#block b
             , (match catch with
               | None -> None
-              | Some (id, b) -> Some (Option.map ~f:m#param id, m#statements b))
+              | Some (id, b) -> Some (Option.map ~f:m#param id, m#block b))
             , match final with
               | None -> None
-              | Some s -> Some (m#statements s) )
+              | Some s -> Some (m#block s) )
 
     method statement_o x =
       match x with
@@ -199,6 +223,7 @@ class map : mapper =
       | EFun (idopt, fun_decl) ->
           let idopt = Option.map ~f:m#ident idopt in
           EFun (idopt, m#fun_decl fun_decl)
+      | EClass (id, cl_decl) -> EClass (Option.map ~f:m#ident id, m#class_decl cl_decl)
       | EArrow fun_decl -> EArrow (m#fun_decl fun_decl)
       | EArr l ->
           EArr
@@ -211,12 +236,7 @@ class map : mapper =
             (List.map l ~f:(fun p ->
                  match p with
                  | Property (i, e) -> Property (m#property_name i, m#expression e)
-                 | PropertySet (n, fun_decl) ->
-                     PropertySet (m#property_name n, m#fun_decl fun_decl)
-                 | PropertyGet (n, fun_decl) ->
-                     PropertyGet (m#property_name n, m#fun_decl fun_decl)
-                 | PropertyMethod (n, fun_decl) ->
-                     PropertyMethod (m#property_name n, m#fun_decl fun_decl)
+                 | PropertyMethod (n, x) -> PropertyMethod (m#property_name n, m#method_ x)
                  | PropertySpread e -> PropertySpread (m#expression e)
                  | CoverInitializedName (e, a, b) ->
                      CoverInitializedName (m#early_error e, a, b)))
@@ -227,6 +247,12 @@ class map : mapper =
           CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
       | CoverCallExpressionAndAsyncArrowHead e ->
           CoverCallExpressionAndAsyncArrowHead (m#early_error e)
+
+    method private method_ x =
+      match x with
+      | MethodSet fun_decl -> MethodSet (m#fun_decl fun_decl)
+      | MethodGet fun_decl -> MethodGet (m#fun_decl fun_decl)
+      | Method fun_decl -> Method (m#fun_decl fun_decl)
 
     method private param p = m#binding_element p
 
@@ -343,6 +369,25 @@ class iter : iterator =
       m#formal_parameter_list params;
       m#function_body body
 
+    method private class_decl x =
+      Option.iter x.extends ~f:m#expression;
+      List.iter x.body ~f:m#class_element
+
+    method private class_element x =
+      match x with
+      | CEMethod (_static, name, x) ->
+          m#class_element_name name;
+          m#method_ x
+      | CEField (_static, n, i) ->
+          m#class_element_name n;
+          m#initialiser_o i
+      | CEStaticBLock b -> m#statements b
+
+    method private class_element_name x =
+      match x with
+      | PropName n -> m#property_name n
+      | PrivName x -> m#ident x
+
     method statement s =
       match s with
       | Block b -> m#statements b
@@ -350,6 +395,9 @@ class iter : iterator =
       | Function_declaration (id, fun_decl) ->
           m#ident id;
           m#fun_decl fun_decl
+      | Class_declaration (id, cl_decl) ->
+          m#ident id;
+          m#class_decl cl_decl
       | Empty_statement -> ()
       | Debugger_statement -> ()
       | Expression_statement e -> m#expression e
@@ -462,6 +510,9 @@ class iter : iterator =
           | None -> ()
           | Some i -> m#ident i);
           m#fun_decl fun_decl
+      | EClass (i, cl_decl) ->
+          Option.iter ~f:m#ident i;
+          m#class_decl cl_decl
       | EArrow fun_decl -> m#fun_decl fun_decl
       | EArr l ->
           List.iter l ~f:(function
@@ -474,15 +525,9 @@ class iter : iterator =
               | Property (i, e) ->
                   m#property_name i;
                   m#expression e
-              | PropertySet (i, fun_decl) ->
-                  m#property_name i;
-                  m#fun_decl fun_decl
-              | PropertyGet (i, fun_decl) ->
-                  m#property_name i;
-                  m#fun_decl fun_decl
-              | PropertyMethod (i, fun_decl) ->
-                  m#property_name i;
-                  m#fun_decl fun_decl
+              | PropertyMethod (n, x) ->
+                  m#property_name n;
+                  m#method_ x
               | PropertySpread e -> m#expression e
               | CoverInitializedName (e, _, _) -> m#early_error e)
       | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
@@ -490,6 +535,12 @@ class iter : iterator =
       | EYield e -> m#expression_o e
       | CoverParenthesizedExpressionAndArrowParameterList e -> m#early_error e
       | CoverCallExpressionAndAsyncArrowHead e -> m#early_error e
+
+    method private method_ x =
+      match x with
+      | MethodSet fun_decl -> m#fun_decl fun_decl
+      | MethodGet fun_decl -> m#fun_decl fun_decl
+      | Method fun_decl -> m#fun_decl fun_decl
 
     method private param p = m#binding_element p
 
@@ -668,7 +719,7 @@ class type freevar =
 
     method merge_block_info : 'a -> unit
 
-    method block : block -> unit
+    method record_block : block -> unit
 
     method state : t
 
@@ -744,7 +795,7 @@ class free =
       let ids = bound_idents_of_params params in
       List.iter ids ~f:tbody#def_var;
       let body = tbody#function_body body in
-      tbody#block (Params params);
+      tbody#record_block (Params params);
       m#merge_info tbody;
       k, params, body, nid
 
@@ -768,12 +819,12 @@ class free =
                 else None
             | None -> None
           in
-          tbody#block (Params params);
+          tbody#record_block (Params params);
           m#merge_info tbody;
           EFun (ident, (k, params, body, nid))
       | _ -> super#expression x
 
-    method block _ = ()
+    method record_block _ = ()
 
     method variable_declaration k x =
       let ids = bound_idents_of_variable_declaration x in
@@ -782,6 +833,14 @@ class free =
       | Var -> List.iter ids ~f:m#def_var);
       super#variable_declaration k x
 
+    method block b =
+      let same_level = level in
+      let tbody = {<state_ = empty; level = same_level>} in
+      let b = tbody#statements b in
+      tbody#record_block Normal;
+      m#merge_block_info tbody;
+      b
+
     method statement x =
       match x with
       | Function_declaration (id, (k, params, body, nid)) ->
@@ -789,36 +848,22 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
-          tbody#block (Params params);
+          tbody#record_block (Params params);
           m#def_var id;
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
-      | Block b ->
-          let same_level = level in
-          let tbody = {<state_ = empty; level = same_level>} in
-          let b = tbody#statements b in
-          tbody#block Normal;
-          m#merge_block_info tbody;
-          Block b
+      | Block b -> Block (m#block b)
       | Try_statement (b, w, f) ->
           let same_level = level in
-          let tb = {<state_ = empty; level = same_level>} in
-          let b = tb#statements b in
-          tb#block Normal;
-          m#merge_block_info tb;
+          let b = m#block b in
           let w =
             match w with
             | None -> None
-            | Some (None, block) ->
-                let tw = {<state_ = empty; level = same_level>} in
-                let block = tw#statements block in
-                tw#block Normal;
-                m#merge_block_info tw;
-                Some (None, block)
+            | Some (None, b) -> Some (None, m#block b)
             | Some (Some id, block) ->
                 let tw = {<state_ = empty; level = same_level>} in
                 let block = tw#statements block in
-                tw#block (Catch id);
+                tw#record_block (Catch id);
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
                 (* .. except the use of 'id' since its scope is limited
@@ -839,12 +884,7 @@ class free =
           let f =
             match f with
             | None -> None
-            | Some block ->
-                let tf = {<state_ = empty; level = same_level>} in
-                let block = tf#statements block in
-                tf#block Normal;
-                m#merge_block_info tf;
-                Some block
+            | Some f -> Some (m#block f)
           in
           Try_statement (b, w, f)
       | _ -> super#statement x
@@ -1060,7 +1100,7 @@ class compact_vardecl =
           Try_statement (b, w, f)
       | s -> s
 
-    method block block =
+    method record_block block =
       (match block with
       | Catch (id, _) ->
           let ids = bound_idents_of_binding id in
@@ -1069,7 +1109,7 @@ class compact_vardecl =
           let s = bound_idents_of_params p in
           m#except_ids s
       | Normal -> ());
-      super#block block
+      super#record_block block
 
     method merge_info from =
       super#merge_info from;

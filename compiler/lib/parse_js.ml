@@ -354,20 +354,22 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
               `Semi_colon (tok, rest, checkpoint)
           | Some (((T_ARROW, _) as tok), prev, checkpoint) when not (fol prev tok) ->
               `Arrow (tok, prev, checkpoint)
-          | Some (last, rest, checkpoint) ->
-              if fol rest last
-                 && I.acceptable checkpoint Js_token.T_VIRTUAL_SEMICOLON Lexer.dummy_pos
-              then `Semi_colon (last, rest, checkpoint)
-              else if match Tokens.last' rest with
-                      | Some ((T_RPAREN, _), rest, _) ->
-                          end_of_do_whle rest
-                          && I.acceptable
-                               checkpoint
-                               Js_token.T_VIRTUAL_SEMICOLON
-                               Lexer.dummy_pos
-                      | _ -> false
-              then `Semi_colon (last, rest, checkpoint)
-              else `None
+          | Some (last, rest, checkpoint) -> (
+              match Tokens.last' rest with
+              | Some ((T_VIRTUAL_SEMICOLON, _), _, _) -> `None
+              | (Some _ | None)
+                when fol rest last
+                     && I.acceptable
+                          checkpoint
+                          Js_token.T_VIRTUAL_SEMICOLON
+                          Lexer.dummy_pos -> `Semi_colon (last, rest, checkpoint)
+              | Some ((T_RPAREN, _), rest, _)
+                when end_of_do_whle rest
+                     && I.acceptable
+                          checkpoint
+                          Js_token.T_VIRTUAL_SEMICOLON
+                          Lexer.dummy_pos -> `Semi_colon (last, rest, checkpoint)
+              | _ -> `None)
         in
 
         let drop_annot_or_error () =
