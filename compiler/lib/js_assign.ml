@@ -322,9 +322,9 @@ class traverse record_block =
   object (m)
     inherit Js_traverse.free as super
 
-    method! block b =
+    method! record_block b =
       record_block m#state b;
-      super#block b
+      super#record_block b
   end
 
 let program' (module Strategy : Strategy) p =
@@ -332,7 +332,7 @@ let program' (module Strategy : Strategy) p =
   let state = Strategy.create nv in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
-  mapper#block Normal;
+  mapper#record_block Normal;
   let free =
     IdentSet.filter
       (function

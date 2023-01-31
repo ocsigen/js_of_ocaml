@@ -29,7 +29,11 @@ class type mapper =
 
     method switch_case : expression -> expression
 
+    method block : Javascript.statement_list -> Javascript.statement_list
+
     method fun_decl : Javascript.function_declaration -> Javascript.function_declaration
+
+    method class_decl : Javascript.class_declaration -> Javascript.class_declaration
 
     method initialiser : expression * location -> expression * location
 
@@ -124,7 +128,7 @@ class type freevar =
 
     method merge_block_info : 'a -> unit
 
-    method block : block -> unit
+    method record_block : block -> unit
 
     method def_var : ident -> unit
 

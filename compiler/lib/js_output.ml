@@ -284,6 +284,7 @@ struct
     | Switch_statement _
     | Try_statement _
     | Function_declaration _
+    | Class_declaration _
     | Debugger_statement -> false
 
   let starts_with ~obj ~funct ~let_identifier ~async_identifier l e =
@@ -315,6 +316,7 @@ struct
       | ERegexp _
       | EUn _
       | ENew _
+      | EClass _
       | EYield _ -> false
       | CoverCallExpressionAndAsyncArrowHead e
       | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
@@ -420,6 +422,14 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident i l b pc
+    | EClass (i, cl_decl) ->
+        PP.string f "class";
+        (match i with
+        | None -> ()
+        | Some i ->
+            PP.space f;
+            ident f i);
+        class_declaration f cl_decl
     | EArrow (k, p, b, pc) ->
         if Prec.(l > AssignementExpression)
         then (
@@ -796,37 +806,42 @@ struct
         PP.break f;
         expression AssignementExpression f e;
         PP.end_group f
-    | PropertyGet (n, (k, l, b, loc')) | PropertySet (n, (k, l, b, loc')) ->
-        (match k with
-        | { async = false; generator = false } -> ()
-        | _ -> assert false);
-        let prefix =
-          match p with
-          | PropertyGet _ -> "get"
-          | PropertySet _ -> "set"
-          | _ -> assert false
-        in
-        function_declaration f prefix property_name (Some n) l b loc'
-    | PropertyMethod (n, (k, l, b, loc')) ->
-        let fpn f () =
-          (match k with
-          | { async = false; generator = false } -> ()
-          | { async = false; generator = true } ->
-              PP.string f "*";
-              PP.space f
-          | { async = true; generator = false } ->
-              PP.string f "async";
-              PP.space f
-          | { async = true; generator = true } ->
-              PP.string f "async*";
-              PP.space f);
-          property_name f n
-        in
-        function_declaration f "" fpn (Some ()) l b loc'
     | PropertySpread e ->
         PP.string f "...";
         expression AssignementExpression f e
+    | PropertyMethod (n, m) -> method_ f property_name n m
     | CoverInitializedName (e, _, _) -> early_error e
+
+  and method_ : 'a. _ -> (PP.t -> 'a -> unit) -> 'a -> method_ -> unit =
+    fun (type a) f (name : PP.t -> a -> unit) (n : a) (m : method_) ->
+     match m with
+     | MethodGet (k, l, b, loc') | MethodSet (k, l, b, loc') ->
+         (match k with
+         | { async = false; generator = false } -> ()
+         | _ -> assert false);
+         let prefix =
+           match m with
+           | MethodGet _ -> "get"
+           | MethodSet _ -> "set"
+           | _ -> assert false
+         in
+         function_declaration f prefix name (Some n) l b loc'
+     | Method (k, l, b, loc') ->
+         let fpn f () =
+           (match k with
+           | { async = false; generator = false } -> ()
+           | { async = false; generator = true } ->
+               PP.string f "*";
+               PP.space f
+           | { async = true; generator = false } ->
+               PP.string f "async";
+               PP.space f
+           | { async = true; generator = true } ->
+               PP.string f "async*";
+               PP.space f);
+           name f n
+         in
+         function_declaration f "" fpn (Some ()) l b loc'
 
   and element_list f el = comma_list f element el
 
@@ -1037,6 +1052,11 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident (Some i) l b loc'
+    | Class_declaration (i, cl_decl) ->
+        PP.string f "class";
+        PP.space f;
+        ident f i;
+        class_declaration f cl_decl
     | Empty_statement -> PP.string f ";"
     | Debugger_statement ->
         PP.string f "debugger";
@@ -1445,6 +1465,49 @@ struct
     PP.string f "}";
     PP.end_group f;
     PP.end_group f
+
+  and class_declaration f x =
+    Option.iter x.extends ~f:(fun e ->
+        PP.space f;
+        PP.string f "extends";
+        PP.space f;
+        expression Expression f e);
+    PP.string f "{";
+    List.iter x.body ~f:(fun x ->
+        match x with
+        | CEMethod (static, n, m) ->
+            if static
+            then (
+              PP.string f "static";
+              PP.space f);
+            method_ f class_element_name n m;
+            PP.break f
+        | CEField (static, n, i) ->
+            if static
+            then (
+              PP.string f "static";
+              PP.space f);
+            class_element_name f n;
+            (match i with
+            | None -> ()
+            | Some (e, loc) ->
+                PP.string f "=";
+                PP.space f;
+                output_debug_info f loc;
+                expression Expression f e);
+            PP.break f
+        | CEStaticBLock l ->
+            PP.string f "static";
+            block f l;
+            PP.break f);
+    PP.string f "}"
+
+  and class_element_name f x =
+    match x with
+    | PropName n -> property_name f n
+    | PrivName i ->
+        PP.string f "#";
+        ident f i
 
   and program f s = statement_list f s
 end
