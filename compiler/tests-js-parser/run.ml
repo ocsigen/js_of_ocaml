@@ -44,13 +44,17 @@ class clean_loc =
 
 let clean_loc = new clean_loc
 
-let _clean_loc p = clean_loc#program p
+let clean_loc p = clean_loc#program p
 
 let p_to_string p =
   let buffer = Buffer.create 100 in
   let pp = Pretty_print.to_buffer buffer in
   let _ = Js_output.program pp p in
   Buffer.contents buffer
+
+let patdiff = false
+
+let vs_explicit = false
 
 let () =
   List.iter files ~f:(fun filename ->
@@ -60,7 +64,16 @@ let () =
       close_in ic;
       try
         let p1 = Parse_js.Lexer.of_string ~filename content |> Parse_js.parse in
-        (if false
+        if patdiff
+        then (
+          let s = p_to_string (clean_loc p1) in
+          let jsoo_name = filename ^ ".jsoo" in
+          let oc = open_out_bin jsoo_name in
+          output_string oc s;
+          close_out oc;
+          let _ret = Sys.command (Printf.sprintf "patdiff %s %s" filename jsoo_name) in
+          ());
+        (if vs_explicit
         then
           try
             let explicit =
@@ -75,8 +88,9 @@ let () =
             let p2 =
               Parse_js.Lexer.of_string ~filename:explicit content |> Parse_js.parse
             in
+            let p1 = clean_loc p1 and p2 = clean_loc p2 in
             let p1s = p_to_string p1 and p2s = p_to_string p2 in
-            if not (String.equal p1s p2s)
+            if Poly.(p1 <> p2)
             then (
               Printf.printf ">>>>>>> MISMATCH %s <<<<<<<<<<\n" filename;
               Printf.printf "%s\n\n%s\n" p1s p2s)
