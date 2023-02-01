@@ -73,6 +73,7 @@ val print_fun_decl : Javascript.program -> string option -> unit
 
 val compile_and_run :
      ?debug:bool
+  -> ?skip_modern:bool
   -> ?flags:string list
   -> ?effects:bool
   -> ?use_js_string:bool

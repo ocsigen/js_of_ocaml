@@ -502,7 +502,14 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?debug ?(flags = []) ?effects ?use_js_string ?unix s =
+let compile_and_run
+    ?debug
+    ?(skip_modern = false)
+    ?(flags = [])
+    ?effects
+    ?use_js_string
+    ?unix
+    s =
   with_temp_dir ~f:(fun () ->
       let bytecode_file =
         s
@@ -520,21 +527,23 @@ let compile_and_run ?debug ?(flags = []) ?effects ?use_js_string ?unix s =
         |> run_javascript
       in
       print_endline output_without_stdlib_modern;
-      let output_with_stdlib_modern =
-        compile_bc_to_javascript
-          ~flags:(flags @ [ "+stdlib_modern.js" ])
-          ?effects
-          ?use_js_string
-          ?sourcemap:debug
-          bytecode_file
-        |> run_javascript
-      in
-      if not (String.equal output_without_stdlib_modern output_with_stdlib_modern)
-      then (
-        print_endline "Output was different with stdlib_modern.js:";
-        print_endline "===========================================";
-        print_string output_with_stdlib_modern;
-        print_endline "==========================================="))
+      if not skip_modern
+      then
+        let output_with_stdlib_modern =
+          compile_bc_to_javascript
+            ~flags:(flags @ [ "+stdlib_modern.js" ])
+            ?effects
+            ?use_js_string
+            ?sourcemap:debug
+            bytecode_file
+          |> run_javascript
+        in
+        if not (String.equal output_without_stdlib_modern output_with_stdlib_modern)
+        then (
+          print_endline "Output was different with stdlib_modern.js:";
+          print_endline "===========================================";
+          print_string output_with_stdlib_modern;
+          print_endline "==========================================="))
 
 let compile_and_parse_whole_program ?(debug = true) ?flags ?effects ?use_js_string ?unix s
     =
