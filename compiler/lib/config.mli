@@ -71,6 +71,8 @@ module Flag : sig
 
   val auto_link : unit -> bool
 
+  val es6 : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

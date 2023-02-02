@@ -68,6 +68,8 @@ class type mapper =
 
 class type iterator =
   object
+    method fun_decl : Javascript.function_declaration -> unit
+
     method early_error : Javascript.early_error -> unit
 
     method expression : Javascript.expression -> unit

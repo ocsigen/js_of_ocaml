@@ -192,6 +192,22 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/es6.ml
+ (name es6_15)
+ (enabled_if true)
+ (modules es6)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (flags -allow-output-patterns)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/exceptions.ml
  (name exceptions_15)
  (enabled_if true)

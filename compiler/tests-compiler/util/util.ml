@@ -463,8 +463,9 @@ class find_function_declaration r n =
       (match s with
       | Variable_statement (_, l) ->
           List.iter l ~f:(function
-              | DeclIdent ((S { name = Utf8 name; _ } as id), Some (EFun (_, fun_decl), _))
-                -> (
+              | DeclIdent
+                  ( (S { name = Utf8 name; _ } as id)
+                  , Some ((EFun (_, fun_decl) | EArrow (fun_decl, _)), _) ) -> (
                   let fd = id, fun_decl in
                   match n with
                   | None -> r := fd :: !r

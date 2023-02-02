@@ -430,7 +430,7 @@ struct
             PP.space f;
             ident f i);
         class_declaration f cl_decl
-    | EArrow (k, p, b, pc) ->
+    | EArrow ((k, p, b, pc), _) ->
         if Prec.(l > AssignementExpression)
         then (
           PP.start_group f 1;
@@ -446,18 +446,16 @@ struct
         PP.break f;
         (match p with
         | { list = [ ((BindingIdent _, None) as x) ]; rest = None } ->
-            formal_parameter f x
+            formal_parameter f x;
+            PP.string f "=>"
         | _ ->
             PP.start_group f 1;
             PP.string f "(";
             formal_parameter_list f p;
-            PP.string f ")";
+            PP.string f ")=>";
             PP.end_group f);
         PP.end_group f;
-        PP.break f;
         PP.start_group f 1;
-        PP.break1 f;
-        PP.string f "=>";
         PP.break1 f;
         (match b with
         | [ (Return_statement (Some e), loc) ] ->
