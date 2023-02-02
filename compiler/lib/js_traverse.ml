@@ -224,7 +224,7 @@ class map : mapper =
           let idopt = Option.map ~f:m#ident idopt in
           EFun (idopt, m#fun_decl fun_decl)
       | EClass (id, cl_decl) -> EClass (Option.map ~f:m#ident id, m#class_decl cl_decl)
-      | EArrow fun_decl -> EArrow (m#fun_decl fun_decl)
+      | EArrow (fun_decl, x) -> EArrow (m#fun_decl fun_decl, x)
       | EArr l ->
           EArr
             (List.map l ~f:(function
@@ -305,6 +305,8 @@ class map : mapper =
 
 class type iterator =
   object
+    method fun_decl : Javascript.function_declaration -> unit
+
     method early_error : Javascript.early_error -> unit
 
     method expression : Javascript.expression -> unit
@@ -365,7 +367,7 @@ class iter : iterator =
       | PNI _ | PNS _ | PNN _ -> ()
       | PComputed e -> m#expression e
 
-    method private fun_decl (_k, params, body, _loc) =
+    method fun_decl (_k, params, body, _loc) =
       m#formal_parameter_list params;
       m#function_body body
 
@@ -513,7 +515,7 @@ class iter : iterator =
       | EClass (i, cl_decl) ->
           Option.iter ~f:m#ident i;
           m#class_decl cl_decl
-      | EArrow fun_decl -> m#fun_decl fun_decl
+      | EArrow (fun_decl, _) -> m#fun_decl fun_decl
       | EArr l ->
           List.iter l ~f:(function
               | ElementHole -> ()
@@ -1313,6 +1315,34 @@ let opt_cons b l =
   | Some b -> b :: l
   | None -> l
 
+let use_fun_context l =
+  let exception True in
+  try
+    (object
+       inherit iter as super
+
+       method fun_decl _ = ()
+
+       method ident x =
+         match x with
+         (* An ArrowFunction does not define local bindings for
+            arguments, super, this, or new.target. *)
+         | S { name = Utf8 ("this" | "arguments" | "super" | "new" (* new.target *)); _ }
+           -> raise True
+         | _ -> ()
+
+       method expression x =
+         match x with
+         | EArrow (_, ANo_fun_context) -> ()
+         | EArrow (_, AUse_parent_fun_context) -> raise True
+         | EArrow (fun_decl, AUnknown) -> super#fun_decl fun_decl
+         | _ -> super#expression x
+    end)
+      #statements
+      l;
+    false
+  with True -> true
+
 (* - Split variable_statement *)
 (* - rewrite assign_op *)
 (* - rewrite function_expression into function_declaration *)
@@ -1342,6 +1372,14 @@ class simpl =
           | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
+      | EFun
+          (None, (({ generator = false; async = true | false }, _, body, _) as fun_decl))
+        when Config.Flag.es6 () && not (use_fun_context body) ->
+          EArrow (fun_decl, ANo_fun_context)
+      | EArrow (((_, _, body, _) as fun_decl), AUnknown) ->
+          if use_fun_context body
+          then EArrow (fun_decl, AUse_parent_fun_context)
+          else EArrow (fun_decl, ANo_fun_context)
       | e -> e
 
     method statement s =

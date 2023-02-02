@@ -903,14 +903,15 @@ encaps:
 
 (* TODO conflict with as then in indent_keyword_bis *)
 arrow_function:
-  | i=ident T_ARROW b=arrow_body { EArrow({async = false; generator = false}, list [param' i],b, p $symbolstartpos) }
+  | i=ident T_ARROW b=arrow_body
+    { EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
   | T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow ({async = false; generator = false}, a,b, p $symbolstartpos) }
+    { EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), AUnknown) }
 
 async_arrow_function:
-  | T_ASYNC i=ident T_ARROW b=arrow_body { EArrow({async = true; generator = false}, list [param' i],b, p $symbolstartpos) }
+  | T_ASYNC i=ident T_ARROW b=arrow_body { EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
   | T_ASYNC T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow ({async = true; generator = false}, a,b, p $symbolstartpos) }
+    { EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), AUnknown) }
 
 
 (* was called consise body in spec *)

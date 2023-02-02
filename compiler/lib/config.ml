@@ -100,6 +100,8 @@ module Flag = struct
      Probably starting with dune.3.7 with
      https://github.com/ocaml/dune/pull/6832 *)
   let auto_link = o ~name:"auto-link" ~default:false
+
+  let es6 = o ~name:"es6" ~default:false
 end
 
 module Param = struct

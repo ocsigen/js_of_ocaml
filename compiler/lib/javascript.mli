@@ -202,7 +202,7 @@ and expression =
   | EVar of ident
   | EFun of ident option * function_declaration
   | EClass of ident option * class_declaration
-  | EArrow of function_declaration
+  | EArrow of function_declaration * arrow_info
   | EStr of Utf8_string.t
   (* A UTF-8 encoded string that may contain escape sequences. *)
   | ETemplate of template
@@ -214,6 +214,11 @@ and expression =
   | EYield of expression option
   | CoverParenthesizedExpressionAndArrowParameterList of early_error
   | CoverCallExpressionAndAsyncArrowHead of early_error
+
+and arrow_info =
+  | AUnknown
+  | AUse_parent_fun_context
+  | ANo_fun_context
 
 and template = template_part list
 
