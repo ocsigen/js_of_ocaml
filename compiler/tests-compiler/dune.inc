@@ -64,10 +64,10 @@
   (pps ppx_expect)))
 
 (library
- ;; compiler/tests-compiler/effects.ml
- (name effects_15)
- (enabled_if (>= %{ocaml_version} 5))
- (modules effects)
+ ;; compiler/tests-compiler/direct_calls.ml
+ (name direct_calls_15)
+ (enabled_if true)
+ (modules direct_calls)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
   (enabled_if true)
@@ -80,10 +80,10 @@
   (pps ppx_expect)))
 
 (library
- ;; compiler/tests-compiler/effects_call_opt.ml
- (name effects_call_opt_15)
- (enabled_if true)
- (modules effects_call_opt)
+ ;; compiler/tests-compiler/effects.ml
+ (name effects_15)
+ (enabled_if (>= %{ocaml_version} 5))
+ (modules effects)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
   (enabled_if true)
