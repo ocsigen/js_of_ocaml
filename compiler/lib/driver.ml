@@ -511,13 +511,17 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
           //# 1 myfile.js
        v}
     *)
-    List.map
+    List.concat_map
       always_required_codes
       ~f:(fun { Linker.program; filename = _; requires = _ } ->
-        wrap_in_iife ~use_strict:false program)
+        let mi, program = Js_traverse.extract_module_import program in
+        match program with
+        | [] -> mi
+        | program -> mi @ [ wrap_in_iife ~use_strict:false program ])
   in
+  let mi, js = Js_traverse.extract_module_import js in
   let runtime_js = wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js in
-  let js = always_required_js @ [ runtime_js ] in
+  let js = always_required_js @ mi @ [ runtime_js ] in
   let js =
     match wrap_with_fun, standalone with
     | `Named name, (true | false) ->

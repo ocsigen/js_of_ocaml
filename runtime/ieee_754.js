@@ -17,8 +17,9 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: jsoo_floor_log2
 var log2_ok = Math.log2 && Math.log2(1.1235582092889474E+307) == 1020
+
+//Provides: jsoo_floor_log2
 function jsoo_floor_log2(x) {
   if(log2_ok) return Math.floor(Math.log2(x))
   var i = 0;

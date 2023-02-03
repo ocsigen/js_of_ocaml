@@ -181,3 +181,5 @@ end
 class clean : mapper
 
 class simpl : mapper
+
+val extract_module_import : Javascript.program -> Javascript.program * Javascript.program

@@ -32,6 +32,14 @@ function caml_sys_close(fd) {
 }
 
 
+function caml_sys_open_internal(file,idx) {
+  if(idx == undefined){
+    idx = caml_sys_fds.length;
+  }
+  caml_sys_fds[idx] = file;
+  return idx | 0;
+}
+
 //Provides: caml_sys_open
 //Requires: caml_raise_sys_error
 //Requires: MlFakeFd_out
@@ -40,13 +48,6 @@ function caml_sys_close(fd) {
 //Requires: fs_node_supported
 //Requires: caml_sys_fds
 //Requires: caml_sys_open_for_node
-function caml_sys_open_internal(file,idx) {
-  if(idx == undefined){
-    idx = caml_sys_fds.length;
-  }
-  caml_sys_fds[idx] = file;
-  return idx | 0;
-}
 function caml_sys_open (name, flags, _perms) {
   var f = {};
   while(flags){

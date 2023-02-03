@@ -559,17 +559,10 @@ let parse' lex =
     in
     fun start_pos -> loop start_pos [] !toks_r
   in
-  let p = List.map p ~f:(fun (start_pos, s) -> take_annot_before start_pos, s) in
-  let groups =
-    List.group p ~f:(fun a _pred ->
-        match a with
-        | [], _ -> true
-        | _ :: _, _ -> false)
-  in
   let p =
-    List.map groups ~f:(function
-        | [] -> assert false
-        | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
+    List.map p ~f:(fun (start_pos, s) ->
+        let annots = take_annot_before start_pos in
+        annots, [ s ])
   in
   p, toks
 

@@ -526,6 +526,25 @@ and bound_idents_of_variable_declaration = function
 
 and bound_idents_of_element (b, _) = bound_idents_of_binding b
 
+let bound_idents_of_import { from = _; kind } =
+  match kind with
+  | Namespace (def, id) -> Option.to_list def @ [ id ]
+  | Named (def, l) -> Option.to_list def @ List.map l ~f:snd
+  | Default id -> [ id ]
+  | SideEffect -> []
+
+let bound_idents_of_export e =
+  match e with
+  | ExportVar (_k, l) -> List.concat_map ~f:bound_idents_of_variable_declaration l
+  | ExportFun (id, _) -> [ id ]
+  | ExportClass (id, _) -> [ id ]
+  | ExportDefaultFun (id, _) -> [ id ]
+  | ExportDefaultClass (id, _) -> [ id ]
+  | ExportDefaultExpression _ -> []
+  | ExportNames _ -> []
+  | ExportFrom _ -> []
+  | CoverExportFrom _ -> []
+
 module IdentSet = Set.Make (struct
   type t = ident
 

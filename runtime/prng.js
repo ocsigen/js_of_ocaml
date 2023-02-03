@@ -1,53 +1,43 @@
+/*
+import {caml_int64_shift_left as shift_l,
+        caml_int64_shift_right_unsigned as shift_r,
+        caml_int64_or as or,
+        caml_int64_xor as xor,
+        caml_int64_add as add,
+        caml_int64_mul as mul} from "./int64.js"
 
-//Provides: caml_lxm_next
-//Requires: caml_int64_shift_left
-//Requires: caml_int64_shift_right_unsigned
-//Requires: caml_int64_or
-//Requires: caml_int64_xor
-//Requires: caml_int64_add
-//Requires: caml_int64_mul
-//Requires: caml_ba_get_1
-//Requires: caml_ba_set_1
-//Requires: caml_int64_of_string
-//Requires: caml_new_string
-function caml_lxm_next(v) {
-  function shift_l(x, k){
-    return caml_int64_shift_left(x,k);
-  }
-  function shift_r(x, k){
-    return caml_int64_shift_right_unsigned(x,k);
-  }
-  function or(a, b){
-    return caml_int64_or(a,b);
-  }
-  function xor(a, b){
-    return caml_int64_xor(a,b);
-  }
-  function add(a, b){
-    return caml_int64_add(a,b);
-  }
-  function mul(a, b){
-    return caml_int64_mul(a,b);
-  }
-  function rotl(x, k) {
-    return or(shift_l(x,k),shift_r (x, 64 - k));
-  }
-  function get(a, i) {
-    return caml_ba_get_1(a, i);
-  }
-  function set(a, i, x) {
-    return caml_ba_set_1(a, i, x);
-  }
-  var M = caml_int64_of_string(caml_new_string("0xd1342543de82ef95"));
-  var daba = caml_int64_of_string(caml_new_string("0xdaba0b6eb09322e3"));
-  var z, q0, q1;
-  var st = v;
-  var a = get(st,0);
-  var s = get(st,1);
-  var x0 = get(st,2);
-  var x1 = get(st,3);
+import {caml_ba_get_1 as get,
+        caml_ba_set_1 as set,
+        caml_int64_of_string} from "./bigarray.js"
+
+import { caml_new_string } from "./mlBytes.js"
+*/
+
+let shift_l = caml_int64_shift_left;
+let shift_r = caml_int64_shift_right_unsigned
+let or = caml_int64_or
+let xor = caml_int64_xor
+let add = caml_int64_add
+let mul = caml_int64_mul
+
+let get =  caml_ba_get_1
+let set = caml_ba_set_1
+
+const M = caml_int64_of_string(caml_new_string("0xd1342543de82ef95"));
+const daba = caml_int64_of_string(caml_new_string("0xdaba0b6eb09322e3"));
+
+function rotl(x, k) {
+  return or(shift_l(x,k),shift_r (x, 64 - k));
+}
+
+export function caml_lxm_next(v) {
+  let st = v;
+  const a = get(st,0);
+  const s = get(st,1);
+  const x0 = get(st,2);
+  const x1 = get(st,3);
   /* Combining operation */
-  z = add(s, x0);
+  let z = add(s, x0);
   /* Mixing function */
   z = mul(xor(z,shift_r(z,32)), daba);
   z = mul(xor(z,shift_r(z,32)), daba);
@@ -55,8 +45,9 @@ function caml_lxm_next(v) {
   /* LCG update */
   set(st, 1, add (mul(s,M), a));
   /* XBG update */
-  var q0 = x0
-  var q1 = x1
+  let q0 = x0
+  let q1 = x1
+  a = 2;
   q1 = xor(q1,q0);
   q0 = rotl(q0, 24);
   q0 = xor(xor(q0, q1), (shift_l(q1,16)));

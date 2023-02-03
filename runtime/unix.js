@@ -81,8 +81,6 @@ function caml_unix_isatty(fileDescriptor) {
   return 0;
 }
 
-//Provides: make_unix_err_args
-//Requires: caml_string_of_jsstring
 var unix_error = [
   /* ===Unix.error===
    *
@@ -100,6 +98,8 @@ var unix_error = [
   "EISCONN", "ENOTCONN", "ESHUTDOWN", "ETOOMANYREFS", "ETIMEDOUT", "ECONNREFUSED",
   "EHOSTDOWN", "EHOSTUNREACH", "ELOOP", "EOVERFLOW"
 ];
+//Provides: make_unix_err_args
+//Requires: caml_string_of_jsstring
 function make_unix_err_args(code, syscall, path, errno) {
   var variant = unix_error.indexOf(code);
   if (variant < 0) {

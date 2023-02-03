@@ -406,6 +406,10 @@ val bound_idents_of_pattern : binding_pattern -> ident list
 
 val bound_idents_of_binding : binding -> ident list
 
+val bound_idents_of_import : import -> ident list
+
+val bound_idents_of_export : export -> ident list
+
 module IdentSet : Set.S with type elt = ident
 
 module IdentMap : Map.S with type key = ident

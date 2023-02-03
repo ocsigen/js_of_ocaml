@@ -1,0 +1,5 @@
+(executable
+ (name import)
+ (modes js)
+ (js_of_ocaml
+  (javascript_files a.js b.js c.js)))

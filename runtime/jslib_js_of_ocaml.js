@@ -27,8 +27,8 @@ function caml_js_on_ie () {
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
-//Provides: caml_js_html_escape const (const)
 var caml_js_regexps = { amp:/&/g, lt:/</g, quot:/\"/g, all:/[&<\"]/ };
+//Provides: caml_js_html_escape const (const)
 function caml_js_html_escape (s) {
   if (!caml_js_regexps.all.test(s)) return s;
   return s.replace(caml_js_regexps.amp, "&amp;")

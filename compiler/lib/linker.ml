@@ -170,7 +170,7 @@ module Fragment = struct
     }
 
   type fragment_ =
-    { provides : provides option
+    { provides : provides list
     ; requires : string list
     ; has_macro : bool
     ; version_constraint_ok : bool
@@ -184,36 +184,72 @@ module Fragment = struct
     }
 
   type t =
-    | Always_include of Javascript.program pack
+    | Always_include of
+        { program : Javascript.program pack
+        ; imports : Javascript.IdentSet.t
+        }
     | Fragment of fragment_
 
   let provides = function
     | Always_include _ -> []
-    | Fragment { provides = Some p; _ } -> [ p.name ]
-    | Fragment _ -> []
+    | Fragment { provides; _ } -> List.map provides ~f:(fun p -> p.name)
 
   let analyze (t : t) : t =
     match t with
     | Always_include _ -> t
-    | Fragment { provides = None; _ } -> t
-    | Fragment
-        ({ provides =
-             Some
-               ({ parse_info = pi
-                ; name
-                ; kind = _
-                ; kind_arg = _
-                ; arity = _
-                ; named_values = _
-                } as provides)
-         ; _
-         } as fragment) ->
-        let code, has_flags = Macro.f ~flags:false (unpack fragment.code) in
-        let named_values = Named_value.find_all code in
-        let arity = Arity.find code ~name in
-        Check.primitive ~has_flags ~name pi ~code ~requires:fragment.requires;
-        let provides = Some { provides with named_values; arity } in
-        Fragment { fragment with code = Ok code; provides; has_macro = has_flags }
+    | Fragment ({ provides; _ } as fragment) ->
+        let free = new Js_traverse.free in
+        let code = unpack fragment.code in
+        let _code = free#program code in
+        let requires = to_stringset free#get_free in
+        let requires = StringSet.diff requires Reserved.provided in
+        let requires = StringSet.diff requires Reserved.keyword in
+        let requires = StringSet.remove "FLAG" requires in
+        let requires = StringSet.remove "BLOCK" requires in
+        let requires = StringSet.elements requires in
+
+        let code, has_flags = Macro.f ~flags:false code in
+        let provides =
+          match provides with
+          | [] ->
+              let provides = to_stringset free#get_def |> StringSet.elements in
+              let parse_info =
+                match unpack fragment.code with
+                | (_, Pi loc) :: _ -> loc
+                | (_, (N | U)) :: _ -> Parse_info.zero
+                | [] -> Parse_info.zero
+              in
+              List.map provides ~f:(fun name ->
+                  let provide =
+                    { parse_info
+                    ; name
+                    ; kind = `Mutator
+                    ; kind_arg = None
+                    ; arity = None
+                    ; named_values = StringSet.empty
+                    }
+                  in
+                  let named_values = Named_value.find_all code in
+                  let arity = Arity.find code ~name in
+                  Check.primitive ~has_flags ~name parse_info ~code ~requires;
+                  { provide with name; named_values; arity })
+          | _ :: _ ->
+              List.map provides ~f:(fun provides ->
+                  match provides with
+                  | { parse_info = pi
+                    ; name
+                    ; kind = _
+                    ; kind_arg = _
+                    ; arity = _
+                    ; named_values = _
+                    } ->
+                      let named_values = Named_value.find_all code in
+                      let arity = Arity.find code ~name in
+                      Check.primitive ~has_flags ~name pi ~code ~requires;
+                      { provides with name; named_values; arity })
+        in
+        Fragment
+          { fragment with code = Ok code; provides; has_macro = has_flags; requires }
 
   let version_match =
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
@@ -235,79 +271,77 @@ module Fragment = struct
           pi.Parse_info.col
     in
     let res =
+      (* TODO: rename imported bindings *)
       List.map program ~f:(fun (annot, code) ->
-          match annot with
-          | [] -> Always_include (Ok code)
-          | annot ->
-              let initial_fragment : fragment_ =
-                { provides = None
-                ; requires = []
-                ; version_constraint_ok = true
-                ; weakdef = false
-                ; always = false
-                ; has_macro = false
-                ; code = Ok code
-                ; js_string = None
-                ; effects = None
-                ; fragment_target = None
-                ; aliases = StringSet.empty
-                }
-              in
-              let fragment =
-                List.fold_left
-                  annot
-                  ~init:initial_fragment
-                  ~f:(fun (fragment : fragment_) ((_, a), pi) ->
-                    match a with
-                    | `Provides (name, kind, ka) ->
-                        { fragment with
-                          provides =
-                            Some
-                              { parse_info = pi
-                              ; name
-                              ; kind
-                              ; kind_arg = ka
-                              ; arity = None
-                              ; named_values = StringSet.empty
-                              }
-                        }
-                    | `Requires mn -> { fragment with requires = mn @ fragment.requires }
-                    | `Version l ->
-                        { fragment with
-                          version_constraint_ok =
-                            fragment.version_constraint_ok && version_match l
-                        }
-                    | `Weakdef -> { fragment with weakdef = true }
-                    | `Always -> { fragment with always = true }
-                    | `Alias name ->
-                        { fragment with aliases = StringSet.add name fragment.aliases }
-                    | (`Ifnot "js-string" | `If "js-string") as i ->
-                        let b =
-                          match i with
-                          | `If _ -> true
-                          | `Ifnot _ -> false
-                        in
-                        if Option.is_some fragment.js_string
-                        then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
-                        { fragment with js_string = Some b }
-                    | (`Ifnot "effects" | `If "effects") as i ->
-                        let b =
-                          match i with
-                          | `If _ -> true
-                          | `Ifnot _ -> false
-                        in
-                        if Option.is_some fragment.effects
-                        then Format.eprintf "Duplicated effects in %s\n" (loc pi);
-                        { fragment with effects = Some b }
-                    | `If name when Option.is_some (Target_env.of_string name) ->
-                        if Option.is_some fragment.fragment_target
-                        then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
-                        { fragment with fragment_target = Target_env.of_string name }
-                    | `If name | `Ifnot name ->
-                        Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
-                        fragment)
-              in
-              Fragment fragment)
+          let initial_fragment : fragment_ =
+            { provides = []
+            ; requires = []
+            ; version_constraint_ok = true
+            ; weakdef = false
+            ; always = false
+            ; has_macro = false
+            ; code = Ok code
+            ; js_string = None
+            ; effects = None
+            ; fragment_target = None
+            ; aliases = StringSet.empty
+            }
+          in
+          let fragment =
+            List.fold_left
+              annot
+              ~init:initial_fragment
+              ~f:(fun (fragment : fragment_) ((_, a), pi) ->
+                match a with
+                | `Provides (name, kind, ka) ->
+                    { fragment with
+                      provides =
+                        [ { parse_info = pi
+                          ; name
+                          ; kind
+                          ; kind_arg = ka
+                          ; arity = None
+                          ; named_values = StringSet.empty
+                          }
+                        ]
+                    }
+                | `Requires mn -> { fragment with requires = mn @ fragment.requires }
+                | `Version l ->
+                    { fragment with
+                      version_constraint_ok =
+                        fragment.version_constraint_ok && version_match l
+                    }
+                | `Weakdef -> { fragment with weakdef = true }
+                | `Always -> { fragment with always = true }
+                | `Alias name ->
+                    { fragment with aliases = StringSet.add name fragment.aliases }
+                | (`Ifnot "js-string" | `If "js-string") as i ->
+                    let b =
+                      match i with
+                      | `If _ -> true
+                      | `Ifnot _ -> false
+                    in
+                    if Option.is_some fragment.js_string
+                    then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
+                    { fragment with js_string = Some b }
+                | (`Ifnot "effects" | `If "effects") as i ->
+                    let b =
+                      match i with
+                      | `If _ -> true
+                      | `Ifnot _ -> false
+                    in
+                    if Option.is_some fragment.effects
+                    then Format.eprintf "Duplicated effects in %s\n" (loc pi);
+                    { fragment with effects = Some b }
+                | `If name when Option.is_some (Target_env.of_string name) ->
+                    if Option.is_some fragment.fragment_target
+                    then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
+                    { fragment with fragment_target = Target_env.of_string name }
+                | `If name | `Ifnot name ->
+                    Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
+                    fragment)
+          in
+          Fragment fragment)
     in
     List.map ~f:analyze res
 
@@ -335,7 +369,8 @@ module Fragment = struct
     parse_from_lex ~filename:file lex
 
   let pack = function
-    | Always_include x -> Always_include (pack x)
+    | Always_include { program = x; imports } ->
+        Always_include { program = pack x; imports }
     | Fragment f -> Fragment { f with code = pack f.code }
 end
 
@@ -425,24 +460,24 @@ let reset () =
 
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
-  | Always_include code ->
+  | Always_include { program = code; imports = _ } ->
       always_included :=
         { ar_filename = filename; ar_program = code; ar_requires = [] }
         :: !always_included;
-      `Ok
+      ()
   | Fragment
       { provides
       ; requires
       ; version_constraint_ok
       ; weakdef
-      ; always
+      ; always = _
       ; code
       ; js_string
       ; effects
       ; fragment_target
       ; aliases
       ; has_macro
-      } -> (
+      } ->
       let ignore_because_of_js_string =
         match js_string, Config.Flag.use_js_string () with
         | Some true, false | Some false, true -> true
@@ -456,28 +491,14 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       if (not version_constraint_ok)
          || ignore_because_of_js_string
          || ignore_because_of_effects
-      then `Ignored
+      then ()
       else
-        match provides with
-        | None ->
-            if not (StringSet.is_empty aliases)
-            then
-              error
-                "Found JavaScript code with neither `//Alias` and not `//Provides` in \
-                 file %S@."
-                filename;
-            if always
-            then (
-              always_included :=
-                { ar_filename = filename; ar_program = code; ar_requires = requires }
-                :: !always_included;
-              `Ok)
-            else
-              error
-                "Found JavaScript code with neither `//Provides` nor `//Always` in file \
-                 %S@."
-                filename
-        | Some { parse_info = pi; name; kind; kind_arg = ka; arity; named_values } ->
+        List.iter
+          provides
+          ~f:(fun
+              ({ parse_info = pi; name; kind; kind_arg = ka; arity; named_values } :
+                Fragment.provides)
+            ->
             let fragment_target =
               Option.value ~default:Target_env.Isomorphic fragment_target
             in
@@ -524,7 +545,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                     true)
             in
             if not is_updating
-            then `Ignored
+            then ()
             else
               let () = () in
               let id = Hashtbl.length provided in
@@ -533,8 +554,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, has_macro, requires);
-              StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
-              `Ok)
+              StringSet.iter (fun alias -> Primitive.alias alias name) aliases)
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -574,12 +594,12 @@ let check_deps () =
 
 let load_file ~target_env filename =
   List.iter (Fragment.parse_file filename) ~f:(fun frag ->
-      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      let () = load_fragment ~target_env ~filename frag in
       ())
 
 let load_fragments ~target_env ~filename l =
   List.iter l ~f:(fun frag ->
-      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
+      let () = load_fragment ~target_env ~filename frag in
       ());
   check_deps ()
 

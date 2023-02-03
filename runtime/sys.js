@@ -214,8 +214,9 @@ function caml_sys_system_command(cmd){
   return 127;
 }
 
-//Provides: caml_sys_time mutable
 var caml_initial_time = (new Date()).getTime() * 0.001;
+
+//Provides: caml_sys_time mutable
 function caml_sys_time () {
   var now = (new Date()).getTime();
   return now * 0.001 - caml_initial_time;

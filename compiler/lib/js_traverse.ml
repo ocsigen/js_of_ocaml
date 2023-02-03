@@ -973,6 +973,8 @@ class free =
           let params = tbody#formal_parameter_list params in
           tbody#record_block (Params params);
           m#def_var id;
+          tbody#def_local
+            (S { name = Utf8_string.of_string_exn "this"; loc = N; var = None });
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
       | Class_declaration (id, cl_decl) ->
@@ -1699,3 +1701,11 @@ class simpl =
               x @ rem
           | _ -> (st, loc) :: rem)
   end
+
+let extract_module_import p =
+  let mi, p =
+    List.partition_map p ~f:(function
+        | ((Export _ | Import _), _) as x -> `Fst x
+        | x -> `Snd x)
+  in
+  mi, p

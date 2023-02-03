@@ -47,8 +47,6 @@ var caml_root = caml_get_root(caml_current_dir) || caml_failwith("unable to comp
 //Provides: MlFile
 function MlFile(){  }
 
-//Provides: path_is_absolute
-//Requires: fs_node_supported
 function make_path_is_absolute() {
   function posix(path) {
     if (path.charAt(0) === '/') return ["", path.substring(1)];
@@ -75,6 +73,9 @@ function make_path_is_absolute() {
   }
   else return posix
 }
+
+//Provides: path_is_absolute
+//Requires: fs_node_supported
 var path_is_absolute = make_path_is_absolute();
 
 //Provides: caml_make_path

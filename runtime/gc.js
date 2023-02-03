@@ -51,8 +51,9 @@ function caml_memprof_set(_control) {
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
 
-//Provides: caml_final_register_called_without_value
 var all_finalizers = new globalThis.Set()
+
+//Provides: caml_final_register_called_without_value
 function caml_final_register_called_without_value (cb, a) {
   if(globalThis.FinalizationRegistry && a instanceof Object) {
     var x = new globalThis.FinalizationRegistry(function (x){all_finalizers.delete(x); cb(0); return;});

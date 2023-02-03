@@ -26,7 +26,6 @@ let () = Sys.catch_break true
 
 let f { Cmd_arg.common; output_file; use_stdin; files } =
   Jsoo_cmdline.Arg.eval common;
-  let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
   let with_output f =
     match output_file with
     | Some "-" -> f stdout
@@ -35,11 +34,18 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
         let file =
           match output_file with
           | Some f -> f
-          | None ->
-              if List.length files = 1
-              then chop_extension (List.hd files) ^ ".min.js"
-              else "a.min.js"
+          | None -> (
+              match files with
+              | [ file ] ->
+                  let base, ext =
+                    match Filename.extension file with
+                    | "" -> file, ".js"
+                    | ext -> Filename.chop_suffix file ext, ext
+                  in
+                  base ^ ".min" ^ ext
+              | _ -> "a.min.js")
         in
+        Printf.eprintf "writing to %s\n" file;
         Filename.gen_file file f
   in
   let gen pp =
@@ -55,23 +61,31 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
           error "error at l:%d col:%d" line col
     in
     let p =
-      List.flatten
-        (List.map files ~f:(fun file ->
-             let lex = Parse_js.Lexer.of_file file in
-             try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
+      List.map files ~f:(fun file ->
+          let lex = Parse_js.Lexer.of_file file in
+          try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi)
     in
     let p =
       if use_stdin
       then
         let lex = Parse_js.Lexer.of_channel stdin in
-        try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
+        try p @ [ Parse_js.parse lex ] with Parse_js.Parsing_error pi -> error_of_pi pi
       else p
     in
+    let p = List.concat p in
     let free = new Js_traverse.free in
     let (_ : Javascript.program) = free#program p in
+    let is_module =
+      List.exists
+        ~f:(function
+          | Javascript.Import _, _ | Export _, _ -> true
+          | _ -> false)
+        p
+    in
     let toplevel_def_and_use =
+      let freevar = free#get_free in
       let state = free#state in
-      Javascript.IdentSet.union state.def_var state.use
+      if is_module then freevar else Javascript.IdentSet.union state.def_var freevar
     in
     Javascript.IdentSet.iter
       (function
@@ -82,7 +96,8 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
       [ ( Flag.shortvar
-        , fun () -> (new Js_traverse.rename_variable ~esm:false :> Js_traverse.mapper) )
+        , fun () -> (new Js_traverse.rename_variable ~esm:is_module :> Js_traverse.mapper)
+        )
       ; (true_, fun () -> new Js_traverse.simpl)
       ; (true_, fun () -> new Js_traverse.clean)
       ]

@@ -108,9 +108,6 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
 /* New lexer engine, with memory of positions  */
 /***********************************************/
 
-//Provides: caml_new_lex_engine
-//Requires: caml_failwith, caml_lex_array
-//Requires: caml_jsbytes_of_string, caml_uint8_array_of_bytes
 function caml_lex_run_mem(s, i, mem, curr_pos) {
   for (;;) {
     var dst = s.charCodeAt(i); i++;
@@ -135,6 +132,9 @@ function caml_lex_run_tag(s, i, mem) {
   }
 }
 
+//Provides: caml_new_lex_engine
+//Requires: caml_failwith, caml_lex_array
+//Requires: caml_jsbytes_of_string, caml_uint8_array_of_bytes
 function caml_new_lex_engine(tbl, start_state, lexbuf) {
   var lex_buffer = 2;
   var lex_buffer_len = 3;

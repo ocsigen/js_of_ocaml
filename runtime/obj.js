@@ -110,8 +110,9 @@ function caml_obj_is_shared(x){
 function caml_lazy_make_forward (v) { return [250, v]; }
 
 ///////////// CamlinternalOO
-//Provides: caml_get_public_method const
 var caml_method_cache = [];
+
+//Provides: caml_get_public_method const
 function caml_get_public_method (obj, tag, cacheid) {
   var meths = obj[1];
   var ofs = caml_method_cache[cacheid];
