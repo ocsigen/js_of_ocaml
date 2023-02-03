@@ -262,3 +262,290 @@ let%expect_test "let inside block" =
       6:   }
       7:   ());
     4 2 |}]
+
+let%expect_test "import" =
+  let test ?(module_ = false) js_prog =
+    let name = if module_ then "test.mjs" else "test.js" in
+    let js_file = js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name in
+    let js_min_file =
+      js_file
+      |> jsoo_minify
+           ~flags:[ "--enable"; "stable_var"; "--enable"; "shortvar" ]
+           ~pretty:true
+    in
+    print_file (Filetype.path_of_js_file js_min_file);
+    let js_min_file2 =
+      js_file
+      |> jsoo_minify
+           ~flags:[ "--enable"; "stable_var"; "--disable"; "shortvar" ]
+           ~pretty:true
+    in
+    print_file (Filetype.path_of_js_file js_min_file2);
+    check_javascript js_file |> print_endline
+  in
+  let t = test ~module_:true in
+  t {|
+import defaultExport from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import v1 from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import defaultExport from "./module-name.mjs"; |}];
+  t {|
+import * as name from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import * as v1 from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import * as name from "./module-name.mjs"; |}];
+  t {|
+import { export1 } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { export1 as v1 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import { export1 } from "./module-name.mjs"; |}];
+  t {|
+import { export1 as alias1 } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { export1 as v1 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import { export1 as alias1 } from "./module-name.mjs"; |}];
+  t {|
+import { default as alias } from "module-name";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { default as v1 } from "module-name";
+    $ cat "test.min.js"
+      1: import { default as alias } from "module-name"; |}];
+  t {|
+import { export1, export2 } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { export1 as v1, export2 as v2 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import { export1, export2 } from "./module-name.mjs"; |}];
+  t {|
+import { export1, export2 as alias2, /* … */ } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { export1 as v2, export2 as v1 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import { export1, export2 as alias2 } from "./module-name.mjs"; |}];
+  t {|
+import { "string name" as alias } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import { "string name" as v1 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import { "string name" as alias } from "./module-name.mjs"; |}];
+  t {|
+import defaultExport, { export1, /* … */ } from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import v1, { export1 as v2 } from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import defaultExport, { export1 } from "./module-name.mjs"; |}];
+  t {|
+import defaultExport, * as name from "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import v1, * as v2 from "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import defaultExport, * as name from "./module-name.mjs"; |}];
+  t {|
+import "./module-name.mjs";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: import "./module-name.mjs";
+    $ cat "test.min.js"
+      1: import "./module-name.mjs"; |}]
+
+let%expect_test "export" =
+  let test ?(module_ = false) js_prog =
+    try
+      let name = if module_ then "test.mjs" else "test.js" in
+      let js_file = js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name in
+      let js_min_file =
+        js_file
+        |> jsoo_minify
+             ~flags:[ "--enable"; "stable_var"; "--enable"; "shortvar" ]
+             ~pretty:true
+      in
+      print_file (Filetype.path_of_js_file js_min_file);
+      check_javascript js_file |> print_endline
+    with e -> print_endline (Printexc.to_string e)
+  in
+  let t = test ~module_:true in
+  t {|
+var name1, nameN;
+export { name1, /* …, */ nameN };
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: var name1, nameN; export { name1, nameN }; |}];
+  t
+    {|
+var variable1, variable2, nameN;
+export { variable1 as name1, variable2 as name2, /* …, */ nameN };
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: var variable1, variable2, nameN;
+      2: export { variable1 as name1, variable2 as name2, nameN }; |}];
+  t {|
+var variable1;
+export { variable1 as "string name" };
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: var variable1; export { variable1 as "string name" }; |}];
+  t {|
+var name1
+export { name1 as default /*, … */ };
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: var name1; export { name1 as default }; |}];
+  t {|
+export * from "module-name";
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export * from "module-name"; |}];
+  t {|
+export * as name1 from "module-name";
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export * as name1 from "module-name"; |}];
+  t {|
+export { name1, /* …, */ nameN } from "module-name";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export { name1, nameN } from "module-name"; |}];
+  t
+    {|
+export { import1 as name1, import2 as name2, /* …, */ nameN } from "module-name";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export { import1 as name1, import2 as name2, nameN } from "module-name"; |}];
+  t {|
+export { default, /* …, */ } from "module-name";
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export { default } from "module-name"; |}];
+  t {|
+export { default as name1 } from "module-name";
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export { default as name1 } from "module-name"; |}];
+  t {|
+export default expression;
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default expression; |}];
+  t {|
+export default ({obj : 2});
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default ({obj: 2}); |}];
+  t {|
+export default function functionName() { /* … */ }
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export default function functionName(){} |}];
+  t {|
+export default class ClassName { /* … */ }|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default class ClassName{} |}];
+  t {|
+export default function* generatorFunctionName() { /* … */ }|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export default function* generatorFunctionName(){} |}];
+  t {|
+export default function () { /* … */ }|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default function(){} |}];
+  t {|
+export default class { /* … */ }|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default class{} |}];
+  t {|
+export default function* () { /* … */ }
+|};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export default function*(){} |}];
+  t {| export let name1, name2/*, … */; // also var |};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export let name1, name2; |}];
+  t {| export const name1 = 1, name2 = 2/*, … */; // also var, let |};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export const name1 = 1, name2 = 2; |}];
+  t {| export function functionName() { /* … */ } |};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export function functionName(){} |}];
+  t {| export class ClassName { /* … */ } |};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export class ClassName{} |}];
+  t {| export function* generatorFunctionName() { /* … */ } |};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export function* generatorFunctionName(){} |}];
+  t {| export const { name1, name2: bar } = o; |};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: export const {name1: name1, name2: bar} = o; |}];
+  t {| export const [ name1, name2 ] = array; |};
+  [%expect {|
+    $ cat "test.min.js"
+      1: export const [name1, name2] = array; |}]
