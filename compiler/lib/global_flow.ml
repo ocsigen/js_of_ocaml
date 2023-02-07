@@ -431,7 +431,7 @@ let propagate st ~update approx x =
                   | Phi _ | Expr _ -> assert false)
                 known
           | Top -> Top)
-      | Prim (Array_get, _) -> assert false
+      | Prim (Array_get, _) -> Domain.others
       | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
              block *)
