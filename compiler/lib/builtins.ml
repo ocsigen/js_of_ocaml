@@ -19,24 +19,26 @@
 open Stdlib
 
 module File = struct
-  (* TODO: Storing more information here (e.g. primitives with arity &
-     purity) would allow us to not parse the file if we're not
-     linking. *)
   type t =
     { name : string
     ; content : string
+    ; fragments : string option
     }
 
   let name t = t.name
 
   let content t = t.content
+
+  let fragments t = t.fragments
+
+  let create ~name ~content = { name; content; fragments = None }
 end
 
 let tbl = Hashtbl.create 17
 
-let register ~name ~content =
+let register ~name ~content ~fragments =
   let name = "+" ^ name in
-  let t = { File.name; content } in
+  let t = { File.name; content; fragments } in
   if Hashtbl.mem tbl name
   then warn "The builtin runtime file %S was registered multiple time" name;
   Hashtbl.add tbl name t;

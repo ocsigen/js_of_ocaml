@@ -23,10 +23,14 @@ module File : sig
   val name : t -> string
 
   val content : t -> string
+
+  val fragments : t -> string option
+
+  val create : name:string -> content:string -> t
 end
 
 val find : string -> File.t option
 
 val all : unit -> File.t list
 
-val register : name:string -> content:string -> File.t
+val register : name:string -> content:string -> fragments:string option -> File.t

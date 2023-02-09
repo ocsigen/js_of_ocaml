@@ -74,8 +74,22 @@ let () =
       List.iter fragments ~f:(fun (f, _fragments) ->
           let name = Filename.basename f in
           let content = read_file f in
+
+          let fragments =
+            Js_of_ocaml_compiler.Linker.Fragment.parse_builtin
+              (Js_of_ocaml_compiler.Builtins.File.create ~name:("+" ^ name) ~content)
+          in
+          let fragments =
+            List.map fragments ~f:Js_of_ocaml_compiler.Linker.Fragment.pack
+          in
           Printf.printf
-            "let %s = Js_of_ocaml_compiler.Builtins.register ~name:\"%s\" ~content:\"%s\"\n"
+            {|
+let %s = Js_of_ocaml_compiler.Builtins.register
+  ~name:%S
+  ~content:{frag|%s|frag}
+  ~fragments:(Some {frag|%s|frag})
+|}
             (to_ident (Filename.chop_extension name))
-            (String.escaped name)
-            (String.escaped content))
+            name
+            content
+            (Marshal.to_string fragments []))
