@@ -30,6 +30,8 @@ module Fragment : sig
   val parse_string : string -> t list
 
   val parse_builtin : Builtins.File.t -> t list
+
+  val pack : t -> t
 end
 
 val reset : unit -> unit

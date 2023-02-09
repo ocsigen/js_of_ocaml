@@ -20,6 +20,18 @@
 
 open! Stdlib
 
+type 'a pack =
+  | Ok of 'a
+  | Pack of string
+
+let unpack = function
+  | Ok x -> x
+  | Pack x -> Marshal.from_string x 0
+
+let pack = function
+  | Pack _ as x -> x
+  | Ok x -> Pack (Marshal.to_string x [])
+
 let to_stringset utf8_string_set =
   Javascript.IdentSet.fold
     (fun x acc ->
@@ -162,7 +174,7 @@ module Fragment = struct
     ; version_constraint_ok : bool
     ; weakdef : bool
     ; always : bool
-    ; code : Javascript.program
+    ; code : Javascript.program pack
     ; js_string : bool option
     ; effects : bool option
     ; fragment_target : Target_env.t option
@@ -170,7 +182,7 @@ module Fragment = struct
     }
 
   type t =
-    | Always_include of Javascript.program
+    | Always_include of Javascript.program pack
     | Fragment of fragment_
 
   let provides = function
@@ -194,12 +206,12 @@ module Fragment = struct
                 } as provides)
          ; _
          } as fragment) ->
-        let code = Macro.f fragment.code in
+        let code = Macro.f (unpack fragment.code) in
         let named_values = Named_value.find_all code in
         let arity = Arity.find code ~name in
         Check.primitive ~name pi ~code ~requires:fragment.requires;
         let provides = Some { provides with named_values; arity } in
-        Fragment { fragment with code; provides }
+        Fragment { fragment with code = Ok code; provides }
 
   let version_match =
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
@@ -223,7 +235,7 @@ module Fragment = struct
     let res =
       List.map program ~f:(fun (annot, code) ->
           match annot with
-          | [] -> Always_include code
+          | [] -> Always_include (Ok code)
           | annot ->
               let initial_fragment : fragment_ =
                 { provides = None
@@ -231,7 +243,7 @@ module Fragment = struct
                 ; version_constraint_ok = true
                 ; weakdef = false
                 ; always = false
-                ; code
+                ; code = Ok code
                 ; js_string = None
                 ; effects = None
                 ; fragment_target = None
@@ -299,8 +311,11 @@ module Fragment = struct
   let parse_builtin builtin =
     let filename = Builtins.File.name builtin in
     let content = Builtins.File.content builtin in
-    let lex = Parse_js.Lexer.of_string ~filename content in
-    parse_from_lex ~filename lex
+    match Builtins.File.fragments builtin with
+    | None ->
+        let lex = Parse_js.Lexer.of_string ~filename content in
+        parse_from_lex ~filename lex
+    | Some fragments -> Marshal.from_string fragments 0
 
   let parse_string string =
     let filename = "<string>" in
@@ -315,6 +330,10 @@ module Fragment = struct
     in
     let lex = Parse_js.Lexer.of_file file in
     parse_from_lex ~filename:file lex
+
+  let pack = function
+    | Always_include x -> Always_include (pack x)
+    | Fragment f -> Fragment { f with code = pack f.code }
 end
 
 (*
@@ -355,6 +374,12 @@ let all_return p =
   try loop_all_sources p; true with May_not_return -> false
 *)
 
+type always_required' =
+  { ar_filename : string
+  ; ar_program : Javascript.program pack
+  ; ar_requires : string list
+  }
+
 type always_required =
   { filename : string
   ; program : Javascript.program
@@ -364,7 +389,7 @@ type always_required =
 type state =
   { ids : IntSet.t
   ; always_required_codes : always_required list
-  ; codes : Javascript.program list
+  ; codes : Javascript.program pack list
   }
 
 type output =
@@ -398,7 +423,9 @@ let reset () =
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
   | Always_include code ->
-      always_included := { filename; program = code; requires = [] } :: !always_included;
+      always_included :=
+        { ar_filename = filename; ar_program = code; ar_requires = [] }
+        :: !always_included;
       `Ok
   | Fragment
       { provides
@@ -438,7 +465,8 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
             if always
             then (
               always_included :=
-                { filename; program = code; requires } :: !always_included;
+                { ar_filename = filename; ar_program = code; ar_requires = requires }
+                :: !always_included;
               `Ok)
             else
               error
@@ -511,24 +539,32 @@ let check_deps () =
   let provided = get_provided () in
   Hashtbl.iter
     (fun id (code, requires) ->
-      let traverse = new Js_traverse.free in
-      let _js = traverse#program code in
-      let free = to_stringset traverse#get_free in
-      let requires = List.fold_right requires ~init:StringSet.empty ~f:StringSet.add in
-      let real = StringSet.inter free provided in
-      let missing = StringSet.diff real requires in
-      if not (StringSet.is_empty missing)
-      then
-        try
-          let name, ploc = Hashtbl.find provided_rev id in
-          warn
-            "code providing %s (%s) may miss dependencies: %s\n"
-            name
-            (loc ploc)
-            (String.concat ~sep:", " (StringSet.elements missing))
-        with Not_found ->
-          (* there is no //Provides for this piece of code *)
-          (* FIXME handle missing deps in this case *)
+      match code with
+      | Ok code -> (
+          let traverse = new Js_traverse.free in
+          let _js = traverse#program code in
+          let free = to_stringset traverse#get_free in
+          let requires =
+            List.fold_right requires ~init:StringSet.empty ~f:StringSet.add
+          in
+          let real = StringSet.inter free provided in
+          let missing = StringSet.diff real requires in
+          if not (StringSet.is_empty missing)
+          then
+            try
+              let name, ploc = Hashtbl.find provided_rev id in
+              warn
+                "code providing %s (%s) may miss dependencies: %s\n"
+                name
+                (loc ploc)
+                (String.concat ~sep:", " (StringSet.elements missing))
+            with Not_found ->
+              (* there is no //Provides for this piece of code *)
+              (* FIXME handle missing deps in this case *)
+              ())
+      | Pack _ ->
+          (* We only have [Pack] for the builtin runtime, which has
+             been checked already (before it was embedded *)
           ())
     code_pieces
 
@@ -579,8 +615,14 @@ and resolve_dep_id_rev visited path id =
     let visited = { visited with codes = code :: visited.codes } in
     visited
 
+let proj_always_required { ar_filename; ar_requires; ar_program } =
+  { filename = ar_filename; requires = ar_requires; program = unpack ar_program }
+
 let init () =
-  { ids = IntSet.empty; always_required_codes = List.rev !always_included; codes = [] }
+  { ids = IntSet.empty
+  ; always_required_codes = List.rev_map !always_included ~f:proj_always_required
+  ; codes = []
+  }
 
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
@@ -624,9 +666,10 @@ let link program (state : state) =
           List.fold_left always.requires ~init:state ~f:(fun state nm ->
               resolve_dep_name_rev state [] nm)
         in
-        { state with codes = always.program :: state.codes })
+        { state with codes = Ok always.program :: state.codes })
   in
-  let runtime = List.flatten (List.rev (program :: state.codes)) in
+  let codes = List.map state.codes ~f:unpack in
+  let runtime = List.flatten (List.rev (program :: codes)) in
   { runtime_code = runtime; always_required_codes = always_required }
 
 let all state =
