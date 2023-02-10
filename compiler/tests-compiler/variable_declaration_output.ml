@@ -123,39 +123,35 @@ let%expect_test _ =
   with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:true) (Some "match_expr"));
   [%expect
     {|
-    function match_expr(param)
-     {var switch$1,switch$0,_c_,_b_,_a_;
-      if(param)
-       {_a_ = param[1];
-        switch$0 = 0;
-        if(_a_)
-         {_b_ = _a_[1];
-          if(_b_)
-           {if(2 === _b_[1] && ! param[2])return 3}
-          else if(! param[2])return 2}
-        else if(! param[2])switch$0 = 1;
-        if(! switch$0)
-         {_c_ = param[2];
-          switch$1 = 0;
-          if(_c_ && ! _c_[1])switch$1 = 1;
-          if(! switch$1)return 4}}
-      return 1}
+    function match_expr(param){
+     var switch$1,switch$0,_c_,_b_,_a_;
+     if(param){
+      _a_ = param[1];
+      switch$0 = 0;
+      if(_a_){
+       _b_ = _a_[1];
+       if(_b_){if(2 === _b_[1] && ! param[2])return 3}else if(! param[2])return 2}
+      else if(! param[2])switch$0 = 1;
+      if(! switch$0){
+       _c_ = param[2];
+       switch$1 = 0;
+       if(_c_ && ! _c_[1])switch$1 = 1;
+       if(! switch$1)return 4}}
+     return 1}
     //end |}];
   with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
   [%expect
     {|
-    function match_expr(param)
-     {if(param)
-       {var _a_=param[1],switch$0=0;
-        if(_a_)
-         {var _b_=_a_[1];
-          if(_b_)
-           {if(2 === _b_[1] && ! param[2])return 3}
-          else if(! param[2])return 2}
-        else if(! param[2])switch$0 = 1;
-        if(! switch$0)
-         {var _c_=param[2],switch$1=0;
-          if(_c_ && ! _c_[1])switch$1 = 1;
-          if(! switch$1)return 4}}
-      return 1}
+    function match_expr(param){
+     if(param){
+      var _a_=param[1],switch$0=0;
+      if(_a_){
+       var _b_=_a_[1];
+       if(_b_){if(2 === _b_[1] && ! param[2])return 3}else if(! param[2])return 2}
+      else if(! param[2])switch$0 = 1;
+      if(! switch$0){
+       var _c_=param[2],switch$1=0;
+       if(_c_ && ! _c_[1])switch$1 = 1;
+       if(! switch$1)return 4}}
+     return 1}
     //end |}]

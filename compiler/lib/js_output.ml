@@ -455,22 +455,25 @@ struct
             PP.string f ")=>";
             PP.end_group f);
         PP.end_group f;
-        PP.start_group f 1;
-        PP.break1 f;
         (match b with
         | [ (Return_statement (Some e), loc) ] ->
             (* Should not starts with '{' *)
-            output_debug_info f loc;
-            parenthesized_expression ~obj:true AssignementExpression f e
-        | [ (Block _, _) ] -> function_body f b
-        | _ ->
             PP.start_group f 1;
+            PP.break1 f;
+            output_debug_info f loc;
+            parenthesized_expression ~obj:true AssignementExpression f e;
+            PP.end_group f
+        | l ->
+            let b =
+              match l with
+              | [ (Block l, _) ] -> l
+              | l -> l
+            in
             PP.string f "{";
+            PP.break f;
             function_body f b;
             output_debug_info f pc;
-            PP.string f "}";
-            PP.end_group f);
-        PP.end_group f;
+            PP.string f "}");
         PP.end_group f;
         if Prec.(l > AssignementExpression)
         then (
@@ -1035,6 +1038,15 @@ struct
     PP.space f;
     binding f v
 
+  and statement1 ~space ?last f s =
+    match s with
+    | Block _, _ -> statement ?last f s
+    | _ ->
+        if space then PP.space ~indent:1 f else PP.break1 f;
+        PP.start_group f 0;
+        statement ?last f s;
+        PP.end_group f
+
   and statement ?(last = false) f (s, loc) =
     let last_semi () = if last then () else PP.string f ";" in
     output_debug_info f loc;
@@ -1076,26 +1088,22 @@ struct
         statement ~last f (If_statement (e, (Block [ s1 ], N), s2), N)
     | If_statement (e, s1, s2) ->
         let rec ite kw e s1 s2 =
-          PP.start_group f 0;
-          PP.start_group f 1;
-          PP.string f kw;
-          PP.break f;
-          PP.start_group f 1;
-          PP.string f "(";
-          expression Expression f e;
-          PP.string f ")";
-          PP.end_group f;
-          PP.end_group f;
-          PP.break1 f;
-          PP.start_group f 0;
-          statement
-            ?last:
-              (match s2 with
-              | None -> Some last
-              | Some _ -> None)
-            f
-            s1;
-          PP.end_group f;
+          (let last_in_s1 =
+             match s2 with
+             | None -> Some last
+             | Some _ -> None
+           in
+           PP.start_group f 0;
+           PP.start_group f 1;
+           PP.string f kw;
+           PP.break f;
+           PP.start_group f 1;
+           PP.string f "(";
+           expression Expression f e;
+           PP.string f ")";
+           PP.end_group f;
+           PP.end_group f;
+           statement1 ~space:false ?last:last_in_s1 f s1);
           match s2 with
           | None -> PP.end_group f
           | Some (If_statement (e, s1, s2), _) when not (ends_with_if_without_else s1) ->
@@ -1105,12 +1113,7 @@ struct
           | Some s2 ->
               PP.break f;
               PP.string f "else";
-              (match s2 with
-              | Block _, _ -> PP.break1 f
-              | _ -> PP.space ~indent:1 f);
-              PP.start_group f 0;
-              statement ~last f s2;
-              PP.end_group f;
+              statement1 ~space:true ~last f s2;
               PP.end_group f
         in
         ite "if" e s1 s2
@@ -1125,18 +1128,12 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.break f;
-        PP.start_group f 0;
-        statement ~last f s;
-        PP.end_group f;
+        statement1 ~space:false ~last f s;
         PP.end_group f
     | Do_while_statement (((Block _, _) as s), e) ->
         PP.start_group f 0;
         PP.string f "do";
-        PP.break1 f;
-        PP.start_group f 0;
-        statement f s;
-        PP.end_group f;
+        statement1 ~space:false f s;
         PP.break f;
         PP.string f "while";
         PP.break1 f;
@@ -1186,10 +1183,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.break f;
-        PP.start_group f 0;
-        statement ~last f s;
-        PP.end_group f;
+        statement1 ~space:false ~last f s;
         PP.end_group f
     | ForIn_statement (e1, e2, s) ->
         PP.start_group f 1;
@@ -1211,10 +1205,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.break f;
-        PP.start_group f 0;
-        statement ~last f s;
-        PP.end_group f;
+        statement1 ~space:false ~last f s;
         PP.end_group f
     | ForOf_statement (e1, e2, s) ->
         PP.start_group f 1;
@@ -1241,10 +1232,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.break f;
-        PP.start_group f 0;
-        statement ~last f s;
-        PP.end_group f;
+        statement1 ~space:false ~last f s;
         PP.end_group f
     | Continue_statement None ->
         PP.string f "continue";
@@ -1281,14 +1269,12 @@ struct
             PP.string f ")";
             PP.end_group f;
             PP.end_group f;
-            PP.break f;
-            PP.start_group f 1;
             PP.string f "{";
+            PP.break f;
             function_body f b;
             output_debug_info f pc;
             PP.string f "}";
             last_semi ();
-            PP.end_group f;
             PP.end_group f
         | Some e ->
             PP.start_group f 7;
@@ -1372,7 +1358,6 @@ struct
     | Try_statement (b, ctch, fin) ->
         PP.start_group f 0;
         PP.string f "try";
-        PP.space ~indent:1 f;
         block f b;
         (match ctch with
         | None -> ()
@@ -1385,7 +1370,6 @@ struct
                 PP.string f "catch(";
                 formal_parameter f i;
                 PP.string f ")");
-            PP.break f;
             block f b;
             PP.end_group f);
         (match fin with
@@ -1394,7 +1378,6 @@ struct
             PP.break f;
             PP.start_group f 1;
             PP.string f "finally";
-            PP.space f;
             block f b;
             PP.end_group f);
         PP.end_group f
@@ -1409,8 +1392,9 @@ struct
         statement_list f ?skip_last_semi r
 
   and block f b =
-    PP.start_group f 1;
     PP.string f "{";
+    PP.start_group f 1;
+    PP.break f;
     statement_list ~skip_last_semi:true f b;
     PP.string f "}";
     PP.end_group f
@@ -1435,13 +1419,11 @@ struct
     PP.string f ")";
     PP.end_group f;
     PP.end_group f;
-    PP.break f;
-    PP.start_group f 1;
     PP.string f "{";
+    PP.break f;
     function_body f body;
     output_debug_info f loc;
     PP.string f "}";
-    PP.end_group f;
     PP.end_group f
 
   and class_declaration f x =

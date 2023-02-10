@@ -64,32 +64,30 @@ module M1 = struct
     //end
     function f_prime(g){return caml_call2(g,1,2)}
     //end
-    function g(param)
-     {return f
-              (function(a,b,c,d)
-                {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
+    function g(param){
+     return f
+             (function(a,b,c,d){
+               return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
     //end
-    function h(param)
-     {return f
-              (function(a,b,c,d)
-                {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
+    function h(param){
+     return f
+             (function(a,b,c,d){
+               return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)})}
     //end
-    function k(a,b,c,d)
-     {return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)}
+    function k(a,b,c,d){
+     return caml_call1(Stdlib[44],((a + b | 0) + c | 0) + d | 0)}
     //end
     function l(_g_,_h_){return k(_b_,_a_,_g_,_h_)}
     //end
     function m(_e_,_f_){return k(_d_,_c_,_e_,_f_)}
     //end
-    function caml_call1(f,a0)
-     {return (f.l >= 0?f.l:f.l = f.length) == 1
-              ?f(a0)
-              :runtime.caml_call_gen(f,[a0])}
+    function caml_call1(f,a0){
+     return (f.l >= 0?f.l:f.l = f.length) == 1?f(a0):runtime.caml_call_gen(f,[a0])}
     //end
-    function caml_call2(f,a0,a1)
-     {return (f.l >= 0?f.l:f.l = f.length) == 2
-              ?f(a0,a1)
-              :runtime.caml_call_gen(f,[a0,a1])}
+    function caml_call2(f,a0,a1){
+     return (f.l >= 0?f.l:f.l = f.length) == 2
+             ?f(a0,a1)
+             :runtime.caml_call_gen(f,[a0,a1])}
     //end
     |}]
 end
@@ -117,9 +115,9 @@ module M2 = struct
     print_fun_decl generated (Some "g");
     [%expect
       {|
-      function f(param,a,b,c,d,e,f)
-       {caml_call1(Stdlib[44],(((a + b | 0) + c | 0) + d | 0) + e | 0);
-        return caml_call1(Stdlib[47],0)}
+      function f(param,a,b,c,d,e,f){
+       caml_call1(Stdlib[44],(((a + b | 0) + c | 0) + d | 0) + e | 0);
+       return caml_call1(Stdlib[47],0)}
       //end
       function f_prime(f){return caml_call1(f,1)}
       //end
