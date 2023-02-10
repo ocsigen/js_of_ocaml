@@ -1050,7 +1050,7 @@ struct
         PP.end_group f
 
   and statement ?(last = false) f (s, loc) =
-    let last_semi () = if last then () else PP.string f ";" in
+    let last_semi () = if (not (PP.compact f)) && last then () else PP.string f ";" in
     output_debug_info f loc;
     match s with
     | Block b -> block f b
