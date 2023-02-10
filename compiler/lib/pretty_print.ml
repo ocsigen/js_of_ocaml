@@ -267,6 +267,8 @@ let to_buffer b =
 
 let set_compact st v = st.compact <- v
 
+let compact st = st.compact
+
 let set_needed_space_function st f = st.needed_space <- Some f
 
 let set_adjust_indentation_function st f = st.adjust_indentation <- Some f
