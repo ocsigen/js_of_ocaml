@@ -153,5 +153,7 @@ let%expect_test "static eval of string get" =
         next$0 = param$0[3],
         prec$0 = [0, key$0, data$0, next$0];
        prec[3] = prec$0;
-       var prec = prec$0, param$0 = next$0;}}
+       var prec = prec$0, param$0 = next$0;
+      }
+    }
     //end |}]

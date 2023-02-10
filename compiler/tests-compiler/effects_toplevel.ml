@@ -44,7 +44,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        function caml_cps_exact_call1(f, a0){
         return runtime.caml_stack_check_depth()
                 ? f(a0)
-                : runtime.caml_trampoline_return(f, [a0]);}
+                : runtime.caml_trampoline_return(f, [a0]);
+       }
        function caml_cps_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? (f.l
@@ -54,11 +55,13 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   == 2
                   ? f(a0, a1)
                   : runtime.caml_call_gen(f, [a0, a1])
-                : runtime.caml_trampoline_return(f, [a0, a1]);}
+                : runtime.caml_trampoline_return(f, [a0, a1]);
+       }
        function caml_cps_exact_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? f(a0, a1)
-                : runtime.caml_trampoline_return(f, [a0, a1]);}
+                : runtime.caml_trampoline_return(f, [a0, a1]);
+       }
        return caml_callback
                (function(cont){
                  var
@@ -69,7 +72,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                     [11, caml_string_of_jsbytes("abc"), 0],
                     caml_string_of_jsbytes("abc")];
                  function g(param, cont){
-                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);}
+                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
+                 }
                  caml_callback(g, [0]);
                  var _b_ = 1;
                  function _c_(i){
@@ -83,8 +87,12 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                             caml_callback(g, [0]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
-                            return;});}
-                 return _c_(_b_);},
-                []);}
+                            return;
+                           });
+                 }
+                 return _c_(_b_);
+                },
+                []);
+      }
       (globalThis));
     //end |}]

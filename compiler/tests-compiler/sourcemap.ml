@@ -67,17 +67,18 @@ let%expect_test _ =
         6:    function id(x){return x;}
         7:    var Test = [0, id];
         8:    runtime.caml_register_global(0, Test, "Test");
-        9:    return;}
-       10:   (globalThis));
-       11:
-       12: //# sourceMappingURL=test.map
+        9:    return;
+       10:   }
+       11:   (globalThis));
+       12:
+       13: //# sourceMappingURL=test.map
       /dune-root/test.ml:1:4 -> 6:12
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:7 -> 6:25
       /dune-root/test.ml:1:12 -> 6:27
       /dune-root/test.ml:1:4 -> 7:18
-      null:-1:-1 -> 9:10
+      null:-1:-1 -> 10:2
     |}]
 
 let%expect_test _ =
@@ -102,7 +103,8 @@ function x (a, b) {
       4: }
     $ cat "test.min.js"
       1:  /*<<test.ml 2 0>>*/ function x(a, b){
-      2:   /*<<test.ml 3 2>>*/ return a + b; /*<<test.ml 4 0>>*/ }
+      2:   /*<<test.ml 3 2>>*/ return a + b;
+      3:  /*<<test.ml 4 0>>*/ }
  |}]
 
 let%expect_test _ =

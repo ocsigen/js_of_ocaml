@@ -272,7 +272,8 @@ let%expect_test "meth_call2" =
     function meth_call_a(o, x){return o.aaa(x);}
     //end
     function meth_call_b(o, x){
-     return runtime.caml_js_meth_call(o, cst_a_b, [0, x]);}
+     return runtime.caml_js_meth_call(o, cst_a_b, [0, x]);
+    }
     //end
     function meth_call_c(o, x){return o.npiπ(x);}
     //end |}]
@@ -383,7 +384,8 @@ let%expect_test "string sharing" =
           s8_bis,
           s9_bis];
        runtime.caml_register_global(18, Test, "Test");
-       return;}
+       return;
+      }
       (globalThis));
     //end |}];
   print_program (program ~share:false ~js_string:true);
@@ -439,7 +441,8 @@ let%expect_test "string sharing" =
           s8_bis,
           s9_bis];
        runtime.caml_register_global(18, Test, "Test");
-       return;}
+       return;
+      }
       (globalThis));
     //end |}];
   print_program (program ~share:true ~js_string:false);
@@ -495,7 +498,8 @@ let%expect_test "string sharing" =
           s8_bis,
           s9_bis];
        runtime.caml_register_global(18, Test, "Test");
-       return;}
+       return;
+      }
       (globalThis));
     //end |}];
   print_program (program ~share:false ~js_string:false);
@@ -547,6 +551,7 @@ let%expect_test "string sharing" =
           s8_bis,
           s9_bis];
        runtime.caml_register_global(18, Test, "Test");
-       return;}
+       return;
+      }
       (globalThis));
     //end |}]

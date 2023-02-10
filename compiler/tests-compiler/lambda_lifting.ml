@@ -35,6 +35,7 @@ Printf.printf "%d\n" (f 3)
        runtime.caml_callback(_d_, [_c_, _b_]);
        var Test = [0];
        runtime.caml_register_global(2, Test, "Test");
-       return;}
+       return;
+      }
       (globalThis));
     //end |}]

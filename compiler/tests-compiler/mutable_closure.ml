@@ -124,27 +124,32 @@ let%expect_test _ =
             var _j_ = - 2;
             if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
             var counter$1 = counter + 1 | 0;
-            return g(counter$1, _j_);}
+            return g(counter$1, _j_);
+           }
            if(0 === n) return i;
            var _k_ = n - 1 | 0;
            if(counter >= 50) return caml_trampoline_return(g, [0, _k_]);
            var counter$0 = counter + 1 | 0;
-           return g(counter$0, _k_);}
+           return g(counter$0, _k_);
+          }
           function g(counter, n){
            if(- 1 === n){
             var _h_ = - 2;
             if(counter >= 50) return caml_trampoline_return(f, [0, _h_]);
             var counter$1 = counter + 1 | 0;
-            return f(counter$1, _h_);}
+            return f(counter$1, _h_);
+           }
            if(0 === n) return i;
            var _i_ = n - 1 | 0;
            if(counter >= 50) return caml_trampoline_return(f, [0, _i_]);
            var counter$0 = counter + 1 | 0;
-           return f(counter$0, _i_);}
+           return f(counter$0, _i_);
+          }
           function f$0(n){return caml_trampoline(f(0, n));}
           function g$0(n){return caml_trampoline(g(0, n));}
           var block = [0, f$0, g$0];
-          return block;},
+          return block;
+         },
         closures$0 = closures(i),
         f = closures$0[1],
         _e_ = direct[1];
@@ -160,5 +165,7 @@ let%expect_test _ =
         indirect$0 = caml_call2(Stdlib_List[19], _d_, _c_),
         direct$0 = direct[1];
        if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-       throw [0, Assert_failure, _b_];}}
+       throw [0, Assert_failure, _b_];
+      }
+    }
     //end|}]

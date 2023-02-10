@@ -6,4 +6,4 @@ b.ml:1:6 -> 24:   function f(x){return <>x - 1 | 0;}
 b.ml:1:15 -> 34:   function f(x){return x - 1 | 0;<>}
 b.ml:1:4 -> 23:   var Testlib_B = [0, <>f];
 a.ml:-1:-1 -> 3:   <>function caml_call1(f, a0){
-a.ml:-1:-1 -> 47:   throw [0, Int, caml_call1(Testlib_B[1], 2)];<>}
+a.ml:-1:-1 -> 2:  <>}
