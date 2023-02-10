@@ -44,20 +44,21 @@ let () = myfun ()
   [%expect
     {|
     function myfun(param){
-     var i=1;
+     var i = 1;
      for(;;){
        var
-        closures=
+        closures =
          function(i){
-          function g(x){return app(f,x)}
-          function f(x){return 0 === x?1:runtime.caml_mul(i,app(g,x - 1 | 0))}
-          var block=[0,g,f];
-          return block},
-        closures$0=closures(i),
-        g=closures$0[1],
-        _b_=g(i);
-       caml_call2(Stdlib_Printf[3],_a_,_b_);
-       var _c_=i + 1 | 0;
-       if(4 === i)return 0;
-       var i=_c_}}
+          function g(x){return app(f, x);}
+          function f(x){
+           return 0 === x ? 1 : runtime.caml_mul(i, app(g, x - 1 | 0));}
+          var block = [0, g, f];
+          return block;},
+        closures$0 = closures(i),
+        g = closures$0[1],
+        _b_ = g(i);
+       caml_call2(Stdlib_Printf[3], _a_, _b_);
+       var _c_ = i + 1 | 0;
+       if(4 === i) return 0;
+       var i = _c_;}}
     //end |}]

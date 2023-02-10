@@ -51,5 +51,5 @@ try raise Not_found with
   print_fun_decl program (Some "some_name");
   [%expect
     {|
-    function some_name(param){try{throw Stdlib[8]}catch(_a_){return 0}}
+    function some_name(param){try{throw Stdlib[8];}catch(_a_){return 0;}}
     //end |}]

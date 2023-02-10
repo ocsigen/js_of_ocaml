@@ -134,15 +134,15 @@ let%expect_test "object" =
   print_var_decl program "obj_literal";
   [%expect
     {|
-    var obj_literal = ({aaa:97,
-      bbb:"test",
-      "cc dd":2,
-      npiπ:5,
-      "\uD83D\uDC2B":3,
-      "\u{1F42B}":1,
-      "\u{1ee62}":1,
-      "🐫":1,
-      𞹢:1});
+    var obj_literal = ({aaa: 97,
+      bbb: "test",
+      "cc dd": 2,
+      npiπ: 5,
+      "\uD83D\uDC2B": 3,
+      "\u{1F42B}": 1,
+      "\u{1ee62}": 1,
+      "🐫": 1,
+      𞹢: 1});
     //end |}]
 
 let%expect_test "get" =
@@ -169,15 +169,15 @@ let%expect_test "get" =
   print_fun_decl program (Some "get_e");
   [%expect
     {|
-    function get_a(o){return o.aaa}
+    function get_a(o){return o.aaa;}
     //end
-    function get_b(o){return o["a b"]}
+    function get_b(o){return o["a b"];}
     //end
-    function get_c(o){return o.npiπ}
+    function get_c(o){return o.npiπ;}
     //end
-    function get_d(o){return o["🐫"]}
+    function get_d(o){return o["🐫"];}
     //end
-    function get_e(o){return o.𞹢}
+    function get_e(o){return o.𞹢;}
     //end |}]
 
 let%expect_test "set" =
@@ -197,11 +197,11 @@ let%expect_test "set" =
   print_fun_decl program (Some "set_c");
   [%expect
     {|
-    function set_a(o,x){return o.aaa = x}
+    function set_a(o, x){return o.aaa = x;}
     //end
-    function set_b(o,x){return o["a b"] = x}
+    function set_b(o, x){return o["a b"] = x;}
     //end
-    function set_c(o,x){return o.npiπ = x}
+    function set_c(o, x){return o.npiπ = x;}
     //end |}]
 
 let%expect_test "delete" =
@@ -221,11 +221,11 @@ let%expect_test "delete" =
   print_fun_decl program (Some "delete_c");
   [%expect
     {|
-    function delete_a(o){return delete o.aaa}
+    function delete_a(o){return delete o.aaa;}
     //end
-    function delete_b(o){return delete o["a b"]}
+    function delete_b(o){return delete o["a b"];}
     //end
-    function delete_c(o){return delete o.npiπ}
+    function delete_c(o){return delete o.npiπ;}
     //end |}]
 
 let%expect_test "meth_call1" =
@@ -245,11 +245,11 @@ let%expect_test "meth_call1" =
   print_fun_decl program (Some "meth_call_c");
   [%expect
     {|
-    function meth_call_a(o,x){return caml_js_meth_call(o,cst_aaa,x)}
+    function meth_call_a(o, x){return caml_js_meth_call(o, cst_aaa, x);}
     //end
-    function meth_call_b(o,x){return caml_js_meth_call(o,cst_a_b,x)}
+    function meth_call_b(o, x){return caml_js_meth_call(o, cst_a_b, x);}
     //end
-    function meth_call_c(o,x){return caml_js_meth_call(o,cst_npi,x)}
+    function meth_call_c(o, x){return caml_js_meth_call(o, cst_npi, x);}
     //end |}]
 
 let%expect_test "meth_call2" =
@@ -269,11 +269,12 @@ let%expect_test "meth_call2" =
   print_fun_decl program (Some "meth_call_c");
   [%expect
     {|
-    function meth_call_a(o,x){return o.aaa(x)}
+    function meth_call_a(o, x){return o.aaa(x);}
     //end
-    function meth_call_b(o,x){return runtime.caml_js_meth_call(o,cst_a_b,[0,x])}
+    function meth_call_b(o, x){
+     return runtime.caml_js_meth_call(o, cst_a_b, [0, x]);}
     //end
-    function meth_call_c(o,x){return o.npiπ(x)}
+    function meth_call_c(o, x){return o.npiπ(x);}
     //end |}]
 
 let%expect_test "jstring / bytestring " =
@@ -336,31 +337,31 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        str_npi_xcf_x80="npi\xcf\x80",
-        str_abcdef="abcdef",
-        str_npi="npiπ",
-        str_abc_def="abc\\def",
-        runtime=globalThis.jsoo_runtime,
-        s3=str_abcdef,
-        s6=str_npi_xcf_x80,
-        s9=str_abc_def,
-        s3_bis=str_abcdef,
-        s6_bis=str_npi_xcf_x80,
-        s9_bis=str_abc_def,
-        Js=[0],
-        s1=str_abcdef,
-        s2=str_abcdef,
-        s4=str_npi,
-        s5=str_npi_xcf_x80,
-        s7=str_abc_def,
-        s8=str_abc_def,
-        s1_bis=str_abcdef,
-        s2_bis=str_abcdef,
-        s4_bis=str_npi,
-        s5_bis=str_npi_xcf_x80,
-        s7_bis=str_abc_def,
-        s8_bis=str_abc_def,
-        Test=
+        str_npi_xcf_x80 = "npi\xcf\x80",
+        str_abcdef = "abcdef",
+        str_npi = "npiπ",
+        str_abc_def = "abc\\def",
+        runtime = globalThis.jsoo_runtime,
+        s3 = str_abcdef,
+        s6 = str_npi_xcf_x80,
+        s9 = str_abc_def,
+        s3_bis = str_abcdef,
+        s6_bis = str_npi_xcf_x80,
+        s9_bis = str_abc_def,
+        Js = [0],
+        s1 = str_abcdef,
+        s2 = str_abcdef,
+        s4 = str_npi,
+        s5 = str_npi_xcf_x80,
+        s7 = str_abc_def,
+        s8 = str_abc_def,
+        s1_bis = str_abcdef,
+        s2_bis = str_abcdef,
+        s4_bis = str_npi,
+        s5_bis = str_npi_xcf_x80,
+        s7_bis = str_abc_def,
+        s8_bis = str_abc_def,
+        Test =
          [0,
           Js,
           s1,
@@ -381,8 +382,8 @@ let%expect_test "string sharing" =
           s7_bis,
           s8_bis,
           s9_bis];
-       runtime.caml_register_global(18,Test,"Test");
-       return}
+       runtime.caml_register_global(18, Test, "Test");
+       return;}
       (globalThis));
     //end |}];
   print_program (program ~share:false ~js_string:true);
@@ -392,31 +393,31 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        runtime=globalThis.jsoo_runtime,
-        cst_npi="npi\xcf\x80",
-        cst_abc_def="abc\\def",
-        cst_abcdef="abcdef",
-        cst_npi$0="npiπ",
-        s3=cst_abcdef,
-        s6=cst_npi,
-        s9=cst_abc_def,
-        s3_bis=cst_abcdef,
-        s6_bis=cst_npi,
-        s9_bis=cst_abc_def,
-        Js=[0],
-        s1=cst_abcdef,
-        s2=cst_abcdef,
-        s4=cst_npi$0,
-        s5=cst_npi,
-        s7=cst_abc_def,
-        s8=cst_abc_def,
-        s1_bis=cst_abcdef,
-        s2_bis=cst_abcdef,
-        s4_bis=cst_npi$0,
-        s5_bis=cst_npi,
-        s7_bis=cst_abc_def,
-        s8_bis=cst_abc_def,
-        Test=
+        runtime = globalThis.jsoo_runtime,
+        cst_npi = "npi\xcf\x80",
+        cst_abc_def = "abc\\def",
+        cst_abcdef = "abcdef",
+        cst_npi$0 = "npiπ",
+        s3 = cst_abcdef,
+        s6 = cst_npi,
+        s9 = cst_abc_def,
+        s3_bis = cst_abcdef,
+        s6_bis = cst_npi,
+        s9_bis = cst_abc_def,
+        Js = [0],
+        s1 = cst_abcdef,
+        s2 = cst_abcdef,
+        s4 = cst_npi$0,
+        s5 = cst_npi,
+        s7 = cst_abc_def,
+        s8 = cst_abc_def,
+        s1_bis = cst_abcdef,
+        s2_bis = cst_abcdef,
+        s4_bis = cst_npi$0,
+        s5_bis = cst_npi,
+        s7_bis = cst_abc_def,
+        s8_bis = cst_abc_def,
+        Test =
          [0,
           Js,
           s1,
@@ -437,8 +438,8 @@ let%expect_test "string sharing" =
           s7_bis,
           s8_bis,
           s9_bis];
-       runtime.caml_register_global(18,Test,"Test");
-       return}
+       runtime.caml_register_global(18, Test, "Test");
+       return;}
       (globalThis));
     //end |}];
   print_program (program ~share:true ~js_string:false);
@@ -447,32 +448,32 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        str_npi_xcf_x80="npi\xcf\x80",
-        str_abcdef="abcdef",
-        str_npi="npiπ",
-        str_abc_def="abc\\def",
-        runtime=globalThis.jsoo_runtime,
-        caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
-        s3=caml_string_of_jsbytes(str_abcdef),
-        s6=caml_string_of_jsbytes(str_npi_xcf_x80),
-        s9=caml_string_of_jsbytes(str_abc_def),
-        s3_bis=caml_string_of_jsbytes(str_abcdef),
-        s6_bis=caml_string_of_jsbytes(str_npi_xcf_x80),
-        s9_bis=caml_string_of_jsbytes(str_abc_def),
-        Js=[0],
-        s1=str_abcdef,
-        s2=str_abcdef,
-        s4=str_npi,
-        s5=str_npi_xcf_x80,
-        s7=str_abc_def,
-        s8=str_abc_def,
-        s1_bis=str_abcdef,
-        s2_bis=str_abcdef,
-        s4_bis=str_npi,
-        s5_bis=str_npi_xcf_x80,
-        s7_bis=str_abc_def,
-        s8_bis=str_abc_def,
-        Test=
+        str_npi_xcf_x80 = "npi\xcf\x80",
+        str_abcdef = "abcdef",
+        str_npi = "npiπ",
+        str_abc_def = "abc\\def",
+        runtime = globalThis.jsoo_runtime,
+        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        s3 = caml_string_of_jsbytes(str_abcdef),
+        s6 = caml_string_of_jsbytes(str_npi_xcf_x80),
+        s9 = caml_string_of_jsbytes(str_abc_def),
+        s3_bis = caml_string_of_jsbytes(str_abcdef),
+        s6_bis = caml_string_of_jsbytes(str_npi_xcf_x80),
+        s9_bis = caml_string_of_jsbytes(str_abc_def),
+        Js = [0],
+        s1 = str_abcdef,
+        s2 = str_abcdef,
+        s4 = str_npi,
+        s5 = str_npi_xcf_x80,
+        s7 = str_abc_def,
+        s8 = str_abc_def,
+        s1_bis = str_abcdef,
+        s2_bis = str_abcdef,
+        s4_bis = str_npi,
+        s5_bis = str_npi_xcf_x80,
+        s7_bis = str_abc_def,
+        s8_bis = str_abc_def,
+        Test =
          [0,
           Js,
           s1,
@@ -493,8 +494,8 @@ let%expect_test "string sharing" =
           s7_bis,
           s8_bis,
           s9_bis];
-       runtime.caml_register_global(18,Test,"Test");
-       return}
+       runtime.caml_register_global(18, Test, "Test");
+       return;}
       (globalThis));
     //end |}];
   print_program (program ~share:false ~js_string:false);
@@ -503,28 +504,28 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        runtime=globalThis.jsoo_runtime,
-        caml_string_of_jsbytes=runtime.caml_string_of_jsbytes,
-        s3=caml_string_of_jsbytes("abcdef"),
-        s6=caml_string_of_jsbytes("npi\xcf\x80"),
-        s9=caml_string_of_jsbytes("abc\\def"),
-        s3_bis=caml_string_of_jsbytes("abcdef"),
-        s6_bis=caml_string_of_jsbytes("npi\xcf\x80"),
-        s9_bis=caml_string_of_jsbytes("abc\\def"),
-        Js=[0],
-        s1="abcdef",
-        s2="abcdef",
-        s4="npiπ",
-        s5="npi\xcf\x80",
-        s7="abc\\def",
-        s8="abc\\def",
-        s1_bis="abcdef",
-        s2_bis="abcdef",
-        s4_bis="npiπ",
-        s5_bis="npi\xcf\x80",
-        s7_bis="abc\\def",
-        s8_bis="abc\\def",
-        Test=
+        runtime = globalThis.jsoo_runtime,
+        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        s3 = caml_string_of_jsbytes("abcdef"),
+        s6 = caml_string_of_jsbytes("npi\xcf\x80"),
+        s9 = caml_string_of_jsbytes("abc\\def"),
+        s3_bis = caml_string_of_jsbytes("abcdef"),
+        s6_bis = caml_string_of_jsbytes("npi\xcf\x80"),
+        s9_bis = caml_string_of_jsbytes("abc\\def"),
+        Js = [0],
+        s1 = "abcdef",
+        s2 = "abcdef",
+        s4 = "npiπ",
+        s5 = "npi\xcf\x80",
+        s7 = "abc\\def",
+        s8 = "abc\\def",
+        s1_bis = "abcdef",
+        s2_bis = "abcdef",
+        s4_bis = "npiπ",
+        s5_bis = "npi\xcf\x80",
+        s7_bis = "abc\\def",
+        s8_bis = "abc\\def",
+        Test =
          [0,
           Js,
           s1,
@@ -545,7 +546,7 @@ let%expect_test "string sharing" =
           s7_bis,
           s8_bis,
           s9_bis];
-       runtime.caml_register_global(18,Test,"Test");
-       return}
+       runtime.caml_register_global(18, Test, "Test");
+       return;}
       (globalThis));
     //end |}]

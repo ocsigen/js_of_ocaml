@@ -108,10 +108,10 @@ let%expect_test "reserved words as fields" =
     /*<< 3 4>>*/ x.catch;
     /*<< 4 4>>*/ x.for;
     /*<< 5 4>>*/ x.continue;
-    /*<< 6 4>>*/  /*<< 6 10>>*/ var y={debugger:2};
-    /*<< 7 4>>*/  /*<< 7 10>>*/ var y={catch:2};
-    /*<< 8 4>>*/  /*<< 8 10>>*/ var y={for:2};
-    /*<< 9 4>>*/  /*<< 9 10>>*/ var y={continue:2}; |}]
+    /*<< 6 4>>*/  /*<< 6 10>>*/ var y = {debugger: 2};
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var y = {catch: 2};
+    /*<< 8 4>>*/  /*<< 8 10>>*/ var y = {for: 2};
+    /*<< 9 4>>*/  /*<< 9 10>>*/ var y = {continue: 2}; |}]
 
 let%expect_test "preserve number literals" =
   print
@@ -133,20 +133,20 @@ let%expect_test "preserve number literals" =
      var t = 1E+3; |};
   [%expect
     {|
-    /*<< 2 5>>*/  /*<< 2 11>>*/ var x=0xf_fff;
-    /*<< 3 5>>*/  /*<< 3 11>>*/ var x=0Xffff;
-    /*<< 4 5>>*/  /*<< 4 11>>*/ var y=0o7_1223;
-    /*<< 5 5>>*/  /*<< 5 11>>*/ var y=0O7123;
-    /*<< 6 5>>*/  /*<< 6 11>>*/ var y=0b1_1001;
-    /*<< 7 5>>*/  /*<< 7 11>>*/ var y=0B11001;
-    /*<< 8 5>>*/  /*<< 8 11>>*/ var y=071923;
-    /*<< 9 5>>*/  /*<< 9 11>>*/ var y=07123;
-    /*<< 10 5>>*/  /*<< 10 11>>*/ var z=0.0;
-    /*<< 11 5>>*/  /*<< 11 11>>*/ var z=0.;
-    /*<< 12 5>>*/  /*<< 12 11>>*/ var t=1.0e-3;
-    /*<< 13 5>>*/  /*<< 13 11>>*/ var t=1.0E+3;
-    /*<< 14 5>>*/  /*<< 14 11>>*/ var t=1e-3;
-    /*<< 15 5>>*/  /*<< 15 11>>*/ var t=1E+3; |}]
+    /*<< 2 5>>*/  /*<< 2 11>>*/ var x = 0xf_fff;
+    /*<< 3 5>>*/  /*<< 3 11>>*/ var x = 0Xffff;
+    /*<< 4 5>>*/  /*<< 4 11>>*/ var y = 0o7_1223;
+    /*<< 5 5>>*/  /*<< 5 11>>*/ var y = 0O7123;
+    /*<< 6 5>>*/  /*<< 6 11>>*/ var y = 0b1_1001;
+    /*<< 7 5>>*/  /*<< 7 11>>*/ var y = 0B11001;
+    /*<< 8 5>>*/  /*<< 8 11>>*/ var y = 071923;
+    /*<< 9 5>>*/  /*<< 9 11>>*/ var y = 07123;
+    /*<< 10 5>>*/  /*<< 10 11>>*/ var z = 0.0;
+    /*<< 11 5>>*/  /*<< 11 11>>*/ var z = 0.;
+    /*<< 12 5>>*/  /*<< 12 11>>*/ var t = 1.0e-3;
+    /*<< 13 5>>*/  /*<< 13 11>>*/ var t = 1.0E+3;
+    /*<< 14 5>>*/  /*<< 14 11>>*/ var t = 1e-3;
+    /*<< 15 5>>*/  /*<< 15 11>>*/ var t = 1E+3; |}]
 
 let%expect_test "preserve number literals in property_name" =
   print
@@ -157,8 +157,8 @@ let%expect_test "preserve number literals in property_name" =
  |};
   [%expect
     {|
-    /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key={100000000000000000000:2};
-    /*<< 3 4>>*/  /*<< 3 22>>*/ var number_as_key={100000000000000000000n:2}; |}]
+    /*<< 2 4>>*/  /*<< 2 22>>*/ var number_as_key = {100000000000000000000: 2};
+    /*<< 3 4>>*/  /*<< 3 22>>*/ var number_as_key = {100000000000000000000n: 2}; |}]
 
 let%expect_test "ops" =
   print
@@ -232,27 +232,31 @@ let%expect_test "arrow" =
 
   [%expect
     {|
-    /*<< 2 4>>*/  /*<< 2 10>>*/ var a=x=> /*<< 2 18>>*/ x + 2;
-    /*<< 3 4>>*/  /*<< 3 10>>*/ var a=()=> /*<< 3 19>>*/ 2;
-    /*<< 4 4>>*/  /*<< 4 10>>*/ var a=x=> /*<< 4 20>>*/ x + 2;
-    /*<< 5 4>>*/  /*<< 5 10>>*/ var a=(x,y)=> /*<< 5 22>>*/ x + y;
-    /*<< 7 4>>*/  /*<< 7 10>>*/ var a=x=>{ /*<< 7 20>>*/ x + 2 /*<< 7 13>>*/ };
-    /*<< 8 4>>*/  /*<< 8 10>>*/ var a=()=>{ /*<< 8 21>>*/ 2 /*<< 8 13>>*/ };
-    /*<< 9 4>>*/  /*<< 9 10>>*/ var a=x=>{ /*<< 9 22>>*/ x + 2 /*<< 9 13>>*/ };
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var a = x=> /*<< 2 18>>*/ x + 2;
+    /*<< 3 4>>*/  /*<< 3 10>>*/ var a = ()=> /*<< 3 19>>*/ 2;
+    /*<< 4 4>>*/  /*<< 4 10>>*/ var a = x=> /*<< 4 20>>*/ x + 2;
+    /*<< 5 4>>*/  /*<< 5 10>>*/ var a = (x, y)=> /*<< 5 22>>*/ x + y;
+    /*<< 7 4>>*/  /*<< 7 10>>*/ var
+    a =
+    x=>{ /*<< 7 20>>*/ x + 2; /*<< 7 13>>*/ };
+    /*<< 8 4>>*/  /*<< 8 10>>*/ var a = ()=>{ /*<< 8 21>>*/ 2; /*<< 8 13>>*/ };
+    /*<< 9 4>>*/  /*<< 9 10>>*/ var
+    a =
+    x=>{ /*<< 9 22>>*/ x + 2; /*<< 9 13>>*/ };
     /*<< 11 4>>*/  /*<< 11 10>>*/ var
-    a=
-     ( /*<< 11 16>>*/ x=1 / 2)=> /*<< 11 28>>*/ x + 10;
+    a =
+    ( /*<< 11 16>>*/ x = 1 / 2)=> /*<< 11 28>>*/ x + 10;
     /*<< 13 4>>*/  /*<< 13 10>>*/ var
-    a=
-     ( /*<< 13 16>>*/ x=/qwe/g)=> /*<< 13 30>>*/ x + 10;
+    a =
+    ( /*<< 13 16>>*/ x = /qwe/g)=> /*<< 13 30>>*/ x + 10;
     /*<< 16 4>>*/  /*<< 16 10>>*/ var
-    a=
-     x=> /*<< 16 17>>*/ y=> /*<< 16 22>>*/ x + y;
+    a =
+    x=> /*<< 16 17>>*/ y=> /*<< 16 22>>*/ x + y;
     /*<< 17 4>>*/  /*<< 17 10>>*/ var
-    a=
-     x=> /*<< 17 17>>*/ y=> /*<< 17 23>>*/ x + y;
-    /*<< 19 4>>*/  /*<< 19 10>>*/ var a=async x=> /*<< 19 23>>*/ y;
-    /*<< 20 4>>*/  /*<< 20 10>>*/ var a=async (a,b)=> /*<< 20 27>>*/ a + b; |}]
+    a =
+    x=> /*<< 17 17>>*/ y=> /*<< 17 23>>*/ x + y;
+    /*<< 19 4>>*/  /*<< 19 10>>*/ var a = async x=> /*<< 19 23>>*/ y;
+    /*<< 20 4>>*/  /*<< 20 10>>*/ var a = async (a, b)=> /*<< 20 27>>*/ a + b; |}]
 
 let%expect_test "trailing comma" =
   (* GH#989 *)
@@ -285,17 +289,17 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
   [%expect
     {|
     /*<< 4 0>>*/ function rehb_new_face(_fontName){
-     /*<< 7 2>>*/ return undefined /*<< 8 0>>*/ }
-    /*<< 12 0>>*/ function rehb_shape(_face,text){
+     /*<< 7 2>>*/ return undefined; /*<< 8 0>>*/ }
+    /*<< 12 0>>*/ function rehb_shape(_face, text){
      /*<< 13 2>>*/  /*<< 13 10>>*/ var
-     str=
-       /*<< 13 12>>*/ caml_to_js_string(text);
+     str =
+      /*<< 13 12>>*/ caml_to_js_string(text);
      /*<< 14 2>>*/  /*<< 14 10>>*/ var
-     ret=
-       /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
-       (function mapper(_char){ /*<< 15 6>>*/ return [0,0,0] /*<< 14 30>>*/ });
+     ret =
+      /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
+      (function mapper(_char){ /*<< 15 6>>*/ return [0, 0, 0]; /*<< 14 30>>*/ });
      /*<< 19 2>>*/  /*<< 19 2>>*/ ret.unshift(0);
-     /*<< 20 2>>*/ return ret /*<< 21 0>>*/ } |}]
+     /*<< 20 2>>*/ return ret; /*<< 21 0>>*/ } |}]
 
 let%expect_test "rest parameters" =
   (* GH#1031 *)
@@ -314,11 +318,11 @@ let%expect_test "rest parameters" =
     {|
      /*<< 2 6>>*/ api_obj[key_module][key_func]
     =
-    function(...args){
-      /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
-             (function(){
-                /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
-                       (api_json[key_module][key_func],args) /*<< 3 41>>*/ }) /*<< 2 38>>*/ }; |}]
+     function(...args){
+       /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
+              (function(){
+                 /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
+                        (api_json[key_module][key_func], args); /*<< 3 41>>*/ }); /*<< 2 38>>*/ }; |}]
 
 let%expect_test "async/await" =
   (* GH#1017 *)
@@ -340,14 +344,14 @@ let%expect_test "async/await" =
     {|
     /*<< 2 9>>*/ async function compile(src){
      /*<< 4 11>>*/  /*<< 4 31>>*/ const
-     glslangModule=
-      await
-       /*<< 4 39>>*/ import
-       ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
+     glslangModule =
+     await
+      /*<< 4 39>>*/ import
+      ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
      /*<< 7 11>>*/  /*<< 7 25>>*/ const
-     glslang=
-      await  /*<< 7 33>>*/ glslangModule.default();
-     /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src,"compute") /*<< 2 9>>*/ } |}]
+     glslang =
+     await  /*<< 7 33>>*/ glslangModule.default();
+     /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src, "compute"); /*<< 2 9>>*/ } |}]
 
 let%expect_test "get/set property" =
   (* GH#1017 *)
@@ -371,15 +375,15 @@ let%expect_test "get/set property" =
   [%expect
     {|
     /*<< 2 5>>*/  /*<< 2 11>>*/ var
-    x=
-     {get prop(){ /*<< 3 20>>*/ return 3 /*<< 3 7>>*/ },
-      set prop(x){ /*<< 4 21>>*/ return x == 2 /*<< 4 7>>*/ },
-      a:4,
-      b(){ /*<< 6 13>>*/ return 5 /*<< 6 7>>*/ },
-      * e(){ /*<< 7 14>>*/ return 5 /*<< 7 7>>*/ },
-      async e(){ /*<< 8 19>>*/ return 5 /*<< 8 7>>*/ },
-      async* e(){ /*<< 9 20>>*/ return 5 /*<< 9 7>>*/ },
-      ["field" + 1]:3}; |}]
+    x =
+    {get prop(){ /*<< 3 20>>*/ return 3; /*<< 3 7>>*/ },
+     set prop(x){ /*<< 4 21>>*/ return x == 2; /*<< 4 7>>*/ },
+     a: 4,
+     b(){ /*<< 6 13>>*/ return 5; /*<< 6 7>>*/ },
+     * e(){ /*<< 7 14>>*/ return 5; /*<< 7 7>>*/ },
+     async e(){ /*<< 8 19>>*/ return 5; /*<< 8 7>>*/ },
+     async* e(){ /*<< 9 20>>*/ return 5; /*<< 9 7>>*/ },
+     ["field" + 1]: 3}; |}]
 
 let%expect_test "assignment pattern" =
   (* GH#1017 *)
@@ -408,18 +412,20 @@ let%expect_test "assignment pattern" =
 
   [%expect
     {|
-    /*<< 2 4>>*/ var x,y,rest;
-    /*<< 3 4>>*/  /*<< 3 14>>*/ var [x,y]=[1,2];
-    /*<< 4 4>>*/  /*<< 4 22>>*/ var [x,y,...rest]=[1,2,...o];
-    /*<< 6 4>>*/  /*<< 6 14>>*/ var {x:x,y:y}={x:1,y:2};
-    /*<< 7 4>>*/  /*<< 7 22>>*/ var {x:x,y:y,...rest}={x:1,y:2,...o};
-    /*<< 9 4>>*/ [x,y] = [1,2];
-    /*<< 10 4>>*/ [x,y,...rest] = [1,2];
-    /*<< 12 4>>*/ ({x,y} = {x:1,y:2});
-    /*<< 13 4>>*/ ({x,y,...rest} = {x:1,y:2});
-    /*<< 15 4>>*/ for([a,b,{c,d= /*<< 15 17>>*/ e,[f]:[g,h,a,i,j]}] in 3)
+    /*<< 2 4>>*/ var x, y, rest;
+    /*<< 3 4>>*/  /*<< 3 14>>*/ var [x, y] = [1, 2];
+    /*<< 4 4>>*/  /*<< 4 22>>*/ var [x, y, ...rest] = [1, 2, ...o];
+    /*<< 6 4>>*/  /*<< 6 14>>*/ var {x: x, y: y} = {x: 1, y: 2};
+    /*<< 7 4>>*/  /*<< 7 22>>*/ var {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+    /*<< 9 4>>*/ [x, y] = [1, 2];
+    /*<< 10 4>>*/ [x, y, ...rest] = [1, 2];
+    /*<< 12 4>>*/ ({x, y} = {x: 1, y: 2});
+    /*<< 13 4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
+    /*<< 15 4>>*/ for
+    ([a, b, {c, d =  /*<< 15 17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
       /*<< 15 43>>*/ ;
-    /*<< 17 4>>*/ for([a,b,{c,d= /*<< 17 17>>*/ e,[f]:[g,h,a,i,j]}] of 3)
+    /*<< 17 4>>*/ for
+    ([a, b, {c, d =  /*<< 17 17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
       /*<< 17 43>>*/ ; |}]
 
 let%expect_test "string template" =
@@ -438,12 +444,12 @@ let%expect_test "string template" =
 
   [%expect
     {|
-    /*<< 2 4>>*/  /*<< 2 10>>*/ var s=`asdte`;
-    /*<< 3 4>>*/  /*<< 3 10>>*/ var s=`asd ${test} te`;
-    /*<< 5 4>>*/  /*<< 5 10>>*/ var s= /*<< 5 12>>*/ tag`asd ${test} te`;
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var s = `asdte`;
+    /*<< 3 4>>*/  /*<< 3 10>>*/ var s = `asd ${test} te`;
+    /*<< 5 4>>*/  /*<< 5 10>>*/ var s =  /*<< 5 12>>*/ tag`asd ${test} te`;
     /*<< 7 4>>*/  /*<< 7 10>>*/ var
-    s=
-     `asd ${ /*<< 7 20>>*/ f(`space ${test} space`,32)} te`; |}]
+    s =
+    `asd ${ /*<< 7 20>>*/ f(`space ${test} space`, 32)} te`; |}]
 
 let%expect_test "from keyword" =
   (* GH#1017 *)
@@ -458,18 +464,17 @@ let%expect_test "from keyword" =
       return this.compute([field],function(state){return get(state.field(field));});}}) |};
   [%expect
     {|
-    /*<< 2 0>>*/ ({key:"from",
+    /*<< 2 0>>*/ ({key: "from",
      value:
-     function from(field,get){
+     function from(field, get){
        /*<< 5 6>>*/ if(! get)
         /*<< 5 14>>*/ get
-       =
-       function get(x){ /*<< 5 34>>*/ return x /*<< 5 18>>*/ };
+       = function get(x){ /*<< 5 34>>*/ return x; /*<< 5 18>>*/ };
        /*<< 6 6>>*/ return  /*<< 6 13>>*/ this.compute
               ([field],
                function(state){
                  /*<< 6 50>>*/ return  /*<< 6 57>>*/ get
-                        ( /*<< 6 61>>*/ state.field(field)) /*<< 6 34>>*/ }) /*<< 4 3>>*/ }}); |}]
+                        ( /*<< 6 61>>*/ state.field(field)); /*<< 6 34>>*/ }); /*<< 4 3>>*/ }}); |}]
 
 let%expect_test "new.target" =
   (* GH#1017 *)
@@ -478,7 +483,7 @@ let%expect_test "new.target" =
  |};
 
   [%expect {|
-    /*<< 2 4>>*/  /*<< 2 10>>*/ var s=new.target; |}]
+    /*<< 2 4>>*/  /*<< 2 10>>*/ var s = new.target; |}]
 
 let%expect_test "super" =
   (* GH#1017 *)
@@ -518,25 +523,29 @@ class x extends p {
      /*<< 2 0>>*/ class
     x
     extends
-    p{constructor(){ /*<< 4 6>>*/  /*<< 4 6>>*/ super(a,b,c) /*<< 3 4>>*/ }
+    p{constructor(){ /*<< 4 6>>*/  /*<< 4 6>>*/ super(a, b, c); /*<< 3 4>>*/ }
     foo(){
-      /*<< 8 6>>*/  /*<< 8 12>>*/ var s=super[d];
-      /*<< 9 6>>*/  /*<< 9 12>>*/ var s=super.d /*<< 6 4>>*/ }
+      /*<< 8 6>>*/  /*<< 8 12>>*/ var s = super[d];
+      /*<< 9 6>>*/  /*<< 9 12>>*/ var s = super.d; /*<< 6 4>>*/ }
     static
     bar(){
-      /*<< 14 6>>*/  /*<< 14 12>>*/ var s=super[d];
-      /*<< 15 6>>*/  /*<< 15 12>>*/ var s=super.d /*<< 12 11>>*/ }
-    x=
+      /*<< 14 6>>*/  /*<< 14 12>>*/ var s = super[d];
+      /*<< 15 6>>*/  /*<< 15 12>>*/ var s = super.d; /*<< 12 11>>*/ }
+    x
+    =
      /*<< 17 5>>*/ 3
     static
-    y=
+    y
+    =
      /*<< 19 12>>*/ 5
-    #z=
+    #z
+    =
      /*<< 21 6>>*/ 6
     static
-    #t=
+    #t
+    =
      /*<< 23 13>>*/ 2
-    static{ /*<< 25 12>>*/  /*<< 25 18>>*/ var x=3}
+    static{ /*<< 25 12>>*/  /*<< 25 18>>*/ var x = 3;}
     } |}]
 
 let%expect_test "ite" =
@@ -566,23 +575,23 @@ if(a) {
 |};
   [%expect {|
     if(a){
-     this(is,not,small);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger)}
+     this(is, not, small);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);}
     else if(b){
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small)}
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small);}
     else if(c){
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger)}
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);}
     else{
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger);
-     this(is,not,small) + this(is,bigger)} |}]
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);
+     this(is, not, small) + this(is, bigger);} |}]
 
 let%expect_test "error reporting" =
   (try

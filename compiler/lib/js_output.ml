@@ -376,7 +376,7 @@ struct
         f_elt f x;
         PP.end_group f;
         PP.string f ",";
-        PP.break f;
+        PP.space f;
         comma_list f f_elt r
 
   let comma_list_rest f f_elt l f_rest rest =
@@ -391,7 +391,7 @@ struct
     | l, Some r ->
         comma_list f f_elt l;
         PP.string f ",";
-        PP.break f;
+        PP.space f;
         PP.start_group f 0;
         PP.string f "...";
         f_rest f r;
@@ -407,7 +407,7 @@ struct
           PP.string f "(");
         expression Expression f e1;
         PP.string f ",";
-        PP.break f;
+        PP.space f;
         expression Expression f e2;
         if Prec.(l > Expression)
         then (
@@ -635,21 +635,17 @@ struct
           | EBin (Coalesce, _, _), Coalesce -> CoalesceExpression
           | _ -> lft
         in
-        if Prec.(l > out)
-        then (
-          PP.start_group f 1;
-          PP.string f "(");
         PP.start_group f 0;
+        if Prec.(l > out) then PP.string f "(";
         expression lft f e1;
         PP.space f;
+        PP.start_group f 1;
         PP.string f (op_str op);
         PP.space f;
         expression rght f e2;
+        if Prec.(l > out) then PP.string f ")";
         PP.end_group f;
-        if Prec.(l > out)
-        then (
-          PP.string f ")";
-          PP.end_group f)
+        PP.end_group f
     | EAssignTarget p -> pattern f p
     | EArr el ->
         PP.start_group f 1;
@@ -724,14 +720,20 @@ struct
         PP.start_group f 0;
         expression ShortCircuitExpression f e;
         PP.end_group f;
-        PP.break f;
+        PP.space f;
         PP.start_group f 1;
+        PP.start_group f 0;
         PP.string f "?";
+        PP.space f;
+        PP.end_group f;
         expression AssignementExpression f e1;
         PP.end_group f;
-        PP.break f;
+        PP.space f;
         PP.start_group f 1;
+        PP.start_group f 0;
         PP.string f ":";
+        PP.space f;
+        PP.end_group f;
         expression AssignementExpression f e2;
         PP.end_group f;
         PP.end_group f;
@@ -806,7 +808,7 @@ struct
         PP.start_group f 0;
         property_name f pn;
         PP.string f ":";
-        PP.break f;
+        PP.space f;
         expression AssignementExpression f e;
         PP.end_group f
     | PropertySpread e ->
@@ -885,17 +887,23 @@ struct
     | DeclIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
         output_debug_info f loc;
+        PP.start_group f 0;
         ident f i;
+        PP.space f;
         PP.string f "=";
-        PP.break f;
+        PP.end_group f;
+        PP.space f;
         expression AssignementExpression f e;
         PP.end_group f
     | DeclPattern (p, (e, loc)) ->
         PP.start_group f 1;
         output_debug_info f loc;
+        PP.start_group f 0;
         pattern f p;
+        PP.space f;
         PP.string f "=";
-        PP.break f;
+        PP.end_group f;
+        PP.space f;
         expression AssignementExpression f e;
         PP.end_group f
 
@@ -904,13 +912,14 @@ struct
     | Prop_binding (pn, e) ->
         property_name f pn;
         PP.string f ":";
-        PP.break f;
+        PP.space f;
         binding_element f e
     | Prop_ident (i, None) -> ident f i
     | Prop_ident (i, Some (e, loc)) ->
         ident f i;
+        PP.space f;
         PP.string f "=";
-        PP.break f;
+        PP.space f;
         output_debug_info f loc;
         expression AssignementExpression f e
 
@@ -920,8 +929,9 @@ struct
     | Some (e, loc) ->
         output_debug_info f loc;
         binding f b;
+        PP.space f;
         PP.string f "=";
-        PP.break f;
+        PP.space f;
         expression AssignementExpression f e
 
   and binding f x =
@@ -956,7 +966,7 @@ struct
     | d :: r ->
         variable_declaration f d;
         PP.string f ",";
-        PP.break f;
+        PP.space f;
         variable_declaration_list_aux f r
 
   and variable_declaration_kind f kind =
@@ -978,9 +988,12 @@ struct
         output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
+        PP.start_group f 0;
         ident f i;
+        PP.space f;
         PP.string f "=";
-        PP.break1 f;
+        PP.end_group f;
+        PP.space f;
         PP.start_group f 0;
         expression AssignementExpression f e;
         if close then PP.string f ";";
@@ -991,9 +1004,12 @@ struct
         output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
+        PP.start_group f 0;
         pattern f p;
+        PP.space f;
         PP.string f "=";
-        PP.break1 f;
+        PP.end_group f;
+        PP.space f;
         PP.start_group f 0;
         expression AssignementExpression f e;
         if close then PP.string f ";";
@@ -1006,11 +1022,6 @@ struct
         variable_declaration_list_aux f l;
         if close then PP.string f ";";
         PP.end_group f
-
-  and opt_expression l f e =
-    match e with
-    | None -> ()
-    | Some e -> expression l f e
 
   and parenthesized_expression
       ?(last_semi = fun () -> ())
@@ -1040,21 +1051,22 @@ struct
     PP.space f;
     binding f v
 
-  and statement1 ~space ?last f s =
+  and statement1 ?last f s =
     match s with
     | Block _, _ -> statement ?last f s
     | _ ->
-        if space then PP.space ~indent:1 f else PP.break1 f;
+        PP.space ~indent:1 f;
         PP.start_group f 0;
         statement ?last f s;
         PP.end_group f
 
   and statement ?(last = false) f (s, loc) =
-    let last_semi () = if (not (PP.compact f)) && last then () else PP.string f ";" in
+    let can_omit_semi = PP.compact f && last in
+    let last_semi () = if can_omit_semi then () else PP.string f ";" in
     output_debug_info f loc;
     match s with
     | Block b -> block f b
-    | Variable_statement (k, l) -> variable_declaration_list k (not last) f l
+    | Variable_statement (k, l) -> variable_declaration_list k (not can_omit_semi) f l
     | Function_declaration (i, (k, l, b, loc')) ->
         let prefix =
           match k with
@@ -1105,7 +1117,7 @@ struct
            PP.string f ")";
            PP.end_group f;
            PP.end_group f;
-           statement1 ~space:false ?last:last_in_s1 f s1);
+           statement1 ?last:last_in_s1 f s1);
           match s2 with
           | None -> PP.end_group f
           | Some (If_statement (e, s1, s2), _) when not (ends_with_if_without_else s1) ->
@@ -1115,7 +1127,7 @@ struct
           | Some s2 ->
               PP.break f;
               PP.string f "else";
-              statement1 ~space:true ~last f s2;
+              statement1 ~last f s2;
               PP.end_group f
         in
         ite "if" e s1 s2
@@ -1130,32 +1142,15 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        statement1 ~space:false ~last f s;
-        PP.end_group f
-    | Do_while_statement (((Block _, _) as s), e) ->
-        PP.start_group f 0;
-        PP.string f "do";
-        statement1 ~space:false f s;
-        PP.break f;
-        PP.string f "while";
-        PP.break1 f;
-        PP.start_group f 1;
-        PP.string f "(";
-        expression Expression f e;
-        PP.string f ")";
-        last_semi ();
-        PP.end_group f;
+        statement1 ~last f s;
         PP.end_group f
     | Do_while_statement (s, e) ->
         PP.start_group f 0;
         PP.string f "do";
-        PP.space ~indent:1 f;
-        PP.start_group f 0;
-        statement f s;
-        PP.end_group f;
+        statement1 f s;
         PP.break f;
         PP.string f "while";
-        PP.break f;
+        PP.break1 f;
         PP.start_group f 1;
         PP.string f "(";
         expression Expression f e;
@@ -1177,15 +1172,21 @@ struct
             parenthesized_expression ~let_identifier:true Expression f e
         | Right (k, l) -> variable_declaration_list k false f l);
         PP.string f ";";
-        PP.break f;
-        opt_expression Expression f e2;
+        (match e2 with
+        | None -> ()
+        | Some e2 ->
+            PP.space f;
+            expression Expression f e2);
         PP.string f ";";
-        PP.break f;
-        opt_expression Expression f e3;
+        (match e3 with
+        | None -> ()
+        | Some e3 ->
+            PP.space f;
+            expression Expression f e3);
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        statement1 ~space:false ~last f s;
+        statement1 ~last f s;
         PP.end_group f
     | ForIn_statement (e1, e2, s) ->
         PP.start_group f 1;
@@ -1207,7 +1208,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        statement1 ~space:false ~last f s;
+        statement1 ~last f s;
         PP.end_group f
     | ForOf_statement (e1, e2, s) ->
         PP.start_group f 1;
@@ -1234,7 +1235,7 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        statement1 ~space:false ~last f s;
+        statement1 ~last f s;
         PP.end_group f
     | Continue_statement None ->
         PP.string f "continue";
@@ -1293,7 +1294,7 @@ struct
         let (Utf8 l) = Javascript.Label.to_string i in
         PP.string f l;
         PP.string f ":";
-        PP.break f;
+        PP.space f;
         statement ~last f s
     | Switch_statement (e, cc, def, cc') ->
         PP.start_group f 1;
@@ -1317,7 +1318,9 @@ struct
           expression Expression f e;
           PP.string f ":";
           PP.end_group f;
-          PP.break f;
+          (match sl with
+          | _ :: _ -> PP.space f
+          | [] -> PP.break f);
           PP.start_group f 0;
           statement_list ~skip_last_semi:last f sl;
           PP.end_group f;
@@ -1337,7 +1340,7 @@ struct
         | Some def ->
             PP.start_group f 1;
             PP.string f "default:";
-            PP.break f;
+            PP.space f;
             PP.start_group f 0;
             statement_list ~skip_last_semi:(List.is_empty cc') f def;
             PP.end_group f;
@@ -1390,7 +1393,7 @@ struct
     | [ s ] -> statement f ?last:skip_last_semi s
     | s :: r ->
         statement f s;
-        PP.break f;
+        PP.space f;
         statement_list f ?skip_last_semi r
 
   and block f b =
@@ -1453,6 +1456,7 @@ struct
             (match i with
             | None -> ()
             | Some (e, loc) ->
+                PP.space f;
                 PP.string f "=";
                 PP.space f;
                 output_debug_info f loc;
