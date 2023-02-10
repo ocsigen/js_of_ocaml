@@ -237,24 +237,18 @@ let%expect_test "arrow" =
     /*<< 4 4>>*/  /*<< 4 10>>*/ var a = x=> /*<< 4 20>>*/ x + 2;
     /*<< 5 4>>*/  /*<< 5 10>>*/ var a = (x, y)=> /*<< 5 22>>*/ x + y;
     /*<< 7 4>>*/  /*<< 7 10>>*/ var
-    a =
-    x=>{ /*<< 7 20>>*/ x + 2; /*<< 7 13>>*/ };
+    a = x=>{ /*<< 7 20>>*/ x + 2; /*<< 7 13>>*/ };
     /*<< 8 4>>*/  /*<< 8 10>>*/ var a = ()=>{ /*<< 8 21>>*/ 2; /*<< 8 13>>*/ };
     /*<< 9 4>>*/  /*<< 9 10>>*/ var
-    a =
-    x=>{ /*<< 9 22>>*/ x + 2; /*<< 9 13>>*/ };
+    a = x=>{ /*<< 9 22>>*/ x + 2; /*<< 9 13>>*/ };
     /*<< 11 4>>*/  /*<< 11 10>>*/ var
-    a =
-    ( /*<< 11 16>>*/ x = 1 / 2)=> /*<< 11 28>>*/ x + 10;
+    a = ( /*<< 11 16>>*/ x = 1 / 2)=> /*<< 11 28>>*/ x + 10;
     /*<< 13 4>>*/  /*<< 13 10>>*/ var
-    a =
-    ( /*<< 13 16>>*/ x = /qwe/g)=> /*<< 13 30>>*/ x + 10;
+    a = ( /*<< 13 16>>*/ x = /qwe/g)=> /*<< 13 30>>*/ x + 10;
     /*<< 16 4>>*/  /*<< 16 10>>*/ var
-    a =
-    x=> /*<< 16 17>>*/ y=> /*<< 16 22>>*/ x + y;
+    a = x=> /*<< 16 17>>*/ y=> /*<< 16 22>>*/ x + y;
     /*<< 17 4>>*/  /*<< 17 10>>*/ var
-    a =
-    x=> /*<< 17 17>>*/ y=> /*<< 17 23>>*/ x + y;
+    a = x=> /*<< 17 17>>*/ y=> /*<< 17 23>>*/ x + y;
     /*<< 19 4>>*/  /*<< 19 10>>*/ var a = async x=> /*<< 19 23>>*/ y;
     /*<< 20 4>>*/  /*<< 20 10>>*/ var a = async (a, b)=> /*<< 20 27>>*/ a + b; |}]
 
@@ -292,12 +286,11 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
     /*<< 8 0>>*/ }
     /*<< 12 0>>*/ function rehb_shape(_face, text){
      /*<< 13 2>>*/  /*<< 13 10>>*/ var
-     str =
-      /*<< 13 12>>*/ caml_to_js_string(text);
+     str =  /*<< 13 12>>*/ caml_to_js_string(text);
      /*<< 14 2>>*/  /*<< 14 10>>*/ var
      ret =
-      /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
-      (function mapper(_char){ /*<< 15 6>>*/ return [0, 0, 0]; /*<< 14 30>>*/ });
+        /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
+        (function mapper(_char){ /*<< 15 6>>*/ return [0, 0, 0]; /*<< 14 30>>*/ });
      /*<< 19 2>>*/  /*<< 19 2>>*/ ret.unshift(0);
      /*<< 20 2>>*/ return ret;
     /*<< 21 0>>*/ } |}]
@@ -317,15 +310,14 @@ let%expect_test "rest parameters" =
 
   [%expect
     {|
-     /*<< 2 6>>*/ api_obj[key_module][key_func]
-    =
-     function(...args){
-       /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
-              (function(){
-                 /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
-                        (api_json[key_module][key_func], args);
-                /*<< 3 41>>*/ });
-      /*<< 2 38>>*/ }; |}]
+    /*<< 2 6>>*/ api_obj[key_module][key_func] =
+    function(...args){
+      /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
+             (function(){
+                /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
+                       (api_json[key_module][key_func], args);
+               /*<< 3 41>>*/ });
+     /*<< 2 38>>*/ }; |}]
 
 let%expect_test "async/await" =
   (* GH#1017 *)
@@ -348,12 +340,11 @@ let%expect_test "async/await" =
     /*<< 2 9>>*/ async function compile(src){
      /*<< 4 11>>*/  /*<< 4 31>>*/ const
      glslangModule =
-     await
-      /*<< 4 39>>*/ import
-      ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
+       await
+        /*<< 4 39>>*/ import
+        ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
      /*<< 7 11>>*/  /*<< 7 25>>*/ const
-     glslang =
-     await  /*<< 7 33>>*/ glslangModule.default();
+     glslang = await  /*<< 7 33>>*/ glslangModule.default();
      /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src, "compute");
     /*<< 2 9>>*/ } |}]
 
@@ -380,14 +371,14 @@ let%expect_test "get/set property" =
     {|
     /*<< 2 5>>*/  /*<< 2 11>>*/ var
     x =
-    {get prop(){ /*<< 3 20>>*/ return 3; /*<< 3 7>>*/ },
-     set prop(x){ /*<< 4 21>>*/ return x == 2; /*<< 4 7>>*/ },
-     a: 4,
-     b(){ /*<< 6 13>>*/ return 5; /*<< 6 7>>*/ },
-     * e(){ /*<< 7 14>>*/ return 5; /*<< 7 7>>*/ },
-     async e(){ /*<< 8 19>>*/ return 5; /*<< 8 7>>*/ },
-     async* e(){ /*<< 9 20>>*/ return 5; /*<< 9 7>>*/ },
-     ["field" + 1]: 3}; |}]
+      {get prop(){ /*<< 3 20>>*/ return 3; /*<< 3 7>>*/ },
+       set prop(x){ /*<< 4 21>>*/ return x == 2; /*<< 4 7>>*/ },
+       a: 4,
+       b(){ /*<< 6 13>>*/ return 5; /*<< 6 7>>*/ },
+       * e(){ /*<< 7 14>>*/ return 5; /*<< 7 7>>*/ },
+       async e(){ /*<< 8 19>>*/ return 5; /*<< 8 7>>*/ },
+       async* e(){ /*<< 9 20>>*/ return 5; /*<< 9 7>>*/ },
+       ["field" + 1]: 3}; |}]
 
 let%expect_test "assignment pattern" =
   (* GH#1017 *)
@@ -416,19 +407,19 @@ let%expect_test "assignment pattern" =
 
   [%expect
     {|
-    /*<< 2 4>>*/ var x, y, rest;
-    /*<< 3 4>>*/  /*<< 3 14>>*/ var [x, y] = [1, 2];
-    /*<< 4 4>>*/  /*<< 4 22>>*/ var [x, y, ...rest] = [1, 2, ...o];
-    /*<< 6 4>>*/  /*<< 6 14>>*/ var {x: x, y: y} = {x: 1, y: 2};
-    /*<< 7 4>>*/  /*<< 7 22>>*/ var {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
-    /*<< 9 4>>*/ [x, y] = [1, 2];
-    /*<< 10 4>>*/ [x, y, ...rest] = [1, 2];
-    /*<< 12 4>>*/ ({x, y} = {x: 1, y: 2});
-    /*<< 13 4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
-    /*<< 15 4>>*/ for
+     /*<< 2 4>>*/ var x, y, rest;
+     /*<< 3 4>>*/  /*<< 3 14>>*/ var [x, y] = [1, 2];
+     /*<< 4 4>>*/  /*<< 4 22>>*/ var [x, y, ...rest] = [1, 2, ...o];
+     /*<< 6 4>>*/  /*<< 6 14>>*/ var {x: x, y: y} = {x: 1, y: 2};
+     /*<< 7 4>>*/  /*<< 7 22>>*/ var {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+     /*<< 9 4>>*/ [x, y] = [1, 2];
+     /*<< 10 4>>*/ [x, y, ...rest] = [1, 2];
+     /*<< 12 4>>*/ ({x, y} = {x: 1, y: 2});
+     /*<< 13 4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
+     /*<< 15 4>>*/ for
     ([a, b, {c, d =  /*<< 15 17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
       /*<< 15 43>>*/ ;
-    /*<< 17 4>>*/ for
+     /*<< 17 4>>*/ for
     ([a, b, {c, d =  /*<< 17 17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
       /*<< 17 43>>*/ ; |}]
 
@@ -452,8 +443,7 @@ let%expect_test "string template" =
     /*<< 3 4>>*/  /*<< 3 10>>*/ var s = `asd ${test} te`;
     /*<< 5 4>>*/  /*<< 5 10>>*/ var s =  /*<< 5 12>>*/ tag`asd ${test} te`;
     /*<< 7 4>>*/  /*<< 7 10>>*/ var
-    s =
-    `asd ${ /*<< 7 20>>*/ f(`space ${test} space`, 32)} te`; |}]
+    s = `asd ${ /*<< 7 20>>*/ f(`space ${test} space`, 32)} te`; |}]
 
 let%expect_test "from keyword" =
   (* GH#1017 *)
@@ -472,8 +462,8 @@ let%expect_test "from keyword" =
      value:
      function from(field, get){
        /*<< 5 6>>*/ if(! get)
-        /*<< 5 14>>*/ get
-       = function get(x){ /*<< 5 34>>*/ return x; /*<< 5 18>>*/ };
+        /*<< 5 14>>*/ get =
+        function get(x){ /*<< 5 34>>*/ return x; /*<< 5 18>>*/ };
        /*<< 6 6>>*/ return  /*<< 6 13>>*/ this.compute
               ([field],
                function(state){
@@ -581,7 +571,8 @@ if(a) {
   this(is,not,small) + this(is,bigger);
 }
 |};
-  [%expect {|
+  [%expect
+    {|
     if(a){
      this(is, not, small);
      this(is, not, small) + this(is, bigger);

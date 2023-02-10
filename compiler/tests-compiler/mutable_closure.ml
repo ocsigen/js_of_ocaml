@@ -116,8 +116,8 @@ let%expect_test _ =
     function fun1(param){
      var i = 0;
      for(;;){
-       var
-        closures =
+      var
+       closures =
          function(i){
           function f(counter, n){
            if(- 1 === n){
@@ -150,22 +150,22 @@ let%expect_test _ =
           var block = [0, f$0, g$0];
           return block;
          },
-        closures$0 = closures(i),
-        f = closures$0[1],
-        _e_ = direct[1];
-       direct[1] = [0, f(i), _e_];
-       var _f_ = indirect[1];
-       indirect[1]
-       = [0, function(i, f){return function(param){return f(i);};}(i, f), _f_];
-       var _g_ = i + 1 | 0;
-       if(3 !== i){var i = _g_; continue;}
-       var
-        _c_ = indirect[1],
-        _d_ = function(f){return caml_call1(f, 0);},
-        indirect$0 = caml_call2(Stdlib_List[19], _d_, _c_),
-        direct$0 = direct[1];
-       if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-       throw [0, Assert_failure, _b_];
-      }
+       closures$0 = closures(i),
+       f = closures$0[1],
+       _e_ = direct[1];
+      direct[1] = [0, f(i), _e_];
+      var _f_ = indirect[1];
+      indirect[1] =
+       [0, function(i, f){return function(param){return f(i);};}(i, f), _f_];
+      var _g_ = i + 1 | 0;
+      if(3 !== i){var i = _g_; continue;}
+      var
+       _c_ = indirect[1],
+       _d_ = function(f){return caml_call1(f, 0);},
+       indirect$0 = caml_call2(Stdlib_List[19], _d_, _c_),
+       direct$0 = direct[1];
+      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
+      throw [0, Assert_failure, _b_];
+     }
     }
     //end|}]

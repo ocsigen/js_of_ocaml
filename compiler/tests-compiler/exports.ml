@@ -99,8 +99,7 @@ let%expect_test "static eval of string get" =
     {|
     (function(globalThis){
        var
-        jsoo_exports =
-        typeof module === "object" && module.exports || globalThis;
+        jsoo_exports = typeof module === "object" && module.exports || globalThis;
        jsoo_exports["x"] = 3;
       }
       (globalThis));
