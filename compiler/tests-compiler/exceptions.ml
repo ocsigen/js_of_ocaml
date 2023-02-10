@@ -33,15 +33,16 @@ let prevent_inline = some_name
   [%expect
     {|
     function some_name(param){
-     try{try{throw Stdlib[8]}catch(x$0){var x=caml_wrap_exception(x$0),i$0=x}}
-     catch(i$1){var i=caml_wrap_exception(i$1),i$0=i}
-     throw i$0}
+     try{
+      try{throw Stdlib[8];}catch(x$0){var x = caml_wrap_exception(x$0), i$0 = x;}}
+     catch(i$1){var i = caml_wrap_exception(i$1), i$0 = i;}
+     throw i$0;}
     //end |}];
   print_fun_decl (program ~debug:false) None;
   [%expect
     {|
     function _a_(_b_){
-     try{try{throw Stdlib[8]}catch(_f_){var _d_=caml_wrap_exception(_f_)}}
-     catch(_e_){var _c_=caml_wrap_exception(_e_);throw _c_}
-     throw _d_}
+     try{try{throw Stdlib[8];}catch(_f_){var _d_ = caml_wrap_exception(_f_);}}
+     catch(_e_){var _c_ = caml_wrap_exception(_e_); throw _c_;}
+     throw _d_;}
     //end |}]

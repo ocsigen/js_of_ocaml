@@ -44,11 +44,11 @@ let%expect_test "static eval of string get" =
   print_var_decl program "bx";
   [%expect
     {|
-    var ex = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,- 10));
+    var ex = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz, - 10));
     //end
     var ax = call_with_char(103);
     //end
-    var bx = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz,30));
+    var bx = call_with_char(caml_string_get(cst_abcdefghijklmnopqrstuvwxyz, 30));
     //end |}]
 
 let%expect_test "static eval of string get" =
@@ -76,11 +76,11 @@ let%expect_test "static eval of string get" =
   print_var_decl program "bx";
   [%expect
     {|
-    var ex = call_with_char(caml_string_get(constant,- 10));
+    var ex = call_with_char(caml_string_get(constant, - 10));
     //end
     var ax = call_with_char(103);
     //end
-    var bx = call_with_char(caml_string_get(constant,30));
+    var bx = call_with_char(caml_string_get(constant, 30));
     //end |}]
 
 let%expect_test "static eval of Sys.backend_type" =
@@ -101,7 +101,7 @@ let%expect_test "static eval of Sys.backend_type" =
   in
   print_fun_decl program (Some "myfun");
   [%expect {|
-    function myfun(param){return 42}
+    function myfun(param){return 42;}
     //end |}]
 
 let%expect_test "static eval of string get" =
@@ -137,21 +137,21 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     function copy_bucketlist(param){
-     if(! param)return 0;
+     if(! param) return 0;
      var
-      key=param[1],
-      data=param[2],
-      next=param[3],
-      prec$1=[0,key,data,next],
-      prec=prec$1,
-      param$0=next;
+      key = param[1],
+      data = param[2],
+      next = param[3],
+      prec$1 = [0, key, data, next],
+      prec = prec$1,
+      param$0 = next;
      for(;;){
-       if(! param$0)return prec$1;
+       if(! param$0) return prec$1;
        var
-        key$0=param$0[1],
-        data$0=param$0[2],
-        next$0=param$0[3],
-        prec$0=[0,key$0,data$0,next$0];
+        key$0 = param$0[1],
+        data$0 = param$0[2],
+        next$0 = param$0[3],
+        prec$0 = [0, key$0, data$0, next$0];
        prec[3] = prec$0;
-       var prec=prec$0,param$0=next$0}}
+       var prec = prec$0, param$0 = next$0;}}
     //end |}]

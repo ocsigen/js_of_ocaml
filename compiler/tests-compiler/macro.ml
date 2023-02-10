@@ -67,19 +67,19 @@ let%expect_test "BLOCK(tag)" =
 
 let%expect_test "BLOCK(1, a)" =
   print_macro_transformed "BLOCK(1, a)";
-  [%expect {| [1,a]; |}]
+  [%expect {| [1, a]; |}]
 
 let%expect_test "BLOCK(1, a, b, c)" =
   print_macro_transformed "BLOCK(1, a, b, c)";
-  [%expect {| [1,a,b,c]; |}]
+  [%expect {| [1, a, b, c]; |}]
 
 let%expect_test "BLOCK(077, a)" =
   print_macro_transformed "BLOCK(077, a)";
-  [%expect {| [63,a]; |}]
+  [%expect {| [63, a]; |}]
 
 let%expect_test "BLOCK(0779, a)" =
   print_macro_transformed "BLOCK(0779, a)";
-  [%expect {| [779,a]; |}]
+  [%expect {| [779, a]; |}]
 
 let%expect_test "TAG(a)" =
   print_macro_transformed "TAG(a)";

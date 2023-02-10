@@ -47,17 +47,17 @@ let%expect_test _ =
   print_var_decl program "symbol_op";
   [%expect
     {|
-    var ex = [0,5,"hello","the \xe2\x80\xa2 and \xe2\x80\xba characters"];
+    var ex = [0, 5, "hello", "the \xe2\x80\xa2 and \xe2\x80\xba characters"];
     //end
-    var sx = [0,"hello2","the • and › characters (2)"];
+    var sx = [0, "hello2", "the • and › characters (2)"];
     //end
-    var ax = [0,1,2,3,4];
+    var ax = [0, 1, 2, 3, 4];
     //end
-    var bx = [254,1.,2.,3.,4.];
+    var bx = [254, 1., 2., 3., 4.];
     //end
-    var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
+    var cx = [254, NaN, NaN, Infinity, - Infinity, 0., - 0.];
     //end
-    var symbol_op = [0,symbol_bind,symbol_map,symbol];
+    var symbol_op = [0, symbol_bind, symbol_map, symbol];
     //end |}]
 
 let%expect_test _ =
@@ -92,15 +92,15 @@ let%expect_test _ =
      caml_string_of_jsbytes("hello"),
      caml_string_of_jsbytes("the \xe2\x80\xa2 and \xe2\x80\xba characters")];
     //end
-    var sx = [0,caml_string_of_jsbytes("hello2"),"the • and › characters (2)"];
+    var sx = [0, caml_string_of_jsbytes("hello2"), "the • and › characters (2)"];
     //end
-    var ax = [0,1,2,3,4];
+    var ax = [0, 1, 2, 3, 4];
     //end
-    var bx = [254,1.,2.,3.,4.];
+    var bx = [254, 1., 2., 3., 4.];
     //end
-    var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.];
+    var cx = [254, NaN, NaN, Infinity, - Infinity, 0., - 0.];
     //end
-    var symbol_op = [0,symbol_bind,symbol_map,symbol];
+    var symbol_op = [0, symbol_bind, symbol_map, symbol];
     //end |}]
 
 let%expect_test _ =
@@ -124,34 +124,38 @@ let%expect_test _ =
   [%expect
     {|
     function match_expr(param){
-     var switch$1,switch$0,_c_,_b_,_a_;
+     var switch$1, switch$0, _c_, _b_, _a_;
      if(param){
       _a_ = param[1];
       switch$0 = 0;
       if(_a_){
        _b_ = _a_[1];
-       if(_b_){if(2 === _b_[1] && ! param[2])return 3}else if(! param[2])return 2}
-      else if(! param[2])switch$0 = 1;
+       if(_b_){
+        if(2 === _b_[1] && ! param[2]) return 3;}
+       else if(! param[2]) return 2;}
+      else if(! param[2]) switch$0 = 1;
       if(! switch$0){
        _c_ = param[2];
        switch$1 = 0;
-       if(_c_ && ! _c_[1])switch$1 = 1;
-       if(! switch$1)return 4}}
-     return 1}
+       if(_c_ && ! _c_[1]) switch$1 = 1;
+       if(! switch$1) return 4;}}
+     return 1;}
     //end |}];
   with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
   [%expect
     {|
     function match_expr(param){
      if(param){
-      var _a_=param[1],switch$0=0;
+      var _a_ = param[1], switch$0 = 0;
       if(_a_){
-       var _b_=_a_[1];
-       if(_b_){if(2 === _b_[1] && ! param[2])return 3}else if(! param[2])return 2}
-      else if(! param[2])switch$0 = 1;
+       var _b_ = _a_[1];
+       if(_b_){
+        if(2 === _b_[1] && ! param[2]) return 3;}
+       else if(! param[2]) return 2;}
+      else if(! param[2]) switch$0 = 1;
       if(! switch$0){
-       var _c_=param[2],switch$1=0;
-       if(_c_ && ! _c_[1])switch$1 = 1;
-       if(! switch$1)return 4}}
-     return 1}
+       var _c_ = param[2], switch$1 = 0;
+       if(_c_ && ! _c_[1]) switch$1 = 1;
+       if(! switch$1) return 4;}}
+     return 1;}
     //end |}]
