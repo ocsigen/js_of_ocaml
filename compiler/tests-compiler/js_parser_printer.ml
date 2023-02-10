@@ -37,7 +37,7 @@ let p_to_string p =
   let s = Buffer.contents buffer in
   s
 
-let print ?(report = false) ?(invalid = false) ~compact source =
+let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact source =
   let stdout = Util.check_javascript_source source in
   (match invalid, stdout with
   | false, _ -> print_endline stdout
@@ -49,7 +49,7 @@ let print ?(report = false) ?(invalid = false) ~compact source =
   let lexed = Parse_js.Lexer.of_string source in
   try
     let parsed = Parse_js.parse lexed in
-    Config.Flag.enable "debuginfo";
+    (if debuginfo then Config.Flag.enable else Config.Flag.disable) "debuginfo";
     let _ = Js_output.program pp parsed in
     let s = Buffer.contents buffer in
     print_endline s;
@@ -538,6 +538,53 @@ class x extends p {
      /*<< 23 13>>*/ 2
     static{ /*<< 25 12>>*/  /*<< 25 18>>*/ var x=3}
     } |}]
+
+let%expect_test "ite" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    {|
+if(a) {
+  this(is,not,small)
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+} else if (b) {
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small)
+} else if (c) {
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+} else {
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+  this(is,not,small) + this(is,bigger);
+}
+|};
+  [%expect {|
+    if(a)
+     {this(is,not,small);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger)}
+    else
+     if(b)
+      {this(is,not,small) + this(is,bigger);
+       this(is,not,small) + this(is,bigger);
+       this(is,not,small) + this(is,bigger);
+       this(is,not,small)}
+     else
+      if(c)
+       {this(is,not,small) + this(is,bigger);
+        this(is,not,small) + this(is,bigger);
+        this(is,not,small) + this(is,bigger)}
+      else
+       {this(is,not,small) + this(is,bigger);
+        this(is,not,small) + this(is,bigger);
+        this(is,not,small) + this(is,bigger)} |}]
 
 let%expect_test "error reporting" =
   (try
