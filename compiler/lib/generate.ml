@@ -1031,13 +1031,25 @@ let internal_prim name =
 
 let register_prim name k f = Hashtbl.add internal_primitives name (k, f)
 
+let invalid_arity name l ~loc ~expected =
+  failwith
+    (Printf.sprintf
+       "%sInvalid arity for primitive %s. Expecting %d but used with %d."
+       (match (loc : J.location) with
+       | Pi { name = Some name; col; line; _ } ->
+           Printf.sprintf "%s:%d:%d: " name line col
+       | Pi _ | N | U -> "")
+       name
+       expected
+       (List.length l))
+
 let register_un_prim name k f =
   register_prim name k (fun l queue ctx loc ->
       match l with
       | [ x ] ->
           let (px, cx), queue = access_queue' ~ctx queue x in
           f cx loc, or_p (kind k) px, queue
-      | _ -> assert false)
+      | l -> invalid_arity name l ~loc ~expected:1)
 
 let register_un_prim_ctx name k f =
   register_prim name k (fun l queue ctx loc ->
@@ -1045,7 +1057,7 @@ let register_un_prim_ctx name k f =
       | [ x ] ->
           let (px, cx), queue = access_queue' ~ctx queue x in
           f ctx cx loc, or_p (kind k) px, queue
-      | _ -> assert false)
+      | _ -> invalid_arity name l ~loc ~expected:1)
 
 let register_bin_prim name k f =
   register_prim name k (fun l queue ctx loc ->
@@ -1054,7 +1066,7 @@ let register_bin_prim name k f =
           let (px, cx), queue = access_queue' ~ctx queue x in
           let (py, cy), queue = access_queue' ~ctx queue y in
           f cx cy loc, or_p (kind k) (or_p px py), queue
-      | _ -> assert false)
+      | _ -> invalid_arity name l ~loc ~expected:2)
 
 let register_tern_prim name f =
   register_prim name `Mutator (fun l queue ctx loc ->
@@ -1064,7 +1076,7 @@ let register_tern_prim name f =
           let (py, cy), queue = access_queue' ~ctx queue y in
           let (pz, cz), queue = access_queue' ~ctx queue z in
           f cx cy cz loc, or_p mutator_p (or_p px (or_p py pz)), queue
-      | _ -> assert false)
+      | _ -> invalid_arity name l ~loc ~expected:3)
 
 let register_un_math_prim name prim =
   let prim = Utf8_string.of_string_exn prim in
