@@ -197,8 +197,7 @@ let rec equal eq xs ys =
         if(match)
          {if(match$0)
            {var ys$1=match$0[2],xs$1=match[2],xs$0=xs$1,ys$0=ys$1;continue}}
-        else
-         if(! match$0)return 1;
+        else if(! match$0)return 1;
         return 0}}
     //end |}]
 
@@ -422,13 +421,10 @@ let add_substitute =
               if(91 <= match)
                {if(97 <= match)
                  {if(123 > match)switch$1 = 1}
-                else
-                 if(95 === match)switch$1 = 1}
-              else
-               if(58 <= match)
-                {if(65 <= match)switch$1 = 1}
-               else
-                if(48 <= match)switch$1 = 1;
+                else if(95 === match)switch$1 = 1}
+              else if(58 <= match)
+               {if(65 <= match)switch$1 = 1}
+              else if(48 <= match)switch$1 = 1;
               if(switch$1){var i$3=i$2 + 1 | 0,i$2=i$3;continue}
               var stop$0=i$2}
             var

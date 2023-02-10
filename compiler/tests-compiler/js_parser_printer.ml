@@ -570,21 +570,19 @@ if(a) {
       this(is,not,small) + this(is,bigger);
       this(is,not,small) + this(is,bigger);
       this(is,not,small) + this(is,bigger)}
+    else if(b)
+     {this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small)}
+    else if(c)
+     {this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger)}
     else
-     if(b)
-      {this(is,not,small) + this(is,bigger);
-       this(is,not,small) + this(is,bigger);
-       this(is,not,small) + this(is,bigger);
-       this(is,not,small)}
-     else
-      if(c)
-       {this(is,not,small) + this(is,bigger);
-        this(is,not,small) + this(is,bigger);
-        this(is,not,small) + this(is,bigger)}
-      else
-       {this(is,not,small) + this(is,bigger);
-        this(is,not,small) + this(is,bigger);
-        this(is,not,small) + this(is,bigger)} |}]
+     {this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger);
+      this(is,not,small) + this(is,bigger)} |}]
 
 let%expect_test "error reporting" =
   (try
