@@ -90,6 +90,7 @@
   (run
    %{bin:js_of_ocaml}
    link
+   --pretty
    --enable
    auto-link
    %{dep:myruntime.js}

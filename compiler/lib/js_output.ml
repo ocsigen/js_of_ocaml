@@ -639,11 +639,13 @@ struct
         then (
           PP.start_group f 1;
           PP.string f "(");
+        PP.start_group f 0;
         expression lft f e1;
         PP.space f;
         PP.string f (op_str op);
         PP.space f;
         expression rght f e2;
+        PP.end_group f;
         if Prec.(l > out)
         then (
           PP.string f ")";
