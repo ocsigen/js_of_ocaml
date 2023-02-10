@@ -37,6 +37,7 @@ let%expect_test _ =
     function caml_call2(f, a0, a1){
      return (f.l >= 0 ? f.l : f.l = f.length) == 2
              ? f(a0, a1)
-             : runtime.caml_call_gen(f, [a0, a1]);}
+             : runtime.caml_call_gen(f, [a0, a1]);
+    }
     //end |}];
   ()

@@ -288,8 +288,8 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
 
   [%expect
     {|
-    /*<< 4 0>>*/ function rehb_new_face(_fontName){
-     /*<< 7 2>>*/ return undefined; /*<< 8 0>>*/ }
+    /*<< 4 0>>*/ function rehb_new_face(_fontName){ /*<< 7 2>>*/ return undefined;
+    /*<< 8 0>>*/ }
     /*<< 12 0>>*/ function rehb_shape(_face, text){
      /*<< 13 2>>*/  /*<< 13 10>>*/ var
      str =
@@ -299,7 +299,8 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
       /*<< 14 12>>*/  /*<< 14 12>>*/ str.split("").map
       (function mapper(_char){ /*<< 15 6>>*/ return [0, 0, 0]; /*<< 14 30>>*/ });
      /*<< 19 2>>*/  /*<< 19 2>>*/ ret.unshift(0);
-     /*<< 20 2>>*/ return ret; /*<< 21 0>>*/ } |}]
+     /*<< 20 2>>*/ return ret;
+    /*<< 21 0>>*/ } |}]
 
 let%expect_test "rest parameters" =
   (* GH#1031 *)
@@ -322,7 +323,9 @@ let%expect_test "rest parameters" =
        /*<< 3 8>>*/ return  /*<< 3 15>>*/  /*<< 3 15>>*/ checkIfInitialized().then
               (function(){
                  /*<< 4 10>>*/ return  /*<< 4 17>>*/ callWithProto
-                        (api_json[key_module][key_func], args); /*<< 3 41>>*/ }); /*<< 2 38>>*/ }; |}]
+                        (api_json[key_module][key_func], args);
+                /*<< 3 41>>*/ });
+      /*<< 2 38>>*/ }; |}]
 
 let%expect_test "async/await" =
   (* GH#1017 *)
@@ -351,7 +354,8 @@ let%expect_test "async/await" =
      /*<< 7 11>>*/  /*<< 7 25>>*/ const
      glslang =
      await  /*<< 7 33>>*/ glslangModule.default();
-     /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src, "compute"); /*<< 2 9>>*/ } |}]
+     /*<< 8 11>>*/ return  /*<< 8 18>>*/ glslang.compileGLSL(src, "compute");
+    /*<< 2 9>>*/ } |}]
 
 let%expect_test "get/set property" =
   (* GH#1017 *)
@@ -474,7 +478,9 @@ let%expect_test "from keyword" =
               ([field],
                function(state){
                  /*<< 6 50>>*/ return  /*<< 6 57>>*/ get
-                        ( /*<< 6 61>>*/ state.field(field)); /*<< 6 34>>*/ }); /*<< 4 3>>*/ }}); |}]
+                        ( /*<< 6 61>>*/ state.field(field));
+                /*<< 6 34>>*/ });
+      /*<< 4 3>>*/ }}); |}]
 
 let%expect_test "new.target" =
   (* GH#1017 *)
@@ -526,11 +532,13 @@ class x extends p {
     p{constructor(){ /*<< 4 6>>*/  /*<< 4 6>>*/ super(a, b, c); /*<< 3 4>>*/ }
     foo(){
       /*<< 8 6>>*/  /*<< 8 12>>*/ var s = super[d];
-      /*<< 9 6>>*/  /*<< 9 12>>*/ var s = super.d; /*<< 6 4>>*/ }
+      /*<< 9 6>>*/  /*<< 9 12>>*/ var s = super.d;
+     /*<< 6 4>>*/ }
     static
     bar(){
       /*<< 14 6>>*/  /*<< 14 12>>*/ var s = super[d];
-      /*<< 15 6>>*/  /*<< 15 12>>*/ var s = super.d; /*<< 12 11>>*/ }
+      /*<< 15 6>>*/  /*<< 15 12>>*/ var s = super.d;
+     /*<< 12 11>>*/ }
     x
     =
      /*<< 17 5>>*/ 3
@@ -578,20 +586,24 @@ if(a) {
      this(is, not, small);
      this(is, not, small) + this(is, bigger);
      this(is, not, small) + this(is, bigger);
-     this(is, not, small) + this(is, bigger);}
+     this(is, not, small) + this(is, bigger);
+    }
     else if(b){
      this(is, not, small) + this(is, bigger);
      this(is, not, small) + this(is, bigger);
      this(is, not, small) + this(is, bigger);
-     this(is, not, small);}
+     this(is, not, small);
+    }
     else if(c){
      this(is, not, small) + this(is, bigger);
      this(is, not, small) + this(is, bigger);
-     this(is, not, small) + this(is, bigger);}
+     this(is, not, small) + this(is, bigger);
+    }
     else{
      this(is, not, small) + this(is, bigger);
      this(is, not, small) + this(is, bigger);
-     this(is, not, small) + this(is, bigger);} |}]
+     this(is, not, small) + this(is, bigger);
+    } |}]
 
 let%expect_test "error reporting" =
   (try

@@ -1368,23 +1368,19 @@ struct
         | None -> ()
         | Some (i, b) ->
             PP.break f;
-            PP.start_group f 1;
             (match i with
             | None -> PP.string f "catch"
             | Some i ->
                 PP.string f "catch(";
                 formal_parameter f i;
                 PP.string f ")");
-            block f b;
-            PP.end_group f);
+            block f b);
         (match fin with
         | None -> ()
         | Some b ->
             PP.break f;
-            PP.start_group f 1;
             PP.string f "finally";
-            block f b;
-            PP.end_group f);
+            block f b);
         PP.end_group f
 
   and statement_list f ?skip_last_semi b =
@@ -1397,17 +1393,20 @@ struct
         statement_list f ?skip_last_semi r
 
   and block f b =
-    PP.string f "{";
+    PP.start_group f 0;
     PP.start_group f 1;
+    PP.string f "{";
     PP.break f;
     statement_list ~skip_last_semi:true f b;
+    PP.end_group f;
+    PP.break f;
     PP.string f "}";
     PP.end_group f
 
   and function_declaration :
       type a. 'pp -> string -> ('pp -> a -> unit) -> a option -> _ -> _ -> _ -> unit =
    fun f prefix (pp_name : _ -> a -> unit) (name : a option) l body loc ->
-    PP.start_group f 1;
+    PP.start_group f 0;
     PP.start_group f 0;
     PP.start_group f 0;
     PP.string f prefix;
@@ -1424,9 +1423,12 @@ struct
     PP.string f ")";
     PP.end_group f;
     PP.end_group f;
+    PP.start_group f 1;
     PP.string f "{";
     PP.break f;
     function_body f body;
+    PP.end_group f;
+    PP.break f;
     output_debug_info f loc;
     PP.string f "}";
     PP.end_group f

@@ -54,10 +54,12 @@ let%expect_test _ =
         function d(a){return f.caml_div(a, 0);}
         var g = a < b ? 1 : 2;
         try{var c = d(a), e = c;}catch(c){var e = d(g);}
-        return e;}
+        return e;
+       }
        var d = [0, b];
        f.caml_register_global(0, d, "Test");
        0;
-       return;}
+       return;
+      }
       (globalThis));
     //end |}]
