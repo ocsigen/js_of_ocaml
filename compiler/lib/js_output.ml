@@ -1074,7 +1074,7 @@ struct
     | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
         (* Dangling else issue... *)
         statement ~last f (If_statement (e, (Block [ s1 ], N), s2), N)
-    | If_statement (e, s1, Some ((Block _, _) as s2)) ->
+    | If_statement (e, s1, s2) -> (
         PP.start_group f 0;
         PP.start_group f 1;
         PP.string f "if";
@@ -1087,53 +1087,26 @@ struct
         PP.end_group f;
         PP.break1 f;
         PP.start_group f 0;
-        statement f s1;
+        statement
+          ?last:
+            (match s2 with
+            | None -> Some last
+            | Some _ -> None)
+          f
+          s1;
         PP.end_group f;
-        PP.break f;
-        PP.string f "else";
-        PP.break1 f;
-        PP.start_group f 0;
-        statement ~last f s2;
-        PP.end_group f;
-        PP.end_group f
-    | If_statement (e, s1, Some s2) ->
-        PP.start_group f 0;
-        PP.start_group f 1;
-        PP.string f "if";
-        PP.break f;
-        PP.start_group f 1;
-        PP.string f "(";
-        expression Expression f e;
-        PP.string f ")";
-        PP.end_group f;
-        PP.end_group f;
-        PP.break1 f;
-        PP.start_group f 0;
-        statement f s1;
-        PP.end_group f;
-        PP.break f;
-        PP.string f "else";
-        PP.space ~indent:1 f;
-        PP.start_group f 0;
-        statement ~last f s2;
-        PP.end_group f;
-        PP.end_group f
-    | If_statement (e, s1, None) ->
-        PP.start_group f 1;
-        PP.start_group f 0;
-        PP.string f "if";
-        PP.break f;
-        PP.start_group f 1;
-        PP.string f "(";
-        expression Expression f e;
-        PP.string f ")";
-        PP.end_group f;
-        PP.end_group f;
-        PP.break f;
-        PP.start_group f 0;
-        statement ~last f s1;
-        PP.end_group f;
-        PP.end_group f
+        match s2 with
+        | None -> PP.end_group f
+        | Some s2 ->
+            PP.break f;
+            PP.string f "else";
+            (match s2 with
+            | Block _, _ -> PP.break1 f
+            | _ -> PP.space ~indent:1 f);
+            PP.start_group f 0;
+            statement ~last f s2;
+            PP.end_group f;
+            PP.end_group f)
     | While_statement (e, s) ->
         PP.start_group f 1;
         PP.start_group f 0;
