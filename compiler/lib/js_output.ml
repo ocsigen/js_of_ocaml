@@ -626,6 +626,46 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
+    | EBin
+        ( (( Eq
+           | StarEq
+           | SlashEq
+           | ModEq
+           | PlusEq
+           | MinusEq
+           | LslEq
+           | AsrEq
+           | LsrEq
+           | BandEq
+           | BxorEq
+           | BorEq
+           | OrEq
+           | AndEq
+           | ExpEq
+           | CoalesceEq ) as op)
+        , e1
+        , e2 ) ->
+        let out, lft, rght = op_prec op in
+        let lft =
+          (* We can have e sequence of coalesce: e1 ?? e2 ?? e3,
+             but each expressions should be a BitwiseORExpression *)
+          match e1, op with
+          | EBin (Coalesce, _, _), Coalesce -> CoalesceExpression
+          | _ -> lft
+        in
+        PP.start_group f 0;
+        if Prec.(l > out) then PP.string f "(";
+        PP.start_group f 0;
+        expression lft f e1;
+        PP.space f;
+        PP.string f (op_str op);
+        PP.end_group f;
+        PP.start_group f 1;
+        PP.space f;
+        expression rght f e2;
+        PP.end_group f;
+        if Prec.(l > out) then PP.string f ")";
+        PP.end_group f
     | EBin (op, e1, e2) ->
         let out, lft, rght = op_prec op in
         let lft =
@@ -892,8 +932,10 @@ struct
         PP.space f;
         PP.string f "=";
         PP.end_group f;
+        PP.start_group f 1;
         PP.space f;
         expression AssignementExpression f e;
+        PP.end_group f;
         PP.end_group f
     | DeclPattern (p, (e, loc)) ->
         PP.start_group f 1;
@@ -903,8 +945,10 @@ struct
         PP.space f;
         PP.string f "=";
         PP.end_group f;
+        PP.start_group f 1;
         PP.space f;
         expression AssignementExpression f e;
+        PP.end_group f;
         PP.end_group f
 
   and binding_property f x =
@@ -977,43 +1021,19 @@ struct
 
   and variable_declaration_list kind close f = function
     | [] -> ()
-    | [ DeclIdent (i, None) ] ->
-        PP.start_group f 1;
-        variable_declaration_kind f kind;
-        PP.space f;
-        ident f i;
-        if close then PP.string f ";"
-    | [ DeclIdent (i, Some (e, loc)) ] ->
-        PP.start_group f 1;
-        output_debug_info f loc;
-        variable_declaration_kind f kind;
-        PP.space f;
-        PP.start_group f 0;
-        ident f i;
-        PP.space f;
-        PP.string f "=";
-        PP.end_group f;
-        PP.space f;
-        PP.start_group f 0;
-        expression AssignementExpression f e;
-        if close then PP.string f ";";
-        PP.end_group f;
-        PP.end_group f
-    | [ DeclPattern (p, (e, loc)) ] ->
+    | [ x ] ->
+        let x, loc =
+          match x with
+          | DeclIdent (_, None) as x -> x, N
+          | DeclIdent (i, Some (e, loc)) -> DeclIdent (i, Some (e, N)), loc
+          | DeclPattern (p, (e, loc)) -> DeclPattern (p, (e, N)), loc
+        in
         PP.start_group f 1;
         output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
-        PP.start_group f 0;
-        pattern f p;
-        PP.space f;
-        PP.string f "=";
-        PP.end_group f;
-        PP.space f;
-        PP.start_group f 0;
-        expression AssignementExpression f e;
+        variable_declaration f x;
         if close then PP.string f ";";
-        PP.end_group f;
         PP.end_group f
     | l ->
         PP.start_group f 1;
@@ -1121,18 +1141,18 @@ struct
           match s2 with
           | None -> PP.end_group f
           | Some (If_statement (e, s1, s2), _) when not (ends_with_if_without_else s1) ->
-              PP.break f;
+              PP.space f;
               ite "else if" e s1 s2;
               PP.end_group f
           | Some s2 ->
-              PP.break f;
+              PP.space f;
               PP.string f "else";
               statement1 ~last f s2;
               PP.end_group f
         in
         ite "if" e s1 s2
     | While_statement (e, s) ->
-        PP.start_group f 1;
+        PP.start_group f 0;
         PP.start_group f 0;
         PP.string f "while";
         PP.break f;
@@ -1159,7 +1179,7 @@ struct
         PP.end_group f;
         PP.end_group f
     | For_statement (e1, e2, e3, s) ->
-        PP.start_group f 1;
+        PP.start_group f 0;
         PP.start_group f 0;
         PP.string f "for";
         PP.break f;
@@ -1189,7 +1209,7 @@ struct
         statement1 ~last f s;
         PP.end_group f
     | ForIn_statement (e1, e2, s) ->
-        PP.start_group f 1;
+        PP.start_group f 0;
         PP.start_group f 0;
         PP.string f "for";
         PP.break f;
@@ -1211,7 +1231,7 @@ struct
         statement1 ~last f s;
         PP.end_group f
     | ForOf_statement (e1, e2, s) ->
-        PP.start_group f 1;
+        PP.start_group f 0;
         PP.start_group f 0;
         PP.string f "for";
         PP.break f;
@@ -1307,31 +1327,33 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.break f;
         PP.start_group f 1;
         PP.string f "{";
+        PP.break f;
         let output_one last (e, sl) =
-          PP.start_group f 1;
           PP.start_group f 1;
           PP.string f "case";
           PP.space f;
           expression Expression f e;
           PP.string f ":";
           PP.end_group f;
+          PP.start_group f 1;
           (match sl with
           | _ :: _ -> PP.space f
           | [] -> PP.break f);
           PP.start_group f 0;
           statement_list ~skip_last_semi:last f sl;
           PP.end_group f;
-          PP.end_group f;
-          PP.break f
+          PP.end_group f
         in
         let rec loop last = function
           | [] -> ()
-          | [ x ] -> output_one last x
+          | [ x ] ->
+              output_one last x;
+              if not last then PP.break f
           | x :: xs ->
               output_one false x;
+              PP.break f;
               loop last xs
         in
         loop (Option.is_none def && List.is_empty cc') cc;
@@ -1342,13 +1364,16 @@ struct
             PP.string f "default:";
             PP.space f;
             PP.start_group f 0;
-            statement_list ~skip_last_semi:(List.is_empty cc') f def;
+            let last = List.is_empty cc' in
+            statement_list ~skip_last_semi:last f def;
             PP.end_group f;
-            PP.end_group f);
+            PP.end_group f;
+            if not last then PP.break f);
         loop true cc';
-        PP.string f "}";
         PP.end_group f;
-        PP.end_group f
+        PP.end_group f;
+        PP.break f;
+        PP.string f "}"
     | Throw_statement e ->
         PP.start_group f 6;
         PP.string f "throw";

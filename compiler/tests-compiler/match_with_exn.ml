@@ -94,7 +94,7 @@ let fun2 () =
       var _a_ = caml_wrap_exception(_c_), switch$1 = 0;
       if(_a_[1] === A){
        var _b_ = _a_[2];
-       if(2 === _b_){var i = _b_; switch$0 = 1;}else switch$1 = 1;
+       if(2 === _b_){var i = _b_; switch$0 = 1;} else switch$1 = 1;
       }
       else
        switch$1 = 1;

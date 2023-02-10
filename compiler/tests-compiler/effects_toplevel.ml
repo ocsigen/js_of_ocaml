@@ -68,9 +68,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   global_data = runtime.caml_get_global_data(),
                   Stdlib_Printf = global_data.Stdlib__Printf,
                   _a_ =
-                   [0,
-                    [11, caml_string_of_jsbytes("abc"), 0],
-                    caml_string_of_jsbytes("abc")];
+                    [0,
+                     [11, caml_string_of_jsbytes("abc"), 0],
+                     caml_string_of_jsbytes("abc")];
                  function g(param, cont){
                   return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
                  }

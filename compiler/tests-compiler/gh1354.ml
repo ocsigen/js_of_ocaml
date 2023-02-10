@@ -60,7 +60,7 @@ with Exit ->
         Stdlib_Printf = global_data.Stdlib__Printf,
         _b_ = 0,
         _d_ =
-         [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
+          [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
         _a_ = 0;
        try{0; _b_ = _a_ + 1 | 0; throw Stdlib[3];}
        catch(_e_){
@@ -123,13 +123,13 @@ with Exit ->
         Stdlib_Printf = global_data.Stdlib__Printf,
         _c_ = 0,
         _h_ =
-         [0,
-          [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
-          caml_string_of_jsbytes("%d %d\n")],
+          [0,
+           [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
+           caml_string_of_jsbytes("%d %d\n")],
         _e_ =
-         [0,
-          [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
-          caml_string_of_jsbytes("%d %d\n")],
+          [0,
+           [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
+           caml_string_of_jsbytes("%d %d\n")],
         _a_ = 0,
         _b_ = 0;
        try{

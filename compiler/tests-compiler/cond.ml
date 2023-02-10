@@ -49,7 +49,7 @@ let%expect_test "conditional" =
      }
      else if(b){
       var switch$1 = 0;
-      if(c || d) switch$1 = 1;else if(! e && ! f){var x = 2; switch$0 = 1;}
+      if(c || d) switch$1 = 1; else if(! e && ! f){var x = 2; switch$0 = 1;}
      }
      else if(c){
       if(! d && ! e && ! f){var x = 3; switch$0 = 1;}
@@ -60,7 +60,7 @@ let%expect_test "conditional" =
      else if(e){
       if(! f){var x = 5; switch$0 = 1;}
      }
-     else if(f){var x = 6; switch$0 = 1;}else{var x = 100; switch$0 = 1;}
+     else if(f){var x = 6; switch$0 = 1;} else{var x = 100; switch$0 = 1;}
      if(! switch$0) var x = - 1;
      return x + 2 | 0;
     }
