@@ -132,10 +132,8 @@ let%expect_test _ =
          {_b_ = _a_[1];
           if(_b_)
            {if(2 === _b_[1] && ! param[2])return 3}
-          else
-           if(! param[2])return 2}
-        else
-         if(! param[2])switch$0 = 1;
+          else if(! param[2])return 2}
+        else if(! param[2])switch$0 = 1;
         if(! switch$0)
          {_c_ = param[2];
           switch$1 = 0;
@@ -153,10 +151,8 @@ let%expect_test _ =
          {var _b_=_a_[1];
           if(_b_)
            {if(2 === _b_[1] && ! param[2])return 3}
-          else
-           if(! param[2])return 2}
-        else
-         if(! param[2])switch$0 = 1;
+          else if(! param[2])return 2}
+        else if(! param[2])switch$0 = 1;
         if(! switch$0)
          {var _c_=param[2],switch$1=0;
           if(_c_ && ! _c_[1])switch$1 = 1;

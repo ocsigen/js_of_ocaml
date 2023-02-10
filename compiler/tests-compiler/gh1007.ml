@@ -173,30 +173,29 @@ let ()  = M.myfun M.x
                    x1=l[1],
                    s=0 < caml_int_compare(x1,x2)?[0,x1,[0,x2,0]]:[0,x2,[0,x1,0]];
                   return [0,s,tl]}}}
-            else
-             if(3 === n && l)
-              {var _d_=l[2];
-               if(_d_)
-                {var match$2=_d_[2];
-                 if(match$2)
-                  {var
-                    tl$1=match$2[2],
-                    x3=match$2[1],
-                    x2$0=_d_[1],
-                    x1$0=l[1],
-                    s$0=
-                     0 < caml_int_compare(x1$0,x2$0)
-                      ?0 < caml_int_compare(x2$0,x3)
-                        ?[0,x1$0,[0,x2$0,[0,x3,0]]]
-                        :0 < caml_int_compare(x1$0,x3)
-                          ?[0,x1$0,[0,x3,[0,x2$0,0]]]
-                          :[0,x3,[0,x1$0,[0,x2$0,0]]]
-                      :0 < caml_int_compare(x1$0,x3)
-                        ?[0,x2$0,[0,x1$0,[0,x3,0]]]
-                        :0 < caml_int_compare(x2$0,x3)
-                          ?[0,x2$0,[0,x3,[0,x1$0,0]]]
-                          :[0,x3,[0,x2$0,[0,x1$0,0]]];
-                   return [0,s$0,tl$1]}}}
+            else if(3 === n && l)
+             {var _d_=l[2];
+              if(_d_)
+               {var match$2=_d_[2];
+                if(match$2)
+                 {var
+                   tl$1=match$2[2],
+                   x3=match$2[1],
+                   x2$0=_d_[1],
+                   x1$0=l[1],
+                   s$0=
+                    0 < caml_int_compare(x1$0,x2$0)
+                     ?0 < caml_int_compare(x2$0,x3)
+                       ?[0,x1$0,[0,x2$0,[0,x3,0]]]
+                       :0 < caml_int_compare(x1$0,x3)
+                         ?[0,x1$0,[0,x3,[0,x2$0,0]]]
+                         :[0,x3,[0,x1$0,[0,x2$0,0]]]
+                     :0 < caml_int_compare(x1$0,x3)
+                       ?[0,x2$0,[0,x1$0,[0,x3,0]]]
+                       :0 < caml_int_compare(x2$0,x3)
+                         ?[0,x2$0,[0,x3,[0,x1$0,0]]]
+                         :[0,x3,[0,x2$0,[0,x1$0,0]]];
+                  return [0,s$0,tl$1]}}}
             var
              n1=n >> 1,
              n2=n - n1 | 0,
@@ -233,30 +232,29 @@ let ()  = M.myfun M.x
                    x1=l[1],
                    s=0 < caml_int_compare(x1,x2)?[0,x2,[0,x1,0]]:[0,x1,[0,x2,0]];
                   return [0,s,tl]}}}
-            else
-             if(3 === n && l)
-              {var _b_=l[2];
-               if(_b_)
-                {var match$2=_b_[2];
-                 if(match$2)
-                  {var
-                    tl$1=match$2[2],
-                    x3=match$2[1],
-                    x2$0=_b_[1],
-                    x1$0=l[1],
-                    s$0=
-                     0 < caml_int_compare(x1$0,x2$0)
-                      ?0 < caml_int_compare(x1$0,x3)
-                        ?0 < caml_int_compare(x2$0,x3)
-                          ?[0,x3,[0,x2$0,[0,x1$0,0]]]
-                          :[0,x2$0,[0,x3,[0,x1$0,0]]]
-                        :[0,x2$0,[0,x1$0,[0,x3,0]]]
-                      :0 < caml_int_compare(x2$0,x3)
-                        ?0 < caml_int_compare(x1$0,x3)
-                          ?[0,x3,[0,x1$0,[0,x2$0,0]]]
-                          :[0,x1$0,[0,x3,[0,x2$0,0]]]
-                        :[0,x1$0,[0,x2$0,[0,x3,0]]];
-                   return [0,s$0,tl$1]}}}
+            else if(3 === n && l)
+             {var _b_=l[2];
+              if(_b_)
+               {var match$2=_b_[2];
+                if(match$2)
+                 {var
+                   tl$1=match$2[2],
+                   x3=match$2[1],
+                   x2$0=_b_[1],
+                   x1$0=l[1],
+                   s$0=
+                    0 < caml_int_compare(x1$0,x2$0)
+                     ?0 < caml_int_compare(x1$0,x3)
+                       ?0 < caml_int_compare(x2$0,x3)
+                         ?[0,x3,[0,x2$0,[0,x1$0,0]]]
+                         :[0,x2$0,[0,x3,[0,x1$0,0]]]
+                       :[0,x2$0,[0,x1$0,[0,x3,0]]]
+                     :0 < caml_int_compare(x2$0,x3)
+                       ?0 < caml_int_compare(x1$0,x3)
+                         ?[0,x3,[0,x1$0,[0,x2$0,0]]]
+                         :[0,x1$0,[0,x3,[0,x2$0,0]]]
+                       :[0,x1$0,[0,x2$0,[0,x3,0]]];
+                  return [0,s$0,tl$1]}}}
             var
              n1=n >> 1,
              n2=n - n1 | 0,
