@@ -13,6 +13,7 @@
 * Compiler: Update the js lexer with new number literal syntax
 * Compiler: update js parser to support most es6 feature (#1391)
 * Compiler: stop parsing the builtin js runtime if not necessary
+* Compiler: improve js pretty printer (#1405)
 * Toplevel: Enable separate compilation of toplevels
 
 ## Bug fixes
