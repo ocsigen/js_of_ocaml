@@ -44,26 +44,25 @@ let%expect_test _ =
   Util.print_fun_decl program (Some "fun1");
   [%expect
     {|
-    function fun1(param)
-     {function odd$0(counter,x)
-       {if(0 === x)return 0;
-        var _g_=x - 1 | 0;
-        if(counter >= 50)return caml_trampoline_return(even$0,[0,_g_]);
-        var counter$0=counter + 1 | 0;
-        return even$0(counter$0,_g_)}
-      function even$0(counter,x)
-       {if(0 === x)return 1;
-        var _f_=x - 1 | 0;
-        if(counter >= 50)return caml_trampoline_return(odd$0,[0,_f_]);
-        var counter$0=counter + 1 | 0;
-        return odd$0(counter$0,_f_)}
-      function odd(x){return caml_trampoline(odd$0(0,x))}
-      function even(x){return caml_trampoline(even$0(0,x))}
-      var _c_=even(1);
-      if(odd(1) === _c_)throw [0,Assert_failure,_b_];
-      try
-       {odd(5000);var _d_=log_success(0);return _d_}
-      catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}}
+    function fun1(param){
+     function odd$0(counter,x){
+      if(0 === x)return 0;
+      var _g_=x - 1 | 0;
+      if(counter >= 50)return caml_trampoline_return(even$0,[0,_g_]);
+      var counter$0=counter + 1 | 0;
+      return even$0(counter$0,_g_)}
+     function even$0(counter,x){
+      if(0 === x)return 1;
+      var _f_=x - 1 | 0;
+      if(counter >= 50)return caml_trampoline_return(odd$0,[0,_f_]);
+      var counter$0=counter + 1 | 0;
+      return odd$0(counter$0,_f_)}
+     function odd(x){return caml_trampoline(odd$0(0,x))}
+     function even(x){return caml_trampoline(even$0(0,x))}
+     var _c_=even(1);
+     if(odd(1) === _c_)throw [0,Assert_failure,_b_];
+     try{odd(5000);var _d_=log_success(0);return _d_}
+     catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}}
     //end |}]
 
 let%expect_test _ =
@@ -90,16 +89,15 @@ let%expect_test _ =
   Util.print_fun_decl program (Some "fun1");
   [%expect
     {|
-    function fun1(param)
-     {function odd$0(x)
-       {return 0 === x?0:caml_trampoline_return(even$0,[0,x - 1 | 0])}
-      function even$0(x)
-       {return 0 === x?1:caml_trampoline_return(odd$0,[0,x - 1 | 0])}
-      function odd(x){return caml_trampoline(odd$0(x))}
-      function even(x){return caml_trampoline(even$0(x))}
-      var _c_=even(1);
-      if(odd(1) === _c_)throw [0,Assert_failure,_b_];
-      try
-       {odd(5000);var _d_=log_success(0);return _d_}
-      catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}}
+    function fun1(param){
+     function odd$0(x){
+      return 0 === x?0:caml_trampoline_return(even$0,[0,x - 1 | 0])}
+     function even$0(x){
+      return 0 === x?1:caml_trampoline_return(odd$0,[0,x - 1 | 0])}
+     function odd(x){return caml_trampoline(odd$0(x))}
+     function even(x){return caml_trampoline(even$0(x))}
+     var _c_=even(1);
+     if(odd(1) === _c_)throw [0,Assert_failure,_b_];
+     try{odd(5000);var _d_=log_success(0);return _d_}
+     catch(_e_){return caml_call1(log_failure,cst_too_much_recursion)}}
     //end |}]

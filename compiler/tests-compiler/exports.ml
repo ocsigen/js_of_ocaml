@@ -63,8 +63,10 @@ let%expect_test "static eval of string get" =
   print_program (clean program);
   [%expect
     {|
-    function Loader(globalThis)
-     {var jsoo_exports={};jsoo_exports["x"] = 3;return jsoo_exports}
+    function Loader(globalThis){
+     var jsoo_exports={};
+     jsoo_exports["x"] = 3;
+     return jsoo_exports}
     if(typeof module === "object" && module.exports)module["exports"] = Loader;
     //end |}];
   let program =
@@ -94,11 +96,11 @@ let%expect_test "static eval of string get" =
   print_program (clean program);
   [%expect
     {|
-    (function(globalThis)
-       {var
-         jsoo_exports=
-          typeof module === "object" && module.exports || globalThis;
-        jsoo_exports["x"] = 3}
+    (function(globalThis){
+       var
+        jsoo_exports=
+         typeof module === "object" && module.exports || globalThis;
+       jsoo_exports["x"] = 3}
       (globalThis));
     //end |}];
   let program =
