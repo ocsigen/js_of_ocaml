@@ -157,7 +157,7 @@ module Share = struct
     let count =
       Addr.Map.fold
         (fun _ block share ->
-          List.fold_left block.body ~init:share ~f:(fun share i ->
+          List.fold_left block.body ~init:share ~f:(fun share (i, _) ->
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
@@ -341,8 +341,8 @@ let bool e = J.ECond (e, one, zero)
 
 (****)
 
-let source_location ctx ?after pc =
-  match Parse_bytecode.Debug.find_loc ctx.Ctx.debug ?after pc with
+let source_location ctx ?force (pc : Code.loc) =
+  match Parse_bytecode.Debug.find_loc ctx.Ctx.debug ?force pc with
   | Some pi -> J.Pi pi
   | None -> J.N
 
@@ -752,7 +752,7 @@ end
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match block.branch with
+  match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc1, _), _, (pc2, _), _) ->
@@ -801,7 +801,7 @@ let build_graph ctx pc =
       Addr.Set.iter (fun pc' -> loops := Addr.Set.add pc' !loops) pc_backs;
       List.iter pc_succs ~f:(fun pc' ->
           let pushtrap =
-            match b.branch with
+            match fst b.branch with
             | Pushtrap ((pc1, _), _, (pc2, _), _remove) ->
                 if pc' = pc1
                 then (
@@ -831,9 +831,9 @@ let build_graph ctx pc =
       then (* already part of a merge node *) false
       else
         match Addr.Map.find pc blocks with
-        | { body = []; branch = Return _; _ } -> false
-        | { body = []; branch = Stop; _ } -> false
-        | { body = []; branch = Branch (pc', _); _ } -> keep_front pc'
+        | { body = []; branch = Return _, _; _ } -> false
+        | { body = []; branch = Stop, _; _ } -> false
+        | { body = []; branch = Branch (pc', _), _; _ } -> keep_front pc'
         | _ -> true
     in
     Hashtbl.iter
@@ -1229,7 +1229,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
-      let loc = source_location ctx ~after:true pc in
+      let loc = source_location ctx ~force:After (After pc) in
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
@@ -1470,15 +1470,18 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       in
       res, []
 
-and translate_instr ctx expr_queue loc instr =
+and translate_instr ctx expr_queue instr =
+  let instr, pc = instr in
   match instr with
   | Assign (x, y) ->
+      let loc = source_location ctx pc in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
         expr_queue
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
+      let loc = source_location ctx pc in
       let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =
         match Code.Var.get_name x with
@@ -1509,6 +1512,7 @@ and translate_instr ctx expr_queue loc instr =
             prop
             (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
   | Set_field (x, n, y) ->
+      let loc = source_location ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
@@ -1516,6 +1520,7 @@ and translate_instr ctx expr_queue loc instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Block.field cx n, cy)), loc ]
   | Offset_ref (x, 1) ->
+      let loc = source_location ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
@@ -1523,6 +1528,7 @@ and translate_instr ctx expr_queue loc instr =
         mutator_p
         [ J.Expression_statement (J.EUn (J.IncrA, Mlvalue.Block.field cx 0)), loc ]
   | Offset_ref (x, n) ->
+      let loc = source_location ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
@@ -1531,6 +1537,7 @@ and translate_instr ctx expr_queue loc instr =
         [ J.Expression_statement (J.EBin (J.PlusEq, Mlvalue.Block.field cx 0, int n)), loc
         ]
   | Array_set (x, y, z) ->
+      let loc = source_location ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       let (_pz, cz), expr_queue = access_queue expr_queue z in
@@ -1539,12 +1546,12 @@ and translate_instr ctx expr_queue loc instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
 
-and translate_instrs ctx expr_queue loc instr last =
+and translate_instrs ctx expr_queue instr last =
   match instr with
   | [] -> [], expr_queue
   | instr :: rem ->
-      let st, expr_queue = translate_instr ctx expr_queue loc instr in
-      let instrs, expr_queue = translate_instrs ctx expr_queue loc rem last in
+      let st, expr_queue = translate_instr ctx expr_queue instr in
+      let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
       st @ instrs, expr_queue
 
 (* Compile loops. *)
@@ -1591,7 +1598,7 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
                     else (
                       if debug () then Format.eprintf "break;@;}@]@,";
                       body @ [ J.Break_statement None, J.N ])) )
-            , source_location st.ctx pc )
+            , source_location st.ctx (Code.location_of_pc pc) )
           in
           let label = if !lab_used then Some lab else None in
           let for_loop =
@@ -1627,9 +1634,7 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   if debug () then Format.eprintf "block %d; frontier: %s;@," pc (string_of_set frontier);
   let block = Addr.Map.find pc st.blocks in
-  let seq, queue =
-    translate_instrs st.ctx queue (source_location st.ctx pc) block.body block.branch
-  in
+  let seq, queue = translate_instrs st.ctx queue block.body block.branch in
   let new_frontier =
     List.fold_left
       (get_succs st pc)
@@ -1647,7 +1652,6 @@ and compile_block_no_loop st queue (pc : Addr.t) loop_stack frontier interm =
     compile_conditional
       st
       queue
-      pc
       block.branch
       loop_stack
       (Hashtbl.find st.backs pc)
@@ -1674,7 +1678,7 @@ and compile_merge_node
   | Some pc, None ->
       (* merge node with a one block frontier *)
       compile_branch st [] (pc, []) loop_stack Addr.Set.empty frontier interm
-  | Some pc, Some (members, branch) ->
+  | Some _, Some (members, branch) ->
       (* merge node *)
       let new_frontier =
         members
@@ -1693,7 +1697,6 @@ and compile_merge_node
         compile_conditional
           st
           []
-          pc
           branch
           loop_stack
           Addr.Set.empty
@@ -1748,8 +1751,8 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
     let branch =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
-      then Code.Switch (x, cases, [||])
-      else Code.Cond (x, cases.(1), cases.(0))
+      then Code.Switch (x, cases, [||]), Code.noloc
+      else Code.Cond (x, cases.(1), cases.(0)), Code.noloc
     in
     ( [ J.variable_declaration [ J.V x, (int default, J.N) ], J.N ]
     , Addr.Set.singleton idx
@@ -1818,7 +1821,8 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
   let never, code = loop cx dtree in
   never, binds @ code
 
-and compile_conditional st queue pc last loop_stack backs frontier interm =
+and compile_conditional st queue last loop_stack backs frontier interm =
+  let last, pc = last in
   (if debug ()
   then
     match last with
@@ -1871,7 +1875,7 @@ and compile_conditional st queue pc last loop_stack backs frontier interm =
         , flush_all
             queue
             [ ( J.Try_statement (body, Some (Some (J.param' (J.V exn_var)), handler), None)
-              , source_location st.ctx pc )
+              , loc )
             ] )
     | Poptrap cont ->
         let never, code = compile_branch st [] cont loop_stack backs frontier interm in

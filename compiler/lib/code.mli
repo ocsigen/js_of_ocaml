@@ -163,6 +163,15 @@ type constant =
 
 val constant_equal : constant -> constant -> bool option
 
+type loc =
+  | No
+  | Before of Addr.t
+  | After of Addr.t
+
+val noloc : loc
+
+val location_of_pc : int -> loc
+
 type prim_arg =
   | Pv of Var.t
   | Pc of constant
@@ -198,8 +207,8 @@ type last =
 
 type block =
   { params : Var.t list
-  ; body : instr list
-  ; branch : last
+  ; body : (instr * loc) list
+  ; branch : last * loc
   }
 
 type program =
@@ -210,18 +219,18 @@ type program =
 
 module Print : sig
   type xinstr =
-    | Instr of instr
-    | Last of last
+    | Instr of (instr * loc)
+    | Last of (last * loc)
 
   val var_list : Format.formatter -> Var.t list -> unit
 
-  val instr : Format.formatter -> instr -> unit
+  val instr : Format.formatter -> instr * loc -> unit
 
   val block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
 
   val program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 
-  val last : Format.formatter -> last -> unit
+  val last : Format.formatter -> last * loc -> unit
 
   val cont : Format.formatter -> cont -> unit
 end
@@ -244,7 +253,7 @@ val traverse :
 val preorder_traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
-val prepend : program -> instr list -> program
+val prepend : program -> (instr * loc) list -> program
 
 val empty : program
 

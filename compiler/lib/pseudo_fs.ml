@@ -91,18 +91,19 @@ let instr_of_name_content prim ~name ~content =
     | `create_file_extern -> "jsoo_create_file_extern"
   in
   assert (String.is_valid_utf_8 name);
-  Let
-    ( Var.fresh ()
-    , Prim
-        ( Extern prim
-        , [ Pc (NativeString (Code.Native_string.of_string name))
-          ; Pc (NativeString (Code.Native_string.of_bytestring content))
-          ] ) )
+  ( Let
+      ( Var.fresh ()
+      , Prim
+          ( Extern prim
+          , [ Pc (NativeString (Code.Native_string.of_string name))
+            ; Pc (NativeString (Code.Native_string.of_bytestring content))
+            ] ) )
+  , Code.noloc )
 
 let embed_file ~name ~filename =
   instr_of_name_content `create_file_extern ~name ~content:(Fs.read_file filename)
 
-let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))
+let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])), noloc)
 
 let f ~prim ~cmis ~files ~paths =
   let cmi_files, missing_cmis =

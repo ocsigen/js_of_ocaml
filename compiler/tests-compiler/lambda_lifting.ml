@@ -26,13 +26,13 @@ Printf.printf "%d\n" (f 3)
         runtime = globalThis.jsoo_runtime,
         global_data = runtime.caml_get_global_data(),
         Stdlib_Printf = global_data.Stdlib__Printf,
-        _c_ =
+        _b_ =
           [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")];
        function f(x){var g$0 = g(x); return g$0(5);}
        function h(x, y){function h(z){return (x + y | 0) + z | 0;} return h;}
        function g(x){function g(y){var h$0 = h(x, y); return h$0(7);} return g;}
-       var _a_ = 3, _b_ = f(_a_), _d_ = Stdlib_Printf[2];
-       runtime.caml_callback(_d_, [_c_, _b_]);
+       var _a_ = f(3);
+       runtime.caml_callback(Stdlib_Printf[2], [_b_, _a_]);
        var Test = [0];
        runtime.caml_register_global(2, Test, "Test");
        return;
