@@ -35,23 +35,23 @@ let rec remove_last l =
 let rec tail_call x f l =
   match l with
   | [] -> None
-  | [ Let (y, Apply { f = g; args; _ }) ] when Var.compare x y = 0 && Var.compare f g = 0
-    -> Some args
+  | [ (Let (y, Apply { f = g; args; _ }), loc) ]
+    when Var.compare x y = 0 && Var.compare f g = 0 -> Some (args, loc)
   | _ :: rem -> tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
   let block = Addr.Map.find pc blocks in
   match block.branch with
-  | Return x -> (
+  | Return x, _loc -> (
       match tail_call x f block.body with
-      | Some f_args when List.length f_params = List.length f_args ->
+      | Some (f_args, loc) when List.length f_params = List.length f_args ->
           let m = Subst.build_mapping f_params f_args in
           List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
           Addr.Map.add
             pc
             { params = block.params
             ; body = remove_last block.body
-            ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m))
+            ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m)), loc
             }
             blocks
       | _ -> blocks)
@@ -60,7 +60,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
 (* Skip try body *)
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match block.branch with
+  match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap (_, _, (pc1, _), pcs) -> f pc1 (Addr.Set.fold f pcs accu)

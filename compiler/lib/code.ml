@@ -326,6 +326,11 @@ let rec constant_equal a b =
   | Int _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
       Some false
 
+type loc =
+  | No
+  | Before of Addr.t
+  | After of Addr.t
+
 type prim_arg =
   | Pv of Var.t
   | Pc of constant
@@ -361,8 +366,8 @@ type last =
 
 type block =
   { params : Var.t list
-  ; body : instr list
-  ; branch : last
+  ; body : (instr * loc) list
+  ; branch : last * loc
   }
 
 type program =
@@ -371,6 +376,9 @@ type program =
   ; free_pc : Addr.t
   }
 
+let noloc = No
+
+let location_of_pc pc = Before pc
 (****)
 
 module Print = struct
@@ -478,7 +486,7 @@ module Print = struct
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
 
-  let instr f i =
+  let instr f (i, _loc) =
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
@@ -487,7 +495,7 @@ module Print = struct
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
 
-  let last f l =
+  let last f (l, _loc) =
     match l with
     | Return x -> Format.fprintf f "return %a" Var.print x
     | Raise (x, `Normal) -> Format.fprintf f "raise %a" Var.print x
@@ -516,8 +524,8 @@ module Print = struct
     | Poptrap c -> Format.fprintf f "poptrap %a" cont c
 
   type xinstr =
-    | Instr of instr
-    | Last of last
+    | Instr of (instr * loc)
+    | Last of (last * loc)
 
   let block annot pc block =
     Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
@@ -536,7 +544,7 @@ end
 let fold_closures p f accu =
   Addr.Map.fold
     (fun _ block accu ->
-      List.fold_left block.body ~init:accu ~f:(fun accu i ->
+      List.fold_left block.body ~init:accu ~f:(fun accu (i, _loc) ->
           match i with
           | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
           | _ -> accu))
@@ -557,12 +565,12 @@ let prepend ({ start; blocks; free_pc } as p) body =
       | exception Not_found ->
           let new_start = free_pc in
           let blocks =
-            Addr.Map.add new_start { params = []; body; branch = Stop } blocks
+            Addr.Map.add new_start { params = []; body; branch = Stop, noloc } blocks
           in
           let free_pc = free_pc + 1 in
           { start = new_start; blocks; free_pc })
 
-let empty_block = { params = []; body = []; branch = Stop }
+let empty_block = { params = []; body = []; branch = Stop, noloc }
 
 let empty =
   let start = 0 in
@@ -575,16 +583,17 @@ let is_empty p =
   | 1 -> (
       let _, v = Addr.Map.choose p.blocks in
       match v with
-      | { body; branch = Stop; params = _ } -> (
+      | { body; branch = Stop, _; params = _ } -> (
           match body with
-          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
+          | ([] | [ (Let (_, Prim (Extern "caml_get_global_data", _)), _) ]) when true ->
+              true
           | _ -> false)
       | _ -> false)
   | _ -> false
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match block.branch with
+  match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _), _) ->
@@ -648,7 +657,7 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)) ->
+            | Let (x, Closure (params, cont)), _ ->
                 let accu = visit blocks (fst cont) f accu in
                 f (Some x) params cont accu
             | _ -> accu))
@@ -704,7 +713,8 @@ let invariant { blocks; start; _ } =
       | Constant _ -> ()
       | Prim (_, _) -> ()
     in
-    let check_instr = function
+    let check_instr (i, _loc) =
+      match i with
       | Let (x, e) ->
           define x;
           check_expr e
@@ -713,7 +723,8 @@ let invariant { blocks; start; _ } =
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
     in
-    let check_last = function
+    let check_last (l, _loc) =
+      match l with
       | Return _ -> ()
       | Raise _ -> ()
       | Stop -> ()

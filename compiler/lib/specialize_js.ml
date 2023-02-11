@@ -151,7 +151,7 @@ let specialize_instrs info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
-    | i :: r -> (
+    | (i, loc) :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
            the array access. The bound checking function returns the array,
@@ -167,13 +167,15 @@ let specialize_instrs info l =
             in
             if List.mem (y, idx) ~set:checks
             then
-              let acc = Let (x, Prim (Extern "caml_array_unsafe_get", [ y; z ])) :: acc in
+              let acc =
+                (Let (x, Prim (Extern "caml_array_unsafe_get", [ y; z ])), loc) :: acc
+              in
               aux info checks r acc
             else
               let y' = Code.Var.fresh () in
               let acc =
-                Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ]))
-                :: Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
+                (Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ])), loc)
+                :: (Let (y', Prim (Extern "caml_check_bound", [ y; z ])), noloc)
                 :: acc
               in
               aux info ((y, idx) :: checks) r acc
@@ -188,20 +190,20 @@ let specialize_instrs info l =
             if List.mem (y, idx) ~set:checks
             then
               let acc =
-                Let (x, Prim (Extern "caml_array_unsafe_set", [ y; z; t ])) :: acc
+                (Let (x, Prim (Extern "caml_array_unsafe_set", [ y; z; t ])), loc) :: acc
               in
               aux info checks r acc
             else
               let y' = Code.Var.fresh () in
               let acc =
-                Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ]))
-                :: Let (y', Prim (Extern "caml_check_bound", [ y; z ]))
+                (Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ])), loc)
+                :: (Let (y', Prim (Extern "caml_check_bound", [ y; z ])), noloc)
                 :: acc
               in
               aux info ((y, idx) :: checks) r acc
         | _ ->
             let i = specialize_instr info i in
-            aux info checks r (i :: acc))
+            aux info checks r ((i, loc) :: acc))
   in
   aux info [] l []
 
@@ -221,7 +223,7 @@ let f_once p =
   let rec loop acc l =
     match l with
     | [] -> List.rev acc
-    | i :: r -> (
+    | (i, loc) :: r -> (
         match i with
         | Let
             ( x
@@ -235,9 +237,9 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            let acc = Let (x', p) :: Let (x, Constant (Int 0l)) :: acc in
+            let acc = (Let (x', p), loc) :: (Let (x, Constant (Int 0l)), loc) :: acc in
             loop acc r
-        | _ -> loop (i :: acc) r)
+        | _ -> loop ((i, loc) :: acc) r)
   in
   let blocks =
     Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks

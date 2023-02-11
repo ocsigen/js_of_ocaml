@@ -62,7 +62,7 @@ let program_deps { blocks; _ } =
   let defs = Array.make nv Var.Set.empty in
   Addr.Map.iter
     (fun _pc block ->
-      List.iter block.body ~f:(fun i ->
+      List.iter block.body ~f:(fun (i, _loc) ->
           match i with
           | Let (x, e) ->
               add_var vars x;
@@ -71,7 +71,7 @@ let program_deps { blocks; _ } =
               add_dep deps x y;
               add_def vars defs x y
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      match block.branch with
+      match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> cont_deps blocks vars deps defs cont
       | Cond (_, cont1, cont2) ->

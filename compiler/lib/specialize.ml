@@ -48,17 +48,17 @@ let rec function_cardinality info x acc =
 
 let specialize_instr info (acc, free_pc, extra) i =
   match i with
-  | Let (x, Apply { f; args; _ }) when Config.Flag.optcall () -> (
+  | Let (x, Apply { f; args; _ }), loc when Config.Flag.optcall () -> (
       let n' = List.length args in
       match function_cardinality info f [] with
       | None -> i :: acc, free_pc, extra
       | Some n when n = n' ->
-          Let (x, Apply { f; args; exact = true }) :: acc, free_pc, extra
+          (Let (x, Apply { f; args; exact = true }), loc) :: acc, free_pc, extra
       | Some n when n < n' ->
           let v = Code.Var.fresh () in
           let args, rest = List.take n args in
-          ( Let (v, Apply { f; args; exact = true })
-            :: Let (x, Apply { f = v; args = rest; exact = false })
+          ( (Let (v, Apply { f; args; exact = true }), loc)
+            :: (Let (x, Apply { f = v; args = rest; exact = false }), loc)
             :: acc
           , free_pc
           , extra )
@@ -70,11 +70,12 @@ let specialize_instr info (acc, free_pc, extra) i =
             let params' = Array.to_list params' in
             let return' = Code.Var.fresh () in
             { params = params'
-            ; body = [ Let (return', Apply { f; args = args @ params'; exact = true }) ]
-            ; branch = Return return'
+            ; body =
+                [ Let (return', Apply { f; args = args @ params'; exact = true }), noloc ]
+            ; branch = Return return', noloc
             }
           in
-          ( Let (x, Closure (missing, (free_pc, missing))) :: acc
+          ( (Let (x, Closure (missing, (free_pc, missing))), loc) :: acc
           , free_pc + 1
           , (free_pc, block) :: extra )
       | _ -> i :: acc, free_pc, extra)

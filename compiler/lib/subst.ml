@@ -47,23 +47,26 @@ let instr s i =
   | Offset_ref (x, n) -> Offset_ref (s x, n)
   | Array_set (x, y, z) -> Array_set (s x, s y, s z)
 
-let instrs s l = List.map l ~f:(fun i -> instr s i)
+let instrs s l = List.map l ~f:(fun (i, loc) -> instr s i, loc)
 
-let last s l =
-  match l with
-  | Stop -> l
-  | Branch cont -> Branch (subst_cont s cont)
-  | Pushtrap (cont1, x, cont2, pcs) ->
-      Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
-  | Return x -> Return (s x)
-  | Raise (x, k) -> Raise (s x, k)
-  | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-  | Switch (x, a1, a2) ->
-      Switch
-        ( s x
-        , Array.map a1 ~f:(fun cont -> subst_cont s cont)
-        , Array.map a2 ~f:(fun cont -> subst_cont s cont) )
-  | Poptrap cont -> Poptrap (subst_cont s cont)
+let last s (l, loc) =
+  let l =
+    match l with
+    | Stop -> l
+    | Branch cont -> Branch (subst_cont s cont)
+    | Pushtrap (cont1, x, cont2, pcs) ->
+        Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
+    | Return x -> Return (s x)
+    | Raise (x, k) -> Raise (s x, k)
+    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
+    | Switch (x, a1, a2) ->
+        Switch
+          ( s x
+          , Array.map a1 ~f:(fun cont -> subst_cont s cont)
+          , Array.map a2 ~f:(fun cont -> subst_cont s cont) )
+    | Poptrap cont -> Poptrap (subst_cont s cont)
+  in
+  l, loc
 
 let block s block =
   { params = block.params; body = instrs s block.body; branch = last s block.branch }
@@ -81,7 +84,10 @@ let rec cont' s pc blocks visited =
     let b = block s b in
     let blocks = Addr.Map.add pc b blocks in
     let blocks, visited =
-      List.fold_left b.body ~init:(blocks, visited) ~f:(fun (blocks, visited) instr ->
+      List.fold_left
+        b.body
+        ~init:(blocks, visited)
+        ~f:(fun (blocks, visited) (instr, _) ->
           match instr with
           | Let (_, Closure (_, (pc, _))) -> cont' s pc blocks visited
           | _ -> blocks, visited)

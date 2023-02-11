@@ -47,7 +47,7 @@ let return_values p =
               { fold = fold_children }
               (fun pc s ->
                 let block = Addr.Map.find pc p.blocks in
-                match block.branch with
+                match fst block.branch with
                 | Return x -> Var.Set.add x s
                 | _ -> s)
               pc
@@ -218,7 +218,7 @@ let expr_deps blocks st x e =
 let program_deps st { blocks; _ } =
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun i ->
+      List.iter block.body ~f:(fun (i, _) ->
           match i with
           | Let (x, e) ->
               add_expr_def st x e;
@@ -228,7 +228,7 @@ let program_deps st { blocks; _ } =
               possibly_mutable st x;
               do_escape st Escape y
           | Offset_ref _ -> ());
-      match block.branch with
+      match fst block.branch with
       | Return _ | Stop -> ()
       | Raise (x, _) -> do_escape st Escape x
       | Branch cont | Poptrap cont -> cont_deps blocks st cont
@@ -247,7 +247,7 @@ let program_deps st { blocks; _ } =
             (fun pc tags ->
               let block = Addr.Map.find pc blocks in
               List.iter
-                ~f:(fun i ->
+                ~f:(fun (i, _) ->
                   match i with
                   | Let (y, Field (x', _)) when Var.equal x x' ->
                       Hashtbl.add st.known_cases y tags

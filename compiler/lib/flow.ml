@@ -103,7 +103,7 @@ let program_deps { blocks; _ } =
   let defs = Array.make nv undefined in
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun i ->
+      List.iter block.body ~f:(fun (i, _loc) ->
           match i with
           | Let (x, e) ->
               add_var vars x;
@@ -113,7 +113,7 @@ let program_deps { blocks; _ } =
               add_dep deps x y;
               add_assign_def vars defs x y
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      match block.branch with
+      match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap cont -> cont_deps blocks vars deps defs cont
       | Cond (_, cont1, cont2) ->
@@ -241,7 +241,7 @@ let program_escape defs known_origins { blocks; _ } =
   let st = { defs; known_origins; may_escape; possibly_mutable } in
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun i ->
+      List.iter block.body ~f:(fun (i, _loc) ->
           match i with
           | Let (x, e) -> expr_escape st x e
           | Assign _ -> ()
@@ -254,7 +254,7 @@ let program_escape defs known_origins { blocks; _ } =
               Var.Set.iter
                 (fun y -> possibly_mutable.(Var.idx y) <- true)
                 (Var.Tbl.get known_origins x));
-      match block.branch with
+      match fst block.branch with
       | Return x | Raise (x, _) -> block_escape st x
       | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
     blocks;

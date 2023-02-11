@@ -24,8 +24,8 @@ val f :
   -> cmis:StringSet.t
   -> files:string list
   -> paths:string list
-  -> Code.instr list
+  -> (Code.instr * Code.loc) list
 
-val embed_file : name:string -> filename:string -> Code.instr
+val embed_file : name:string -> filename:string -> Code.instr * Code.loc
 
-val init : unit -> Code.instr
+val init : unit -> Code.instr * Code.loc

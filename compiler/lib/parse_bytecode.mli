@@ -23,9 +23,14 @@ open Stdlib
 module Debug : sig
   type t
 
+  type force =
+    | Before
+    | After
+    | No
+
   val create : include_cmis:bool -> bool -> t
 
-  val find_loc : t -> ?after:bool -> int -> Parse_info.t option
+  val find_loc : t -> ?force:force -> Code.loc -> Parse_info.t option
 
   val is_empty : t -> bool
 
