@@ -1,5 +1,6 @@
 # dev (20??-??) - ??
 ## Features/Changes
+* Lib: Added support for KeyboardEvent.getModifierState
 * Misc: bump min ocaml version to 4.08
 * Misc: remove some old runtime files to support some external libs
 * Effects: partial CPS transformation, resulting in much better performances, lower compilation time and smaller generated code
