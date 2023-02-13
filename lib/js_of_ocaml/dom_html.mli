@@ -365,6 +365,8 @@ and keyboardEvent =
 
     method keyCode : int readonly_prop
 
+    method getModifierState: js_string t -> bool t meth
+
     method keyIdentifier : js_string t optdef readonly_prop
   end
 
