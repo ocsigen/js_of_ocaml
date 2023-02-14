@@ -339,7 +339,7 @@ end
     113:      /*<<test.ml:56:51>>*/  /*<<test.ml:56:51>>*/ var _o_ = info(0);
     114:      /*<<test.ml:56:8>>*/ return [0,
     115:              /*<<test.ml:56:13>>*/ caml_call2(Stdlib_Printf[4], _b_, _o_)];
-    116:    }
+    116:     /*<<test.ml:61:52>>*/ }
     117:    function print_exception_backtrace(outchan, backtrace){
     118:      /*<<test.ml:64:2>>*/ if(! backtrace)
     119:       /*<<test.ml:66:6>>*/ return  /*<<test.ml:66:6>>*/ caml_call2
@@ -364,7 +364,7 @@ end
     138:      }
     139:     }
     140:     return 0;
-    141:    }
+    141:     /*<<test.ml:73:10>>*/ }
     142:    function compare(left, right, e1, e2){
     143:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
     144:      var v1 = e1[1];
@@ -378,7 +378,7 @@ end
     152:     var v2$0 = e2[1];
     153:      /*<<test.ml:79:26>>*/ return  /*<<test.ml:79:26>>*/ caml_call2
     154:             (right, v1$0, v2$0);
-    155:    }
+    155:     /*<<test.ml:81:24>>*/ }
     156:     /*<<test.ml:75:16>>*/ var
     157:      /*<<test.ml:75:16>>*/ Either = [0, compare],
     158:     Test =
