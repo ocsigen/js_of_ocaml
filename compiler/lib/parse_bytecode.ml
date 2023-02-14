@@ -63,6 +63,9 @@ module Debug : sig
 
   val find_loc : t -> ?force:force -> Code.loc -> Parse_info.t option
 
+  val find_loc' :
+    t -> Code.loc -> (string option * Location.t * Instruct.debug_event_kind) option
+
   val find_source : t -> string -> string option
 
   val mem : t -> int -> bool
@@ -271,6 +274,16 @@ end = struct
     with Not_found -> []
 
   let mem { events_by_pc; _ } pc = Int_table.mem events_by_pc pc
+
+  let find_loc' { events_by_pc; _ } x =
+    match x with
+    | Code.No -> None
+    | Code.Before pc | Code.After pc -> (
+        try
+          let { event; source } = Int_table.find events_by_pc pc in
+          let loc = event.ev_loc in
+          Some (source, loc, event.ev_kind)
+        with Not_found -> None)
 
   let find_loc { events_by_pc; _ } ?(force = No) x =
     match x with
@@ -788,22 +801,31 @@ type compile_info =
   }
 
 let string_of_addr debug_data addr =
-  match Debug.find_loc debug_data (Code.location_of_pc addr) with
-  | None -> string_of_int addr
-  | Some loc -> (
-      match loc.Parse_info.src with
-      | None -> string_of_int addr
-      | Some file -> Printf.sprintf "%s:%d:%d" file loc.Parse_info.line loc.Parse_info.col
-      )
+  match Debug.find_loc' debug_data (Code.location_of_pc addr) with
+  | None -> None
+  | Some (src, loc, kind) ->
+      let pos (p : Lexing.position) =
+        Printf.sprintf "%d:%d" p.pos_lnum (p.pos_cnum - p.pos_bol)
+      in
+      let file =
+        match src with
+        | None -> "<unknown>"
+        | Some file -> file
+      in
+      let kind =
+        match kind with
+        | Event_before -> "(before)"
+        | Event_after _ -> "(after)"
+        | Event_pseudo -> "(pseudo)"
+      in
+      Some (Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
 let rec compile_block blocks debug_data code pc state =
   if not (Addr.Set.mem pc !tagged_blocks)
   then (
     let limit = Blocks.next blocks pc in
     assert (limit > pc);
-    if debug_parser ()
-    then
-      Format.eprintf "Compiling from %s to %d@." (string_of_addr debug_data pc) (limit - 1);
+    if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
     let state = State.start_block pc state in
     tagged_blocks := Addr.Set.add pc !tagged_blocks;
     let instr, last, state' =
@@ -825,6 +847,11 @@ let rec compile_block blocks debug_data code pc state =
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
   assert (pc <= infos.limit);
+  (if debug_parser ()
+  then
+    match string_of_addr infos.debug pc with
+    | None -> ()
+    | Some s -> Format.eprintf "@@@@ %s @@@@@." s);
   if pc = infos.limit
   then
     if (* stop if we reach end_of_code (ie when compiling cmo) *)
@@ -842,13 +869,7 @@ and compile infos pc state instrs =
     State.name_vars state infos.debug pc;
     let code = infos.code in
     let instr = get_instr_exn code pc in
-    if debug_parser ()
-    then
-      Format.eprintf
-        "%08x %s %s@."
-        instr.opcode
-        instr.name
-        (string_of_addr infos.debug pc);
+    if debug_parser () then Format.eprintf "%08x %s@." instr.opcode instr.name;
     let state =
       match instr.Instr.code with
       | APPLY
