@@ -1351,11 +1351,25 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | Eq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue
+            ( bool
+                (J.call
+                   (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                   [ cx; cy ]
+                   loc)
+            , or_p px py
+            , queue )
         | Neq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue
+            ( J.EBin
+                ( J.Minus
+                , one
+                , J.call
+                    (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                    [ cx; cy ]
+                    loc )
+            , or_p px py
+            , queue )
         | IsInt, [ x ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             bool (Mlvalue.is_immediate cx), px, queue
