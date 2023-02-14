@@ -1106,7 +1106,7 @@ and compile infos pc state instrs =
         if debug_parser () then Format.printf "return %a@." Var.print x;
         instrs, (Return x, loc), state
     | RESTART -> assert false
-    | GRAB -> compile infos (pc + 2) state instrs
+    | GRAB -> assert false
     | CLOSURE ->
         let nvars = getu code (pc + 1) in
         let addr = pc + gets code (pc + 2) + 2 in
@@ -1122,10 +1122,10 @@ and compile infos pc state instrs =
         in
         let env = Array.of_list env in
         if debug_parser () then Format.printf "fun %a (" Var.print x;
-        let nparams =
+        let nparams, addr =
           match (get_instr_exn code addr).Instr.code with
-          | GRAB -> getu code (addr + 1) + 1
-          | _ -> 1
+          | GRAB -> getu code (addr + 1) + 1, addr + 2
+          | _ -> 1, addr
         in
         let state' = State.start_function state env 0 in
         let params, state' = State.make_stack nparams state' in
@@ -1178,10 +1178,10 @@ and compile infos pc state instrs =
           List.fold_left (List.rev !vars) ~init:instrs ~f:(fun instr (i, x) ->
               let addr = pc + 3 + gets code (pc + 3 + i) in
               if debug_parser () then Format.printf "fun %a (" Var.print x;
-              let nparams =
+              let nparams, addr =
                 match (get_instr_exn code addr).Instr.code with
-                | GRAB -> getu code (addr + 1) + 1
-                | _ -> 1
+                | GRAB -> getu code (addr + 1) + 1, addr + 2
+                | _ -> 1, addr
               in
               let offset = i * clo_offset_3 in
               let state' = State.start_function state env offset in
