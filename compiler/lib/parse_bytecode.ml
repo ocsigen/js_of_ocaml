@@ -26,6 +26,8 @@ let debug_parser = Debug.find "parser"
 
 let debug_sourcemap = Debug.find "sourcemap"
 
+let times = Debug.find "times"
+
 type bytecode = string
 
 let predefined_exceptions =
@@ -2541,6 +2543,7 @@ let from_exe
       (fun id -> keep (Ident.name id))
       orig_symbols
   in
+  let t = Timer.make () in
   (if Debug.dbg_section_needed debug_data
   then
     try
@@ -2552,6 +2555,8 @@ let from_exe
         warn
           "Warning: Program not linked with -g, original variable names and locations \
            not available.@.");
+  if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
+
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->
@@ -2683,11 +2688,13 @@ let from_exe
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
+  let t = Timer.make () in
   if Debug.names debug_data
   then
     Array.iter debug ~f:(fun l ->
         List.iter l ~f:(fun ev ->
             Debug.read_event ~paths:[] ~crcs:(Hashtbl.create 17) ~orig:0 debug_data ev));
+  if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let ident_table =
     let t = Hashtbl.create 17 in
     if Debug.names debug_data
@@ -2880,10 +2887,12 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
   really_input ic code 0 compunit.Cmo_format.cu_codesize;
+  let t = Timer.make () in
   if Debug.dbg_section_needed debug_data && compunit.Cmo_format.cu_debug <> 0
   then (
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
+  if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
   Code.invariant p.code;
   p
@@ -2891,18 +2900,22 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
 let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   let debug_data = Debug.create ~include_cmis debug in
   let orig = ref 0 in
+  let t = ref 0. in
   let units =
     List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
         seek_in ic compunit.Cmo_format.cu_pos;
         let code = Bytes.create compunit.Cmo_format.cu_codesize in
         really_input ic code 0 compunit.Cmo_format.cu_codesize;
+        let t0 = Timer.make () in
         if Debug.dbg_section_needed debug_data && compunit.Cmo_format.cu_debug <> 0
         then (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
+        t := !t +. Timer.get t0;
         orig := !orig + compunit.Cmo_format.cu_codesize;
         compunit, code)
   in
+  if times () then Format.eprintf "    read debug events: %.2f@." !t;
   let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
   Code.invariant p.code;
   p
