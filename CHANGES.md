@@ -16,6 +16,7 @@
 * Compiler: update js parser to support most es6 feature (#1391)
 * Compiler: stop parsing the builtin js runtime if not necessary
 * Compiler: improve js pretty printer (#1405)
+* Compiler: improve debug location and speedup compilation (#1407)
 * Toplevel: Enable separate compilation of toplevels
 * Runtime: js backtrace recording controled by OCAMLRUNPARAM
 
