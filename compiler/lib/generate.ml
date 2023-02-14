@@ -1233,11 +1233,13 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
-        | (st, J.N) :: rem ->
+        | (st, x) :: rem ->
             let loc =
-              match source_location ctx (Before pc) with
-              | J.N -> J.U
-              | x -> x
+              match x, source_location ctx (Before pc) with
+              | (J.U | J.N), (J.U | J.N) -> J.U
+              | x, (J.U | J.N) -> x
+              | (J.U | J.N), x -> x
+              | _, x -> x
             in
             (st, loc) :: rem
         | _ -> clo
