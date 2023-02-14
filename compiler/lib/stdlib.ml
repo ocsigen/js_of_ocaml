@@ -117,18 +117,6 @@ module List = struct
         | Some result -> result
         | None -> find_map_value ~f ~default l)
 
-  let filter_map ~f l =
-    let l =
-      List.fold_left
-        (fun acc x ->
-          match f x with
-          | Some x -> x :: acc
-          | None -> acc)
-        []
-        l
-    in
-    rev l
-
   let rec rev_append_map ~f l acc =
     match l with
     | [] -> acc

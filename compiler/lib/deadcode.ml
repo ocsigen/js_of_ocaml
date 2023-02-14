@@ -226,9 +226,10 @@ let f ({ blocks; _ } as p : Code.program) =
             pc
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
             ; body =
-                List.map
-                  (List.filter block.body ~f:(fun (i, _loc) -> live_instr st i))
-                  ~f:(fun (i, loc) -> filter_closure all_blocks st i, loc)
+                List.filter_map block.body ~f:(fun (i, loc) ->
+                    if live_instr st i
+                    then Some (filter_closure all_blocks st i, loc)
+                    else None)
             ; branch = filter_live_last all_blocks st block.branch
             }
             blocks)
