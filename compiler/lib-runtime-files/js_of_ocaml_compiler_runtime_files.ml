@@ -55,6 +55,7 @@ let runtime =
     ; prng
     ; sync
     ; effect
+    ; zstd
     ]
 
 include Files
