@@ -23,6 +23,11 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
+type profile =
+  | O1
+  | O2
+  | O3
+
 let should_export = function
   | `Iife -> false
   | `Named _ | `Anonymous -> true
@@ -91,10 +96,15 @@ let effects p =
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
-let exact_calls p =
+let exact_calls profile p =
   if not (Config.Flag.effects ())
   then
-    let info = Global_flow.f p in
+    let fast =
+      match profile with
+      | O3 -> false
+      | O1 | O2 -> true
+    in
+    let info = Global_flow.f ~fast p in
     Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
   else p
 
@@ -558,8 +568,6 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-type profile = Code.program -> Code.program
-
 let full
     ~standalone
     ~wrap_with_fun
@@ -573,8 +581,11 @@ let full
   let exported_runtime = not standalone in
   let opt =
     specialize_js_once
-    +> profile
-    +> exact_calls
+    +> (match profile with
+       | O1 -> o1
+       | O2 -> o2
+       | O3 -> o3)
+    +> exact_calls profile
     +> effects
     +> map_fst (Generate_closure.f +> deadcode')
   in
@@ -618,7 +629,7 @@ let full_no_source_map
 let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
-    ?(profile = o1)
+    ?(profile = O1)
     ?(linkall = false)
     ?source_map
     ?custom_header
@@ -639,7 +650,7 @@ let f
 let f'
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
-    ?(profile = o1)
+    ?(profile = O1)
     ?(linkall = false)
     ?custom_header
     formatter
@@ -660,13 +671,13 @@ let from_string ~prims ~debug s formatter =
   full_no_source_map
     ~standalone:false
     ~wrap_with_fun:`Anonymous
-    ~profile:o1
+    ~profile:O1
     ~linkall:false
     ~custom_header:None
     formatter
     d
     p
 
-let profiles = [ 1, o1; 2, o2; 3, o3 ]
+let profiles = [ 1, O1; 2, O2; 3, O3 ]
 
 let profile i = try Some (List.assoc i profiles) with Not_found -> None
