@@ -102,9 +102,9 @@ function x (a, b) {
       3:   return a + b;
       4: }
     $ cat "test.min.js"
-      1:  /*<<test.ml 2 0>>*/ function x(a, b){
-      2:   /*<<test.ml 3 2>>*/ return a + b;
-      3:  /*<<test.ml 4 0>>*/ }
+      1:  /*<<test.ml:2:0>>*/ function x(a, b){
+      2:   /*<<test.ml:3:2>>*/ return a + b;
+      3:  /*<<test.ml:4:0>>*/ }
  |}]
 
 let%expect_test _ =
