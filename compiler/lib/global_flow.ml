@@ -542,7 +542,7 @@ type info =
   ; info_may_escape : bool array
   }
 
-let f p =
+let f ~fast p =
   let t = Timer.make () in
   let t1 = Timer.make () in
   let rets = return_values p in
@@ -565,7 +565,7 @@ let f p =
     ; possibly_mutable
     ; known_cases = Hashtbl.create 16
     ; applied_functions = Hashtbl.create 16
-    ; fast = not (Config.Flag.effects ())
+    ; fast
     }
   in
   program_deps st p;
