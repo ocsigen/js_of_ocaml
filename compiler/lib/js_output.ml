@@ -67,7 +67,7 @@ struct
       | Pi { Parse_info.name = Some file; line; col; _ }
       | Pi { Parse_info.src = Some file; line; col; _ } ->
           PP.non_breaking_space f;
-          PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file line col);
+          PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
           PP.non_breaking_space f
       | N -> ()
       | U | Pi _ ->
