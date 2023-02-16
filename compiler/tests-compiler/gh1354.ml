@@ -48,6 +48,7 @@ with Exit ->
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
+        caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call2(f, a0, a1){
         return (f.l >= 0 ? f.l : f.l = f.length) == 2
@@ -62,10 +63,10 @@ with Exit ->
         _d_ =
           [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
         _a_ = 0;
-       try{0; _b_ = _a_ + 1 | 0; throw Stdlib[3];}
+       try{0; _b_ = _a_ + 1 | 0; throw caml_maybe_attach_backtrace(Stdlib[3], 1);}
        catch(_e_){
         var _c_ = caml_wrap_exception(_e_);
-        if(_c_ !== Stdlib[3]) throw _c_;
+        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
         caml_call2(Stdlib_Printf[3], _d_, _b_ | 0);
         var Test = [0];
         runtime.caml_register_global(3, Test, "Test");
@@ -110,6 +111,7 @@ with Exit ->
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
+        caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call3(f, a0, a1, a2){
@@ -137,15 +139,21 @@ with Exit ->
         0;
         _c_ = _f_;
         var _g_ = _f_;
-        try{var _i_ = _f_ + 1 | 0; 0; _g_ = _i_; _c_ = _i_; throw Stdlib[3];}
+        try{
+         var _i_ = _f_ + 1 | 0;
+         0;
+         _g_ = _i_;
+         _c_ = _i_;
+         throw caml_maybe_attach_backtrace(Stdlib[3], 1);
+        }
         catch(_k_){
          caml_call3(Stdlib_Printf[3], _h_, _g_ | 0, _b_);
-         throw Stdlib[3];
+         throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
        catch(_j_){
         var _d_ = caml_wrap_exception(_j_);
-        if(_d_ !== Stdlib[3]) throw _d_;
+        if(_d_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_d_, 0);
         caml_call3(Stdlib_Printf[3], _e_, _c_ | 0, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");
@@ -189,6 +197,7 @@ with Exit ->
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
+        caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call2(f, a0, a1){
@@ -206,12 +215,21 @@ with Exit ->
         _a_ = 0;
        try{
         var _e_ = _a_;
-        try{var _g_ = _a_ + 1 | 0; 0; _e_ = _g_; _b_ = _g_; throw Stdlib[3];}
-        catch(_i_){caml_call2(Stdlib_Printf[3], _f_, _e_); throw Stdlib[3];}
+        try{
+         var _g_ = _a_ + 1 | 0;
+         0;
+         _e_ = _g_;
+         _b_ = _g_;
+         throw caml_maybe_attach_backtrace(Stdlib[3], 1);
+        }
+        catch(_i_){
+         caml_call2(Stdlib_Printf[3], _f_, _e_);
+         throw caml_maybe_attach_backtrace(Stdlib[3], 1);
+        }
        }
        catch(_h_){
         var _c_ = caml_wrap_exception(_h_);
-        if(_c_ !== Stdlib[3]) throw _c_;
+        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
         caml_call2(Stdlib_Printf[3], _d_, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");

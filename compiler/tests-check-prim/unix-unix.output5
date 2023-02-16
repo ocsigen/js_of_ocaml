@@ -168,9 +168,6 @@ caml_ml_domain_set_name
 From +effect.js:
 jsoo_effect_not_supported
 
-From +fail.js:
-caml_return_exn_constant
-
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode

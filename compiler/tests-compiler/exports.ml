@@ -53,7 +53,15 @@ let%expect_test "static eval of string get" =
   in
   let program =
     compile_and_parse_whole_program
-      ~flags:[ "--wrap-with-fun"; "Loader"; "--target-env"; "browser"; "--no-extern-fs" ]
+      ~flags:
+        [ "--wrap-with-fun"
+        ; "Loader"
+        ; "--target-env"
+        ; "browser"
+        ; "--no-extern-fs"
+        ; "--enable"
+        ; "vardecl"
+        ]
       {|
       external pure_js_expr : string -> 'a = "caml_pure_js_expr"
       external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
@@ -72,7 +80,15 @@ let%expect_test "static eval of string get" =
     //end |}];
   let program =
     compile_and_parse_whole_program
-      ~flags:[ "--wrap-with-fun"; "Loader"; "--target-env"; "browser"; "--no-extern-fs" ]
+      ~flags:
+        [ "--wrap-with-fun"
+        ; "Loader"
+        ; "--target-env"
+        ; "browser"
+        ; "--no-extern-fs"
+        ; "--enable"
+        ; "vardecl"
+        ]
       {|
       external pure_js_expr : string -> 'a = "caml_pure_js_expr"
       external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
@@ -87,7 +103,7 @@ let%expect_test "static eval of string get" =
     //end |}];
   let program =
     compile_and_parse_whole_program
-      ~flags:[ "--target-env"; "browser"; "--no-extern-fs" ]
+      ~flags:[ "--target-env"; "browser"; "--no-extern-fs"; "--enable"; "vardecl" ]
       {|
       external pure_js_expr : string -> 'a = "caml_pure_js_expr"
       external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
@@ -106,7 +122,7 @@ let%expect_test "static eval of string get" =
     //end |}];
   let program =
     compile_and_parse_whole_program
-      ~flags:[ "--target-env"; "browser"; "--no-extern-fs" ]
+      ~flags:[ "--target-env"; "browser"; "--no-extern-fs"; "--enable"; "vardecl" ]
       {|
       external pure_js_expr : string -> 'a = "caml_pure_js_expr"
       external set : 'a -> 'b -> 'c -> unit = "caml_js_set"

@@ -77,7 +77,7 @@ let fun2 () =
      try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
      catch(_e_){
       var _d_ = caml_wrap_exception(_e_);
-      if(_d_[1] !== A) throw _d_;
+      if(_d_[1] !== A) throw caml_maybe_attach_backtrace(_d_, 0);
       var i = _d_[2];
       if(2 !== i) return i + 2 | 0;
       var i$0 = i;
@@ -98,7 +98,7 @@ let fun2 () =
       }
       else
        switch$1 = 1;
-      if(switch$1) throw _a_;
+      if(switch$1) throw caml_maybe_attach_backtrace(_a_, 0);
      }
      if(! switch$0){if(0 !== i$0) return i$0 + 1 | 0; var i = i$0;}
      return i;

@@ -62,25 +62,32 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       var _i_ = caml_wrap_exception(_t_);
       if(_i_[1] !== Stdlib[7]){
        var raise$1 = caml_pop_trap();
-       return raise$1(_i_);
+       return raise$1(caml_maybe_attach_backtrace(_i_, 0));
       }
       var n = 0, _j_ = 0;
      }
-     try{if(caml_string_equal(s, cst$0)) throw Stdlib[8]; var _o_ = 7, m = _o_;}
+     try{
+      if(caml_string_equal(s, cst$0))
+       throw caml_maybe_attach_backtrace(Stdlib[8], 1);
+      var _o_ = 7, m = _o_;
+     }
      catch(_s_){
       var _k_ = caml_wrap_exception(_s_);
-      if(_k_ !== Stdlib[8]){var raise$0 = caml_pop_trap(); return raise$0(_k_);}
+      if(_k_ !== Stdlib[8]){
+       var raise$0 = caml_pop_trap();
+       return raise$0(caml_maybe_attach_backtrace(_k_, 0));
+      }
       var m = 0, _l_ = 0;
      }
      caml_push_trap
       (function(_r_){
         if(_r_ === Stdlib[8]) return cont(0);
         var raise = caml_pop_trap();
-        return raise(_r_);
+        return raise(caml_maybe_attach_backtrace(_r_, 0));
        });
      if(caml_string_equal(s, cst)){
       var _m_ = Stdlib[8], raise = caml_pop_trap();
-      return raise(_m_);
+      return raise(caml_maybe_attach_backtrace(_m_, 1));
      }
      var _n_ = Stdlib[79];
      return caml_cps_call2
@@ -104,8 +111,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                     var l = match[2];
                     return caml_cps_exact_call1(_h_, l);
                    }
-                   var exn = match[2], raise = caml_pop_trap();
-                   return raise(exn);
+                   var
+                    exn = match[2],
+                    raise = caml_pop_trap(),
+                    exn$0 = caml_maybe_attach_backtrace(exn, 1);
+                   return raise(exn$0);
                   });
         }
         return _h_(l);

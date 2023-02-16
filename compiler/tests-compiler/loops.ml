@@ -173,7 +173,8 @@ let for_for_while () =
       for(;;)
        for(;;){
         if(10 > caml_div(k, j)){
-         try{caml_div(k, j);}catch(_c_){throw Stdlib[8];}
+         try{caml_div(k, j);}
+         catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
          id[1]++;
          continue;
         }
@@ -257,7 +258,7 @@ let f t x =
      catch(_f_){
       var _c_ = caml_wrap_exception(_f_);
       if(_c_ === Stdlib[8]) return - 1;
-      throw _c_;
+      throw caml_maybe_attach_backtrace(_c_, 0);
      }
      if(val$0 && ! val$0[2]){
       var x$1 = val$0[1], x$0 = x$1;
@@ -266,7 +267,7 @@ let f t x =
        try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0); switch$0 = 1;}
        catch(_e_){
         var _a_ = caml_wrap_exception(_e_);
-        if(_a_ !== Stdlib[3]) throw _a_;
+        if(_a_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_a_, 0);
         var _d_ = 0;
        }
        if(switch$0){
@@ -455,7 +456,7 @@ let add_substitute =
        continue;
       }
       var start$0 = i$4 + 1 | 0;
-      if(lim$1 <= start$0) throw Stdlib[8];
+      if(lim$1 <= start$0) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
       var opening = caml_string_get(s, start$0), switch$0 = 0;
       if(40 !== opening && 123 !== opening){
        var start = start$0 + 1 | 0, lim$0 = caml_ml_string_length(s), i$2 = start;
@@ -490,11 +491,14 @@ let add_substitute =
        var new_start = start$0 + 1 | 0, k$2 = 0;
        if(40 === opening)
         var closing = 41;
-       else{if(123 !== opening) throw [0, Assert_failure, _a_]; var closing = 125;
+       else{
+        if(123 !== opening)
+         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+        var closing = 125;
        }
        var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
        for(;;){
-        if(lim <= stop) throw Stdlib[8];
+        if(lim <= stop) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
         if(caml_string_get(s, stop) === opening){
          var i = stop + 1 | 0, k$0 = k + 1 | 0, k = k$0, stop = i;
          continue;
