@@ -149,9 +149,6 @@ caml_ml_condition_signal
 caml_ml_condition_wait
 jsoo_effect_not_supported
 
-From +fail.js:
-caml_return_exn_constant
-
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode
