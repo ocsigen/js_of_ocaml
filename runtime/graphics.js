@@ -22,11 +22,12 @@ var caml_gr_state;
 //Provides: caml_gr_state_get
 //Requires: caml_gr_state
 //Requires: caml_named_value, caml_string_of_jsbytes
+//Requires: caml_maybe_attach_backtrace
 function caml_gr_state_get() {
   if(caml_gr_state) {
     return caml_gr_state;
   }
-  throw [0,caml_named_value("Graphics.Graphic_failure"), caml_string_of_jsbytes("Not initialized")]
+  throw caml_maybe_attach_backtrace([0,caml_named_value("Graphics.Graphic_failure"), caml_string_of_jsbytes("Not initialized")]);
 }
 //Provides: caml_gr_state_set
 //Requires: caml_gr_state,caml_gr_state_init

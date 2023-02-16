@@ -129,27 +129,32 @@ function caml_jsoo_flags_effects(unit){
 
 //Provides: caml_wrap_exception const (mutable)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
-//Requires: caml_return_exn_constant
 function caml_wrap_exception(e) {
   if (FLAG("excwrap")) {
     if(e instanceof Array) return e;
+    var exn;
     //Stack_overflow: chrome, safari
     if(globalThis.RangeError
        && e instanceof globalThis.RangeError
        && e.message
        && e.message.match(/maximum call stack/i))
-      return caml_return_exn_constant(caml_global_data.Stack_overflow);
+      exn = caml_global_data.Stack_overflow;
     //Stack_overflow: firefox
-    if(globalThis.InternalError
+    else if(globalThis.InternalError
        && e instanceof globalThis.InternalError
        && e.message
        && e.message.match(/too much recursion/i))
-      return caml_return_exn_constant(caml_global_data.Stack_overflow);
+      exn = caml_global_data.Stack_overflow;
     //Wrap Error in Js.Error exception
-    if(e instanceof globalThis.Error && caml_named_value("jsError"))
-      return [0,caml_named_value("jsError"),e];
-    //fallback: wrapped in Failure
-    return [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
+    else if(e instanceof globalThis.Error && caml_named_value("jsError"))
+      exn = [0,caml_named_value("jsError"),e];
+    else
+      //fallback: wrapped in Failure
+      exn = [0,caml_global_data.Failure,caml_string_of_jsstring (String(e))];
+    // We already have an error at hand, let's use it.
+    if (e instanceof globalThis.Error)
+      exn.js_error = e;
+    return exn;
   } else
     return e;
 }
