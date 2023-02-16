@@ -108,7 +108,7 @@ module Share = struct
 
   let add_prim s t =
     let n = try StringMap.find s t.prims with Not_found -> 0 in
-    { t with prims = StringMap.add s (n + 1) t.prims }
+    if n < 0 then t else { t with prims = StringMap.add s (n + 1) t.prims }
 
   let add_special_prim_if_exists s t =
     if Primitive.exists s then { t with prims = StringMap.add s (-1) t.prims } else t
