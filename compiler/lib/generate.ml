@@ -188,7 +188,7 @@ module Share = struct
         ; "caml_trampoline_return"
         ; "caml_wrap_exception"
         ; "caml_list_of_js_array"
-        ; "caml_exn_with_js_backtrace"
+        ; "caml_maybe_attach_backtrace"
         ; "jsoo_effect_not_supported"
         ]
         ~init:count
@@ -1179,21 +1179,17 @@ let _ =
 *)
 let throw_statement ctx cx k loc =
   match (k : [ `Normal | `Reraise | `Notrace ]) with
-  | _ when not (Config.Flag.improved_stacktrace ()) -> [ J.Throw_statement cx, loc ]
   | `Notrace -> [ J.Throw_statement cx, loc ]
-  | `Normal ->
+  | (`Normal | `Reraise) as m ->
+      let force =
+        match m with
+        | `Normal -> true
+        | `Reraise -> false
+      in
       [ ( J.Throw_statement
             (J.call
-               (runtime_fun ctx "caml_exn_with_js_backtrace")
-               [ cx; bool (int 1) ]
-               loc)
-        , loc )
-      ]
-  | `Reraise ->
-      [ ( J.Throw_statement
-            (J.call
-               (runtime_fun ctx "caml_exn_with_js_backtrace")
-               [ cx; bool (int 0) ]
+               (Share.get_prim (runtime_fun ctx) "caml_maybe_attach_backtrace" ctx.share)
+               [ cx; (if force then int 1 else int 0) ]
                loc)
         , loc )
       ]
