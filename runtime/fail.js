@@ -20,14 +20,13 @@
 //Provides: caml_raise_constant (const)
 function caml_raise_constant (tag) { throw tag; }
 
-//Provides: caml_return_exn_constant (const)
-function caml_return_exn_constant (tag) { return tag; }
-
 //Provides: caml_raise_with_arg (const, mutable)
-function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
+//Requires: caml_maybe_attach_backtrace
+function caml_raise_with_arg (tag, arg) { throw caml_maybe_attach_backtrace([0, tag, arg]); }
 
 //Provides: caml_raise_with_args (const, mutable)
-function caml_raise_with_args (tag, args) { throw [0, tag].concat(args); }
+//Requires: caml_maybe_attach_backtrace
+function caml_raise_with_args (tag, args) { throw caml_maybe_attach_backtrace([0, tag].concat(args)); }
 
 //Provides: caml_raise_with_string (const, const)
 //Requires: caml_raise_with_arg, caml_string_of_jsbytes
