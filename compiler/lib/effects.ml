@@ -364,7 +364,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
          means that we have an unbounded of calls in direct style
          (even with tail call optimization) *)
       tail_call ~st ~exact:true ~check:false ~f:k [ x ]
-  | Raise (x, _) -> (
+  | Raise (x, rmode) -> (
       assert (List.is_empty alloc_jump_closures);
       match Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
@@ -373,9 +373,29 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
           [], last
       | _ ->
           let exn_handler = Var.fresh_n "raise" in
+          let x, instrs =
+            match rmode with
+            | `Notrace -> x, []
+            | (`Normal | `Reraise) as m ->
+                let x' = Var.fork x in
+                let force =
+                  match m with
+                  | `Normal -> true
+                  | `Reraise -> false
+                in
+                let i =
+                  [ Let
+                      ( x'
+                      , Prim
+                          ( Extern "caml_maybe_attach_backtrace"
+                          , [ Pv x; Pc (Int (if force then 1l else 0l)) ] ) )
+                  ]
+                in
+                x', i
+          in
           tail_call
             ~st
-            ~instrs:[ Let (exn_handler, Prim (Extern "caml_pop_trap", [])) ]
+            ~instrs:(Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: instrs)
             ~exact:true
             ~check:false
             ~f:exn_handler
