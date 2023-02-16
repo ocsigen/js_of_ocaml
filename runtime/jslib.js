@@ -161,11 +161,27 @@ function caml_wrap_exception(e) {
 
 //Provides: caml_maybe_attach_backtrace
 //Requires: caml_exn_with_js_backtrace
+//Requires: jsoo_sys_getenv
 function caml_maybe_attach_backtrace(exn, force) {
-  if(FLAG("with-js-error"))
+  if(jsoo_record_backtrace)
     return caml_exn_with_js_backtrace(exn, force);
   else return exn
 }
+
+var jsoo_record_backtrace = FLAG("with-js-error");
+
+(function () {
+  var r = jsoo_sys_getenv("OCAMLRUNPARAM")
+  if(r !== undefined){
+    var l = r.split(",");
+    for(var i = 0; i < l.length; i++){
+      if(l[i] == "b") { jsoo_record_backtrace = 1; break }
+      else if (l[i].startsWith("b=")) {
+        jsoo_record_backtrace = +(l[i].slice(2))}
+      else continue;
+    }
+  }
+}) ()
 
 // Experimental
 //Provides: caml_exn_with_js_backtrace

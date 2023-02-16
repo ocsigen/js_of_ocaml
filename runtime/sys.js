@@ -91,6 +91,7 @@ function caml_fatal_uncaught_exception(err){
       var at_exit = caml_named_value("Pervasives.do_at_exit");
       if(at_exit) caml_callback(at_exit, [0]);
       console.error("Fatal error: exception " + msg + "\n");
+      if(err.js_error) throw err.js_error;
     }
   }
   else {
@@ -105,22 +106,30 @@ function caml_set_static_env(k,v){
   globalThis.jsoo_static_env[k] = v;
   return 0;
 }
-//Provides: caml_sys_getenv (const)
-//Requires: caml_raise_not_found
-//Requires: caml_string_of_jsstring
-//Requires: caml_jsstring_of_string
-function caml_sys_getenv (name) {
+
+//Provides: jsoo_sys_getenv (const)
+function jsoo_sys_getenv(n) {
   var process = globalThis.process;
-  var n = caml_jsstring_of_string(name);
   //nodejs env
   if(process
      && process.env
      && process.env[n] != undefined)
-    return caml_string_of_jsstring(process.env[n]);
+    return process.env[n];
   if(globalThis.jsoo_static_env
      && globalThis.jsoo_static_env[n])
-    return caml_string_of_jsstring(globalThis.jsoo_static_env[n])
-  caml_raise_not_found ();
+    return globalThis.jsoo_static_env[n]
+}
+
+//Provides: caml_sys_getenv (const)
+//Requires: caml_raise_not_found
+//Requires: caml_string_of_jsstring
+//Requires: caml_jsstring_of_string
+//Requires: jsoo_sys_getenv
+function caml_sys_getenv (name) {
+  var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
+  if(r === undefined)
+    caml_raise_not_found ();
+  return caml_string_of_jsstring(r)
 }
 
 //Provides: caml_sys_unsafe_getenv
