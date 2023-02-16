@@ -154,6 +154,14 @@ function caml_wrap_exception(e) {
     return e;
 }
 
+//Provides: caml_maybe_attach_backtrace
+//Requires: caml_exn_with_js_backtrace
+function caml_maybe_attach_backtrace(exn, force) {
+  if(FLAG("with-js-error"))
+    return caml_exn_with_js_backtrace(exn, force);
+  else return exn
+}
+
 // Experimental
 //Provides: caml_exn_with_js_backtrace
 //Requires: caml_global_data
