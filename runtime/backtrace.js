@@ -15,16 +15,37 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+
+//Provides: caml_record_backtrace_flag
+//Requires: jsoo_sys_getenv
+var caml_record_backtrace_flag = FLAG("with-js-error");
+
+(function () {
+  var r = jsoo_sys_getenv("OCAMLRUNPARAM")
+  if(r !== undefined){
+    var l = r.split(",");
+    for(var i = 0; i < l.length; i++){
+      if(l[i] == "b") { caml_record_backtrace_flag = 1; break }
+      else if (l[i].startsWith("b=")) {
+        caml_record_backtrace_flag = +(l[i].slice(2))}
+      else continue;
+    }
+  }
+}) ()
+
+
 //Provides: caml_ml_debug_info_status const
 function caml_ml_debug_info_status () { return 0; }
-//Provides: caml_backtrace_status const
-function caml_backtrace_status () { return 0; }
+//Provides: caml_backtrace_status
+//Requires: caml_record_backtrace_flag
+function caml_backtrace_status (_unit) { return caml_record_backtrace_flag ? 1 : 0; }
 //Provides: caml_get_exception_backtrace const
 function caml_get_exception_backtrace () { return 0; }
 //Provides: caml_get_exception_raw_backtrace const
 function caml_get_exception_raw_backtrace () { return [0]; }
 //Provides: caml_record_backtrace
-function caml_record_backtrace () { return 0; }
+//Requires: caml_record_backtrace_flag
+function caml_record_backtrace (b) { caml_record_backtrace_flag = b; return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return [0]; }
 //Provides: caml_raw_backtrace_length
