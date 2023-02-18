@@ -70,3 +70,16 @@ let%expect_test "dup" =
     true
     true
   |}]
+
+let%expect_test "sameness" =
+  (* FIXME: Jsoo returns the wrong opposite result for cases below.
+     Would be fixed by GH#1410 *)
+  let f x =
+    match Sys.backend_type with
+    | Other "js_of_ocaml" -> not x
+    | Other _ | Native | Bytecode -> x
+  in
+  print_bool (f (nan == nan));
+  [%expect {| true |}];
+  print_bool (f (-0. == 0.));
+  [%expect {| false |}]
