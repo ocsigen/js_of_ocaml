@@ -351,7 +351,7 @@ end
     125:         (Stdlib_Printf[1], outchan, _c_, str);
     126:       }
     127:        /*<<test.ml:69:6>>*/  /*<<test.ml:69:6>>*/ var _g_ = i + 1 | 0;
-    128:       if(_f_ === i) break;
+    128:       if(Object.is(_f_, i)) break;
     129:       i = _g_;
     130:      }
     131:     }

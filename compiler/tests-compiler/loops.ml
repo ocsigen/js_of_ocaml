@@ -254,7 +254,7 @@ let f t x =
      try{var val$0 = caml_call2(Stdlib_Hashtbl[6], t, x);}
      catch(_f_){
       var _c_ = caml_wrap_exception(_f_);
-      if(_c_ === Stdlib[8]) return - 1;
+      if(Object.is(_c_, Stdlib[8])) return - 1;
       throw caml_maybe_attach_backtrace(_c_, 0);
      }
      if(val$0 && ! val$0[2]){
@@ -265,7 +265,8 @@ let f t x =
         try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0);}
         catch(_e_){
          var _a_ = caml_wrap_exception(_e_);
-         if(_a_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_a_, 0);
+         if(! Object.is(_a_, Stdlib[3]))
+          throw caml_maybe_attach_backtrace(_a_, 0);
          var _d_ = 0;
          break a;
         }
@@ -500,12 +501,12 @@ let add_substitute =
          var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
          for(;;){
           if(lim <= stop) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-          if(caml_string_get(s, stop) === opening){
+          if(Object.is(caml_string_get(s, stop), opening)){
            var i = stop + 1 | 0, k$0 = k + 1 | 0;
            k = k$0;
            stop = i;
           }
-          else if(caml_string_get(s, stop) === closing){
+          else if(Object.is(caml_string_get(s, stop), closing)){
            if(0 === k) break;
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
            k = k$1;

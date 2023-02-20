@@ -1056,6 +1056,11 @@ let remove_unused_tail_args ctx exact trampolined args =
     else args
   else args
 
+let is_int = function
+  | J.ENum n -> J.Num.is_int n
+  | J.EBin ((J.Bor | J.Lsr), _, _) -> true
+  | _ -> false
+
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
@@ -1353,23 +1358,31 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | Eq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            ( bool
-                (J.call
-                   (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
-                   [ cx; cy ]
-                   loc)
-            , or_p px py
-            , queue )
+            let e =
+              if is_int cx || is_int cy
+              then bool (J.EBin (J.EqEqEq, cx, cy))
+              else
+                bool
+                  (J.call
+                     (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                     [ cx; cy ]
+                     loc)
+            in
+            e, or_p px py, queue
         | Neq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            ( bool_not
-                (J.call
-                   (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
-                   [ cx; cy ]
-                   loc)
-            , or_p px py
-            , queue )
+            let e =
+              if is_int cx || is_int cy
+              then bool (J.EBin (J.NotEqEq, cx, cy))
+              else
+                bool_not
+                  (J.call
+                     (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                     [ cx; cy ]
+                     loc)
+            in
+            e, or_p px py, queue
         | IsInt, [ x ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             bool (Mlvalue.is_immediate cx), px, queue
