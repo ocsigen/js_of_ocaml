@@ -353,13 +353,16 @@ function caml_input_value_from_reader(reader, ofs) {
           break;
         case 0x04: //cst.CODE_SHARED8:
           var offset = reader.read8u ();
-          return intern_obj_table[obj_counter - offset];
+          if(!compressed) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x05: //cst.CODE_SHARED16:
           var offset = reader.read16u ();
-          return intern_obj_table[obj_counter - offset];
+          if(!compressed) offset = obj_counter - offset;
+          return intern_obj_table[obj_counter];
         case 0x06: //cst.CODE_SHARED32:
           var offset = reader.read32u ();
-          return intern_obj_table[obj_counter - offset];
+          if(!compressed) offset = obj_counter - offset;
+          return intern_obj_table[obj_counter];
         case 0x08: //cst.CODE_BLOCK32:
           var header = reader.read32u ();
           var tag = header & 0xFF;
