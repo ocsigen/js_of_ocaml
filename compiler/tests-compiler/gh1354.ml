@@ -66,7 +66,7 @@ with Exit ->
        try{0; _b_ = _a_ + 1 | 0; throw caml_maybe_attach_backtrace(Stdlib[3], 1);}
        catch(_e_){
         var _c_ = caml_wrap_exception(_e_);
-        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
+        if(! Object.is(_c_, Stdlib[3])) throw caml_maybe_attach_backtrace(_c_, 0);
         caml_call2(Stdlib_Printf[3], _d_, _b_ | 0);
         var Test = [0];
         runtime.caml_register_global(3, Test, "Test");
@@ -153,7 +153,7 @@ with Exit ->
        }
        catch(_j_){
         var _d_ = caml_wrap_exception(_j_);
-        if(_d_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_d_, 0);
+        if(! Object.is(_d_, Stdlib[3])) throw caml_maybe_attach_backtrace(_d_, 0);
         caml_call3(Stdlib_Printf[3], _e_, _c_ | 0, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");
@@ -229,7 +229,7 @@ with Exit ->
        }
        catch(_h_){
         var _c_ = caml_wrap_exception(_h_);
-        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
+        if(! Object.is(_c_, Stdlib[3])) throw caml_maybe_attach_backtrace(_c_, 0);
         caml_call2(Stdlib_Printf[3], _d_, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");

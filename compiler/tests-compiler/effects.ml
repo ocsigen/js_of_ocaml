@@ -49,7 +49,7 @@ let fff () =
               10,
               [0,
                function(e, cont){
-                return e === E
+                return Object.is(e, E)
                         ? cont([0, function(k, cont){return cont(11);}])
                         : cont(0);
                }],
