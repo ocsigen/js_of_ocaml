@@ -343,6 +343,8 @@ let plus_int x y =
 
 let bool e = J.ECond (e, one, zero)
 
+let bool_not e = J.ECond (e, zero, one)
+
 (****)
 
 let source_location debug ?force (pc : Code.loc) =
@@ -1361,13 +1363,11 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | Neq, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            ( J.EBin
-                ( J.Minus
-                , one
-                , J.call
-                    (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
-                    [ cx; cy ]
-                    loc )
+            ( bool_not
+                (J.call
+                   (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                   [ cx; cy ]
+                   loc)
             , or_p px py
             , queue )
         | IsInt, [ x ] ->
