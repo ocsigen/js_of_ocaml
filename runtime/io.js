@@ -279,7 +279,7 @@ function caml_ml_input_block (chanid, ba, i, l) {
 //Requires: caml_refill, caml_failwith, caml_raise_end_of_file
 function caml_input_value (chanid) {
   var chan = caml_ml_channels[chanid];
-  var header = new Uint8Array(20);
+  var header = new Uint8Array(16);
   function block(buffer, offset, n) {
     var r = 0;
     while(r < n){
@@ -296,15 +296,15 @@ function caml_input_value (chanid) {
     }
     return r;
   }
-  var r = block(header, 0, 20);
+  var r = block(header, 0, 16);
   if(r == 0)
     caml_raise_end_of_file();
-  else if (r < 20)
+  else if (r < 16)
     caml_failwith("input_value: truncated object");
   var len = caml_marshal_data_size (caml_bytes_of_array(header), 0);
-  var buf = new Uint8Array(len + 20);
+  var buf = new Uint8Array(len + 16);
   buf.set(header,0);
-  var r = block(buf, 20, len)
+  var r = block(buf, 16, len)
   if(r < len)
     caml_failwith("input_value: truncated object " + r + "  " + len);
   var offset = [0];

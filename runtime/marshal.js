@@ -353,16 +353,16 @@ function caml_input_value_from_reader(reader, ofs) {
           break;
         case 0x04: //cst.CODE_SHARED8:
           var offset = reader.read8u ();
-          if(!compressed) offset = obj_counter - offset;
+          if(compressed == 0) offset = obj_counter - offset;
           return intern_obj_table[offset];
         case 0x05: //cst.CODE_SHARED16:
           var offset = reader.read16u ();
-          if(!compressed) offset = obj_counter - offset;
-          return intern_obj_table[obj_counter];
+          if(compressed == 0) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x06: //cst.CODE_SHARED32:
           var offset = reader.read32u ();
-          if(!compressed) offset = obj_counter - offset;
-          return intern_obj_table[obj_counter];
+          if(compressed == 0) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x08: //cst.CODE_BLOCK32:
           var header = reader.read32u ();
           var tag = header & 0xFF;
@@ -487,7 +487,6 @@ function caml_input_value_from_reader(reader, ofs) {
     var res = new Uint8Array(uncompressed_data_len);
     var res = zstd_decompress(data, res);
     var reader = new UInt8ArrayReader(res, 0);
-    console.log(res);
   }
   var res = intern_rec (reader);
   while (stack.length > 0) {
@@ -537,8 +536,7 @@ function caml_marshal_data_size (s, ofs) {
     caml_failwith("Marshal.data_size: bad object");
     break
   }
-  /* TODO: 20 should be fixed */
-  return header_len - 20 + data_len;
+  return header_len - 16 + data_len;
 }
 
 //Provides: MlObjectTable
