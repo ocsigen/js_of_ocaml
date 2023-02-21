@@ -19,7 +19,11 @@
 
 open! Stdlib
 
-class macro_mapper =
+type m =
+  | Replace
+  | Count of int ref
+
+class macro_mapper ~flags =
   object (m)
     inherit Js_traverse.map as super
 
@@ -28,9 +32,14 @@ class macro_mapper =
       match x with
       | J.ECall (J.EVar (J.S { name = Utf8 name; _ }), (ANormal | ANullish), args, _) -> (
           match name, args with
-          | "FLAG", [ J.Arg (J.EStr (Utf8 s)) ] ->
-              let i = if Config.Flag.find s then 1l else 0l in
-              J.ENum (J.Num.of_int32 i)
+          | "FLAG", [ J.Arg (J.EStr (Utf8 s)) ] -> (
+              match flags with
+              | Replace ->
+                  let i = if Config.Flag.find s then 1l else 0l in
+                  J.ENum (J.Num.of_int32 i)
+              | Count count ->
+                  incr count;
+                  super#expression x)
           | "BLOCK", J.Arg (J.ENum tag) :: (_ :: _ as args)
             when List.for_all args ~f:(function
                      | J.Arg _ -> true
@@ -57,6 +66,13 @@ class macro_mapper =
       | _ -> super#expression x
   end
 
-let f js =
-  let trav = new macro_mapper in
-  trav#program js
+let f ~flags js =
+  let count = ref 0 in
+  let flags =
+    match flags with
+    | true -> Replace
+    | false -> Count count
+  in
+  let trav = new macro_mapper ~flags in
+  let js = trav#program js in
+  js, !count > 0
