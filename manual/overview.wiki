@@ -25,7 +25,7 @@ Js_of_ocaml is composed of multiple packages:
 
 Note: All code examples in this manual use Js_of_ocaml's ppx syntax.
 It is, however, possible to use Js_of_ocaml purely as a compiler
-while using a different library (e.g. gen_js_api, brr) to
+while using a different package (e.g. gen_js_api, brr) to
 provide bindings to the browser APIs.
 
 == Installation
