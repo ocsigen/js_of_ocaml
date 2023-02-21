@@ -29,6 +29,9 @@ caml_reset_afl_instrumentation
 caml_runtime_events_pause
 caml_runtime_events_resume
 caml_runtime_events_start
+caml_runtime_events_user_register
+caml_runtime_events_user_resolve
+caml_runtime_events_user_write
 caml_signbit
 caml_static_release_bytecode
 caml_terminfo_rows
