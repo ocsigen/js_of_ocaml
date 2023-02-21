@@ -3,6 +3,7 @@
 * Lib: Added support for KeyboardEvent.getModifierState
 * Misc: bump min ocaml version to 4.08
 * Misc: remove some old runtime files to support some external libs
+* Misc: switch to dune 3.7
 * Effects: partial CPS transformation, resulting in much better performances, lower compilation time and smaller generated code
 * Compiler: separate compilation can now drops unused units when linking (similar to ocamlc). (#1378)
   Feature is disabled by default while dune rules are being fixed. Enable with --enable=auto-link.
