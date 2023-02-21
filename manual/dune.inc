@@ -6,6 +6,7 @@
   (source_tree files)
   ../toplevel/examples/lwt_toplevel/index.html
   ../toplevel/examples/lwt_toplevel/toplevel.js
+  ../toplevel/examples/lwt_toplevel/toplevel.bc.js
   ../toplevel/examples/lwt_toplevel/test_dynlink.js
   ../examples/boulderdash/index.html
   ../examples/boulderdash/boulderdash.js
@@ -40,7 +41,7 @@
   (bash "mkdir -p files/wysiwyg")
   (bash "mkdir -p files/hyperbolic")
   (bash "mkdir -p files/minesweeper")
-  (bash "mkdir -p files/cubes")(bash "cp -r ../toplevel/examples/lwt_toplevel/index.html ../toplevel/examples/lwt_toplevel/toplevel.js ../toplevel/examples/lwt_toplevel/test_dynlink.js files/toplevel")
+  (bash "mkdir -p files/cubes")(bash "cp -r ../toplevel/examples/lwt_toplevel/index.html ../toplevel/examples/lwt_toplevel/toplevel.js ../toplevel/examples/lwt_toplevel/toplevel.bc.js ../toplevel/examples/lwt_toplevel/test_dynlink.js files/toplevel")
   (bash "cp -r ../examples/boulderdash/index.html ../examples/boulderdash/boulderdash.js ../examples/boulderdash/sprites files/boulderdash")
   (bash "cp -r ../examples/webgl/index.html ../examples/webgl/webgldemo.js files/webgl")
   (bash "cp -r ../examples/graph_viewer/index.html ../examples/graph_viewer/viewer_js.js files/graph_viewer")

@@ -17,4 +17,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Javascript.program -> Javascript.program
+val f : flags:bool -> Javascript.program -> Javascript.program * bool

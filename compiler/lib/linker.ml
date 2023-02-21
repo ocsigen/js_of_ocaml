@@ -120,7 +120,7 @@ module Check = struct
         super#merge_info from
     end
 
-  let primitive ~name pi ~code ~requires =
+  let primitive ~name pi ~code ~requires ~has_flags =
     let free =
       if Config.Flag.warn_unused ()
       then new check_and_warn name pi
@@ -135,6 +135,7 @@ module Check = struct
     let freename = StringSet.diff freename Reserved.keyword in
     let freename = StringSet.diff freename Reserved.provided in
     let freename = StringSet.remove Constant.global_object freename in
+    let freename = if has_flags then StringSet.remove "FLAG" freename else freename in
     if StringSet.mem Constant.old_global_object freename && false
        (* Don't warn yet, we want to give a transition period where both
           "globalThis" and "joo_global_object" are allowed without extra
@@ -171,6 +172,7 @@ module Fragment = struct
   type fragment_ =
     { provides : provides option
     ; requires : string list
+    ; has_macro : bool
     ; version_constraint_ok : bool
     ; weakdef : bool
     ; always : bool
@@ -206,12 +208,12 @@ module Fragment = struct
                 } as provides)
          ; _
          } as fragment) ->
-        let code = Macro.f (unpack fragment.code) in
+        let code, has_flags = Macro.f ~flags:false (unpack fragment.code) in
         let named_values = Named_value.find_all code in
         let arity = Arity.find code ~name in
-        Check.primitive ~name pi ~code ~requires:fragment.requires;
+        Check.primitive ~has_flags ~name pi ~code ~requires:fragment.requires;
         let provides = Some { provides with named_values; arity } in
-        Fragment { fragment with code = Ok code; provides }
+        Fragment { fragment with code = Ok code; provides; has_macro = has_flags }
 
   let version_match =
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
@@ -243,6 +245,7 @@ module Fragment = struct
                 ; version_constraint_ok = true
                 ; weakdef = false
                 ; always = false
+                ; has_macro = false
                 ; code = Ok code
                 ; js_string = None
                 ; effects = None
@@ -389,7 +392,7 @@ type always_required =
 type state =
   { ids : IntSet.t
   ; always_required_codes : always_required list
-  ; codes : Javascript.program pack list
+  ; codes : (Javascript.program pack * bool) list
   }
 
 type output =
@@ -438,6 +441,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; effects
       ; fragment_target
       ; aliases
+      ; has_macro
       } -> (
       let ignore_because_of_js_string =
         match js_string, Config.Flag.use_js_string () with
@@ -528,7 +532,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               StringSet.iter Primitive.register_named_value named_values;
               Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
-              Hashtbl.add code_pieces id (code, requires);
+              Hashtbl.add code_pieces id (code, has_macro, requires);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
               `Ok)
 
@@ -538,7 +542,7 @@ let get_provided () =
 let check_deps () =
   let provided = get_provided () in
   Hashtbl.iter
-    (fun id (code, requires) ->
+    (fun id (code, _has_macro, requires) ->
       match code with
       | Ok code -> (
           let traverse = new Js_traverse.free in
@@ -585,13 +589,10 @@ let load_files ~target_env l =
 
 (* resolve *)
 let rec resolve_dep_name_rev visited path nm =
-  let id =
-    try
-      let x = Hashtbl.find provided nm in
-      x.id
-    with Not_found -> error "missing dependency '%s'@." nm
+  let x =
+    try Hashtbl.find provided nm with Not_found -> error "missing dependency '%s'@." nm
   in
-  resolve_dep_id_rev visited path id
+  resolve_dep_id_rev visited path x.id
 
 and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids
@@ -606,13 +607,13 @@ and resolve_dep_id_rev visited path id =
     visited)
   else
     let path = id :: path in
-    let code, req = Hashtbl.find code_pieces id in
+    let code, has_macro, req = Hashtbl.find code_pieces id in
     let visited = { visited with ids = IntSet.add id visited.ids } in
     let visited =
       List.fold_left req ~init:visited ~f:(fun visited nm ->
           resolve_dep_name_rev visited path nm)
     in
-    let visited = { visited with codes = code :: visited.codes } in
+    let visited = { visited with codes = (code, has_macro) :: visited.codes } in
     visited
 
 let proj_always_required { ar_filename; ar_requires; ar_program } =
@@ -666,9 +667,17 @@ let link program (state : state) =
           List.fold_left always.requires ~init:state ~f:(fun state nm ->
               resolve_dep_name_rev state [] nm)
         in
-        { state with codes = Ok always.program :: state.codes })
+        { state with codes = (Ok always.program, false) :: state.codes })
   in
-  let codes = List.map state.codes ~f:unpack in
+  let codes =
+    List.map state.codes ~f:(fun (x, has_macro) ->
+        let c = unpack x in
+        if has_macro
+        then
+          let c, _ = Macro.f ~flags:true c in
+          c
+        else c)
+  in
   let runtime = List.flatten (List.rev (program :: codes)) in
   { runtime_code = runtime; always_required_codes = always_required }
 

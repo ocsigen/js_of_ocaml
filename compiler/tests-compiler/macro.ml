@@ -30,7 +30,7 @@ let print_macro_transformed source =
         |> Util.Filetype.write_js ~name:"test.js"
       in
       let parsed = Util.parse_js source in
-      let transformed = Jsoo.Macro.f parsed in
+      let transformed, _ = Jsoo.Macro.f ~flags:false parsed in
       let (_ : Jsoo.Source_map.t option) = Jsoo.Js_output.program pp transformed in
       print_endline (Buffer.contents buffer))
 

@@ -3,7 +3,7 @@ type desc = string * string * string list
 let all : desc list =
   [ ( "../toplevel/examples/lwt_toplevel"
     , "toplevel"
-    , [ "index.html"; "toplevel.js"; "test_dynlink.js" ] )
+    , [ "index.html"; "toplevel.js"; "toplevel.bc.js"; "test_dynlink.js" ] )
   ; ( "../examples/boulderdash"
     , "boulderdash"
     , [ "index.html"; "boulderdash.js"; "sprites/" ] )

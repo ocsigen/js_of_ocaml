@@ -34,9 +34,12 @@
    (js_of_ocaml-ppx -> ppx_support.enabled.ml)
    (-> ppx_support.disabled.ml)))
  (flags
-  (:standard -rectypes -linkall))
+  (:standard -rectypes))
+ (link_flags
+  (:standard -linkall))
  (modes byte js)
  (js_of_ocaml
+  (link_flags (:standard))
   (build_runtime_flags
    (:standard
     +toplevel.js
@@ -144,8 +147,4 @@
 
 (alias
  (name default)
- (deps toplevel.js index.html))
-
-(alias
- (name separate)
- (deps toplevel.bc.js))
+ (deps toplevel.js toplevel.bc.js index.html))
