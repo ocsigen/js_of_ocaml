@@ -56,6 +56,7 @@ let runtime =
     ; sync
     ; effect
     ; zstd
+    ; runtime_events
     ]
 
 include Files
