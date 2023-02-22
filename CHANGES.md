@@ -20,6 +20,7 @@
 * Toplevel: Enable separate compilation of toplevels
 * Runtime: js backtrace recording controled by OCAMLRUNPARAM
 * Runtime: support for zstd decompression of marshalled data (ocaml.5.1) (#12006)
+* Runtime: stub out custom runtime events symbols for OCaml 5.1 (#1414)
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions
