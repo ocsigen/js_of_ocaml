@@ -74,6 +74,7 @@ let v =
   | 4 :: 13 :: _ -> `V4_13
   | 4 :: 14 :: _ -> `V4_14
   | 5 :: 0 :: _ -> `V5_00
+  | 5 :: 1 :: _ -> `V5_01
   | _ ->
       if compare current [ 4; 4 ] < 0
       then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
