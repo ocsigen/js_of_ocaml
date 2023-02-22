@@ -260,7 +260,13 @@ let merge = function
               ~names_offset:(names_offset + List.length sm.names)
               rest
       in
-      let acc_rev = loop (empty ~filename:"") ~sources_offset:0 ~names_offset:0 l in
+      let acc_rev =
+        loop
+          { (empty ~filename:"") with sources_content = Some [] }
+          ~sources_offset:0
+          ~names_offset:0
+          l
+      in
       Some
         { acc_rev with
           mappings = List.rev acc_rev.mappings
