@@ -51,7 +51,7 @@ let function_arity info x =
 
 let specialize_instr function_arity (acc, free_pc, extra) i =
   match i with
-  | Let (x, Apply { f; args; exact }), loc when (not exact) && Config.Flag.optcall () -> (
+  | Let (x, Apply { f; args; exact = false }), loc when Config.Flag.optcall () -> (
       let n' = List.length args in
       match function_arity f with
       | None -> i :: acc, free_pc, extra
