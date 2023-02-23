@@ -403,3 +403,15 @@ let%expect_test _ =
   f (Obj.magic cb5);
   [%expect {|
     Result: function#2#2 |}]
+
+let%expect_test _ =
+  let open Js_of_ocaml in
+  let f = Js.wrap_callback (fun s -> print_endline s) in
+  Js.export "f" f;
+  let () =
+    Js.Unsafe.fun_call
+      (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
+      [| Js.Unsafe.coerce (Js.string "hello") |]
+  in
+  ();
+  [%expect {| hello |}]
