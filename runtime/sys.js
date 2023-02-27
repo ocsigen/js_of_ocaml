@@ -347,6 +347,13 @@ function caml_spacetime_only_works_for_native_code() {
   caml_failwith("Spacetime profiling only works for native code");
 }
 
+
+//Provides: caml_sys_is_regular_file
+//Requires: resolve_fs_device
+function caml_sys_is_regular_file(name) {
+  var root = resolve_fs_device(name);
+  return root.device.isFile(root.rest);
+}
 //Always
 //Requires: caml_fatal_uncaught_exception
 function caml_setup_uncaught_exception_handler() {

@@ -64,6 +64,14 @@ MlFakeDevice.prototype.exists = function(name) {
   this.lookup(name);
   return this.content[name]?1:0;
 }
+MlFakeDevice.prototype.isFile = function(name) {
+  if(this.exists(name) && !this.is_dir(name)) {
+    return 1
+  }
+  else {
+    return 0
+  }
+}
 MlFakeDevice.prototype.mkdir = function(name,mode, raise_unix) {
   var unix_error = raise_unix && caml_named_value('Unix.Unix_error');
   if(this.exists(name)) {

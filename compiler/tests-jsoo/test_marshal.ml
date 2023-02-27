@@ -133,3 +133,24 @@ let%expect_test _ =
   Printf.printf "%S" (Marshal.to_string ba []);
   [%expect
     {| "\132\149\166\190\000\000\000'\000\000\000\001\000\000\000\007\000\000\000\007\024_bigarr02\000\000\000\000\020\000\000\000\000\000\000\000(\000\000\000\001\000\000\000\005\000\003\000\003\000\001\000\002" |}]
+
+let%expect_test _ =
+  let data =
+    "\132\149\166\189\r\022\206\021\001\147F\137d(\181/\253\000Xm\000\0000\n\
+     \000\000'\016c\001\000\012\135\007E"
+  in
+  let ocaml_5_1 =
+    match String.split_on_char '.' Sys.ocaml_version with
+    | major :: minor :: _ ->
+        let major = int_of_string major and minor = int_of_string minor in
+        major > 5 || (major = 5 && minor >= 1)
+    | _ -> assert false
+  in
+  let s =
+    match Sys.backend_type with
+    | Other "js_of_ocaml" -> Marshal.from_string data 0
+    | Other _ | Native | Bytecode ->
+        if ocaml_5_1 then Marshal.from_string data 0 else String.make 10000 'c'
+  in
+  Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
+  [%expect {| cccccccccccccccccccc ... (10000) |}]

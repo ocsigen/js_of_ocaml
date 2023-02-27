@@ -19,6 +19,7 @@
 * Compiler: improve debug location and speedup compilation (#1407)
 * Toplevel: Enable separate compilation of toplevels
 * Runtime: js backtrace recording controled by OCAMLRUNPARAM
+* Runtime: support for zstd decompression of marshalled data (ocaml.5.1) (#12006)
 
 ## Bug fixes
 - Effects: fix Js.export and Js.export_all to work with functions

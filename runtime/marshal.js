@@ -47,6 +47,47 @@ var caml_marshal_constants = {
 }
 
 
+//Provides: UInt8ArrayReader
+//Requires: caml_string_of_array, caml_jsbytes_of_string
+function UInt8ArrayReader (s, i) { this.s = s; this.i = i; }
+UInt8ArrayReader.prototype = {
+  read8u:function () { return this.s[this.i++]; },
+  read8s:function () { return this.s[this.i++] << 24 >> 24; },
+  read16u:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 2;
+    return (s[i] << 8) | s[i + 1]
+  },
+  read16s:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 2;
+    return (s[i] << 24 >> 16) | s[i + 1];
+  },
+  read32u:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 4;
+    return ((s[i] << 24) | (s[i+1] << 16) |
+            (s[i+2] << 8) | s[i+3]) >>> 0;
+  },
+  read32s:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 4;
+    return (s[i] << 24) | (s[i+1] << 16) |
+      (s[i+2] << 8) | s[i+3];
+  },
+  readstr:function (len) {
+    var i = this.i;
+    this.i = i + len;
+    return caml_string_of_array(this.s.subarray(i, i + len));
+  },
+  readuint8array:function (len) {
+    var i = this.i;
+    this.i = i + len;
+    return this.s.subarray(i, i + len);
+  }
+}
+
+
 //Provides: MlStringReader
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function MlStringReader (s, i) { this.s = caml_jsbytes_of_string(s); this.i = i; }
@@ -79,6 +120,16 @@ MlStringReader.prototype = {
     var i = this.i;
     this.i = i + len;
     return caml_string_of_jsbytes(this.s.substring(i, i + len));
+  },
+  readuint8array:function (len) {
+    var b = new Uint8Array(len);
+    var s = this.s;
+    var i = this.i;
+    for(var j = 0; j < len; j++) {
+      b[j] = s.charCodeAt(i + j);
+    }
+    this.i = i + len;
+    return b;
   }
 }
 
@@ -118,6 +169,12 @@ BigStringReader.prototype = {
     }
     this.i = i + len;
     return caml_string_of_array(arr);
+  },
+  readuint8array:function (len) {
+    var i = this.i;
+    var offset = this.offset(i);
+    this.i = i + len;
+    return this.s.data.subarray(offset, offset + len);
   }
 }
 
@@ -216,16 +273,55 @@ var caml_custom_ops =
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_custom_ops
+//Requires: zstd_decompress
+//Requires: UInt8ArrayReader
 function caml_input_value_from_reader(reader, ofs) {
-  var _magic = reader.read32u ()
-  var _block_len = reader.read32u ();
-  var num_objects = reader.read32u ();
-  var _size_32 = reader.read32u ();
-  var _size_64 = reader.read32u ();
+  function readvlq(overflow) {
+    var c = reader.read8u();
+    var n = c & 0x7F;
+    while ((c & 0x80) != 0) {
+      c = reader.read8u();
+      var n7 = n << 7;
+      if (n != n7 >> 7) overflow[0] = true;
+      n = n7 | (c & 0x7F);
+    }
+    return n;
+  }
+  var magic = reader.read32u ()
+  switch(magic){
+  case 0x8495A6BE: /* Intext_magic_number_small */
+    var header_len = 20;
+    var compressed = 0;
+    var data_len = reader.read32u ();
+    var uncompressed_data_len = data_len;
+    var num_objects = reader.read32u ();
+    var _size_32 = reader.read32u ();
+    var _size_64 = reader.read32u ();
+    break
+  case 0x8495A6BD: /* Intext_magic_number_compressed */
+    var header_len = reader.read8u() & 0x3F;
+    var compressed = 1;
+    var overflow = [false];
+    var data_len = readvlq(overflow);
+    var uncompressed_data_len = readvlq(overflow);
+    var num_objects = readvlq(overflow);
+    var _size_32 = readvlq (overflow);
+    var _size_64 = readvlq (overflow);
+    if(overflow[0]){
+        caml_failwith("caml_input_value_from_reader: object too large to be read back on this platform");
+    }
+    break
+  case 0x8495A6BF: /* Intext_magic_number_big */
+    caml_failwith("caml_input_value_from_reader: object too large to be read back on a 32-bit platform");
+    break
+  default:
+    caml_failwith("caml_input_value_from_reader: bad object");
+    break;
+  }
   var stack = [];
   var intern_obj_table = (num_objects > 0)?[]:null;
   var obj_counter = 0;
-  function intern_rec () {
+  function intern_rec (reader) {
     var code = reader.read8u ();
     if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
@@ -257,13 +353,16 @@ function caml_input_value_from_reader(reader, ofs) {
           break;
         case 0x04: //cst.CODE_SHARED8:
           var offset = reader.read8u ();
-          return intern_obj_table[obj_counter - offset];
+          if(compressed == 0) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x05: //cst.CODE_SHARED16:
           var offset = reader.read16u ();
-          return intern_obj_table[obj_counter - offset];
+          if(compressed == 0) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x06: //cst.CODE_SHARED32:
           var offset = reader.read32u ();
-          return intern_obj_table[obj_counter - offset];
+          if(compressed == 0) offset = obj_counter - offset;
+          return intern_obj_table[offset];
         case 0x08: //cst.CODE_BLOCK32:
           var header = reader.read32u ();
           var tag = header & 0xFF;
@@ -383,30 +482,72 @@ function caml_input_value_from_reader(reader, ofs) {
       }
     }
   }
-  var res = intern_rec ();
+  if(compressed) {
+    var data = reader.readuint8array(data_len);
+    var res = new Uint8Array(uncompressed_data_len);
+    var res = zstd_decompress(data, res);
+    var reader = new UInt8ArrayReader(res, 0);
+  }
+  var res = intern_rec (reader);
   while (stack.length > 0) {
     var size = stack.pop();
     var v = stack.pop();
     var d = v.length;
     if (d < size) stack.push(v, size);
-    v[d] = intern_rec ();
+    v[d] = intern_rec (reader);
   }
   if (typeof ofs!="number") ofs[0] = reader.i;
   return res;
 }
 
+//Provides: caml_marshal_header_size
+//Version: < 5.1.0
+var caml_marshal_header_size = 20
+
+//Provides: caml_marshal_header_size
+//Version: >= 5.1.0
+var caml_marshal_header_size = 16
+
+
+
 //Provides: caml_marshal_data_size mutable
 //Requires: caml_failwith, caml_bytes_unsafe_get
+//Requires: caml_uint8_array_of_bytes
+//Requires: UInt8ArrayReader
+//Requires: caml_marshal_header_size
 function caml_marshal_data_size (s, ofs) {
-  function get32(s,i) {
-    return (caml_bytes_unsafe_get(s, i) << 24) |
-      (caml_bytes_unsafe_get(s, i + 1) << 16) |
-      (caml_bytes_unsafe_get(s, i + 2) << 8) |
-      caml_bytes_unsafe_get(s, i + 3);
+  var r = new UInt8ArrayReader(caml_uint8_array_of_bytes(s), ofs);
+  function readvlq(overflow) {
+    var c = r.read8u();
+    var n = c & 0x7F;
+    while ((c & 0x80) != 0) {
+      c = r.read8u();
+      var n7 = n << 7;
+      if (n != n7 >> 7) overflow[0] = true;
+      n = n7 | (c & 0x7F);
+    }
+    return n;
   }
-  if (get32(s, ofs) != (0x8495A6BE|0))
+
+  switch(r.read32u()){
+  case 0x8495A6BE: /* Intext_magic_number_small */
+    var header_len = 20;
+    var data_len = r.read32u();
+    break;
+  case 0x8495A6BD: /* Intext_magic_number_compressed */
+    var header_len = r.read8u() & 0x3F;
+    var overflow = [false];
+    var data_len = readvlq(overflow);
+    if(overflow[0]){
+      caml_failwith("Marshal.data_size: object too large to be read back on this platform");
+    }
+    break
+  case 0x8495A6BF: /* Intext_magic_number_big */
+  default:
     caml_failwith("Marshal.data_size: bad object");
-  return (get32(s, ofs + 4));
+    break
+  }
+  return header_len - caml_marshal_header_size + data_len;
 }
 
 //Provides: MlObjectTable

@@ -49,7 +49,8 @@ let%expect_test _ =
     +sys.js
     +toplevel.js
     +unix.js
-    +weak.js |}];
+    +weak.js
+    +zstd.js |}];
   printl runtime;
   [%expect
     {|
@@ -88,7 +89,8 @@ let%expect_test _ =
     +sync.js
     +sys.js
     +unix.js
-    +weak.js |}];
+    +weak.js
+    +zstd.js |}];
   printl extra;
   [%expect {|
     +dynlink.js
