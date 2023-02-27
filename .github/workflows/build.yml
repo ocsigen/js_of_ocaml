@@ -55,6 +55,11 @@ jobs:
             skip-effects: true
             skip-test: false
             skip-doc: true
+          - os: windows-latest
+            ocaml-compiler: ocaml.5.0.0,ocaml-option-mingw
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
@@ -80,6 +85,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
+            dra27: https://github.com/dra27/opam-repository.git#windows-5.0
             default: https://github.com/hhugo/opam-repository-mingw.git#opam2
             opam: https://github.com/ocaml/opam-repository.git
           dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
