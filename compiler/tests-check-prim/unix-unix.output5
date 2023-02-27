@@ -290,6 +290,7 @@ caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
+caml_sys_is_regular_file
 
 From +unix.js:
 caml_unix_cleanup
@@ -298,7 +299,4 @@ caml_unix_findclose
 caml_unix_findfirst
 caml_unix_findnext
 caml_unix_startup
-
-From +zstd.js:
-zstd_decompress
 
