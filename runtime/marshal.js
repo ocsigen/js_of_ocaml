@@ -500,10 +500,21 @@ function caml_input_value_from_reader(reader, ofs) {
   return res;
 }
 
+//Provides: caml_marshal_header_size
+//Version: < 5.1.0
+var caml_marshal_header_size = 20
+
+//Provides: caml_marshal_header_size
+//Version: >= 5.1.0
+var caml_marshal_header_size = 16
+
+
+
 //Provides: caml_marshal_data_size mutable
 //Requires: caml_failwith, caml_bytes_unsafe_get
 //Requires: caml_uint8_array_of_bytes
 //Requires: UInt8ArrayReader
+//Requires: caml_marshal_header_size
 function caml_marshal_data_size (s, ofs) {
   var r = new UInt8ArrayReader(caml_uint8_array_of_bytes(s), ofs);
   function readvlq(overflow) {
@@ -536,7 +547,7 @@ function caml_marshal_data_size (s, ofs) {
     caml_failwith("Marshal.data_size: bad object");
     break
   }
-  return header_len - 16 + data_len;
+  return header_len - caml_marshal_header_size + data_len;
 }
 
 //Provides: MlObjectTable
