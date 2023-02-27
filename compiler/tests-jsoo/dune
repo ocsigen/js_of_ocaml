@@ -3,7 +3,9 @@
  (libraries unix compiler-libs.common)
  (foreign_stubs
   (language c)
-  (names bigarray_stubs))
+  (names bigarray_stubs flush_stubs))
+ (js_of_ocaml
+  (javascript_files runtime.js))
  (inline_tests
   (flags -allow-output-patterns)
   (modes js best))

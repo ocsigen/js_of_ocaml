@@ -17,24 +17,28 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* see https://github.com/ocaml/ocaml/pull/12046 *)
+external flush_stdout_stderr : unit -> unit = "flush_stdout_stderr"
+
 let parse s =
+  flush_stdout_stderr ();
   try
     let lexbuf = Lexing.from_string s in
     while true do
       let result = Calc_parser.main Calc_lexer.token lexbuf in
+      flush_stdout_stderr ();
       print_int result;
-      print_newline ();
-      flush stdout
+      print_newline ()
     done
-  with Calc_lexer.Eof -> print_endline "EOF"
+  with Calc_lexer.Eof ->
+    flush_stdout_stderr ();
+    print_endline "EOF"
 
 let%expect_test "parsing" =
-  (* Uncomment once https://github.com/janestreet/ppx_expect/issues/43 is fixed.
-        {[
-     let (old : bool) = Parsing.set_trace true in
-     parse "1+2*3";
-     [%expect
-       {|
+  let (old : bool) = Parsing.set_trace true in
+  parse "1+2*3";
+  [%expect
+    {|
        State 0: shift to state 1
        State 1: read token INT(1)
        State 1: shift to state 3
@@ -51,9 +55,9 @@ let%expect_test "parsing" =
        State 3: reduce by rule 2
        State 18: reduce by rule 6
        EOF |}];
-     parse "(1+2)*3";
-     [%expect
-       {|
+  parse "(1+2)*3";
+  [%expect
+    {|
        State 0: shift to state 1
        State 1: read token LPAREN
        State 1: shift to state 5
@@ -76,9 +80,9 @@ let%expect_test "parsing" =
        State 3: reduce by rule 2
        State 18: reduce by rule 6
        EOF |}];
-     parse "-10-1";
-     [%expect
-       {|
+  parse "-10-1";
+  [%expect
+    {|
        State 0: shift to state 1
        State 1: read token MINUS
        State 1: shift to state 4
@@ -92,9 +96,9 @@ let%expect_test "parsing" =
        State 11: shift to state 3
        State 3: reduce by rule 2
        EOF |}];
-     parse "63/2*-3";
-     [%expect
-       {|
+  parse "63/2*-3";
+  [%expect
+    {|
        State 0: shift to state 1
        State 1: read token INT(63)
        State 1: shift to state 3
@@ -115,7 +119,7 @@ let%expect_test "parsing" =
        State 8: reduce by rule 8
        State 18: reduce by rule 6
        EOF |}];
-     let (_ : bool) = Parsing.set_trace old in ]} *)
+  let (_ : bool) = Parsing.set_trace old in
   parse "1+2*3";
   [%expect {| EOF |}];
   parse "(1+2)*3";
