@@ -48,6 +48,13 @@ MlNodeDevice.prototype.exists = function(name) {
     return 0;
   }
 }
+MlNodeDevice.prototype.isFile = function(name) {
+  try {
+    return this.fs.statSync(this.nm(name)).isFile()?1:0;
+  } catch (err) {
+    caml_raise_sys_error(err.toString());
+  }
+}
 MlNodeDevice.prototype.mkdir = function(name, mode, raise_unix) {
   try {
     this.fs.mkdirSync(this.nm(name),{mode:mode});
