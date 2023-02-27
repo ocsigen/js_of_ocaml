@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(* see https://github.com/ocaml/ocaml/pull/12046 *)
+external flush_stdout_stderr : unit -> unit = "flush_stdout_stderr"
+
 let parse s =
   try
     let lexbuf = Lexing.from_string s in
@@ -24,9 +27,15 @@ let parse s =
       let result = Calc_parser.main Calc_lexer.token lexbuf in
       print_int result;
       print_newline ();
-      flush stdout
+      flush stdout;
+      flush stderr;
+      flush_stdout_stderr ()
     done
-  with Calc_lexer.Eof -> print_endline "EOF"
+  with Calc_lexer.Eof ->
+    print_endline "EOF";
+    flush stdout;
+    flush stderr;
+    flush_stdout_stderr ()
 
 let%expect_test "parsing" =
   let (old : bool) = Parsing.set_trace true in
