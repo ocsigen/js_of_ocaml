@@ -88,7 +88,7 @@ jobs:
             dra27: https://github.com/dra27/opam-repository.git#windows-5.0
             default: https://github.com/hhugo/opam-repository-mingw.git#opam2
             opam: https://github.com/ocaml/opam-repository.git
-          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
+          dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
@@ -97,7 +97,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: ${{ matrix.os == 'ubuntu-latest' }}
+          dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
