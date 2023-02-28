@@ -83,6 +83,26 @@ end = struct
       | None -> find_smaller ~f ~bad:mid ~good ~good_s
       | Some s -> find_smaller ~f ~bad ~good:mid ~good_s:s
 
+  (* Windows uses 3 digits for the exponent, let's fix it. *)
+  let fix_exponent s =
+    try
+      let start = String.index_from s 0 'e' + 1 in
+      let start =
+        match String.get s start with
+        | '-' | '+' -> succ start
+        | _ -> start
+      in
+      let stop = ref start in
+      while Char.equal (String.get s !stop) '0' do
+        incr stop
+      done;
+      if start = !stop
+      then s
+      else
+        String.sub s ~pos:0 ~len:start
+        ^ String.sub s ~pos:!stop ~len:(String.length s - !stop)
+    with Not_found -> s
+
   let of_float v =
     match Float.classify_float v with
     | FP_nan -> "NaN"
@@ -104,8 +124,8 @@ end = struct
               ~good:18
               ~good_s:"max"
           with
-          | "max" -> float_to_string 18 v
-          | s -> s)
+          | "max" -> float_to_string 18 v |> fix_exponent
+          | s -> fix_exponent s)
 
   let is_zero s = String.equal s "0"
 
