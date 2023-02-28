@@ -256,6 +256,18 @@ caml_obj_update_tag
 From +prng.js:
 caml_lxm_next
 
+From +runtime_events.js:
+caml_custom_event_index
+caml_runtime_events_create_cursor
+caml_runtime_events_free_cursor
+caml_runtime_events_pause
+caml_runtime_events_read_poll
+caml_runtime_events_resume
+caml_runtime_events_start
+caml_runtime_events_user_register
+caml_runtime_events_user_resolve
+caml_runtime_events_user_write
+
 From +stdlib.js:
 caml_build_symbols
 caml_is_printable
