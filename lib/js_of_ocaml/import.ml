@@ -35,21 +35,21 @@ module Poly = struct
 end
 
 module Int_replace_polymorphic_compare = struct
-  let ( < ) (x : int) y = x < y
+  external ( < ) : int -> int -> bool = "%lessthan"
 
-  let ( <= ) (x : int) y = x <= y
+  external ( <= ) : int -> int -> bool = "%lessequal"
 
-  let ( <> ) (x : int) y = x <> y
+  external ( <> ) : int -> int -> bool = "%notequal"
 
-  let ( = ) (x : int) y = x = y
+  external ( = ) : int -> int -> bool = "%equal"
 
-  let ( > ) (x : int) y = x > y
+  external ( > ) : int -> int -> bool = "%greaterthan"
 
-  let ( >= ) (x : int) y = x >= y
+  external ( >= ) : int -> int -> bool = "%greaterequal"
 
-  let compare (x : int) y = compare x y
+  external compare : int -> int -> int = "%compare"
 
-  let equal (x : int) y = x = y
+  external equal : int -> int -> bool = "%equal"
 
   let max (x : int) y = if x >= y then x else y
 
