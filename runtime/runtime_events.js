@@ -24,8 +24,8 @@ function caml_runtime_events_start() {
   return 0;
 }
 
-//Provides: caml_runtime_events_stop
-function caml_runtime_events_stop() {
+//Provides: caml_runtime_events_pause
+function caml_runtime_events_pause() {
   return 0;
 }
 
