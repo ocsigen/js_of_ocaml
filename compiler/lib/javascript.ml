@@ -66,6 +66,23 @@ end = struct
 
   let of_int32 = Int32.to_string
 
+  external format_float : string -> float -> string = "caml_format_float"
+
+  let fmts = Array.init 19 ~f:(fun i -> "%." ^ string_of_int i ^ "g")
+
+  let float_to_string prec v = format_float fmts.(prec) v
+
+  let rec find_smaller ~f ~bad ~good ~good_s =
+    if bad + 1 = good
+    then good_s
+    else
+      let mid = (good + bad) / 2 in
+      assert (mid <> good);
+      assert (mid <> bad);
+      match f mid with
+      | None -> find_smaller ~f ~bad:mid ~good ~good_s
+      | Some s -> find_smaller ~f ~bad ~good:mid ~good_s:s
+
   let of_float v =
     match Float.classify_float v with
     | FP_nan -> "NaN"
@@ -73,17 +90,22 @@ end = struct
         (* [1/-0] < 0. seems to be the only way to detect -0 in JavaScript *)
         if Float.(1. /. v < 0.) then "-0." else "0."
     | FP_infinite -> if Float.(v < 0.) then "-Infinity" else "Infinity"
-    | FP_normal | FP_subnormal ->
+    | FP_normal | FP_subnormal -> (
         let vint = int_of_float v in
         if Float.equal (float_of_int vint) v
         then Printf.sprintf "%d." vint
         else
-          let s1 = Printf.sprintf "%.12g" v in
-          if Float.equal v (float_of_string s1)
-          then s1
-          else
-            let s2 = Printf.sprintf "%.15g" v in
-            if Float.equal v (float_of_string s2) then s2 else Printf.sprintf "%.18g" v
+          match
+            find_smaller
+              ~f:(fun prec ->
+                let s = float_to_string prec v in
+                if Float.equal v (float_of_string s) then Some s else None)
+              ~bad:0
+              ~good:18
+              ~good_s:"max"
+          with
+          | "max" -> float_to_string 18 v
+          | s -> s)
 
   let is_zero s = String.equal s "0"
 
