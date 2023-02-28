@@ -7757,7 +7757,7 @@
     epsilon = Stdlib[27],
     of_string_opt = Stdlib[36],
     to_string = Stdlib[35],
-    pi = 3.14159265358979312;
+    pi = 3.141592653589793;
    function is_integer(x){
      /*<<float.ml:111:19>>*/ var
      _aq_ = x ==  /*<<float.ml:111:23>>*/ runtime.caml_trunc_float(x) ? 1 : 0;
@@ -23015,7 +23015,7 @@
       ( /*<<random.ml:156:7>>*/ caml_notequal(n, _h_))
        /*<<random.ml:159:22>>*/ return  /*<<random.ml:156:20>>*/ runtime.caml_int64_to_float
               (n)
-             * 1.11022302462515654e-16
+             * 1.1102230246251565e-16
              * bound;
     }
     /*<<random.ml:159:41>>*/ }
