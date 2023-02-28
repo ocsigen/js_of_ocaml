@@ -37,9 +37,11 @@ caml_unix_access
 caml_unix_bind
 caml_unix_chdir
 caml_unix_chmod
+caml_unix_clear_close_on_exec
 caml_unix_clear_nonblock
 caml_unix_close
 caml_unix_connect
+caml_unix_create_process
 caml_unix_dup
 caml_unix_dup2
 caml_unix_environment
@@ -49,6 +51,7 @@ caml_unix_execve
 caml_unix_execvp
 caml_unix_execvpe
 caml_unix_exit
+caml_unix_filedescr_of_channel
 caml_unix_fstat
 caml_unix_fstat_64
 caml_unix_fsync
@@ -56,12 +59,6 @@ caml_unix_ftruncate
 caml_unix_ftruncate_64
 caml_unix_getaddrinfo
 caml_unix_getcwd
-caml_unix_getegid
-caml_unix_geteuid
-caml_unix_getgid
-caml_unix_getgrgid
-caml_unix_getgrnam
-caml_unix_getgroups
 caml_unix_gethostbyaddr
 caml_unix_gethostbyname
 caml_unix_gethostname
@@ -74,6 +71,7 @@ caml_unix_getservbyname
 caml_unix_getservbyport
 caml_unix_getsockname
 caml_unix_getsockopt
+caml_unix_inchannel_of_filedescr
 caml_unix_link
 caml_unix_listen
 caml_unix_lockf
@@ -81,6 +79,7 @@ caml_unix_lseek
 caml_unix_lseek_64
 caml_unix_map_file_bytecode
 caml_unix_open
+caml_unix_outchannel_of_filedescr
 caml_unix_pipe
 caml_unix_putenv
 caml_unix_read
@@ -91,6 +90,7 @@ caml_unix_rename
 caml_unix_select
 caml_unix_send
 caml_unix_sendto
+caml_unix_set_close_on_exec
 caml_unix_set_nonblock
 caml_unix_setsockopt
 caml_unix_shutdown
@@ -99,19 +99,14 @@ caml_unix_sleep
 caml_unix_socket
 caml_unix_socketpair
 caml_unix_string_of_inet_addr
+caml_unix_system
+caml_unix_terminate_process
 caml_unix_times
 caml_unix_truncate
 caml_unix_truncate_64
 caml_unix_utimes
+caml_unix_waitpid
 caml_unix_write
-win_clear_close_on_exec
-win_create_process
-win_inchannel_of_filedescr
-win_outchannel_of_filedescr
-win_set_close_on_exec
-win_system
-win_terminate_process
-win_waitpid
 debugger
 is_digit_normalized
 
@@ -221,9 +216,11 @@ caml_marshal_constants
 From +mlBytes.js:
 caml_array_of_bytes
 caml_array_of_string
+caml_bytes_of_utf16_jsstring
 caml_string_set16
 caml_string_set32
 caml_string_set64
+caml_string_unsafe_set
 caml_to_js_string
 
 From +nat.js:
@@ -262,10 +259,7 @@ caml_sys_const_naked_pointers_checked
 caml_sys_is_regular_file
 
 From +unix.js:
-caml_unix_cleanup
-caml_unix_filedescr_of_fd
-caml_unix_findclose
-caml_unix_findfirst
-caml_unix_findnext
-caml_unix_startup
+caml_unix_getpwuid
+caml_unix_getuid
+caml_unix_rewinddir
 
