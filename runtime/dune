@@ -28,4 +28,5 @@
   weak.js
   domain.js
   prng.js
-  sync.js))
+  sync.js
+  runtime_events.js))
