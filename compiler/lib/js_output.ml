@@ -1567,7 +1567,7 @@ let program f ?source_map p =
       match Builtins.find file with
       | Some f -> Some (Builtins.File.content f)
       | None ->
-          if Sys.file_exists file
+          if Sys.file_exists file && not (Sys.is_directory file)
           then
             let content = Fs.read_file file in
             Some content
