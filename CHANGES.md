@@ -23,11 +23,12 @@
 * Runtime: stub out custom runtime events symbols for OCaml 5.1 (#1414)
 
 ## Bug fixes
-- Effects: fix Js.export and Js.export_all to work with functions
-- Sourcemap: fix incorrect sourcemap with separate compilation
-- Compiler: fix control flow analysis; some annotions were wrong in the runtime
+* Effects: fix Js.export and Js.export_all to work with functions
+* Sourcemap: fix incorrect sourcemap with separate compilation
+* Compiler: fix control flow analysis; some annotions were wrong in the runtime
 * Compiler: js backtrace recording respected in the js runtime and when using effects
-- Runtime: fix the compilation of some mutually recursive functions
+* Compiler: no longer fail on invalid source file (when the file is a directory)
+* Runtime: fix the compilation of some mutually recursive functions
 
 # 5.0.1 (2022-12-20) - Lille
 ## Features/Changes
