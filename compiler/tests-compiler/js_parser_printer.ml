@@ -46,14 +46,14 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
   let buffer = Buffer.create (String.length source) in
   let pp = Pretty_print.to_buffer buffer in
   Pretty_print.set_compact pp compact;
-  let lexed = Parse_js.Lexer.of_string source in
+  let lexed = Parse_js.Lexer.of_string ~filename:"fake" source in
   try
     let parsed = Parse_js.parse lexed in
     (if debuginfo then Config.Flag.enable else Config.Flag.disable) "debuginfo";
     let _ = Js_output.program pp parsed in
     let s = Buffer.contents buffer in
     print_endline s;
-    (let lexed = Parse_js.Lexer.of_string s in
+    (let lexed = Parse_js.Lexer.of_string ~filename:"fake" s in
      let parsed2 = Parse_js.parse lexed in
      let p1 = remove_loc parsed in
      let p2 = remove_loc parsed2 in
@@ -75,18 +75,18 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
 
 let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
-  [%expect {| /*<<:1:0>>*/ /*<<:1:0>>*/f(...[1,2,3]); |}]
+  [%expect {| /*<<fake:1:0>>*/ /*<<fake:1:0>>*/f(...[1,2,3]); |}]
 
 let%expect_test "no postfix addition coalesce" =
   print ~compact:true "a + +b";
   [%expect {|
-    /*<<:1:0>>*/a+
+    /*<<fake:1:0>>*/a+
     +b; |}]
 
 let%expect_test "no postfix subtraction coalesce" =
   print ~compact:true "a - -b";
   [%expect {|
-    /*<<:1:0>>*/a-
+    /*<<fake:1:0>>*/a-
     -b; |}]
 
 let%expect_test "reserved words as fields" =
@@ -104,14 +104,14 @@ let%expect_test "reserved words as fields" =
   |};
   [%expect
     {|
-    /*<<:2:4>>*/ x.debugger;
-    /*<<:3:4>>*/ x.catch;
-    /*<<:4:4>>*/ x.for;
-    /*<<:5:4>>*/ x.continue;
-    /*<<:6:4>>*/  /*<<:6:10>>*/ var y = {debugger: 2};
-    /*<<:7:4>>*/  /*<<:7:10>>*/ var y = {catch: 2};
-    /*<<:8:4>>*/  /*<<:8:10>>*/ var y = {for: 2};
-    /*<<:9:4>>*/  /*<<:9:10>>*/ var y = {continue: 2}; |}]
+    /*<<fake:2:4>>*/ x.debugger;
+    /*<<fake:3:4>>*/ x.catch;
+    /*<<fake:4:4>>*/ x.for;
+    /*<<fake:5:4>>*/ x.continue;
+    /*<<fake:6:4>>*/  /*<<fake:6:10>>*/ var y = {debugger: 2};
+    /*<<fake:7:4>>*/  /*<<fake:7:10>>*/ var y = {catch: 2};
+    /*<<fake:8:4>>*/  /*<<fake:8:10>>*/ var y = {for: 2};
+    /*<<fake:9:4>>*/  /*<<fake:9:10>>*/ var y = {continue: 2}; |}]
 
 let%expect_test "preserve number literals" =
   print
@@ -133,20 +133,20 @@ let%expect_test "preserve number literals" =
      var t = 1E+3; |};
   [%expect
     {|
-    /*<<:2:5>>*/  /*<<:2:11>>*/ var x = 0xf_fff;
-    /*<<:3:5>>*/  /*<<:3:11>>*/ var x = 0Xffff;
-    /*<<:4:5>>*/  /*<<:4:11>>*/ var y = 0o7_1223;
-    /*<<:5:5>>*/  /*<<:5:11>>*/ var y = 0O7123;
-    /*<<:6:5>>*/  /*<<:6:11>>*/ var y = 0b1_1001;
-    /*<<:7:5>>*/  /*<<:7:11>>*/ var y = 0B11001;
-    /*<<:8:5>>*/  /*<<:8:11>>*/ var y = 071923;
-    /*<<:9:5>>*/  /*<<:9:11>>*/ var y = 07123;
-    /*<<:10:5>>*/  /*<<:10:11>>*/ var z = 0.0;
-    /*<<:11:5>>*/  /*<<:11:11>>*/ var z = 0.;
-    /*<<:12:5>>*/  /*<<:12:11>>*/ var t = 1.0e-3;
-    /*<<:13:5>>*/  /*<<:13:11>>*/ var t = 1.0E+3;
-    /*<<:14:5>>*/  /*<<:14:11>>*/ var t = 1e-3;
-    /*<<:15:5>>*/  /*<<:15:11>>*/ var t = 1E+3; |}]
+    /*<<fake:2:5>>*/  /*<<fake:2:11>>*/ var x = 0xf_fff;
+    /*<<fake:3:5>>*/  /*<<fake:3:11>>*/ var x = 0Xffff;
+    /*<<fake:4:5>>*/  /*<<fake:4:11>>*/ var y = 0o7_1223;
+    /*<<fake:5:5>>*/  /*<<fake:5:11>>*/ var y = 0O7123;
+    /*<<fake:6:5>>*/  /*<<fake:6:11>>*/ var y = 0b1_1001;
+    /*<<fake:7:5>>*/  /*<<fake:7:11>>*/ var y = 0B11001;
+    /*<<fake:8:5>>*/  /*<<fake:8:11>>*/ var y = 071923;
+    /*<<fake:9:5>>*/  /*<<fake:9:11>>*/ var y = 07123;
+    /*<<fake:10:5>>*/  /*<<fake:10:11>>*/ var z = 0.0;
+    /*<<fake:11:5>>*/  /*<<fake:11:11>>*/ var z = 0.;
+    /*<<fake:12:5>>*/  /*<<fake:12:11>>*/ var t = 1.0e-3;
+    /*<<fake:13:5>>*/  /*<<fake:13:11>>*/ var t = 1.0E+3;
+    /*<<fake:14:5>>*/  /*<<fake:14:11>>*/ var t = 1e-3;
+    /*<<fake:15:5>>*/  /*<<fake:15:11>>*/ var t = 1E+3; |}]
 
 let%expect_test "preserve number literals in property_name" =
   print
@@ -157,8 +157,10 @@ let%expect_test "preserve number literals in property_name" =
  |};
   [%expect
     {|
-    /*<<:2:4>>*/  /*<<:2:22>>*/ var number_as_key = {100000000000000000000: 2};
-    /*<<:3:4>>*/  /*<<:3:22>>*/ var number_as_key = {100000000000000000000n: 2}; |}]
+    /*<<fake:2:4>>*/  /*<<fake:2:22>>*/ var
+    number_as_key = {100000000000000000000: 2};
+    /*<<fake:3:4>>*/  /*<<fake:3:22>>*/ var
+    number_as_key = {100000000000000000000n: 2}; |}]
 
 let%expect_test "ops" =
   print
@@ -187,22 +189,22 @@ let%expect_test "ops" =
   (* FIXME: parsing & parens  *)
   [%expect
     {|
-    /*<<:2:4>>*/ a += a;
-    /*<<:3:4>>*/ b ||= true;
-    /*<<:4:4>>*/ c **= b ** 2;
-    /*<<:5:4>>*/ 1 ** 2;
-    /*<<:6:4>>*/ (- 1) ** 2;
-    /*<<:7:4>>*/ - (1 ** 2);
-    /*<<:8:4>>*/ f ??= fw;
-    /*<<:9:4>>*/ g = c || (a ?? b) || c;
-    /*<<:10:4>>*/ g = (c || a) ?? (b || c);
-    /*<<:11:4>>*/ g = c && (a ?? b) && c;
-    /*<<:12:4>>*/ g = (c && a) ?? (b && c);
-    /*<<:13:4>>*/ y = a ?? b ?? c ?? d;
-    /*<<:15:4>>*/ y = a?.b?.s?.[a] ?? c ?? d;
-    /*<<:17:4>>*/ a?.b;
-    /*<<:18:4>>*/ a?.[b];
-    /*<<:19:4>>*/  /*<<:19:4>>*/ a?.(b); |}]
+    /*<<fake:2:4>>*/ a += a;
+    /*<<fake:3:4>>*/ b ||= true;
+    /*<<fake:4:4>>*/ c **= b ** 2;
+    /*<<fake:5:4>>*/ 1 ** 2;
+    /*<<fake:6:4>>*/ (- 1) ** 2;
+    /*<<fake:7:4>>*/ - (1 ** 2);
+    /*<<fake:8:4>>*/ f ??= fw;
+    /*<<fake:9:4>>*/ g = c || (a ?? b) || c;
+    /*<<fake:10:4>>*/ g = (c || a) ?? (b || c);
+    /*<<fake:11:4>>*/ g = c && (a ?? b) && c;
+    /*<<fake:12:4>>*/ g = (c && a) ?? (b && c);
+    /*<<fake:13:4>>*/ y = a ?? b ?? c ?? d;
+    /*<<fake:15:4>>*/ y = a?.b?.s?.[a] ?? c ?? d;
+    /*<<fake:17:4>>*/ a?.b;
+    /*<<fake:18:4>>*/ a?.[b];
+    /*<<fake:19:4>>*/  /*<<fake:19:4>>*/ a?.(b); |}]
 
 let%expect_test "arrow" =
   print
@@ -232,25 +234,27 @@ let%expect_test "arrow" =
 
   [%expect
     {|
-    /*<<:2:4>>*/  /*<<:2:10>>*/ var a = x=> /*<<:2:18>>*/ x + 2;
-    /*<<:3:4>>*/  /*<<:3:10>>*/ var a = ()=> /*<<:3:19>>*/ 2;
-    /*<<:4:4>>*/  /*<<:4:10>>*/ var a = x=> /*<<:4:20>>*/ x + 2;
-    /*<<:5:4>>*/  /*<<:5:10>>*/ var a = (x, y)=> /*<<:5:22>>*/ x + y;
-    /*<<:7:4>>*/  /*<<:7:10>>*/ var
-    a = x=>{ /*<<:7:20>>*/ x + 2; /*<<:7:13>>*/ };
-    /*<<:8:4>>*/  /*<<:8:10>>*/ var a = ()=>{ /*<<:8:21>>*/ 2; /*<<:8:13>>*/ };
-    /*<<:9:4>>*/  /*<<:9:10>>*/ var
-    a = x=>{ /*<<:9:22>>*/ x + 2; /*<<:9:13>>*/ };
-    /*<<:11:4>>*/  /*<<:11:10>>*/ var
-    a = ( /*<<:11:16>>*/ x = 1 / 2)=> /*<<:11:28>>*/ x + 10;
-    /*<<:13:4>>*/  /*<<:13:10>>*/ var
-    a = ( /*<<:13:16>>*/ x = /qwe/g)=> /*<<:13:30>>*/ x + 10;
-    /*<<:16:4>>*/  /*<<:16:10>>*/ var
-    a = x=> /*<<:16:17>>*/ y=> /*<<:16:22>>*/ x + y;
-    /*<<:17:4>>*/  /*<<:17:10>>*/ var
-    a = x=> /*<<:17:17>>*/ y=> /*<<:17:23>>*/ x + y;
-    /*<<:19:4>>*/  /*<<:19:10>>*/ var a = async x=> /*<<:19:23>>*/ y;
-    /*<<:20:4>>*/  /*<<:20:10>>*/ var a = async (a, b)=> /*<<:20:27>>*/ a + b; |}]
+    /*<<fake:2:4>>*/  /*<<fake:2:10>>*/ var a = x=> /*<<fake:2:18>>*/ x + 2;
+    /*<<fake:3:4>>*/  /*<<fake:3:10>>*/ var a = ()=> /*<<fake:3:19>>*/ 2;
+    /*<<fake:4:4>>*/  /*<<fake:4:10>>*/ var a = x=> /*<<fake:4:20>>*/ x + 2;
+    /*<<fake:5:4>>*/  /*<<fake:5:10>>*/ var a = (x, y)=> /*<<fake:5:22>>*/ x + y;
+    /*<<fake:7:4>>*/  /*<<fake:7:10>>*/ var
+    a = x=>{ /*<<fake:7:20>>*/ x + 2; /*<<fake:7:13>>*/ };
+    /*<<fake:8:4>>*/  /*<<fake:8:10>>*/ var
+    a = ()=>{ /*<<fake:8:21>>*/ 2; /*<<fake:8:13>>*/ };
+    /*<<fake:9:4>>*/  /*<<fake:9:10>>*/ var
+    a = x=>{ /*<<fake:9:22>>*/ x + 2; /*<<fake:9:13>>*/ };
+    /*<<fake:11:4>>*/  /*<<fake:11:10>>*/ var
+    a = ( /*<<fake:11:16>>*/ x = 1 / 2)=> /*<<fake:11:28>>*/ x + 10;
+    /*<<fake:13:4>>*/  /*<<fake:13:10>>*/ var
+    a = ( /*<<fake:13:16>>*/ x = /qwe/g)=> /*<<fake:13:30>>*/ x + 10;
+    /*<<fake:16:4>>*/  /*<<fake:16:10>>*/ var
+    a = x=> /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y;
+    /*<<fake:17:4>>*/  /*<<fake:17:10>>*/ var
+    a = x=> /*<<fake:17:17>>*/ y=> /*<<fake:17:23>>*/ x + y;
+    /*<<fake:19:4>>*/  /*<<fake:19:10>>*/ var a = async x=> /*<<fake:19:23>>*/ y;
+    /*<<fake:20:4>>*/  /*<<fake:20:10>>*/ var
+    a = async (a, b)=> /*<<fake:20:27>>*/ a + b; |}]
 
 let%expect_test "trailing comma" =
   (* GH#989 *)
@@ -282,18 +286,21 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
 
   [%expect
     {|
-    /*<<:4:0>>*/ function rehb_new_face(_fontName){ /*<<:7:2>>*/ return undefined;
-    /*<<:8:0>>*/ }
-    /*<<:12:0>>*/ function rehb_shape(_face, text){
-     /*<<:13:2>>*/  /*<<:13:10>>*/ var
-     str =  /*<<:13:12>>*/ caml_to_js_string(text);
-     /*<<:14:2>>*/  /*<<:14:10>>*/ var
+    /*<<fake:4:0>>*/ function rehb_new_face(_fontName){
+     /*<<fake:7:2>>*/ return undefined;
+    /*<<fake:8:0>>*/ }
+    /*<<fake:12:0>>*/ function rehb_shape(_face, text){
+     /*<<fake:13:2>>*/  /*<<fake:13:10>>*/ var
+     str =  /*<<fake:13:12>>*/ caml_to_js_string(text);
+     /*<<fake:14:2>>*/  /*<<fake:14:10>>*/ var
      ret =
-        /*<<:14:12>>*/  /*<<:14:12>>*/ str.split("").map
-        (function mapper(_char){ /*<<:15:6>>*/ return [0, 0, 0]; /*<<:14:30>>*/ });
-     /*<<:19:2>>*/  /*<<:19:2>>*/ ret.unshift(0);
-     /*<<:20:2>>*/ return ret;
-    /*<<:21:0>>*/ } |}]
+        /*<<fake:14:12>>*/  /*<<fake:14:12>>*/ str.split("").map
+        (function mapper(_char){
+           /*<<fake:15:6>>*/ return [0, 0, 0];
+          /*<<fake:14:30>>*/ });
+     /*<<fake:19:2>>*/  /*<<fake:19:2>>*/ ret.unshift(0);
+     /*<<fake:20:2>>*/ return ret;
+    /*<<fake:21:0>>*/ } |}]
 
 let%expect_test "rest parameters" =
   (* GH#1031 *)
@@ -310,14 +317,15 @@ let%expect_test "rest parameters" =
 
   [%expect
     {|
-    /*<<:2:6>>*/ api_obj[key_module][key_func] =
+    /*<<fake:2:6>>*/ api_obj[key_module][key_func] =
     function(...args){
-      /*<<:3:8>>*/ return  /*<<:3:15>>*/  /*<<:3:15>>*/ checkIfInitialized().then
+      /*<<fake:3:8>>*/ return  /*<<fake:3:15>>*/  /*<<fake:3:15>>*/ checkIfInitialized
+              ().then
              (function(){
-                /*<<:4:10>>*/ return  /*<<:4:17>>*/ callWithProto
+                /*<<fake:4:10>>*/ return  /*<<fake:4:17>>*/ callWithProto
                        (api_json[key_module][key_func], args);
-               /*<<:3:41>>*/ });
-     /*<<:2:38>>*/ }; |}]
+               /*<<fake:3:41>>*/ });
+     /*<<fake:2:38>>*/ }; |}]
 
 let%expect_test "async/await" =
   (* GH#1017 *)
@@ -337,16 +345,17 @@ let%expect_test "async/await" =
 
   [%expect
     {|
-    /*<<:2:9>>*/ async function compile(src){
-     /*<<:4:11>>*/  /*<<:4:31>>*/ const
+    /*<<fake:2:9>>*/ async function compile(src){
+     /*<<fake:4:11>>*/  /*<<fake:4:31>>*/ const
      glslangModule =
        await
-        /*<<:4:39>>*/ import
+        /*<<fake:4:39>>*/ import
         ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
-     /*<<:7:11>>*/  /*<<:7:25>>*/ const
-     glslang = await  /*<<:7:33>>*/ glslangModule.default();
-     /*<<:8:11>>*/ return  /*<<:8:18>>*/ glslang.compileGLSL(src, "compute");
-    /*<<:2:9>>*/ } |}]
+     /*<<fake:7:11>>*/  /*<<fake:7:25>>*/ const
+     glslang = await  /*<<fake:7:33>>*/ glslangModule.default();
+     /*<<fake:8:11>>*/ return  /*<<fake:8:18>>*/ glslang.compileGLSL
+            (src, "compute");
+    /*<<fake:2:9>>*/ } |}]
 
 let%expect_test "get/set property" =
   (* GH#1017 *)
@@ -369,15 +378,15 @@ let%expect_test "get/set property" =
 
   [%expect
     {|
-    /*<<:2:5>>*/  /*<<:2:11>>*/ var
+    /*<<fake:2:5>>*/  /*<<fake:2:11>>*/ var
     x =
-      {get prop(){ /*<<:3:20>>*/ return 3; /*<<:3:7>>*/ },
-       set prop(x){ /*<<:4:21>>*/ return x == 2; /*<<:4:7>>*/ },
+      {get prop(){ /*<<fake:3:20>>*/ return 3; /*<<fake:3:7>>*/ },
+       set prop(x){ /*<<fake:4:21>>*/ return x == 2; /*<<fake:4:7>>*/ },
        a: 4,
-       b(){ /*<<:6:13>>*/ return 5; /*<<:6:7>>*/ },
-       * e(){ /*<<:7:14>>*/ return 5; /*<<:7:7>>*/ },
-       async e(){ /*<<:8:19>>*/ return 5; /*<<:8:7>>*/ },
-       async* e(){ /*<<:9:20>>*/ return 5; /*<<:9:7>>*/ },
+       b(){ /*<<fake:6:13>>*/ return 5; /*<<fake:6:7>>*/ },
+       * e(){ /*<<fake:7:14>>*/ return 5; /*<<fake:7:7>>*/ },
+       async e(){ /*<<fake:8:19>>*/ return 5; /*<<fake:8:7>>*/ },
+       async* e(){ /*<<fake:9:20>>*/ return 5; /*<<fake:9:7>>*/ },
        ["field" + 1]: 3}; |}]
 
 let%expect_test "assignment pattern" =
@@ -407,21 +416,22 @@ let%expect_test "assignment pattern" =
 
   [%expect
     {|
-     /*<<:2:4>>*/ var x, y, rest;
-     /*<<:3:4>>*/  /*<<:3:14>>*/ var [x, y] = [1, 2];
-     /*<<:4:4>>*/  /*<<:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
-     /*<<:6:4>>*/  /*<<:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
-     /*<<:7:4>>*/  /*<<:7:22>>*/ var {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
-     /*<<:9:4>>*/ [x, y] = [1, 2];
-     /*<<:10:4>>*/ [x, y, ...rest] = [1, 2];
-     /*<<:12:4>>*/ ({x, y} = {x: 1, y: 2});
-     /*<<:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
-     /*<<:15:4>>*/ for
-    ([a, b, {c, d =  /*<<:15:17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
-      /*<<:15:43>>*/ ;
-     /*<<:17:4>>*/ for
-    ([a, b, {c, d =  /*<<:17:17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
-      /*<<:17:43>>*/ ; |}]
+     /*<<fake:2:4>>*/ var x, y, rest;
+     /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
+     /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
+     /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
+     /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
+     {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+     /*<<fake:9:4>>*/ [x, y] = [1, 2];
+     /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
+     /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
+     /*<<fake:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
+     /*<<fake:15:4>>*/ for
+    ([a, b, {c, d =  /*<<fake:15:17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
+      /*<<fake:15:43>>*/ ;
+     /*<<fake:17:4>>*/ for
+    ([a, b, {c, d =  /*<<fake:17:17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
+      /*<<fake:17:43>>*/ ; |}]
 
 let%expect_test "string template" =
   (* GH#1017 *)
@@ -439,11 +449,12 @@ let%expect_test "string template" =
 
   [%expect
     {|
-    /*<<:2:4>>*/  /*<<:2:10>>*/ var s = `asdte`;
-    /*<<:3:4>>*/  /*<<:3:10>>*/ var s = `asd ${test} te`;
-    /*<<:5:4>>*/  /*<<:5:10>>*/ var s =  /*<<:5:12>>*/ tag`asd ${test} te`;
-    /*<<:7:4>>*/  /*<<:7:10>>*/ var
-    s = `asd ${ /*<<:7:20>>*/ f(`space ${test} space`, 32)} te`; |}]
+    /*<<fake:2:4>>*/  /*<<fake:2:10>>*/ var s = `asdte`;
+    /*<<fake:3:4>>*/  /*<<fake:3:10>>*/ var s = `asd ${test} te`;
+    /*<<fake:5:4>>*/  /*<<fake:5:10>>*/ var
+    s =  /*<<fake:5:12>>*/ tag`asd ${test} te`;
+    /*<<fake:7:4>>*/  /*<<fake:7:10>>*/ var
+    s = `asd ${ /*<<fake:7:20>>*/ f(`space ${test} space`, 32)} te`; |}]
 
 let%expect_test "from keyword" =
   (* GH#1017 *)
@@ -458,19 +469,19 @@ let%expect_test "from keyword" =
       return this.compute([field],function(state){return get(state.field(field));});}}) |};
   [%expect
     {|
-    /*<<:2:0>>*/ ({key: "from",
+    /*<<fake:2:0>>*/ ({key: "from",
      value:
      function from(field, get){
-       /*<<:5:6>>*/ if(! get)
-        /*<<:5:14>>*/ get =
-        function get(x){ /*<<:5:34>>*/ return x; /*<<:5:18>>*/ };
-       /*<<:6:6>>*/ return  /*<<:6:13>>*/ this.compute
+       /*<<fake:5:6>>*/ if(! get)
+        /*<<fake:5:14>>*/ get =
+        function get(x){ /*<<fake:5:34>>*/ return x; /*<<fake:5:18>>*/ };
+       /*<<fake:6:6>>*/ return  /*<<fake:6:13>>*/ this.compute
               ([field],
                function(state){
-                 /*<<:6:50>>*/ return  /*<<:6:57>>*/ get
-                        ( /*<<:6:61>>*/ state.field(field));
-                /*<<:6:34>>*/ });
-      /*<<:4:3>>*/ }}); |}]
+                 /*<<fake:6:50>>*/ return  /*<<fake:6:57>>*/ get
+                        ( /*<<fake:6:61>>*/ state.field(field));
+                /*<<fake:6:34>>*/ });
+      /*<<fake:4:3>>*/ }}); |}]
 
 let%expect_test "new.target" =
   (* GH#1017 *)
@@ -479,7 +490,7 @@ let%expect_test "new.target" =
  |};
 
   [%expect {|
-    /*<<:2:4>>*/  /*<<:2:10>>*/ var s = new.target; |}]
+    /*<<fake:2:4>>*/  /*<<fake:2:10>>*/ var s = new.target; |}]
 
 let%expect_test "super" =
   (* GH#1017 *)
@@ -516,34 +527,36 @@ class x extends p {
 
   [%expect
     {|
-     /*<<:2:0>>*/ class
+     /*<<fake:2:0>>*/ class
     x
     extends
-    p{constructor(){ /*<<:4:6>>*/  /*<<:4:6>>*/ super(a, b, c); /*<<:3:4>>*/ }
+    p{constructor(){
+      /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super(a, b, c);
+     /*<<fake:3:4>>*/ }
     foo(){
-      /*<<:8:6>>*/  /*<<:8:12>>*/ var s = super[d];
-      /*<<:9:6>>*/  /*<<:9:12>>*/ var s = super.d;
-     /*<<:6:4>>*/ }
+      /*<<fake:8:6>>*/  /*<<fake:8:12>>*/ var s = super[d];
+      /*<<fake:9:6>>*/  /*<<fake:9:12>>*/ var s = super.d;
+     /*<<fake:6:4>>*/ }
     static
     bar(){
-      /*<<:14:6>>*/  /*<<:14:12>>*/ var s = super[d];
-      /*<<:15:6>>*/  /*<<:15:12>>*/ var s = super.d;
-     /*<<:12:11>>*/ }
+      /*<<fake:14:6>>*/  /*<<fake:14:12>>*/ var s = super[d];
+      /*<<fake:15:6>>*/  /*<<fake:15:12>>*/ var s = super.d;
+     /*<<fake:12:11>>*/ }
     x
     =
-     /*<<:17:5>>*/ 3
+     /*<<fake:17:5>>*/ 3
     static
     y
     =
-     /*<<:19:12>>*/ 5
+     /*<<fake:19:12>>*/ 5
     #z
     =
-     /*<<:21:6>>*/ 6
+     /*<<fake:21:6>>*/ 6
     static
     #t
     =
-     /*<<:23:13>>*/ 2
-    static{ /*<<:25:12>>*/  /*<<:25:18>>*/ var x = 3;}
+     /*<<fake:23:13>>*/ 2
+    static{ /*<<fake:25:12>>*/  /*<<fake:25:18>>*/ var x = 3;}
     } |}]
 
 let%expect_test "ite" =
@@ -682,7 +695,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   | false, _ -> print_endline stdout
   | true, "" -> print_endline "invalid file but node --check didn't complain"
   | true, _ -> ());
-  let lex = Parse_js.Lexer.of_string s in
+  let lex = Parse_js.Lexer.of_string ~filename:"fake" s in
   let _p, tokens =
     try Parse_js.parse' lex
     with Parse_js.Parsing_error pi as e ->
@@ -741,8 +754,8 @@ let%expect_test "invalid ident" =
     {|
      2: 4:var, 8:\uD83B\uDE62, 21:=, 23:42, 25:;, 27:// invalid surrogate escape sequence,
      3: 4:var, 8:\u{1F42B}, 18:=, 20:2, 21:;, 23:// U+1F42B is not a valid id,
-    Lexer error: 2:8: Illegal Unicode escape
-    Lexer error: 3:8: Unexpected token ILLEGAL |}]
+    Lexer error: fake:2:8: Illegal Unicode escape
+    Lexer error: fake:3:8: Unexpected token ILLEGAL |}]
 
 let%expect_test "string" =
   parse_print_token
@@ -772,7 +785,7 @@ let%expect_test "multiline string" =
      3: 4:"\n    ",
      4: 5:;,
      5: 4:42, 0:;,
-    Lexer error: 3:5: Unexpected token ILLEGAL |}];
+    Lexer error: fake:3:5: Unexpected token ILLEGAL |}];
   parse_print_token {|
     42;
     "\
@@ -797,8 +810,8 @@ let%expect_test "multiline string" =
      3: 4:"\n\n    ",
      5: 5:;,
      6: 4:42, 0:;,
-    Lexer error: 3:5: Unexpected token ILLEGAL
-    Lexer error: 4:0: Unexpected token ILLEGAL |}];
+    Lexer error: fake:3:5: Unexpected token ILLEGAL
+    Lexer error: fake:4:0: Unexpected token ILLEGAL |}];
   [%expect {||}]
 
 let%expect_test "multiline comments" =

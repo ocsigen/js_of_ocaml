@@ -64,21 +64,27 @@ struct
     (if debug_enabled
     then
       match loc with
-      | Pi { Parse_info.name = Some file; line; col; _ }
-      | Pi { Parse_info.src = Some file; line; col; _ } ->
-          PP.non_breaking_space f;
-          PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
-          PP.non_breaking_space f
-      | N -> ()
-      | U | Pi _ ->
+      | Pi { Parse_info.src = None | Some ""; name = None | Some ""; _ } | N -> ()
+      | U ->
           PP.non_breaking_space f;
           PP.string f "/*<<?>>*/";
+          PP.non_breaking_space f
+      | Pi { Parse_info.src; name; line; col; _ } ->
+          let file =
+            match name, src with
+            | (None | Some ""), Some file -> file
+            | Some file, (None | Some "") -> file
+            | Some file, Some _file -> file
+            | None, None -> assert false
+          in
+          PP.non_breaking_space f;
+          PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
           PP.non_breaking_space f);
     if source_map_enabled
     then
       match loc with
       | N -> ()
-      | U | Pi { Parse_info.src = None; _ } ->
+      | U | Pi { Parse_info.src = None | Some ""; _ } ->
           push_mapping
             (PP.pos f)
             { Source_map.gen_line = -1
@@ -103,7 +109,7 @@ struct
     if source_map_enabled
     then
       match loc with
-      | None -> ()
+      | None | Some { Parse_info.src = Some "" | None; _ } -> ()
       | Some { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
@@ -114,7 +120,6 @@ struct
             ; ori_col = col
             ; ori_name = Some (get_name_index nm)
             }
-      | Some _ -> ()
 
   let ident f = function
     | S { name = Utf8 name; var = Some v; _ } ->
