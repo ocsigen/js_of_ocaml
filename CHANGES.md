@@ -1,4 +1,4 @@
-# dev (20??-??) - ??
+# 5.1.0 (2023-03-07) - Otari
 ## Features/Changes
 * Lib: Added support for KeyboardEvent.getModifierState
 * Misc: bump min ocaml version to 4.08
