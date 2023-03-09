@@ -40,12 +40,12 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         runtime = globalThis.jsoo_runtime,
         caml_callback = runtime.caml_callback,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
-       function caml_cps_exact_call1(f, a0){
+       function caml_exact_trampoline_call1(f, a0){
         return runtime.caml_stack_check_depth()
                 ? f(a0)
                 : runtime.caml_trampoline_return(f, [a0]);
        }
-       function caml_cps_call2(f, a0, a1){
+       function caml_trampoline_cps_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? (f.l
                     >= 0
@@ -56,7 +56,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   : runtime.caml_call_gen(f, [a0, a1])
                 : runtime.caml_trampoline_return(f, [a0, a1]);
        }
-       function caml_cps_exact_call2(f, a0, a1){
+       function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? f(a0, a1)
                 : runtime.caml_trampoline_return(f, [a0, a1]);
@@ -67,27 +67,27 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   dummy = 0,
                   global_data = runtime.caml_get_global_data(),
                   Stdlib_Printf = global_data.Stdlib__Printf,
-                  _a_ =
+                  _b_ =
                     [0,
                      [11, caml_string_of_jsbytes("abc"), 0],
                      caml_string_of_jsbytes("abc")];
                  function g(param, cont){
-                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
+                  return caml_trampoline_cps_call2(Stdlib_Printf[2], _b_, cont);
                  }
                  caml_callback(g, [dummy]);
-                 function _b_(i){
-                  return caml_cps_exact_call2
+                 function _c_(i){
+                  return caml_exact_trampoline_cps_call
                           (g,
                            dummy,
-                           function(_c_){
-                            var _d_ = i + 1 | 0;
-                            if(5 !== i) return caml_cps_exact_call1(_b_, _d_);
+                           function(_d_){
+                            var _e_ = i + 1 | 0;
+                            if(5 !== i) return caml_exact_trampoline_call1(_c_, _e_);
                             caml_callback(g, [dummy]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
                            });
                  }
-                 return _b_(1);
+                 return _c_(1);
                 },
                 []);
       }

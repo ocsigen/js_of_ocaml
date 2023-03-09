@@ -186,6 +186,7 @@ module Fragment = struct
       ~init:StringMap.empty
       [ "js-string", Config.Flag.use_js_string
       ; "effects", Config.Flag.effects
+      ; "doubletranslate", Config.Flag.double_translation
       ; ( "wasm"
         , fun () ->
             match Config.target () with

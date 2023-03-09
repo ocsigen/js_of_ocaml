@@ -158,40 +158,45 @@ let%expect_test "direct calls with --enable effects" =
          var raise = caml_pop_trap(), e$0 = caml_maybe_attach_backtrace(e, 0);
          return raise(e$0);
         });
-      return caml_cps_exact_call2
-              (g, x, function(_f_){caml_pop_trap(); return cont();});
+      return caml_exact_trampoline_cps_call
+              (g, x, function(_t_){caml_pop_trap(); return cont();});
      }
-     return caml_cps_exact_call3
+     return caml_exact_trampoline_cps_call$0
              (f,
               function(x, cont){return cont();},
               7,
-              function(_d_){
-               return caml_cps_exact_call3
+              function(_r_){
+               return caml_exact_trampoline_cps_call$0
                        (f,
                         function(x, cont){
-                         return caml_cps_call3(Stdlib[28], x, cst_a$0, cont);
+                         return caml_trampoline_cps_call3
+                                 (Stdlib[28], x, cst_a$0, cont);
                         },
                         cst_a,
-                        function(_e_){return cont(0);});
+                        function(_s_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(), M2 = F(), _c_ = M2[1].call(null, 2);
-     return cont([0, M1[1].call(null, 1), _c_]);
+     var M1 = F(), M2 = F(), _q_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _q_]);
     }
     //end
     function test4(x, cont){
      function F(symbol){
-      function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _a_, x, cont);}
+      function f(x, cont){
+       return caml_trampoline_cps_call3(Stdlib_Printf[2], _o_, x, cont);
+      }
       return [0, f];
      }
      var M1 = F(), M2 = F();
-     return caml_cps_exact_call2
+     return caml_exact_trampoline_cps_call
              (M1[1],
               1,
-              function(_b_){return caml_cps_exact_call2(M2[1], 2, cont);});
+              function(_p_){
+               return caml_exact_trampoline_cps_call(M2[1], 2, cont);
+              });
     }
     //end
     |}]

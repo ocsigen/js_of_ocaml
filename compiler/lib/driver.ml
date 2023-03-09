@@ -112,11 +112,13 @@ let effects ~deadcode_sentinal p =
         Deadcode.f p
       else p, live_vars
     in
-    p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f)
+    let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
+    let p = if Config.Flag.double_translation () then p else Lambda_lifting.f p in
+    p, trampolined_calls, in_cps)
   else
     ( p
     , (Code.Var.Set.empty : Effects.trampolined_calls)
-    , (Code.Var.Set.empty : Effects.in_cps) )
+    , (Code.Var.Set.empty : Code.Var.Set.t) )
 
 let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
@@ -202,7 +204,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps = _ } =
+    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -210,6 +212,7 @@ let generate
     ~exported_runtime
     ~live_vars:variable_uses
     ~trampolined_calls
+    ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal

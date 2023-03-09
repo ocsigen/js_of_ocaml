@@ -77,8 +77,11 @@ let iter_block_free_vars f block =
   List.iter block.body ~f:(fun i -> iter_instr_free_vars f i);
   iter_last_free_var f block.branch
 
-let iter_instr_bound_vars f i =
+let iter_instr_bound_vars ?(closure_params = false) f i =
   match i with
+  | Let (x, Closure (params, _)) when closure_params ->
+      f x;
+      List.iter ~f params
   | Let (x, _) -> f x
   | Event _ | Set_field _ | Offset_ref _ | Array_set _ | Assign _ -> ()
 
@@ -87,10 +90,16 @@ let iter_last_bound_vars f l =
   | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ()
   | Pushtrap (_, x, _) -> f x
 
-let iter_block_bound_vars f block =
+let iter_block_bound_vars ?(closure_params = false) f block =
   List.iter ~f block.params;
-  List.iter block.body ~f:(fun i -> iter_instr_bound_vars f i);
+  List.iter block.body ~f:(fun i -> iter_instr_bound_vars ~closure_params f i);
   iter_last_bound_vars f block.branch
+
+let block_bound_vars ?(closure_params = false) block =
+  let open Code.Var.Set in
+  let bound = ref empty in
+  iter_block_bound_vars ~closure_params (fun var -> bound := add var !bound) block;
+  !bound
 
 (****)
 

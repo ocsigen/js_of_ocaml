@@ -21,7 +21,16 @@ open! Stdlib
 
 val iter_block_free_vars : (Code.Var.t -> unit) -> Code.block -> unit
 
-val iter_block_bound_vars : (Code.Var.t -> unit) -> Code.block -> unit
+val iter_block_bound_vars :
+  ?closure_params:bool -> (Code.Var.t -> unit) -> Code.block -> unit
+(** Iterate on the variables bound in a block (let-bound identifiers and block
+    parameters). If [closure_params] is [true] (by default, it is [false]),
+    these variables include the parameters of closures created in the block. *)
+
+val block_bound_vars : ?closure_params:bool -> Code.block -> Code.Var.Set.t
+(** Computes the set of variables that are bound in a block. If
+  [closure_params] is [true] (by default, it is [false]), these variables
+  include the parameters of closures created in the block. *)
 
 val iter_instr_free_vars : (Code.Var.t -> unit) -> Code.instr -> unit
 

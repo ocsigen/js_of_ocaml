@@ -291,6 +291,7 @@ let compile_to_javascript
     ?(flags = [])
     ?(use_js_string = false)
     ?(effects = false)
+    ?(doubletranslate = false)
     ~pretty
     ~sourcemap
     file =
@@ -300,6 +301,9 @@ let compile_to_javascript
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
       ; (if effects then [ "--enable=effects" ] else [ "--disable=effects" ])
+      ; (if doubletranslate
+         then [ "--enable=doubletranslate" ]
+         else [ "--disable=doubletranslate" ])
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])
@@ -352,6 +356,7 @@ let compile_bc_to_javascript
 let compile_cmo_to_javascript
     ?(flags = [])
     ?effects
+    ?doubletranslate
     ?use_js_string
     ?(pretty = true)
     ?(sourcemap = true)
@@ -359,6 +364,7 @@ let compile_cmo_to_javascript
   Filetype.path_of_cmo_file file
   |> compile_to_javascript
        ?effects
+       ?doubletranslate
        ?use_js_string
        ~flags:([ "--disable"; "header" ] @ flags)
        ~pretty
@@ -510,6 +516,50 @@ let print_fun_decl program n =
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 
+(* Find a doubly-translated function by name, and use the call to [caml_cps_closure] to find the direct-style and CPS closures *)
+class find_double_function_declaration r n =
+  object
+    inherit Jsoo.Js_traverse.map as super
+
+    method! statement s =
+      let open Jsoo.Javascript in
+      (match s with
+      | Variable_statement (_, l) ->
+          List.iter l ~f:(function
+            | DeclIdent
+                ( S { name = Utf8 name; _ }
+                , Some
+                    ( ECall
+                        ( EVar (S { name = Utf8 "caml_cps_closure"; _ })
+                        , _
+                        , [ Arg e1; Arg e2 ]
+                        , _ )
+                    , _ ) ) as var_decl ->
+                let decls = var_decl, e1, e2 in
+                if String.equal name n then r := decls :: !r else ()
+            | _ -> ())
+      | _ -> ());
+      super#statement s
+  end
+
+let print_double_fun_decl program n =
+  let r = ref [] in
+  let o = new find_double_function_declaration r n in
+  ignore (o#program program);
+  let module J = Jsoo.Javascript in
+  let maybe_print_decl = function
+    | J.EFun _ -> ()
+    | J.(EVar (S { name = Utf8 name; _ })) -> print_fun_decl program (Some name)
+    | _ -> print_endline "not found"
+  in
+  match !r with
+  | [ (var_decl, e1, e2) ] ->
+      maybe_print_decl e1;
+      maybe_print_decl e2;
+      print_string (program_to_string [ J.(Variable_statement (Var, [ var_decl ]), N) ])
+  | [] -> print_endline "not found"
+  | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
+
 let compile_and_run_bytecode ?unix s =
   with_temp_dir ~f:(fun () ->
       s
@@ -580,13 +630,26 @@ let compile_and_parse_whole_program
       |> compile_bc_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string s =
+let compile_and_parse
+    ?(debug = true)
+    ?pretty
+    ?flags
+    ?effects
+    ?doubletranslate
+    ?use_js_string
+    s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
-      |> compile_cmo_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
+      |> compile_cmo_to_javascript
+           ?pretty
+           ?flags
+           ?effects
+           ?doubletranslate
+           ?use_js_string
+           ~sourcemap:debug
       |> parse_js)
 
 let normalize_path s =
