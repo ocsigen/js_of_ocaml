@@ -61,6 +61,8 @@ let create kind =
   ]
   |> List.fold_left ~init:StringMap.empty ~f:(fun acc (k, v) -> StringMap.add k v acc)
 
+let with_kind t kind = StringMap.add "kind" (string_of_kind kind) t
+
 let prefix = "//# buildInfo:"
 
 let to_string info =

@@ -28,6 +28,8 @@ type t =
   ; output_file : string option
   ; resolve_sourcemap_url : bool
   ; linkall : bool
+  ; mklib : bool
+  ; toplevel : bool
   }
 
 let options =
@@ -65,6 +67,17 @@ let options =
     let doc = "Link all compilation units." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
+  let mklib =
+    let doc =
+      "Build a library (.cma.js file) with the js files (.cmo.js files) given on the \
+       command line. Similar to ocamlc -a."
+    in
+    Arg.(value & flag & info [ "a" ] ~doc)
+  in
+  let toplevel =
+    let doc = "Compile a toplevel." in
+    Arg.(value & flag & info [ "toplevel" ] ~doc)
+  in
   let build_t
       common
       no_sourcemap
@@ -74,7 +87,9 @@ let options =
       output_file
       resolve_sourcemap_url
       js_files
-      linkall =
+      linkall
+      mklib
+      toplevel =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -97,7 +112,16 @@ let options =
             } )
       else None
     in
-    `Ok { common; output_file; js_files; source_map; resolve_sourcemap_url; linkall }
+    `Ok
+      { common
+      ; output_file
+      ; js_files
+      ; source_map
+      ; resolve_sourcemap_url
+      ; linkall
+      ; mklib
+      ; toplevel
+      }
   in
   let t =
     Term.(
@@ -110,11 +134,22 @@ let options =
       $ output_file
       $ resolve_sourcemap_url
       $ js_files
-      $ linkall)
+      $ linkall
+      $ mklib
+      $ toplevel)
   in
   Term.ret t
 
-let f { common; output_file; source_map; resolve_sourcemap_url; js_files; linkall } =
+let f
+    { common
+    ; output_file
+    ; source_map
+    ; resolve_sourcemap_url
+    ; js_files
+    ; linkall
+    ; mklib
+    ; toplevel
+    } =
   Jsoo_cmdline.Arg.eval common;
   let with_output f =
     match output_file with
@@ -122,7 +157,14 @@ let f { common; output_file; source_map; resolve_sourcemap_url; js_files; linkal
     | Some file -> Filename.gen_file file f
   in
   with_output (fun output ->
-      Link_js.link ~output ~linkall ~files:js_files ~source_map ~resolve_sourcemap_url)
+      Link_js.link
+        ~output
+        ~linkall
+        ~mklib
+        ~toplevel
+        ~files:js_files
+        ~source_map
+        ~resolve_sourcemap_url)
 
 let info =
   Info.make

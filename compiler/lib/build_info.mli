@@ -34,6 +34,8 @@ val to_string : t -> string
 
 val parse : string -> t option
 
+val with_kind : t -> kind -> t
+
 exception
   Incompatible_build_info of
     { key : string
