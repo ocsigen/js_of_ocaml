@@ -37,6 +37,8 @@ type info =
   ; info_may_escape : bool array
   }
 
-val f : Code.program -> info
+val f : fast:bool -> Code.program -> info
 
 val exact_call : info -> Var.t -> int -> bool
+
+val function_arity : info -> Var.t -> int option

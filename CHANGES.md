@@ -16,6 +16,7 @@
 * Compiler: stop parsing the builtin js runtime if not necessary
 * Compiler: improve js pretty printer (#1405)
 * Compiler: improve debug location and speedup compilation (#1407)
+* Compiler: improve analysis for more direct call (#1397)
 * Toplevel: Enable separate compilation of toplevels
 * Runtime: js backtrace recording controled by OCAMLRUNPARAM
 * Runtime: support for zstd decompression of marshalled data (ocaml.5.1) (#12006)

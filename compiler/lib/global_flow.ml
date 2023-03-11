@@ -100,6 +100,7 @@ type state =
   ; applied_functions : (Var.t * Var.t, unit) Hashtbl.t
         (* Functions that have been already considered at a call site.
            This is to avoid repeated computations *)
+  ; fast : bool
   }
 
 let add_var st x = Var.ISet.add st.vars x
@@ -126,7 +127,8 @@ let add_assign_def st x y =
 let add_param_def st x =
   add_var st x;
   let idx = Var.idx x in
-  assert (is_undefined st.defs.(idx))
+  assert (is_undefined st.defs.(idx));
+  if st.fast then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true }
 
 let rec arg_deps st ?ignore params args =
   match params, args with
@@ -155,6 +157,12 @@ let expr_deps blocks st x e =
       (* The analysis knowns about these primitives, and will compute
          an approximation of the value they return based on an
          approximation of their arguments *)
+      (if st.fast
+      then
+        match l with
+        | Pv x :: _ -> do_escape st Escape x
+        | Pc _ :: _ -> ()
+        | [] -> assert false);
       List.iter
         ~f:(fun a ->
           match a with
@@ -207,7 +215,7 @@ let expr_deps blocks st x e =
       match st.defs.(Var.idx f) with
       | Expr (Closure (params, _)) when List.length args = List.length params ->
           Hashtbl.add st.applied_functions (x, f) ();
-          List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
+          if not st.fast then List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
           Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
       | _ -> ())
   | Closure (l, cont) ->
@@ -243,17 +251,19 @@ let program_deps st { blocks; _ } =
             ~f:(fun i (pc, _) ->
               Hashtbl.replace h pc (i :: (try Hashtbl.find h pc with Not_found -> [])))
             a2;
-          Hashtbl.iter
-            (fun pc tags ->
-              let block = Addr.Map.find pc blocks in
-              List.iter
-                ~f:(fun (i, _) ->
-                  match i with
-                  | Let (y, Field (x', _)) when Var.equal x x' ->
-                      Hashtbl.add st.known_cases y tags
-                  | _ -> ())
-                block.body)
-            h
+          if not st.fast
+          then
+            Hashtbl.iter
+              (fun pc tags ->
+                let block = Addr.Map.find pc blocks in
+                List.iter
+                  ~f:(fun (i, _) ->
+                    match i with
+                    | Let (y, Field (x', _)) when Var.equal x x' ->
+                        Hashtbl.add st.known_cases y tags
+                    | _ -> ())
+                  block.body)
+              h
       | Pushtrap (cont, x, cont_h, _) ->
           add_var st x;
           st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
@@ -406,31 +416,34 @@ let propagate st ~update approx x =
           | Top -> Top)
       | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get approx y
       | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
-          match Var.Tbl.get approx y with
-          | Values { known; others } ->
-              Domain.join_set
-                ~update
-                ~st
-                ~approx
-                ~others
-                (fun z ->
-                  match st.defs.(Var.idx z) with
-                  | Expr (Block (_, lst, _)) ->
-                      Array.iter ~f:(fun t -> add_dep st x t) lst;
-                      let a =
-                        Array.fold_left
-                          ~f:(fun acc t ->
-                            Domain.join ~update ~st ~approx (Var.Tbl.get approx t) acc)
-                          ~init:Domain.bot
-                          lst
-                      in
-                      if st.possibly_mutable.(Var.idx z)
-                      then Domain.join ~update ~st ~approx Domain.others a
-                      else a
-                  | Expr (Closure _) -> Domain.bot
-                  | Phi _ | Expr _ -> assert false)
-                known
-          | Top -> Top)
+          if st.fast
+          then Domain.others
+          else
+            match Var.Tbl.get approx y with
+            | Values { known; others } ->
+                Domain.join_set
+                  ~update
+                  ~st
+                  ~approx
+                  ~others
+                  (fun z ->
+                    match st.defs.(Var.idx z) with
+                    | Expr (Block (_, lst, _)) ->
+                        Array.iter ~f:(fun t -> add_dep st x t) lst;
+                        let a =
+                          Array.fold_left
+                            ~f:(fun acc t ->
+                              Domain.join ~update ~st ~approx (Var.Tbl.get approx t) acc)
+                            ~init:Domain.bot
+                            lst
+                        in
+                        if st.possibly_mutable.(Var.idx z)
+                        then Domain.join ~update ~st ~approx Domain.others a
+                        else a
+                    | Expr (Closure _) -> Domain.bot
+                    | Phi _ | Expr _ -> assert false)
+                  known
+            | Top -> Top)
       | Prim (Array_get, _) -> Domain.others
       | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
@@ -457,12 +470,14 @@ let propagate st ~update approx x =
                       if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
                         Hashtbl.add st.applied_functions (x, g) ();
-                        List.iter2
-                          ~f:(fun p a ->
-                            add_assign_def st p a;
-                            update ~children:false p)
-                          params
-                          args;
+                        if not st.fast
+                        then
+                          List.iter2
+                            ~f:(fun p a ->
+                              add_assign_def st p a;
+                              update ~children:false p)
+                            params
+                            args;
                         Var.Set.iter
                           (fun y -> add_dep st x y)
                           (Var.Map.find g st.return_values));
@@ -527,7 +542,7 @@ type info =
   ; info_may_escape : bool array
   }
 
-let f p =
+let f ~fast p =
   let t = Timer.make () in
   let t1 = Timer.make () in
   let rets = return_values p in
@@ -550,6 +565,7 @@ let f p =
     ; possibly_mutable
     ; known_cases = Hashtbl.create 16
     ; applied_functions = Hashtbl.create 16
+    ; fast
     }
   in
   program_deps st p;
@@ -621,3 +637,25 @@ let exact_call info f n =
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
         known
+
+let function_arity info f =
+  match Var.Tbl.get info.info_approximation f with
+  | Top | Values { others = true; _ } -> None
+  | Values { known; others = false } -> (
+      match
+        Var.Set.fold
+          (fun g acc ->
+            match info.info_defs.(Var.idx g) with
+            | Expr (Closure (params, _)) -> (
+                let n = List.length params in
+                match acc with
+                | None -> Some (Some n)
+                | Some (Some n') when n <> n' -> Some None
+                | Some _ -> acc)
+            | Expr (Block _) -> acc
+            | Expr _ | Phi _ -> assert false)
+          known
+          None
+      with
+      | Some v -> v
+      | None -> None)
