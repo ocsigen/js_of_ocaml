@@ -86,7 +86,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
             dra27: https://github.com/dra27/opam-repository.git#windows-5.0
-            default: https://github.com/hhugo/opam-repository-mingw.git#opam2
+            default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
           dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
