@@ -10012,8 +10012,7 @@
           /*<<set.ml:311:35>>*/ return [0,
                  ll,
                  function(param){
-                   /*<<set.ml:311:60>>*/ return join
-                          ( /*<<set.ml:311:65>>*/ caml_call1(rl, 0), v, r);
+                   /*<<set.ml:311:60>>*/ return join(rl(0), v, r);
                   /*<<set.ml:311:76>>*/ }];
         }
         function disjoint(s1, s2){
@@ -10031,8 +10030,7 @@
              /*<<set.ml:323:34>>*/ _L_ = disjoint(l1, l2);
             /*<<set.ml:323:34>>*/ if(! _L_)  /*<<set.ml:323:34>>*/ return _L_;
             /*<<set.ml:323:64>>*/ var
-             /*<<set.ml:323:64>>*/ s2$1 =
-               /*<<set.ml:323:64>>*/ caml_call1(r2, 0),
+             /*<<set.ml:323:64>>*/ s2$1 = r2(0),
             s1$0 = r1,
             s2$0 = s2$1;
            continue;
@@ -14386,14 +14384,12 @@
          fa = match[1],
          _di_ =
            function(param){
-             /*<<camlinternalFormat.ml:698:17>>*/  /*<<camlinternalFormat.ml:698:28>>*/ caml_call1
-             (af, 0);
+             /*<<camlinternalFormat.ml:698:17>>*/ af(0);
              /*<<camlinternalFormat.ml:698:39>>*/ return 0;
             /*<<camlinternalFormat.ml:698:43>>*/ };
          /*<<camlinternalFormat.ml:697:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:697:17>>*/  /*<<camlinternalFormat.ml:697:28>>*/ caml_call1
-                  (fa, 0);
+                  /*<<camlinternalFormat.ml:697:17>>*/ fa(0);
                   /*<<camlinternalFormat.ml:697:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:697:43>>*/ },
                 _di_,
@@ -14409,14 +14405,12 @@
          fa$0 = match$0[1],
          _dj_ =
            function(param){
-             /*<<camlinternalFormat.ml:703:17>>*/  /*<<camlinternalFormat.ml:703:28>>*/ caml_call1
-             (af$0, 0);
+             /*<<camlinternalFormat.ml:703:17>>*/ af$0(0);
              /*<<camlinternalFormat.ml:703:39>>*/ return 0;
             /*<<camlinternalFormat.ml:703:43>>*/ };
          /*<<camlinternalFormat.ml:702:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:702:17>>*/  /*<<camlinternalFormat.ml:702:28>>*/ caml_call1
-                  (fa$0, 0);
+                  /*<<camlinternalFormat.ml:702:17>>*/ fa$0(0);
                   /*<<camlinternalFormat.ml:702:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:702:43>>*/ },
                 _dj_,
@@ -14432,14 +14426,12 @@
          fa$1 = match$1[1],
          _dk_ =
            function(param){
-             /*<<camlinternalFormat.ml:708:17>>*/  /*<<camlinternalFormat.ml:708:28>>*/ caml_call1
-             (af$1, 0);
+             /*<<camlinternalFormat.ml:708:17>>*/ af$1(0);
              /*<<camlinternalFormat.ml:708:39>>*/ return 0;
             /*<<camlinternalFormat.ml:708:43>>*/ };
          /*<<camlinternalFormat.ml:707:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:707:17>>*/  /*<<camlinternalFormat.ml:707:28>>*/ caml_call1
-                  (fa$1, 0);
+                  /*<<camlinternalFormat.ml:707:17>>*/ fa$1(0);
                   /*<<camlinternalFormat.ml:707:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:707:43>>*/ },
                 _dk_,
@@ -14455,14 +14447,12 @@
          fa$2 = match$2[1],
          _dl_ =
            function(param){
-             /*<<camlinternalFormat.ml:713:17>>*/  /*<<camlinternalFormat.ml:713:28>>*/ caml_call1
-             (af$2, 0);
+             /*<<camlinternalFormat.ml:713:17>>*/ af$2(0);
              /*<<camlinternalFormat.ml:713:39>>*/ return 0;
             /*<<camlinternalFormat.ml:713:43>>*/ };
          /*<<camlinternalFormat.ml:712:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:712:17>>*/  /*<<camlinternalFormat.ml:712:28>>*/ caml_call1
-                  (fa$2, 0);
+                  /*<<camlinternalFormat.ml:712:17>>*/ fa$2(0);
                   /*<<camlinternalFormat.ml:712:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:712:43>>*/ },
                 _dl_,
@@ -14478,14 +14468,12 @@
          fa$3 = match$3[1],
          _dm_ =
            function(param){
-             /*<<camlinternalFormat.ml:723:17>>*/  /*<<camlinternalFormat.ml:723:28>>*/ caml_call1
-             (af$3, 0);
+             /*<<camlinternalFormat.ml:723:17>>*/ af$3(0);
              /*<<camlinternalFormat.ml:723:39>>*/ return 0;
             /*<<camlinternalFormat.ml:723:43>>*/ };
          /*<<camlinternalFormat.ml:722:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:722:17>>*/  /*<<camlinternalFormat.ml:722:28>>*/ caml_call1
-                  (fa$3, 0);
+                  /*<<camlinternalFormat.ml:722:17>>*/ fa$3(0);
                   /*<<camlinternalFormat.ml:722:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:722:43>>*/ },
                 _dm_,
@@ -14501,14 +14489,12 @@
          fa$4 = match$4[1],
          _dn_ =
            function(param){
-             /*<<camlinternalFormat.ml:718:17>>*/  /*<<camlinternalFormat.ml:718:28>>*/ caml_call1
-             (af$4, 0);
+             /*<<camlinternalFormat.ml:718:17>>*/ af$4(0);
              /*<<camlinternalFormat.ml:718:39>>*/ return 0;
             /*<<camlinternalFormat.ml:718:43>>*/ };
          /*<<camlinternalFormat.ml:717:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:717:17>>*/  /*<<camlinternalFormat.ml:717:28>>*/ caml_call1
-                  (fa$4, 0);
+                  /*<<camlinternalFormat.ml:717:17>>*/ fa$4(0);
                   /*<<camlinternalFormat.ml:717:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:717:43>>*/ },
                 _dn_,
@@ -14524,14 +14510,12 @@
          fa$5 = match$5[1],
          _do_ =
            function(param){
-             /*<<camlinternalFormat.ml:728:17>>*/  /*<<camlinternalFormat.ml:728:28>>*/ caml_call1
-             (af$5, 0);
+             /*<<camlinternalFormat.ml:728:17>>*/ af$5(0);
              /*<<camlinternalFormat.ml:728:39>>*/ return 0;
             /*<<camlinternalFormat.ml:728:43>>*/ };
          /*<<camlinternalFormat.ml:727:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:727:17>>*/  /*<<camlinternalFormat.ml:727:28>>*/ caml_call1
-                  (fa$5, 0);
+                  /*<<camlinternalFormat.ml:727:17>>*/ fa$5(0);
                   /*<<camlinternalFormat.ml:727:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:727:43>>*/ },
                 _do_,
@@ -14547,14 +14531,12 @@
          fa$6 = match$6[1],
          _dp_ =
            function(param){
-             /*<<camlinternalFormat.ml:733:17>>*/  /*<<camlinternalFormat.ml:733:28>>*/ caml_call1
-             (af$6, 0);
+             /*<<camlinternalFormat.ml:733:17>>*/ af$6(0);
              /*<<camlinternalFormat.ml:733:39>>*/ return 0;
             /*<<camlinternalFormat.ml:733:43>>*/ };
          /*<<camlinternalFormat.ml:732:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:732:17>>*/  /*<<camlinternalFormat.ml:732:28>>*/ caml_call1
-                  (fa$6, 0);
+                  /*<<camlinternalFormat.ml:732:17>>*/ fa$6(0);
                   /*<<camlinternalFormat.ml:732:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:732:43>>*/ },
                 _dp_,
@@ -14570,14 +14552,12 @@
          fa$7 = match$7[1],
          _dq_ =
            function(param){
-             /*<<camlinternalFormat.ml:766:17>>*/  /*<<camlinternalFormat.ml:766:28>>*/ caml_call1
-             (af$7, 0);
+             /*<<camlinternalFormat.ml:766:17>>*/ af$7(0);
              /*<<camlinternalFormat.ml:766:39>>*/ return 0;
             /*<<camlinternalFormat.ml:766:43>>*/ };
          /*<<camlinternalFormat.ml:765:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:765:17>>*/  /*<<camlinternalFormat.ml:765:28>>*/ caml_call1
-                  (fa$7, 0);
+                  /*<<camlinternalFormat.ml:765:17>>*/ fa$7(0);
                   /*<<camlinternalFormat.ml:765:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:765:43>>*/ },
                 _dq_,
@@ -14601,34 +14581,26 @@
          ag = match$9[1],
          _dr_ =
            function(param){
-             /*<<camlinternalFormat.ml:775:17>>*/  /*<<camlinternalFormat.ml:775:28>>*/ caml_call1
-             (jd, 0);
-             /*<<camlinternalFormat.ml:775:50>>*/  /*<<camlinternalFormat.ml:775:50>>*/ caml_call1
-             (de$8, 0);
+             /*<<camlinternalFormat.ml:775:17>>*/ jd(0);
+             /*<<camlinternalFormat.ml:775:50>>*/ de$8(0);
              /*<<camlinternalFormat.ml:775:61>>*/ return 0;
             /*<<camlinternalFormat.ml:775:65>>*/ },
          _ds_ =
            function(param){
-             /*<<camlinternalFormat.ml:774:17>>*/  /*<<camlinternalFormat.ml:774:28>>*/ caml_call1
-             (ed$8, 0);
-             /*<<camlinternalFormat.ml:774:50>>*/  /*<<camlinternalFormat.ml:774:50>>*/ caml_call1
-             (dj, 0);
+             /*<<camlinternalFormat.ml:774:17>>*/ ed$8(0);
+             /*<<camlinternalFormat.ml:774:50>>*/ dj(0);
              /*<<camlinternalFormat.ml:774:61>>*/ return 0;
             /*<<camlinternalFormat.ml:774:65>>*/ },
          _dt_ =
            function(param){
-             /*<<camlinternalFormat.ml:773:17>>*/  /*<<camlinternalFormat.ml:773:28>>*/ caml_call1
-             (ga, 0);
-             /*<<camlinternalFormat.ml:773:50>>*/  /*<<camlinternalFormat.ml:773:50>>*/ caml_call1
-             (af$8, 0);
+             /*<<camlinternalFormat.ml:773:17>>*/ ga(0);
+             /*<<camlinternalFormat.ml:773:50>>*/ af$8(0);
              /*<<camlinternalFormat.ml:773:61>>*/ return 0;
             /*<<camlinternalFormat.ml:773:65>>*/ };
          /*<<camlinternalFormat.ml:772:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:772:17>>*/  /*<<camlinternalFormat.ml:772:28>>*/ caml_call1
-                  (fa$8, 0);
-                  /*<<camlinternalFormat.ml:772:50>>*/  /*<<camlinternalFormat.ml:772:50>>*/ caml_call1
-                  (ag, 0);
+                  /*<<camlinternalFormat.ml:772:17>>*/ fa$8(0);
+                  /*<<camlinternalFormat.ml:772:50>>*/ ag(0);
                   /*<<camlinternalFormat.ml:772:61>>*/ return 0;
                  /*<<camlinternalFormat.ml:772:65>>*/ },
                 _dt_,
@@ -14645,14 +14617,12 @@
          fa$9 = match$10[1],
          _du_ =
            function(param){
-             /*<<camlinternalFormat.ml:744:17>>*/  /*<<camlinternalFormat.ml:744:28>>*/ caml_call1
-             (af$9, 0);
+             /*<<camlinternalFormat.ml:744:17>>*/ af$9(0);
              /*<<camlinternalFormat.ml:744:39>>*/ return 0;
             /*<<camlinternalFormat.ml:744:43>>*/ };
          /*<<camlinternalFormat.ml:743:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:743:17>>*/  /*<<camlinternalFormat.ml:743:28>>*/ caml_call1
-                  (fa$9, 0);
+                  /*<<camlinternalFormat.ml:743:17>>*/ fa$9(0);
                   /*<<camlinternalFormat.ml:743:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:743:43>>*/ },
                 _du_,
@@ -14669,14 +14639,12 @@
          fa$10 = match$11[1],
          _dv_ =
            function(param){
-             /*<<camlinternalFormat.ml:739:17>>*/  /*<<camlinternalFormat.ml:739:28>>*/ caml_call1
-             (af$10, 0);
+             /*<<camlinternalFormat.ml:739:17>>*/ af$10(0);
              /*<<camlinternalFormat.ml:739:39>>*/ return 0;
             /*<<camlinternalFormat.ml:739:43>>*/ };
          /*<<camlinternalFormat.ml:738:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:738:17>>*/  /*<<camlinternalFormat.ml:738:28>>*/ caml_call1
-                  (fa$10, 0);
+                  /*<<camlinternalFormat.ml:738:17>>*/ fa$10(0);
                   /*<<camlinternalFormat.ml:738:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:738:43>>*/ },
                 _dv_,
@@ -14693,14 +14661,12 @@
          fa$11 = match$12[1],
          _dw_ =
            function(param){
-             /*<<camlinternalFormat.ml:749:17>>*/  /*<<camlinternalFormat.ml:749:28>>*/ caml_call1
-             (af$11, 0);
+             /*<<camlinternalFormat.ml:749:17>>*/ af$11(0);
              /*<<camlinternalFormat.ml:749:39>>*/ return 0;
             /*<<camlinternalFormat.ml:749:43>>*/ };
          /*<<camlinternalFormat.ml:748:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:748:17>>*/  /*<<camlinternalFormat.ml:748:28>>*/ caml_call1
-                  (fa$11, 0);
+                  /*<<camlinternalFormat.ml:748:17>>*/ fa$11(0);
                   /*<<camlinternalFormat.ml:748:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:748:43>>*/ },
                 _dw_,
@@ -14717,26 +14683,22 @@
          fa$12 = match$13[1],
           /*<<camlinternalFormat.ml:753:4>>*/ _dx_ =
            function(param){
-             /*<<camlinternalFormat.ml:756:17>>*/  /*<<camlinternalFormat.ml:756:28>>*/ caml_call1
-             (de$12, 0);
+             /*<<camlinternalFormat.ml:756:17>>*/ de$12(0);
              /*<<camlinternalFormat.ml:756:39>>*/ return 0;
             /*<<camlinternalFormat.ml:756:43>>*/ },
          _dy_ =
            function(param){
-             /*<<camlinternalFormat.ml:755:17>>*/  /*<<camlinternalFormat.ml:755:28>>*/ caml_call1
-             (ed$12, 0);
+             /*<<camlinternalFormat.ml:755:17>>*/ ed$12(0);
              /*<<camlinternalFormat.ml:755:39>>*/ return 0;
             /*<<camlinternalFormat.ml:755:43>>*/ },
          _dz_ =
            function(param){
-             /*<<camlinternalFormat.ml:754:17>>*/  /*<<camlinternalFormat.ml:754:28>>*/ caml_call1
-             (af$12, 0);
+             /*<<camlinternalFormat.ml:754:17>>*/ af$12(0);
              /*<<camlinternalFormat.ml:754:39>>*/ return 0;
             /*<<camlinternalFormat.ml:754:43>>*/ };
          /*<<camlinternalFormat.ml:753:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:753:17>>*/  /*<<camlinternalFormat.ml:753:28>>*/ caml_call1
-                  (fa$12, 0);
+                  /*<<camlinternalFormat.ml:753:17>>*/ fa$12(0);
                   /*<<camlinternalFormat.ml:753:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:753:43>>*/ },
                 _dz_,
@@ -14753,26 +14715,22 @@
          fa$13 = match$14[1],
           /*<<camlinternalFormat.ml:759:4>>*/ _dA_ =
            function(param){
-             /*<<camlinternalFormat.ml:762:17>>*/  /*<<camlinternalFormat.ml:762:28>>*/ caml_call1
-             (de$13, 0);
+             /*<<camlinternalFormat.ml:762:17>>*/ de$13(0);
              /*<<camlinternalFormat.ml:762:39>>*/ return 0;
             /*<<camlinternalFormat.ml:762:43>>*/ },
          _dB_ =
            function(param){
-             /*<<camlinternalFormat.ml:761:17>>*/  /*<<camlinternalFormat.ml:761:28>>*/ caml_call1
-             (ed$13, 0);
+             /*<<camlinternalFormat.ml:761:17>>*/ ed$13(0);
              /*<<camlinternalFormat.ml:761:39>>*/ return 0;
             /*<<camlinternalFormat.ml:761:43>>*/ },
          _dC_ =
            function(param){
-             /*<<camlinternalFormat.ml:760:17>>*/  /*<<camlinternalFormat.ml:760:28>>*/ caml_call1
-             (af$13, 0);
+             /*<<camlinternalFormat.ml:760:17>>*/ af$13(0);
              /*<<camlinternalFormat.ml:760:39>>*/ return 0;
             /*<<camlinternalFormat.ml:760:43>>*/ };
          /*<<camlinternalFormat.ml:759:4>>*/ return [0,
                 function(param){
-                  /*<<camlinternalFormat.ml:759:17>>*/  /*<<camlinternalFormat.ml:759:28>>*/ caml_call1
-                  (fa$13, 0);
+                  /*<<camlinternalFormat.ml:759:17>>*/ fa$13(0);
                   /*<<camlinternalFormat.ml:759:39>>*/ return 0;
                  /*<<camlinternalFormat.ml:759:43>>*/ },
                 _dC_,
@@ -15086,10 +15044,8 @@
               /*<<camlinternalFormat.ml:842:23>>*/ match = fmtty_rel_det(ty),
              f4 = match[4],
              f2 = match[2];
-             /*<<camlinternalFormat.ml:843:15>>*/  /*<<camlinternalFormat.ml:843:15>>*/ caml_call1
-             (f2, 0);
-             /*<<camlinternalFormat.ml:844:15>>*/  /*<<camlinternalFormat.ml:844:15>>*/ caml_call1
-             (f4, 0);
+             /*<<camlinternalFormat.ml:843:15>>*/ f2(0);
+             /*<<camlinternalFormat.ml:844:15>>*/ f4(0);
              /*<<camlinternalFormat.ml:845:4>>*/ return [9,
                     ty11,
                     ty22,
@@ -16158,10 +16114,8 @@
            fmtty_rel_det(sub_fmtty$0),
          f4 = match$8[4],
          f2 = match$8[2];
-         /*<<camlinternalFormat.ml:1267:15>>*/  /*<<camlinternalFormat.ml:1267:15>>*/ caml_call1
-         (f2, 0);
-         /*<<camlinternalFormat.ml:1268:15>>*/  /*<<camlinternalFormat.ml:1268:15>>*/ caml_call1
-         (f4, 0);
+         /*<<camlinternalFormat.ml:1267:15>>*/ f2(0);
+         /*<<camlinternalFormat.ml:1268:15>>*/ f4(0);
          /*<<camlinternalFormat.ml:1270:6>>*/ var
           /*<<camlinternalFormat.ml:1270:6>>*/ match$9 =
            type_ignored_format_substituti
@@ -22271,8 +22225,7 @@
    function of_value(kind, layout, v){
      /*<<bigarray.ml:172:4>>*/  /*<<bigarray.ml:172:12>>*/ var
      a = create(kind, layout);
-     /*<<bigarray.ml:173:4>>*/  /*<<bigarray.ml:173:4>>*/ caml_call1
-     (set(a), v);
+     /*<<bigarray.ml:173:4>>*/ set(a)(v);
      /*<<bigarray.ml:173:4>>*/ return a;
     /*<<bigarray.ml:174:5>>*/ }
    function create$0(kind, layout, dim){

@@ -618,10 +618,7 @@ let ()  = M.run ()
        even = closures$0[1],
        param$0 = even(i);
       for(;;){
-       if(759635106 > param$0[1]){
-        var f = param$0[2], param$0 = caml_call1(f, 0);
-        continue;
-       }
+       if(759635106 > param$0[1]){var f = param$0[2], param$0 = f(0); continue;}
        var _g_ = i + 1 | 0;
        if(4 !== i){var i = _g_; continue a;}
        var
