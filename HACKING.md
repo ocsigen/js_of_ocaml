@@ -16,3 +16,6 @@
 * git diff # review diff
 * git commit -am "sync doc"
 * git push origin wikidoc
+
+# Ignore reformating commit in git blame
+* git config blame.ignoreRevsFile .git-blame-ignore-revs
