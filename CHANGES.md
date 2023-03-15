@@ -1,3 +1,7 @@
+# 5.1.1 (2023-03-15) - Lille
+## Bug fixes
+* Compiler: fix jsoo link in presence of --disable use-js-string (#1430)
+
 # 5.1.0 (2023-03-07) - Otari
 ## Features/Changes
 * Lib: Added support for KeyboardEvent.getModifierState
