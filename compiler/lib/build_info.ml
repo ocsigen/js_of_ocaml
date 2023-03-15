@@ -132,3 +132,11 @@ let merge fname1 info1 fname2 info2 =
         | _, None, None -> assert false)
       info1
       info2
+
+let configure t =
+  StringMap.iter
+    (fun k v ->
+      match k with
+      | "use-js-string" | "effects" -> Config.Flag.set k (bool_of_string v)
+      | _ -> ())
+    t

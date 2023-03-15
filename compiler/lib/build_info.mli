@@ -44,3 +44,5 @@ exception
 val merge : string -> t -> string -> t -> t
 
 val kind : t -> kind
+
+val configure : t -> unit
