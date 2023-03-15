@@ -258,18 +258,18 @@ module Shape = struct
               ; normal = position
               ; color =
                   (if s.material.Material.has_texture
-                  then
-                    let vu =
-                      Vector.make
-                        position.Vector.y
-                        position.Vector.z
-                        (-.position.Vector.x)
-                    in
-                    let vv = Vector.cross vu position in
-                    let u = Vector.dot pos vu in
-                    let v = Vector.dot pos vv in
-                    s.material.Material.get_color u v
-                  else s.material.Material.get_color 0. 0.)
+                   then
+                     let vu =
+                       Vector.make
+                         position.Vector.y
+                         position.Vector.z
+                         (-.position.Vector.x)
+                     in
+                     let vv = Vector.cross vu position in
+                     let u = Vector.dot pos vu in
+                     let v = Vector.dot pos vv in
+                     s.material.Material.get_color u v
+                   else s.material.Material.get_color 0. 0.)
               }
 end
 
@@ -322,38 +322,40 @@ module Engine = struct
           (Vector.subtract light.Light.position info.Intersection_info.position)
       in
       (if options.render_diffuse
-      then
-        let l = Vector.dot v info.Intersection_info.normal in
-        if l > 0.
-        then
-          color :=
-            Color.add
-              !color
-              (Color.multiply
-                 info.Intersection_info.color
-                 (Color.multiply_scalar light.Light.color l)));
+       then
+         let l = Vector.dot v info.Intersection_info.normal in
+         if l > 0.
+         then
+           color :=
+             Color.add
+               !color
+               (Color.multiply
+                  info.Intersection_info.color
+                  (Color.multiply_scalar light.Light.color l)));
       (if depth <= options.ray_depth
-      then
-        if options.render_reflections
-           && info.Intersection_info.shape.Shape.material.Material.reflection > 0.
-        then
-          let reflection_ray =
-            get_reflection_ray
-              info.Intersection_info.position
-              info.Intersection_info.normal
-              ray.Ray.direction
-          in
-          let col =
-            match test_intersection reflection_ray scene info.Intersection_info.shape with
-            | Some ({ Intersection_info.distance = d; _ } as info) when d > 0. ->
-                ray_trace options info reflection_ray scene (depth + 1)
-            | _ -> scene.Scene.background.Background.color
-          in
-          color :=
-            Color.blend
-              !color
-              col
-              info.Intersection_info.shape.Shape.material.Material.reflection);
+       then
+         if options.render_reflections
+            && info.Intersection_info.shape.Shape.material.Material.reflection > 0.
+         then
+           let reflection_ray =
+             get_reflection_ray
+               info.Intersection_info.position
+               info.Intersection_info.normal
+               ray.Ray.direction
+           in
+           let col =
+             match
+               test_intersection reflection_ray scene info.Intersection_info.shape
+             with
+             | Some ({ Intersection_info.distance = d; _ } as info) when d > 0. ->
+                 ray_trace options info reflection_ray scene (depth + 1)
+             | _ -> scene.Scene.background.Background.color
+           in
+           color :=
+             Color.blend
+               !color
+               col
+               info.Intersection_info.shape.Shape.material.Material.reflection);
       let shadow_info = ref None in
       if options.render_shadows
       then (

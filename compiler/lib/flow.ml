@@ -386,9 +386,9 @@ let build_subst info vars =
     (fun x ->
       let u = Var.Tbl.get info.info_maybe_unknown x in
       (if not u
-      then
-        let s = Var.Tbl.get info.info_known_origins x in
-        if Var.Set.cardinal s = 1 then subst.(Var.idx x) <- Some (Var.Set.choose s));
+       then
+         let s = Var.Tbl.get info.info_known_origins x in
+         if Var.Set.cardinal s = 1 then subst.(Var.idx x) <- Some (Var.Set.choose s));
       if Option.is_none subst.(Var.idx x) then subst.(Var.idx x) <- direct_approx info x;
       match subst.(Var.idx x) with
       | None -> ()

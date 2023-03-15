@@ -50,14 +50,18 @@ let clock_div () =
   let rec update_cb () =
     let dt = Sys.time () -. !t0 in
     (if not !stopped
-    then
-      let str =
-        let secs = int_of_float dt in
-        js
-          (Printf.sprintf "%02d:%02d:%02d" (secs / 3600) (secs / 60 mod 60) (secs mod 60))
-      in
-      let txt = document##createTextNode str in
-      replace_child div txt);
+     then
+       let str =
+         let secs = int_of_float dt in
+         js
+           (Printf.sprintf
+              "%02d:%02d:%02d"
+              (secs / 3600)
+              (secs / 60 mod 60)
+              (secs mod 60))
+       in
+       let txt = document##createTextNode str in
+       replace_child div txt);
     Lwt_js.sleep 1. >>= fun () -> update_cb ()
   in
   ignore (update_cb ());

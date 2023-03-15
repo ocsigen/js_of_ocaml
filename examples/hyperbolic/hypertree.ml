@@ -909,9 +909,9 @@ let compute_neighbors nodes tree =
     Array.iter compute_frontiers l;
     frontiers.(i) <-
       (if Array.length l = 0
-      then [| status i |], [| status i |]
-      else
-        fst frontiers.(node_info l.(0)), snd frontiers.(node_info l.(Array.length l - 1)))
+       then [| status i |], [| status i |]
+       else
+         fst frontiers.(node_info l.(0)), snd frontiers.(node_info l.(Array.length l - 1)))
     (*
       (i :: fst frontiers.(node_info (List.hd l)),
        i :: snd frontiers.(node_info (list_tl l)))
@@ -1002,10 +1002,10 @@ let tree_layout node_names root =
         let w0 =
           ref
             (if is_root
-            then
-              let (Node (w, _)) = ch_weights.(0) in
-              (total_weight -. w) /. 2.
-            else 0.)
+             then
+               let (Node (w, _)) = ch_weights.(0) in
+               (total_weight -. w) /. 2.
+             else 0.)
         in
         array_map2
           (fun node weights ->

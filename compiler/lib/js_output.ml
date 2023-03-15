@@ -62,24 +62,24 @@ struct
 
   let output_debug_info f loc =
     (if debug_enabled
-    then
-      match loc with
-      | Pi { Parse_info.src = None | Some ""; name = None | Some ""; _ } | N -> ()
-      | U ->
-          PP.non_breaking_space f;
-          PP.string f "/*<<?>>*/";
-          PP.non_breaking_space f
-      | Pi { Parse_info.src; name; line; col; _ } ->
-          let file =
-            match name, src with
-            | (None | Some ""), Some file -> file
-            | Some file, (None | Some "") -> file
-            | Some file, Some _file -> file
-            | None, None -> assert false
-          in
-          PP.non_breaking_space f;
-          PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
-          PP.non_breaking_space f);
+     then
+       match loc with
+       | Pi { Parse_info.src = None | Some ""; name = None | Some ""; _ } | N -> ()
+       | U ->
+           PP.non_breaking_space f;
+           PP.string f "/*<<?>>*/";
+           PP.non_breaking_space f
+       | Pi { Parse_info.src; name; line; col; _ } ->
+           let file =
+             match name, src with
+             | (None | Some ""), Some file -> file
+             | Some file, (None | Some "") -> file
+             | Some file, Some _file -> file
+             | None, None -> assert false
+           in
+           PP.non_breaking_space f;
+           PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
+           PP.non_breaking_space f);
     if source_map_enabled
     then
       match loc with
@@ -1637,11 +1637,11 @@ let program f ?source_map p =
         Some { sm with Source_map.sources; names; sources_content; mappings }
   in
   (if stats ()
-  then
-    let size i = Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
-    let _percent n d =
-      Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. float_of_int d)
-    in
-    let total_s = PP.total f in
-    Format.eprintf "total size : %s@." (size total_s));
+   then
+     let size i = Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
+     let _percent n d =
+       Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. float_of_int d)
+     in
+     let total_s = PP.total f in
+     Format.eprintf "total size : %s@." (size total_s));
   sm

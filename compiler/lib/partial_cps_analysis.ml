@@ -67,10 +67,10 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                 (fun g ->
                   add_var vars g;
                   (if known_tail_call
-                  then
-                    match fun_name with
-                    | None -> ()
-                    | Some f -> add_tail_dep tail_deps f g);
+                   then
+                     match fun_name with
+                     | None -> ()
+                     | Some f -> add_tail_dep tail_deps f g);
                   (* If a called function is in CPS, then the call
                      point is in CPS *)
                   add_dep deps x g;

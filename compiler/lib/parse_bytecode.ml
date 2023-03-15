@@ -859,10 +859,10 @@ and compile infos pc state instrs =
   if debug_parser () then State.print state;
   assert (pc <= infos.limit);
   (if debug_parser ()
-  then
-    match string_of_addr infos.debug pc with
-    | None -> ()
-    | Some s -> Format.eprintf "@@@@ %s @@@@@." s);
+   then
+     match string_of_addr infos.debug pc with
+     | None -> ()
+     | Some s -> Format.eprintf "@@@@ %s @@@@@." s);
   if pc = infos.limit
   then
     if (* stop if we reach end_of_code (ie when compiling cmo) *)
@@ -2569,16 +2569,16 @@ let from_exe
   in
   let t = Timer.make () in
   (if Debug.dbg_section_needed debug_data
-  then
-    try
-      ignore (Toc.seek_section toc ic "DBUG");
-      Debug.read debug_data ~crcs ~includes ic
-    with Not_found ->
-      if Debug.enabled debug_data || include_cmis
-      then
-        warn
-          "Warning: Program not linked with -g, original variable names and locations \
-           not available.@.");
+   then
+     try
+       ignore (Toc.seek_section toc ic "DBUG");
+       Debug.read debug_data ~crcs ~includes ic
+     with Not_found ->
+       if Debug.enabled debug_data || include_cmis
+       then
+         warn
+           "Warning: Program not linked with -g, original variable names and locations \
+            not available.@.");
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in
@@ -2747,10 +2747,10 @@ let from_bytes ~prims ~debug (code : bytecode) =
         match var with
         | Some x when globals.is_const.(i) ->
             (if Debug.names debug_data
-            then
-              match find_name i with
-              | None -> ()
-              | Some name -> Code.Var.name x name);
+             then
+               match find_name i with
+               | None -> ()
+               | Some name -> Code.Var.name x name);
             need_gdata := true;
             (Let (x, Field (gdata, i)), noloc) :: l
         | _ -> l)

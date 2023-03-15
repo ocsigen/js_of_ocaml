@@ -74,27 +74,27 @@ let () =
           let _ret = Sys.command (Printf.sprintf "patdiff %s %s" filename jsoo_name) in
           ());
         (if vs_explicit
-        then
-          try
-            let explicit =
-              Filename.(
-                concat
-                  (concat (dirname (dirname filename)) "pass-explicit")
-                  (basename filename))
-            in
-            let ic = open_in_bin explicit in
-            let content = In_channel.input_all ic in
-            close_in ic;
-            let p2 =
-              Parse_js.Lexer.of_string ~filename:explicit content |> Parse_js.parse
-            in
-            let p1 = clean_loc p1 and p2 = clean_loc p2 in
-            let p1s = p_to_string p1 and p2s = p_to_string p2 in
-            if Poly.(p1 <> p2)
-            then (
-              Printf.printf ">>>>>>> MISMATCH %s <<<<<<<<<<\n" filename;
-              Printf.printf "%s\n\n%s\n" p1s p2s)
-          with _ -> ());
+         then
+           try
+             let explicit =
+               Filename.(
+                 concat
+                   (concat (dirname (dirname filename)) "pass-explicit")
+                   (basename filename))
+             in
+             let ic = open_in_bin explicit in
+             let content = In_channel.input_all ic in
+             close_in ic;
+             let p2 =
+               Parse_js.Lexer.of_string ~filename:explicit content |> Parse_js.parse
+             in
+             let p1 = clean_loc p1 and p2 = clean_loc p2 in
+             let p1s = p_to_string p1 and p2s = p_to_string p2 in
+             if Poly.(p1 <> p2)
+             then (
+               Printf.printf ">>>>>>> MISMATCH %s <<<<<<<<<<\n" filename;
+               Printf.printf "%s\n\n%s\n" p1s p2s)
+           with _ -> ());
         add pass
       with Parse_js.Parsing_error loc ->
         if has_unsupported_syntax content

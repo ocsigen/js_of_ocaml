@@ -148,15 +148,15 @@ let draw_cell dom bd =
   dom##.src :=
     js
       (if bd.flag
-      then "sprites/flag.png"
-      else if bd.mined
-      then "sprites/bomb.png"
-      else if bd.seen
-      then
-        if bd.nbm = 0
-        then "sprites/empty.png"
-        else "sprites/" ^ string_of_int bd.nbm ^ ".png"
-      else "sprites/normal.png")
+       then "sprites/flag.png"
+       else if bd.mined
+       then "sprites/bomb.png"
+       else if bd.seen
+       then
+         if bd.nbm = 0
+         then "sprites/empty.png"
+         else "sprites/" ^ string_of_int bd.nbm ^ ".png"
+       else "sprites/normal.png")
 
 let draw_board d =
   for y = 0 to d.cf.nbrows - 1 do

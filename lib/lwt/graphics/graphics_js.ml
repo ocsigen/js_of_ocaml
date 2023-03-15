@@ -108,12 +108,12 @@ let loop elist f : unit =
         mouse_x := cx;
         mouse_y := cy;
         (if List.mem Mouse_motion elist
-        then
-          let mouse_x, mouse_y = get_pos_mouse () in
-          let s =
-            { mouse_x; mouse_y; button = !button; keypressed = false; key = null }
-          in
-          f s);
+         then
+           let mouse_x, mouse_y = get_pos_mouse () in
+           let s =
+             { mouse_x; mouse_y; button = !button; keypressed = false; key = null }
+           in
+           f s);
         Js._true);
   (* EventListener sur le doc car pas de moyen simple de le faire
      sur un canvasElement *)

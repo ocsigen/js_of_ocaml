@@ -87,17 +87,17 @@ let prefix = "//# unitInfo:"
 let to_string t =
   [ [ prefix; "Provides:"; String.concat ~sep:", " (StringSet.elements t.provides) ]
   ; (if StringSet.equal empty.requires t.requires
-    then []
-    else [ prefix; "Requires:"; String.concat ~sep:", " (StringSet.elements t.requires) ])
+     then []
+     else [ prefix; "Requires:"; String.concat ~sep:", " (StringSet.elements t.requires) ])
   ; (if List.equal ~eq:String.equal empty.primitives t.primitives
-    then []
-    else [ prefix; "Primitives:"; String.concat ~sep:", " t.primitives ])
+     then []
+     else [ prefix; "Primitives:"; String.concat ~sep:", " t.primitives ])
   ; (if Bool.equal empty.force_link t.force_link
-    then []
-    else [ prefix; "Force_link:"; string_of_bool t.force_link ])
+     then []
+     else [ prefix; "Force_link:"; string_of_bool t.force_link ])
   ; (if Bool.equal empty.effects_without_cps t.effects_without_cps
-    then []
-    else [ prefix; "Effects_without_cps:"; string_of_bool t.effects_without_cps ])
+     then []
+     else [ prefix; "Effects_without_cps:"; string_of_bool t.effects_without_cps ])
   ]
   |> List.filter_map ~f:(function
          | [] -> None

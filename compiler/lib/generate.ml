@@ -1607,12 +1607,12 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
                 , None
                 , Js_simpl.block
                     (if never_body
-                    then (
-                      if debug () then Format.eprintf "}@]@,";
-                      body)
-                    else (
-                      if debug () then Format.eprintf "break;@;}@]@,";
-                      body @ [ J.Break_statement None, J.N ])) )
+                     then (
+                       if debug () then Format.eprintf "}@]@,";
+                       body)
+                     else (
+                       if debug () then Format.eprintf "break;@;}@]@,";
+                       body @ [ J.Break_statement None, J.N ])) )
             , source_location st.ctx (Code.location_of_pc pc) )
           in
           let label = if !lab_used then Some lab else None in
@@ -1839,15 +1839,15 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
 and compile_conditional st queue last loop_stack backs frontier interm =
   let last, pc = last in
   (if debug ()
-  then
-    match last with
-    | Branch _ | Poptrap _ -> ()
-    | Pushtrap _ -> Format.eprintf "@[<hv 2>try {@;"
-    | Return _ -> Format.eprintf "ret;@;"
-    | Raise _ -> Format.eprintf "raise;@;"
-    | Stop -> Format.eprintf "stop;@;"
-    | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
-    | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
+   then
+     match last with
+     | Branch _ | Poptrap _ -> ()
+     | Pushtrap _ -> Format.eprintf "@[<hv 2>try {@;"
+     | Return _ -> Format.eprintf "ret;@;"
+     | Raise _ -> Format.eprintf "raise;@;"
+     | Stop -> Format.eprintf "stop;@;"
+     | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
+     | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
   let loc = source_location st.ctx pc in
   let res =
     match last with
@@ -1974,10 +1974,10 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         never1 && never2, flush_all queue code
   in
   (if debug ()
-  then
-    match last with
-    | Branch _ | Poptrap _ | Return _ | Raise _ | Stop -> ()
-    | Switch _ | Cond _ | Pushtrap _ -> Format.eprintf "}@]@;");
+   then
+     match last with
+     | Branch _ | Poptrap _ | Return _ | Raise _ | Stop -> ()
+     | Switch _ | Cond _ | Pushtrap _ -> Format.eprintf "}@]@;");
   res
 
 and compile_argument_passing ctx queue (pc, args) _backs continuation =

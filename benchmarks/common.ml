@@ -188,12 +188,12 @@ end = struct
            | { st_kind = S_REG | S_LNK; _ } -> true
            | _ -> false)
     |> (if spec.ext = ""
-       then fun x -> x
-       else
-         fun x ->
-         x
-         |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
-         |> List.map ~f:Filename.chop_extension)
+        then fun x -> x
+        else
+          fun x ->
+          x
+          |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
+          |> List.map ~f:Filename.chop_extension)
     |> List.sort ~cmp:compare
 
   let ml = create "ml" ".ml"

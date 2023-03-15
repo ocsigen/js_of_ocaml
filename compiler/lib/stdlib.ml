@@ -229,8 +229,8 @@ module List = struct
             :: x5
             ::
             (if count > max_non_tailcall
-            then tail_append tl l2
-            else count_append tl l2 (count + 1)))
+             then tail_append tl l2
+             else count_append tl l2 (count + 1)))
 
   let append l1 l2 = count_append l1 l2 0
 

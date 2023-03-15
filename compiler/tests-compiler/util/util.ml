@@ -301,8 +301,8 @@ let compile_to_javascript
       ; (if sourcemap then [ "--sourcemap" ] else [])
       ; (if effects then [ "--enable=effects" ] else [ "--disable=effects" ])
       ; (if use_js_string
-        then [ "--enable=use-js-string" ]
-        else [ "--disable=use-js-string" ])
+         then [ "--enable=use-js-string" ]
+         else [ "--disable=use-js-string" ])
       ; flags
       ]
   in

@@ -158,11 +158,11 @@ let expr_deps blocks st x e =
          an approximation of the value they return based on an
          approximation of their arguments *)
       (if st.fast
-      then
-        match l with
-        | Pv x :: _ -> do_escape st Escape x
-        | Pc _ :: _ -> ()
-        | [] -> assert false);
+       then
+         match l with
+         | Pv x :: _ -> do_escape st Escape x
+         | Pc _ :: _ -> ()
+         | [] -> assert false);
       List.iter
         ~f:(fun a ->
           match a with

@@ -166,9 +166,7 @@ module Trampoline = struct
         let tailcall_max_depth = Config.Param.tailcall_max_depth () in
         let all =
           List.map all ~f:(fun id ->
-              ( (if tailcall_max_depth = 0
-                then None
-                else Some (Code.Var.fresh_n "counter"))
+              ( (if tailcall_max_depth = 0 then None else Some (Code.Var.fresh_n "counter"))
               , Var.Map.find id closures_map ))
         in
         let blocks, free_pc, instrs, instrs_wrapper =

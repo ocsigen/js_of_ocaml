@@ -36,19 +36,19 @@ let fannkuch n =
         let qq = q.(!q0) in
         q.(!q0) <- !q0;
         (if !q0 >= 3
-        then
-          let i = ref 1 in
-          let j = ref (!q0 - 1) in
-          while
-            let t = q.(!i) in
-            q.(!i) <- q.(!j);
-            q.(!j) <- t;
-            incr i;
-            decr j;
-            !i < !j
-          do
-            ()
-          done);
+         then
+           let i = ref 1 in
+           let j = ref (!q0 - 1) in
+           while
+             let t = q.(!i) in
+             q.(!i) <- q.(!j);
+             q.(!j) <- t;
+             incr i;
+             decr j;
+             !i < !j
+           do
+             ()
+           done);
         q0 := qq;
         incr flips
       done);

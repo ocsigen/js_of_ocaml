@@ -105,18 +105,18 @@ let string_of_mapping mapping =
           (c.gen_col - !gen_col)
           ::
           (if c.ori_source = -1
-          then []
-          else
-            (c.ori_source - !ori_source)
-            :: (c.ori_line - !ori_line)
-            :: (c.ori_col - !ori_col)
-            ::
-            (match c.ori_name with
-            | None -> []
-            | Some n ->
-                let n' = !ori_name in
-                ori_name := n;
-                [ n - n' ]))
+           then []
+           else
+             (c.ori_source - !ori_source)
+             :: (c.ori_line - !ori_line)
+             :: (c.ori_col - !ori_col)
+             ::
+             (match c.ori_name with
+             | None -> []
+             | Some n ->
+                 let n' = !ori_name in
+                 ori_name := n;
+                 [ n - n' ]))
         in
         gen_col := c.gen_col;
         if c.ori_source <> -1

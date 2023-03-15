@@ -10,5 +10,5 @@ break-separators=before
 dock-collection-brackets=false
 margin=90
 module-item-spacing=sparse
-version=0.24.1
+version=0.25.1
 ocaml-version=4.04.0

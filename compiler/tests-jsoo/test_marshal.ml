@@ -113,11 +113,11 @@ let%expect_test _ =
     "\132\149\166\190\000\000\000\012\000\000\000\001\000\000\000\004\000\000\000\003\018_j\000\000\000\000\000\000\000\000\001"
   in
   (if String.split_on_char '.' Sys.ocaml_version |> List.hd |> int_of_string >= 5
-  then ()
-  else
-    let v = Marshal.from_string data 0 in
-    let () = assert (1L = v) in
-    ());
+   then ()
+   else
+     let v = Marshal.from_string data 0 in
+     let () = assert (1L = v) in
+     ());
   [%expect {||}]
 
 let%expect_test _ =
