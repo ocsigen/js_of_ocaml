@@ -356,29 +356,31 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
         match build_info_for_file with
         | Some bi -> (
             match Build_info.kind bi with
-            | `Runtime -> true
-            | `Cma | `Exe | `Cmo | `Unknown -> false)
-        | None -> false
+            | `Runtime -> Some bi
+            | `Cma | `Exe | `Cmo | `Unknown -> None)
+        | None -> None
       in
-      if is_runtime
-      then (
-        let primitives =
-          List.fold_left units ~init:[] ~f:(fun acc (u : Unit_info.t) ->
-              acc @ u.primitives)
-        in
-        let code = Parse_bytecode.link_info ~symtable:!sym ~primitives ~crcs:[] in
-        let b = Buffer.create 100 in
-        let fmt = Pretty_print.to_buffer b in
-        Driver.configure fmt;
-        Driver.f'
-          ~standalone:false
-          ~linkall:false
-          ~wrap_with_fun:`Iife
-          fmt
-          (Parse_bytecode.Debug.create ~include_cmis:false false)
-          code;
-        let content = Buffer.contents b in
-        String.split_on_char ~sep:'\n' content |> List.iter ~f:(Line_writer.write oc));
+      (match is_runtime with
+      | None -> ()
+      | Some bi ->
+          Build_info.configure bi;
+          let primitives =
+            List.fold_left units ~init:[] ~f:(fun acc (u : Unit_info.t) ->
+                acc @ u.primitives)
+          in
+          let code = Parse_bytecode.link_info ~symtable:!sym ~primitives ~crcs:[] in
+          let b = Buffer.create 100 in
+          let fmt = Pretty_print.to_buffer b in
+          Driver.configure fmt;
+          Driver.f'
+            ~standalone:false
+            ~linkall:false
+            ~wrap_with_fun:`Iife
+            fmt
+            (Parse_bytecode.Debug.create ~include_cmis:false false)
+            code;
+          let content = Buffer.contents b in
+          String.split_on_char ~sep:'\n' content |> List.iter ~f:(Line_writer.write oc));
       (match !sm_for_file with
       | None -> ()
       | Some x -> sm := (x, !reloc) :: !sm);
