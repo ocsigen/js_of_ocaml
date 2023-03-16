@@ -69,11 +69,49 @@ function caml_obj_with_tag(tag,x) {
 }
 
 //Provides: caml_obj_dup mutable (mutable)
-function caml_obj_dup (x) {
-  var l = x.length;
-  var a = new Array(l);
-  for(var i = 0; i < l; i++ ) a[i] = x[i];
-  return a;
+//Requires: MlInt64, MlBytes, caml_failwith
+ function caml_obj_dup (x) {
+  switch (typeof x) {
+    case 'number':
+    case 'bigint':
+    case 'boolean':
+    case 'undefined':
+    case 'function':
+    case 'string': return x;
+    case 'object': {
+      if (x === null || x instanceof MlInt64) {
+        return x;
+      }
+
+      if (x instanceof MlBytes) {
+        if (typeof x.c === 'string') {
+          // we can re-use the content because strings are immutable
+          return new MlBytes(x.t, x.c, x.l);
+        } else {
+          // it must be an array, as defined in ./mlBytes.js
+          var content = Array.prototype.slice.call(x.c);
+          return new MlBytes(x.t, content, x.l);
+        }
+      }
+
+      if (x instanceof Array) {
+        return Array.prototype.slice.call(x);
+      }
+
+      // if we get here, then we want to fallback to the default
+      // case, which will end with the error handling.
+    }
+    default: break
+  }
+
+  try {
+    // printing the value as a string and json-stringifying can both fail,
+    // so wrap it in a try/catch with a less useful error message
+    var as_json = globalThis.JSON.stringify(x);
+    caml_failwith("caml_obj_dup called on unknown value: " + x + " " + as_json)
+  } catch (_) {
+    caml_failwith("caml_obj_dup called on unknown value");
+  }
 }
 
 //Provides: caml_obj_truncate (mutable, const)

@@ -64,50 +64,11 @@ let compare (p1, n1) (p2, n2) =
 
 let equal a b = compare a b = 0
 
-let current_exe =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 32
-  in
-  "Caml1999X", v
+let current_exe = "Caml1999X", 31
 
-let current_cmo =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 32
-  in
-  "Caml1999O", v
+let current_cmo = "Caml1999O", 500
 
-let current_cma =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 32
-  in
-  "Caml1999A", v
+let current_cma = "Caml1999A", 500
 
 let current = function
   | `Exe -> current_exe

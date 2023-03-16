@@ -28,7 +28,7 @@ type t =
   ; effects_without_cps : bool
   }
 
-val of_cmo : Cmo_format.compilation_unit -> t
+val of_cmo : Cmo_format.compilation_unit_descr -> t
 
 val union : t -> t -> t
 

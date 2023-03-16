@@ -65,7 +65,7 @@ val from_cmo :
      ?includes:string list
   -> ?include_cmis:bool
   -> ?debug:bool
-  -> Cmo_format.compilation_unit
+  -> Cmo_format.compilation_unit_descr
   -> in_channel
   -> one
 
@@ -79,7 +79,7 @@ val from_cma :
 
 val from_channel :
      in_channel
-  -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
+  -> [ `Cmo of Cmo_format.compilation_unit_descr | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
      prims:string array

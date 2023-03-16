@@ -31,7 +31,7 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> Int (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
-  | Const_float_array sl ->
+  | Const_float_array sl | Const_float_block sl ->
       let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
       Tuple (Obj.double_array_tag, Array.of_list l, Unknown)
   | ((Const_pointer i) [@if ocaml_version < (4, 12, 0)]) ->
@@ -42,9 +42,9 @@ let rec constant_of_const : _ -> Code.constant =
 
 let rec find_loc_in_summary ident' = function
   | Env.Env_empty -> None
-  | Env.Env_value (_summary, ident, description) when Poly.(ident = ident') ->
+  | Env.Env_value (_summary, ident, description, _) when Poly.(ident = ident') ->
       Some description.Types.val_loc
-  | Env.Env_value (summary, _, _)
+  | Env.Env_value (summary, _, _, _)
   | Env.Env_type (summary, _, _)
   | Env.Env_extension (summary, _, _)
   | Env.Env_module (summary, _, _, _)

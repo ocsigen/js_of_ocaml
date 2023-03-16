@@ -37,9 +37,12 @@ let empty =
   ; effects_without_cps = false
   }
 
-let of_cmo (cmo : Cmo_format.compilation_unit) =
-  let provides = StringSet.singleton cmo.cu_name in
-  let requires = StringSet.of_list (List.map cmo.cu_required_globals ~f:Ident.name) in
+let of_cmo (cmo : Cmo_format.compilation_unit_descr) =
+  let provides = StringSet.singleton (Compilation_unit.name_as_string cmo.cu_name) in
+  let requires =
+    StringSet.of_list
+      (List.map cmo.cu_required_globals ~f:Compilation_unit.name_as_string)
+  in
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
     (not (Config.Flag.effects ()))
@@ -49,8 +52,11 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
   in
   let force_link = cmo.cu_force_link in
   let crcs =
-    List.fold_left cmo.cu_imports ~init:StringMap.empty ~f:(fun acc (s, o) ->
-        StringMap.add s o acc)
+    Array.fold_left cmo.cu_imports ~init:StringMap.empty ~f:(fun acc info ->
+        StringMap.add
+          (Compilation_unit.Name.to_string (Import_info.name info))
+          (Import_info.crc info)
+          acc)
   in
   { provides; requires; primitives = []; force_link; effects_without_cps; crcs }
 

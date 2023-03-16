@@ -2515,8 +2515,9 @@ end = struct
 
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
-    let orig_crcs : (string * Digest.t option) list = input_value ic in
-    orig_crcs
+    let orig_crcs : Import_info.t array = input_value ic in
+    List.map (Array.to_list orig_crcs) ~f:(fun import ->
+        Import_info.name import |> Compilation_unit.Name.to_string, Import_info.crc import)
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -2690,7 +2691,9 @@ let from_exe
     then
       Ocaml_compiler.Symtable.GlobalMap.fold
         (fun id num acc ->
-          if num > exception_ids && Ident.global id && is_module (Ident.name id)
+          if num > exception_ids
+             && Ident.is_global_or_predef id
+             && is_module (Ident.name id)
           then StringSet.add (Ident.name id) acc
           else acc)
         symbols
@@ -2901,7 +2904,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     if include_cmis
     then
       List.fold_left l ~init:StringSet.empty ~f:(fun acc (compunit, _) ->
-          StringSet.add compunit.Cmo_format.cu_name acc)
+          StringSet.add (Compilation_unit.name_as_string compunit.Cmo_format.cu_name) acc)
     else StringSet.empty
   in
   { code = prepend prog body; cmis; debug = debug_data }
@@ -2964,7 +2967,7 @@ let from_channel ic =
           then raise Magic_number.(Bad_magic_version magic);
           let compunit_pos = input_binary_int ic in
           seek_in ic compunit_pos;
-          let compunit : Cmo_format.compilation_unit = input_value ic in
+          let compunit : Cmo_format.compilation_unit_descr = input_value ic in
           `Cmo compunit
       | `Cma ->
           if Config.Flag.check_magic ()
