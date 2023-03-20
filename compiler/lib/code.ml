@@ -77,7 +77,9 @@ module Var : sig
 
   val get_loc : t -> Parse_info.t option
 
-  val loc : t -> Parse_info.t -> unit
+  val get_mode : t -> (Types.type_expr * Types.value_mode) option
+
+  val info : t -> Parse_info.t * (Types.type_expr * Types.value_mode) -> unit
 
   val name : t -> string -> unit
 
@@ -141,13 +143,13 @@ end = struct
 
   let printer = Var_printer.create Var_printer.Alphabet.javascript
 
-  let locations = Hashtbl.create 17
+  let information = Hashtbl.create 17
 
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
-    Hashtbl.clear locations;
+    Hashtbl.clear information;
     Var_printer.reset printer
 
   let to_string ?origin i = Var_printer.to_string printer ?origin i
@@ -158,13 +160,17 @@ end = struct
 
   let name i nm = Var_printer.name printer i nm
 
-  let loc i pi = Hashtbl.add locations i pi
+  let info i pi = Hashtbl.add information i pi
 
   (*;
     Format.eprintf "loc for %d : %d-%d\n%!"
                    i pi.Parse_info.line pi.Parse_info.col
   *)
-  let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
+  let get_loc i = try Some (fst (Hashtbl.find information i)) with Not_found -> None
+
+  let get_mode i = try Some (snd (Hashtbl.find information i)) with Not_found -> None
+
+  let get_info i = try Some (Hashtbl.find information i) with Not_found -> None
 
   let fresh () =
     incr last_var;
@@ -185,9 +191,9 @@ end = struct
 
   let propagate_name i j =
     Var_printer.propagate_name printer i j;
-    match get_loc i with
+    match get_info i with
     | None -> ()
-    | Some l -> loc j l
+    | Some l -> info j l
 
   let set_pretty b = Var_printer.set_pretty printer b
 

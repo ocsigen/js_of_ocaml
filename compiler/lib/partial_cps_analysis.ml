@@ -39,19 +39,21 @@ let add_tail_dep deps x y =
       (fun s -> Some (Var.Set.add x (Option.value ~default:Var.Set.empty s)))
       !deps
 
-let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
+let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~global_function ~fun_name pc =
   let block = Addr.Map.find pc blocks in
   List.iter_last block.body ~f:(fun is_last (i, _) ->
       match i with
       | Let (x, Apply { f; _ }) -> (
           add_var vars x;
-          (match fun_name with
-          | None -> ()
-          | Some g ->
-              add_var vars g;
-              (* If a call point is in CPS, then the englobing
-                 function should be in CPS *)
-              add_dep deps g x);
+          (if not global_function
+          then
+            match fun_name with
+            | None -> ()
+            | Some g ->
+                add_var vars g;
+                (* If a call point is in CPS, then the englobing
+                   function should be in CPS *)
+                add_dep deps g x);
           match Var.Tbl.get info.Global_flow.info_approximation f with
           | Top -> ()
           | Values { known; others } ->
@@ -91,14 +93,101 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
       | Let (_, (Prim _ | Block _ | Constant _ | Field _))
       | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
 
+let alloc_mode m =
+  match m with
+  | Types.Amode m -> m
+  | Amodevar { Types.upper; _ } -> upper
+
+let mode m =
+  match m.Types.r_as_l with
+  | Types.Amode m -> m
+  | Amodevar { Types.upper; _ } -> upper
+
+(*
+let alloc_mode_const f (m : Types.alloc_mode_const) =
+  match m with
+  | Global -> Format.fprintf f "global"
+  | Local -> Format.fprintf f "local"
+
+let alloc_mode f m =
+  match m with
+  | Types.Amode m -> alloc_mode_const f m
+  | Amodevar { Types.upper; lower; _ } ->
+      Format.fprintf f "_%a_ %a" alloc_mode_const upper alloc_mode_const lower
+
+let value_mode f m =
+  Format.fprintf
+    f
+    "%a   {l:%a g:%a}"
+    alloc_mode_const
+    (mode m)
+    alloc_mode
+    m.Types.r_as_l
+    alloc_mode
+    m.Types.r_as_g
+
+let _ = value_mode
+*)
 let program_deps ~info ~vars ~tail_deps ~deps p =
   fold_closures
     p
-    (fun fun_name _ (pc, _) _ ->
+    (fun fun_name params (pc, _) _ ->
+      let global_function =
+        match fun_name with
+        | Some f -> (
+            let is_global x =
+              match Var.get_mode x with
+              | None -> false
+              | Some (_, m) -> (
+                  match mode m with
+                  | Global -> true
+                  | Local -> false)
+            in
+(*
+            Format.eprintf
+              "%s %a %b / %b /"
+              (Var.to_string f)
+              Var.print
+              f
+              (is_global f)
+              (is_global f && List.for_all ~f:is_global params);
+            List.iter ~f:(fun f -> Format.eprintf " %b" (is_global f)) params;
+            Format.eprintf "@.";
+*)            match Var.get_mode f with
+            | Some (ty, _) ->
+                let all_global, _ =
+                  List.fold_left
+                    ~f:(fun (b, ty) _ ->
+                      match Types.get_desc ty with
+                      | Tarrow ((_, m, _), _, ty', _) ->
+                          let is_global m =
+                            match alloc_mode m with
+                            | Global -> true
+                            | Local -> false
+                          in
+                          Format.eprintf " %b" (is_global m);
+                          b && is_global m, ty'
+                      | _ -> false, ty)
+                    ~init:(true, ty)
+                    params
+                in
+                Format.eprintf " ==> %b@." all_global;
+                is_global f && all_global
+            | None -> false)
+        | None -> true
+      in
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
+          block_deps
+            ~info
+            ~vars
+            ~tail_deps
+            ~deps
+            ~blocks:p.blocks
+            ~global_function
+            ~fun_name
+            pc)
         pc
         p.blocks
         ())

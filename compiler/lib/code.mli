@@ -68,9 +68,11 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val loc : t -> Parse_info.t -> unit
+  val info : t -> Parse_info.t * (Types.type_expr * Types.value_mode) -> unit
 
   val get_loc : t -> Parse_info.t option
+
+  val get_mode : t -> (Types.type_expr * Types.value_mode) option
 
   val get_name : t -> string option
 

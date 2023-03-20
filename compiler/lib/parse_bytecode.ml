@@ -138,6 +138,7 @@ end = struct
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
   let create ~include_cmis enabled =
+let enabled = true ||enabled in
     let names = enabled || Config.Flag.pretty () in
     { events_by_pc = Int_table.create 17
     ; units = Hashtbl.create 17
@@ -711,7 +712,10 @@ module State = struct
     | (j, ident) :: lrem, Var (v, _) :: srem when i = j ->
         (match Ocaml_compiler.find_loc_in_summary ident summary with
         | None -> ()
-        | Some loc -> Var.loc v (pi_of_loc debug loc));
+        | Some (loc, m) ->
+            (*            Format.eprintf "%a:%a@." Var.print v value_mode m;*)
+            (* *)
+            Var.info v (pi_of_loc debug loc, m));
         Var.name v (Ident.name ident);
         name_rec debug (i + 1) lrem srem summary
     | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary

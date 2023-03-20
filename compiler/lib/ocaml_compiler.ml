@@ -42,8 +42,8 @@ let rec constant_of_const : _ -> Code.constant =
 
 let rec find_loc_in_summary ident' = function
   | Env.Env_empty -> None
-  | Env.Env_value (_summary, ident, description, _) when Poly.(ident = ident') ->
-      Some description.Types.val_loc
+  | Env.Env_value (_summary, ident, description, mode) when Poly.(ident = ident') ->
+      Some (description.Types.val_loc, (description.Types.val_type, mode))
   | Env.Env_value (summary, _, _, _)
   | Env.Env_type (summary, _, _)
   | Env.Env_extension (summary, _, _)

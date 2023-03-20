@@ -18,7 +18,8 @@
 
 val constant_of_const : Lambda.structured_constant -> Code.constant
 
-val find_loc_in_summary : Ident.t -> Env.summary -> Location.t option
+val find_loc_in_summary :
+  Ident.t -> Env.summary -> (Location.t * (Types.type_expr * Types.value_mode)) option
 
 module Symtable : sig
   module GlobalMap : sig
