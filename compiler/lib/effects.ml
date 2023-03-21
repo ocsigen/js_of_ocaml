@@ -489,7 +489,10 @@ let rec cps_instr ~st ~wrap instr loc rem =
       | _ -> assert false)
   | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
       let exact = exact || Global_flow.exact_call st.flow_info f (List.length args) in
+if exact then
       (Let (x, Apply { f; args; exact }), loc) :: rem
+else
+      call_with_trampoline ~x ~f ~args ~exact ~loc ~rem
   | Let (x, Apply { f; args; _ }) when wrap ->
       let exact =
         Partial_cps_analysis.exact_cps_call
