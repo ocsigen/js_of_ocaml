@@ -2788,6 +2788,11 @@ module Reloc = struct
     ; primitives = Hashtbl.create 17
     }
 
+  let constant_of_const x = Ocaml_compiler.constant_of_const x
+    [@@if ocaml_version < (5, 1, 0)]
+
+  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
+
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
     if t.step2_started then assert false;
@@ -2795,7 +2800,7 @@ module Reloc = struct
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
     let slot_for_literal sc =
-      t.constants <- Ocaml_compiler.constant_of_const sc :: t.constants;
+      t.constants <- constant_of_const sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos
