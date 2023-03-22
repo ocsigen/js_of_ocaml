@@ -8,11 +8,8 @@ and "the Examples" refers to all files marked "Copyright CNRS
 Université Paris Diderot" in directory "examples" and its
 sub-directories.
 
-The Compiler and Library are distributed under the terms of the GNU
-Lesser General Public License version 2 (included below).
-
-The Examples are distributed under the terms of the GNU Lesser
-General Public License version 2 (included below).
+Both the Compiler and Library and the Examples are distributed under the
+terms of the GNU Lesser General Public License version 2 (included below).
 
 As a special exception to the GNU Lesser General Public License, you
 may link, statically or dynamically, a "work that uses the Library"
