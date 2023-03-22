@@ -101,6 +101,8 @@ module Line_writer : sig
 
   val write : ?source:Line_reader.t -> t -> string -> unit
 
+  val write_lines : ?source:Line_reader.t -> t -> string -> unit
+
   val lnum : t -> int
 end = struct
   type t =
@@ -133,6 +135,16 @@ end = struct
     let lnum_off = lnum_off + 1 in
     t.source <- source;
     t.lnum <- t.lnum + lnum_off
+
+  let write_lines ?source t lines =
+    let l = String.split_on_char ~sep:'\n' lines in
+    let rec w = function
+      | [ "" ] | [] -> ()
+      | s :: xs ->
+          write ?source t s;
+          w xs
+    in
+    w l
 
   let lnum t = t.lnum
 end
@@ -231,7 +243,10 @@ end = struct
     build_info, units
 end
 
-let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
+let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
+  (* we currently don't do anything with [toplevel]. It could be used
+     to conditionally include link_info ?*)
+  ignore (toplevel : bool);
   let t = Timer.make () in
   let oc = Line_writer.of_channel output in
   let warn_effects = ref false in
@@ -255,6 +270,7 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
           ~f:(fun (info : Unit_info.t) (requires, to_link, all) ->
             let all = StringSet.union all info.provides in
             if (not (Config.Flag.auto_link ()))
+               || mklib
                || cmo_file
                || linkall
                || info.force_link
@@ -266,7 +282,7 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
             else requires, to_link, all))
   in
   let skip = StringSet.diff all to_link in
-  if not (StringSet.is_empty missing)
+  if (not (StringSet.is_empty missing)) && not mklib
   then
     failwith
       (Printf.sprintf
@@ -290,6 +306,8 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
                   : int);
               sym_js := s :: !sym_js)
             u.Unit_info.provides));
+
+  let build_info_emitted = ref false in
   List.iter files ~f:(fun (file, (build_info_for_file, units)) ->
       let sm_for_file = ref None in
       let ic = Line_reader.open_ file in
@@ -311,7 +329,14 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
                  file
                  line
              with
-            | Keep | Build_info _ -> copy ic oc
+            | Keep -> copy ic oc
+            | Build_info bi ->
+                skip ic;
+                if not !build_info_emitted
+                then (
+                  let bi = if mklib then Build_info.with_kind bi `Cma else bi in
+                  Line_writer.write_lines oc (Build_info.to_string bi);
+                  build_info_emitted := true)
             | Drop -> skip ic
             | Unit ->
                 let u = Units.read ic Unit_info.empty in
@@ -327,7 +352,11 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
                   then
                     Format.eprintf
                       "Copy %s@."
-                      (String.concat ~sep:"," (StringSet.elements u.provides)))
+                      (String.concat ~sep:"," (StringSet.elements u.provides));
+                  if mklib
+                  then
+                    let u = if linkall then { u with force_link = true } else u in
+                    Line_writer.write_lines oc (Unit_info.to_string u))
                 else (
                   if debug ()
                   then
@@ -345,7 +374,7 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
                     skip ic
                   done)
             | Source_map x ->
-                Line_reader.drop ic;
+                skip ic;
                 sm_for_file := Some x);
             read ()
       in
@@ -380,7 +409,7 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
             (Parse_bytecode.Debug.create ~include_cmis:false false)
             code;
           let content = Buffer.contents b in
-          String.split_on_char ~sep:'\n' content |> List.iter ~f:(Line_writer.write oc));
+          Line_writer.write_lines oc content);
       (match !sm_for_file with
       | None -> ()
       | Some x -> sm := (x, !reloc) :: !sm);
@@ -424,8 +453,8 @@ let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
               Line_writer.write oc s));
       if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
 
-let link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map =
-  try link ~output ~linkall ~files ~resolve_sourcemap_url ~source_map
+let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
+  try link ~output ~linkall ~toplevel ~mklib ~files ~resolve_sourcemap_url ~source_map
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

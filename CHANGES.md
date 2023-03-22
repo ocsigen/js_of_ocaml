@@ -1,3 +1,9 @@
+# dev
+## Features/Changes
+* Compiler: jsoo link archive with -a (#1428)
+
+## Bug fixes
+
 # 5.1.1 (2023-03-15) - Lille
 ## Bug fixes
 * Compiler: fix jsoo link in presence of --disable use-js-string (#1430)
