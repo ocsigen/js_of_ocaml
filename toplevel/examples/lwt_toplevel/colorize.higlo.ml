@@ -5,7 +5,7 @@ let text ~a_class:cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ])
 
 let ocaml ~a_class:cl s =
   let tks = Higlo.Lang.parse ~lang:"ocaml" s in
-  let span' cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ]) in
+  let span' cl (s, _) = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ]) in
   let make_span = function
     | Higlo.Lang.Bcomment s -> span' "comment" s
     | Higlo.Lang.Constant s -> span' "constant" s
@@ -18,6 +18,7 @@ let ocaml ~a_class:cl s =
     | Higlo.Lang.String s -> span' "string" s
     | Higlo.Lang.Symbol (level, s) -> span' (Printf.sprintf "sym%d" level) s
     | Higlo.Lang.Text s -> span' "text" s
+    | Higlo.Lang.Title (_, s) -> span' "text" s
   in
   Tyxml_js.Html.(div ~a:[ a_class [ cl ] ] (List.map make_span tks))
 
