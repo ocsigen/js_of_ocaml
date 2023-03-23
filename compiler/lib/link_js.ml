@@ -281,16 +281,13 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
               , all )
             else requires, to_link, all))
   in
-  let skip = StringSet.diff all to_link in
+  let _skip = StringSet.diff all to_link in
   if (not (StringSet.is_empty missing)) && not mklib
   then
     failwith
       (Printf.sprintf
          "Could not find compilation unit for %s"
          (String.concat ~sep:", " (StringSet.elements missing)));
-  if debug ()
-  then
-    Format.eprintf "Not linking %s@." (String.concat ~sep:", " (StringSet.elements skip));
   if times () then Format.eprintf "  scan: %a@." Timer.print t;
   let sm = ref [] in
   let build_info = ref None in
@@ -309,6 +306,14 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
 
   let build_info_emitted = ref false in
   List.iter files ~f:(fun (file, (build_info_for_file, units)) ->
+      let is_runtime =
+        match build_info_for_file with
+        | Some bi -> (
+            match Build_info.kind bi with
+            | `Runtime -> Some bi
+            | `Cma | `Exe | `Cmo | `Unknown -> None)
+        | None -> None
+      in
       let sm_for_file = ref None in
       let ic = Line_reader.open_ file in
       let skip ic = Line_reader.drop ic in
@@ -334,7 +339,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                 skip ic;
                 if not !build_info_emitted
                 then (
-                  let bi = if mklib then Build_info.with_kind bi `Cma else bi in
+                  let bi = Build_info.with_kind bi (if mklib then `Cma else `Unknown) in
                   Line_writer.write_lines oc (Build_info.to_string bi);
                   build_info_emitted := true)
             | Drop -> skip ic
@@ -348,15 +353,31 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                     warn
                       "Warning: your program contains effect handlers; you should \
                        probably run js_of_ocaml with option '--enable=effects'@.");
+                  (if mklib
+                   then
+                     let u = if linkall then { u with force_link = true } else u in
+                     Line_writer.write_lines oc (Unit_info.to_string u));
+                  let size = ref 0 in
+                  while
+                    match Line_reader.peek ic with
+                    | None -> false
+                    | Some line -> (
+                        match prefix_kind line with
+                        | `Other ->
+                            size := !size + String.length line + 1;
+                            true
+                        | `Json_base64 _ | `Url _ | `Build_info _ | `Unit -> false)
+                  do
+                    copy ic oc
+                  done;
                   if debug ()
                   then
                     Format.eprintf
-                      "Copy %s@."
-                      (String.concat ~sep:"," (StringSet.elements u.provides));
-                  if mklib
-                  then
-                    let u = if linkall then { u with force_link = true } else u in
-                    Line_writer.write_lines oc (Unit_info.to_string u))
+                      "Copy %d bytes for %s@."
+                      !size
+                      (match is_runtime with
+                      | None -> String.concat ~sep:", " (StringSet.elements u.provides)
+                      | Some _ -> "the js runtime"))
                 else (
                   if debug ()
                   then
@@ -381,14 +402,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
       read ();
       Line_writer.write oc "";
       Line_reader.close ic;
-      let is_runtime =
-        match build_info_for_file with
-        | Some bi -> (
-            match Build_info.kind bi with
-            | `Runtime -> Some bi
-            | `Cma | `Exe | `Cmo | `Unknown -> None)
-        | None -> None
-      in
       (match is_runtime with
       | None -> ()
       | Some bi ->
