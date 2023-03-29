@@ -178,6 +178,7 @@ let generate
     ((p, live_vars), cps_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
+  Wa_generate.f ~live_vars p;
   Generate.f
     p
     ~exported_runtime
