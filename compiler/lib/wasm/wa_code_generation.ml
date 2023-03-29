@@ -13,12 +13,17 @@ https://github.com/llvm/llvm-project/issues/58438
 (* binaryen does not support block input parameters
    https://github.com/WebAssembly/binaryen/issues/5047 *)
 
+type context = { mutable other_fields : W.module_field list }
+
+let make_context () = { other_fields = [] }
+
 type var = int
 
 and state =
   { var_count : int
   ; vars : var Var.Map.t
   ; instrs : W.instruction list
+  ; context : context
   }
 
 and 'a t = state -> 'a * state
@@ -41,6 +46,11 @@ let expression_list f l =
         loop (x :: acc) r
   in
   loop [] l
+
+let register_global name typ init st =
+  st.context.other_fields <-
+    W.Global { name = S name; typ; init } :: st.context.other_fields;
+  (), st
 
 let var x st =
   try Var.Map.find x st.vars, st
@@ -159,6 +169,11 @@ let assign x e =
   let* e = e in
   instr (W.LocalSet (x, e))
 
+let seq l e =
+  let* instrs = blk l in
+  let* e = e in
+  return (W.Seq (instrs, e))
+
 let drop e =
   let* e = e in
   instr (Drop e)
@@ -179,7 +194,7 @@ let if_ ty e l1 l2 =
   | W.UnOp (I32 Eqz, e') -> instr (If (ty, e', instrs2, instrs1))
   | _ -> instr (If (ty, e, instrs1, instrs2))
 
-let function_body ~body =
-  let st = { var_count = 0; vars = Var.Map.empty; instrs = [] } in
+let function_body ~context ~body =
+  let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   st.var_count, List.rev st.instrs

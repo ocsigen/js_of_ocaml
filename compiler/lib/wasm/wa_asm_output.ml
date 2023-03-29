@@ -285,7 +285,7 @@ let f fields =
     ~f:(fun f ->
       match f with
       | Import { name; _ } -> Var_printer.add_reserved name
-      | Function _ -> ())
+      | Function _ | Global _ -> ())
     fields;
   to_channel stdout
   @@
@@ -294,11 +294,30 @@ let f fields =
       ~f:(fun f ->
         match f with
         | Function { name; typ; _ } -> Some (Code.Var.to_string name, typ)
-        | Import { name; desc = Fun typ } -> Some (name, typ))
+        | Import { name; desc = Fun typ } -> Some (name, typ)
+        | Global _ -> None)
+      fields
+  in
+  let globals =
+    List.filter_map
+      ~f:(fun f ->
+        match f with
+        | Function _ | Import _ -> None
+        | Global { name; typ; init } ->
+            assert (Poly.equal init (Const (I32 0l)));
+            Some (name, typ))
       fields
   in
   let define_symbol name =
     line (string ".hidden " ^^ string name) ^^ line (string ".globl " ^^ string name)
+  in
+  let declare_global name { mut; typ } =
+    line
+      (string ".globaltype "
+      ^^ symbol name 0
+      ^^ string ", "
+      ^^ value_type typ
+      ^^ if mut then empty else string ", immutable")
   in
   let declare_func_type name typ =
     line (string ".functype " ^^ string name ^^ string " " ^^ func_type typ)
@@ -331,8 +350,10 @@ let f fields =
                          (string ".local " ^^ separate_map (string ", ") value_type locals))
                  ^^ concat_map instruction body
                  ^^ line (string "end_function"))
-        | Import _ -> empty)
+        | Import _ | Global _ -> empty)
       fields
   in
-  indent (concat_map (fun (name, typ) -> declare_func_type name typ) types)
+  indent
+    (concat_map (fun (name, typ) -> declare_global name typ) globals
+    ^^ concat_map (fun (name, typ) -> declare_func_type name typ) types)
   ^^ function_section

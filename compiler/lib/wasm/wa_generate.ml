@@ -13,6 +13,7 @@ type ctx =
   { live : int array
   ; blocks : block Addr.Map.t
   ; mutable primitives : W.func_type StringMap.t
+  ; global_context : Wa_code_generation.context
   }
 
 let register_primitive ctx nm typ =
@@ -25,10 +26,23 @@ let func_type n =
 
 let rec translate_expr ctx e =
   match e with
-  | Apply _ | Block _ | Field _ | Closure _ | Constant _ -> (*ZZZ*) Arith.const 0l
+  | Apply _ -> (*ZZZ*) Arith.const 0l
+  | Block (tag, a, _) ->
+      Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
+  | Field (x, n) -> Memory.field (load x) n
+  | Closure _ | Constant _ -> (*ZZZ*) Arith.const 0l
   | Prim (p, l) -> (
       let l = List.map ~f:transl_prim_arg l in
       match p, l with
+      | Extern "caml_array_unsafe_get", [ x; y ] -> Memory.array_get x y
+      | Extern "caml_array_unsafe_set", [ x; y; z ] ->
+          seq (Memory.array_set x y z) Value.unit
+      | Extern "caml_string_unsafe_get", [ x; y ] -> Memory.bytes_get x y
+      | Extern "caml_string_unsafe_set", [ x; y; z ] ->
+          seq (Memory.bytes_set x y z) Value.unit
+      | Extern "caml_bytes_unsafe_get", [ x; y ] -> Memory.bytes_get x y
+      | Extern "caml_bytes_unsafe_set", [ x; y; z ] ->
+          seq (Memory.bytes_set x y z) Value.unit
       | Extern "%int_add", [ x; y ] -> Value.int_add x y
       | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
       | Extern "%int_mul", [ x; y ] -> Value.int_mul x y
@@ -56,9 +70,9 @@ let rec translate_expr ctx e =
       | Eq, [ x; y ] -> Value.eq x y
       | Neq, [ x; y ] -> Value.neq x y
       | Ult, [ x; y ] -> Value.ult x y
-      | Array_get, [ _x; _y ] -> (*ZZZ*) Arith.const 0l
+      | Array_get, [ x; y ] -> Memory.array_get x y
       | IsInt, [ x ] -> Value.is_int x
-      | Vectlength, [ _x ] -> (*ZZZ*) Arith.const 0l
+      | Vectlength, [ x ] -> Memory.block_length x
       | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
           assert false)
 
@@ -69,7 +83,14 @@ and translate_instr ctx (i, _) =
       if ctx.live.(Var.idx x) = 0
       then drop (translate_expr ctx e)
       else store x (translate_expr ctx e)
-  | Set_field _ | Offset_ref _ | Array_set _ -> (*ZZZ*) return ()
+  | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
+  | Offset_ref (x, n) ->
+      Memory.set_field
+        (load x)
+        0
+        (Value.val_int
+           Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
+  | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
 
 and translate_instrs ctx l =
   match l with
@@ -206,7 +227,29 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
             match fall_through with
             | `Return -> instr (Push e)
             | `Block _ -> instr (Return (Some e)))
-        | Switch _ | Raise _ | Pushtrap _ | Poptrap _ -> return ())
+        | Switch (x, a1, a2) -> (
+            let br_table e a context =
+              let len = Array.length a in
+              let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
+              let dest (pc, args) =
+                assert (List.is_empty args);
+                index pc 0 context
+              in
+              let* e = e in
+              instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
+            in
+            match a1, a2 with
+            | [||], _ -> br_table (Memory.tag (load x)) a2 context
+            | _, [||] -> br_table (Value.int_val (load x)) a1 context
+            | _ ->
+                (*ZZZ Use Br_on_cast *)
+                let context' = extend_context fall_through context in
+                if_
+                  { params = []; result = result_typ }
+                  (Value.check_is_int (load x))
+                  (br_table (Value.int_val (load x)) a1 context')
+                  (br_table (Memory.tag (load x)) a2 context'))
+        | Raise _ | Pushtrap _ | Poptrap _ -> return ())
   and translate_branch result_typ fall_through src (dst, args) context =
     let* () =
       if List.is_empty args
@@ -247,6 +290,7 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
   in
   let local_count, body =
     function_body
+      ~context:ctx.global_context
       ~body:
         (let* () = build_initial_env in
          translate_branch [ Value.value ] `Return (-1) cont [])
@@ -263,9 +307,12 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
     }
   :: acc
 
-let entry_point toplevel_fun entry_name =
-  let body = drop (return (W.Call (V toplevel_fun, []))) in
-  let _, body = function_body ~body in
+let entry_point ctx toplevel_fun entry_name =
+  let body =
+    let* () = entry_point ~register_primitive:(register_primitive ctx) in
+    drop (return (W.Call (V toplevel_fun, [])))
+  in
+  let _, body = function_body ~context:ctx.global_context ~body in
   W.Function
     { name = Var.fresh_n "entry_point"
     ; exported_name = Some entry_name
@@ -285,7 +332,13 @@ let f
   (*
   Code.Print.program (fun _ _ -> "") p;
 *)
-  let ctx = { live = live_vars; blocks = p.blocks; primitives = StringMap.empty } in
+  let ctx =
+    { live = live_vars
+    ; blocks = p.blocks
+    ; primitives = StringMap.empty
+    ; global_context = make_context ()
+    }
+  in
   let toplevel_name = Var.fresh_n "toplevel" in
   let functions =
     Code.fold_closures
@@ -299,8 +352,12 @@ let f
       ~f:(fun (name, ty) -> W.Import { name; desc = Fun ty })
       (StringMap.bindings ctx.primitives)
   in
-  let start_function = entry_point toplevel_name "kernel_run" in
-  let fields = primitives @ functions @ [ start_function ] in
+  let start_function = entry_point ctx toplevel_name "kernel_run" in
+  let fields =
+    List.rev_append
+      ctx.global_context.other_fields
+      (primitives @ functions @ [ start_function ])
+  in
   fields
 
 let f (p : Code.program) ~live_vars =

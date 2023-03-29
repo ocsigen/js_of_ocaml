@@ -1,6 +1,27 @@
 module type S = sig
   type expression = Wa_code_generation.expression
 
+  module Memory : sig
+    val allocate :
+      tag:int -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list -> expression
+
+    val tag : expression -> expression
+
+    val field : expression -> int -> expression
+
+    val set_field : expression -> int -> expression -> unit Wa_code_generation.t
+
+    val array_get : expression -> expression -> expression
+
+    val array_set : expression -> expression -> expression -> unit Wa_code_generation.t
+
+    val bytes_get : expression -> expression -> expression
+
+    val bytes_set : expression -> expression -> expression -> unit Wa_code_generation.t
+
+    val block_length : expression -> expression
+  end
+
   module Value : sig
     val value : Wa_ast.value_type
 
@@ -50,4 +71,7 @@ module type S = sig
 
     val int_asr : expression -> expression -> expression
   end
+
+  val entry_point :
+    register_primitive:(string -> Wa_ast.func_type -> unit) -> unit Wa_code_generation.t
 end

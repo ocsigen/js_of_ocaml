@@ -1,3 +1,7 @@
+type context = { mutable other_fields : Wa_ast.module_field list }
+
+val make_context : unit -> context
+
 type 'a t
 
 type expression = Wa_ast.expression t
@@ -7,6 +11,8 @@ val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
 val return : 'a -> 'a t
 
 val instr : Wa_ast.instruction -> unit t
+
+val seq : unit t -> expression -> expression
 
 val expression_list : ('a -> expression) -> 'a list -> Wa_ast.expression list t
 
@@ -62,4 +68,6 @@ val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 
 val add_var : Wa_ast.var -> int t
 
-val function_body : body:unit t -> int * Wa_ast.instruction list
+val register_global : string -> Wa_ast.global_type -> Wa_ast.expression -> unit t
+
+val function_body : context:context -> body:unit t -> int * Wa_ast.instruction list

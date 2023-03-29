@@ -9,6 +9,13 @@ type value_type =
   | I64
   | F64
 
+type 'typ mut_type =
+  { mut : bool
+  ; typ : 'typ
+  }
+
+type global_type = value_type mut_type
+
 type func_type =
   { params : value_type list
   ; result : value_type list
@@ -116,6 +123,11 @@ type module_field =
       ; typ : func_type
       ; locals : value_type list
       ; body : instruction list
+      }
+  | Global of
+      { name : symbol
+      ; typ : global_type
+      ; init : expression
       }
   | Import of
       { name : string
