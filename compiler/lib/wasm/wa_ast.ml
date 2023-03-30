@@ -116,6 +116,14 @@ and instruction =
 
 type import_desc = Fun of func_type
 
+type data =
+  | DataI8 of int
+  | DataI32 of int32
+  | DataI64 of int64
+  | DataBytes of string
+  | DataSym of symbol * int
+  | DataSpace of int
+
 type module_field =
   | Function of
       { name : var
@@ -123,6 +131,12 @@ type module_field =
       ; typ : func_type
       ; locals : value_type list
       ; body : instruction list
+      }
+  | Data of
+      { name : var
+      ; active : bool
+      ; read_only : bool
+      ; contents : data list
       }
   | Global of
       { name : symbol

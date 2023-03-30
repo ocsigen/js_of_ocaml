@@ -72,6 +72,10 @@ module type S = sig
     val int_asr : expression -> expression -> expression
   end
 
+  module Constant : sig
+    val translate : Code.constant -> expression
+  end
+
   val entry_point :
     register_primitive:(string -> Wa_ast.func_type -> unit) -> unit Wa_code_generation.t
 end

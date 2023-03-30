@@ -13,9 +13,12 @@ https://github.com/llvm/llvm-project/issues/58438
 (* binaryen does not support block input parameters
    https://github.com/WebAssembly/binaryen/issues/5047 *)
 
-type context = { mutable other_fields : W.module_field list }
+type context =
+  { mutable data_segments : (bool * W.data list) Var.Map.t
+  ; mutable other_fields : W.module_field list
+  }
 
-let make_context () = { other_fields = [] }
+let make_context () = { data_segments = Var.Map.empty; other_fields = [] }
 
 type var = int
 
@@ -46,6 +49,8 @@ let expression_list f l =
         loop (x :: acc) r
   in
   loop [] l
+
+let get_context st = st.context, st
 
 let register_global name typ init st =
   st.context.other_fields <-

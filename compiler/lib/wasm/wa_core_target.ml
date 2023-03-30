@@ -132,6 +132,66 @@ module Value = struct
   let int_asr i i' = Arith.((i asr int_val i') lor const 1l)
 end
 
+module Constant = struct
+  let rec translate_rec context c =
+    match c with
+    | Code.Int i -> W.DataI32 Int32.(add (add i i) 1l)
+    | Tuple (tag, a, _) ->
+        let h = Memory.header ~const:true ~tag ~len:(Array.length a) () in
+        let name = Code.Var.fresh_n "block" in
+        let block =
+          W.DataI32 h :: List.map ~f:(fun c -> translate_rec context c) (Array.to_list a)
+        in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+    | NativeString (Byte s | Utf (Utf8 s)) | String s ->
+        let l = String.length s in
+        let len = (l + 4) / 4 in
+        let h = Memory.header ~const:true ~tag:Obj.string_tag ~len () in
+        let name = Code.Var.fresh_n "str" in
+        let extra = (4 * len) - l - 1 in
+        let string =
+          W.DataI32 h
+          :: DataBytes s
+          :: (if extra = 0 then [ DataI8 0 ] else [ DataSpace extra; DataI8 extra ])
+        in
+        context.data_segments <-
+          Code.Var.Map.add name (true, string) context.data_segments;
+        W.DataSym (V name, 4)
+    | Float f ->
+        let h = Memory.header ~const:true ~tag:Obj.double_tag ~len:2 () in
+        let name = Code.Var.fresh_n "float" in
+        let block = [ W.DataI32 h; DataI64 (Int64.bits_of_float f) ] in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+    | Float_array l ->
+        (*ZZZ Boxed array? *)
+        let l = Array.to_list l in
+        let h =
+          Memory.header ~const:true ~tag:Obj.double_array_tag ~len:(List.length l) ()
+        in
+        let name = Code.Var.fresh_n "float_array" in
+        let block =
+          W.DataI32 h :: List.map ~f:(fun f -> translate_rec context (Float f)) l
+        in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+    | Int64 i ->
+        let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
+        let name = Code.Var.fresh_n "int64" in
+        let block = [ W.DataI32 h; DataSym (S "caml_int64_ops", 0); DataI64 i ] in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+
+  let translate c =
+    let* context = get_context in
+    return
+      (match translate_rec context c with
+      | W.DataSym (V name, offset) -> W.ConstSym (V name, offset)
+      | W.DataI32 i -> W.Const (I32 i)
+      | _ -> assert false)
+end
+
 let entry_point ~register_primitive =
   let declare_global name =
     register_global name { mut = true; typ = I32 } (Const (I32 0l))

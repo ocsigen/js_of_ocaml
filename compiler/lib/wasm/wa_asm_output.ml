@@ -276,6 +276,16 @@ and instruction i =
   | Nop -> empty
   | Push e -> expression e
 
+let escape_string s =
+  let b = Buffer.create (String.length s + 2) in
+  for i = 0 to String.length s - 1 do
+    let c = s.[i] in
+    if Poly.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
+    then Buffer.add_char b c
+    else Printf.bprintf b "\\x%02x" (Char.code c)
+  done;
+  Buffer.contents b
+
 let section_header kind name =
   line
     (string ".section ." ^^ string kind ^^ string "." ^^ string name ^^ string ",\"\",@")
@@ -285,7 +295,7 @@ let f fields =
     ~f:(fun f ->
       match f with
       | Import { name; _ } -> Var_printer.add_reserved name
-      | Function _ | Global _ -> ())
+      | Function _ | Data _ | Global _ -> ())
     fields;
   to_channel stdout
   @@
@@ -295,14 +305,14 @@ let f fields =
         match f with
         | Function { name; typ; _ } -> Some (Code.Var.to_string name, typ)
         | Import { name; desc = Fun typ } -> Some (name, typ)
-        | Global _ -> None)
+        | Data _ | Global _ -> None)
       fields
   in
   let globals =
     List.filter_map
       ~f:(fun f ->
         match f with
-        | Function _ | Import _ -> None
+        | Function _ | Import _ | Data _ -> None
         | Global { name; typ; init } ->
             assert (Poly.equal init (Const (I32 0l)));
             Some (name, typ))
@@ -321,6 +331,58 @@ let f fields =
   in
   let declare_func_type name typ =
     line (string ".functype " ^^ string name ^^ string " " ^^ func_type typ)
+  in
+  let data_sections =
+    concat_map
+      (fun f ->
+        match f with
+        | Function _ | Import _ -> empty
+        | Data { name; read_only; active; contents } ->
+            assert active;
+            (* Not supported *)
+            let name = Code.Var.to_string name in
+            let size =
+              List.fold_left
+                ~init:0
+                ~f:(fun s d ->
+                  s
+                  +
+                  match d with
+                  | DataI8 _ -> 1
+                  | DataI32 _ | DataSym _ -> 4
+                  | DataI64 _ -> 8
+                  | DataBytes b -> String.length b
+                  | DataSpace n -> n)
+                contents
+            in
+            indent
+              (section_header (if read_only then "rodata" else "data") name
+              ^^ define_symbol name
+              ^^ line (string ".p2align 2")
+              ^^ line (string ".size " ^^ string name ^^ string ", " ^^ integer size))
+            ^^ line (string name ^^ string ":")
+            ^^ indent
+                 (concat_map
+                    (fun d ->
+                      line
+                        (match d with
+                        | DataI8 i -> string ".int8 " ^^ integer i
+                        | DataI32 i -> string ".int32 " ^^ integer32 i
+                        | DataI64 i -> string ".int64 " ^^ integer64 i
+                        | DataBytes b ->
+                            string ".ascii \"" ^^ string (escape_string b) ^^ string "\""
+                        | DataSym (name, offset) -> string ".int32 " ^^ symbol name offset
+                        | DataSpace n -> string ".space " ^^ integer n))
+                    contents)
+        | Global { name; _ } ->
+            let name =
+              match name with
+              | V name -> Code.Var.to_string name
+              | S name -> name
+            in
+            indent (section_header "data" name ^^ define_symbol name)
+            ^^ line (string name ^^ string ":"))
+      fields
   in
   let function_section =
     concat_map
@@ -350,10 +412,11 @@ let f fields =
                          (string ".local " ^^ separate_map (string ", ") value_type locals))
                  ^^ concat_map instruction body
                  ^^ line (string "end_function"))
-        | Import _ | Global _ -> empty)
+        | Import _ | Data _ | Global _ -> empty)
       fields
   in
   indent
     (concat_map (fun (name, typ) -> declare_global name typ) globals
     ^^ concat_map (fun (name, typ) -> declare_func_type name typ) types)
   ^^ function_section
+  ^^ data_sections

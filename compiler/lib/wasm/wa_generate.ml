@@ -7,7 +7,7 @@ open Wa_core_target
 let transl_prim_arg x =
   match x with
   | Pv x -> load x
-  | Pc _ -> (*ZZZ*) Arith.const 0l
+  | Pc c -> Constant.translate c
 
 type ctx =
   { live : int array
@@ -30,7 +30,8 @@ let rec translate_expr ctx e =
   | Block (tag, a, _) ->
       Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
   | Field (x, n) -> Memory.field (load x) n
-  | Closure _ | Constant _ -> (*ZZZ*) Arith.const 0l
+  | Closure _ -> (*ZZZ*) Arith.const 0l
+  | Constant c -> Constant.translate c
   | Prim (p, l) -> (
       let l = List.map ~f:transl_prim_arg l in
       match p, l with
@@ -352,11 +353,17 @@ let f
       ~f:(fun (name, ty) -> W.Import { name; desc = Fun ty })
       (StringMap.bindings ctx.primitives)
   in
+  let constant_data =
+    List.map
+      ~f:(fun (name, (active, contents)) ->
+        W.Data { name; read_only = true; active; contents })
+      (Var.Map.bindings ctx.global_context.data_segments)
+  in
   let start_function = entry_point ctx toplevel_name "kernel_run" in
   let fields =
     List.rev_append
       ctx.global_context.other_fields
-      (primitives @ functions @ [ start_function ])
+      (primitives @ functions @ (start_function :: constant_data))
   in
   fields
 

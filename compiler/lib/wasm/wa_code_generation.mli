@@ -1,4 +1,7 @@
-type context = { mutable other_fields : Wa_ast.module_field list }
+type context =
+  { mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
+  ; mutable other_fields : Wa_ast.module_field list
+  }
 
 val make_context : unit -> context
 
@@ -69,5 +72,7 @@ val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 val add_var : Wa_ast.var -> int t
 
 val register_global : string -> Wa_ast.global_type -> Wa_ast.expression -> unit t
+
+val get_context : context t
 
 val function_body : context:context -> body:unit t -> int * Wa_ast.instruction list
