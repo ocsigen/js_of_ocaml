@@ -1042,21 +1042,5 @@ let%expect_test "label parsing" =
     {|
 get:{of:{from:{async:{break async}break from}break of}break get}
 |};
-  [%expect.unreachable]
-[@@expect.uncaught_exn {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-
-  ("Js_of_ocaml_compiler.Parse_js.Parsing_error(_)")
-  Raised at Js_of_ocaml_compiler__Parse_js.parse_aux in file "compiler/lib/parse_js.ml", line 425, characters 6-37
-  Called from Js_of_ocaml_compiler__Parse_js.parse' in file "compiler/lib/parse_js.ml", line 440, characters 16-59
-  Called from Js_parser_printer_15__Js_parser_printer.parse_print_token in file "compiler/tests-compiler/js_parser_printer.ml", line 700, characters 8-27
-  Re-raised at Js_parser_printer_15__Js_parser_printer.parse_print_token in file "compiler/tests-compiler/js_parser_printer.ml", line 703, characters 6-13
-  Called from Js_parser_printer_15__Js_parser_printer.(fun) in file "compiler/tests-compiler/js_parser_printer.ml", line 1040, characters 2-110
-  Called from Expect_test_collector.Make.Instance_io.exec in file "collector/expect_test_collector.ml", line 262, characters 12-19
-
-  Trailing output
-  ---------------
-
-  cannot parse l:2:3@. |}]
+  [%expect
+    {| 2: 0:get, 3::, 4:{, 5:of, 7::, 8:{, 9:from, 13::, 14:{, 15:async, 20::, 21:{, 22:break, 28:async, 0:; (virtual), 33:}, 34:break, 40:from, 0:; (virtual), 44:}, 45:break, 51:of, 0:; (virtual), 53:}, 54:break, 60:get, 0:; (virtual), 63:}, |}]

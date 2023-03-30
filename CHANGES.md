@@ -4,6 +4,7 @@
 
 ## Bug fixes
 * Compiler: put custom header at the top of the output file (fix #1441)
+* Compiler (js parser): fix parsing of js labels (fix #1440)
 
 # 5.1.1 (2023-03-15) - Lille
 ## Bug fixes
