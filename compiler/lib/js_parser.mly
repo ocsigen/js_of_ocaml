@@ -509,9 +509,7 @@ stmt1:
  | debugger_stmt   { $1 }
 
 label:
-  | T_IDENTIFIER {
-          let name, _raw = $1 in
-          Label.of_string name }
+  | id { Label.of_string $1 }
 
 (* Library definitions *)
 
