@@ -3,6 +3,7 @@
 * Compiler: jsoo link archive with -a (#1428)
 
 ## Bug fixes
+* Compiler: put custom header at the top of the output file (fix #1441)
 
 # 5.1.1 (2023-03-15) - Lille
 ## Bug fixes
