@@ -12,6 +12,7 @@ let transl_prim_arg x =
 type ctx =
   { live : int array
   ; blocks : block Addr.Map.t
+  ; closures : Wa_closure_conversion.closure Var.Map.t
   ; mutable primitives : W.func_type StringMap.t
   ; global_context : Wa_code_generation.context
   }
@@ -24,13 +25,28 @@ let register_primitive ctx nm typ =
 let func_type n =
   { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
-let rec translate_expr ctx e =
+let rec translate_expr ctx x e =
   match e with
-  | Apply _ -> (*ZZZ*) Arith.const 0l
+  | Apply { f; args; _ } ->
+      (*ZZZ*)
+      let rec loop acc l =
+        match l with
+        | [] ->
+            let arity = List.length args in
+            let funct = Var.fresh () in
+            let* closure = tee funct (load f) in
+            let* funct = Memory.load_function_pointer ~arity (load funct) in
+            return
+              (W.Call_indirect (func_type (arity + 1), funct, List.rev (closure :: acc)))
+        | x :: r ->
+            let* x = load x in
+            loop (x :: acc) r
+      in
+      loop [] args
   | Block (tag, a, _) ->
       Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
   | Field (x, n) -> Memory.field (load x) n
-  | Closure _ -> (*ZZZ*) Arith.const 0l
+  | Closure _ -> Closure.translate ~context:ctx.global_context ~closures:ctx.closures x
   | Constant c -> Constant.translate c
   | Prim (p, l) -> (
       let l = List.map ~f:transl_prim_arg l in
@@ -82,8 +98,8 @@ and translate_instr ctx (i, _) =
   | Assign (x, y) -> assign x (load y)
   | Let (x, e) ->
       if ctx.live.(Var.idx x) = 0
-      then drop (translate_expr ctx e)
-      else store x (translate_expr ctx e)
+      then drop (translate_expr ctx x e)
+      else store x (translate_expr ctx x e)
   | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
   | Offset_ref (x, n) ->
       Memory.set_field
@@ -278,8 +294,10 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
   in
   let build_initial_env =
     let* () = bind_parameters in
-    let* _ = add_var (Code.Var.fresh ()) in
-    return ()
+    match name_opt with
+    | Some f ->
+        Closure.bind_environment ~context:ctx.global_context ~closures:ctx.closures f
+    | None -> return ()
   in
   (*
   Format.eprintf "=== %d ===@." pc;
@@ -330,12 +348,14 @@ let f
     ~should_export
     ~warn_on_unhandled_effect
       _debug *) =
+  let p, closures = Wa_closure_conversion.f p in
   (*
   Code.Print.program (fun _ _ -> "") p;
 *)
   let ctx =
     { live = live_vars
     ; blocks = p.blocks
+    ; closures
     ; primitives = StringMap.empty
     ; global_context = make_context ()
     }

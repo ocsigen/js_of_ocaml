@@ -1,5 +1,6 @@
 type context =
-  { mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
+  { constants : (Wa_ast.var, Wa_ast.expression) Hashtbl.t
+  ; mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
   }
 
@@ -71,8 +72,12 @@ val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 
 val add_var : Wa_ast.var -> int t
 
+val define_var : Wa_ast.var -> expression -> unit t
+
 val register_global : string -> Wa_ast.global_type -> Wa_ast.expression -> unit t
 
 val get_context : context t
+
+val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> unit t
 
 val function_body : context:context -> body:unit t -> int * Wa_ast.instruction list

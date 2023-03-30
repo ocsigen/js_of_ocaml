@@ -14,13 +14,17 @@ https://github.com/llvm/llvm-project/issues/58438
    https://github.com/WebAssembly/binaryen/issues/5047 *)
 
 type context =
-  { mutable data_segments : (bool * W.data list) Var.Map.t
+  { constants : (Var.t, W.expression) Hashtbl.t
+  ; mutable data_segments : (bool * W.data list) Var.Map.t
   ; mutable other_fields : W.module_field list
   }
 
-let make_context () = { data_segments = Var.Map.empty; other_fields = [] }
+let make_context () =
+  { constants = Hashtbl.create 128; data_segments = Var.Map.empty; other_fields = [] }
 
-type var = int
+type var =
+  | Local of int
+  | Expr of W.expression t
 
 and state =
   { var_count : int
@@ -50,6 +54,10 @@ let expression_list f l =
   in
   loop [] l
 
+let register_data_segment x ~active v st =
+  st.context.data_segments <- Var.Map.add x (active, v) st.context.data_segments;
+  (), st
+
 let get_context st = st.context, st
 
 let register_global name typ init st =
@@ -59,17 +67,22 @@ let register_global name typ init st =
 
 let var x st =
   try Var.Map.find x st.vars, st
-  with Not_found ->
-    Format.eprintf "ZZZ %a@." Var.print x;
-    0, st
+  with Not_found -> (
+    try Expr (return (Hashtbl.find st.context.constants x)), st
+    with Not_found ->
+      Format.eprintf "ZZZ %a@." Var.print x;
+      Local 0, st)
 
 let add_var x ({ var_count; vars; _ } as st) =
   match Var.Map.find_opt x vars with
-  | Some i -> i, st
+  | Some (Local i) -> i, st
+  | Some (Expr _) -> assert false
   | None ->
       let i = var_count in
-      let vars = Var.Map.add x i vars in
+      let vars = Var.Map.add x (Local i) vars in
       i, { st with var_count = var_count + 1; vars }
+
+let define_var x e st = (), { st with vars = Var.Map.add x (Expr e) st.vars }
 
 let instr i : unit t = fun st -> (), { st with instrs = i :: st.instrs }
 
@@ -157,7 +170,9 @@ end
 
 let load x =
   let* x = var x in
-  return (W.LocalGet x)
+  match x with
+  | Local x -> return (W.LocalGet x)
+  | Expr e -> e
 
 let tee x e =
   let* e = e in
@@ -172,7 +187,9 @@ let store x e =
 let assign x e =
   let* x = var x in
   let* e = e in
-  instr (W.LocalSet (x, e))
+  match x with
+  | Local x -> instr (W.LocalSet (x, e))
+  | Expr _ -> assert false
 
 let seq l e =
   let* instrs = blk l in

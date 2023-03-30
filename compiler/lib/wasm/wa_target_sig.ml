@@ -5,6 +5,9 @@ module type S = sig
     val allocate :
       tag:int -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list -> expression
 
+    val load_function_pointer :
+      arity:int -> expression -> Wa_ast.expression Wa_code_generation.t
+
     val tag : expression -> expression
 
     val field : expression -> int -> expression
@@ -74,6 +77,20 @@ module type S = sig
 
   module Constant : sig
     val translate : Code.constant -> expression
+  end
+
+  module Closure : sig
+    val translate :
+         context:Wa_code_generation.context
+      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+      -> Code.Var.t
+      -> expression
+
+    val bind_environment :
+         context:Wa_code_generation.context
+      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+      -> Code.Var.t
+      -> unit Wa_code_generation.t
   end
 
   val entry_point :
