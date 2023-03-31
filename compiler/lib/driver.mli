@@ -26,7 +26,6 @@ val f :
   -> ?profile:profile
   -> ?linkall:bool
   -> ?source_map:Source_map.t
-  -> ?custom_header:string
   -> Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
@@ -37,7 +36,6 @@ val f' :
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> ?linkall:bool
-  -> ?custom_header:string
   -> Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program

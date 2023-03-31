@@ -187,11 +187,6 @@ let generate
     ~warn_on_unhandled_effect
     d
 
-let header formatter ~custom_header =
-  match custom_header with
-  | None -> ()
-  | Some c -> Pretty_print.string formatter (c ^ "\n")
-
 let debug_linker = Debug.find "linker"
 
 let extra_js_files =
@@ -399,10 +394,9 @@ let coloring js =
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
 
-let output formatter ~standalone ~custom_header ~source_map () js =
+let output formatter ~source_map () js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Writing file...@.";
-  if standalone then header ~custom_header formatter;
   let sm = Js_output.program formatter ?source_map js in
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
@@ -568,16 +562,7 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let full
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~linkall
-    ~source_map
-    ~custom_header
-    formatter
-    d
-    p =
+let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
   let exported_runtime = not standalone in
   let opt =
     specialize_js_once
@@ -595,7 +580,7 @@ let full
     +> pack ~wrap_with_fun ~standalone
     +> coloring
     +> check_js
-    +> output formatter ~standalone ~custom_header ~source_map ()
+    +> output formatter ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
@@ -603,26 +588,9 @@ let full
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 
-let full_no_source_map
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~linkall
-    ~custom_header
-    formatter
-    d
-    p =
+let full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p =
   let (_ : Source_map.t option) =
-    full
-      ~standalone
-      ~wrap_with_fun
-      ~profile
-      ~linkall
-      ~custom_header
-      ~source_map:None
-      formatter
-      d
-      p
+    full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None formatter d p
   in
   ()
 
@@ -632,39 +600,20 @@ let f
     ?(profile = O1)
     ?(linkall = false)
     ?source_map
-    ?custom_header
     formatter
     d
     p =
-  full
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~linkall
-    ~source_map
-    ~custom_header
-    formatter
-    d
-    p
+  full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p
 
 let f'
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ?(linkall = false)
-    ?custom_header
     formatter
     d
     p =
-  full_no_source_map
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~linkall
-    ~custom_header
-    formatter
-    d
-    p
+  full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
@@ -673,7 +622,6 @@ let from_string ~prims ~debug s formatter =
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~linkall:false
-    ~custom_header:None
     formatter
     d
     p
