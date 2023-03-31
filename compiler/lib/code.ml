@@ -662,6 +662,25 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
   let accu = visit blocks start f accu in
   f None [] (start, []) accu
 
+let fold_closures_outermost_first { start; blocks; _ } f accu =
+  let rec visit blocks pc f accu =
+    traverse
+      { fold = fold_children }
+      (fun pc accu ->
+        let block = Addr.Map.find pc blocks in
+        List.fold_left block.body ~init:accu ~f:(fun accu i ->
+            match i with
+            | Let (x, Closure (params, cont)), _ ->
+                let accu = f (Some x) params cont accu in
+                visit blocks (fst cont) f accu
+            | _ -> accu))
+      pc
+      blocks
+      accu
+  in
+  let accu = f None [] (start, []) accu in
+  visit blocks start f accu
+
 let eq p1 p2 =
   p1.start = p2.start
   && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks

@@ -58,7 +58,7 @@ val load : Wa_ast.var -> expression
 
 val tee : Wa_ast.var -> expression -> expression
 
-val store : Wa_ast.var -> expression -> unit t
+val store : ?always:bool -> Wa_ast.var -> expression -> unit t
 
 val assign : Wa_ast.var -> expression -> unit t
 
@@ -74,10 +74,14 @@ val add_var : Wa_ast.var -> int t
 
 val define_var : Wa_ast.var -> expression -> unit t
 
+val is_small_constant : Wa_ast.expression -> bool t
+
 val register_global : string -> Wa_ast.global_type -> Wa_ast.expression -> unit t
 
-val get_context : context t
-
 val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> unit t
+
+val get_data_segment : Code.Var.t -> (bool * Wa_ast.data list) t
+
+val get_context : context t
 
 val function_body : context:context -> body:unit t -> int * Wa_ast.instruction list

@@ -31,13 +31,20 @@ let rec translate_expr ctx x e =
       (*ZZZ*)
       let rec loop acc l =
         match l with
-        | [] ->
+        | [] -> (
             let arity = List.length args in
             let funct = Var.fresh () in
             let* closure = tee funct (load f) in
             let* funct = Memory.load_function_pointer ~arity (load funct) in
-            return
-              (W.Call_indirect (func_type (arity + 1), funct, List.rev (closure :: acc)))
+            match funct with
+            | W.ConstSym (g, 0) ->
+                (* Functions with constant closures ignore their
+                   environment *)
+                return (W.Call (g, List.rev (W.Const (I32 0l) :: acc)))
+            | _ ->
+                return
+                  (W.Call_indirect
+                     (func_type (arity + 1), funct, List.rev (closure :: acc))))
         | x :: r ->
             let* x = load x in
             loop (x :: acc) r
@@ -156,7 +163,7 @@ let parallel_renaming params args =
     l
     ~f:(fun continuation (y, x) ->
       let* () = continuation in
-      store y (load x))
+      store ~always:true y (load x))
     ~init:(return ())
 
 let extend_context fall_through context =
@@ -362,7 +369,7 @@ let f
   in
   let toplevel_name = Var.fresh_n "toplevel" in
   let functions =
-    Code.fold_closures
+    Code.fold_closures_outermost_first
       p
       (fun name_opt params cont ->
         translate_function ctx name_opt toplevel_name params cont)

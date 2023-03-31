@@ -8,7 +8,20 @@ module Memory = struct
   let mem_load ?(offset = 0) e =
     assert (offset >= 0);
     let* e = e in
-    return (W.Load (I32 (Int32.of_int offset), e))
+    match e with
+    | W.ConstSym (V x, offset') ->
+        let rec get_data offset l =
+          match l with
+          | [] -> assert false
+          | W.DataI32 i :: _ when offset = 0 -> W.Const (I32 i)
+          | W.DataSym (sym, ofs) :: _ when offset = 0 -> W.ConstSym (sym, ofs)
+          | (W.DataI32 _ | DataSym _) :: r -> get_data (offset - 4) r
+          | (DataI8 _ | DataBytes _ | DataSpace _ | DataI64 _) :: _ -> assert false
+        in
+        let* _, l = get_data_segment x in
+        let data = get_data (offset + offset') l in
+        return data
+    | _ -> return (W.Load (I32 (Int32.of_int offset), e))
 
   let mem_init ?(offset = 0) e e' =
     assert (offset >= 0);

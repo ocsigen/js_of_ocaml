@@ -58,7 +58,13 @@ let register_data_segment x ~active v st =
   st.context.data_segments <- Var.Map.add x (active, v) st.context.data_segments;
   (), st
 
+let get_data_segment x st = Var.Map.find x st.context.data_segments, st
+
 let get_context st = st.context, st
+
+let register_constant x e st =
+  Hashtbl.add st.context.constants x e;
+  (), st
 
 let register_global name typ init st =
   st.context.other_fields <-
@@ -85,6 +91,8 @@ let add_var x ({ var_count; vars; _ } as st) =
 let define_var x e st = (), { st with vars = Var.Map.add x (Expr e) st.vars }
 
 let instr i : unit t = fun st -> (), { st with instrs = i :: st.instrs }
+
+let instrs l : unit t = fun st -> (), { st with instrs = List.rev_append l st.instrs }
 
 let blk l st =
   let instrs = st.instrs in
@@ -168,6 +176,11 @@ module Arith = struct
   let const n = return (W.Const (I32 n))
 end
 
+let is_small_constant e =
+  match e with
+  | W.ConstSym _ | W.Const _ -> return true
+  | _ -> return false
+
 let load x =
   let* x = var x in
   match x with
@@ -176,13 +189,28 @@ let load x =
 
 let tee x e =
   let* e = e in
-  let* i = add_var x in
-  return (W.LocalTee (i, e))
+  let* b = is_small_constant e in
+  if b
+  then
+    let* () = register_constant x e in
+    return e
+  else
+    let* i = add_var x in
+    return (W.LocalTee (i, e))
 
-let store x e =
+let rec store ?(always = false) x e =
   let* e = e in
-  let* i = add_var x in
-  instr (LocalSet (i, e))
+  match e with
+  | W.Seq (l, e') ->
+      let* () = instrs l in
+      store ~always x (return e')
+  | _ ->
+      let* b = is_small_constant e in
+      if b && not always
+      then register_constant x e
+      else
+        let* i = add_var x in
+        instr (LocalSet (i, e))
 
 let assign x e =
   let* x = var x in
@@ -198,7 +226,9 @@ let seq l e =
 
 let drop e =
   let* e = e in
-  instr (Drop e)
+  match e with
+  | W.Seq (l, Const _) -> instrs l
+  | _ -> instr (Drop e)
 
 let loop ty l =
   let* instrs = blk l in
