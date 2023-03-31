@@ -2,6 +2,8 @@ type context =
   { constants : (Wa_ast.var, Wa_ast.expression) Hashtbl.t
   ; mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
+  ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
   }
 
 val make_context : unit -> context
@@ -83,5 +85,9 @@ val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> uni
 val get_data_segment : Code.Var.t -> (bool * Wa_ast.data list) t
 
 val get_context : context t
+
+val need_apply_fun : arity:int -> Code.Var.t t
+
+val need_curry_fun : arity:int -> Code.Var.t t
 
 val function_body : context:context -> body:unit t -> int * Wa_ast.instruction list

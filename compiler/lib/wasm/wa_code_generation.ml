@@ -17,10 +17,17 @@ type context =
   { constants : (Var.t, W.expression) Hashtbl.t
   ; mutable data_segments : (bool * W.data list) Var.Map.t
   ; mutable other_fields : W.module_field list
+  ; mutable apply_funs : Var.t IntMap.t
+  ; mutable curry_funs : Var.t IntMap.t
   }
 
 let make_context () =
-  { constants = Hashtbl.create 128; data_segments = Var.Map.empty; other_fields = [] }
+  { constants = Hashtbl.create 128
+  ; data_segments = Var.Map.empty
+  ; other_fields = []
+  ; apply_funs = IntMap.empty
+  ; curry_funs = IntMap.empty
+  }
 
 type var =
   | Local of int
@@ -245,6 +252,24 @@ let if_ ty e l1 l2 =
   match e with
   | W.UnOp (I32 Eqz, e') -> instr (If (ty, e', instrs2, instrs1))
   | _ -> instr (If (ty, e, instrs1, instrs2))
+
+let need_apply_fun ~arity st =
+  let ctx = st.context in
+  ( (try IntMap.find arity ctx.apply_funs
+     with Not_found ->
+       let x = Var.fresh_n (Printf.sprintf "apply_%d" arity) in
+       ctx.apply_funs <- IntMap.add arity x ctx.apply_funs;
+       x)
+  , st )
+
+let need_curry_fun ~arity st =
+  let ctx = st.context in
+  ( (try IntMap.find arity ctx.curry_funs
+     with Not_found ->
+       let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
+       ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
+       x)
+  , st )
 
 let function_body ~context ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in

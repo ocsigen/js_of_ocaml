@@ -27,8 +27,7 @@ let func_type n =
 
 let rec translate_expr ctx x e =
   match e with
-  | Apply { f; args; _ } ->
-      (*ZZZ*)
+  | Apply { f; args; exact } when exact || List.length args = 1 ->
       let rec loop acc l =
         match l with
         | [] -> (
@@ -50,6 +49,11 @@ let rec translate_expr ctx x e =
             loop (x :: acc) r
       in
       loop [] args
+  | Apply { f; args; _ } ->
+      let* apply = need_apply_fun ~arity:(List.length args) in
+      let* args = expression_list load args in
+      let* closure = load f in
+      return (W.Call (V apply, args @ [ closure ]))
   | Block (tag, a, _) ->
       Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
   | Field (x, n) -> Memory.field (load x) n
@@ -347,6 +351,8 @@ let entry_point ctx toplevel_fun entry_name =
     ; body
     }
 
+module Curry = Wa_curry.Make (Wa_core_target)
+
 let f
     (p : Code.program)
     ~live_vars
@@ -386,6 +392,7 @@ let f
         W.Data { name; read_only = true; active; contents })
       (Var.Map.bindings ctx.global_context.data_segments)
   in
+  Curry.f ~context:ctx.global_context;
   let start_function = entry_point ctx toplevel_name "kernel_run" in
   let fields =
     List.rev_append

@@ -97,6 +97,8 @@ module Memory = struct
   let set_field e idx e' = mem_store ~offset:(4 * idx) e e'
 
   let load_function_pointer ~arity closure = field closure (if arity = 1 then 0 else 2)
+
+  let load_function_arity closure = Arith.(field closure 1 lsr const 24l)
 end
 
 module Value = struct
@@ -256,7 +258,7 @@ module Closure = struct
         List.fold_left
           ~f:(fun accu (f, arity) ->
             let* i, start = accu in
-            let* curry_fun = return f in
+            let* curry_fun = if arity > 1 then need_curry_fun ~arity else return f in
             let start =
               if i = 0
               then start
@@ -335,6 +337,18 @@ module Closure = struct
                   return (W.Load (I32 (Int32.of_int (4 * i)), f))) ))
            ~init:(offset, return ())
            free_variables)
+
+  let curry_allocate ~arity _ ~f ~closure ~arg =
+    Memory.allocate
+      ~tag:Obj.closure_tag
+      [ `Expr (W.ConstSym (f, 0))
+      ; `Expr (closure_info ~arity ~sz:2)
+      ; `Var closure
+      ; `Var arg
+      ]
+
+  let curry_load ~arity:_ _ closure =
+    return (Memory.field (load closure) 3, Memory.field (load closure) 4)
 end
 
 let entry_point ~register_primitive =
