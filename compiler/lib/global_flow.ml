@@ -324,12 +324,13 @@ module Domain = struct
     then (
       st.may_escape.(idx) <- s;
       match st.defs.(idx) with
-      | Expr (Block (_, a, _)) ->
+      | Expr (Block (_, a, _)) -> (
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
-          if Poly.equal s Escape
-          then (
-            st.possibly_mutable.(idx) <- true;
-            update ~children:true x)
+          match s with
+          | Escape ->
+              st.possibly_mutable.(idx) <- true;
+              update ~children:true x
+          | Escape_constant | No -> ())
       | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
@@ -621,12 +622,12 @@ let f ~fast p =
                            x
                            (match st.defs.(Var.idx x) with
                            | Expr (Closure _) -> "C"
-                           | Expr (Block _) ->
+                           | Expr (Block _) -> (
                                "B"
                                ^
-                               if Poly.equal st.may_escape.(Var.idx x) Escape
-                               then "X"
-                               else ""
+                               match st.may_escape.(Var.idx x) with
+                               | Escape -> "X"
+                               | _ -> "")
                            | _ -> "O")))
                     (Var.Set.elements known)
                     others

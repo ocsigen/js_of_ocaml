@@ -42,19 +42,19 @@ module J = Javascript
 let string_of_set s =
   String.concat ~sep:", " (List.map ~f:Addr.to_string (Addr.Set.elements s))
 
-let rec list_group_rec f g l b m n =
+let rec list_group_rec ~equal f g l b m n =
   match l with
   | [] -> List.rev ((b, List.rev m) :: n)
   | a :: r ->
       let fa = f a in
-      if Poly.(fa = b)
-      then list_group_rec f g r b (g a :: m) n
-      else list_group_rec f g r fa [ g a ] ((b, List.rev m) :: n)
+      if equal fa b
+      then list_group_rec ~equal f g r b (g a :: m) n
+      else list_group_rec ~equal f g r fa [ g a ] ((b, List.rev m) :: n)
 
-let list_group f g l =
+let list_group ~equal f g l =
   match l with
   | [] -> []
-  | a :: r -> list_group_rec f g r (f a) [ g a ] []
+  | a :: r -> list_group_rec ~equal f g r (f a) [ g a ] []
 
 (****)
 
@@ -588,7 +588,7 @@ module DTree = struct
     a
     |> Array.to_list
     |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
-    |> list_group fst snd
+    |> list_group ~equal:Poly.equal fst snd
     |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
     |> List.sort ~cmp:(fun (_, l1) (_, l2) -> compare (List.length l1) (List.length l2))
     |> Array.of_list
@@ -600,7 +600,7 @@ module DTree = struct
     let ai = Array.mapi a ~f:(fun i x -> x, i) in
     (* group the contiguous cases with the same continuation *)
     let ai : (Code.cont * int list) array =
-      Array.of_list (list_group fst snd (Array.to_list ai))
+      Array.of_list (list_group ~equal:Poly.equal fst snd (Array.to_list ai))
     in
     let rec loop low up =
       let array_norm : (Code.cont * int list) array =

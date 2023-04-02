@@ -395,7 +395,7 @@ end
 module Int64 = struct
   include Int64
 
-  let equal (a : int64) (b : int64) = Poly.( = ) a b
+  let equal (a : int64) (b : int64) = Poly.(a = b)
 end
 
 module Float = struct
