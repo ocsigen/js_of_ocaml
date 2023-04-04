@@ -19,13 +19,17 @@
 
 open! Stdlib
 
+type ori_location =
+  { source : int
+  ; line : int
+  ; col : int
+  ; name : int option
+  }
+
 type map =
   { gen_line : int
   ; gen_col : int
-  ; ori_source : int
-  ; ori_line : int
-  ; ori_col : int
-  ; ori_name : int option
+  ; ori_location : ori_location option
   }
 
 type mapping = map list
@@ -52,7 +56,11 @@ let empty ~filename =
 
 let map_line_number ~f =
   let f i = if i < 0 then i else f i in
-  fun m -> { m with ori_line = f m.ori_line; gen_line = f m.gen_line }
+  fun m ->
+    { m with
+      gen_line = f m.gen_line
+    ; ori_location = Option.map m.ori_location ~f:(fun l -> { l with line = f l.line })
+    }
 
 let string_of_mapping mapping =
   let mapping =
@@ -79,15 +87,7 @@ let string_of_mapping mapping =
     if i < len
     then
       let c = a.(i) in
-      if prev >= 0
-         && c.ori_source = a.(prev).ori_source
-         && c.ori_line = a.(prev).ori_line
-         && c.ori_col = a.(prev).ori_col
-      then (* We already are at this location *)
-        loop prev (i + 1)
-      else if i + 1 < len
-              && c.gen_line = a.(i + 1).gen_line
-              && c.gen_col = a.(i + 1).gen_col
+      if i + 1 < len && c.gen_line = a.(i + 1).gen_line && c.gen_col = a.(i + 1).gen_col
       then (* Only keep one source location per generated location *)
         loop prev (i + 1)
       else (
@@ -104,26 +104,25 @@ let string_of_mapping mapping =
         let l =
           (c.gen_col - !gen_col)
           ::
-          (if c.ori_source = -1
-           then []
-           else
-             (c.ori_source - !ori_source)
-             :: (c.ori_line - !ori_line)
-             :: (c.ori_col - !ori_col)
-             ::
-             (match c.ori_name with
-             | None -> []
-             | Some n ->
-                 let n' = !ori_name in
-                 ori_name := n;
-                 [ n - n' ]))
+          (match c.ori_location with
+          | None -> []
+          | Some ori ->
+              (ori.source - !ori_source)
+              :: (ori.line - !ori_line)
+              :: (ori.col - !ori_col)
+              ::
+              (match ori.name with
+              | None -> []
+              | Some n ->
+                  let n' = !ori_name in
+                  ori_name := n;
+                  [ n - n' ]))
         in
         gen_col := c.gen_col;
-        if c.ori_source <> -1
-        then (
-          ori_source := c.ori_source;
-          ori_line := c.ori_line;
-          ori_col := c.ori_col);
+        Option.iter c.ori_location ~f:(fun ori ->
+            ori_source := ori.source;
+            ori_line := ori.line;
+            ori_col := ori.col);
         Vlq64.encode_l buf l;
         loop i (i + 1))
   in
@@ -158,13 +157,7 @@ let mapping_of_string str =
           match v with
           | [ g ] ->
               gen_col := !gen_col + g;
-              { gen_line = line
-              ; gen_col = !gen_col
-              ; ori_source = -1
-              ; ori_line = -1
-              ; ori_col = -1
-              ; ori_name = None
-              }
+              { gen_line = line; gen_col = !gen_col; ori_location = None }
           | [ g; os; ol; oc ] ->
               gen_col := !gen_col + g;
               ori_source := !ori_source + os;
@@ -172,10 +165,13 @@ let mapping_of_string str =
               ori_col := !ori_col + oc;
               { gen_line = line
               ; gen_col = !gen_col
-              ; ori_source = !ori_source
-              ; ori_line = !ori_line
-              ; ori_col = !ori_col
-              ; ori_name = None
+              ; ori_location =
+                  Some
+                    { source = !ori_source
+                    ; line = !ori_line
+                    ; col = !ori_col
+                    ; name = None
+                    }
               }
           | [ g; os; ol; oc; on ] ->
               gen_col := !gen_col + g;
@@ -185,10 +181,13 @@ let mapping_of_string str =
               ori_name := !ori_name + on;
               { gen_line = line
               ; gen_col = !gen_col
-              ; ori_source = !ori_source
-              ; ori_line = !ori_line
-              ; ori_col = !ori_col
-              ; ori_name = Some !ori_name
+              ; ori_location =
+                  Some
+                    { source = !ori_source
+                    ; line = !ori_line
+                    ; col = !ori_col
+                    ; name = Some !ori_name
+                    }
               }
           | _ -> invalid_arg "Source_map.mapping_of_string"
         in
@@ -198,14 +197,13 @@ let mapping_of_string str =
   readline 0 0 []
 
 let maps ~sources_offset ~names_offset x =
-  let gen_line = x.gen_line in
-  let ori_source = x.ori_source + sources_offset in
-  let ori_name =
-    match x.ori_name with
-    | None -> None
-    | Some ori_name -> Some (ori_name + names_offset)
+  let ori_location =
+    Option.map x.ori_location ~f:(fun ori ->
+        let source = ori.source + sources_offset in
+        let name = Option.map ori.name ~f:(fun name -> name + names_offset) in
+        { ori with source; name })
   in
-  { x with gen_line; ori_source; ori_name }
+  { x with ori_location }
 
 let filter_map sm ~f =
   let a = Array.of_list sm.mappings in

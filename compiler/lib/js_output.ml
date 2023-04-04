@@ -87,22 +87,13 @@ struct
       | U | Pi { Parse_info.src = None | Some ""; _ } ->
           push_mapping
             (PP.pos f)
-            { Source_map.gen_line = -1
-            ; gen_col = -1
-            ; ori_source = -1
-            ; ori_line = -1
-            ; ori_col = -1
-            ; ori_name = None
-            }
+            { Source_map.gen_line = -1; gen_col = -1; ori_location = None }
       | Pi { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
             { Source_map.gen_line = -1
             ; gen_col = -1
-            ; ori_source = get_file_index file
-            ; ori_line = line
-            ; ori_col = col
-            ; ori_name = None
+            ; ori_location = Some { source = get_file_index file; line; col; name = None }
             }
 
   let output_debug_info_ident f nm loc =
@@ -115,10 +106,13 @@ struct
             (PP.pos f)
             { Source_map.gen_line = -1
             ; gen_col = -1
-            ; ori_source = get_file_index file
-            ; ori_line = line
-            ; ori_col = col
-            ; ori_name = Some (get_name_index nm)
+            ; ori_location =
+                Some
+                  { source = get_file_index file
+                  ; line
+                  ; col
+                  ; name = Some (get_name_index nm)
+                  }
             }
 
   let ident f = function

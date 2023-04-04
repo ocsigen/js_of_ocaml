@@ -54,17 +54,18 @@ let print_mapping lines (sm : Source_map.t) =
           ^ "<>"
           ^ String.sub line ~pos:col ~len:(len - col)
       in
-      if match file m.ori_source with
-         | "a.ml" | "b.ml" | "c.ml" | "d.ml" -> true
-         | _ -> false
-      then
-        Printf.printf
-          "%s:%d:%d -> %d:%s\n"
-          (file m.ori_source)
-          m.ori_line
-          m.ori_col
-          m.gen_col
-          (mark m.gen_col lines.(m.gen_line - 1)))
+      Option.iter m.ori_location ~f:(fun (ori : Source_map.ori_location) ->
+          if match file ori.source with
+             | "a.ml" | "b.ml" | "c.ml" | "d.ml" -> true
+             | _ -> false
+          then
+            Printf.printf
+              "%s:%d:%d -> %d:%s\n"
+              (file ori.source)
+              ori.line
+              ori.col
+              m.gen_col
+              (mark m.gen_col lines.(m.gen_line - 1))))
 
 let files = Sys.argv |> Array.to_list |> List.tl
 

@@ -17,13 +17,17 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+type ori_location =
+  { source : int
+  ; line : int
+  ; col : int
+  ; name : int option
+  }
+
 type map =
   { gen_line : int
   ; gen_col : int
-  ; ori_source : int
-  ; ori_line : int
-  ; ori_col : int
-  ; ori_name : int option
+  ; ori_location : ori_location option
   }
 
 type mapping = map list
