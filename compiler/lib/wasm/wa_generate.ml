@@ -25,9 +25,10 @@ let register_primitive ctx nm typ =
 let func_type n =
   { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
-let rec translate_expr ctx x e =
+let rec translate_expr ctx stack_ctx x e =
   match e with
   | Apply { f; args; exact } when exact || List.length args = 1 ->
+      let* () = Stack.perform_spilling stack_ctx (`Instr x) in
       let rec loop acc l =
         match l with
         | [] -> (
@@ -35,6 +36,7 @@ let rec translate_expr ctx x e =
             let funct = Var.fresh () in
             let* closure = tee funct (load f) in
             let* funct = Memory.load_function_pointer ~arity (load funct) in
+            Stack.kill_variables stack_ctx;
             match funct with
             | W.ConstSym (g, 0) ->
                 (* Functions with constant closures ignore their
@@ -50,14 +52,17 @@ let rec translate_expr ctx x e =
       in
       loop [] args
   | Apply { f; args; _ } ->
+      let* () = Stack.perform_spilling stack_ctx (`Instr x) in
       let* apply = need_apply_fun ~arity:(List.length args) in
       let* args = expression_list load args in
       let* closure = load f in
+      Stack.kill_variables stack_ctx;
       return (W.Call (V apply, args @ [ closure ]))
   | Block (tag, a, _) ->
-      Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
+      Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
   | Field (x, n) -> Memory.field (load x) n
-  | Closure _ -> Closure.translate ~context:ctx.global_context ~closures:ctx.closures x
+  | Closure _ ->
+      Closure.translate ~context:ctx.global_context ~closures:ctx.closures ~stack_ctx x
   | Constant c -> Constant.translate c
   | Prim (p, l) -> (
       let l = List.map ~f:transl_prim_arg l in
@@ -84,9 +89,12 @@ let rec translate_expr ctx x e =
       | Extern nm, l ->
           (*ZZZ Different calling convention when large number of parameters *)
           register_primitive ctx nm (func_type (List.length l));
+          let* () = Stack.perform_spilling stack_ctx (`Instr x) in
           let rec loop acc l =
             match l with
-            | [] -> return (W.Call (S nm, List.rev acc))
+            | [] ->
+                Stack.kill_variables stack_ctx;
+                return (W.Call (S nm, List.rev acc))
             | x :: r ->
                 let* x = x in
                 loop (x :: acc) r
@@ -104,13 +112,15 @@ let rec translate_expr ctx x e =
       | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
           assert false)
 
-and translate_instr ctx (i, _) =
+and translate_instr ctx stack_ctx (i, _) =
   match i with
-  | Assign (x, y) -> assign x (load y)
+  | Assign (x, y) ->
+      let* () = assign x (load y) in
+      Stack.assign stack_ctx x
   | Let (x, e) ->
       if ctx.live.(Var.idx x) = 0
-      then drop (translate_expr ctx x e)
-      else store x (translate_expr ctx x e)
+      then drop (translate_expr ctx stack_ctx x e)
+      else store x (translate_expr ctx stack_ctx x e)
   | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
   | Offset_ref (x, n) ->
       Memory.set_field
@@ -120,12 +130,13 @@ and translate_instr ctx (i, _) =
            Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
   | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
 
-and translate_instrs ctx l =
+and translate_instrs ctx stack_ctx l =
   match l with
   | [] -> return ()
   | i :: rem ->
-      let* () = translate_instr ctx i in
-      translate_instrs ctx rem
+      let* () = Stack.perform_reloads stack_ctx (`Instr (fst i)) in
+      let* () = translate_instr ctx stack_ctx i in
+      translate_instrs ctx stack_ctx rem
 
 let parallel_renaming params args =
   let rec visit visited prev s m x l =
@@ -175,7 +186,19 @@ let extend_context fall_through context =
   | `Block _ as b -> b :: context
   | `Return -> `Skip :: context
 
-let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
+let translate_function p ctx name_opt toplevel_name params ((pc, _) as cont) acc =
+  let stack_info =
+    Stack.generate_spilling_information
+      p
+      ~context:ctx.global_context
+      ~closures:ctx.closures
+      ~env:
+        (match name_opt with
+        | Some name -> name
+        | None -> Var.fresh ())
+      ~pc
+      ~params
+  in
   let g = Wa_structure.build_graph ctx.blocks pc in
   let idom = Wa_structure.dominator_tree g in
   let dom = Wa_structure.reverse_tree idom in
@@ -235,9 +258,14 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
         translate_tree result_typ fall_through pc' context
     | [] -> (
         let block = Addr.Map.find pc ctx.blocks in
-        let* () = translate_instrs ctx block.body in
+        let* global_context = get_context in
+        let stack_ctx = Stack.start_block ~context:global_context stack_info pc in
+        let* () = translate_instrs ctx stack_ctx block.body in
+        let* () = Stack.perform_reloads stack_ctx (`Branch (fst block.branch)) in
+        let* () = Stack.perform_spilling stack_ctx (`Block pc) in
         match fst block.branch with
-        | Branch cont -> translate_branch result_typ fall_through pc cont context
+        | Branch cont ->
+            translate_branch result_typ fall_through pc cont context stack_ctx
         | Return x -> (
             let* e = load x in
             match fall_through with
@@ -248,14 +276,19 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
             if_
               { params = []; result = result_typ }
               (Value.check_is_not_zero (load x))
-              (translate_branch result_typ fall_through pc cont1 context')
-              (translate_branch result_typ fall_through pc cont2 context')
+              (translate_branch result_typ fall_through pc cont1 context' stack_ctx)
+              (translate_branch result_typ fall_through pc cont2 context' stack_ctx)
         | Stop -> (
             let* e = Value.unit in
             match fall_through with
             | `Return -> instr (Push e)
             | `Block _ -> instr (Return (Some e)))
-        | Switch (x, a1, a2) -> (
+        | Switch (x, a1, a2) ->
+            let l =
+              List.filter
+                ~f:(fun pc' -> Stack.stack_adjustment_needed stack_ctx ~src:pc ~dst:pc')
+                (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc)))
+            in
             let br_table e a context =
               let len = Array.length a in
               let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
@@ -266,19 +299,32 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
               let* e = e in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
             in
-            match a1, a2 with
-            | [||], _ -> br_table (Memory.tag (load x)) a2 context
-            | _, [||] -> br_table (Value.int_val (load x)) a1 context
-            | _ ->
-                (*ZZZ Use Br_on_cast *)
-                let context' = extend_context fall_through context in
-                if_
-                  { params = []; result = result_typ }
-                  (Value.check_is_int (load x))
-                  (br_table (Value.int_val (load x)) a1 context')
-                  (br_table (Memory.tag (load x)) a2 context'))
+            let rec nest l context =
+              match l with
+              | pc' :: rem ->
+                  let* () =
+                    Wa_code_generation.block
+                      { params = []; result = [] }
+                      (nest rem (`Block pc' :: context))
+                  in
+                  let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
+                  instr (Br (index pc' 0 context, None))
+              | [] -> (
+                  match a1, a2 with
+                  | [||], _ -> br_table (Memory.tag (load x)) a2 context
+                  | _, [||] -> br_table (Value.int_val (load x)) a1 context
+                  | _ ->
+                      (*ZZZ Use Br_on_cast *)
+                      let context' = extend_context fall_through context in
+                      if_
+                        { params = []; result = result_typ }
+                        (Value.check_is_int (load x))
+                        (br_table (Value.int_val (load x)) a1 context')
+                        (br_table (Memory.tag (load x)) a2 context'))
+            in
+            nest l context
         | Raise _ | Pushtrap _ | Poptrap _ -> return ())
-  and translate_branch result_typ fall_through src (dst, args) context =
+  and translate_branch result_typ fall_through src (dst, args) context stack_ctx =
     let* () =
       if List.is_empty args
       then return ()
@@ -286,6 +332,7 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
         let block = Addr.Map.find dst ctx.blocks in
         parallel_renaming block.params args
     in
+    let* () = Stack.adjust_stack stack_ctx ~src ~dst in
     if (src >= 0 && Wa_structure.is_backward g src dst)
        || Wa_structure.is_merge_node g dst
     then
@@ -323,7 +370,9 @@ let translate_function ctx name_opt toplevel_name params ((pc, _) as cont) acc =
       ~context:ctx.global_context
       ~body:
         (let* () = build_initial_env in
-         translate_branch [ Value.value ] `Return (-1) cont [])
+         let stack_ctx = Stack.start_function ~context:ctx.global_context stack_info in
+         let* () = Stack.perform_spilling stack_ctx `Function in
+         translate_branch [ Value.value ] `Return (-1) cont [] stack_ctx)
   in
   W.Function
     { name =
@@ -378,7 +427,7 @@ let f
     Code.fold_closures_outermost_first
       p
       (fun name_opt params cont ->
-        translate_function ctx name_opt toplevel_name params cont)
+        translate_function p ctx name_opt toplevel_name params cont)
       []
   in
   let primitives =

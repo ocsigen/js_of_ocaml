@@ -94,8 +94,32 @@ module Make (Target : Wa_target_sig.S) = struct
       let* _ = add_var x in
       let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
-      let* e = Closure.curry_allocate ~arity m ~f:(V name') ~closure:f ~arg:x in
-      instr (Push e)
+      let res = Code.Var.fresh_n "res" in
+      let stack_info, stack =
+        Stack.make_info ()
+        |> fun info ->
+        Stack.add_spilling
+          info
+          ~location:res
+          ~stack:[]
+          ~live_vars:Var.Set.empty
+          ~spilled_vars:(Var.Set.of_list [ x; f ])
+      in
+      let ret = Code.Var.fresh_n "ret" in
+      let stack_info, _ =
+        Stack.add_spilling
+          stack_info
+          ~location:ret
+          ~stack
+          ~live_vars:Var.Set.empty
+          ~spilled_vars:Var.Set.empty
+      in
+      let stack_ctx = Stack.start_function ~context stack_info in
+      let* e =
+        Closure.curry_allocate ~stack_ctx ~x:res ~arity m ~f:(V name') ~closure:f ~arg:x
+      in
+      let* () = instr (Push e) in
+      Stack.perform_spilling stack_ctx (`Instr ret)
     in
     let local_count, body = function_body ~context ~body in
     W.Function
@@ -113,7 +137,8 @@ module Make (Target : Wa_target_sig.S) = struct
     assert (arity > 1);
     let body =
       let l =
-        List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i))
+        List.rev
+          (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
       in
       let* () = bind_parameters l in
       let f = Code.Var.fresh_n "f" in
@@ -125,15 +150,41 @@ module Make (Target : Wa_target_sig.S) = struct
         (let* l = expression_list load l in
          let* res = call ~arity (load f) l in
          instr (Push res))
-        (let* e =
-           List.fold_left
-             ~f:(fun e x ->
-               let* x = load x in
-               call ~arity:1 e [ x ])
-             ~init:(load f)
-             l
+        (let rec build_spilling_info stack_info stack live_vars acc l =
+           match l with
+           | [] -> stack_info, List.rev acc
+           | x :: rem ->
+               let live_vars = Var.Set.remove x live_vars in
+               let y = Var.fresh () in
+               let stack_info, stack =
+                 Stack.add_spilling
+                   stack_info
+                   ~location:y
+                   ~stack
+                   ~live_vars
+                   ~spilled_vars:
+                     (if List.is_empty stack then live_vars else Var.Set.empty)
+               in
+               build_spilling_info stack_info stack live_vars ((x, y) :: acc) rem
          in
-         instr (Push e))
+         let stack_info, l =
+           build_spilling_info (Stack.make_info ()) [] (Var.Set.of_list l) [] l
+         in
+         let stack_ctx = Stack.start_function ~context stack_info in
+         let rec build_applies y l =
+           match l with
+           | [] ->
+               let* y = y in
+               instr (Push y)
+           | (x, y') :: rem ->
+               let* () = Stack.perform_reloads stack_ctx (`Vars (Var.Set.singleton x)) in
+               let* () = Stack.perform_spilling stack_ctx (`Instr y') in
+               let* x = load x in
+               Stack.kill_variables stack_ctx;
+               let* () = store y' (call ~arity:1 y [ x ]) in
+               build_applies (load y') rem
+         in
+         build_applies (load f) l)
     in
     let local_count, body = function_body ~context ~body in
     W.Function

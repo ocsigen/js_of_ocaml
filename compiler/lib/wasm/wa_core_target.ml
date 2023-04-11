@@ -4,6 +4,8 @@ open Wa_code_generation
 
 type expression = Wa_ast.expression Wa_code_generation.t
 
+module Stack = Wa_spilling
+
 module Memory = struct
   let mem_load ?(offset = 0) e =
     assert (offset >= 0);
@@ -44,16 +46,30 @@ module Memory = struct
   let header ?(const = false) ~tag ~len () =
     Int32.(add (shift_left (of_int len) 10) (of_int (tag + if const then 3 * 256 else 0)))
 
-  let allocate ~tag l =
+  let allocate stack_ctx x ~tag l =
     let len = List.length l in
     let p = Code.Var.fresh_n "p" in
     let size = (len + 1) * 4 in
     seq
-      (let* v =
+      (let* () = Stack.perform_spilling stack_ctx (`Instr x) in
+       let* v =
          tee p Arith.(return (W.GlobalGet (S "young_ptr")) - const (Int32.of_int size))
        in
        let* () = instr (W.GlobalSet (S "young_ptr", v)) in
        let* () = mem_init (load p) (Arith.const (header ~tag ~len ())) in
+       Stack.kill_variables stack_ctx;
+       let* () =
+         Stack.perform_reloads
+           stack_ctx
+           (`Vars
+             (List.fold_left
+                ~f:(fun s v ->
+                  match v with
+                  | `Expr _ -> s
+                  | `Var x -> Code.Var.Set.add x s)
+                ~init:Code.Var.Set.empty
+                l))
+       in
        snd
          (List.fold_right
             ~init:(len, return ())
@@ -248,7 +264,7 @@ module Closure = struct
   let closure_info ~arity ~sz =
     W.Const (I32 Int32.(add (shift_left (of_int arity) 24) (of_int ((sz lsl 1) + 1))))
 
-  let translate ~context ~closures x =
+  let translate ~context ~closures ~stack_ctx x =
     let info = Code.Var.Map.find x closures in
     let f, _ = List.hd info.Wa_closure_conversion.functions in
     if Code.Var.equal x f
@@ -287,9 +303,16 @@ module Closure = struct
         let h = Memory.header ~const:true ~tag:Obj.closure_tag ~len:(List.length l) () in
         let name = Code.Var.fresh_n "closure" in
         let* () = register_data_segment name ~active:true (W.DataI32 h :: l) in
+        let* () =
+          (* In case we did not detect that this closure was constant
+             during the spilling analysis *)
+          Stack.perform_spilling stack_ctx (`Instr x)
+        in
         return (W.ConstSym (V name, 4))
       else
         Memory.allocate
+          stack_ctx
+          x
           ~tag:Obj.closure_tag
           (List.rev_map ~f:(fun e -> `Expr e) start
           @ List.map ~f:(fun x -> `Var x) free_variables))
@@ -338,8 +361,10 @@ module Closure = struct
            ~init:(offset, return ())
            free_variables)
 
-  let curry_allocate ~arity _ ~f ~closure ~arg =
+  let curry_allocate ~stack_ctx ~x ~arity _ ~f ~closure ~arg =
     Memory.allocate
+      stack_ctx
+      x
       ~tag:Obj.closure_tag
       [ `Expr (W.ConstSym (f, 0))
       ; `Expr (closure_info ~arity ~sz:2)
@@ -355,6 +380,7 @@ let entry_point ~register_primitive =
   let declare_global name =
     register_global name { mut = true; typ = I32 } (Const (I32 0l))
   in
+  let* () = declare_global "sp" in
   let* () = declare_global "young_ptr" in
   let* () = declare_global "young_limit" in
   register_primitive "caml_modify" { W.params = [ I32; I32 ]; result = [] };
