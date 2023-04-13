@@ -581,7 +581,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O3 -> o3)
     +> exact_calls profile
     +> effects
-    +> map_fst (Generate_closure.f +> deadcode')
+    +> map_fst (*Generate_closure.f +>*) deadcode'
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
