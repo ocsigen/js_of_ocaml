@@ -383,6 +383,24 @@ module Output () = struct
     line (string ".int8 " ^^ integer (String.length s))
     ^^ line (string ".ascii \"" ^^ string (escape_string s) ^^ string "\"")
 
+  let producer_section =
+    delayed
+    @@ fun () ->
+    indent
+      (section_header "custom_section" "producers"
+      ^^ vector
+           [ len_string "language"
+             ^^ vector [ len_string "OCaml" ^^ len_string Sys.ocaml_version ]
+           ; len_string "processed-by"
+             ^^ vector
+                  [ len_string "wasm_of_ocaml"
+                    ^^ len_string
+                         (match Compiler_version.git_version with
+                         | "" -> Compiler_version.s
+                         | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v)
+                  ]
+           ])
+
   let target_features =
     delayed
     @@ fun () ->
@@ -541,6 +559,7 @@ module Output () = struct
       ^^ concat_map (fun (name, typ) -> declare_tag name typ) tags)
     ^^ function_section
     ^^ data_sections
+    ^^ producer_section
     ^^ target_features
 end
 
