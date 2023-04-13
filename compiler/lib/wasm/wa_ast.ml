@@ -4,15 +4,38 @@ type symbol =
   | V of var
   | S of string
 
+type packed_type =
+  | I8
+  | I16
+
+type heap_type =
+  | Func
+  | Extern
+  | Eq
+  | I31
+  | Type of var
+
+type ref_type =
+  { nullable : bool
+  ; typ : heap_type
+  }
+
 type value_type =
   | I32
   | I64
   | F64
+  | Ref of ref_type
+
+type storage_type =
+  | Value of value_type
+  | Packed of packed_type
 
 type 'typ mut_type =
   { mut : bool
   ; typ : 'typ
   }
+
+type field_type = storage_type mut_type
 
 type global_type = value_type mut_type
 
@@ -20,6 +43,11 @@ type func_type =
   { params : value_type list
   ; result : value_type list
   }
+
+type str_type =
+  | Struct of field_type list
+  | Array of field_type
+  | Func of func_type
 
 type ('i32, 'i64, 'f64) op =
   | I32 of 'i32
@@ -97,6 +125,23 @@ type expression =
   | MemoryGrow of int * expression
   | Seq of instruction list * expression
   | Pop of value_type
+  | RefFunc of symbol
+  | Call_ref of var * expression * expression list
+  | I31New of expression
+  | I31Get of signage * expression
+  | ArrayNew of var * expression * expression
+  | ArrayNewFixed of var * expression list
+  | ArrayNewData of var * var * expression * expression
+  | ArrayGet of signage option * var * expression * expression
+  | ArrayLen of expression
+  | StructNew of var * expression list
+  | StructGet of signage option * var * int * expression
+  | RefCast of ref_type * expression
+  | RefTest of ref_type * expression
+  | RefEq of expression * expression
+  | RefNull
+  | ExternInternalize of expression
+  | ExternExternalize of expression
 
 and instruction =
   | Drop of expression
@@ -113,6 +158,20 @@ and instruction =
   | CallInstr of symbol * expression list
   | Nop
   | Push of expression
+  | Try of
+      func_type
+      * instruction list
+      * (string * instruction list) list
+      * instruction list option
+  | Throw of string * expression
+  | Rethrow of int
+  | ArraySet of signage option * var * expression * expression * expression
+  | StructSet of signage option * var * int * expression * expression
+  | Br_on_cast of int * ref_type * ref_type * expression
+  | Br_on_cast_fail of int * ref_type * ref_type * expression
+  | Return_call_indirect of func_type * expression * expression list
+  | Return_call of symbol * expression list
+  | Return_call_ref of var * expression * expression list
 
 type import_desc = Fun of func_type
 
@@ -123,6 +182,13 @@ type data =
   | DataBytes of string
   | DataSym of symbol * int
   | DataSpace of int
+
+type type_field =
+  { name : var
+  ; typ : str_type
+  ; supertype : var option
+  ; final : bool
+  }
 
 type module_field =
   | Function of
@@ -143,7 +209,12 @@ type module_field =
       ; typ : global_type
       ; init : expression
       }
+  | Tag of
+      { name : symbol
+      ; typ : value_type
+      }
   | Import of
       { name : string
       ; desc : import_desc
       }
+  | Type of type_field list
