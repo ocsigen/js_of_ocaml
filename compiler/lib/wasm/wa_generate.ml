@@ -181,6 +181,8 @@ let parallel_renaming params args =
       store ~always:true y (load x))
     ~init:(return ())
 
+let exception_name = "ocaml_exception"
+
 let extend_context fall_through context =
   match fall_through with
   | `Block _ as b -> b :: context
@@ -323,7 +325,21 @@ let translate_function p ctx name_opt toplevel_name params ((pc, _) as cont) acc
                         (br_table (Memory.tag (load x)) a2 context'))
             in
             nest l context
-        | Raise _ | Pushtrap _ | Poptrap _ -> return ())
+        | Raise (x, _) ->
+            let* () = use_exceptions in
+            let* e = load x in
+            instr (Throw (exception_name, e))
+        | Pushtrap (cont, x, cont', _) ->
+            let context' = extend_context fall_through context in
+            let* () = use_exceptions in
+            try_
+              { params = []; result = result_typ }
+              (translate_branch result_typ fall_through pc cont context' stack_ctx)
+              exception_name
+              (let* () = store ~always:true x (return (W.Pop Value.value)) in
+               translate_branch result_typ fall_through pc cont' context' stack_ctx)
+        | Poptrap cont ->
+            translate_branch result_typ fall_through pc cont context stack_ctx)
   and translate_branch result_typ fall_through src (dst, args) context stack_ctx =
     let* () =
       if List.is_empty args
@@ -448,7 +464,9 @@ let f
       ctx.global_context.other_fields
       (primitives @ functions @ (start_function :: constant_data))
   in
-  fields
+  if ctx.global_context.use_exceptions
+  then W.Tag { name = S exception_name; typ = Value.value } :: fields
+  else fields
 
 let f (p : Code.program) ~live_vars =
   let fields = f ~live_vars p in

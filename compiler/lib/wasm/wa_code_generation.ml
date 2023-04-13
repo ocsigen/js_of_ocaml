@@ -17,6 +17,7 @@ type context =
   { constants : (Var.t, W.expression) Hashtbl.t
   ; mutable data_segments : (bool * W.data list) Var.Map.t
   ; mutable other_fields : W.module_field list
+  ; mutable use_exceptions : bool
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
   }
@@ -25,6 +26,7 @@ let make_context () =
   { constants = Hashtbl.create 128
   ; data_segments = Var.Map.empty
   ; other_fields = []
+  ; use_exceptions = false
   ; apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
   }
@@ -252,6 +254,15 @@ let if_ ty e l1 l2 =
   match e with
   | W.UnOp (I32 Eqz, e') -> instr (If (ty, e', instrs2, instrs1))
   | _ -> instr (If (ty, e, instrs1, instrs2))
+
+let try_ ty body exception_name handler =
+  let* body = blk body in
+  let* handler = blk handler in
+  instr (Try (ty, body, [ exception_name, handler ], None))
+
+let use_exceptions st =
+  st.context.use_exceptions <- true;
+  (), st
 
 let need_apply_fun ~arity st =
   let ctx = st.context in

@@ -2,6 +2,7 @@ type context =
   { constants : (Wa_ast.var, Wa_ast.expression) Hashtbl.t
   ; mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
+  ; mutable use_exceptions : bool
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
   }
@@ -72,6 +73,8 @@ val block : Wa_ast.func_type -> unit t -> unit t
 
 val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 
+val try_ : Wa_ast.func_type -> unit t -> string -> unit t -> unit t
+
 val add_var : Wa_ast.var -> int t
 
 val define_var : Wa_ast.var -> expression -> unit t
@@ -85,6 +88,8 @@ val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> uni
 val get_data_segment : Code.Var.t -> (bool * Wa_ast.data list) t
 
 val get_context : context t
+
+val use_exceptions : unit t
 
 val need_apply_fun : arity:int -> Code.Var.t t
 
