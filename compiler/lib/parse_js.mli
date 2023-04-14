@@ -34,6 +34,6 @@ val parse : Lexer.t -> Javascript.program
 val parse' :
      Lexer.t
   -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
-     * (Js_token.t * Parse_info.t) list
+     * (Js_token.t * Lexing.position * Lexing.position) list
 
 val parse_expr : Lexer.t -> Javascript.expression

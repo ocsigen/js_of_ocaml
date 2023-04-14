@@ -652,9 +652,9 @@ let check_vs_string s toks =
   in
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
-    | ((Js_token.T_STRING (_, codepoint_len) as x), pi) :: rest ->
-        let { Parse_info.idx = codepoint_idx; _ } = pi in
+    | (Js_token.T_VIRTUAL_SEMICOLON, _, _) :: rest -> loop offset pos rest
+    | ((Js_token.T_STRING (_, codepoint_len) as x), p1, _p2) :: rest ->
+        let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
         let bytes_idx = codepoint_idx - offset in
         let bytes_len =
           let bytes_len = ref 0 in
@@ -679,8 +679,8 @@ let check_vs_string s toks =
               a
               b);
         loop offset (bytes_idx + bytes_len + 1) rest
-    | (x, pi) :: rest ->
-        let { Parse_info.idx; _ } = pi in
+    | (x, p1, _p2) :: rest ->
+        let { Parse_info.idx; _ } = Parse_info.t_of_pos p1 in
         let idx = idx - offset in
         let str = Js_token.to_string x in
         space pos idx;
@@ -706,8 +706,9 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
-    | (tok, pos) :: xs ->
+    | [ (Js_token.T_EOF, _, _) ] | [] -> Printf.printf "\n"
+    | (tok, p1, _p2) :: xs ->
+        let pos = Parse_info.t_of_pos p1 in
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
         | true -> Printf.printf "\n%2d: " pos.Parse_info.line
@@ -828,7 +829,7 @@ let%expect_test "multiline comments" =
 /* test */ 42 /* test */
 |};
   [%expect {|
-    2: 0:/* test */, 11:42, 14:/* test */, 0:;, |}];
+    2: 0:/* test */, 11:42, 0:;, 14:/* test */, |}];
   parse_print_token {|
     42
     /*
@@ -838,11 +839,11 @@ let%expect_test "multiline comments" =
     42
 |};
   [%expect {|
-    2: 4:42,
+    2: 4:42, 0:;,
     3: 4:/*
        "
 
-       */, 0:;,
+       */,
     7: 4:42, 0:;, |}]
 
 let%expect_test "++--" =
@@ -938,7 +939,9 @@ a:while(true){
     23: 4:a (identifier), 6:=, 8:b (identifier), 0:; (virtual),
     24: 4:++ (INCR), 6:c (identifier), 0:; (virtual),
     26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
-    27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual), |}]
+    27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual),
+    29: 4:do, 7:{, 9:x (identifier), 0:; (virtual), 11:}, 13:while, 19:(, 20:true, 24:), 0:; (virtual), 26:y (identifier), 0:; (virtual),
+    30: 4:do, 7:;, 9:while, 15:(, 16:true, 20:), 0:; (virtual), 22:y (identifier), 0:; (virtual), |}]
 
 let%expect_test _ =
   parse_print_token
@@ -1000,7 +1003,7 @@ c
      6: 0://Another comment,
      7: 0:a (identifier), 0:; (virtual),
      8: 0:if, 3:(, 4:a (identifier), 5:), 7:{,
-     9: 0://Provides: test,
+     9: 0://Provides: test(annot),
     10: 0:b (identifier), 0:; (virtual),
     11: 0:},
     12: 0://Provides: test(annot),

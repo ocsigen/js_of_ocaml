@@ -208,7 +208,7 @@ T_BACKQUOTE
 (* Rules type decl                                                       *)
 (*************************************************************************)
 
-%start <[ `Annot of Js_token.Annot.t * Parse_info.t | `Item of Javascript.statement * Javascript.location] list > program
+%start <(Lexing.position * (Javascript.statement * Javascript.location)) list > program
 %start <Javascript.expression> standalone_expression
 
 %%
@@ -248,8 +248,7 @@ annot:
   | a=TAnnot { a, pi $symbolstartpos }
 
 module_item:
-  | item { `Item $1 }
-  | annot { `Annot $1 }
+  | item { $symbolstartpos, $1 }
 
 (*************************************************************************)
 (* statement                                                           *)
