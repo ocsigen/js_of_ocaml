@@ -153,6 +153,15 @@ end = struct
   let all t_rev = List.rev_map t_rev ~f:(fun ((t, (p, _)), _) -> t, Parse_info.t_of_pos p)
 end
 
+let parse_annot s =
+  match String.drop_prefix ~prefix:"//" s with
+  | None -> None
+  | Some s -> (
+      let buf = Lexing.from_string s in
+      try Some (Annot_parser.annot Annot_lexer.main buf) with
+      | Not_found -> None
+      | _ -> None)
+
 let parse_aux the_parser (lexbuf : Lexer.t) =
   let init = the_parser (Lexer.curr_pos lexbuf) in
   let fol prev (_, (c, _)) =
@@ -172,25 +181,6 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
     | I.Accepted _ -> assert false
     | I.Rejected -> `Error prev
     | I.HandlingError _ -> loop_error prev (I.resume checkpoint)
-  in
-  let parse_annot s =
-    match String.drop_prefix ~prefix:"//" s with
-    | None -> None
-    | Some s -> (
-        let buf = Lexing.from_string s in
-        try
-          match Annot_parser.annot Annot_lexer.main buf with
-          | `Requires l -> Some (`Requires l)
-          | `Provides (n, k, ka) -> Some (`Provides (n, k, ka))
-          | `Version l -> Some (`Version l)
-          | `Weakdef -> Some `Weakdef
-          | `Always -> Some `Always
-          | `If name -> Some (`If name)
-          | `Ifnot name -> Some (`Ifnot name)
-          | `Alias name -> Some (`Alias name)
-        with
-        | Not_found -> None
-        | _ -> None)
   in
   let rec loop prev buffer checkpoint =
     let module I = Js_parser.MenhirInterpreter in
