@@ -104,7 +104,7 @@ let string_of_mapping mapping =
         let l =
           (c.gen_col - !gen_col)
           ::
-          (if c.ori_source = -1
+          (if c.ori_source < 0
            then []
            else
              (c.ori_source - !ori_source)
@@ -119,7 +119,7 @@ let string_of_mapping mapping =
                  [ n - n' ]))
         in
         gen_col := c.gen_col;
-        if c.ori_source <> -1
+        if c.ori_source >= 0
         then (
           ori_source := c.ori_source;
           ori_line := c.ori_line;
@@ -199,7 +199,9 @@ let mapping_of_string str =
 
 let maps ~sources_offset ~names_offset x =
   let gen_line = x.gen_line in
-  let ori_source = x.ori_source + sources_offset in
+  let ori_source =
+    if x.ori_source < 0 then x.ori_source else x.ori_source + sources_offset
+  in
   let ori_name =
     match x.ori_name with
     | None -> None
