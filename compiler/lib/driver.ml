@@ -295,7 +295,11 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
       Javascript.IdentSet.fold
         (fun x acc ->
           match x with
-          | V _ -> assert false
+          | V _ ->
+              (* This is an error. We don't complain here as we want
+                 to be able to name other variable to make it
+                 easier to spot the problematic ones *)
+              acc
           | S { name = Utf8 x; _ } -> StringSet.add x acc)
         free
         StringSet.empty
@@ -387,7 +391,11 @@ let coloring js =
   Javascript.IdentSet.iter
     (fun x ->
       match x with
-      | V _ -> assert false
+      | V _ ->
+          (* This is an error. We don't complain here as we want
+             to be able to name other variable to make it
+             easier to spot the problematic ones *)
+          ()
       | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
     free;
   let js = Js_assign.program js in

@@ -20,7 +20,9 @@
 open! Stdlib
 open Javascript
 
-let debug = Debug.find "shortvar"
+let debug_shortvar = Debug.find "shortvar"
+
+let debug = Debug.find "js_assign"
 
 module S = Code.Var.Set
 module Var = Code.Var
@@ -156,7 +158,7 @@ while compiling the OCaml toplevel:
             stats idx i)
           else incr bad)
     done;
-    if debug ()
+    if debug_shortvar ()
     then
       Format.eprintf
         "Function parameter properly assigned: %d/%d@."
@@ -173,7 +175,7 @@ while compiling the OCaml toplevel:
         stats idx n);
       if List.is_empty l then assert (weight idx.(i) = 0)
     done;
-    if debug ()
+    if debug_shortvar ()
     then (
       Format.eprintf "short variable count: %d/%d@." !n1 !n0;
       Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3);
@@ -340,30 +342,43 @@ let program' (module Strategy : Strategy) p =
         | S _ -> false)
       mapper#get_free
   in
-  if IdentSet.cardinal free <> 0
-  then (
-    if not (debug ())
-    then failwith_ "Some variables escaped (#%d)" (IdentSet.cardinal free)
-    else
-      let (_ : Source_map.t option) =
-        Js_output.program (Pretty_print.to_out_channel stderr) p
-      in
-      Format.eprintf "Some variables escaped:";
-      IdentSet.iter
-        (function
-          | S _ -> ()
-          | V v -> Format.eprintf " <%s>" (Var.to_string v))
-        free;
-      Format.eprintf "@.");
+  let has_free_var = IdentSet.cardinal free <> 0 in
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
   let color = function
-    | V v ->
+    | V v -> (
         let name = names.(Var.idx v) in
-        assert (not (String.is_empty name));
-        ident ~var:v (Utf8_string.of_string_exn name)
+        match name, has_free_var with
+        | "", true -> V v
+        | "", false -> assert false
+        | _, (true | false) -> ident ~var:v (Utf8_string.of_string_exn name))
     | x -> x
   in
-  (new Js_traverse.subst color)#program p
+  let p = (new Js_traverse.subst color)#program p in
+  (if has_free_var
+   then
+     let () =
+       if not (debug_shortvar () || debug ())
+       then
+         Format.eprintf
+           "Some variables escaped (#%d). Use [--debug js_assign] for more info.@."
+           (IdentSet.cardinal free)
+       else
+         let (_ : Source_map.t option) =
+           Js_output.program
+             ~accept_unnamed_var:true
+             (Pretty_print.to_out_channel stderr)
+             p
+         in
+         Format.eprintf "Some variables escaped:";
+         IdentSet.iter
+           (function
+             | S _ -> ()
+             | V v -> Format.eprintf " <%s>" (Var.to_string v))
+           free;
+         Format.eprintf "@."
+     in
+     assert false);
+  p
 
 let program p =
   if Config.Flag.shortvar ()

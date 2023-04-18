@@ -54,6 +54,8 @@ module Make (D : sig
   val get_name_index : string -> int
 
   val source_map_enabled : bool
+
+  val accept_unnamed_var : bool
 end) =
 struct
   open D
@@ -131,7 +133,7 @@ struct
         PP.string f name
     | S { name = Utf8 name; var = None; loc = U | N } -> PP.string f name
     | V v ->
-        assert (Debug.find "shortvar" ());
+        assert accept_unnamed_var;
         PP.string f ("<" ^ Code.Var.to_string v ^ ">")
 
   let opt_identifier f i =
@@ -1537,7 +1539,7 @@ let hashtbl_to_list htb =
   |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
   |> List.map ~f:fst
 
-let program f ?source_map p =
+let program ?(accept_unnamed_var = false) f ?source_map p =
   let temp_mappings = ref [] in
   let files = Hashtbl.create 17 in
   let names = Hashtbl.create 17 in
@@ -1602,6 +1604,8 @@ let program f ?source_map p =
     let get_file_index = get_file_index
 
     let source_map_enabled = source_map_enabled
+
+    let accept_unnamed_var = accept_unnamed_var
   end) in
   PP.set_needed_space_function f need_space;
   if Config.Flag.effects () then PP.set_adjust_indentation_function f (fun n -> n mod 40);
