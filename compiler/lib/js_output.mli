@@ -19,4 +19,8 @@
  *)
 
 val program :
-  Pretty_print.t -> ?source_map:Source_map.t -> Javascript.program -> Source_map.t option
+     ?accept_unnamed_var:bool
+  -> Pretty_print.t
+  -> ?source_map:Source_map.t
+  -> Javascript.program
+  -> Source_map.t option
