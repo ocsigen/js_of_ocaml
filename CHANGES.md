@@ -5,6 +5,9 @@
 ## Bug fixes
 * Compiler: put custom header at the top of the output file (fix #1441)
 * Compiler (js parser): fix parsing of js labels (fix #1440)
+* Compiler: fix simplification of js with let and const
+* Compiler: reduce memory consumption when parsing js
+* Compiler: parsing js can return a list of token, the list was sometime incorrect
 
 # 5.1.1 (2023-03-15) - Lille
 ## Bug fixes
