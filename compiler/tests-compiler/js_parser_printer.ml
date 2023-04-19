@@ -911,6 +911,9 @@ a:while(true){
     a = b + c
     (d + e).print()
 
+    do { x } while (true) y
+    do ; while (true) y
+
 |};
   [%expect
     {|
