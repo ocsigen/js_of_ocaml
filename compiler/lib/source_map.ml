@@ -62,21 +62,6 @@ let empty ~filename =
   ; mappings = []
   }
 
-let map_line_number ~f = function
-  | Gen { gen_line; gen_col } -> Gen { gen_line = f gen_line; gen_col }
-  | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
-      Gen_Ori
-        { gen_line = f gen_line; gen_col; ori_source; ori_line = f ori_line; ori_col }
-  | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
-      Gen_Ori_Name
-        { gen_line = f gen_line
-        ; gen_col
-        ; ori_source
-        ; ori_line = f ori_line
-        ; ori_col
-        ; ori_name
-        }
-
 let gen_line = function
   | Gen { gen_line; _ } | Gen_Ori { gen_line; _ } | Gen_Ori_Name { gen_line; _ } ->
       gen_line
@@ -85,11 +70,6 @@ let gen_col = function
   | Gen { gen_col; _ } | Gen_Ori { gen_col; _ } | Gen_Ori_Name { gen_col; _ } -> gen_col
 
 let string_of_mapping mapping =
-  let mapping =
-    (* The binary format encodes lines starting at zero, but
-       [ori_line] and [gen_line] are 1 based. *)
-    List.map mapping ~f:(map_line_number ~f:pred)
-  in
   let a = Array.of_list mapping in
   let len = Array.length a in
   Array.stable_sort
@@ -99,10 +79,12 @@ let string_of_mapping mapping =
       | n -> n)
     a;
   let buf = Buffer.create 1024 in
-  let gen_line_r = ref 0 in
+  (* The binary format encodes lines starting at zero, but
+     [ori_line] and [gen_line] are 1 based. *)
+  let gen_line_r = ref 1 in
   let gen_col_r = ref 0 in
   let ori_source_r = ref 0 in
-  let ori_line_r = ref 0 in
+  let ori_line_r = ref 1 in
   let ori_col_r = ref 0 in
   let ori_name_r = ref 0 in
   let rec loop prev i =
@@ -169,19 +151,16 @@ let mapping_of_string str =
   let total_len = String.length str in
   let gen_col = ref 0 in
   let ori_source = ref 0 in
-  let ori_line = ref 0 in
+  let ori_line = ref 1 in
   let ori_col = ref 0 in
   let ori_name = ref 0 in
   let rec readline line pos acc =
     if pos >= total_len
-    then
-      (* The binary format encodes lines starting at zero, but
-         [ori_line] and [gen_line] are 1 based. *)
-      List.rev_map acc ~f:(map_line_number ~f:succ)
+    then List.rev acc
     else
       let last = try String.index_from str pos ';' with Not_found -> total_len in
       gen_col := 0;
-      let pos, acc = read_tokens line pos last acc in
+      let pos, acc = if pos = last then pos + 1, acc else read_tokens line pos last acc in
       readline (succ line) pos acc
   and read_tokens line start stop acc =
     let last = try min (String.index_from str start ',') stop with Not_found -> stop in
@@ -225,7 +204,9 @@ let mapping_of_string str =
         let acc = v :: acc in
         if last = stop then last + 1, acc else read_tokens line (last + 1) stop acc
   in
-  readline 0 0 []
+  (* The binary format encodes lines starting at zero, but
+     [ori_line] and [gen_line] are 1 based. *)
+  readline 1 0 []
 
 let maps ~sources_offset ~names_offset x =
   match x with
