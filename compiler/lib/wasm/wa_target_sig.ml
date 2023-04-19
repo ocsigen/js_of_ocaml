@@ -116,6 +116,10 @@ module type S = sig
 
     val int_mul : expression -> expression -> expression
 
+    val int_div : expression -> expression -> expression
+
+    val int_mod : expression -> expression -> expression
+
     val int_neg : expression -> expression
 
     val int_or : expression -> expression -> expression

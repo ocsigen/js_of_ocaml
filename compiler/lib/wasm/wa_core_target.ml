@@ -90,10 +90,7 @@ module Memory = struct
 
   let tag e = Arith.(mem_load (e - const 4l) land const 0xffl)
 
-  (*
-  let length e = Arith.(mem_load (e - const 4l) lsr const 10l)
-*)
-  let block_length e = Arith.((mem_load (e - const 4l) lsr const 9l) lor const 1l)
+  let block_length e = Arith.(mem_load (e - const 4l) lsr const 1l)
 
   let array_get e e' = mem_load Arith.(e + ((e' - const 1l) lsl const 1l))
 
@@ -149,6 +146,10 @@ module Value = struct
   let int_sub i i' = Arith.(i - i' + const 1l)
 
   let int_mul i i' = val_int Arith.(int_val i * int_val i')
+
+  let int_div i i' = val_int Arith.(int_val i / int_val i')
+
+  let int_mod i i' = val_int Arith.(int_val i mod int_val i')
 
   let int_neg i = Arith.(const 2l - i)
 

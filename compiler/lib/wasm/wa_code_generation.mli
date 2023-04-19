@@ -32,6 +32,10 @@ module Arith : sig
 
   val ( * ) : expression -> expression -> expression
 
+  val ( / ) : expression -> expression -> expression
+
+  val ( mod ) : expression -> expression -> expression
+
   val ( lsl ) : expression -> expression -> expression
 
   val ( lsr ) : expression -> expression -> expression
@@ -53,6 +57,8 @@ module Arith : sig
   val ( <> ) : expression -> expression -> expression
 
   val ult : expression -> expression -> expression
+
+  val uge : expression -> expression -> expression
 
   val eqz : expression -> expression
 end

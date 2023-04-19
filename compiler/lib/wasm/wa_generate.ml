@@ -67,6 +67,7 @@ let rec translate_expr ctx stack_ctx x e =
   | Prim (p, l) -> (
       let l = List.map ~f:transl_prim_arg l in
       match p, l with
+      (*ZZZ array operations need to deal with array of unboxed floats *)
       | Extern "caml_array_unsafe_get", [ x; y ] -> Memory.array_get x y
       | Extern "caml_array_unsafe_set", [ x; y; z ] ->
           seq (Memory.array_set x y z) Value.unit
@@ -78,7 +79,9 @@ let rec translate_expr ctx stack_ctx x e =
           seq (Memory.bytes_set x y z) Value.unit
       | Extern "%int_add", [ x; y ] -> Value.int_add x y
       | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
-      | Extern "%int_mul", [ x; y ] -> Value.int_mul x y
+      | Extern ("%int_mul" | "%direct_int_mul"), [ x; y ] -> Value.int_mul x y
+      | Extern "%direct_int_div", [ x; y ] -> Value.int_div x y
+      | Extern "%direct_int_mod", [ x; y ] -> Value.int_mod x y
       | Extern "%int_neg", [ x ] -> Value.int_neg x
       | Extern "%int_or", [ x; y ] -> Value.int_or x y
       | Extern "%int_and", [ x; y ] -> Value.int_and x y
@@ -86,6 +89,16 @@ let rec translate_expr ctx stack_ctx x e =
       | Extern "%int_lsl", [ x; y ] -> Value.int_lsl x y
       | Extern "%int_lsr", [ x; y ] -> Value.int_lsr x y
       | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
+      | Extern "caml_check_bound", [ x; y ] ->
+          let nm = "caml_array_bound_error" in
+          register_primitive ctx nm { params = []; result = [] };
+          seq
+            (if_
+               { params = []; result = [] }
+               (Arith.uge (Value.int_val y) (Memory.block_length x))
+               (instr (CallInstr (S nm, [])))
+               (return ()))
+            x
       | Extern nm, l ->
           (*ZZZ Different calling convention when large number of parameters *)
           register_primitive ctx nm (func_type (List.length l));
@@ -108,7 +121,7 @@ let rec translate_expr ctx stack_ctx x e =
       | Ult, [ x; y ] -> Value.ult x y
       | Array_get, [ x; y ] -> Memory.array_get x y
       | IsInt, [ x ] -> Value.is_int x
-      | Vectlength, [ x ] -> Memory.block_length x
+      | Vectlength, [ x ] -> Value.val_int (Memory.block_length x)
       | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
           assert false)
 
