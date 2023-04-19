@@ -1419,7 +1419,7 @@ class simpl =
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
-          | Variable_statement ((Var as k), l1) ->
+          | Variable_statement (((Var | Let | Const) as k), l1) ->
               let x =
                 List.map l1 ~f:(function
                     | DeclPattern _ as d -> Variable_statement (k, [ d ]), loc
