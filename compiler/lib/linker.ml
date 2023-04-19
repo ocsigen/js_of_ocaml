@@ -68,7 +68,7 @@ module Named_value : sig
 end = struct
   class traverse_and_find_named_values all =
     object
-      inherit Js_traverse.map as self
+      inherit Js_traverse.iter as self
 
       method expression x =
         let open Javascript in
@@ -83,7 +83,7 @@ end = struct
   let find_all code =
     let all = ref StringSet.empty in
     let p = new traverse_and_find_named_values all in
-    ignore (p#program code);
+    p#program code;
     !all
 end
 
