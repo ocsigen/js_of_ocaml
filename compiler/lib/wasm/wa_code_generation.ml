@@ -13,26 +13,40 @@ https://github.com/llvm/llvm-project/issues/58438
 (* binaryen does not support block input parameters
    https://github.com/WebAssembly/binaryen/issues/5047 *)
 
+type constant_global =
+  { init : W.expression option
+  ; constant : bool
+  }
+
 type context =
   { constants : (Var.t, W.expression) Hashtbl.t
   ; mutable data_segments : (bool * W.data list) Var.Map.t
+  ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
+  ; types : (string, Var.t) Hashtbl.t
+  ; mutable closure_envs : Var.t Var.Map.t
+        (** GC: mapping of recursive functions to their shared environment *)
   ; mutable use_exceptions : bool
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
+  ; mutable init_code : W.instruction list
   }
 
 let make_context () =
   { constants = Hashtbl.create 128
   ; data_segments = Var.Map.empty
+  ; constant_globals = Var.Map.empty
   ; other_fields = []
+  ; types = Hashtbl.create 128
+  ; closure_envs = Var.Map.empty
   ; use_exceptions = false
   ; apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
+  ; init_code = []
   }
 
 type var =
-  | Local of int
+  | Local of int * W.value_type option
   | Expr of W.expression t
 
 and state =
@@ -75,10 +89,68 @@ let register_constant x e st =
   Hashtbl.add st.context.constants x e;
   (), st
 
-let register_global name typ init st =
-  st.context.other_fields <-
-    W.Global { name = S name; typ; init } :: st.context.other_fields;
+type type_def =
+  { supertype : Wa_ast.var option
+  ; final : bool
+  ; typ : Wa_ast.str_type
+  }
+
+let register_type nm gen_typ st =
+  let context = st.context in
+  let { supertype; final; typ }, st = gen_typ () st in
+  ( (try Hashtbl.find context.types nm
+     with Not_found ->
+       let name = Var.fresh_n nm in
+       context.other_fields <-
+         Type [ { name; typ; supertype; final } ] :: context.other_fields;
+       Hashtbl.add context.types nm name;
+       name)
+  , st )
+
+let register_global name ?(constant = false) typ init st =
+  st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;
+  (match name with
+  | S _ -> ()
+  | V nm ->
+      st.context.constant_globals <-
+        Var.Map.add
+          nm
+          { init = (if not typ.mut then Some init else None)
+          ; constant = (not typ.mut) || constant
+          }
+          st.context.constant_globals);
   (), st
+
+let global_is_constant name =
+  let* ctx = get_context in
+  return
+    (match Var.Map.find_opt name ctx.constant_globals with
+    | Some { constant = true; _ } -> true
+    | _ -> false)
+
+let get_global (name : Wa_ast.symbol) =
+  match name with
+  | S _ -> return None
+  | V name ->
+      let* ctx = get_context in
+      return
+        (match Var.Map.find_opt name ctx.constant_globals with
+        | Some { init; _ } -> init
+        | _ -> None)
+
+let register_init_code code st =
+  let st' = { var_count = 0; vars = Var.Map.empty; instrs = []; context = st.context } in
+  let (), st' = code st' in
+  st.context.init_code <- st'.instrs @ st.context.init_code;
+  (), st
+
+let set_closure_env f env st =
+  st.context.closure_envs <- Var.Map.add f env st.context.closure_envs;
+  (), st
+
+let get_closure_env f st = Var.Map.find f st.context.closure_envs, st
+
+let is_closure f st = Var.Map.mem f st.context.closure_envs, st
 
 let var x st =
   try Var.Map.find x st.vars, st
@@ -86,15 +158,17 @@ let var x st =
     try Expr (return (Hashtbl.find st.context.constants x)), st
     with Not_found ->
       Format.eprintf "ZZZ %a@." Var.print x;
-      Local 0, st)
+      Local (0, None), st)
 
-let add_var x ({ var_count; vars; _ } as st) =
+let add_var ?typ x ({ var_count; vars; _ } as st) =
   match Var.Map.find_opt x vars with
-  | Some (Local i) -> i, st
+  | Some (Local (i, typ')) ->
+      assert (Poly.equal typ typ');
+      i, st
   | Some (Expr _) -> assert false
   | None ->
       let i = var_count in
-      let vars = Var.Map.add x (Local i) vars in
+      let vars = Var.Map.add x (Local (i, typ)) vars in
       i, { st with var_count = var_count + 1; vars }
 
 let define_var x e st = (), { st with vars = Var.Map.add x (Expr e) st.vars }
@@ -107,6 +181,12 @@ let blk l st =
   let instrs = st.instrs in
   let (), st = l { st with instrs = [] } in
   List.rev st.instrs, { st with instrs }
+
+let cast ?(nullable = false) typ e =
+  let* e = e in
+  match typ, e with
+  | W.I31, W.I31New _ -> return e
+  | _ -> return (W.RefCast ({ W.nullable; typ }, e))
 
 module Arith = struct
   let binary op e e' =
@@ -189,20 +269,33 @@ module Arith = struct
   let eqz = unary Eqz
 
   let const n = return (W.Const (I32 n))
+
+  let to_int31 n =
+    let* n = n in
+    match n with
+    | W.I31Get (S, n') -> return n'
+    | _ -> return (W.I31New n)
+
+  let of_int31 n =
+    let* n = n in
+    match n with
+    | W.I31New (Const (I32 _) as c) -> return c (*ZZZ Overflow *)
+    | _ -> return (W.I31Get (S, n))
 end
 
 let is_small_constant e =
   match e with
-  | W.ConstSym _ | W.Const _ -> return true
+  | W.ConstSym _ | W.Const _ | W.I31New (W.Const _) | W.RefFunc _ -> return true
+  | W.GlobalGet (V name) -> global_is_constant name
   | _ -> return false
 
 let load x =
   let* x = var x in
   match x with
-  | Local x -> return (W.LocalGet x)
+  | Local (x, _) -> return (W.LocalGet x)
   | Expr e -> e
 
-let tee x e =
+let tee ?typ x e =
   let* e = e in
   let* b = is_small_constant e in
   if b
@@ -210,28 +303,28 @@ let tee x e =
     let* () = register_constant x e in
     return e
   else
-    let* i = add_var x in
+    let* i = add_var ?typ x in
     return (W.LocalTee (i, e))
 
-let rec store ?(always = false) x e =
+let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
   | W.Seq (l, e') ->
       let* () = instrs l in
-      store ~always x (return e')
+      store ~always ?typ x (return e')
   | _ ->
       let* b = is_small_constant e in
       if b && not always
       then register_constant x e
       else
-        let* i = add_var x in
+        let* i = add_var ?typ x in
         instr (LocalSet (i, e))
 
 let assign x e =
   let* x = var x in
   let* e = e in
   match x with
-  | Local x -> instr (W.LocalSet (x, e))
+  | Local (x, _) -> instr (W.LocalSet (x, e))
   | Expr _ -> assert false
 
 let seq l e =
@@ -242,7 +335,9 @@ let seq l e =
 let drop e =
   let* e = e in
   match e with
-  | W.Seq (l, Const _) -> instrs l
+  | W.Seq (l, e') ->
+      let* b = is_small_constant e' in
+      if b then instrs l else instr (Drop e)
   | _ -> instr (Drop e)
 
 let loop ty l =
@@ -288,7 +383,23 @@ let need_curry_fun ~arity st =
        x)
   , st )
 
-let function_body ~context ~body =
+let init_code context = instrs context.init_code
+
+let function_body ~context ~value_type ~param_count ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
-  st.var_count, List.rev st.instrs
+  let local_count, body = st.var_count, List.rev st.instrs in
+  let local_types = Array.make local_count None in
+  Var.Map.iter
+    (fun _ v ->
+      match v with
+      | Local (i, typ) -> local_types.(i) <- typ
+      | Expr _ -> ())
+    st.vars;
+  let locals =
+    local_types
+    |> Array.map ~f:(fun v -> Option.value ~default:value_type v)
+    |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
+    |> Array.to_list
+  in
+  locals, body

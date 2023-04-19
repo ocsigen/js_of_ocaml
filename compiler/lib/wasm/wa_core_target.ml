@@ -109,7 +109,9 @@ module Memory = struct
 
   let set_field e idx e' = mem_store ~offset:(4 * idx) e e'
 
-  let load_function_pointer ~arity closure = field closure (if arity = 1 then 0 else 2)
+  let load_function_pointer ~arity ?skip_cast:_ closure =
+    let* e = field closure (if arity = 1 then 0 else 2) in
+    return (`Index, e)
 
   let load_function_arity closure = Arith.(field closure 1 lsr const 24l)
 end
@@ -268,6 +270,7 @@ module Closure = struct
   let translate ~context ~closures ~stack_ctx x =
     let info = Code.Var.Map.find x closures in
     let f, _ = List.hd info.Wa_closure_conversion.functions in
+    let* () = set_closure_env x x in
     if Code.Var.equal x f
     then (
       let start_env = closure_env_start info in
@@ -374,12 +377,12 @@ module Closure = struct
       ]
 
   let curry_load ~arity:_ _ closure =
-    return (Memory.field (load closure) 3, Memory.field (load closure) 4)
+    return (Memory.field (load closure) 3, Memory.field (load closure) 4, None)
 end
 
-let entry_point ~register_primitive =
+let entry_point ~context:_ ~register_primitive =
   let declare_global name =
-    register_global name { mut = true; typ = I32 } (Const (I32 0l))
+    register_global (S name) { mut = true; typ = I32 } (Const (I32 0l))
   in
   let* () = declare_global "sp" in
   let* () = declare_global "young_ptr" in

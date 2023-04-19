@@ -20,12 +20,16 @@ module Make (Target : Wa_target_sig.S) = struct
       ~init:(return ())
       l
 
-  let call ~arity closure args =
+  let call ?typ ~arity closure args =
     let funct = Var.fresh () in
-    let* closure = tee funct closure in
+    let* closure = tee ?typ funct closure in
     let args = args @ [ closure ] in
-    let* funct = Memory.load_function_pointer ~arity (load funct) in
-    return (W.Call_indirect (func_type (List.length args), funct, args))
+    let* kind, funct =
+      Memory.load_function_pointer ~arity ~skip_cast:(Option.is_some typ) (load funct)
+    in
+    match kind with
+    | `Index -> return (W.Call_indirect (func_type (List.length args), funct, args))
+    | `Ref ty -> return (W.Call_ref (ty, funct, args))
 
   let curry_app_name n m = Printf.sprintf "curry_app %d_%d" n m
 
@@ -51,28 +55,26 @@ module Make (Target : Wa_target_sig.S) = struct
       let* _ = add_var f in
       let* args' = expression_list load args in
       let* _f = load f in
-      let rec loop m args closure =
+      let rec loop m args closure closure_typ =
         if m = arity
         then
-          let* e = call ~arity (load closure) (List.append args args') in
+          let* e = call ?typ:closure_typ ~arity (load closure) (List.append args args') in
           instr (W.Push e)
         else
-          let* load_arg, load_closure = Closure.curry_load ~arity m closure in
+          let* load_arg, load_closure, closure_typ =
+            Closure.curry_load ~arity m closure
+          in
           let* x = load_arg in
           let closure' = Code.Var.fresh_n "f" in
-          let* () = store closure' load_closure in
-          loop (m + 1) (x :: args) closure'
+          let* () = store ?typ:closure_typ closure' load_closure in
+          loop (m + 1) (x :: args) closure' closure_typ
       in
-      loop m [] f
+      loop m [] f None
     in
-    let local_count, body = function_body ~context ~body in
-    W.Function
-      { name
-      ; exported_name = None
-      ; typ = func_type 1
-      ; locals = List.init ~len:(local_count - m - 1) ~f:(fun _ -> Value.value)
-      ; body
-      }
+    let locals, body =
+      function_body ~context ~value_type:Value.value ~param_count:2 ~body
+    in
+    W.Function { name; exported_name = None; typ = func_type 1; locals; body }
 
   let curry_name n m = Printf.sprintf "curry_%d_%d" n m
 
@@ -121,14 +123,10 @@ module Make (Target : Wa_target_sig.S) = struct
       let* () = instr (Push e) in
       Stack.perform_spilling stack_ctx (`Instr ret)
     in
-    let local_count, body = function_body ~context ~body in
-    W.Function
-      { name
-      ; exported_name = None
-      ; typ = func_type 1
-      ; locals = List.init ~len:(local_count - 2) ~f:(fun _ -> Value.value)
-      ; body
-      }
+    let locals, body =
+      function_body ~context ~value_type:Value.value ~param_count:2 ~body
+    in
+    W.Function { name; exported_name = None; typ = func_type 1; locals; body }
     :: functions
 
   let curry ~arity ~name = curry ~arity arity ~name
@@ -186,14 +184,10 @@ module Make (Target : Wa_target_sig.S) = struct
          in
          build_applies (load f) l)
     in
-    let local_count, body = function_body ~context ~body in
-    W.Function
-      { name
-      ; exported_name = None
-      ; typ = func_type arity
-      ; locals = List.init ~len:(local_count - arity - 1) ~f:(fun _ -> Value.value)
-      ; body
-      }
+    let locals, body =
+      function_body ~context ~value_type:Value.value ~param_count:(arity + 1) ~body
+    in
+    W.Function { name; exported_name = None; typ = func_type arity; locals; body }
 
   let f ~context =
     IntMap.iter

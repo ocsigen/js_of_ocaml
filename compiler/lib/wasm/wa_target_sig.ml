@@ -60,7 +60,10 @@ module type S = sig
       -> expression
 
     val load_function_pointer :
-      arity:int -> expression -> Wa_ast.expression Wa_code_generation.t
+         arity:int
+      -> ?skip_cast:bool
+      -> expression
+      -> ([ `Index | `Ref of Wa_ast.var ] * Wa_ast.expression) Wa_code_generation.t
 
     val load_function_arity : expression -> expression
 
@@ -164,9 +167,14 @@ module type S = sig
       -> Wa_ast.expression Wa_code_generation.t
 
     val curry_load :
-      arity:int -> int -> Code.Var.t -> (expression * expression) Wa_code_generation.t
+         arity:int
+      -> int
+      -> Code.Var.t
+      -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
   end
 
   val entry_point :
-    register_primitive:(string -> Wa_ast.func_type -> unit) -> unit Wa_code_generation.t
+       context:Wa_code_generation.context
+    -> register_primitive:(string -> Wa_ast.func_type -> unit)
+    -> unit Wa_code_generation.t
 end
