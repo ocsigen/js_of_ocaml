@@ -20,13 +20,25 @@
 open! Stdlib
 
 type map =
-  { gen_line : int
-  ; gen_col : int
-  ; ori_source : int
-  ; ori_line : int
-  ; ori_col : int
-  ; ori_name : int option
-  }
+  | Gen of
+      { gen_line : int
+      ; gen_col : int
+      }
+  | Gen_Ori of
+      { gen_line : int
+      ; gen_col : int
+      ; ori_source : int
+      ; ori_line : int
+      ; ori_col : int
+      }
+  | Gen_Ori_Name of
+      { gen_line : int
+      ; gen_col : int
+      ; ori_source : int
+      ; ori_line : int
+      ; ori_col : int
+      ; ori_name : int
+      }
 
 type mapping = map list
 
@@ -50,9 +62,27 @@ let empty ~filename =
   ; mappings = []
   }
 
-let map_line_number ~f =
-  let f i = if i < 0 then i else f i in
-  fun m -> { m with ori_line = f m.ori_line; gen_line = f m.gen_line }
+let map_line_number ~f = function
+  | Gen { gen_line; gen_col } -> Gen { gen_line = f gen_line; gen_col }
+  | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
+      Gen_Ori
+        { gen_line = f gen_line; gen_col; ori_source; ori_line = f ori_line; ori_col }
+  | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+      Gen_Ori_Name
+        { gen_line = f gen_line
+        ; gen_col
+        ; ori_source
+        ; ori_line = f ori_line
+        ; ori_col
+        ; ori_name
+        }
+
+let gen_line = function
+  | Gen { gen_line; _ } | Gen_Ori { gen_line; _ } | Gen_Ori_Name { gen_line; _ } ->
+      gen_line
+
+let gen_col = function
+  | Gen { gen_col; _ } | Gen_Ori { gen_col; _ } | Gen_Ori_Name { gen_col; _ } -> gen_col
 
 let string_of_mapping mapping =
   let mapping =
@@ -64,66 +94,71 @@ let string_of_mapping mapping =
   let len = Array.length a in
   Array.stable_sort
     ~cmp:(fun t1 t2 ->
-      match compare t1.gen_line t2.gen_line with
-      | 0 -> compare t1.gen_col t2.gen_col
+      match compare (gen_line t1) (gen_line t2) with
+      | 0 -> compare (gen_col t1) (gen_col t2)
       | n -> n)
     a;
   let buf = Buffer.create 1024 in
-  let gen_line = ref 0 in
-  let gen_col = ref 0 in
-  let ori_source = ref 0 in
-  let ori_line = ref 0 in
-  let ori_col = ref 0 in
-  let ori_name = ref 0 in
+  let gen_line_r = ref 0 in
+  let gen_col_r = ref 0 in
+  let ori_source_r = ref 0 in
+  let ori_line_r = ref 0 in
+  let ori_col_r = ref 0 in
+  let ori_name_r = ref 0 in
   let rec loop prev i =
     if i < len
     then
       let c = a.(i) in
-      if prev >= 0
-         && c.ori_source = a.(prev).ori_source
-         && c.ori_line = a.(prev).ori_line
-         && c.ori_col = a.(prev).ori_col
-      then (* We already are at this location *)
-        loop prev (i + 1)
-      else if i + 1 < len
-              && c.gen_line = a.(i + 1).gen_line
-              && c.gen_col = a.(i + 1).gen_col
+      if i + 1 < len && gen_line c = gen_line a.(i + 1) && gen_col c = gen_col a.(i + 1)
       then (* Only keep one source location per generated location *)
         loop prev (i + 1)
       else (
-        if !gen_line <> c.gen_line
+        if !gen_line_r <> gen_line c
         then (
-          assert (!gen_line < c.gen_line);
-          for _i = !gen_line to c.gen_line - 1 do
+          assert (!gen_line_r < gen_line c);
+          for _i = !gen_line_r to gen_line c - 1 do
             Buffer.add_char buf ';'
           done;
-          gen_col := 0;
-          gen_line := c.gen_line)
+          gen_col_r := 0;
+          gen_line_r := gen_line c)
         else if i > 0
         then Buffer.add_char buf ',';
         let l =
-          (c.gen_col - !gen_col)
-          ::
-          (if c.ori_source < 0
-           then []
-           else
-             (c.ori_source - !ori_source)
-             :: (c.ori_line - !ori_line)
-             :: (c.ori_col - !ori_col)
-             ::
-             (match c.ori_name with
-             | None -> []
-             | Some n ->
-                 let n' = !ori_name in
-                 ori_name := n;
-                 [ n - n' ]))
+          match c with
+          | Gen { gen_line = _; gen_col } ->
+              let res = [ gen_col - !gen_col_r ] in
+              gen_col_r := gen_col;
+              res
+          | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
+              let res =
+                [ gen_col - !gen_col_r
+                ; ori_source - !ori_source_r
+                ; ori_line - !ori_line_r
+                ; ori_col - !ori_col_r
+                ]
+              in
+              gen_col_r := gen_col;
+              ori_col_r := ori_col;
+              ori_line_r := ori_line;
+              ori_source_r := ori_source;
+              res
+          | Gen_Ori_Name
+              { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+              let res =
+                [ gen_col - !gen_col_r
+                ; ori_source - !ori_source_r
+                ; ori_line - !ori_line_r
+                ; ori_col - !ori_col_r
+                ; ori_name - !ori_name_r
+                ]
+              in
+              gen_col_r := gen_col;
+              ori_col_r := ori_col;
+              ori_line_r := ori_line;
+              ori_source_r := ori_source;
+              ori_name_r := ori_name;
+              res
         in
-        gen_col := c.gen_col;
-        if c.ori_source >= 0
-        then (
-          ori_source := c.ori_source;
-          ori_line := c.ori_line;
-          ori_col := c.ori_col);
         Vlq64.encode_l buf l;
         loop i (i + 1))
   in
@@ -158,38 +193,33 @@ let mapping_of_string str =
           match v with
           | [ g ] ->
               gen_col := !gen_col + g;
-              { gen_line = line
-              ; gen_col = !gen_col
-              ; ori_source = -1
-              ; ori_line = -1
-              ; ori_col = -1
-              ; ori_name = None
-              }
+              Gen { gen_line = line; gen_col = !gen_col }
           | [ g; os; ol; oc ] ->
               gen_col := !gen_col + g;
               ori_source := !ori_source + os;
               ori_line := !ori_line + ol;
               ori_col := !ori_col + oc;
-              { gen_line = line
-              ; gen_col = !gen_col
-              ; ori_source = !ori_source
-              ; ori_line = !ori_line
-              ; ori_col = !ori_col
-              ; ori_name = None
-              }
+              Gen_Ori
+                { gen_line = line
+                ; gen_col = !gen_col
+                ; ori_source = !ori_source
+                ; ori_line = !ori_line
+                ; ori_col = !ori_col
+                }
           | [ g; os; ol; oc; on ] ->
               gen_col := !gen_col + g;
               ori_source := !ori_source + os;
               ori_line := !ori_line + ol;
               ori_col := !ori_col + oc;
               ori_name := !ori_name + on;
-              { gen_line = line
-              ; gen_col = !gen_col
-              ; ori_source = !ori_source
-              ; ori_line = !ori_line
-              ; ori_col = !ori_col
-              ; ori_name = Some !ori_name
-              }
+              Gen_Ori_Name
+                { gen_line = line
+                ; gen_col = !gen_col
+                ; ori_source = !ori_source
+                ; ori_line = !ori_line
+                ; ori_col = !ori_col
+                ; ori_name = !ori_name
+                }
           | _ -> invalid_arg "Source_map.mapping_of_string"
         in
         let acc = v :: acc in
@@ -198,36 +228,47 @@ let mapping_of_string str =
   readline 0 0 []
 
 let maps ~sources_offset ~names_offset x =
-  let gen_line = x.gen_line in
-  let ori_source =
-    if x.ori_source < 0 then x.ori_source else x.ori_source + sources_offset
-  in
-  let ori_name =
-    match x.ori_name with
-    | None -> None
-    | Some ori_name -> Some (ori_name + names_offset)
-  in
-  { x with gen_line; ori_source; ori_name }
+  match x with
+  | Gen _ -> x
+  | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
+      let ori_source = ori_source + sources_offset in
+      Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+  | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+      let ori_source = ori_source + sources_offset in
+      let ori_name = ori_name + names_offset in
+      Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
 
 let filter_map sm ~f =
   let a = Array.of_list sm.mappings in
   Array.stable_sort
     ~cmp:(fun t1 t2 ->
-      match compare t1.gen_line t2.gen_line with
-      | 0 -> compare t1.gen_col t2.gen_col
+      match compare (gen_line t1) (gen_line t2) with
+      | 0 -> compare (gen_col t1) (gen_col t2)
       | n -> n)
     a;
-  let l = Array.to_list a |> List.group ~f:(fun a b -> a.gen_line = b.gen_line) in
+  let l = Array.to_list a |> List.group ~f:(fun a b -> gen_line a = gen_line b) in
 
   let rec loop acc mapping =
     match mapping with
     | [] -> List.rev acc
     | x :: xs ->
-        let gen_line = (List.hd x).gen_line in
+        let gen_line = gen_line (List.hd x) in
         let acc =
           match f gen_line with
           | None -> acc
-          | Some gen_line -> List.rev_append_map x ~f:(fun x -> { x with gen_line }) acc
+          | Some gen_line ->
+              List.rev_append_map
+                x
+                ~f:(function
+                  | Gen { gen_line = _; gen_col } -> Gen { gen_line; gen_col }
+                  | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
+                      Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+                  | Gen_Ori_Name
+                      { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name }
+                    ->
+                      Gen_Ori_Name
+                        { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
+                acc
         in
         loop acc xs
   in

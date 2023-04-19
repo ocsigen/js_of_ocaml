@@ -87,25 +87,17 @@ struct
       match loc with
       | N -> ()
       | U | Pi { Parse_info.src = None | Some ""; _ } ->
-          push_mapping
-            (PP.pos f)
-            { Source_map.gen_line = -1
-            ; gen_col = -1
-            ; ori_source = -1
-            ; ori_line = -1
-            ; ori_col = -1
-            ; ori_name = None
-            }
+          push_mapping (PP.pos f) (Source_map.Gen { gen_line = -1; gen_col = -1 })
       | Pi { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
-            { Source_map.gen_line = -1
-            ; gen_col = -1
-            ; ori_source = get_file_index file
-            ; ori_line = line
-            ; ori_col = col
-            ; ori_name = None
-            }
+            (Source_map.Gen_Ori
+               { gen_line = -1
+               ; gen_col = -1
+               ; ori_source = get_file_index file
+               ; ori_line = line
+               ; ori_col = col
+               })
 
   let output_debug_info_ident f nm loc =
     if source_map_enabled
@@ -115,13 +107,14 @@ struct
       | Some { Parse_info.src = Some file; line; col; _ } ->
           push_mapping
             (PP.pos f)
-            { Source_map.gen_line = -1
-            ; gen_col = -1
-            ; ori_source = get_file_index file
-            ; ori_line = line
-            ; ori_col = col
-            ; ori_name = Some (get_name_index nm)
-            }
+            (Source_map.Gen_Ori_Name
+               { gen_line = -1
+               ; gen_col = -1
+               ; ori_source = get_file_index file
+               ; ori_line = line
+               ; ori_col = col
+               ; ori_name = get_name_index nm
+               })
 
   let ident f = function
     | S { name = Utf8 name; var = Some v; _ } ->
@@ -1632,11 +1625,19 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
         in
         let mappings =
           List.rev_append_map !temp_mappings sm.mappings ~f:(fun (pos, m) ->
-              { m with
-                (* [p_line] starts at zero, [gen_line] at 1 *)
-                Source_map.gen_line = pos.PP.p_line + 1
-              ; Source_map.gen_col = pos.PP.p_col
-              })
+              let gen_line = pos.PP.p_line + 1 in
+              let gen_col = pos.PP.p_col in
+              match m with
+              | Source_map.Gen { gen_col = _; gen_line = _ } ->
+                  Source_map.Gen { gen_col; gen_line }
+              | Source_map.Gen_Ori
+                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col } ->
+                  Source_map.Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+              | Source_map.Gen_Ori_Name
+                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col; ori_name }
+                ->
+                  Source_map.Gen_Ori_Name
+                    { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
         in
         Some { sm with Source_map.sources; names; sources_content; mappings }
   in
