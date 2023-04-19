@@ -24,17 +24,18 @@ let print_mapping (sm : Source_map.t) =
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
   List.iter sm.mappings ~f:(fun (m : Source_map.map) ->
-      let file = function
-        | -1 -> "null"
-        | n -> normalize_path sources.(n)
-      in
-      Printf.printf
-        "%s:%d:%d -> %d:%d\n"
-        (file m.ori_source)
-        m.ori_line
-        m.ori_col
-        m.gen_line
-        m.gen_col)
+      match m with
+      | Gen_Ori { gen_line; gen_col; ori_line; ori_col; ori_source }
+      | Gen_Ori_Name { gen_line; gen_col; ori_line; ori_col; ori_source; ori_name = _ } ->
+          let file n = normalize_path sources.(n) in
+          Printf.printf
+            "%s:%d:%d -> %d:%d\n"
+            (file ori_source)
+            ori_line
+            ori_col
+            gen_line
+            gen_col
+      | Gen { gen_line; gen_col } -> Printf.printf "null -> %d:%d\n" gen_line gen_col)
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -78,7 +79,7 @@ let%expect_test _ =
       /dune-root/test.ml:1:7 -> 6:25
       /dune-root/test.ml:1:12 -> 6:27
       /dune-root/test.ml:1:4 -> 7:18
-      null:-1:-1 -> 10:2
+      null -> 10:2
     |}]
 
 let%expect_test _ =
@@ -119,8 +120,9 @@ let%expect_test _ =
     ;;;;EAEE,EAAE,EAAC,CAAE;ECQY,UACC |}]
 
 let%expect_test _ =
-  let gen (gen_line, gen_col) (ori_line, ori_col) ori_source : Source_map.map =
-    { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name = None }
+  let gen (gen_line, gen_col) (line, col) source : Source_map.map =
+    Source_map.Gen_Ori
+      { gen_line; gen_col; ori_source = source; ori_line = line; ori_col = col }
   in
   let s1 : Source_map.t =
     { (Source_map.empty ~filename:"1.map") with

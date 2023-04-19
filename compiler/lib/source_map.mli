@@ -18,13 +18,25 @@
  *)
 
 type map =
-  { gen_line : int
-  ; gen_col : int
-  ; ori_source : int
-  ; ori_line : int
-  ; ori_col : int
-  ; ori_name : int option
-  }
+  | Gen of
+      { gen_line : int
+      ; gen_col : int
+      }
+  | Gen_Ori of
+      { gen_line : int
+      ; gen_col : int
+      ; ori_source : int
+      ; ori_line : int
+      ; ori_col : int
+      }
+  | Gen_Ori_Name of
+      { gen_line : int
+      ; gen_col : int
+      ; ori_source : int
+      ; ori_line : int
+      ; ori_col : int
+      ; ori_name : int
+      }
 
 type mapping = map list
 
