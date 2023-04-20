@@ -97,7 +97,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
+          dune-cache: ${{ matrix.os != 'macos-latest' }}
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
