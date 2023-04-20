@@ -50,14 +50,14 @@ let () = myfun ()
       var
        f =
          function(x){
-          return 0 === x ? 1 : runtime.caml_mul(i$0, app(g$0, x - 1 | 0));
+          return Object.is(0, x) ? 1 : runtime.caml_mul(i$0, app(g$0, x - 1 | 0));
          },
        g = function(x){return app(f$0, x);};
       let f$0 = f, g$0 = g;
       var _c_ = app(f, i);
       caml_call2(Stdlib_Printf[3], _a_, _c_);
       var _b_ = i + 1 | 0;
-      if(4 === i) return 0;
+      if(Object.is(4, i)) return 0;
       i = _b_;
      }
     }

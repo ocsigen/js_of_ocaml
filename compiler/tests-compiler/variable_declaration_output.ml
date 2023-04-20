@@ -131,7 +131,7 @@ let%expect_test _ =
       if(_a_){
        _b_ = _a_[1];
        if(_b_){
-        if(2 === _b_[1] && ! param[2]) return 3;
+        if(Object.is(2, _b_[1]) && ! param[2]) return 3;
        }
        else if(! param[2]) return 2;
       }
@@ -153,7 +153,7 @@ let%expect_test _ =
       if(_a_){
        var _b_ = _a_[1];
        if(_b_){
-        if(2 === _b_[1] && ! param[2]) return 3;
+        if(Object.is(2, _b_[1]) && ! param[2]) return 3;
        }
        else if(! param[2]) return 2;
       }

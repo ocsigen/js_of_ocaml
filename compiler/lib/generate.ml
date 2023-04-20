@@ -1057,7 +1057,6 @@ let remove_unused_tail_args ctx exact trampolined args =
   else args
 
 let is_int = function
-  | J.ENum n -> J.Num.is_int n
   | J.EBin ((J.Bor | J.Lsr), _, _) -> true
   | _ -> false
 
