@@ -72,7 +72,12 @@ let%expect_test "dup" =
   |}]
 
 let%expect_test "sameness" =
+  let mzero = 1. /. neg_infinity in
   print_bool (nan == nan);
   [%expect {| true |}];
   print_bool (-0. == 0.);
+  [%expect {| false |}];
+  print_bool (mzero == float_of_int 0);
+  [%expect {| false |}];
+  print_bool (float_of_int 0 == ~-.(float_of_int 0));
   [%expect {| false |}]

@@ -110,7 +110,7 @@ let%expect_test _ =
             >>> 0
            ? caml_call1(Stdlib_Printf[2], _b_)
            : caml_call1(Stdlib_Printf[2], _c_);
-       if(1 === i[1])
+       if(Object.is(1, i[1]))
         log_success(0);
        else
         caml_call1(log_failure, cst_side_effect_computed_twice);

@@ -1029,7 +1029,6 @@ let throw_statement ctx cx k loc =
       ]
 
 let is_int = function
-  | J.ENum n -> J.Num.is_int n
   | J.EBin ((J.Bor | J.Lsr), _, _) -> true
   | _ -> false
 

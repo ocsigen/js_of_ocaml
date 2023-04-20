@@ -42,7 +42,7 @@ let rec f x y z =
           function(a, b, c){
            var f = a, e = b, d = c;
            for(;;){
-            if(0 === f && 0 === e && 0 === d) return 1;
+            if(Object.is(0, f) && Object.is(0, e) && Object.is(0, d)) return 1;
             var g = (d + f | 0) + e | 0;
             f = f + d | 0;
             e = e - d | 0;

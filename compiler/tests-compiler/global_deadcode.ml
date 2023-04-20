@@ -68,7 +68,7 @@ let%expect_test "Eliminates unused functions from functor" =
     function add(x, t){
      if(! t) return [0, 0, x, 0, 1];
      var r = t[3], v = t[2], l = t[1], c = caml_call2(Ord[1], x, v);
-     if(0 === c) return t;
+     if(Object.is(0, c)) return t;
      if(0 <= c){var rr = add(x, r); return Object.is(r, rr) ? t : bal(l, v, rr);}
      var ll = add(x, l);
      return Object.is(l, ll) ? t : bal(ll, v, r);
@@ -83,7 +83,7 @@ let%expect_test "Eliminates unused functions from functor" =
        v = param$0[2],
        l = param$0[1],
        c = caml_call2(Ord[1], x, v);
-      if(0 === c) return v;
+      if(Object.is(0, c)) return v;
       var r$0 = 0 <= c ? r : l;
       param$0 = r$0;
      }
