@@ -279,7 +279,7 @@ module Memory = struct
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast (_, GlobalGet nm) -> (
+    | W.RefCast (_, GlobalGet (V nm)) -> (
         let* init = get_global nm in
         match init with
         | Some (W.StructNew (_, l)) ->
@@ -474,12 +474,8 @@ module Closure = struct
           (W.StructNew
              ( typ
              , if arity = 1
-               then [ Const (I32 1l); RefFunc (V f) ]
-               else
-                 [ Const (I32 (Int32.of_int arity))
-                 ; RefFunc (V curry_fun)
-                 ; RefFunc (V f)
-                 ] ))
+               then [ Const (I32 1l); RefFunc f ]
+               else [ Const (I32 (Int32.of_int arity)); RefFunc curry_fun; RefFunc f ] ))
       in
       return (W.GlobalGet (V name))
     else
@@ -493,12 +489,8 @@ module Closure = struct
             (W.StructNew
                ( typ
                , (if arity = 1
-                  then [ W.Const (I32 1l); RefFunc (V f) ]
-                  else
-                    [ Const (I32 (Int32.of_int arity))
-                    ; RefFunc (V curry_fun)
-                    ; RefFunc (V f)
-                    ])
+                  then [ W.Const (I32 1l); RefFunc f ]
+                  else [ Const (I32 (Int32.of_int arity)); RefFunc curry_fun; RefFunc f ])
                  @ l ))
       | (g, _) :: _ as functions ->
           let function_count = List.length functions in
@@ -530,12 +522,9 @@ module Closure = struct
               (W.StructNew
                  ( typ
                  , (if arity = 1
-                    then [ W.Const (I32 1l); RefFunc (V f) ]
+                    then [ W.Const (I32 1l); RefFunc f ]
                     else
-                      [ Const (I32 (Int32.of_int arity))
-                      ; RefFunc (V curry_fun)
-                      ; RefFunc (V f)
-                      ])
+                      [ Const (I32 (Int32.of_int arity)); RefFunc curry_fun; RefFunc f ])
                    @ [ env ] ))
           in
           if is_last_fun functions f
@@ -654,4 +643,4 @@ module Stack = struct
   let stack_adjustment_needed _ ~src:_ ~dst:_ = false
 end
 
-let entry_point ~context ~register_primitive:_ = init_code context
+let entry_point ~context = init_code context

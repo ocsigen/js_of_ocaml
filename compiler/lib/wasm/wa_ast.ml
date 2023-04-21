@@ -121,11 +121,11 @@ type expression =
   | LocalTee of int * expression
   | GlobalGet of symbol
   | Call_indirect of func_type * expression * expression list
-  | Call of symbol * expression list
+  | Call of var * expression list
   | MemoryGrow of int * expression
   | Seq of instruction list * expression
   | Pop of value_type
-  | RefFunc of symbol
+  | RefFunc of var
   | Call_ref of var * expression * expression list
   | I31New of expression
   | I31Get of signage * expression
@@ -155,32 +155,34 @@ and instruction =
   | Br_table of expression * int list * int
   | Br of int * expression option
   | Return of expression option
-  | CallInstr of symbol * expression list
+  | CallInstr of var * expression list
   | Nop
   | Push of expression
   | Try of
       func_type
       * instruction list
-      * (string * instruction list) list
+      * (var * instruction list) list
       * instruction list option
-  | Throw of string * expression
+  | Throw of var * expression
   | Rethrow of int
   | ArraySet of signage option * var * expression * expression * expression
   | StructSet of signage option * var * int * expression * expression
   | Br_on_cast of int * ref_type * ref_type * expression
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | Return_call_indirect of func_type * expression * expression list
-  | Return_call of symbol * expression list
+  | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
 
-type import_desc = Fun of func_type
+type import_desc =
+  | Fun of func_type
+  | Tag of value_type
 
 type data =
   | DataI8 of int
   | DataI32 of int32
   | DataI64 of int64
   | DataBytes of string
-  | DataSym of symbol * int
+  | DataSym of var * int
   | DataSpace of int
 
 type type_field =
@@ -210,11 +212,13 @@ type module_field =
       ; init : expression
       }
   | Tag of
-      { name : symbol
+      { name : var
       ; typ : value_type
       }
   | Import of
-      { name : string
+      { import_module : string
+      ; import_name : string
+      ; name : var
       ; desc : import_desc
       }
   | Type of type_field list

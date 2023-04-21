@@ -17,14 +17,8 @@ module Generate (Target : Wa_target_sig.S) = struct
     { live : int array
     ; blocks : block Addr.Map.t
     ; closures : Wa_closure_conversion.closure Var.Map.t
-    ; mutable primitives : W.func_type StringMap.t
     ; global_context : Wa_code_generation.context
     }
-
-  let register_primitive ctx nm typ =
-    (*ZZZ check type*)
-    if not (StringMap.mem nm ctx.primitives)
-    then ctx.primitives <- StringMap.add nm typ ctx.primitives
 
   let func_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
@@ -43,10 +37,10 @@ module Generate (Target : Wa_target_sig.S) = struct
               Stack.kill_variables stack_ctx;
               let* b = is_closure f in
               if b
-              then return (W.Call (V f, List.rev (closure :: acc)))
+              then return (W.Call (f, List.rev (closure :: acc)))
               else
                 match kind, funct with
-                | `Index, W.ConstSym (g, 0) | `Ref _, W.RefFunc g ->
+                | `Index, W.ConstSym (V g, 0) | `Ref _, W.RefFunc g ->
                     (* Functions with constant closures ignore their
                        environment *)
                     let* unit = Value.unit in
@@ -68,7 +62,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         let* args = expression_list load args in
         let* closure = load f in
         Stack.kill_variables stack_ctx;
-        return (W.Call (V apply, args @ [ closure ]))
+        return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _) ->
         Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n) -> Memory.field (load x) n
@@ -101,24 +95,27 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "%int_lsr", [ x; y ] -> Value.int_lsr x y
         | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
         | Extern "caml_check_bound", [ x; y ] ->
-            let nm = "caml_array_bound_error" in
-            register_primitive ctx nm { params = []; result = [] };
+            let* f =
+              register_import
+                ~name:"caml_array_bound_error"
+                (Fun { params = []; result = [] })
+            in
             seq
               (if_
                  { params = []; result = [] }
                  (Arith.uge (Value.int_val y) (Memory.block_length x))
-                 (instr (CallInstr (S nm, [])))
+                 (instr (CallInstr (f, [])))
                  (return ()))
               x
-        | Extern nm, l ->
+        | Extern name, l ->
             (*ZZZ Different calling convention when large number of parameters *)
-            register_primitive ctx nm (func_type (List.length l));
+            let* f = register_import ~name (Fun (func_type (List.length l))) in
             let* () = Stack.perform_spilling stack_ctx (`Instr x) in
             let rec loop acc l =
               match l with
               | [] ->
                   Stack.kill_variables stack_ctx;
-                  return (W.Call (S nm, List.rev acc))
+                  return (W.Call (f, List.rev acc))
               | x :: r ->
                   let* x = x in
                   loop (x :: acc) r
@@ -351,16 +348,16 @@ module Generate (Target : Wa_target_sig.S) = struct
               in
               nest l context
           | Raise (x, _) ->
-              let* () = use_exceptions in
               let* e = load x in
-              instr (Throw (exception_name, e))
+              let* tag = register_import ~name:exception_name (Tag Value.value) in
+              instr (Throw (tag, e))
           | Pushtrap (cont, x, cont', _) ->
               let context' = extend_context fall_through context in
-              let* () = use_exceptions in
+              let* tag = register_import ~name:exception_name (Tag Value.value) in
               try_
                 { params = []; result = result_typ }
                 (translate_branch result_typ fall_through pc cont context' stack_ctx)
-                exception_name
+                tag
                 (let* () = store ~always:true x (return (W.Pop Value.value)) in
                  translate_branch result_typ fall_through pc cont' context' stack_ctx)
           | Poptrap cont ->
@@ -431,12 +428,8 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   let entry_point ctx toplevel_fun entry_name =
     let body =
-      let* () =
-        entry_point
-          ~context:ctx.global_context
-          ~register_primitive:(register_primitive ctx)
-      in
-      drop (return (W.Call (V toplevel_fun, [])))
+      let* () = entry_point ~context:ctx.global_context in
+      drop (return (W.Call (toplevel_fun, [])))
     in
     let locals, body =
       function_body
@@ -469,12 +462,7 @@ module Generate (Target : Wa_target_sig.S) = struct
   Code.Print.program (fun _ _ -> "") p;
 *)
     let ctx =
-      { live = live_vars
-      ; blocks = p.blocks
-      ; closures
-      ; primitives = StringMap.empty
-      ; global_context = make_context ()
-      }
+      { live = live_vars; blocks = p.blocks; closures; global_context = make_context () }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
@@ -484,10 +472,15 @@ module Generate (Target : Wa_target_sig.S) = struct
           translate_function p ctx name_opt toplevel_name params cont)
         []
     in
-    let primitives =
-      List.map
-        ~f:(fun (name, ty) -> W.Import { name; desc = Fun ty })
-        (StringMap.bindings ctx.primitives)
+    let imports =
+      List.concat
+        (List.map
+           ~f:(fun (import_module, m) ->
+             List.map
+               ~f:(fun (import_name, (name, desc)) ->
+                 W.Import { import_module; import_name; name; desc })
+               (StringMap.bindings m))
+           (StringMap.bindings ctx.global_context.imports))
     in
     let constant_data =
       List.map
@@ -496,15 +489,10 @@ module Generate (Target : Wa_target_sig.S) = struct
         (Var.Map.bindings ctx.global_context.data_segments)
     in
     Curry.f ~context:ctx.global_context;
-    let start_function = entry_point ctx toplevel_name "kernel_run" in
-    let fields =
-      List.rev_append
-        ctx.global_context.other_fields
-        (primitives @ functions @ (start_function :: constant_data))
-    in
-    if ctx.global_context.use_exceptions
-    then W.Tag { name = S exception_name; typ = Value.value } :: fields
-    else fields
+    let start_function = entry_point ctx toplevel_name "_initialize" in
+    List.rev_append
+      ctx.global_context.other_fields
+      (imports @ functions @ (start_function :: constant_data))
 end
 
 let f (p : Code.program) ~live_vars =

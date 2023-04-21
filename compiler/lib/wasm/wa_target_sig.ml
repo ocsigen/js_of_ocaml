@@ -161,7 +161,7 @@ module type S = sig
       -> x:Code.Var.t
       -> arity:int
       -> int
-      -> f:Wa_ast.symbol
+      -> f:Code.Var.t
       -> closure:Code.Var.t
       -> arg:Code.Var.t
       -> Wa_ast.expression Wa_code_generation.t
@@ -173,8 +173,5 @@ module type S = sig
       -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
   end
 
-  val entry_point :
-       context:Wa_code_generation.context
-    -> register_primitive:(string -> Wa_ast.func_type -> unit)
-    -> unit Wa_code_generation.t
+  val entry_point : context:Wa_code_generation.context -> unit Wa_code_generation.t
 end

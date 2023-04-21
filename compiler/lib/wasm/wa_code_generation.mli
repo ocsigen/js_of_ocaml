@@ -1,3 +1,5 @@
+open Stdlib
+
 type constant_global
 
 type context =
@@ -5,10 +7,10 @@ type context =
   ; mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
   ; mutable constant_globals : constant_global Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
+  ; mutable imports : (Code.Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
   ; types : (string, Code.Var.t) Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
-  ; mutable use_exceptions : bool
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wa_ast.instruction list
@@ -92,7 +94,7 @@ val block : Wa_ast.func_type -> unit t -> unit t
 
 val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 
-val try_ : Wa_ast.func_type -> unit t -> string -> unit t -> unit t
+val try_ : Wa_ast.func_type -> unit t -> Code.Var.t -> unit t -> unit t
 
 val add_var : ?typ:Wa_ast.value_type -> Wa_ast.var -> int t
 
@@ -108,10 +110,13 @@ type type_def =
 
 val register_type : string -> (unit -> type_def t) -> Wa_ast.var t
 
+val register_import :
+  ?import_module:string -> name:string -> Wa_ast.import_desc -> Wa_ast.var t
+
 val register_global :
   Wa_ast.symbol -> ?constant:bool -> Wa_ast.global_type -> Wa_ast.expression -> unit t
 
-val get_global : Wa_ast.symbol -> Wa_ast.expression option t
+val get_global : Code.Var.t -> Wa_ast.expression option t
 
 val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> unit t
 
@@ -128,8 +133,6 @@ val set_closure_env : Code.Var.t -> Code.Var.t -> unit t
 val get_closure_env : Code.Var.t -> Code.Var.t t
 
 val is_closure : Code.Var.t -> bool t
-
-val use_exceptions : unit t
 
 val need_apply_fun : arity:int -> Code.Var.t t
 

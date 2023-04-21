@@ -16,7 +16,7 @@ module Memory = struct
           match l with
           | [] -> assert false
           | W.DataI32 i :: _ when offset = 0 -> W.Const (I32 i)
-          | W.DataSym (sym, ofs) :: _ when offset = 0 -> W.ConstSym (sym, ofs)
+          | W.DataSym (sym, ofs) :: _ when offset = 0 -> W.ConstSym (V sym, ofs)
           | (W.DataI32 _ | DataSym _) :: r -> get_data (offset - 4) r
           | (DataI8 _ | DataBytes _ | DataSpace _ | DataI64 _) :: _ -> assert false
         in
@@ -35,7 +35,10 @@ module Memory = struct
     assert (offset >= 0);
     let* e = Arith.(e + const (Int32.of_int offset)) in
     let* e' = e' in
-    instr (CallInstr (S "caml_modify", [ e; e' ]))
+    let* f =
+      register_import ~name:"caml_modify" (Fun { W.params = [ I32; I32 ]; result = [] })
+    in
+    instr (CallInstr (f, [ e; e' ]))
 
   (*ZZZ
     p = young_ptr - size;
@@ -179,7 +182,7 @@ module Constant = struct
           W.DataI32 h :: List.map ~f:(fun c -> translate_rec context c) (Array.to_list a)
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (V name, 4)
+        W.DataSym (name, 4)
     | NativeString (Byte s | Utf (Utf8 s)) | String s ->
         let l = String.length s in
         let len = (l + 4) / 4 in
@@ -193,13 +196,13 @@ module Constant = struct
         in
         context.data_segments <-
           Code.Var.Map.add name (true, string) context.data_segments;
-        W.DataSym (V name, 4)
+        W.DataSym (name, 4)
     | Float f ->
         let h = Memory.header ~const:true ~tag:Obj.double_tag ~len:2 () in
         let name = Code.Var.fresh_n "float" in
         let block = [ W.DataI32 h; DataI64 (Int64.bits_of_float f) ] in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (V name, 4)
+        W.DataSym (name, 4)
     | Float_array l ->
         (*ZZZ Boxed array? *)
         let l = Array.to_list l in
@@ -211,19 +214,21 @@ module Constant = struct
           W.DataI32 h :: List.map ~f:(fun f -> translate_rec context (Float f)) l
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (V name, 4)
+        W.DataSym (name, 4)
     | Int64 i ->
         let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
         let name = Code.Var.fresh_n "int64" in
-        let block = [ W.DataI32 h; DataSym (S "caml_int64_ops", 0); DataI64 i ] in
+        let block =
+          [ W.DataI32 h; DataI32 0l (*ZZZ DataSym (S "caml_int64_ops", 0)*); DataI64 i ]
+        in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (V name, 4)
+        W.DataSym (name, 4)
 
   let translate c =
     let* context = get_context in
     return
       (match translate_rec context c with
-      | W.DataSym (V name, offset) -> W.ConstSym (V name, offset)
+      | W.DataSym (name, offset) -> W.ConstSym (V name, offset)
       | W.DataI32 i -> W.Const (I32 i)
       | _ -> assert false)
 end
@@ -300,7 +305,7 @@ module Closure = struct
             ~f:(fun e ->
               match e with
               | W.Const (I32 i) -> W.DataI32 i
-              | ConstSym (sym, offset) -> DataSym (sym, offset)
+              | ConstSym (V sym, offset) -> DataSym (sym, offset)
               | _ -> assert false)
             start
         in
@@ -370,7 +375,7 @@ module Closure = struct
       stack_ctx
       x
       ~tag:Obj.closure_tag
-      [ `Expr (W.ConstSym (f, 0))
+      [ `Expr (W.ConstSym (V f, 0))
       ; `Expr (closure_info ~arity ~sz:2)
       ; `Var closure
       ; `Var arg
@@ -380,16 +385,17 @@ module Closure = struct
     return (Memory.field (load closure) 3, Memory.field (load closure) 4, None)
 end
 
-let entry_point ~context:_ ~register_primitive =
+let entry_point ~context:_ =
   let declare_global name =
     register_global (S name) { mut = true; typ = I32 } (Const (I32 0l))
   in
   let* () = declare_global "sp" in
   let* () = declare_global "young_ptr" in
   let* () = declare_global "young_limit" in
-  register_primitive "caml_modify" { W.params = [ I32; I32 ]; result = [] };
-  register_primitive "__wasm_call_ctors" { W.params = []; result = [] };
-  let* () = instr (W.CallInstr (S "__wasm_call_ctors", [])) in
+  let* call_ctors =
+    register_import ~name:"__wasm_call_ctors" (Fun { W.params = []; result = [] })
+  in
+  let* () = instr (W.CallInstr (call_ctors, [])) in
   let* sz = Arith.const 3l in
   let* high = Arith.((return (W.MemoryGrow (0, sz)) + const 3l) lsl const 16l) in
   let* () = instr (W.GlobalSet (S "young_ptr", high)) in

@@ -23,10 +23,10 @@ type context =
   ; mutable data_segments : (bool * W.data list) Var.Map.t
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
+  ; mutable imports : (Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
   ; types : (string, Var.t) Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
-  ; mutable use_exceptions : bool
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
@@ -37,9 +37,9 @@ let make_context () =
   ; data_segments = Var.Map.empty
   ; constant_globals = Var.Map.empty
   ; other_fields = []
+  ; imports = StringMap.empty
   ; types = Hashtbl.create 128
   ; closure_envs = Var.Map.empty
-  ; use_exceptions = false
   ; apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
   ; init_code = []
@@ -111,10 +111,10 @@ let register_global name ?(constant = false) typ init st =
   st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;
   (match name with
   | S _ -> ()
-  | V nm ->
+  | V name ->
       st.context.constant_globals <-
         Var.Map.add
-          nm
+          name
           { init = (if not typ.mut then Some init else None)
           ; constant = (not typ.mut) || constant
           }
@@ -128,15 +128,34 @@ let global_is_constant name =
     | Some { constant = true; _ } -> true
     | _ -> false)
 
-let get_global (name : Wa_ast.symbol) =
-  match name with
-  | S _ -> return None
-  | V name ->
-      let* ctx = get_context in
-      return
-        (match Var.Map.find_opt name ctx.constant_globals with
-        | Some { init; _ } -> init
-        | _ -> None)
+let get_global name =
+  let* ctx = get_context in
+  return
+    (match Var.Map.find_opt name ctx.constant_globals with
+    | Some { init; _ } -> init
+    | _ -> None)
+
+let register_import ?(import_module = "env") ~name typ st =
+  ( (try
+       let x, typ' =
+         StringMap.find name (StringMap.find import_module st.context.imports)
+       in
+       (*ZZZ error message*)
+       assert (Poly.equal typ typ');
+       x
+     with Not_found ->
+       let x = Var.fresh_n name in
+       st.context.imports <-
+         StringMap.update
+           import_module
+           (fun m ->
+             Some
+               (match m with
+               | None -> StringMap.singleton name (x, typ)
+               | Some m -> StringMap.add name (x, typ) m))
+           st.context.imports;
+       x)
+  , st )
 
 let register_init_code code st =
   let st' = { var_count = 0; vars = Var.Map.empty; instrs = []; context = st.context } in
@@ -360,10 +379,6 @@ let try_ ty body exception_name handler =
   let* body = blk body in
   let* handler = blk handler in
   instr (Try (ty, body, [ exception_name, handler ], None))
-
-let use_exceptions st =
-  st.context.use_exceptions <- true;
-  (), st
 
 let need_apply_fun ~arity st =
   let ctx = st.context in
