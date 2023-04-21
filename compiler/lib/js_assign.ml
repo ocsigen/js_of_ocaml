@@ -344,6 +344,12 @@ let program' (module Strategy : Strategy) p =
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
+  (* ignore the choosen name for escaping/free [V _] variables *)
+  IdentSet.iter
+    (function
+      | S _ -> ()
+      | V x -> names.(Var.idx x) <- "")
+    free;
   let color = function
     | V v -> (
         let name = names.(Var.idx v) in
