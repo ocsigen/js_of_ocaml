@@ -117,6 +117,36 @@ module Memory = struct
     return (`Index, e)
 
   let load_function_arity closure = Arith.(field closure 1 lsr const 24l)
+
+  let box_float stack_ctx x e =
+    let p = Code.Var.fresh_n "p" in
+    let size = 12 in
+    seq
+      (let* () = Stack.perform_spilling stack_ctx (`Instr x) in
+       let* v =
+         tee p Arith.(return (W.GlobalGet (S "young_ptr")) - const (Int32.of_int size))
+       in
+       let* () = instr (W.GlobalSet (S "young_ptr", v)) in
+       let* () = mem_init (load p) (Arith.const (header ~tag:Obj.double_tag ~len:2 ())) in
+       Stack.kill_variables stack_ctx;
+       let* () = Stack.perform_reloads stack_ctx (`Vars Code.Var.Set.empty) in
+       let* p = load p in
+       let* e = e in
+       instr (Store (F64 (Int32.of_int 4), p, e)))
+      Arith.(load p + const 4l)
+
+  let unbox_float e =
+    let* e = e in
+    match e with
+    | W.ConstSym (V x, 4) ->
+        let get_data l =
+          match l with
+          | [ W.DataI32 _; W.DataI64 f ] -> W.Const (F64 (Int64.float_of_bits f))
+          | _ -> assert false
+        in
+        let* _, l = get_data_segment x in
+        return (get_data l)
+    | _ -> return (W.Load (F64 0l, e))
 end
 
 module Value = struct
@@ -383,6 +413,34 @@ module Closure = struct
 
   let curry_load ~arity:_ _ closure =
     return (Memory.field (load closure) 3, Memory.field (load closure) 4, None)
+end
+
+module Math = struct
+  let float_func_type n =
+    { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
+
+  let unary name x =
+    let* f = register_import ~name (Fun (float_func_type 1)) in
+    let* x = x in
+    return (W.Call (f, [ x ]))
+
+  let cos f = unary "cos" f
+
+  let sin f = unary "sin" f
+
+  let asin f = unary "asin" f
+
+  let binary name x y =
+    let* f = register_import ~name (Fun (float_func_type 2)) in
+    let* x = x in
+    let* y = y in
+    return (W.Call (f, [ x; y ]))
+
+  let atan2 f g = binary "atan2" f g
+
+  let power f g = binary "pow" f g
+
+  let fmod f g = binary "fmod" f g
 end
 
 let entry_point ~context:_ =

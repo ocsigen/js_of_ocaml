@@ -23,6 +23,26 @@ module Generate (Target : Wa_target_sig.S) = struct
   let func_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
+  let float_bin_op' stack_ctx x op f g =
+    Memory.box_float stack_ctx x (op (Memory.unbox_float f) (Memory.unbox_float g))
+
+  let float_bin_op stack_ctx x op f g =
+    let* f = Memory.unbox_float f in
+    let* g = Memory.unbox_float g in
+    Memory.box_float stack_ctx x (return (W.BinOp (F64 op, f, g)))
+
+  let float_un_op' stack_ctx x op f =
+    Memory.box_float stack_ctx x (op (Memory.unbox_float f))
+
+  let float_un_op stack_ctx x op f =
+    let* f = Memory.unbox_float f in
+    Memory.box_float stack_ctx x (return (W.UnOp (F64 op, f)))
+
+  let float_comparison op f g =
+    let* f = Memory.unbox_float f in
+    let* g = Memory.unbox_float g in
+    Value.val_int (return (W.BinOp (F64 op, f, g)))
+
   let rec translate_expr ctx stack_ctx x e =
     match e with
     | Apply { f; args; exact } when exact || List.length args = 1 ->
@@ -86,7 +106,33 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
         | Extern ("%int_mul" | "%direct_int_mul"), [ x; y ] -> Value.int_mul x y
         | Extern "%direct_int_div", [ x; y ] -> Value.int_div x y
+        | Extern "%int_div", [ x; y ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            seq
+              (if_
+                 { params = []; result = [] }
+                 (Arith.eqz (Value.int_val y))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              (Value.int_div x y)
         | Extern "%direct_int_mod", [ x; y ] -> Value.int_mod x y
+        | Extern "%int_mod", [ x; y ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            seq
+              (if_
+                 { params = []; result = [] }
+                 (Arith.eqz (Value.int_val y))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              (Value.int_mod x y)
         | Extern "%int_neg", [ x ] -> Value.int_neg x
         | Extern "%int_or", [ x; y ] -> Value.int_or x y
         | Extern "%int_and", [ x; y ] -> Value.int_and x y
@@ -107,6 +153,36 @@ module Generate (Target : Wa_target_sig.S) = struct
                  (instr (CallInstr (f, [])))
                  (return ()))
               x
+        | Extern "caml_add_float", [ f; g ] -> float_bin_op stack_ctx x Add f g
+        | Extern "caml_sub_float", [ f; g ] -> float_bin_op stack_ctx x Sub f g
+        | Extern "caml_mul_float", [ f; g ] -> float_bin_op stack_ctx x Mul f g
+        | Extern "caml_div_float", [ f; g ] -> float_bin_op stack_ctx x Div f g
+        | Extern "caml_copysign_float", [ f; g ] -> float_bin_op stack_ctx x CopySign f g
+        | Extern "caml_neg_float", [ f ] -> float_un_op stack_ctx x Neg f
+        | Extern "caml_abs_float", [ f ] -> float_un_op stack_ctx x Abs f
+        | Extern "caml_ceil_float", [ f ] -> float_un_op stack_ctx x Ceil f
+        | Extern "caml_floor_float", [ f ] -> float_un_op stack_ctx x Floor f
+        | Extern "caml_trunc_float", [ f ] -> float_un_op stack_ctx x Trunc f
+        | Extern "caml_round_float", [ f ] -> float_un_op stack_ctx x Nearest f
+        | Extern "caml_sqrt_float", [ f ] -> float_un_op stack_ctx x Sqrt f
+        | Extern "caml_eq_float", [ f; g ] -> float_comparison Eq f g
+        | Extern "caml_neq_float", [ f; g ] -> float_comparison Ne f g
+        | Extern "caml_ge_float", [ f; g ] -> float_comparison Ge f g
+        | Extern "caml_le_float", [ f; g ] -> float_comparison Le f g
+        | Extern "caml_gt_float", [ f; g ] -> float_comparison Gt f g
+        | Extern "caml_lt_float", [ f; g ] -> float_comparison Lt f g
+        | Extern "caml_int_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Value.val_int (return (W.UnOp (I32 (TruncF64 S), f)))
+        | Extern "caml_float_of_int", [ n ] ->
+            let* n = Value.int_val n in
+            Memory.box_float stack_ctx x (return (W.UnOp (F64 (ConvertI32 S), n)))
+        | Extern "caml_cos_float", [ f ] -> float_un_op' stack_ctx x Math.cos f
+        | Extern "caml_sin_float", [ f ] -> float_un_op' stack_ctx x Math.sin f
+        | Extern "caml_asin_float", [ f ] -> float_un_op' stack_ctx x Math.asin f
+        | Extern "caml_atan2_float", [ f; g ] -> float_bin_op' stack_ctx x Math.atan2 f g
+        | Extern "caml_power_float", [ f; g ] -> float_bin_op' stack_ctx x Math.power f g
+        | Extern "caml_fmod_float", [ f; g ] -> float_bin_op' stack_ctx x Math.fmod f g
         | Extern name, l ->
             (*ZZZ Different calling convention when large number of parameters *)
             let* f = register_import ~name (Fun (func_type (List.length l))) in

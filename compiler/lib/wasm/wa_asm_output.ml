@@ -136,19 +136,20 @@ module Output () = struct
     | I64 _ -> string "i64."
     | F64 _ -> string "f64."
 
-  let int_un_op op =
-    match op with
-    | Clz -> "clz"
-    | Ctz -> "ctz"
-    | Popcnt -> "popcnt"
-    | Eqz -> "eqz"
-
   let signage op (s : Wa_ast.signage) =
     op
     ^
     match s with
     | S -> "_s"
     | U -> "_u"
+
+  let int_un_op op =
+    match op with
+    | Clz -> "clz"
+    | Ctz -> "ctz"
+    | Popcnt -> "popcnt"
+    | Eqz -> "eqz"
+    | TruncF64 s -> signage "trunc_f64" s
 
   let int_bin_op (op : int_bin_op) =
     match op with
@@ -180,6 +181,8 @@ module Output () = struct
     | Trunc -> "trunc"
     | Nearest -> "nearest"
     | Sqrt -> "sqrt"
+    | ConvertI32 s -> signage "convert_i32" s
+    | ConvertI64 s -> signage "convert_i64" s
 
   let float_bin_op op =
     match op with
@@ -217,6 +220,8 @@ module Output () = struct
        then Int64.to_string i
        else Printf.sprintf "0x%Lx" i)
 
+  let float64 f = string (Printf.sprintf "%h" f) (*ZZZ nan with payload*)
+
   let index name = string (Code.Var.to_string name)
 
   let symbol name offset =
@@ -232,10 +237,7 @@ module Output () = struct
   let rec expression e =
     match e with
     | Const op ->
-        line
-          (type_prefix op
-          ^^ string "const "
-          ^^ select integer32 integer64 (fun f -> string (string_of_float f (*ZZZ*))) op)
+        line (type_prefix op ^^ string "const " ^^ select integer32 integer64 float64 op)
     | ConstSym (name, offset) ->
         line (type_prefix (I32 ()) ^^ string "const " ^^ symbol name offset)
     | UnOp (op, e') ->

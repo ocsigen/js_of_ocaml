@@ -159,6 +159,7 @@ let specialize_instrs info l =
         match i with
         | Let (x, Prim (Extern "caml_array_get", [ y; z ]))
         | Let (x, Prim (Extern "caml_array_get_float", [ y; z ]))
+        | Let (x, Prim (Extern "caml_floatarray_get", [ y; z ]))
         | Let (x, Prim (Extern "caml_array_get_addr", [ y; z ])) ->
             let idx =
               match the_int info z with
@@ -181,6 +182,7 @@ let specialize_instrs info l =
               aux info ((y, idx) :: checks) r acc
         | Let (x, Prim (Extern "caml_array_set", [ y; z; t ]))
         | Let (x, Prim (Extern "caml_array_set_float", [ y; z; t ]))
+        | Let (x, Prim (Extern "caml_floatarray_set", [ y; z; t ]))
         | Let (x, Prim (Extern "caml_array_set_addr", [ y; z; t ])) ->
             let idx =
               match the_int info z with
@@ -232,6 +234,7 @@ let f_once p =
                      ( "caml_array_set"
                      | "caml_array_unsafe_set"
                      | "caml_array_set_float"
+                     | "caml_floatarray_set"
                      | "caml_array_set_addr"
                      | "caml_array_unsafe_set_float"
                      | "caml_floatarray_unsafe_set" )

@@ -95,19 +95,20 @@ let type_prefix op nm =
   | F64 _ -> "f64.")
   ^ nm
 
-let int_un_op op =
-  match op with
-  | Clz -> "clz"
-  | Ctz -> "ctz"
-  | Popcnt -> "popcnt"
-  | Eqz -> "eqz"
-
 let signage op (s : Wa_ast.signage) =
   op
   ^
   match s with
   | S -> "_s"
   | U -> "_u"
+
+let int_un_op op =
+  match op with
+  | Clz -> "clz"
+  | Ctz -> "ctz"
+  | Popcnt -> "popcnt"
+  | Eqz -> "eqz"
+  | TruncF64 s -> signage "trunc_f64" s
 
 let int_bin_op (op : int_bin_op) =
   match op with
@@ -139,6 +140,8 @@ let float_un_op op =
   | Trunc -> "trunc"
   | Nearest -> "nearest"
   | Sqrt -> "sqrt"
+  | ConvertI32 s -> signage "convert_i32" s
+  | ConvertI64 s -> signage "convert_i64" s
 
 let float_bin_op op =
   match op with
@@ -186,13 +189,18 @@ let lookup_symbol ctx (x : symbol) =
 
 let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
 
+let float64 f =
+  if Float.equal (1. /. f) 0.
+  then if Float.( < ) f 0. then "-inf" else "inf"
+  else Printf.sprintf "%h" f (*ZZZ nan with payload*)
+
 let expression_or_instructions ctx in_function =
   let rec expression e =
     match e with
     | Const op ->
         [ List
             [ Atom (type_prefix op "const")
-            ; Atom (select Int32.to_string Int64.to_string string_of_float (*ZZZ*) op)
+            ; Atom (select Int32.to_string Int64.to_string float64 op)
             ]
         ]
     | ConstSym (symb, ofs) ->

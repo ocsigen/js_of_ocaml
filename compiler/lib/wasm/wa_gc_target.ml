@@ -338,6 +338,15 @@ module Memory = struct
   let load_function_arity closure =
     let* ty = Type.closure_type_1 in
     wasm_struct_get ty (wasm_cast ty closure) 0
+
+  let box_float _ _ e =
+    let* ty = Type.float_type in
+    let* e = e in
+    return (W.StructNew (ty, [ e ]))
+
+  let unbox_float e =
+    let* ty = Type.float_type in
+    wasm_struct_get ty (wasm_cast ty e) 0
 end
 
 module Constant = struct
@@ -641,6 +650,34 @@ module Stack = struct
   let adjust_stack _ ~src:_ ~dst:_ = return ()
 
   let stack_adjustment_needed _ ~src:_ ~dst:_ = false
+end
+
+module Math = struct
+  let float_func_type n =
+    { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
+
+  let unary name x =
+    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 1)) in
+    let* x = x in
+    return (W.Call (f, [ x ]))
+
+  let cos f = unary "cos" f
+
+  let sin f = unary "sin" f
+
+  let asin f = unary "asin" f
+
+  let binary name x y =
+    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
+    let* x = x in
+    let* y = y in
+    return (W.Call (f, [ x; y ]))
+
+  let atan2 f g = binary "atan2" f g
+
+  let power f g = binary "pow" f g
+
+  let fmod f g = binary "fmod" f g
 end
 
 let entry_point ~context = init_code context

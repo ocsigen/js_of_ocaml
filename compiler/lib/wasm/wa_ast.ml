@@ -54,15 +54,16 @@ type ('i32, 'i64, 'f64) op =
   | I64 of 'i64
   | F64 of 'f64
 
+type signage =
+  | S
+  | U
+
 type int_un_op =
   | Clz
   | Ctz
   | Popcnt
   | Eqz
-
-type signage =
-  | S
-  | U
+  | TruncF64 of signage
 
 type int_bin_op =
   | Add
@@ -92,6 +93,8 @@ type float_un_op =
   | Trunc
   | Nearest
   | Sqrt
+  | ConvertI32 of signage
+  | ConvertI64 of signage
 
 type float_bin_op =
   | Add

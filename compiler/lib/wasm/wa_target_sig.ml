@@ -82,6 +82,10 @@ module type S = sig
     val bytes_set : expression -> expression -> expression -> unit Wa_code_generation.t
 
     val block_length : expression -> expression
+
+    val box_float : Stack.ctx -> Code.Var.t -> expression -> expression
+
+    val unbox_float : expression -> expression
   end
 
   module Value : sig
@@ -171,6 +175,20 @@ module type S = sig
       -> int
       -> Code.Var.t
       -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
+  end
+
+  module Math : sig
+    val cos : expression -> expression
+
+    val sin : expression -> expression
+
+    val asin : expression -> expression
+
+    val atan2 : expression -> expression -> expression
+
+    val power : expression -> expression -> expression
+
+    val fmod : expression -> expression -> expression
   end
 
   val entry_point : context:Wa_code_generation.context -> unit Wa_code_generation.t
