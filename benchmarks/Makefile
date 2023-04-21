@@ -257,7 +257,7 @@ _noperf:
 
 
 clean: _noperf
-	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes
+	rm -rf results build __precomp __run __run_effects *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes
 
 
 copy-extra-bc:
