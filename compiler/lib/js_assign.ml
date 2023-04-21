@@ -294,7 +294,15 @@ module Preserve : Strategy = struct
         let _assigned =
           S.fold
             (fun var assigned ->
-              assert (String.is_empty names.(Var.idx var));
+              if not (String.is_empty names.(Var.idx var))
+              then (
+                assert (debug_shortvar ());
+                Format.eprintf
+                  "@[<v>A name was already assigned for variable %a, it is %s@,@]%!"
+                  Var.print
+                  var
+                  names.(Var.idx var);
+                assert false);
               let name =
                 match Var.get_name var with
                 | Some expected_name ->
@@ -343,6 +351,30 @@ let program' (module Strategy : Strategy) p =
       mapper#get_free
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
+  (if has_free_var
+  then
+    let () =
+      if not (debug_shortvar () || debug ())
+      then
+        Format.eprintf
+          "Some variables escaped (#%d). Use [--debug js_assign] for more info.@."
+          (IdentSet.cardinal free)
+      else
+        let (_ : Source_map.t option) =
+          Js_output.program
+            ~accept_unnamed_var:true
+            (Pretty_print.to_out_channel stderr)
+            p
+        in
+        Format.eprintf "Some variables escaped:";
+        IdentSet.iter
+          (function
+            | S _ -> ()
+            | V v -> Format.eprintf " <%s>" (Var.to_string v))
+          free;
+        Format.eprintf "@."
+    in
+    assert false);
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
   let color = function
     | V v -> (
@@ -354,30 +386,6 @@ let program' (module Strategy : Strategy) p =
     | x -> x
   in
   let p = (new Js_traverse.subst color)#program p in
-  (if has_free_var
-   then
-     let () =
-       if not (debug_shortvar () || debug ())
-       then
-         Format.eprintf
-           "Some variables escaped (#%d). Use [--debug js_assign] for more info.@."
-           (IdentSet.cardinal free)
-       else
-         let (_ : Source_map.t option) =
-           Js_output.program
-             ~accept_unnamed_var:true
-             (Pretty_print.to_out_channel stderr)
-             p
-         in
-         Format.eprintf "Some variables escaped:";
-         IdentSet.iter
-           (function
-             | S _ -> ()
-             | V v -> Format.eprintf " <%s>" (Var.to_string v))
-           free;
-         Format.eprintf "@."
-     in
-     assert false);
   p
 
 let program p =
