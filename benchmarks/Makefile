@@ -230,7 +230,7 @@ nativejs.svg: __run
 
 
 %.pdf: %.svg
-	inkscape -D --export-pdf="$@" -w 210 -h 297 $<
+	inkscape -D --export-type="pdf" --export-filename="$@" -w 210 -h 297 $<
 
 
 nativejs.png: nativejs.svg
