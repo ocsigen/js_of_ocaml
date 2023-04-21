@@ -45,7 +45,9 @@ let mean_variance a =
     let d = a.(i) -. m in
     s := !s +. (d *. d)
   done;
-  m, !s /. float (Array.length a)
+  (* https://en.wikipedia.org/wiki/Unbiased_estimation_of_standard_deviation
+     https://en.wikipedia.org/wiki/Bessel%27s_correction *)
+  m, !s /. float (Array.length a - 1)
 
 (*        90%    95%    98%    99%    99.5%  99.8%  99.9%*)
 let tinv_table =
