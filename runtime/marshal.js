@@ -552,7 +552,7 @@ function caml_marshal_data_size (s, ofs) {
 
 //Provides: MlObjectTable
 var MlObjectTable;
-if (typeof globalThis.WeakMap === 'undefined') {
+if (typeof globalThis.Map === 'undefined') {
   MlObjectTable = function() {
     /* polyfill (using linear search) */
     function NaiveLookup(objs) { this.objs = objs; }
@@ -572,7 +572,7 @@ if (typeof globalThis.WeakMap === 'undefined') {
 }
 else {
   MlObjectTable = function MlObjectTable() {
-    this.objs = []; this.lookup = new globalThis.WeakMap();
+    this.objs = []; this.lookup = new globalThis.Map();
   };
 }
 
@@ -715,6 +715,7 @@ var caml_output_val = function (){
         writer.size_32 += 1 + (((len + 4) / 4)|0);
         writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else if (caml_is_ml_string(v)) {
+        if (memo(v)) return;
         var len = caml_ml_string_length(v);
         if (len < 0x20)
           writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
