@@ -17,7 +17,7 @@
  (preprocess
   (pps ppx_optcomp_light sedlex.ppx)))
 
-(ocamllex js_lexer annot_lexer)
+(ocamllex annot_lexer)
 
 (menhir
  (modules js_parser)
