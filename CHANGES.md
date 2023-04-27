@@ -9,6 +9,7 @@
 * Compiler: reduce memory consumption when parsing js
 * Compiler: parsing js can return a list of token, the list was sometime incorrect
 * Sourcemap: stop producing sourcemaps mappings with negative lines or columns
+* Runtime: fix marshalling with sharing and string (use-js-string)
 
 # 5.1.1 (2023-03-15) - Lille
 ## Bug fixes

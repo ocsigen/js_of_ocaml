@@ -154,3 +154,14 @@ let%expect_test _ =
   in
   Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
   [%expect {| cccccccccccccccccccc ... (10000) |}]
+
+let%expect_test "test sharing of string" =
+  let s = "AString" in
+  let p = s, s in
+  let obj = [ p; p ] in
+  Printf.printf "%S" (Marshal.to_string s []);
+  [%expect
+    {| "\132\149\166\190\000\000\000\b\000\000\000\001\000\000\000\003\000\000\000\002'AString" |}];
+  Printf.printf "%S" (Marshal.to_string obj []);
+  [%expect
+    {| "\132\149\166\190\000\000\000\016\000\000\000\004\000\000\000\012\000\000\000\011\160\160'AString\004\001\160\004\003@" |}]
