@@ -53,7 +53,7 @@ end = struct
 end
 
 module Var : sig
-  type t
+  type t [@@ocaml.immediate]
 
   val print : Format.formatter -> t -> unit
 
@@ -198,8 +198,6 @@ end = struct
     propagate_name o n;
     n
 
-  let dummy = -1
-
   module Set = Set.Make (T)
   module Map = Map.Make (T)
 
@@ -218,30 +216,26 @@ end = struct
 
     let iter f t =
       for i = 0 to Array.length t - 1 do
-        f i t.(i)
+        f i (Array.unsafe_get t i)
       done
   end
 
   module ISet = struct
-    type t = T.t array
+    type t = BitSet.t
 
     type elt = T.t
 
-    let iter f t =
-      for i = 0 to Array.length t - 1 do
-        let x = t.(i) in
-        if compare x dummy <> 0 then f x
-      done
+    let iter f t = BitSet.iter ~f t
 
-    let mem t x = compare t.(x) dummy <> 0
+    let mem t x = BitSet.mem t x
 
-    let add t x = t.(x) <- x
+    let add t (x : int) = BitSet.set t x
 
-    let remove t x = t.(x) <- dummy
+    let remove t x = BitSet.unset t x
 
-    let copy = Array.copy
+    let copy = BitSet.copy
 
-    let empty _v = Array.make (count ()) dummy
+    let empty _v = BitSet.create' (count ())
   end
 end
 
@@ -692,7 +686,7 @@ let invariant { blocks; start; _ } =
   if with_invariant ()
   then (
     assert (Addr.Map.mem start blocks);
-    let defs = Array.make (Var.count ()) false in
+    let defs = Var.ISet.empty () in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
       assert (List.length args >= List.length b.params)
@@ -700,8 +694,8 @@ let invariant { blocks; start; _ } =
     let define x =
       if check_defs
       then (
-        assert (not defs.(Var.idx x));
-        defs.(Var.idx x) <- true)
+        assert (not (Var.ISet.mem defs x));
+        Var.ISet.add defs x)
     in
     let check_expr = function
       | Apply _ -> ()

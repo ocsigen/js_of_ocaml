@@ -137,7 +137,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
       | Values { others; _ } -> others)
   | Expr (Closure _) ->
       (* If a function escapes, it must be in CPS *)
-      info.Global_flow.info_may_escape.(idx)
+      Var.ISet.mem info.Global_flow.info_may_escape x
   | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
       (* Effects primitives are in CPS *)
       true

@@ -285,7 +285,7 @@ let the_case_of info x =
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Int i)) -> CConst (Int32.to_int i)
           | Expr (Block (j, _, _)) ->
-              if info.info_possibly_mutable.(Var.idx x) then Unknown else CTag j
+              if Var.ISet.mem info.info_possibly_mutable x then Unknown else CTag j
           | Expr (Constant (Tuple (j, _, _))) -> CTag j
           | _ -> Unknown)
         Unknown

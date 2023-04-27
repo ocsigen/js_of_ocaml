@@ -34,7 +34,7 @@ type approx =
 type info =
   { info_defs : def array
   ; info_approximation : approx Var.Tbl.t
-  ; info_may_escape : bool array
+  ; info_may_escape : Var.ISet.t
   }
 
 val f : fast:bool -> Code.program -> info

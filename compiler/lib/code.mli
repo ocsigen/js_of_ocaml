@@ -46,7 +46,7 @@ module DebugAddr : sig
 end
 
 module Var : sig
-  type t
+  type t [@@ocaml.immediate]
 
   val print : Format.formatter -> t -> unit
 

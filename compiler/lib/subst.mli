@@ -34,7 +34,7 @@ val last : (Var.t -> Var.t) -> last * loc -> last * loc
 
 val cont : (Var.t -> Var.t) -> int -> program -> program
 
-val from_array : Var.t option array -> Var.t -> Var.t
+val from_array : Var.t array -> Var.t -> Var.t
 
 val build_mapping : Var.t list -> Var.t list -> Var.t Var.Map.t
 

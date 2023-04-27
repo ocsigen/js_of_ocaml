@@ -146,11 +146,11 @@ let find_loops p =
 
 let mark_variables in_loop p =
   let vars = Var.Tbl.make () (-1) in
-  let visited = Array.make p.free_pc false in
+  let visited = BitSet.create' p.free_pc in
   let rec traverse pc =
-    if not visited.(pc)
+    if not (BitSet.mem visited pc)
     then (
-      visited.(pc) <- true;
+      BitSet.set visited pc;
       let block = Addr.Map.find pc p.blocks in
       (try
          let pc' = Addr.Map.find pc in_loop in
@@ -168,11 +168,11 @@ let mark_variables in_loop p =
 let free_variables vars in_loop p =
   let all_freevars = ref Addr.Map.empty in
   let freevars = ref Addr.Map.empty in
-  let visited = Array.make p.free_pc false in
+  let visited = BitSet.create' p.free_pc in
   let rec traverse pc =
-    if not visited.(pc)
+    if not (BitSet.mem visited pc)
     then (
-      visited.(pc) <- true;
+      BitSet.set visited pc;
       let block = Addr.Map.find pc p.blocks in
       iter_block_free_vars
         (fun x ->

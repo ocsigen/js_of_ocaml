@@ -104,10 +104,7 @@ let cont s addr p =
 
 (****)
 
-let from_array s x =
-  match s.(Var.idx x) with
-  | Some y -> y
-  | None -> x
+let from_array s x = s.(Var.idx x)
 
 (****)
 
