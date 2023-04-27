@@ -539,7 +539,7 @@ let solver st =
 type info =
   { info_defs : def array
   ; info_approximation : Domain.t Var.Tbl.t
-  ; info_may_escape : bool array
+  ; info_may_escape : Var.ISet.t
   }
 
 let f ~fast p =
@@ -621,10 +621,11 @@ let f ~fast p =
                     | No -> "n"))
             s)
       vars;
-  { info_defs = defs
-  ; info_approximation = approximation
-  ; info_may_escape = Array.map ~f:(fun s -> Poly.(s <> No)) may_escape
-  }
+  let info_may_escape = Var.ISet.empty () in
+  Array.iteri
+    ~f:(fun i s -> if Poly.(s <> No) then Var.ISet.add info_may_escape (Var.of_idx i))
+    may_escape;
+  { info_defs = defs; info_approximation = approximation; info_may_escape }
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with

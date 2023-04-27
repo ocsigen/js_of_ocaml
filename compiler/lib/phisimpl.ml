@@ -145,10 +145,8 @@ let solver1 vars deps defs =
   ignore (Solver1.f () g (propagate1 deps defs reprs));
   Array.mapi reprs ~f:(fun idx y ->
       match y with
-      | Some y ->
-          let y = repr reprs y in
-          if Var.idx y = idx then None else Some y
-      | None -> None)
+      | Some y -> repr reprs y
+      | None -> Var.of_idx idx)
 
 let f p =
   let t = Timer.make () in
@@ -159,9 +157,7 @@ let f p =
   let subst = solver1 vars deps defs in
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
   Array.iteri subst ~f:(fun idx y ->
-      match y with
-      | None -> ()
-      | Some y -> Code.Var.propagate_name (Var.of_idx idx) y);
+      if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
   let p = Subst.program (Subst.from_array subst) p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   p

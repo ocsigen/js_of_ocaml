@@ -1024,6 +1024,8 @@ module BitSet : sig
 
   val create : unit -> t
 
+  val create' : int -> t
+
   val mem : t -> int -> bool
 
   val set : t -> int -> unit
@@ -1043,6 +1045,8 @@ end = struct
   type t = { mutable arr : int array }
 
   let create () = { arr = Array.make 1 0 }
+
+  let create' n = { arr = Array.make ((n / int_num_bits) + 1) 0 }
 
   let size t = Array.length t.arr * int_num_bits
 
