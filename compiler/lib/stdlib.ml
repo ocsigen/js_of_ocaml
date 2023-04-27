@@ -85,14 +85,7 @@ let failwith_ fmt =
 let raise_ exn =
   if !fail then raise exn else Format.eprintf "%s@." (Printexc.to_string exn)
 
-let int_num_bits =
-  let size = ref 0 in
-  let i = ref (-1) in
-  while !i <> 0 do
-    i := !i lsl 1;
-    incr size
-  done;
-  !size
+let int_num_bits = Sys.int_size
 
 module List = struct
   include ListLabels
@@ -1054,20 +1047,26 @@ end = struct
     let arr = t.arr in
     let idx = i / int_num_bits in
     let off = i mod int_num_bits in
-    idx < Array.length arr && Array.unsafe_get arr idx land (1 lsl off) <> 0
+    idx < Array.length arr
+    &&
+    let x = Array.unsafe_get arr idx in
+    x <> 0 && x land (1 lsl off) <> 0
+
+  let[@ocaml.inline never] resize t idx =
+    let size = Array.length t.arr in
+    let size_ref = ref size in
+    while idx >= !size_ref do
+      size_ref := !size_ref * 2
+    done;
+    let a = Array.make !size_ref 0 in
+    Array.blit t.arr 0 a 0 size;
+    t.arr <- a
 
   let set t i =
     let idx = i / int_num_bits in
     let off = i mod int_num_bits in
-    let size = ref (Array.length t.arr) in
-    while idx >= !size do
-      size := !size * 2
-    done;
-    if !size <> Array.length t.arr
-    then (
-      let a = Array.make !size 0 in
-      Array.blit t.arr 0 a 0 (Array.length t.arr);
-      t.arr <- a);
+    let size = Array.length t.arr in
+    if idx >= size then resize t idx;
     Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lor (1 lsl off))
 
   let unset t i =
@@ -1076,8 +1075,10 @@ end = struct
     let size = Array.length t.arr in
     if idx >= size
     then ()
-    else if Array.unsafe_get t.arr idx land (1 lsl off) <> 0
-    then Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lxor (1 lsl off))
+    else
+      let b = Array.unsafe_get t.arr idx in
+      let mask = 1 lsl off in
+      if b <> 0 && b land mask <> 0 then Array.unsafe_set t.arr idx (b lxor mask)
 
   let next_free t i =
     let x = ref i in
