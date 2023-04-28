@@ -27,6 +27,8 @@
   Js_token
   --explain
   --unused-token
+  TAnnot
+  --unused-token
   TComment
   --unused-token
   TCommentLineDirective

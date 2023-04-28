@@ -244,9 +244,6 @@ standalone_expression:
 program:
  | l=module_item* T_EOF { l }
 
-annot:
-  | a=TAnnot { a, pi $symbolstartpos }
-
 module_item:
   | item { $symbolstartpos, $1 }
 
