@@ -1,4 +1,4 @@
-# dev
+# 5.2.0 (2023-04-28) - Lille
 ## Features/Changes
 * Compiler: jsoo link archive with -a (#1428)
 
