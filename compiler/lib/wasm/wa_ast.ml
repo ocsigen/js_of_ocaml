@@ -181,6 +181,7 @@ and instruction =
 
 type import_desc =
   | Fun of func_type
+  | Global of global_type
   | Tag of value_type
 
 type data =

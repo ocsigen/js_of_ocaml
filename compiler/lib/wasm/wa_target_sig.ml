@@ -86,6 +86,10 @@ module type S = sig
     val box_float : Stack.ctx -> Code.Var.t -> expression -> expression
 
     val unbox_float : expression -> expression
+
+    val box_int64 : Stack.ctx -> Code.Var.t -> expression -> expression
+
+    val unbox_int64 : expression -> expression
   end
 
   module Value : sig

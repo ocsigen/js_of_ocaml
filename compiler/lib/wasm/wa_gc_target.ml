@@ -31,12 +31,56 @@ module Type = struct
           ; typ = W.Struct [ { mut = false; typ = Value F64 } ]
           })
 
-  let int64_type =
-    register_type "int64" (fun () ->
+  let compare_ext_type =
+    register_type "compare_ext" (fun () ->
         return
           { supertype = None
           ; final = true
-          ; typ = W.Struct [ { mut = false; typ = Value I64 } ]
+          ; typ = W.Func { W.params = [ value; value ]; result = [ I32 ] }
+          })
+
+  let custom_operations_type =
+    register_type "custom_operations" (fun () ->
+        let* compare_ext = compare_ext_type in
+        return
+          { supertype = None
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type compare_ext })
+                  }
+                ]
+          })
+
+  let custom_type =
+    register_type "custom" (fun () ->
+        let* custom_operations = custom_operations_type in
+        return
+          { supertype = None
+          ; final = false
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ]
+          })
+
+  let int64_type =
+    register_type "int64" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = false
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = false; typ = Value I64 }
+                ]
           })
 
   let func_type n =
@@ -347,6 +391,24 @@ module Memory = struct
   let unbox_float e =
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
+
+  let make_int64 e =
+    let* custom_operations = Type.custom_operations_type in
+    let* int64_ops =
+      register_import
+        ~name:"int64_ops"
+        (Global
+           { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
+    in
+    let* ty = Type.int64_type in
+    let* e = e in
+    return (W.StructNew (ty, [ GlobalGet (V int64_ops); e ]))
+
+  let box_int64 _ _ e = make_int64 e
+
+  let unbox_int64 e =
+    let* ty = Type.int64_type in
+    wasm_struct_get ty (wasm_cast ty e) 1
 end
 
 module Constant = struct
@@ -433,8 +495,8 @@ module Constant = struct
               , I31New (Const (I32 (Int32.of_int Obj.double_array_tag)))
                 :: List.map ~f:(fun f -> W.StructNew (ty, [ Const (F64 f) ])) l ) )
     | Int64 i ->
-        let* ty = Type.int64_type in
-        return (true, W.StructNew (ty, [ Const (I64 i) ]))
+        let* e = Memory.make_int64 (return (W.Const (I64 i))) in
+        return (true, e)
 
   let translate c =
     let* const, c = translate_rec c in

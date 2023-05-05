@@ -477,6 +477,7 @@ let import f =
           ; List
               (match desc with
               | Fun typ -> Atom "func" :: index name :: func_type typ
+              | Global ty -> [ Atom "global"; index name; global_type ty ]
               | Tag ty -> [ Atom "tag"; index name; List [ Atom "param"; value_type ty ] ])
           ]
       ]

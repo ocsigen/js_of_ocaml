@@ -147,6 +147,37 @@ module Memory = struct
         let* _, l = get_data_segment x in
         return (get_data l)
     | _ -> return (W.Load (F64 0l, e))
+
+  let box_int64 stack_ctx x e =
+    let p = Code.Var.fresh_n "p" in
+    let size = 16 in
+    seq
+      (let* () = Stack.perform_spilling stack_ctx (`Instr x) in
+       let* v =
+         tee p Arith.(return (W.GlobalGet (S "young_ptr")) - const (Int32.of_int size))
+       in
+       let* () = instr (W.GlobalSet (S "young_ptr", v)) in
+       let* () = mem_init (load p) (Arith.const (header ~tag:Obj.double_tag ~len:2 ())) in
+       Stack.kill_variables stack_ctx;
+       let* () = Stack.perform_reloads stack_ctx (`Vars Code.Var.Set.empty) in
+       let* p = load p in
+       let* () = instr (Store (I32 4l, p, ConstSym (S "int64_ops", 0))) in
+       let* e = e in
+       instr (Store (I64 8l, p, e)))
+      Arith.(load p + const 4l)
+
+  let unbox_int64 e =
+    let* e = e in
+    match e with
+    | W.ConstSym (V x, 4) ->
+        let get_data l =
+          match l with
+          | [ W.DataI32 _; W.DataSym _; W.DataI64 f ] -> W.Const (I64 f)
+          | _ -> assert false
+        in
+        let* _, l = get_data_segment x in
+        return (get_data l)
+    | _ -> return (W.Load (F64 4l, e))
 end
 
 module Value = struct
@@ -248,9 +279,7 @@ module Constant = struct
     | Int64 i ->
         let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
         let name = Code.Var.fresh_n "int64" in
-        let block =
-          [ W.DataI32 h; DataI32 0l (*ZZZ DataSym (S "caml_int64_ops", 0)*); DataI64 i ]
-        in
+        let block = [ W.DataI32 h; DataSym (S "caml_int64_ops", 0); DataI64 i ] in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
         W.DataSym (V name, 4)
 

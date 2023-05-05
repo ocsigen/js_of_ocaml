@@ -104,6 +104,8 @@ module Output () = struct
 
   let features = Feature.make ()
 
+  let mutable_globals = Feature.register features "mutable-globals"
+
   let nontrapping_fptoint = Feature.register features "nontrapping-fptoint"
 
   let exception_handling = Feature.register features "exception-handling"
@@ -443,7 +445,8 @@ module Output () = struct
           | Function { name; typ; _ } -> Some (name, typ, None)
           | Import { import_module; import_name; name; desc = Fun typ } ->
               Some (name, typ, Some (import_module, import_name))
-          | Import { desc = Tag _; _ } | Data _ | Global _ | Tag _ | Type _ -> None)
+          | Import { desc = Global _ | Tag _; _ } | Data _ | Global _ | Tag _ | Type _ ->
+              None)
         fields
     in
     let globals =
@@ -452,6 +455,9 @@ module Output () = struct
           match f with
           | Function _ | Import { desc = Fun _ | Tag _; _ } | Data _ | Tag _ | Type _ ->
               None
+          | Import { import_module; import_name; name; desc = Global typ } ->
+              if typ.mut then Feature.require mutable_globals;
+              Some (V name, typ, Some (import_module, import_name))
           | Global { name; typ; init } ->
               assert (Poly.equal init (Const (I32 0l)));
               Some (name, typ, None))
@@ -461,7 +467,9 @@ module Output () = struct
       List.filter_map
         ~f:(fun f ->
           match f with
-          | Function _ | Import { desc = Fun _; _ } | Data _ | Global _ | Type _ -> None
+          | Function _
+          | Import { desc = Fun _ | Global _; _ }
+          | Data _ | Global _ | Type _ -> None
           | Import { import_module; import_name; name; desc = Tag typ } ->
               Some (name, typ, Some (import_module, import_name))
           | Tag { name; typ } ->

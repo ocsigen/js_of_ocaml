@@ -5,6 +5,53 @@
 
    (type $string (array (mut i8)))
 
+   (type $compare_ext (func (param (ref eq)) (param (ref eq)) (result i32)))
+
+   (type $custom_operations
+      (struct
+         (field (ref $compare_ext))
+         ;; ZZZ
+      ))
+
+   (type $custom (struct (field (ref $custom_operations))))
+
+   (global $int64_ops (export "int64_ops") (ref $custom_operations)
+      (struct.new $custom_operations (ref.func $int64_cmp)))
+
+   (type $int64
+      (sub $custom (struct (field (ref $custom_operations)) (field i64))))
+
+   (func $int64_cmp (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+      (local $i1 i64) (local $i2 i64)
+      (local.set $i1 (struct.get $int64 1 (ref.cast $int64 (local.get $v1))))
+      (local.set $i2 (struct.get $int64 1 (ref.cast $int64 (local.get $v2))))
+      (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
+               (i64.lt_s (local.get $i1) (local.get $i2))))
+
+   (func $caml_copy_int64 (param $i i64) (result (ref eq))
+      (struct.new $int64 (global.get $int64_ops) (local.get $i)))
+
+   (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
+      (local $s (ref $string)) (local $i i32) (local $len i32)
+      (local $res i64)
+      (local.set $s (ref.cast $string (local.get $v)))
+      (local.set $res (i64.const 0))
+      (local.set $i (i32.const 0))
+      (local.set $len (array.len (local.get $s)))
+      ;; ZZZ validation / negative numbers / ...
+      (loop $loop
+         (if (i32.lt_s (local.get $i) (local.get $len))
+            (then
+               (local.set $res
+                  (i64.add (i64.mul (local.get $res) (i64.const 10))
+                     (i64.extend_i32_s
+                        (i32.sub
+                           (array.get_u $string (local.get $s) (local.get $i))
+                           (i32.const 48)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (return_call $caml_copy_int64 (local.get $res)))
+
    (func (export "caml_make_vect")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       ;; ZZZ check that $n >= 0
