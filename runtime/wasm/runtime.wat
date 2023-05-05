@@ -1,5 +1,5 @@
 (module
-   (tag (export "ocaml_exception") (param (ref eq)))
+   (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
 
    (type $block (array (mut (ref eq))))
 
@@ -14,6 +14,49 @@
       ))
 
    (type $custom (struct (field (ref $custom_operations))))
+
+   (global $caml_global_data (mut (ref $block))
+      (array.new $block (i31.new (i32.const 0)) (i32.const 12)))
+
+   (func (export "caml_register_global")
+      (param (ref eq)) (param $v (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $i i32)
+      (local.set $i (i31.get_u (ref.cast i31 (local.get 0))))
+      (if (i32.lt_u (local.get $i) (array.len (global.get $caml_global_data)))
+         (then
+            (array.set $block (global.get $caml_global_data)
+               (local.get $i) (local.get $v))))
+      (i31.new (i32.const 0)))
+
+   (func $caml_raise_constant (param (ref eq))
+      (throw $ocaml_exception (local.get 0)))
+
+   (func $caml_raise_with_arg (param $tag (ref eq)) (param $arg (ref eq))
+      (throw $ocaml_exception
+         (array.new_fixed $block
+            (i31.new (i32.const 0)) (local.get $tag) (local.get $arg))))
+
+   (global $INVALID_EXN i32 (i32.const 3))
+
+   (func $caml_invalid_argument (param $arg (ref eq))
+       (call $caml_raise_with_arg
+           (array.get $block (global.get $caml_global_data)
+              (global.get $INVALID_EXN))
+           (local.get 0)))
+
+   (data $index_out_of_bounds "index out of bounds")
+
+   (func $caml_array_bound_error (export "caml_array_bound_error")
+      (call $caml_invalid_argument
+         (array.new_data $string $index_out_of_bounds
+            (i32.const 0) (i32.const 19))))
+
+   (global $ZERO_DIVIDE_EXN i32 (i32.const 5))
+
+   (func (export "caml_raise_zero_divide")
+      (call $caml_raise_constant
+         (array.get $block (global.get $caml_global_data)
+                    (global.get $ZERO_DIVIDE_EXN))))
 
    (global $int64_ops (export "int64_ops") (ref $custom_operations)
       (struct.new $custom_operations (ref.func $int64_cmp)))
@@ -52,12 +95,18 @@
                (br $loop))))
       (return_call $caml_copy_int64 (local.get $res)))
 
+   (data $Array_make "Array.make")
+
    (func (export "caml_make_vect")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
-      ;; ZZZ check that $n >= 0
       (local $sz i32) (local $b (ref $block))
       (local.set $sz (i32.add (i31.get_s (ref.cast i31 (local.get $n)))
                               (i32.const 1)))
+      (if (i32.lt_s (local.get $sz) (i32.const 1))
+         (then
+            (call $caml_invalid_argument
+               (array.new_data $string $Array_make
+                               (i32.const 0) (i32.const 10)))))
       (local.set $b (array.new $block (local.get $v) (local.get $sz)))
       (array.set $block (local.get $b) (i32.const 0) (i31.new (i32.const 0)))
       (local.get $b))
@@ -80,10 +129,6 @@
       (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
 
-   (func (export "caml_register_global")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (i31.new (i32.const 0)))
-
    (func (export "caml_register_named_value")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
@@ -91,14 +136,6 @@
    (func (export "caml_int_of_string")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
-
-   (func (export "caml_array_bound_error")
-      ;; ZZZ
-      (unreachable))
-
-   (func (export "caml_raise_zero_divide")
-      ;; ZZZ
-      (unreachable))
 
    (global $caml_oo_last_id (mut i32) (i32.const 0))
 
