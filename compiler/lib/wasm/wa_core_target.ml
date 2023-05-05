@@ -16,7 +16,7 @@ module Memory = struct
           match l with
           | [] -> assert false
           | W.DataI32 i :: _ when offset = 0 -> W.Const (I32 i)
-          | W.DataSym (sym, ofs) :: _ when offset = 0 -> W.ConstSym (V sym, ofs)
+          | W.DataSym (sym, ofs) :: _ when offset = 0 -> W.ConstSym (sym, ofs)
           | (W.DataI32 _ | DataSym _) :: r -> get_data (offset - 4) r
           | (DataI8 _ | DataBytes _ | DataSpace _ | DataI64 _) :: _ -> assert false
         in
@@ -106,7 +106,7 @@ module Memory = struct
   let bytes_set e e' e'' =
     let* addr = Arith.(e + e' - const 1l) in
     let* e'' = e'' in
-    instr (W.Store8 (U, I32 (Int32.of_int 0), addr, e''))
+    instr (W.Store8 (I32 (Int32.of_int 0), addr, e''))
 
   let field e idx = mem_load ~offset:(4 * idx) e
 
@@ -212,7 +212,7 @@ module Constant = struct
           W.DataI32 h :: List.map ~f:(fun c -> translate_rec context c) (Array.to_list a)
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (name, 4)
+        W.DataSym (V name, 4)
     | NativeString (Byte s | Utf (Utf8 s)) | String s ->
         let l = String.length s in
         let len = (l + 4) / 4 in
@@ -226,13 +226,13 @@ module Constant = struct
         in
         context.data_segments <-
           Code.Var.Map.add name (true, string) context.data_segments;
-        W.DataSym (name, 4)
+        W.DataSym (V name, 4)
     | Float f ->
         let h = Memory.header ~const:true ~tag:Obj.double_tag ~len:2 () in
         let name = Code.Var.fresh_n "float" in
         let block = [ W.DataI32 h; DataI64 (Int64.bits_of_float f) ] in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (name, 4)
+        W.DataSym (V name, 4)
     | Float_array l ->
         (*ZZZ Boxed array? *)
         let l = Array.to_list l in
@@ -244,7 +244,7 @@ module Constant = struct
           W.DataI32 h :: List.map ~f:(fun f -> translate_rec context (Float f)) l
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (name, 4)
+        W.DataSym (V name, 4)
     | Int64 i ->
         let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
         let name = Code.Var.fresh_n "int64" in
@@ -252,13 +252,13 @@ module Constant = struct
           [ W.DataI32 h; DataI32 0l (*ZZZ DataSym (S "caml_int64_ops", 0)*); DataI64 i ]
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
-        W.DataSym (name, 4)
+        W.DataSym (V name, 4)
 
   let translate c =
     let* context = get_context in
     return
       (match translate_rec context c with
-      | W.DataSym (name, offset) -> W.ConstSym (V name, offset)
+      | W.DataSym (name, offset) -> W.ConstSym (name, offset)
       | W.DataI32 i -> W.Const (I32 i)
       | _ -> assert false)
 end
@@ -335,7 +335,7 @@ module Closure = struct
             ~f:(fun e ->
               match e with
               | W.Const (I32 i) -> W.DataI32 i
-              | ConstSym (V sym, offset) -> DataSym (sym, offset)
+              | ConstSym (sym, offset) -> DataSym (sym, offset)
               | _ -> assert false)
             start
         in

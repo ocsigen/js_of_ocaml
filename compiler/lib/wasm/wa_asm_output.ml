@@ -104,6 +104,8 @@ module Output () = struct
 
   let features = Feature.make ()
 
+  let nontrapping_fptoint = Feature.register features "nontrapping-fptoint"
+
   let exception_handling = Feature.register features "exception-handling"
 
   let tail_call = Feature.register features "tail-call"
@@ -114,7 +116,7 @@ module Output () = struct
       | I32 -> "i32"
       | I64 -> "i64"
       | F64 -> "f64"
-      | Ref _ -> assert false (* Not supported*))
+      | Ref _ -> assert false (* Not supported *))
 
   let func_type { params; result } =
     assert (List.length result <= 1);
@@ -149,7 +151,10 @@ module Output () = struct
     | Ctz -> "ctz"
     | Popcnt -> "popcnt"
     | Eqz -> "eqz"
-    | TruncF64 s -> signage "trunc_f64" s
+    | TruncSatF64 s ->
+        Feature.require nontrapping_fptoint;
+        signage "trunc_sat_f64" s
+    | ReinterpretF64 -> "reinterpret_f64"
 
   let int_bin_op (op : int_bin_op) =
     match op with
@@ -181,8 +186,10 @@ module Output () = struct
     | Trunc -> "trunc"
     | Nearest -> "nearest"
     | Sqrt -> "sqrt"
-    | ConvertI32 s -> signage "convert_i32" s
-    | ConvertI64 s -> signage "convert_i64" s
+    | Convert (`I32, s) -> signage "convert_i32" s
+    | Convert (`I64, s) -> signage "convert_i64" s
+    | Reinterpret `I32 -> "reinterpret_i32"
+    | Reinterpret `I64 -> "reinterpret_i64"
 
   let float_bin_op op =
     match op with
@@ -247,6 +254,8 @@ module Output () = struct
         expression e1
         ^^ expression e2
         ^^ line (type_prefix op ^^ string (select int_bin_op int_bin_op float_bin_op op))
+    | I32WrapI64 e -> expression e ^^ line (string "i32.wrap_i64")
+    | I64ExtendI32 (s, e) -> expression e ^^ line (string (signage "i64.extend_i32" s))
     | Load (offset, e') ->
         expression e'
         ^^ line
@@ -299,13 +308,12 @@ module Output () = struct
              (type_prefix offset
              ^^ string "store "
              ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
-    | Store8 (s, offset, e, e') ->
+    | Store8 (offset, e, e') ->
         expression e
         ^^ expression e'
         ^^ line
              (type_prefix offset
-             ^^ string (signage "store8" s)
-             ^^ string " "
+             ^^ string "store8 "
              ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
     | LocalSet (i, e) -> expression e ^^ line (string "local.set " ^^ integer i)
     | GlobalSet (nm, e) -> expression e ^^ line (string "global.set " ^^ symbol nm 0)
@@ -533,7 +541,7 @@ module Output () = struct
                               ^^ string (escape_string b)
                               ^^ string "\""
                           | DataSym (name, offset) ->
-                              string ".int32 " ^^ symbol (V name) offset
+                              string ".int32 " ^^ symbol name offset
                           | DataSpace n -> string ".space " ^^ integer n))
                       contents)
           | Global { name; _ } ->

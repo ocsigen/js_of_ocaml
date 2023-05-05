@@ -63,7 +63,8 @@ type int_un_op =
   | Ctz
   | Popcnt
   | Eqz
-  | TruncF64 of signage
+  | TruncSatF64 of signage
+  | ReinterpretF64
 
 type int_bin_op =
   | Add
@@ -93,8 +94,8 @@ type float_un_op =
   | Trunc
   | Nearest
   | Sqrt
-  | ConvertI32 of signage
-  | ConvertI64 of signage
+  | Convert of [ `I32 | `I64 ] * signage
+  | Reinterpret of [ `I32 | `I64 ]
 
 type float_bin_op =
   | Add
@@ -118,6 +119,8 @@ type expression =
   | ConstSym of symbol * int
   | UnOp of (int_un_op, int_un_op, float_un_op) op * expression
   | BinOp of (int_bin_op, int_bin_op, float_bin_op) op * expression * expression
+  | I32WrapI64 of expression
+  | I64ExtendI32 of signage * expression
   | Load of (memarg, memarg, memarg) op * expression
   | Load8 of signage * (memarg, memarg, memarg) op * expression
   | LocalGet of int
@@ -149,7 +152,7 @@ type expression =
 and instruction =
   | Drop of expression
   | Store of (memarg, memarg, memarg) op * expression * expression
-  | Store8 of signage * (memarg, memarg, memarg) op * expression * expression
+  | Store8 of (memarg, memarg, memarg) op * expression * expression
   | LocalSet of int * expression
   | GlobalSet of symbol * expression
   | Loop of func_type * instruction list
@@ -168,8 +171,8 @@ and instruction =
       * instruction list option
   | Throw of var * expression
   | Rethrow of int
-  | ArraySet of signage option * var * expression * expression * expression
-  | StructSet of signage option * var * int * expression * expression
+  | ArraySet of var * expression * expression * expression
+  | StructSet of var * int * expression * expression
   | Br_on_cast of int * ref_type * ref_type * expression
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | Return_call_indirect of func_type * expression * expression list
@@ -185,7 +188,7 @@ type data =
   | DataI32 of int32
   | DataI64 of int64
   | DataBytes of string
-  | DataSym of var * int
+  | DataSym of symbol * int
   | DataSpace of int
 
 type type_field =

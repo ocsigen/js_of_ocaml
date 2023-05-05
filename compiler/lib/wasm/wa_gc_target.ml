@@ -292,7 +292,7 @@ module Memory = struct
   let wasm_struct_set ty e i e' =
     let* e = e in
     let* e' = e' in
-    instr (W.StructSet (None, ty, i, e, e'))
+    instr (W.StructSet (ty, i, e, e'))
 
   let wasm_array_get ?(ty = Type.block_type) e e' =
     let* ty = ty in
@@ -305,7 +305,7 @@ module Memory = struct
     let* e = wasm_cast ty e in
     let* e' = e' in
     let* e'' = e'' in
-    instr (W.ArraySet (None, ty, e, e', e''))
+    instr (W.ArraySet (ty, e, e', e''))
 
   let tag e = Value.int_val (wasm_array_get e (Arith.const 0l))
 
