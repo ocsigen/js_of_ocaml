@@ -15,7 +15,14 @@ async function main() {
           await WebAssembly.instantiate(await code,
                                         {env:runtimeModule.instance.exports,
                                          Math:math})
-    wasmModule.instance.exports._initialize()
+    try {
+      wasmModule.instance.exports._initialize()
+    } catch (e) {
+        if (e instanceof WebAssembly.Exception &&
+            e.is(runtimeModule.instance.exports.ocaml_exit))
+            process.exit(e.getArg(runtimeModule.instance.exports.ocaml_exit, 0));
+        throw e;
+    }
 }
 
 main ()

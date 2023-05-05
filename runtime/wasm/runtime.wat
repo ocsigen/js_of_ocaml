@@ -1,11 +1,16 @@
 (module
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
+   (tag $ocaml_exit (export "ocaml_exit") (param i32))
 
    (type $block (array (mut (ref eq))))
 
    (type $string (array (mut i8)))
 
    (type $float (struct (field f64)))
+
+   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+
+   (type $closure (struct (field i32) (field (ref $function_1))))
 
    (type $compare_ext (func (param (ref eq)) (param (ref eq)) (result i32)))
 
@@ -137,7 +142,11 @@
 
    (func (export "caml_int_of_string")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
+      ;; ZZZ
       (i31.new (i32.const 0)))
+
+   (func (export "caml_sys_exit") (param (ref eq)) (result (ref eq))
+      (throw $ocaml_exit (i31.get_s (ref.cast i31 (local.get $0)))))
 
    (global $caml_oo_last_id (mut i32) (i32.const 0))
 
@@ -176,6 +185,57 @@
    (global $double_array_tag i32 (i32.const 254))
    (global $custom_tag i32 (i32.const 255))
 
+   (func (export "caml_obj_tag") (param $v (ref eq)) (result (ref eq))
+      (if (ref.test i31 (local.get $v))
+         (then (return (i31.new (i32.const 1000)))))
+      (drop (block $not_block (result (ref eq))
+         (return (array.get $block
+                    (br_on_cast_fail $not_block $block (local.get $v))
+                    (i32.const 0)))))
+      (if (ref.test $string (local.get $v))
+         (then (return (i31.new (global.get $string_tag)))))
+      (if (ref.test $float (local.get $v))
+         (then (return (i31.new (global.get $float_tag)))))
+      (if (ref.test $custom (local.get $v))
+         (then (return (i31.new (global.get $custom_tag)))))
+      (if (ref.test $closure (local.get $v))
+         (then (return (i31.new (global.get $closure_tag)))))
+      ;; ZZZ float array
+      ;; ZZZ others?
+      (unreachable))
+
+   (func (export "caml_obj_make_forward")
+      (param $b (ref eq)) (param $v (ref eq)) (result (ref eq))
+      (local $block (ref $block))
+      (local.set $block (ref.cast $block (local.get $b)))
+      (array.set $block (local.get $block)
+         (i32.const 0) (i31.new (global.get $forward_tag)))
+      (array.set $block (local.get $block) (i32.const 1) (local.get $v))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
+      (array.new $block (i31.new (i32.const 0))
+                 (i32.add (i31.get_u (ref.cast i31 (local.get $size)))
+                          (i32.const 1))))
+
+   (func (export "caml_update_dummy")
+      (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
+      (local $i i32) (local $len i32)
+      (local $dst (ref $block)) (local $src (ref $block))
+      ;; ZZZ check for closure or float array
+      (local.set $src (ref.cast $block (local.get $newval)))
+      (local.set $dst (ref.cast $block (local.get $dummy)))
+      (local.set $len (array.len (local.get $dst)))
+      (local.set $i (i32.const 0))
+      (loop $loop
+         (if (i32.lt_s (local.get $i) (local.get $len))
+            (then
+               (array.set $block (local.get $dst) (local.get $i)
+                  (array.get $block (local.get $src) (local.get $i)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (i31.new (i32.const 0)))
+
    (func $caml_string_equal (export "caml_string_equal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
       (local $s1 (ref $string)) (local $s2 (ref $string))
@@ -203,6 +263,71 @@
       (return
          (i31.new (i32.eqz (i31.get_u (ref.cast i31
             (call $caml_string_equal (local.get $p1) (local.get $p2))))))))
+
+   (func (export "caml_string_of_bytes") (param $v (ref eq)) (result (ref eq))
+      (local.get $v))
+
+   (func (export "caml_string_get")
+      (param $v (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (local $s (ref $string)) (local $p i32)
+      (local.set $s (ref.cast $string (local.get $v)))
+      (local.set $p (i31.get_s (ref.cast i31 (local.get $i))))
+      (if (i32.ge_u (local.get $p) (array.len (local.get $s)))
+         (then (call $caml_array_bound_error)))
+      (i31.new (array.get_u $string (local.get $s) (local.get $p))))
+
+   (data $Bytes_create "Bytes.create")
+
+   (func (export "caml_create_bytes")
+      (param $len (ref eq)) (result (ref eq))
+      (local $l i32)
+      (local.set $l (i31.get_u (ref.cast i31 (local.get $len))))
+      (if (i32.lt_s (local.get $l) (i32.const 0))
+         (then
+            (call $caml_invalid_argument
+               (array.new_data $string $Bytes_create
+                               (i32.const 0) (i32.const 12)))))
+      (array.new $string (i32.const 0) (local.get $l)))
+
+   (export "caml_blit_bytes" (func $caml_blit_string))
+   (func $caml_blit_string (export "caml_blit_string")
+      (param $v1 (ref eq)) (param $i1 (ref eq))
+      (param $v2 (ref eq)) (param $i2 (ref eq))
+      (param $n (ref eq)) (result (ref eq))
+      (local $s1 (ref $string)) (local $p1 i32)
+      (local $s2 (ref $string)) (local $p2 i32)
+      (local $i i32) (local $l i32)
+      (local.set $l (i31.get_s (ref.cast i31 (local.get $n))))
+      (block $return
+         (br_if $return (i32.eqz (local.get $l)))
+         (local.set $s1 (ref.cast $string (local.get $v1)))
+         (local.set $p1 (i31.get_s (ref.cast i31 (local.get $i1))))
+         (local.set $s2 (ref.cast $string (local.get $v2)))
+         (local.set $p2 (i31.get_s (ref.cast i31 (local.get $i2))))
+         (if (ref.eq (local.get $v1) (local.get $v2))
+            (br_if $return (i32.eq (local.get $p1) (local.get $p2)))
+            (if (i32.gt_u (i32.add (local.get $p2) (local.get $l))
+                          (local.get $p1))
+               (then
+                  (local.set $i (i32.sub (local.get $l) (i32.const 1)))
+                  (loop $loop1
+                     (br_if $return (i32.lt_s (local.get $i) (i32.const 0l)))
+                     (array.set $string (local.get $s2)
+                        (i32.add (local.get $p2) (local.get $i))
+                        (array.get_u $string (local.get $s1)
+                           (i32.add (local.get $p1) (local.get $i))))
+                     (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+                     (br $loop1)))))
+         (local.set $i (i32.const 0))
+         (loop $loop2
+            (br_if $return (i32.eq (local.get $i) (local.get $l)))
+            (array.set $string (local.get $s2)
+               (i32.add (local.get $p2) (local.get $i))
+                        (array.get_u $string (local.get $s1)
+                           (i32.add (local.get $p1) (local.get $i))))
+            (local.set $i (i32.add (local.get $i) (i32.const 1)))
+            (br $loop2)))
+      (i31.new (i32.const 0)))
 
    (type $int_array (array (mut i32)))
    (type $block_array (array (mut (ref $block))))
