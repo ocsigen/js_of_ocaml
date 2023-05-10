@@ -1,0 +1,9 @@
+(rule
+   (target runtime.wasm)
+   (deps runtime.wat)
+   (action
+      (run wasm-opt --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{deps} -O  -o %{target})))
+
+(alias
+ (name all)
+ (deps (glob_files *.js)))

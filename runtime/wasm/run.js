@@ -1,3 +1,4 @@
+#!/usr/bin/env -S node --experimental-wasm-stringref  --experimental-wasm-gc
 (async function () {
     const fs = require('fs/promises');
     const path = require('path');
