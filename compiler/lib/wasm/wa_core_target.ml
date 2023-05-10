@@ -93,11 +93,18 @@ module Memory = struct
 
   let tag e = Arith.(mem_load (e - const 4l) land const 0xffl)
 
-  let block_length e = Arith.(mem_load (e - const 4l) lsr const 1l)
+  let block_length e = Arith.(mem_load (e - const 4l) lsr const 10l)
 
   let array_get e e' = mem_load Arith.(e + ((e' - const 1l) lsl const 1l))
 
   let array_set e e' e'' = mem_store Arith.(e + ((e' - const 1l) lsl const 1l)) e''
+
+  let bytes_length e =
+    let l = Code.Var.fresh () in
+    Arith.(
+      tee l ((block_length e lsl const 2l) - const 1l)
+      - let* tail = e + load l in
+        return (W.Load8 (U, I32 0l, tail)))
 
   let bytes_get e e' =
     let* addr = Arith.(e + e' - const 1l) in

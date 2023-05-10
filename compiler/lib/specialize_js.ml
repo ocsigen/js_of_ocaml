@@ -51,6 +51,7 @@ let specialize_instr info i =
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
       | Some _ -> Let (x, Constant (Int 0l))
       | None -> i)
+  (*
   | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])) -> (
       match the_def_of info a with
       | Some (Block (_, a, _)) ->
@@ -130,6 +131,7 @@ let specialize_instr info i =
       match the_string_of info y with
       | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
       | None -> i)
+*)
   | Let (x, Prim (Extern "%int_mul", [ y; z ])) -> (
       match the_int info y, the_int info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->

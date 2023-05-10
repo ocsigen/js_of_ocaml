@@ -101,12 +101,41 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "caml_array_unsafe_get", [ x; y ] -> Memory.array_get x y
         | Extern "caml_array_unsafe_set", [ x; y; z ] ->
             seq (Memory.array_set x y z) Value.unit
-        | Extern "caml_string_unsafe_get", [ x; y ] -> Memory.bytes_get x y
-        | Extern "caml_string_unsafe_set", [ x; y; z ] ->
+        | Extern ("caml_string_unsafe_get" | "caml_bytes_unsafe_get"), [ x; y ] ->
+            Memory.bytes_get x y
+        | Extern ("caml_string_unsafe_set" | "caml_bytes_unsafe_set"), [ x; y; z ] ->
             seq (Memory.bytes_set x y z) Value.unit
-        | Extern "caml_bytes_unsafe_get", [ x; y ] -> Memory.bytes_get x y
-        | Extern "caml_bytes_unsafe_set", [ x; y; z ] ->
-            seq (Memory.bytes_set x y z) Value.unit
+        | Extern ("caml_string_get" | "caml_bytes_get"), [ x; y ] ->
+            seq
+              (let* f =
+                 register_import
+                   ~name:"caml_bound_error"
+                   (Fun { params = []; result = [] })
+               in
+               if_
+                 { params = []; result = [] }
+                 (Arith.uge (Value.int_val y) (Memory.bytes_length x))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              (Memory.bytes_get x y)
+        | Extern ("caml_string_set" | "caml_bytes_set"), [ x; y; z ] ->
+            seq
+              (let* f =
+                 register_import
+                   ~name:"caml_bound_error"
+                   (Fun { params = []; result = [] })
+               in
+               let* () =
+                 if_
+                   { params = []; result = [] }
+                   (Arith.uge (Value.int_val y) (Memory.bytes_length x))
+                   (instr (CallInstr (f, [])))
+                   (return ())
+               in
+               Memory.bytes_set x y z)
+              Value.unit
+        | Extern ("caml_ml_string_length" | "caml_ml_bytes_length"), [ x ] ->
+            Value.val_int (Memory.bytes_length x)
         | Extern "%int_add", [ x; y ] -> Value.int_add x y
         | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
         | Extern ("%int_mul" | "%direct_int_mul"), [ x; y ] -> Value.int_mul x y
@@ -124,7 +153,6 @@ module Generate (Target : Wa_target_sig.S) = struct
                  (instr (CallInstr (f, [])))
                  (return ()))
               (Value.int_div x y)
-        | Extern "%direct_int_mod", [ x; y ] -> Value.int_mod x y
         | Extern "%int_mod", [ x; y ] ->
             let* f =
               register_import
@@ -138,6 +166,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                  (instr (CallInstr (f, [])))
                  (return ()))
               (Value.int_mod x y)
+        | Extern "%direct_int_mod", [ x; y ] -> Value.int_mod x y
         | Extern "%int_neg", [ x ] -> Value.int_neg x
         | Extern "%int_or", [ x; y ] -> Value.int_or x y
         | Extern "%int_and", [ x; y ] -> Value.int_and x y
@@ -147,9 +176,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
         | Extern "caml_check_bound", [ x; y ] ->
             let* f =
-              register_import
-                ~name:"caml_array_bound_error"
-                (Fun { params = []; result = [] })
+              register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
             in
             seq
               (if_
@@ -254,6 +281,10 @@ module Generate (Target : Wa_target_sig.S) = struct
                  (match i with
                  | Const (I32 i) -> W.Const (I64 (Int64.of_int32 i))
                  | _ -> W.I64ExtendI32 (S, i)))
+        | Extern "caml_int_compare", [ i; j ] ->
+            Value.val_int
+              Arith.(
+                (Value.int_val j < Value.int_val i) - (Value.int_val i < Value.int_val j))
         | Extern name, l ->
             (*ZZZ Different calling convention when large number of parameters *)
             let* f = register_import ~name (Fun (func_type (List.length l))) in

@@ -2183,8 +2183,10 @@ let init () =
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"
-    ; "caml_js_from_float", "%identity"
-    ; "caml_js_to_float", "%identity"
+      (*ZZZ
+          ; "caml_js_from_float", "%identity"
+          ; "caml_js_to_float", "%identity"
+      *)
     ];
   Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)

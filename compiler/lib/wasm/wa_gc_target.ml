@@ -362,6 +362,11 @@ module Memory = struct
 
   let array_set e e' e'' = wasm_array_set e Arith.(Value.int_val e' + const 1l) e''
 
+  let bytes_length e =
+    let* ty = Type.string_type in
+    let* e = wasm_cast ty e in
+    return (W.ArrayLen e)
+
   let bytes_get e e' =
     Value.val_int (wasm_array_get ~ty:Type.string_type e (Value.int_val e'))
 

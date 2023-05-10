@@ -1,10 +1,6 @@
 (async function () {
-    const fs = require('fs/promises');
-    const path = require('path');
-    const runtimePath =
-          path.resolve(path.dirname(process.argv[1]), 'runtime.wasm');
-    const runtime = fs.readFile(runtimePath);
-    const code = fs.readFile(process.argv[2]);
+    const runtime = fetch('runtime.wasm');
+    const code = fetch('a.wasm');
 
     var caml_callback;
 
@@ -38,15 +34,18 @@
          format:(f)=>""+f
         }
     const runtimeModule =
-          await WebAssembly.instantiate(await runtime,
-                                        {Math:math,bindings:bindings});
+          await WebAssembly.instantiateStreaming(runtime,
+                                                 {Math:math,bindings:bindings});
 
     caml_callback = runtimeModule.instance.exports.caml_callback;
 
     const wasmModule =
-          await WebAssembly.instantiate(await code,
-                                        {env:runtimeModule.instance.exports,
-                                         Math:math})
+          await WebAssembly.instantiateStreaming(
+              code,
+              {env:runtimeModule.instance.exports,
+               Math:math}
+          )
+
     try {
         wasmModule.instance.exports._initialize()
     } catch (e) {
