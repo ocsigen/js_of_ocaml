@@ -411,6 +411,7 @@ let function_body ~context ~value_type ~param_count ~body =
       | Local (i, typ) -> local_types.(i) <- typ
       | Expr _ -> ())
     st.vars;
+  let body = Wa_tail_call.f body in
   let locals =
     local_types
     |> Array.map ~f:(fun v -> Option.value ~default:value_type v)
