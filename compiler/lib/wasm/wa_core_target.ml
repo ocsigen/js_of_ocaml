@@ -125,6 +125,15 @@ module Memory = struct
 
   let load_function_arity closure = Arith.(field closure 1 lsr const 24l)
 
+  let check_function_arity f arity if_match if_mismatch =
+    let func_arity = load_function_arity (load f) in
+    if_
+      { params = []; result = [ I32 ] }
+      Arith.(func_arity = const (Int32.of_int arity))
+      (let* res = if_match ~typ:None (load f) in
+       instr (Push res))
+      if_mismatch
+
   let box_float stack_ctx x e =
     let p = Code.Var.fresh_n "p" in
     let size = 12 in

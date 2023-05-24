@@ -400,9 +400,26 @@ module Memory = struct
     let* e = wasm_struct_get ty casted_closure (if arity = 1 then 1 else 2) in
     return (`Ref fun_ty, e)
 
-  let load_function_arity closure =
-    let* ty = Type.closure_type_1 in
-    wasm_struct_get ty (wasm_cast ty closure) 0
+  let check_function_arity f arity if_match if_mismatch =
+    let* fun_ty = Type.closure_type arity in
+    let* closure = load f in
+    let* () =
+      drop
+        (block_expr
+           { params = []; result = [ Value.value ] }
+           (let* e =
+              if_match
+                ~typ:(Some (W.Ref { nullable = false; typ = Type fun_ty }))
+                (return
+                   (W.Br_on_cast_fail
+                      ( 0
+                      , { nullable = false; typ = Eq }
+                      , { nullable = false; typ = Type fun_ty }
+                      , closure )))
+            in
+            instr (W.Return (Some e))))
+    in
+    if_mismatch
 
   let box_float _ _ e =
     let* ty = Type.float_type in

@@ -117,10 +117,10 @@ module Make (Target : Wa_target_sig.S) = struct
           ~spilled_vars:Var.Set.empty
       in
       let stack_ctx = Stack.start_function ~context stack_info in
-      let* e =
-        Closure.curry_allocate ~stack_ctx ~x:res ~arity m ~f:name' ~closure:f ~arg:x
+      let* () =
+        push
+          (Closure.curry_allocate ~stack_ctx ~x:res ~arity m ~f:name' ~closure:f ~arg:x)
       in
-      let* () = instr (Push e) in
       Stack.perform_spilling stack_ctx (`Instr ret)
     in
     let locals, body =
@@ -141,13 +141,12 @@ module Make (Target : Wa_target_sig.S) = struct
       let* () = bind_parameters l in
       let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
-      let func_arity = Memory.load_function_arity (load f) in
-      if_
-        { params = []; result = [ Value.value ] }
-        Arith.(func_arity = const (Int32.of_int arity))
-        (let* l = expression_list load l in
-         let* res = call ~arity (load f) l in
-         instr (Push res))
+      Memory.check_function_arity
+        f
+        arity
+        (fun ~typ closure ->
+          let* l = expression_list load l in
+          call ?typ ~arity closure l)
         (let rec build_spilling_info stack_info stack live_vars acc l =
            match l with
            | [] -> stack_info, List.rev acc
