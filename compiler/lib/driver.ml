@@ -56,20 +56,20 @@ let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
   Specialize.f ~function_arity:(fun f -> Specialize.function_arity info f) p
 
-let specialize_js (p, info) =
+let specialize_js ~target (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
-  Specialize_js.f info p
+  Specialize_js.f ~target info p
 
 let specialize_js_once p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once p
 
-let specialize' (p, info) =
+let specialize' ~target (p, info) =
   let p = specialize_1 (p, info) in
-  let p = specialize_js (p, info) in
+  let p = specialize_js ~target (p, info) in
   p, info
 
-let specialize p = fst (specialize' p)
+let specialize ~target p = fst (specialize' ~target p)
 
 let eval ~target (p, info) =
   if Config.Flag.staticeval () then Eval.f ~target info p else p
@@ -129,26 +129,26 @@ let o1 ~target : 'a -> 'a =
   print
   +> tailcall
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize'
+  +> specialize' ~target
   +> eval ~target
   +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
-  +> specialize'
+  +> specialize' ~target
   +> eval ~target
   +> inline ~target
   +> deadcode
   +> print
   +> flow
-  +> specialize'
+  +> specialize' ~target
   +> eval ~target
   +> inline ~target
   +> deadcode
   +> phi
   +> flow
-  +> specialize
+  +> specialize ~target
   +> identity
 
 (* o2 *)
@@ -163,11 +163,11 @@ let round1 ~target : 'a -> 'a =
   +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize'
+  +> specialize' ~target
   +> eval ~target
   +> identity
 
-let round2 ~target = flow +> specialize' +> eval ~target +> deadcode +> o1 ~target
+let round2 ~target = flow +> specialize' ~target +> eval ~target +> deadcode +> o1 ~target
 
 let o3 ~target =
   loop 10 "tailcall+inline" (round1 ~target) 1
