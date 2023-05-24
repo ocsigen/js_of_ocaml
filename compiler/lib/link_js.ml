@@ -412,7 +412,13 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             List.fold_left units ~init:[] ~f:(fun acc (u : Unit_info.t) ->
                 acc @ u.primitives)
           in
-          let code = Parse_bytecode.link_info ~symtable:!sym ~primitives ~crcs:[] in
+          let code =
+            Parse_bytecode.link_info
+              ~target:`JavaScript
+              ~symtable:!sym
+              ~primitives
+              ~crcs:[]
+          in
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;

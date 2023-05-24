@@ -341,6 +341,28 @@ module Int32 = struct
       n
 end
 
+module Int31 = struct
+  let wrap i = Int32.(shift_right (shift_left i 1) 1)
+
+  let of_int_warning_on_overflow i =
+    Int32.convert_warning_on_overflow
+      ~to_int32:(fun i -> wrap (Int32.of_int i))
+      ~of_int32:Int32.to_int
+      ~equal:Int_replace_polymorphic_compare.( = )
+      ~to_dec:(Printf.sprintf "%d")
+      ~to_hex:(Printf.sprintf "%x")
+      i
+
+  let of_nativeint_warning_on_overflow n =
+    Int32.convert_warning_on_overflow
+      ~to_int32:(fun i -> wrap (Nativeint.to_int32 i))
+      ~of_int32:Nativeint.of_int32
+      ~equal:Nativeint.equal
+      ~to_dec:(Printf.sprintf "%nd")
+      ~to_hex:(Printf.sprintf "%nx")
+      n
+end
+
 module Option = struct
   let map ~f x =
     match x with

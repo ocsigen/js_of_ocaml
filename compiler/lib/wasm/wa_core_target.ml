@@ -242,7 +242,7 @@ end
 module Constant = struct
   let rec translate_rec context c =
     match c with
-    | Code.Int i -> W.DataI32 Int32.(add (add i i) 1l)
+    | Code.Int (Regular, i) -> W.DataI32 Int32.(add (add i i) 1l)
     | Tuple (tag, a, _) ->
         let h = Memory.header ~const:true ~tag ~len:(Array.length a) () in
         let name = Code.Var.fresh_n "block" in
@@ -287,6 +287,25 @@ module Constant = struct
         let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
         let name = Code.Var.fresh_n "int64" in
         let block = [ W.DataI32 h; DataSym (S "caml_int64_ops", 0); DataI64 i ] in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+    | Int (Int32, i) ->
+        let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:2 () in
+        let name = Code.Var.fresh_n "int32" in
+        let block =
+          [ W.DataI32 h; DataI32 0l (*ZZZ DataSym (S "caml_int32_ops", 0)*); DataI32 i ]
+        in
+        context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
+        W.DataSym (V name, 4)
+    | Int (Native, i) ->
+        let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:2 () in
+        let name = Code.Var.fresh_n "nativeint" in
+        let block =
+          [ W.DataI32 h
+          ; DataI32 0l (*ZZZ DataSym (S "caml_nativeint_ops", 0)*)
+          ; DataI32 i
+          ]
+        in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
         W.DataSym (V name, 4)
 

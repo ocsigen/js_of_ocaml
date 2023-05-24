@@ -274,6 +274,11 @@ module Native_string = struct
     | Utf _, Byte _ | Byte _, Utf _ -> false
 end
 
+type int_kind =
+  | Regular
+  | Int32
+  | Native
+
 type constant =
   | String of string
   | NativeString of Native_string.t
@@ -281,7 +286,7 @@ type constant =
   | Float_array of float array
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
-  | Int of int32
+  | Int of int_kind * int32
 
 let rec constant_equal a b =
   match a, b with
@@ -301,7 +306,7 @@ let rec constant_equal a b =
         !same
   | Int64 a, Int64 b -> Some (Int64.equal a b)
   | Float_array a, Float_array b -> Some (Array.equal Float.equal a b)
-  | Int a, Int b -> Some (Int32.equal a b)
+  | Int (k, a), Int (k', b) -> if Poly.(k = k') then Some (Int32.equal a b) else None
   | Float a, Float b -> Some (Float.equal a b)
   | String _, NativeString _ | NativeString _, String _ -> None
   | Int _, Float _ | Float _, Int _ -> None
@@ -416,7 +421,15 @@ module Print = struct
               constant f a.(i)
             done;
             Format.fprintf f ")")
-    | Int i -> Format.fprintf f "%ld" i
+    | Int (k, i) ->
+        Format.fprintf
+          f
+          "%ld%s"
+          i
+          (match k with
+          | Regular -> ""
+          | Int32 -> "l"
+          | Native -> "n")
 
   let arg f a =
     match a with

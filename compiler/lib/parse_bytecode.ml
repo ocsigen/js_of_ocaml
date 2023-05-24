@@ -418,7 +418,7 @@ end
 
 (* Parse constants *)
 module Constants : sig
-  val parse : Obj.t -> Code.constant
+  val parse : target:[ `JavaScript | `Wasm ] -> Obj.t -> Code.constant
 
   val inlined : Code.constant -> bool
 end = struct
@@ -452,7 +452,7 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
-  let rec parse x =
+  let rec parse ~target x =
     if Obj.is_block x
     then
       let tag = Obj.tag x in
@@ -465,10 +465,14 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 -> Int (Obj.magic x : int32)
+        | Some name when same_ident name ident_32 -> Int (Int32, (Obj.magic x : int32))
         | Some name when same_ident name ident_native ->
             let i : nativeint = Obj.magic x in
-            Int (Int32.of_nativeint_warning_on_overflow i)
+            Int
+              ( Native
+              , match target with
+                | `JavaScript -> Int32.of_nativeint_warning_on_overflow i
+                | `Wasm -> Int31.of_nativeint_warning_on_overflow i )
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -478,11 +482,18 @@ end = struct
         | None -> assert false
       else if tag < Obj.no_scan_tag
       then
-        Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
+        Tuple
+          ( tag
+          , Array.init (Obj.size x) ~f:(fun i -> parse ~target (Obj.field x i))
+          , Unknown )
       else assert false
     else
       let i : int = Obj.magic x in
-      Int (Int32.of_int_warning_on_overflow i)
+      Int
+        ( Regular
+        , match target with
+          | `JavaScript -> Int32.of_int_warning_on_overflow i
+          | `Wasm -> Int31.of_int_warning_on_overflow i )
 
   let inlined = function
     | String _ | NativeString _ -> false
@@ -493,7 +504,7 @@ end = struct
     | Int _ -> true
 end
 
-let const i = Constant (Int i)
+let const i = Constant (Int (Regular, i))
 
 (* Globals *)
 type globals =
@@ -764,7 +775,7 @@ let register_global ?(force = false) g i loc rem =
         ( Var.fresh ()
         , Prim
             ( Extern "caml_register_global"
-            , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
+            , Pc (Int (Regular, Int32.of_int i)) :: Pv (access_global g i) :: args ) )
     , loc )
     :: rem
   else rem
@@ -2132,7 +2143,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Eq, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BNEQ ->
@@ -2142,7 +2153,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Eq, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BLTINT ->
@@ -2152,7 +2163,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Lt, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BLEINT ->
@@ -2162,7 +2173,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Le, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BGTINT ->
@@ -2172,7 +2183,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Le, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BGEINT ->
@@ -2182,7 +2193,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Lt, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BULTINT ->
@@ -2192,7 +2203,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Ult, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BUGEINT ->
@@ -2202,7 +2213,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Ult, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | ULTINT ->
@@ -2265,7 +2276,7 @@ and compile infos pc state instrs =
                ( m
                , Prim
                    ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int (Int32.of_int cache)) ] ) )
+                   , [ Pv obj; Pv tag; Pc (Int (Regular, Int32.of_int cache)) ] ) )
            , loc )
           :: (Let (tag, const n), loc)
           :: instrs)
@@ -2289,7 +2300,10 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           (( Let
-               (m, Prim (Extern "caml_get_public_method", [ Pv obj; Pv tag; Pc (Int 0l) ]))
+               ( m
+               , Prim
+                   ( Extern "caml_get_public_method"
+                   , [ Pv obj; Pv tag; Pc (Int (Regular, 0l)) ] ) )
            , loc )
           :: instrs)
     | GETMETHOD ->
@@ -2530,6 +2544,7 @@ let read_primitives toc ic =
   String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
 let from_exe
+    ~target
     ?(includes = [])
     ~linkall
     ~link_info
@@ -2543,7 +2558,7 @@ let from_exe
   let primitive_table = Array.of_list primitives in
   let code = Toc.read_code toc ic in
   let init_data = Toc.read_data toc ic in
-  let init_data = Array.map ~f:Constants.parse init_data in
+  let init_data = Array.map ~f:(Constants.parse ~target) init_data in
   let orig_symbols = Toc.read_symb toc ic in
   let orig_crcs = Toc.read_crcs toc ic in
   let keeps =
@@ -2636,8 +2651,8 @@ let from_exe
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let infos =
-        [ "toc", Constants.parse (Obj.repr toc)
-        ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
+        [ "toc", Constants.parse ~target (Obj.repr toc)
+        ; "prim_count", Int (Regular, Int32.of_int (Array.length globals.primitives))
         ]
       in
       let body =
@@ -2792,13 +2807,13 @@ module Reloc = struct
   let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
-  let step1 t compunit code =
+  let step1 ~target t compunit code =
     if t.step2_started then assert false;
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
     let slot_for_literal sc =
-      t.constants <- constant_of_const sc :: t.constants;
+      t.constants <- constant_of_const ~target sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos
@@ -2866,9 +2881,9 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
+let from_compilation_units ~target ~includes:_ ~include_cmis ~debug_data l =
   let reloc = Reloc.create () in
-  List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
+  List.iter l ~f:(fun (compunit, code) -> Reloc.step1 ~target reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
   let globals = Reloc.make_globals reloc in
   let code =
@@ -2917,7 +2932,8 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
   in
   { code = prepend prog body; cmis; debug = debug_data }
 
-let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic =
+let from_cmo ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic
+    =
   let debug_data = Debug.create ~include_cmis debug in
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
@@ -2928,11 +2944,13 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
+  let p =
+    from_compilation_units ~target ~includes ~include_cmis ~debug_data [ compunit, code ]
+  in
   Code.invariant p.code;
   p
 
-let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
+let from_cma ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   let debug_data = Debug.create ~include_cmis debug in
   let orig = ref 0 in
   let t = ref 0. in
@@ -2951,7 +2969,7 @@ let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
         compunit, code)
   in
   if times () then Format.eprintf "    read debug events: %.2f@." !t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
+  let p = from_compilation_units ~target ~includes ~include_cmis ~debug_data units in
   Code.invariant p.code;
   p
 
@@ -3011,17 +3029,17 @@ let predefined_exceptions () =
               ( v_index
               , Constant
                   (Int
-                     ((* Predefined exceptions are registered in
-                         Symtable.init with [-index - 1] *)
-                      Int32.of_int
-                        (-index - 1))) )
+                     ( (* Predefined exceptions are registered in
+                          Symtable.init with [-index - 1] *)
+                       Regular
+                     , Int32.of_int (-index - 1) )) )
           , noloc )
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray)), noloc
         ; ( Let
               ( Var.fresh ()
               , Prim
                   ( Extern "caml_register_global"
-                  , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js ] ) )
+                  , [ Pc (Int (Regular, Int32.of_int index)); Pv exn; Pv v_name_js ] ) )
           , noloc )
         ])
     |> List.concat
@@ -3038,7 +3056,7 @@ let predefined_exceptions () =
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
-let link_info ~symtable ~primitives ~crcs =
+let link_info ~target ~symtable ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
   let symtable_js =
     Ocaml_compiler.Symtable.GlobalMap.fold
@@ -3058,8 +3076,8 @@ let link_info ~symtable ~primitives ~crcs =
       ]
     in
     let infos =
-      [ "toc", Constants.parse (Obj.repr toc)
-      ; "prim_count", Int (Int32.of_int (List.length primitives))
+      [ "toc", Constants.parse ~target (Obj.repr toc)
+      ; "prim_count", Int (Regular, Int32.of_int (List.length primitives))
       ]
     in
     let body =

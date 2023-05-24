@@ -139,6 +139,7 @@ let run { Cmd_arg.common; profile; input_file; output_file; params } =
           used. But the -linkall option is probably good enough. *)
        let code =
          Parse_bytecode.from_exe
+           ~target:`Wasm
            ~includes:include_dirs
            ~include_cmis:false
            ~link_info:false

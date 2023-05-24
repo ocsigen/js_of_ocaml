@@ -296,7 +296,7 @@ let cps_branch ~st ~src (pc, args) loc =
           (* We are jumping to a block that is also used as a continuation.
              We pass it a dummy argument. *)
           let x = Var.fresh () in
-          [ x ], [ Let (x, Constant (Int 0l)), noloc ]
+          [ x ], [ Let (x, Constant (Int (Regular, 0l))), noloc ]
         else args, []
       in
       (* We check the stack depth only for backward edges (so, at
@@ -390,7 +390,7 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
                         ( x'
                         , Prim
                             ( Extern "caml_maybe_attach_backtrace"
-                            , [ Pv x; Pc (Int (if force then 1l else 0l)) ] ) )
+                            , [ Pv x; Pc (Int (Regular, if force then 1l else 0l)) ] ) )
                     , noloc )
                   ]
                 in
@@ -468,11 +468,12 @@ let cps_instr ~st (instr : instr) : instr =
       Let (x, Closure (params @ [ k ], cont))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
-      | Pc (Int a) ->
+      | Pc (Int (_, a)) ->
           Let
             ( x
-            , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
-            )
+            , Prim
+                ( Extern "caml_alloc_dummy_function"
+                , [ size; Pc (Int (Regular, Int32.succ a)) ] ) )
       | _ -> assert false)
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with
@@ -549,7 +550,7 @@ let cps_block ~st ~k pc block =
               [ arg; k' ]
               loc)
     | Prim (Extern "%perform", [ Pv effect ]) ->
-        perform_effect ~effect ~continuation:(Pc (Int 0l)) loc
+        perform_effect ~effect ~continuation:(Pc (Int (Regular, 0l))) loc
     | Prim (Extern "%reperform", [ Pv effect; continuation ]) ->
         perform_effect ~effect ~continuation loc
     | _ -> None

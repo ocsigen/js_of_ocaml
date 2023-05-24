@@ -71,7 +71,8 @@ let specialize' (p, info) =
 
 let specialize p = fst (specialize' p)
 
-let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
+let eval ~target (p, info) =
+  if Config.Flag.staticeval () then Eval.f ~target info p else p
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -124,25 +125,25 @@ let identity x = x
 
 (* o1 *)
 
-let o1 : 'a -> 'a =
+let o1 ~target : 'a -> 'a =
   print
   +> tailcall
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'
-  +> eval
+  +> eval ~target
   +> inline (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
   +> specialize'
-  +> eval
+  +> eval ~target
   +> inline
   +> deadcode
   +> print
   +> flow
   +> specialize'
-  +> eval
+  +> eval ~target
   +> inline
   +> deadcode
   +> phi
@@ -152,23 +153,26 @@ let o1 : 'a -> 'a =
 
 (* o2 *)
 
-let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
+let o2 ~target : 'a -> 'a = loop 10 "o1" (o1 ~target) 1 +> print
 
 (* o3 *)
 
-let round1 : 'a -> 'a =
+let round1 ~target : 'a -> 'a =
   print
   +> tailcall
   +> inline (* inlining may reveal new tailcall opt *)
   +> deadcode (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'
-  +> eval
+  +> eval ~target
   +> identity
 
-let round2 = flow +> specialize' +> eval +> deadcode +> o1
+let round2 ~target = flow +> specialize' +> eval ~target +> deadcode +> o1 ~target
 
-let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
+let o3 ~target =
+  loop 10 "tailcall+inline" (round1 ~target) 1
+  +> loop 10 "flow" (round2 ~target) 1
+  +> print
 
 let generate
     d
@@ -570,6 +574,11 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
+let target_flag t =
+  match t with
+  | `JavaScript _ -> `JavaScript
+  | `Wasm _ -> `Wasm
+
 let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   let exported_runtime = not standalone in
   let opt =
@@ -578,6 +587,7 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
+         ~target:(target_flag target)
     +> exact_calls profile
     +> effects
     +> map_fst (*Generate_closure.f +>*) deadcode'

@@ -67,6 +67,22 @@ module Type = struct
                 ]
           })
 
+  let int32_type =
+    register_type "int32" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = false
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = false; typ = Value I32 }
+                ]
+          })
+
   let int64_type =
     register_type "int64" (fun () ->
         let* custom_operations = custom_operations_type in
@@ -397,6 +413,21 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
+  let make_int32 ~kind e =
+    let* custom_operations = Type.custom_operations_type in
+    let* int32_ops =
+      register_import
+        ~name:
+          (match kind with
+          | `Int32 -> "int32_ops"
+          | `Nativeint -> "nativeint_ops")
+        (Global
+           { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
+    in
+    let* ty = Type.int32_type in
+    let* e = e in
+    return (W.StructNew (ty, [ GlobalGet (V int32_ops); e ]))
+
   let make_int64 e =
     let* custom_operations = Type.custom_operations_type in
     let* int64_ops =
@@ -426,7 +457,7 @@ module Constant = struct
 
   let rec translate_rec c =
     match c with
-    | Code.Int i -> return (true, W.I31New (Const (I32 i))) (*ZZZ 32 bit integers *)
+    | Code.Int (Regular, i) -> return (true, W.I31New (Const (I32 i)))
     | Tuple (tag, a, _) ->
         let* ty = Type.block_type in
         let* l =
@@ -500,6 +531,12 @@ module Constant = struct
                 :: List.map ~f:(fun f -> W.StructNew (ty, [ Const (F64 f) ])) l ) )
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
+        return (true, e)
+    | Int (Int32, i) ->
+        let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
+        return (true, e)
+    | Int (Native, i) ->
+        let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
         return (true, e)
 
   let translate c =

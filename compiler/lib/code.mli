@@ -152,6 +152,11 @@ module Native_string : sig
   val of_bytestring : string -> t
 end
 
+type int_kind =
+  | Regular
+  | Int32
+  | Native
+
 type constant =
   | String of string
   | NativeString of Native_string.t
@@ -159,7 +164,7 @@ type constant =
   | Float_array of float array
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
-  | Int of int32
+  | Int of int_kind * int32
 
 val constant_equal : constant -> constant -> bool option
 

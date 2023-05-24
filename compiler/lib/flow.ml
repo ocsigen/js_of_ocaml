@@ -343,7 +343,7 @@ let the_const_of info x =
 
 let the_int info x =
   match the_const_of info x with
-  | Some (Int i) -> Some i
+  | Some (Int (_, i)) -> Some i
   | _ -> None
 
 let the_string_of info x =

@@ -21,4 +21,4 @@ val clear_static_env : unit -> unit
 
 val set_static_env : string -> string -> unit
 
-val f : Flow.info -> Code.program -> Code.program
+val f : target:[ `JavaScript | `Wasm ] -> Flow.info -> Code.program -> Code.program
