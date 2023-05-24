@@ -95,17 +95,17 @@ let register p k kargs arity =
         (string_of_kind k));
   add_external p;
   (match arity with
-  | Some a -> Hashtbl.add arities p a
+  | Some a -> Hashtbl.replace arities p a
   | _ -> ());
   (match kargs with
-  | Some k -> Hashtbl.add kind_args_tbl p k
+  | Some k -> Hashtbl.replace kind_args_tbl p k
   | _ -> ());
-  Hashtbl.add kinds p k
+  Hashtbl.replace kinds p k
 
 let alias nm nm' =
   add_external nm';
   add_external nm;
-  Hashtbl.add aliases nm nm'
+  Hashtbl.replace aliases nm nm'
 
 let named_values = ref StringSet.empty
 

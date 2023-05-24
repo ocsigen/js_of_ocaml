@@ -671,6 +671,14 @@ module Generate (Target : Wa_target_sig.S) = struct
       (imports @ functions @ (start_function :: constant_data))
 end
 
+let init () =
+  List.iter
+    ~f:(fun (nm, nm') -> Primitive.alias nm nm')
+    [ "caml_alloc_dummy_float", "caml_alloc_dummy" (*ZZZ*)
+    ; "caml_make_array", "%identity"
+    ; "caml_ensure_stack_capacity", "%identity"
+    ]
+
 let f ch (p : Code.program) ~live_vars =
   match target with
   | `Core ->

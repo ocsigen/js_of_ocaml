@@ -2088,34 +2088,6 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@]@.";
   res
 
-let f
-    (p : Code.program)
-    ~exported_runtime
-    ~live_vars
-    ~cps_calls
-    ~should_export
-    ~warn_on_unhandled_effect
-    debug =
-  let t' = Timer.make () in
-  let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
-  let exported_runtime =
-    if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
-  in
-  let ctx =
-    Ctx.initial
-      ~warn_on_unhandled_effect
-      ~exported_runtime
-      ~should_export
-      p.blocks
-      live_vars
-      cps_calls
-      share
-      debug
-  in
-  let p = compile_program ctx p.start in
-  if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
-  p
-
 let init () =
   List.iter
     ~f:(fun (nm, nm') -> Primitive.alias nm nm')
@@ -2167,9 +2139,7 @@ let init () =
     ; "caml_int64_to_int", "caml_int64_to_int32"
     ; "caml_int64_of_nativeint", "caml_int64_of_int32"
     ; "caml_int64_to_nativeint", "caml_int64_to_int32"
-      (* ZZZ
-          ; "caml_float_of_int", "%identity"
-      *)
+    ; "caml_float_of_int", "%identity"
     ; "caml_array_get_float", "caml_array_get"
     ; "caml_floatarray_get", "caml_array_get"
     ; "caml_array_get_addr", "caml_array_get"
@@ -2183,13 +2153,37 @@ let init () =
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"
-      (*ZZZ
-          ; "caml_js_from_float", "%identity"
-          ; "caml_js_to_float", "%identity"
-      *)
+    ; "caml_js_from_float", "%identity"
+    ; "caml_js_to_float", "%identity"
     ];
   Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
     internal_primitives
 
-let () = init ()
+let f
+    (p : Code.program)
+    ~exported_runtime
+    ~live_vars
+    ~cps_calls
+    ~should_export
+    ~warn_on_unhandled_effect
+    debug =
+  let t' = Timer.make () in
+  let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
+  let exported_runtime =
+    if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
+  in
+  let ctx =
+    Ctx.initial
+      ~warn_on_unhandled_effect
+      ~exported_runtime
+      ~should_export
+      p.blocks
+      live_vars
+      cps_calls
+      share
+      debug
+  in
+  let p = compile_program ctx p.start in
+  if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
+  p

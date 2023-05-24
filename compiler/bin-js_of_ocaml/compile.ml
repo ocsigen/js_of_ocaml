@@ -88,6 +88,7 @@ let run
     ; export_file
     ; keep_unit_names
     } =
+  Generate.init ();
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Jsoo_cmdline.Arg.eval common;

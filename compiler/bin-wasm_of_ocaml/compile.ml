@@ -91,6 +91,7 @@ let link_and_optimize wat_file output_file =
   optimize temp_file output_file
 
 let run { Cmd_arg.common; profile; input_file; output_file; params } =
+  Wa_generate.init ();
   Jsoo_cmdline.Arg.eval common;
   (match output_file with
   | name, _ when debug_mem () -> Debug.start_profiling name
