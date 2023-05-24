@@ -13,7 +13,7 @@
 
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
 
-   (type $closure (struct (field i32) (field (ref $function_1))))
+   (type $closure (struct (field (ref $function_1))))
 
    (type $value->value->int
       (func (param (ref eq)) (param (ref eq)) (result i32)))
@@ -1369,7 +1369,7 @@
                      (call $wrap
                         (call $get (local.get $args) (i31.new (local.get $i))))
                      (local.get $acc)
-                     (struct.get $closure 1
+                     (struct.get $closure 0
                         (ref.cast $closure (local.get $acc)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
