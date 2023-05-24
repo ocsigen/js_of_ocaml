@@ -245,6 +245,31 @@ module Type = struct
                   ; { W.mut = false; typ = Value value }
                   ])
           })
+
+  let dummy_closure_type ~arity =
+    register_type (Printf.sprintf "dummy_closure_%d" arity) (fun () ->
+        let* cl_typ = closure_type arity in
+        let* cl_typ' = if arity = 1 then closure_type_1 else closure_type arity in
+        let* common = closure_common_fields in
+        let* fun_ty' = function_type arity in
+        return
+          { supertype = Some cl_typ
+          ; final = true
+          ; typ =
+              W.Struct
+                ((if arity = 1
+                  then common
+                  else
+                    common
+                    @ [ { mut = false
+                        ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
+                        }
+                      ])
+                @ [ { W.mut = true
+                    ; typ = W.Value (Ref { nullable = true; typ = Type cl_typ' })
+                    }
+                  ])
+          })
 end
 
 module Value = struct
@@ -397,6 +422,14 @@ module Memory = struct
     let casted_closure = if skip_cast then closure else wasm_cast ty closure in
     let* e = wasm_struct_get ty casted_closure (env_start arity - 1) in
     return (`Ref fun_ty, e)
+
+  let load_real_closure ~arity closure =
+    let* ty = Type.dummy_closure_type ~arity in
+    let* cl_typ = if arity = 1 then Type.closure_type_1 else Type.closure_type arity in
+    let* e =
+      wasm_cast cl_typ (wasm_struct_get ty (wasm_cast ty closure) (env_start arity))
+    in
+    return (cl_typ, e)
 
   let check_function_arity f arity if_match if_mismatch =
     let* fun_ty = Type.closure_type arity in
@@ -769,6 +802,25 @@ module Closure = struct
       ( Memory.wasm_struct_get ty (cast (load closure)) (offset + 1)
       , Memory.wasm_struct_get ty (cast (load closure)) offset
       , Some (W.Ref { nullable = false; typ = Type cl_ty }) )
+
+  let dummy ~arity =
+    (* The runtime only handle function with arity up to 4 *)
+    let arity = if arity > 4 then 1 else arity in
+    let* dummy_fun = need_dummy_fun ~arity in
+    let* ty = Type.dummy_closure_type ~arity in
+    let* curry_fun = if arity > 1 then need_curry_fun ~arity else return dummy_fun in
+    let* cl_typ = Type.closure_type arity in
+    let closure_contents =
+      if arity = 1
+      then [ W.RefFunc dummy_fun; RefNull (Type cl_typ) ]
+      else [ RefFunc curry_fun; RefFunc dummy_fun; RefNull (Type cl_typ) ]
+    in
+    return
+      (W.StructNew
+         ( ty
+         , if include_closure_arity
+           then Const (I32 1l) :: closure_contents
+           else closure_contents ))
 end
 
 module Stack = struct

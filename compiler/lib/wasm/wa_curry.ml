@@ -188,6 +188,27 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     W.Function { name; exported_name = None; typ = func_type arity; locals; body }
 
+  let dummy ~context ~arity ~name =
+    let body =
+      let l =
+        List.rev
+          (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
+      in
+      let* () = bind_parameters l in
+      let f = Code.Var.fresh_n "f" in
+      let* _ = add_var f in
+      let* typ, closure = Memory.load_real_closure ~arity (load f) in
+      let* l = expression_list load l in
+      let* e =
+        call ~typ:(W.Ref { nullable = false; typ = Type typ }) ~arity (return closure) l
+      in
+      instr (W.Return (Some e))
+    in
+    let locals, body =
+      function_body ~context ~value_type:Value.value ~param_count:(arity + 1) ~body
+    in
+    W.Function { name; exported_name = None; typ = func_type arity; locals; body }
+
   let f ~context =
     IntMap.iter
       (fun arity name ->
@@ -198,5 +219,10 @@ module Make (Target : Wa_target_sig.S) = struct
       (fun arity name ->
         let l = curry ~context ~arity ~name in
         context.other_fields <- List.rev_append l context.other_fields)
-      context.curry_funs
+      context.curry_funs;
+    IntMap.iter
+      (fun arity name ->
+        let f = dummy ~context ~arity ~name in
+        context.other_fields <- f :: context.other_fields)
+      context.dummy_funs
 end

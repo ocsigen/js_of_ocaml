@@ -13,7 +13,47 @@
 
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
 
-   (type $closure (struct (field (ref $function_1))))
+   (type $closure (struct (;(field i32);) (field (ref $function_1))))
+
+   (type $dummy_closure_1
+      (sub $closure
+         (struct (field (ref $function_1)) (field (mut (ref null $closure))))))
+
+   (type $function_2
+      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+
+   (type $closure_2
+      (sub $closure
+         (struct (field (ref $function_1)) (field (ref $function_2)))))
+
+   (type $dummy_closure_2
+      (sub $closure_2
+         (struct (field (ref $function_1)) (field (ref $function_2))
+            (field (mut (ref null $closure_2))))))
+
+   (type $function_3
+      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+
+   (type $closure_3
+      (sub $closure
+         (struct (field (ref $function_1)) (field (ref $function_3)))))
+
+   (type $dummy_closure_3
+      (sub $closure_3
+         (struct (field (ref $function_1)) (field (ref $function_3))
+            (field (mut (ref null $closure_3))))))
+
+   (type $function_4
+      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+
+   (type $closure_4
+      (sub $closure
+         (struct (field (ref $function_1)) (field (ref $function_4)))))
+
+   (type $dummy_closure_4
+      (sub $closure_4
+         (struct (field (ref $function_1)) (field (ref $function_4))
+            (field (mut (ref null $closure_4))))))
 
    (type $value->value->int
       (func (param (ref eq)) (param (ref eq)) (result i32)))
@@ -545,21 +585,38 @@
 
    (func (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
-      (local $i i32) (local $len i32)
+      (local $i i32)
       (local $dst (ref $block)) (local $src (ref $block))
-      ;; ZZZ check for closure or float array
-      (local.set $src (ref.cast $block (local.get $newval)))
-      (local.set $dst (ref.cast $block (local.get $dummy)))
-      (local.set $len (array.len (local.get $dst)))
-      (local.set $i (i32.const 0))
-      (loop $loop
-         (if (i32.lt_s (local.get $i) (local.get $len))
-            (then
-               (array.set $block (local.get $dst) (local.get $i)
-                  (array.get $block (local.get $src) (local.get $i)))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
-      (i31.new (i32.const 0)))
+      (drop (block $not_block (result (ref eq))
+         (local.set $dst
+            (br_on_cast_fail $not_block $block (local.get $dummy)))
+         (local.set $src (ref.cast $block (local.get $newval)))
+         (array.copy $block $block
+            (local.get $dst) (i32.const 0) (local.get $src) (i32.const 0)
+            (array.len (local.get $dst)))
+         (return (i31.new (i32.const 0)))))
+      (drop (block $not_closure_1 (result (ref eq))
+         (struct.set $dummy_closure_1 1
+            (br_on_cast_fail $not_closure_1 $dummy_closure_1 (local.get $dummy))
+            (ref.cast $closure (local.get $newval)))
+         (return (i31.new (i32.const 0)))))
+      (drop (block $not_closure_2 (result (ref eq))
+         (struct.set $dummy_closure_2 2
+            (br_on_cast_fail $not_closure_2 $dummy_closure_2 (local.get $dummy))
+            (ref.cast $closure_2 (local.get $newval)))
+         (return (i31.new (i32.const 0)))))
+      (drop (block $not_closure_3 (result (ref eq))
+         (struct.set $dummy_closure_3 2
+            (br_on_cast_fail $not_closure_3 $dummy_closure_3 (local.get $dummy))
+            (ref.cast $closure_3 (local.get $newval)))
+         (return (i31.new (i32.const 0)))))
+      (drop (block $not_closure_4 (result (ref eq))
+         (struct.set $dummy_closure_4 2
+            (br_on_cast_fail $not_closure_4 $dummy_closure_4 (local.get $dummy))
+            (ref.cast $closure_4 (local.get $newval)))
+         (return (i31.new (i32.const 0)))))
+      ;; ZZZ float array
+      (unreachable))
 
    (func $caml_string_equal (export "caml_string_equal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))

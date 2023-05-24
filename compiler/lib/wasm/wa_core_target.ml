@@ -125,6 +125,8 @@ module Memory = struct
 
   let load_function_arity closure = Arith.(field closure 1 lsr const 24l)
 
+  let load_real_closure ~arity:_ _ = assert false
+
   let check_function_arity f arity if_match if_mismatch =
     let func_arity = load_function_arity (load f) in
     if_
@@ -534,6 +536,8 @@ module Closure = struct
 
   let curry_load ~arity:_ _ closure =
     return (Memory.field (load closure) 3, Memory.field (load closure) 4, None)
+
+  let dummy ~arity:_ = assert false
 end
 
 module Math = struct

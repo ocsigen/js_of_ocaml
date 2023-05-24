@@ -65,6 +65,9 @@ module type S = sig
       -> expression
       -> ([ `Index | `Ref of Wa_ast.var ] * Wa_ast.expression) Wa_code_generation.t
 
+    val load_real_closure :
+      arity:int -> expression -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
+
     val check_function_arity :
          Code.Var.t
       -> int
@@ -194,6 +197,8 @@ module type S = sig
       -> int
       -> Code.Var.t
       -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
+
+    val dummy : arity:int -> Wa_ast.expression Wa_code_generation.t
   end
 
   module Math : sig

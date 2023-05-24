@@ -13,6 +13,7 @@ type context =
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wa_ast.instruction list
   }
 
@@ -141,6 +142,8 @@ val is_closure : Code.Var.t -> bool t
 val need_apply_fun : arity:int -> Code.Var.t t
 
 val need_curry_fun : arity:int -> Code.Var.t t
+
+val need_dummy_fun : arity:int -> Code.Var.t t
 
 val function_body :
      context:context

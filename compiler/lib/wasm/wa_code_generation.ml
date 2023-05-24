@@ -29,6 +29,7 @@ type context =
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
+  ; mutable dummy_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
   }
 
@@ -42,6 +43,7 @@ let make_context () =
   ; closure_envs = Var.Map.empty
   ; apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
+  ; dummy_funs = IntMap.empty
   ; init_code = []
   }
 
@@ -403,6 +405,15 @@ let need_curry_fun ~arity st =
      with Not_found ->
        let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
        ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
+       x)
+  , st )
+
+let need_dummy_fun ~arity st =
+  let ctx = st.context in
+  ( (try IntMap.find arity ctx.dummy_funs
+     with Not_found ->
+       let x = Var.fresh_n (Printf.sprintf "dummy_%d" arity) in
+       ctx.dummy_funs <- IntMap.add arity x ctx.dummy_funs;
        x)
   , st )
 

@@ -119,6 +119,10 @@ module Generate (Target : Wa_target_sig.S) = struct
     | Closure _ ->
         Closure.translate ~context:ctx.global_context ~closures:ctx.closures ~stack_ctx x
     | Constant c -> Constant.translate c
+    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int (_, arity)) ])
+      when Poly.(target = `GC) -> Closure.dummy ~arity:(Int32.to_int arity)
+    | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->
+        Closure.dummy ~arity:1
     | Prim (p, l) -> (
         let l = List.map ~f:transl_prim_arg l in
         match p, l with
