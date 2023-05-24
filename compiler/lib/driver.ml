@@ -44,12 +44,12 @@ let deadcode p =
   let r, _ = deadcode' p in
   r
 
-let inline p =
+let inline ~target p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
     let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars)
+    Inline.f ~target p live_vars)
   else p
 
 let specialize_1 (p, info) =
@@ -131,20 +131,20 @@ let o1 ~target : 'a -> 'a =
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'
   +> eval ~target
-  +> inline (* inlining may reveal new tailcall opt *)
+  +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
   +> specialize'
   +> eval ~target
-  +> inline
+  +> inline ~target
   +> deadcode
   +> print
   +> flow
   +> specialize'
   +> eval ~target
-  +> inline
+  +> inline ~target
   +> deadcode
   +> phi
   +> flow
@@ -160,7 +160,7 @@ let o2 ~target : 'a -> 'a = loop 10 "o1" (o1 ~target) 1 +> print
 let round1 ~target : 'a -> 'a =
   print
   +> tailcall
-  +> inline (* inlining may reveal new tailcall opt *)
+  +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'

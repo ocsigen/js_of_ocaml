@@ -18,4 +18,5 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Code.program -> Deadcode.variable_uses -> Code.program
+val f :
+  target:[ `JavaScript | `Wasm ] -> Code.program -> Deadcode.variable_uses -> Code.program
