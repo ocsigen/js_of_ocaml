@@ -18,6 +18,7 @@ let rec instruction ~tail i =
   | Push (Call_indirect (ty, e, l)) when tail -> Return_call_indirect (ty, e, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
   | Push (Call_ref _) -> i
+  | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
   | Drop _
   | Store _
   | Store8 _
@@ -33,8 +34,6 @@ let rec instruction ~tail i =
   | Push _
   | ArraySet _
   | StructSet _
-  | Br_on_cast _
-  | Br_on_cast_fail _
   | Return_call_indirect _
   | Return_call _
   | Return_call_ref _ -> i

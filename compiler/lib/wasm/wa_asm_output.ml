@@ -117,6 +117,7 @@ module Output () = struct
       (match t with
       | I32 -> "i32"
       | I64 -> "i64"
+      | F32 -> "f32"
       | F64 -> "f64"
       | Ref _ -> assert false (* Not supported *))
 
@@ -138,6 +139,7 @@ module Output () = struct
     match op with
     | I32 _ -> string "i32."
     | I64 _ -> string "i64."
+    | F32 _ -> string "f32."
     | F64 _ -> string "f64."
 
   let signage op (s : Wa_ast.signage) =
@@ -147,7 +149,7 @@ module Output () = struct
     | S -> "_s"
     | U -> "_u"
 
-  let int_un_op op =
+  let int_un_op sz op =
     match op with
     | Clz -> "clz"
     | Ctz -> "ctz"
@@ -156,9 +158,9 @@ module Output () = struct
     | TruncSatF64 s ->
         Feature.require nontrapping_fptoint;
         signage "trunc_sat_f64" s
-    | ReinterpretF64 -> "reinterpret_f64"
+    | ReinterpretF -> "reinterpret_f" ^ sz
 
-  let int_bin_op (op : int_bin_op) =
+  let int_bin_op _ (op : int_bin_op) =
     match op with
     | Add -> "add"
     | Sub -> "sub"
@@ -179,7 +181,7 @@ module Output () = struct
     | Le s -> signage "le" s
     | Ge s -> signage "ge" s
 
-  let float_un_op op =
+  let float_un_op sz op =
     match op with
     | Neg -> "neg"
     | Abs -> "abs"
@@ -190,10 +192,9 @@ module Output () = struct
     | Sqrt -> "sqrt"
     | Convert (`I32, s) -> signage "convert_i32" s
     | Convert (`I64, s) -> signage "convert_i64" s
-    | Reinterpret `I32 -> "reinterpret_i32"
-    | Reinterpret `I64 -> "reinterpret_i64"
+    | ReinterpretI -> "reinterpret_i" ^ sz
 
-  let float_bin_op op =
+  let float_bin_op _ op =
     match op with
     | Add -> "add"
     | Sub -> "sub"
@@ -209,27 +210,30 @@ module Output () = struct
     | Le -> "le"
     | Ge -> "ge"
 
-  let select i32 i64 f64 op =
+  let select i32 i64 f32 f64 op =
     match op with
-    | I32 x -> i32 x
-    | I64 x -> i64 x
-    | F64 x -> f64 x
+    | I32 x -> i32 "32" x
+    | I64 x -> i64 "64" x
+    | F32 x -> f32 "32" x
+    | F64 x -> f64 "64" x
 
   let integer i = string (string_of_int i)
 
-  let integer32 i =
+  let integer32 _ i =
     string
       (if Poly.(i > -10000l && i < 10000l)
        then Int32.to_string i
        else Printf.sprintf "0x%lx" i)
 
-  let integer64 i =
+  let integer64 _ i =
     string
       (if Poly.(i > -10000L && i < 10000L)
        then Int64.to_string i
        else Printf.sprintf "0x%Lx" i)
 
-  let float64 f = string (Printf.sprintf "%h" f) (*ZZZ nan with payload*)
+  let float32 _ f = string (Printf.sprintf "%h" f) (*ZZZ nan with payload*)
+
+  let float64 _ f = string (Printf.sprintf "%h" f) (*ZZZ nan with payload*)
 
   let index name = string (Code.Var.to_string name)
 
@@ -243,37 +247,52 @@ module Output () = struct
     then empty
     else (if offset < 0 then empty else string "+") ^^ integer offset
 
+  let offs _ i = Int32.to_string i
+
   let rec expression e =
     match e with
     | Const op ->
-        line (type_prefix op ^^ string "const " ^^ select integer32 integer64 float64 op)
+        line
+          (type_prefix op
+          ^^ string "const "
+          ^^ select integer32 integer64 float32 float64 op)
     | ConstSym (name, offset) ->
         line (type_prefix (I32 ()) ^^ string "const " ^^ symbol name offset)
     | UnOp (op, e') ->
         expression e'
-        ^^ line (type_prefix op ^^ string (select int_un_op int_un_op float_un_op op))
+        ^^ line
+             (type_prefix op
+             ^^ string (select int_un_op int_un_op float_un_op float_un_op op))
     | BinOp (op, e1, e2) ->
         expression e1
         ^^ expression e2
-        ^^ line (type_prefix op ^^ string (select int_bin_op int_bin_op float_bin_op op))
+        ^^ line
+             (type_prefix op
+             ^^ string (select int_bin_op int_bin_op float_bin_op float_bin_op op))
     | I32WrapI64 e -> expression e ^^ line (string "i32.wrap_i64")
     | I64ExtendI32 (s, e) -> expression e ^^ line (string (signage "i64.extend_i32" s))
+    | F32DemoteF64 e -> expression e ^^ line (string "f32.demote_f64")
+    | F64PromoteF32 e -> expression e ^^ line (string "f64.promote_f32")
     | Load (offset, e') ->
         expression e'
         ^^ line
              (type_prefix offset
              ^^ string "load "
-             ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
+             ^^ string (select offs offs offs offs offset))
     | Load8 (s, offset, e') ->
         expression e'
         ^^ line
              (type_prefix offset
              ^^ string (signage "load8" s)
              ^^ string " "
-             ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
+             ^^ string (select offs offs offs offs offset))
     | LocalGet i -> line (string "local.get " ^^ integer i)
     | LocalTee (i, e') -> expression e' ^^ line (string "local.tee " ^^ integer i)
     | GlobalGet nm -> line (string "global.get " ^^ symbol nm 0)
+    | BlockExpr (ty, l) ->
+        line (string "block" ^^ block_type ty)
+        ^^ indent (concat_map instruction l)
+        ^^ line (string "end_block")
     | Call_indirect (typ, f, l) ->
         concat_map expression l
         ^^ expression f
@@ -296,7 +315,9 @@ module Output () = struct
     | RefCast _
     | RefTest _
     | RefEq _
-    | RefNull
+    | RefNull _
+    | Br_on_cast _
+    | Br_on_cast_fail _
     | ExternExternalize _
     | ExternInternalize _ -> assert false (* Not supported *)
 
@@ -309,14 +330,14 @@ module Output () = struct
         ^^ line
              (type_prefix offset
              ^^ string "store "
-             ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
+             ^^ string (select offs offs offs offs offset))
     | Store8 (offset, e, e') ->
         expression e
         ^^ expression e'
         ^^ line
              (type_prefix offset
              ^^ string "store8 "
-             ^^ string (select Int32.to_string Int32.to_string Int32.to_string offset))
+             ^^ string (select offs offs offs offs offset))
     | LocalSet (i, e) -> expression e ^^ line (string "local.set " ^^ integer i)
     | GlobalSet (nm, e) -> expression e ^^ line (string "global.set " ^^ symbol nm 0)
     | Loop (ty, l) ->
@@ -373,8 +394,7 @@ module Output () = struct
     | Return_call (x, l) ->
         Feature.require tail_call;
         concat_map expression l ^^ line (string "return_call " ^^ index x)
-    | ArraySet _ | StructSet _ | Br_on_cast _ | Br_on_cast_fail _ | Return_call_ref _ ->
-        assert false (* Not supported *)
+    | ArraySet _ | StructSet _ | Return_call_ref _ -> assert false (* Not supported *)
 
   let escape_string s =
     let b = Buffer.create (String.length s + 2) in
@@ -542,8 +562,8 @@ module Output () = struct
                         line
                           (match d with
                           | DataI8 i -> string ".int8 " ^^ integer i
-                          | DataI32 i -> string ".int32 " ^^ integer32 i
-                          | DataI64 i -> string ".int64 " ^^ integer64 i
+                          | DataI32 i -> string ".int32 " ^^ integer32 "32" i
+                          | DataI64 i -> string ".int64 " ^^ integer64 "64" i
                           | DataBytes b ->
                               string ".ascii \""
                               ^^ string (escape_string b)

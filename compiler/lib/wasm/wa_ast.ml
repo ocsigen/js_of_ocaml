@@ -23,6 +23,7 @@ type ref_type =
 type value_type =
   | I32
   | I64
+  | F32
   | F64
   | Ref of ref_type
 
@@ -49,9 +50,10 @@ type str_type =
   | Array of field_type
   | Func of func_type
 
-type ('i32, 'i64, 'f64) op =
+type ('i32, 'i64, 'f32, 'f64) op =
   | I32 of 'i32
   | I64 of 'i64
+  | F32 of 'f32
   | F64 of 'f64
 
 type signage =
@@ -64,7 +66,7 @@ type int_un_op =
   | Popcnt
   | Eqz
   | TruncSatF64 of signage
-  | ReinterpretF64
+  | ReinterpretF
 
 type int_bin_op =
   | Add
@@ -95,7 +97,7 @@ type float_un_op =
   | Nearest
   | Sqrt
   | Convert of [ `I32 | `I64 ] * signage
-  | Reinterpret of [ `I32 | `I64 ]
+  | ReinterpretI
 
 type float_bin_op =
   | Add
@@ -115,17 +117,21 @@ type float_bin_op =
 type memarg = int32
 
 type expression =
-  | Const of (int32, int64, float) op
+  | Const of (int32, int64, float, float) op
   | ConstSym of symbol * int
-  | UnOp of (int_un_op, int_un_op, float_un_op) op * expression
-  | BinOp of (int_bin_op, int_bin_op, float_bin_op) op * expression * expression
+  | UnOp of (int_un_op, int_un_op, float_un_op, float_un_op) op * expression
+  | BinOp of
+      (int_bin_op, int_bin_op, float_bin_op, float_bin_op) op * expression * expression
   | I32WrapI64 of expression
   | I64ExtendI32 of signage * expression
-  | Load of (memarg, memarg, memarg) op * expression
-  | Load8 of signage * (memarg, memarg, memarg) op * expression
+  | F32DemoteF64 of expression
+  | F64PromoteF32 of expression
+  | Load of (memarg, memarg, memarg, memarg) op * expression
+  | Load8 of signage * (memarg, memarg, memarg, memarg) op * expression
   | LocalGet of int
   | LocalTee of int * expression
   | GlobalGet of symbol
+  | BlockExpr of func_type * instruction list
   | Call_indirect of func_type * expression * expression list
   | Call of var * expression list
   | MemoryGrow of int * expression
@@ -145,14 +151,16 @@ type expression =
   | RefCast of ref_type * expression
   | RefTest of ref_type * expression
   | RefEq of expression * expression
-  | RefNull
+  | RefNull of heap_type
   | ExternInternalize of expression
   | ExternExternalize of expression
+  | Br_on_cast of int * ref_type * ref_type * expression
+  | Br_on_cast_fail of int * ref_type * ref_type * expression
 
 and instruction =
   | Drop of expression
-  | Store of (memarg, memarg, memarg) op * expression * expression
-  | Store8 of (memarg, memarg, memarg) op * expression * expression
+  | Store of (memarg, memarg, memarg, memarg) op * expression * expression
+  | Store8 of (memarg, memarg, memarg, memarg) op * expression * expression
   | LocalSet of int * expression
   | GlobalSet of symbol * expression
   | Loop of func_type * instruction list
@@ -173,8 +181,6 @@ and instruction =
   | Rethrow of int
   | ArraySet of var * expression * expression * expression
   | StructSet of var * int * expression * expression
-  | Br_on_cast of int * ref_type * ref_type * expression
-  | Br_on_cast_fail of int * ref_type * ref_type * expression
   | Return_call_indirect of func_type * expression * expression list
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
