@@ -43,17 +43,17 @@
           await WebAssembly.instantiateStreaming(
               code,
               {env:runtimeModule.instance.exports,
-               Math:math}
+               Math:math,bindings:bindings}
           )
 
     try {
         wasmModule.instance.exports._initialize()
     } catch (e) {
         if (e instanceof WebAssembly.Exception &&
-            e.is(runtimeModule.instance.exports.ocaml_exit))
-            process.exit(e.getArg(runtimeModule.instance.exports.ocaml_exit, 0));
+            e.is(wasmModule.instance.exports.ocaml_exit))
+            process.exit(e.getArg(wasmModule.instance.exports.ocaml_exit, 0));
         if (e instanceof WebAssembly.Exception &&
-            e.is(runtimeModule.instance.exports.ocaml_exception)) {
+            e.is(wasmModule.instance.exports.ocaml_exception)) {
             console.log('Uncaught exception')
             process.exit(1)
         }

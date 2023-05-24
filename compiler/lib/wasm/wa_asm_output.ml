@@ -429,14 +429,14 @@ module Output () = struct
               ~f:(fun f -> line (string ".ascii \"+\"") ^^ len_string f)
               (Feature.get features)))
 
-  let f fields =
+  let f ch fields =
     List.iter
       ~f:(fun f ->
         match f with
         | Global { name = S name; _ } -> Var_printer.add_reserved name
         | Import _ | Function _ | Data _ | Global { name = V _; _ } | Tag _ | Type _ -> ())
       fields;
-    to_channel stdout
+    to_channel ch
     @@
     let types =
       List.filter_map
@@ -601,6 +601,6 @@ module Output () = struct
     ^^ target_features
 end
 
-let f fields =
+let f ch fields =
   let module O = Output () in
-  O.f fields
+  O.f ch fields

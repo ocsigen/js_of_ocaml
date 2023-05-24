@@ -178,7 +178,6 @@ let generate
     ((p, live_vars), cps_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
-  Wa_generate.f ~live_vars p;
   Generate.f
     p
     ~exported_runtime
@@ -571,7 +570,7 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
+let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   let exported_runtime = not standalone in
   let opt =
     specialize_js_once
@@ -583,7 +582,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
     +> effects
     +> map_fst (*Generate_closure.f +>*) deadcode'
   in
-  let emit =
+  let emit formatter =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
     +> link ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
@@ -595,24 +594,29 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
   let t = Timer.make () in
   let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  emit r
+  match target with
+  | `JavaScript formatter -> emit formatter r
+  | `Wasm ch ->
+      let (p, live_vars), _ = r in
+      Wa_generate.f ch ~live_vars p;
+      None
 
-let full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p =
+let full_no_source_map ~target ~standalone ~wrap_with_fun ~profile ~linkall d p =
   let (_ : Source_map.t option) =
-    full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None formatter d p
+    full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None d p
   in
   ()
 
 let f
+    ~target
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ?(linkall = false)
     ?source_map
-    formatter
     d
     p =
-  full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p
+  full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p
 
 let f'
     ?(standalone = true)
@@ -622,16 +626,23 @@ let f'
     formatter
     d
     p =
-  full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p
+  full_no_source_map
+    ~target:(`JavaScript formatter)
+    ~standalone
+    ~wrap_with_fun
+    ~profile
+    ~linkall
+    d
+    p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
+    ~target:(`JavaScript formatter)
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~linkall:false
-    formatter
     d
     p
 

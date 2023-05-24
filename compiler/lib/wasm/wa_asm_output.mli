@@ -1,1 +1,1 @@
-val f : Wa_ast.module_field list -> unit
+val f : out_channel -> Wa_ast.module_field list -> unit

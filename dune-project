@@ -131,3 +131,27 @@
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
+
+(package
+ (name wasm_of_ocaml-compiler)
+ (synopsis "Compiler from OCaml bytecode to WebAssembly")
+ (description
+  "Wasm_of_ocaml is a compiler from OCaml bytecode to WebAssembly. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
+ (depends
+  (ocaml (and (>= 4.08) (< 5.1)))
+  (num :with-test)
+  (ppx_expect (and (>= v0.14.2) :with-test))
+  (ppxlib (>= 0.15.0))
+  (re :with-test)
+  (cmdliner (>= 1.1.0))
+  (sedlex (>= 2.3))
+  menhir
+  menhirLib
+  menhirSdk
+  yojson)
+ (depopts
+  ocamlfind)
+ (conflicts
+  (ocamlfind (< 1.5.1))
+  (js_of_ocaml (< 3.0))
+))

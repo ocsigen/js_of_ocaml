@@ -592,7 +592,7 @@ let data_offsets fields =
     ~init:(0, Code.Var.Map.empty)
     fields
 
-let f fields =
+let f ch fields =
   let heap_base, addresses = data_offsets fields in
   let ctx =
     { addresses
@@ -633,7 +633,8 @@ let f fields =
       [ List (Atom "elem" :: Atom "declare" :: Atom "func" :: List.map ~f:index functions)
       ]
   in
-  Format.printf
+  Format.fprintf
+    (Format.formatter_of_out_channel ch)
     "%a@."
     format_sexp
     (List

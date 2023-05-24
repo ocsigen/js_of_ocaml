@@ -190,12 +190,12 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
+            ~target:(`JavaScript fmt)
             ~standalone
             ?profile
             ~linkall
             ~wrap_with_fun
             ?source_map
-            fmt
             one.debug
             code
       | `File, fmt ->
@@ -214,12 +214,12 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
+              ~target:(`JavaScript fmt)
               ~standalone
               ?profile
               ~linkall
               ~wrap_with_fun
               ?source_map
-              fmt
               one.debug
               code
           in
