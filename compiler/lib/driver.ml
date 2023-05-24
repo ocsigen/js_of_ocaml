@@ -590,7 +590,11 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
          ~target:(target_flag target)
     +> exact_calls profile
     +> effects
-    +> map_fst (*Generate_closure.f +>*) deadcode'
+    +> map_fst
+         ((match target with
+          | `JavaScript _ -> Generate_closure.f
+          | `Wasm _ -> Fun.id)
+         +> deadcode')
   in
   let emit formatter =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
