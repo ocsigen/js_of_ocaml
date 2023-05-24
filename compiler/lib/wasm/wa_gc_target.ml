@@ -438,12 +438,11 @@ module Constant = struct
             ~init:(return [])
             a
         in
+        let l = List.rev l in
         let l' =
           List.map ~f:(fun (const, v) -> if const then v else W.I31New (Const (I32 0l))) l
         in
-        let c =
-          W.ArrayNewFixed (ty, I31New (Const (I32 (Int32.of_int tag))) :: List.rev l')
-        in
+        let c = W.ArrayNewFixed (ty, I31New (Const (I32 (Int32.of_int tag))) :: l') in
         if List.exists ~f:(fun (const, _) -> not const) l
         then
           let* c = store_in_global c in

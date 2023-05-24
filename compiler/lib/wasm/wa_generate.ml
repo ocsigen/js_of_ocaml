@@ -452,9 +452,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                | Cond _ | Pushtrap _ -> false (*ZZZ also some Switch*)
                | _ -> true
             then
-              block
-                { params = []; result = result_typ }
-                (code ~context:(`Block pc' :: context))
+              block { params = []; result = [] } (code ~context:(`Block pc' :: context))
             else code ~context
           in
           translate_tree result_typ fall_through pc' context
