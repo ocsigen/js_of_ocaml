@@ -43,10 +43,35 @@ module Generate (Target : Wa_target_sig.S) = struct
     let* g = Memory.unbox_float g in
     Value.val_int (return (W.BinOp (F64 op, f, g)))
 
+  let int32_bin_op stack_ctx x op f g =
+    let* f = Memory.unbox_int32 f in
+    let* g = Memory.unbox_int32 g in
+    Memory.box_int32 stack_ctx x (return (W.BinOp (I32 op, f, g)))
+
+  let int32_shift_op stack_ctx x op f g =
+    let* f = Memory.unbox_int32 f in
+    let* g = Value.int_val g in
+    Memory.box_int32 stack_ctx x (return (W.BinOp (I32 op, f, g)))
+
   let int64_bin_op stack_ctx x op f g =
     let* f = Memory.unbox_int64 f in
     let* g = Memory.unbox_int64 g in
     Memory.box_int64 stack_ctx x (return (W.BinOp (I64 op, f, g)))
+
+  let int64_shift_op stack_ctx x op f g =
+    let* f = Memory.unbox_int64 f in
+    let* g = Value.int_val g in
+    Memory.box_int64 stack_ctx x (return (W.BinOp (I64 op, f, I64ExtendI32 (S, g))))
+
+  let nativeint_bin_op stack_ctx x op f g =
+    let* f = Memory.unbox_nativeint f in
+    let* g = Memory.unbox_nativeint g in
+    Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 op, f, g)))
+
+  let nativeint_shift_op stack_ctx x op f g =
+    let* f = Memory.unbox_nativeint f in
+    let* g = Value.int_val g in
+    Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 op, f, g)))
 
   let rec translate_expr ctx stack_ctx x e =
     match e with
@@ -190,6 +215,10 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "caml_mul_float", [ f; g ] -> float_bin_op stack_ctx x Mul f g
         | Extern "caml_div_float", [ f; g ] -> float_bin_op stack_ctx x Div f g
         | Extern "caml_copysign_float", [ f; g ] -> float_bin_op stack_ctx x CopySign f g
+        | Extern "caml_signbit_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            let sign = W.BinOp (F64 CopySign, Const (F64 1.), f) in
+            Value.val_int (return (W.BinOp (F64 Lt, sign, Const (F64 0.))))
         | Extern "caml_neg_float", [ f ] -> float_un_op stack_ctx x Neg f
         | Extern "caml_abs_float", [ f ] -> float_un_op stack_ctx x Abs f
         | Extern "caml_ceil_float", [ f ] -> float_un_op stack_ctx x Ceil f
@@ -211,12 +240,138 @@ module Generate (Target : Wa_target_sig.S) = struct
             Memory.box_float stack_ctx x (return (W.UnOp (F64 (Convert (`I32, S)), n)))
         | Extern "caml_cos_float", [ f ] -> float_un_op' stack_ctx x Math.cos f
         | Extern "caml_sin_float", [ f ] -> float_un_op' stack_ctx x Math.sin f
+        | Extern "caml_tan_float", [ f ] -> float_un_op' stack_ctx x Math.tan f
+        | Extern "caml_acos_float", [ f ] -> float_un_op' stack_ctx x Math.acos f
         | Extern "caml_asin_float", [ f ] -> float_un_op' stack_ctx x Math.asin f
+        | Extern "caml_atan_float", [ f ] -> float_un_op' stack_ctx x Math.atan f
         | Extern "caml_atan2_float", [ f; g ] -> float_bin_op' stack_ctx x Math.atan2 f g
+        | Extern "caml_cosh_float", [ f ] -> float_un_op' stack_ctx x Math.cosh f
+        | Extern "caml_sinh_float", [ f ] -> float_un_op' stack_ctx x Math.sinh f
+        | Extern "caml_tanh_float", [ f ] -> float_un_op' stack_ctx x Math.tanh f
+        | Extern "caml_acosh_float", [ f ] -> float_un_op' stack_ctx x Math.acosh f
+        | Extern "caml_asinh_float", [ f ] -> float_un_op' stack_ctx x Math.asinh f
+        | Extern "caml_atanh_float", [ f ] -> float_un_op' stack_ctx x Math.atanh f
+        | Extern "caml_cbrt_float", [ f ] -> float_un_op' stack_ctx x Math.cbrt f
+        | Extern "caml_exp_float", [ f ] -> float_un_op' stack_ctx x Math.exp f
+        | Extern "caml_log_float", [ f ] -> float_un_op' stack_ctx x Math.log f
+        | Extern "caml_expm1_float", [ f ] -> float_un_op' stack_ctx x Math.expm1 f
+        | Extern "caml_log1p_float", [ f ] -> float_un_op' stack_ctx x Math.log1p f
+        | Extern "caml_log2_float", [ f ] -> float_un_op' stack_ctx x Math.log2 f
+        | Extern "caml_log10_float", [ f ] -> float_un_op' stack_ctx x Math.log10 f
         | Extern "caml_power_float", [ f; g ] -> float_bin_op' stack_ctx x Math.power f g
+        | Extern "caml_hypot_float", [ f; g ] -> float_bin_op' stack_ctx x Math.hypot f g
         | Extern "caml_fmod_float", [ f; g ] -> float_bin_op' stack_ctx x Math.fmod f g
+        | Extern "caml_int32_bits_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_int32
+              stack_ctx
+              x
+              (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
+        | Extern "caml_int32_float_of_bits", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_float
+              stack_ctx
+              x
+              (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
+        | Extern "caml_int32_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_int32 stack_ctx x (return (W.UnOp (I32 (TruncSatF64 S), f)))
+        | Extern "caml_int32_to_float", [ n ] ->
+            let* n = Memory.unbox_int32 n in
+            Memory.box_float stack_ctx x (return (W.UnOp (F64 (Convert (`I32, S)), n)))
+        | Extern "caml_int32_neg", [ i ] ->
+            let* i = Memory.unbox_int32 i in
+            Memory.box_int32 stack_ctx x (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
+        | Extern "caml_int32_add", [ i; j ] -> int32_bin_op stack_ctx x Add i j
+        | Extern "caml_int32_sub", [ i; j ] -> int32_bin_op stack_ctx x Sub i j
+        | Extern "caml_int32_mul", [ i; j ] -> int32_bin_op stack_ctx x Mul i j
+        | Extern "caml_int32_and", [ i; j ] -> int32_bin_op stack_ctx x And i j
+        | Extern "caml_int32_or", [ i; j ] -> int32_bin_op stack_ctx x Or i j
+        | Extern "caml_int32_xor", [ i; j ] -> int32_bin_op stack_ctx x Xor i j
+        | Extern "caml_int32_div", [ i; j ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            let res = Var.fresh () in
+            (*ZZZ Can we do better?*)
+            let i' = Var.fresh () in
+            let j' = Var.fresh () in
+            seq
+              (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
+               let* () =
+                 if_
+                   { params = []; result = [] }
+                   (let* j = load j' in
+                    return (W.UnOp (I32 Eqz, j)))
+                   (instr (CallInstr (f, [])))
+                   (return ())
+               in
+               let* () = store ~typ:I32 i' (Memory.unbox_int32 i) in
+               if_
+                 { params = []; result = [] }
+                 Arith.(
+                   (let* j = load j' in
+                    return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
+                   land let* i = load i' in
+                        return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
+                 (store ~always:true ~typ:I32 res (return (W.Const (I32 Int32.min_int))))
+                 (store
+                    ~always:true
+                    ~typ:I32
+                    res
+                    (let* i = load i' in
+                     let* j = load j' in
+                     return (W.BinOp (I32 (Div S), i, j)))))
+              (Memory.box_int32 stack_ctx x (load res))
+        | Extern "caml_int32_mod", [ i; j ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            let j' = Var.fresh () in
+            seq
+              (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
+               if_
+                 { params = []; result = [] }
+                 (let* j = load j' in
+                  return (W.UnOp (I32 Eqz, j)))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              (let* i = Memory.unbox_int32 i in
+               let* j = load j' in
+               Memory.box_int32 stack_ctx x (return (W.BinOp (I32 (Rem S), i, j))))
+        | Extern "caml_int32_shift_left", [ i; j ] -> int32_shift_op stack_ctx x Shl i j
+        | Extern "caml_int32_shift_right", [ i; j ] ->
+            int32_shift_op stack_ctx x (Shr S) i j
+        | Extern "caml_int32_shift_right_unsigned", [ i; j ] ->
+            int32_shift_op stack_ctx x (Shr U) i j
+        | Extern "caml_int32_to_int", [ i ] -> Value.val_int (Memory.unbox_int32 i)
+        | Extern "caml_int32_of_int", [ i ] ->
+            Memory.box_int32 stack_ctx x (Value.int_val i)
+        | Extern "caml_int64_bits_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_int64 stack_ctx x (return (W.UnOp (I64 ReinterpretF, f)))
+        | Extern "caml_int64_float_of_bits", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_float stack_ctx x (return (W.UnOp (F64 ReinterpretI, i)))
+        | Extern "caml_int64_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_int64 stack_ctx x (return (W.UnOp (I64 (TruncSatF64 S), f)))
+        | Extern "caml_int64_to_float", [ n ] ->
+            let* n = Memory.unbox_int64 n in
+            Memory.box_float stack_ctx x (return (W.UnOp (F64 (Convert (`I64, S)), n)))
+        | Extern "caml_int64_neg", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_int64 stack_ctx x (return (W.BinOp (I64 Sub, Const (I64 0L), i)))
         | Extern "caml_int64_add", [ i; j ] -> int64_bin_op stack_ctx x Add i j
+        | Extern "caml_int64_sub", [ i; j ] -> int64_bin_op stack_ctx x Sub i j
         | Extern "caml_int64_mul", [ i; j ] -> int64_bin_op stack_ctx x Mul i j
+        | Extern "caml_int64_and", [ i; j ] -> int64_bin_op stack_ctx x And i j
+        | Extern "caml_int64_or", [ i; j ] -> int64_bin_op stack_ctx x Or i j
+        | Extern "caml_int64_xor", [ i; j ] -> int64_bin_op stack_ctx x Xor i j
         | Extern "caml_int64_div", [ i; j ] ->
             let* f =
               register_import
@@ -272,6 +427,14 @@ module Generate (Target : Wa_target_sig.S) = struct
               (let* i = Memory.unbox_int64 i in
                let* j = load j' in
                Memory.box_int64 stack_ctx x (return (W.BinOp (I64 (Rem S), i, j))))
+        | Extern "caml_int64_shift_left", [ i; j ] -> int64_shift_op stack_ctx x Shl i j
+        | Extern "caml_int64_shift_right", [ i; j ] ->
+            int64_shift_op stack_ctx x (Shr S) i j
+        | Extern "caml_int64_shift_right_unsigned", [ i; j ] ->
+            int64_shift_op stack_ctx x (Shr U) i j
+        | Extern "caml_int64_to_int", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Value.val_int (return (W.I32WrapI64 i))
         | Extern "caml_int64_of_int", [ i ] ->
             let* i = Value.int_val i in
             Memory.box_int64
@@ -281,6 +444,113 @@ module Generate (Target : Wa_target_sig.S) = struct
                  (match i with
                  | Const (I32 i) -> W.Const (I64 (Int64.of_int32 i))
                  | _ -> W.I64ExtendI32 (S, i)))
+        | Extern "caml_int64_to_int32", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_int32 stack_ctx x (return (W.I32WrapI64 i))
+        | Extern "caml_int64_of_int32", [ i ] ->
+            let* i = Memory.unbox_int32 i in
+            Memory.box_int64 stack_ctx x (return (W.I64ExtendI32 (S, i)))
+        | Extern "caml_int64_to_nativeint", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_nativeint stack_ctx x (return (W.I32WrapI64 i))
+        | Extern "caml_int64_of_nativeint", [ i ] ->
+            let* i = Memory.unbox_nativeint i in
+            Memory.box_int64 stack_ctx x (return (W.I64ExtendI32 (S, i)))
+        | Extern "caml_nativeint_bits_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_nativeint
+              stack_ctx
+              x
+              (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
+        | Extern "caml_nativeint_float_of_bits", [ i ] ->
+            let* i = Memory.unbox_int64 i in
+            Memory.box_float
+              stack_ctx
+              x
+              (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
+        | Extern "caml_nativeint_of_float", [ f ] ->
+            let* f = Memory.unbox_float f in
+            Memory.box_nativeint stack_ctx x (return (W.UnOp (I32 (TruncSatF64 S), f)))
+        | Extern "caml_nativeint_to_float", [ n ] ->
+            let* n = Memory.unbox_nativeint n in
+            Memory.box_float stack_ctx x (return (W.UnOp (F64 (Convert (`I32, S)), n)))
+        | Extern "caml_nativeint_neg", [ i ] ->
+            let* i = Memory.unbox_nativeint i in
+            Memory.box_nativeint
+              stack_ctx
+              x
+              (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
+        | Extern "caml_nativeint_add", [ i; j ] -> nativeint_bin_op stack_ctx x Add i j
+        | Extern "caml_nativeint_sub", [ i; j ] -> nativeint_bin_op stack_ctx x Sub i j
+        | Extern "caml_nativeint_mul", [ i; j ] -> nativeint_bin_op stack_ctx x Mul i j
+        | Extern "caml_nativeint_and", [ i; j ] -> nativeint_bin_op stack_ctx x And i j
+        | Extern "caml_nativeint_or", [ i; j ] -> nativeint_bin_op stack_ctx x Or i j
+        | Extern "caml_nativeint_xor", [ i; j ] -> nativeint_bin_op stack_ctx x Xor i j
+        | Extern "caml_nativeint_div", [ i; j ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            let res = Var.fresh () in
+            (*ZZZ Can we do better?*)
+            let i' = Var.fresh () in
+            let j' = Var.fresh () in
+            seq
+              (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
+               let* () =
+                 if_
+                   { params = []; result = [] }
+                   (let* j = load j' in
+                    return (W.UnOp (I32 Eqz, j)))
+                   (instr (CallInstr (f, [])))
+                   (return ())
+               in
+               let* () = store ~typ:I32 i' (Memory.unbox_nativeint i) in
+               if_
+                 { params = []; result = [] }
+                 Arith.(
+                   (let* j = load j' in
+                    return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
+                   land let* i = load i' in
+                        return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
+                 (store ~always:true ~typ:I32 res (return (W.Const (I32 Int32.min_int))))
+                 (store
+                    ~always:true
+                    ~typ:I32
+                    res
+                    (let* i = load i' in
+                     let* j = load j' in
+                     return (W.BinOp (I32 (Div S), i, j)))))
+              (Memory.box_nativeint stack_ctx x (load res))
+        | Extern "caml_nativeint_mod", [ i; j ] ->
+            let* f =
+              register_import
+                ~name:"caml_raise_zero_divide"
+                (Fun { params = []; result = [] })
+            in
+            let j' = Var.fresh () in
+            seq
+              (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
+               if_
+                 { params = []; result = [] }
+                 (let* j = load j' in
+                  return (W.UnOp (I32 Eqz, j)))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              (let* i = Memory.unbox_nativeint i in
+               let* j = load j' in
+               Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 (Rem S), i, j))))
+        | Extern "caml_nativeint_shift_left", [ i; j ] ->
+            nativeint_shift_op stack_ctx x Shl i j
+        | Extern "caml_nativeint_shift_right", [ i; j ] ->
+            nativeint_shift_op stack_ctx x (Shr S) i j
+        | Extern "caml_nativeint_shift_right_unsigned", [ i; j ] ->
+            nativeint_shift_op stack_ctx x (Shr U) i j
+        | Extern "caml_nativeint_to_int", [ i ] ->
+            Value.val_int (Memory.unbox_nativeint i)
+        | Extern "caml_nativeint_of_int", [ i ] ->
+            Memory.box_nativeint stack_ctx x (Value.int_val i)
         | Extern "caml_int_compare", [ i; j ] ->
             Value.val_int
               Arith.(

@@ -31,25 +31,39 @@ module Type = struct
           ; typ = W.Struct [ { mut = false; typ = Value F64 } ]
           })
 
-  let compare_ext_type =
-    register_type "compare_ext" (fun () ->
+  let compare_type =
+    register_type "compare" (fun () ->
         return
           { supertype = None
           ; final = true
           ; typ = W.Func { W.params = [ value; value ]; result = [ I32 ] }
           })
 
+  let hash_type =
+    register_type "hash" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Func { W.params = [ value ]; result = [ I32 ] }
+          })
+
   let custom_operations_type =
     register_type "custom_operations" (fun () ->
-        let* compare_ext = compare_ext_type in
+        let* string = string_type in
+        let* compare = compare_type in
+        let* hash = hash_type in
         return
           { supertype = None
           ; final = true
           ; typ =
               W.Struct
                 [ { mut = false
-                  ; typ = Value (Ref { nullable = false; typ = Type compare_ext })
+                  ; typ = Value (Ref { nullable = false; typ = Type string })
                   }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type compare })
+                  }
+                ; { mut = false; typ = Value (Ref { nullable = true; typ = Type hash }) }
                 ]
           })
 
@@ -445,6 +459,12 @@ module Memory = struct
     let* e = e in
     return (W.StructNew (ty, [ GlobalGet (V int32_ops); e ]))
 
+  let box_int32 _ _ e = make_int32 ~kind:`Int32 e
+
+  let unbox_int32 e =
+    let* ty = Type.int32_type in
+    wasm_struct_get ty (wasm_cast ty e) 1
+
   let make_int64 e =
     let* custom_operations = Type.custom_operations_type in
     let* int64_ops =
@@ -461,6 +481,12 @@ module Memory = struct
 
   let unbox_int64 e =
     let* ty = Type.int64_type in
+    wasm_struct_get ty (wasm_cast ty e) 1
+
+  let box_nativeint _ _ e = make_int32 ~kind:`Nativeint e
+
+  let unbox_nativeint e =
+    let* ty = Type.int32_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 end
 
@@ -785,7 +811,39 @@ module Math = struct
 
   let sin f = unary "sin" f
 
+  let tan f = unary "tan" f
+
+  let acos f = unary "acos" f
+
   let asin f = unary "asin" f
+
+  let atan f = unary "atan" f
+
+  let cosh f = unary "cosh" f
+
+  let sinh f = unary "sinh" f
+
+  let tanh f = unary "tanh" f
+
+  let acosh f = unary "acosh" f
+
+  let asinh f = unary "asinh" f
+
+  let atanh f = unary "atanh" f
+
+  let cbrt f = unary "cbrt" f
+
+  let exp f = unary "exp" f
+
+  let expm1 f = unary "expm1" f
+
+  let log f = unary "log" f
+
+  let log1p f = unary "log1p" f
+
+  let log2 f = unary "log2" f
+
+  let log10 f = unary "log10" f
 
   let binary name x y =
     let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
@@ -794,6 +852,8 @@ module Math = struct
     return (W.Call (f, [ x; y ]))
 
   let atan2 f g = binary "atan2" f g
+
+  let hypot f g = binary "hypot" f g
 
   let power f g = binary "pow" f g
 

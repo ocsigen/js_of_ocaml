@@ -162,7 +162,41 @@ module Memory = struct
         in
         let* _, l = get_data_segment x in
         return (get_data l)
-    | _ -> return (W.Load (F64 0l, e))
+    | _ ->
+        (*ZZZ aligned?*)
+        return (W.Load (F64 0l, e))
+
+  let box_int32 stack_ctx x e =
+    let p = Code.Var.fresh_n "p" in
+    let size = 16 in
+    seq
+      (let* () = Stack.perform_spilling stack_ctx (`Instr x) in
+       let* v =
+         tee p Arith.(return (W.GlobalGet (S "young_ptr")) - const (Int32.of_int size))
+       in
+       let* () = instr (W.GlobalSet (S "young_ptr", v)) in
+       let* () = mem_init (load p) (Arith.const (header ~tag:Obj.double_tag ~len:2 ())) in
+       Stack.kill_variables stack_ctx;
+       let* () = Stack.perform_reloads stack_ctx (`Vars Code.Var.Set.empty) in
+       let* p = load p in
+       (* ZZZ int32_ops *)
+       let* () = instr (Store (I32 4l, p, Const (I32 0l))) in
+       let* e = e in
+       instr (Store (I32 8l, p, e)))
+      Arith.(load p + const 4l)
+
+  let unbox_int32 e =
+    let* e = e in
+    match e with
+    | W.ConstSym (V x, 4) ->
+        let get_data l =
+          match l with
+          | [ W.DataI32 _; (W.DataI32 _ | W.DataSym _); W.DataI32 f ] -> W.Const (I32 f)
+          | _ -> assert false
+        in
+        let* _, l = get_data_segment x in
+        return (get_data l)
+    | _ -> return (W.Load (I32 4l, e))
 
   let box_int64 stack_ctx x e =
     let p = Code.Var.fresh_n "p" in
@@ -194,6 +228,27 @@ module Memory = struct
         let* _, l = get_data_segment x in
         return (get_data l)
     | _ -> return (W.Load (F64 4l, e))
+
+  let box_nativeint stack_ctx x e =
+    let p = Code.Var.fresh_n "p" in
+    let size = 16 in
+    seq
+      (let* () = Stack.perform_spilling stack_ctx (`Instr x) in
+       let* v =
+         tee p Arith.(return (W.GlobalGet (S "young_ptr")) - const (Int32.of_int size))
+       in
+       let* () = instr (W.GlobalSet (S "young_ptr", v)) in
+       let* () = mem_init (load p) (Arith.const (header ~tag:Obj.double_tag ~len:2 ())) in
+       Stack.kill_variables stack_ctx;
+       let* () = Stack.perform_reloads stack_ctx (`Vars Code.Var.Set.empty) in
+       let* p = load p in
+       (* ZZZ nativeint_ops *)
+       let* () = instr (Store (I32 4l, p, Const (I32 0l))) in
+       let* e = e in
+       instr (Store (I32 8l, p, e)))
+      Arith.(load p + const 4l)
+
+  let unbox_nativeint = unbox_int32
 end
 
 module Value = struct
@@ -295,7 +350,9 @@ module Constant = struct
     | Int64 i ->
         let h = Memory.header ~const:true ~tag:Obj.custom_tag ~len:3 () in
         let name = Code.Var.fresh_n "int64" in
-        let block = [ W.DataI32 h; DataSym (S "caml_int64_ops", 0); DataI64 i ] in
+        let block =
+          [ W.DataI32 h; DataI32 0l (*ZZZ DataSym (S "caml_int64_ops", 0)*); DataI64 i ]
+        in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;
         W.DataSym (V name, 4)
     | Int (Int32, i) ->
@@ -492,7 +549,39 @@ module Math = struct
 
   let sin f = unary "sin" f
 
+  let tan f = unary "tan" f
+
+  let acos f = unary "acos" f
+
   let asin f = unary "asin" f
+
+  let atan f = unary "atan" f
+
+  let cosh f = unary "cosh" f
+
+  let sinh f = unary "sinh" f
+
+  let tanh f = unary "tanh" f
+
+  let acosh f = unary "acosh" f
+
+  let asinh f = unary "asinh" f
+
+  let atanh f = unary "atanh" f
+
+  let cbrt f = unary "cbrt" f
+
+  let exp f = unary "exp" f
+
+  let expm1 f = unary "expm1" f
+
+  let log f = unary "log" f
+
+  let log1p f = unary "log1p" f
+
+  let log2 f = unary "log2" f
+
+  let log10 f = unary "log10" f
 
   let binary name x y =
     let* f = register_import ~name (Fun (float_func_type 2)) in
@@ -501,6 +590,8 @@ module Math = struct
     return (W.Call (f, [ x; y ]))
 
   let atan2 f g = binary "atan2" f g
+
+  let hypot f g = binary "hypot" f g
 
   let power f g = binary "pow" f g
 

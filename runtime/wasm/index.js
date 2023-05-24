@@ -5,9 +5,15 @@
     var caml_callback;
 
     let math =
-        {cos:Math.cos, sin:Math.sin, asin:Math.asin, atan2:Math.atan2,
-         pow:Math.pow, fmod:(x, y) => x%y,
-         log:(x)=>console.log('ZZZZZ', x)}
+        {cos:Math.cos, sin:Math.sin, tan:Math.tan,
+         acos:Math.acos, asin:Math.asin, atan:Math.atan,
+         cosh:Math.cosh, sinh:Math.sinh, tanh:Math.tanh,
+         acosh:Math.acosh, asinh:Math.asinh, atanh:Math.atanh,
+         cbrt:Math.cbrt, exp:Math.exp, expm1:Math.expm1,
+         log:Math.log, log1p:Math.log1p, log2:Math.log2, log10:Math.log10,
+         atan2:Math.atan2, hypot:Math.hypot, pow:Math.pow,
+         fmod:(x, y) => x%y}
+
     let bindings =
         {identity:(x)=>x,
          from_bool:(x)=>!!x,
@@ -31,7 +37,8 @@
              for (var i = 0; i < len; i++) args[i] = arguments[i];
              return caml_callback(f, arity, args);
          },
-         format:(f)=>""+f
+         format:(f)=>""+f,
+         log:(x)=>console.log('ZZZZZ', x)
         }
     const runtimeModule =
           await WebAssembly.instantiateStreaming(runtime,
