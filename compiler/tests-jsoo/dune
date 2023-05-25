@@ -7,7 +7,6 @@
  (js_of_ocaml
   (javascript_files runtime.js))
  (inline_tests
-  (flags -allow-output-patterns)
   (modes js best))
  (preprocess
   (pps ppx_expect)))
