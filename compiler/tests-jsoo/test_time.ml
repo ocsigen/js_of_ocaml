@@ -18,48 +18,59 @@
  *)
 
 let%expect_test _ =
-  print_float (Unix.time ());
-  [%expect {| [0-9]+\. (regexp) |}]
+  let f = Unix.time () in
+  let z, _integral = Float.modf f in
+  match Float.classify_float f, Float.classify_float z with
+  | FP_normal, FP_zero -> ()
+  | _ -> assert false
 
 let%expect_test _ =
-  print_float (Unix.gettimeofday ());
-  [%expect {| [0-9]+\.[0-9]* (regexp) |}]
+  let f = Unix.gettimeofday () in
+  match Float.classify_float f with
+  | FP_normal -> ()
+  | _ -> assert false
 
+(* Attempt to check that the result of gmtime has the right shape *)
 let%expect_test _ =
   let open Unix in
-  let { tm_sec; tm_min; tm_hour; tm_mday; tm_mon; tm_year; tm_wday; tm_yday; tm_isdst } =
+  let { tm_sec
+      ; tm_min
+      ; tm_hour
+      ; tm_mday
+      ; tm_mon
+      ; tm_year
+      ; tm_wday
+      ; tm_yday
+      ; tm_isdst = _
+      } =
     gmtime (time ())
   in
-  let gap () = print_char '\n' in
+  let check_int s =
+    assert (
+      String.length s > 0
+      && String.for_all
+           (function
+             | '0' .. '9' | ' ' -> true
+             | _ -> false)
+           s)
+  in
   print_int tm_sec;
-  gap ();
+  check_int [%expect.output];
   print_int tm_min;
-  gap ();
+  check_int [%expect.output];
   print_int tm_hour;
-  gap ();
+  check_int [%expect.output];
   print_int tm_mday;
-  gap ();
+  check_int [%expect.output];
   print_int tm_mon;
-  gap ();
+  check_int [%expect.output];
   print_int tm_year;
-  gap ();
+  check_int [%expect.output];
   print_int tm_wday;
-  gap ();
+  check_int [%expect.output];
   print_int tm_yday;
-  gap ();
-  print_endline (if tm_isdst then "true" else "false");
-  [%expect
-    {|
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  [0-9]+      (regexp)
-  true\|false (regexp)
-  |}]
+  check_int [%expect.output];
+  [%expect {|  |}]
 
 let now = 1377134255.469
 

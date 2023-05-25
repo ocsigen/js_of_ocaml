@@ -73,7 +73,6 @@ let () =
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
   (enabled_if %s)
-  (flags -allow-output-patterns)
   (deps
    (file %%{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %%{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
