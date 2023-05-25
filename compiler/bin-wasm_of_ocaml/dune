@@ -24,7 +24,8 @@
  (target wa_runtime.ml)
  (deps
   gen/gen.exe
-  ../../runtime/wasm/runtime.wasm)
+  ../../runtime/wasm/runtime.wasm
+  ../../runtime/wasm/runtime.js)
  (action
   (with-stdout-to
    %{target}

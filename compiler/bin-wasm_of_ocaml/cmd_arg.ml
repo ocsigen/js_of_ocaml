@@ -57,7 +57,7 @@ let options =
     let output_file =
       match output_file with
       | Some s -> s, true
-      | None -> chop_extension input_file ^ ".wasm", false
+      | None -> chop_extension input_file ^ ".js", false
     in
     let params : (string * string) list = List.flatten set_param in
     `Ok { common; params; profile; output_file; input_file }

@@ -84,11 +84,41 @@ let optimize in_file out_file =
 let link_and_optimize wat_file output_file =
   with_intermediate_file (Filename.temp_file "funtime" ".wasm")
   @@ fun runtime_file ->
-  write_file runtime_file Wa_runtime.runtime;
+  write_file runtime_file Wa_runtime.wasm_runtime;
   with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   link runtime_file wat_file temp_file;
   optimize temp_file output_file
+
+let escape_string s =
+  let l = String.length s in
+  let b = Buffer.create (String.length s + 2) in
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    match c with
+    (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
+    | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
+    | '\000' .. '\031' | '\127' ->
+        Buffer.add_string b "\\x";
+        Buffer.add_char_hex b c
+    | '"' ->
+        Buffer.add_char b '\\';
+        Buffer.add_char b c
+    | c -> Buffer.add_char b c
+  done;
+  Buffer.contents b
+
+let copy_js_runtime wasm_file output_file =
+  let s = Wa_runtime.js_runtime in
+  let rec find i =
+    if String.equal (String.sub s ~pos:i ~len:4) "CODE" then i else find (i + 1)
+  in
+  let i = find 0 in
+  write_file
+    output_file
+    (String.sub s ~pos:0 ~len:i
+    ^ escape_string (Filename.basename wasm_file)
+    ^ String.sub s ~pos:(i + 4) ~len:(String.length s - i - 4))
 
 let run { Cmd_arg.common; profile; input_file; output_file; params } =
   Wa_generate.init ();
@@ -150,8 +180,10 @@ let run { Cmd_arg.common; profile; input_file; output_file; params } =
        in
        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
        let wat_file = Filename.chop_extension (fst output_file) ^ ".wat" in
+       let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
        output_gen wat_file (output code ~standalone:true);
-       link_and_optimize wat_file (fst output_file)
+       link_and_optimize wat_file wasm_file;
+       copy_js_runtime wasm_file (fst output_file)
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
   Debug.stop_profiling ()
