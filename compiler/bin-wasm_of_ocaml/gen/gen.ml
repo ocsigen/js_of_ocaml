@@ -7,4 +7,7 @@ let () =
     (String.escaped (read_file (open_in Sys.argv.(1))));
   Format.printf
     "let js_runtime = \"%s\"@."
-    (String.escaped (read_file (open_in Sys.argv.(2))))
+    (String.escaped (read_file (open_in Sys.argv.(2))));
+  Format.printf
+    "let dependencies = \"%s\"@."
+    (String.escaped (read_file (open_in Sys.argv.(3))))

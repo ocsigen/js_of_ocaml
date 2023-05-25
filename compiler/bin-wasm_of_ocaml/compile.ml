@@ -76,19 +76,37 @@ let link runtime_file input_file output_file =
       ; Filename.quote output_file
       ])
 
+let dead_code_elimination in_file out_file =
+  with_intermediate_file (Filename.temp_file "deps" ".json")
+  @@ fun deps_file ->
+  write_file deps_file Wa_runtime.dependencies;
+  command
+    (("wasm-metadce" :: common_binaryen_options)
+    @ [ "--graph-file"
+      ; Filename.quote deps_file
+      ; Filename.quote in_file
+      ; "-o"
+      ; Filename.quote out_file
+      ; ">"
+      ; "/dev/null"
+      ])
+
 let optimize in_file out_file =
   command
     (("wasm-opt" :: common_binaryen_options)
     @ [ "-O3"; "--gufa"; "-O3"; Filename.quote in_file; "-o"; Filename.quote out_file ])
 
 let link_and_optimize wat_file output_file =
-  with_intermediate_file (Filename.temp_file "funtime" ".wasm")
+  with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
   write_file runtime_file Wa_runtime.wasm_runtime;
   with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   link runtime_file wat_file temp_file;
-  optimize temp_file output_file
+  with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
+  @@ fun temp_file' ->
+  dead_code_elimination temp_file temp_file';
+  optimize temp_file' output_file
 
 let escape_string s =
   let l = String.length s in

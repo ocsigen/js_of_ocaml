@@ -25,7 +25,8 @@
  (deps
   gen/gen.exe
   ../../runtime/wasm/runtime.wasm
-  ../../runtime/wasm/runtime.js)
+  ../../runtime/wasm/runtime.js
+  ../../runtime/wasm/deps.json)
  (action
   (with-stdout-to
    %{target}
