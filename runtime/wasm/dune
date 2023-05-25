@@ -1,10 +1,16 @@
 (install
  (section lib)
  (package wasm_of_ocaml-compiler)
- (files runtime.wasm))
+ (files runtime.wasm runtime.js))
 
 (rule
    (target runtime.wasm)
-   (deps runtime.wat)
+   (deps args)
    (action
-      (run wasm-opt -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{deps} -O  -o %{target})))
+      (pipe-stdout
+         (run wasm-merge -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{read-lines:args} -o -)
+         (run wasm-opt -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory - -O3 -o %{target}))))
+
+(rule (target args)
+   (deps args.ml (glob_files *.wat))
+   (action (with-stdout-to %{target}  (run ocaml %{deps}))))

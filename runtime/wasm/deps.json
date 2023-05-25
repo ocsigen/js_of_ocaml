@@ -1,0 +1,69 @@
+[
+  {
+    "name": "root",
+    "reaches": ["init"],
+    "root": true
+  },
+  {
+    "name": "init",
+    "export": "_initialize"
+  },
+  {
+    "name": "callback",
+    "export": "caml_callback"
+  },
+  {
+    "name": "wrap_callback",
+    "import": ["bindings", "wrap_callback"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "wrap_callback_args",
+    "import": ["bindings", "wrap_callback_args"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "wrap_callback_strict",
+    "import": ["bindings", "wrap_callback_strict"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "wrap_callback_unsafe",
+    "import": ["bindings", "wrap_callback_unsafe"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "meth_wrap_callback",
+    "import": ["bindings", "meth_wrap_callback"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "meth_wrap_callback_args",
+    "import": ["bindings", "meth_wrap_callback_args"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "meth_wrap_callback_strict",
+    "import": ["bindings", "meth_wrap_callback_strict"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "meth_wrap_callback_unsafe",
+    "import": ["bindings", "meth_wrap_callback_unsafe"],
+    "reaches": ["callback"]
+  },
+  {
+    "name": "alloc_tm",
+    "export": "caml_alloc_tm"
+  },
+  {
+    "name": "gmtime",
+    "import": ["bindings", "gmtime"],
+    "reaches": ["alloc_tm"]
+  },
+  {
+    "name": "localtime",
+    "import": ["bindings", "localtime"],
+    "reaches": ["alloc_tm"]
+  },
+]
