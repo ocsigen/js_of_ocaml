@@ -1,4 +1,7 @@
 (module
+   (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "forward_tag" (global $forward_tag i32))
+
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
@@ -106,6 +109,7 @@
       (i32.xor (local.get $h) (local.get $len)))
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
+   (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
 
    (global $caml_hash_queue (ref $block)
       (array.new $block (i31.new (i32.const 0)) (global.get $HASH_QUEUE_SIZE)))
@@ -158,7 +162,40 @@
                         (i31.get_u
                            (ref.cast i31
                               (array.get $block (local.get $b) (i32.const 0)))))
-                     ;; ZZZ Special tags (forward / object)
+                     (if (i32.eq (local.get $tag) (global.get $forward_tag))
+                        (then
+                           (local.set $i (i32.const 0))
+                           (loop $forward
+                              (local.set $v
+                                 (array.get $block
+                                    (local.get $b) (i32.const 1)))
+                              (drop (block $not_block' (result (ref eq))
+                                 (local.set $b
+                                    (br_on_cast_fail $not_block' $block
+                                       (local.get $v)))
+                                 (br_if $again
+                                    (i32.eqz
+                                       (ref.eq
+                                          (array.get $block (local.get $b)
+                                             (i32.const 0))
+                                          (i31.new (global.get $forward_tag)))))
+                                 (local.set $i
+                                    (i32.add (local.get $i) (i32.const 1)))
+                                 (br_if $loop
+                                    (i32.eq
+                                       (local.get $i)
+                                       (global.get $MAX_FORWARD_DEREFERENCE)))
+                                 (br $forward)))
+                              (br $again))))
+                     (if (i32.eqz (local.get $tag) (global.get $object_tag))
+                        (then
+                           (local.set $h
+                              (call $caml_hash_mix_int (local.get $h)
+                                 (i31.get_s
+                                    (ref.cast i31
+                                       (array.get $block
+                                          (local.get $b) (i32.const 2))))))
+                           (br $loop)))
                      (local.set $len (array.len (local.get $b)))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
@@ -195,8 +232,8 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-                  ;; ZZZ other cases? (closures, javascript values)
-                  (unreachable)
+                  ;; closures are ignored
+                  ;; ZZZ javascript values
                   (br $loop)))))
       ;; clear the queue to avoid a memory leak
       (array.fill $block (global.get $caml_hash_queue)

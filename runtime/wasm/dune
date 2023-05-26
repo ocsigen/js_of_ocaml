@@ -5,7 +5,7 @@
 
 (rule
    (target runtime.wasm)
-   (deps args)
+   (deps args (glob_files *.wat))
    (action
       (pipe-stdout
          (run wasm-merge -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{read-lines:args} -o -)

@@ -1,12 +1,20 @@
 [
   {
     "name": "root",
-    "reaches": ["init"],
+    "reaches": ["init", "exn", "exit"],
     "root": true
   },
   {
     "name": "init",
     "export": "_initialize"
+  },
+  {
+    "name": "exn",
+    "export": "ocaml_exception"
+  },
+  {
+    "name": "exit",
+    "export": "ocaml_exit"
   },
   {
     "name": "callback",

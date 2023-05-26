@@ -17,6 +17,10 @@
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block (i31.new (i32.const 0))))
 
+   (func (export "caml_raw_backtrace_next_slot")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
    (data $raw_backtrace_slot_err
       "Printexc.get_raw_backtrace_slot: index out of bounds")
 
@@ -41,5 +45,8 @@
 
    (func (export "caml_ml_debug_info_status")
       (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_record_backtrace") (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
 )

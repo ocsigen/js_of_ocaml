@@ -169,15 +169,17 @@
     try {
         wasmModule.instance.exports._initialize()
     } catch (e) {
-        if (e instanceof WebAssembly.Exception &&
-            e.is(wasmModule.instance.exports.ocaml_exit))
-            process.exit(e.getArg(wasmModule.instance.exports.ocaml_exit, 0));
-        if (e instanceof WebAssembly.Exception &&
-            e.is(wasmModule.instance.exports.ocaml_exception)) {
+        if (e instanceof WebAssembly.Exception) {
+          const exit_tag = wasmModule.instance.exports.ocaml_exit;
+          if (exit_tag && e.is(exit_tag))
+            isNode && process.exit(e.getArg(exit_tag, 0));
+          const exn_tag = wasmModule.instance.exports.ocaml_exception;
+          if (exn_tag && e.is(exn_tag)) {
             console.log('Uncaught exception')
-            process.exit(1)
+            isNode && process.exit(1)
+          }
+        } else {
+            throw e;
         }
-        throw e;
     }
-
 })()

@@ -66,7 +66,7 @@
    (global $cont_tag i32 (i32.const 245))
    (global $lazy_tag i32 (i32.const 246))
    (global $closure_tag i32 (i32.const 247))
-   (global $object_tag i32 (i32.const 248))
+   (global $object_tag (export "object_tag") i32 (i32.const 248))
    (global $forward_tag (export "forward_tag") i32 (i32.const 250))
    (global $abstract_tag (export "abstract_tag") i32 (i32.const 251))
    (global $string_tag i32 (i32.const 252))
@@ -114,7 +114,8 @@
       ;; ZZZ float array
       (unreachable))
 
-   (func (export "caml_obj_dup") (param (ref eq)) (result (ref eq))
+   (func $caml_obj_dup (export "caml_obj_dup")
+      (param (ref eq)) (result (ref eq))
       ;; ZZZ Deal with non-block values?
       (local $orig (ref $block))
       (local $res (ref $block))
@@ -127,6 +128,14 @@
       (array.copy $block $block
          (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)
          (i32.sub (local.get $len) (i32.const 1)))
+      (local.get $res))
+
+   (func (export "caml_obj_with_tag")
+      (param $tag (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $res (ref eq))
+      (local.set $res (call $caml_obj_dup (local.get 1)))
+      (array.set $block (ref.cast $block (local.get $res)) (i32.const 0)
+         (local.get $tag))
       (local.get $res))
 
    (func (export "caml_obj_block")
@@ -207,6 +216,26 @@
                (then (return (i31.new (i32.const 0)))))))
       (i31.new (i32.const 1)))
 
+   (func (export "caml_obj_compare_and_swap")
+      (param (ref eq)) (param (ref eq))
+      (param $old (ref eq)) (param $new (ref eq)) (result (ref eq))
+      (local $b (ref $block))
+      (local $i i32)
+      (local.set $b (ref.cast $block (local.get 0)))
+      (local.set $i
+         (i32.add (i31.get_u (ref.cast i31 (local.get 1))) (i32.const 1)))
+      (if (result (ref eq))
+          (ref.eq
+            (array.get $block (local.get $b) (local.get $i)) (local.get $old))
+         (then
+            (array.set $block (local.get $b) (local.get $i) (local.get $new))
+            (i31.new (i32.const 1)))
+         (else
+            (i31.new (i32.const 0)))))
+
+   (func (export "caml_obj_is_shared") (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 1)))
+
    (func (export "caml_get_public_method")
       (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
       ;;ZZZ
@@ -228,4 +257,7 @@
       (local.set $id (global.get $caml_oo_last_id))
       (global.set $caml_oo_last_id (i32.add (local.get $id) (i32.const 1)))
       (i31.new (local.get $id)))
+
+   (func (export "caml_obj_reachable_words") (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
 )
