@@ -127,7 +127,63 @@
              return caml_callback(f, args.length, args, 2);
          },
          wrap_fun_arguments:(f)=>function(){return f(arguments)},
-         format:(f)=>""+f,
+         format_float:(prec, conversion, x)=>{
+           function toFixed(x,dp) {
+             if (Math.abs(x) < 1.0) {
+               return x.toFixed(dp);
+             } else {
+               var e = parseInt(x.toString().split('+')[1]);
+               if (e > 20) {
+                 e -= 20;
+                 x /= Math.pow(10,e);
+                 x += (new Array(e+1)).join('0');
+                 if(dp > 0) {
+                   x = x + '.' + (new Array(dp+1)).join('0');
+                 }
+                 return x;
+               }
+               else return x.toFixed(dp)
+             }
+           }
+           switch (conversion) {
+           case 0:
+             var s = x.toExponential(prec);
+             // exponent should be at least two digits
+             var i = s.length;
+             if (s.charAt(i - 3) == 'e')
+               s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
+             break;
+           case 1:
+             s = toFixed(x, prec); break;
+           case 2:
+             prec = prec?prec:1;
+             s = x.toExponential(prec - 1);
+             var j = s.indexOf('e');
+             var exp = +s.slice(j + 1);
+             if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
+               // remove trailing zeroes
+               var i = j - 1; while (s.charAt(i) == '0') i--;
+               if (s.charAt(i) == '.') i--;
+               s = s.slice(0, i + 1) + s.slice(j);
+               i = s.length;
+               if (s.charAt(i - 3) == 'e')
+                 s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
+               break;
+             } else {
+               var p = prec;
+               if (exp < 0) { p -= exp + 1; s = x.toFixed(p); }
+               else while (s = x.toFixed(p), s.length > prec + 1) p--;
+               if (p) {
+                 // remove trailing zeroes
+                 var i = s.length - 1; while (s.charAt(i) == '0') i--;
+                 if (s.charAt(i) == '.') i--;
+                 s = s.slice(0, i + 1);
+               }
+             }
+             break;
+           }
+           return s
+         },
          gettimeofday:()=>(new Date()).getTime() / 1000,
          gmtime:(t)=>{
            var d = new Date (t * 1000);

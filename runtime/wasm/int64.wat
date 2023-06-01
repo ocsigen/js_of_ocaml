@@ -4,6 +4,9 @@
       (func $parse_sign_and_base
          (param (ref $string)) (result i32 i32 i32 i32)))
    (import "ints" "parse_digit" (func $parse_digit (param i32) (result i32)))
+   (import "ints" "parse_int_format"
+      (func $parse_int_format
+         (param (ref $string)) (result i32 i32 i32 i32 i32)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
 
    (type $string (array (mut i8)))
@@ -138,9 +141,125 @@
       (call $log_js (string.const "caml_int64_create_lo_mi_hi"))
       (i31.new (i32.const 0)))
 
-   ;; ZZZ
-   (func $dummy_format_fun (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $log_js (string.const "dummy_format_fun"))
-      (array.new_fixed $string (i32.const 64)))
-   (export "caml_int64_format" (func $dummy_format_fun))
+   (func $format_int64_default (param $d i64) (result (ref eq))
+      (local $s (ref $string))
+      (local $negative i32) (local $i i32) (local $n i64)
+      (if (i64.lt_s (local.get $d) (i64.const 0))
+         (then
+            (local.set $negative (i32.const 1))
+            (local.set $i (i32.const 1))
+            (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
+      (local.set $n (local.get $d))
+      (loop $count
+         (local.set $i (i32.add (local.get $i) (i32.const 1)))
+         (local.set $n (i64.div_u (local.get $n) (i64.const 10)))
+         (br_if $count (i64.ne (local.get $n) (i64.const 0))))
+      (local.set $s (array.new $string (i32.const 0) (local.get $i)))
+      (loop $write
+         (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+         (array.set $string (local.get $s) (local.get $i)
+            (i32.add (i32.const 48)
+               (i32.wrap_i64 (i64.rem_u (local.get $d) (i64.const 10)))))
+         (local.set $d (i64.div_u (local.get $d) (i64.const 10)))
+         (br_if $write (i64.ne (local.get $d) (i64.const 0))))
+      (if (local.get $negative)
+         (then
+            (array.set $string (local.get $s) (i32.const 0)
+               (i32.const 45)))) ;; '-'
+      (local.get $s))
+
+   (type $chars (array i8))
+
+   (import "ints" "lowercase_hex_table"
+      (global $lowercase_hex_table (ref $chars)))
+
+   (import "ints" "uppercase_hex_table"
+      (global $uppercase_hex_table (ref $chars)))
+
+   (func (export "caml_int64_format")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $d i64)
+      (local $s (ref $string))
+      (local $format (i32 i32 i32 i32 i32))
+      (local $sign_style i32) (local $alternate i32) (local $signed i32)
+      (local $base i64) (local $uppercase i32)
+      (local $negative i32)
+      (local $i i32)
+      (local $n i64)
+      (local $chars (ref $chars))
+      (local.set $s (ref.cast $string (local.get 0)))
+      (local.set $d (struct.get $int64 1 (ref.cast $int64 (local.get 1))))
+      (if (i32.eq (array.len (local.get $s)) (i32.const 2))
+         (then
+            (if (i32.eq (array.get $string (local.get $s) (i32.const 1))
+                        (i32.const 100)) ;; 'd'
+               (then (return_call $format_int64_default (local.get $d))))))
+      (local.set $format (call $parse_int_format (local.get $s)))
+      (local.set $sign_style (tuple.extract 0 (local.get $format)))
+      (local.set $alternate (tuple.extract 1 (local.get $format)))
+      (local.set $signed (tuple.extract 2 (local.get $format)))
+      (local.set $base (i64.extend_i32_u (tuple.extract 3 (local.get $format))))
+      (local.set $uppercase (tuple.extract 4 (local.get $format)))
+      (if (i32.and (local.get $signed) (i64.lt_s (local.get $d) (i64.const 0)))
+         (then
+            (local.set $negative (i32.const 1))
+            (local.set $d (i64.sub (i64.const 0) (local.get $d)))))
+      (local.set $n (local.get $d))
+      (loop $count
+         (local.set $i (i32.add (local.get $i) (i32.const 1)))
+         (local.set $n (i64.div_u (local.get $n) (local.get $base)))
+         (br_if $count (i64.ne (local.get $n) (i64.const 0))))
+      (if (i32.or (local.get $negative)
+                  (local.get $sign_style))
+         (then (local.set $i (i32.add (local.get $i) (i32.const 1)))))
+      (if (local.get $alternate)
+         (then
+            (if (i64.ne (local.get $d) (i64.const 0))
+               (then
+                  (if (i64.eq (local.get $base) (i64.const 16))
+                     (then
+                        (local.set $i (i32.add (local.get $i) (i32.const 2)))))
+                  (if (i64.eq (local.get $base) (i64.const 8))
+                     (then
+                        (local.set $i
+                           (i32.add (local.get $i) (i32.const 1)))))))))
+      (local.set $chars
+         (select (result (ref $chars))
+            (global.get $uppercase_hex_table)
+            (global.get $lowercase_hex_table)
+            (local.get $uppercase)))
+      (local.set $s (array.new $string (i32.const 0) (local.get $i)))
+      (loop $write
+         (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+         (array.set $string (local.get $s) (local.get $i)
+            (array.get_u $chars (local.get $chars)
+               (i32.wrap_i64 (i64.rem_u (local.get $d) (local.get $base)))))
+         (local.set $d (i64.div_u (local.get $d) (local.get $base)))
+         (br_if $write (i64.ne (local.get $d) (i64.const 0))))
+      (if (local.get $negative)
+         (then
+            (array.set $string (local.get $s) (i32.const 0)
+               (i32.const 45))) ;; '-'
+         (else
+            (if (local.get $sign_style)
+               (then
+                  (if (i32.eq (local.get $sign_style) (i32.const 1))
+                     (then
+                        (array.set $string (local.get $s) (i32.const 0)
+                           (i32.const 43))) ;; '+'
+                     (else
+                        (array.set $string (local.get $s) (i32.const 0)
+                           (i32.const 32)))))))) ;; ' '
+      (if (local.get $alternate)
+         (then
+            (if (i32.ne (local.get $i) (i32.const 0))
+               (then
+                  (array.set $string (local.get $s) (i32.const 0)
+                     (i32.const 48)) ;; '0'
+                  (if (i64.eq (local.get $base) (i64.const 16))
+                     (then
+                        (array.set $string (local.get $s) (i32.const 1)
+                           (i32.const 120)))))))) ;; 'x'
+      (local.get $s))
+
 )

@@ -1,8 +1,9 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "ints" "parse_int"
       (func $parse_int
          (param (ref eq)) (param i32) (param (ref $string)) (result i32)))
+   (import "ints" "format_int"
+      (func $format_int (param (ref eq)) (param i32) (result (ref eq))))
 
    (type $string (array (mut i8)))
    (type $value->value->int
@@ -95,10 +96,9 @@
          (call $parse_int
             (local.get $v) (i32.const 32) (global.get $NATIVEINT_ERRMSG))))
 
-   ;; ZZZ
-   (func $dummy_format_fun (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $log_js (string.const "dummy_format_fun"))
-      (array.new_fixed $string (i32.const 64)))
-   (export "caml_int32_format" (func $dummy_format_fun))
-   (export "caml_nativeint_format" (func $dummy_format_fun))
+   (export "caml_nativeint_format" (func $caml_int32_format))
+   (func $caml_int32_format (export "caml_int32_format")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (return_call $format_int (local.get 0)
+         (struct.get $int32 1 (ref.cast $int32 (local.get 1)))))
 )
