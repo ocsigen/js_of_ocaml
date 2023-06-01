@@ -18,7 +18,8 @@
    (func (export "caml_sys_exit") (param (ref eq)) (result (ref eq))
       (throw $ocaml_exit (i31.get_s (ref.cast i31 (local.get 0)))))
 
-   (func (export "caml_sys_getenv")
+   (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
+   (func $caml_sys_getenv (export "caml_sys_getenv")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
       (call $log_js (string.const "caml_sys_getenv"))
@@ -32,6 +33,12 @@
       (call $log_js (string.const "caml_sys_argv"))
       (array.new_fixed $block (i31.new (i32.const 0))
          (array.new_fixed $string (i32.const 97))))
+
+   (func (export "caml_sys_executable_name")
+      (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_js (string.const "caml_sys_executable_name"))
+      (i31.new (i32.const 0)))
 
    (export "caml_sys_time_include_children" (func $caml_sys_time))
    (func $caml_sys_time (export "caml_sys_time")
@@ -67,6 +74,40 @@
                (br $loop))))
       (local.get $a))
 
+   (func (export "caml_sys_const_bigendian")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_sys_const_word_size")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 32)))
+
+   (func (export "caml_sys_const_int_size")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 31)))
+
+   (func (export "caml_sys_const_max_wosize")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0xfffffff)))
+
+   (func (export "caml_sys_const_ostype_unix")
+      (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_js (string.const "caml_sys_const_ostype_unix"))
+      (i31.new (i32.const 1)))
+
+   (func (export "caml_sys_const_ostype_win32")
+      (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_js (string.const "caml_sys_const_ostype_win32"))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_sys_const_ostype_cygwin")
+      (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_js (string.const "caml_sys_const_ostype_cygwin"))
+      (i31.new (i32.const 0)))
+
    (data $Unix "Unix")
 
    (func (export "caml_sys_get_config")
@@ -81,4 +122,27 @@
    (func (export "caml_sys_isatty")
       (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
+
+   (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
+      (array.new_fixed $string))
+
+   (func (export "caml_runtime_parameters") (param (ref eq)) (result (ref eq))
+      (array.new_fixed $string))
+
+   (func (export "caml_install_signal_handler")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
+   (global $caml_runtime_warnings (mut i32) (i32.const 0))
+
+   (func (export "caml_ml_enable_runtime_warnings")
+      (param (ref eq)) (result (ref eq))
+      (global.set $caml_runtime_warnings
+         (i31.get_u (ref.cast i31 (local.get 0))))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_ml_runtime_warnings_enabled")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (global.get $caml_runtime_warnings)))
+
 )

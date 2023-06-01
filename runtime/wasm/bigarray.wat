@@ -208,7 +208,7 @@
    (func (export "caml_ba_to_typed_array") (param (ref eq)) (result (ref eq))
       (call $wrap
          (extern.internalize
-            (struct.get $bigarray 1 (ref.cast $bigarray (local.get $0))))))
+            (struct.get $bigarray 1 (ref.cast $bigarray (local.get 0))))))
 
    (func $caml_ba_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result (ref eq))
@@ -368,7 +368,7 @@
       (local $i i32)
       (local.set $dim
          (struct.get $bigarray 2 (ref.cast $bigarray (local.get 0))))
-      (local.set $i (i31.get_s (ref.cast i31 (local.get $1))))
+      (local.set $i (i31.get_s (ref.cast i31 (local.get 1))))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
          (then (call $caml_invalid_argument
                   (array.new_data $string $Bigarray_dim

@@ -12,7 +12,7 @@
 
    (func (export "caml_alloc_tm")
       (param $sec i32) (param $min i32) (param $hour i32) (param $mday i32)
-      (param $mon i32) (param $year i32) (param $wday i32) (param $yday $i32)
+      (param $mon i32) (param $year i32) (param $wday i32) (param $yday i32)
       (param $isdst i32) (result (ref eq))
       (array.new_fixed $block (i31.new (i32.const 0))
          (i31.new (local.get $sec))

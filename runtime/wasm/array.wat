@@ -1,7 +1,6 @@
 (module
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
-   (import "bindings" "log" (func $log_js (param anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))

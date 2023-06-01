@@ -240,4 +240,15 @@
          (i32.const 0) (i31.new (i32.const 0)) (local.get $wr))
       (i31.new (i32.and (call $caml_hash_mix_final (local.get $h))
                         (i32.const 0x3FFFFFFF))))
+
+   (func (export "caml_string_hash")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $h i32)
+      (i31.new
+         (i32.and
+            (call $caml_hash_mix_final
+               (call $caml_hash_mix_string
+                  (i31.get_s (ref.cast i31 (local.get 0)))
+                  (ref.cast $string (local.get 1))))
+            (i32.const 0x3FFFFFFF))))
 )

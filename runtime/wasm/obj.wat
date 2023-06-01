@@ -1,5 +1,6 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -182,12 +183,12 @@
    (func (export "caml_lazy_make_forward")
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block (i31.new (global.get $forward_tag))
-         (local.get $0)))
+         (local.get 0)))
 
    (func $obj_update_tag
       (param (ref eq)) (param $o i32) (param $n i32) (result i32)
       (local $b (ref $block))
-      (local.set $b (ref.cast $block (local.get $0)))
+      (local.set $b (ref.cast $block (local.get 0)))
       (if (result i32) (ref.eq (array.get $block (local.get $b) (i32.const 0))
                                (i31.new (local.get $o)))
          (then
@@ -209,7 +210,7 @@
 
    (func (export "caml_lazy_update_to_forcing")
       (param (ref eq)) (result (ref eq))
-      (if (ref.test $block (local.get $0))
+      (if (ref.test $block (local.get 0))
          (then
             (if (call $obj_update_tag (local.get 0)
                    (global.get $lazy_tag) (global.get $forcing_tag))
@@ -236,6 +237,36 @@
    (func (export "caml_obj_is_shared") (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 1)))
 
+   (func (export "caml_obj_raw_field")
+      (param $o (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (array.get $block (ref.cast $block (local.get $o))
+         (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))))
+
+   (func (export "caml_obj_set_raw_field")
+      (param $o (ref eq)) (param $i (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (array.set $block (ref.cast $block (local.get $o))
+         (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
+         (local.get $v))
+      (i31.new (i32.const 0)))
+
+   (data $not_implemented "Obj.add_offset is not supported")
+
+   (func (export "caml_obj_add_offset")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (array.new_data $string $not_implemented (i32.const 0) (i32.const 31)))
+      (i31.new (i32.const 0)))
+
+   (data $truncate_not_implemented "Obj.truncate is not supported")
+
+   (func (export "caml_obj_truncate")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (array.new_data $string $truncate_not_implemented
+            (i32.const 0) (i32.const 29)))
+      (i31.new (i32.const 0)))
+
    (func (export "caml_get_public_method")
       (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
       ;;ZZZ
@@ -250,7 +281,7 @@
       (array.set $block (ref.cast $block (local.get 0)) (i32.const 2)
          (i31.new (local.get $id)))
       (global.set $caml_oo_last_id (i32.add (local.get $id) (i32.const 1)))
-      (local.get $0))
+      (local.get 0))
 
    (func (export "caml_fresh_oo_id") (param (ref eq)) (result (ref eq))
       (local $id i32)
