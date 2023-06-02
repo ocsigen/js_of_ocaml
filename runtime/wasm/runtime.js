@@ -1,13 +1,13 @@
 #!/usr/bin/env -S node --experimental-wasm-stringref --experimental-wasm-gc
 (async function () {
+    "use strict";
     const src = 'CODE';
     function loadRelative(src) {
       const path = require('path');
       const f = path.join(path.dirname(require.main.filename),src);
       return require('fs/promises').readFile(f)
     }
-    const isNode =
-          this.process && process.versions && process.versions.node;
+    const isNode = globalThis?.process?.versions?.node;
     const code = isNode?loadRelative(src):fetch(src);
 
     var caml_callback, caml_alloc_tm;
@@ -212,6 +212,7 @@
                                 d.getDay(), doy,
                                 (d.getTimezoneOffset() < stdTimezoneOffset))
          },
+         mktime:(year,month,day,h,m,s)=>new Date(year,month,day,h,m,s).getTime(),
          random_seed:()=>crypto.getRandomValues(new Int32Array(12)),
          log:(x)=>console.log('ZZZZZ', x)
         }

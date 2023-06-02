@@ -72,4 +72,23 @@
    (func (export "caml_ml_mutex_unlock") (param (ref eq)) (result (ref eq))
       (struct.set $mutex 2 (ref.cast $mutex (local.get 0)) (i32.const 1))
       (i31.new (i32.const 0)))
+
+   (func (export "caml_ml_condition_new") (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
+   (data $condition_failure "Condition.wait: cannot wait")
+
+   (func (export "caml_ml_condition_wait")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (array.new_data $string $condition_failure
+            (i32.const 0) (i32.const 27)))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_ml_condition_signal") (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
+
+   (func (export "caml_ml_condition_broadcast")
+      (param (ref eq)) (result (ref eq))
+      (i31.new (i32.const 0)))
 )
