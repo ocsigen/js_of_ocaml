@@ -344,7 +344,7 @@ module Value = struct
 
   let int_lsl = binop Arith.( lsl )
 
-  let int_lsr = binop Arith.( lsr )
+  let int_lsr i i' = val_int Arith.((int_val i land const 0x7fffffffl) lsr int_val i')
 
   let int_asr = binop Arith.( asr )
 end

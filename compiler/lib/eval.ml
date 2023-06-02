@@ -36,9 +36,10 @@ let int_binop l w f =
   | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, w (f i j)))
   | _ -> None
 
-let shift l w f =
+let shift l w t f =
   match l with
-  | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, w (f i (Int32.to_int j land 0x1f))))
+  | [ Int (_, i); Int (_, j) ] ->
+      Some (Int (Regular, w (f (t i) (Int32.to_int j land 0x1f))))
   | _ -> None
 
 let float_binop_aux l f =
@@ -99,9 +100,10 @@ let eval_prim ~target x =
       | "%int_and", _ -> int_binop l wrap Int.logand
       | "%int_or", _ -> int_binop l wrap Int.logor
       | "%int_xor", _ -> int_binop l wrap Int.logxor
-      | "%int_lsl", _ -> shift l wrap Int.shift_left
-      | "%int_lsr", _ -> shift l wrap Int.shift_right_logical
-      | "%int_asr", _ -> shift l wrap Int.shift_right
+      | "%int_lsl", _ -> shift l wrap Fun.id Int.shift_left
+      | "%int_lsr", _ ->
+          shift l wrap (fun i -> Int.logand i 0x7fffffffl) Int.shift_right_logical
+      | "%int_asr", _ -> shift l wrap Fun.id Int.shift_right
       | "%int_neg", [ Int (_, i) ] -> Some (Int (Regular, Int.neg i))
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
