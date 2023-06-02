@@ -97,7 +97,7 @@
       (local.set $threshold
          (i64.div_u (i64.const -1) (i64.extend_i32_u (local.get $base))))
       (local.set $d
-         (call $parse_digit (array.get $string (local.get $s) (local.get $i))))
+         (call $parse_digit (array.get_u $string (local.get $s) (local.get $i))))
       (if (i32.ge_u (local.get $d) (local.get $base))
          (then (call $caml_failwith (global.get $INT64_ERRMSG))))
       (local.set $res (i64.extend_i32_u (local.get $d)))
@@ -105,7 +105,7 @@
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (if (i32.lt_s (local.get $i) (local.get $len))
             (then
-               (local.set $c (array.get $string (local.get $s) (local.get $i)))
+               (local.set $c (array.get_u $string (local.get $s) (local.get $i)))
                (br_if $loop (i32.eq (local.get $c) (i32.const 95))) ;; '_'
                (local.set $d (call $parse_digit (local.get $c)))
                (if (i32.ge_u (local.get $d) (local.get $base))
@@ -191,7 +191,7 @@
       (local.set $d (struct.get $int64 1 (ref.cast $int64 (local.get 1))))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
-            (if (i32.eq (array.get $string (local.get $s) (i32.const 1))
+            (if (i32.eq (array.get_u $string (local.get $s) (i32.const 1))
                         (i32.const 100)) ;; 'd'
                (then (return_call $format_int64_default (local.get $d))))))
       (local.set $format (call $parse_int_format (local.get $s)))
@@ -252,7 +252,7 @@
                            (i32.const 32)))))))) ;; ' '
       (if (local.get $alternate)
          (then
-            (if (i32.ne (local.get $i) (i32.const 0))
+            (if (local.get $i)
                (then
                   (array.set $string (local.get $s) (i32.const 0)
                      (i32.const 48)) ;; '0'

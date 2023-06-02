@@ -1,7 +1,12 @@
 (module
    (import "bindings" "gettimeofday" (func $gettimeofday (result f64)))
-   (import "bindings" "gmtime" (func $gmtime (result (ref eq))))
-   (import "bindings" "localtime" (func $localtime (result (ref eq))))
+   (import "bindings" "gmtime" (func $gmtime (param f64) (result (ref eq))))
+   (import "bindings" "localtime"
+      (func $localtime (param f64) (result (ref eq))))
+   (import "bindings" "mktime"
+      (func $mktime
+         (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
+         (result f64)))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
@@ -26,10 +31,10 @@
          (i31.new (local.get $isdst))))
 
    (func (export "unix_gmtime") (param (ref eq)) (result (ref eq))
-      (call $gmtime))
+      (call $gmtime (struct.get $float 0 (ref.cast $float (local.get 0)))))
 
    (func (export "unix_localtime") (param (ref eq)) (result (ref eq))
-      (call $localtime))
+      (call $localtime (struct.get $float 0 (ref.cast $float (local.get 0)))))
 
    (func (export "unix_time") (param (ref eq)) (result (ref eq))
       (struct.new $float (f64.floor (call $gettimeofday))))

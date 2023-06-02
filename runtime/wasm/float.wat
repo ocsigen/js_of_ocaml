@@ -121,7 +121,7 @@
          (loop $count
             (local.set $j (i32.add (local.get $j) (i32.const 1)))
             (local.set $d (i32.div_u (local.get $d) (i32.const 10)))
-            (br_if $count (i32.ne (local.get $d) (i32.const 0))))
+            (br_if $count (local.get $d)))
          (local.set $len (i32.add (i32.add (local.get $i) (local.get $prec))
                                   (i32.add (i32.const 6) (local.get $j))))
          (if (i32.eqz (local.get $prec))
@@ -136,7 +136,7 @@
                (i32.add (i32.const 48)
                   (i32.rem_u (local.get $d) (i32.const 10))))
             (local.set $d (i32.div_u (local.get $d) (i32.const 10)))
-            (br_if $write (i32.ne (local.get $d) (i32.const 0))))
+            (br_if $write (local.get $d)))
          (array.set $string (local.get $s)
             (i32.sub (local.get $len) (i32.const 1))
             (select (i32.const 43) (i32.const 45)
@@ -190,9 +190,9 @@
          (block $bad_format
             (br_if $bad_format (i32.lt_u (local.get $len) (i32.const 2)))
             (br_if $bad_format
-               (i32.ne (array.get $string (local.get $s) (i32.const 0))
+               (i32.ne (array.get_u $string (local.get $s) (i32.const 0))
                        (i32.const 37))) ;; '%'
-            (local.set $c (array.get $string (local.get $s) (i32.const 1)))
+            (local.set $c (array.get_u $string (local.get $s) (i32.const 1)))
             (if (i32.eq (local.get $c) (i32.const 43)) ;; '+'
                (then
                   (local.set $sign_style (i32.const 1))
@@ -203,13 +203,13 @@
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))))
             (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
             (br_if $bad_format
-               (i32.ne (array.get $string (local.get $s) (local.get $i))
+               (i32.ne (array.get_u $string (local.get $s) (local.get $i))
                        (i32.const 46))) ;; '.'
             (loop $precision
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
                (local.set $c
-                  (array.get $string (local.get $s) (local.get $i)))
+                  (array.get_u $string (local.get $s) (local.get $i)))
                (if (i32.and (i32.ge_u (local.get $c) (i32.const 48))  ;; '0'
                             (i32.le_u (local.get $c) (i32.const 57))) ;; '9'
                   (then
@@ -312,7 +312,7 @@
             (local.set $i (i32.const 0))
             (local.set $len (array.len (local.get $s)))
             (loop $uppercase
-               (local.set $c (array.get $string (local.get $s) (local.get $i)))
+               (local.set $c (array.get_u $string (local.get $s) (local.get $i)))
                (if (i32.and (i32.ge_u (local.get $c) (i32.const 97))   ;; 'a'
                             (i32.le_u (local.get $c) (i32.const 122))) ;; 'z'
                   (then
