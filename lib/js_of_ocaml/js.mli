@@ -813,6 +813,12 @@ external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
       Javascript string should only contain UTF-16 code points below
       255.) *)
 
+external float : float -> float = "caml_js_from_float"
+(** Conversion of OCaml floats to Javascript numbers. *)
+
+external to_float : float -> float = "caml_js_to_float"
+(** Conversion of Javascript numbers to OCaml floats. *)
+
 (** {2 Convenience coercion functions} *)
 
 val coerce : 'a -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
@@ -1017,14 +1023,6 @@ exception Error of error t [@ocaml.deprecated "[since 4.0] Use [Js_error.Exn] in
     In case the javascript exception is not an instance of javascript [Error],
     it will be serialized and wrapped into a [Failure] exception.
   *)
-
-external float : float -> float = "%identity" [@@ocaml.deprecated "[since 2.0]."]
-
-(** Conversion of OCaml floats to Javascript numbers. *)
-
-external to_float : float -> float = "%identity" [@@ocaml.deprecated "[since 2.0]."]
-
-(** Conversion of Javascript numbers to OCaml floats. *)
 
 type float_prop = float prop [@@ocaml.deprecated "[since 2.0]."]
 
