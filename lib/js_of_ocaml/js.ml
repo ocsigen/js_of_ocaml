@@ -763,6 +763,10 @@ external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 
 external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 
+external float : float -> float = "caml_js_from_float"
+
+external to_float : float -> float = "caml_js_to_float"
+
 external typeof : _ t -> js_string t = "caml_js_typeof"
 
 external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
@@ -810,7 +814,3 @@ let export_all obj =
 (* DEPRECATED *)
 
 type float_prop = float prop
-
-external float : float -> float = "%identity"
-
-external to_float : float -> float = "%identity"
