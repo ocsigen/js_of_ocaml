@@ -23,6 +23,8 @@
    (type $closure_last_arg
       (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
 
+   (type $int_array (array (mut i32)))
+
    (type $dummy_closure_1
       (sub $closure_last_arg
          (struct (field (ref $function_1)) (field (mut (ref null $closure))))))
@@ -267,11 +269,82 @@
             (i32.const 0) (i32.const 29)))
       (i31.new (i32.const 0)))
 
+   (global $method_cache (mut (ref $int_array))
+      (array.new $int_array (i32.const 0) (i32.const 8)))
+
    (func (export "caml_get_public_method")
-      (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
-      ;;ZZZ
-      (call $log_js (string.const "caml_get_public_method"))
-      (i31.new (i32.const 0)))
+      (param $obj (ref eq) (ref eq) (ref eq)) (result (ref eq))
+      (local $meths (ref $block))
+      (local $tag i32) (local $cacheid i32) (local $ofs i32)
+      (local $li i32) (local $mi i32) (local $hi i32)
+      (local $a (ref $int_array)) (local $len i32)
+      (local.set $meths
+         (ref.cast $block
+            (array.get $block (ref.cast $block (local.get $obj)) (i32.const 1))))
+      (local.set $tag (i31.get_s (ref.cast i31 (local.get 1))))
+      (local.set $cacheid (i31.get_u (ref.cast i31 (local.get 2))))
+      (local.set $len (array.len (global.get $method_cache)))
+      (if (i32.ge_s (local.get $cacheid) (local.get $len))
+         (then
+            (loop $size
+               (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+               (br_if $size (i32.ge_s (local.get $cacheid) (local.get $len))))
+            (local.set $a (array.new $int_array (i32.const 0) (local.get $len)))
+            (array.copy $int_array $int_array
+               (local.get $a) (i32.const 0)
+               (global.get $method_cache) (i32.const 0)
+               (array.len (global.get $method_cache)))
+            (global.set $method_cache (local.get $a))))
+      (local.set $ofs
+         (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
+      (if (i32.eq (local.get $tag)
+             (i31.get_s
+                (ref.cast i31
+                   (array.get $block (local.get $meths) (local.get $ofs)))))
+         (then
+            (return
+               (array.get $block
+                  (local.get $meths) (i32.sub (local.get $ofs) (i32.const 1))))))
+      (local.set $li (i32.const 3))
+      (local.set $hi
+         (i32.add
+            (i32.shl
+               (i31.get_u
+                  (ref.cast i31
+                     (array.get $block (local.get $meths) (i32.const 1))))
+               (i32.const 1))
+            (i32.const 1)))
+      (loop $loop
+         (if (i32.lt_u (local.get $li) (local.get $hi))
+            (then
+               (local.set $mi
+                  (i32.or (i32.shr_u (i32.add (local.get $li) (local.get $hi))
+                                     (i32.const 1))
+                          (i32.const 1)))
+               (if (i32.lt_s
+                      (local.get $tag)
+                      (i31.get_s
+                         (ref.cast i31
+                            (array.get $block
+                               (local.get $meths)
+                               (i32.add (local.get $mi) (i32.const 1))))))
+                  (then
+                     (local.set $hi (i32.sub (local.get $mi) (i32.const 2))))
+                  (else
+                     (local.set $li (local.get $mi))))
+               (br $loop))))
+      (array.set $int_array (global.get $method_cache) (local.get $cacheid)
+         (i32.add (local.get $li) (i32.const 1)))
+      (if (result (ref eq))
+          (i32.eq (local.get $tag)
+             (i31.get_s
+                (ref.cast i31
+                   (array.get $block (local.get $meths)
+                      (i32.add (local.get $li) (i32.const 1))))))
+         (then
+            (array.get $block (local.get $meths) (local.get $li)))
+         (else
+            (i31.new (i32.const 0)))))
 
    (global $caml_oo_last_id (mut i32) (i32.const 0))
 
