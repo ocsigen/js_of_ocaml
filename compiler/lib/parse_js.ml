@@ -496,10 +496,15 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
   let checkpoint = State.create init in
   match loop checkpoint checkpoint with
   | `Ok x -> x
-  | `Error t -> (
-      match State.Cursor.last_token (State.cursor t) with
-      | None -> assert false
-      | Some ((_, p, _), _) -> raise (Parsing_error (Parse_info.t_of_pos p)))
+  | `Error t ->
+      let rec last cursor =
+        match State.Cursor.last_token cursor with
+        | None -> assert false
+        | Some ((T_VIRTUAL_SEMICOLON, _, _), cursor) -> last cursor
+        | Some ((_, p, _), _) -> p
+      in
+      let p = last (State.cursor t) in
+      raise (Parsing_error (Parse_info.t_of_pos p))
 
 let fail_early =
   object
