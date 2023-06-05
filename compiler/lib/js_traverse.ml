@@ -315,6 +315,8 @@ class type iterator =
 
     method switch_case : Javascript.expression -> unit
 
+    method block : Javascript.statement_list -> unit
+
     method initialiser : Javascript.expression * Javascript.location -> unit
 
     method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
@@ -344,6 +346,8 @@ class iter : iterator =
     method ident _ = ()
 
     method early_error _ = ()
+
+    method block l = m#statements l
 
     method statements l = List.iter l ~f:(fun (s, _) -> m#statement s)
 
@@ -383,7 +387,7 @@ class iter : iterator =
       | CEField (_static, n, i) ->
           m#class_element_name n;
           m#initialiser_o i
-      | CEStaticBLock b -> m#statements b
+      | CEStaticBLock b -> m#block b
 
     method private class_element_name x =
       match x with
@@ -392,7 +396,7 @@ class iter : iterator =
 
     method statement s =
       match s with
-      | Block b -> m#statements b
+      | Block b -> m#block b
       | Variable_statement (k, l) -> List.iter l ~f:(m#variable_declaration k)
       | Function_declaration (id, fun_decl) ->
           m#ident id;
@@ -451,15 +455,15 @@ class iter : iterator =
               m#switch_case e;
               m#statements s)
       | Try_statement (b, catch, final) -> (
-          m#statements b;
+          m#block b;
           (match catch with
           | None -> ()
           | Some (id, b) ->
               Option.iter ~f:m#param id;
-              m#statements b);
+              m#block b);
           match final with
           | None -> ()
-          | Some s -> m#statements s)
+          | Some s -> m#block s)
 
     method statement_o x =
       match x with
