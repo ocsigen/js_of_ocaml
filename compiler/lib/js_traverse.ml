@@ -909,42 +909,58 @@ class free =
       super#for_binding k x
   end
 
+type scope =
+  | Lexical_block
+  | Fun_block of ident option
+
 class rename_variable =
-  let declared local_only ident params body =
+  let declared scope params body =
     let declared_names = ref StringSet.empty in
     let decl_var x =
       match x with
       | S { name = Utf8 name; _ } -> declared_names := StringSet.add name !declared_names
       | _ -> ()
     in
-    Option.iter ~f:decl_var ident;
+    (match scope with
+    | Lexical_block -> ()
+    | Fun_block None -> ()
+    | Fun_block (Some x) -> decl_var x);
     List.iter params ~f:(fun x -> decl_var x);
-    (object
+    (object (self)
+       val depth = 0
+
        inherit iter as super
 
        method expression _ = ()
 
+       method fun_decl _ = ()
+
        method statement x =
-         match x with
-         | Function_declaration (id, _) -> if not local_only then decl_var id
-         | _ -> super#statement x
+         match scope, x with
+         | Fun_block _, Function_declaration (id, fd) ->
+             decl_var id;
+             self#fun_decl fd
+         | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
+         | (Fun_block _ | Lexical_block), _ -> super#statement x
 
        method variable_declaration k l =
-         if (not local_only)
-            ||
-            match k with
-            | Let | Const -> true
-            | Var -> false
+         if match scope, k with
+            | (Lexical_block | Fun_block _), (Let | Const) -> depth = 0
+            | Lexical_block, Var -> false
+            | Fun_block _, Var -> true
          then
            let ids = bound_idents_of_variable_declaration l in
            List.iter ids ~f:decl_var
 
+       method block l =
+         let m = {<depth = depth + 1>} in
+         m#statements l
+
        method for_binding k p =
-         if (not local_only)
-            ||
-            match k with
-            | Let | Const -> true
-            | Var -> false
+         if match scope, k with
+            | (Lexical_block | Fun_block _), (Let | Const) -> depth = 0
+            | Lexical_block, Var -> false
+            | Fun_block _, Var -> true
          then
            match p with
            | BindingIdent i -> decl_var i
@@ -963,8 +979,8 @@ class rename_variable =
 
     val decl = StringSet.empty
 
-    method private update_state local_only ident params iter_body =
-      let declared_names = declared local_only ident params iter_body in
+    method private update_state scope params iter_body =
+      let declared_names = declared scope params iter_body in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
                   declared_names
@@ -979,18 +995,18 @@ class rename_variable =
 
     method fun_decl (k, params, body, nid) =
       let ids = bound_idents_of_params params in
-      let m' = m#update_state false None ids body in
+      let m' = m#update_state (Fun_block None) ids body in
       k, m'#formal_parameter_list params, m'#function_body body, m#loc nid
 
     method program p =
-      let m' = m#update_state true None [] p in
+      let m' = m#update_state Lexical_block [] p in
       m'#statements p
 
     method expression e =
       match e with
       | EFun (ident, (k, params, body, nid)) ->
           let ids = bound_idents_of_params params in
-          let m' = m#update_state false ident ids body in
+          let m' = m#update_state (Fun_block ident) ids body in
           EFun
             ( Option.map ident ~f:m'#ident
             , (k, m'#formal_parameter_list params, m'#function_body body, m#loc nid) )
@@ -1000,23 +1016,23 @@ class rename_variable =
       match s with
       | Function_declaration (id, (k, params, body, nid)) ->
           let ids = bound_idents_of_params params in
-          let m' = m#update_state false None ids body in
+          let m' = m#update_state (Fun_block None) ids body in
           Function_declaration
             ( m#ident id
             , (k, m'#formal_parameter_list params, m'#function_body body, m#loc nid) )
       | Block l ->
-          let m' = m#update_state true None [] l in
+          let m' = m#update_state Lexical_block [] l in
           Block (m'#statements l)
       | Try_statement (block, catch, final) ->
           let block =
-            let m' = m#update_state true None [] block in
+            let m' = m#update_state Lexical_block [] block in
             m'#statements block
           in
           let final =
             match final with
             | None -> None
             | Some final ->
-                let m' = m#update_state true None [] final in
+                let m' = m#update_state Lexical_block [] final in
                 Some (m'#statements final)
           in
           let catch =
@@ -1035,7 +1051,7 @@ class rename_variable =
                       in
                       Some p, l
                 in
-                let m' = m#update_state true None l catch in
+                let m' = m#update_state Lexical_block l catch in
                 let i =
                   match i with
                   | None -> None
