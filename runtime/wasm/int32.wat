@@ -3,7 +3,8 @@
       (func $parse_int
          (param (ref eq)) (param i32) (param (ref $string)) (result i32)))
    (import "ints" "format_int"
-      (func $format_int (param (ref eq)) (param i32) (result (ref eq))))
+      (func $format_int
+         (param (ref eq)) (param i32) (param i32) (result (ref eq))))
 
    (type $string (array (mut i8)))
    (type $value->value->int
@@ -100,5 +101,5 @@
    (func $caml_int32_format (export "caml_int32_format")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $format_int (local.get 0)
-         (struct.get $int32 1 (ref.cast $int32 (local.get 1)))))
+         (struct.get $int32 1 (ref.cast $int32 (local.get 1))) (i32.const 0)))
 )

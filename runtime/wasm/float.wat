@@ -5,7 +5,7 @@
    (import "bindings" "format_float"
       (func $format_float
          (param i32) (param i32) (param f64) (result (ref string))))
-   (import "bindings" "parse_float"
+   (import "bindings" "identity"
       (func $parse_float (param anyref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
@@ -256,7 +256,8 @@
       (local.set $negative
          (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 63))))
       (local.set $i
-         (i32.or (local.get $negative) (local.get $sign_style)))
+         (i32.or (local.get $negative)
+                 (i32.ne (local.get $sign_style) (i32.const 0))))
       (local.set $s
          (block $sign (result (ref $string))
             (local.set $exp
@@ -271,7 +272,8 @@
                            (global.get $inf))
                         (else
                            (local.set $negative (i32.const 0))
-                           (local.set $i (local.get $sign_style))
+                           (local.set $i
+                              (i32.ne (local.get $sign_style) (i32.const 0)))
                            (global.get $nan))))
                   (local.set $len (array.len (local.get $txt)))
                   (local.set $s
@@ -633,7 +635,7 @@
          (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
       (return (struct.new $float (f64.const 0))))
 
-   (func (export "caml_nextafter")
+   (func (export "caml_nextafter_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $x f64) (local $y f64) (local $i i64) (local $j i64)
       (local.set $x (struct.get $float 0 (ref.cast $float (local.get 0))))
@@ -841,7 +843,23 @@
       (i31.new
          (i32.add
             (i32.sub (f64.gt (local.get $x) (local.get $y))
-                     (f64.lt (local.get $y) (local.get $x)))
+                     (f64.lt (local.get $x) (local.get $y)))
             (i32.sub (f64.eq (local.get $x) (local.get $x))
                      (f64.eq (local.get $y) (local.get $y))))))
+
+   (func (export "caml_round") (param $x f64) (result f64)
+      (local $y f64)
+      (if (result f64) (f64.ge (local.get $x) (f64.const 0))
+         (then
+            (local.set $y (f64.floor (local.get $x)))
+            (if (result f64)
+                (f64.ge (f64.sub (local.get $x) (local.get $y)) (f64.const 0.5))
+               (then (f64.add (local.get $y) (f64.const 1)))
+               (else (local.get $y))))
+         (else
+            (local.set $y (f64.ceil (local.get $x)))
+            (if (result f64)
+                (f64.ge (f64.sub (local.get $y) (local.get $x)) (f64.const 0.5))
+               (then (f64.sub (local.get $y) (f64.const 1)))
+               (else (local.get $y))))))
 )

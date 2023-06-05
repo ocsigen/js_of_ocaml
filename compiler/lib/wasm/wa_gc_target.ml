@@ -928,6 +928,11 @@ module Math = struct
   let power f g = binary "pow" f g
 
   let fmod f g = binary "fmod" f g
+
+  let round x =
+    let* f = register_import ~name:"caml_round" (Fun (float_func_type 1)) in
+    let* x = x in
+    return (W.Call (f, [ x ]))
 end
 
 let entry_point ~context = init_code context

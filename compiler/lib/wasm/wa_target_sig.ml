@@ -247,6 +247,8 @@ module type S = sig
     val power : expression -> expression -> expression
 
     val fmod : expression -> expression -> expression
+
+    val round : expression -> expression
   end
 
   val entry_point : context:Wa_code_generation.context -> unit Wa_code_generation.t

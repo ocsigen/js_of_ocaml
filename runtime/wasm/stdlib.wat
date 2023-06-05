@@ -5,6 +5,9 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "jslib" "caml_string_of_jsstring"
+      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -35,15 +38,17 @@
             (local.set $l (struct.get $assoc 2 (local.get $a)))
             (br $loop))))
 
-   (func (export "caml_named_value") (param (ref eq)) (result (ref null eq))
+   (func (export "caml_named_value") (param anyref) (result (ref null eq))
+      (local $s (ref eq))
+      (local.set $s (call $caml_string_of_jsstring (call $wrap (local.get $0))))
       (return_call $find_named_value
-         (local.get 0)
+         (local.get $s)
          (array.get $assoc_array (global.get $named_value_table)
             (i32.rem_u
                (i31.get_s
                   (ref.cast i31
                      (call $caml_string_hash
-                        (i31.new (i32.const 0)) (local.get 0))))
+                        (i31.new (i32.const 0)) (local.get $s))))
                (global.get $Named_value_size)))))
 
    (func (export "caml_register_named_value")

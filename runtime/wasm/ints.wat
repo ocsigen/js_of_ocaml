@@ -8,7 +8,7 @@
    (func (export "caml_format_int")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $format_int
-         (local.get 0) (i31.get_s (ref.cast i31 (local.get 1)))))
+         (local.get 0) (i31.get_s (ref.cast i31 (local.get 1))) (i32.const 1)))
 
    (func $parse_sign_and_base (export "parse_sign_and_base")
       (param $s (ref $string)) (result i32 i32 i32 i32)
@@ -19,7 +19,7 @@
       (local.set $signedness (i32.const 1))
       (local.set $sign (i32.const 1))
       (local.set $base (i32.const 10))
-      (if (i32.eqz (local.get $len))
+      (if (i32.ne (local.get $len) (i32.const 0))
          (then
             (local.set $c (array.get_u $string (local.get $s) (i32.const 0)))
             (if (i32.eq (local.get $c) (i32.const 45))
@@ -85,6 +85,8 @@
       (local $t (i32 i32 i32 i32))
       (local.set $s (ref.cast $string (local.get $v)))
       (local.set $len (array.len (local.get $s)))
+      (if (i32.eqz (local.get $len))
+        (then (call $caml_failwith (local.get $errmsg))))
       (local.set $t (call $parse_sign_and_base (local.get $s)))
       (local.set $i (tuple.extract 0 (local.get $t)))
       (local.set $signedness (tuple.extract 1 (local.get $t)))
@@ -154,8 +156,8 @@
       (i31.new
          (i32.or
             (i32.shl (i32.and (local.get $x) (i32.const 0xFF)) (i32.const 8))
-            (i32.shr_u (i32.and (local.get $x) (i32.const 0x00FF))
-               (i32.const 8)))))
+            (i32.and
+               (i32.shr_u (local.get $x) (i32.const 8)) (i32.const 0xFF)))))
 
    (func (export "%caml_format_int_special") (param (ref eq)) (result (ref eq))
       (return_call $format_int_default
@@ -276,7 +278,7 @@
          (local.get $uppercase)))
 
    (func $format_int (export "format_int")
-      (param (ref eq)) (param $d i32) (result (ref eq))
+      (param (ref eq)) (param $d i32) (param $small i32) (result (ref eq))
       (local $s (ref $string))
       (local $format (i32 i32 i32 i32 i32))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
@@ -297,10 +299,17 @@
       (local.set $signed (tuple.extract 2 (local.get $format)))
       (local.set $base (tuple.extract 3 (local.get $format)))
       (local.set $uppercase (tuple.extract 4 (local.get $format)))
-      (if (i32.and (local.get $signed) (i32.lt_s (local.get $d) (i32.const 0)))
+      (if (i32.lt_s (local.get $d) (i32.const 0))
          (then
-            (local.set $negative (i32.const 1))
-            (local.set $d (i32.sub (i32.const 0) (local.get $d)))))
+            (if (local.get $signed)
+               (then
+                  (local.set $negative (i32.const 1))
+                  (local.set $d (i32.sub (i32.const 0) (local.get $d))))
+               (else
+                  (if (local.get $small)
+                     (then
+                        (local.set $d
+                           (i32.and (local.get $d) (i32.const 0x7fffffff)))))))))
       (local.set $n (local.get $d))
       (loop $count
          (local.set $i (i32.add (local.get $i) (i32.const 1)))

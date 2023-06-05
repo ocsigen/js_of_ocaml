@@ -47,7 +47,6 @@
          array_length:(a)=>a.length,
          array_get:(a,i)=>a[i],
          array_set:(a,i,v)=>a[i]=v,
-         get_int:(a,i)=>a[i],
          ta_create:(k,sz)=> new(typed_arrays[k])(sz),
          ta_normalize:(a)=>
            a instanceof Uint8ClampedArray?
@@ -127,7 +126,6 @@
              return caml_callback(f, args.length, args, 2);
          },
          wrap_fun_arguments:(f)=>function(){return f(arguments)},
-         parse_float:(s)=>+s,
          format_float:(prec, conversion, x)=>{
            function toFixed(x,dp) {
              if (Math.abs(x) < 1.0) {

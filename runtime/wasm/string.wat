@@ -127,7 +127,7 @@
    (func (export "caml_create_bytes")
       (param $len (ref eq)) (result (ref eq))
       (local $l i32)
-      (local.set $l (i31.get_u (ref.cast i31 (local.get $len))))
+      (local.set $l (i31.get_s (ref.cast i31 (local.get $len))))
       (if (i32.lt_s (local.get $l) (i32.const 0))
          (then
             (call $caml_invalid_argument
@@ -313,7 +313,7 @@
       (local.set $v (struct.get $int64 1 (ref.cast $int64 (local.get 2))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
          (then (call $caml_bound_error)))
-      (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
+      (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
                     (array.len (local.get $s)))
          (then (call $caml_bound_error)))
       (array.set $string (local.get $s) (local.get $p)

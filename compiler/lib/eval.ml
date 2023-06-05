@@ -102,7 +102,13 @@ let eval_prim ~target x =
       | "%int_xor", _ -> int_binop l wrap Int.logxor
       | "%int_lsl", _ -> shift l wrap Fun.id Int.shift_left
       | "%int_lsr", _ ->
-          shift l wrap (fun i -> Int.logand i 0x7fffffffl) Int.shift_right_logical
+          shift
+            l
+            wrap
+            (match target with
+            | `JavaScript -> Fun.id
+            | `Wasm -> fun i -> Int.logand i 0x7fffffffl)
+            Int.shift_right_logical
       | "%int_asr", _ -> shift l wrap Fun.id Int.shift_right
       | "%int_neg", [ Int (_, i) ] -> Some (Int (Regular, Int.neg i))
       (* float *)
@@ -155,7 +161,7 @@ let eval_prim ~target x =
                ( Regular
                , match target with
                  | `JavaScript -> 32l
-                 | `Wasm -> 32l ))
+                 | `Wasm -> 31l ))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int (Regular, 0l))
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int (Regular, 0l))
       | _ -> None)

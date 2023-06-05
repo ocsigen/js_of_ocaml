@@ -587,6 +587,8 @@ module Math = struct
 
   let log10 f = unary "log10" f
 
+  let round f = unary "round" f
+
   let binary name x y =
     let* f = register_import ~name (Fun (float_func_type 2)) in
     let* x = x in

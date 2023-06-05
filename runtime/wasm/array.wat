@@ -60,7 +60,7 @@
          (local.get $a) (i32.const 1) (local.get $a1) (i32.const 1)
          (i32.sub (local.get $l1) (i32.const 1)))
       (array.copy $block $block
-         (local.get $a) (i32.const 1) (local.get $a2) (local.get $l1)
+         (local.get $a) (local.get $l1) (local.get $a2) (i32.const 1)
          (i32.sub (local.get $l2) (i32.const 1)))
       (local.get $a))
 
@@ -85,6 +85,7 @@
              (br $compute_length))))
       (local.set $a
          (array.new $block (i31.new (i32.const 0)) (local.get $len)))
+      (local.set $l (local.get 0))
       (local.set $i (i32.const 1))
       (loop $fill
          (drop (block $exit (result (ref eq))
@@ -111,9 +112,9 @@
       (result (ref eq))
       (array.copy $block $block
          (ref.cast $block (local.get $a2))
-         (i31.get_s (ref.cast i31 (local.get $i2)))
+         (i32.add (i31.get_s (ref.cast i31 (local.get $i2))) (i32.const 1))
          (ref.cast $block (local.get $a1))
-         (i31.get_s (ref.cast i31 (local.get $i1)))
+         (i32.add (i31.get_s (ref.cast i31 (local.get $i1))) (i32.const 1))
          (i31.get_s (ref.cast i31 (local.get $len))))
       (i31.new (i32.const 0)))
 
@@ -121,7 +122,7 @@
       (param $a (ref eq)) (param $i (ref eq)) (param $len (ref eq))
       (param $v (ref eq)) (result (ref eq))
       (array.fill $block (ref.cast $block (local.get $a))
-         (i31.get_u (ref.cast i31 (local.get $i)))
+         (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
          (local.get $v)
          (i31.get_u (ref.cast i31 (local.get $len))))
       (i31.new (i32.const 0)))

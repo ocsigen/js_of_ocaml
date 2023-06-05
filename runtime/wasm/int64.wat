@@ -89,6 +89,8 @@
       (local $t (i32 i32 i32 i32))
       (local.set $s (ref.cast $string (local.get $v)))
       (local.set $len (array.len (local.get $s)))
+      (if (i32.eqz (local.get $len))
+        (then (call $caml_failwith (global.get $INT64_ERRMSG))))
       (local.set $t (call $parse_sign_and_base (local.get $s)))
       (local.set $i (tuple.extract 0 (local.get $t)))
       (local.set $signedness (tuple.extract 1 (local.get $t)))
@@ -259,7 +261,8 @@
                   (if (i64.eq (local.get $base) (i64.const 16))
                      (then
                         (array.set $string (local.get $s) (i32.const 1)
-                           (i32.const 120)))))))) ;; 'x'
+                           (select (i32.const 88) (i32.const 120) ;; 'X' 'x'
+                              (local.get $uppercase)))))))))
       (local.get $s))
 
 )
