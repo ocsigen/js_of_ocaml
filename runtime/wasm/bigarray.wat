@@ -412,7 +412,19 @@
       (i31.new (i32.const 0)))
 
    (func (export "caml_string_of_array") (param (ref eq)) (result (ref eq))
-      ;; ZZZ used to convert a typed array to a string...
-      (call $log_js (string.const "caml_string_of_array"))
-      (unreachable))
+      ;; used to convert a typed array to a string
+      (local $a (ref extern)) (local $len i32) (local $i i32)
+      (local $s (ref $string))
+      (local.set $a
+         (ref.as_non_null (extern.externalize (call $unwrap (local.get 0)))))
+      (local.set $len (call $ta_length (local.get $a)))
+      (local.set $s (array.new $string (i32.const 0) (local.get $len)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (array.set $string (local.get $s) (local.get $i)
+                  (call $ta_get_ui8 (local.get $a) (local.get $i)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (local.get $s))
 )
