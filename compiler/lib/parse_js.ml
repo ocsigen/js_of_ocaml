@@ -356,7 +356,11 @@ let rec offer_one t (lexbuf : Lexer.t) =
         | ( Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _)
           , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _, _) as tok) ) -> tok
         | Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _), _
-          when nl_separated h tok ->
+          when nl_separated h tok && acceptable t T_VIRTUAL_SEMICOLON ->
+            (* restricted token can also appear as regular identifier such
+               as in [x.return]. In such case, feeding a virtual semicolon
+               could trigger a parser error. Here, we first checkpoint
+               that a virtual semicolon is acceptable. *)
             Lexer.rollback lexbuf;
             semicolon
         (* The practical effect of these restricted productions is as follows:
