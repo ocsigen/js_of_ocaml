@@ -1,10 +1,10 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "ta_length"
-      (func $ta_length (param externref) (result i32)))
+      (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_get_i32"
-      (func $ta_get_i32 (param externref) (param i32) (result i32)))
-   (import "bindings" "random_seed" (func $random_seed (result externref)))
+      (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
+   (import "bindings" "random_seed" (func $random_seed (result (ref extern))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
@@ -55,7 +55,7 @@
 
    (func (export "caml_sys_random_seed")
       (param (ref eq)) (result (ref eq))
-      (local $r externref)
+      (local $r (ref extern))
       (local $a (ref $block))
       (local $i i32) (local $n i32)
       (local.set $r (call $random_seed))

@@ -1,40 +1,41 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "ta_create"
-      (func $ta_create (param i32) (param i32) (result externref)))
+      (func $ta_create (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_normalize"
-      (func $ta_normalize (param externref) (result externref)))
-   (import "bindings" "ta_kind" (func $ta_kind (param externref) (result i32)))
+      (func $ta_normalize (param (ref extern)) (result (ref extern))))
+   (import "bindings" "ta_kind"
+      (func $ta_kind (param (ref extern)) (result i32)))
    (import "bindings" "ta_length"
-      (func $ta_length (param externref) (result i32)))
+      (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_get_f64"
-      (func $ta_get_f64 (param externref) (param i32) (result f64)))
+      (func $ta_get_f64 (param (ref extern)) (param i32) (result f64)))
    (import "bindings" "ta_get_f32"
-      (func $ta_get_f32 (param externref) (param i32) (result f64)))
+      (func $ta_get_f32 (param (ref extern)) (param i32) (result f64)))
    (import "bindings" "ta_get_i32"
-      (func $ta_get_i32 (param externref) (param i32) (result i32)))
+      (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get_i16"
-      (func $ta_get_i16 (param externref) (param i32) (result i32)))
+      (func $ta_get_i16 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get_ui16"
-      (func $ta_get_ui16 (param externref) (param i32) (result i32)))
+      (func $ta_get_ui16 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get_i8"
-      (func $ta_get_i8 (param externref) (param i32) (result i32)))
+      (func $ta_get_i8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get_ui8"
-      (func $ta_get_ui8 (param externref) (param i32) (result i32)))
+      (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_f64"
-      (func $ta_set_f64 (param externref) (param i32) (param f64)))
+      (func $ta_set_f64 (param (ref extern)) (param i32) (param f64)))
    (import "bindings" "ta_set_f32"
-      (func $ta_set_f32 (param externref) (param i32) (param f64)))
+      (func $ta_set_f32 (param (ref extern)) (param i32) (param f64)))
    (import "bindings" "ta_set_i32"
-      (func $ta_set_i32 (param externref) (param i32) (param i32)))
+      (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
    (import "bindings" "ta_set_i16"
-      (func $ta_set_i16 (param externref) (param i32) (param (ref i31))))
+      (func $ta_set_i16 (param (ref extern)) (param i32) (param (ref i31))))
    (import "bindings" "ta_set_ui16"
-      (func $ta_set_ui16 (param externref) (param i32) (param (ref i31))))
+      (func $ta_set_ui16 (param (ref extern)) (param i32) (param (ref i31))))
    (import "bindings" "ta_set_i8"
-      (func $ta_set_i8 (param externref) (param i32) (param (ref i31))))
+      (func $ta_set_i8 (param (ref extern)) (param i32) (param (ref i31))))
    (import "bindings" "ta_set_ui8"
-      (func $ta_set_ui8 (param externref) (param i32) (param (ref i31))))
+      (func $ta_set_ui8 (param (ref extern)) (param i32) (param (ref i31))))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
@@ -82,7 +83,7 @@
       (sub $custom
          (struct
             (field (ref $custom_operations))
-            (field externref) ;; data
+            (field (ref extern)) ;; data
             (field (ref $int_array)) ;; size in each dimension
             (field i8) ;; number of dimensions
             (field i8) ;; kind
@@ -122,7 +123,7 @@
                         (i32.eq (local.get $kind) (i32.const 11))))))
 
   (func $caml_ba_create_buffer
-     (param $kind i32) (param $sz i32) (result externref)
+     (param $kind i32) (param $sz i32) (result (ref extern))
      (return_call $ta_create (local.get $kind)
         ;; ZZZ Check for overflow
         (i32.mul (local.get $sz)
@@ -180,11 +181,12 @@
    (data $ta_too_large "Typed_array.to_genarray: too large")
 
    (func (export "caml_ba_from_typed_array") (param (ref eq)) (result (ref eq))
-      (local $data externref)
+      (local $data (ref extern))
       (local $kind i32)
       (local $len i32)
       (local.set $data
-         (call $ta_normalize (extern.externalize (call $unwrap (local.get 0)))))
+         (call $ta_normalize
+            (ref.as_non_null (extern.externalize (call $unwrap (local.get 0))))))
       (local.set $kind (call $ta_kind (local.get $data)))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then
@@ -212,7 +214,7 @@
 
    (func $caml_ba_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result (ref eq))
-      (local $data externref)
+      (local $data (ref extern))
       (local.set $data (struct.get $bigarray 1 (local.get $ba)))
       (block $float32
        (block $float64
@@ -280,7 +282,7 @@
 
    (func $caml_ba_set_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (param $v (ref eq))
-      (local $data externref)
+      (local $data (ref extern))
       (local $b (ref $block)) (local $l i64)
       (local.set $data (struct.get $bigarray 1 (local.get $ba)))
       (block $float32

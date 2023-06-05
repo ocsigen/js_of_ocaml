@@ -2,9 +2,9 @@
    (import "int64" "caml_copy_int64"
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "bindings" "ta_get_i32"
-      (func $ta_get_i32 (param externref) (param i32) (result i32)))
+      (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_i32"
-      (func $ta_set_i32 (param externref) (param i32) (param i32)))
+      (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
 
    (type $value->value->int
       (func (param (ref eq)) (param (ref eq)) (result i32)))
@@ -23,14 +23,14 @@
       (sub $custom
          (struct
             (field (ref $custom_operations))
-            (field externref) ;; data
+            (field (ref extern)) ;; data
             (field (ref $int_array)) ;; size in each dimension
             (field i8) ;; number of dimensions
             (field i8) ;; kind
             (field i8)))) ;; layout
 
    (func (export "caml_lxm_next") (param $v (ref eq)) (result (ref eq))
-      (local $data externref)
+      (local $data (ref extern))
       (local $a i64) (local $s i64) (local $q0 i64) (local $q1 i64)
       (local $z i64)
       (local.set $data
