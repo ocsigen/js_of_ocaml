@@ -732,8 +732,6 @@ struct
         PP.string f "new";
         PP.space f;
         expression NewExpression f e;
-        PP.break f;
-        PP.string f "()";
         PP.end_group f;
         if Prec.(l > NewExpression)
         then (
