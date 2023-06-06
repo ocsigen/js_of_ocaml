@@ -1424,7 +1424,17 @@ class simpl =
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
-          | Variable_statement (((Var | Let | Const) as k), l1) ->
+          (* if (e1) e2 else e3 --> if e1 ? e2 : e3 *)
+          | If_statement
+              (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
+              (Expression_statement (ECond (e1, e2, e3)), loc) :: rem
+          (* if (!e1) e2 --> e1 || e2 *)
+          | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
+              (Expression_statement (EBin (Or, e1, e2)), loc) :: rem
+          (* if (e1) e2 --> e1 && e2 *)
+          | If_statement (e1, (Expression_statement e2, _), None) ->
+              (Expression_statement (EBin (And, e1, e2)), loc) :: rem
+          | Variable_statement (k, l1) ->
               let x =
                 List.map l1 ~f:(function
                     | DeclPattern _ as d -> Variable_statement (k, [ d ]), loc
