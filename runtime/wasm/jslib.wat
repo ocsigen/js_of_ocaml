@@ -147,7 +147,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test $string (local.get 1))
          (then
-            (local.set 1 (call $caml_jsstring_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (return_call $wrap
          (call $get
             (ref.as_non_null (extern.externalize (call $unwrap (local.get 0))))
@@ -157,7 +157,7 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test $string (local.get 1))
          (then
-            (local.set 1 (call $caml_jsstring_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (call $set (call $unwrap (local.get 0)) (call $unwrap (local.get 1))
          (call $unwrap (local.get 2)))
       (i31.new (i32.const 0)))
@@ -323,23 +323,27 @@
                      (local.get $acc)
                      (struct.get $closure 0
                         (ref.cast $closure (local.get $acc)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop
                   (i32.eqz (ref.test $closure_last_arg (local.get $f))))))
          (else
             (local.set $i (i32.const 0))
-            (loop $loop
-               (if (i32.lt_u (local.get $i) (local.get $count))
-                  (then
-                     (local.set $acc
-                        (call_ref $function_1
-                           (call $wrap
-                              (call $get (local.get $args)
-                                 (i31.new (local.get $i))))
-                           (local.get $acc)
-                           (struct.get $closure 0
-                              (ref.cast $closure (local.get $acc)))))
-                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                     (br $loop))))
+            (drop (block $done (result (ref eq))
+               (loop $loop
+                  (if (i32.lt_u (local.get $i) (local.get $count))
+                     (then
+                        (local.set $acc
+                           (call_ref $function_1
+                              (call $wrap
+                                 (call $get (local.get $args)
+                                    (i31.new (local.get $i))))
+                              (local.get $acc)
+                              (struct.get $closure 0
+                                 (br_on_cast_fail $done $closure
+                                    (local.get $acc)))))
+                        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                        (br $loop))))
+               (i31.new (i32.const 0))))
             (if (local.get $kind)
                (then
                   (if (ref.test $closure (local.get $acc))

@@ -119,19 +119,29 @@
 
    (func $caml_obj_dup (export "caml_obj_dup")
       (param (ref eq)) (result (ref eq))
-      ;; ZZZ Deal with non-block values?
-      (local $orig (ref $block))
-      (local $res (ref $block))
+      (local $orig (ref $block)) (local $res (ref $block))
+      (local $s (ref $string)) (local $s' (ref $string))
       (local $len i32)
-      (local.set $orig (ref.cast $block (local.get 0)))
-      (local.set $len (array.len (local.get $orig)))
-      (local.set $res
-         (array.new $block (array.get $block (local.get $orig) (i32.const 0))
-            (local.get $len)))
-      (array.copy $block $block
-         (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)
-         (i32.sub (local.get $len) (i32.const 1)))
-      (local.get $res))
+      (drop (block $not_block (result (ref eq))
+         (local.set $orig (br_on_cast_fail $not_block $block (local.get 0)))
+         (local.set $len (array.len (local.get $orig)))
+         (local.set $res
+            (array.new $block (array.get $block (local.get $orig) (i32.const 0))
+               (local.get $len)))
+         (array.copy $block $block
+            (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)
+            (i32.sub (local.get $len) (i32.const 1)))
+         (return (local.get $res))))
+      (drop (block $not_string (result (ref eq))
+         (local.set $s (br_on_cast_fail $not_string $string (local.get 0)))
+         (local.set $len (array.len (local.get $s)))
+         (local.set $s' (array.new $string (i32.const 0) (local.get $len)))
+         (array.copy $string $string
+            (local.get $s') (i32.const 0) (local.get $s) (i32.const 0)
+            (local.get $len))
+         (return (local.get $s'))))
+      ;; ZZZ Deal with other values?
+      (unreachable))
 
    (func (export "caml_obj_with_tag")
       (param $tag (ref eq)) (param (ref eq)) (result (ref eq))
@@ -169,9 +179,7 @@
       (if (ref.test $closure (local.get $v))
          (then (return (i31.new (global.get $closure_tag)))))
       ;; ZZZ float array
-      (if (ref.test $js (local.get $v))
-         (then (return (i31.new (global.get $abstract_tag)))))
-      (unreachable))
+      (i31.new (global.get $abstract_tag)))
 
    (func (export "caml_obj_make_forward")
       (param $b (ref eq)) (param $v (ref eq)) (result (ref eq))

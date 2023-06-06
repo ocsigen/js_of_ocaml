@@ -102,4 +102,12 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $format_int (local.get 0)
          (struct.get $int32 1 (ref.cast $int32 (local.get 1))) (i32.const 0)))
+
+   (func (export "caml_nativeint_of_int32") (param (ref eq)) (result (ref eq))
+      (return_call $caml_copy_nativeint
+         (struct.get $int32 1 (ref.cast $int32 (local.get 0)))))
+
+   (func (export "caml_nativeint_to_int32") (param (ref eq)) (result (ref eq))
+      (return_call $caml_copy_int32
+         (struct.get $int32 1 (ref.cast $int32 (local.get 0)))))
 )

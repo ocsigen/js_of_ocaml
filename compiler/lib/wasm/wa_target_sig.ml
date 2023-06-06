@@ -232,6 +232,8 @@ module type S = sig
 
     val exp : expression -> expression
 
+    val exp2 : expression -> expression
+
     val log : expression -> expression
 
     val expm1 : expression -> expression

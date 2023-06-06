@@ -258,6 +258,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Extern "caml_atanh_float", [ f ] -> float_un_op' stack_ctx x Math.atanh f
         | Extern "caml_cbrt_float", [ f ] -> float_un_op' stack_ctx x Math.cbrt f
         | Extern "caml_exp_float", [ f ] -> float_un_op' stack_ctx x Math.exp f
+        | Extern "caml_exp2_float", [ f ] -> float_un_op' stack_ctx x Math.exp2 f
         | Extern "caml_log_float", [ f ] -> float_un_op' stack_ctx x Math.log f
         | Extern "caml_expm1_float", [ f ] -> float_un_op' stack_ctx x Math.expm1 f
         | Extern "caml_log1p_float", [ f ] -> float_un_op' stack_ctx x Math.log1p f
