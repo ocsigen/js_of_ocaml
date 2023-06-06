@@ -609,6 +609,20 @@ if(a) {
      this(is, not, small) + this(is, bigger);
     } |}]
 
+let%expect_test "" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+var e = function () { } ()
+
+var e = f(x => function () { } ())
+|};
+  [%expect
+    {|
+    cannot parse js (from l:4, c:31)@. |}]
+
 let%expect_test "error reporting" =
   (try
      print ~invalid:true ~compact:false {|
