@@ -8,7 +8,7 @@ let rec instruction ~tail i =
   | Try (ty, l, catches, catch_all) ->
       Try
         ( ty
-        , instructions ~tail:false l
+        , l
         , List.map ~f:(fun (tag, l) -> tag, instructions ~tail l) catches
         , Option.map ~f:(fun l -> instructions ~tail l) catch_all )
   | Return (Some (Call (symb, l))) -> Return_call (symb, l)
