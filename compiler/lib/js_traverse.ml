@@ -1406,6 +1406,11 @@ class simpl =
 
     method statements s =
       let s = super#statements s in
+      let is_use_strict e =
+        match e with
+        | EStr (Utf8 "use strict") -> true
+        | _ -> false
+      in
       List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
           match st with
           | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
@@ -1430,22 +1435,32 @@ class simpl =
                         | None -> Variable_statement (k, [ d ]), loc))
               in
               x @ rem
-          (* Eliminate some expression statements *)
-          | Expression_statement e1 -> (
+          (* Eliminate some expression statements. *)
+          | Expression_statement e1
+          (* We always keep the statement `"use strict";` *)
+            when not (is_use_strict e1) -> (
               match rem with
-                | [] -> [(st, loc)]
-                | (st2, loc2) :: _ -> (match st2 with
-                  | Variable_statement (k, decls) -> (match decls with
-                    (* e1; var x = e2; --> var x = e1, e2 *)
-                    | [DeclIdent (ident, Some (e2, e2loc))] -> 
-                        (Variable_statement (k, [DeclIdent (ident, Some (ESeq (e1, e2), e2loc))]), loc):: rem
-                    | _ -> (st, loc) :: (st2, loc2) :: rem)
+              | [] -> [ st, loc ]
+              | (st2, loc2) :: rem -> (
+                  match st2 with
+                  | Variable_statement (k, decls) -> (
+                      match decls with
+                      (* e1; var x = e2; --> var x = e1, e2 *)
+                      | [ DeclIdent (ident, Some (e2, e2loc)) ] ->
+                          ( Variable_statement
+                              (k, [ DeclIdent (ident, Some (ESeq (e1, e2), e2loc)) ])
+                          , loc )
+                          :: rem
+                      | _ -> (st, loc) :: (st2, loc2) :: rem)
                   (* e1; return e2; --> return e1, e2; *)
-                  | Return_statement (Some e2) -> (Return_statement (Some (ESeq (e1, e2))), loc) :: rem
+                  | Return_statement (Some e2) ->
+                      (Return_statement (Some (ESeq (e1, e2))), loc) :: rem
                   (* e1; if e2 ...; --> if (e1, e2) ...; *)
-                  | If_statement (e2, iftrue, iffalse )-> (If_statement (ESeq (e1, e2), iftrue, iffalse), loc) :: rem
+                  | If_statement (e2, iftrue, iffalse) ->
+                      (If_statement (ESeq (e1, e2), iftrue, iffalse), loc) :: rem
                   (* e1; e2; --> e1, e2; *)
-                  | Expression_statement e2 -> (Expression_statement (ESeq (e1, e2)), loc) :: rem
+                  | Expression_statement e2 ->
+                      (Expression_statement (ESeq (e1, e2)), loc) :: rem
                   | _ -> (st, loc) :: (st2, loc2) :: rem))
           | _ -> (st, loc) :: rem)
   end
