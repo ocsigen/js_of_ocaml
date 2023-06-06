@@ -1440,8 +1440,6 @@ class simpl =
                     | [DeclIdent (ident, Some (e2, e2loc))] -> 
                         (Variable_statement (k, [DeclIdent (ident, Some (ESeq (e1, e2), e2loc))]), loc):: rem
                     | _ -> (st, loc) :: (st2, loc2) :: rem)
-                  (* e1; return; --> return e1; *)
-                  | Return_statement (None) -> (Return_statement (Some e1), loc) :: rem
                   (* e1; return e2; --> return e1, e2; *)
                   | Return_statement (Some e2) -> (Return_statement (Some (ESeq (e1, e2))), loc) :: rem
                   (* e1; if e2 ...; --> if (e1, e2) ...; *)
