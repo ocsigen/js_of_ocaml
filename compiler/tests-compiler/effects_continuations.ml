@@ -120,13 +120,14 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       }
       var m = 0, _y_ = 0;
      }
-     runtime.caml_push_trap
-      (function(_E_){
-        if(_E_ === Stdlib[8]) return cont(0);
-        var raise = caml_pop_trap();
-        return raise(caml_maybe_attach_backtrace(_E_, 0));
-       });
-     if(caml_string_equal(s, cst)){
+     if
+      (runtime.caml_push_trap
+        (function(_E_){
+          if(_E_ === Stdlib[8]) return cont(0);
+          var raise = caml_pop_trap();
+          return raise(caml_maybe_attach_backtrace(_E_, 0));
+         }),
+       caml_string_equal(s, cst)){
       var _z_ = Stdlib[8], raise = caml_pop_trap();
       return raise(caml_maybe_attach_backtrace(_z_, 1));
      }
@@ -134,7 +135,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      return caml_cps_call2
              (_A_,
               cst_toto,
-              function(_D_){caml_pop_trap(); return cont([0, [0, _D_, n, m]]);});
+              function(_D_){return caml_pop_trap(), cont([0, [0, _D_, n, m]]);});
     }
     //end
     function cond1(b, cont){
@@ -169,8 +170,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                         (_o_,
                          ic,
                          function(line){
-                          all[1] = [0, line, all[1]];
-                          return b
+                          return all[1] = [0, line, all[1]],
+                                 b
                                   ? caml_cps_call2(Stdlib[53], line, _n_)
                                   : caml_cps_exact_call1(_n_, 0);
                          });
@@ -192,8 +193,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                         (_k_,
                          ic,
                          function(line){
-                          all[1] = [0, line, all[1]];
-                          return caml_cps_call2(Stdlib[53], line, _j_);
+                          return all[1] = [0, line, all[1]],
+                                 caml_cps_call2(Stdlib[53], line, _j_);
                          });
                }
                return caml_cps_call2(_i_, _d_, _j_);

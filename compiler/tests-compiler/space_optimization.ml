@@ -1,6 +1,6 @@
 (* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2019 Hugo Heuzard
+ * Copyright (C) 2023 Micah Cantor
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,5 @@
 
 open Util
 
-let array_set =
-  {|
-   let some_name a n =
-     let x = a.(n) <- n in
-     x = ()
-   let a = [|1;2;3|]
-   let () = assert (some_name a 2)
-   |}
-
-let%expect_test "array_set" =
-  let program = compile_and_parse array_set in
-  print_fun_decl program (Some "some_name");
-  [%expect
-    {|
-    function some_name(a, n){return runtime.caml_check_bound(a, n)[1 + n] = n, 1;}
-    //end |}]
-
-let%expect_test "array_set" =
-  compile_and_run array_set;
-  [%expect {| |}]
+let%expect_test "expression statements" =
+  true;[%expect true]

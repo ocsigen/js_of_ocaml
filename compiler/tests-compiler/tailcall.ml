@@ -64,7 +64,7 @@ let%expect_test _ =
      var _c_ = even(1);
      if(odd(1) === _c_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
-     try{odd(5000); var _d_ = log_success(0); return _d_;}
+     try{var _d_ = (odd(5000), log_success(0)); return _d_;}
      catch(_e_){return caml_call1(log_failure, cst_too_much_recursion);}
     }
     //end |}]
@@ -105,7 +105,7 @@ let%expect_test _ =
      var _c_ = even(1);
      if(odd(1) === _c_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
-     try{odd(5000); var _d_ = log_success(0); return _d_;}
+     try{var _d_ = (odd(5000), log_success(0)); return _d_;}
      catch(_e_){return caml_call1(log_failure, cst_too_much_recursion);}
     }
     //end |}]

@@ -152,12 +152,12 @@ let%expect_test _ =
          },
        closures$0 = closures(i),
        f = closures$0[1],
-       _e_ = direct[1];
-      direct[1] = [0, f(i), _e_];
-      var _f_ = indirect[1];
-      indirect[1] =
-       [0, function(i, f){return function(param){return f(i);};}(i, f), _f_];
-      var _g_ = i + 1 | 0;
+       _e_ = direct[1],
+       _f_ = (direct[1] = [0, f(i), _e_], indirect[1]),
+       _g_ =
+         (indirect[1] =
+           [0, function(i, f){return function(param){return f(i);};}(i, f), _f_],
+          i + 1 | 0);
       if(3 !== i){var i = _g_; continue;}
       var
        _c_ = indirect[1],

@@ -58,19 +58,16 @@ let%expect_test "direct calls without --enable effects" =
     {|
     function test1(param){
      function f(g, x){return caml_call1(g, x);}
-     var _d_ = 7;
-     f(function(x){return x + 1 | 0;}, _d_);
-     var _e_ = 4.;
-     f(function(x){return x * 2.;}, _e_);
-     return 0;
+     var _d_ = 7, _e_ = (f(function(x){return x + 1 | 0;}, _d_), 4.);
+     return f(function(x){return x * 2.;}, _e_), 0;
     }
     //end
     function test2(param){
      function f(g, x){return caml_call1(g, x);}
      var _c_ = 7;
-     f(function(x){return x + 1 | 0;}, _c_);
-     f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
-     return 0;
+     return f(function(x){return x + 1 | 0;}, _c_),
+            f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a),
+            0;
     }
     //end
     function test3(x){
@@ -85,8 +82,7 @@ let%expect_test "direct calls without --enable effects" =
       return [0, f];
      }
      var M1 = F([0]), M2 = F([0]);
-     M1[1].call(null, 1);
-     return M2[1].call(null, 2);
+     return M1[1].call(null, 1), M2[1].call(null, 2);
     }
     //end |}]
 
@@ -131,11 +127,8 @@ let%expect_test "direct calls with --enable effects" =
     {|
     function test1(param, cont){
      function f(g, x){return g(x);}
-     var _k_ = 7;
-     f(function(x){return x + 1 | 0;}, _k_);
-     var _l_ = 4.;
-     f(function(x){return x * 2.;}, _l_);
-     return cont(0);
+     var _k_ = 7, _l_ = (f(function(x){return x + 1 | 0;}, _k_), 4.);
+     return f(function(x){return x * 2.;}, _l_), cont(0);
     }
     //end
     function test2(param, cont){

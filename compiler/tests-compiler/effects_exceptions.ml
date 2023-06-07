@@ -79,13 +79,14 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       }
       var m = 0, _l_ = 0;
      }
-     caml_push_trap
-      (function(_r_){
-        if(_r_ === Stdlib[8]) return cont(0);
-        var raise = caml_pop_trap();
-        return raise(caml_maybe_attach_backtrace(_r_, 0));
-       });
-     if(caml_string_equal(s, cst)){
+     if
+      (caml_push_trap
+        (function(_r_){
+          if(_r_ === Stdlib[8]) return cont(0);
+          var raise = caml_pop_trap();
+          return raise(caml_maybe_attach_backtrace(_r_, 0));
+         }),
+       caml_string_equal(s, cst)){
       var _m_ = Stdlib[8], raise = caml_pop_trap();
       return raise(caml_maybe_attach_backtrace(_m_, 1));
      }
@@ -93,36 +94,38 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      return caml_cps_call2
              (_n_,
               cst_toto,
-              function(_q_){caml_pop_trap(); return cont([0, [0, _q_, n, m]]);});
+              function(_q_){return caml_pop_trap(), cont([0, [0, _q_, n, m]]);});
     }
     //end |}];
   print_fun_decl code (Some "handler_is_loop");
   [%expect
     {|
     function handler_is_loop(f, g, l, cont){
-     caml_push_trap
-      (function(_g_){
-        function _h_(l){
-         return caml_cps_call2
-                 (g,
-                  l,
-                  function(match){
-                   if(72330306 <= match[1]){
-                    var l = match[2];
-                    return caml_cps_exact_call1(_h_, l);
-                   }
-                   var
-                    exn = match[2],
-                    raise = caml_pop_trap(),
-                    exn$0 = caml_maybe_attach_backtrace(exn, 1);
-                   return raise(exn$0);
-                  });
-        }
-        return _h_(l);
-       });
-     var _e_ = 0;
+     var
+      _e_ =
+        (caml_push_trap
+          (function(_g_){
+            function _h_(l){
+             return caml_cps_call2
+                     (g,
+                      l,
+                      function(match){
+                       if(72330306 <= match[1]){
+                        var l = match[2];
+                        return caml_cps_exact_call1(_h_, l);
+                       }
+                       var
+                        exn = match[2],
+                        raise = caml_pop_trap(),
+                        exn$0 = caml_maybe_attach_backtrace(exn, 1);
+                       return raise(exn$0);
+                      });
+            }
+            return _h_(l);
+           }),
+         0);
      return caml_cps_call2
-             (f, _e_, function(_f_){caml_pop_trap(); return cont(_f_);});
+             (f, _e_, function(_f_){return caml_pop_trap(), cont(_f_);});
     }
     //end |}];
   print_fun_decl code (Some "handler_is_merge_node");
@@ -130,9 +133,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     {|
     function handler_is_merge_node(g, cont){
      function _b_(s){return caml_cps_call3(Stdlib[28], s, cst_aaa, cont);}
-     caml_push_trap(function(_d_){return _b_(cst$1);});
-     var _a_ = 0;
+     var _a_ = (caml_push_trap(function(_d_){return _b_(cst$1);}), 0);
      return caml_cps_call2
-             (g, _a_, function(_c_){caml_pop_trap(); return _b_(_c_);});
+             (g, _a_, function(_c_){return caml_pop_trap(), _b_(_c_);});
     }
     //end |}]
