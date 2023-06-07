@@ -581,3 +581,7 @@ let normalize_path s =
       | '\\' -> '/' (* Normalize windows path for the tests *)
       | x -> x)
     s
+
+let optimize_space js_file =
+  let simplifier = new Jsoo.Js_traverse.simpl in
+  js_file |> parse_js |> simplifier#statements |> program_to_string

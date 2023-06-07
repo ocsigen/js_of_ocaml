@@ -101,3 +101,5 @@ val compile_and_parse_whole_program :
   -> Javascript.program
 
 val normalize_path : string -> string
+
+val optimize_space : Filetype.js_file -> string
