@@ -19,5 +19,101 @@
 
 open Util
 
-let%expect_test "expression statements" =
-  true;[%expect true]
+let%expect_test "if statement to conditional expression" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "if (e1) e2; else e3;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1 ? e2 : e3;
+        //end|}])
+
+let%expect_test "one branch negated if to || expression" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "if (!e1) e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1 || e2;
+        //end|}])
+
+let%expect_test "one branch if to && expression statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "if (e1) e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1 && e2;
+        //end|}])
+
+let%expect_test "expression statement; var declaration" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "e1; var x = e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        var x = (e1, e2);
+        //end|}])
+
+let%expect_test "expression statement; return statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "e1; return e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        return e1, e2;
+        //end|}])
+
+let%expect_test "expression statement; if statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "e1; if (e2) 0; else 1;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1, e2 ? 0 : 1;
+        //end|}])
+
+let%expect_test "expression statement; if statement without else" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "e1; if (e2) 0;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1, e2 && 0;
+        //end|}])
+
+let%expect_test "expression statement; expression statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "e1; e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        e1, e2;
+        //end|}])
+
+let%expect_test "\"use strict\"; expression statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "\"use strict\"; e2;" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        "use strict"; e2;
+        //end|}])

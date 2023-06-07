@@ -1453,9 +1453,9 @@ class simpl =
               | [] -> [ st, loc ]
               | (st2, loc2) :: rem -> (
                   match st2 with
+                  (* e1; var x = e2; --> var x = e1, e2 *)
                   | Variable_statement (k, decls) -> (
                       match decls with
-                      (* e1; var x = e2; --> var x = e1, e2 *)
                       | [ DeclIdent (ident, Some (e2, e2loc)) ] ->
                           ( Variable_statement
                               (k, [ DeclIdent (ident, Some (ESeq (e1, e2), e2loc)) ])
