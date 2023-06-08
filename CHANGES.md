@@ -1,3 +1,15 @@
+# Dev (2023-??-??) - ??
+## Features/Changes
+* Misc: Bump magic number for ocaml 5.1
+* Misc: changes to stay compatible with the next version of ppx_expect
+
+## Bug fixes
+* Compiler: fix location for parsing errors when last token is a virtual semicolon
+* Compiler: fix variable renaming with nested const/let decl with identical names
+* Compiler: fix variable renaming inside js method
+* Compiler: consise body should allow any expression but object literals
+* Compiler: preverve [new] without arguments [new C] (vs [new C()]
+
 # 5.2.0 (2023-04-28) - Lille
 ## Features/Changes
 * Compiler: jsoo link archive with -a (#1428)

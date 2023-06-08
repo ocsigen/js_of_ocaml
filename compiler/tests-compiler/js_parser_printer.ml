@@ -609,6 +609,39 @@ if(a) {
      this(is, not, small) + this(is, bigger);
     } |}]
 
+let%expect_test "consise body can be anything that doesn't start with curly brackets" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+var e = function () { } ()
+
+var e = f(x => function () { } ())
+
+var e = f(x => new class f {})
+|};
+  [%expect
+    {|
+    var e = function(){}();
+    var e = f(x=>function(){}());
+    var e = f(x=>new class f{}); |}]
+
+let%expect_test "new kw with no arguments should be preserve" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+var e = new f
+var e = new f()
+var e = new class f {}
+var e = new (class f {})
+|};
+  [%expect
+    {|
+    var e = new f; var e = new f(); var e = new class f{}; var e = new class f{}; |}]
+
 let%expect_test "error reporting" =
   (try
      print ~invalid:true ~compact:false {|

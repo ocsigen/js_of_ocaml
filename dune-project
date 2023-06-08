@@ -34,6 +34,7 @@
  (conflicts
   (ocamlfind (< 1.5.1))
   (js_of_ocaml (< 3.0))
+  (base (= v0.16.0))
 ))
 
 (package

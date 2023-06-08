@@ -911,9 +911,7 @@ async_arrow_function:
 (* was called consise body in spec *)
 arrow_body:
  | "{" b=function_body "}" { b }
- | e=assignment_expr_no_stmt { [(Return_statement (Some e), p $symbolstartpos)] }
- (* ugly *)
- | e=function_expr { [(Expression_statement e, p $symbolstartpos)] }
+ | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)] }
 
 (*----------------------------*)
 (* no in                    *)
@@ -969,6 +967,31 @@ expr_no_stmt:
 assignment_expr_no_stmt:
  | conditional_expr(primary_no_stmt) { $1 }
  | e1=left_hand_side_expr_(primary_no_stmt) op=assignment_operator e2=assignment_expr
+    {
+      match assignment_pattern_of_expr (Some op) e1 with
+      | None -> EBin (op, e1, e2)
+      | Some pat -> EBin (op, EAssignTarget pat, e2)
+    }
+ (* es6: *)
+ | arrow_function { $1 }
+ | async_arrow_function { $1 }
+ (* es6: *)
+ | T_YIELD { EYield None }
+ | T_YIELD e=assignment_expr { EYield (Some e) }
+ | T_YIELD "*" e=assignment_expr { EYield (Some e) }
+
+
+primary_for_consise_body:
+ | function_expr       { $1 }
+ | class_expr          { $1 }
+ (* es6: *)
+ | generator_expr      { $1 }
+ (* es7: *)
+ | async_function_expr { $1 }
+
+assignment_expr_for_consise_body:
+ | conditional_expr(primary_for_consise_body) { $1 }
+ | e1=left_hand_side_expr_(primary_for_consise_body) op=assignment_operator e2=assignment_expr
     {
       match assignment_pattern_of_expr (Some op) e1 with
       | None -> EBin (op, e1, e2)
