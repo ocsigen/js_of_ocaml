@@ -70,6 +70,14 @@ let%expect_test "expression statement; if statement" =
         e1, e2 ? 0 : 1;
         //end|}])
 
+let%expect_test "expression statement; if statement with returns" =
+  with_temp_dir ~f:(fun () ->
+      let js_file = to_js_file "e1; if (e2) return 0; else return 1;" in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        return e1, e2 ? 0 : 1;
+        //end|}])
+
 let%expect_test "expression statement; if statement without else" =
   with_temp_dir ~f:(fun () ->
       let js_file = to_js_file "e1; if (e2) 0;" in
@@ -78,9 +86,17 @@ let%expect_test "expression statement; if statement without else" =
         e1, e2 && 0;
         //end|}])
 
+let%expect_test "expression statement; if statement without else with return" =
+  with_temp_dir ~f:(fun () ->
+      let js_file = to_js_file "e1; if (e2) return 0;" in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        if(e1, e2) return 0;
+        //end|}])
+
 let%expect_test "if statement without else; return statement" =
   with_temp_dir ~f:(fun () ->
-      let js_file = to_js_file "if (e1) e2; return e3" in
+      let js_file = to_js_file "if (e1) e2; return e3;" in
       print_endline (Util.optimize_space js_file);
       [%expect {|
         return e1 && e2, e3;
@@ -92,6 +108,22 @@ let%expect_test "expression statement; expression statement" =
       print_endline (Util.optimize_space js_file);
       [%expect {|
         e1, e2;
+        //end|}])
+
+let%expect_test "if statement; if statement; return statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_file = to_js_file "if (e1) e2; if (e3) e4; else e5; return e6;" in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+      return e1 && e2, e3 ? e4 : e5, e6;
+      //end|}])
+
+let%expect_test "if statement; if statement; var statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_file = to_js_file "if (e1) e2; if (e3) e4; else e5; var x = e6;" in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        var x = (e1 && e2, e3 ? e4 : e5, e6);
         //end|}])
 
 let%expect_test "\"use strict\"; expression statement" =
