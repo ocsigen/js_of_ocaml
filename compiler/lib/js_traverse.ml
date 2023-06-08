@@ -1408,11 +1408,15 @@ class simpl =
       in
       let simplify_statement (st, loc) =
         match st with
+        (* if (1) e1 ... --> e1 *)
         | If_statement (ENum n, iftrue, _) when Num.is_one n -> [ iftrue ]
+        (* if (0) e1 else e2 --> e2 *)
         | If_statement (ENum n, _, Some (st, _)) when Num.is_zero n -> [ st, loc ]
+        (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
         | If_statement
-            (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
-          -> [ Return_statement (Some (ECond (cond, e1, e2))), loc ]
+            (e1, (Return_statement (Some e2), _), Some (Return_statement (Some e3), _)) ->
+            [ Return_statement (Some (ECond (e1, e2, e3))), loc ]
+        (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
         | If_statement
             ( cond
             , (Expression_statement (EBin (Eq, v1, e1)), _)
@@ -1442,12 +1446,11 @@ class simpl =
             x
         | _ -> [ st, loc ]
       in
+      (* Eliminate some expression statements. *)
       let eliminate_expression_statements (st, loc) rem =
         match st with
-        (* Eliminate some expression statements. *)
-        | Expression_statement e1
-        (* We always keep the statement `"use strict";` *)
-          when not (is_use_strict e1) -> (
+        | Expression_statement e1 when not (is_use_strict e1) -> (
+            (* We always keep the statement `"use strict";` *)
             match rem with
             | [] -> [ st, loc ]
             | (st2, loc2) :: rem -> (
@@ -1473,6 +1476,8 @@ class simpl =
                 | _ -> (st, loc) :: (st2, loc2) :: rem))
         | _ -> (st, loc) :: rem
       in
+      (* First simplify single statements *)
       List.concat_map ~f:simplify_statement s
+      (* Then try to combine expression statements *)
       |> List.fold_right ~f:eliminate_expression_statements ~init:[]
   end
