@@ -325,8 +325,7 @@ let ()  = M.myfun M.x
         var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
         continue;
        }
-       2 <= len && sort(len, l);
-       var x$0 = next;
+       var x$0 = (2 <= len && sort(len, l), next);
        continue a;
       }
      }

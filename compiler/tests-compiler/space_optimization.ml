@@ -96,6 +96,17 @@ let%expect_test "expression statement; if statement without else" =
         e1, e2 && 0;
         //end|}])
 
+let%expect_test "if statement without else; return statement" =
+  with_temp_dir ~f:(fun () ->
+      let js_prog = "if (e1) e2; return e3" in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      print_endline (Util.optimize_space js_file);
+      [%expect {|
+        return e1 && e2, e3;
+        //end|}])
+
 let%expect_test "expression statement; expression statement" =
   with_temp_dir ~f:(fun () ->
       let js_prog = "e1; e2;" in

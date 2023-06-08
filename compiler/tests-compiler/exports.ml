@@ -219,11 +219,11 @@ let%expect_test "static eval of string get" =
          }
          ());
        function caml_exn_with_js_backtrace(exn, force){
-        (! exn.js_error || force || exn[0] == 248)
-        &&
-         (exn.js_error =
-          new globalThis.Error("Js exception containing backtrace"));
-        return exn;
+        return (! exn.js_error || force || exn[0] == 248)
+               &&
+                (exn.js_error =
+                 new globalThis.Error("Js exception containing backtrace")),
+               exn;
        }
        function caml_maybe_attach_backtrace(exn, force){
         return caml_record_backtrace_flag
@@ -246,15 +246,14 @@ let%expect_test "static eval of string get" =
         if(s.repeat) return s.repeat(n);
         var r = "", l = 0;
         for(;;){
-         n & 1 && (r += s);
-         if(n >>= 1, n == 0) return r;
+         if(n & 1 && (r += s), n >>= 1, n == 0) return r;
          s += s, l++, l == 9 && s.slice(0, 1);
         }
        }
        function caml_convert_string_to_bytes(s){
         s.t == 2
          ? s.c += caml_str_repeat(s.l - s.c.length, "\0")
-         : s.c = caml_subarray_to_jsbytes(s.c, 0, s.c.length);
+         : s.c = caml_subarray_to_jsbytes(s.c, 0, s.c.length),
         s.t = 0;
        }
        function jsoo_is_ascii(s){
@@ -271,34 +270,38 @@ let%expect_test "static eval of string get" =
         for(b = "", t = "", i = 0, l = s.length; i < l; i++){
          if(c1 = s.charCodeAt(i), c1 < 0x80){
           for(j = i + 1; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++) ;
-          j - i > 512
-           ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
-           : t += s.slice(i, j);
-          if(j == l) break;
+          if
+           (j - i > 512
+             ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
+             : t += s.slice(i, j),
+            j == l)
+           break;
           i = j;
          }
-         v = 1,
-         ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
-         &&
-          (c = c2 + (c1 << 6),
-           c1 < 0xe0
-            ? (v = c - 0x3080, v < 0x80 && (v = 1))
-            : (v
-              = 2,
-              ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
-              &&
-               (c = c2 + (c << 6),
-                c1 < 0xf0
-                 ? (v
-                   = c - 0xe2080,
-                   (v < 0x800 || v >= 0xd7ff && v < 0xe000) && (v = 2))
-                 : (v
-                   = 3,
-                   ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128 && c1 < 0xf5
-                   &&
-                    (v = c2 - 0x3c82080 + (c << 6),
-                     (v < 0x10000 || v > 0x10ffff) && (v = 3))))));
-         if(v < 4)
+         if
+          (v = 1,
+           ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+           &&
+            (c = c2 + (c1 << 6),
+             c1 < 0xe0
+              ? (v = c - 0x3080, v < 0x80 && (v = 1))
+              : (v
+                = 2,
+                ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+                &&
+                 (c = c2 + (c << 6),
+                  c1 < 0xf0
+                   ? (v
+                     = c - 0xe2080,
+                     (v < 0x800 || v >= 0xd7ff && v < 0xe000) && (v = 2))
+                   : (v
+                     = 3,
+                     ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+                     && c1 < 0xf5
+                     &&
+                      (v = c2 - 0x3c82080 + (c << 6),
+                       (v < 0x10000 || v > 0x10ffff) && (v = 3)))))),
+           v < 4)
           i -= v, t += "\ufffd";
          else if(v > 0xffff)
           t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3FF));
@@ -345,12 +348,17 @@ let%expect_test "static eval of string get" =
        }
        function caml_ml_flush(chanid){
         var chan = caml_ml_channels[chanid];
-        chan.opened || caml_raise_sys_error("Cannot flush a closed channel");
-        if(! chan.buffer || chan.buffer_curr == 0) return 0;
-        chan.output
-         ? chan.output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr))
-         : chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
-        return chan.offset += chan.buffer_curr, chan.buffer_curr = 0, 0;
+        if
+         (chan.opened || caml_raise_sys_error("Cannot flush a closed channel"),
+          ! chan.buffer || chan.buffer_curr == 0)
+         return 0;
+        return chan.output
+                ? chan.output
+                  (caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr))
+                : chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr),
+               chan.offset += chan.buffer_curr,
+               chan.buffer_curr = 0,
+               0;
        }
        function caml_sys_open_for_node(fd, flags){return null;}
        function fs_node_supported(){return false;}
@@ -394,11 +402,12 @@ let%expect_test "static eval of string get" =
         ? caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/")
         : caml_current_dir = "/static";
        function caml_make_path(name){
-        var i;
-        name = caml_jsstring_of_string(name),
-        path_is_absolute(name) || (name = caml_current_dir + name);
         var
-         comp0 = path_is_absolute(name),
+         i,
+         comp0 =
+           (name = caml_jsstring_of_string(name),
+            path_is_absolute(name) || (name = caml_current_dir + name),
+            path_is_absolute(name)),
          comp = comp0[1].split("/"),
          ncomp = [];
         for(i = 0; i < comp.length; i++)
@@ -416,10 +425,12 @@ let%expect_test "static eval of string get" =
         for(b = "", t = b, i = 0, l = s.length; i < l; i++){
          if(c = s.charCodeAt(i), c < 0x80){
           for(j = i + 1; j < l && (c = s.charCodeAt(j)) < 0x80; j++) ;
-          j - i > 512
-           ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
-           : t += s.slice(i, j);
-          if(j == l) break;
+          if
+           (j - i > 512
+             ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
+             : t += s.slice(i, j),
+            j == l)
+           break;
           i = j;
          }
          if(c < 0x800)
@@ -448,20 +459,21 @@ let%expect_test "static eval of string get" =
        }
        function caml_bytes_of_utf16_jsstring(s){
         var tag = 9;
-        jsoo_is_ascii(s) || (tag = 8, s = caml_utf8_of_utf16(s));
-        return new MlBytes(tag, s, s.length);
+        return jsoo_is_ascii(s) || (tag = 8, s = caml_utf8_of_utf16(s)),
+               new MlBytes(tag, s, s.length);
        }
        function caml_string_of_jsstring(s){
         return caml_bytes_of_utf16_jsstring(s);
        }
        function make_unix_err_args(code, syscall, path, errno){
-        var variant = unix_error.indexOf(code);
-        if(variant < 0){errno == null && (errno = - 9999); variant = [0, errno];}
         var
+         variant = unix_error.indexOf(code),
          args =
-           [variant,
-            caml_string_of_jsstring(syscall || ""),
-            caml_string_of_jsstring(path || "")];
+           (variant < 0
+            && (errno == null && (errno = - 9999), variant = [0, errno]),
+            [variant,
+             caml_string_of_jsstring(syscall || ""),
+             caml_string_of_jsstring(path || "")]);
         return args;
        }
        function caml_named_value(nm){return caml_named_values[nm];}
@@ -471,8 +483,8 @@ let%expect_test "static eval of string get" =
        function caml_is_ml_bytes(s){return s instanceof MlBytes;}
        function caml_is_ml_string(s){return caml_is_ml_bytes(s);}
        function caml_bytes_of_array(a){
-        a instanceof Uint8Array || (a = new Uint8Array(a));
-        return new MlBytes(4, a, a.length);
+        return a instanceof Uint8Array || (a = new Uint8Array(a)),
+               new MlBytes(4, a, a.length);
        }
        function caml_bytes_of_string(s){return s;}
        function caml_raise_no_such_file(name){
@@ -485,15 +497,14 @@ let%expect_test "static eval of string get" =
         return s.c = a, s.t = 4, a;
        }
        function caml_uint8_array_of_bytes(s){
-        s.t != 4 && caml_convert_bytes_to_array(s);
-        return s.c;
+        return s.t != 4 && caml_convert_bytes_to_array(s), s.c;
        }
        function caml_invalid_argument(msg){
         caml_raise_with_string(caml_global_data.Invalid_argument, msg);
        }
        function caml_create_bytes(len){
-        len < 0 && caml_invalid_argument("Bytes.create");
-        return new MlBytes(len ? 2 : 9, "", len);
+        return len < 0 && caml_invalid_argument("Bytes.create"),
+               new MlBytes(len ? 2 : 9, "", len);
        }
        function caml_ml_bytes_length(s){return s.l;}
        function caml_blit_bytes(s1, i1, s2, i2, len){
@@ -511,18 +522,19 @@ let%expect_test "static eval of string get" =
            ? caml_subarray_to_jsbytes(s1.c, i1, len)
            : i1 == 0 && s1.c.length == len ? s1.c : s1.c.substr(i1, len),
          s2.t = s2.c.length == s2.l ? 0 : 2;
+        else if
+         (s2.t != 4 && caml_convert_bytes_to_array(s2),
+          c1 = s1.c,
+          c2 = s2.c,
+          s1.t == 4)
+         if(i2 <= i1)
+          for(i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
+         else
+          for(i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
         else{
-         s2.t != 4 && caml_convert_bytes_to_array(s2);
-         if(c1 = s1.c, c2 = s2.c, s1.t == 4)
-          if(i2 <= i1)
-           for(i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
-          else
-           for(i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
-         else{
-          l = Math.min(len, c1.length - i1);
-          for(i = 0; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
-          for(; i < len; i++) c2[i2 + i] = 0;
-         }
+         l = Math.min(len, c1.length - i1);
+         for(i = 0; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
+         for(; i < len; i++) c2[i2 + i] = 0;
         }
         return 0;
        }
@@ -613,26 +625,26 @@ let%expect_test "static eval of string get" =
        MlFakeFile.prototype.write =
         function(offset, buf, pos, len){
          var new_str, old_data, clen = this.length();
-         offset + len >= clen
-         &&
-          (new_str = caml_create_bytes(offset + len),
-           old_data = this.data,
-           this.data = new_str,
-           caml_blit_bytes(old_data, 0, this.data, 0, clen));
-         return caml_blit_bytes
+         return offset + len >= clen
+                &&
+                 (new_str = caml_create_bytes(offset + len),
+                  old_data = this.data,
+                  this.data = new_str,
+                  caml_blit_bytes(old_data, 0, this.data, 0, clen)),
+                caml_blit_bytes
                  (caml_bytes_of_array(buf), pos, this.data, offset, len),
                 0;
         },
        MlFakeFile.prototype.read =
         function(offset, buf, pos, len){
          var data, clen = this.length();
-         offset + len >= clen && (len = clen - offset);
-         len
-         &&
-          (data = caml_create_bytes(len | 0),
-           caml_blit_bytes(this.data, offset, data, 0, len),
-           buf.set(caml_uint8_array_of_bytes(data), pos));
-         return len;
+         return offset + len >= clen && (len = clen - offset),
+                len
+                &&
+                 (data = caml_create_bytes(len | 0),
+                  caml_blit_bytes(this.data, offset, data, 0, len),
+                  buf.set(caml_uint8_array_of_bytes(data), pos)),
+                len;
         };
        function MlFakeFd(name, file, flags){
         this.file = file, this.name = name, this.flags = flags;
@@ -692,28 +704,31 @@ let%expect_test "static eval of string get" =
         function(name){return this.exists(name) && ! this.is_dir(name) ? 1 : 0;},
        MlFakeDevice.prototype.mkdir =
         function(name, mode, raise_unix){
-         var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-         this.exists(name)
-         &&
-          (unix_error
-            ? caml_raise_with_args
-              (unix_error, make_unix_err_args("EEXIST", "mkdir", this.nm(name)))
-            : caml_raise_sys_error(name + ": File exists"));
-         var parent = /^(.*)\/[^/]+/.exec(name);
+         var
+          unix_error = raise_unix && caml_named_value("Unix.Unix_error"),
+          parent =
+            (this.exists(name)
+             &&
+              (unix_error
+                ? caml_raise_with_args
+                  (unix_error,
+                   make_unix_err_args("EEXIST", "mkdir", this.nm(name)))
+                : caml_raise_sys_error(name + ": File exists")),
+             /^(.*)\/[^/]+/.exec(name));
          parent = parent && parent[1] || "",
          this.exists(parent)
          ||
           (unix_error
             ? caml_raise_with_args
               (unix_error, make_unix_err_args("ENOENT", "mkdir", this.nm(parent)))
-            : caml_raise_sys_error(parent + ": No such file or directory"));
+            : caml_raise_sys_error(parent + ": No such file or directory")),
          this.is_dir(parent)
          ||
           (unix_error
             ? caml_raise_with_args
               (unix_error,
                make_unix_err_args("ENOTDIR", "mkdir", this.nm(parent)))
-            : caml_raise_sys_error(parent + ": Not a directory"));
+            : caml_raise_sys_error(parent + ": Not a directory")),
          this.create_dir_if_needed(this.slash(name));
         },
        MlFakeDevice.prototype.rmdir =
@@ -728,7 +743,7 @@ let%expect_test "static eval of string get" =
           (unix_error
             ? caml_raise_with_args
               (unix_error, make_unix_err_args("ENOENT", "rmdir", this.nm(name)))
-            : caml_raise_sys_error(name + ": No such file or directory"));
+            : caml_raise_sys_error(name + ": No such file or directory")),
          this.is_dir(name)
          ||
           (unix_error
@@ -747,11 +762,17 @@ let%expect_test "static eval of string get" =
         },
        MlFakeDevice.prototype.readdir =
         function(name){
-         var m, n, name_slash = name == "" ? "" : this.slash(name);
-         this.exists(name)
-         || caml_raise_sys_error(name + ": No such file or directory");
-         this.is_dir(name) || caml_raise_sys_error(name + ": Not a directory");
-         var r = new RegExp("^" + name_slash + "([^/]+)"), seen = {}, a = [];
+         var
+          m,
+          n,
+          name_slash = name == "" ? "" : this.slash(name),
+          r =
+            (this.exists(name)
+             || caml_raise_sys_error(name + ": No such file or directory"),
+             this.is_dir(name) || caml_raise_sys_error(name + ": Not a directory"),
+             new RegExp("^" + name_slash + "([^/]+)")),
+          seen = {},
+          a = [];
          for(var n in this.content)
           m = n.match(r), m && ! seen[m[1]] && (seen[m[1]] = true, a.push(m[1]));
          return a;
@@ -765,14 +786,16 @@ let%expect_test "static eval of string get" =
           i = 0;
          return {readSync:
                  function(){
-                  c
-                  &&
-                   (unix_error
-                     ? caml_raise_with_args
-                       (unix_error,
-                        make_unix_err_args("EBADF", "closedir", this.nm(name)))
-                     : caml_raise_sys_error(name + ": closedir failed"));
-                  if(i == a.length) return null;
+                  if
+                   (c
+                    &&
+                     (unix_error
+                       ? caml_raise_with_args
+                         (unix_error,
+                          make_unix_err_args("EBADF", "closedir", this.nm(name)))
+                       : caml_raise_sys_error(name + ": closedir failed")),
+                    i == a.length)
+                   return null;
                   var entry = a[i];
                   return i++, {name: entry};
                  },
@@ -784,8 +807,9 @@ let%expect_test "static eval of string get" =
                      ? caml_raise_with_args
                        (unix_error,
                         make_unix_err_args("EBADF", "closedir", this.nm(name)))
-                     : caml_raise_sys_error(name + ": closedir failed"));
-                  c = true, a = [];
+                     : caml_raise_sys_error(name + ": closedir failed")),
+                  c = true,
+                  a = [];
                  }};
         },
        MlFakeDevice.prototype.is_dir =
@@ -802,23 +826,25 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.open =
         function(name, f){
          var file;
-         f.rdonly && f.wronly
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_rdonly and Open_wronly are not compatible");
-         f.text && f.binary
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_text and Open_binary are not compatible");
-         if(this.lookup(name), this.content[name]){
+         if
+          (f.rdonly && f.wronly
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_rdonly and Open_wronly are not compatible"),
+           f.text && f.binary
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_text and Open_binary are not compatible"),
+           this.lookup(name),
+           this.content[name])
           this.is_dir(name)
-          && caml_raise_sys_error(this.nm(name) + " : is a directory");
+          && caml_raise_sys_error(this.nm(name) + " : is a directory"),
           f.create && f.excl
-          && caml_raise_sys_error(this.nm(name) + " : file already exists");
-          file = this.content[name], f.truncate && file.truncate();
-         }
+          && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+          file = this.content[name],
+          f.truncate && file.truncate();
          else if(f.create)
           this.create_dir_if_needed(name),
           this.content[name] = new MlFakeFile(caml_create_bytes(0)),
@@ -830,23 +856,25 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.open =
         function(name, f){
          var file;
-         f.rdonly && f.wronly
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_rdonly and Open_wronly are not compatible");
-         f.text && f.binary
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_text and Open_binary are not compatible");
-         if(this.lookup(name), this.content[name]){
+         if
+          (f.rdonly && f.wronly
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_rdonly and Open_wronly are not compatible"),
+           f.text && f.binary
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_text and Open_binary are not compatible"),
+           this.lookup(name),
+           this.content[name])
           this.is_dir(name)
-          && caml_raise_sys_error(this.nm(name) + " : is a directory");
+          && caml_raise_sys_error(this.nm(name) + " : is a directory"),
           f.create && f.excl
-          && caml_raise_sys_error(this.nm(name) + " : file already exists");
-          file = this.content[name], f.truncate && file.truncate();
-         }
+          && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+          file = this.content[name],
+          f.truncate && file.truncate();
          else if(f.create)
           this.create_dir_if_needed(name),
           this.content[name] = new MlFakeFile(caml_create_bytes(0)),
@@ -858,10 +886,11 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.register =
         function(name, content){
          var file, bytes;
-         this.content[name]
-         && caml_raise_sys_error(this.nm(name) + " : file already exists");
-         caml_is_ml_bytes(content) && (file = new MlFakeFile(content));
-         if(caml_is_ml_string(content))
+         if
+          (this.content[name]
+           && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+           caml_is_ml_bytes(content) && (file = new MlFakeFile(content)),
+           caml_is_ml_string(content))
           file = new MlFakeFile(caml_bytes_of_string(content));
          else if(content instanceof Array)
           file = new MlFakeFile(caml_bytes_of_array(content));
@@ -887,7 +916,7 @@ let%expect_test "static eval of string get" =
         caml_global_data.Failure
         ||
          (caml_global_data.Failure =
-          [248, caml_string_of_jsbytes("Failure"), - 3]);
+          [248, caml_string_of_jsbytes("Failure"), - 3]),
         caml_raise_with_string(caml_global_data.Failure, msg);
        }
        var
@@ -899,7 +928,7 @@ let%expect_test "static eval of string get" =
         ? jsoo_mount_point.push
           ({path: caml_root, device: new MlNodeDevice(caml_root)})
         : jsoo_mount_point.push
-          ({path: caml_root, device: new MlFakeDevice(caml_root)});
+          ({path: caml_root, device: new MlFakeDevice(caml_root)}),
        jsoo_mount_point.push
         ({path: "/static/", device: new MlFakeDevice("/static/")});
        function resolve_fs_device(name){
@@ -919,18 +948,20 @@ let%expect_test "static eval of string get" =
            {path: m.path,
             device: m.device,
             rest: name.substring(m.path.length, name.length)});
-        ! res && fs_node_supported()
-        &&
-         (root = caml_get_root(name),
-          root && root.match(/^[a-zA-Z]:\/$/)
+        if
+         (! res && fs_node_supported()
           &&
-           (m = {path: root, device: new MlNodeDevice(root)},
-            jsoo_mount_point.push(m),
-            res =
-             {path: m.path,
-              device: m.device,
-              rest: name.substring(m.path.length, name.length)}));
-        if(res) return res;
+           (root = caml_get_root(name),
+            root && root.match(/^[a-zA-Z]:\/$/)
+            &&
+             (m = {path: root, device: new MlNodeDevice(root)},
+              jsoo_mount_point.push(m),
+              res =
+               {path: m.path,
+                device: m.device,
+                rest: name.substring(m.path.length, name.length)})),
+          res)
+         return res;
         caml_raise_sys_error("no device found for " + name_slash);
        }
        function MlFakeFd_out(fd, flags){
@@ -948,15 +979,14 @@ let%expect_test "static eval of string get" =
        MlFakeFd_out.prototype.write =
         function(offset, buf, pos, len){
          var src;
-         if(this.log){
-          len > 0 && pos >= 0 && pos + len <= buf.length
-          && buf[pos + len - 1] == 10
-          && len--;
-          return src = caml_create_bytes(len),
+         if(this.log)
+          return len > 0 && pos >= 0 && pos + len <= buf.length
+                 && buf[pos + len - 1] == 10
+                 && len--,
+                 src = caml_create_bytes(len),
                  caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len),
                  this.log(src.toUtf16()),
                  0;
-         }
          caml_raise_sys_error(this.fd + ": file descriptor already closed");
         },
        MlFakeFd_out.prototype.read =
@@ -965,8 +995,9 @@ let%expect_test "static eval of string get" =
         },
        MlFakeFd_out.prototype.close = function(){this.log = undefined;};
        function caml_sys_open_internal(file, idx){
-        idx == undefined && (idx = caml_sys_fds.length);
-        return caml_sys_fds[idx] = file, idx | 0;
+        return idx == undefined && (idx = caml_sys_fds.length),
+               caml_sys_fds[idx] = file,
+               idx | 0;
        }
        function caml_sys_open(name, flags, _perms){
         var f = {};
@@ -993,17 +1024,20 @@ let%expect_test "static eval of string get" =
          }
          flags = flags[2];
         }
-        f.rdonly && f.wronly
-        &&
-         caml_raise_sys_error
-          (caml_jsbytes_of_string(name)
-           + " : flags Open_rdonly and Open_wronly are not compatible");
-        f.text && f.binary
-        &&
-         caml_raise_sys_error
-          (caml_jsbytes_of_string(name)
-           + " : flags Open_text and Open_binary are not compatible");
-        var root = resolve_fs_device(name), file = root.device.open(root.rest, f);
+        var
+         root =
+           (f.rdonly && f.wronly
+            &&
+             caml_raise_sys_error
+              (caml_jsbytes_of_string(name)
+               + " : flags Open_rdonly and Open_wronly are not compatible"),
+            f.text && f.binary
+            &&
+             caml_raise_sys_error
+              (caml_jsbytes_of_string(name)
+               + " : flags Open_text and Open_binary are not compatible"),
+            resolve_fs_device(name)),
+         file = root.device.open(root.rest, f);
         return caml_sys_open_internal(file, undefined);
        }
        (function(){
@@ -1022,10 +1056,12 @@ let%expect_test "static eval of string get" =
          }
          ());
        function caml_ml_open_descriptor_in(fd){
-        var file = caml_sys_fds[fd];
-        file.flags.wronly && caml_raise_sys_error("fd " + fd + " is writeonly");
         var
-         refill = null,
+         file = caml_sys_fds[fd],
+         refill =
+           (file.flags.wronly
+            && caml_raise_sys_error("fd " + fd + " is writeonly"),
+            null),
          channel =
            {file: file,
             offset: file.flags.append ? file.length() : 0,
@@ -1039,10 +1075,11 @@ let%expect_test "static eval of string get" =
         return caml_ml_channels[channel.fd] = channel, channel.fd;
        }
        function caml_ml_open_descriptor_out(fd){
-        var file = caml_sys_fds[fd];
-        file.flags.rdonly && caml_raise_sys_error("fd " + fd + " is readonly");
         var
-         buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1,
+         file = caml_sys_fds[fd],
+         buffered =
+           (file.flags.rdonly && caml_raise_sys_error("fd " + fd + " is readonly"),
+            file.flags.buffered !== undefined ? file.flags.buffered : 1),
          channel =
            {file: file,
             offset: file.flags.append ? file.length() : 0,
@@ -1079,14 +1116,13 @@ let%expect_test "static eval of string get" =
         if(name_opt)
          if(name = name_opt, globalThis.toplevelReloc)
           n = caml_callback(globalThis.toplevelReloc, [name]);
-         else if(caml_global_data.toc){
+         else if(caml_global_data.toc)
           caml_global_data.symbols
-          || (caml_global_data.symbols = caml_build_symbols(caml_global_data.toc));
+          || (caml_global_data.symbols = caml_build_symbols(caml_global_data.toc)),
           nid = caml_global_data.symbols[name],
           nid >= 0
            ? n = nid
            : caml_failwith("caml_register_global: cannot locate " + name);
-         }
         caml_global_data[n + 1] = v, name_opt && (caml_global_data[name_opt] = v);
        }
        function caml_register_named_value(nm, v){
@@ -1110,8 +1146,7 @@ let%expect_test "static eval of string get" =
           exn = [0, caml_named_value("jsError"), e];
          else
           exn = [0, caml_global_data.Failure, caml_string_of_jsstring(String(e))];
-         e instanceof globalThis.Error && (exn.js_error = e);
-         return exn;
+         return e instanceof globalThis.Error && (exn.js_error = e), exn;
         }
        }
        function caml_is_special_exception(exn){
@@ -1124,11 +1159,10 @@ let%expect_test "static eval of string get" =
          r += exn[1][1],
          exn.length == 3 && exn[2][0] == 0 && caml_is_special_exception(exn[1])
           ? (bucket = exn[2], start = 1)
-          : (start = 2, bucket = exn);
+          : (start = 2, bucket = exn),
          r += "(";
-         for(i = start; i < bucket.length; i++){
-          i > start && (r += ", ");
-          if(v = bucket[i], typeof v == "number")
+         for(i = start; i < bucket.length; i++)
+          if(i > start && (r += ", "), v = bucket[i], typeof v == "number")
            r += v.toString();
           else if(v instanceof MlBytes)
            r += '"' + v.toString() + '"';
@@ -1136,7 +1170,6 @@ let%expect_test "static eval of string get" =
            r += '"' + v.toString() + '"';
           else
            r += "_";
-         }
          r += ")";
         }
         else if(exn[0] == 248) r += exn[1];
@@ -1144,18 +1177,19 @@ let%expect_test "static eval of string get" =
        }
        function caml_fatal_uncaught_exception(err){
         var msg, handler, at_exit;
-        if(err instanceof Array && (err[0] == 0 || err[0] == 248))
+        if(err instanceof Array && (err[0] == 0 || err[0] == 248)){
          if
           (handler = caml_named_value("Printexc.handle_uncaught_exception"),
            handler)
           caml_callback(handler, [err, false]);
-         else{
-          msg = caml_format_exception(err),
-          at_exit = caml_named_value("Pervasives.do_at_exit"),
-          at_exit && caml_callback(at_exit, [0]);
-          if(console.error("Fatal error: exception " + msg + "\n"), err.js_error)
-           throw err.js_error;
-         }
+         else if
+          (msg = caml_format_exception(err),
+           at_exit = caml_named_value("Pervasives.do_at_exit"),
+           at_exit && caml_callback(at_exit, [0]),
+           console.error("Fatal error: exception " + msg + "\n"),
+           err.js_error)
+          throw err.js_error;
+        }
         else
          throw err;
        }
@@ -1343,11 +1377,11 @@ let%expect_test "static eval of string get" =
          }
          ());
        function caml_exn_with_js_backtrace(exn, force){
-        (! exn.js_error || force || exn[0] == 248)
-        &&
-         (exn.js_error =
-          new globalThis.Error("Js exception containing backtrace"));
-        return exn;
+        return (! exn.js_error || force || exn[0] == 248)
+               &&
+                (exn.js_error =
+                 new globalThis.Error("Js exception containing backtrace")),
+               exn;
        }
        function caml_maybe_attach_backtrace(exn, force){
         return caml_record_backtrace_flag
@@ -1370,15 +1404,14 @@ let%expect_test "static eval of string get" =
         if(s.repeat) return s.repeat(n);
         var r = "", l = 0;
         for(;;){
-         n & 1 && (r += s);
-         if(n >>= 1, n == 0) return r;
+         if(n & 1 && (r += s), n >>= 1, n == 0) return r;
          s += s, l++, l == 9 && s.slice(0, 1);
         }
        }
        function caml_convert_string_to_bytes(s){
         s.t == 2
          ? s.c += caml_str_repeat(s.l - s.c.length, "\0")
-         : s.c = caml_subarray_to_jsbytes(s.c, 0, s.c.length);
+         : s.c = caml_subarray_to_jsbytes(s.c, 0, s.c.length),
         s.t = 0;
        }
        function jsoo_is_ascii(s){
@@ -1395,34 +1428,38 @@ let%expect_test "static eval of string get" =
         for(b = "", t = "", i = 0, l = s.length; i < l; i++){
          if(c1 = s.charCodeAt(i), c1 < 0x80){
           for(j = i + 1; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++) ;
-          j - i > 512
-           ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
-           : t += s.slice(i, j);
-          if(j == l) break;
+          if
+           (j - i > 512
+             ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
+             : t += s.slice(i, j),
+            j == l)
+           break;
           i = j;
          }
-         v = 1,
-         ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
-         &&
-          (c = c2 + (c1 << 6),
-           c1 < 0xe0
-            ? (v = c - 0x3080, v < 0x80 && (v = 1))
-            : (v
-              = 2,
-              ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
-              &&
-               (c = c2 + (c << 6),
-                c1 < 0xf0
-                 ? (v
-                   = c - 0xe2080,
-                   (v < 0x800 || v >= 0xd7ff && v < 0xe000) && (v = 2))
-                 : (v
-                   = 3,
-                   ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128 && c1 < 0xf5
-                   &&
-                    (v = c2 - 0x3c82080 + (c << 6),
-                     (v < 0x10000 || v > 0x10ffff) && (v = 3))))));
-         if(v < 4)
+         if
+          (v = 1,
+           ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+           &&
+            (c = c2 + (c1 << 6),
+             c1 < 0xe0
+              ? (v = c - 0x3080, v < 0x80 && (v = 1))
+              : (v
+                = 2,
+                ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+                &&
+                 (c = c2 + (c << 6),
+                  c1 < 0xf0
+                   ? (v
+                     = c - 0xe2080,
+                     (v < 0x800 || v >= 0xd7ff && v < 0xe000) && (v = 2))
+                   : (v
+                     = 3,
+                     ++i < l && ((c2 = s.charCodeAt(i)) & - 64) == 128
+                     && c1 < 0xf5
+                     &&
+                      (v = c2 - 0x3c82080 + (c << 6),
+                       (v < 0x10000 || v > 0x10ffff) && (v = 3)))))),
+           v < 4)
           i -= v, t += "\ufffd";
          else if(v > 0xffff)
           t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3FF));
@@ -1469,12 +1506,17 @@ let%expect_test "static eval of string get" =
        }
        function caml_ml_flush(chanid){
         var chan = caml_ml_channels[chanid];
-        chan.opened || caml_raise_sys_error("Cannot flush a closed channel");
-        if(! chan.buffer || chan.buffer_curr == 0) return 0;
-        chan.output
-         ? chan.output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr))
-         : chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
-        return chan.offset += chan.buffer_curr, chan.buffer_curr = 0, 0;
+        if
+         (chan.opened || caml_raise_sys_error("Cannot flush a closed channel"),
+          ! chan.buffer || chan.buffer_curr == 0)
+         return 0;
+        return chan.output
+                ? chan.output
+                  (caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr))
+                : chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr),
+               chan.offset += chan.buffer_curr,
+               chan.buffer_curr = 0,
+               0;
        }
        function caml_sys_open_for_node(fd, flags){return null;}
        function fs_node_supported(){return false;}
@@ -1518,11 +1560,12 @@ let%expect_test "static eval of string get" =
         ? caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/")
         : caml_current_dir = "/static";
        function caml_make_path(name){
-        var i;
-        name = caml_jsstring_of_string(name),
-        path_is_absolute(name) || (name = caml_current_dir + name);
         var
-         comp0 = path_is_absolute(name),
+         i,
+         comp0 =
+           (name = caml_jsstring_of_string(name),
+            path_is_absolute(name) || (name = caml_current_dir + name),
+            path_is_absolute(name)),
          comp = comp0[1].split("/"),
          ncomp = [];
         for(i = 0; i < comp.length; i++)
@@ -1540,10 +1583,12 @@ let%expect_test "static eval of string get" =
         for(b = "", t = b, i = 0, l = s.length; i < l; i++){
          if(c = s.charCodeAt(i), c < 0x80){
           for(j = i + 1; j < l && (c = s.charCodeAt(j)) < 0x80; j++) ;
-          j - i > 512
-           ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
-           : t += s.slice(i, j);
-          if(j == l) break;
+          if
+           (j - i > 512
+             ? (t.substr(0, 1), b += t, t = "", b += s.slice(i, j))
+             : t += s.slice(i, j),
+            j == l)
+           break;
           i = j;
          }
          if(c < 0x800)
@@ -1572,20 +1617,21 @@ let%expect_test "static eval of string get" =
        }
        function caml_bytes_of_utf16_jsstring(s){
         var tag = 9;
-        jsoo_is_ascii(s) || (tag = 8, s = caml_utf8_of_utf16(s));
-        return new MlBytes(tag, s, s.length);
+        return jsoo_is_ascii(s) || (tag = 8, s = caml_utf8_of_utf16(s)),
+               new MlBytes(tag, s, s.length);
        }
        function caml_string_of_jsstring(s){
         return caml_bytes_of_utf16_jsstring(s);
        }
        function make_unix_err_args(code, syscall, path, errno){
-        var variant = unix_error.indexOf(code);
-        if(variant < 0){errno == null && (errno = - 9999); variant = [0, errno];}
         var
+         variant = unix_error.indexOf(code),
          args =
-           [variant,
-            caml_string_of_jsstring(syscall || ""),
-            caml_string_of_jsstring(path || "")];
+           (variant < 0
+            && (errno == null && (errno = - 9999), variant = [0, errno]),
+            [variant,
+             caml_string_of_jsstring(syscall || ""),
+             caml_string_of_jsstring(path || "")]);
         return args;
        }
        function caml_named_value(nm){return caml_named_values[nm];}
@@ -1595,8 +1641,8 @@ let%expect_test "static eval of string get" =
        function caml_is_ml_bytes(s){return s instanceof MlBytes;}
        function caml_is_ml_string(s){return caml_is_ml_bytes(s);}
        function caml_bytes_of_array(a){
-        a instanceof Uint8Array || (a = new Uint8Array(a));
-        return new MlBytes(4, a, a.length);
+        return a instanceof Uint8Array || (a = new Uint8Array(a)),
+               new MlBytes(4, a, a.length);
        }
        function caml_bytes_of_string(s){return s;}
        function caml_raise_no_such_file(name){
@@ -1609,15 +1655,14 @@ let%expect_test "static eval of string get" =
         return s.c = a, s.t = 4, a;
        }
        function caml_uint8_array_of_bytes(s){
-        s.t != 4 && caml_convert_bytes_to_array(s);
-        return s.c;
+        return s.t != 4 && caml_convert_bytes_to_array(s), s.c;
        }
        function caml_invalid_argument(msg){
         caml_raise_with_string(caml_global_data.Invalid_argument, msg);
        }
        function caml_create_bytes(len){
-        len < 0 && caml_invalid_argument("Bytes.create");
-        return new MlBytes(len ? 2 : 9, "", len);
+        return len < 0 && caml_invalid_argument("Bytes.create"),
+               new MlBytes(len ? 2 : 9, "", len);
        }
        function caml_ml_bytes_length(s){return s.l;}
        function caml_blit_bytes(s1, i1, s2, i2, len){
@@ -1635,18 +1680,19 @@ let%expect_test "static eval of string get" =
            ? caml_subarray_to_jsbytes(s1.c, i1, len)
            : i1 == 0 && s1.c.length == len ? s1.c : s1.c.substr(i1, len),
          s2.t = s2.c.length == s2.l ? 0 : 2;
+        else if
+         (s2.t != 4 && caml_convert_bytes_to_array(s2),
+          c1 = s1.c,
+          c2 = s2.c,
+          s1.t == 4)
+         if(i2 <= i1)
+          for(i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
+         else
+          for(i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
         else{
-         s2.t != 4 && caml_convert_bytes_to_array(s2);
-         if(c1 = s1.c, c2 = s2.c, s1.t == 4)
-          if(i2 <= i1)
-           for(i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
-          else
-           for(i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
-         else{
-          l = Math.min(len, c1.length - i1);
-          for(i = 0; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
-          for(; i < len; i++) c2[i2 + i] = 0;
-         }
+         l = Math.min(len, c1.length - i1);
+         for(i = 0; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
+         for(; i < len; i++) c2[i2 + i] = 0;
         }
         return 0;
        }
@@ -1737,26 +1783,26 @@ let%expect_test "static eval of string get" =
        MlFakeFile.prototype.write =
         function(offset, buf, pos, len){
          var new_str, old_data, clen = this.length();
-         offset + len >= clen
-         &&
-          (new_str = caml_create_bytes(offset + len),
-           old_data = this.data,
-           this.data = new_str,
-           caml_blit_bytes(old_data, 0, this.data, 0, clen));
-         return caml_blit_bytes
+         return offset + len >= clen
+                &&
+                 (new_str = caml_create_bytes(offset + len),
+                  old_data = this.data,
+                  this.data = new_str,
+                  caml_blit_bytes(old_data, 0, this.data, 0, clen)),
+                caml_blit_bytes
                  (caml_bytes_of_array(buf), pos, this.data, offset, len),
                 0;
         },
        MlFakeFile.prototype.read =
         function(offset, buf, pos, len){
          var data, clen = this.length();
-         offset + len >= clen && (len = clen - offset);
-         len
-         &&
-          (data = caml_create_bytes(len | 0),
-           caml_blit_bytes(this.data, offset, data, 0, len),
-           buf.set(caml_uint8_array_of_bytes(data), pos));
-         return len;
+         return offset + len >= clen && (len = clen - offset),
+                len
+                &&
+                 (data = caml_create_bytes(len | 0),
+                  caml_blit_bytes(this.data, offset, data, 0, len),
+                  buf.set(caml_uint8_array_of_bytes(data), pos)),
+                len;
         };
        function MlFakeFd(name, file, flags){
         this.file = file, this.name = name, this.flags = flags;
@@ -1816,28 +1862,31 @@ let%expect_test "static eval of string get" =
         function(name){return this.exists(name) && ! this.is_dir(name) ? 1 : 0;},
        MlFakeDevice.prototype.mkdir =
         function(name, mode, raise_unix){
-         var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-         this.exists(name)
-         &&
-          (unix_error
-            ? caml_raise_with_args
-              (unix_error, make_unix_err_args("EEXIST", "mkdir", this.nm(name)))
-            : caml_raise_sys_error(name + ": File exists"));
-         var parent = /^(.*)\/[^/]+/.exec(name);
+         var
+          unix_error = raise_unix && caml_named_value("Unix.Unix_error"),
+          parent =
+            (this.exists(name)
+             &&
+              (unix_error
+                ? caml_raise_with_args
+                  (unix_error,
+                   make_unix_err_args("EEXIST", "mkdir", this.nm(name)))
+                : caml_raise_sys_error(name + ": File exists")),
+             /^(.*)\/[^/]+/.exec(name));
          parent = parent && parent[1] || "",
          this.exists(parent)
          ||
           (unix_error
             ? caml_raise_with_args
               (unix_error, make_unix_err_args("ENOENT", "mkdir", this.nm(parent)))
-            : caml_raise_sys_error(parent + ": No such file or directory"));
+            : caml_raise_sys_error(parent + ": No such file or directory")),
          this.is_dir(parent)
          ||
           (unix_error
             ? caml_raise_with_args
               (unix_error,
                make_unix_err_args("ENOTDIR", "mkdir", this.nm(parent)))
-            : caml_raise_sys_error(parent + ": Not a directory"));
+            : caml_raise_sys_error(parent + ": Not a directory")),
          this.create_dir_if_needed(this.slash(name));
         },
        MlFakeDevice.prototype.rmdir =
@@ -1852,7 +1901,7 @@ let%expect_test "static eval of string get" =
           (unix_error
             ? caml_raise_with_args
               (unix_error, make_unix_err_args("ENOENT", "rmdir", this.nm(name)))
-            : caml_raise_sys_error(name + ": No such file or directory"));
+            : caml_raise_sys_error(name + ": No such file or directory")),
          this.is_dir(name)
          ||
           (unix_error
@@ -1871,11 +1920,17 @@ let%expect_test "static eval of string get" =
         },
        MlFakeDevice.prototype.readdir =
         function(name){
-         var m, n, name_slash = name == "" ? "" : this.slash(name);
-         this.exists(name)
-         || caml_raise_sys_error(name + ": No such file or directory");
-         this.is_dir(name) || caml_raise_sys_error(name + ": Not a directory");
-         var r = new RegExp("^" + name_slash + "([^/]+)"), seen = {}, a = [];
+         var
+          m,
+          n,
+          name_slash = name == "" ? "" : this.slash(name),
+          r =
+            (this.exists(name)
+             || caml_raise_sys_error(name + ": No such file or directory"),
+             this.is_dir(name) || caml_raise_sys_error(name + ": Not a directory"),
+             new RegExp("^" + name_slash + "([^/]+)")),
+          seen = {},
+          a = [];
          for(var n in this.content)
           m = n.match(r), m && ! seen[m[1]] && (seen[m[1]] = true, a.push(m[1]));
          return a;
@@ -1889,14 +1944,16 @@ let%expect_test "static eval of string get" =
           i = 0;
          return {readSync:
                  function(){
-                  c
-                  &&
-                   (unix_error
-                     ? caml_raise_with_args
-                       (unix_error,
-                        make_unix_err_args("EBADF", "closedir", this.nm(name)))
-                     : caml_raise_sys_error(name + ": closedir failed"));
-                  if(i == a.length) return null;
+                  if
+                   (c
+                    &&
+                     (unix_error
+                       ? caml_raise_with_args
+                         (unix_error,
+                          make_unix_err_args("EBADF", "closedir", this.nm(name)))
+                       : caml_raise_sys_error(name + ": closedir failed")),
+                    i == a.length)
+                   return null;
                   var entry = a[i];
                   return i++, {name: entry};
                  },
@@ -1908,8 +1965,9 @@ let%expect_test "static eval of string get" =
                      ? caml_raise_with_args
                        (unix_error,
                         make_unix_err_args("EBADF", "closedir", this.nm(name)))
-                     : caml_raise_sys_error(name + ": closedir failed"));
-                  c = true, a = [];
+                     : caml_raise_sys_error(name + ": closedir failed")),
+                  c = true,
+                  a = [];
                  }};
         },
        MlFakeDevice.prototype.is_dir =
@@ -1926,23 +1984,25 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.open =
         function(name, f){
          var file;
-         f.rdonly && f.wronly
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_rdonly and Open_wronly are not compatible");
-         f.text && f.binary
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_text and Open_binary are not compatible");
-         if(this.lookup(name), this.content[name]){
+         if
+          (f.rdonly && f.wronly
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_rdonly and Open_wronly are not compatible"),
+           f.text && f.binary
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_text and Open_binary are not compatible"),
+           this.lookup(name),
+           this.content[name])
           this.is_dir(name)
-          && caml_raise_sys_error(this.nm(name) + " : is a directory");
+          && caml_raise_sys_error(this.nm(name) + " : is a directory"),
           f.create && f.excl
-          && caml_raise_sys_error(this.nm(name) + " : file already exists");
-          file = this.content[name], f.truncate && file.truncate();
-         }
+          && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+          file = this.content[name],
+          f.truncate && file.truncate();
          else if(f.create)
           this.create_dir_if_needed(name),
           this.content[name] = new MlFakeFile(caml_create_bytes(0)),
@@ -1954,23 +2014,25 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.open =
         function(name, f){
          var file;
-         f.rdonly && f.wronly
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_rdonly and Open_wronly are not compatible");
-         f.text && f.binary
-         &&
-          caml_raise_sys_error
-           (this.nm(name)
-            + " : flags Open_text and Open_binary are not compatible");
-         if(this.lookup(name), this.content[name]){
+         if
+          (f.rdonly && f.wronly
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_rdonly and Open_wronly are not compatible"),
+           f.text && f.binary
+           &&
+            caml_raise_sys_error
+             (this.nm(name)
+              + " : flags Open_text and Open_binary are not compatible"),
+           this.lookup(name),
+           this.content[name])
           this.is_dir(name)
-          && caml_raise_sys_error(this.nm(name) + " : is a directory");
+          && caml_raise_sys_error(this.nm(name) + " : is a directory"),
           f.create && f.excl
-          && caml_raise_sys_error(this.nm(name) + " : file already exists");
-          file = this.content[name], f.truncate && file.truncate();
-         }
+          && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+          file = this.content[name],
+          f.truncate && file.truncate();
          else if(f.create)
           this.create_dir_if_needed(name),
           this.content[name] = new MlFakeFile(caml_create_bytes(0)),
@@ -1982,10 +2044,11 @@ let%expect_test "static eval of string get" =
        MlFakeDevice.prototype.register =
         function(name, content){
          var file, bytes;
-         this.content[name]
-         && caml_raise_sys_error(this.nm(name) + " : file already exists");
-         caml_is_ml_bytes(content) && (file = new MlFakeFile(content));
-         if(caml_is_ml_string(content))
+         if
+          (this.content[name]
+           && caml_raise_sys_error(this.nm(name) + " : file already exists"),
+           caml_is_ml_bytes(content) && (file = new MlFakeFile(content)),
+           caml_is_ml_string(content))
           file = new MlFakeFile(caml_bytes_of_string(content));
          else if(content instanceof Array)
           file = new MlFakeFile(caml_bytes_of_array(content));
@@ -2011,7 +2074,7 @@ let%expect_test "static eval of string get" =
         caml_global_data.Failure
         ||
          (caml_global_data.Failure =
-          [248, caml_string_of_jsbytes("Failure"), - 3]);
+          [248, caml_string_of_jsbytes("Failure"), - 3]),
         caml_raise_with_string(caml_global_data.Failure, msg);
        }
        var
@@ -2023,7 +2086,7 @@ let%expect_test "static eval of string get" =
         ? jsoo_mount_point.push
           ({path: caml_root, device: new MlNodeDevice(caml_root)})
         : jsoo_mount_point.push
-          ({path: caml_root, device: new MlFakeDevice(caml_root)});
+          ({path: caml_root, device: new MlFakeDevice(caml_root)}),
        jsoo_mount_point.push
         ({path: "/static/", device: new MlFakeDevice("/static/")});
        function resolve_fs_device(name){
@@ -2043,18 +2106,20 @@ let%expect_test "static eval of string get" =
            {path: m.path,
             device: m.device,
             rest: name.substring(m.path.length, name.length)});
-        ! res && fs_node_supported()
-        &&
-         (root = caml_get_root(name),
-          root && root.match(/^[a-zA-Z]:\/$/)
+        if
+         (! res && fs_node_supported()
           &&
-           (m = {path: root, device: new MlNodeDevice(root)},
-            jsoo_mount_point.push(m),
-            res =
-             {path: m.path,
-              device: m.device,
-              rest: name.substring(m.path.length, name.length)}));
-        if(res) return res;
+           (root = caml_get_root(name),
+            root && root.match(/^[a-zA-Z]:\/$/)
+            &&
+             (m = {path: root, device: new MlNodeDevice(root)},
+              jsoo_mount_point.push(m),
+              res =
+               {path: m.path,
+                device: m.device,
+                rest: name.substring(m.path.length, name.length)})),
+          res)
+         return res;
         caml_raise_sys_error("no device found for " + name_slash);
        }
        function MlFakeFd_out(fd, flags){
@@ -2072,15 +2137,14 @@ let%expect_test "static eval of string get" =
        MlFakeFd_out.prototype.write =
         function(offset, buf, pos, len){
          var src;
-         if(this.log){
-          len > 0 && pos >= 0 && pos + len <= buf.length
-          && buf[pos + len - 1] == 10
-          && len--;
-          return src = caml_create_bytes(len),
+         if(this.log)
+          return len > 0 && pos >= 0 && pos + len <= buf.length
+                 && buf[pos + len - 1] == 10
+                 && len--,
+                 src = caml_create_bytes(len),
                  caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len),
                  this.log(src.toUtf16()),
                  0;
-         }
          caml_raise_sys_error(this.fd + ": file descriptor already closed");
         },
        MlFakeFd_out.prototype.read =
@@ -2089,8 +2153,9 @@ let%expect_test "static eval of string get" =
         },
        MlFakeFd_out.prototype.close = function(){this.log = undefined;};
        function caml_sys_open_internal(file, idx){
-        idx == undefined && (idx = caml_sys_fds.length);
-        return caml_sys_fds[idx] = file, idx | 0;
+        return idx == undefined && (idx = caml_sys_fds.length),
+               caml_sys_fds[idx] = file,
+               idx | 0;
        }
        function caml_sys_open(name, flags, _perms){
         var f = {};
@@ -2117,17 +2182,20 @@ let%expect_test "static eval of string get" =
          }
          flags = flags[2];
         }
-        f.rdonly && f.wronly
-        &&
-         caml_raise_sys_error
-          (caml_jsbytes_of_string(name)
-           + " : flags Open_rdonly and Open_wronly are not compatible");
-        f.text && f.binary
-        &&
-         caml_raise_sys_error
-          (caml_jsbytes_of_string(name)
-           + " : flags Open_text and Open_binary are not compatible");
-        var root = resolve_fs_device(name), file = root.device.open(root.rest, f);
+        var
+         root =
+           (f.rdonly && f.wronly
+            &&
+             caml_raise_sys_error
+              (caml_jsbytes_of_string(name)
+               + " : flags Open_rdonly and Open_wronly are not compatible"),
+            f.text && f.binary
+            &&
+             caml_raise_sys_error
+              (caml_jsbytes_of_string(name)
+               + " : flags Open_text and Open_binary are not compatible"),
+            resolve_fs_device(name)),
+         file = root.device.open(root.rest, f);
         return caml_sys_open_internal(file, undefined);
        }
        (function(){
@@ -2146,10 +2214,12 @@ let%expect_test "static eval of string get" =
          }
          ());
        function caml_ml_open_descriptor_in(fd){
-        var file = caml_sys_fds[fd];
-        file.flags.wronly && caml_raise_sys_error("fd " + fd + " is writeonly");
         var
-         refill = null,
+         file = caml_sys_fds[fd],
+         refill =
+           (file.flags.wronly
+            && caml_raise_sys_error("fd " + fd + " is writeonly"),
+            null),
          channel =
            {file: file,
             offset: file.flags.append ? file.length() : 0,
@@ -2163,10 +2233,11 @@ let%expect_test "static eval of string get" =
         return caml_ml_channels[channel.fd] = channel, channel.fd;
        }
        function caml_ml_open_descriptor_out(fd){
-        var file = caml_sys_fds[fd];
-        file.flags.rdonly && caml_raise_sys_error("fd " + fd + " is readonly");
         var
-         buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1,
+         file = caml_sys_fds[fd],
+         buffered =
+           (file.flags.rdonly && caml_raise_sys_error("fd " + fd + " is readonly"),
+            file.flags.buffered !== undefined ? file.flags.buffered : 1),
          channel =
            {file: file,
             offset: file.flags.append ? file.length() : 0,
@@ -2203,14 +2274,13 @@ let%expect_test "static eval of string get" =
         if(name_opt)
          if(name = name_opt, globalThis.toplevelReloc)
           n = caml_callback(globalThis.toplevelReloc, [name]);
-         else if(caml_global_data.toc){
+         else if(caml_global_data.toc)
           caml_global_data.symbols
-          || (caml_global_data.symbols = caml_build_symbols(caml_global_data.toc));
+          || (caml_global_data.symbols = caml_build_symbols(caml_global_data.toc)),
           nid = caml_global_data.symbols[name],
           nid >= 0
            ? n = nid
            : caml_failwith("caml_register_global: cannot locate " + name);
-         }
         caml_global_data[n + 1] = v, name_opt && (caml_global_data[name_opt] = v);
        }
        function caml_register_named_value(nm, v){
@@ -2234,8 +2304,7 @@ let%expect_test "static eval of string get" =
           exn = [0, caml_named_value("jsError"), e];
          else
           exn = [0, caml_global_data.Failure, caml_string_of_jsstring(String(e))];
-         e instanceof globalThis.Error && (exn.js_error = e);
-         return exn;
+         return e instanceof globalThis.Error && (exn.js_error = e), exn;
         }
        }
        function caml_is_special_exception(exn){
@@ -2248,11 +2317,10 @@ let%expect_test "static eval of string get" =
          r += exn[1][1],
          exn.length == 3 && exn[2][0] == 0 && caml_is_special_exception(exn[1])
           ? (bucket = exn[2], start = 1)
-          : (start = 2, bucket = exn);
+          : (start = 2, bucket = exn),
          r += "(";
-         for(i = start; i < bucket.length; i++){
-          i > start && (r += ", ");
-          if(v = bucket[i], typeof v == "number")
+         for(i = start; i < bucket.length; i++)
+          if(i > start && (r += ", "), v = bucket[i], typeof v == "number")
            r += v.toString();
           else if(v instanceof MlBytes)
            r += '"' + v.toString() + '"';
@@ -2260,7 +2328,6 @@ let%expect_test "static eval of string get" =
            r += '"' + v.toString() + '"';
           else
            r += "_";
-         }
          r += ")";
         }
         else if(exn[0] == 248) r += exn[1];
@@ -2268,18 +2335,19 @@ let%expect_test "static eval of string get" =
        }
        function caml_fatal_uncaught_exception(err){
         var msg, handler, at_exit;
-        if(err instanceof Array && (err[0] == 0 || err[0] == 248))
+        if(err instanceof Array && (err[0] == 0 || err[0] == 248)){
          if
           (handler = caml_named_value("Printexc.handle_uncaught_exception"),
            handler)
           caml_callback(handler, [err, false]);
-         else{
-          msg = caml_format_exception(err),
-          at_exit = caml_named_value("Pervasives.do_at_exit"),
-          at_exit && caml_callback(at_exit, [0]);
-          if(console.error("Fatal error: exception " + msg + "\n"), err.js_error)
-           throw err.js_error;
-         }
+         else if
+          (msg = caml_format_exception(err),
+           at_exit = caml_named_value("Pervasives.do_at_exit"),
+           at_exit && caml_callback(at_exit, [0]),
+           console.error("Fatal error: exception " + msg + "\n"),
+           err.js_error)
+          throw err.js_error;
+        }
         else
          throw err;
        }

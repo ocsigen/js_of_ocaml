@@ -1310,11 +1310,6 @@ let assign_op = function
     when Poly.(exp = exp') -> Some (EBin (translate_assign_op unop, exp, y))
   | _ -> None
 
-let opt_cons b l =
-  match b with
-  | Some b -> b :: l
-  | None -> l
-
 let use_fun_context l =
   let exception True in
   try
@@ -1411,66 +1406,73 @@ class simpl =
         | EStr (Utf8 "use strict") -> true
         | _ -> false
       in
-      List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
-          match st with
-          | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
-          | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
-          | If_statement
-              (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
-            -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
-          | If_statement
-              ( cond
-              , (Expression_statement (EBin (Eq, v1, e1)), _)
-              , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
-            when Poly.(v1 = v2) ->
-              (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
-          (* if (e1) e2 else e3 --> if e1 ? e2 : e3 *)
-          | If_statement
-              (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
-              (Expression_statement (ECond (e1, e2, e3)), loc) :: rem
-          (* if (!e1) e2 --> e1 || e2 *)
-          | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
-              (Expression_statement (EBin (Or, e1, e2)), loc) :: rem
-          (* if (e1) e2 --> e1 && e2 *)
-          | If_statement (e1, (Expression_statement e2, _), None) ->
-              (Expression_statement (EBin (And, e1, e2)), loc) :: rem
-          | Variable_statement (k, l1) ->
-              let x =
-                List.map l1 ~f:(function
-                    | DeclPattern _ as d -> Variable_statement (k, [ d ]), loc
-                    | DeclIdent (_, None) as d -> Variable_statement (k, [ d ]), loc
-                    | DeclIdent (ident, Some (exp, _)) as d -> (
-                        match assign_op (EVar ident, exp) with
-                        | Some e -> Expression_statement e, loc
-                        | None -> Variable_statement (k, [ d ]), loc))
-              in
-              x @ rem
-          (* Eliminate some expression statements. *)
-          | Expression_statement e1
-          (* We always keep the statement `"use strict";` *)
-            when not (is_use_strict e1) -> (
-              match rem with
-              | [] -> [ st, loc ]
-              | (st2, loc2) :: rem -> (
-                  match st2 with
-                  (* e1; var x = e2; --> var x = e1, e2 *)
-                  | Variable_statement (k, decls) -> (
-                      match decls with
-                      | [ DeclIdent (ident, Some (e2, e2loc)) ] ->
-                          ( Variable_statement
-                              (k, [ DeclIdent (ident, Some (ESeq (e1, e2), e2loc)) ])
-                          , loc )
-                          :: rem
-                      | _ -> (st, loc) :: (st2, loc2) :: rem)
-                  (* e1; return e2; --> return e1, e2; *)
-                  | Return_statement (Some e2) ->
-                      (Return_statement (Some (ESeq (e1, e2))), loc) :: rem
-                  (* e1; if e2 ...; --> if (e1, e2) ...; *)
-                  | If_statement (e2, iftrue, iffalse) ->
-                      (If_statement (ESeq (e1, e2), iftrue, iffalse), loc) :: rem
-                  (* e1; e2; --> e1, e2; *)
-                  | Expression_statement e2 ->
-                      (Expression_statement (ESeq (e1, e2)), loc) :: rem
-                  | _ -> (st, loc) :: (st2, loc2) :: rem))
-          | _ -> (st, loc) :: rem)
+      let simplify_statement (st, loc) =
+        match st with
+        | If_statement (ENum n, iftrue, _) when Num.is_one n -> [ iftrue ]
+        | If_statement (ENum n, _, Some (st, _)) when Num.is_zero n -> [ st, loc ]
+        | If_statement
+            (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
+          -> [ Return_statement (Some (ECond (cond, e1, e2))), loc ]
+        | If_statement
+            ( cond
+            , (Expression_statement (EBin (Eq, v1, e1)), _)
+            , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
+          when Poly.(v1 = v2) ->
+            [ Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc ]
+        (* if (e1) e2 else e3 --> if e1 ? e2 : e3 *)
+        | If_statement
+            (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
+            [ Expression_statement (ECond (e1, e2, e3)), loc ]
+        (* if (!e1) e2 --> e1 || e2 *)
+        | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
+            [ Expression_statement (EBin (Or, e1, e2)), loc ]
+        (* if (e1) e2 --> e1 && e2 *)
+        | If_statement (e1, (Expression_statement e2, _), None) ->
+            [ Expression_statement (EBin (And, e1, e2)), loc ]
+        | Variable_statement (k, l1) ->
+            let x =
+              List.map l1 ~f:(function
+                  | DeclPattern _ as d -> Variable_statement (k, [ d ]), loc
+                  | DeclIdent (_, None) as d -> Variable_statement (k, [ d ]), loc
+                  | DeclIdent (ident, Some (exp, _)) as d -> (
+                      match assign_op (EVar ident, exp) with
+                      | Some e -> Expression_statement e, loc
+                      | None -> Variable_statement (k, [ d ]), loc))
+            in
+            x
+        | _ -> [ st, loc ]
+      in
+      let eliminate_expression_statements (st, loc) rem =
+        match st with
+        (* Eliminate some expression statements. *)
+        | Expression_statement e1
+        (* We always keep the statement `"use strict";` *)
+          when not (is_use_strict e1) -> (
+            match rem with
+            | [] -> [ st, loc ]
+            | (st2, loc2) :: rem -> (
+                match st2 with
+                (* e1; var x = e2; --> var x = e1, e2 *)
+                | Variable_statement (k, decls) -> (
+                    match decls with
+                    | [ DeclIdent (ident, Some (e2, e2loc)) ] ->
+                        ( Variable_statement
+                            (k, [ DeclIdent (ident, Some (ESeq (e1, e2), e2loc)) ])
+                        , loc )
+                        :: rem
+                    | _ -> (st, loc) :: (st2, loc2) :: rem)
+                (* e1; return e2; --> return e1, e2; *)
+                | Return_statement (Some e2) ->
+                    (Return_statement (Some (ESeq (e1, e2))), loc) :: rem
+                (* e1; if e2 ...; --> if (e1, e2) ...; *)
+                | If_statement (e2, iftrue, iffalse) ->
+                    (If_statement (ESeq (e1, e2), iftrue, iffalse), loc) :: rem
+                (* e1; e2; --> e1, e2; *)
+                | Expression_statement e2 ->
+                    (Expression_statement (ESeq (e1, e2)), loc) :: rem
+                | _ -> (st, loc) :: (st2, loc2) :: rem))
+        | _ -> (st, loc) :: rem
+      in
+      List.concat_map ~f:simplify_statement s
+      |> List.fold_right ~f:eliminate_expression_statements ~init:[]
   end
