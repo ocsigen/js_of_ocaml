@@ -78,7 +78,10 @@ module M1 = struct
               });
     }
     //end
-    not found
+    function k(a, b, c, d){
+     return caml_call1(Stdlib[44], ((a + b | 0) + c | 0) + d | 0);
+    }
+    //end
     function l(_g_, _h_){return k(_b_, _a_, _g_, _h_);}
     //end
     function m(_e_, _f_){return k(_d_, _c_, _e_, _f_);}
@@ -122,8 +125,8 @@ module M2 = struct
     [%expect
       {|
       function f(param, a, b, c, d, e, f){
-       return caml_call1(Stdlib[44], (((a + b | 0) + c | 0) + d | 0) + e | 0),
-              caml_call1(Stdlib[47], 0);
+       caml_call1(Stdlib[44], (((a + b | 0) + c | 0) + d | 0) + e | 0);
+       return caml_call1(Stdlib[47], 0);
       }
       //end
       function f_prime(f){return caml_call1(f, 1);}

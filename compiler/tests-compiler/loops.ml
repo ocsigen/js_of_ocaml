@@ -88,14 +88,16 @@ let rec fun_with_loop acc = function
       if(1 === x && ! param$0[2]){
        var a$0 = [0, acc$0], i$0 = 0;
        for(;;){
-        var _b_ = (a$0[1] = [0, 1, a$0[1]], i$0 + 1 | 0);
+        a$0[1] = [0, 1, a$0[1]];
+        var _b_ = i$0 + 1 | 0;
         if(10 === i$0) return a$0[1];
         var i$0 = _b_;
        }
       }
       var xs = param$0[2], a = [0, acc$0], i = 0;
       for(;;){
-       var _a_ = (a[1] = [0, 1, a[1]], i + 1 | 0);
+       a[1] = [0, 1, a[1]];
+       var _a_ = i + 1 | 0;
        if(10 !== i){var i = _a_; continue;}
        var acc$1 = [0, x, a[1]], acc$0 = acc$1, param$0 = xs;
        continue a;
@@ -435,30 +437,22 @@ let add_substitute =
       var previous$0 = caml_string_get(s, i$4);
       if(36 !== previous$0){
        if(92 === previous){
-        var
-         i$6 =
-           (caml_call2(add_char, b, 92),
-            caml_call2(add_char, b, previous$0),
-            i$4 + 1 | 0),
-         previous = 32,
-         i$4 = i$6;
+        caml_call2(add_char, b, 92);
+        caml_call2(add_char, b, previous$0);
+        var i$6 = i$4 + 1 | 0, previous = 32, i$4 = i$6;
         continue;
        }
        if(92 === previous$0){
         var i$7 = i$4 + 1 | 0, previous = previous$0, i$4 = i$7;
         continue;
        }
-       var
-        i$8 = (caml_call2(add_char, b, previous$0), i$4 + 1 | 0),
-        previous = previous$0,
-        i$4 = i$8;
+       caml_call2(add_char, b, previous$0);
+       var i$8 = i$4 + 1 | 0, previous = previous$0, i$4 = i$8;
        continue;
       }
       if(92 === previous){
-       var
-        i$5 = (caml_call2(add_char, b, previous$0), i$4 + 1 | 0),
-        previous = 32,
-        i$4 = i$5;
+       caml_call2(add_char, b, previous$0);
+       var i$5 = i$4 + 1 | 0, previous = 32, i$4 = i$5;
        continue;
       }
       var start$0 = i$4 + 1 | 0;
@@ -526,11 +520,9 @@ let add_substitute =
         break;
        }
       }
-      var
-       next_i = match$0[2],
-       ident = match$0[1],
-       previous = (caml_call2(add_string, b, caml_call1(f, ident)), 32),
-       i$4 = next_i;
+      var next_i = match$0[2], ident = match$0[1];
+      caml_call2(add_string, b, caml_call1(f, ident));
+      var previous = 32, i$4 = next_i;
      }
     }
     //end |}]

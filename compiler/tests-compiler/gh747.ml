@@ -72,43 +72,45 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
      17:             ? f(a0, a1)
      18:             : runtime.caml_call_gen(f, [a0, a1]);
      19:    }
-     20:     /*<<test.ml:3:0>>*/ var
+     20:    var
      21:     global_data = runtime.caml_get_global_data(),
      22:     greeting = caml_string_of_jsbytes("hello world"),
      23:     greeting$0 = caml_string_of_jsbytes("hello world with unicode: \xc9\x8a"),
      24:     Stdlib = global_data.Stdlib,
      25:     Stdlib_Random = global_data.Stdlib__Random,
-     26:     Stdlib_String = global_data.Stdlib__String,
-     27:      /*<<test.ml:7:47>>*/ _a_ =
-     28:       ( /*<<test.ml:3:0>>*/ caml_call1(Stdlib[46], greeting),
-     29:         /*<<test.ml:5:0>>*/ caml_call1(Stdlib[46], greeting$0),
-     30:         /*<<test.ml:7:47>>*/ caml_call1(Stdlib_Random[5], 30)),
-     31:      /*<<test.ml:7:34>>*/ unicodeLength =
-     32:        /*<<test.ml:7:34>>*/ runtime.caml_ml_string_length
-     33:        ( /*<<test.ml:7:34>>*/ caml_call2(Stdlib_String[1], _a_, 105)),
-     34:      /*<<test.ml:8:56>>*/ _b_ =
-     35:        /*<<test.ml:8:56>>*/ caml_call1(Stdlib[33], unicodeLength),
-     36:      /*<<test.ml:8:14>>*/ _c_ =
-     37:        /*<<test.ml:8:14>>*/ caml_call2
-     38:        (Stdlib[28],
-     39:         caml_string_of_jsbytes('String.length("\xc9\x8a") should be two:'),
-     40:         _b_),
-     41:      /*<<test.ml:9:39>>*/ _d_ =
-     42:       ( /*<<test.ml:8:0>>*/ caml_call1(Stdlib[46], _c_),
-     43:         /*<<test.ml:9:39>>*/ caml_call2(Stdlib_String[1], 1, 138)),
-     44:      /*<<test.ml:9:14>>*/ _e_ =
-     45:        /*<<test.ml:9:14>>*/ caml_call2(Stdlib_String[1], 1, 201),
-     46:      /*<<test.ml:9:13>>*/ _f_ =
-     47:        /*<<test.ml:9:13>>*/ caml_call2(Stdlib[28], _e_, _d_),
-     48:     Test =
-     49:       ( /*<<test.ml:9:0>>*/ caml_call1(Stdlib[46], _f_),
-     50:        [0, greeting$0, unicodeLength]);
-     51:    runtime.caml_register_global(8, Test, "Test");
-     52:    return;
-     53:    /*<<?>>*/ }
-     54:   (globalThis));
-     55:
-     56: //# sourceMappingURL=test.map |}]
+     26:     Stdlib_String = global_data.Stdlib__String;
+     27:     /*<<test.ml:3:0>>*/  /*<<test.ml:3:0>>*/ caml_call1(Stdlib[46], greeting);
+     28:     /*<<test.ml:5:0>>*/  /*<<test.ml:5:0>>*/ caml_call1
+     29:     (Stdlib[46], greeting$0);
+     30:     /*<<test.ml:7:47>>*/ var
+     31:      /*<<test.ml:7:47>>*/ _a_ =
+     32:        /*<<test.ml:7:47>>*/ caml_call1(Stdlib_Random[5], 30),
+     33:      /*<<test.ml:7:34>>*/ unicodeLength =
+     34:        /*<<test.ml:7:34>>*/ runtime.caml_ml_string_length
+     35:        ( /*<<test.ml:7:34>>*/ caml_call2(Stdlib_String[1], _a_, 105)),
+     36:      /*<<test.ml:8:56>>*/ _b_ =
+     37:        /*<<test.ml:8:56>>*/ caml_call1(Stdlib[33], unicodeLength),
+     38:      /*<<test.ml:8:14>>*/ _c_ =
+     39:        /*<<test.ml:8:14>>*/ caml_call2
+     40:        (Stdlib[28],
+     41:         caml_string_of_jsbytes('String.length("\xc9\x8a") should be two:'),
+     42:         _b_);
+     43:     /*<<test.ml:8:0>>*/  /*<<test.ml:8:0>>*/ caml_call1(Stdlib[46], _c_);
+     44:     /*<<test.ml:9:39>>*/ var
+     45:      /*<<test.ml:9:39>>*/ _d_ =
+     46:        /*<<test.ml:9:39>>*/ caml_call2(Stdlib_String[1], 1, 138),
+     47:      /*<<test.ml:9:14>>*/ _e_ =
+     48:        /*<<test.ml:9:14>>*/ caml_call2(Stdlib_String[1], 1, 201),
+     49:      /*<<test.ml:9:13>>*/ _f_ =
+     50:        /*<<test.ml:9:13>>*/ caml_call2(Stdlib[28], _e_, _d_);
+     51:     /*<<test.ml:9:0>>*/  /*<<test.ml:9:0>>*/ caml_call1(Stdlib[46], _f_);
+     52:    var Test = [0, greeting$0, unicodeLength];
+     53:    runtime.caml_register_global(8, Test, "Test");
+     54:    return;
+     55:    /*<<?>>*/ }
+     56:   (globalThis));
+     57:
+     58: //# sourceMappingURL=test.map |}]
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->

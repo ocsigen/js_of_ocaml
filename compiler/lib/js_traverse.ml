@@ -1406,6 +1406,7 @@ class simpl =
         | EStr (Utf8 "use strict") -> true
         | _ -> false
       in
+      let pretty = Config.Flag.pretty () in
       let simplify_statement (st, loc) =
         match st with
         (* if (1) e1 ... --> e1 *)
@@ -1477,7 +1478,8 @@ class simpl =
         | _ -> (st, loc) :: rem
       in
       (* First simplify single statements *)
-      List.concat_map ~f:simplify_statement s
-      (* Then try to combine expression statements *)
-      |> List.fold_right ~f:eliminate_expression_statements ~init:[]
+      let single_simplified = List.concat_map ~f:simplify_statement s in
+      if pretty (* When pretty is enabled, don't combine expression statements *)
+      then single_simplified
+      else List.fold_right single_simplified ~f:eliminate_expression_statements ~init:[]
   end

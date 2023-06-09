@@ -57,7 +57,8 @@ let%expect_test _ =
         return e;
        }
        var d = [0, b];
-       f.caml_register_global(0, d, "Test"), 0;
+       f.caml_register_global(0, d, "Test");
+       0;
        return;
       }
       (globalThis));
