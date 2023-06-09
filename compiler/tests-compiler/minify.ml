@@ -258,3 +258,86 @@ let%expect_test _ =
           6: a=1;let
           7: b=2;const
           8: c=3} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+  function f() {
+    const v = 2;
+    if(true) {
+      var x = v;
+      { const v = x + 1 }
+    }
+  }
+        |}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2:   function f() {
+          3:     const v = 2;
+          4:     if(true) {
+          5:       var x = v;
+          6:       { const v = x + 1 }
+          7:     }
+          8:   }
+          9:
+        $ cat "test.min.js"
+          1: function
+          2: f(){const
+          3: a=2;if(true){var
+          4: b=a;const
+          5: c=b+1}} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+(function () {
+  class f {
+    f() {
+      const y = 2;
+      return v
+    }
+  };
+  const w = y
+})()
+        |}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: (function () {
+          3:   class f {
+          4:     f() {
+          5:       const y = 2;
+          6:       return v
+          7:     }
+          8:   };
+          9:   const w = y
+         10: })()
+         11:
+        $ cat "test.min.js"
+          1: (function(){class
+          2: f{f(){const
+          3: a=2;return v}}const
+          4: a=y}()); |}])
