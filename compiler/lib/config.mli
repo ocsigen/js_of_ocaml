@@ -29,6 +29,8 @@ module Flag : sig
 
   val shortvar : unit -> bool
 
+  val simplify : unit -> bool
+
   val compact : unit -> bool
 
   val inline : unit -> bool

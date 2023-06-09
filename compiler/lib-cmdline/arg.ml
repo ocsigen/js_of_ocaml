@@ -96,6 +96,7 @@ let t =
         in
         let disable = disable_if_pretty "shortvar" disable in
         let disable = disable_if_pretty "share" disable in
+        let disable = disable_if_pretty "simplify" disable in
         { debug = { enable = debug; disable = [] }
         ; optim = { enable; disable }
         ; quiet

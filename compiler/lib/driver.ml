@@ -547,7 +547,7 @@ if (typeof module === 'object' && module.exports) {
   in
   (* post pack optim *)
   let t3 = Timer.make () in
-  let js = (new Js_traverse.simpl)#program js in
+  let js = if Config.Flag.simplify () then (new Js_traverse.simpl)#program js else js in
   if times () then Format.eprintf "    simpl: %a@." Timer.print t3;
   let t4 = Timer.make () in
   let js = (new Js_traverse.clean)#program js in

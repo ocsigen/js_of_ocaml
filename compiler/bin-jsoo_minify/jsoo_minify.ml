@@ -82,7 +82,7 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
       [ (Flag.shortvar, fun () -> new Js_traverse.rename_variable)
-      ; (true_, fun () -> new Js_traverse.simpl)
+      ; (Flag.simplify, fun () -> new Js_traverse.simpl)
       ; (true_, fun () -> new Js_traverse.clean)
       ]
     in

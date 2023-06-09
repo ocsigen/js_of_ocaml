@@ -60,6 +60,8 @@ module Flag = struct
 
   let shortvar = o ~name:"shortvar" ~default:true
 
+  let simplify = o ~name:"simplify" ~default:true
+
   let compact = o ~name:"compact" ~default:true
 
   let optcall = o ~name:"optcall" ~default:true
