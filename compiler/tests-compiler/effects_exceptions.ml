@@ -102,22 +102,24 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function handler_is_loop(f, g, l, cont){
      caml_push_trap
       (function(_g_){
-        function _h_(l){
-         return caml_cps_call2
-                 (g,
-                  l,
-                  function(match){
-                   if(72330306 <= match[1]){
-                    var l = match[2];
-                    return caml_cps_exact_call1(_h_, l);
-                   }
-                   var
-                    exn = match[2],
-                    raise = caml_pop_trap(),
-                    exn$0 = caml_maybe_attach_backtrace(exn, 1);
-                   return raise(exn$0);
-                  });
-        }
+        var
+         _h_ =
+           function(l){
+            return caml_cps_call2
+                    (g,
+                     l,
+                     function(match){
+                      if(72330306 <= match[1]){
+                       var l = match[2];
+                       return caml_cps_exact_call1(_h_, l);
+                      }
+                      var
+                       exn = match[2],
+                       raise = caml_pop_trap(),
+                       exn$0 = caml_maybe_attach_backtrace(exn, 1);
+                      return raise(exn$0);
+                     });
+           };
         return _h_(l);
        });
      var _e_ = 0;
@@ -129,7 +131,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_merge_node(g, cont){
-     function _b_(s){return caml_cps_call3(Stdlib[28], s, cst_aaa, cont);}
+     var _b_ = function(s){return caml_cps_call3(Stdlib[28], s, cst_aaa, cont);};
      caml_push_trap(function(_d_){return _b_(cst$1);});
      var _a_ = 0;
      return caml_cps_call2

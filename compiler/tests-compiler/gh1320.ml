@@ -49,11 +49,13 @@ let () = myfun ()
       var
        closures =
          function(i){
-          function g(x){return app(f, x);}
-          function f(x){
-           return 0 === x ? 1 : runtime.caml_mul(i, app(g, x - 1 | 0));
-          }
-          var block = [0, g, f];
+          var
+           g = function(x){return app(f, x);},
+           f =
+             function(x){
+              return 0 === x ? 1 : runtime.caml_mul(i, app(g, x + - 1 | 0));
+             },
+           block = [0, g, f];
           return block;
          },
        closures$0 = closures(i),

@@ -324,7 +324,7 @@ let ()  = M.myfun M.x
         var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
         continue;
        }
-       2 <= len && sort(len, l);
+       if(2 <= len) sort(len, l);
        var x$0 = next;
        continue a;
       }
@@ -372,7 +372,7 @@ let ()  = M.run ()
       var
        even =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - (1 - odd(n + - 1 | 0));
           switch(n){
             case 0:
              return 1;
@@ -383,7 +383,7 @@ let ()  = M.run ()
          },
        odd =
          function(n){
-          if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
+          if(2 < n >>> 0) return 1 - (1 - even(n + - 1 | 0));
           switch(n){
             case 0:
              return 0;
@@ -461,35 +461,40 @@ let ()  = M.run ()
       var
        closures =
          function(i){
-          function even(n){
-           if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
-           switch(n){
-             case 0:
-              var
-               f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
-              delayed[1] = [0, f, delayed[1]];
-              f(0);
-              return 1;
-             case 1:
-              return 1 - (1 - odd(0));
-             default: return 1 - (1 - odd(1));
-           }
-          }
-          function odd(n){
-           if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
-           switch(n){
-             case 0:
-              var
-               f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
-              delayed[1] = [0, f, delayed[1]];
-              f(0);
-              return 0;
-             case 1:
-              return 1 - (1 - even(0));
-             default: return 1 - (1 - even(1));
-           }
-          }
-          var block = [0, even, odd];
+          var
+           even =
+             function(n){
+              if(2 < n >>> 0) return 1 - (1 - odd(n + - 1 | 0));
+              switch(n){
+                case 0:
+                 var
+                  f =
+                    function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
+                 delayed[1] = [0, f, delayed[1]];
+                 f(0);
+                 return 1;
+                case 1:
+                 return 1 - (1 - odd(0));
+                default: return 1 - (1 - odd(1));
+              }
+             },
+           odd =
+             function(n){
+              if(2 < n >>> 0) return 1 - (1 - even(n + - 1 | 0));
+              switch(n){
+                case 0:
+                 var
+                  f =
+                    function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
+                 delayed[1] = [0, f, delayed[1]];
+                 f(0);
+                 return 0;
+                case 1:
+                 return 1 - (1 - even(0));
+                default: return 1 - (1 - even(1));
+              }
+             },
+           block = [0, even, odd];
           return block;
          },
        closures$0 = closures(i),
@@ -571,47 +576,54 @@ let ()  = M.run ()
       var
        closures =
          function(i){
-          function even(n){
-           if(2 < n >>> 0)
-            return [0, 748545554, function(param){return odd(n - 1 | 0);}];
-           switch(n){
-             case 0:
-              return [0,
-                      748545554,
-                      function(param){
-                       function f(param){
-                        return caml_call2(Stdlib_Printf[2], _c_, i);
-                       }
-                       delayed[1] = [0, f, delayed[1]];
-                       f(0);
-                       return _d_;
-                      }];
-             case 1:
-              return [0, 748545554, function(param){return odd(0);}];
-             default: return [0, 748545554, function(param){return odd(1);}];
-           }
-          }
-          function odd(n){
-           if(2 < n >>> 0)
-            return [0, 748545554, function(param){return even(n - 1 | 0);}];
-           switch(n){
-             case 0:
-              return [0,
-                      748545554,
-                      function(param){
-                       function f(param){
-                        return caml_call2(Stdlib_Printf[2], _a_, i);
-                       }
-                       delayed[1] = [0, f, delayed[1]];
-                       f(0);
-                       return _b_;
-                      }];
-             case 1:
-              return [0, 748545554, function(param){return even(0);}];
-             default: return [0, 748545554, function(param){return even(1);}];
-           }
-          }
-          var block = [0, even, odd];
+          var
+           even =
+             function(n){
+              if(2 < n >>> 0)
+               return [0, 748545554, function(param){return odd(n + - 1 | 0);}];
+              switch(n){
+                case 0:
+                 return [0,
+                         748545554,
+                         function(param){
+                          var
+                           f =
+                             function(param){
+                              return caml_call2(Stdlib_Printf[2], _c_, i);
+                             };
+                          delayed[1] = [0, f, delayed[1]];
+                          f(0);
+                          return _d_;
+                         }];
+                case 1:
+                 return [0, 748545554, function(param){return odd(0);}];
+                default: return [0, 748545554, function(param){return odd(1);}];
+              }
+             },
+           odd =
+             function(n){
+              if(2 < n >>> 0)
+               return [0, 748545554, function(param){return even(n + - 1 | 0);}];
+              switch(n){
+                case 0:
+                 return [0,
+                         748545554,
+                         function(param){
+                          var
+                           f =
+                             function(param){
+                              return caml_call2(Stdlib_Printf[2], _a_, i);
+                             };
+                          delayed[1] = [0, f, delayed[1]];
+                          f(0);
+                          return _b_;
+                         }];
+                case 1:
+                 return [0, 748545554, function(param){return even(0);}];
+                default: return [0, 748545554, function(param){return even(1);}];
+              }
+             },
+           block = [0, even, odd];
           return block;
          },
        closures$0 = closures(i),

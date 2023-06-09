@@ -137,23 +137,23 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     function copy_bucketlist(param){
-      if(! param) return 0;
-      var
+     if(! param) return 0;
+     var
       key = param[1],
       data = param[2],
       next = param[3],
       prec$1 = [0, key, data, next],
       prec = prec$1,
       param$0 = next;
-      for(;;){
+     for(;;){
       if(! param$0) return prec$1;
       var
-        key$0 = param$0[1],
-        data$0 = param$0[2],
-        next$0 = param$0[3],
-        prec$0 = [0, key$0, data$0, next$0];
+       key$0 = param$0[1],
+       data$0 = param$0[2],
+       next$0 = param$0[3],
+       prec$0 = [0, key$0, data$0, next$0];
       prec[3] = prec$0;
       var prec = prec$0, param$0 = next$0;
-      }
+     }
     }
     //end |}]

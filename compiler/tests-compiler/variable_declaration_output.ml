@@ -139,7 +139,7 @@ let%expect_test _ =
       if(! switch$0){
        _c_ = param[2];
        switch$1 = 0;
-       _c_ && ! _c_[1] && (switch$1 = 1);
+       if(_c_ && ! _c_[1]) switch$1 = 1;
        if(! switch$1) return 4;
       }
      }
@@ -162,7 +162,7 @@ let%expect_test _ =
       else if(! param[2]) switch$0 = 1;
       if(! switch$0){
        var _c_ = param[2], switch$1 = 0;
-       _c_ && ! _c_[1] && (switch$1 = 1);
+       if(_c_ && ! _c_[1]) switch$1 = 1;
        if(! switch$1) return 4;
       }
      }

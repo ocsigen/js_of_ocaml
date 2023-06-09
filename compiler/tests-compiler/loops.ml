@@ -508,14 +508,14 @@ let add_substitute =
          continue;
         }
         if(0 !== k){
-         var i$0 = stop + 1 | 0, k$1 = k - 1 | 0, k = k$1, stop = i$0;
+         var i$0 = stop + 1 | 0, k$1 = k + - 1 | 0, k = k$1, stop = i$0;
          continue;
         }
         var
          match$0 =
            [0,
             caml_call3
-             (Stdlib_String[15], s, new_start, (stop - start$0 | 0) - 1 | 0),
+             (Stdlib_String[15], s, new_start, (stop - start$0 | 0) + - 1 | 0),
             stop + 1 | 0];
         break;
        }

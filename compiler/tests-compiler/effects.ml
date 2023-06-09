@@ -51,9 +51,9 @@ let fff () =
                   ? cont([0, function(k, cont){return cont(11);}])
                   : cont(0);
          }],
-      _c_ = 10;
-     function _d_(x, cont){return cont(x);}
-     var _e_ = Stdlib_Effect[3][5];
+      _c_ = 10,
+      _d_ = function(x, cont){return cont(x);},
+      _e_ = Stdlib_Effect[3][5];
      return caml_cps_call4
              (_e_,
               _d_,

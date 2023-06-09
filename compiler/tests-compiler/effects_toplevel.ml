@@ -70,26 +70,29 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   _a_ =
                     [0,
                      [11, caml_string_of_jsbytes("abc"), 0],
-                     caml_string_of_jsbytes("abc")];
-                 function g(param, cont){
-                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
-                 }
+                     caml_string_of_jsbytes("abc")],
+                  g =
+                    function(param, cont){
+                     return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
+                    };
                  caml_callback(g, [0]);
-                 var _b_ = 1;
-                 function _c_(i){
-                  var _d_ = 0;
-                  return caml_cps_exact_call2
-                          (g,
-                           _d_,
-                           function(_e_){
-                            var _f_ = i + 1 | 0;
-                            if(5 !== i) return caml_cps_exact_call1(_c_, _f_);
-                            caml_callback(g, [0]);
-                            var Test = [0];
-                            runtime.caml_register_global(2, Test, "Test");
-                            return;
-                           });
-                 }
+                 var
+                  _b_ = 1,
+                  _c_ =
+                    function(i){
+                     var _d_ = 0;
+                     return caml_cps_exact_call2
+                             (g,
+                              _d_,
+                              function(_e_){
+                               var _f_ = i + 1 | 0;
+                               if(5 !== i) return caml_cps_exact_call1(_c_, _f_);
+                               caml_callback(g, [0]);
+                               var Test = [0];
+                               runtime.caml_register_global(2, Test, "Test");
+                               return;
+                              });
+                    };
                  return _c_(_b_);
                 },
                 []);

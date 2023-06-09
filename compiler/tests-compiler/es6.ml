@@ -14,13 +14,15 @@ let f x =
   Util.print_program program;
   [%expect
     {|
-    (globalThis=>{
+    (function(globalThis){
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        f = x=>{var g = y=>(x + y | 0) + 7 | 0; return g;},
+        f =
+          function(x){var g = function(y){return (x + y | 0) + 7 | 0;}; return g;},
         Test = [0, f];
        runtime.caml_register_global(0, Test, "Test");
-       return;})
-     (globalThis);
+       return;
+      }
+      (globalThis));
     //end |}]

@@ -138,22 +138,21 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function cond1(b, cont){
-     function _u_(ic){return cont([0, ic, 7]);}
+     var _u_ = function(ic){return cont([0, ic, 7]);};
      return b
              ? caml_cps_call2(Stdlib[79], cst_toto$0, _u_)
              : caml_cps_call2(Stdlib[79], cst_titi, _u_);
     }
     //end
     function cond2(b, cont){
-     function _s_(_t_){return cont(7);}
+     var _s_ = function(_t_){return cont(7);};
      return b
              ? caml_cps_call2(Stdlib_Printf[3], _a_, _s_)
              : caml_cps_call2(Stdlib_Printf[3], _b_, _s_);
     }
     //end
     function cond3(b, cont){
-     var x = [0, 0];
-     function _q_(_r_){return cont(x[1]);}
+     var x = [0, 0], _q_ = function(_r_){return cont(x[1]);};
      return b ? (x[1] = 1, _q_(0)) : caml_cps_call2(Stdlib_Printf[3], _c_, _q_);
     }
     //end
@@ -163,18 +162,20 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (_m_,
               cst_static_examples_ml,
               function(ic){
-               function _n_(_p_){
-                var _o_ = Stdlib[83];
-                return caml_cps_call2
-                        (_o_,
-                         ic,
-                         function(line){
-                          all[1] = [0, line, all[1]];
-                          return b
-                                  ? caml_cps_call2(Stdlib[53], line, _n_)
-                                  : caml_cps_exact_call1(_n_, 0);
-                         });
-               }
+               var
+                _n_ =
+                  function(_p_){
+                   var _o_ = Stdlib[83];
+                   return caml_cps_call2
+                           (_o_,
+                            ic,
+                            function(line){
+                             all[1] = [0, line, all[1]];
+                             return b
+                                     ? caml_cps_call2(Stdlib[53], line, _n_)
+                                     : caml_cps_exact_call1(_n_, 0);
+                            });
+                  };
                return _n_(0);
               });
     }
@@ -185,17 +186,19 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (_h_,
               cst_static_examples_ml$0,
               function(ic){
-               var _i_ = Stdlib_Printf[3];
-               function _j_(_l_){
-                var _k_ = Stdlib[83];
-                return caml_cps_call2
-                        (_k_,
-                         ic,
-                         function(line){
-                          all[1] = [0, line, all[1]];
-                          return caml_cps_call2(Stdlib[53], line, _j_);
-                         });
-               }
+               var
+                _i_ = Stdlib_Printf[3],
+                _j_ =
+                  function(_l_){
+                   var _k_ = Stdlib[83];
+                   return caml_cps_call2
+                           (_k_,
+                            ic,
+                            function(line){
+                             all[1] = [0, line, all[1]];
+                             return caml_cps_call2(Stdlib[53], line, _j_);
+                            });
+                  };
                return caml_cps_call2(_i_, _d_, _j_);
               });
     }
@@ -206,11 +209,13 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (_f_,
               _e_,
               function(l){
-               function _g_(x){
-                if(! x) return cont(l);
-                var r = x[2];
-                return caml_cps_exact_call1(_g_, r);
-               }
+               var
+                _g_ =
+                  function(x){
+                   if(! x) return cont(l);
+                   var r = x[2];
+                   return caml_cps_exact_call1(_g_, r);
+                  };
                return _g_(l);
               });
     }
