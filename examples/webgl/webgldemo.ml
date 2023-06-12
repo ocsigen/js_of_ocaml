@@ -89,7 +89,7 @@ let get_source src_id =
 
 let float32array a =
   let array = new%js Typed_array.float32Array (Array.length a) in
-  Array.iteri (fun i v -> Typed_array.set array i v) a;
+  Array.iteri (fun i v -> Typed_array.set array i (Js.float v)) a;
   array
 
 module Proj3D = struct
@@ -273,11 +273,11 @@ let start (pos, norm) =
   in
   check_error gl;
   debug "ready";
-  let get_time () = (new%js date_now)##getTime in
+  let get_time () = Js.to_float (new%js date_now)##getTime in
   let last_draw = ref (get_time ()) in
   let draw_times = Queue.create () in
   let rec f () =
-    let t = (new%js date_now)##getTime /. 1000. in
+    let t = Js.to_float (new%js date_now)##getTime /. 1000. in
     let mat' = Proj3D.mult mat (Proj3D.rotate_y (1. *. t)) in
     gl##uniformMatrix4fv_typed proj_loc _false (Proj3D.array mat');
     gl##clear (gl##._DEPTH_BUFFER_BIT_ lor gl##._COLOR_BUFFER_BIT_);

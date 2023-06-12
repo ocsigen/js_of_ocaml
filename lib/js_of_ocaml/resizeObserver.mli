@@ -43,9 +43,9 @@
 
 class type resizeObserverSize =
   object
-    method inlineSize : float Js.readonly_prop
+    method inlineSize : float Js.t Js.readonly_prop
 
-    method blockSize : float Js.readonly_prop
+    method blockSize : float Js.t Js.readonly_prop
   end
 
 class type resizeObserverEntry =

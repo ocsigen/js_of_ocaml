@@ -610,7 +610,7 @@ let request_animation_frame () =
   let t, s = Lwt.wait () in
   let (_ : Dom_html.animation_frame_request_id) =
     Dom_html.window##requestAnimationFrame
-      (Js.wrap_callback (fun (_ : float) -> Lwt.wakeup s ()))
+      (Js.wrap_callback (fun (_ : float Js.t) -> Lwt.wakeup s ()))
   in
   t
 

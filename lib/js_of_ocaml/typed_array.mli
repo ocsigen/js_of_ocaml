@@ -22,7 +22,7 @@
 
 open Js
 
-type uint32 = float
+type uint32 = float Js.t
 
 class type arrayBuffer =
   object
@@ -79,9 +79,9 @@ type int32Array = (int32, Bigarray.int32_elt) typedArray
 
 type uint32Array = (int32, Bigarray.int32_elt) typedArray
 
-type float32Array = (float, Bigarray.float32_elt) typedArray
+type float32Array = (float Js.t, Bigarray.float32_elt) typedArray
 
-type float64Array = (float, Bigarray.float64_elt) typedArray
+type float64Array = (float Js.t, Bigarray.float64_elt) typedArray
 
 val kind : ('a, 'b) typedArray t -> ('a, 'b) Bigarray.kind
 
@@ -200,13 +200,13 @@ class type dataView =
 
     method getUint32_ : int -> bool t -> uint32 meth
 
-    method getFloat32 : int -> float meth
+    method getFloat32 : int -> float Js.t meth
 
-    method getFloat32_ : int -> bool t -> float meth
+    method getFloat32_ : int -> bool t -> float Js.t meth
 
-    method getFloat64 : int -> float meth
+    method getFloat64 : int -> float Js.t meth
 
-    method getFloat64_ : int -> bool t -> float meth
+    method getFloat64_ : int -> bool t -> float Js.t meth
 
     method setInt8 : int -> int -> unit meth
 
@@ -228,13 +228,13 @@ class type dataView =
 
     method setUint32_ : int -> uint32 -> bool t -> unit meth
 
-    method setFloat32 : int -> float -> unit meth
+    method setFloat32 : int -> float Js.t -> unit meth
 
-    method setFloat32_ : int -> float -> bool t -> unit meth
+    method setFloat32_ : int -> float Js.t -> bool t -> unit meth
 
-    method setFloat64 : int -> float -> unit meth
+    method setFloat64 : int -> float Js.t -> unit meth
 
-    method setFloat64_ : int -> float -> bool t -> unit meth
+    method setFloat64_ : int -> float Js.t -> bool t -> unit meth
   end
 
 val dataView : (arrayBuffer t -> dataView t) constr

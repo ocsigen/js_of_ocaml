@@ -14,9 +14,9 @@ let () =
   html##.onwheel :=
     Dom.handler (fun (event : Dom_html.mousewheelEvent Js.t) ->
         Firebug.console##debug event;
-        let deltaX = event##.deltaX in
-        let deltaY = event##.deltaY in
-        let deltaZ = event##.deltaZ in
+        let deltaX = Js.to_float event##.deltaX in
+        let deltaY = Js.to_float event##.deltaY in
+        let deltaZ = Js.to_float event##.deltaZ in
         let deltaMode = event##.deltaMode in
         let wheelDelta = event##.wheelDelta in
         let wheelDeltaX = event##.wheelDeltaX in

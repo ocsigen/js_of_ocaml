@@ -46,7 +46,7 @@ if (Intl.is_supported()) then (
           let collator = new%js Intl.collator_constr
             (def (array [| lang |])) undefined
           in
-          float_of_int(collator##.compare a b))) ;
+          Js.float (float_of_int(collator##.compare a b)))) ;
       letters
     in
     let a = jas [| "a"; "z"; "ä" |] in
@@ -95,7 +95,7 @@ if (Intl.is_supported()) then (
       (def (jas [| "de-u-co-phonebk" |])) undefined
     in
     let a = a##sort (wrap_callback
-                       (fun v1 v2 -> float_of_int(collator##.compare v1 v2)))
+                       (fun v1 v2 -> Js.float (float_of_int(collator##.compare v1 v2))))
     in
     fc (a##join (string ", ")) ;
 

@@ -8,11 +8,11 @@ class type intersectionObserverEntry =
 
     method intersectionRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method intersectionRatio : float Js.readonly_prop
+    method intersectionRatio : float Js.t Js.readonly_prop
 
     method isIntersecting : bool Js.t Js.readonly_prop
 
-    method time : float Js.readonly_prop
+    method time : float Js.t Js.readonly_prop
   end
 
 class type intersectionObserverOptions =
@@ -21,7 +21,7 @@ class type intersectionObserverOptions =
 
     method rootMargin : Js.js_string Js.t Js.writeonly_prop
 
-    method threshold : float Js.js_array Js.t Js.writeonly_prop
+    method threshold : float Js.t Js.js_array Js.t Js.writeonly_prop
   end
 
 class type intersectionObserver =
@@ -30,7 +30,7 @@ class type intersectionObserver =
 
     method rootMargin : Js.js_string Js.t Js.readonly_prop
 
-    method thresholds : float Js.js_array Js.t Js.readonly_prop
+    method thresholds : float Js.t Js.js_array Js.t Js.readonly_prop
 
     method observe : #Dom.node Js.t -> unit Js.meth
 

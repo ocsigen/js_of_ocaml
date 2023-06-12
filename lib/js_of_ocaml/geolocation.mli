@@ -46,19 +46,19 @@ type watchId
 
 class type coordinates =
   object
-    method latitude : float Js.readonly_prop
+    method latitude : float Js.t Js.readonly_prop
 
-    method longitude : float Js.readonly_prop
+    method longitude : float Js.t Js.readonly_prop
 
-    method altitude : float Js.opt Js.readonly_prop
+    method altitude : float Js.t Js.opt Js.readonly_prop
 
-    method accuracy : float Js.readonly_prop
+    method accuracy : float Js.t Js.readonly_prop
 
-    method altitudeAccuracy : float Js.opt Js.readonly_prop
+    method altitudeAccuracy : float Js.t Js.opt Js.readonly_prop
 
-    method heading : float Js.opt Js.readonly_prop
+    method heading : float Js.t Js.opt Js.readonly_prop
 
-    method speed : float Js.opt Js.readonly_prop
+    method speed : float Js.t Js.opt Js.readonly_prop
   end
 
 class type position =

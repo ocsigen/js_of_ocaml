@@ -254,7 +254,7 @@ module Js = struct
 
       method charAt : int -> js_string t meth
 
-      method charCodeAt : int -> float meth
+      method charCodeAt : int -> int meth
 
       (* This may return NaN... *)
       method concat : js_string t -> js_string t meth
@@ -274,7 +274,7 @@ module Js = struct
 
       method lastIndexOf_from : js_string t -> int -> int meth
 
-      method localeCompare : js_string t -> float meth
+      method localeCompare : js_string t -> float t meth
 
       method _match : regExp t -> match_result_handle t opt meth
 
@@ -396,7 +396,7 @@ class type ['a] js_array =
 
     method slice_end : int -> 'a js_array t meth
 
-    method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
+    method sort : ('a -> 'a -> float t) callback -> 'a js_array t meth
 
     method sort_asStrings : 'a js_array t meth
 
@@ -511,9 +511,9 @@ class type date =
 
     method toLocaleTimeString : js_string t meth
 
-    method valueOf : float meth
+    method valueOf : float t meth
 
-    method getTime : float meth
+    method getTime : float t meth
 
     method getFullYear : int meth
 
@@ -549,39 +549,39 @@ class type date =
 
     method getTimezoneOffset : int meth
 
-    method setTime : float -> float meth
+    method setTime : float t -> float t meth
 
-    method setFullYear : int -> float meth
+    method setFullYear : int -> float t meth
 
-    method setUTCFullYear : int -> float meth
+    method setUTCFullYear : int -> float t meth
 
-    method setMonth : int -> float meth
+    method setMonth : int -> float t meth
 
-    method setUTCMonth : int -> float meth
+    method setUTCMonth : int -> float t meth
 
-    method setDate : int -> float meth
+    method setDate : int -> float t meth
 
-    method setUTCDate : int -> float meth
+    method setUTCDate : int -> float t meth
 
-    method setDay : int -> float meth
+    method setDay : int -> float t meth
 
-    method setUTCDay : int -> float meth
+    method setUTCDay : int -> float t meth
 
-    method setHours : int -> float meth
+    method setHours : int -> float t meth
 
-    method setUTCHours : int -> float meth
+    method setUTCHours : int -> float t meth
 
-    method setMinutes : int -> float meth
+    method setMinutes : int -> float t meth
 
-    method setUTCMinutes : int -> float meth
+    method setUTCMinutes : int -> float t meth
 
-    method setSeconds : int -> float meth
+    method setSeconds : int -> float t meth
 
-    method setUTCSeconds : int -> float meth
+    method setUTCSeconds : int -> float t meth
 
-    method setMilliseconds : int -> float meth
+    method setMilliseconds : int -> float t meth
 
-    method setUTCMilliseconds : int -> float meth
+    method setUTCMilliseconds : int -> float t meth
 
     method toUTCString : js_string t meth
 
@@ -592,21 +592,21 @@ class type date =
 
 class type date_constr =
   object
-    method parse : js_string t -> float meth
+    method parse : js_string t -> float t meth
 
-    method _UTC_month : int -> int -> float meth
+    method _UTC_month : int -> int -> float t meth
 
-    method _UTC_day : int -> int -> float meth
+    method _UTC_day : int -> int -> float t meth
 
-    method _UTC_hour : int -> int -> int -> int -> float meth
+    method _UTC_hour : int -> int -> int -> int -> float t meth
 
-    method _UTC_min : int -> int -> int -> int -> int -> float meth
+    method _UTC_min : int -> int -> int -> int -> int -> float t meth
 
-    method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
+    method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
 
-    method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> float meth
+    method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> float t meth
 
-    method now : float meth
+    method now : float t meth
   end
 
 let date_constr = Unsafe.global##._Date
@@ -615,7 +615,7 @@ let date : date_constr t = date_constr
 
 let date_now : date t constr = date_constr
 
-let date_fromTimeValue : (float -> date t) constr = date_constr
+let date_fromTimeValue : (float t -> date t) constr = date_constr
 
 let date_month : (int -> int -> date t) constr = date_constr
 
@@ -632,65 +632,65 @@ let date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr =
 
 class type math =
   object
-    method _E : float readonly_prop
+    method _E : float t readonly_prop
 
-    method _LN2 : float readonly_prop
+    method _LN2 : float t readonly_prop
 
-    method _LN10 : float readonly_prop
+    method _LN10 : float t readonly_prop
 
-    method _LOG2E : float readonly_prop
+    method _LOG2E : float t readonly_prop
 
-    method _LOG10E : float readonly_prop
+    method _LOG10E : float t readonly_prop
 
-    method _PI : float readonly_prop
+    method _PI : float t readonly_prop
 
-    method _SQRT1_2_ : float readonly_prop
+    method _SQRT1_2_ : float t readonly_prop
 
-    method _SQRT2 : float readonly_prop
+    method _SQRT2 : float t readonly_prop
 
-    method abs : float -> float meth
+    method abs : float t -> float t meth
 
-    method acos : float -> float meth
+    method acos : float t -> float t meth
 
-    method asin : float -> float meth
+    method asin : float t -> float t meth
 
-    method atan : float -> float meth
+    method atan : float t -> float t meth
 
-    method atan2 : float -> float -> float meth
+    method atan2 : float t -> float t -> float t meth
 
-    method ceil : float -> float meth
+    method ceil : float t -> float t meth
 
-    method cos : float -> float meth
+    method cos : float t -> float t meth
 
-    method exp : float -> float meth
+    method exp : float t -> float t meth
 
-    method floor : float -> float meth
+    method floor : float t -> float t meth
 
-    method log : float -> float meth
+    method log : float t -> float t meth
 
-    method max : float -> float -> float meth
+    method max : float t -> float t -> float t meth
 
-    method max_3 : float -> float -> float -> float meth
+    method max_3 : float t -> float t -> float t -> float t meth
 
-    method max_4 : float -> float -> float -> float -> float meth
+    method max_4 : float t -> float t -> float t -> float t -> float t meth
 
-    method min : float -> float -> float meth
+    method min : float t -> float t -> float t meth
 
-    method min_3 : float -> float -> float -> float meth
+    method min_3 : float t -> float t -> float t -> float t meth
 
-    method min_4 : float -> float -> float -> float -> float meth
+    method min_4 : float t -> float t -> float t -> float t -> float t meth
 
-    method pow : float -> float -> float meth
+    method pow : float t -> float t -> float t meth
 
-    method random : float meth
+    method random : float t meth
 
-    method round : float -> float meth
+    method round : float t -> float t meth
 
-    method sin : float -> float meth
+    method sin : float t -> float t meth
 
-    method sqrt : float -> float meth
+    method sqrt : float t -> float t meth
 
-    method tan : float -> float meth
+    method tan : float t -> float t meth
   end
 
 let math = Unsafe.global##._Math
@@ -795,9 +795,9 @@ external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 
 external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 
-external float : float -> float = "caml_js_from_float"
+external float : float -> float t = "caml_js_from_float"
 
-external to_float : float -> float = "caml_js_to_float"
+external to_float : float t -> float = "caml_js_to_float"
 
 external typeof : _ t -> js_string t = "caml_js_typeof"
 
@@ -810,7 +810,7 @@ let parseInt (s : js_string t) : int =
   let s = Unsafe.fun_call Unsafe.global##.parseInt [| Unsafe.inject s |] in
   if isNaN s then failwith "parseInt" else s
 
-let parseFloat (s : js_string t) : float =
+let parseFloat (s : js_string t) : float t =
   let s = Unsafe.fun_call Unsafe.global##.parseFloat [| Unsafe.inject s |] in
   if isNaN s then failwith "parseFloat" else s
 
@@ -845,4 +845,4 @@ let export_all obj =
 
 (* DEPRECATED *)
 
-type float_prop = float prop
+type float_prop = float t prop
