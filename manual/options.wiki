@@ -39,6 +39,7 @@
 | deadcode     | true     | Deadcode elimination                   |
 | inline       | true     | Code inlining                          |
 | shortvar     | true     | Shorten variable names                 |
+| simplify     | true     | Simplify generated JS to save space    |
 | staticeval   | true     | Static evaluation of constants         |
 | share        | true     | Share string and number constants      |
 | strict       | true     | Enable strict mode                     |
