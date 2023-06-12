@@ -27,6 +27,18 @@
        Uint16Array, Int32Array, Int32Array, Int32Array, Int32Array,
        Float32Array, Float64Array, Uint8Array]
 
+    var start_fiber
+
+    function wrap_fun (t,f,a) {
+       // Don't wrap if js-promise-integration is not enabled
+       // There is no way to check this without calling WebAssembly.Function
+       try {
+         return new WebAssembly.Function(t,f,a)
+       } catch (e) {
+         return f
+       }
+    }
+
     let bindings =
         {jstag:
          WebAssembly.JSTag||
@@ -217,6 +229,13 @@
          },
          mktime:(year,month,day,h,m,s)=>new Date(year,month,day,h,m,s).getTime(),
          random_seed:()=>crypto.getRandomValues(new Int32Array(12)),
+         start_fiber:(x)=>start_fiber(x),
+         suspend_fiber:
+         wrap_fun(
+             {parameters: ['externref','funcref','eqref'], results: ['eqref']},
+             ((f, env)=>new Promise((k)=> f(k, env))),
+             {suspending:"first"}),
+         resume_fiber:(k,v)=>k(v),
          log:(x)=>console.log('ZZZZZ', x)
         }
     const imports = {Math:math,bindings:bindings}
@@ -227,8 +246,19 @@
     caml_callback = wasmModule.instance.exports.caml_callback;
     caml_alloc_tm = wasmModule.instance.exports.caml_alloc_tm;
 
+    start_fiber = wrap_fun(
+        {parameters: ['eqref'], results: ['externref']},
+        wasmModule.instance.exports.caml_start_fiber,
+        {promising: 'first'}
+    )
+    var _initialize = wrap_fun(
+        {parameters: [], results: ['externref']},
+        wasmModule.instance.exports._initialize,
+        {promising: 'first'}
+    )
+
     try {
-        wasmModule.instance.exports._initialize()
+        await _initialize()
     } catch (e) {
         if (e instanceof WebAssembly.Exception) {
           const exit_tag = wasmModule.instance.exports.ocaml_exit;

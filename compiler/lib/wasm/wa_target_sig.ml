@@ -256,5 +256,6 @@ module type S = sig
   val exception_handler_body :
     typ:Wa_ast.value_type list -> unit Wa_code_generation.t -> unit Wa_code_generation.t
 
-  val entry_point : context:Wa_code_generation.context -> unit Wa_code_generation.t
+  val entry_point :
+    context:Wa_code_generation.context -> Wa_ast.func_type * unit Wa_code_generation.t
 end

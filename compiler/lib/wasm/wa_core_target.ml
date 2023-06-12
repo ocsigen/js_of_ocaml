@@ -609,18 +609,21 @@ end
 let exception_handler_body ~typ:_ b = b
 
 let entry_point ~context:_ =
-  let declare_global name =
-    register_global (S name) { mut = true; typ = I32 } (Const (I32 0l))
+  let code =
+    let declare_global name =
+      register_global (S name) { mut = true; typ = I32 } (Const (I32 0l))
+    in
+    let* () = declare_global "sp" in
+    let* () = declare_global "young_ptr" in
+    let* () = declare_global "young_limit" in
+    let* call_ctors =
+      register_import ~name:"__wasm_call_ctors" (Fun { W.params = []; result = [] })
+    in
+    let* () = instr (W.CallInstr (call_ctors, [])) in
+    let* sz = Arith.const 3l in
+    let* high = Arith.((return (W.MemoryGrow (0, sz)) + const 3l) lsl const 16l) in
+    let* () = instr (W.GlobalSet (S "young_ptr", high)) in
+    let low = W.ConstSym (S "__heap_base", 0) in
+    instr (W.GlobalSet (S "young_limit", low))
   in
-  let* () = declare_global "sp" in
-  let* () = declare_global "young_ptr" in
-  let* () = declare_global "young_limit" in
-  let* call_ctors =
-    register_import ~name:"__wasm_call_ctors" (Fun { W.params = []; result = [] })
-  in
-  let* () = instr (W.CallInstr (call_ctors, [])) in
-  let* sz = Arith.const 3l in
-  let* high = Arith.((return (W.MemoryGrow (0, sz)) + const 3l) lsl const 16l) in
-  let* () = instr (W.GlobalSet (S "young_ptr", high)) in
-  let low = W.ConstSym (S "__heap_base", 0) in
-  instr (W.GlobalSet (S "young_limit", low))
+  { W.params = []; result = [] }, code

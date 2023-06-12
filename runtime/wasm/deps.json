@@ -1,12 +1,16 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "exit"],
+    "reaches": ["init", "exn", "exit", "effects"],
     "root": true
   },
   {
     "name": "init",
     "export": "_initialize"
+  },
+  {
+    "name": "effects",
+    "export": "caml_start_fiber"
   },
   {
     "name": "exn",

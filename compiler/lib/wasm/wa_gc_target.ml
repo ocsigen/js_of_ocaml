@@ -955,4 +955,17 @@ let exception_handler_body ~typ b =
      let* exn = load x in
      instr (Throw (ocaml_tag, W.Call (f, [ exn ]))))
 
-let entry_point ~context = init_code context
+let entry_point ~context =
+  let code =
+    let* f =
+      register_import
+        ~name:"caml_initialize_effects"
+        (Fun { W.params = [ W.Ref { nullable = true; typ = Extern } ]; result = [] })
+    in
+    let suspender = Code.Var.fresh () in
+    let* _ = add_var suspender in
+    let* s = load suspender in
+    let* () = instr (W.CallInstr (f, [ s ])) in
+    init_code context
+  in
+  { W.params = [ W.Ref { nullable = true; typ = Extern } ]; result = [] }, code

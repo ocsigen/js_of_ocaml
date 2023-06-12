@@ -881,21 +881,22 @@ module Generate (Target : Wa_target_sig.S) = struct
     :: acc
 
   let entry_point ctx toplevel_fun entry_name =
+    let typ, code = entry_point ~context:ctx.global_context in
     let body =
-      let* () = entry_point ~context:ctx.global_context in
+      let* () = code in
       drop (return (W.Call (toplevel_fun, [])))
     in
     let locals, body =
       function_body
         ~context:ctx.global_context
         ~value_type:Value.value
-        ~param_count:0
+        ~param_count:(List.length typ.W.params)
         ~body
     in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
-      ; typ = { W.params = []; result = [] }
+      ; typ
       ; locals
       ; body
       }
@@ -926,6 +927,8 @@ module Generate (Target : Wa_target_sig.S) = struct
           translate_function p ctx name_opt toplevel_name params cont)
         []
     in
+    Curry.f ~context:ctx.global_context;
+    let start_function = entry_point ctx toplevel_name "_initialize" in
     let imports =
       List.concat
         (List.map
@@ -942,8 +945,6 @@ module Generate (Target : Wa_target_sig.S) = struct
           W.Data { name; read_only = true; active; contents })
         (Var.Map.bindings ctx.global_context.data_segments)
     in
-    Curry.f ~context:ctx.global_context;
-    let start_function = entry_point ctx toplevel_name "_initialize" in
     List.rev_append
       ctx.global_context.other_fields
       (imports @ functions @ (start_function :: constant_data))

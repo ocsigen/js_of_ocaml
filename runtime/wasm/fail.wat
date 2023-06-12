@@ -9,10 +9,11 @@
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
    (export "javascript_exception" (tag $javascript_exception))
 
-   (func $caml_raise_constant (param (ref eq))
+   (func $caml_raise_constant (export "caml_raise_constant") (param (ref eq))
       (throw $ocaml_exception (local.get 0)))
 
-   (func $caml_raise_with_arg (param $tag (ref eq)) (param $arg (ref eq))
+   (func $caml_raise_with_arg (export "caml_raise_with_arg")
+      (param $tag (ref eq)) (param $arg (ref eq))
       (throw $ocaml_exception
          (array.new_fixed $block
             (i31.new (i32.const 0)) (local.get $tag) (local.get $arg))))

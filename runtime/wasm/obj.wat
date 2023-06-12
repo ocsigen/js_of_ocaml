@@ -1,6 +1,8 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "effect" "caml_is_continuation"
+      (func $caml_is_continuation (param (ref eq)) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -178,6 +180,8 @@
          (then (return (i31.new (global.get $custom_tag)))))
       (if (ref.test $closure (local.get $v))
          (then (return (i31.new (global.get $closure_tag)))))
+      (if (call $caml_is_continuation (local.get $v))
+         (then (return (i31.new (global.get $cont_tag)))))
       ;; ZZZ float array
       (i31.new (global.get $abstract_tag)))
 
