@@ -56,6 +56,8 @@ module Js = struct
 
     external equals : 'a -> 'b -> bool = "caml_js_equals"
 
+    external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
+
     external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 
     external eval_string : string -> 'a = "caml_js_eval_string"
@@ -64,7 +66,9 @@ module Js = struct
 
     external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
-    let global = pure_js_expr "globalThis"
+    external get_global : unit -> 'a = "caml_js_global"
+
+    let global = get_global ()
 
     external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
       = "caml_js_wrap_callback_unsafe"
@@ -91,6 +95,10 @@ module Js = struct
   end
 
   (****)
+
+  external equals : _ -> _ -> bool = "caml_js_equals"
+
+  external strict_equals : _ -> _ -> bool = "caml_js_strict_equals"
 
   type 'a opt = 'a
 
@@ -128,6 +136,10 @@ module Js = struct
     val option : 'a option -> 'a t
 
     val to_option : 'a t -> 'a option
+
+    external equals : _ t -> _ t -> bool = "caml_js_equals"
+
+    external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
   end
 
   module Opt : OPT with type 'a t = 'a opt = struct
@@ -137,17 +149,17 @@ module Js = struct
 
     let return = some
 
-    let map x f = if Unsafe.equals x null then null else return (f x)
+    let map x f = if equals x null then null else return (f x)
 
-    let bind x f = if Unsafe.equals x null then null else f x
+    let bind x f = if equals x null then null else f x
 
-    let test x = not (Unsafe.equals x null)
+    let test x = not (equals x null)
 
-    let iter x f = if not (Unsafe.equals x null) then f x
+    let iter x f = if not (equals x null) then f x
 
-    let case x f g = if Unsafe.equals x null then f () else g x
+    let case x f g = if equals x null then f () else g x
 
-    let get x f = if Unsafe.equals x null then f () else x
+    let get x f = if equals x null then f () else x
 
     let option x =
       match x with
@@ -155,6 +167,10 @@ module Js = struct
       | Some x -> return x
 
     let to_option x = case x (fun () -> None) (fun x -> Some x)
+
+    external equals : 'a -> 'b -> bool = "caml_js_equals"
+
+    external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
   end
 
   module Optdef : OPT with type 'a t = 'a optdef = struct
@@ -164,17 +180,17 @@ module Js = struct
 
     let return = def
 
-    let map x f = if x == undefined then undefined else return (f x)
+    let map x f = if strict_equals x undefined then undefined else return (f x)
 
-    let bind x f = if x == undefined then undefined else f x
+    let bind x f = if strict_equals x undefined then undefined else f x
 
-    let test x = x != undefined
+    let test x = not (strict_equals x undefined)
 
-    let iter x f = if x != undefined then f x
+    let iter x f = if not (strict_equals x undefined) then f x
 
-    let case x f g = if x == undefined then f () else g x
+    let case x f g = if strict_equals x undefined then f () else g x
 
-    let get x f = if x == undefined then f () else x
+    let get x f = if strict_equals x undefined then f () else x
 
     let option x =
       match x with
@@ -182,6 +198,10 @@ module Js = struct
       | Some x -> return x
 
     let to_option x = case x (fun () -> None) (fun x -> Some x)
+
+    external equals : 'a -> 'b -> bool = "caml_js_equals"
+
+    external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
   end
 
   (****)

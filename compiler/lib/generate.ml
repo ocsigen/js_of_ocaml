@@ -1390,6 +1390,8 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
            | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
            ]}
         *)
+        | Extern "caml_js_global", _ ->
+            J.EVar (J.ident Constant.global_object_), const_p, queue
         | Extern "%overrideMod", [ Pc (String m); Pc (String f) ] ->
             runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p, queue
         | Extern "%overrideMod", _ -> assert false

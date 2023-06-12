@@ -37,6 +37,8 @@ module Js = struct
 
   external delete : t -> t -> unit = "caml_js_delete"
 
+  external get_global : unit -> t = "caml_js_global"
+
   external call : t -> t -> t array -> t = "caml_js_call"
 
   external fun_call : t -> t array -> t = "caml_js_fun_call"
@@ -50,6 +52,8 @@ module Js = struct
   external obj : (string * t) array -> t = "caml_js_object"
 
   external equals : t -> t -> bool = "caml_js_equals"
+
+  external strict_equals : t -> t -> bool = "caml_js_strict_equals"
 
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 

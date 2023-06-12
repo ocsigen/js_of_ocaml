@@ -29,6 +29,7 @@
    (import "bindings" "new_obj" (func $new_obj (result anyref)))
    (import "bindings" "new_array"
       (func $new_array (param i32) (result (ref extern))))
+   (import "bindings" "global_this" (global $global_this anyref))
    (import "bindings" "iter_props"
       (func $iter_props (param anyref) (param anyref)))
    (import "bindings" "array_length"
@@ -97,6 +98,9 @@
          (call $eval
             (string.new_wtf8_array replace
                (local.get $s) (i32.const 0) (array.len (local.get $s))))))
+
+   (func (export "caml_js_global") (param (ref eq)) (result (ref eq))
+      (call $wrap (global.get $global_this)))
 
    (func (export "caml_js_to_float") (param (ref eq)) (result (ref eq))
       (struct.new $float (call $to_float (call $unwrap (local.get 0)))))

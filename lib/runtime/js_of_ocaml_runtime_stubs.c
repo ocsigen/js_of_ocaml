@@ -88,6 +88,10 @@ void caml_js_get () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_get!\n");
   exit(1);
 }
+void caml_js_global () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_global!\n");
+  exit(1);
+}
 void caml_js_instanceof () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_instanceof!\n");
   exit(1);
@@ -110,6 +114,10 @@ void caml_js_pure_expr () {
 }
 void caml_js_set () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_set!\n");
+  exit(1);
+}
+void caml_js_strict_equals () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_strict_equals!\n");
   exit(1);
 }
 void caml_js_to_array () {

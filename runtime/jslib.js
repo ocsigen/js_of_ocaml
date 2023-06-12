@@ -30,6 +30,9 @@ function caml_js_get(o,f) { return o[f]; }
 //Provides: caml_js_delete (mutable, const)
 function caml_js_delete(o,f) { delete o[f]; return 0}
 
+//Provides: caml_js_global const
+function caml_js_global () { return globalThis }
+
 //Provides: caml_js_instanceof (const, const)
 function caml_js_instanceof(o,c) { return (o instanceof c) ? 1 : 0; }
 
