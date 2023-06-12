@@ -133,3 +133,150 @@ let%expect_test "\"use strict\"; expression statement" =
       [%expect {|
         "use strict"; e2;
         //end|}])
+
+(* Test on an arbitrary larger OCaml program to see the effect of simplification. *)
+let%expect_test "end-to-end" =
+  let prog =
+    {|
+  module M : sig
+    val run : unit -> unit
+  end = struct
+    let delayed = ref []
+    let even i =
+      let rec odd = function
+      | 0 ->
+        let f () = Printf.printf "in odd, called with %d\n" i in
+        delayed := f :: !delayed;
+        f ();
+        false
+      | 1 -> not (not (even 0))
+      | 2 -> not (not (even 1))
+      | n -> not (not (even (n - 1)))
+      and even = function
+      | 0 ->
+        let f () = Printf.printf "in even, called with %d\n" i in
+        delayed := f :: !delayed;
+        f ();
+        true
+      | 1 -> not (not (odd 0))
+      | 2 -> not (not (odd 1))
+      | n -> not (not (odd (n - 1)))
+      in even i
+
+  let run () =
+    for i = 0 to 4 do
+      ignore (even (i) : bool)
+    done;
+    List.iter (fun f -> f ()) (List.rev !delayed)
+  end
+
+  let ()  = M.run ()
+  |}
+  in
+  let js_simpl_es6 =
+    Util.compile_and_parse ~flags:[ "--enable"; "es6"; "--enable"; "simplify" ] prog
+  in
+  let js_pretty =
+    Util.compile_and_parse ~flags:[ "--enable"; "es6"; "--disable"; "simplify" ] prog
+  in
+  Util.print_fun_decl js_simpl_es6 (Some "run");
+  [%expect
+    {|
+      function run(param){
+       var i = 0;
+       for(;;){
+        var
+         closures =
+           i=>{
+            var
+             even =
+               n=>{
+                if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+                switch(n){
+                  case 0:
+                   var f = param=>caml_call2(Stdlib_Printf[2], _b_, i);
+                   return delayed[1] = [0, f, delayed[1]], f(0), 1;
+                  case 1:
+                   return 1 - (1 - odd(0));
+                  default: return 1 - (1 - odd(1));
+                }},
+             odd =
+               n=>{
+                if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
+                switch(n){
+                  case 0:
+                   var f = param=>caml_call2(Stdlib_Printf[2], _a_, i);
+                   return delayed[1] = [0, f, delayed[1]], f(0), 0;
+                  case 1:
+                   return 1 - (1 - even(0));
+                  default: return 1 - (1 - even(1));
+                }},
+             block = [0, even, odd];
+            return block;},
+         closures$0 = closures(i),
+         even = closures$0[1],
+         _e_ = (even(i), i + 1 | 0);
+        if(4 !== i){var i = _e_; continue;}
+        var _c_ = caml_call1(Stdlib_List[9], delayed[1]), _d_ = f=>caml_call1(f, 0);
+        return caml_call2(Stdlib_List[17], _d_, _c_);
+       }
+      }
+      //end
+    |}];
+  Util.print_var_decl js_pretty "run";
+  [%expect
+    {|
+    var run = (function(param){
+      var i = 0;
+      for(;;){
+       var
+        closures =
+          function(i){
+           var
+            even =
+              function(n){
+               if(2 < n >>> 0) return 1 - (1 - odd(n + - 1 | 0));
+               switch(n){
+                 case 0:
+                  var
+                   f =
+                     function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
+                  delayed[1] = [0, f, delayed[1]];
+                  f(0);
+                  return 1;
+                 case 1:
+                  return 1 - (1 - odd(0));
+                 default: return 1 - (1 - odd(1));
+               }
+              },
+            odd =
+              function(n){
+               if(2 < n >>> 0) return 1 - (1 - even(n + - 1 | 0));
+               switch(n){
+                 case 0:
+                  var
+                   f =
+                     function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
+                  delayed[1] = [0, f, delayed[1]];
+                  f(0);
+                  return 0;
+                 case 1:
+                  return 1 - (1 - even(0));
+                 default: return 1 - (1 - even(1));
+               }
+              },
+            block = [0, even, odd];
+           return block;
+          },
+        closures$0 = closures(i),
+        even = closures$0[1];
+       even(i);
+       var _e_ = i + 1 | 0;
+       if(4 !== i){var i = _e_; continue;}
+       var
+        _c_ = caml_call1(Stdlib_List[9], delayed[1]),
+        _d_ = function(f){return caml_call1(f, 0);};
+       return caml_call2(Stdlib_List[17], _d_, _c_);
+      }
+     });
+    //end |}]
