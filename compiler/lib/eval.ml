@@ -257,7 +257,14 @@ let eval_instr ~target info ((x, loc) as i) =
           [ Let (x, c), loc ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
-      [ Let (jsoo, Constant (String "js_of_ocaml")), noloc
+      [ ( Let
+            ( jsoo
+            , Constant
+                (String
+                   (match target with
+                   | `JavaScript -> "js_of_ocaml"
+                   | `Wasm -> "wasm_of_ocaml")) )
+        , noloc )
       ; Let (x, Block (0, [| jsoo |], NotArray)), loc
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->

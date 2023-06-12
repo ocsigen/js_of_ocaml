@@ -6,6 +6,7 @@
    (import "bindings" "ta_set_i32"
       (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
 
+   (type $string (array (mut i8)))
    (type $value->value->int
       (func (param (ref eq)) (param (ref eq)) (result i32)))
    (type $value->int

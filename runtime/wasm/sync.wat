@@ -70,7 +70,7 @@
             (i31.new (i32.const 1)))))
 
    (func (export "caml_ml_mutex_unlock") (param (ref eq)) (result (ref eq))
-      (struct.set $mutex 2 (ref.cast $mutex (local.get 0)) (i32.const 1))
+      (struct.set $mutex 2 (ref.cast $mutex (local.get 0)) (i32.const 0))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_condition_new") (param (ref eq)) (result (ref eq))

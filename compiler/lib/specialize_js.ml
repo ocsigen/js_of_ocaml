@@ -24,14 +24,14 @@ open Flow
 
 let specialize_instr ~target info i =
   match i, target with
-  | Let (x, Prim (Extern "caml_format_int", [ y; z ])), _ -> (
+  | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
       match the_string_of info y with
       | Some "%d" -> (
           match the_int info z with
           | Some i -> Let (x, Constant (String (Int32.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [ z ])))
       | _ -> i)
-  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])), _ -> (
+  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])), `JavaScript -> (
       match the_int info z with
       | Some i -> Let (x, Constant (String (Int32.to_string i)))
       | None -> i)

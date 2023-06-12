@@ -159,10 +159,6 @@
             (i32.and
                (i32.shr_u (local.get $x) (i32.const 8)) (i32.const 0xFF)))))
 
-   (func (export "%caml_format_int_special") (param (ref eq)) (result (ref eq))
-      (return_call $format_int_default
-         (i31.get_s (ref.cast i31 (local.get 0)))))
-
    (type $chars (array i8))
 
    (global $lowercase_hex_table (export "lowercase_hex_table") (ref $chars)
