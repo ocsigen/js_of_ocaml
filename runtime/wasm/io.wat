@@ -31,6 +31,9 @@
       (call $log_js (string.const "caml_ml_open_descriptor_in"))
       (i31.new (i32.const 0)))
 
+   (global $caml_stderr (export "caml_stderr")
+      (mut (ref eq)) (i31.new (i32.const 0)))
+
    (func (export "caml_ml_open_descriptor_out")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
