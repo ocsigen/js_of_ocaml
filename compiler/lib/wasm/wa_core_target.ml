@@ -606,6 +606,8 @@ module Math = struct
   let fmod f g = binary "fmod" f g
 end
 
+let exception_handler_body ~typ:_ b = b
+
 let entry_point ~context:_ =
   let declare_global name =
     register_global (S name) { mut = true; typ = I32 } (Const (I32 0l))

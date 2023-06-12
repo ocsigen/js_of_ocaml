@@ -57,6 +57,10 @@
       (func $wrap_meth_callback_unsafe (param (ref eq)) (result anyref)))
    (import "bindings" "wrap_fun_arguments"
       (func $wrap_fun_arguments (param anyref) (result anyref)))
+   (import "fail" "caml_failwith_tag"
+      (func $caml_failwith_tag (result (ref eq))))
+   (import "stdlib" "caml_named_value"
+      (func $caml_named_value (param anyref) (result (ref null eq))))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
@@ -536,7 +540,46 @@
                (br $loop))))
       (local.get $l))
 
+   (func (export "caml_wrap_exception") (param (externref)) (result (ref eq))
+      (local $exn (ref eq))
+      (local.set $exn (call $wrap (extern.internalize (local.get 0))))
+      ;; ZZZ special case for stack overflows?
+      (block $undef
+         (return
+            (array.new_fixed $block (i31.new (i32.const 0))
+               (br_on_null $undef
+                  (call $caml_named_value (string.const "jsError"))))
+               (local.get $exn)))
+      (array.new_fixed $block (i31.new (i32.const 0))
+         (call $caml_failwith_tag)
+         (local.get $exn)))
+
    (func (export "caml_js_error_option_of_exception")
       (param (ref eq)) (result (ref eq))
+      (local $exn (ref $block))
+      (local.set $exn (ref.cast $block (local.get $0)))
+      (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
+                  (i31.new (i32.const 0)))
+         (then
+            (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
+                   (call $caml_named_value (string.const "jsError")))
+               (then
+                  (return
+                     (array.new_fixed $block (i31.new (i32.const 0))
+                        (array.get $block (local.get $exn) (i32.const 2))))))))
       (i31.new (i32.const 0)))
+
+   (func (export "caml_js_error_of_exception")
+      (param (ref eq)) (result (ref eq))
+      (local $exn (ref $block))
+      (local.set $exn (ref.cast $block (local.get $0)))
+      (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
+                  (i31.new (i32.const 0)))
+         (then
+            (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
+                   (call $caml_named_value (string.const "jsError")))
+               (then
+                  (return
+                     (array.get $block (local.get $exn) (i32.const 2)))))))
+      (call $wrap (ref.null any)))
 )

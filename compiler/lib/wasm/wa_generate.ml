@@ -808,7 +808,9 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* tag = register_import ~name:exception_name (Tag Value.value) in
               try_
                 { params = []; result = result_typ }
-                (translate_branch result_typ fall_through pc cont context' stack_ctx)
+                (exception_handler_body
+                   ~typ:result_typ
+                   (translate_branch result_typ fall_through pc cont context' stack_ctx))
                 tag
                 (let* () = store ~always:true x (return (W.Pop Value.value)) in
                  translate_branch result_typ fall_through pc cont' context' stack_ctx)

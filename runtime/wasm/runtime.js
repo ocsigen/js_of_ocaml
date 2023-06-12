@@ -28,7 +28,11 @@
        Float32Array, Float64Array, Uint8Array]
 
     let bindings =
-        {identity:(x)=>x,
+        {jstag:
+         WebAssembly.JSTag||
+         // ZZZ not supported in node yet
+         new WebAssembly.Tag({parameters:['externref'],results:[]}),
+         identity:(x)=>x,
          from_bool:(x)=>!!x,
          get:(x,y)=>x[y],
          set:(x,y,z)=>x[y]=z,
