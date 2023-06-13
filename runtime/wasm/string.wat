@@ -8,15 +8,16 @@
       (func $caml_copy_int64 (param i64) (result (ref eq))))
 
    (type $string (array (mut i8)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))

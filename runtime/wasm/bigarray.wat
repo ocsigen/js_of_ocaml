@@ -48,19 +48,21 @@
    (import "int64" "caml_copy_int64"
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "obj" "double_array_tag" (global $double_array_tag i32))
+   (import "compare" "unordered" (global $unordered i32))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))
@@ -77,22 +79,19 @@
             (i32.const 95) (i32.const 98) (i32.const 105) (i32.const 103)
             (i32.const 97) (i32.const 114) (i32.const 114) (i32.const 48)
             (i32.const 50))
-         (ref.func $bigarray_cmp) (ref.func $bigarray_hash)))
+         (ref.func $caml_ba_compare)
+         (ref.null $value->value->int->int)
+         (ref.func $bigarray_hash)))
 
    (type $bigarray
       (sub $custom
          (struct
             (field (ref $custom_operations))
-            (field (ref extern)) ;; data
-            (field (ref $int_array)) ;; size in each dimension
-            (field i8) ;; number of dimensions
-            (field i8) ;; kind
-            (field i8)))) ;; layout
-
-   (func $bigarray_cmp (param (ref eq)) (param (ref eq)) (result i32)
-      ;; ZZZ
-      (call $log_js (string.const "bigarray_cmp"))
-      (i32.const 1))
+            (field $ba_data (mut (ref extern))) ;; data
+            (field $ba_dim (ref $int_array)) ;; size in each dimension
+            (field $ba_num_dims i8) ;; number of dimensions
+            (field $ba_kind i8) ;; kind
+            (field $ba_layout i8)))) ;; layout
 
    (func $bigarray_hash (param (ref eq)) (result i32)
       ;; ZZZ
@@ -410,6 +409,213 @@
       (call $caml_ba_set_at_offset
          (local.get $ba) (local.get $i) (local.get $v))
       (i31.new (i32.const 0)))
+
+   (func $caml_ba_compare
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (param $total i32) (result i32)
+      (local $b1 (ref $bigarray)) (local $b2 (ref $bigarray))
+      (local $i1 i32) (local $i2 i32) (local $i i32) (local $len i32)
+      (local $f1 f64) (local $f2 f64)
+      (local $d1 (ref extern)) (local $d2 (ref extern))
+      (local.set $b1 (ref.cast $bigarray (local.get $v1)))
+      (local.set $b2 (ref.cast $bigarray (local.get $v2)))
+      (if (i32.ne (struct.get $bigarray $ba_layout (local.get $b2))
+                  (struct.get $bigarray $ba_layout (local.get $b1)))
+         (then
+            (return
+               (i32.sub (struct.get $bigarray $ba_layout (local.get $b2))
+                        (struct.get $bigarray $ba_layout (local.get $b1))))))
+      (if (i32.ne (struct.get $bigarray $ba_kind (local.get $b2))
+                  (struct.get $bigarray $ba_kind (local.get $b1)))
+         (then
+            (return
+               (i32.sub (struct.get $bigarray $ba_kind (local.get $b2))
+                        (struct.get $bigarray $ba_kind (local.get $b1))))))
+      (if (i32.ne (struct.get $bigarray $ba_num_dims (local.get $b2))
+                  (struct.get $bigarray $ba_num_dims (local.get $b1)))
+         (then
+            (return
+               (i32.sub (struct.get $bigarray $ba_num_dims (local.get $b2))
+                        (struct.get $bigarray $ba_num_dims (local.get $b1))))))
+      (local.set $len (struct.get $bigarray $ba_num_dims (local.get $b2)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+                (local.set $i1
+                   (array.get $int_array
+                      (struct.get $bigarray $ba_dim (local.get $b1))
+                      (local.get $i)))
+                (local.set $i2
+                   (array.get $int_array
+                      (struct.get $bigarray $ba_dim (local.get $b2))
+                      (local.get $i)))
+                (if (i32.ne (local.get $i1) (local.get $i2))
+                   (return
+                      (select (i32.const -1) (i32.const 1)
+                         (i32.lt_u (local.get $i1) (local.get $i2)))))
+                (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                (br $loop))))
+      (local.set $d1 (struct.get $bigarray $ba_data (local.get $b1)))
+      (local.set $d2 (struct.get $bigarray $ba_data (local.get $b2)))
+      (local.set $len (call $ta_length (local.get $d1)))
+      (local.set $i (i32.const 0))
+      (block $float32
+       (block $float64
+        (block $int8
+         (block $uint8
+          (block $int16
+           (block $uint16
+            (block $int32
+             (block $int64
+              (br_table $float32 $float64 $int8 $uint8 $int16 $uint16
+                        $int32 $int64 $int32 $int32
+                        $float32 $float64 $uint8
+                 (struct.get $bigarray $ba_kind (local.get $b1))))
+             ;; int64
+             (loop $loop
+                (if (i32.lt_u (local.get $i) (local.get $len))
+                   (then
+                      (local.set $i1
+                         (call $ta_get_i32 (local.get $d1)
+                            (i32.add (local.get $i) (i32.const 1))))
+                      (local.set $i2
+                         (call $ta_get_i32 (local.get $d2)
+                            (i32.add (local.get $i) (i32.const 1))))
+                      (if (i32.lt_s (local.get $i1) (local.get $i2))
+                         (then (return (i32.const -1))))
+                      (if (i32.gt_s (local.get $i1) (local.get $i2))
+                         (then (return (i32.const 1))))
+                      (local.set $i1
+                         (call $ta_get_i32 (local.get $d1) (local.get $i)))
+                      (local.set $i2
+                         (call $ta_get_i32 (local.get $d2) (local.get $i)))
+                      (if (i32.lt_u (local.get $i1) (local.get $i2))
+                         (then (return (i32.const -1))))
+                      (if (i32.gt_u (local.get $i1) (local.get $i2))
+                         (then (return (i32.const 1))))
+                      (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                      (br $loop))))
+             (return (i32.const 0)))
+            ;; int32
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (local.set $i1
+                        (call $ta_get_i32 (local.get $d1) (local.get $i)))
+                     (local.set $i2
+                        (call $ta_get_i32 (local.get $d2) (local.get $i)))
+                     (if (i32.lt_s (local.get $i1) (local.get $i2))
+                        (then (return (i32.const -1))))
+                     (if (i32.gt_s (local.get $i1) (local.get $i2))
+                        (then (return (i32.const 1))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))
+            (return (i32.const 0)))
+           ;; uint16
+           (loop $loop
+              (if (i32.lt_u (local.get $i) (local.get $len))
+                 (then
+                    (local.set $i1
+                       (call $ta_get_ui16 (local.get $d1) (local.get $i)))
+                    (local.set $i2
+                       (call $ta_get_ui16 (local.get $d2) (local.get $i)))
+                    (if (i32.lt_s (local.get $i1) (local.get $i2))
+                       (then (return (i32.const -1))))
+                    (if (i32.gt_s (local.get $i1) (local.get $i2))
+                       (then (return (i32.const 1))))
+                    (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                    (br $loop))))
+           (return (i32.const 0)))
+          ;; int16
+          (loop $loop
+             (if (i32.lt_u (local.get $i) (local.get $len))
+                (then
+                   (local.set $i1
+                      (call $ta_get_i16 (local.get $d1) (local.get $i)))
+                   (local.set $i2
+                      (call $ta_get_i16 (local.get $d2) (local.get $i)))
+                   (if (i32.lt_s (local.get $i1) (local.get $i2))
+                      (then (return (i32.const -1))))
+                   (if (i32.gt_s (local.get $i1) (local.get $i2))
+                      (then (return (i32.const 1))))
+                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                   (br $loop))))
+          (return (i32.const 0)))
+         ;; uint8
+         (loop $loop
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (local.set $i1
+                     (call $ta_get_ui8 (local.get $d1) (local.get $i)))
+                  (local.set $i2
+                     (call $ta_get_ui8 (local.get $d2) (local.get $i)))
+                  (if (i32.lt_s (local.get $i1) (local.get $i2))
+                     (then (return (i32.const -1))))
+                  (if (i32.gt_s (local.get $i1) (local.get $i2))
+                     (then (return (i32.const 1))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br $loop))))
+         (return (i32.const 0)))
+        ;; int8
+        (loop $loop
+           (if (i32.lt_u (local.get $i) (local.get $len))
+              (then
+                 (local.set $i1
+                    (call $ta_get_i8 (local.get $d1) (local.get $i)))
+                 (local.set $i2
+                    (call $ta_get_i8 (local.get $d2) (local.get $i)))
+                 (if (i32.lt_s (local.get $i1) (local.get $i2))
+                    (then (return (i32.const -1))))
+                 (if (i32.gt_s (local.get $i1) (local.get $i2))
+                    (then (return (i32.const 1))))
+                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                 (br $loop))))
+        (return (i32.const 0)))
+       ;; float64
+       (loop $loop
+          (if (i32.lt_u (local.get $i) (local.get $len))
+             (then
+                (local.set $f1
+                   (call $ta_get_f64 (local.get $d1) (local.get $i)))
+                (local.set $f2
+                   (call $ta_get_f64 (local.get $d2) (local.get $i)))
+                (if (f64.lt (local.get $f1) (local.get $f2))
+                   (then (return (i32.const -1))))
+                (if (f64.gt (local.get $f1) (local.get $f2))
+                   (then (return (i32.const 1))))
+                (if (f64.ne (local.get $f1) (local.get $f2))
+                   (then
+                      (if (i32.eqz (local.get $total))
+                         (then (return (global.get $unordered))))
+                      (if (f64.eq (local.get $f1) (local.get $f1))
+                         (then (return (i32.const 1))))
+                      (if (f64.eq (local.get $f2) (local.get $f2))
+                         (then (return (i32.const -1))))))
+                (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                (br $loop))))
+       (return (i32.const 0)))
+      ;; float32
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (local.set $f1
+                  (call $ta_get_f32 (local.get $d1) (local.get $i)))
+               (local.set $f2
+                  (call $ta_get_f32 (local.get $d2) (local.get $i)))
+               (if (f64.lt (local.get $f1) (local.get $f2))
+                  (then (return (i32.const -1))))
+               (if (f64.gt (local.get $f1) (local.get $f2))
+                  (then (return (i32.const 1))))
+               (if (f64.ne (local.get $f1) (local.get $f2))
+                  (then
+                     (if (i32.eqz (local.get $total))
+                        (then (return (global.get $unordered))))
+                     (if (f64.eq (local.get $f1) (local.get $f1))
+                        (then (return (i32.const 1))))
+                     (if (f64.eq (local.get $f2) (local.get $f2))
+                        (then (return (i32.const -1))))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (return (i32.const 0)))
 
    (func (export "caml_string_of_array") (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string

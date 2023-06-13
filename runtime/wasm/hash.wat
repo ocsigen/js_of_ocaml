@@ -1,24 +1,33 @@
 (module
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
+   (import "bindings" "is_string"
+      (func $ref_test_string (param anyref) (result i32)))
+   (import "bindings" "identity"
+      (func $ref_cast_string (param anyref) (result (ref string))))
+   (import "jslib" "caml_string_of_jsstring"
+      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $js (struct (field anyref)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))
 
-   (func $caml_hash_mix_int (param $h i32) (param $d i32) (result i32)
+   (func $caml_hash_mix_int (export "caml_hash_mix_int")
+      (param $h i32) (param $d i32) (result i32)
       (i32.add
          (i32.mul
             (i32.rotl
@@ -33,7 +42,8 @@
             (i32.const 5))
          (i32.const 0xe6546b64)))
 
-   (func $caml_hash_mix_final (param $h i32) (result i32)
+   (func $caml_hash_mix_final (export "caml_hash_mix_final")
+      (param $h i32) (result i32)
       (local.set $h
          (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 16))))
       (local.set $h (i32.mul (local.get $h) (i32.const 0x85ebca6b)))
@@ -60,7 +70,7 @@
          (then (local.set $i (i64.const 0))))
       (return_call $caml_hash_mix_int64 (local.get $h) (local.get $i)))
 
-   (func $caml_hash_mix_string
+   (func $caml_hash_mix_string (export "caml_hash_mix_string")
       (param $h i32) (param $s (ref $string)) (result i32)
       (local $i i32) (local $len i32) (local $w i32)
       (local.set $len (array.len (local.get $s)))
@@ -108,6 +118,11 @@
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
 
+   (func $caml_hash_mix_jsstring
+      (param $h i32) (param $s (ref eq)) (result i32)
+      (return_call $caml_hash_mix_string (local.get $h)
+         (ref.cast $string (call $caml_string_of_jsstring (local.get $s)))))
+
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
 
@@ -124,6 +139,7 @@
       (local $i i32)
       (local $len i32)
       (local $tag i32)
+      (local $str anyref)
       (local.set $sz (i31.get_u (ref.cast i31 (local.get $limit))))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
          (then (local.set $sz (global.get $HASH_QUEUE_SIZE))))
@@ -231,15 +247,27 @@
                         (call $caml_hash_mix_int (local.get $h)
                            (call_ref $value->int
                               (local.get $v)
-                              (struct.get $custom_operations 2
-                                 (br_on_null $loop
+                              (br_on_null $loop
+                                 (struct.get $custom_operations $cust_hash
                                     (struct.get $custom 0
                                        (br_on_cast_fail $not_custom $custom
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-                  ;; closures are ignored
-                  ;; ZZZ javascript values
+                  (drop (block $not_js (result (ref eq))
+                     (local.set $str
+                        (struct.get $js 0
+                           (br_on_cast_fail $not_js $js (local.get $v))))
+                     ;; ZZZ use ref.test / ref.cast
+                     (if (call $ref_test_string (local.get $str))
+                        (then
+                           (local.set $h
+                              (call $caml_hash_mix_int (local.get $h)
+                                 (string.hash
+                                    (call $ref_cast_string
+                                       (local.get $str)))))))
+                     (i31.new (i32.const 0))))
+                  ;; closures and continuations and other js values are ignored
                   (br $loop)))))
       ;; clear the queue to avoid a memory leak
       (array.fill $block (global.get $caml_hash_queue)

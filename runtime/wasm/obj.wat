@@ -1,5 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
@@ -7,19 +6,19 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))
-   (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (struct (;(field i32);) (field (ref $function_1))))
    (type $closure_last_arg

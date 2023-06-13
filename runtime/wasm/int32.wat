@@ -7,15 +7,16 @@
          (param (ref eq)) (param i32) (param i32) (result (ref eq))))
 
    (type $string (array (mut i8)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))
@@ -24,12 +25,14 @@
       (struct.new $custom_operations
          (array.new_fixed $string (i32.const 95) (i32.const 105)) ;; "_i"
          (ref.func $int32_cmp)
+         (ref.null $value->value->int->int)
          (ref.func $int32_hash)))
 
    (type $int32
       (sub $custom (struct (field (ref $custom_operations)) (field i32))))
 
-   (func $int32_cmp (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+   (func $int32_cmp
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)
       (local $i1 i32) (local $i2 i32)
       (local.set $i1 (struct.get $int32 1 (ref.cast $int32 (local.get $v1))))
       (local.set $i2 (struct.get $int32 1 (ref.cast $int32 (local.get $v2))))
@@ -78,6 +81,7 @@
       (struct.new $custom_operations
          (array.new_fixed $string (i32.const 95) (i32.const 110)) ;; "_n"
          (ref.func $int32_cmp)
+         (ref.null $value->value->int->int)
          (ref.func $int32_hash)))
 
    (func $caml_copy_nativeint (export "caml_copy_nativeint")
@@ -93,7 +97,7 @@
 
    (func (export "caml_nativeint_of_string")
       (param $v (ref eq)) (result (ref eq))
-      (return_call $caml_copy_int32
+      (return_call $caml_copy_nativeint
          (call $parse_int
             (local.get $v) (i32.const 32) (global.get $NATIVEINT_ERRMSG))))
 

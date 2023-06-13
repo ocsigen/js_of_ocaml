@@ -38,7 +38,7 @@ module Type = struct
         return
           { supertype = None
           ; final = true
-          ; typ = W.Func { W.params = [ value; value ]; result = [ I32 ] }
+          ; typ = W.Func { W.params = [ value; value; I32 ]; result = [ I32 ] }
           })
 
   let hash_type =
@@ -63,7 +63,10 @@ module Type = struct
                   ; typ = Value (Ref { nullable = false; typ = Type string })
                   }
                 ; { mut = false
-                  ; typ = Value (Ref { nullable = false; typ = Type compare })
+                  ; typ = Value (Ref { nullable = true; typ = Type compare })
+                  }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = true; typ = Type compare })
                   }
                 ; { mut = false; typ = Value (Ref { nullable = true; typ = Type hash }) }
                 ]

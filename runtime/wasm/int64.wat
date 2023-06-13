@@ -10,15 +10,16 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
 
    (type $string (array (mut i8)))
-   (type $value->value->int
-      (func (param (ref eq)) (param (ref eq)) (result i32)))
+   (type $value->value->int->int
+      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $value->int
       (func (param (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field (ref $string)) ;; identifier
-         (field (ref $value->value->int)) ;; compare
-         (field (ref null $value->int)) ;; hash
+         (field $cust_id (ref $string))
+         (field $cust_compare (ref null $value->value->int->int))
+         (field $cust_compare_ext (ref null $value->value->int->int))
+         (field $cust_hash (ref null $value->int))
          ;; ZZZ
       ))
    (type $custom (struct (field (ref $custom_operations))))
@@ -27,12 +28,14 @@
       (struct.new $custom_operations
          (array.new_fixed $string (i32.const 95) (i32.const 106)) ;; "_j"
          (ref.func $int64_cmp)
+         (ref.null $value->value->int->int)
          (ref.func $int64_hash)))
 
    (type $int64
       (sub $custom (struct (field (ref $custom_operations)) (field i64))))
 
-   (func $int64_cmp (param $v1 (ref eq)) (param $v2 (ref eq)) (result i32)
+   (func $int64_cmp
+      (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)
       (local $i1 i64) (local $i2 i64)
       (local.set $i1 (struct.get $int64 1 (ref.cast $int64 (local.get $v1))))
       (local.set $i2 (struct.get $int64 1 (ref.cast $int64 (local.get $v2))))
