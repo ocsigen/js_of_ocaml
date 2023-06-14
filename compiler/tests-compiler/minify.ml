@@ -362,22 +362,18 @@ function f () {
       in
       print_file (Filetype.path_of_js_file js_file);
       print_file (Filetype.path_of_js_file js_min_file);
-      [%expect.unreachable])
-[@@expect.uncaught_exn {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-
-  (Failure "non-zero exit code")
-  Raised at Stdlib__Buffer.add_channel in file "buffer.ml", line 211, characters 18-35
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string.loop in file "compiler/tests-compiler/util/util.ml", line 169, characters 4-52
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string in file "compiler/tests-compiler/util/util.ml", line 172, characters 7-14
-
-  Trailing output
-  ---------------
-  Some variables escaped (#1). Use [--debug js_assign] for more info.
-  /home/hugo/js_of_ocaml/_build/default/compiler/bin-jsoo_minify/jsoo_minify.exe: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
-  Error: File "compiler/lib/js_assign.ml", line 386, characters 5-11: Assertion failed
-
-  process exited with error code 1
-   /home/hugo/js_of_ocaml/_build/default/compiler/bin-jsoo_minify/jsoo_minify.exe --enable shortvar test.js -o test.min.js |}]
+      [%expect{|
+        $ cat "test.js"
+          1:
+          2: function f () {
+          3:   const c = 2;
+          4:   return function () {
+          5:     var c = c + 2;
+          6:     return c
+          7:   }
+          8: }
+        $ cat "test.min.js"
+          1: function
+          2: f(){const
+          3: a=2;return function(){var
+          4: a=a+2;return a}} |}])

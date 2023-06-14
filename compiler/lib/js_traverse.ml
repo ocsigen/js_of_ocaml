@@ -1281,55 +1281,6 @@ class clean =
       | s -> s
   end
 
-let translate_assign_op = function
-  | Div -> SlashEq
-  | Mod -> ModEq
-  | Lsl -> LslEq
-  | Asr -> AsrEq
-  | Lsr -> LsrEq
-  | Band -> BandEq
-  | Bor -> BorEq
-  | Bxor -> BxorEq
-  | Mul -> StarEq
-  | Plus -> PlusEq
-  | Minus -> MinusEq
-  | And -> AndEq
-  | Or -> OrEq
-  | Exp -> ExpEq
-  | Coalesce -> CoalesceEq
-  | _ -> assert false
-
-let is_one = function
-  | ENum n -> Num.is_one n
-  | _ -> false
-
-let assign_op = function
-  | exp, EBin (Plus, exp', exp'') -> (
-      match Poly.(exp = exp'), Poly.(exp = exp'') with
-      | false, false -> None
-      | true, false ->
-          if is_one exp''
-          then Some (EUn (IncrB, exp))
-          else Some (EBin (PlusEq, exp, exp''))
-      | false, true ->
-          if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
-      | true, true -> Some (EBin (StarEq, exp, ENum (Num.of_int32 2l))))
-  | exp, EBin (Minus, exp', y) when Poly.(exp = exp') ->
-      if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
-  | exp, EBin (Mul, exp', exp'') -> (
-      match Poly.(exp = exp'), Poly.(exp = exp'') with
-      | false, false -> None
-      | true, _ -> Some (EBin (StarEq, exp, exp''))
-      | _, true -> Some (EBin (StarEq, exp, exp')))
-  | ( exp
-    , EBin
-        ( ((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor | And | Or | Exp | Coalesce)
-          as unop)
-        , exp'
-        , y ) )
-    when Poly.(exp = exp') -> Some (EBin (translate_assign_op unop, exp, y))
-  | _ -> None
-
 let opt_cons b l =
   match b with
   | Some b -> b :: l
@@ -1440,15 +1391,7 @@ class simpl =
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
           | Variable_statement (((Var | Let | Const) as k), l1) ->
-              let x =
-                List.map l1 ~f:(function
-                    | DeclPattern _ as d -> Variable_statement (k, [ d ]), loc
-                    | DeclIdent (_, None) as d -> Variable_statement (k, [ d ]), loc
-                    | DeclIdent (ident, Some (exp, _)) as d -> (
-                        match assign_op (EVar ident, exp) with
-                        | Some e -> Expression_statement e, loc
-                        | None -> Variable_statement (k, [ d ]), loc))
-              in
+              let x = List.map l1 ~f:(fun d -> Variable_statement (k, [ d ]), loc) in
               x @ rem
           | _ -> (st, loc) :: rem)
   end
