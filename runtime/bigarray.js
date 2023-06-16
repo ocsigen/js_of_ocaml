@@ -881,6 +881,7 @@ function caml_ba_kind_of_typed_array(ta){
   else if (ta instanceof Float64Array) kind = 1;
   else if (ta instanceof Int8Array) kind = 2;
   else if (ta instanceof Uint8Array) kind = 3;
+  else if (ta instanceof Uint8ClampedArray) kind = 3;
   else if (ta instanceof Int16Array) kind = 4;
   else if (ta instanceof Uint16Array) kind = 5;
   else if (ta instanceof Int32Array) kind = 6;

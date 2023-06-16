@@ -153,6 +153,7 @@ let provided =
     ; "Uint16Array"
     ; "Uint32Array"
     ; "Uint8Array"
+    ; "Uint8ClampedArray"
     ; "atob"
     ; "btoa"
     ; "clearInterval"
