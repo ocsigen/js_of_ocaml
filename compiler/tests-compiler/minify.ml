@@ -362,7 +362,8 @@ function f () {
       in
       print_file (Filetype.path_of_js_file js_file);
       print_file (Filetype.path_of_js_file js_min_file);
-      [%expect{|
+      [%expect
+        {|
         $ cat "test.js"
           1:
           2: function f () {
