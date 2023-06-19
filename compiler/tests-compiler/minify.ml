@@ -341,3 +341,40 @@ let%expect_test _ =
           2: f{f(){const
           3: a=2;return v}}const
           4: a=y}()); |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+function f () {
+  const c = 2;
+  return function () {
+    var c = c + 2;
+    return c
+  }
+}        |}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: function f () {
+          3:   const c = 2;
+          4:   return function () {
+          5:     var c = c + 2;
+          6:     return c
+          7:   }
+          8: }
+        $ cat "test.min.js"
+          1: function
+          2: f(){const
+          3: a=2;return function(){var
+          4: a=a+2;return a}} |}])
