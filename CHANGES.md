@@ -2,6 +2,7 @@
 ## Features/Changes
 * Misc: Bump magic number for ocaml 5.1
 * Misc: changes to stay compatible with the next version of ppx_expect
+* Runtime: support conversion of Uint8ClampedArray typed arrays to bigarrays (#1472)
 
 ## Bug fixes
 * Compiler: fix location for parsing errors when last token is a virtual semicolon
@@ -10,6 +11,7 @@
 * Compiler: consise body should allow any expression but object literals
 * Compiler: preserve [new] without arguments [new C] (vs [new C()]
 * Compiler: remove invalid rewriting of js (#1471, #1469)
+* Runtime: fix int32 values returned from bigarrays when wrapping Uint32Array objects (#1472)
 
 # 5.2.0 (2023-04-28) - Lille
 ## Features/Changes
