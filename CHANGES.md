@@ -1,4 +1,4 @@
-# Dev (2023-??-??) - ??
+# 5.3.0 (2023-??-??) - ??
 ## Features/Changes
 * Misc: Bump magic number for ocaml 5.1
 * Misc: changes to stay compatible with the next version of ppx_expect
