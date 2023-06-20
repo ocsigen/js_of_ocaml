@@ -895,5 +895,10 @@ function caml_ba_kind_of_typed_array(ta){
 //Requires: caml_ba_create_unsafe
 function caml_ba_from_typed_array(ta){
   var kind = caml_ba_kind_of_typed_array(ta);
+  var ta =
+      /* Needed to avoid unsigned setters overflowing
+         the range of OCaml [int32] values. */
+      ta instanceof Uint32Array ?
+      new Int32Array(ta.buffer ,ta.byteOffset, ta.length) : ta;
   return caml_ba_create_unsafe(kind, 0, [ta.length], ta);
 }
