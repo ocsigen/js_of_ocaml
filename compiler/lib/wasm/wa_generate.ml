@@ -648,7 +648,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       in
       l
     in
-    let l = List.rev (visit_all params args) in
+    let l = visit_all params args in
     List.fold_left
       l
       ~f:(fun continuation (y, x) ->
