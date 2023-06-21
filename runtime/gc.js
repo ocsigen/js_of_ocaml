@@ -24,11 +24,13 @@ function caml_gc_compaction(){ return 0}
 function caml_gc_counters() { return [254,0,0,0] }
 //Provides: caml_gc_quick_stat
 function caml_gc_quick_stat(){
-  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 }
 //Provides: caml_gc_stat
 function caml_gc_stat() {
-  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  // A field was added in OCaml 4.12. It is unlikely to be an issue to
+  // return too many fields in previous versions of OCaml.
+  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 }
 
 //Provides: caml_gc_set
@@ -38,7 +40,7 @@ function caml_gc_set(_control) {
 
 //Provides: caml_gc_get
 function caml_gc_get(){
-  return [0,0,0,0,0,0,0,0,0]
+  return [0,0,0,0,0,0,0,0,0,0,0,0]
 }
 
 //Provides: caml_memprof_set
