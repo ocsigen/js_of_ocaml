@@ -1162,6 +1162,8 @@ let _ =
       J.EUn (J.Delete, J.EAccess (cx, ANormal, cy)));
   register_bin_prim "caml_js_equals" `Mutable (fun cx cy _ ->
       bool (J.EBin (J.EqEq, cx, cy)));
+  register_bin_prim "caml_js_strict_equals" `Mutable (fun cx cy _ ->
+      bool (J.EBin (J.EqEqEq, cx, cy)));
   register_bin_prim "caml_js_instanceof" `Mutator (fun cx cy _ ->
       bool (J.EBin (J.InstanceOf, cx, cy)));
   register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))

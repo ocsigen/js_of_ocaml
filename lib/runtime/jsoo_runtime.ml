@@ -59,6 +59,8 @@ module Js = struct
 
   external equals : t -> t -> bool = "caml_js_equals"
 
+  external strict_equals : t -> t -> bool = "caml_js_strict_equals"
+
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 
   external eval_string : string -> 'a = "caml_js_eval_string"

@@ -81,6 +81,12 @@ module type OPT = sig
 
   val to_option : 'a t -> 'a option
   (** Convert to option type. *)
+
+  external equals : _ t -> _ t -> bool = "caml_js_equals"
+  (** Javascript [==] equality operator. *)
+
+  external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
+  (** Javascript [===] equality operator. *)
 end
 
 module Opt : OPT with type 'a t = 'a opt
@@ -167,6 +173,14 @@ external wrap_meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
 (** Wrap an OCaml function so that it can be invoked from
       Javascript.  The first parameter of the function will be bound
       to the value of the [this] implicit parameter. *)
+
+(** {2 Javascript comparisons} *)
+
+external equals : _ t -> _ t -> bool = "caml_js_equals"
+(** Javascript [==] equality operator. *)
+
+external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
+(** Javascript [===] equality operator. *)
 
 (** {2 Javascript standard objects} *)
 
@@ -988,6 +1002,12 @@ module Unsafe : sig
 
   external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_strict"
+
+  external equals : _ -> _ -> bool = "caml_js_equals"
+  (** Javascript [==] equality operator. *)
+
+  external strict_equals : _ -> _ -> bool = "caml_js_strict_equals"
+  (** Javascript [===] equality operator. *)
 
   (** {3 Deprecated functions.} *)
 
