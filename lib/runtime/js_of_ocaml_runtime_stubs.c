@@ -120,6 +120,10 @@ void caml_js_set () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_set!\n");
   exit(1);
 }
+void caml_js_strict_equals () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_strict_equals!\n");
+  exit(1);
+}
 void caml_js_to_array () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_array!\n");
   exit(1);
