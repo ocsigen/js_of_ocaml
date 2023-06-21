@@ -35,7 +35,8 @@ let unit_of_cma filename =
   seek_in ic toc_pos;
   let lib : Cmo_format.library = input_value ic in
   close_in ic;
-  List.map lib.Cmo_format.lib_units ~f:(fun u -> u.Cmo_format.cu_name)
+  List.map lib.Cmo_format.lib_units ~f:(fun u ->
+      Js_of_ocaml_compiler.Ocaml_compiler.Cmo_format.name u)
 
 let read_cmi ~dir cmi =
   let with_name file =

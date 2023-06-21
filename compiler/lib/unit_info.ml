@@ -38,18 +38,19 @@ let empty =
   }
 
 let of_cmo (cmo : Cmo_format.compilation_unit) =
-  let provides = StringSet.singleton cmo.cu_name in
-  let requires = StringSet.of_list (List.map cmo.cu_required_globals ~f:Ident.name) in
+  let open Ocaml_compiler in
+  let provides = StringSet.singleton (Cmo_format.name cmo) in
+  let requires = StringSet.of_list (Cmo_format.requires cmo) in
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
     (not (Config.Flag.effects ()))
-    && List.exists cmo.cu_primitives ~f:(function
+    && List.exists (Cmo_format.primitives cmo) ~f:(function
            | "%resume" | "%reperform" | "%perform" -> true
            | _ -> false)
   in
-  let force_link = cmo.cu_force_link in
+  let force_link = Cmo_format.force_link cmo in
   let crcs =
-    List.fold_left cmo.cu_imports ~init:StringMap.empty ~f:(fun acc (s, o) ->
+    List.fold_left (Cmo_format.imports cmo) ~init:StringMap.empty ~f:(fun acc (s, o) ->
         StringMap.add s o acc)
   in
   { provides; requires; primitives = []; force_link; effects_without_cps; crcs }
