@@ -226,7 +226,7 @@ class type js_string =
 
     method charAt : int -> js_string t meth
 
-    method charCodeAt : int -> int meth
+    method charCodeAt : int -> float t meth
 
     (* This may return NaN... *)
     method concat : js_string t -> js_string t meth

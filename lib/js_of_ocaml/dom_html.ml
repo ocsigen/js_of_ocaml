@@ -3412,7 +3412,7 @@ module Keyboard_key = struct
     let key = Optdef.get evt##.key empty_string in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
-    | 1 -> char_of_int (key##charCodeAt 0)
+    | 1 -> char_of_int (int_of_float (Js.to_float (key##charCodeAt 0)))
     | _ -> None
 end
 
