@@ -288,7 +288,15 @@ function caml_tanh_float (x) { return Math.tanh(x); }
 //Provides: caml_atanh_float const
 function caml_atanh_float (x) { return Math.atanh(x); }
 //Provides: caml_round_float const
-function caml_round_float (x) { return Math.round(x); }
+function caml_round_float (x) {
+  if (x >= 0) {
+    var y = Math.floor(x);
+    return (x - y >= 0.5)?(y + 1):y
+  } else {
+    var y = Math.ceil(x);
+    return (y - x >= 0.5)?(y - 1):y
+  }
+}
 //Provides: caml_cbrt_float const
 function caml_cbrt_float (x) { return Math.cbrt(x); }
 
