@@ -323,7 +323,7 @@ function caml_unix_findclose(dir_handle) {
 }
 
 
-//Provides: caml_unix_inet_addr_of_string
+//Provides: caml_unix_inet_addr_of_string const
 //Alias: unix_inet_addr_of_string
 function caml_unix_inet_addr_of_string () {return 0;}
 
