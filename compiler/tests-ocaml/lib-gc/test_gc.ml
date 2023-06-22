@@ -19,7 +19,7 @@ type stat = Gc.stat =
     stack_size: int;
     forced_major_collections: int}
 
-type control =
+type control = Gc.control =
   { minor_heap_size : int;
     major_heap_increment : int;
     space_overhead : int;
