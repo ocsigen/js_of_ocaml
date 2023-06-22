@@ -1,3 +1,8 @@
+# Dev (2023-??-??) - ??
+
+## Bug fixes
+* Runtime: several small fixes (#1475)
+
 # 5.3.0 (2023-??-??) - ??
 ## Features/Changes
 * Misc: Bump magic number for ocaml 5.1
