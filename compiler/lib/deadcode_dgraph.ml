@@ -21,14 +21,13 @@ open Code
 type def =
   | Expr of expr
   | Var of Var.t
-  | Unknown
 
-type state =
+(* type state =
   { blocks : block Addr.Map.t
   ; live : bool Var.Tbl.t
-  ; defs : def array
+  ; defs : def list array
   ; pure_funs : Var.Set.t
-  }
+  } *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -45,57 +44,59 @@ module Solver = G.Solver (Domain)
 let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
 
 (* Returns an array of definitions of each variable *)
-let definitions (p : program) =
-  let defs = Array.make 0 Unknown in
+let definitions nv (p : program) =
+  let defs = Array.make nv [] in
+  let add_def x d = defs.(Var.idx x) <- d :: defs.(Var.idx x) in
   Addr.Map.iter
     (fun _ block ->
       List.iter
         (fun (i, _) ->
           match i with
-          | Let (x, e) -> defs.(Var.idx x) <- Expr e
-          | Assign (x, y) -> defs.(Var.idx x) <- Var y
+          | Let (x, e) -> add_def x (Expr e)
+          | Assign (x, y) -> add_def x (Var y)
           | _ -> ())
         block.body)
     p.blocks;
   defs
 
 (* Returns the adjacency list for the variable dependency graph. *)
-let dependencies (defs : def array) =
-  let deps = Array.make 0 Var.Set.empty in
+let dependencies nv defs =
+  let deps = Array.make nv Var.Set.empty in
   let add_dep i x = deps.(i) <- Var.Set.add x deps.(i) in
   Array.iteri
-    (fun i d ->
-      match d with
-      | Expr e -> (
-          match e with
-          | Apply { f; args; _ } ->
-              add_dep i f;
-              List.iter (add_dep i) args
-          | Block (_, params, _) -> Array.iter (add_dep i) params
-          | Field (z, _) -> add_dep i z
-          | Constant _ -> ()
-          (* Not exactly sure how to handle these two *)
-          | Closure (_, _) -> ()
-          | Prim (_, _) -> ())
-      | Var y -> add_dep i y
-      | Unknown -> ())
+    (fun i ds ->
+      List.iter
+        (fun d ->
+          match d with
+          | Expr e -> (
+              match e with
+              | Apply { f; args; _ } ->
+                  add_dep i f;
+                  List.iter (add_dep i) args
+              | Block (_, params, _) -> Array.iter (add_dep i) params
+              | Field (z, _) -> add_dep i z
+              | Constant _ -> ()
+              (* Not exactly sure how to handle these two *)
+              | Closure (_, _) -> ()
+              | Prim (_, _) -> ())
+          | Var y -> add_dep i y)
+        ds)
     defs;
   deps
 
 (* Returns a boolean array representing whether each variable appears in an effectful definition. *)
-let effectful defs pure_funs =
-  let effs = Array.make 0 false in
-  Array.iteri
-    (fun i d ->
-      match d with
-      | Expr e -> if not (pure_expr pure_funs e) then effs.(i) <- true
-      | Var y -> effs.(i) <- effs.(Var.idx y)
-      | Unknown -> ())
-    defs;
+let effectful nv defs pure_funs =
+  let effs = Array.make nv false in
+  let set_eff i d =
+    match d with
+    | Expr e -> if not (pure_expr pure_funs e) then effs.(i) <- true
+    | Var y -> effs.(i) <- effs.(Var.idx y)
+  in
+  Array.iteri (fun i ds -> List.iter (fun d -> set_eff i d) ds) defs;
   effs
 
 (* Returns the set of variables given the adjacency list of variable depencies. *)
-let variables (deps : Var.Set.t array) =
+let variables deps =
   let vars = Var.ISet.empty () in
   Array.iter (fun s -> Var.Set.iter (fun v -> Var.ISet.add vars v) s) deps;
   vars
@@ -113,7 +114,7 @@ let solver vars deps effectful =
   in
   Solver.f () g (propagate deps effectful)
 
-let live_instr st i =
+(* let live_instr st i =
   match i with
   | Let (x, e) ->
       (* variable has been marked as live or the expression is impure *)
@@ -123,25 +124,16 @@ let live_instr st i =
       Var.Tbl.get st.live x
   | Set_field _ | Offset_ref _ | Array_set _ ->
       (* these are impure so always live *)
-      true
+      true *)
 
 let run (p : program) =
+  let nv = Var.count () in
   let blocks = p.blocks in
-  let defs = definitions p in
-  let deps = dependencies defs in
+  let defs = definitions nv p in
+  let deps = dependencies nv defs in
   let pure_funs = Pure_fun.f p in
-  let effs = effectful defs pure_funs in
+  let effs = effectful nv defs pure_funs in
   let vars = variables deps in
   let live = solver vars deps effs in
-  (* Now that we have live variable table, remove dead ones *)
-  let st = { blocks; live; defs; pure_funs } in
-  let remove_dead (block : block) =
-    { params = List.filter (fun x -> Var.Tbl.get st.live x) block.params
-    ; body = (* remove dead instructions *)
-             _
-    ; branch = (* Remove dead code from the last instruction *)
-               _
-    }
-  in
-  let blocks = Addr.Map.map remove_dead p.blocks in
-  { p with blocks }
+  Var.Tbl.iter (fun v b -> Format.eprintf "%a: %b\n" Var.print v b) live;
+  { p with blocks }, Array.make nv 0
