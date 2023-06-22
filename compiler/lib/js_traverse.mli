@@ -78,6 +78,8 @@ class type iterator =
 
     method switch_case : Javascript.expression -> unit
 
+    method block : Javascript.statement_list -> unit
+
     method initialiser : Javascript.expression * Javascript.location -> unit
 
     method initialiser_o : (Javascript.expression * Javascript.location) option -> unit

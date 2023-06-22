@@ -104,6 +104,9 @@ jobs:
       - run: opam pin add zarith git+https://github.com/hhugo/Zarith.git#ci2
         if: runner.os == 'Windows'
 
+      - run: opam pin add base https://github.com/janestreet/base.git#v0.16
+        if: runner.os == 'Windows'
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
