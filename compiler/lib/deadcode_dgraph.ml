@@ -23,11 +23,11 @@ type def =
   | Var of Var.t
 
 (* type state =
-  { blocks : block Addr.Map.t
-  ; live : bool Var.Tbl.t
-  ; defs : def list array
-  ; pure_funs : Var.Set.t
-  } *)
+   { blocks : block Addr.Map.t
+   ; live : bool Var.Tbl.t
+   ; defs : def list array
+   ; pure_funs : Var.Set.t
+   } *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -76,9 +76,14 @@ let dependencies nv defs =
               | Block (_, params, _) -> Array.iter (add_dep i) params
               | Field (z, _) -> add_dep i z
               | Constant _ -> ()
-              (* Not exactly sure how to handle these two *)
-              | Closure (_, _) -> ()
-              | Prim (_, _) -> ())
+              | Closure (params, _) -> List.iter (add_dep i) params
+              | Prim (_, args) ->
+                  List.iter
+                    (fun arg ->
+                      match arg with
+                      | Pv v -> add_dep i v
+                      | Pc _ -> ())
+                    args)
           | Var y -> add_dep i y)
         ds)
     defs;
@@ -87,12 +92,15 @@ let dependencies nv defs =
 (* Returns a boolean array representing whether each variable appears in an effectful definition. *)
 let effectful nv defs pure_funs =
   let effs = Array.make nv false in
-  let set_eff i d =
-    match d with
-    | Expr e -> if not (pure_expr pure_funs e) then effs.(i) <- true
-    | Var y -> effs.(i) <- effs.(Var.idx y)
-  in
-  Array.iteri (fun i ds -> List.iter (fun d -> set_eff i d) ds) defs;
+  Array.iteri (* For each set of definitions *)
+    (fun i ds ->
+      List.iter (* For each definition *)
+        (fun d -> (* See if definition is effectful *)
+          match d with
+          | Expr e -> if not (pure_expr pure_funs e) then effs.(i) <- true
+          | Var y -> effs.(i) <- effs.(Var.idx y))
+        ds)
+    defs;
   effs
 
 (* Returns the set of variables given the adjacency list of variable depencies. *)
@@ -106,6 +114,7 @@ let variables deps =
    (2) there exists a live variable y that depends on x. *)
 let propagate deps effectful live x =
   let idx = Var.idx x in
+  Format.eprintf "%b\n" effectful.(idx);
   effectful.(idx) || Var.Set.exists (fun y -> Var.Tbl.get live y) deps.(idx)
 
 let solver vars deps effectful =
@@ -115,25 +124,38 @@ let solver vars deps effectful =
   Solver.f () g (propagate deps effectful)
 
 (* let live_instr st i =
-  match i with
-  | Let (x, e) ->
-      (* variable has been marked as live or the expression is impure *)
-      Var.Tbl.get st.live x || not (pure_expr st.pure_funs e)
-  | Assign (x, _) ->
-      (* variable has been marked as live *)
-      Var.Tbl.get st.live x
-  | Set_field _ | Offset_ref _ | Array_set _ ->
-      (* these are impure so always live *)
-      true *)
+   match i with
+   | Let (x, e) ->
+       (* variable has been marked as live or the expression is impure *)
+       Var.Tbl.get st.live x || not (pure_expr st.pure_funs e)
+   | Assign (x, _) ->
+       (* variable has been marked as live *)
+       Var.Tbl.get st.live x
+   | Set_field _ | Offset_ref _ | Array_set _ ->
+       (* these are impure so always live *)
+       true *)
 
 let run (p : program) =
   let nv = Var.count () in
   let blocks = p.blocks in
   let defs = definitions nv p in
   let deps = dependencies nv defs in
+  (* Print out dependency info *)
+  Format.eprintf "Dependencies:\n";
+  Array.iteri
+    (fun i ds ->
+      Format.eprintf "%d: { " i;
+      Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
+      Format.eprintf "}\n")
+    deps;
   let pure_funs = Pure_fun.f p in
   let effs = effectful nv defs pure_funs in
+  (* Print out effectfulness info *)
+  Format.eprintf "Effectful:\n";
+  Array.iteri (fun i b -> Format.eprintf "%d: %b\n" i b) effs;
   let vars = variables deps in
   let live = solver vars deps effs in
+  (* Print out liveness info *)
+  Format.eprintf "Liveness:\n";
   Var.Tbl.iter (fun v b -> Format.eprintf "%a: %b\n" Var.print v b) live;
   { p with blocks }, Array.make nv 0
