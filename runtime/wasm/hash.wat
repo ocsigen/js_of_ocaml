@@ -5,8 +5,7 @@
       (func $ref_test_string (param anyref) (result i32)))
    (import "bindings" "identity"
       (func $ref_cast_string (param anyref) (result (ref string))))
-   (import "jslib" "caml_string_of_jsstring"
-      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -52,12 +51,14 @@
       (local.set $h (i32.mul (local.get $h) (i32.const 0xc2b2ae35)))
       (i32.xor (local.get $h) (i32.shr_u (local.get $h) (i32.const 16))))
 
-   (func $caml_hash_mix_int64 (param $h i32) (param $d i64) (result i32)
+   (func $caml_hash_mix_int64 (export "caml_hash_mix_int64")
+      (param $h i32) (param $d i64) (result i32)
       (return_call $caml_hash_mix_int
          (call $caml_hash_mix_int (local.get $h) (i32.wrap_i64 (local.get $d)))
          (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 32)))))
 
-   (func $caml_hash_mix_float (param $h i32) (param $d f64) (result i32)
+   (func $caml_hash_mix_float (export "caml_hash_mix_float")
+      (param $h i32) (param $d f64) (result i32)
       (local $i i64)
       (local.set $i (i64.reinterpret_f64 (local.get $d)))
       (if (i64.eq (i64.and (local.get $i) (i64.const 0x7FF0000000000000))
@@ -69,6 +70,20 @@
       (if (i64.eq (local.get $i) (i64.const 0x8000000000000000))
          (then (local.set $i (i64.const 0))))
       (return_call $caml_hash_mix_int64 (local.get $h) (local.get $i)))
+
+   (func $caml_hash_mix_float32 (export "caml_hash_mix_float32")
+      (param $h i32) (param $d f32) (result i32)
+      (local $i i32)
+      (local.set $i (i32.reinterpret_f32 (local.get $d)))
+      (if (i32.eq (i32.and (local.get $i) (i32.const 0x7F800000))
+                  (i32.const 0x7F800000))
+         (then
+            (if (i32.ne (i32.and (local.get $i) (i32.const 0x7FFFFF))
+                        (i32.const 0))
+               (then (local.set $i (i32.const 0x7F800001))))))
+      (if (i32.eq (local.get $i) (i32.const 0x80000000))
+         (then (local.set $i (i32.const 0))))
+      (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
 
    (func $caml_hash_mix_string (export "caml_hash_mix_string")
       (param $h i32) (param $s (ref $string)) (result i32)
@@ -120,8 +135,8 @@
 
    (func $caml_hash_mix_jsstring
       (param $h i32) (param $s (ref eq)) (result i32)
-      (return_call $caml_hash_mix_string (local.get $h)
-         (ref.cast $string (call $caml_string_of_jsstring (local.get $s)))))
+      (return_call $caml_hash_mix_int (local.get $h)
+         (string.hash (call $ref_cast_string (call $unwrap (local.get $s))))))
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))

@@ -67,10 +67,8 @@
          is_string:(v)=>+(typeof v==="string"),
          ta_create:(k,sz)=> new(typed_arrays[k])(sz),
          ta_normalize:(a)=>
-           a instanceof Uint8ClampedArray?
-             new Uint8Array(a.buffer,a.byteOffset,a.byteLength):
-             a instanceof Uint32Array?
-               new Int32Array(a.buffer,a.byteOffset,a.byteLength):a,
+           a instanceof Uint32Array?
+           new Int32Array(a.buffer,a.byteOffset,a.length):a,
          ta_kind:(a)=>typed_arrays.findIndex((c)=>a instanceof c),
          ta_length:(a)=>a.length,
          ta_get_f64:(a,i)=>a[i],
@@ -87,6 +85,12 @@
          ta_set_ui16:(a,i,v)=>a[i]=v,
          ta_set_i8:(a,i,v)=>a[i]=v,
          ta_set_ui8:(a,i,v)=>a[i]=v,
+         ta_fill:(a,v)=>a.fill(v),
+         ta_blit:(s,d)=>d.set(s),
+         ta_subarray:(a,i,j)=>a.subarray(i,j),
+         ta_set:(a,b,i)=>a.set(b,i),
+         ta_new:(len)=>new Uint8Array(len),
+         ta_copy:(ta,t,s,n)=>ta.copyWithin(t,s,n),
          wrap_callback:(f)=>function (){
              var n = arguments.length;
              if(n > 0) {

@@ -18,6 +18,13 @@
          (array.new_fixed $block
             (i31.new (i32.const 0)) (local.get $tag) (local.get $arg))))
 
+   (global $OUT_OF_MEMORY_EXN i32 (i32.const 0))
+
+   (func (export "caml_raise_out_of_memory")
+      (return_call $caml_raise_constant
+         (array.get $block (global.get $caml_global_data)
+                    (global.get $OUT_OF_MEMORY_EXN))))
+
    (global $FAILURE_EXN i32 (i32.const 2))
 
    (func (export "caml_failwith_tag") (result (ref eq))
