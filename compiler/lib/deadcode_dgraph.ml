@@ -44,7 +44,7 @@ module Solver = G.Solver (Domain)
 let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
 
 (* Returns an array of definitions of each variable *)
-let definitions nv (p : program) =
+let definitions nv prog =
   let defs = Array.make nv [] in
   let add_def x d = defs.(Var.idx x) <- d :: defs.(Var.idx x) in
   Addr.Map.iter
@@ -56,16 +56,16 @@ let definitions nv (p : program) =
           | Assign (x, y) -> add_def x (Var y)
           | _ -> ())
         block.body)
-    p.blocks;
+    prog.blocks;
   defs
 
 (* Returns the adjacency list for the variable dependency graph. *)
 let dependencies nv defs =
   let deps = Array.make nv Var.Set.empty in
-  let add_dep i x = deps.(i) <- Var.Set.add x deps.(i) in
-  Array.iteri
+  let add_dep i x = deps.(Var.idx x) <- Var.Set.add (Var.of_idx i) deps.(Var.idx x) in
+  Array.iteri (* For each set of definitions *)
     (fun i ds ->
-      List.iter
+      List.iter (* For each definition *)
         (fun d ->
           match d with
           | Expr e -> (
@@ -89,18 +89,51 @@ let dependencies nv defs =
     defs;
   deps
 
-(* Returns a boolean array representing whether each variable appears in an effectful definition. *)
-let effectful nv defs pure_funs =
+let expr_contains_var x e =
+  match e with
+  | Apply { f; args; _ } -> Var.equal x f || List.exists (Var.equal x) args
+  | Block (_, params, _) -> Array.exists (Var.equal x) params
+  | Field (z, _) -> Var.equal x z
+  | Constant _ -> false
+  | Closure (params, _) -> List.exists (Var.equal x) params
+  | Prim (_, args) ->
+      List.exists
+        (fun arg ->
+          match arg with
+          | Pv v -> Var.equal x v
+          | Pc _ -> false)
+        args
+
+(* Returns a boolean array representing whether each variable appears in an effectful instruction. *)
+let effectful nv prog pure_funs =
   let effs = Array.make nv false in
-  Array.iteri (* For each set of definitions *)
-    (fun i ds ->
-      List.iter (* For each definition *)
-        (fun d -> (* See if definition is effectful *)
-          match d with
-          | Expr e -> if not (pure_expr pure_funs e) then effs.(i) <- true
-          | Var y -> effs.(i) <- effs.(Var.idx y))
-        ds)
-    defs;
+  let effectful_instruction i =
+    match i with
+    | Let (x, e) ->
+        if (not (pure_expr pure_funs e)) && expr_contains_var x e
+        then effs.(Var.idx x) <- true
+    | Assign (x, _) -> effs.(Var.idx x) <- true (* TODO: correct? *)
+    | _ -> ()
+  in
+  let rec effectful_block block =
+    List.iter (fun (i, _) -> effectful_instruction i) block.body;
+    match fst block.branch with
+    | Stop -> ()
+    | Return x | Raise (x, _) -> effs.(Var.idx x) <- true
+    | Branch cont | Poptrap cont ->
+        effectful_continuation prog cont;
+        effectful_continuation prog cont
+    | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2, _) ->
+        effectful_continuation prog cont1;
+        effectful_continuation prog cont2
+    | Switch (_, a1, a2) ->
+        Array.iter (fun cont -> effectful_continuation prog cont) a1;
+        Array.iter (fun cont -> effectful_continuation prog cont) a2
+  and effectful_continuation prog ((pc, _) : cont) =
+    let block = Addr.Map.find pc prog.blocks in
+    effectful_block block
+  in
+  Addr.Map.iter (fun _ block -> effectful_block block) prog.blocks;
   effs
 
 (* Returns the set of variables given the adjacency list of variable depencies. *)
@@ -114,14 +147,13 @@ let variables deps =
    (2) there exists a live variable y that depends on x. *)
 let propagate deps effectful live x =
   let idx = Var.idx x in
-  Format.eprintf "%b\n" effectful.(idx);
   effectful.(idx) || Var.Set.exists (fun y -> Var.Tbl.get live y) deps.(idx)
 
 let solver vars deps effectful =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver.f () g (propagate deps effectful)
+  Solver.f () (G.invert () g) (propagate deps effectful)
 
 (* let live_instr st i =
    match i with
@@ -149,7 +181,7 @@ let run (p : program) =
       Format.eprintf "}\n")
     deps;
   let pure_funs = Pure_fun.f p in
-  let effs = effectful nv defs pure_funs in
+  let effs = effectful nv p pure_funs in
   (* Print out effectfulness info *)
   Format.eprintf "Effectful:\n";
   Array.iteri (fun i b -> Format.eprintf "%d: %b\n" i b) effs;
