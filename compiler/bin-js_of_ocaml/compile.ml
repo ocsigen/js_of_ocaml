@@ -26,7 +26,7 @@ let debug_mem = Debug.find "mem"
 let () = Sys.catch_break true
 
 let gen_unit_filename dir u =
-  Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
+  Filename.concat dir (Printf.sprintf "%s.js" (Ocaml_compiler.Cmo_format.name u))
 
 let header formatter ~custom_header =
   match custom_header with
@@ -358,7 +358,12 @@ let run
                  ic
              in
              if times ()
-             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
+             then
+               Format.eprintf
+                 "  parsing: %a (%s)@."
+                 Timer.print
+                 t1
+                 (Ocaml_compiler.Cmo_format.name cmo);
              output_gen
                ~standalone:false
                ~custom_header
@@ -379,7 +384,12 @@ let run
                    ic
                in
                if times ()
-               then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
+               then
+                 Format.eprintf
+                   "  parsing: %a (%s)@."
+                   Timer.print
+                   t1
+                   (Ocaml_compiler.Cmo_format.name cmo);
                output_partial cmo ~standalone ~source_map code output)
          in
          output_gen

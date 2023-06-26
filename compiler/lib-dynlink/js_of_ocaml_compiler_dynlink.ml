@@ -52,7 +52,7 @@ let () =
   let sym =
     let t : Ocaml_compiler.Symtable.GlobalMap.t = Obj.obj (List.assoc "SYMB" toc) in
     Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i n acc -> StringMap.add (Ident.name i) n acc)
+      (fun i n acc -> StringMap.add (Ocaml_compiler.Symtable.Global.name i) n acc)
       t
       StringMap.empty
   in

@@ -299,7 +299,9 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           StringSet.iter
             (fun s ->
               ignore
-                (Ocaml_compiler.Symtable.GlobalMap.enter sym (Ident.create_persistent s)
+                (Ocaml_compiler.Symtable.GlobalMap.enter
+                   sym
+                   (Ocaml_compiler.Symtable.Global.Glob_compunit s)
                   : int);
               sym_js := s :: !sym_js)
             u.Unit_info.provides));
