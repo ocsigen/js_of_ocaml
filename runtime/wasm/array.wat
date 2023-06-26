@@ -1,6 +1,7 @@
 (module
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+   (import "obj" "double_array_tag" (global $double_array_tag i32))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -11,16 +12,20 @@
    (func $caml_make_vect (export "caml_make_vect")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $b (ref $block))
-      (local.set $sz (i32.add (i31.get_s (ref.cast i31 (local.get $n)))
-                              (i32.const 1)))
-      (if (i32.lt_s (local.get $sz) (i32.const 1))
+      (local.set $sz (i31.get_s (ref.cast i31 (local.get $n))))
+      (if (i32.lt_s (local.get $sz) (i32.const 0))
          (then
             (call $caml_invalid_argument
                (array.new_data $string $Array_make
                                (i32.const 0) (i32.const 10)))))
-      (local.set $b (array.new $block (local.get $v) (local.get $sz)))
+      (local.set $b
+         (array.new $block (local.get $v)
+            (i32.add (local.get $sz) (i32.const 1))))
       ;; ZZZ float array
-      (array.set $block (local.get $b) (i32.const 0) (i31.new (i32.const 0)))
+      (array.set $block (local.get $b) (i32.const 0)
+         (i31.new
+            (select (global.get $double_array_tag) (i32.const 0)
+               (i32.and (local.get $sz) (ref.test $float (local.get $v))))))
       (local.get $b))
 
    (export "caml_make_float_vect" (func $caml_floatarray_create))
@@ -38,10 +43,14 @@
       (local.set $a1 (ref.cast $block (local.get $a)))
       (local.set $a2 (array.new $block (i31.new (i32.const 0))
                         (i32.add (local.get $len) (i32.const 1))))
-      (array.copy $block $block
-         (local.get $a2) (i32.const 1) (local.get $a1)
-         (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
-         (local.get $len))
+      (array.set $block (local.get $a2) (i32.const 0)
+         (array.get $block (local.get $a1) (i32.const 0)))
+      (if (local.get $len)
+         (then
+            (array.copy $block $block
+               (local.get $a2) (i32.const 1) (local.get $a1)
+               (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
+               (local.get $len))))
       (local.get $a2))
 
    (func (export "caml_array_append")
@@ -56,6 +65,14 @@
          (array.new $block (i31.new (i32.const 0))
             (i32.sub (i32.add (local.get $l1) (local.get $l2)) (i32.const 1))))
       ;; ZZZ float array
+      (array.set $block (local.get $a) (i32.const 0)
+         (i31.new
+            (select (global.get $double_array_tag) (i32.const 0)
+               (i32.or
+                  (ref.eq (array.get $block (local.get $a1) (i32.const 0))
+                     (i31.new (global.get $double_array_tag)))
+                  (ref.eq (array.get $block (local.get $a2) (i32.const 0))
+                     (i31.new (global.get $double_array_tag)))))))
       (array.copy $block $block
          (local.get $a) (i32.const 1) (local.get $a1) (i32.const 1)
          (i32.sub (local.get $l1) (i32.const 1)))
@@ -68,6 +85,7 @@
       ;; ZZZ float array
       (local $i i32) (local $len i32)
       (local $l (ref eq))
+      (local $isfloat i32)
       (local $a (ref $block)) (local $a' (ref $block)) (local $b (ref $block))
       (local.set $l (local.get 0))
       (local.set $len (i32.const 1))
@@ -81,10 +99,17 @@
                          (ref.cast $block
                             (array.get $block (local.get $b) (i32.const 1))))
                       (i32.const 1))))
+             (if (ref.eq (array.get $block (local.get $b) (i32.const 0))
+                    (i31.new (global.get $double_array_tag)))
+                 (then (local.set $isfloat (i32.const 1))))
              (local.set $l (array.get $block (local.get $b) (i32.const 2)))
              (br $compute_length))))
       (local.set $a
          (array.new $block (i31.new (i32.const 0)) (local.get $len)))
+      (if (local.get $isfloat)
+         (then
+            (array.set $block (local.get $a) (i32.const 0)
+               (i31.new (global.get $double_array_tag)))))
       (local.set $l (local.get 0))
       (local.set $i (i32.const 1))
       (loop $fill
