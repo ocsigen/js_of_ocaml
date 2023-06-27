@@ -89,29 +89,36 @@ let dependencies nv defs =
     defs;
   deps
 
-let expr_contains_var x e =
-  match e with
-  | Apply { f; args; _ } -> Var.equal x f || List.exists (Var.equal x) args
-  | Block (_, params, _) -> Array.exists (Var.equal x) params
-  | Field (z, _) -> Var.equal x z
-  | Constant _ -> false
-  | Closure (params, _) -> List.exists (Var.equal x) params
+(* Return the set of variables used in a given expression *)
+let expr_vars (e : expr) =
+  let vars = Var.ISet.empty () in
+  (match e with
+  | Apply { f; args; _ } ->
+      Var.ISet.add vars f;
+      List.iter (Var.ISet.add vars) args
+  | Block (_, params, _) -> Array.iter (Var.ISet.add vars) params
+  | Field (z, _) -> Var.ISet.add vars z
+  | Constant _ -> ()
+  | Closure (params, _) -> List.iter (Var.ISet.add vars) params
   | Prim (_, args) ->
-      List.exists
-        (fun arg ->
-          match arg with
-          | Pv v -> Var.equal x v
-          | Pc _ -> false)
-        args
+      List.iter
+        (fun v ->
+          match v with
+          | Pv v -> Var.ISet.add vars v
+          | Pc _ -> ())
+        args);
+  vars
 
 (* Returns a boolean array representing whether each variable appears in an effectful instruction. *)
 let effectful nv prog pure_funs =
   let effs = Array.make nv false in
   let effectful_instruction i =
     match i with
-    | Let (x, e) ->
-        if (not (pure_expr pure_funs e)) && expr_contains_var x e
-        then effs.(Var.idx x) <- true
+    | Let (_, e) ->
+        if not (pure_expr pure_funs e)
+        then
+          let vars = expr_vars e in
+          Var.ISet.iter (fun v -> effs.(Var.idx v) <- true) vars
     | Assign (x, _) -> effs.(Var.idx x) <- true (* TODO: correct? *)
     | _ -> ()
   in
@@ -136,10 +143,10 @@ let effectful nv prog pure_funs =
   Addr.Map.iter (fun _ block -> effectful_block block) prog.blocks;
   effs
 
-(* Returns the set of variables given the adjacency list of variable depencies. *)
+(* Returns the set of variables given the adjacency list of variable dependencies. *)
 let variables deps =
   let vars = Var.ISet.empty () in
-  Array.iter (fun s -> Var.Set.iter (fun v -> Var.ISet.add vars v) s) deps;
+  Array.iteri (fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
 (* A variable x is live if either
