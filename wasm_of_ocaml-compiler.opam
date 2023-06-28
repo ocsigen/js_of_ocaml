@@ -14,6 +14,7 @@ bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
   "dune" {>= "3.7"}
   "ocaml" {>= "4.08" & < "5.1"}
+  "js_of_ocaml" {= version}
   "num" {with-test}
   "ppx_expect" {>= "v0.14.2" & with-test}
   "ppxlib" {>= "0.15.0"}
