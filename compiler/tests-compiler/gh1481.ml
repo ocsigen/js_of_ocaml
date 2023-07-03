@@ -85,28 +85,64 @@ let () =
         return 67 <= _r_ ? 68 <= _r_ ? cst_D : cst_C : 66 <= _r_ ? cst_B : cst_A;
        }
        function _b_(_p_, _o_){
-        if(65 === _p_)
-         var _q_ = _o_;
-        else{
-         if(68 === _p_ && 68 === _o_) return 68;
-         if(65 !== _o_){
-          if(66 !== _o_ && 66 !== _p_){67 === _p_; return 67;}
-          return 66;
+        var switch$0 = 0;
+        if(typeof _p_ === "number")
+         if(65 === _p_){
+          var _q_ = _o_;
+          switch$0 = 1;
          }
-         var _q_ = _p_;
+         else if(68 === _p_ && typeof _o_ === "number" && 68 === _o_) return 68;
+        if(! switch$0){
+         var switch$1 = 0;
+         if(typeof _o_ === "number")
+          if(65 === _o_){
+           var _q_ = _p_;
+           switch$1 = 2;
+          }
+          else if(66 === _o_) switch$1 = 1;
+         var switch$2 = 0;
+         switch(switch$1){
+           case 0:
+            var switch$3 = 0;
+            if(typeof _p_ === "number")
+             if(66 === _p_) switch$3 = 1; else 67 === _p_;
+            if(! switch$3) return 67;
+            break;
+           case 2:
+            switch$2 = 1; break;
+         }
+         if(! switch$2) return 66;
         }
         return _q_;
        }
        function _c_(_m_, _l_){
-        if(65 === _m_)
-         var _n_ = _l_;
-        else{
-         if(68 === _m_ && 68 === _l_) return 68;
-         if(65 !== _l_){
-          if(66 !== _l_ && 66 !== _m_){67 === _m_; return 67;}
-          return 66;
+        var switch$0 = 0;
+        if(typeof _m_ === "number")
+         if(65 === _m_){
+          var _n_ = _l_;
+          switch$0 = 1;
          }
-         var _n_ = _m_;
+         else if(68 === _m_ && typeof _l_ === "number" && 68 === _l_) return 68;
+        if(! switch$0){
+         var switch$1 = 0;
+         if(typeof _l_ === "number")
+          if(65 === _l_){
+           var _n_ = _m_;
+           switch$1 = 2;
+          }
+          else if(66 === _l_) switch$1 = 1;
+         var switch$2 = 0;
+         switch(switch$1){
+           case 0:
+            var switch$3 = 0;
+            if(typeof _m_ === "number")
+             if(66 === _m_) switch$3 = 1; else 67 === _m_;
+            if(! switch$3) return 67;
+            break;
+           case 2:
+            switch$2 = 1; break;
+         }
+         if(! switch$2) return 66;
         }
         return _n_;
        }
@@ -124,8 +160,9 @@ let () =
       }
       (globalThis));
     //end |}];
-  Util.compile_and_run ~debug:false prog;
-  [%expect {|
+  Util.compile_and_run ~debug:false ~flags:[ "--disable"; "inline" ] prog;
+  [%expect
+    {|
     [a] is: `C
     [b] is: `A
     [correct a b] is: `C
