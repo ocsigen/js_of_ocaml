@@ -1731,7 +1731,7 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
   if debug ()
   then
     Format.eprintf
-      "Resove %s to %s;@,"
+      "Resolve %s to %s;@,"
       (string_of_set new_frontier')
       (string_of_set new_frontier);
   if Addr.Set.cardinal new_frontier <= 1
