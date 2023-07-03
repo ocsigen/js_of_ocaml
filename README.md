@@ -12,18 +12,23 @@ The generated code works with [Chrome beta](https://www.google.com/chrome/beta/)
 
 ## Installation
 
+The following commands will perform a minimal installation:
 ```
-opam pin add . wasm_of_ocaml js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
+opam pin add -n --with-version 5.3.0 .
+opam install wasm_of_ocaml-compiler
+```
+You may want to install additional packages. For instance:
+
+```
+opam install js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 
 ## Usage
 
-Your program must first be compiled using the OCaml bytecode compiler `ocamlc`.
-JavaScript bindings are provided by the `js_of_ocaml` package. The syntax
-extension is provided by `js_of_ocaml-ppx` package.
+You can try compiling the program in `examples/cubes`. Your program must first be compiled using the OCaml bytecode compiler `ocamlc`. JavaScript bindings are provided by the `js_of_ocaml` package. The syntax extension is provided by `js_of_ocaml-ppx` package. Package `js_of_ocaml-lwt` provides Javascript specific Lwt functions.
 
 ```
-ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx,js_of_ocaml-lwt -linkpkg -o cubes.byte cubes.ml
+ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx,js_of_ocaml-lwt -linkpkg -o cubes.byte cubes.mli cubes.ml
 ```
 
 Then, run the `wasm_of_ocaml` compiler to produce WebAssembly code:
