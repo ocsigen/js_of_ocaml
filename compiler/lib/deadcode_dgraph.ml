@@ -17,26 +17,29 @@
  *)
 
 open Code
+open Stdlib
 
 type def =
   | Expr of expr
   | Var of Var.t
 
-(* type state =
-   { blocks : block Addr.Map.t
-   ; live : bool Var.Tbl.t
-   ; defs : def list array
-   ; pure_funs : Var.Set.t
-   } *)
+type live =
+  | Live of IntSet.t
+  | Dead
+
+let live_to_string = function
+  | Live fields ->
+      "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d" i) fields "" ^ " }"
+  | Dead -> "dead"
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
 module Domain = struct
-  type t = bool
+  type t = live
 
-  let equal = Bool.equal
+  let equal = Poly.( = )
 
-  let bot = false
+  let bot = Dead
 end
 
 module Solver = G.Solver (Domain)
@@ -50,7 +53,7 @@ let definitions nv prog =
   Addr.Map.iter
     (fun _ block ->
       List.iter
-        (fun (i, _) ->
+        ~f:(fun (i, _) ->
           match i with
           | Let (x, e) -> add_def x (Expr e)
           | Assign (x, y) -> add_def x (Var y)
@@ -64,22 +67,23 @@ let dependencies nv defs =
   let deps = Array.make nv Var.Set.empty in
   let add_dep i x = deps.(Var.idx x) <- Var.Set.add (Var.of_idx i) deps.(Var.idx x) in
   Array.iteri (* For each set of definitions *)
-    (fun i ds ->
+    ~f:(fun i ds ->
       List.iter (* For each definition *)
-        (fun d ->
+        ~f:(fun d ->
           match d with
+          (* Add dependencies from definition *)
           | Expr e -> (
               match e with
               | Apply { f; args; _ } ->
                   add_dep i f;
-                  List.iter (add_dep i) args
-              | Block (_, params, _) -> Array.iter (add_dep i) params
+                  List.iter ~f:(add_dep i) args
+              | Block (_, params, _) -> Array.iter ~f:(add_dep i) params
               | Field (z, _) -> add_dep i z
               | Constant _ -> ()
-              | Closure (params, _) -> List.iter (add_dep i) params
+              | Closure (params, _) -> List.iter ~f:(add_dep i) params
               | Prim (_, args) ->
                   List.iter
-                    (fun arg ->
+                    ~f:(fun arg ->
                       match arg with
                       | Pv v -> add_dep i v
                       | Pc _ -> ())
@@ -90,77 +94,120 @@ let dependencies nv defs =
   deps
 
 (* Return the set of variables used in a given expression *)
-let expr_vars (e : expr) =
+let expr_vars e =
   let vars = Var.ISet.empty () in
   (match e with
   | Apply { f; args; _ } ->
       Var.ISet.add vars f;
-      List.iter (Var.ISet.add vars) args
-  | Block (_, params, _) -> Array.iter (Var.ISet.add vars) params
+      List.iter ~f:(Var.ISet.add vars) args
+  | Block (_, params, _) -> Array.iter ~f:(Var.ISet.add vars) params
   | Field (z, _) -> Var.ISet.add vars z
   | Constant _ -> ()
-  | Closure (params, _) -> List.iter (Var.ISet.add vars) params
+  | Closure (params, _) -> List.iter ~f:(Var.ISet.add vars) params
   | Prim (_, args) ->
       List.iter
-        (fun v ->
+        ~f:(fun v ->
           match v with
           | Pv v -> Var.ISet.add vars v
           | Pc _ -> ())
         args);
   vars
 
-(* Returns a boolean array representing whether each variable appears in an effectful instruction. *)
-let effectful nv prog pure_funs =
-  let effs = Array.make nv false in
-  let effectful_instruction i =
+(* Returns a boolean array representing whether each variable either
+   (1) appears in an effectful instruction; or
+   (2) is returned or raised by a function. *)
+let liveness nv prog pure_funs defs =
+  let live_vars = Array.make nv Dead in
+  let add_live v =
+    let idx = Var.idx v in
+    let fields =
+      List.fold_left
+        ~f:(fun acc def ->
+          match def with
+          | Expr (Field (_, i)) -> IntSet.add i acc
+          | _ -> acc)
+        ~init:IntSet.empty
+        defs.(idx)
+    in
+    live_vars.(idx) <- Live fields
+  in
+  let live_instruction i =
     match i with
     | Let (_, e) ->
         if not (pure_expr pure_funs e)
         then
           let vars = expr_vars e in
-          Var.ISet.iter (fun v -> effs.(Var.idx v) <- true) vars
-    | Assign (x, _) -> effs.(Var.idx x) <- true (* TODO: correct? *)
-    | _ -> ()
+          Var.ISet.iter add_live vars
+    | Assign (_, _) -> ()
+    | Set_field (x, _, y) ->
+        add_live x;
+        add_live y
+    | Array_set (x, y, z) ->
+        add_live x;
+        add_live y;
+        add_live z
+    | Offset_ref (x, _) -> add_live x
   in
-  let rec effectful_block block =
-    List.iter (fun (i, _) -> effectful_instruction i) block.body;
+  let rec live_block block =
+    List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
+    (* Base Cases *)
     | Stop -> ()
-    | Return x | Raise (x, _) -> effs.(Var.idx x) <- true
+    | Return x | Raise (x, _) -> add_live x
+    (* Recursive cases *)
     | Branch cont | Poptrap cont ->
-        effectful_continuation prog cont;
-        effectful_continuation prog cont
+        live_continuation prog cont;
+        live_continuation prog cont
     | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2, _) ->
-        effectful_continuation prog cont1;
-        effectful_continuation prog cont2
+        live_continuation prog cont1;
+        live_continuation prog cont2
     | Switch (_, a1, a2) ->
-        Array.iter (fun cont -> effectful_continuation prog cont) a1;
-        Array.iter (fun cont -> effectful_continuation prog cont) a2
-  and effectful_continuation prog ((pc, _) : cont) =
+        Array.iter ~f:(fun cont -> live_continuation prog cont) a1;
+        Array.iter ~f:(fun cont -> live_continuation prog cont) a2
+  and live_continuation prog ((pc, _) : cont) =
     let block = Addr.Map.find pc prog.blocks in
-    effectful_block block
+    live_block block
   in
-  Addr.Map.iter (fun _ block -> effectful_block block) prog.blocks;
-  effs
+  Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
+  live_vars
 
 (* Returns the set of variables given the adjacency list of variable dependencies. *)
 let variables deps =
   let vars = Var.ISet.empty () in
-  Array.iteri (fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
+  Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
 (* A variable x is live if either
-   (1) it appears in an effectful expression; or
-   (2) there exists a live variable y that depends on x. *)
-let propagate deps effectful live x =
-  let idx = Var.idx x in
-  effectful.(idx) || Var.Set.exists (fun y -> Var.Tbl.get live y) deps.(idx)
+    (1) it appears in an effectful expression;
+    (2) it is returned or raised by a function; or
+    (3) there exists a live variable y that depends on x.
+   The first two conditions are determined by a traversal of the program and given by `live_vars`.
+   The third is determined here by propagating liveness to a variable's dependencies. *)
 
-let solver vars deps effectful =
+(* We want to know which fields of x are used
+   Look at definition of y, if y is a field access, then set that field to be live in the block *)
+let propagate deps live_vars live_table x =
+  let idx = Var.idx x in
+  let union_deps fields =
+    Var.Set.fold
+      (fun y acc ->
+        match Var.Tbl.get live_table y with
+        | Live y_fields -> IntSet.union acc y_fields
+        | Dead -> acc)
+      deps.(idx)
+      fields
+  in
+  match live_vars.(idx) with
+  | Live fields -> Live (union_deps fields)
+  | Dead ->
+      let fields = union_deps IntSet.empty in
+      if IntSet.is_empty fields then Dead else Live fields
+
+let solver vars deps live_vars =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver.f () (G.invert () g) (propagate deps effectful)
+  Solver.f () (G.invert () g) (propagate deps live_vars)
 
 (* let live_instr st i =
    match i with
@@ -174,7 +221,7 @@ let solver vars deps effectful =
        (* these are impure so always live *)
        true *)
 
-let run (p : program) =
+let run p =
   let nv = Var.count () in
   let blocks = p.blocks in
   let defs = definitions nv p in
@@ -182,19 +229,19 @@ let run (p : program) =
   (* Print out dependency info *)
   Format.eprintf "Dependencies:\n";
   Array.iteri
-    (fun i ds ->
+    ~f:(fun i ds ->
       Format.eprintf "%d: { " i;
       Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
       Format.eprintf "}\n")
     deps;
   let pure_funs = Pure_fun.f p in
-  let effs = effectful nv p pure_funs in
-  (* Print out effectfulness info *)
-  Format.eprintf "Effectful:\n";
-  Array.iteri (fun i b -> Format.eprintf "%d: %b\n" i b) effs;
-  let vars = variables deps in
-  let live = solver vars deps effs in
+  let live_vars = liveness nv p pure_funs defs in
   (* Print out liveness info *)
   Format.eprintf "Liveness:\n";
-  Var.Tbl.iter (fun v b -> Format.eprintf "%a: %b\n" Var.print v b) live;
+  Array.iteri ~f:(fun i l -> Format.eprintf "%d: %s\n" i (live_to_string l)) live_vars;
+  let vars = variables deps in
+  let live_table = solver vars deps live_vars in
+  (* After dependency propagation *)
+  Format.eprintf "Liveness with dependencies:\n";
+  Var.Tbl.iter (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l)) live_table;
   { p with blocks }, Array.make nv 0
