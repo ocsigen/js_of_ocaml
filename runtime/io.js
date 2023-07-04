@@ -156,6 +156,20 @@ function caml_ml_open_descriptor_in (fd)  {
 }
 
 
+//Provides: caml_ml_open_descriptor_in_with_flags
+//Requires: caml_ml_open_descriptor_in
+//Version: >= 5.1
+function caml_ml_open_descriptor_in_with_flags(fd, flags){
+  return caml_ml_open_descriptor_in(fd);
+}
+
+//Provides: caml_ml_open_descriptor_out_with_flags
+//Requires: caml_ml_open_descriptor_out
+//Version: >= 5.1
+function caml_ml_open_descriptor_out_with_flags(fd, flags){
+  return caml_ml_open_descriptor_out(fd);
+}
+
 //Provides: caml_channel_descriptor
 //Requires: caml_ml_channels
 //Alias: win_filedescr_of_channel
