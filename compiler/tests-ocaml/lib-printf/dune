@@ -2,7 +2,7 @@
  (names pr6534 pr6938 tprintf)
  (libraries)
  (flags
-  (:standard \ -strict-formats))
+  (:standard -no-strict-formats \ -strict-formats))
  (modes
   js
   (best exe)))
