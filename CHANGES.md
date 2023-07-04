@@ -4,6 +4,8 @@
 * Runtime: fix hashing of NaN (#1475)
 * Runtime: float rounding should resolve tie away from zero (#1475)
 * Runtime: fix Gc.stat, Gc.quick_stat, Gc.get (#1475)
+* Compiler: fix some miscompilation, probably introduced in jsoo 5.0.0,
+  revealed by OCaml 5.0 ?
 
 # 5.3.0 (2023-??-??) - ??
 ## Features/Changes
