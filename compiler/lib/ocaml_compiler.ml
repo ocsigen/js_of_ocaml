@@ -111,6 +111,7 @@ module Symtable = struct
     let to_ident = function
       | Glob_compunit x -> Ident.create_persistent x
       | Glob_predef x -> Ident.create_predef x
+      [@@ocaml.warning "-32"]
   end
 
   module GlobalMap = struct

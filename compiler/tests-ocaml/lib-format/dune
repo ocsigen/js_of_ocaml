@@ -2,7 +2,7 @@
  (names pr6824 print_if_newline pp_print_custom_break print_seq tformat)
  (libraries)
  (flags
-  (:standard \ -strict-formats))
+  (:standard -no-strict-formats \ -strict-formats))
  (modes js))
 
 (rule
