@@ -52,8 +52,21 @@ let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadco
 let definitions nv prog =
   let defs = Array.make nv [] in
   let add_def x d = defs.(Var.idx x) <- d :: defs.(Var.idx x) in
+  let rec add_arg_def params args =
+    match params, args with
+    | x :: params, y :: args ->
+        add_def x (Var y);
+        add_arg_def params args
+    | _ -> ()
+  in
+  let add_cont_defs (pc, args) =
+    match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
+    | Some block -> add_arg_def block.params args
+    | None -> () (* Dead continuation *)
+  in
   Addr.Map.iter
     (fun _ block ->
+      (* Add definitions from block body *)
       List.iter
         ~f:(fun (i, _) ->
           match i with
@@ -61,15 +74,20 @@ let definitions nv prog =
           | Assign (x, y) -> add_def x (Var y)
           | _ -> ())
         block.body;
+      (* Add definitions for block parameters *)
       match fst block.branch with
-      | Return _ -> _
-      | Raise (_, _) -> _
-      | Stop -> _
-      | Branch _ -> _
-      | Cond (_, _, _) -> _
-      | Switch (_, _, _) -> _
-      | Pushtrap (_, _, _, _) -> _
-      | Poptrap _ -> _)
+      | Return _ | Raise _ | Stop -> ()
+      | Branch cont -> add_cont_defs cont
+      | Cond (_, cont1, cont2) ->
+          add_cont_defs cont1;
+          add_cont_defs cont2
+      | Switch (_, a1, a2) ->
+          Array.iter ~f:add_cont_defs a1;
+          Array.iter ~f:add_cont_defs a2
+      | Pushtrap (cont, _, cont_h, _) ->
+          add_cont_defs cont;
+          add_cont_defs cont_h
+      | Poptrap cont -> add_cont_defs cont)
     prog.blocks;
   defs
 
@@ -124,9 +142,6 @@ let expr_vars e =
         args);
   vars
 
-(* Returns a boolean array representing whether each variable either
-   (1) appears in an effectful instruction; or
-   (2) is returned or raised by a function. *)
 let liveness nv prog pure_funs =
   let live_vars = Array.make nv Dead in
   let add_top v =
