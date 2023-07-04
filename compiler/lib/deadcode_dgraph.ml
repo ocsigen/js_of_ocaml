@@ -60,7 +60,16 @@ let definitions nv prog =
           | Let (x, e) -> add_def x (Expr e)
           | Assign (x, y) -> add_def x (Var y)
           | _ -> ())
-        block.body)
+        block.body;
+      match fst block.branch with
+      | Return _ -> _
+      | Raise (_, _) -> _
+      | Stop -> _
+      | Branch _ -> _
+      | Cond (_, _, _) -> _
+      | Switch (_, _, _) -> _
+      | Pushtrap (_, _, _, _) -> _
+      | Poptrap _ -> _)
     prog.blocks;
   defs
 
@@ -184,62 +193,36 @@ let variables deps =
    The first two conditions are determined by a traversal of the program and given by `live_vars`.
    The third is determined here by propagating liveness to a variable's dependencies. *)
 
-(* Look at each dependency y of x.
-   - If x is Live fields, then x becomes Live (union_deps fields)
-   - If x is Top, then if union_deps is not empty (some y is Live fields) then x is Live (union_deps empty)
-   - If x is Dead, then if union_deps is empty and all dependencies are dead, x is dead. If a dep
-    is Top then x is Top. *)
+(* Look at all the places that x is used (deps.(Var.idx x))
+   If that variable y is...
+    - Live or Top and it is a field access, add i to fields(x)
+    - Dead, then do nothing *)
 let propagate deps defs live_vars live_table x =
   let idx = Var.idx x in
-  let union_deps fields =
-    Var.Set.fold
-      (fun y acc ->
-        match Var.Tbl.get live_table y with
-        | Live y_fields -> IntSet.union acc y_fields
-        | Top | Dead ->
-            List.fold_left
-              ~f:(fun acc def ->
-                match def with
-                | Expr (Field (_, i)) -> IntSet.add i acc
-                | _ -> acc)
-              ~init:acc
-              defs.(Var.idx y))
-      deps.(idx)
-      fields
+  let join l1 l2 =
+    match l1, l2 with
+    | _, Top | Top, _ -> Top
+    | Live f1, Live f2 -> Live (IntSet.union f1 f2)
+    | Dead, Live f | Live f, Dead -> Live f
+    | Dead, Dead -> Dead
   in
-  let is_top x =
-    match Var.Tbl.get live_table x with
-    | Top -> true
-    | _ -> false
+  let contribution y =
+    List.fold_left
+      ~f:(fun acc def ->
+        match def with
+        | Expr (Field (_, i)) -> join acc (Live (IntSet.singleton i))
+        | Var z -> join acc (Var.Tbl.get live_table z)
+        | _ -> join acc Top)
+      ~init:Dead
+      defs.(Var.idx y)
   in
-  match live_vars.(idx) with
-  | Live fields -> Live (union_deps fields)
-  | Top ->
-      let fields = union_deps IntSet.empty in
-      if IntSet.is_empty fields then Top else Live fields
-  | Dead ->
-      let fields = union_deps IntSet.empty in
-      if IntSet.is_empty fields
-      then if Var.Set.exists is_top deps.(idx) then Top else Dead
-      else Live fields
+  Var.Set.fold (fun y live -> join (contribution y) live) deps.(idx) live_vars.(idx)
 
 let solver vars deps defs live_vars =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   Solver.f () (G.invert () g) (propagate deps defs live_vars)
-
-(* let live_instr st i =
-   match i with
-   | Let (x, e) ->
-       (* variable has been marked as live or the expression is impure *)
-       Var.Tbl.get st.live x || not (pure_expr st.pure_funs e)
-   | Assign (x, _) ->
-       (* variable has been marked as live *)
-       Var.Tbl.get st.live x
-   | Set_field _ | Offset_ref _ | Array_set _ ->
-       (* these are impure so always live *)
-       true *)
 
 let run p =
   let nv = Var.count () in
