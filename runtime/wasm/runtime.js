@@ -241,6 +241,12 @@
              ((f, env)=>new Promise((k)=> f(k, env))),
              {suspending:"first"}),
          resume_fiber:(k,v)=>k(v),
+         weak_new:(v)=>new WeakRef(v),
+         weak_deref:(w)=>{var v = w.deref(); return v==undefined?null:v},
+         weak_map_new:()=>new WeakMap,
+         weak_map_get:(m,x)=>m.get(x),
+         weak_map_set:(m,x,v)=>m.set(x,v),
+         weak_map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
         }
     const imports = {Math:math,bindings:bindings}
