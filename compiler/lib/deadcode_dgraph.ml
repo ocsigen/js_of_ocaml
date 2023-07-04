@@ -186,17 +186,6 @@ let variables deps =
   Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
-(* A variable x is live if either
-    (1) it appears in an effectful expression;
-    (2) it is returned or raised by a function; or
-    (3) there exists a live variable y that depends on x.
-   The first two conditions are determined by a traversal of the program and given by `live_vars`.
-   The third is determined here by propagating liveness to a variable's dependencies. *)
-
-(* Look at all the places that x is used (deps.(Var.idx x))
-   If that variable y is...
-    - Live or Top and it is a field access, add i to fields(x)
-    - Dead, then do nothing *)
 let propagate deps defs live_vars live_table x =
   let idx = Var.idx x in
   let join l1 l2 =
