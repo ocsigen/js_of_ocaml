@@ -25,11 +25,13 @@ type def =
 
 type live =
   | Live of IntSet.t
+  | Top
   | Dead
 
 let live_to_string = function
   | Live fields ->
-      "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d" i) fields "" ^ " }"
+      "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+  | Top -> "top"
   | Dead -> "dead"
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -116,20 +118,17 @@ let expr_vars e =
 (* Returns a boolean array representing whether each variable either
    (1) appears in an effectful instruction; or
    (2) is returned or raised by a function. *)
-let liveness nv prog pure_funs defs =
+let liveness nv prog pure_funs =
   let live_vars = Array.make nv Dead in
-  let add_live v =
+  let add_top v =
     let idx = Var.idx v in
-    let fields =
-      List.fold_left
-        ~f:(fun acc def ->
-          match def with
-          | Expr (Field (_, i)) -> IntSet.add i acc
-          | _ -> acc)
-        ~init:IntSet.empty
-        defs.(idx)
-    in
-    live_vars.(idx) <- Live fields
+    live_vars.(idx) <- Top
+  in
+  let add_live v i =
+    let idx = Var.idx v in
+    match live_vars.(idx) with
+    | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
+    | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
   in
   let live_instruction i =
     match i with
@@ -137,23 +136,24 @@ let liveness nv prog pure_funs defs =
         if not (pure_expr pure_funs e)
         then
           let vars = expr_vars e in
-          Var.ISet.iter add_live vars
+          Var.ISet.iter add_top vars
     | Assign (_, _) -> ()
-    | Set_field (x, _, y) ->
-        add_live x;
-        add_live y
+    (* TODO: what to do with these? *)
+    | Set_field (x, i, y) ->
+        add_live x i;
+        add_top y
     | Array_set (x, y, z) ->
-        add_live x;
-        add_live y;
-        add_live z
-    | Offset_ref (x, _) -> add_live x
+        add_top x;
+        add_top y;
+        add_top z
+    | Offset_ref (x, i) -> add_live x i
   in
   let rec live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
     (* Base Cases *)
     | Stop -> ()
-    | Return x | Raise (x, _) -> add_live x
+    | Return x | Raise (x, _) -> add_top x
     (* Recursive cases *)
     | Branch cont | Poptrap cont ->
         live_continuation prog cont;
@@ -184,30 +184,50 @@ let variables deps =
    The first two conditions are determined by a traversal of the program and given by `live_vars`.
    The third is determined here by propagating liveness to a variable's dependencies. *)
 
-(* We want to know which fields of x are used
-   Look at definition of y, if y is a field access, then set that field to be live in the block *)
-let propagate deps live_vars live_table x =
+(* Look at each dependency y of x.
+   - If x is Live fields, then x becomes Live (union_deps fields)
+   - If x is Top, then if union_deps is not empty (some y is Live fields) then x is Live (union_deps empty)
+   - If x is Dead, then if union_deps is empty and all dependencies are dead, x is dead. If a dep
+    is Top then x is Top. *)
+let propagate deps defs live_vars live_table x =
   let idx = Var.idx x in
   let union_deps fields =
     Var.Set.fold
       (fun y acc ->
         match Var.Tbl.get live_table y with
         | Live y_fields -> IntSet.union acc y_fields
-        | Dead -> acc)
+        | Top | Dead ->
+            List.fold_left
+              ~f:(fun acc def ->
+                match def with
+                | Expr (Field (_, i)) -> IntSet.add i acc
+                | _ -> acc)
+              ~init:acc
+              defs.(Var.idx y))
       deps.(idx)
       fields
   in
+  let is_top x =
+    match Var.Tbl.get live_table x with
+    | Top -> true
+    | _ -> false
+  in
   match live_vars.(idx) with
   | Live fields -> Live (union_deps fields)
+  | Top ->
+      let fields = union_deps IntSet.empty in
+      if IntSet.is_empty fields then Top else Live fields
   | Dead ->
       let fields = union_deps IntSet.empty in
-      if IntSet.is_empty fields then Dead else Live fields
+      if IntSet.is_empty fields
+      then if Var.Set.exists is_top deps.(idx) then Top else Dead
+      else Live fields
 
-let solver vars deps live_vars =
+let solver vars deps defs live_vars =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver.f () (G.invert () g) (propagate deps live_vars)
+  Solver.f () (G.invert () g) (propagate deps defs live_vars)
 
 (* let live_instr st i =
    match i with
@@ -235,13 +255,15 @@ let run p =
       Format.eprintf "}\n")
     deps;
   let pure_funs = Pure_fun.f p in
-  let live_vars = liveness nv p pure_funs defs in
+  let live_vars = liveness nv p pure_funs in
   (* Print out liveness info *)
   Format.eprintf "Liveness:\n";
   Array.iteri ~f:(fun i l -> Format.eprintf "%d: %s\n" i (live_to_string l)) live_vars;
   let vars = variables deps in
-  let live_table = solver vars deps live_vars in
+  let live_table = solver vars deps defs live_vars in
   (* After dependency propagation *)
   Format.eprintf "Liveness with dependencies:\n";
-  Var.Tbl.iter (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l)) live_table;
+  Var.Tbl.iter
+    (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
+    live_table;
   { p with blocks }, Array.make nv 0
