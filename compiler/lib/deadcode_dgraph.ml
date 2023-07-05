@@ -21,7 +21,7 @@ open Stdlib
 
 type def =
   | Expr of expr
-  | Var of Var.t
+  | Param
 
 type live =
   | Top
@@ -59,77 +59,76 @@ module Solver = G.Solver (Domain)
 
 let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
 
-(* Returns an array of definitions of each variable *)
-(* TODO: Change this to return def array instead of def list array *)
 let definitions nv prog =
-  let defs = Array.make nv [] in
-  let add_def x d = defs.(Var.idx x) <- d :: defs.(Var.idx x) in
-  let add_arg_def params args =
-    try List.iter2 ~f:(fun x y -> add_def x (Var y)) params args
-    with Invalid_argument _ -> ()
-  in
-  let add_cont_defs (pc, args) =
-    match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
-    | Some block -> add_arg_def block.params args
-    | None -> () (* Dead continuation *)
-  in
+  let defs = Array.make nv Param in
+  let set_def x d = defs.(Var.idx x) <- d in
   Addr.Map.iter
     (fun _ block ->
-      (* Add definitions from block body *)
+      (* Add defs/deps from block body *)
       List.iter
         ~f:(fun (i, _) ->
           match i with
-          | Let (x, e) -> add_def x (Expr e)
-          | Assign (x, y) -> add_def x (Var y)
+          | Let (x, e) -> set_def x (Expr e)
+          | Assign (x, _) -> set_def x Param
           | _ -> ())
-        block.body;
-      (* Add definitions for block parameters *)
-      match fst block.branch with
-      | Return _ | Raise _ | Stop -> ()
-      | Branch cont -> add_cont_defs cont
-      | Cond (_, cont1, cont2) ->
-          add_cont_defs cont1;
-          add_cont_defs cont2
-      | Switch (_, a1, a2) ->
-          Array.iter ~f:add_cont_defs a1;
-          Array.iter ~f:add_cont_defs a2
-      | Pushtrap (cont, _, cont_h, _) ->
-          add_cont_defs cont;
-          add_cont_defs cont_h
-      | Poptrap cont -> add_cont_defs cont)
+        block.body)
     prog.blocks;
   defs
 
-(* Returns the adjacency list for the variable dependency graph. *)
-let dependencies nv defs =
-  let deps = Array.make nv Var.Set.empty in
-  let add_dep i x = deps.(Var.idx x) <- Var.Set.add (Var.of_idx i) deps.(Var.idx x) in
-  Array.iteri (* For each set of definitions *)
-    ~f:(fun i ds ->
-      List.iter (* For each definition *)
-        ~f:(fun d ->
-          match d with
-          (* Add dependencies from definition *)
-          | Expr e -> (
-              match e with
-              | Apply { f; args; _ } ->
-                  add_dep i f;
-                  List.iter ~f:(add_dep i) args
-              | Block (_, params, _) -> Array.iter ~f:(add_dep i) params
-              | Field (z, _) -> add_dep i z
-              | Constant _ -> ()
-              | Closure (params, _) -> List.iter ~f:(add_dep i) params
-              | Prim (_, args) ->
-                  List.iter
-                    ~f:(fun arg ->
-                      match arg with
-                      | Pv v -> add_dep i v
-                      | Pc _ -> ())
-                    args)
-          | Var y -> add_dep i y)
-        ds)
-    defs;
-  deps
+let usages nv prog =
+  let uses = Array.make nv Var.Set.empty in
+  let add_use x y = uses.(Var.idx y) <- Var.Set.add x uses.(Var.idx y) in
+  let add_arg_dep params args =
+    try List.iter2 ~f:(fun x y -> add_use x y) params args with Invalid_argument _ -> ()
+  in
+  let add_cont_deps (pc, args) =
+    match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
+    | Some block -> add_arg_dep block.params args
+    | None -> () (* Dead continuation *)
+  in
+  let add_expr_uses x e =
+    match e with
+    | Apply { f; args; _ } ->
+        add_use x f;
+        List.iter ~f:(add_use x) args
+    | Block (_, params, _) -> Array.iter ~f:(add_use x) params
+    | Field (z, _) -> add_use x z
+    | Constant _ -> ()
+    | Closure (params, _) -> List.iter ~f:(add_use x) params
+    | Prim (_, args) ->
+        List.iter
+          ~f:(fun arg ->
+            match arg with
+            | Pv v -> add_use x v
+            | Pc _ -> ())
+          args
+  in
+  Addr.Map.iter
+    (fun _ block ->
+      (* Add deps from block body *)
+      List.iter
+        ~f:(fun (i, _) ->
+          match i with
+          | Let (x, e) -> add_expr_uses x e
+          | Assign (x, y) -> add_use x y
+          | _ -> ())
+        block.body;
+      (* Add deps from block branch *)
+      match fst block.branch with
+      | Return _ | Raise _ | Stop -> ()
+      | Branch cont -> add_cont_deps cont
+      | Cond (_, cont1, cont2) ->
+          add_cont_deps cont1;
+          add_cont_deps cont2
+      | Switch (_, a1, a2) ->
+          Array.iter ~f:add_cont_deps a1;
+          Array.iter ~f:add_cont_deps a2
+      | Pushtrap (cont, _, cont_h, _) ->
+          add_cont_deps cont;
+          add_cont_deps cont_h
+      | Poptrap cont -> add_cont_deps cont)
+    prog.blocks;
+  uses
 
 (* Return the set of variables used in a given expression *)
 let expr_vars e =
@@ -210,28 +209,27 @@ let variables deps =
   Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
-let propagate deps defs live_vars live_table x =
+let propagate uses defs live_vars live_table x =
   let idx = Var.idx x in
   let contribution y =
-    List.fold_left
-      ~f:(fun acc def ->
-        match def with
-        | Expr (Field (_, i)) -> Domain.join acc (Live (IntSet.singleton i))
-        | Var _ -> Domain.join acc (Var.Tbl.get live_table y)
+    match Var.Tbl.get live_table y with
+    | Dead -> Dead
+    | _ -> (
+        match defs.(Var.idx y) with
+        | Expr (Field (_, i)) -> Live (IntSet.singleton i)
+        | Param -> Var.Tbl.get live_table y
         | _ -> Top)
-      ~init:Dead
-      defs.(Var.idx y)
   in
   Var.Set.fold
     (fun y live -> Domain.join (contribution y) live)
-    deps.(idx)
+    uses.(idx)
     live_vars.(idx)
 
-let solver vars deps defs live_vars =
+let solver vars uses defs live_vars =
   let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
+    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f uses.(Var.idx x)) }
   in
-  Solver.f () (G.invert () g) (propagate deps defs live_vars)
+  Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
 let run p =
   let nv = Var.count () in
@@ -240,31 +238,29 @@ let run p =
   (* Print out definitions *)
   Format.eprintf "Definitions:\n";
   Array.iteri
-    ~f:(fun i defs ->
-      Format.eprintf "v%d: { " i;
-      List.iter
-        ~f:(function
-          | Expr e -> Format.eprintf "%a " Print.expr e
-          | Var y -> Format.eprintf "%a " Var.print y)
-        defs;
-      Format.eprintf "}\n")
+    ~f:(fun i def ->
+      Format.eprintf "v%d: " i;
+      (match def with
+      | Expr e -> Format.eprintf "%a " Print.expr e
+      | Param -> Format.eprintf "param");
+      Format.eprintf "\n")
     defs;
-  let deps = dependencies nv defs in
-  (* Print out dependency info *)
-  Format.eprintf "Dependencies:\n";
+  (* Print out usage info *)
+  let uses = usages nv p in
+  Format.eprintf "Usages:\n";
   Array.iteri
     ~f:(fun i ds ->
       Format.eprintf "v%d: { " i;
       Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
       Format.eprintf "}\n")
-    deps;
+    uses;
   let pure_funs = Pure_fun.f p in
   let live_vars = liveness nv p pure_funs in
   (* Print out liveness info *)
   Format.eprintf "Liveness:\n";
   Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars;
-  let vars = variables deps in
-  let live_table = solver vars deps defs live_vars in
+  let vars = variables uses in
+  let live_table = solver vars uses defs live_vars in
   (* After dependency propagation *)
   Format.eprintf "Liveness with dependencies:\n";
   Var.Tbl.iter
