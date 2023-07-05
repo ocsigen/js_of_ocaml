@@ -1,6 +1,7 @@
 # Dev (2023-??-??) - ??
 
 ## Bug fixes
+* Runtime: Fix recursive modules on ocaml < 4.13 (#1485)
 * Runtime: fix hashing of NaN (#1475)
 * Runtime: float rounding should resolve tie away from zero (#1475)
 * Runtime: fix Gc.stat, Gc.quick_stat, Gc.get (#1475)
