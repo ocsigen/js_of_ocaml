@@ -66,25 +66,3 @@ end
 let () =
   List.iter (fun x -> x#go)
     [new Foo.cls; Foo.M.foo(); Lazy.force Foo.M.bar]
-
-module rec Even : sig val is: int -> bool end =
-struct
-  let is n =
-    match n with
-    | 0 -> true
-    | 1 -> false
-    | n -> Odd.is (n - 1)
-end
-and Odd : sig val is: int -> bool end =
-struct
-  let is n =
-    match n with
-    | 0 -> false
-    | 1 -> true
-    | n -> Even.is (n - 1)
-end
-
-let () =
-  for k = 1 to 5 do
-    Printf.printf "%d: %s\n" k (if Even.is k then "even" else "odd")
-  done
