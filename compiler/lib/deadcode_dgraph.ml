@@ -24,8 +24,8 @@ type def =
   | Var of Var.t
 
 type live =
-  | Live of IntSet.t
   | Top
+  | Live of IntSet.t
   | Dead
 
 let live_to_string = function
@@ -39,9 +39,20 @@ module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Domain = struct
   type t = live
 
-  let equal = Poly.( = )
+  let equal l1 l2 =
+    match l1, l2 with
+    | Top, Top | Dead, Dead -> true
+    | Live l1, Live l2 -> IntSet.equal l1 l2
+    | _ -> false
 
   let bot = Dead
+
+  let join l1 l2 =
+    match l1, l2 with
+    | _, Top | Top, _ -> Top
+    | Live f1, Live f2 -> Live (IntSet.union f1 f2)
+    | Dead, Live f | Live f, Dead -> Live f
+    | Dead, Dead -> Dead
 end
 
 module Solver = G.Solver (Domain)
@@ -49,15 +60,13 @@ module Solver = G.Solver (Domain)
 let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
 
 (* Returns an array of definitions of each variable *)
+(* TODO: Change this to return def array instead of def list array *)
 let definitions nv prog =
   let defs = Array.make nv [] in
   let add_def x d = defs.(Var.idx x) <- d :: defs.(Var.idx x) in
-  let rec add_arg_def params args =
-    match params, args with
-    | x :: params, y :: args ->
-        add_def x (Var y);
-        add_arg_def params args
-    | _ -> ()
+  let add_arg_def params args =
+    try List.iter2 ~f:(fun x y -> add_def x (Var y)) params args
+    with Invalid_argument _ -> ()
   in
   let add_cont_defs (pc, args) =
     match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
@@ -203,24 +212,20 @@ let variables deps =
 
 let propagate deps defs live_vars live_table x =
   let idx = Var.idx x in
-  let join l1 l2 =
-    match l1, l2 with
-    | _, Top | Top, _ -> Top
-    | Live f1, Live f2 -> Live (IntSet.union f1 f2)
-    | Dead, Live f | Live f, Dead -> Live f
-    | Dead, Dead -> Dead
-  in
   let contribution y =
     List.fold_left
       ~f:(fun acc def ->
         match def with
-        | Expr (Field (_, i)) -> join acc (Live (IntSet.singleton i))
-        | Var z -> join acc (Var.Tbl.get live_table z)
-        | _ -> join acc Top)
+        | Expr (Field (_, i)) -> Domain.join acc (Live (IntSet.singleton i))
+        | Var _ -> Domain.join acc (Var.Tbl.get live_table y)
+        | _ -> Top)
       ~init:Dead
       defs.(Var.idx y)
   in
-  Var.Set.fold (fun y live -> join (contribution y) live) deps.(idx) live_vars.(idx)
+  Var.Set.fold
+    (fun y live -> Domain.join (contribution y) live)
+    deps.(idx)
+    live_vars.(idx)
 
 let solver vars deps defs live_vars =
   let g =
@@ -232,12 +237,24 @@ let run p =
   let nv = Var.count () in
   let blocks = p.blocks in
   let defs = definitions nv p in
+  (* Print out definitions *)
+  Format.eprintf "Definitions:\n";
+  Array.iteri
+    ~f:(fun i defs ->
+      Format.eprintf "v%d: { " i;
+      List.iter
+        ~f:(function
+          | Expr e -> Format.eprintf "%a " Print.expr e
+          | Var y -> Format.eprintf "%a " Var.print y)
+        defs;
+      Format.eprintf "}\n")
+    defs;
   let deps = dependencies nv defs in
   (* Print out dependency info *)
   Format.eprintf "Dependencies:\n";
   Array.iteri
     ~f:(fun i ds ->
-      Format.eprintf "%d: { " i;
+      Format.eprintf "v%d: { " i;
       Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
       Format.eprintf "}\n")
     deps;
@@ -245,7 +262,7 @@ let run p =
   let live_vars = liveness nv p pure_funs in
   (* Print out liveness info *)
   Format.eprintf "Liveness:\n";
-  Array.iteri ~f:(fun i l -> Format.eprintf "%d: %s\n" i (live_to_string l)) live_vars;
+  Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars;
   let vars = variables deps in
   let live_table = solver vars deps defs live_vars in
   (* After dependency propagation *)
