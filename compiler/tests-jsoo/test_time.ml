@@ -17,9 +17,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler.Stdlib
+
 let%expect_test _ =
   let f = Unix.time () in
-  let z, _integral = Float.modf f in
+  let z, _integral = modf f in
   match Float.classify_float f, Float.classify_float z with
   | FP_normal, FP_zero -> ()
   | _ -> assert false
@@ -49,7 +51,7 @@ let%expect_test _ =
     assert (
       String.length s > 0
       && String.for_all
-           (function
+           ~f:(function
              | '0' .. '9' | ' ' -> true
              | _ -> false)
            s)

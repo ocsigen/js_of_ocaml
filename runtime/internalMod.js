@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_CamlinternalMod_init_mod
-//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_raise_with_arg, caml_global_data, caml_alloc_dummy_infix
 //If: !effects
 //Version: < 4.13
 function caml_CamlinternalMod_init_mod(loc,shape) {
@@ -29,7 +29,9 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
     if(typeof shape === "number")
       switch(shape){
       case 0://function
-        struct[idx]={fun:undef_module};
+        var dummy=caml_alloc_dummy_infix();
+        dummy.fun=undef_module;
+        struct[idx]=dummy;
         break;
       case 1://lazy
         struct[idx]=[246, undef_module];
@@ -78,7 +80,7 @@ function caml_CamlinternalMod_update_mod(shape,real,x) {
 }
 
 //Provides: caml_CamlinternalMod_init_mod
-//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_raise_with_arg, caml_global_data, caml_alloc_dummy_infix
 //If: effects
 //Version: < 4.13
 function caml_CamlinternalMod_init_mod(loc,shape,cont) {
@@ -89,7 +91,9 @@ function caml_CamlinternalMod_init_mod(loc,shape,cont) {
     if(typeof shape === "number")
       switch(shape){
       case 0://function
-        struct[idx]={fun:undef_module};
+        var dummy=caml_alloc_dummy_infix();
+        dummy.fun=undef_module;
+        struct[idx]=dummy;
         break;
       case 1://lazy
         struct[idx]=[246, undef_module];
