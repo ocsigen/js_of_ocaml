@@ -194,9 +194,14 @@ function caml_js_from_bool(x) { return !!x; }
 //Provides: caml_js_to_bool const (const)
 function caml_js_to_bool(x) { return +x; }
 //Provides: caml_js_from_float const (const)
+//Alias: caml_js_from_int32
+//Alias: caml_js_from_nativeint
 function caml_js_from_float(x) { return x; }
 //Provides: caml_js_to_float const (const)
 function caml_js_to_float(x) { return x; }
+//Provides: caml_js_to_int32 const (const)
+//Alias: caml_js_to_nativeint
+function caml_js_to_int32(x) { return x|0; }
 
 //Provides: caml_js_from_array mutable (shallow)
 function caml_js_from_array(a) {

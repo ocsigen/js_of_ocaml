@@ -2159,6 +2159,10 @@ let init () =
     ; "caml_ensure_stack_capacity", "%identity"
     ; "caml_js_from_float", "%identity"
     ; "caml_js_to_float", "%identity"
+    ; "caml_js_from_int32", "%identity"
+    ; "caml_js_from_nativeint", "%identity"
+    ; "caml_js_to_int32", "caml_int_of_float"
+    ; "caml_js_to_nativeint", "caml_int_of_float"
     ];
   Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)

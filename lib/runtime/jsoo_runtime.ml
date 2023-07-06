@@ -25,6 +25,14 @@ module Js = struct
 
   external float_of_number : t -> float = "caml_js_to_float"
 
+  external number_of_int32 : int32 -> t = "caml_js_from_int32"
+
+  external int32_of_number : t -> int32 = "caml_js_to_int32"
+
+  external number_of_nativeint : nativeint -> t = "caml_js_from_nativeint"
+
+  external nativeint_of_number : t -> nativeint = "caml_js_to_nativeint"
+
   external typeof : t -> t = "caml_js_typeof"
 
   external instanceof : t -> t -> bool = "caml_js_instanceof"

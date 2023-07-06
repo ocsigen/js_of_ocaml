@@ -799,6 +799,14 @@ external float : float -> float t = "caml_js_from_float"
 
 external to_float : float t -> float = "caml_js_to_float"
 
+external int32 : int32 -> float t = "caml_js_from_int32"
+
+external to_int32 : float t -> int32 = "caml_js_to_int32"
+
+external nativeint : nativeint -> float t = "caml_js_from_nativeint"
+
+external to_nativeint : float t -> nativeint = "caml_js_to_nativeint"
+
 external typeof : _ t -> js_string t = "caml_js_typeof"
 
 external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
