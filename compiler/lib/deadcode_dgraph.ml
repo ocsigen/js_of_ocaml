@@ -94,7 +94,7 @@ let usages nv prog =
     | Block (_, params, _) -> Array.iter ~f:(add_use x) params
     | Field (z, _) -> add_use x z
     | Constant _ -> ()
-    | Closure (params, _) -> List.iter ~f:(add_use x) params
+    | Closure (_, cont) -> add_cont_deps cont
     | Prim (_, args) ->
         List.iter
           ~f:(fun arg ->
