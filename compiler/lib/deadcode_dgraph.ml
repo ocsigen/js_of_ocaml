@@ -64,7 +64,7 @@ let definitions nv prog =
   let set_def x d = defs.(Var.idx x) <- d in
   Addr.Map.iter
     (fun _ block ->
-      (* Add defs/deps from block body *)
+      (* Add defs from block body *)
       List.iter
         ~f:(fun (i, _) ->
           match i with
@@ -111,7 +111,8 @@ let usages nv prog =
           match i with
           | Let (x, e) -> add_expr_uses x e
           | Assign (x, y) -> add_use x y
-          | _ -> ())
+          (* TODO: These? *)
+          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
       (* Add deps from block branch *)
       match fst block.branch with
@@ -164,11 +165,12 @@ let liveness nv prog pure_funs =
   in
   let live_instruction i =
     match i with
-    | Let (_, e) ->
+    | Let (x, e) ->
         if not (pure_expr pure_funs e)
-        then
+        then (
           let vars = expr_vars e in
-          Var.ISet.iter add_top vars
+          Var.ISet.iter add_top vars;
+          add_top x)
     | Assign (_, _) -> ()
     (* TODO: what to do with these? *)
     | Set_field (x, i, y) ->
@@ -213,8 +215,9 @@ let propagate uses defs live_vars live_table x =
   let idx = Var.idx x in
   let contribution y =
     match Var.Tbl.get live_table y with
-    | Dead -> Dead
+    | Dead -> Dead (* If x is used in y, and y is dead, then x is dead. *)
     | _ -> (
+        (* Otherwise we may be able to refine y's liveness. *)
         match defs.(Var.idx y) with
         | Expr (Field (_, i)) -> Live (IntSet.singleton i)
         | Param -> Var.Tbl.get live_table y
