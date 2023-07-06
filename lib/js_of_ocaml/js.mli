@@ -807,6 +807,20 @@ external float : float -> float = "caml_js_from_float"
 external to_float : float -> float = "caml_js_to_float"
 (** Conversion of Javascript numbers to OCaml floats. *)
 
+external int32 : int32 -> float = "caml_js_from_int32"
+(** Conversion of OCaml floats to Javascript numbers. *)
+
+external to_int32 : float -> int32 = "caml_js_to_int32"
+(** Conversion of Javascript numbers to OCaml 32-bits. The given
+    floating-point number is truncated to an integer. *)
+
+external nativeint : nativeint -> float = "caml_js_from_nativeint"
+(** Conversion of OCaml 32-bits integers to Javascript numbers. *)
+
+external to_nativeint : float -> nativeint = "caml_js_to_nativeint"
+(** Conversion of Javascript numbers to OCaml native integers. The
+    given floating-point number is truncated to an integer. *)
+
 (** {2 Convenience coercion functions} *)
 
 val coerce : 'a -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
