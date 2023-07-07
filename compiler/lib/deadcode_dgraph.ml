@@ -28,12 +28,6 @@ type live =
   | Live of IntSet.t
   | Dead
 
-let live_to_string = function
-  | Live fields ->
-      "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
-  | Top -> "top"
-  | Dead -> "dead"
-
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
 module Domain = struct
@@ -293,8 +287,15 @@ let eliminate (prog : program) (live_table : live Var.Tbl.t) : program =
   in
   let blocks = Addr.Map.map update_block prog.blocks in
   { prog with blocks }
+  
+(* 
+module Print = struct
+  let live_to_string = function
+    | Live fields ->
+        "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+    | Top -> "top"
+    | Dead -> "dead"
 
-module Debug = struct
   let print_defs defs =
     Format.eprintf "Definitions:\n";
     Array.iteri
@@ -325,22 +326,22 @@ module Debug = struct
       (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
       live_table
 end
-
+ *)
 let f p =
   let nv = Var.count () in
   (* Compute definitions *)
   let defs = definitions nv p in
-  Debug.print_defs defs;
   (* Compute usages *)
   let uses = usages nv p in
-  Debug.print_uses uses;
   (* Compute initial liveness *)
   let pure_funs = Pure_fun.f p in
   let live_vars = liveness nv p pure_funs in
-  Debug.print_liveness live_vars;
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
-  Debug.print_live_tbl live_table;
+  (* Print.print_defs defs;
+     Print.print_uses uses;
+     Print.print_liveness live_vars;
+     Print.print_live_tbl live_table; *)
   (* After dependency propagation *)
   eliminate p live_table
