@@ -228,15 +228,22 @@ let solver vars uses defs live_vars =
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
-let eliminate (prog : program) (live_table : live Var.Tbl.t) : program =
+let eliminate prog live_table =
   let is_live v =
     match Var.Tbl.get live_table v with
     | Dead -> false
     | _ -> true
   in
-  let eliminate_cont ((pc, params) : cont) =
-    let params = List.filter ~f:is_live params in
-    pc, params
+  let rec filter_args pl al =
+    match pl, al with
+    | x :: pl, y :: al -> if is_live x then y :: filter_args pl al else filter_args pl al
+    | [], _ -> []
+    | _ -> assert false
+  in
+  let eliminate_cont ((pc, args) : cont) =
+    let block = Addr.Map.find pc prog.blocks in
+    let args = filter_args block.params args in
+    pc, args
   in
   let update_block block =
     let params = List.filter ~f:is_live block.params in
@@ -247,24 +254,30 @@ let eliminate (prog : program) (live_table : live Var.Tbl.t) : program =
           match instr with
           | Let (x, e) -> (
               match Var.Tbl.get live_table x with
-              | Top -> Some (instr, loc)
+              | Top -> (
+                  match e with
+                  | Closure (l, cont) ->
+                      let e = Closure (l, eliminate_cont cont) in
+                      Some (Let (x, e), loc)
+                  | _ -> Some (instr, loc))
               | Live fields -> (
                   match e with
                   (* Eliminate unused fields from block *)
                   | Block (start, vars, is_array) ->
-                      let used_vars =
+                      let _used_vars =
                         Array.to_list vars
                         |> List.filteri ~f:(fun i _ -> IntSet.mem i fields)
                         |> Array.of_list
                       in
-                      let e = Block (start, used_vars, is_array) in
+                      let e = Block (start, vars, is_array) in
                       Some (Let (x, e), loc)
                   (* This should never happen *)
                   | _ -> Some (instr, loc))
               | Dead -> None)
-          (* TODO: These? *)
-          | Assign (_, _) | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _)
-            -> Some (instr, loc))
+          (* TODO: need to filter closure cont for assign too *)
+          | Assign (x, _) -> if is_live x then Some (instr, loc) else None
+          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
+              Some (instr, loc))
         block.body
     in
     (* Analyze branch *)
@@ -287,46 +300,46 @@ let eliminate (prog : program) (live_table : live Var.Tbl.t) : program =
   in
   let blocks = Addr.Map.map update_block prog.blocks in
   { prog with blocks }
-  
-(* 
-module Print = struct
-  let live_to_string = function
-    | Live fields ->
-        "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
-    | Top -> "top"
-    | Dead -> "dead"
 
-  let print_defs defs =
-    Format.eprintf "Definitions:\n";
-    Array.iteri
-      ~f:(fun i def ->
-        Format.eprintf "v%d: " i;
-        (match def with
-        | Expr e -> Format.eprintf "%a " Print.expr e
-        | Param -> Format.eprintf "param");
-        Format.eprintf "\n")
-      defs
+(*
+   module Print = struct
+     let live_to_string = function
+       | Live fields ->
+           "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+       | Top -> "top"
+       | Dead -> "dead"
 
-  let print_uses uses =
-    Format.eprintf "Usages:\n";
-    Array.iteri
-      ~f:(fun i ds ->
-        Format.eprintf "v%d: { " i;
-        Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
-        Format.eprintf "}\n")
-      uses
+     let print_defs defs =
+       Format.eprintf "Definitions:\n";
+       Array.iteri
+         ~f:(fun i def ->
+           Format.eprintf "v%d: " i;
+           (match def with
+           | Expr e -> Format.eprintf "%a " Print.expr e
+           | Param -> Format.eprintf "param");
+           Format.eprintf "\n")
+         defs
 
-  let print_liveness live_vars =
-    Format.eprintf "Liveness:\n";
-    Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars
+     let print_uses uses =
+       Format.eprintf "Usages:\n";
+       Array.iteri
+         ~f:(fun i ds ->
+           Format.eprintf "v%d: { " i;
+           Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
+           Format.eprintf "}\n")
+         uses
 
-  let print_live_tbl live_table =
-    Format.eprintf "Liveness with dependencies:\n";
-    Var.Tbl.iter
-      (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
-      live_table
-end
- *)
+     let print_liveness live_vars =
+       Format.eprintf "Liveness:\n";
+       Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars
+
+     let print_live_tbl live_table =
+       Format.eprintf "Liveness with dependencies:\n";
+       Var.Tbl.iter
+         (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
+         live_table
+   end
+*)
 let f p =
   let nv = Var.count () in
   (* Compute definitions *)
