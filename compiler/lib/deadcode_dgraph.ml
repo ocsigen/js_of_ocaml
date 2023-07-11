@@ -235,13 +235,21 @@ let eliminate prog live_table =
   let add_sentinal_instr blocks =
     Addr.Map.update
       0
-      (fun b ->
-        match b with
-        | None -> assert false (* Unreachable *)
+      (function
         | Some block ->
             let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
-            Some { block with body })
+            Some { block with body }
+        | None -> assert false (* Unreachable *))
       blocks
+  in
+  let compact_vars vars =
+    let i = ref (Array.length vars - 1) in
+    while !i >= 0 && Var.equal vars.(!i) sentinal do
+      i := !i - 1
+    done;
+    let compacted = Array.make (!i + 1) sentinal in
+    Array.blit ~src:vars ~src_pos:0 ~dst:compacted ~dst_pos:0 ~len:(!i + 1);
+    compacted
   in
   let is_live v =
     match Var.Tbl.get live_table v with
@@ -277,6 +285,7 @@ let eliminate prog live_table =
                   Array.mapi
                     ~f:(fun i v -> if IntSet.mem i fields then v else sentinal)
                     vars
+                  |> compact_vars
                 in
                 let e = Block (start, vars, is_array) in
                 Some (Let (x, e))
