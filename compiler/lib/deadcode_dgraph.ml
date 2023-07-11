@@ -186,7 +186,10 @@ let liveness nv prog pure_funs =
     | Branch cont | Poptrap cont ->
         live_continuation prog cont;
         live_continuation prog cont
-    | Cond (x, cont1, cont2) | Pushtrap (cont1, x, cont2, _) ->
+    | Pushtrap (cont1, _, cont2, _) ->
+        live_continuation prog cont1;
+        live_continuation prog cont2
+    | Cond (x, cont1, cont2) ->
         add_top x;
         live_continuation prog cont1;
         live_continuation prog cont2
