@@ -231,6 +231,18 @@ let solver vars uses defs live_vars =
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
 let eliminate prog live_table =
+  let sentinal = Var.fresh () in
+  let add_sentinal_instr blocks =
+    Addr.Map.update
+      0
+      (fun b ->
+        match b with
+        | None -> assert false (* Unreachable *)
+        | Some block ->
+            let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
+            Some { block with body })
+      blocks
+  in
   let is_live v =
     match Var.Tbl.get live_table v with
     | Dead -> false
@@ -247,39 +259,43 @@ let eliminate prog live_table =
     let args = filter_args block.params args in
     pc, args
   in
+  let eliminate_closure instr =
+    match instr with
+    | Let (x, Closure (args, cont)) -> Let (x, Closure (args, eliminate_cont cont))
+    | _ -> instr
+  in
+  let eliminate_instr instr =
+    match instr with
+    | Let (x, e) -> (
+        match Var.Tbl.get live_table x with
+        | Top -> Some instr
+        | Live fields -> (
+            match e with
+            (* Eliminate unused fields from block *)
+            | Block (start, vars, is_array) ->
+                let vars =
+                  Array.mapi
+                    ~f:(fun i v -> if IntSet.mem i fields then v else sentinal)
+                    vars
+                in
+                let e = Block (start, vars, is_array) in
+                Some (Let (x, e))
+            (* This should never happen *)
+            | _ -> None)
+        | Dead -> None)
+    | Assign (x, _) -> if is_live x then Some instr else None
+    | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> Some instr
+  in
   let update_block block =
+    (* Filter dead params *)
     let params = List.filter ~f:is_live block.params in
     (* Analyze block instructions *)
     let body =
       List.filter_map
         ~f:(fun (instr, loc) ->
-          match instr with
-          | Let (x, e) -> (
-              match Var.Tbl.get live_table x with
-              | Top -> (
-                  match e with
-                  | Closure (l, cont) ->
-                      let e = Closure (l, eliminate_cont cont) in
-                      Some (Let (x, e), loc)
-                  | _ -> Some (instr, loc))
-              | Live fields -> (
-                  match e with
-                  (* Eliminate unused fields from block *)
-                  | Block (start, vars, is_array) ->
-                      let used_vars =
-                        Array.to_list vars
-                        |> List.filteri ~f:(fun i _ -> IntSet.mem i fields)
-                        |> Array.of_list
-                      in
-                      let e = Block (start, used_vars, is_array) in
-                      Some (Let (x, e), loc)
-                  (* This should never happen *)
-                  | _ -> Some (instr, loc))
-              | Dead -> None)
-          (* TODO: need to filter closure cont for assign too *)
-          | Assign (x, _) -> if is_live x then Some (instr, loc) else None
-          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
-              Some (instr, loc))
+          Option.map
+            ~f:(fun instr -> eliminate_closure instr, loc)
+            (eliminate_instr instr))
         block.body
     in
     (* Analyze branch *)
@@ -300,7 +316,7 @@ let eliminate prog live_table =
     in
     { params; body; branch }
   in
-  let blocks = Addr.Map.map update_block prog.blocks in
+  let blocks = prog.blocks |> Addr.Map.map update_block |> add_sentinal_instr in
   { prog with blocks }
 
 module Print = struct
