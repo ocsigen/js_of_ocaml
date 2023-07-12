@@ -69,31 +69,49 @@ let definitions nv prog =
     prog.blocks;
   defs
 
-let usages nv prog =
-  let uses = Array.make nv Var.Set.empty in
-  let add_use x y = uses.(Var.idx y) <- Var.Set.add x uses.(Var.idx y) in
+type usage_kind =
+  | Compute (* variable y is used to compute x *)
+  | Propagate (* values of y propagate to x *)
+
+let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array =
+  let uses = Array.make nv Var.Map.empty in
+  let add_use kind x y = uses.(Var.idx y) <- Var.Map.add x kind uses.(Var.idx y) in
   let add_arg_dep params args =
-    try List.iter2 ~f:(fun x y -> add_use x y) params args with Invalid_argument _ -> ()
+    try List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
+    with Invalid_argument _ -> ()
   in
   let add_cont_deps (pc, args) =
     match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
     | Some block -> add_arg_dep block.params args
     | None -> () (* Dead continuation *)
   in
-  let add_expr_uses x e =
+  let add_expr_uses x e : unit =
     match e with
     | Apply { f; args; _ } ->
-        add_use x f;
-        List.iter ~f:(add_use x) args
-    | Block (_, params, _) -> Array.iter ~f:(add_use x) params
-    | Field (z, _) -> add_use x z
+        (match Var.Tbl.get global_info.info_approximation f with
+        | Top -> ()
+        | Values { known; _ } ->
+            Var.Set.iter (* For each known value of f *)
+              (fun k ->
+                (* 1. Look at return values, and add edge between x and these values. *)
+                let return_values = Var.Map.find k global_info.info_return_vals in
+                Var.Set.iter (add_use Propagate x) return_values;
+                (* 2. If k is a closure, add an edge pairwise between the parameters and arguments *)
+                match global_info.info_defs.(Var.idx k) with
+                | Expr (Closure (params, _)) ->
+                    List.iter2 ~f:(add_use Propagate) params args
+                | _ -> ())
+              known);
+        add_use Compute x f
+    | Block (_, params, _) -> Array.iter ~f:(add_use Propagate x) params
+    | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
     | Closure (_, cont) -> add_cont_deps cont
     | Prim (_, args) ->
         List.iter
           ~f:(fun arg ->
             match arg with
-            | Pv v -> add_use x v
+            | Pv v -> add_use Compute x v
             | Pc _ -> ())
           args
   in
@@ -104,7 +122,7 @@ let usages nv prog =
         ~f:(fun (i, _) ->
           match i with
           | Let (x, e) -> add_expr_uses x e
-          | Assign (x, y) -> add_use x y
+          | Assign (x, y) -> add_use Compute x y
           (* TODO: These? *)
           | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
@@ -145,7 +163,7 @@ let expr_vars e =
         args);
   vars
 
-let liveness nv prog pure_funs =
+let liveness nv prog pure_funs (global_info : Global_flow.info) =
   let live_vars = Array.make nv Dead in
   let add_top v =
     let idx = Var.idx v in
@@ -162,9 +180,16 @@ let liveness nv prog pure_funs =
     | Let (x, e) ->
         if not (pure_expr pure_funs e)
         then (
+          (* TODO: if e is an impure application, then look at each argument, if they escape then set to top *)
           let vars = expr_vars e in
           Var.ISet.iter add_top vars;
-          add_top x)
+          add_top x;
+          match e with
+          | Apply { args; _ } ->
+              List.iter
+                ~f:(fun x -> if Var.ISet.mem global_info.info_may_escape x then add_top x)
+                args
+          | _ -> ())
     | Assign (_, _) -> ()
     (* TODO: what to do with these? *)
     | Set_field (x, i, y) ->
@@ -181,7 +206,8 @@ let liveness nv prog pure_funs =
     match fst block.branch with
     (* Base Cases *)
     | Stop -> ()
-    | Return x | Raise (x, _) -> add_top x
+    | Return x -> if Var.ISet.mem global_info.info_may_escape x then add_top x
+    | Raise (x, _) -> add_top x
     (* Recursive cases *)
     | Branch cont | Poptrap cont ->
         live_continuation prog cont;
@@ -210,26 +236,30 @@ let variables deps =
   Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
-let propagate uses defs live_vars live_table x =
+let propagate (uses : usage_kind Var.Map.t array) defs live_vars live_table x =
   let idx = Var.idx x in
-  let contribution y =
-    match Var.Tbl.get live_table y with
-    | Dead -> Dead (* If x is used in y, and y is dead, then x is dead. *)
-    | Top | Live _ -> (
-        (* Otherwise we may be able to refine y's liveness. *)
-        match defs.(Var.idx y) with
-        | Expr (Field (_, i)) -> Live (IntSet.singleton i)
-        | Param -> Var.Tbl.get live_table y
-        | _ -> Top)
+  let contribution y usage_kind =
+    match usage_kind with
+    | Compute -> (
+        match Var.Tbl.get live_table y with
+        | Dead -> Dead (* If x is used in y, and y is dead, then x is dead. *)
+        | Top | Live _ -> (
+            (* Otherwise we may be able to refine y's liveness. *)
+            match defs.(Var.idx y) with
+            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
+            | _ -> Top))
+    | Propagate -> Var.Tbl.get live_table y
   in
-  Var.Set.fold
-    (fun y live -> Domain.join (contribution y) live)
+  Var.Map.fold
+    (fun y usage_kind live -> Domain.join (contribution y usage_kind) live)
     uses.(idx)
     live_vars.(idx)
 
-let solver vars uses defs live_vars =
+let solver vars (uses : usage_kind Var.Map.t array) defs live_vars =
   let g =
-    { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f uses.(Var.idx x)) }
+    { G.domain = vars
+    ; G.iter_children = (fun f x -> Var.Map.iter (fun y _ -> f y) uses.(Var.idx x))
+    }
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
@@ -354,7 +384,7 @@ module Print = struct
     Array.iteri
       ~f:(fun i ds ->
         Format.eprintf "v%d: { " i;
-        Var.Set.iter (fun d -> Format.eprintf "%a " Var.print d) ds;
+        Var.Map.iter (fun d _ -> Format.eprintf "%a " Var.print d) ds;
         Format.eprintf "}\n")
       uses
 
@@ -369,15 +399,15 @@ module Print = struct
       live_table
 end
 
-let f p =
+let f p global_info =
   let nv = Var.count () in
   (* Compute definitions *)
   let defs = definitions nv p in
   (* Compute usages *)
-  let uses = usages nv p in
+  let uses = usages nv p global_info in
   (* Compute initial liveness *)
   let pure_funs = Pure_fun.f p in
-  let live_vars = liveness nv p pure_funs in
+  let live_vars = liveness nv p pure_funs global_info in
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
