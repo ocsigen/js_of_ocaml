@@ -540,6 +540,7 @@ type info =
   { info_defs : def array
   ; info_approximation : Domain.t Var.Tbl.t
   ; info_may_escape : Var.ISet.t
+  ; info_return_vals : Var.Set.t Var.Map.t
   }
 
 let f ~fast p =
@@ -625,7 +626,11 @@ let f ~fast p =
   Array.iteri
     ~f:(fun i s -> if Poly.(s <> No) then Var.ISet.add info_may_escape (Var.of_idx i))
     may_escape;
-  { info_defs = defs; info_approximation = approximation; info_may_escape }
+  { info_defs = defs
+  ; info_approximation = approximation
+  ; info_may_escape
+  ; info_return_vals = rets
+  }
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with

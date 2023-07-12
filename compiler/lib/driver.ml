@@ -38,7 +38,10 @@ let tailcall p =
 
 let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
-  Deadcode_dgraph.run p
+  let global_info = Global_flow.f ~fast:false p in
+  let p = Deadcode_dgraph.f p global_info in
+  let _, live_vars = Deadcode.f p in
+  p, live_vars
 
 let deadcode p =
   let r, _ = deadcode' p in

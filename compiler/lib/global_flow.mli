@@ -35,6 +35,7 @@ type info =
   { info_defs : def array
   ; info_approximation : approx Var.Tbl.t
   ; info_may_escape : Var.ISet.t
+  ; info_return_vals : Var.Set.t Var.Map.t
   }
 
 val f : fast:bool -> Code.program -> info
