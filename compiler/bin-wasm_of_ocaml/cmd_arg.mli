@@ -23,6 +23,7 @@ type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
+  ; runtime_files : string list
   ; output_file : string * bool
   ; input_file : string
   ; params : (string * string) list

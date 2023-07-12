@@ -65,16 +65,14 @@ let common_binaryen_options =
   ; "-n"
   ]
 
-let link runtime_file input_file output_file =
+let link runtime_files input_file output_file =
   command
     (("wasm-merge" :: common_binaryen_options)
-    @ [ Filename.quote runtime_file
-      ; "env"
-      ; Filename.quote input_file
-      ; "exec"
-      ; "-o"
-      ; Filename.quote output_file
-      ])
+    @ List.flatten
+        (List.map
+           ~f:(fun runtime_file -> [ Filename.quote runtime_file; "env" ])
+           runtime_files)
+    @ [ Filename.quote input_file; "exec"; "-o"; Filename.quote output_file ])
 
 let dead_code_elimination in_file out_file =
   with_intermediate_file (Filename.temp_file "deps" ".json")
@@ -96,13 +94,13 @@ let optimize in_file out_file =
     (("wasm-opt" :: common_binaryen_options)
     @ [ "-O3"; Filename.quote in_file; "-o"; Filename.quote out_file ])
 
-let link_and_optimize wat_file output_file =
+let link_and_optimize runtime_wasm_files wat_file output_file =
   with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
   write_file runtime_file Wa_runtime.wasm_runtime;
   with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
-  link runtime_file wat_file temp_file;
+  link (runtime_file :: runtime_wasm_files) wat_file temp_file;
   with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
   dead_code_elimination temp_file temp_file';
@@ -138,7 +136,7 @@ let copy_js_runtime wasm_file output_file =
     ^ escape_string (Filename.basename wasm_file)
     ^ String.sub s ~pos:(i + 4) ~len:(String.length s - i - 4))
 
-let run { Cmd_arg.common; profile; input_file; output_file; params } =
+let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Wa_generate.init ();
   Jsoo_cmdline.Arg.eval common;
   (match output_file with
@@ -147,12 +145,25 @@ let run { Cmd_arg.common; profile; input_file; output_file; params } =
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   let t = Timer.make () in
   let include_dirs = List.filter_map [ "+stdlib/" ] ~f:(fun d -> Findlib.find [] d) in
+  let runtime_wasm_files, runtime_js_files =
+    List.partition runtime_files ~f:(fun name ->
+        List.exists
+          ~f:(fun s -> Filename.check_suffix name s)
+          [ ".wasm"; ".wat"; ".wast" ])
+  in
+  let runtime_js_files, builtin =
+    List.partition_map runtime_js_files ~f:(fun name ->
+        match Builtins.find name with
+        | Some t -> `Snd t
+        | None -> `Fst name)
+  in
   let t1 = Timer.make () in
-  let builtin = Js_of_ocaml_compiler_runtime_files.runtime in
+  let builtin = Js_of_ocaml_compiler_runtime_files.runtime @ builtin in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
       Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
+  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
@@ -200,7 +211,7 @@ let run { Cmd_arg.common; profile; input_file; output_file; params } =
        let wat_file = Filename.chop_extension (fst output_file) ^ ".wat" in
        let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
        output_gen wat_file (output code ~standalone:true);
-       link_and_optimize wat_file wasm_file;
+       link_and_optimize runtime_wasm_files wat_file wasm_file;
        copy_js_runtime wasm_file (fst output_file)
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());

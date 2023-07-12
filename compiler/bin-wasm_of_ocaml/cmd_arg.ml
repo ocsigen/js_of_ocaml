@@ -25,12 +25,17 @@ type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
+  ; runtime_files : string list
   ; output_file : string * bool
   ; input_file : string
   ; params : (string * string) list
   }
 
 let options =
+  let runtime_files =
+    let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
+    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
+  in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
@@ -52,7 +57,7 @@ let options =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
-  let build_t common set_param profile output_file input_file =
+  let build_t common set_param profile output_file input_file runtime_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       match output_file with
@@ -60,10 +65,16 @@ let options =
       | None -> chop_extension input_file ^ ".js", false
     in
     let params : (string * string) list = List.flatten set_param in
-    `Ok { common; params; profile; output_file; input_file }
+    `Ok { common; params; profile; output_file; input_file; runtime_files }
   in
   let t =
     Term.(
-      const build_t $ Jsoo_cmdline.Arg.t $ set_param $ profile $ output_file $ input_file)
+      const build_t
+      $ Jsoo_cmdline.Arg.t
+      $ set_param
+      $ profile
+      $ output_file
+      $ input_file
+      $ runtime_files)
   in
   Term.ret t
