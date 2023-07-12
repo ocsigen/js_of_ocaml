@@ -384,7 +384,16 @@ module Print = struct
     Array.iteri
       ~f:(fun i ds ->
         Format.eprintf "v%d: { " i;
-        Var.Map.iter (fun d _ -> Format.eprintf "%a " Var.print d) ds;
+        Var.Map.iter
+          (fun d k ->
+            Format.eprintf
+              "(%a, %s) "
+              Var.print
+              d
+              (match k with
+              | Compute -> "C"
+              | Propagate -> "P"))
+          ds;
         Format.eprintf "}\n")
       uses
 
