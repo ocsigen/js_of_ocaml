@@ -541,18 +541,23 @@
       (local.get $l))
 
    (func (export "caml_wrap_exception") (param (externref)) (result (ref eq))
-      (local $exn (ref eq))
-      (local.set $exn (call $wrap (extern.internalize (local.get 0))))
+      (local $exn anyref)
+      (local.set $exn (extern.internalize (local.get 0)))
       ;; ZZZ special case for stack overflows?
       (block $undef
          (return
             (array.new_fixed $block (i31.new (i32.const 0))
                (br_on_null $undef
-                  (call $caml_named_value (string.const "jsError"))))
-               (local.get $exn)))
+                  (call $caml_named_value (string.const "jsError")))
+               (call $wrap (local.get $exn)))))
       (array.new_fixed $block (i31.new (i32.const 0))
          (call $caml_failwith_tag)
-         (local.get $exn)))
+         (call $caml_string_of_jsstring
+            (call $wrap
+               (call $meth_call
+                  (local.get $exn)
+                  (string.const "toString")
+                  (extern.internalize (call $new_array (i32.const 0))))))))
 
    (func (export "caml_js_error_option_of_exception")
       (param (ref eq)) (result (ref eq))
