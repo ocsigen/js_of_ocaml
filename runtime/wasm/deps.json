@@ -1,16 +1,12 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "exit", "effects"],
+    "reaches": ["init", "exn", "exit"],
     "root": true
   },
   {
     "name": "init",
     "export": "_initialize"
-  },
-  {
-    "name": "effects",
-    "export": "caml_start_fiber"
   },
   {
     "name": "exn",
@@ -77,5 +73,14 @@
     "name": "localtime",
     "import": ["bindings", "localtime"],
     "reaches": ["alloc_tm"]
+  },
+  {
+    "name": "effects",
+    "export": "caml_start_fiber"
+  },
+  {
+    "name": "start_fiber",
+    "import": ["bindings", "start_fiber"],
+    "reaches": ["effects"]
   },
 ]
