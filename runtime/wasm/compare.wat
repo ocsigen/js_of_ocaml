@@ -226,18 +226,21 @@
                   (br_if $next_item (ref.eq (local.get $v1) (local.get $v2)))))
             (drop (block $v1_is_not_int (result (ref eq))
                (local.set $i1
-                  (br_on_cast_fail $v1_is_not_int i31 (local.get $v1)))
+                  (br_on_cast_fail $v1_is_not_int (ref eq) (ref i31)
+                    (local.get $v1)))
                (br_if $next_item (ref.eq (local.get $v1) (local.get $v2)))
                (drop (block $v2_is_not_int (result (ref eq))
                   (local.set $i2
-                     (br_on_cast_fail $v2_is_not_int i31 (local.get $v2)))
+                     (br_on_cast_fail $v2_is_not_int (ref eq) (ref i31)
+                        (local.get $v2)))
                   ;; v1 and v2 are both integers
                   (return (i32.sub (i31.get_s (local.get $i1))
                                    (i31.get_s (local.get $i2))))))
                ;; check for forward tag
                (drop (block $v2_not_forward (result (ref eq))
                   (local.set $b2
-                     (br_on_cast_fail $v2_not_forward $block (local.get $v2)))
+                     (br_on_cast_fail $v2_not_forward (ref eq) (ref $block)
+                        (local.get $v2)))
                   (local.set $t2
                      (i31.get_u (ref.cast i31 (array.get $block (local.get $b2)
                                                  (i32.const 0)))))
@@ -250,7 +253,7 @@
                (block $v2_not_comparable
                   (drop (block $v2_not_custom (result (ref eq))
                      (local.set $c2
-                         (br_on_cast_fail $v2_not_custom $custom
+                         (br_on_cast_fail $v2_not_custom (ref eq) (ref $custom)
                             (local.get $v2)))
                      (local.set $res
                         (call_ref $value->value->int->int
@@ -267,8 +270,8 @@
                   ;; check for forward tag
                   (drop (block $v1_not_forward (result (ref eq))
                      (local.set $b1
-                        (br_on_cast_fail
-                           $v1_not_forward $block (local.get $v1)))
+                        (br_on_cast_fail $v1_not_forward (ref eq) (ref $block)
+                           (local.get $v1)))
                      (local.set $t1
                         (i31.get_u (ref.cast i31
                                       (array.get $block (local.get $b1)
@@ -282,7 +285,8 @@
                   (block $v1_not_comparable
                      (drop (block $v1_not_custom (result (ref eq))
                         (local.set $c1
-                            (br_on_cast_fail $v1_not_custom $custom
+                            (br_on_cast_fail
+                               $v1_not_custom (ref eq) (ref $custom)
                                (local.get $v1)))
                         (local.set $res
                            (call_ref $value->value->int->int
@@ -297,13 +301,15 @@
             (drop (block $heterogeneous (result (ref eq))
                (drop (block $v1_not_block (result (ref eq))
                   (local.set $b1
-                     (br_on_cast_fail $v1_not_block $block (local.get $v1)))
+                     (br_on_cast_fail $v1_not_block (ref eq) (ref $block)
+                        (local.get $v1)))
                   (local.set $t1
                      (i31.get_u
                         (ref.cast i31
                            (array.get $block (local.get $b1) (i32.const 0)))))
                   (local.set $b2
-                     (br_on_cast_fail $heterogeneous $block (local.get $v2)))
+                     (br_on_cast_fail $heterogeneous (ref eq) (ref $block)
+                        (local.get $v2)))
                   (local.set $t2
                      (i31.get_u
                         (ref.cast i31
@@ -385,10 +391,12 @@
                (drop (block $v1_not_float (result (ref eq))
                   (local.set $f1
                      (struct.get $float 0
-                        (br_on_cast_fail $v1_not_float $float (local.get $v1))))
+                        (br_on_cast_fail $v1_not_float (ref eq) (ref $float)
+                           (local.get $v1))))
                   (local.set $f2
                      (struct.get $float 0
-                        (br_on_cast_fail $heterogeneous $float (local.get $v2))))
+                        (br_on_cast_fail $heterogeneous (ref eq) (ref $float)
+                           (local.get $v2))))
                   (if (f64.lt (local.get $f1) (local.get $f2))
                      (then (return (i32.const -1))))
                   (if (f64.gt (local.get $f1) (local.get $f2))
@@ -404,18 +412,22 @@
                   (br $next_item)))
                (drop (block $v1_not_string (result (ref eq))
                   (local.set $str1
-                     (br_on_cast_fail $v1_not_string $string (local.get $v1)))
+                     (br_on_cast_fail $v1_not_string (ref eq) (ref $string)
+                        (local.get $v1)))
                   (local.set $str2
-                      (br_on_cast_fail $heterogeneous $string (local.get $v2)))
+                      (br_on_cast_fail $heterogeneous (ref eq) (ref $string)
+                         (local.get $v2)))
                   (local.set $res
                      (call $compare_strings (local.get $str1) (local.get $str2)))
                   (br_if $next_item (i32.eqz (local.get $res)))
                   (return (local.get $res))))
                (drop (block $v1_not_custom (result (ref eq))
                   (local.set $c1
-                     (br_on_cast_fail $v1_not_custom $custom (local.get $v1)))
+                     (br_on_cast_fail $v1_not_custom (ref eq) (ref $custom)
+                        (local.get $v1)))
                   (local.set $c2
-                      (br_on_cast_fail $heterogeneous $custom (local.get $v2)))
+                      (br_on_cast_fail $heterogeneous (ref eq) (ref $custom)
+                         (local.get $v2)))
                   (if (i32.eqz
                          (ref.eq (struct.get $custom 0 (local.get $c1))
                                  (struct.get $custom 0 (local.get $c2))))
@@ -448,10 +460,12 @@
                (drop (block $v1_not_js (result (ref eq))
                   (local.set $js1
                      (struct.get $js 0
-                        (br_on_cast_fail $v1_not_js $js (local.get $v1))))
+                        (br_on_cast_fail $v1_not_js (ref eq) (ref $js)
+                           (local.get $v1))))
                   (local.set $js2
                      (struct.get $js 0
-                        (br_on_cast_fail $heterogeneous $js (local.get $v2))))
+                        (br_on_cast_fail $heterogeneous (ref eq) (ref $js)
+                           (local.get $v2))))
                   ;; ZZZ use ref.test / ref.cast
                   (if (i32.and (call $ref_test_string (local.get $js1))
                                (call $ref_test_string (local.get $js2)))

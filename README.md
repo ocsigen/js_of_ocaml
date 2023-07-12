@@ -4,11 +4,11 @@ Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssem
 
 ## Requirements
 
-Wasm_of_ocaml relies on the Binaryen toolchain. At the moment, you need to install a [specific fork](https://github.com/vouillon/binaryen/tree/fixes): we rely on a number of unreleased fixes, and the main branch uses a new format for the `br_on_cast` instruction which is not yet supported by `node`.
+Wasm_of_ocaml relies on the Binaryen toolchain. At the moment, you need to install it [from the main branch on GitHub](https://github.com/WebAssembly/binaryen/).
 
 ## Supported engines
 
-The generated code works with [Chrome beta](https://www.google.com/chrome/beta/) and [node nightly](https://nodejs.org/download/nightly/v21.0.0-nightly20230628900ae1bda7/). For Chrome, you need to enable WebAssembly Garbage Collection and WebAssembly Stringref from chrome://flags/. For node, you need to use the following flags:`--experimental-wasm-gc  --experimental-wasm-stringref`.
+The generated code works with [Chrome beta](https://www.google.com/chrome/beta/) and [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230711fb76fe1ec2/). For Chrome, you need to enable WebAssembly Garbage Collection and WebAssembly Stringref from chrome://flags/. For node, you need to use the following flags:`--experimental-wasm-gc  --experimental-wasm-stringref`.
 
 ## Installation
 

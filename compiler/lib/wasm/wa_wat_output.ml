@@ -71,13 +71,8 @@ let global_type typ = mut_type value_type typ
 let str_type typ =
   match typ with
   | Func ty -> List (Atom "func" :: func_type ty)
-  | Struct l -> (
-      match target with
-      | `Binaryen ->
-          List
-            (Atom "struct" :: List.map ~f:(fun f -> List [ Atom "field"; field_type f ]) l)
-      | `Reference ->
-          List [ Atom "struct"; List (Atom "field" :: List.map ~f:field_type l) ])
+  | Struct l ->
+      List (Atom "struct" :: List.map ~f:(fun f -> List [ Atom "field"; field_type f ]) l)
   | Array ty -> List [ Atom "array"; field_type ty ]
 
 let block_type = func_type
@@ -327,38 +322,22 @@ let expression_or_instructions ctx in_function =
         | `Reference -> [ List (Atom "ref.test" :: ref_type ty :: expression e) ])
     | RefEq (e, e') -> [ List (Atom "ref.eq" :: (expression e @ expression e')) ]
     | RefNull ty -> [ List [ Atom "ref.null"; heap_type ty ] ]
-    | Br_on_cast (i, ty, ty', e) -> (
-        match target with
-        | `Binaryen ->
-            [ List
-                (Atom "br_on_cast"
-                :: Atom (string_of_int i)
-                :: (ref_type' ty' @ expression e))
-            ]
-        | `Reference ->
-            [ List
-                (Atom "br_on_cast"
-                :: Atom (string_of_int i)
-                :: ref_type ty
-                :: ref_type ty'
-                :: expression e)
-            ])
-    | Br_on_cast_fail (i, ty, ty', e) -> (
-        match target with
-        | `Binaryen ->
-            [ List
-                (Atom "br_on_cast_fail"
-                :: Atom (string_of_int i)
-                :: (ref_type' ty' @ expression e))
-            ]
-        | `Reference ->
-            [ List
-                (Atom "br_on_cast_fail"
-                :: Atom (string_of_int i)
-                :: ref_type ty
-                :: ref_type ty'
-                :: expression e)
-            ])
+    | Br_on_cast (i, ty, ty', e) ->
+        [ List
+            (Atom "br_on_cast"
+            :: Atom (string_of_int i)
+            :: ref_type ty
+            :: ref_type ty'
+            :: expression e)
+        ]
+    | Br_on_cast_fail (i, ty, ty', e) ->
+        [ List
+            (Atom "br_on_cast_fail"
+            :: Atom (string_of_int i)
+            :: ref_type ty
+            :: ref_type ty'
+            :: expression e)
+        ]
     | ExternInternalize e -> [ List (Atom "extern.internalize" :: expression e) ]
     | ExternExternalize e -> [ List (Atom "extern.externalize" :: expression e) ]
   and instruction i =
@@ -522,21 +501,20 @@ let data_contents ctx contents =
   escape_string (Buffer.contents b)
 
 let type_field { name; typ; supertype; final } =
-  match target with
-  | `Binaryen when Option.is_none supertype ->
-      List [ Atom "type"; index name; str_type typ ]
-  | _ ->
-      List
-        [ Atom "type"
-        ; index name
-        ; List
-            (Atom "sub"
-            :: ((if final && Poly.(target <> `Binaryen) then [ Atom "final" ] else [])
-               @ (match supertype with
-                 | Some supertype -> [ index supertype ]
-                 | None -> [])
-               @ [ str_type typ ]))
-        ]
+  if final && Option.is_none supertype
+  then List [ Atom "type"; index name; str_type typ ]
+  else
+    List
+      [ Atom "type"
+      ; index name
+      ; List
+          (Atom "sub"
+          :: ((if final then [ Atom "final" ] else [])
+             @ (match supertype with
+               | Some supertype -> [ index supertype ]
+               | None -> [])
+             @ [ str_type typ ]))
+      ]
 
 let field ctx f =
   match f with

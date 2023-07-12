@@ -85,9 +85,9 @@
       ))
    (type $custom (struct (field (ref $custom_operations))))
    (type $int32
-      (sub $custom (struct (field (ref $custom_operations)) (field i32))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
    (type $int64
-      (sub $custom (struct (field (ref $custom_operations)) (field i64))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
    (type $int_array (array (mut i32)))
 
    (global $bigarray_ops (ref $custom_operations)
@@ -102,7 +102,7 @@
          (ref.func $bigarray_hash)))
 
    (type $bigarray
-      (sub $custom
+      (sub final $custom
          (struct
             (field (ref $custom_operations))
             (field $ba_data (mut (ref extern))) ;; data

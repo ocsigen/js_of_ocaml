@@ -27,7 +27,8 @@
       (local $a (ref $assoc))
       (block $tail (result (ref null eq))
          (loop $loop
-            (local.set $a (br_on_cast_fail $tail $assoc (local.get $l)))
+            (local.set $a
+               (br_on_cast_fail $tail (ref null eq) (ref $assoc) (local.get $l)))
             (if (i31.get_u
                    (ref.cast i31
                        (call $caml_string_equal

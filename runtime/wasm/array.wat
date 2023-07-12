@@ -91,7 +91,8 @@
       (local.set $len (i32.const 1))
       (loop $compute_length
          (drop (block $exit (result (ref eq))
-             (local.set $b (br_on_cast_fail $exit $block (local.get $l)))
+             (local.set $b
+                (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
              (local.set $len
                 (i32.add (local.get $len)
                    (i32.sub
@@ -114,7 +115,8 @@
       (local.set $i (i32.const 1))
       (loop $fill
          (drop (block $exit (result (ref eq))
-             (local.set $b (br_on_cast_fail $exit $block (local.get $l)))
+             (local.set $b
+                (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
              (local.set $a'
                 (ref.cast $block
                    (array.get $block (local.get $b) (i32.const 1))))

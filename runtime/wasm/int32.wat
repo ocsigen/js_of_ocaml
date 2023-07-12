@@ -29,7 +29,7 @@
          (ref.func $int32_hash)))
 
    (type $int32
-      (sub $custom (struct (field (ref $custom_operations)) (field i32))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
 
    (func $int32_cmp
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)

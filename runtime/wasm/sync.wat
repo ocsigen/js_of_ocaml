@@ -37,7 +37,7 @@
          (ref.func $custom_hash_id)))
 
    (type $mutex
-      (sub $custom_with_id
+      (sub final $custom_with_id
          (struct
             (field (ref $custom_operations))
             (field i64)

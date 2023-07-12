@@ -30,13 +30,13 @@
 
    (rec (type $stack (struct (field (ref null $stack)))))
    (type $pos
-      (sub $stack
+      (sub final $stack
          (struct
             (field $pos_previous (ref null $stack))
             (field $pc i32)
             (field $pos i32))))
    (type $undo
-      (sub $stack
+      (sub final $stack
          (struct
             (field $undo_previous (ref null $stack))
             (field $tbl (ref $int_array))
@@ -428,7 +428,7 @@
                (ref.cast $undo
                   (block $undo (result (ref $stack))
                      (local.set $p
-                        (br_on_cast_fail $undo $pos
+                        (br_on_cast_fail $undo (ref eq) (ref $pos)
                            (br_on_null $reject (local.get $stack))))
                      (local.set $pc (struct.get $pos $pc (local.get $p)))
                      (local.set $pos (struct.get $pos $pos (local.get $p)))

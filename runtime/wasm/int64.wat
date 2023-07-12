@@ -32,7 +32,7 @@
          (ref.func $int64_hash)))
 
    (type $int64
-      (sub $custom (struct (field (ref $custom_operations)) (field i64))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
 
    (func $int64_cmp
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)

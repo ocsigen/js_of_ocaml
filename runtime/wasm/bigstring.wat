@@ -39,7 +39,7 @@
    (type $custom (struct (field (ref $custom_operations))))
    (type $int_array (array (mut i32)))
    (type $bigarray
-      (sub $custom
+      (sub final $custom
          (struct
             (field $ba_ops (ref $custom_operations))
             (field $ba_data (mut (ref extern))) ;; data

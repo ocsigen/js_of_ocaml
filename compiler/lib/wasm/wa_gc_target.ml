@@ -92,7 +92,7 @@ module Type = struct
         let* custom = custom_type in
         return
           { supertype = Some custom
-          ; final = false
+          ; final = true
           ; typ =
               W.Struct
                 [ { mut = false
@@ -108,7 +108,7 @@ module Type = struct
         let* custom = custom_type in
         return
           { supertype = Some custom
-          ; final = false
+          ; final = true
           ; typ =
               W.Struct
                 [ { mut = false

@@ -40,10 +40,7 @@
     }
 
     let bindings =
-        {jstag:
-         WebAssembly.JSTag||
-         // ZZZ not supported in node yet
-         new WebAssembly.Tag({parameters:['externref'],results:[]}),
+        {jstag:WebAssembly.JSTag,
          identity:(x)=>x,
          from_bool:(x)=>!!x,
          get:(x,y)=>x[y],

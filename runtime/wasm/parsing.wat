@@ -299,7 +299,8 @@
                  (block $cont
                     (drop (block $not_block (result (ref eq))
                        (local.set $arg
-                          (br_on_cast_fail $not_block $block (local.get $varg)))
+                          (br_on_cast_fail $not_block (ref eq) (ref $block)
+                             (local.get $varg)))
                        (array.set $block (local.get $env)
                           (global.get $env_curr_char)
                           (array.get $block

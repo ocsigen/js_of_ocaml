@@ -73,12 +73,14 @@
 
    (func $wrap (export "wrap") (param anyref) (result (ref eq))
       (block $is_eq (result (ref eq))
-         (return (struct.new $js (br_on_cast $is_eq eq (local.get 0))))))
+         (return
+            (struct.new $js (br_on_cast $is_eq anyref (ref eq) (local.get 0))))))
 
    (func $unwrap (export "unwrap") (param (ref eq)) (result anyref)
       (block $not_js (result anyref)
-         (return (struct.get $js 0
-                    (br_on_cast_fail $not_js $js (local.get 0))))))
+         (return
+            (struct.get $js 0
+               (br_on_cast_fail $not_js (ref eq) (ref $js) (local.get 0))))))
 
    (func (export "caml_js_equals")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
@@ -347,7 +349,7 @@
                                     (i31.new (local.get $i))))
                               (local.get $acc)
                               (struct.get $closure 0
-                                 (br_on_cast_fail $done $closure
+                                 (br_on_cast_fail $done (ref eq) (ref $closure)
                                     (local.get $acc)))))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
                         (br $loop))))
@@ -501,7 +503,8 @@
          (loop $compute_length
             (local.set $l
                (array.get $block
-                  (br_on_cast_fail $done $block (local.get $l)) (i32.const 2)))
+                  (br_on_cast_fail $done (ref eq) (ref $block) (local.get $l))
+                  (i32.const 2)))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
             (br $compute_length))))
       (local.set $a (call $new_array (local.get $i)))
@@ -509,7 +512,8 @@
       (local.set $l (local.get 0))
       (drop (block $exit (result (ref eq))
          (loop $loop
-            (local.set $b (br_on_cast_fail $exit $block (local.get $l)))
+            (local.set $b
+               (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
             (call $array_set (local.get $a) (local.get $i)
                (call $unwrap (array.get $block (local.get $b) (i32.const 1))))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))

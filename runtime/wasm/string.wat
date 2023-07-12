@@ -22,9 +22,9 @@
       ))
    (type $custom (struct (field (ref $custom_operations))))
    (type $int32
-      (sub $custom (struct (field (ref $custom_operations)) (field i32))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
    (type $int64
-      (sub $custom (struct (field (ref $custom_operations)) (field i64))))
+      (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
 
    (export "caml_bytes_equal" (func $caml_string_equal))
    (func $caml_string_equal (export "caml_string_equal")

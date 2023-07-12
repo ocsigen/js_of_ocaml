@@ -57,7 +57,7 @@
       (struct (field (ref $called_with_continuation)) (field (ref eq))))
 
    (type $cont_resume
-      (sub $cont
+      (sub final $cont
          (struct
             (field $cont_func (ref $cont_func))
             (field $cont_resolver externref))))
@@ -219,7 +219,7 @@
    ;; Perform
 
    (type $call_handler_env
-      (sub $closure
+      (sub final $closure
          (struct
             (field (ref $function_1))
             (field $handler (ref eq))

@@ -27,7 +27,7 @@
    (type $int_array (array (mut i32)))
 
    (type $dummy_closure_1
-      (sub $closure_last_arg
+      (sub final $closure_last_arg
          (struct (field (ref $function_1)) (field (mut (ref null $closure))))))
 
    (type $function_2
@@ -38,7 +38,7 @@
          (struct (field (ref $function_1)) (field (ref $function_2)))))
 
    (type $dummy_closure_2
-      (sub $closure_2
+      (sub final $closure_2
          (struct (field (ref $function_1)) (field (ref $function_2))
             (field (mut (ref null $closure_2))))))
 
@@ -50,7 +50,7 @@
          (struct (field (ref $function_1)) (field (ref $function_3)))))
 
    (type $dummy_closure_3
-      (sub $closure_3
+      (sub final $closure_3
          (struct (field (ref $function_1)) (field (ref $function_3))
             (field (mut (ref null $closure_3))))))
 
@@ -62,7 +62,7 @@
          (struct (field (ref $function_1)) (field (ref $function_4)))))
 
    (type $dummy_closure_4
-      (sub $closure_4
+      (sub final $closure_4
          (struct (field (ref $function_1)) (field (ref $function_4))
             (field (mut (ref null $closure_4))))))
 
@@ -89,7 +89,8 @@
       (local $dst (ref $block)) (local $src (ref $block))
       (drop (block $not_block (result (ref eq))
          (local.set $dst
-            (br_on_cast_fail $not_block $block (local.get $dummy)))
+            (br_on_cast_fail $not_block (ref eq) (ref $block)
+               (local.get $dummy)))
          (local.set $src (ref.cast $block (local.get $newval)))
          (array.copy $block $block
             (local.get $dst) (i32.const 0) (local.get $src) (i32.const 0)
@@ -97,22 +98,26 @@
          (return (i31.new (i32.const 0)))))
       (drop (block $not_closure_1 (result (ref eq))
          (struct.set $dummy_closure_1 1
-            (br_on_cast_fail $not_closure_1 $dummy_closure_1 (local.get $dummy))
+            (br_on_cast_fail $not_closure_1 (ref eq) (ref $dummy_closure_1)
+               (local.get $dummy))
             (ref.cast $closure (local.get $newval)))
          (return (i31.new (i32.const 0)))))
       (drop (block $not_closure_2 (result (ref eq))
          (struct.set $dummy_closure_2 2
-            (br_on_cast_fail $not_closure_2 $dummy_closure_2 (local.get $dummy))
+            (br_on_cast_fail $not_closure_2 (ref eq) (ref $dummy_closure_2)
+               (local.get $dummy))
             (ref.cast $closure_2 (local.get $newval)))
          (return (i31.new (i32.const 0)))))
       (drop (block $not_closure_3 (result (ref eq))
          (struct.set $dummy_closure_3 2
-            (br_on_cast_fail $not_closure_3 $dummy_closure_3 (local.get $dummy))
+            (br_on_cast_fail $not_closure_3 (ref eq) (ref $dummy_closure_3)
+               (local.get $dummy))
             (ref.cast $closure_3 (local.get $newval)))
          (return (i31.new (i32.const 0)))))
       (drop (block $not_closure_4 (result (ref eq))
          (struct.set $dummy_closure_4 2
-            (br_on_cast_fail $not_closure_4 $dummy_closure_4 (local.get $dummy))
+            (br_on_cast_fail $not_closure_4 (ref eq) (ref $dummy_closure_4)
+               (local.get $dummy))
             (ref.cast $closure_4 (local.get $newval)))
          (return (i31.new (i32.const 0)))))
       ;; ZZZ float array
@@ -124,7 +129,8 @@
       (local $s (ref $string)) (local $s' (ref $string))
       (local $len i32)
       (drop (block $not_block (result (ref eq))
-         (local.set $orig (br_on_cast_fail $not_block $block (local.get 0)))
+         (local.set $orig (br_on_cast_fail $not_block (ref eq) (ref $block)
+            (local.get 0)))
          (local.set $len (array.len (local.get $orig)))
          (local.set $res
             (array.new $block (array.get $block (local.get $orig) (i32.const 0))
@@ -134,7 +140,8 @@
             (i32.sub (local.get $len) (i32.const 1)))
          (return (local.get $res))))
       (drop (block $not_string (result (ref eq))
-         (local.set $s (br_on_cast_fail $not_string $string (local.get 0)))
+         (local.set $s (br_on_cast_fail $not_string (ref eq) (ref $string)
+            (local.get 0)))
          (local.set $len (array.len (local.get $s)))
          (local.set $s' (array.new $string (i32.const 0) (local.get $len)))
          (array.copy $string $string
@@ -168,9 +175,10 @@
       (if (ref.test i31 (local.get $v))
          (then (return (i31.new (i32.const 1000)))))
       (drop (block $not_block (result (ref eq))
-         (return (array.get $block
-                    (br_on_cast_fail $not_block $block (local.get $v))
-                    (i32.const 0)))))
+         (return
+            (array.get $block
+              (br_on_cast_fail $not_block (ref eq) (ref $block) (local.get $v))
+              (i32.const 0)))))
       (if (ref.test $string (local.get $v))
          (then (return (i31.new (global.get $string_tag)))))
       (if (ref.test $float (local.get $v))
