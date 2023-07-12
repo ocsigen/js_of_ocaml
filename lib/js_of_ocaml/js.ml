@@ -830,7 +830,9 @@ let _ =
 let _ =
   Printexc.register_printer (fun e ->
       let e : < .. > t = Obj.magic e in
-      if instanceof e array_constructor then None else Some (to_string e##toString))
+      if instanceof e error_constr
+      then Some (Js_error.to_string (Js_error.of_error e))
+      else None)
 
 let export_js (field : js_string t) x =
   Unsafe.set
