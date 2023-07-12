@@ -46,6 +46,9 @@
       (param $i i32) (result (ref eq))
       (struct.new $int32 (global.get $int32_ops) (local.get $i)))
 
+   (func (export "Int32_val") (param (ref eq)) (result i32)
+      (struct.get $int32 1 (ref.cast $int32 (local.get 0))))
+
    (func (export "caml_int32_bswap") (param (ref eq)) (result (ref eq))
       (local $i i32)
       (local.set $i (struct.get $int32 1 (ref.cast $int32 (local.get 0))))

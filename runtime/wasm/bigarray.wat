@@ -1799,4 +1799,32 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (local.get $s))
+
+   (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
+      (struct.get $bigarray $ba_kind (ref.cast $bigarray (local.get 0))))
+
+   (func (export "caml_ba_get_layout") (param (ref eq)) (result i32)
+      (struct.get $bigarray $ba_layout (ref.cast $bigarray (local.get 0))))
+
+   (func (export "caml_ba_get_data") (param (ref eq)) (result (ref extern))
+      (struct.get $bigarray $ba_data (ref.cast $bigarray (local.get 0))))
+
+   (func (export "caml_ba_set_data") (param (ref eq)) (param (ref extern))
+      (struct.set $bigarray $ba_data (ref.cast $bigarray (local.get 0))
+         (local.get $1)))
+
+   (func (export "caml_ba_get_dim") (param (ref eq)) (result (ref $int_array))
+      (struct.get $bigarray $ba_dim (ref.cast $bigarray (local.get 0))))
+
+   (func (export "caml_ba_alloc")
+      (param $kind i32) (param $layout i32) (param $num_dims i32)
+      (param $data (ref extern)) (param $dim (ref $int_array))
+      (result (ref eq))
+      (struct.new $bigarray
+         (global.get $bigarray_ops)
+         (local.get $data)
+         (local.get $dim)
+         (local.get $num_dims)
+         (local.get $kind)
+         (local.get $layout)))
 )

@@ -28,6 +28,9 @@
    (global $nan (ref $chars)
       (array.new_fixed $chars (i32.const 110) (i32.const 97) (i32.const 110)))
 
+   (func (export "Double_val") (param (ref eq)) (result f64)
+      (struct.get $float 0 (ref.cast $float (local.get 0))))
+
    (func (export "caml_hexstring_of_float")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $b i64) (local $prec i32) (local $style i32)

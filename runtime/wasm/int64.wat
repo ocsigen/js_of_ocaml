@@ -53,6 +53,9 @@
       (param $i i64) (result (ref eq))
       (struct.new $int64 (global.get $int64_ops) (local.get $i)))
 
+   (func (export "Int64_val") (param (ref eq)) (result i64)
+      (struct.get $int64 1 (ref.cast $int64 (local.get 0))))
+
    (func (export "caml_int64_bswap") (param (ref eq)) (result (ref eq))
       (local $i i64)
       (local.set $i (struct.get $int64 1 (ref.cast $int64 (local.get 0))))
