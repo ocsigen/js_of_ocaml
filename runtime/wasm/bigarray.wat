@@ -353,7 +353,7 @@
                 (i32.or (i32.eq (local.get $kind) (i32.const 10))
                         (i32.eq (local.get $kind) (i32.const 11))))))
 
-  (func $caml_ba_create_buffer
+  (func $caml_ba_create_buffer (export "caml_ba_create_buffer")
      (param $kind i32) (param $sz i32) (result (ref extern))
      (local $l i64)
      (local.set $l

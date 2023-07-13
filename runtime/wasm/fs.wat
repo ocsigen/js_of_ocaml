@@ -1,6 +1,8 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
 
+   (type $string (array (mut i8)))
+
    (func (export "caml_sys_getcwd")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
@@ -36,6 +38,12 @@
       ;; ZZZ
       (call $log_js (string.const "caml_sys_file_exists"))
       (i31.new (i32.const 0)))
+
+   (func (export "caml_read_file_content")
+      (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_js (string.const "caml_read_file_content"))
+      (array.new_fixed $string))
 
    (func (export "caml_fs_init") (result (ref eq))
       (i31.new (i32.const 0)))
