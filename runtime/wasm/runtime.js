@@ -61,7 +61,6 @@
          array_length:(a)=>a.length,
          array_get:(a,i)=>a[i],
          array_set:(a,i,v)=>a[i]=v,
-         is_string:(v)=>+(typeof v==="string"),
          ta_create:(k,sz)=> new(typed_arrays[k])(sz),
          ta_normalize:(a)=>
            a instanceof Uint32Array?

@@ -153,24 +153,10 @@
       (param $v (ref eq)) (param $offset (ref eq))
       (param $len (ref eq)) (param $init (ref eq))
       (result (ref eq))
-(;ZZZ V8 bug
       (array.fill $string (ref.cast $string (local.get $v))
          (i31.get_u (ref.cast i31 (local.get $offset)))
          (i31.get_u (ref.cast i31 (local.get $init)))
          (i31.get_u (ref.cast i31 (local.get $len))))
-;)
-      (local $s (ref $string)) (local $i i32) (local $limit i32) (local $c i32)
-      (local.set $s (ref.cast $string (local.get $v)))
-      (local.set $i (i31.get_u (ref.cast i31 (local.get $offset))))
-      (local.set $limit
-         (i32.add (local.get $i) (i31.get_u (ref.cast i31 (local.get $len)))))
-      (local.set $c (i31.get_u (ref.cast i31 (local.get $init))))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $limit))
-            (then
-               (array.set $string (local.get $s) (local.get $i) (local.get $c))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
       (i31.new (i32.const 0)))
 
    (export "caml_string_get16" (func $caml_bytes_get16))

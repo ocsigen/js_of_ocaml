@@ -1,10 +1,6 @@
 (module
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
-   (import "bindings" "is_string"
-      (func $ref_test_string (param anyref) (result i32)))
-   (import "bindings" "identity"
-      (func $ref_cast_string (param anyref) (result (ref string))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
 
    (type $block (array (mut (ref eq))))
@@ -136,7 +132,7 @@
    (func $caml_hash_mix_jsstring
       (param $h i32) (param $s (ref eq)) (result i32)
       (return_call $caml_hash_mix_int (local.get $h)
-         (string.hash (call $ref_cast_string (call $unwrap (local.get $s))))))
+         (string.hash (ref.cast string (call $unwrap (local.get $s))))))
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
@@ -274,19 +270,16 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-                  (drop (block $not_js (result (ref eq))
+                  (drop (block $not_jsstring anyref
                      (local.set $str
                         (struct.get $js 0
-                           (br_on_cast_fail $not_js (ref eq) (ref $js)
+                           (br_on_cast_fail $not_jsstring (ref eq) (ref $js)
                               (local.get $v))))
-                     ;; ZZZ use ref.test / ref.cast
-                     (if (call $ref_test_string (local.get $str))
-                        (then
-                           (local.set $h
-                              (call $caml_hash_mix_int (local.get $h)
-                                 (string.hash
-                                    (call $ref_cast_string
-                                       (local.get $str)))))))
+                     (local.set $h
+                        (call $caml_hash_mix_int (local.get $h)
+                           (string.hash
+                              (br_on_cast_fail $not_jsstring anyref (ref string)
+                                 (local.get $str)))))
                      (i31.new (i32.const 0))))
                   ;; closures and continuations and other js values are ignored
                   (br $loop)))))
