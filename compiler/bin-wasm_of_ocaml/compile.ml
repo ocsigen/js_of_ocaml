@@ -124,17 +124,73 @@ let escape_string s =
   done;
   Buffer.contents b
 
-let copy_js_runtime wasm_file output_file =
+let build_js_runtime wasm_file output_file =
+  let wrap_in_iife ~use_strict js =
+    let module J = Javascript in
+    let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in
+    let expr e = J.Expression_statement e, J.N in
+    let freenames =
+      let o = new Js_traverse.free in
+      let (_ : J.program) = o#program js in
+      o#get_free
+    in
+    let export_shim js =
+      if J.IdentSet.mem (J.ident Constant.exports_) freenames
+      then
+        let export_node =
+          let s =
+            Printf.sprintf
+              {|((typeof module === 'object' && module.exports) || %s)|}
+              Constant.global_object
+          in
+          let lex = Parse_js.Lexer.of_string s in
+          Parse_js.parse_expr lex
+        in
+        var Constant.exports_ export_node :: js
+      else js
+    in
+    let old_global_object_shim js =
+      if J.IdentSet.mem (J.ident Constant.old_global_object_) freenames
+      then
+        var Constant.old_global_object_ (J.EVar (J.ident Constant.global_object_)) :: js
+      else js
+    in
+
+    let efun args body = J.EFun (None, J.fun_ args body J.U) in
+    let mk f =
+      let js = export_shim js in
+      let js = old_global_object_shim js in
+      let js =
+        if use_strict
+        then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
+        else js
+      in
+      f [ J.ident Constant.global_object_ ] js
+    in
+    expr (J.call (mk efun) [ J.EVar (J.ident Constant.global_object_) ] J.N)
+  in
+  let always_required_js =
+    List.map
+      Linker.((link [] (init ())).always_required_codes)
+      ~f:(fun { Linker.program; _ } -> wrap_in_iife ~use_strict:false program)
+  in
+  let b = Buffer.create 1024 in
+  let f = Pretty_print.to_buffer b in
+  Pretty_print.set_compact f (not (Config.Flag.pretty ()));
+  ignore (Js_output.program f always_required_js);
   let s = Wa_runtime.js_runtime in
   let rec find i =
     if String.equal (String.sub s ~pos:i ~len:4) "CODE" then i else find (i + 1)
   in
-  let i = find 0 in
+  let i = String.index s '\n' + 1 in
+  let j = find 0 in
   write_file
     output_file
     (String.sub s ~pos:0 ~len:i
+    ^ Buffer.contents b
+    ^ String.sub s ~pos:i ~len:(j - i)
     ^ escape_string (Filename.basename wasm_file)
-    ^ String.sub s ~pos:(i + 4) ~len:(String.length s - i - 4))
+    ^ String.sub s ~pos:(j + 4) ~len:(String.length s - j - 4))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Wa_generate.init ();
@@ -212,7 +268,7 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
        let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
        output_gen wat_file (output code ~standalone:true);
        link_and_optimize runtime_wasm_files wat_file wasm_file;
-       copy_js_runtime wasm_file (fst output_file)
+       build_js_runtime wasm_file (fst output_file)
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
   Debug.stop_profiling ()
