@@ -102,8 +102,9 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
                     List.iter2 ~f:(add_use Propagate) params args
                 | _ -> ())
               known);
-        add_use Compute x f
-    | Block (_, params, _) -> Array.iter ~f:(add_use Propagate x) params
+        add_use Compute x f;
+        List.iter ~f:(add_use Compute x) args
+    | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
     | Closure (_, cont) -> add_cont_deps cont
@@ -180,7 +181,6 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     | Let (x, e) ->
         if not (pure_expr pure_funs e)
         then (
-          (* TODO: if e is an impure application, then look at each argument, if they escape then set to top *)
           let vars = expr_vars e in
           Var.ISet.iter add_top vars;
           add_top x;
@@ -236,18 +236,32 @@ let variables deps =
   Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
-let propagate (uses : usage_kind Var.Map.t array) defs live_vars live_table x =
+let propagate uses defs live_vars live_table x =
   let idx = Var.idx x in
   let contribution y usage_kind =
     match usage_kind with
+    (* If x is used to compute y, we consider the liveness of y *)
     | Compute -> (
         match Var.Tbl.get live_table y with
-        | Dead -> Dead (* If x is used in y, and y is dead, then x is dead. *)
-        | Top | Live _ -> (
-            (* Otherwise we may be able to refine y's liveness. *)
+        (* If y is dead, then x is dead. *)
+        | Dead -> Dead
+        (* If y is a live block, then x is live if it is used in a live field *)
+        | Live fields -> (
+            match defs.(Var.idx y) with
+            | Expr (Block (_, vars, _)) ->
+                let found = ref false in
+                Array.iteri
+                  ~f:(fun i v ->
+                    if Var.equal v x && IntSet.mem i fields then found := true)
+                  vars;
+                if !found then Top else Dead
+            | _ -> Top)
+        (* If y is top, then if y is a field access, x depends only on that field *)
+        | Top -> (
             match defs.(Var.idx y) with
             | Expr (Field (_, i)) -> Live (IntSet.singleton i)
             | _ -> Top))
+    (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
   in
   Var.Map.fold
@@ -255,7 +269,7 @@ let propagate (uses : usage_kind Var.Map.t array) defs live_vars live_table x =
     uses.(idx)
     live_vars.(idx)
 
-let solver vars (uses : usage_kind Var.Map.t array) defs live_vars =
+let solver vars uses defs live_vars =
   let g =
     { G.domain = vars
     ; G.iter_children = (fun f x -> Var.Map.iter (fun y _ -> f y) uses.(Var.idx x))
@@ -263,17 +277,11 @@ let solver vars (uses : usage_kind Var.Map.t array) defs live_vars =
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
-let eliminate prog live_table =
-  let sentinal = Var.fresh () in
+let eliminate prog sentinal live_table =
   let add_sentinal_instr blocks =
-    Addr.Map.update
-      0
-      (function
-        | Some block ->
-            let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
-            Some { block with body }
-        | None -> assert false (* Unreachable *))
-      blocks
+    let block = Addr.Map.find 0 blocks in
+    let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
+    Addr.Map.add 0 { block with body } blocks
   in
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
@@ -302,7 +310,8 @@ let eliminate prog live_table =
   in
   let eliminate_closure instr =
     match instr with
-    | Let (x, Closure (args, cont)) -> Let (x, Closure (args, eliminate_cont cont))
+    | Let (x, Closure (args, cont)) ->
+        Let (x, Closure (args, eliminate_cont cont))
     | _ -> instr
   in
   let eliminate_instr instr =
@@ -322,8 +331,7 @@ let eliminate prog live_table =
                 in
                 let e = Block (start, vars, is_array) in
                 Some (Let (x, e))
-            (* This should never happen *)
-            | _ -> None)
+            | _ -> Some instr)
         | Dead -> None)
     | Assign (x, _) -> if is_live x then Some instr else None
     | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> Some instr
@@ -368,7 +376,7 @@ module Print = struct
     | Top -> "top"
     | Dead -> "dead"
 
-  let _print_defs defs =
+  let print_defs defs =
     Format.eprintf "Definitions:\n";
     Array.iteri
       ~f:(fun i def ->
@@ -406,9 +414,24 @@ module Print = struct
     Var.Tbl.iter
       (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
       live_table
+
+  let annot live_table _ (xi : Code.Print.xinstr) =
+    match xi with
+    | Last _ -> ""
+    | Instr (i, _) -> (
+        match i with
+        | Let (x, _) -> (
+            match Var.Tbl.get live_table x with
+            | Dead -> "X"
+            | Top -> "T"
+            | Live fields ->
+                "{ " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+            )
+        | _ -> "")
 end
 
 let f p global_info =
+  let sentinal = Var.fresh () in
   let nv = Var.count () in
   (* Compute definitions *)
   let defs = definitions nv p in
@@ -422,10 +445,10 @@ let f p global_info =
   let live_table = solver vars uses defs live_vars in
   (* Print.print_defs defs; *)
   Print.print_uses uses;
-  Print.print_liveness live_vars;
+  (* Print.print_liveness live_vars; *)
   Print.print_live_tbl live_table;
   (* After dependency propagation *)
-  let p = eliminate p live_table in
+  let p = eliminate p sentinal live_table in
   Format.eprintf "After Elimination:\n";
   Code.Print.program (fun _ _ -> "") p;
   p
