@@ -19,6 +19,8 @@
 open Code
 open Stdlib
 
+let debug = Debug.find "globaldeadcode"
+
 type def =
   | Expr of expr
   | Param
@@ -310,8 +312,7 @@ let eliminate prog sentinal live_table =
   in
   let eliminate_closure instr =
     match instr with
-    | Let (x, Closure (args, cont)) ->
-        Let (x, Closure (args, eliminate_cont cont))
+    | Let (x, Closure (args, cont)) -> Let (x, Closure (args, eliminate_cont cont))
     | _ -> instr
   in
   let eliminate_instr instr =
@@ -414,20 +415,6 @@ module Print = struct
     Var.Tbl.iter
       (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
       live_table
-
-  let annot live_table _ (xi : Code.Print.xinstr) =
-    match xi with
-    | Last _ -> ""
-    | Instr (i, _) -> (
-        match i with
-        | Let (x, _) -> (
-            match Var.Tbl.get live_table x with
-            | Dead -> "X"
-            | Top -> "T"
-            | Live fields ->
-                "{ " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
-            )
-        | _ -> "")
 end
 
 let f p global_info =
@@ -443,12 +430,12 @@ let f p global_info =
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
-  (* Print.print_defs defs; *)
-  Print.print_uses uses;
-  (* Print.print_liveness live_vars; *)
-  Print.print_live_tbl live_table;
   (* After dependency propagation *)
   let p = eliminate p sentinal live_table in
-  Format.eprintf "After Elimination:\n";
-  Code.Print.program (fun _ _ -> "") p;
+  if debug ()
+  then (
+    Print.print_uses uses;
+    Print.print_live_tbl live_table;
+    Format.eprintf "After Elimination:\n";
+    Code.Print.program (fun _ _ -> "") p);
   p
