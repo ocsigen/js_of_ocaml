@@ -22,7 +22,6 @@
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.15.0))
-  (dune (< 3.9))
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (sedlex (>= 2.3))

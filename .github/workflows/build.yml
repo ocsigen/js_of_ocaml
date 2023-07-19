@@ -9,6 +9,9 @@ on:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
 
+env:
+  DUNE_CONFIG__BACKGROUND_SANDBOXES: disabled
+
 jobs:
   build:
     strategy:
