@@ -16,7 +16,7 @@ depends: [
   "num" {with-test}
   "ppx_expect" {>= "v0.14.2" & with-test}
   "ppxlib" {>= "0.15.0"}
-  "dune" {>= "3.7" & < "3.9.1"}
+  "dune" {>= "3.7" & < "3.9"}
   "re" {with-test}
   "cmdliner" {>= "1.1.0"}
   "sedlex" {>= "2.3"}
