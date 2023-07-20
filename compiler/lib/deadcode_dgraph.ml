@@ -93,15 +93,19 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
         (match Var.Tbl.get global_info.info_approximation f with
         | Top -> ()
         | Values { known; _ } ->
-            Var.Set.iter (* For each known value of f *)
+            Var.Set.iter (* For each known closure value of f *)
               (fun k ->
                 (* 1. Look at return values, and add edge between x and these values. *)
-                let return_values = Var.Map.find k global_info.info_return_vals in
-                Var.Set.iter (add_use Propagate x) return_values;
-                (* 2. If k is a closure, add an edge pairwise between the parameters and arguments *)
+                (* 2. Add an edge pairwise between the parameters and arguments *)
                 match global_info.info_defs.(Var.idx k) with
                 | Expr (Closure (params, _)) ->
-                    List.iter2 ~f:(add_use Propagate) params args
+                    (* If the function is under/over-applied then global flow will mark arguments and return value as escaping.
+                       So we only need to consider the case when there is an exact application. *)
+                    if List.length params = List.length args
+                    then (
+                      let return_values = Var.Map.find k global_info.info_return_vals in
+                      Var.Set.iter (add_use Propagate x) return_values;
+                      List.iter2 ~f:(add_use Propagate) params args)
                 | _ -> ())
               known);
         add_use Compute x f;
@@ -203,31 +207,15 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
         add_top z
     | Offset_ref (x, i) -> add_live x i
   in
-  let rec live_block block =
+  let live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
-    (* Base Cases *)
     | Stop -> ()
     | Return x -> if Var.ISet.mem global_info.info_may_escape x then add_top x
     | Raise (x, _) -> add_top x
-    (* Recursive cases *)
-    | Branch cont | Poptrap cont ->
-        live_continuation prog cont;
-        live_continuation prog cont
-    | Pushtrap (cont1, _, cont2, _) ->
-        live_continuation prog cont1;
-        live_continuation prog cont2
-    | Cond (x, cont1, cont2) ->
-        add_top x;
-        live_continuation prog cont1;
-        live_continuation prog cont2
-    | Switch (x, a1, a2) ->
-        add_top x;
-        Array.iter ~f:(fun cont -> live_continuation prog cont) a1;
-        Array.iter ~f:(fun cont -> live_continuation prog cont) a2
-  and live_continuation prog ((pc, _) : cont) =
-    let block = Addr.Map.find pc prog.blocks in
-    live_block block
+    | Cond (x, _, _) -> add_top x
+    | Switch (x, _, _) -> add_top x
+    | Branch _ | Poptrap _ | Pushtrap _ -> ()
   in
   Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
   live_vars
@@ -279,7 +267,7 @@ let solver vars uses defs live_vars =
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
-let eliminate prog sentinal live_table =
+let zero prog sentinal live_table =
   let add_sentinal_instr blocks =
     let block = Addr.Map.find 0 blocks in
     let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
@@ -299,31 +287,29 @@ let eliminate prog sentinal live_table =
     | Dead -> false
     | _ -> true
   in
-  let rec filter_args pl al =
-    match pl, al with
-    | x :: pl, y :: al -> if is_live x then y :: filter_args pl al else filter_args pl al
-    | [], _ -> []
-    | _ -> assert false
+  let zero_var x = if not (is_live x) then sentinal else x in
+  let zero_cont ((pc, args) : cont) =
+    match Addr.Map.find_opt pc prog.blocks with
+    | Some block ->
+        let args =
+          List.map2
+            ~f:(fun param arg -> if is_live param then arg else sentinal)
+            block.params
+            args
+        in
+        pc, args
+    | None -> pc, args
   in
-  let eliminate_cont ((pc, args) : cont) =
-    let block = Addr.Map.find pc prog.blocks in
-    let args = filter_args block.params args in
-    pc, args
-  in
-  let eliminate_closure instr =
-    match instr with
-    | Let (x, Closure (args, cont)) -> Let (x, Closure (args, eliminate_cont cont))
-    | _ -> instr
-  in
-  let eliminate_instr instr =
+  let zero_instr instr =
     match instr with
     | Let (x, e) -> (
-        match Var.Tbl.get live_table x with
-        | Top -> Some instr
-        | Live fields -> (
-            match e with
-            (* Eliminate unused fields from block *)
-            | Block (start, vars, is_array) ->
+        match e with
+        | Closure (args, cont) ->
+            let cont = zero_cont cont in
+            Let (x, Closure (args, cont))
+        | Block (start, vars, is_array) -> (
+            match Var.Tbl.get live_table x with
+            | Live fields ->
                 let vars =
                   Array.mapi
                     ~f:(fun i v -> if IntSet.mem i fields then v else sentinal)
@@ -331,43 +317,37 @@ let eliminate prog sentinal live_table =
                   |> compact_vars
                 in
                 let e = Block (start, vars, is_array) in
-                Some (Let (x, e))
-            | _ -> Some instr)
-        | Dead -> None)
-    | Assign (x, _) -> if is_live x then Some instr else None
-    | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> Some instr
+                Let (x, e)
+            | _ -> instr)
+        | Apply ap ->
+            let args = List.map ~f:zero_var ap.args in
+            Let (x, Apply { ap with args })
+        | _ -> instr)
+    | _ -> instr
   in
-  let update_block block =
-    (* Filter dead params *)
-    let params = List.filter ~f:is_live block.params in
+  let zero_block block =
     (* Analyze block instructions *)
-    let body =
-      List.filter_map
-        ~f:(fun (instr, loc) ->
-          Option.map
-            ~f:(fun instr -> eliminate_closure instr, loc)
-            (eliminate_instr instr))
-        block.body
-    in
+    let body = List.map ~f:(fun (instr, loc) -> zero_instr instr, loc) block.body in
     (* Analyze branch *)
     let branch =
       let last, loc = block.branch in
       let last =
         match last with
-        | Return _ | Raise (_, _) | Stop -> last
-        | Branch cont -> Branch (eliminate_cont cont)
-        | Cond (x, cont1, cont2) -> Cond (x, eliminate_cont cont1, eliminate_cont cont2)
+        | Return x -> Return (zero_var x)
+        | Raise (_, _) | Stop -> last
+        | Branch cont -> Branch (zero_cont cont)
+        | Cond (x, cont1, cont2) -> Cond (x, zero_cont cont1, zero_cont cont2)
         | Switch (x, a1, a2) ->
-            Switch (x, Array.map ~f:eliminate_cont a1, Array.map ~f:eliminate_cont a2)
+            Switch (x, Array.map ~f:zero_cont a1, Array.map ~f:zero_cont a2)
         | Pushtrap (cont1, x, cont2, pcs) ->
-            Pushtrap (eliminate_cont cont1, x, eliminate_cont cont2, pcs)
-        | Poptrap cont -> Poptrap (eliminate_cont cont)
+            Pushtrap (zero_cont cont1, x, zero_cont cont2, pcs)
+        | Poptrap cont -> Poptrap (zero_cont cont)
       in
       last, loc
     in
-    { params; body; branch }
+    { block with body; branch }
   in
-  let blocks = prog.blocks |> Addr.Map.map update_block |> add_sentinal_instr in
+  let blocks = prog.blocks |> Addr.Map.map zero_block |> add_sentinal_instr in
   { prog with blocks }
 
 module Print = struct
@@ -418,7 +398,7 @@ module Print = struct
 end
 
 let f p global_info =
-  let sentinal = Var.fresh () in
+  let _sentinal = Var.fresh () in
   let nv = Var.count () in
   (* Compute definitions *)
   let defs = definitions nv p in
@@ -430,8 +410,8 @@ let f p global_info =
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
-  (* After dependency propagation *)
-  let p = eliminate p sentinal live_table in
+  (* Zero out dead fields *)
+  (* let p = zero p sentinal live_table in *)
   if debug ()
   then (
     Print.print_uses uses;
