@@ -111,7 +111,7 @@ module Symtable = struct
     let to_ident = function
       | Glob_compunit x -> Ident.create_persistent x
       | Glob_predef x -> Ident.create_predef x
-      [@@ocaml.warning "-32"]
+    [@@ocaml.warning "-32"]
   end
 
   module GlobalMap = struct
@@ -173,16 +173,16 @@ module Symtable = struct
   [@@if ocaml_version >= (5, 2, 0)]
 
   let reloc_get_of_string name = Cmo_format.Reloc_getglobal (Ident.create_persistent name)
-    [@@if ocaml_version < (5, 2, 0)]
+  [@@if ocaml_version < (5, 2, 0)]
 
   let reloc_set_of_string name = Cmo_format.Reloc_setglobal (Ident.create_persistent name)
-    [@@if ocaml_version < (5, 2, 0)]
+  [@@if ocaml_version < (5, 2, 0)]
 
   let reloc_get_of_string name = Cmo_format.Reloc_getcompunit (Compunit name)
-    [@@if ocaml_version >= (5, 2, 0)]
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let reloc_set_of_string name = Cmo_format.Reloc_setcompunit (Compunit name)
-    [@@if ocaml_version >= (5, 2, 0)]
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let reloc_ident name =
     let buf = Bytes.create 4 in
@@ -208,13 +208,13 @@ module Cmo_format = struct
   let name (t : t) =
     let (Compunit name) = t.cu_name in
     name
-    [@@if ocaml_version >= (5, 2, 0)]
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let requires (t : t) = List.map ~f:Ident.name t.cu_required_globals
-    [@@if ocaml_version < (5, 2, 0)]
+  [@@if ocaml_version < (5, 2, 0)]
 
   let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
-    [@@if ocaml_version >= (5, 2, 0)]
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let primitives (t : t) = t.cu_primitives
 

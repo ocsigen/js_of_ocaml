@@ -40,52 +40,49 @@
   @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver> for API documentation.
   @see <https://dom.spec.whatwg.org/#mutation-observers> for the Web Hypertext Application Technology Working Group (WHATWG) spec. *)
 
-class type mutationObserverInit =
-  object
-    method childList : bool Js.writeonly_prop
+class type mutationObserverInit = object
+  method childList : bool Js.writeonly_prop
 
-    method attributes : bool Js.writeonly_prop
+  method attributes : bool Js.writeonly_prop
 
-    method characterData : bool Js.writeonly_prop
+  method characterData : bool Js.writeonly_prop
 
-    method subtree : bool Js.writeonly_prop
+  method subtree : bool Js.writeonly_prop
 
-    method attributeOldValue : bool Js.writeonly_prop
+  method attributeOldValue : bool Js.writeonly_prop
 
-    method characterDataOldValue : bool Js.writeonly_prop
+  method characterDataOldValue : bool Js.writeonly_prop
 
-    method attributeFilter : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
-  end
+  method attributeFilter : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
+end
 
-class type mutationRecord =
-  object
-    method _type : Js.js_string Js.t Js.readonly_prop
+class type mutationRecord = object
+  method _type : Js.js_string Js.t Js.readonly_prop
 
-    method target : Dom.node Js.t Js.readonly_prop
+  method target : Dom.node Js.t Js.readonly_prop
 
-    method addedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
+  method addedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
 
-    method removedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
+  method removedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
 
-    method previousSibling : Dom.node Js.t Js.opt Js.readonly_prop
+  method previousSibling : Dom.node Js.t Js.opt Js.readonly_prop
 
-    method nextSibling : Dom.node Js.t Js.opt Js.readonly_prop
+  method nextSibling : Dom.node Js.t Js.opt Js.readonly_prop
 
-    method attributeName : Js.js_string Js.t Js.opt Js.readonly_prop
+  method attributeName : Js.js_string Js.t Js.opt Js.readonly_prop
 
-    method attributeNamespace : Js.js_string Js.t Js.opt Js.readonly_prop
+  method attributeNamespace : Js.js_string Js.t Js.opt Js.readonly_prop
 
-    method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
-  end
+  method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
+end
 
-class type mutationObserver =
-  object
-    method observe : #Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
+class type mutationObserver = object
+  method observe : #Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
 
-    method disconnect : unit Js.meth
+  method disconnect : unit Js.meth
 
-    method takeRecords : mutationRecord Js.t Js.js_array Js.t Js.meth
-  end
+  method takeRecords : mutationRecord Js.t Js.js_array Js.t Js.meth
+end
 
 val empty_mutation_observer_init : unit -> mutationObserverInit Js.t
 

@@ -19,99 +19,94 @@
 open! Stdlib
 open Javascript
 
-class type mapper =
-  object
-    method loc : Javascript.location -> Javascript.location
+class type mapper = object
+  method loc : Javascript.location -> Javascript.location
 
-    method expression : expression -> expression
+  method expression : expression -> expression
 
-    method expression_o : expression option -> expression option
+  method expression_o : expression option -> expression option
 
-    method switch_case : expression -> expression
+  method switch_case : expression -> expression
 
-    method block : Javascript.statement_list -> Javascript.statement_list
+  method block : Javascript.statement_list -> Javascript.statement_list
 
-    method fun_decl : Javascript.function_declaration -> Javascript.function_declaration
+  method fun_decl : Javascript.function_declaration -> Javascript.function_declaration
 
-    method class_decl : Javascript.class_declaration -> Javascript.class_declaration
+  method class_decl : Javascript.class_declaration -> Javascript.class_declaration
 
-    method initialiser : expression * location -> expression * location
+  method initialiser : expression * location -> expression * location
 
-    method initialiser_o :
-      (expression * location) option -> (expression * location) option
+  method initialiser_o : (expression * location) option -> (expression * location) option
 
-    method for_binding :
-         Javascript.variable_declaration_kind
-      -> Javascript.for_binding
-      -> Javascript.for_binding
+  method for_binding :
+       Javascript.variable_declaration_kind
+    -> Javascript.for_binding
+    -> Javascript.for_binding
 
-    method variable_declaration :
-         Javascript.variable_declaration_kind
-      -> Javascript.variable_declaration
-      -> Javascript.variable_declaration
+  method variable_declaration :
+       Javascript.variable_declaration_kind
+    -> Javascript.variable_declaration
+    -> Javascript.variable_declaration
 
-    method statement : statement -> statement
+  method statement : statement -> statement
 
-    method statements : statement_list -> statement_list
+  method statements : statement_list -> statement_list
 
-    method statement_o : (statement * location) option -> (statement * location) option
+  method statement_o : (statement * location) option -> (statement * location) option
 
-    method ident : ident -> ident
+  method ident : ident -> ident
 
-    method formal_parameter_list :
-      Javascript.formal_parameter_list -> Javascript.formal_parameter_list
+  method formal_parameter_list :
+    Javascript.formal_parameter_list -> Javascript.formal_parameter_list
 
-    method program : program -> program
+  method program : program -> program
 
-    method function_body : statement_list -> statement_list
-  end
+  method function_body : statement_list -> statement_list
+end
 
-class type iterator =
-  object
-    method fun_decl : Javascript.function_declaration -> unit
+class type iterator = object
+  method fun_decl : Javascript.function_declaration -> unit
 
-    method early_error : Javascript.early_error -> unit
+  method early_error : Javascript.early_error -> unit
 
-    method expression : Javascript.expression -> unit
+  method expression : Javascript.expression -> unit
 
-    method expression_o : Javascript.expression option -> unit
+  method expression_o : Javascript.expression option -> unit
 
-    method switch_case : Javascript.expression -> unit
+  method switch_case : Javascript.expression -> unit
 
-    method block : Javascript.statement_list -> unit
+  method block : Javascript.statement_list -> unit
 
-    method initialiser : Javascript.expression * Javascript.location -> unit
+  method initialiser : Javascript.expression * Javascript.location -> unit
 
-    method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
+  method initialiser_o : (Javascript.expression * Javascript.location) option -> unit
 
-    method for_binding :
-      Javascript.variable_declaration_kind -> Javascript.for_binding -> unit
+  method for_binding :
+    Javascript.variable_declaration_kind -> Javascript.for_binding -> unit
 
-    method variable_declaration :
-      Javascript.variable_declaration_kind -> Javascript.variable_declaration -> unit
+  method variable_declaration :
+    Javascript.variable_declaration_kind -> Javascript.variable_declaration -> unit
 
-    method statement : Javascript.statement -> unit
+  method statement : Javascript.statement -> unit
 
-    method statement_o : (Javascript.statement * Javascript.location) option -> unit
+  method statement_o : (Javascript.statement * Javascript.location) option -> unit
 
-    method statements : Javascript.statement_list -> unit
+  method statements : Javascript.statement_list -> unit
 
-    method ident : Javascript.ident -> unit
+  method ident : Javascript.ident -> unit
 
-    method program : Javascript.program -> unit
+  method program : Javascript.program -> unit
 
-    method function_body : Javascript.statement_list -> unit
-  end
+  method function_body : Javascript.statement_list -> unit
+end
 
 class map : mapper
 
 class iter : iterator
 
-class subst :
-  (ident -> ident)
-  -> object
-       inherit mapper
-     end
+class subst : (ident -> ident) -> object
+  inherit mapper
+end
 
 type t =
   { use : IdentSet.t
@@ -124,32 +119,31 @@ type block =
   | Params of formal_parameter_list
   | Normal
 
-class type freevar =
-  object ('a)
-    inherit mapper
+class type freevar = object ('a)
+  inherit mapper
 
-    method merge_info : 'a -> unit
+  method merge_info : 'a -> unit
 
-    method merge_block_info : 'a -> unit
+  method merge_block_info : 'a -> unit
 
-    method record_block : block -> unit
+  method record_block : block -> unit
 
-    method def_var : ident -> unit
+  method def_var : ident -> unit
 
-    method def_local : Javascript.ident -> unit
+  method def_local : Javascript.ident -> unit
 
-    method use_var : ident -> unit
+  method use_var : ident -> unit
 
-    method state : t
+  method state : t
 
-    method get_count : int IdentMap.t
+  method get_count : int IdentMap.t
 
-    method get_free : IdentSet.t
+  method get_free : IdentSet.t
 
-    method get_def : IdentSet.t
+  method get_def : IdentSet.t
 
-    method get_use : IdentSet.t
-  end
+  method get_use : IdentSet.t
+end
 
 class free : freevar
 
@@ -157,12 +151,11 @@ class rename_variable : mapper
 
 class share_constant : mapper
 
-class compact_vardecl :
-  object ('a)
-    inherit free
+class compact_vardecl : object ('a)
+  inherit free
 
-    method exc : IdentSet.t
-  end
+  method exc : IdentSet.t
+end
 
 class clean : mapper
 

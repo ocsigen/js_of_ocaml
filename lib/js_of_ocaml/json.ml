@@ -20,18 +20,17 @@
 open Js
 open! Import
 
-class type json =
-  object
-    method parse : 'a. js_string t -> 'a meth
+class type json = object
+  method parse : 'a. js_string t -> 'a meth
 
-    method parse_ :
-      'a 'b 'c 'd. js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
+  method parse_ :
+    'a 'b 'c 'd. js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
 
-    method stringify : 'a. 'a -> js_string t meth
+  method stringify : 'a. 'a -> js_string t meth
 
-    method stringify_ :
-      'a 'b 'c 'd. 'a -> ('b, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
-  end
+  method stringify_ :
+    'a 'b 'c 'd. 'a -> ('b, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
+end
 
 let json : json Js.t = Unsafe.global##._JSON
 
@@ -54,10 +53,9 @@ let input_reviver =
 
 let unsafe_input s = json##parse_ s input_reviver
 
-class type obj =
-  object
-    method constructor : 'a. 'a constr Js.readonly_prop
-  end
+class type obj = object
+  method constructor : 'a. 'a constr Js.readonly_prop
+end
 
 let mlInt64_constr =
   let dummy_int64 = 1L in

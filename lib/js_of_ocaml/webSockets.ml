@@ -26,68 +26,63 @@ type readyState =
   | CLOSING
   | CLOSED
 
-class type ['a] closeEvent =
-  object
-    inherit ['a] Dom.event
+class type ['a] closeEvent = object
+  inherit ['a] Dom.event
 
-    method code : int Js.readonly_prop
+  method code : int Js.readonly_prop
 
-    method reason : Js.js_string Js.t Js.readonly_prop
+  method reason : Js.js_string Js.t Js.readonly_prop
 
-    method wasClean : bool Js.t Js.readonly_prop
-  end
+  method wasClean : bool Js.t Js.readonly_prop
+end
 
-class type ['a] messageEvent =
-  object
-    inherit ['a] Dom.event
+class type ['a] messageEvent = object
+  inherit ['a] Dom.event
 
-    method data : Js.js_string Js.t Js.readonly_prop
+  method data : Js.js_string Js.t Js.readonly_prop
 
-    method data_buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
+  method data_buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
 
-    method data_blob : File.blob Js.t Js.readonly_prop
-  end
+  method data_blob : File.blob Js.t Js.readonly_prop
+end
 
-class type webSocket =
-  object ('self)
-    inherit Dom_html.eventTarget
+class type webSocket = object ('self)
+  inherit Dom_html.eventTarget
 
-    method url : Js.js_string Js.t Js.readonly_prop
+  method url : Js.js_string Js.t Js.readonly_prop
 
-    method readyState : readyState Js.readonly_prop
+  method readyState : readyState Js.readonly_prop
 
-    method bufferedAmount : int Js.readonly_prop
+  method bufferedAmount : int Js.readonly_prop
 
-    method onopen :
-      ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
+  method onopen : ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
 
-    method onclose :
-      ('self Js.t, 'self closeEvent Js.t) Dom.event_listener Js.writeonly_prop
+  method onclose :
+    ('self Js.t, 'self closeEvent Js.t) Dom.event_listener Js.writeonly_prop
 
-    method onerror :
-      ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
+  method onerror : ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
 
-    method extensions : Js.js_string Js.t Js.readonly_prop
+  method extensions : Js.js_string Js.t Js.readonly_prop
 
-    method protocol : Js.js_string Js.t Js.readonly_prop
+  method protocol : Js.js_string Js.t Js.readonly_prop
 
-    method close : unit Js.meth
+  method close : unit Js.meth
 
-    method close_withCode : int -> unit Js.meth
+  method close_withCode : int -> unit Js.meth
 
-    method close_withCodeAndReason : int -> Js.js_string Js.t -> unit Js.meth
+  method close_withCodeAndReason : int -> Js.js_string Js.t -> unit Js.meth
 
-    method onmessage :
-      ('self Js.t, 'self messageEvent Js.t) Dom.event_listener Js.writeonly_prop
+  method onmessage :
+    ('self Js.t, 'self messageEvent Js.t) Dom.event_listener Js.writeonly_prop
 
-    method binaryType : Js.js_string Js.t Js.prop
+  method binaryType : Js.js_string Js.t Js.prop
 
-    method send : Js.js_string Js.t -> unit Js.meth
+  method send : Js.js_string Js.t -> unit Js.meth
 
-    method send_buffer : Typed_array.arrayBuffer Js.t -> unit Js.meth
+  method send_buffer : Typed_array.arrayBuffer Js.t -> unit Js.meth
 
-    method send_blob : File.blob Js.t -> unit Js.meth
-  end
+  method send_blob : File.blob Js.t -> unit Js.meth
+end
 
 let webSocket = Js.Unsafe.global##._WebSocket
 

@@ -103,49 +103,47 @@ let outside_color = Js.string (*"#0c1a0d"*) "#070718"
 
 let option var = Js.Optdef.get var (fun () -> Js.Unsafe.coerce (new%js Js.array_empty))
 
-class type style =
-  object
-    method border : float Js.optdef Js.readonly_prop
+class type style = object
+  method border : float Js.optdef Js.readonly_prop
 
-    method padding : float Js.optdef Js.readonly_prop
+  method padding : float Js.optdef Js.readonly_prop
 
-    method backgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method backgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method boundaryColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method boundaryColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method treeColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method treeColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method nodeColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method nodeColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method nodeBackgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method nodeBackgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method nodeFont : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method nodeFont : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method buttonColor : Js.js_string Js.t Js.optdef Js.readonly_prop
-  end
+  method buttonColor : Js.js_string Js.t Js.optdef Js.readonly_prop
+end
 
 let style : style Js.t = option Js.Unsafe.global##.hyp_style_
 
-class type messages =
-  object
-    method info : Js.js_string Js.t Js.optdef Js.readonly_prop
+class type messages = object
+  method info : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method recenter : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method recenter : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method noRef : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method noRef : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method close : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method close : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method wikimediaCommons : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method wikimediaCommons : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method language : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method language : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method noRef : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method noRef : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method languages : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method languages : Js.js_string Js.t Js.optdef Js.readonly_prop
 
-    method ok : Js.js_string Js.t Js.optdef Js.readonly_prop
-  end
+  method ok : Js.js_string Js.t Js.optdef Js.readonly_prop
+end
 
 let opt_style v default = Js.Optdef.get v (fun () -> default)
 

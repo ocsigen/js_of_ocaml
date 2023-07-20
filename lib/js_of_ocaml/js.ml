@@ -226,95 +226,93 @@ module Js = struct
 
   type string_array
 
-  class type js_string =
-    object
-      method toString : js_string t meth
+  class type js_string = object
+    method toString : js_string t meth
 
-      method valueOf : js_string t meth
+    method valueOf : js_string t meth
 
-      method charAt : int -> js_string t meth
+    method charAt : int -> js_string t meth
 
-      method charCodeAt : int -> float meth
+    method charCodeAt : int -> float meth
 
-      (* This may return NaN... *)
-      method concat : js_string t -> js_string t meth
+    (* This may return NaN... *)
+    method concat : js_string t -> js_string t meth
 
-      method concat_2 : js_string t -> js_string t -> js_string t meth
+    method concat_2 : js_string t -> js_string t -> js_string t meth
 
-      method concat_3 : js_string t -> js_string t -> js_string t -> js_string t meth
+    method concat_3 : js_string t -> js_string t -> js_string t -> js_string t meth
 
-      method concat_4 :
-        js_string t -> js_string t -> js_string t -> js_string t -> js_string t meth
+    method concat_4 :
+      js_string t -> js_string t -> js_string t -> js_string t -> js_string t meth
 
-      method indexOf : js_string t -> int meth
+    method indexOf : js_string t -> int meth
 
-      method indexOf_from : js_string t -> int -> int meth
+    method indexOf_from : js_string t -> int -> int meth
 
-      method lastIndexOf : js_string t -> int meth
+    method lastIndexOf : js_string t -> int meth
 
-      method lastIndexOf_from : js_string t -> int -> int meth
+    method lastIndexOf_from : js_string t -> int -> int meth
 
-      method localeCompare : js_string t -> float meth
+    method localeCompare : js_string t -> float meth
 
-      method _match : regExp t -> match_result_handle t opt meth
+    method _match : regExp t -> match_result_handle t opt meth
 
-      method normalize : js_string t meth
+    method normalize : js_string t meth
 
-      method normalize_form : normalization t -> js_string t meth
+    method normalize_form : normalization t -> js_string t meth
 
-      method replace : regExp t -> js_string t -> js_string t meth
+    method replace : regExp t -> js_string t -> js_string t meth
 
-      method replace_string : js_string t -> js_string t -> js_string t meth
+    method replace_string : js_string t -> js_string t -> js_string t meth
 
-      method search : regExp t -> int meth
+    method search : regExp t -> int meth
 
-      method slice : int -> int -> js_string t meth
+    method slice : int -> int -> js_string t meth
 
-      method slice_end : int -> js_string t meth
+    method slice_end : int -> js_string t meth
 
-      method split : js_string t -> string_array t meth
+    method split : js_string t -> string_array t meth
 
-      method split_limited : js_string t -> int -> string_array t meth
+    method split_limited : js_string t -> int -> string_array t meth
 
-      method split_regExp : regExp t -> string_array t meth
+    method split_regExp : regExp t -> string_array t meth
 
-      method split_regExpLimited : regExp t -> int -> string_array t meth
+    method split_regExpLimited : regExp t -> int -> string_array t meth
 
-      method substring : int -> int -> js_string t meth
+    method substring : int -> int -> js_string t meth
 
-      method substring_toEnd : int -> js_string t meth
+    method substring_toEnd : int -> js_string t meth
 
-      method toLowerCase : js_string t meth
+    method toLowerCase : js_string t meth
 
-      method toLocaleLowerCase : js_string t meth
+    method toLocaleLowerCase : js_string t meth
 
-      method toUpperCase : js_string t meth
+    method toUpperCase : js_string t meth
 
-      method toLocaleUpperCase : js_string t meth
+    method toLocaleUpperCase : js_string t meth
 
-      method trim : js_string t meth
+    method trim : js_string t meth
 
-      method length : int readonly_prop
-    end
+    method length : int readonly_prop
+  end
 
-  and regExp =
-    object
-      method exec : js_string t -> match_result_handle t opt meth
+  and regExp = object
+    method exec : js_string t -> match_result_handle t opt meth
 
-      method test : js_string t -> bool t meth
+    method test : js_string t -> bool t meth
 
-      method toString : js_string t meth
+    method toString : js_string t meth
 
-      method source : js_string t readonly_prop
+    method source : js_string t readonly_prop
 
-      method global : bool t readonly_prop
+    method global : bool t readonly_prop
 
-      method ignoreCase : bool t readonly_prop
+    method ignoreCase : bool t readonly_prop
 
-      method multiline : bool t readonly_prop
+    method multiline : bool t readonly_prop
 
-      method lastIndex : int prop
-    end
+    method lastIndex : int prop
+  end
 
   and normalization = js_string
 
@@ -335,10 +333,9 @@ end
 
 include Js
 
-class type string_constr =
-  object
-    method fromCharCode : int -> js_string t meth
-  end
+class type string_constr = object
+  method fromCharCode : int -> js_string t meth
+end
 
 let string_constr = Unsafe.global##._String
 
@@ -348,78 +345,76 @@ let regExp_copy = regExp
 
 let regExp_withFlags = regExp
 
-class type ['a] js_array =
-  object
-    method toString : js_string t meth
+class type ['a] js_array = object
+  method toString : js_string t meth
 
-    method toLocaleString : js_string t meth
+  method toLocaleString : js_string t meth
 
-    method concat : 'a js_array t -> 'a js_array t meth
+  method concat : 'a js_array t -> 'a js_array t meth
 
-    method join : js_string t -> js_string t meth
+  method join : js_string t -> js_string t meth
 
-    method pop : 'a optdef meth
+  method pop : 'a optdef meth
 
-    method push : 'a -> int meth
+  method push : 'a -> int meth
 
-    method push_2 : 'a -> 'a -> int meth
+  method push_2 : 'a -> 'a -> int meth
 
-    method push_3 : 'a -> 'a -> 'a -> int meth
+  method push_3 : 'a -> 'a -> 'a -> int meth
 
-    method push_4 : 'a -> 'a -> 'a -> 'a -> int meth
+  method push_4 : 'a -> 'a -> 'a -> 'a -> int meth
 
-    method reverse : 'a js_array t meth
+  method reverse : 'a js_array t meth
 
-    method shift : 'a optdef meth
+  method shift : 'a optdef meth
 
-    method slice : int -> int -> 'a js_array t meth
+  method slice : int -> int -> 'a js_array t meth
 
-    method slice_end : int -> 'a js_array t meth
+  method slice_end : int -> 'a js_array t meth
 
-    method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
+  method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
 
-    method sort_asStrings : 'a js_array t meth
+  method sort_asStrings : 'a js_array t meth
 
-    method splice : int -> int -> 'a js_array t meth
+  method splice : int -> int -> 'a js_array t meth
 
-    method splice_1 : int -> int -> 'a -> 'a js_array t meth
+  method splice_1 : int -> int -> 'a -> 'a js_array t meth
 
-    method splice_2 : int -> int -> 'a -> 'a -> 'a js_array t meth
+  method splice_2 : int -> int -> 'a -> 'a -> 'a js_array t meth
 
-    method splice_3 : int -> int -> 'a -> 'a -> 'a -> 'a js_array t meth
+  method splice_3 : int -> int -> 'a -> 'a -> 'a -> 'a js_array t meth
 
-    method splice_4 : int -> int -> 'a -> 'a -> 'a -> 'a -> 'a js_array t meth
+  method splice_4 : int -> int -> 'a -> 'a -> 'a -> 'a -> 'a js_array t meth
 
-    method unshift : 'a -> int meth
+  method unshift : 'a -> int meth
 
-    method unshift_2 : 'a -> 'a -> int meth
+  method unshift_2 : 'a -> 'a -> int meth
 
-    method unshift_3 : 'a -> 'a -> 'a -> int meth
+  method unshift_3 : 'a -> 'a -> 'a -> int meth
 
-    method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
+  method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
 
-    method some : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
+  method some : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
 
-    method every : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
+  method every : ('a -> int -> 'a js_array t -> bool t) callback -> bool t meth
 
-    method forEach : ('a -> int -> 'a js_array t -> unit) callback -> unit meth
+  method forEach : ('a -> int -> 'a js_array t -> unit) callback -> unit meth
 
-    method map : ('a -> int -> 'a js_array t -> 'b) callback -> 'b js_array t meth
+  method map : ('a -> int -> 'a js_array t -> 'b) callback -> 'b js_array t meth
 
-    method filter : ('a -> int -> 'a js_array t -> bool t) callback -> 'a js_array t meth
+  method filter : ('a -> int -> 'a js_array t -> bool t) callback -> 'a js_array t meth
 
-    method reduce_init :
-      ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
+  method reduce_init : ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
 
-    method reduce : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
+  method reduce : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
 
-    method reduceRight_init :
-      ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
+  method reduceRight_init :
+    ('b -> 'a -> int -> 'a js_array t -> 'b) callback -> 'b -> 'b meth
 
-    method reduceRight : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
+  method reduceRight : ('a -> 'a -> int -> 'a js_array t -> 'a) callback -> 'a meth
 
-    method length : int prop
-  end
+  method length : int prop
+end
 
 let object_constructor = Unsafe.global##._Object
 
@@ -443,151 +438,147 @@ let array_map f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
 
 let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _ -> f idx x))
 
-class type match_result =
-  object
-    inherit [js_string t] js_array
+class type match_result = object
+  inherit [js_string t] js_array
 
-    method index : int readonly_prop
+  method index : int readonly_prop
 
-    method input : js_string t readonly_prop
-  end
+  method input : js_string t readonly_prop
+end
 
 let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
 
 let match_result : match_result_handle t -> match_result t = Unsafe.coerce
 
-class type number =
-  object
-    method toString : js_string t meth
+class type number = object
+  method toString : js_string t meth
 
-    method toString_radix : int -> js_string t meth
+  method toString_radix : int -> js_string t meth
 
-    method toLocaleString : js_string t meth
+  method toLocaleString : js_string t meth
 
-    method toFixed : int -> js_string t meth
+  method toFixed : int -> js_string t meth
 
-    method toExponential : js_string t meth
+  method toExponential : js_string t meth
 
-    method toExponential_digits : int -> js_string t meth
+  method toExponential_digits : int -> js_string t meth
 
-    method toPrecision : int -> js_string t meth
-  end
+  method toPrecision : int -> js_string t meth
+end
 
 external number_of_float : float -> number t = "caml_js_from_float"
 
 external float_of_number : number t -> float = "caml_js_to_float"
 
-class type date =
-  object
-    method toString : js_string t meth
+class type date = object
+  method toString : js_string t meth
 
-    method toDateString : js_string t meth
+  method toDateString : js_string t meth
 
-    method toTimeString : js_string t meth
+  method toTimeString : js_string t meth
 
-    method toLocaleString : js_string t meth
+  method toLocaleString : js_string t meth
 
-    method toLocaleDateString : js_string t meth
+  method toLocaleDateString : js_string t meth
 
-    method toLocaleTimeString : js_string t meth
+  method toLocaleTimeString : js_string t meth
 
-    method valueOf : float meth
+  method valueOf : float meth
 
-    method getTime : float meth
+  method getTime : float meth
 
-    method getFullYear : int meth
+  method getFullYear : int meth
 
-    method getUTCFullYear : int meth
+  method getUTCFullYear : int meth
 
-    method getMonth : int meth
+  method getMonth : int meth
 
-    method getUTCMonth : int meth
+  method getUTCMonth : int meth
 
-    method getDate : int meth
+  method getDate : int meth
 
-    method getUTCDate : int meth
+  method getUTCDate : int meth
 
-    method getDay : int meth
+  method getDay : int meth
 
-    method getUTCDay : int meth
+  method getUTCDay : int meth
 
-    method getHours : int meth
+  method getHours : int meth
 
-    method getUTCHours : int meth
+  method getUTCHours : int meth
 
-    method getMinutes : int meth
+  method getMinutes : int meth
 
-    method getUTCMinutes : int meth
+  method getUTCMinutes : int meth
 
-    method getSeconds : int meth
+  method getSeconds : int meth
 
-    method getUTCSeconds : int meth
+  method getUTCSeconds : int meth
 
-    method getMilliseconds : int meth
+  method getMilliseconds : int meth
 
-    method getUTCMilliseconds : int meth
+  method getUTCMilliseconds : int meth
 
-    method getTimezoneOffset : int meth
+  method getTimezoneOffset : int meth
 
-    method setTime : float -> float meth
+  method setTime : float -> float meth
 
-    method setFullYear : int -> float meth
+  method setFullYear : int -> float meth
 
-    method setUTCFullYear : int -> float meth
+  method setUTCFullYear : int -> float meth
 
-    method setMonth : int -> float meth
+  method setMonth : int -> float meth
 
-    method setUTCMonth : int -> float meth
+  method setUTCMonth : int -> float meth
 
-    method setDate : int -> float meth
+  method setDate : int -> float meth
 
-    method setUTCDate : int -> float meth
+  method setUTCDate : int -> float meth
 
-    method setDay : int -> float meth
+  method setDay : int -> float meth
 
-    method setUTCDay : int -> float meth
+  method setUTCDay : int -> float meth
 
-    method setHours : int -> float meth
+  method setHours : int -> float meth
 
-    method setUTCHours : int -> float meth
+  method setUTCHours : int -> float meth
 
-    method setMinutes : int -> float meth
+  method setMinutes : int -> float meth
 
-    method setUTCMinutes : int -> float meth
+  method setUTCMinutes : int -> float meth
 
-    method setSeconds : int -> float meth
+  method setSeconds : int -> float meth
 
-    method setUTCSeconds : int -> float meth
+  method setUTCSeconds : int -> float meth
 
-    method setMilliseconds : int -> float meth
+  method setMilliseconds : int -> float meth
 
-    method setUTCMilliseconds : int -> float meth
+  method setUTCMilliseconds : int -> float meth
 
-    method toUTCString : js_string t meth
+  method toUTCString : js_string t meth
 
-    method toISOString : js_string t meth
+  method toISOString : js_string t meth
 
-    method toJSON : 'a -> js_string t meth
-  end
+  method toJSON : 'a -> js_string t meth
+end
 
-class type date_constr =
-  object
-    method parse : js_string t -> float meth
+class type date_constr = object
+  method parse : js_string t -> float meth
 
-    method _UTC_month : int -> int -> float meth
+  method _UTC_month : int -> int -> float meth
 
-    method _UTC_day : int -> int -> float meth
+  method _UTC_day : int -> int -> float meth
 
-    method _UTC_hour : int -> int -> int -> int -> float meth
+  method _UTC_hour : int -> int -> int -> int -> float meth
 
-    method _UTC_min : int -> int -> int -> int -> int -> float meth
+  method _UTC_min : int -> int -> int -> int -> int -> float meth
 
-    method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
 
-    method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> float meth
+  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> float meth
 
-    method now : float meth
-  end
+  method now : float meth
+end
 
 let date_constr = Unsafe.global##._Date
 
@@ -610,81 +601,79 @@ let date_sec : (int -> int -> int -> int -> int -> int -> date t) constr = date_
 let date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr =
   date_constr
 
-class type math =
-  object
-    method _E : float readonly_prop
+class type math = object
+  method _E : float readonly_prop
 
-    method _LN2 : float readonly_prop
+  method _LN2 : float readonly_prop
 
-    method _LN10 : float readonly_prop
+  method _LN10 : float readonly_prop
 
-    method _LOG2E : float readonly_prop
+  method _LOG2E : float readonly_prop
 
-    method _LOG10E : float readonly_prop
+  method _LOG10E : float readonly_prop
 
-    method _PI : float readonly_prop
+  method _PI : float readonly_prop
 
-    method _SQRT1_2_ : float readonly_prop
+  method _SQRT1_2_ : float readonly_prop
 
-    method _SQRT2 : float readonly_prop
+  method _SQRT2 : float readonly_prop
 
-    method abs : float -> float meth
+  method abs : float -> float meth
 
-    method acos : float -> float meth
+  method acos : float -> float meth
 
-    method asin : float -> float meth
+  method asin : float -> float meth
 
-    method atan : float -> float meth
+  method atan : float -> float meth
 
-    method atan2 : float -> float -> float meth
+  method atan2 : float -> float -> float meth
 
-    method ceil : float -> float meth
+  method ceil : float -> float meth
 
-    method cos : float -> float meth
+  method cos : float -> float meth
 
-    method exp : float -> float meth
+  method exp : float -> float meth
 
-    method floor : float -> float meth
+  method floor : float -> float meth
 
-    method log : float -> float meth
+  method log : float -> float meth
 
-    method max : float -> float -> float meth
+  method max : float -> float -> float meth
 
-    method max_3 : float -> float -> float -> float meth
+  method max_3 : float -> float -> float -> float meth
 
-    method max_4 : float -> float -> float -> float -> float meth
+  method max_4 : float -> float -> float -> float -> float meth
 
-    method min : float -> float -> float meth
+  method min : float -> float -> float meth
 
-    method min_3 : float -> float -> float -> float meth
+  method min_3 : float -> float -> float -> float meth
 
-    method min_4 : float -> float -> float -> float -> float meth
+  method min_4 : float -> float -> float -> float -> float meth
 
-    method pow : float -> float -> float meth
+  method pow : float -> float -> float meth
 
-    method random : float meth
+  method random : float meth
 
-    method round : float -> float meth
+  method round : float -> float meth
 
-    method sin : float -> float meth
+  method sin : float -> float meth
 
-    method sqrt : float -> float meth
+  method sqrt : float -> float meth
 
-    method tan : float -> float meth
-  end
+  method tan : float -> float meth
+end
 
 let math = Unsafe.global##._Math
 
-class type error =
-  object
-    method name : js_string t prop
+class type error = object
+  method name : js_string t prop
 
-    method message : js_string t prop
+  method message : js_string t prop
 
-    method stack : js_string t optdef prop
+  method stack : js_string t optdef prop
 
-    method toString : js_string t meth
-  end
+  method toString : js_string t meth
+end
 
 let error_constr = Unsafe.global##._Error
 
@@ -736,12 +725,11 @@ let exn_with_js_backtrace = Js_error.attach_js_backtrace
 
 external js_error_of_exn : exn -> error t opt = "caml_js_error_of_exception"
 
-class type json =
-  object
-    method parse : js_string t -> 'a meth
+class type json = object
+  method parse : js_string t -> 'a meth
 
-    method stringify : 'a -> js_string t meth
-  end
+  method stringify : 'a -> js_string t meth
+end
 
 let _JSON : json t = Unsafe.global##._JSON
 

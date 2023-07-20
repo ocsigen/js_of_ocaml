@@ -856,35 +856,35 @@ struct
     | CoverInitializedName (e, _, _) -> early_error e
 
   and method_ : 'a. _ -> (PP.t -> 'a -> unit) -> 'a -> method_ -> unit =
-    fun (type a) f (name : PP.t -> a -> unit) (n : a) (m : method_) ->
-     match m with
-     | MethodGet (k, l, b, loc') | MethodSet (k, l, b, loc') ->
-         (match k with
-         | { async = false; generator = false } -> ()
-         | _ -> assert false);
-         let prefix =
-           match m with
-           | MethodGet _ -> "get"
-           | MethodSet _ -> "set"
-           | _ -> assert false
-         in
-         function_declaration f prefix name (Some n) l b loc'
-     | Method (k, l, b, loc') ->
-         let fpn f () =
-           (match k with
-           | { async = false; generator = false } -> ()
-           | { async = false; generator = true } ->
-               PP.string f "*";
-               PP.space f
-           | { async = true; generator = false } ->
-               PP.string f "async";
-               PP.space f
-           | { async = true; generator = true } ->
-               PP.string f "async*";
-               PP.space f);
-           name f n
-         in
-         function_declaration f "" fpn (Some ()) l b loc'
+   fun (type a) f (name : PP.t -> a -> unit) (n : a) (m : method_) ->
+    match m with
+    | MethodGet (k, l, b, loc') | MethodSet (k, l, b, loc') ->
+        (match k with
+        | { async = false; generator = false } -> ()
+        | _ -> assert false);
+        let prefix =
+          match m with
+          | MethodGet _ -> "get"
+          | MethodSet _ -> "set"
+          | _ -> assert false
+        in
+        function_declaration f prefix name (Some n) l b loc'
+    | Method (k, l, b, loc') ->
+        let fpn f () =
+          (match k with
+          | { async = false; generator = false } -> ()
+          | { async = false; generator = true } ->
+              PP.string f "*";
+              PP.space f
+          | { async = true; generator = false } ->
+              PP.string f "async";
+              PP.space f
+          | { async = true; generator = true } ->
+              PP.string f "async*";
+              PP.space f);
+          name f n
+        in
+        function_declaration f "" fpn (Some ()) l b loc'
 
   and element_list f el = comma_list f element el
 
