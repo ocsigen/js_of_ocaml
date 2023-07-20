@@ -36,21 +36,20 @@ let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
 
-let deadcode' p =
+let deadcode' _global_info p =
   if debug () then Format.eprintf "Dead-code...@.";
-  let global_info = Global_flow.f ~fast:false p in
-  let p = Deadcode_dgraph.f p global_info in
-  let _, live_vars = Deadcode.f p in
+  (* let p = Deadcode_dgraph.f p global_info in *)
+  let p, live_vars = Deadcode.f p in
   p, live_vars
 
-let deadcode p =
-  let r, _ = deadcode' p in
+let deadcode global_info p =
+  let r, _ = deadcode' global_info p in
   r
 
-let inline p =
+let inline global_info p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
-    let p, live_vars = deadcode' p in
+    let p, live_vars = deadcode' global_info p in
     if debug () then Format.eprintf "Inlining...@.";
     Inline.f p live_vars)
   else p
@@ -127,27 +126,27 @@ let identity x = x
 
 (* o1 *)
 
-let o1 : 'a -> 'a =
+let o1 global_info =
   print
   +> tailcall
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'
   +> eval
-  +> inline (* inlining may reveal new tailcall opt *)
-  +> deadcode
+  +> inline global_info (* inlining may reveal new tailcall opt *)
+  +> deadcode global_info
   +> tailcall
   +> phi
   +> flow
   +> specialize'
   +> eval
-  +> inline
-  +> deadcode
+  +> inline global_info
+  +> deadcode global_info
   +> print
   +> flow
   +> specialize'
   +> eval
-  +> inline
-  +> deadcode
+  +> inline global_info
+  +> deadcode global_info
   +> phi
   +> flow
   +> specialize
@@ -155,23 +154,28 @@ let o1 : 'a -> 'a =
 
 (* o2 *)
 
-let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
+let o2 global_info = loop 10 "o1" (o1 global_info) 1 +> print
 
 (* o3 *)
 
-let round1 : 'a -> 'a =
+let round1 global_info =
   print
   +> tailcall
-  +> inline (* inlining may reveal new tailcall opt *)
-  +> deadcode (* deadcode required before flow simple -> provided by constant *)
+  +> inline global_info (* inlining may reveal new tailcall opt *)
+  +> deadcode
+       global_info (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
   +> specialize'
   +> eval
   +> identity
 
-let round2 = flow +> specialize' +> eval +> deadcode +> o1
+let round2 global_info =
+  flow +> specialize' +> eval +> deadcode global_info +> o1 global_info
 
-let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
+let o3 global_info =
+  loop 10 "tailcall+inline" (round1 global_info) 1
+  +> loop 10 "flow" (round2 global_info) 1
+  +> print
 
 let generate
     d
@@ -576,14 +580,15 @@ let configure formatter =
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
   let exported_runtime = not standalone in
   let opt =
+    let global_info = Global_flow.f ~fast:false p in
     specialize_js_once
     +> (match profile with
-       | O1 -> o1
-       | O2 -> o2
-       | O3 -> o3)
+       | O1 -> o1 global_info
+       | O2 -> o2 global_info
+       | O3 -> o3 global_info)
     +> exact_calls profile
     +> effects
-    +> map_fst (Generate_closure.f +> deadcode')
+    +> map_fst (Generate_closure.f +> deadcode' global_info)
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
