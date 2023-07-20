@@ -22,16 +22,15 @@ open Js
 open Dom
 open! Import
 
-class type blob =
-  object
-    method size : int readonly_prop
+class type blob = object
+  method size : int readonly_prop
 
-    method _type : js_string t readonly_prop
+  method _type : js_string t readonly_prop
 
-    method slice : int -> int -> blob t meth
+  method slice : int -> int -> blob t meth
 
-    method slice_withContentType : int -> int -> js_string t -> blob t meth
-  end
+  method slice_withContentType : int -> int -> js_string t -> blob t meth
+end
 
 let blob_constr = Unsafe.global##._Blob
 
@@ -84,22 +83,20 @@ let blob_from_any ?contentType ?endings l =
   in
   blob_raw ?contentType ?endings (Array.of_list l)
 
-class type file =
-  object
-    inherit blob
+class type file = object
+  inherit blob
 
-    method name : js_string t readonly_prop
+  method name : js_string t readonly_prop
 
-    method lastModifiedDate : js_string t readonly_prop
-  end
+  method lastModifiedDate : js_string t readonly_prop
+end
 
 (* in firefox 3.0-3.5 file.name is not available, we use the nonstandard fileName instead *)
-class type file_name_only =
-  object
-    method name : js_string t optdef readonly_prop
+class type file_name_only = object
+  method name : js_string t optdef readonly_prop
 
-    method fileName : js_string t optdef readonly_prop
-  end
+  method fileName : js_string t optdef readonly_prop
+end
 
 let filename file =
   let file : file_name_only t = Js.Unsafe.coerce file in
@@ -136,69 +133,64 @@ module CoerceTo = struct
     else Js.null
 end
 
-class type fileList =
-  object
-    inherit [file] Dom.nodeList
-  end
+class type fileList = object
+  inherit [file] Dom.nodeList
+end
 
-class type fileError =
-  object
-    method code : int readonly_prop
-  end
+class type fileError = object
+  method code : int readonly_prop
+end
 
-class type ['a] progressEvent =
-  object
-    inherit ['a] event
+class type ['a] progressEvent = object
+  inherit ['a] event
 
-    method lengthComputable : bool t readonly_prop
+  method lengthComputable : bool t readonly_prop
 
-    method loaded : int readonly_prop
+  method loaded : int readonly_prop
 
-    method total : int readonly_prop
-  end
+  method total : int readonly_prop
+end
 
-class type progressEventTarget =
-  object ('self)
-    method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+class type progressEventTarget = object ('self)
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
-  end
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
+end
 
 type readyState =
   | EMPTY
   | LOADING
   | DONE
 
-class type fileReader =
-  object ('self)
-    method readAsArrayBuffer : #blob t -> unit meth
+class type fileReader = object ('self)
+  method readAsArrayBuffer : #blob t -> unit meth
 
-    method readAsBinaryString : #blob t -> unit meth
+  method readAsBinaryString : #blob t -> unit meth
 
-    method readAsText : #blob t -> unit meth
+  method readAsText : #blob t -> unit meth
 
-    method readAsText_withEncoding : #blob t -> js_string t -> unit meth
+  method readAsText_withEncoding : #blob t -> js_string t -> unit meth
 
-    method readAsDataURL : #blob t -> unit meth
+  method readAsDataURL : #blob t -> unit meth
 
-    method abort : unit meth
+  method abort : unit meth
 
-    method readyState : readyState readonly_prop
+  method readyState : readyState readonly_prop
 
-    method result : file_any readonly_prop
+  method result : file_any readonly_prop
 
-    method error : fileError t readonly_prop
+  method error : fileError t readonly_prop
 
-    inherit progressEventTarget
-  end
+  inherit progressEventTarget
+end
 
 module ReaderEvent = struct
   type typ = fileReader progressEvent t Dom.Event.typ

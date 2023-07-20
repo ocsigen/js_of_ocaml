@@ -19,11 +19,12 @@
  *)
 open! Stdlib
 
-module Make (N : sig
-  type t
-end)
-(NSet : Set.S with type elt = N.t)
-(NMap : Map.S with type key = N.t) =
+module Make
+    (N : sig
+      type t
+    end)
+    (NSet : Set.S with type elt = N.t)
+    (NMap : Map.S with type key = N.t) =
 struct
   type t =
     { domain : NSet.t
@@ -175,11 +176,12 @@ module type Tbl = sig
   val make : size -> 'a -> 'a t
 end
 
-module Make_Imperative (N : sig
-  type t
-end)
-(NSet : ISet with type elt = N.t)
-(NTbl : Tbl with type key = N.t) =
+module Make_Imperative
+    (N : sig
+      type t
+    end)
+    (NSet : ISet with type elt = N.t)
+    (NTbl : Tbl with type key = N.t) =
 struct
   type t =
     { domain : NSet.t

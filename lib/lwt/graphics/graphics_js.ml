@@ -22,10 +22,9 @@ open Js_of_ocaml_lwt
 open! Import
 include Graphics
 
-class type context_ =
-  object
-    method canvas : Dom_html.canvasElement Js.t Js.readonly_prop
-  end
+class type context_ = object
+  method canvas : Dom_html.canvasElement Js.t Js.readonly_prop
+end
 
 type context = context_ Js.t
 

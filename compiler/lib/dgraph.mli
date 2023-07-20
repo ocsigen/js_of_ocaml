@@ -17,11 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-module Make (N : sig
-  type t
-end)
-(NSet : Set.S with type elt = N.t)
-(NMap : Map.S with type key = N.t) : sig
+module Make
+    (N : sig
+      type t
+    end)
+    (NSet : Set.S with type elt = N.t)
+    (NMap : Map.S with type key = N.t) : sig
   type t =
     { domain : NSet.t
     ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a
@@ -72,11 +73,12 @@ module type Tbl = sig
   val make : size -> 'a -> 'a t
 end
 
-module Make_Imperative (N : sig
-  type t
-end)
-(NSet : ISet with type elt = N.t)
-(NTbl : Tbl with type key = N.t) : sig
+module Make_Imperative
+    (N : sig
+      type t
+    end)
+    (NSet : ISet with type elt = N.t)
+    (NTbl : Tbl with type key = N.t) : sig
   type t =
     { domain : NSet.t
     ; iter_children : (N.t -> unit) -> N.t -> unit

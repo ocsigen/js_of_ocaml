@@ -22,50 +22,47 @@ open Js
 
 type uint32 = float
 
-class type arrayBuffer =
-  object
-    method byteLength : int readonly_prop
+class type arrayBuffer = object
+  method byteLength : int readonly_prop
 
-    method slice : int -> int -> arrayBuffer t meth
+  method slice : int -> int -> arrayBuffer t meth
 
-    method slice_toEnd : int -> arrayBuffer t meth
-  end
+  method slice_toEnd : int -> arrayBuffer t meth
+end
 
 let arrayBuffer : (int -> arrayBuffer t) constr = Js.Unsafe.global##._ArrayBuffer
 
-class type arrayBufferView =
-  object
-    method buffer : arrayBuffer t readonly_prop
+class type arrayBufferView = object
+  method buffer : arrayBuffer t readonly_prop
 
-    method byteOffset : int readonly_prop
+  method byteOffset : int readonly_prop
 
-    method byteLength : int readonly_prop
-  end
+  method byteLength : int readonly_prop
+end
 
-class type ['a, 'b] typedArray =
-  object
-    inherit arrayBufferView
+class type ['a, 'b] typedArray = object
+  inherit arrayBufferView
 
-    method _BYTES_PER_ELEMENT : int readonly_prop
+  method _BYTES_PER_ELEMENT : int readonly_prop
 
-    method length : int readonly_prop
+  method length : int readonly_prop
 
-    method set_fromArray : 'a js_array t -> int -> unit meth
+  method set_fromArray : 'a js_array t -> int -> unit meth
 
-    method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
+  method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
 
-    method subarray : int -> int -> ('a, 'b) typedArray t meth
+  method subarray : int -> int -> ('a, 'b) typedArray t meth
 
-    method subarray_toEnd : int -> ('a, 'b) typedArray t meth
+  method subarray_toEnd : int -> ('a, 'b) typedArray t meth
 
-    method slice : int -> int -> ('a, 'b) typedArray t meth
+  method slice : int -> int -> ('a, 'b) typedArray t meth
 
-    method slice_toEnd : int -> ('a, 'b) typedArray t meth
+  method slice_toEnd : int -> ('a, 'b) typedArray t meth
 
-    (* This fake method is needed for typing purposes.
-       Without it, ['b] would not be constrained. *)
-    method _content_type_ : 'b optdef readonly_prop
-  end
+  (* This fake method is needed for typing purposes.
+     Without it, ['b] would not be constrained. *)
+  method _content_type_ : 'b optdef readonly_prop
+end
 
 type int8Array = (int, Bigarray.int8_signed_elt) typedArray
 
@@ -181,66 +178,65 @@ let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a
 
 let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
 
-class type dataView =
-  object
-    inherit arrayBufferView
+class type dataView = object
+  inherit arrayBufferView
 
-    method getInt8 : int -> int meth
+  method getInt8 : int -> int meth
 
-    method getUint8 : int -> int meth
+  method getUint8 : int -> int meth
 
-    method getInt16 : int -> int meth
+  method getInt16 : int -> int meth
 
-    method getInt16_ : int -> bool t -> int meth
+  method getInt16_ : int -> bool t -> int meth
 
-    method getUint16 : int -> int meth
+  method getUint16 : int -> int meth
 
-    method getUint16_ : int -> bool t -> int meth
+  method getUint16_ : int -> bool t -> int meth
 
-    method getInt32 : int -> int meth
+  method getInt32 : int -> int meth
 
-    method getInt32_ : int -> bool t -> int meth
+  method getInt32_ : int -> bool t -> int meth
 
-    method getUint32 : int -> uint32 meth
+  method getUint32 : int -> uint32 meth
 
-    method getUint32_ : int -> bool t -> uint32 meth
+  method getUint32_ : int -> bool t -> uint32 meth
 
-    method getFloat32 : int -> float meth
+  method getFloat32 : int -> float meth
 
-    method getFloat32_ : int -> bool t -> float meth
+  method getFloat32_ : int -> bool t -> float meth
 
-    method getFloat64 : int -> float meth
+  method getFloat64 : int -> float meth
 
-    method getFloat64_ : int -> bool t -> float meth
+  method getFloat64_ : int -> bool t -> float meth
 
-    method setInt8 : int -> int -> unit meth
+  method setInt8 : int -> int -> unit meth
 
-    method setUint8 : int -> int -> unit meth
+  method setUint8 : int -> int -> unit meth
 
-    method setInt16 : int -> int -> unit meth
+  method setInt16 : int -> int -> unit meth
 
-    method setInt16_ : int -> int -> bool t -> unit meth
+  method setInt16_ : int -> int -> bool t -> unit meth
 
-    method setUint16 : int -> int -> unit meth
+  method setUint16 : int -> int -> unit meth
 
-    method setUint16_ : int -> int -> bool t -> unit meth
+  method setUint16_ : int -> int -> bool t -> unit meth
 
-    method setInt32 : int -> int -> unit meth
+  method setInt32 : int -> int -> unit meth
 
-    method setInt32_ : int -> int -> bool t -> unit meth
+  method setInt32_ : int -> int -> bool t -> unit meth
 
-    method setUint32 : int -> uint32 -> unit meth
+  method setUint32 : int -> uint32 -> unit meth
 
-    method setUint32_ : int -> uint32 -> bool t -> unit meth
+  method setUint32_ : int -> uint32 -> bool t -> unit meth
 
-    method setFloat32 : int -> float -> unit meth
+  method setFloat32 : int -> float -> unit meth
 
-    method setFloat32_ : int -> float -> bool t -> unit meth
+  method setFloat32_ : int -> float -> bool t -> unit meth
 
-    method setFloat64 : int -> float -> unit meth
+  method setFloat64 : int -> float -> unit meth
 
-    method setFloat64_ : int -> float -> bool t -> unit meth
-  end
+  method setFloat64_ : int -> float -> bool t -> unit meth
+end
 
 let dataView = Js.Unsafe.global##._DataView
 
