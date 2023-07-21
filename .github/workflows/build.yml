@@ -88,7 +88,7 @@ jobs:
             dra27: https://github.com/dra27/opam-repository.git#windows-5.0
             default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
-          dune-cache: true
+          dune-cache: false
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
@@ -100,9 +100,6 @@ jobs:
           dune-cache: ${{ matrix.os != 'macos-latest' }}
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
-
-      - run: opam pin add zarith git+https://github.com/hhugo/Zarith.git#win-fix
-        if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
