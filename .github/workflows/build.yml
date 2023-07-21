@@ -1,5 +1,8 @@
 name: build
 
+env:
+  DUNE_CONFIG__BACKGROUND_DIGESTS: disabled
+
 on:
   pull_request:
   push:
@@ -88,7 +91,7 @@ jobs:
             dra27: https://github.com/dra27/opam-repository.git#windows-5.0
             default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
-          dune-cache: false
+          dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
@@ -97,7 +100,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: ${{ matrix.os != 'macos-latest' }}
+          dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
