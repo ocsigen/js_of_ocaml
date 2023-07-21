@@ -2556,8 +2556,8 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
                  Js.Unsafe.coerce
                    (document##createElement (Js.string "<input name=\"x\">"))
                in
-               el##.tagName##toLowerCase == Js.string "input"
-               && el##.name == Js.string "x"
+               Js.equals el##.tagName##toLowerCase (Js.string "input")
+               && Js.equals el##.name (Js.string "x")
              with _ -> false
           then `Extended
           else `Standard;
@@ -2740,12 +2740,12 @@ let html_element : htmlElement t constr = Js.Unsafe.global##._HTMLElement
 
 module CoerceTo = struct
   let element : #Dom.node Js.t -> element Js.t Js.opt =
-    if def html_element == undefined
+    if not (Js.Optdef.test (def html_element))
     then
       (* ie < 9 does not have HTMLElement: we have to cheat to check
          that something is an html element *)
       fun e ->
-      if def (Js.Unsafe.coerce e)##.innerHTML == undefined
+      if not (Js.Optdef.test (def (Js.Unsafe.coerce e)##.innerHTML))
       then Js.null
       else Js.some (Js.Unsafe.coerce e)
     else
@@ -2753,7 +2753,7 @@ module CoerceTo = struct
       if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce tag (e : #element t) =
-    if e##.tagName##toLowerCase == Js.string tag
+    if Js.equals e##.tagName##toLowerCase (Js.string tag)
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 
@@ -2880,7 +2880,7 @@ module CoerceTo = struct
   let video e = unsafeCoerce "video" e
 
   let unsafeCoerceEvent constr (ev : #event t) =
-    if def constr != undefined && Js.instanceof ev constr
+    if Js.Optdef.test (def constr) && Js.instanceof ev constr
     then Js.some (Js.Unsafe.coerce ev)
     else Js.null
 

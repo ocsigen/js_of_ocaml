@@ -37,7 +37,7 @@ let json : json Js.t = Unsafe.global##._JSON
 
 let input_reviver =
   let reviver _this _key (value : Unsafe.any) : Obj.t =
-    if typeof value == string "string"
+    if Js.equals (typeof value) (string "string")
     then Obj.repr (to_bytestring (Unsafe.coerce value))
     else if instanceof value Js.array_empty
             && (Unsafe.coerce value)##.length == 4

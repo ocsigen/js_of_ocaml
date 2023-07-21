@@ -2136,7 +2136,7 @@ module CoerceTo = struct
     if Js.instanceof e svg_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce (e : #element t) tag =
-    if e##.tagName##toLowerCase == Js.string tag
+    if Js.equals e##.tagName##toLowerCase (Js.string tag)
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 

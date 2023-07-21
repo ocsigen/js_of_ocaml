@@ -370,7 +370,7 @@ class type event_listener_options =
   end
 
 let addEventListenerWithOptions (e : (< .. > as 'a) t) typ ?capture ?once ?passive h =
-  if (Js.Unsafe.coerce e)##.addEventListener == Js.undefined
+  if not (Js.Optdef.test (Js.Unsafe.coerce e)##.addEventListener)
   then
     let ev = (Js.string "on")##concat typ in
     let callback e = Js.Unsafe.call (h, e, [||]) in
