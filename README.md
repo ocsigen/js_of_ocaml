@@ -41,3 +41,25 @@ This outputs a file `cubes.js` which loads the WebAssembly code from file `cube.
 ```
 python3 -m http.server 8000 --directory .
 ```
+
+As a larger example, you can try [CAMLBOY](https://github.com/linoscope/CAMLBOY). You need to install a forked version of [Brr](https://github.com/ocaml-wasm/brr/tree/wasm). Once the Js_of_ocaml UI is compiled (with `dune build`), you can generate WebAssembly code instead with the following command:
+```
+wasm_of_ocaml _build/default/bin/web/index.bc-for-jsoo
+```
+
+## Implementation status
+
+A large part of the runtime is [implemented](https://github.com/ocaml-wasm/wasm_of_ocaml/issues/5). File-related functions, marshaling and dynamic linking are not supported yet.
+
+Separate compilation is not implemented yet.
+
+## Compatibility with Js_of_ocaml
+
+Since the value representation is different, some adaptations are necessary.
+
+The most notable change is that, except for integers, OCaml numbers are no longer mapped to JavaScript numbers. So, explicit conversions `Js.to_float` and `Js.float` are now necessary to convert between OCaml floats and JavaScript numbers. The typing of JavaScript Typed Arrays has also been changed to deal with this.
+
+Additionally, OCaml physical equality will not work properly on JavaScript objects (it compares boxed values instead of values themselves). You should use `Js.string_equals` instead.
+
+Some forked versions of [Brr](https://github.com/ocaml-wasm/brr/tree/wasm) and
+[Gen_js_api](https://github.com/ocaml-wasm/gen_js_api/tree/wasm) are compatible with Wasm_of_ocaml.
