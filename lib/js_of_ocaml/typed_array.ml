@@ -20,7 +20,9 @@
 open! Import
 open Js
 
-type uint32 = float
+type int32 = number_t
+
+type uint32 = number_t
 
 class type arrayBuffer = object
   method byteLength : int readonly_prop
@@ -40,7 +42,7 @@ class type arrayBufferView = object
   method byteLength : int readonly_prop
 end
 
-class type ['a, 'b] typedArray = object
+class type ['a, 'b, 'c] typedArray = object
   inherit arrayBufferView
 
   method _BYTES_PER_ELEMENT : int readonly_prop
@@ -49,47 +51,61 @@ class type ['a, 'b] typedArray = object
 
   method set_fromArray : 'a js_array t -> int -> unit meth
 
-  method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
+  method set_fromTypedArray : ('a, 'b, 'c) typedArray t -> int -> unit meth
 
-  method subarray : int -> int -> ('a, 'b) typedArray t meth
+  method subarray : int -> int -> ('a, 'b, 'c) typedArray t meth
 
-  method subarray_toEnd : int -> ('a, 'b) typedArray t meth
+  method subarray_toEnd : int -> ('a, 'b, 'c) typedArray t meth
 
-  method slice : int -> int -> ('a, 'b) typedArray t meth
+  method slice : int -> int -> ('a, 'b, 'c) typedArray t meth
 
-  method slice_toEnd : int -> ('a, 'b) typedArray t meth
+  method slice_toEnd : int -> ('a, 'b, 'c) typedArray t meth
 
   (* This fake method is needed for typing purposes.
      Without it, ['b] would not be constrained. *)
-  method _content_type_ : 'b optdef readonly_prop
+  method _content_type_ : ('b * 'c) optdef readonly_prop
 end
 
-type int8Array = (int, Bigarray.int8_signed_elt) typedArray
+type int8Array = (int, int, Bigarray.int8_signed_elt) typedArray
 
-type uint8Array = (int, Bigarray.int8_unsigned_elt) typedArray
+type uint8Array = (int, int, Bigarray.int8_unsigned_elt) typedArray
 
-type int16Array = (int, Bigarray.int16_signed_elt) typedArray
+type int16Array = (int, int, Bigarray.int16_signed_elt) typedArray
 
-type uint16Array = (int, Bigarray.int16_unsigned_elt) typedArray
+type uint16Array = (int, int, Bigarray.int16_unsigned_elt) typedArray
 
-type int32Array = (int32, Bigarray.int32_elt) typedArray
+type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
 
-type uint32Array = (int32, Bigarray.int32_elt) typedArray
+type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
 
-type float32Array = (float, Bigarray.float32_elt) typedArray
+type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
-type float64Array = (float, Bigarray.float64_elt) typedArray
+type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
-external kind : ('a, 'b) typedArray t -> ('a, 'b) Bigarray.kind
+type ('bigarray, 'typed_array, 'elt) type' =
+  | Char : (int, char, Bigarray.int8_unsigned_elt) type'
+  | Int8_signed : (int, int, Bigarray.int8_signed_elt) type'
+  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) type'
+  | Int16_signed : (int, int, Bigarray.int16_signed_elt) type'
+  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
+  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
+  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
+  | Float32 : (number_t, float, Bigarray.float32_elt) type'
+  | Float64 : (number_t, float, Bigarray.float64_elt) type'
+
+external kind :
+  ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
   = "caml_ba_kind_of_typed_array"
 
-external from_genarray :
-  ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t -> ('a, 'b) typedArray t
-  = "caml_ba_to_typed_array"
+external from_genarray_impl :
+     ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t
+  -> ('typed_array, 'bigarray, 'elt) typedArray t = "caml_ba_to_typed_array"
 
 external to_genarray :
-  ('a, 'b) typedArray t -> ('a, 'b, Bigarray.c_layout) Bigarray.Genarray.t
-  = "caml_ba_from_typed_array"
+     ('typed_array, 'bigarray, 'elt) typedArray t
+  -> ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t = "caml_ba_from_typed_array"
+
+let from_genarray _ a = from_genarray_impl a
 
 let int8Array = Js.Unsafe.global##._Int8Array
 
@@ -171,12 +187,12 @@ let float64Array_fromBuffer = float64Array
 
 let float64Array_inBuffer = float64Array
 
-let set : ('a, 'b) typedArray t -> int -> 'a -> unit =
+let set : ('a, _, _) typedArray t -> int -> 'a -> unit =
  fun a i v -> array_set (Unsafe.coerce a) i v
 
-let get : ('a, 'b) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
+let get : ('a, _, _) typedArray t -> int -> 'a optdef = fun a i -> Js.Unsafe.get a i
 
-let unsafe_get : ('a, 'b) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
+let unsafe_get : ('a, _, _) typedArray t -> int -> 'a = fun a i -> Js.Unsafe.get a i
 
 class type dataView = object
   inherit arrayBufferView
@@ -193,9 +209,9 @@ class type dataView = object
 
   method getUint16_ : int -> bool t -> int meth
 
-  method getInt32 : int -> int meth
+  method getInt32 : int -> int32 meth
 
-  method getInt32_ : int -> bool t -> int meth
+  method getInt32_ : int -> bool t -> int32 meth
 
   method getUint32 : int -> uint32 meth
 
@@ -221,9 +237,9 @@ class type dataView = object
 
   method setUint16_ : int -> int -> bool t -> unit meth
 
-  method setInt32 : int -> int -> unit meth
+  method setInt32 : int -> int32 -> unit meth
 
-  method setInt32_ : int -> int -> bool t -> unit meth
+  method setInt32_ : int -> int32 -> bool t -> unit meth
 
   method setUint32 : int -> uint32 -> unit meth
 
