@@ -46,9 +46,9 @@ class type performanceEntry =
 
     method entryType : Js.js_string Js.t Js.readonly_prop
 
-    method startTime : float Js.t Js.readonly_prop
+    method startTime : Js.number Js.t Js.readonly_prop
 
-    method duration : float Js.t Js.readonly_prop
+    method duration : Js.number Js.t Js.readonly_prop
   end
 
 class type performanceObserverEntryList =

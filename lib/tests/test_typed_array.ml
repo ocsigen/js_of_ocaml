@@ -30,9 +30,9 @@ module Setup = struct
     | Uint8 : (int, int, Bigarray.int8_unsigned_elt) t
     | Int16 : (int, int, Bigarray.int16_signed_elt) t
     | Uint16 : (int, int, Bigarray.int16_unsigned_elt) t
-    | Int32 : (float Js.t, Int32.t, Bigarray.int32_elt) t
-    | Float32 : (float Js.t, float, Bigarray.float32_elt) t
-    | Float64 : (float Js.t, float, Bigarray.float64_elt) t
+    | Int32 : (Js.number Js.t, Int32.t, Bigarray.int32_elt) t
+    | Float32 : (Js.number Js.t, float, Bigarray.float32_elt) t
+    | Float64 : (Js.number Js.t, float, Bigarray.float64_elt) t
 end
 
 let kind_of_setup : type a b c. (a, b, c) Setup.t -> (b, c) kind = function

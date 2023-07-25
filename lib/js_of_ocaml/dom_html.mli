@@ -381,11 +381,11 @@ and mousewheelEvent =
 
     method wheelDeltaY : int optdef readonly_prop
 
-    method deltaX : float t readonly_prop
+    method deltaX : number t readonly_prop
 
-    method deltaY : float t readonly_prop
+    method deltaY : number t readonly_prop
 
-    method deltaZ : float t readonly_prop
+    method deltaZ : number t readonly_prop
 
     method deltaMode : delta_mode readonly_prop
   end
@@ -590,13 +590,13 @@ and pointerEvent =
 
     method pointerId : int Js.readonly_prop
 
-    method width : float t Js.readonly_prop
+    method width : number t Js.readonly_prop
 
-    method height : float t Js.readonly_prop
+    method height : number t Js.readonly_prop
 
-    method pressure : float t Js.readonly_prop
+    method pressure : number t Js.readonly_prop
 
-    method tangentialPressure : float t Js.readonly_prop
+    method tangentialPressure : number t Js.readonly_prop
 
     method tiltX : int Js.readonly_prop
 
@@ -655,7 +655,7 @@ and animationEvent =
 
     method animationName : js_string t readonly_prop
 
-    method elapsedTime : float t readonly_prop
+    method elapsedTime : number t readonly_prop
 
     method pseudoElement : js_string t readonly_prop
   end
@@ -666,7 +666,7 @@ and transitionEvent =
 
     method propertyName : js_string t readonly_prop
 
-    method elapsedTime : float t readonly_prop
+    method elapsedTime : number t readonly_prop
 
     method pseudoElement : js_string t readonly_prop
   end
@@ -787,17 +787,17 @@ and element =
 (** Rectangular box (used for element bounding boxes) *)
 and clientRect =
   object
-    method top : float t readonly_prop
+    method top : number t readonly_prop
 
-    method right : float t readonly_prop
+    method right : number t readonly_prop
 
-    method bottom : float t readonly_prop
+    method bottom : number t readonly_prop
 
-    method left : float t readonly_prop
+    method left : number t readonly_prop
 
-    method width : float t optdef readonly_prop
+    method width : number t optdef readonly_prop
 
-    method height : float t optdef readonly_prop
+    method height : number t optdef readonly_prop
   end
 
 and clientRectList =
@@ -1496,9 +1496,9 @@ class type timeRanges =
   object
     method length : int readonly_prop
 
-    method start : int -> float t meth
+    method start : int -> number t meth
 
-    method end_ : int -> float t meth
+    method end_ : int -> number t meth
   end
 
 type networkState =
@@ -1534,9 +1534,9 @@ class type mediaElement =
 
     method currentSrc : js_string t readonly_prop
 
-    method currentTime : float t prop
+    method currentTime : number t prop
 
-    method duration : float t readonly_prop
+    method duration : number t readonly_prop
 
     method ended : bool t readonly_prop
 
@@ -1552,7 +1552,7 @@ class type mediaElement =
 
     method paused : bool t readonly_prop
 
-    method playbackRate : float t prop
+    method playbackRate : number t prop
 
     method played : timeRanges t readonly_prop
 
@@ -1568,7 +1568,7 @@ class type mediaElement =
 
     method src : js_string t prop
 
-    method volume : float t prop
+    method volume : number t prop
 
     method oncanplay : ('self t, mediaEvent t) event_listener writeonly_prop
 
@@ -1637,7 +1637,7 @@ class type canvasElement =
 
     method toDataURL_type : js_string t -> js_string t meth
 
-    method toDataURL_type_compression : js_string t -> float t -> js_string t meth
+    method toDataURL_type_compression : js_string t -> number t -> js_string t meth
 
     method getContext : context -> canvasRenderingContext2D t meth
   end
@@ -1650,19 +1650,19 @@ and canvasRenderingContext2D =
 
     method restore : unit meth
 
-    method scale : float t -> float t -> unit meth
+    method scale : number t -> number t -> unit meth
 
-    method rotate : float t -> unit meth
+    method rotate : number t -> unit meth
 
-    method translate : float t -> float t -> unit meth
+    method translate : number t -> number t -> unit meth
 
     method transform :
-      float t -> float t -> float t -> float t -> float t -> float t -> unit meth
+      number t -> number t -> number t -> number t -> number t -> number t -> unit meth
 
     method setTransform :
-      float t -> float t -> float t -> float t -> float t -> float t -> unit meth
+      number t -> number t -> number t -> number t -> number t -> number t -> unit meth
 
-    method globalAlpha : float t prop
+    method globalAlpha : number t prop
 
     method globalCompositeOperation : js_string t prop
 
@@ -1679,15 +1679,15 @@ and canvasRenderingContext2D =
     method fillStyle_pattern : canvasPattern t writeonly_prop
 
     method createLinearGradient :
-      float t -> float t -> float t -> float t -> canvasGradient t meth
+      number t -> number t -> number t -> number t -> canvasGradient t meth
 
     method createRadialGradient :
-         float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
+         number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
       -> canvasGradient t meth
 
     method createPattern : imageElement t -> js_string t -> canvasPattern t meth
@@ -1697,47 +1697,47 @@ and canvasRenderingContext2D =
 
     method createPattern_fromVideo : videoElement t -> js_string t -> canvasPattern t meth
 
-    method lineWidth : float t prop
+    method lineWidth : number t prop
 
     method lineCap : js_string t prop
 
     method lineJoin : js_string t prop
 
-    method miterLimit : float t prop
+    method miterLimit : number t prop
 
-    method shadowOffsetX : float t prop
+    method shadowOffsetX : number t prop
 
-    method shadowOffsetY : float t prop
+    method shadowOffsetY : number t prop
 
-    method shadowBlur : float t prop
+    method shadowBlur : number t prop
 
     method shadowColor : js_string t prop
 
-    method clearRect : float t -> float t -> float t -> float t -> unit meth
+    method clearRect : number t -> number t -> number t -> number t -> unit meth
 
-    method fillRect : float t -> float t -> float t -> float t -> unit meth
+    method fillRect : number t -> number t -> number t -> number t -> unit meth
 
-    method strokeRect : float t -> float t -> float t -> float t -> unit meth
+    method strokeRect : number t -> number t -> number t -> number t -> unit meth
 
     method beginPath : unit meth
 
     method closePath : unit meth
 
-    method moveTo : float t -> float t -> unit meth
+    method moveTo : number t -> number t -> unit meth
 
-    method lineTo : float t -> float t -> unit meth
+    method lineTo : number t -> number t -> unit meth
 
-    method quadraticCurveTo : float t -> float t -> float t -> float t -> unit meth
+    method quadraticCurveTo : number t -> number t -> number t -> number t -> unit meth
 
     method bezierCurveTo :
-      float t -> float t -> float t -> float t -> float t -> float t -> unit meth
+      number t -> number t -> number t -> number t -> number t -> number t -> unit meth
 
-    method arcTo : float t -> float t -> float t -> float t -> float t -> unit meth
+    method arcTo : number t -> number t -> number t -> number t -> number t -> unit meth
 
-    method rect : float t -> float t -> float t -> float t -> unit meth
+    method rect : number t -> number t -> number t -> number t -> unit meth
 
     method arc :
-      float t -> float t -> float t -> float t -> float t -> bool t -> unit meth
+      number t -> number t -> number t -> number t -> number t -> bool t -> unit meth
 
     method fill : unit meth
 
@@ -1745,9 +1745,9 @@ and canvasRenderingContext2D =
 
     method clip : unit meth
 
-    method isPointInPath : float t -> float t -> bool t meth
+    method isPointInPath : number t -> number t -> bool t meth
 
-    method drawFocusRing : #element t -> float t -> float t -> bool t -> bool t meth
+    method drawFocusRing : #element t -> number t -> number t -> bool t -> bool t meth
 
     method font : js_string t prop
 
@@ -1755,85 +1755,85 @@ and canvasRenderingContext2D =
 
     method textBaseline : js_string t prop
 
-    method fillText : js_string t -> float t -> float t -> unit meth
+    method fillText : js_string t -> number t -> number t -> unit meth
 
-    method fillText_withWidth : js_string t -> float t -> float t -> float t -> unit meth
+    method fillText_withWidth : js_string t -> number t -> number t -> number t -> unit meth
 
-    method strokeText : js_string t -> float t -> float t -> unit meth
+    method strokeText : js_string t -> number t -> number t -> unit meth
 
     method strokeText_withWidth :
-      js_string t -> float t -> float t -> float t -> unit meth
+      js_string t -> number t -> number t -> number t -> unit meth
 
     method measureText : js_string t -> textMetrics t meth
 
-    method drawImage : imageElement t -> float t -> float t -> unit meth
+    method drawImage : imageElement t -> number t -> number t -> unit meth
 
     method drawImage_withSize :
-      imageElement t -> float t -> float t -> float t -> float t -> unit meth
+      imageElement t -> number t -> number t -> number t -> number t -> unit meth
 
     method drawImage_full :
          imageElement t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
       -> unit meth
 
-    method drawImage_fromCanvas : canvasElement t -> float t -> float t -> unit meth
+    method drawImage_fromCanvas : canvasElement t -> number t -> number t -> unit meth
 
     method drawImage_fromCanvasWithSize :
-      canvasElement t -> float t -> float t -> float t -> float t -> unit meth
+      canvasElement t -> number t -> number t -> number t -> number t -> unit meth
 
     method drawImage_fullFromCanvas :
          canvasElement t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
       -> unit meth
 
     method drawImage_fromVideoWithVideo :
-      videoElement t -> float t -> float t -> unit meth
+      videoElement t -> number t -> number t -> unit meth
 
     method drawImage_fromVideoWithSize :
-      videoElement t -> float t -> float t -> float t -> float t -> unit meth
+      videoElement t -> number t -> number t -> number t -> number t -> unit meth
 
     method drawImage_fullFromVideo :
          videoElement t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
-      -> float t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
+      -> number t
       -> unit meth
 
     (* Method createImageData not available in Opera *)
     method createImageData : int -> int -> imageData t meth
 
-    method getImageData : float t -> float t -> float t -> float t -> imageData t meth
+    method getImageData : number t -> number t -> number t -> number t -> imageData t meth
 
-    method putImageData : imageData t -> float t -> float t -> unit meth
+    method putImageData : imageData t -> number t -> number t -> unit meth
   end
 
 and canvasGradient =
   object
-    method addColorStop : float t -> js_string t -> unit meth
+    method addColorStop : number t -> js_string t -> unit meth
   end
 
 and textMetrics =
   object
-    method width : float t readonly_prop
+    method width : number t readonly_prop
   end
 
 and imageData =
@@ -2222,16 +2222,16 @@ class type window =
 
     method print : unit meth
 
-    method setInterval : (unit -> unit) Js.callback -> float t -> interval_id meth
+    method setInterval : (unit -> unit) Js.callback -> number t -> interval_id meth
 
     method clearInterval : interval_id -> unit meth
 
-    method setTimeout : (unit -> unit) Js.callback -> float t -> timeout_id meth
+    method setTimeout : (unit -> unit) Js.callback -> number t -> timeout_id meth
 
     method clearTimeout : timeout_id -> unit meth
 
     method requestAnimationFrame :
-      (float t -> unit) Js.callback -> animation_frame_request_id meth
+      (number t -> unit) Js.callback -> animation_frame_request_id meth
 
     method cancelAnimationFrame : animation_frame_request_id -> unit meth
 
@@ -2278,7 +2278,7 @@ class type window =
 
     method _URL : _URL t readonly_prop
 
-    method devicePixelRatio : float t readonly_prop
+    method devicePixelRatio : number t readonly_prop
   end
 
 val window : window t

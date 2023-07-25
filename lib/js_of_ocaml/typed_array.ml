@@ -20,9 +20,9 @@
 open! Import
 open Js
 
-type int32 = float Js.t
+type int32 = Js.number Js.t
 
-type uint32 = float Js.t
+type uint32 = Js.number Js.t
 
 class type arrayBuffer =
   object
@@ -81,9 +81,9 @@ type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
 
 type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
 
-type float32Array = (float Js.t, float, Bigarray.float32_elt) typedArray
+type float32Array = (Js.number Js.t, float, Bigarray.float32_elt) typedArray
 
-type float64Array = (float Js.t, float, Bigarray.float64_elt) typedArray
+type float64Array = (Js.number Js.t, float, Bigarray.float64_elt) typedArray
 
 type ('bigarray, 'typed_array, 'elt) type' =
   | Char : (int, char, Bigarray.int8_unsigned_elt) type'
@@ -93,8 +93,8 @@ type ('bigarray, 'typed_array, 'elt) type' =
   | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
   | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
   | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
-  | Float32 : (float Js.t, float, Bigarray.float32_elt) type'
-  | Float64 : (float Js.t, float, Bigarray.float64_elt) type'
+  | Float32 : (Js.number Js.t, float, Bigarray.float32_elt) type'
+  | Float64 : (Js.number Js.t, float, Bigarray.float64_elt) type'
 
 external kind :
   ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
@@ -221,13 +221,13 @@ class type dataView =
 
     method getUint32_ : int -> bool t -> uint32 meth
 
-    method getFloat32 : int -> float Js.t meth
+    method getFloat32 : int -> Js.number Js.t meth
 
-    method getFloat32_ : int -> bool t -> float Js.t meth
+    method getFloat32_ : int -> bool t -> Js.number Js.t meth
 
-    method getFloat64 : int -> float Js.t meth
+    method getFloat64 : int -> Js.number Js.t meth
 
-    method getFloat64_ : int -> bool t -> float Js.t meth
+    method getFloat64_ : int -> bool t -> Js.number Js.t meth
 
     method setInt8 : int -> int -> unit meth
 
@@ -249,13 +249,13 @@ class type dataView =
 
     method setUint32_ : int -> uint32 -> bool t -> unit meth
 
-    method setFloat32 : int -> float Js.t -> unit meth
+    method setFloat32 : int -> Js.number Js.t -> unit meth
 
-    method setFloat32_ : int -> float Js.t -> bool t -> unit meth
+    method setFloat32_ : int -> Js.number Js.t -> bool t -> unit meth
 
-    method setFloat64 : int -> float Js.t -> unit meth
+    method setFloat64 : int -> Js.number Js.t -> unit meth
 
-    method setFloat64_ : int -> float Js.t -> bool t -> unit meth
+    method setFloat64_ : int -> Js.number Js.t -> bool t -> unit meth
   end
 
 let dataView = Js.Unsafe.global##._DataView
