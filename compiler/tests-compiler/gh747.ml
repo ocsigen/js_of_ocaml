@@ -353,8 +353,8 @@ end
     128:         (Stdlib_Printf[1], outchan, _c_, str);
     129:       }
     130:        /*<<test.ml:69:6>>*/  /*<<test.ml:69:6>>*/ var _g_ = i + 1 | 0;
-    131:       if(_f_ !== i){var i = _g_; continue;}
-    132:       break;
+    131:       if(_f_ === i) break;
+    132:       var i = _g_;
     133:      }
     134:     }
     135:     return 0;
