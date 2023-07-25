@@ -1,3 +1,7 @@
+# Dev (2023-??-??) - ??
+
+* Runtime: fix Dom_html.onIE (#1493)
+
 # 5.4.0 (2023-07-06) - Lille
 
 ## Bug fixes
