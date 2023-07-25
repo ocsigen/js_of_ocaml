@@ -36,9 +36,9 @@ let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
 
-let deadcode' _global_info p =
+let deadcode' global_info p =
   if debug () then Format.eprintf "Dead-code...@.";
-  (* let p = Deadcode_dgraph.f p global_info in *)
+  let p = Deadcode_dgraph.f p global_info in
   let p, live_vars = Deadcode.f p in
   p, live_vars
 
@@ -98,16 +98,9 @@ let effects p =
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
-let exact_calls profile p =
+let exact_calls global_info p =
   if not (Config.Flag.effects ())
-  then
-    let fast =
-      match profile with
-      | O3 -> false
-      | O1 | O2 -> true
-    in
-    let info = Global_flow.f ~fast p in
-    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+  then Specialize.f ~function_arity:(fun f -> Global_flow.function_arity global_info f) p
   else p
 
 let print p =
@@ -586,7 +579,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O1 -> o1 global_info
        | O2 -> o2 global_info
        | O3 -> o3 global_info)
-    +> exact_calls profile
+    +> exact_calls global_info
     +> effects
     +> map_fst (Generate_closure.f +> deadcode' global_info)
   in
