@@ -30,6 +30,9 @@ type control_flow_graph =
   ; block_order : (Addr.t, int) Hashtbl.t
   }
 
+let is_backward g pc pc' = Hashtbl.find g.block_order pc >= Hashtbl.find g.block_order pc'
+let is_forward g pc pc' = Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
   let l = ref [] in
@@ -79,7 +82,7 @@ let dominator_tree g =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+    else if is_forward g pc pc'
     then inter pc (Hashtbl.find dom pc')
     else inter (Hashtbl.find dom pc) pc'
   in
@@ -87,7 +90,7 @@ let dominator_tree g =
       let l = Hashtbl.find g.succs pc in
       Addr.Set.iter
         (fun pc' ->
-          if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+          if is_forward g pc pc'
           then
             let d = try inter pc (Hashtbl.find dom pc') with Not_found -> pc in
             Hashtbl.replace dom pc' d)
@@ -97,7 +100,7 @@ let dominator_tree g =
       let l = Hashtbl.find g.succs pc in
       Addr.Set.iter
         (fun pc' ->
-          if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+          if is_forward g pc pc'
           then
             let d = Hashtbl.find dom pc' in
             assert (inter pc d = d))
@@ -107,7 +110,7 @@ let dominator_tree g =
 (* pc dominates pc' *)
 let rec dominates g idom pc pc' =
   pc = pc'
-  || Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+  || is_forward g pc pc'
      && dominates g idom pc (Hashtbl.find idom pc')
 
 (* pc has at least two forward edges moving into it *)
@@ -127,7 +130,6 @@ let is_loop_header g pc =
   let o = Hashtbl.find g.block_order pc in
   Addr.Set.exists (fun pc' -> Hashtbl.find g.block_order pc' >= o) s
 
-let is_backward g pc pc' = Hashtbl.find g.block_order pc >= Hashtbl.find g.block_order pc'
 
 let dominance_frontier g idom =
   let frontiers = Hashtbl.create 16 in
