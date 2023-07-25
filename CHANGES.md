@@ -8,6 +8,7 @@
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
 * Compiler: fix global flow analysis (#1494)
+* Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
 
 # 5.4.0 (2023-07-06) - Lille
 
