@@ -43,25 +43,27 @@ let%expect_test "conditional" =
   [%expect
     {|
     function f(a, b, c, d, e, f){
-     var switch$0 = 0;
-     if(a){
-      if(! b && ! c && ! d && ! e && ! f){var x = 1; switch$0 = 1;}
+     a:
+     {
+      b:
+      if(a){
+       if(! b && ! c && ! d && ! e && ! f){var x = 1; break a;}
+      }
+      else if(b){
+       if(! c && ! d){if(e) break b; if(f) break b; var x = 2; break a;}
+      }
+      else if(c){
+       if(! d && ! e && ! f){var x = 3; break a;}
+      }
+      else if(d){
+       if(! e && ! f){var x = 4; break a;}
+      }
+      else{
+       if(! e){if(f){var x = 6; break a;} var x = 100; break a;}
+       if(! f){var x = 5; break a;}
+      }
+      var x = - 1;
      }
-     else if(b){
-      var switch$1 = 0;
-      if(c || d) switch$1 = 1; else if(! e && ! f){var x = 2; switch$0 = 1;}
-     }
-     else if(c){
-      if(! d && ! e && ! f){var x = 3; switch$0 = 1;}
-     }
-     else if(d){
-      if(! e && ! f){var x = 4; switch$0 = 1;}
-     }
-     else if(e){
-      if(! f){var x = 5; switch$0 = 1;}
-     }
-     else if(f){var x = 6; switch$0 = 1;} else{var x = 100; switch$0 = 1;}
-     if(! switch$0) var x = - 1;
      return x + 2 | 0;
     }
     //end |}]

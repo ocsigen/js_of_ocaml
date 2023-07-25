@@ -33,11 +33,15 @@ let prevent_inline = some_name
   [%expect
     {|
     function some_name(param){
-     try{
-      try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
-      catch(x$0){var x = caml_wrap_exception(x$0), i$0 = x;}
+     a:
+     {
+      try{
+       try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
+       catch(x$0){var x = caml_wrap_exception(x$0);}
+      }
+      catch(i$1){var i = caml_wrap_exception(i$1), i$0 = i; break a;}
+      var i$0 = x;
      }
-     catch(i$1){var i = caml_wrap_exception(i$1), i$0 = i;}
      throw caml_maybe_attach_backtrace(i$0, 1);
     }
     //end |}];
