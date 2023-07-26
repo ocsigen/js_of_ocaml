@@ -104,7 +104,9 @@ let exact_calls profile p =
       | O3 -> false
       | O1 | O2 -> true
     in
+    let p, sentinal = Deadcode_dgraph.add_sentinal p in
     let info = Global_flow.f ~fast p in
+    let p = Deadcode_dgraph.f p sentinal info in
     Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
   else p
 
