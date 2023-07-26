@@ -32,13 +32,14 @@ let () =
   in
   Util.compile_and_run prog;
   [%expect {|
-    undefined
-    undefined |}];
+    7
+    7 |}];
   let program = Util.compile_and_parse prog in
   Util.print_fun_decl program (Some "bug");
-  [%expect {|
+  [%expect
+    {|
     function bug(param){
      var g = [0, function(x){return function(_c_){return _c_;};}];
-     return [0, function(param){return g[1].call(null, 1);}, g];
+     return [0, function(param){return caml_call1(g[1], 1);}, g];
     }
     //end |}]
