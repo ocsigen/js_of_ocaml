@@ -22,7 +22,8 @@
 //Provides: caml_js_on_ie const
 function caml_js_on_ie () {
   var ua =
-      globalThis.navigator?globalThis.navigator.userAgent:"";
+      (globalThis.navigator&&globalThis.navigator.userAgent)
+      ?globalThis.navigator.userAgent:"";
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
