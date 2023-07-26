@@ -327,8 +327,27 @@
             isNode && process.exit(e.getArg(exit_tag, 0));
           const exn_tag = wasmModule.instance.exports.ocaml_exception;
           if (exn_tag && e.is(exn_tag)) {
-            console.log('Uncaught exception')
-            isNode && process.exit(1)
+            var exn = e.getArg(exn_tag, 0)
+            var handle_uncaught_exception =
+              wasmModule.instance.exports.caml_named_value
+                ('Printexc.handle_uncaught_exception');
+            if (handle_uncaught_exception)
+              wasmModule.instance.exports.caml_callback
+                (handle_uncaught_exception, 2, [exn, 0], 0)
+            else {
+                var at_exit =
+                    wasmModule.instance.exports.caml_named_value
+                      ('Pervasives.do_at_exit');
+                if (at_exit)
+                    wasmModule.instance.exports.caml_callback
+                      (at_exit, 1, [0], 0);
+                console.error (
+                    "Fatal error: exception " +
+                        wasmModule.instance.exports.caml_format_exception(exn) +
+                        "\n"
+                )
+            }
+            isNode && process.exit(2)
           }
         } else {
             throw e;

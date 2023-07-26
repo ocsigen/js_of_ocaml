@@ -67,4 +67,20 @@
          (array.get $block (global.get $caml_global_data)
                     (global.get $NOT_FOUND_EXN))))
 
+   (global $MATCH_FAILURE_EXN i32 (i32.const 7))
+   (global $ASSERT_FAILURE_EXN i32 (i32.const 10))
+   (global $UNDEFINED_RECURSIVE_MODULE_EXN i32 (i32.const 11))
+
+   (func (export "caml_is_special_exception") (param (ref eq)) (result i32)
+      (i32.or
+         (ref.eq (local.get 0)
+            (array.get $block (global.get $caml_global_data)
+               (global.get $MATCH_FAILURE_EXN)))
+         (i32.or
+            (ref.eq (local.get 0)
+               (array.get $block (global.get $caml_global_data)
+                  (global.get $ASSERT_FAILURE_EXN)))
+            (ref.eq (local.get 0)
+               (array.get $block (global.get $caml_global_data)
+                  (global.get $UNDEFINED_RECURSIVE_MODULE_EXN))))))
 )

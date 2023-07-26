@@ -1,12 +1,20 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "exit"],
+    "reaches": ["init", "exn", "exit", "named_values", "format_exn", "callback"],
     "root": true
   },
   {
     "name": "init",
     "export": "_initialize"
+  },
+  {
+    "name": "named_values",
+    "export": "caml_named_value"
+  },
+  {
+    "name": "format_exn",
+    "export": "caml_format_exception"
   },
   {
     "name": "exn",
@@ -82,5 +90,5 @@
     "name": "start_fiber",
     "import": ["bindings", "start_fiber"],
     "reaches": ["effects"]
-  },
+  }
 ]
