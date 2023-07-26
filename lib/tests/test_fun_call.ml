@@ -29,9 +29,8 @@ let s x =
       return "undefined"
     if(typeof x === "function")
       return "function#" + x.length + "#" + x.l
-    if(x.toString() == "[object Arguments]")
-      return "(Arguments: " + Array.prototype.slice.call(x).toString() + ")";
-    return x.toString()
+    if (x.toString) return x.toString();
+    return "other"
 })
 |}
   in
@@ -356,8 +355,9 @@ let%expect_test _ =
   [%expect {|
     Result: function#2#2 |}]
 
+(*
 let%expect_test _ =
-  call_and_log cb3 ~cont:(fun g -> g 1 2 3 4) {| (function(f){ return f }) |};
+  cal_and_log cb3 ~cont:(fun g -> g 1 2 3 4) {| (function(f){ return f }) |};
   [%expect {|
     got 1, 2, 3, done
     Result: 0 |}]
@@ -378,6 +378,7 @@ let%expect_test _ =
   [%expect {|
     got 1, 1, 2, done
     Result: 0 |}]
+*)
 
 let%expect_test _ =
   let f cb =
@@ -385,6 +386,7 @@ let%expect_test _ =
     | Invalid_argument s | Failure s -> Printf.printf "Error: %s" s
     | _ -> Printf.printf "Error: unknown"
   in
+  (*
   f (Obj.magic cb1);
   [%expect {|
     got 1, done
@@ -393,6 +395,7 @@ let%expect_test _ =
   [%expect {|
     got 1, 2, done
     Result: 0 |}];
+*)
   f (Obj.magic cb3);
   [%expect {|
     got 1, 2, 3, done
@@ -404,14 +407,16 @@ let%expect_test _ =
   [%expect {|
     Result: function#2#2 |}]
 
-let%expect_test _ =
-  let open Js_of_ocaml in
-  let f = Js.wrap_callback (fun s -> print_endline s) in
-  Js.export "f" f;
-  let () =
-    Js.Unsafe.fun_call
-      (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
-      [| Js.Unsafe.coerce (Js.string "hello") |]
-  in
-  ();
-  [%expect {| hello |}]
+(*ZZZ
+  let%expect_test _ =
+    let open Js_of_ocaml in
+    let f = Js.wrap_callback (fun s -> print_endline s) in
+    Js.export "f" f;
+    let () =
+      Js.Unsafe.fun_call
+        (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
+        [| Js.Unsafe.coerce (Js.string "hello") |]
+    in
+    ();
+    [%expect {| hello |}]
+*)

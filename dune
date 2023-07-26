@@ -9,6 +9,10 @@
     (:standard --enable effects))
    (build_runtime_flags
     (:standard --enable effects))))
+ (wasm
+  (binaries (tools/node_wrapper.sh as node))
+  (js_of_ocaml
+   (target wasm)))
  (bench_no_debug
   (flags
    (:standard \ -g))

@@ -48,11 +48,13 @@ let prefix : string =
 type enabled_if =
   | GE5
   | No_effects
+  | Not_wasm
   | Any
 
 let enabled_if = function
   | "test_sys" -> GE5
   | "test_fun_call" -> No_effects
+  | "test_json" -> Not_wasm
   | _ -> Any
 
 let () =
@@ -80,5 +82,6 @@ let () =
            (match enabled_if basename with
            | Any -> "true"
            | GE5 -> "(>= %{ocaml_version} 5)"
-           | No_effects -> "(<> %{profile} using-effects)")
+           | No_effects -> "(<> %{profile} using-effects)"
+           | Not_wasm -> "(<> %{profile} wasm)")
            basename)

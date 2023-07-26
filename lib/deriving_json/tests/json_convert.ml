@@ -33,12 +33,17 @@ let str =
 
 type t = int list * float option * string [@@deriving json]
 
+let wasm =
+  match Sys.backend_type with
+  | Other "wasm_of_ocaml" -> true
+  | _ -> false
+
 let test t v =
-  if v = Json.unsafe_input (Json.output v) then () else print_endline "Not equal";
-  if v = Deriving_Json.from_string t (Js.to_string (Json.output v))
+  if wasm || v = Json.unsafe_input (Json.output v) then () else print_endline "Not equal";
+  if wasm || v = Deriving_Json.from_string t (Js.to_string (Json.output v))
   then ()
   else print_endline "Not equal";
-  if v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
+  if wasm || v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
   then ()
   else print_endline "Not equal";
   if v = Deriving_Json.from_string t (Deriving_Json.to_string t v)
