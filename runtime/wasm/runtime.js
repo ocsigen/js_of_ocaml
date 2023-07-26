@@ -27,6 +27,8 @@
        Uint16Array, Int32Array, Int32Array, Int32Array, Int32Array,
        Float32Array, Float64Array, Uint8Array]
 
+    const fs = isNode&&require('fs')
+
     var start_fiber
 
     function wrap_fun (t,f,a) {
@@ -236,6 +238,11 @@
            var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
            return res.signal?128:status
          },
+         getcwd:()=>isNode?process.cwd():'/static',
+         chdir:(x)=>process.chdir(x),
+         unlink:(p)=>fs.unlinkSync(p),
+         readdir:(p)=>fs.readdirSync(p),
+         file_exists:(p)=>+fs.existsSync(p),
          start_fiber:(x)=>start_fiber(x),
          suspend_fiber:
          wrap_fun(
