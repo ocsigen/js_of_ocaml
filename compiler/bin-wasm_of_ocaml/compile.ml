@@ -92,7 +92,12 @@ let dead_code_elimination in_file out_file =
 let optimize in_file out_file =
   command
     (("wasm-opt" :: common_binaryen_options)
-    @ [ "-O3"; Filename.quote in_file; "-o"; Filename.quote out_file ])
+    @ [ "-O2"
+      ; "--skip-pass=inlining-optimizing"
+      ; Filename.quote in_file
+      ; "-o"
+      ; Filename.quote out_file
+      ])
 
 let link_and_optimize runtime_wasm_files wat_file output_file =
   with_intermediate_file (Filename.temp_file "runtime" ".wasm")
