@@ -148,9 +148,12 @@
    (func (export "caml_js_meth_call")
       (param $o (ref eq)) (param $f (ref eq)) (param $args (ref eq))
       (result (ref eq))
+      (if (ref.test $string (local.get $f))
+         (then
+            (local.set $f (call $caml_jsbytes_of_string (local.get $f)))))
       (return_call $wrap
          (call $meth_call (call $unwrap (local.get $o))
-            (call $unwrap (call $caml_jsstring_of_string (local.get $f)))
+            (call $unwrap (local.get $f))
             (call $unwrap (call $caml_js_from_array (local.get $args))))))
 
    (func (export "caml_js_get")
@@ -176,7 +179,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test $string (local.get 1))
          (then
-            (local.set 1 (call $caml_jsstring_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (call $delete (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))
       (i31.new (i32.const 0)))
 
@@ -533,7 +536,7 @@
       (local.set $i (i32.const 0))
       (local.set $l (i31.new (i32.const 0)))
       (loop $loop
-         (if (i32.le_u (local.get $i) (local.get $len))
+         (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (local.set $l
                   (array.new_fixed $block (i31.new (i32.const 0))

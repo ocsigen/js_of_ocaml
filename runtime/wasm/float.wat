@@ -730,7 +730,7 @@
                               (i64.const 0x3ff))
                      (i64.const 52)))))
 
-   (func (export "caml_ldexp")
+   (func (export "caml_ldexp_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (struct.new $float
          (call $ldexp (struct.get $float 0 (ref.cast $float (local.get 0)))
