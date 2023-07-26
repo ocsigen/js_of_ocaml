@@ -16,4 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Code.program -> Global_flow.info -> Code.program
+val add_sentinal : Code.program -> Code.program * Code.Var.t
+
+val f : Code.program -> Code.Var.t -> Global_flow.info -> Code.program

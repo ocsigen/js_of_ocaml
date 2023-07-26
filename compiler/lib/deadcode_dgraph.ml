@@ -21,6 +21,8 @@ open Stdlib
 
 let debug = Debug.find "globaldeadcode"
 
+let times = Debug.find "times"
+
 type def =
   | Expr of expr
   | Param
@@ -197,7 +199,6 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
                 args
           | _ -> ())
     | Assign (_, _) -> ()
-    (* TODO: what to do with these? *)
     | Set_field (x, i, y) ->
         add_live x i;
         add_top y
@@ -246,7 +247,7 @@ let propagate uses defs live_vars live_table x =
                   vars;
                 if !found then Top else Dead
             | _ -> Top)
-        (* If y is top, then if y is a field access, x depends only on that field *)
+        (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
             match defs.(Var.idx y) with
             | Expr (Field (_, i)) -> Live (IntSet.singleton i)
@@ -268,11 +269,6 @@ let solver vars uses defs live_vars =
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
 let zero prog sentinal live_table =
-  let add_sentinal_instr blocks =
-    let block = Addr.Map.find 0 blocks in
-    let body = (Let (sentinal, Constant (Int 0l)), Before 0) :: block.body in
-    Addr.Map.add 0 { block with body } blocks
-  in
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
     while !i >= 0 && Var.equal vars.(!i) sentinal do
@@ -347,7 +343,7 @@ let zero prog sentinal live_table =
     in
     { block with body; branch }
   in
-  let blocks = prog.blocks |> Addr.Map.map zero_block |> add_sentinal_instr in
+  let blocks = prog.blocks |> Addr.Map.map zero_block in
   { prog with blocks }
 
 module Print = struct
@@ -397,8 +393,13 @@ module Print = struct
       live_table
 end
 
-let f p global_info =
-  let _sentinal = Var.fresh () in
+let add_sentinal p =
+  let sentinal = Var.fresh () in
+  let instr, loc = Let (sentinal, Constant (Int 0l)), Before 0 in
+  Code.prepend p [ instr, loc ], sentinal
+
+let f p sentinal global_info =
+  let t = Timer.make () in
   let nv = Var.count () in
   (* Compute definitions *)
   let defs = definitions nv p in
@@ -411,11 +412,14 @@ let f p global_info =
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
   (* Zero out dead fields *)
-  (* let p = zero p sentinal live_table in *)
+  let p = zero p sentinal live_table in
   if debug ()
   then (
+    Code.Print.program (fun _ _ -> "") p;
+    Print.print_liveness live_vars;
     Print.print_uses uses;
     Print.print_live_tbl live_table;
     Format.eprintf "After Elimination:\n";
     Code.Print.program (fun _ _ -> "") p);
+  if times () then Format.eprintf "  deadcode dgraph.: %a@." Timer.print t;
   p
