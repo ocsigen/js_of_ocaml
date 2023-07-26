@@ -276,6 +276,26 @@
                (br $loop))))
       (local.get $a'))
 
+   (func (export "caml_js_to_string_array")
+      (param $a (ref extern)) (result (ref eq))
+      (local $a' (ref $block)) (local $l i32) (local $i i32)
+      (local.set $l (call $array_length (local.get $a)))
+      (local.set $a'
+         (array.new $block (i31.new (i32.const 0))
+            (i32.add (local.get $l) (i32.const 1))))
+      (local.set $i (i32.const 0))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (array.set $block (local.get $a')
+                  (i32.add (local.get $i) (i32.const 1))
+                  (call $caml_string_of_jsstring
+                     (call $wrap
+                        (call $array_get (local.get $a) (local.get $i)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (local.get $a'))
+
    (func $caml_js_wrap_callback (export "caml_js_wrap_callback")
       (param (ref eq)) (result (ref eq))
       (return_call $wrap (call $wrap_callback (local.get 0))))

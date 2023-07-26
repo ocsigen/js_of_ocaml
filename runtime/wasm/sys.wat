@@ -6,9 +6,21 @@
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "random_seed" (func $random_seed (result (ref extern))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
+   (import "jslib" "caml_string_of_jsstring"
+      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
+   (import "jslib" "caml_js_to_string_array"
+      (func $caml_js_to_string_array (param $a (ref extern)) (result (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
+   (import "bindings" "argv" (func $argv (result (ref extern))))
+   (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
+   (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
+   (import "bindings" "array_length"
+      (func $array_length (param (ref extern)) (result i32)))
+   (import "bindings" "array_get"
+      (func $array_get (param (ref extern)) (param i32) (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -21,24 +33,24 @@
    (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
    (func $caml_sys_getenv (export "caml_sys_getenv")
       (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_sys_getenv"))
-      (call $log_js
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
-      (call $caml_raise_not_found)
-      (i31.new (i32.const 0)))
+      (local $res anyref)
+      (local.set $res
+         (call $getenv
+            (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+      (if (i32.eqz (ref.test string (local.get $res)))
+         (then
+            (call $caml_raise_not_found)))
+      (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
 
    (func (export "caml_sys_argv") (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_argv"))
-      (array.new_fixed $block (i31.new (i32.const 0))
-         (array.new_fixed $string (i32.const 97))))
+      (call $caml_js_to_string_array (call $argv)))
 
    (func (export "caml_sys_executable_name")
       (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_sys_executable_name"))
-      (i31.new (i32.const 0)))
+      (array.get $block
+         (ref.cast $block (call $caml_js_to_string_array (call $argv)))
+         (i32.const 1)))
 
    (export "caml_sys_time_include_children" (func $caml_sys_time))
    (func $caml_sys_time (export "caml_sys_time")
@@ -50,8 +62,8 @@
    (func (export "caml_sys_system_command")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_system_command"))
-      (i31.new (i32.const 0)))
+      (return_call $system
+         (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
 
    (func (export "caml_sys_random_seed")
       (param (ref eq)) (result (ref eq))
@@ -93,19 +105,16 @@
    (func (export "caml_sys_const_ostype_unix")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_const_ostype_unix"))
       (i31.new (i32.const 1)))
 
    (func (export "caml_sys_const_ostype_win32")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_const_ostype_win32"))
       (i31.new (i32.const 0)))
 
    (func (export "caml_sys_const_ostype_cygwin")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_const_ostype_cygwin"))
       (i31.new (i32.const 0)))
 
    (data $Unix "Unix")
@@ -113,7 +122,7 @@
    (func (export "caml_sys_get_config")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "caml_sys_get_config"))
+      ;; (call $log_js (string.const "caml_sys_get_config"))
       (array.new_fixed $block (i31.new (i32.const 0))
          (array.new_data $string $Unix (i32.const 0) (i32.const 4))
          (i31.new (i32.const 32))

@@ -230,6 +230,12 @@
          },
          mktime:(year,month,day,h,m,s)=>new Date(year,month,day,h,m,s).getTime(),
          random_seed:()=>crypto.getRandomValues(new Int32Array(12)),
+         argv:()=>isNode?process.argv.slice(1):['a.out'],
+         getenv:(n)=>isNode?process.env[n]:null,
+         system:(c)=>{
+           var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
+           return res.signal?128:status
+         },
          start_fiber:(x)=>start_fiber(x),
          suspend_fiber:
          wrap_fun(
