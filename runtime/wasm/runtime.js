@@ -29,6 +29,37 @@
 
     const fs = isNode&&require('fs')
 
+    let fs_cst = fs?.constants;
+
+    let open_flags =
+      fs?[fs_cst.RDONLY,fs_cst.O_WRONLY,fs_cst.O_APPEND,fs_cst.O_CREAT,
+          fs_cst.O_TRUNC,fs_cst.O_EXCL,fs_cst.O_NONBLOCK]:[]
+
+    var out_channels =
+      { map : new WeakMap(), set : new Set(),
+        finalization :
+          new FinalizationRegistry ((ref)=>out_channels.set.delete(ref)) };
+
+    function register_channel (ch) {
+      const ref = new WeakRef (ch);
+      out_channels.map.set(ch, ref);
+      out_channels.set.add(ref);
+      out_channels.finalization.register(ch, ref, ch);
+    }
+
+    function unregister_channel (ch) {
+      const ref = out_channels.map.get(ch);
+      if (ref) {
+        out_channels.map.delete(ch);
+        out_channels.set.delete(ref);
+        out_channels.finalization.unregister(ch);
+      }
+    }
+
+    function channel_list () {
+      return [...out_channels.set].map((ref) => ref.deref()).filter((ch)=>ch);
+    }
+
     var start_fiber
 
     function wrap_fun (t,f,a) {
@@ -232,6 +263,16 @@
          },
          mktime:(year,month,day,h,m,s)=>new Date(year,month,day,h,m,s).getTime(),
          random_seed:()=>crypto.getRandomValues(new Int32Array(12)),
+         open:(p,flags,perm)=>
+           fs.openSync(p,open_flags.reduce((f,v,i)=>(flags&(1<<i))?(f|v):f,0),
+                       perm),
+         close:(fd)=>fs.closeSync(fd),
+         write:(fd,b,o,l)=>fs.writeSync(fd,b,o,l),
+         read:(fd,b,o,l,p)=>fs.readSync(fd,b,o,l,p),
+         file_size:(fd)=>fs.fstatSync(fd,{bigint:true}).size,
+         register_channel,
+         unregister_channel,
+         channel_list,
          argv:()=>isNode?process.argv.slice(1):['a.out'],
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
