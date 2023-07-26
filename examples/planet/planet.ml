@@ -355,7 +355,13 @@ let shadow texture =
   let canvas = create_canvas w h in
   let ctx = canvas##getContext Html._2d_ in
   let w, h = w / 8, h / 8 in
-  let img = ctx##getImageData 0. 0. (float w) (float h) in
+  let img =
+    ctx##getImageData
+      (Js.float 0.)
+      (Js.float 0.)
+      (Js.float (float w))
+      (Js.float (float h))
+  in
   let data = img##.data in
   let inv_gamma = 1. /. gamma in
   let update_shadow obliquity =
@@ -382,12 +388,14 @@ let shadow texture =
         Html.pixel_set data (k' + 3) c
       done
     done;
-    ctx##putImageData img 0. 0.;
+    ctx##putImageData img (Js.float 0.) (Js.float 0.);
     ctx##.globalCompositeOperation := Js.string "copy";
     ctx##save;
-    ctx##scale (8. *. float (w + 2) /. float w) (8. *. float (h + 2) /. float h);
-    ctx##translate (-1.) (-1.);
-    ctx##drawImage_fromCanvas canvas 0. 0.;
+    ctx##scale
+      (Js.float (8. *. float (w + 2) /. float w))
+      (Js.float (8. *. float (h + 2) /. float h));
+    ctx##translate (Js.float (-1.)) (Js.float (-1.));
+    ctx##drawImage_fromCanvas canvas (Js.float 0.) (Js.float 0.);
     ctx##restore
   in
   update_shadow obliquity;
@@ -401,15 +409,15 @@ let shadow texture =
     then (
       no_lighting := false;
       let phi = mod_float phi (2. *. pi) in
-      ctx'##drawImage texture 0. 0.;
+      ctx'##drawImage texture (Js.float 0.) (Js.float 0.);
       let i =
         truncate (mod_float (((2. *. pi) -. phi) *. float w /. 2. /. pi) (float w))
       in
-      ctx'##drawImage_fromCanvas canvas (float i) 0.;
-      ctx'##drawImage_fromCanvas canvas (float i -. float w) 0.)
+      ctx'##drawImage_fromCanvas canvas (Js.float (float i)) (Js.float 0.);
+      ctx'##drawImage_fromCanvas canvas (Js.float (float i -. float w)) (Js.float 0.))
     else if not !no_lighting
     then (
-      ctx'##drawImage texture 0. 0.;
+      ctx'##drawImage texture (Js.float 0.) (Js.float 0.);
       no_lighting := true)
   in
   (*
@@ -481,9 +489,9 @@ let draw ctx _img shd o _uv normals face_info dir =
       if dot_product normals.(i) dir >= 0.
       then (
         ctx##beginPath;
-        ctx##moveTo x1 y1;
-        ctx##lineTo x2 y2;
-        ctx##lineTo x3 y3;
+        ctx##moveTo (Js.float x1) (Js.float y1);
+        ctx##lineTo (Js.float x2) (Js.float y2);
+        ctx##lineTo (Js.float x3) (Js.float y3);
         ctx##closePath;
         ctx##save;
         ctx##clip;
@@ -498,7 +506,13 @@ let draw ctx _img shd o _uv normals face_info dir =
         let d = (dy2 *. dv3) -. (dy3 *. dv2) in
         let e = (dy2 *. du3) -. (dy3 *. du2) in
         let f = y1 -. (d *. u1) -. (e *. v1) in
-        ctx##transform a d b e c f;
+        ctx##transform
+          (Js.float a)
+          (Js.float d)
+          (Js.float b)
+          (Js.float e)
+          (Js.float c)
+          (Js.float f);
         (*
 let (u1, v1) = uv.(v1) in
 let (u2, v2) = uv.(v2) in
@@ -546,7 +560,16 @@ let v' = min th (max v1 (max v2 v3) +. 4.) in
 let du = u' -. u in
 let dv = v' -. v in
 *)
-        ctx##drawImage_fullFromCanvas shd u v du dv u v du dv;
+        ctx##drawImage_fullFromCanvas
+          shd
+          (Js.float u)
+          (Js.float v)
+          (Js.float du)
+          (Js.float dv)
+          (Js.float u)
+          (Js.float v)
+          (Js.float du)
+          (Js.float dv);
         ctx##restore))
     o.faces
 
@@ -694,7 +717,7 @@ let start _ =
                       Js._true))
                  Js._true);
           Js._false);
-    let ti = ref (new%js Js.date_now)##getTime in
+    let ti = ref (Js.to_float (new%js Js.date_now)##getTime) in
     let fps = ref 0. in
     let rec loop t phi =
       let rotation = xz_rotation (phi -. !phi_rot) in
@@ -702,21 +725,40 @@ let start _ =
       let m = matrix_mul !m (matrix_mul !m_obliq rotation) in
       let o' = rotate_object m o in
       let v' = rotate_normal m v in
-      ctx'##clearRect 0. 0. (float width) (float height);
+      ctx'##clearRect
+        (Js.float 0.)
+        (Js.float 0.)
+        (Js.float (float width))
+        (Js.float (float height));
       ctx'##save;
       if !clipped
       then (
         ctx'##beginPath;
-        ctx'##arc r r (r *. 0.95) 0. (-2. *. pi) Js._true;
+        ctx'##arc
+          (Js.float r)
+          (Js.float r)
+          (Js.float (r *. 0.95))
+          (Js.float 0.)
+          (Js.float (-2. *. pi))
+          Js._true;
         ctx'##clip);
-      ctx'##setTransform (r -. 2.) 0. 0. (r -. 2.) r r;
+      ctx'##setTransform
+        (Js.float (r -. 2.))
+        (Js.float 0.)
+        (Js.float 0.)
+        (Js.float (r -. 2.))
+        (Js.float r)
+        (Js.float r);
       ctx'##.globalCompositeOperation := Js.string "lighter";
       draw ctx' texture shd o' uv normals face_info v';
       ctx'##restore;
       ctx##.globalCompositeOperation := Js.string "copy";
-      ctx##drawImage_fromCanvas canvas' 0. 0.;
-      (try ignore (ctx##getImageData 0. 0. 1. 1.) with _ -> ());
-      let t' = (new%js Js.date_now)##getTime in
+      ctx##drawImage_fromCanvas canvas' (Js.float 0.) (Js.float 0.);
+      (try
+         ignore
+           (ctx##getImageData (Js.float 0.) (Js.float 0.) (Js.float 1.) (Js.float 1.))
+       with _ -> ());
+      let t' = Js.to_float (new%js Js.date_now)##getTime in
       (fps :=
          let hz = 1000. /. (t' -. !ti) in
          if !fps = 0. then hz else (0.9 *. !fps) +. (0.1 *. hz));
@@ -724,7 +766,7 @@ let start _ =
       ti := t';
       Lwt_js.sleep 0.01
       >>= fun () ->
-      let t' = (new%js Js.date_now)##getTime in
+      let t' = Js.to_float (new%js Js.date_now)##getTime in
       let dt = t' -. t in
       let dt = if dt < 0. then 0. else if dt > 1000. then 0. else dt in
       let angle = 2. *. pi *. dt /. 1000. /. 10. in
@@ -734,7 +776,7 @@ if true then Lwt.return () else
       if (not !paused) && !follow then phi_rot := !phi_rot +. angle;
       loop t' (if !paused then phi else phi +. angle)
     in
-    loop (new%js Js.date_now)##getTime 0.);
+    loop (Js.to_float (new%js Js.date_now)##getTime) 0.);
   Js._false
 
 let _ = Html.window##.onload := Html.handler start

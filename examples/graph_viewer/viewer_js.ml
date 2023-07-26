@@ -50,24 +50,38 @@ module Common = Viewer_common.F (struct
 
   let restore ctx = ctx##restore
 
-  let scale ctx ~sx ~sy = ctx##scale sx sy
+  let scale ctx ~sx ~sy = ctx##scale (Js.float sx) (Js.float sy)
 
-  let translate ctx ~tx ~ty = ctx##translate tx ty
+  let translate ctx ~tx ~ty = ctx##translate (Js.float tx) (Js.float ty)
 
   let begin_path ctx = ctx##beginPath
 
   let close_path ctx = ctx##closePath
 
-  let move_to ctx ~x ~y = ctx##moveTo x y
+  let move_to ctx ~x ~y = ctx##moveTo (Js.float x) (Js.float y)
 
-  let line_to ctx ~x ~y = ctx##lineTo x y
+  let line_to ctx ~x ~y = ctx##lineTo (Js.float x) (Js.float y)
 
-  let curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 = ctx##bezierCurveTo x1 y1 x2 y2 x3 y3
+  let curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 =
+    ctx##bezierCurveTo
+      (Js.float x1)
+      (Js.float y1)
+      (Js.float x2)
+      (Js.float y2)
+      (Js.float x3)
+      (Js.float y3)
 
   let arc ctx ~xc ~yc ~radius ~angle1 ~angle2 =
-    ctx##arc xc yc radius angle1 angle2 Js._true
+    ctx##arc
+      (Js.float xc)
+      (Js.float yc)
+      (Js.float radius)
+      (Js.float angle1)
+      (Js.float angle2)
+      Js._true
 
-  let rectangle ctx ~x ~y ~width ~height = ctx##rect x y width height
+  let rectangle ctx ~x ~y ~width ~height =
+    ctx##rect (Js.float x) (Js.float y) (Js.float width) (Js.float height)
 
   let fill ctx c =
     ctx##.fillStyle := c;
@@ -86,12 +100,12 @@ module Common = Viewer_common.F (struct
     (match fill_color with
     | Some c ->
         ctx##.fillStyle := c;
-        ctx##fillText txt x y
+        ctx##fillText txt (Js.float x) (Js.float y)
     | None -> ());
     match stroke_color with
     | Some c ->
         ctx##.strokeStyle := c;
-        ctx##strokeText txt x y
+        ctx##strokeText txt (Js.float x) (Js.float y)
     | None -> ()
 
   type window = Html.canvasElement Js.t
@@ -102,7 +116,7 @@ module Common = Viewer_common.F (struct
 
   let get_drawable w =
     let ctx = w##getContext Html._2d_ in
-    ctx##.lineWidth := 2.;
+    ctx##.lineWidth := Js.float 2.;
     w, ctx
 
   let make_pixmap _ width height =
@@ -126,14 +140,14 @@ module Common = Viewer_common.F (struct
       ((p, _) : pixmap) =
     c##drawImage_fullFromCanvas
       p
-      (float xsrc)
-      (float ysrc)
-      (float width)
-      (float height)
-      (float x)
-      (float y)
-      (float width)
-      (float height)
+      (Js.float (float xsrc))
+      (Js.float (float ysrc))
+      (Js.float (float width))
+      (Js.float (float height))
+      (Js.float (float x))
+      (Js.float (float y))
+      (Js.float (float width))
+      (Js.float (float height))
 
   (****)
 
@@ -353,7 +367,7 @@ Firebug.console##log_2(Js.string "update", Js.date##now());
       redraw_queued := true;
       let (_ : Html.animation_frame_request_id) =
         Html.window##requestAnimationFrame
-          (Js.wrap_callback (fun (_ : float) ->
+          (Js.wrap_callback (fun _ ->
                redraw_queued := false;
                redraw st (get_scale ()) hadj#value vadj#value canvas))
       in

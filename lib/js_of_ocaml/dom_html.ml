@@ -2837,8 +2837,8 @@ let elementClientPosition (e : #element t) =
   let r = e##getBoundingClientRect in
   let body = document##.body in
   let html = document##.documentElement in
-  ( truncate r##.left - body##.clientLeft - html##.clientLeft
-  , truncate r##.top - body##.clientTop - html##.clientTop )
+  ( truncate (Js.to_float r##.left) - body##.clientLeft - html##.clientLeft
+  , truncate (Js.to_float r##.top) - body##.clientTop - html##.clientTop )
 
 let getDocumentScroll () =
   let body = document##.body in
@@ -3325,7 +3325,7 @@ module Keyboard_key = struct
     let key = Optdef.get evt##.key empty_string in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
-    | 1 -> char_of_int (int_of_float (key##charCodeAt 0))
+    | 1 -> char_of_int (int_of_float (Js.to_float (key##charCodeAt 0)))
     | _ -> None
 end
 
@@ -3580,14 +3580,14 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
         let req = List.find (fun c -> Js.Optdef.test c) l in
         fun callback -> Js.Unsafe.fun_call req [| Js.Unsafe.inject callback |]
       with Not_found ->
-        let now () = (new%js Js.date_now)##getTime in
+        let now () = Js.to_float (new%js Js.date_now)##getTime in
         let last = ref (now ()) in
         fun callback ->
           let t = now () in
           let dt = !last +. (1000. /. 60.) -. t in
           let dt = if Poly.(dt < 0.) then 0. else dt in
           last := t;
-          ignore (window##setTimeout callback dt))
+          ignore (window##setTimeout callback (Js.float dt)))
 
 (****)
 
@@ -3614,7 +3614,7 @@ let setTimeout callback d : timeout_id_safe =
       if Poly.(d > overflow_limit) then overflow_limit, d -. overflow_limit else d, 0.
     in
     let cb = if Poly.(remain = 0.) then callback else loop remain in
-    id := Some (window##setTimeout (Js.wrap_callback cb) step)
+    id := Some (window##setTimeout (Js.wrap_callback cb) (Js.float step))
   in
   loop d ();
   id
