@@ -1,6 +1,7 @@
 # Dev (2023-??-??) - ??
 
 * Runtime: fix Dom_html.onIE (#1493)
+* Compiler: fix global flow analysis (#1494)
 
 # 5.4.0 (2023-07-06) - Lille
 

@@ -215,7 +215,9 @@ let expr_deps blocks st x e =
       match st.defs.(Var.idx f) with
       | Expr (Closure (params, _)) when List.length args = List.length params ->
           Hashtbl.add st.applied_functions (x, f) ();
-          if not st.fast then List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
+          if st.fast
+          then List.iter ~f:(fun a -> do_escape st Escape a) args
+          else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
           Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
       | _ -> ())
   | Closure (l, cont) ->
@@ -470,8 +472,13 @@ let propagate st ~update approx x =
                       if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
                         Hashtbl.add st.applied_functions (x, g) ();
-                        if not st.fast
+                        if st.fast
                         then
+                          List.iter
+                            ~f:(fun y ->
+                              Domain.variable_escape ~update ~st ~approx Escape y)
+                            args
+                        else
                           List.iter2
                             ~f:(fun p a ->
                               add_assign_def st p a;
@@ -593,7 +600,7 @@ let f ~fast p =
               | Values { known; others } ->
                   Format.fprintf
                     f
-                    "{%a/%b} mut:%b vmut:%b esc:%s"
+                    "{%a/%b} mut:%b vmut:%b vesc:%s esc:%s"
                     (Format.pp_print_list
                        ~pp_sep:(fun f () -> Format.fprintf f ", ")
                        (fun f x ->
@@ -615,6 +622,10 @@ let f ~fast p =
                     others
                     st.possibly_mutable.(Var.idx x)
                     st.variable_possibly_mutable.(Var.idx x)
+                    (match st.variable_may_escape.(Var.idx x) with
+                    | Escape -> "Y"
+                    | Escape_constant -> "y"
+                    | No -> "n")
                     (match st.may_escape.(Var.idx x) with
                     | Escape -> "Y"
                     | Escape_constant -> "y"
