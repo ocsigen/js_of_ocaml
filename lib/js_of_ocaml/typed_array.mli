@@ -196,13 +196,13 @@ class type dataView = object
 
   method getUint32_ : int -> bool t -> uint32 meth
 
-  method getFloat32 : int -> float meth
+  method getFloat32 : int -> number_t meth
 
-  method getFloat32_ : int -> bool t -> float meth
+  method getFloat32_ : int -> bool t -> number_t meth
 
-  method getFloat64 : int -> float meth
+  method getFloat64 : int -> number_t meth
 
-  method getFloat64_ : int -> bool t -> float meth
+  method getFloat64_ : int -> bool t -> number_t meth
 
   method setInt8 : int -> int -> unit meth
 
@@ -224,13 +224,13 @@ class type dataView = object
 
   method setUint32_ : int -> uint32 -> bool t -> unit meth
 
-  method setFloat32 : int -> float -> unit meth
+  method setFloat32 : int -> number_t -> unit meth
 
-  method setFloat32_ : int -> float -> bool t -> unit meth
+  method setFloat32_ : int -> number_t -> bool t -> unit meth
 
-  method setFloat64 : int -> float -> unit meth
+  method setFloat64 : int -> number_t -> unit meth
 
-  method setFloat64_ : int -> float -> bool t -> unit meth
+  method setFloat64_ : int -> number_t -> bool t -> unit meth
 end
 
 val dataView : (arrayBuffer t -> dataView t) constr

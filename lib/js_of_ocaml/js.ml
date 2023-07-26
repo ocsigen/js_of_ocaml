@@ -246,14 +246,32 @@ module Js = struct
 
   type string_array
 
-  class type js_string = object
+  type number_t = float
+
+  class type number = object
+    method toString : js_string t meth
+
+    method toString_radix : int -> js_string t meth
+
+    method toLocaleString : js_string t meth
+
+    method toFixed : int -> js_string t meth
+
+    method toExponential : js_string t meth
+
+    method toExponential_digits : int -> js_string t meth
+
+    method toPrecision : int -> js_string t meth
+  end
+
+  and js_string = object
     method toString : js_string t meth
 
     method valueOf : js_string t meth
 
     method charAt : int -> js_string t meth
 
-    method charCodeAt : int -> float meth
+    method charCodeAt : int -> number_t meth
 
     (* This may return NaN... *)
     method concat : js_string t -> js_string t meth
@@ -273,7 +291,7 @@ module Js = struct
 
     method lastIndexOf_from : js_string t -> int -> int meth
 
-    method localeCompare : js_string t -> float meth
+    method localeCompare : js_string t -> number_t meth
 
     method _match : regExp t -> match_result_handle t opt meth
 
@@ -392,7 +410,7 @@ class type ['a] js_array = object
 
   method slice_end : int -> 'a js_array t meth
 
-  method sort : ('a -> 'a -> float) callback -> 'a js_array t meth
+  method sort : ('a -> 'a -> number_t) callback -> 'a js_array t meth
 
   method sort_asStrings : 'a js_array t meth
 
@@ -470,26 +488,6 @@ let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
 
 let match_result : match_result_handle t -> match_result t = Unsafe.coerce
 
-class type number = object
-  method toString : js_string t meth
-
-  method toString_radix : int -> js_string t meth
-
-  method toLocaleString : js_string t meth
-
-  method toFixed : int -> js_string t meth
-
-  method toExponential : js_string t meth
-
-  method toExponential_digits : int -> js_string t meth
-
-  method toPrecision : int -> js_string t meth
-end
-
-external number_of_float : float -> number t = "caml_js_from_float"
-
-external float_of_number : number t -> float = "caml_js_to_float"
-
 class type date = object
   method toString : js_string t meth
 
@@ -503,9 +501,9 @@ class type date = object
 
   method toLocaleTimeString : js_string t meth
 
-  method valueOf : float meth
+  method valueOf : number_t meth
 
-  method getTime : float meth
+  method getTime : number_t meth
 
   method getFullYear : int meth
 
@@ -541,39 +539,39 @@ class type date = object
 
   method getTimezoneOffset : int meth
 
-  method setTime : float -> float meth
+  method setTime : number_t -> number_t meth
 
-  method setFullYear : int -> float meth
+  method setFullYear : int -> number_t meth
 
-  method setUTCFullYear : int -> float meth
+  method setUTCFullYear : int -> number_t meth
 
-  method setMonth : int -> float meth
+  method setMonth : int -> number_t meth
 
-  method setUTCMonth : int -> float meth
+  method setUTCMonth : int -> number_t meth
 
-  method setDate : int -> float meth
+  method setDate : int -> number_t meth
 
-  method setUTCDate : int -> float meth
+  method setUTCDate : int -> number_t meth
 
-  method setDay : int -> float meth
+  method setDay : int -> number_t meth
 
-  method setUTCDay : int -> float meth
+  method setUTCDay : int -> number_t meth
 
-  method setHours : int -> float meth
+  method setHours : int -> number_t meth
 
-  method setUTCHours : int -> float meth
+  method setUTCHours : int -> number_t meth
 
-  method setMinutes : int -> float meth
+  method setMinutes : int -> number_t meth
 
-  method setUTCMinutes : int -> float meth
+  method setUTCMinutes : int -> number_t meth
 
-  method setSeconds : int -> float meth
+  method setSeconds : int -> number_t meth
 
-  method setUTCSeconds : int -> float meth
+  method setUTCSeconds : int -> number_t meth
 
-  method setMilliseconds : int -> float meth
+  method setMilliseconds : int -> number_t meth
 
-  method setUTCMilliseconds : int -> float meth
+  method setUTCMilliseconds : int -> number_t meth
 
   method toUTCString : js_string t meth
 
@@ -583,21 +581,21 @@ class type date = object
 end
 
 class type date_constr = object
-  method parse : js_string t -> float meth
+  method parse : js_string t -> number_t meth
 
-  method _UTC_month : int -> int -> float meth
+  method _UTC_month : int -> int -> number_t meth
 
-  method _UTC_day : int -> int -> float meth
+  method _UTC_day : int -> int -> number_t meth
 
-  method _UTC_hour : int -> int -> int -> int -> float meth
+  method _UTC_hour : int -> int -> int -> int -> number_t meth
 
-  method _UTC_min : int -> int -> int -> int -> int -> float meth
+  method _UTC_min : int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> float meth
+  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> number_t meth
 
-  method now : float meth
+  method now : number_t meth
 end
 
 let date_constr = Unsafe.global##._Date
@@ -606,7 +604,7 @@ let date : date_constr t = date_constr
 
 let date_now : date t constr = date_constr
 
-let date_fromTimeValue : (float -> date t) constr = date_constr
+let date_fromTimeValue : (number_t -> date t) constr = date_constr
 
 let date_month : (int -> int -> date t) constr = date_constr
 
@@ -622,65 +620,65 @@ let date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr =
   date_constr
 
 class type math = object
-  method _E : float readonly_prop
+  method _E : number_t readonly_prop
 
-  method _LN2 : float readonly_prop
+  method _LN2 : number_t readonly_prop
 
-  method _LN10 : float readonly_prop
+  method _LN10 : number_t readonly_prop
 
-  method _LOG2E : float readonly_prop
+  method _LOG2E : number_t readonly_prop
 
-  method _LOG10E : float readonly_prop
+  method _LOG10E : number_t readonly_prop
 
-  method _PI : float readonly_prop
+  method _PI : number_t readonly_prop
 
-  method _SQRT1_2_ : float readonly_prop
+  method _SQRT1_2_ : number_t readonly_prop
 
-  method _SQRT2 : float readonly_prop
+  method _SQRT2 : number_t readonly_prop
 
-  method abs : float -> float meth
+  method abs : number_t -> number_t meth
 
-  method acos : float -> float meth
+  method acos : number_t -> number_t meth
 
-  method asin : float -> float meth
+  method asin : number_t -> number_t meth
 
-  method atan : float -> float meth
+  method atan : number_t -> number_t meth
 
-  method atan2 : float -> float -> float meth
+  method atan2 : number_t -> number_t -> number_t meth
 
-  method ceil : float -> float meth
+  method ceil : number_t -> number_t meth
 
-  method cos : float -> float meth
+  method cos : number_t -> number_t meth
 
-  method exp : float -> float meth
+  method exp : number_t -> number_t meth
 
-  method floor : float -> float meth
+  method floor : number_t -> number_t meth
 
-  method log : float -> float meth
+  method log : number_t -> number_t meth
 
-  method max : float -> float -> float meth
+  method max : number_t -> number_t -> number_t meth
 
-  method max_3 : float -> float -> float -> float meth
+  method max_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method max_4 : float -> float -> float -> float -> float meth
+  method max_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method min : float -> float -> float meth
+  method min : number_t -> number_t -> number_t meth
 
-  method min_3 : float -> float -> float -> float meth
+  method min_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method min_4 : float -> float -> float -> float -> float meth
+  method min_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method pow : float -> float -> float meth
+  method pow : number_t -> number_t -> number_t meth
 
-  method random : float meth
+  method random : number_t meth
 
-  method round : float -> float meth
+  method round : number_t -> number_t meth
 
-  method sin : float -> float meth
+  method sin : number_t -> number_t meth
 
-  method sqrt : float -> float meth
+  method sqrt : number_t -> number_t meth
 
-  method tan : float -> float meth
+  method tan : number_t -> number_t meth
 end
 
 let math = Unsafe.global##._Math
@@ -783,17 +781,21 @@ external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 
 external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 
-external float : float -> float = "caml_js_from_float"
+external float : float -> number_t = "caml_js_from_float"
 
-external to_float : float -> float = "caml_js_to_float"
+external to_float : number_t -> float = "caml_js_to_float"
 
-external int32 : int32 -> float = "caml_js_from_int32"
+external number_of_float : float -> number t = "caml_js_from_float"
 
-external to_int32 : float -> int32 = "caml_js_to_int32"
+external float_of_number : number t -> float = "caml_js_to_float"
 
-external nativeint : nativeint -> float = "caml_js_from_nativeint"
+external int32 : int32 -> number_t = "caml_js_from_int32"
 
-external to_nativeint : float -> nativeint = "caml_js_to_nativeint"
+external to_int32 : number_t -> int32 = "caml_js_to_int32"
+
+external nativeint : nativeint -> number_t = "caml_js_from_nativeint"
+
+external to_nativeint : number_t -> nativeint = "caml_js_to_nativeint"
 
 external typeof : _ t -> js_string t = "caml_js_typeof"
 
@@ -806,7 +808,7 @@ let parseInt (s : js_string t) : int =
   let s = Unsafe.fun_call Unsafe.global##.parseInt [| Unsafe.inject s |] in
   if isNaN s then failwith "parseInt" else s
 
-let parseFloat (s : js_string t) : float =
+let parseFloat (s : js_string t) : number_t =
   let s = Unsafe.fun_call Unsafe.global##.parseFloat [| Unsafe.inject s |] in
   if isNaN s then failwith "parseFloat" else s
 
@@ -841,4 +843,4 @@ let export_all obj =
 
 (* DEPRECATED *)
 
-type float_prop = float prop
+type float_prop = number_t prop

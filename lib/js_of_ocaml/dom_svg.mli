@@ -220,7 +220,7 @@ and animatedEnumeration = [int (*short*)] animated
 and animatedInteger = [int] animated
 
 (* interface SVGAnimatedNumber *)
-and animatedNumber = [float] animated
+and animatedNumber = [number_t] animated
 
 (* interface SVGNumberList *)
 and numberList = [number t] list
@@ -232,13 +232,13 @@ and animatedNumberList = [numberList t] animated
 and length = object
   method unitType : lengthUnitType readonly_prop
 
-  method value : float prop
+  method value : number_t prop
 
-  method valueInSpecifiedUnits : float prop
+  method valueInSpecifiedUnits : number_t prop
 
   method valueAsString : js_string t prop
 
-  method newValueSpecifiedUnits : lengthUnitType -> float -> unit meth
+  method newValueSpecifiedUnits : lengthUnitType -> number_t -> unit meth
 
   method convertToSpecifiedUnits : lengthUnitType -> unit meth
 end
@@ -256,13 +256,13 @@ and animatedLengthList = [lengthList t] animated
 and angle = object
   method unitType : angleUnitType readonly_prop
 
-  method value : float prop
+  method value : number_t prop
 
-  method valueInSpecifiedUnits : float prop
+  method valueInSpecifiedUnits : number_t prop
 
   method valueAsString : js_string t prop
 
-  method newValueSpecifiedUnits : angleUnitType -> float -> unit meth
+  method newValueSpecifiedUnits : angleUnitType -> number_t -> unit meth
 
   method convertToSpecifiedUnits : angleUnitType -> unit meth
 end
@@ -298,13 +298,13 @@ end
 
 (* interface SVGRect *)
 and rect = object
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 
-  method width : float prop
+  method width : number_t prop
 
-  method height : float prop
+  method height : number_t prop
 end
 
 (* interface SVGAnimatedRect *)
@@ -452,19 +452,19 @@ and svgElement = object
 
   method viewport : rect t readonly_prop
 
-  method pixelUnitToMillimeterX : float readonly_prop
+  method pixelUnitToMillimeterX : number_t readonly_prop
 
-  method pixelUnitToMillimeterY : float readonly_prop
+  method pixelUnitToMillimeterY : number_t readonly_prop
 
-  method screenPixelUnitToMillimeterX : float readonly_prop
+  method screenPixelUnitToMillimeterX : number_t readonly_prop
 
-  method screenPixelUnitToMillimeterY : float readonly_prop
+  method screenPixelUnitToMillimeterY : number_t readonly_prop
 
   method useCurrentView : bool t readonly_prop
 
   method currentView : viewSpec t readonly_prop
 
-  method currentScale : float prop
+  method currentScale : number_t prop
 
   method currentTranslate : point t readonly_prop
 
@@ -482,7 +482,7 @@ and svgElement = object
 
   method animationsPaused : bool t meth
 
-  method getCurrentTime : float meth
+  method getCurrentTime : number_t meth
 
   method setCurrentTime : int -> unit meth
 
@@ -695,9 +695,9 @@ end
 
 (* interface SVGPoint *)
 and point = object
-  method x : float readonly_prop
+  method x : number_t readonly_prop
 
-  method y : float readonly_prop
+  method y : number_t readonly_prop
 
   method matrixTransform : matrix t -> point t meth
 end
@@ -707,39 +707,39 @@ and pointList = [point t] list
 
 (* interface SVGMatrix *)
 and matrix = object
-  method a : float readonly_prop
+  method a : number_t readonly_prop
 
-  method b : float readonly_prop
+  method b : number_t readonly_prop
 
-  method c : float readonly_prop
+  method c : number_t readonly_prop
 
-  method d : float readonly_prop
+  method d : number_t readonly_prop
 
-  method e : float readonly_prop
+  method e : number_t readonly_prop
 
-  method f : float readonly_prop
+  method f : number_t readonly_prop
 
   method multiply : matrix t -> matrix t meth
 
   method inverse : matrix t meth
 
-  method translate : float -> float -> matrix t meth
+  method translate : number_t -> number_t -> matrix t meth
 
-  method scale : float -> matrix t meth
+  method scale : number_t -> matrix t meth
 
-  method scaleNonUniform : float -> float -> matrix t meth
+  method scaleNonUniform : number_t -> number_t -> matrix t meth
 
-  method rotate : float -> matrix t meth
+  method rotate : number_t -> matrix t meth
 
-  method rotateFromVector : float -> float -> matrix t meth
+  method rotateFromVector : number_t -> number_t -> matrix t meth
 
   method flipX : matrix t meth
 
   method flipY : matrix t meth
 
-  method skewX : float -> matrix t meth
+  method skewX : number_t -> matrix t meth
 
-  method skewY : float -> matrix t meth
+  method skewY : number_t -> matrix t meth
 end
 
 (* interface SVGTransform *)
@@ -748,19 +748,19 @@ and transform = object
 
   method matrix : matrix t readonly_prop
 
-  method angle : float readonly_prop
+  method angle : number_t readonly_prop
 
   method setMatrix : matrix t -> unit meth
 
-  method setTranslate : float -> float -> unit meth
+  method setTranslate : number_t -> number_t -> unit meth
 
-  method setScale : float -> float -> unit meth
+  method setScale : number_t -> number_t -> unit meth
 
-  method setRotate : float -> float -> float -> unit meth
+  method setRotate : number_t -> number_t -> number_t -> unit meth
 
-  method setSkewX : float -> unit meth
+  method setSkewX : number_t -> unit meth
 
-  method setSkewY : float -> unit meth
+  method setSkewY : number_t -> unit meth
 end
 
 (* interface SVGTransformList *)
@@ -800,9 +800,9 @@ and pathSegClosePath = pathSeg
 and pathSegMoveto = object
   inherit pathSeg
 
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 end
 
 (* interface SVGPathSegLinetoAbs *)
@@ -810,9 +810,9 @@ end
 and pathSegLineto = object
   inherit pathSeg
 
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 end
 
 (* interface SVGPathSegCurvetoCubicAbs *)
@@ -820,17 +820,17 @@ end
 and pathSegCurvetoCubic = object
   inherit pathSeg
 
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 
-  method x1 : float prop
+  method x1 : number_t prop
 
-  method y1 : float prop
+  method y1 : number_t prop
 
-  method x2 : float prop
+  method x2 : number_t prop
 
-  method y2 : float prop
+  method y2 : number_t prop
 end
 
 (* interface SVGPathSegCurvetoQuadraticAbs *)
@@ -838,13 +838,13 @@ end
 and pathSegCurvetoQuadratic = object
   inherit pathSeg
 
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 
-  method x1 : float prop
+  method x1 : number_t prop
 
-  method y1 : float prop
+  method y1 : number_t prop
 end
 
 (* interface SVGPathSegArcAbs *)
@@ -852,13 +852,13 @@ end
 and pathSegArc = object
   inherit pathSeg
 
-  method y : float prop
+  method y : number_t prop
 
-  method r1 : float prop
+  method r1 : number_t prop
 
-  method r2 : float prop
+  method r2 : number_t prop
 
-  method angle : float prop
+  method angle : number_t prop
 
   method largeArcFlag : bool t prop
 
@@ -870,7 +870,7 @@ end
 and pathSegLinetoHorizontal = object
   inherit pathSeg
 
-  method x : float
+  method x : number_t
 end
 
 (* interface SVGPathSegLinetoVerticalAbs *)
@@ -878,19 +878,19 @@ end
 and pathSegLinetoVertical = object
   inherit pathSeg
 
-  method y : float
+  method y : number_t
 end
 
 and pathSegCurvetoCubicSmooth = object
   inherit pathSeg
 
-  method x : float
+  method x : number_t
 
-  method y : float
+  method y : number_t
 
-  method x2 : float
+  method x2 : number_t
 
-  method y2 : float
+  method y2 : number_t
 end
 
 (* interface SVGPathSegCurvetoQuadraticSmoothAbs *)
@@ -898,9 +898,9 @@ end
 and pathSegCurvetoQuadraticSmooth = object
   inherit pathSeg
 
-  method x : float
+  method x : number_t
 
-  method y : float
+  method y : number_t
 end
 
 and pathSegList = [pathSeg t] list
@@ -934,59 +934,85 @@ and pathElement = object
 
   method pathLength : animatedNumber t readonly_prop
 
-  method getTotalLength : float meth
+  method getTotalLength : number_t meth
 
-  method getPointAtLength : float -> point t meth
+  method getPointAtLength : number_t -> point t meth
 
-  method getPathSegAtLength : float -> int
+  method getPathSegAtLength : number_t -> int
 
   method createSVGPathSegClosePath : pathSegClosePath meth
 
-  method createSVGPathSegMovetoAbs : float -> float -> pathSegMoveto meth
+  method createSVGPathSegMovetoAbs : number_t -> number_t -> pathSegMoveto meth
 
-  method createSVGPathSegMovetoRel : float -> float -> pathSegMoveto meth
+  method createSVGPathSegMovetoRel : number_t -> number_t -> pathSegMoveto meth
 
-  method createSVGPathSegLinetoAbs : float -> float -> pathSegLineto meth
+  method createSVGPathSegLinetoAbs : number_t -> number_t -> pathSegLineto meth
 
-  method createSVGPathSegLinetoRel : float -> float -> pathSegLineto meth
+  method createSVGPathSegLinetoRel : number_t -> number_t -> pathSegLineto meth
 
   method createSVGPathSegCurvetoCubicAbs :
-    float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> pathSegCurvetoCubic meth
 
   method createSVGPathSegCurvetoCubicRel :
-    float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> pathSegCurvetoCubic meth
 
   method createSVGPathSegCurvetoQuadraticAbs :
-    float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+    number_t -> number_t -> number_t -> number_t -> pathSegCurvetoQuadratic meth
 
   method createSVGPathSegCurvetoQuadraticRel :
-    float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+    number_t -> number_t -> number_t -> number_t -> pathSegCurvetoQuadratic meth
 
   method createSVGPathSegArcAbs :
-    float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> bool t
+    -> bool t
+    -> pathSegArc meth
 
   method createSVGPathSegArcRel :
-    float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> bool t
+    -> bool t
+    -> pathSegArc meth
 
-  method createSVGPathSegLinetoHorizontalAbs : float -> pathSegLinetoHorizontal meth
+  method createSVGPathSegLinetoHorizontalAbs : number_t -> pathSegLinetoHorizontal meth
 
-  method createSVGPathSegLinetoHorizontalRel : float -> pathSegLinetoHorizontal meth
+  method createSVGPathSegLinetoHorizontalRel : number_t -> pathSegLinetoHorizontal meth
 
-  method createSVGPathSegLinetoVerticalAbs : float -> pathSegLinetoVertical meth
+  method createSVGPathSegLinetoVerticalAbs : number_t -> pathSegLinetoVertical meth
 
-  method createSVGPathSegLinetoVerticalRel : float -> pathSegLinetoVertical meth
+  method createSVGPathSegLinetoVerticalRel : number_t -> pathSegLinetoVertical meth
 
   method createSVGPathSegCurvetoCubicSmoothAbs :
-    float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+    number_t -> number_t -> number_t -> number_t -> pathSegCurvetoCubicSmooth meth
 
   method createSVGPathSegCurvetoCubicSmoothRel :
-    float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+    number_t -> number_t -> number_t -> number_t -> pathSegCurvetoCubicSmooth meth
 
   method createSVGPathSegCurvetoQuadraticSmoothAbs :
-    float -> float -> pathSegCurvetoQuadraticSmooth meth
+    number_t -> number_t -> pathSegCurvetoQuadraticSmooth meth
 
   method createSVGPathSegCurvetoQuadraticSmoothRel :
-    float -> float -> pathSegCurvetoQuadraticSmooth meth
+    number_t -> number_t -> pathSegCurvetoQuadraticSmooth meth
 end
 
 (* interface SVGRectElement *)
@@ -1146,9 +1172,9 @@ and textContentElement = object
 
   method getNumberOfChars : int meth
 
-  method getComputedTextLength : float meth
+  method getComputedTextLength : number_t meth
 
-  method getSubStringLength : int -> int -> float meth
+  method getSubStringLength : int -> int -> number_t meth
 
   method getStartPositionOfChar : int -> point t meth
 
@@ -1156,7 +1182,7 @@ and textContentElement = object
 
   method getExtentOfChar : int -> rect t meth
 
-  method getRotationOfChar : int -> float meth
+  method getRotationOfChar : int -> number_t meth
 
   method getCharNumAtPosition : point -> int meth
 
@@ -1239,13 +1265,13 @@ and glyphRefElement = object
 
   method format : js_string t prop
 
-  method x : float prop
+  method x : number_t prop
 
-  method y : float prop
+  method y : number_t prop
 
-  method dx : float prop
+  method dx : number_t prop
 
-  method dy : float prop
+  method dy : number_t prop
 end
 
 (* interface SVGPaint : SVGColor { *)
@@ -1793,11 +1819,11 @@ and animationElement = object
   (* inherit elementTimeControl *)
   method targetElement : element t readonly_prop
 
-  method getStartTime : float meth
+  method getStartTime : number_t meth
 
-  method getCurrentTime : float meth
+  method getCurrentTime : number_t meth
 
-  method getSimpleDuration : float meth
+  method getSimpleDuration : number_t meth
 end
 
 (* interface SVGAnimateElement *)

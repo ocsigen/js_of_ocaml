@@ -19,9 +19,9 @@
 open! Import
 
 class type resizeObserverSize = object
-  method inlineSize : float Js.readonly_prop
+  method inlineSize : Js.number_t Js.readonly_prop
 
-  method blockSize : float Js.readonly_prop
+  method blockSize : Js.number_t Js.readonly_prop
 end
 
 class type resizeObserverEntry = object
