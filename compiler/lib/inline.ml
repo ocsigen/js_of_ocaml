@@ -38,7 +38,7 @@ let optimizable blocks pc _ =
             +
             match fst branch with
             | Cond _ -> 2
-            | Switch (_, a1, a2) -> Array.length a1 + Array.length a2
+            | Switch (_, a1) -> Array.length a1
             | _ -> 0)
       in
       let optimizable =
@@ -113,9 +113,8 @@ let fold_children blocks pc f accu =
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
-      let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
       accu
 
 let rewrite_closure blocks cont_pc clos_pc =

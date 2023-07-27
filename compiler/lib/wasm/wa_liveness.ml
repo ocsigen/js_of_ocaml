@@ -58,9 +58,7 @@ let block_deps deps block pc =
   | Cond (_, cont1, cont2) ->
       cont_deps deps pc cont1;
       cont_deps deps pc cont2
-  | Switch (_, a1, a2) ->
-      Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont);
-      Array.iter a2 ~f:(fun cont -> cont_deps deps pc cont)
+  | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont)
   | Pushtrap (cont, _, cont_h) ->
       cont_deps deps pc cont;
       cont_deps deps pc cont_h
@@ -128,9 +126,7 @@ let propagate_through_branch ~ctx (b, _) s =
   | Stop -> s
   | Branch cont | Poptrap cont -> cont_used ~ctx cont s
   | Cond (_, cont1, cont2) -> s |> cont_used ~ctx cont1 |> cont_used ~ctx cont2
-  | Switch (_, a1, a2) ->
-      let s = Array.fold_right a1 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s in
-      Array.fold_right a2 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s
+  | Switch (_, a1) -> Array.fold_right a1 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s
   | Pushtrap (cont, x, cont_h) ->
       s |> cont_used ~ctx cont |> cont_used ~ctx cont_h |> Var.Set.remove x
 

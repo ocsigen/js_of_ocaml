@@ -215,7 +215,7 @@ type last =
   | Stop
   | Branch of cont
   | Cond of Var.t * cont * cont
-  | Switch of Var.t * cont array * cont array
+  | Switch of Var.t * cont array
   | Pushtrap of cont * Var.t * cont
   | Poptrap of cont
 

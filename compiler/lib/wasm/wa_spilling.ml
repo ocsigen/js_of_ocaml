@@ -143,9 +143,7 @@ let block_deps bound_vars deps block pc =
   | Cond (_, cont1, cont2) ->
       cont_deps deps pc cont1;
       cont_deps deps pc cont2
-  | Switch (_, a1, a2) ->
-      Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont);
-      Array.iter a2 ~f:(fun cont -> cont_deps deps pc cont)
+  | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont)
   | Pushtrap (cont, exn, cont_h) ->
       cont_deps deps pc cont;
       bound_vars := Var.Set.add exn !bound_vars;
@@ -339,9 +337,7 @@ let spilled_variables
       | Stop -> spilled
       | Branch cont | Poptrap cont -> handle_cont cont spilled
       | Cond (_, cont1, cont2) -> spilled |> handle_cont cont1 |> handle_cont cont2
-      | Switch (_, a1, a2) ->
-          let spilled = Array.fold_right a1 ~f:handle_cont ~init:spilled in
-          Array.fold_right a2 ~f:handle_cont ~init:spilled
+      | Switch (_, a1) -> Array.fold_right a1 ~f:handle_cont ~init:spilled
       | Pushtrap (cont, _, cont_h) -> spilled |> handle_cont cont |> handle_cont cont_h)
     domain
     spilled

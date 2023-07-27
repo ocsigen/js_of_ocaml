@@ -69,9 +69,8 @@ let fold_children blocks pc f accu =
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
-      let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
       accu
 
 let rec traverse f pc visited blocks =

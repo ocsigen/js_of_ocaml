@@ -98,10 +98,9 @@ and mark_reachable st pc =
         mark_var st x;
         mark_cont_reachable st cont1;
         mark_cont_reachable st cont2
-    | Switch (x, a1, a2) ->
+    | Switch (x, a1) ->
         mark_var st x;
-        Array.iter a1 ~f:(fun cont -> mark_cont_reachable st cont);
-        Array.iter a2 ~f:(fun cont -> mark_cont_reachable st cont)
+        Array.iter a1 ~f:(fun cont -> mark_cont_reachable st cont)
     | Pushtrap (cont1, _, cont2) ->
         mark_cont_reachable st cont1;
         mark_cont_reachable st cont2)
@@ -137,11 +136,8 @@ let filter_live_last blocks st (l, loc) =
     | Branch cont -> Branch (filter_cont blocks st cont)
     | Cond (x, cont1, cont2) ->
         Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
-    | Switch (x, a1, a2) ->
-        Switch
-          ( x
-          , Array.map a1 ~f:(fun cont -> filter_cont blocks st cont)
-          , Array.map a2 ~f:(fun cont -> filter_cont blocks st cont) )
+    | Switch (x, a1) ->
+        Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
     | Pushtrap (cont1, x, cont2) ->
         Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
     | Poptrap cont -> Poptrap (filter_cont blocks st cont)
@@ -201,9 +197,7 @@ let f ({ blocks; _ } as p : Code.program) =
       | Cond (_, cont1, cont2) ->
           add_cont_dep blocks defs cont1;
           add_cont_dep blocks defs cont2
-      | Switch (_, a1, a2) ->
-          Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont);
-          Array.iter a2 ~f:(fun cont -> add_cont_dep blocks defs cont)
+      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont)
       | Pushtrap (cont, _, cont_h) ->
           add_cont_dep blocks defs cont_h;
           add_cont_dep blocks defs cont

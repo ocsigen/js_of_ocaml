@@ -368,7 +368,7 @@ type last =
   | Stop
   | Branch of cont
   | Cond of Var.t * cont * cont
-  | Switch of Var.t * cont array * cont array
+  | Switch of Var.t * cont array
   | Pushtrap of cont * Var.t * cont
   | Poptrap of cont
 
@@ -533,10 +533,9 @@ module Print = struct
     | Branch c -> Format.fprintf f "branch %a" cont c
     | Cond (x, cont1, cont2) ->
         Format.fprintf f "if %a then %a else %a" Var.print x cont cont1 cont cont2
-    | Switch (x, a1, a2) ->
+    | Switch (x, a1) ->
         Format.fprintf f "switch %a {" Var.print x;
         Array.iteri a1 ~f:(fun i c -> Format.fprintf f "int %d -> %a; " i cont c);
-        Array.iteri a2 ~f:(fun i c -> Format.fprintf f "tag %d -> %a; " i cont c);
         Format.fprintf f "}"
     | Pushtrap (cont1, x, cont2) ->
         Format.fprintf f "pushtrap %a handler %a => %a" cont cont1 Var.print x cont cont2
@@ -632,18 +631,12 @@ let poptraps blocks pc =
           let acc, visited = loop blocks pc1 visited depth acc in
           let acc, visited = loop blocks pc2 visited depth acc in
           acc, visited
-      | Switch (_, a1, a2) ->
+      | Switch (_, a1) ->
           let acc, visited =
             Array.fold_right
               ~init:(acc, visited)
               ~f:(fun (pc, _) (acc, visited) -> loop blocks pc visited depth acc)
               a1
-          in
-          let acc, visited =
-            Array.fold_right
-              ~init:(acc, visited)
-              ~f:(fun (pc, _) (acc, visited) -> loop blocks pc visited depth acc)
-              a2
           in
           acc, visited
   in
@@ -662,9 +655,8 @@ let fold_children blocks pc f accu =
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
-      let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
       accu
 
 let fold_children_skip_try_body blocks pc f accu =
@@ -680,9 +672,8 @@ let fold_children_skip_try_body blocks pc f accu =
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
-      let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
       accu
 
 type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
@@ -828,9 +819,7 @@ let invariant { blocks; start; _ } =
       | Cond (_x, cont1, cont2) ->
           check_cont cont1;
           check_cont cont2
-      | Switch (_x, a1, a2) ->
-          Array.iteri a1 ~f:(fun _ cont -> check_cont cont);
-          Array.iteri a2 ~f:(fun _ cont -> check_cont cont)
+      | Switch (_x, a1) -> Array.iteri a1 ~f:(fun _ cont -> check_cont cont)
       | Pushtrap (cont1, _x, cont2) ->
           check_cont cont1;
           check_cont cont2

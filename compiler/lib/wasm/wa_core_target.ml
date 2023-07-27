@@ -109,7 +109,9 @@ module Memory = struct
       Arith.(load p + const 4l)
   (*ZZZ Float array?*)
 
-  let tag e = Arith.(mem_load (e - const 4l) land const 0xffl)
+  let tag e =
+    let val_int i = Arith.((i lsl const 1l) + const 1l) in
+    val_int Arith.(mem_load (e - const 4l) land const 0xffl)
 
   let block_length e = Arith.(mem_load (e - const 4l) lsr const 10l)
 

@@ -59,11 +59,7 @@ let last s (l, loc) =
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
     | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, a1, a2) ->
-        Switch
-          ( s x
-          , Array.map a1 ~f:(fun cont -> subst_cont s cont)
-          , Array.map a2 ~f:(fun cont -> subst_cont s cont) )
+    | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont s cont))
     | Poptrap cont -> Poptrap (subst_cont s cont)
   in
   l, loc

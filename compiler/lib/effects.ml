@@ -431,13 +431,11 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
             , cps_jump_cont ~st ~src:pc cont1 last_loc
             , cps_jump_cont ~st ~src:pc cont2 last_loc )
         , last_loc ) )
-  | Switch (x, c1, c2) ->
+  | Switch (x, c1) ->
       (* To avoid code duplication during JavaScript generation, we need
          to create a single block per continuation *)
       let cps_jump_cont = Fun.memoize (fun x -> cps_jump_cont ~st ~src:pc x last_loc) in
-      ( alloc_jump_closures
-      , ( Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
-        , last_loc ) )
+      alloc_jump_closures, (Switch (x, Array.map c1 ~f:cps_jump_cont), last_loc)
   | Pushtrap (body_cont, exn, ((handler_pc, _) as handler_cont)) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
@@ -929,8 +927,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
                match branch with
                | Branch cont -> Branch (resolve cont)
                | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
-               | Switch (x, a1, a2) ->
-                   Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
+               | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
                | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
                | Poptrap cont -> Poptrap (resolve cont)
                | Return _ | Raise _ | Stop -> branch

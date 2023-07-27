@@ -763,10 +763,9 @@ let fold_children blocks pc f accu =
       let accu = f pc2 accu in
       accu
   | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
-  | Switch (_, a1, a2) ->
-      let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
+  | Switch (_, a1) ->
+      let a1 = DTree.build_switch a1 in
       let accu = DTree.fold_cont f a1 accu in
-      let accu = DTree.fold_cont f a2 accu in
       accu
 
 let build_graph ctx pc =
@@ -1102,6 +1101,7 @@ let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
       let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
       ocaml_string ~ctx ~loc s);
+  register_un_prim "%direct_obj_tag" `Mutator (fun cx _loc -> Mlvalue.Block.tag cx);
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
@@ -1769,7 +1769,7 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
     let branch =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
-      then Code.Switch (x, cases, [||]), Code.noloc
+      then Code.Switch (x, cases), Code.noloc
       else Code.Cond (x, cases.(1), cases.(0)), Code.noloc
     in
     ( [ J.variable_declaration [ J.V x, (int default, J.N) ], J.N ]
@@ -1850,7 +1850,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
      | Raise _ -> Format.eprintf "raise;@;"
      | Stop -> Format.eprintf "stop;@;"
      | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
-     | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
+     | Switch (x, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
   let loc = source_location_ctx st.ctx pc in
   let res =
     match last with
@@ -1912,21 +1912,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
             (DTree.build_if c1 c2)
         in
         never, flush_all queue b
-    | Switch (x, [||], a2) ->
-        let (_px, cx), queue = access_queue queue x in
-        let never, code =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (Mlvalue.Block.tag cx)
-            (DTree.build_switch a2)
-        in
-        never, flush_all queue code
-    | Switch (x, a1, [||]) ->
+    | Switch (x, a1) ->
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
@@ -1940,41 +1926,6 @@ and compile_conditional st queue last loop_stack backs frontier interm =
             (DTree.build_switch a1)
         in
         never, flush_all queue code
-    | Switch (x, a1, a2) ->
-        (* The variable x is accessed several times, so we can directly
-           refer to it *)
-        let never1, b1 =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (var x)
-            (DTree.build_switch a1)
-        in
-        let never2, b2 =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (Mlvalue.Block.tag (var x))
-            (DTree.build_switch a2)
-        in
-        let code =
-          Js_simpl.if_statement
-            (Mlvalue.is_immediate (var x))
-            loc
-            (Js_simpl.block b1)
-            never1
-            (Js_simpl.block b2)
-            never2
-        in
-        never1 && never2, flush_all queue code
   in
   (if debug ()
    then

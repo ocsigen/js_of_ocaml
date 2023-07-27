@@ -65,10 +65,9 @@ let iter_last_free_var f l =
       f x;
       iter_cont_free_vars f cont1;
       iter_cont_free_vars f cont2
-  | Switch (x, a1, a2) ->
+  | Switch (x, a1) ->
       f x;
-      Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c);
-      Array.iter a2 ~f:(fun c -> iter_cont_free_vars f c)
+      Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c)
   | Pushtrap (cont1, _, cont2) ->
       iter_cont_free_vars f cont1;
       iter_cont_free_vars f cont2

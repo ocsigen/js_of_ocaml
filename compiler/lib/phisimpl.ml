@@ -77,9 +77,8 @@ let program_deps { blocks; _ } =
       | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2
-      | Switch (_, a1, a2) ->
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
+      | Switch (_, a1) ->
+          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
       | Pushtrap (cont, _, cont_h) ->
           cont_deps blocks vars deps defs cont_h;
           cont_deps blocks vars deps defs cont

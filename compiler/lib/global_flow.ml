@@ -252,27 +252,34 @@ let program_deps st { blocks; _ } =
       | Cond (x, cont1, cont2) ->
           cont_deps blocks st cont1;
           cont_deps blocks st ~ignore:x cont2
-      | Switch (x, a1, a2) ->
+      | Switch (x, a1) -> (
           Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont);
-          let h = Hashtbl.create 16 in
-          Array.iteri
-            ~f:(fun i (pc, _) ->
-              Hashtbl.replace h pc (i :: (try Hashtbl.find h pc with Not_found -> [])))
-            a2;
           if not st.fast
           then
-            Hashtbl.iter
-              (fun pc tags ->
-                let block = Addr.Map.find pc blocks in
-                List.iter
-                  ~f:(fun (i, _) ->
-                    match i with
-                    | Let (y, Field (x', _)) when Var.equal x x' ->
-                        Hashtbl.add st.known_cases y tags
-                    | _ -> ())
-                  block.body)
-              h
+            (* looking up the def of x is fine here, because the tag
+               we're looking for is at addr [pc - 2] (see
+               parse_bytecode.ml) and [Addr.Map.iter] iterate in
+               increasing order *)
+            match st.defs.(Code.Var.idx x) with
+            | Expr (Prim (Extern "%direct_obj_tag", [ Pv b ])) ->
+                let h = Hashtbl.create 16 in
+                Array.iteri a1 ~f:(fun i (pc, _) ->
+                    Hashtbl.replace
+                      h
+                      pc
+                      (i :: (try Hashtbl.find h pc with Not_found -> [])));
+                Hashtbl.iter
+                  (fun pc tags ->
+                    let block = Addr.Map.find pc blocks in
+                    List.iter
+                      ~f:(fun (i, _) ->
+                        match i with
+                        | Let (y, Field (x', _)) when Var.equal b x' ->
+                            Hashtbl.add st.known_cases y tags
+                        | _ -> ())
+                      block.body)
+                  h
+            | Expr _ | Phi _ -> ())
       | Pushtrap (cont, x, cont_h) ->
           add_var st x;
           st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };

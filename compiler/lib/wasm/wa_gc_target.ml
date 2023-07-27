@@ -688,7 +688,7 @@ module Memory = struct
       let* ty = Type.block_type in
       return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
 
-  let tag e = Value.int_val (wasm_array_get e (Arith.const 0l))
+  let tag e = wasm_array_get e (Arith.const 0l)
 
   let array_length e =
     let* block = Type.block_type in

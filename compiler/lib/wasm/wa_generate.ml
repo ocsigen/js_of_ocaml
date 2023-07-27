@@ -256,6 +256,7 @@ module Generate (Target : Wa_target_sig.S) = struct
             | Extern "%int_lsl", [ x; y ] -> Value.int_lsl x y
             | Extern "%int_lsr", [ x; y ] -> Value.int_lsr x y
             | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
+            | Extern "%direct_obj_tag", [ x ] -> Memory.tag x
             | Extern "caml_check_bound", [ x; y ] ->
                 seq
                   (let* cond = Arith.uge (Value.int_val y) (Memory.array_length x) in
@@ -914,7 +915,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                 match fall_through with
                 | `Return -> instr (Push e)
                 | `Block _ -> instr (Return (Some e)))
-            | Switch (x, a1, a2) ->
+            | Switch (x, a1) ->
                 let l =
                   List.filter
                     ~f:(fun pc' ->
@@ -941,18 +942,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                       in
                       let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
                       instr (Br (label_index context pc', None))
-                  | [] -> (
-                      match a1, a2 with
-                      | [||], _ -> br_table (Memory.tag (load x)) a2 context
-                      | _, [||] -> br_table (Value.int_val (load x)) a1 context
-                      | _ ->
-                          (*ZZZ Use Br_on_cast *)
-                          let context' = extend_context fall_through context in
-                          if_
-                            { params = []; result = result_typ }
-                            (Value.check_is_int (load x))
-                            (br_table (Value.int_val (load x)) a1 context')
-                            (br_table (Memory.tag (load x)) a2 context'))
+                  | [] -> br_table (Value.int_val (load x)) a1 context
                 in
                 nest l context
             | Raise (x, _) ->
@@ -1211,9 +1201,7 @@ let fix_switch_branches p =
   Addr.Map.iter
     (fun _ block ->
       match fst block.branch with
-      | Switch (_, l, l') ->
-          fix_branches l;
-          fix_branches l'
+      | Switch (_, l) -> fix_branches l
       | _ -> ())
     p.blocks;
   !p'
