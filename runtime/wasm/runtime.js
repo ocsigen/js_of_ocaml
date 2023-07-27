@@ -277,7 +277,7 @@
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
            var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
-           return res.signal?128:status
+           return res.signal?128:res.status
          },
          getcwd:()=>isNode?process.cwd():'/static',
          chdir:(x)=>process.chdir(x),
