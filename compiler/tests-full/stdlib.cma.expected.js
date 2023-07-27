@@ -14767,360 +14767,359 @@
          {
           g:
           {
-           if(typeof ty1 === "number"){
-            if(typeof ty2 === "number")
-              /*<<camlinternalFormat.ml:849:34>>*/ return 0;
-            switch(ty2[0]){
-              case 10:
-               break b;
-              case 11:
-               break a;
-              case 12:
-               break c;
-              case 13:
-               break d;
-              case 14:
-               break e;
+           if(typeof ty1 !== "number"){
+            switch(ty1[0]){
+              case 0:
+               var rest1 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 0:
+                   var rest2 = ty2[1];
+                    /*<<camlinternalFormat.ml:804:36>>*/ return [0,
+                           trans(rest1, rest2)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 1:
+               var rest1$0 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 1:
+                   var rest2$0 = ty2[1];
+                    /*<<camlinternalFormat.ml:805:40>>*/ return [1,
+                           trans(rest1$0, rest2$0)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 2:
+               var rest1$1 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 2:
+                   var rest2$1 = ty2[1];
+                    /*<<camlinternalFormat.ml:807:34>>*/ return [2,
+                           trans(rest1$1, rest2$1)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 3:
+               var rest1$2 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 3:
+                   var rest2$2 = ty2[1];
+                    /*<<camlinternalFormat.ml:808:38>>*/ return [3,
+                           trans(rest1$2, rest2$2)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 4:
+               var rest1$3 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 4:
+                   var rest2$3 = ty2[1];
+                    /*<<camlinternalFormat.ml:810:46>>*/ return [4,
+                           trans(rest1$3, rest2$3)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 5:
+               var rest1$4 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 5:
+                   var rest2$4 = ty2[1];
+                    /*<<camlinternalFormat.ml:809:38>>*/ return [5,
+                           trans(rest1$4, rest2$4)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 6:
+               var rest1$5 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 6:
+                   var rest2$5 = ty2[1];
+                    /*<<camlinternalFormat.ml:811:38>>*/ return [6,
+                           trans(rest1$5, rest2$5)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
+              case 7:
+               var rest1$6 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 7:
+                   var rest2$6 = ty2[1];
+                    /*<<camlinternalFormat.ml:806:36>>*/ return [7,
+                           trans(rest1$6, rest2$6)];
+                  case 8:
+                   break f;
+                  case 9:
+                   break g;
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+               break;
               case 8:
-               break f;
+               var rest1$7 = ty1[2], ty1$0 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 8:
+                    /*<<camlinternalFormat.ml:835:34>>*/ var
+                    rest2$7 = ty2[2],
+                    ty2$0 = ty2[1],
+                     /*<<camlinternalFormat.ml:835:34>>*/ _de_ =
+                      trans(rest1$7, rest2$7);
+                    /*<<camlinternalFormat.ml:835:4>>*/ return [8,
+                           trans(ty1$0, ty2$0),
+                           _de_];
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+                /*<<camlinternalFormat.ml:836:26>>*/ throw  /*<<camlinternalFormat.ml:836:26>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _k_], 1);
               case 9:
-               break g;
+               var rest1$8 = ty1[3], ty12 = ty1[2], ty11 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 8:
+                   break f;
+                  case 9:
+                    /*<<camlinternalFormat.ml:841:13>>*/ var
+                    rest2$8 = ty2[3],
+                    ty22 = ty2[2],
+                    ty21 = ty2[1],
+                     /*<<camlinternalFormat.ml:841:13>>*/ ty =
+                      trans(symm(ty12), ty21),
+                     /*<<camlinternalFormat.ml:842:23>>*/ match =
+                      fmtty_rel_det(ty),
+                    f4 = match[4],
+                    f2 = match[2];
+                    /*<<camlinternalFormat.ml:843:15>>*/ f2(0);
+                    /*<<camlinternalFormat.ml:844:15>>*/ f4(0);
+                    /*<<camlinternalFormat.ml:845:4>>*/ return [9,
+                           ty11,
+                           ty22,
+                           trans(rest1$8, rest2$8)];
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   break e;
+                }
+                /*<<camlinternalFormat.ml:846:28>>*/ throw  /*<<camlinternalFormat.ml:846:28>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _l_], 1);
+              case 10:
+               var rest1$9 = ty1[1];
+               if(typeof ty2 !== "number" && 10 === ty2[0]){
+                var rest2$9 = ty2[1];
+                 /*<<camlinternalFormat.ml:813:38>>*/ return [10,
+                        trans(rest1$9, rest2$9)];
+               }
+                /*<<camlinternalFormat.ml:814:21>>*/ throw  /*<<camlinternalFormat.ml:814:21>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _m_], 1);
+              case 11:
+               var rest1$10 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 10:
+                   break b;
+                  case 11:
+                   var rest2$10 = ty2[1];
+                    /*<<camlinternalFormat.ml:817:38>>*/ return [11,
+                           trans(rest1$10, rest2$10)];
+                }
+                /*<<camlinternalFormat.ml:818:21>>*/ throw  /*<<camlinternalFormat.ml:818:21>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _n_], 1);
+              case 12:
+               var rest1$11 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   var rest2$11 = ty2[1];
+                    /*<<camlinternalFormat.ml:821:34>>*/ return [12,
+                           trans(rest1$11, rest2$11)];
+                }
+                /*<<camlinternalFormat.ml:822:19>>*/ throw  /*<<camlinternalFormat.ml:822:19>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _o_], 1);
+              case 13:
+               var rest1$12 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   var rest2$12 = ty2[1];
+                    /*<<camlinternalFormat.ml:825:40>>*/ return [13,
+                           trans(rest1$12, rest2$12)];
+                }
+                /*<<camlinternalFormat.ml:826:22>>*/ throw  /*<<camlinternalFormat.ml:826:22>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _p_], 1);
               default:
-                /*<<camlinternalFormat.ml:850:23>>*/ throw  /*<<camlinternalFormat.ml:850:23>>*/ caml_maybe_attach_backtrace
-                      ([0, Assert_failure, _b_], 1);
+               var rest1$13 = ty1[1];
+               if(typeof ty2 !== "number")
+                switch(ty2[0]){
+                  case 10:
+                   break b;
+                  case 11:
+                   break a;
+                  case 12:
+                   break c;
+                  case 13:
+                   break d;
+                  case 14:
+                   var rest2$13 = ty2[1];
+                    /*<<camlinternalFormat.ml:830:4>>*/ return [14,
+                           trans(rest1$13, rest2$13)];
+                }
+                /*<<camlinternalFormat.ml:831:30>>*/ throw  /*<<camlinternalFormat.ml:831:30>>*/ caml_maybe_attach_backtrace
+                      ([0, Assert_failure, _q_], 1);
             }
+             /*<<camlinternalFormat.ml:851:23>>*/ throw  /*<<camlinternalFormat.ml:851:23>>*/ caml_maybe_attach_backtrace
+                   ([0, Assert_failure, _j_], 1);
            }
-           switch(ty1[0]){
-             case 0:
-              var rest1 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 0:
-                  var rest2 = ty2[1];
-                   /*<<camlinternalFormat.ml:804:36>>*/ return [0,
-                          trans(rest1, rest2)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 1:
-              var rest1$0 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 1:
-                  var rest2$0 = ty2[1];
-                   /*<<camlinternalFormat.ml:805:40>>*/ return [1,
-                          trans(rest1$0, rest2$0)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 2:
-              var rest1$1 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 2:
-                  var rest2$1 = ty2[1];
-                   /*<<camlinternalFormat.ml:807:34>>*/ return [2,
-                          trans(rest1$1, rest2$1)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 3:
-              var rest1$2 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 3:
-                  var rest2$2 = ty2[1];
-                   /*<<camlinternalFormat.ml:808:38>>*/ return [3,
-                          trans(rest1$2, rest2$2)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 4:
-              var rest1$3 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 4:
-                  var rest2$3 = ty2[1];
-                   /*<<camlinternalFormat.ml:810:46>>*/ return [4,
-                          trans(rest1$3, rest2$3)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 5:
-              var rest1$4 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 5:
-                  var rest2$4 = ty2[1];
-                   /*<<camlinternalFormat.ml:809:38>>*/ return [5,
-                          trans(rest1$4, rest2$4)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 6:
-              var rest1$5 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 6:
-                  var rest2$5 = ty2[1];
-                   /*<<camlinternalFormat.ml:811:38>>*/ return [6,
-                          trans(rest1$5, rest2$5)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 7:
-              var rest1$6 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 7:
-                  var rest2$6 = ty2[1];
-                   /*<<camlinternalFormat.ml:806:36>>*/ return [7,
-                          trans(rest1$6, rest2$6)];
-                 case 8:
-                  break f;
-                 case 9:
-                  break g;
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-              break;
-             case 8:
-              var rest1$7 = ty1[2], ty1$0 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 8:
-                   /*<<camlinternalFormat.ml:835:34>>*/ var
-                   rest2$7 = ty2[2],
-                   ty2$0 = ty2[1],
-                    /*<<camlinternalFormat.ml:835:34>>*/ _de_ =
-                     trans(rest1$7, rest2$7);
-                   /*<<camlinternalFormat.ml:835:4>>*/ return [8,
-                          trans(ty1$0, ty2$0),
-                          _de_];
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-               /*<<camlinternalFormat.ml:836:26>>*/ throw  /*<<camlinternalFormat.ml:836:26>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _k_], 1);
-             case 9:
-              var rest1$8 = ty1[3], ty12 = ty1[2], ty11 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 8:
-                  break f;
-                 case 9:
-                   /*<<camlinternalFormat.ml:841:13>>*/ var
-                   rest2$8 = ty2[3],
-                   ty22 = ty2[2],
-                   ty21 = ty2[1],
-                    /*<<camlinternalFormat.ml:841:13>>*/ ty =
-                     trans(symm(ty12), ty21),
-                    /*<<camlinternalFormat.ml:842:23>>*/ match =
-                     fmtty_rel_det(ty),
-                   f4 = match[4],
-                   f2 = match[2];
-                   /*<<camlinternalFormat.ml:843:15>>*/ f2(0);
-                   /*<<camlinternalFormat.ml:844:15>>*/ f4(0);
-                   /*<<camlinternalFormat.ml:845:4>>*/ return [9,
-                          ty11,
-                          ty22,
-                          trans(rest1$8, rest2$8)];
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  break e;
-               }
-               /*<<camlinternalFormat.ml:846:28>>*/ throw  /*<<camlinternalFormat.ml:846:28>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _l_], 1);
+           if(typeof ty2 === "number")
+             /*<<camlinternalFormat.ml:849:34>>*/ return 0;
+           switch(ty2[0]){
              case 10:
-              var rest1$9 = ty1[1];
-              if(typeof ty2 !== "number" && 10 === ty2[0]){
-               var rest2$9 = ty2[1];
-                /*<<camlinternalFormat.ml:813:38>>*/ return [10,
-                       trans(rest1$9, rest2$9)];
-              }
-               /*<<camlinternalFormat.ml:814:21>>*/ throw  /*<<camlinternalFormat.ml:814:21>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _m_], 1);
+              break b;
              case 11:
-              var rest1$10 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 10:
-                  break b;
-                 case 11:
-                  var rest2$10 = ty2[1];
-                   /*<<camlinternalFormat.ml:817:38>>*/ return [11,
-                          trans(rest1$10, rest2$10)];
-               }
-               /*<<camlinternalFormat.ml:818:21>>*/ throw  /*<<camlinternalFormat.ml:818:21>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _n_], 1);
+              break a;
              case 12:
-              var rest1$11 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  var rest2$11 = ty2[1];
-                   /*<<camlinternalFormat.ml:821:34>>*/ return [12,
-                          trans(rest1$11, rest2$11)];
-               }
-               /*<<camlinternalFormat.ml:822:19>>*/ throw  /*<<camlinternalFormat.ml:822:19>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _o_], 1);
+              break c;
              case 13:
-              var rest1$12 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  var rest2$12 = ty2[1];
-                   /*<<camlinternalFormat.ml:825:40>>*/ return [13,
-                          trans(rest1$12, rest2$12)];
-               }
-               /*<<camlinternalFormat.ml:826:22>>*/ throw  /*<<camlinternalFormat.ml:826:22>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _p_], 1);
+              break d;
+             case 14:
+              break e;
+             case 8:
+              break f;
+             case 9: break;
              default:
-              var rest1$13 = ty1[1];
-              if(typeof ty2 !== "number")
-               switch(ty2[0]){
-                 case 10:
-                  break b;
-                 case 11:
-                  break a;
-                 case 12:
-                  break c;
-                 case 13:
-                  break d;
-                 case 14:
-                  var rest2$13 = ty2[1];
-                   /*<<camlinternalFormat.ml:830:4>>*/ return [14,
-                          trans(rest1$13, rest2$13)];
-               }
-               /*<<camlinternalFormat.ml:831:30>>*/ throw  /*<<camlinternalFormat.ml:831:30>>*/ caml_maybe_attach_backtrace
-                     ([0, Assert_failure, _q_], 1);
+               /*<<camlinternalFormat.ml:850:23>>*/ throw  /*<<camlinternalFormat.ml:850:23>>*/ caml_maybe_attach_backtrace
+                     ([0, Assert_failure, _b_], 1);
            }
-            /*<<camlinternalFormat.ml:851:23>>*/ throw  /*<<camlinternalFormat.ml:851:23>>*/ caml_maybe_attach_backtrace
-                  ([0, Assert_failure, _j_], 1);
           }
            /*<<camlinternalFormat.ml:847:28>>*/ throw  /*<<camlinternalFormat.ml:847:28>>*/ caml_maybe_attach_backtrace
                  ([0, Assert_failure, _d_], 1);
@@ -26365,13 +26364,14 @@
     }
     /*<<format.ml:1344:75>>*/ }
    function output_acc(ppf, acc){
-     /*<<format.ml:1350:29>>*/ b:
+     /*<<format.ml:1350:29>>*/ if(typeof acc === "number")
+      /*<<format.ml:1376:32>>*/ return 0;
+    b:
     {
      a:
      {
       c:
       {
-       if(typeof acc === "number")  /*<<format.ml:1376:32>>*/ return 0;
        switch(acc[0]){
          case 0:
           var f = acc[2], p = acc[1];
@@ -26471,13 +26471,14 @@
      /*<<format.ml:1370:32>>*/ return pp_print_string(ppf, s);
     /*<<format.ml:1376:34>>*/ }
    function strput_acc(ppf, acc){
-     /*<<format.ml:1382:29>>*/ b:
+     /*<<format.ml:1382:29>>*/ if(typeof acc === "number")
+      /*<<format.ml:1411:32>>*/ return 0;
+    b:
     {
      a:
      {
       c:
       {
-       if(typeof acc === "number")  /*<<format.ml:1411:32>>*/ return 0;
        switch(acc[0]){
          case 0:
           var f = acc[2], p = acc[1];
