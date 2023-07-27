@@ -677,8 +677,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         ~params
     in
     let g = Wa_structure.build_graph ctx.blocks pc in
-    let idom = Wa_structure.dominator_tree g in
-    let dom = Wa_structure.reverse_tree idom in
+    let dom = Wa_structure.dominator_tree g in
     let rec index pc i context =
       match context with
       | `Block pc' :: _ when pc = pc' -> i
@@ -698,9 +697,11 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~fall_through
           ~pc
           ~l:
-            (List.filter
-               ~f:(fun pc' -> is_switch || Wa_structure.is_merge_node g pc')
-               (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc))))
+            (pc
+            |> Wa_structure.get_edges dom
+            |> Addr.Set.elements
+            |> List.filter ~f:(fun pc' -> is_switch || Wa_structure.is_merge_node g pc')
+            |> Wa_structure.sort_in_post_order g)
           ~context
       in
       if Wa_structure.is_loop_header g pc

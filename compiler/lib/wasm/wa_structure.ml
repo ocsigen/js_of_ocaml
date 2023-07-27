@@ -1,6 +1,8 @@
 open Stdlib
 open Code
 
+type graph = (Addr.t, Addr.Set.t) Hashtbl.t
+
 let get_edges g src = try Hashtbl.find g src with Not_found -> Addr.Set.empty
 
 let add_edge g src dst = Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
@@ -17,12 +19,6 @@ let reverse_tree t =
   Hashtbl.iter (fun child parent -> add_edge g parent child) t;
   g
 
-let rec leave_try_body blocks pc =
-  match Addr.Map.find pc blocks with
-  | { body = []; branch = (Return _ | Stop), _; _ } -> false
-  | { body = []; branch = Branch (pc', _), _; _ } -> leave_try_body blocks pc'
-  | _ -> true
-
 type control_flow_graph =
   { succs : (Addr.t, Addr.Set.t) Hashtbl.t
   ; preds : (Addr.t, Addr.Set.t) Hashtbl.t
@@ -31,7 +27,14 @@ type control_flow_graph =
   }
 
 let is_backward g pc pc' = Hashtbl.find g.block_order pc >= Hashtbl.find g.block_order pc'
+
 let is_forward g pc pc' = Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
+
+let rec leave_try_body blocks pc =
+  match Addr.Map.find pc blocks with
+  | { body = []; branch = (Return _ | Stop), _; _ } -> false
+  | { body = []; branch = Branch (pc', _), _; _ } -> leave_try_body blocks pc'
+  | _ -> true
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
@@ -74,7 +77,7 @@ let build_graph blocks pc =
   let preds = reverse_graph succs in
   { succs; preds; reverse_post_order = !l; block_order }
 
-let dominator_tree g =
+let reversed_dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Hashtbl.create 16 in
@@ -107,11 +110,7 @@ let dominator_tree g =
         l);
   dom
 
-(* pc dominates pc' *)
-let rec dominates g idom pc pc' =
-  pc = pc'
-  || is_forward g pc pc'
-     && dominates g idom pc (Hashtbl.find idom pc')
+let dominator_tree g = reverse_tree (reversed_dominator_tree g)
 
 (* pc has at least two forward edges moving into it *)
 let is_merge_node g pc =
@@ -130,20 +129,8 @@ let is_loop_header g pc =
   let o = Hashtbl.find g.block_order pc in
   Addr.Set.exists (fun pc' -> Hashtbl.find g.block_order pc' >= o) s
 
-
-let dominance_frontier g idom =
-  let frontiers = Hashtbl.create 16 in
-  Hashtbl.iter
-    (fun pc preds ->
-      if Addr.Set.cardinal preds > 1
-      then
-        let dom = Hashtbl.find idom pc in
-        let rec loop runner =
-          if runner <> dom
-          then (
-            add_edge frontiers runner pc;
-            loop (Hashtbl.find idom runner))
-        in
-        Addr.Set.iter loop preds)
-    g.preds;
-  frontiers
+let sort_in_post_order g l =
+  List.sort
+    ~cmp:(fun b b' ->
+      compare (Hashtbl.find g.block_order b') (Hashtbl.find g.block_order b))
+    l
