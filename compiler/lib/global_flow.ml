@@ -245,14 +245,9 @@ let program_deps st { blocks; _ } =
       | Cond (x, cont1, cont2) ->
           cont_deps blocks st cont1;
           cont_deps blocks st ~ignore:x cont2
-      | Switch (x, a1, a2) ->
+      | Switch (x, a1) ->
           Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont);
           let h = Hashtbl.create 16 in
-          Array.iteri
-            ~f:(fun i (pc, _) ->
-              Hashtbl.replace h pc (i :: (try Hashtbl.find h pc with Not_found -> [])))
-            a2;
           if not st.fast
           then
             Hashtbl.iter
