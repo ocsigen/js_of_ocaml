@@ -37,6 +37,7 @@ with Exit ->
         (List.concat
            [ [ "--disable"; "inline" ]
            ; [ "--disable"; "deadcode" ]
+           ; [ "--disable"; "globaldeadcode" ]
            ; [ "--disable"; "staticeval" ]
            ])
       prog
@@ -100,6 +101,7 @@ with Exit ->
         (List.concat
            [ [ "--disable"; "inline" ]
            ; [ "--disable"; "deadcode" ]
+           ; [ "--disable"; "globaldeadcode" ]
            ; [ "--disable"; "staticeval" ]
            ])
       prog
@@ -186,6 +188,7 @@ with Exit ->
         (List.concat
            [ [ "--disable"; "inline" ]
            ; [ "--disable"; "deadcode" ]
+           ; [ "--disable"; "globaldeadcode" ]
            ; [ "--disable"; "staticeval" ]
            ])
       prog
