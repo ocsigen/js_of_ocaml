@@ -262,7 +262,7 @@ let propagate uses defs live_vars live_table x =
   Var.Map.fold
     (fun y usage_kind live -> Domain.join (contribution y usage_kind) live)
     uses.(idx)
-    live_vars.(idx)
+    (Domain.join live_vars.(idx) (Var.Tbl.get live_table x))
 
 let solver vars uses defs live_vars =
   let g =
