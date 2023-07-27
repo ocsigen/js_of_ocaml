@@ -23,16 +23,15 @@
 open Js
 open Dom
 
-class type blob =
-  object
-    method size : int readonly_prop
+class type blob = object
+  method size : int readonly_prop
 
-    method _type : js_string t readonly_prop
+  method _type : js_string t readonly_prop
 
-    method slice : int -> int -> blob t meth
+  method slice : int -> int -> blob t meth
 
-    method slice_withContentType : int -> int -> js_string t -> blob t meth
-  end
+  method slice_withContentType : int -> int -> js_string t -> blob t meth
+end
 
 type 'a make_blob =
   ?contentType:string -> ?endings:[ `Transparent | `Native ] -> 'a -> blob t
@@ -49,14 +48,13 @@ val blob_from_any :
   list
   make_blob
 
-class type file =
-  object
-    inherit blob
+class type file = object
+  inherit blob
 
-    method name : js_string t readonly_prop
+  method name : js_string t readonly_prop
 
-    method lastModifiedDate : js_string t readonly_prop
-  end
+  method lastModifiedDate : js_string t readonly_prop
+end
 
 type file_any
 
@@ -72,82 +70,77 @@ module CoerceTo : sig
   val arrayBuffer : file_any -> Typed_array.arrayBuffer t Opt.t
 end
 
-class type fileList =
-  object
-    inherit [file] Dom.nodeList
-  end
+class type fileList = object
+  inherit [file] Dom.nodeList
+end
 
-class type fileError =
-  object
-    method code : int readonly_prop
-  end
+class type fileError = object
+  method code : int readonly_prop
+end
 
 (* {2 Events} *)
-class type ['a] progressEvent =
-  object
-    inherit ['a] event
+class type ['a] progressEvent = object
+  inherit ['a] event
 
-    method lengthComputable : bool t readonly_prop
+  method lengthComputable : bool t readonly_prop
 
-    method loaded : int readonly_prop
+  method loaded : int readonly_prop
 
-    method total : int readonly_prop
-  end
+  method total : int readonly_prop
+end
 
-class type progressEventTarget =
-  object ('self)
-    method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+class type progressEventTarget = object ('self)
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
-  end
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
+end
 
 type readyState =
   | EMPTY
   | LOADING
   | DONE
 
-class type fileReader =
-  object ('self)
-    method readAsArrayBuffer : #blob t -> unit meth
+class type fileReader = object ('self)
+  method readAsArrayBuffer : #blob t -> unit meth
 
-    method readAsBinaryString : #blob t -> unit meth
+  method readAsBinaryString : #blob t -> unit meth
 
-    method readAsText : #blob t -> unit meth
+  method readAsText : #blob t -> unit meth
 
-    method readAsText_withEncoding : #blob t -> js_string t -> unit meth
+  method readAsText_withEncoding : #blob t -> js_string t -> unit meth
 
-    method readAsDataURL : #blob t -> unit meth
+  method readAsDataURL : #blob t -> unit meth
 
-    method abort : unit meth
+  method abort : unit meth
 
-    method readyState : readyState readonly_prop
+  method readyState : readyState readonly_prop
 
-    method result : file_any readonly_prop
+  method result : file_any readonly_prop
 
-    method error : fileError t readonly_prop
+  method error : fileError t readonly_prop
 
-    method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-    inherit progressEventTarget
-  end
+  inherit progressEventTarget
+end
 
 module ReaderEvent : sig
   type typ = fileReader progressEvent t Dom.Event.typ

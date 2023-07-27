@@ -1698,8 +1698,11 @@ and compile_merge_node
       let new_frontier =
         members
         |> List.map ~f:(fun pc ->
-               let seen = get_seen st pc in
-               dominance_frontier ~seen st pc)
+               if Addr.Set.mem pc frontier
+               then Addr.Set.singleton pc
+               else
+                 let seen = get_seen st pc in
+                 dominance_frontier ~seen st pc)
         |> List.fold_left ~init:Addr.Set.empty ~f:Addr.Set.union
       in
       (* The frontier has to move when compiling a merge node. Fail early instead of infinite recursion. *)
@@ -1728,7 +1731,7 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
   if debug ()
   then
     Format.eprintf
-      "Resove %s to %s;@,"
+      "Resolve %s to %s;@,"
       (string_of_set new_frontier')
       (string_of_set new_frontier);
   if Addr.Set.cardinal new_frontier <= 1

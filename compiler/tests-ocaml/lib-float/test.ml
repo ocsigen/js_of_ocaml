@@ -32,11 +32,9 @@ let cases = [
   (20, True (fun () -> Float.(is_nan(trunc nan))));
 
   (21, Equal((fun () -> Float.round 0.5), 1.));
-  (* tie resolve differently *)
-  (* (22, Equal((fun () -> Float.round (-0.5)), -1.)); *)
+  (22, Equal((fun () -> Float.round (-0.5)), -1.));
   (23, Equal((fun () -> Float.round 1.5), 2.));
-  (* tie resolve differently *)
-  (* (24, Equal((fun () -> Float.round (-1.5)), -2.)); *)
+  (24, Equal((fun () -> Float.round (-1.5)), -2.));
   (25, let x = 0x1.0000000000001p52 in (* x + 0.5 rounds to x +. 1. *)
        Equal((fun () -> Float.round x), x));
   (26, Equal((fun () -> Float.round (Float.next_after 0.5 0.)), 0.));

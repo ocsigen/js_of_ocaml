@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler.Stdlib
+
 (* https://github.com/ocaml/ocaml/pull/9497 *)
 (* Original test case from the issue: *)
 
@@ -36,7 +38,9 @@ let%expect_test _ =
     ignore (IdSet.mem { id = 1 } basic_set : bool)
     (* diverge here *)
   with e ->
-    assert (String.ends_with ~suffix:"Undefined recursive module" (Printexc.to_string e))
+    if String.is_suffix ~suffix:"Undefined recursive module" (Printexc.to_string e)
+    then ()
+    else raise e
 
 (* Looping version *)
 module rec M1 : sig

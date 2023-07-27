@@ -36,7 +36,7 @@ let predefined_exceptions =
 let new_closure_repr =
   match Ocaml_version.v with
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 -> true
+  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> true
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -2436,7 +2436,7 @@ let parse_bytecode code globals debug_data =
 
 let override_global =
   match Ocaml_version.v with
-  | `V4_13 | `V4_14 | `V5_00 | `V5_01 -> []
+  | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
         Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
@@ -2563,8 +2563,10 @@ let from_exe
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
   let symbols =
-    Ocaml_compiler.Symtable.GlobalMap.filter_global_map
-      (fun id -> keep (Ident.name id))
+    Ocaml_compiler.Symtable.GlobalMap.filter
+      (function
+        | Glob_predef _ -> true
+        | Glob_compunit name -> keep name)
       orig_symbols
   in
   let t = Timer.make () in
@@ -2585,7 +2587,7 @@ let from_exe
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->
       try
-        let nn = Ident.create_persistent name in
+        let nn = Ocaml_compiler.Symtable.Global.Glob_compunit name in
         let i = Ocaml_compiler.Symtable.GlobalMap.find nn orig_symbols in
         globals.override.(i) <- Some v;
         if debug_parser () then Format.eprintf "overriding global %s@." name
@@ -2593,11 +2595,9 @@ let from_exe
   if linkall
   then
     (* export globals *)
-    Ocaml_compiler.Symtable.GlobalMap.iter
-      (fun id n ->
-        globals.named_value.(n) <- Some (Ident.name id);
-        globals.is_exported.(n) <- true)
-      symbols;
+    Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
+        globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
+        globals.is_exported.(n) <- true);
   let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
@@ -2620,7 +2620,7 @@ let from_exe
     then
       let symtable_js =
         Ocaml_compiler.Symtable.GlobalMap.fold
-          (fun i p acc -> (Ident.name i, p) :: acc)
+          (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
           symbols
           []
         |> Array.of_list
@@ -2683,16 +2683,14 @@ let from_exe
       with Exit -> false
   in
   let cmis =
-    let exception_ids =
-      List.fold_left predefined_exceptions ~init:(-1) ~f:(fun acc (i, _) -> max acc i)
-    in
     if include_cmis
     then
       Ocaml_compiler.Symtable.GlobalMap.fold
-        (fun id num acc ->
-          if num > exception_ids && Ident.global id && is_module (Ident.name id)
-          then StringSet.add (Ident.name id) acc
-          else acc)
+        (fun id _num acc ->
+          match id with
+          | Ocaml_compiler.Symtable.Global.Glob_compunit name ->
+              if is_module name then StringSet.add name acc else acc
+          | Glob_predef _ -> acc)
         symbols
         StringSet.empty
     else StringSet.empty
@@ -2723,9 +2721,9 @@ let from_bytes ~prims ~debug (code : bytecode) =
     let t = Hashtbl.create 17 in
     if Debug.names debug_data
     then
-      Symtable.iter_global_map
-        (fun id pos' -> Hashtbl.add t pos' id)
-        (Symtable.current_state ());
+      Ocaml_compiler.Symtable.GlobalMap.iter
+        (Ocaml_compiler.Symtable.current_state ())
+        ~f:(fun id pos' -> Hashtbl.add t pos' id);
     t
   in
   let globals = make_globals 0 [||] prims in
@@ -2740,7 +2738,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     else
       match Hashtbl.find ident_table i with
       | exception Not_found -> None
-      | ident -> Some (Ident.name ident)
+      | glob -> Some (Ocaml_compiler.Symtable.Global.name glob)
   in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
@@ -2789,7 +2787,7 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-    [@@if ocaml_version < (5, 1, 0)]
+  [@@if ocaml_version < (5, 1, 0)]
 
   let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
@@ -2820,8 +2818,7 @@ module Reloc = struct
   let step2 t compunit code =
     t.step2_started <- true;
     let open Cmo_format in
-    let next id =
-      let name = Ident.name id in
+    let next name =
       try Hashtbl.find t.names name
       with Not_found ->
         let pos = t.pos in
@@ -2829,11 +2826,20 @@ module Reloc = struct
         Hashtbl.add t.names name pos;
         pos
     in
-    let slot_for_getglobal id = next id in
-    let slot_for_setglobal id = next id in
-    List.iter compunit.cu_reloc ~f:(function
-        | Reloc_getglobal id, pos -> gen_patch_int code pos (slot_for_getglobal id)
-        | Reloc_setglobal id, pos -> gen_patch_int code pos (slot_for_setglobal id)
+    let slot_for_global id = next id in
+    List.iter compunit.cu_reloc ~f:(fun (reloc, pos) ->
+        let patch name = gen_patch_int code pos name in
+        match reloc with
+        | ((Reloc_getglobal id) [@if ocaml_version < (5, 2, 0)]) ->
+            patch (slot_for_global (Ident.name id))
+        | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
+            patch (slot_for_global (Ident.name id))
+        | ((Reloc_getcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
+            patch (slot_for_global id)
+        | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
+            patch (slot_for_global id)
+        | ((Reloc_setcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
+            patch (slot_for_global id)
         | _ -> ())
 
   let primitives t =
@@ -2906,7 +2912,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     if include_cmis
     then
       List.fold_left l ~init:StringSet.empty ~f:(fun acc (compunit, _) ->
-          StringSet.add compunit.Cmo_format.cu_name acc)
+          StringSet.add (Ocaml_compiler.Cmo_format.name compunit) acc)
     else StringSet.empty
   in
   { code = prepend prog body; cmis; debug = debug_data }
@@ -3036,7 +3042,7 @@ let link_info ~symtable ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
   let symtable_js =
     Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i p acc -> (Ident.name i, p) :: acc)
+      (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
       symtable
       []
     |> Array.of_list

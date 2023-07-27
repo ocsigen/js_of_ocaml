@@ -244,7 +244,7 @@ function caml_hash (count, limit, seed, obj) {
       // Integer
       h = caml_hash_mix_int(h, v+v+1);
       num--;
-    } else if (v === +v) {
+    } else if (typeof v === "number") {
       // Float
       h = caml_hash_mix_float(h,v);
       num--;

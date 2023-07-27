@@ -4,48 +4,45 @@
 
     https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API *)
 
-class type intersectionObserverEntry =
-  object
-    method target : Dom.node Js.t Js.readonly_prop
+class type intersectionObserverEntry = object
+  method target : Dom.node Js.t Js.readonly_prop
 
-    method boundingClientRect : Dom_html.clientRect Js.t Js.readonly_prop
+  method boundingClientRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method rootBounds : Dom_html.clientRect Js.t Js.opt Js.readonly_prop
+  method rootBounds : Dom_html.clientRect Js.t Js.opt Js.readonly_prop
 
-    method intersectionRect : Dom_html.clientRect Js.t Js.readonly_prop
+  method intersectionRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method intersectionRatio : float Js.readonly_prop
+  method intersectionRatio : float Js.readonly_prop
 
-    method isIntersecting : bool Js.t Js.readonly_prop
+  method isIntersecting : bool Js.t Js.readonly_prop
 
-    method time : float Js.readonly_prop
-  end
+  method time : float Js.readonly_prop
+end
 
-class type intersectionObserverOptions =
-  object
-    method root : Dom.node Js.t Js.writeonly_prop
+class type intersectionObserverOptions = object
+  method root : Dom.node Js.t Js.writeonly_prop
 
-    method rootMargin : Js.js_string Js.t Js.writeonly_prop
+  method rootMargin : Js.js_string Js.t Js.writeonly_prop
 
-    method threshold : float Js.js_array Js.t Js.writeonly_prop
-  end
+  method threshold : float Js.js_array Js.t Js.writeonly_prop
+end
 
-class type intersectionObserver =
-  object
-    method root : Dom.node Js.t Js.opt Js.readonly_prop
+class type intersectionObserver = object
+  method root : Dom.node Js.t Js.opt Js.readonly_prop
 
-    method rootMargin : Js.js_string Js.t Js.readonly_prop
+  method rootMargin : Js.js_string Js.t Js.readonly_prop
 
-    method thresholds : float Js.js_array Js.t Js.readonly_prop
+  method thresholds : float Js.js_array Js.t Js.readonly_prop
 
-    method observe : #Dom.node Js.t -> unit Js.meth
+  method observe : #Dom.node Js.t -> unit Js.meth
 
-    method unobserve : #Dom.node Js.t -> unit Js.meth
+  method unobserve : #Dom.node Js.t -> unit Js.meth
 
-    method disconnect : unit Js.meth
+  method disconnect : unit Js.meth
 
-    method takeRecords : intersectionObserverEntry Js.t Js.js_array Js.meth
-  end
+  method takeRecords : intersectionObserverEntry Js.t Js.js_array Js.meth
+end
 
 val empty_intersection_observer_options : unit -> intersectionObserverOptions Js.t
 

@@ -1,6 +1,19 @@
 (library
+ (name jsoo_testsuite_latest)
+ (modules test_io test_floats)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (enabled_if
+  (>= %{ocaml_version} 4.14))
+ (inline_tests
+  (modes js best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsoo_testsuite)
- (libraries unix compiler-libs.common)
+ (modules
+  (:standard \ test_io test_floats))
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
   (names bigarray_stubs flush_stubs))

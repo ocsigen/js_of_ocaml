@@ -29,40 +29,37 @@
 open Js
 open Dom_html
 
-class type ['a, 'b] worker =
-  object ('self)
-    inherit eventTarget
+class type ['a, 'b] worker = object ('self)
+  inherit eventTarget
 
-    method onerror : ('self t, errorEvent t) event_listener writeonly_prop
+  method onerror : ('self t, errorEvent t) event_listener writeonly_prop
 
-    method onmessage : ('self t, 'b messageEvent t) event_listener writeonly_prop
+  method onmessage : ('self t, 'b messageEvent t) event_listener writeonly_prop
 
-    method postMessage : 'a -> unit meth
+  method postMessage : 'a -> unit meth
 
-    method terminate : unit meth
-  end
+  method terminate : unit meth
+end
 
-and errorEvent =
-  object
-    inherit event
+and errorEvent = object
+  inherit event
 
-    method message : js_string t readonly_prop
+  method message : js_string t readonly_prop
 
-    method filename : js_string t readonly_prop
+  method filename : js_string t readonly_prop
 
-    method lineno : int readonly_prop
+  method lineno : int readonly_prop
 
-    method colno : int readonly_prop
+  method colno : int readonly_prop
 
-    method error : Unsafe.any readonly_prop
-  end
+  method error : Unsafe.any readonly_prop
+end
 
-and ['a] messageEvent =
-  object
-    inherit event
+and ['a] messageEvent = object
+  inherit event
 
-    method data : 'a readonly_prop
-  end
+  method data : 'a readonly_prop
+end
 
 val create : string -> ('a, 'b) worker t
 

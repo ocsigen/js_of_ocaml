@@ -1,0 +1,11 @@
+(executables
+ (names test_gc)
+ (libraries)
+ (flags -w -69)
+ (modes js))
+
+(rule
+ (alias runtest)
+ (deps test_gc.bc.js)
+ (action
+  (run node test_gc.bc.js)))

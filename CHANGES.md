@@ -1,4 +1,19 @@
-# 5.3.0 (2023-??-??) - ??
+# Dev (2023-??-??) - ??
+
+* Runtime: fix Dom_html.onIE (#1493)
+* Compiler: fix global flow analysis (#1494)
+
+# 5.4.0 (2023-07-06) - Lille
+
+## Bug fixes
+* Runtime: Fix recursive modules on ocaml < 4.13 (#1485)
+* Runtime: fix hashing of NaN (#1475)
+* Runtime: float rounding should resolve tie away from zero (#1475)
+* Runtime: fix Gc.stat, Gc.quick_stat, Gc.get (#1475)
+* Compiler: fix some miscompilation, probably introduced in jsoo 5.0.0,
+  revealed by OCaml 5.0
+
+# 5.3.0 (2023-06-21) - Lille
 ## Features/Changes
 * Misc: Bump magic number for ocaml 5.1
 * Misc: changes to stay compatible with the next version of ppx_expect

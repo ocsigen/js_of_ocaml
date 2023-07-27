@@ -285,7 +285,7 @@ function caml_parse_engine(tables, env, cmd, arg)
   return res;
 }
 
-//Provides: caml_set_parser_trace const
+//Provides: caml_set_parser_trace
 //Requires: caml_parser_trace
 function caml_set_parser_trace(bool) {
   var oldflag = caml_parser_trace;

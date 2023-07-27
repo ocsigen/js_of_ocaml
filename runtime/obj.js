@@ -17,8 +17,8 @@
 
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
-  if( typeof y==="function" ) { x.fun = y; return 0; }
   if( y.fun ) { x.fun = y.fun; return 0; }
+  if( typeof y==="function" ) { x.fun = y; return 0; }
   var i = y.length; while (i--) x[i] = y[i]; return 0;
 }
 
@@ -171,27 +171,13 @@ function caml_obj_update_tag(b,o,n) {
 }
 
 //Provides: caml_lazy_update_to_forcing
-//Requires: caml_obj_tag, caml_obj_update_tag, caml_ml_domain_unique_token
+//Requires: caml_obj_update_tag
 function caml_lazy_update_to_forcing(o) {
-  var t = caml_obj_tag(o);
-  if(t != 246 && t != 250 && t != 244)
-    return 4
-  if(caml_obj_update_tag(o, 246, 244)) {
-    return 0
+  if ((o instanceof Array) && o[0] == (o[0] >>> 0) &&
+      caml_obj_update_tag(o, 246, 244)) {
+    return 0;
   } else {
-    var field0 = o[1];
-    t = o[0]
-    if(t == 244) {
-      if(field0 == caml_ml_domain_unique_token(0))
-        return 1
-      else
-        return 2
-    } else if (t == 250) {
-      return 3;
-    } else {
-      // assert t = lazy_tag
-      return 2;
-    }
+    return 1;
   }
 }
 
