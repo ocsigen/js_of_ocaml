@@ -184,6 +184,10 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
     | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
   in
+  let variable_may_escape x = match global_info.info_variable_may_escape.(Var.idx x) with
+    | Escape | Escape_constant -> true
+    | No -> false
+  in
   let live_instruction i =
     match i with
     | Let (x, e) ->
@@ -195,7 +199,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
           match e with
           | Apply { args; _ } ->
               List.iter
-                ~f:(fun x -> if Var.ISet.mem global_info.info_may_escape x then add_top x)
+                ~f:(fun x -> if variable_may_escape x then add_top x)
                 args
           | _ -> ())
     | Assign (_, _) -> ()
@@ -212,7 +216,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
     | Stop -> ()
-    | Return x -> if Var.ISet.mem global_info.info_may_escape x then add_top x
+    | Return x -> if variable_may_escape x then add_top x
     | Raise (x, _) -> add_top x
     | Cond (x, _, _) -> add_top x
     | Switch (x, _, _) -> add_top x
