@@ -322,7 +322,7 @@ module Current = struct
         let res = Js.match_result res in
         Js.to_string (Js.Unsafe.get res 1))
 
-  let set_fragment s = l##.hash := Js.bytestring (urlencode s)
+  let set_fragment s = l##.hash := Js.bytestring s
 
   let get () = url_of_js_string l##.href
 
