@@ -1318,6 +1318,9 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             prim, const_p, queue
         | Extern "%closure", _ -> assert false
+        | Extern "%undefined", [] ->
+            J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue
+        | Extern "%undefined", _ -> assert false
         | Extern "%caml_js_opt_call", f :: o :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let (po, co), queue = access_queue' ~ctx queue o in

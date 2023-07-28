@@ -399,7 +399,8 @@ end
 
 let add_sentinal p =
   let sentinal = Var.fresh () in
-  let instr, loc = Let (sentinal, Constant (Int 0l)), Before 0 in
+  let undefined = Prim (Extern "%undefined", []) in
+  let instr, loc = Let (sentinal, undefined), Before 0 in
   Code.prepend p [ instr, loc ], sentinal
 
 let f p sentinal global_info =
