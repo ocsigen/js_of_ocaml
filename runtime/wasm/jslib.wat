@@ -487,7 +487,7 @@
       (if (i32.eqz (local.get $n)) (then (return (local.get $s'))))
       (local.set $s''
          (array.new $string (i32.const 0)
-            (i32.add (local.get $i) (local.get $n))))
+            (i32.sub (local.get $i) (local.get $n))))
       (local.set $i (i32.const 0))
       (local.set $n (i32.const 0))
       (loop $fill
