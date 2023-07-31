@@ -166,11 +166,11 @@ let%expect_test "static eval of tags" =
       type t = A | B | C of t | D of t
 
       let foobar =
-        let x = C (D A) in
+        let x = if Random.int 3 > 1 then C (D A) else D (A) in
         match x with
         | A -> 1
         | B -> 2
-        | C _ -> 2
+        | C _ 
         | D _ -> 3
 
       let export = [|foobar;foobar|]
