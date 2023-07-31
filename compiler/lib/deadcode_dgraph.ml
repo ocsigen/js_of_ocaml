@@ -14,6 +14,16 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+ This module provides a global liveness analysis more powerful than that found in [deadcode.ml]. In particular,
+ this analysis annotates blocks with the specific fields that are live. It also uses [global_flow.ml] to determine
+ the liveness of function return values. It first computes an initial liveness of each variable by traversing the program IR.
+ Then it propagates this information to the dependencies of each variable using a flow analysis solver. Lastly it replaces
+ dead variables with a sentinal zero variable.
+
+ Although this module does not perform any dead-code elimination itself, it is designed to be used to identify and substitute 
+ dead variables that are then removed by [deadcode.ml]. In particular it can allow the elimination of unused functions defined 
+ in functors, which the original deadcode elimination cannot. 
  *)
 
 open Code
@@ -23,14 +33,16 @@ let debug = Debug.find "globaldeadcode"
 
 let times = Debug.find "times"
 
+(** Definition of a variable [x]. *)
 type def =
-  | Expr of expr
-  | Param
+  | Expr of expr (** [x] is defined by an expression. *)
+  | Param (** [x] is a block or closure parameter. *)
 
+(** Liveness of a variable [x], forming a lattice structure. *)
 type live =
-  | Top
-  | Live of IntSet.t
-  | Dead
+  | Top (** [x] is live and not a block. *)
+  | Live of IntSet.t (** [x] is a live block with a (non-empty) set of live fields. *)
+  | Dead (** [x] is dead. *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -45,6 +57,7 @@ module Domain = struct
 
   let bot = Dead
 
+  (** Join the liveness according to lattice structure. *)
   let join l1 l2 =
     match l1, l2 with
     | _, Top | Top, _ -> Top
@@ -73,10 +86,17 @@ let definitions nv prog =
     prog.blocks;
   defs
 
+(** Type of variable usage. *)  
 type usage_kind =
-  | Compute (* variable y is used to compute x *)
-  | Propagate (* values of y propagate to x *)
+  | Compute (** variable y is used to compute x *)
+  | Propagate (** values of y propagate to x *)
 
+(** Compute the adjacency list for the dependency graph of given program. An edge between
+    variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
+    as [Propagate] if [x] is applied as a closure or block argument the parameter [y]. 
+    
+    We use information from global flow to try to add edges between function calls and their return values
+    at known call sites. *)
 let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array =
   let uses = Array.make nv Var.Map.empty in
   let add_use kind x y = uses.(Var.idx y) <- Var.Map.add x kind uses.(Var.idx y) in
@@ -132,7 +152,6 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
           match i with
           | Let (x, e) -> add_expr_uses x e
           | Assign (x, y) -> add_use Compute x y
-          (* TODO: These? *)
           | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
       (* Add deps from block branch *)
@@ -152,7 +171,7 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
     prog.blocks;
   uses
 
-(* Return the set of variables used in a given expression *)
+(** Return the set of variables used in a given expression *)
 let expr_vars e =
   let vars = Var.ISet.empty () in
   (match e with
@@ -172,6 +191,16 @@ let expr_vars e =
         args);
   vars
 
+(** Compute the initial liveness of each variable in the program. 
+
+    A variable [x] is marked as [Top] if 
+    + It is used in an impure expression (as defined by [pure_expr]);
+    + Is used in a conditonal/switch;
+    + Is raised by an exception;
+    + Is used in another stateful instruction (like setting a block or array field);
+    + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
+    
+    A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
 let liveness nv prog pure_funs (global_info : Global_flow.info) =
   let live_vars = Array.make nv Dead in
   let add_top v =
@@ -184,7 +213,8 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
     | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
   in
-  let variable_may_escape x = match global_info.info_variable_may_escape.(Var.idx x) with
+  let variable_may_escape x =
+    match global_info.info_variable_may_escape.(Var.idx x) with
     | Escape | Escape_constant -> true
     | No -> false
   in
@@ -198,9 +228,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
           add_top x;
           match e with
           | Apply { args; _ } ->
-              List.iter
-                ~f:(fun x -> if variable_may_escape x then add_top x)
-                args
+              List.iter ~f:(fun x -> if variable_may_escape x then add_top x) args
           | _ -> ())
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
@@ -231,8 +259,14 @@ let variables deps =
   Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
   vars
 
+(** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
+    defined by joining its current liveness and the contribution of each vairable [y]
+    that uses [x]. *)
 let propagate uses defs live_vars live_table x =
   let idx = Var.idx x in
+  (** Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
+      ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
+       the contribution depends on the liveness of [y] and its definition. *)
   let contribution y usage_kind =
     match usage_kind with
     (* If x is used to compute y, we consider the liveness of y *)
@@ -272,6 +306,13 @@ let solver vars uses defs live_vars =
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
+(** Replace each instance of a dead variable with a sentinal value. 
+  Blocks that end in dead variables are compacted to the first live entry. 
+  Dead variables are replaced when
+    + They appear in a dead field of a block; or
+    + They are returned; or
+    + They are applied to a function. 
+ *)
 let zero prog sentinal live_table =
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
@@ -357,17 +398,6 @@ module Print = struct
     | Top -> "top"
     | Dead -> "dead"
 
-  let print_defs defs =
-    Format.eprintf "Definitions:\n";
-    Array.iteri
-      ~f:(fun i def ->
-        Format.eprintf "v%d: " i;
-        (match def with
-        | Expr e -> Format.eprintf "%a " Print.expr e
-        | Param -> Format.eprintf "param");
-        Format.eprintf "\n")
-      defs
-
   let print_uses uses =
     Format.eprintf "Usages:\n";
     Array.iteri
@@ -397,12 +427,14 @@ module Print = struct
       live_table
 end
 
+(** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p =
   let sentinal = Var.fresh () in
   let undefined = Prim (Extern "%undefined", []) in
   let instr, loc = Let (sentinal, undefined), Before 0 in
   Code.prepend p [ instr, loc ], sentinal
 
+(** Run the liveness analysis and replace dead variables with the given sentinal. *)
 let f p sentinal global_info =
   let t = Timer.make () in
   let nv = Var.count () in
