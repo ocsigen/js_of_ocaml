@@ -189,7 +189,7 @@ let is_int info x =
   | Pc (Int _) -> Y
   | Pc _ -> N
 
-let the_tag_of info x =
+let the_tag_of info x get =
   match x with
   | Pv x ->
       get_approx
@@ -197,17 +197,37 @@ let the_tag_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Block (j, _, _)) ->
-              if Var.ISet.mem info.info_possibly_mutable x then None else Some j
-          | Expr (Constant (Tuple (j, _, _))) -> Some j
+              if Var.ISet.mem info.info_possibly_mutable x then None else get j
+          | Expr (Constant (Tuple (j, _, _))) -> get j
           | _ -> None)
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when i = j -> u
+          | Some i, Some j when Poly.(i = j) -> u
           | _ -> None)
         x
-  | Pc (Tuple (j, _, _)) -> Some j
+  | Pc (Tuple (j, _, _)) -> get j
   | _ -> None
+
+let the_cont_of info x (a : cont array) =
+  (* The value of [x] might be meaningless when we're inside a dead code.
+     The proper fix would be to remove the deadcode entirely.
+     Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
+     see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
+  let get i = if i >= 0 && i < Array.length a then Some a.(i) else None in
+  get_approx
+    info
+    (fun x ->
+      match info.info_defs.(Var.idx x) with
+      | Expr (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get
+      | Expr (Constant (Int j)) -> get (Int32.to_int j)
+      | _ -> None)
+    None
+    (fun u v ->
+      match u, v with
+      | Some i, Some j when Poly.(i = j) -> u
+      | _ -> None)
+    x
 
 let eval_instr info ((x, loc) as i) =
   match x with
@@ -249,7 +269,7 @@ let eval_instr info ((x, loc) as i) =
           Flow.update_def info x c;
           [ Let (x, c), loc ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
-      match the_tag_of info y with
+      match the_tag_of info y (fun x -> Some x) with
       | Some tag ->
           let c = Constant (Int (Int32.of_int tag)) in
           Flow.update_def info x c;
@@ -340,15 +360,9 @@ let eval_branch info (l, loc) =
           | Zero -> Branch ffalse
           | Non_zero -> Branch ftrue
           | Unknown -> b)
-    | Switch (x, const) as b -> (
-        (* The value of [x] might be meaningless when we're inside a dead code.
-           The proper fix would be to remove the deadcode entirely.
-           Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
-           see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
-        match the_int info (Pv x) with
-        | Some j ->
-            let j = Int32.to_int j in
-            if j >= 0 && j < Array.length const then Branch const.(j) else b
+    | Switch (x, a) as b -> (
+        match the_cont_of info x a with
+        | Some cont -> Branch cont
         | None -> b)
     | _ as b -> b
   in
