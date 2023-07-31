@@ -18068,9 +18068,9 @@
     /*<<camlinternalFormat.ml:2018:62>>*/ }
    function make_padprec_fmt_ebb(pad, prec, fmt){
      /*<<camlinternalFormat.ml:2038:2>>*/ if(typeof prec === "number")
-     var match = prec ? [0, 1, fmt] : [0, 0, fmt];
+     var match = prec ? [0, 1] : [0, 0];
     else
-     var p = prec[1], match = [0, [0, p], fmt];
+     var p = prec[1], match = [0, [0, p]];
     var prec$0 = match[1];
      /*<<camlinternalFormat.ml:2039:2>>*/ if(typeof pad === "number")
       /*<<camlinternalFormat.ml:2040:26>>*/ return [0, 0, prec$0, fmt];
