@@ -189,33 +189,25 @@ let is_int info x =
   | Pc (Int _) -> Y
   | Pc _ -> N
 
-type case_of =
-  | CConst of int
-  | CTag of int
-  | Unknown
-
-let the_case_of info x =
+let the_tag_of info x =
   match x with
   | Pv x ->
       get_approx
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Int i)) -> CConst (Int32.to_int i)
           | Expr (Block (j, _, _)) ->
-              if Var.ISet.mem info.info_possibly_mutable x then Unknown else CTag j
-          | Expr (Constant (Tuple (j, _, _))) -> CTag j
-          | _ -> Unknown)
-        Unknown
+              if Var.ISet.mem info.info_possibly_mutable x then None else Some j
+          | Expr (Constant (Tuple (j, _, _))) -> Some j
+          | _ -> None)
+        None
         (fun u v ->
           match u, v with
-          | CTag i, CTag j when i = j -> u
-          | CConst i, CConst j when i = j -> u
-          | _ -> Unknown)
+          | Some i, Some j when i = j -> u
+          | _ -> None)
         x
-  | Pc (Int i) -> CConst (Int32.to_int i)
-  | Pc (Tuple (j, _, _)) -> CTag j
-  | _ -> Unknown
+  | Pc (Tuple (j, _, _)) -> Some j
+  | _ -> None
 
 let eval_instr info ((x, loc) as i) =
   match x with
@@ -257,12 +249,12 @@ let eval_instr info ((x, loc) as i) =
           Flow.update_def info x c;
           [ Let (x, c), loc ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
-      match the_case_of info y with
-      | CTag tag ->
+      match the_tag_of info y with
+      | Some tag ->
           let c = Constant (Int (Int32.of_int tag)) in
           Flow.update_def info x c;
           [ Let (x, c), loc ]
-      | CConst _ | Unknown -> [ i ])
+      | None -> [ i ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
       [ Let (jsoo, Constant (String "js_of_ocaml")), noloc
@@ -349,13 +341,15 @@ let eval_branch info (l, loc) =
           | Non_zero -> Branch ftrue
           | Unknown -> b)
     | Switch (x, const) as b -> (
-        (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
+        (* The value of [x] might be meaningless when we're inside a dead code.
            The proper fix would be to remove the deadcode entirely.
            Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
            see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
-        match the_case_of info (Pv x) with
-        | CConst j when j >= 0 && j < Array.length const -> Branch const.(j)
-        | CConst _ | CTag _ | Unknown -> b)
+        match the_int info (Pv x) with
+        | Some j ->
+            let j = Int32.to_int j in
+            if j >= 0 && j < Array.length const then Branch const.(j) else b
+        | None -> b)
     | _ as b -> b
   in
   l, loc
