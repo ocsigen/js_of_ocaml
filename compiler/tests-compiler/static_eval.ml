@@ -157,3 +157,36 @@ let%expect_test "static eval of string get" =
      }
     }
     //end |}]
+
+let%expect_test "static eval of tags" =
+  let program =
+    compile_and_parse
+      {|
+
+      type t = A | B | C of t | D of t
+
+      let foobar =
+        let x = C (D A) in
+        match x with
+        | A -> 1
+        | B -> 2
+        | C _ -> 2
+        | D _ -> 3
+
+      let export = [|foobar;foobar|]
+  |}
+  in
+  print_program program;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var
+        runtime = globalThis.jsoo_runtime,
+        export$0 = [0, 2, 2],
+        Test = [0, 2, export$0];
+       runtime.caml_register_global(1, Test, "Test");
+       return;
+      }
+      (globalThis));
+    //end |}]
