@@ -579,6 +579,13 @@ let target_flag t =
   | `JavaScript _ -> `JavaScript
   | `Wasm _ -> `Wasm
 
+let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(linkall = false) p =
+  p
+  |> link ~standalone ~linkall
+  |> pack ~wrap_with_fun ~standalone
+  |> coloring
+  |> check_js
+
 let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   let exported_runtime = not standalone in
   let opt =
@@ -598,10 +605,7 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   in
   let emit formatter =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link ~standalone ~linkall
-    +> pack ~wrap_with_fun ~standalone
-    +> coloring
-    +> check_js
+    +> link_and_pack ~standalone ~wrap_with_fun ~linkall
     +> output formatter ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";

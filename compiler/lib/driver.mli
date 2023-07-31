@@ -48,6 +48,13 @@ val from_string :
   -> Pretty_print.t
   -> unit
 
+val link_and_pack :
+     ?standalone:bool
+  -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?linkall:bool
+  -> Javascript.statement_list
+  -> Javascript.statement_list
+
 val configure : Pretty_print.t -> unit
 
 val profiles : (int * profile) list

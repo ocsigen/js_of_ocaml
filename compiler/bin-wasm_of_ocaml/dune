@@ -8,6 +8,7 @@
   cmdliner
   compiler-libs.common
   js_of_ocaml-compiler.runtime-files
+  yojson
   (select
    findlib_support.ml
    from

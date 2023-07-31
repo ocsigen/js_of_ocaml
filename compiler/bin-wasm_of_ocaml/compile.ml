@@ -42,7 +42,9 @@ let remove_file filename =
 
 let with_intermediate_file ?(keep = false) name f =
   match f name with
-  | _ -> if not keep then remove_file name
+  | res ->
+      if not keep then remove_file name;
+      res
   | exception e ->
       remove_file name;
       raise e
@@ -74,10 +76,39 @@ let link runtime_files input_file output_file =
            runtime_files)
     @ [ Filename.quote input_file; "exec"; "-o"; Filename.quote output_file ])
 
+let generate_dependencies primitives =
+  Yojson.Basic.to_string
+    (`List
+      (StringSet.fold
+         (fun nm s ->
+           `Assoc
+             [ "name", `String ("js:" ^ nm)
+             ; "import", `List [ `String "js"; `String nm ]
+             ]
+           :: s)
+         primitives
+         (Yojson.Basic.Util.to_list (Yojson.Basic.from_string Wa_runtime.dependencies))))
+
+let filter_unused_primitives primitives usage_file =
+  let ch = open_in usage_file in
+  let s = ref primitives in
+  (try
+     while true do
+       let l = input_line ch in
+       match String.drop_prefix ~prefix:"unused: js:" l with
+       | Some nm -> s := StringSet.remove nm !s
+       | None -> ()
+     done
+   with End_of_file -> ());
+  !s
+
 let dead_code_elimination in_file out_file =
   with_intermediate_file (Filename.temp_file "deps" ".json")
   @@ fun deps_file ->
-  write_file deps_file Wa_runtime.dependencies;
+  with_intermediate_file (Filename.temp_file "usage" ".txt")
+  @@ fun usage_file ->
+  let primitives = Linker.get_provided () in
+  write_file deps_file (generate_dependencies primitives);
   command
     (("wasm-metadce" :: common_binaryen_options)
     @ [ "--graph-file"
@@ -86,8 +117,9 @@ let dead_code_elimination in_file out_file =
       ; "-o"
       ; Filename.quote out_file
       ; ">"
-      ; "/dev/null"
-      ])
+      ; Filename.quote usage_file
+      ]);
+  filter_unused_primitives primitives usage_file
 
 let optimize in_file out_file =
   command
@@ -108,8 +140,9 @@ let link_and_optimize runtime_wasm_files wat_file output_file =
   link (runtime_file :: runtime_wasm_files) wat_file temp_file;
   with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
-  dead_code_elimination temp_file temp_file';
-  optimize temp_file' output_file
+  let primitives = dead_code_elimination temp_file temp_file' in
+  optimize temp_file' output_file;
+  primitives
 
 let escape_string s =
   let l = String.length s in
@@ -129,73 +162,58 @@ let escape_string s =
   done;
   Buffer.contents b
 
-let build_js_runtime wasm_file output_file =
-  let wrap_in_iife ~use_strict js =
-    let module J = Javascript in
-    let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in
-    let expr e = J.Expression_statement e, J.N in
-    let freenames =
-      let o = new Js_traverse.free in
-      let (_ : J.program) = o#program js in
-      o#get_free
+let build_js_runtime primitives wasm_file output_file =
+  let always_required_js, primitives =
+    let l =
+      StringSet.fold
+        (fun nm l ->
+          let id = Utf8_string.of_string_exn nm in
+          Javascript.Property (PNI id, EVar (S { name = id; var = None; loc = N })) :: l)
+        primitives
+        []
     in
-    let export_shim js =
-      if J.IdentSet.mem (J.ident Constant.exports_) freenames
-      then
-        let export_node =
-          let s =
-            Printf.sprintf
-              {|((typeof module === 'object' && module.exports) || %s)|}
-              Constant.global_object
-          in
-          let lex = Parse_js.Lexer.of_string s in
-          Parse_js.parse_expr lex
-        in
-        var Constant.exports_ export_node :: js
-      else js
-    in
-    let old_global_object_shim js =
-      if J.IdentSet.mem (J.ident Constant.old_global_object_) freenames
-      then
-        var Constant.old_global_object_ (J.EVar (J.ident Constant.global_object_)) :: js
-      else js
-    in
-
-    let efun args body = J.EFun (None, J.fun_ args body J.U) in
-    let mk f =
-      let js = export_shim js in
-      let js = old_global_object_shim js in
-      let js =
-        if use_strict
-        then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
-        else js
-      in
-      f [ J.ident Constant.global_object_ ] js
-    in
-    expr (J.call (mk efun) [ J.EVar (J.ident Constant.global_object_) ] J.N)
-  in
-  let always_required_js =
-    List.map
-      Linker.((link [] (init ())).always_required_codes)
-      ~f:(fun { Linker.program; _ } -> wrap_in_iife ~use_strict:false program)
+    match
+      List.split_last
+      @@ Driver.link_and_pack [ Javascript.Return_statement (Some (EObj l)), N ]
+    with
+    | Some x -> x
+    | None -> assert false
   in
   let b = Buffer.create 1024 in
   let f = Pretty_print.to_buffer b in
   Pretty_print.set_compact f (not (Config.Flag.pretty ()));
   ignore (Js_output.program f always_required_js);
+  let b' = Buffer.create 1024 in
+  let f = Pretty_print.to_buffer b' in
+  Pretty_print.set_compact f (not (Config.Flag.pretty ()));
+  ignore (Js_output.program f [ primitives ]);
   let s = Wa_runtime.js_runtime in
-  let rec find i =
-    if String.equal (String.sub s ~pos:i ~len:4) "CODE" then i else find (i + 1)
+  let rec find pat i =
+    if String.equal (String.sub s ~pos:i ~len:(String.length pat)) pat
+    then i
+    else find pat (i + 1)
   in
   let i = String.index s '\n' + 1 in
-  let j = find 0 in
+  let j = find "CODE" 0 in
+  let k = find "PRIMITIVES" 0 in
+  let rec trim_semi s =
+    let l = String.length s in
+    if l = 0
+    then s
+    else
+      match s.[l - 1] with
+      | ';' | '\n' -> trim_semi (String.sub s ~pos:0 ~len:(l - 1))
+      | _ -> s
+  in
   write_file
     output_file
     (String.sub s ~pos:0 ~len:i
     ^ Buffer.contents b
     ^ String.sub s ~pos:i ~len:(j - i)
     ^ escape_string (Filename.basename wasm_file)
-    ^ String.sub s ~pos:(j + 4) ~len:(String.length s - j - 4))
+    ^ String.sub s ~pos:(j + 4) ~len:(k - j - 4)
+    ^ trim_semi (Buffer.contents b')
+    ^ String.sub s ~pos:(k + 10) ~len:(String.length s - k - 10))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Wa_generate.init ();
@@ -223,8 +241,15 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
-      Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
-  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
+      Linker.load_fragments
+        ~ignore_always_annotation:true
+        ~target_env:Target_env.Isomorphic
+        ~filename
+        runtimes);
+  Linker.load_files
+    ~ignore_always_annotation:true
+    ~target_env:Target_env.Isomorphic
+    runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
@@ -272,8 +297,8 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
        let wat_file = Filename.chop_extension (fst output_file) ^ ".wat" in
        let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
        output_gen wat_file (output code ~standalone:true);
-       link_and_optimize runtime_wasm_files wat_file wasm_file;
-       build_js_runtime wasm_file (fst output_file)
+       let primitives = link_and_optimize runtime_wasm_files wat_file wasm_file in
+       build_js_runtime primitives wasm_file (fst output_file)
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
   Debug.stop_profiling ()

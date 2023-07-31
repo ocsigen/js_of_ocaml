@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --experimental-wasm-stringref --experimental-wasm-gc
-(async function (eval_function) {
+(async function (eval_function, js) {
     "use strict";
     const src = 'CODE';
     function loadRelative(src) {
@@ -299,7 +299,7 @@
          weak_map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
         }
-    const imports = {Math:math,bindings:bindings,env:{}}
+    const imports = {Math:math,bindings:bindings,env:{},js:js}
     const wasmModule =
           isNode?await WebAssembly.instantiate(await code, imports)
                 :await WebAssembly.instantiateStreaming(code,imports)
@@ -353,4 +353,5 @@
             throw e;
         }
     }
-})(((joo_global_object,globalThis)=>(x)=>eval(x))(globalThis,globalThis));
+})(((joo_global_object,globalThis)=>(x)=>eval(x))(globalThis,globalThis),
+   PRIMITIVES);
