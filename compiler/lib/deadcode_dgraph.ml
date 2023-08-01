@@ -195,9 +195,9 @@ let expr_vars e =
 
     A variable [x] is marked as [Top] if 
     + It is used in an impure expression (as defined by [pure_expr]);
-    + Is used in a conditonal/switch;
-    + Is raised by an exception;
-    + Is used in another stateful instruction (like setting a block or array field);
+    + It is used in a conditonal/switch;
+    + It is raised by an exception;
+    + It is used in another stateful instruction (like setting a block or array field);
     + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
     
     A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
