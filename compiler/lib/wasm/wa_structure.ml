@@ -30,16 +30,30 @@ let is_backward g pc pc' = Hashtbl.find g.block_order pc >= Hashtbl.find g.block
 
 let is_forward g pc pc' = Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
 
-let rec leave_try_body blocks pc =
-  match Addr.Map.find pc blocks with
-  | { body = []; branch = (Return _ | Stop), _; _ } -> false
-  | { body = []; branch = Branch (pc', _), _; _ } -> leave_try_body blocks pc'
-  | _ -> true
+(* pc has at least two forward edges moving into it *)
+let is_merge_node' block_order preds pc =
+  let s = try Hashtbl.find preds pc with Not_found -> Addr.Set.empty in
+  let o = Hashtbl.find block_order pc in
+  let n =
+    Addr.Set.fold (fun pc' n -> if Hashtbl.find block_order pc' < o then n + 1 else n) s 0
+  in
+  n > 1
+
+let rec leave_try_body block_order preds blocks pc =
+  if is_merge_node' block_order preds pc
+  then false
+  else
+    match Addr.Map.find pc blocks with
+    | { body = []; branch = (Return _ | Stop), _; _ } -> false
+    | { body = []; branch = Branch (pc', _), _; _ } ->
+        leave_try_body block_order preds blocks pc'
+    | _ -> true
 
 let build_graph blocks pc =
   let succs = Hashtbl.create 16 in
   let l = ref [] in
   let visited = Hashtbl.create 16 in
+  let poptraps = ref [] in
   let rec traverse ~englobing_exn_handlers pc =
     if not (Hashtbl.mem visited pc)
     then (
@@ -57,13 +71,7 @@ let build_graph blocks pc =
                 match englobing_exn_handlers with
                 | [] -> assert false
                 | enter_pc :: rem ->
-                    if leave_try_body blocks leave_pc
-                    then
-                      (* Add an edge to limit the [try] body *)
-                      Hashtbl.add
-                        succs
-                        enter_pc
-                        (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc));
+                    poptraps := (enter_pc, leave_pc) :: !poptraps;
                     rem)
             | _ -> englobing_exn_handlers
           in
@@ -75,6 +83,12 @@ let build_graph blocks pc =
   let block_order = Hashtbl.create 16 in
   List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
   let preds = reverse_graph succs in
+  List.iter !poptraps ~f:(fun (enter_pc, leave_pc) ->
+      if leave_try_body block_order preds blocks leave_pc
+      then (
+        (* Add an edge to limit the [try] body *)
+        Hashtbl.add succs enter_pc (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc));
+        Hashtbl.add preds leave_pc (Addr.Set.add enter_pc (Hashtbl.find preds leave_pc))));
   { succs; preds; reverse_post_order = !l; block_order }
 
 let reversed_dominator_tree g =
@@ -113,16 +127,7 @@ let reversed_dominator_tree g =
 let dominator_tree g = reverse_tree (reversed_dominator_tree g)
 
 (* pc has at least two forward edges moving into it *)
-let is_merge_node g pc =
-  let s = try Hashtbl.find g.preds pc with Not_found -> Addr.Set.empty in
-  let o = Hashtbl.find g.block_order pc in
-  let n =
-    Addr.Set.fold
-      (fun pc' n -> if Hashtbl.find g.block_order pc' < o then n + 1 else n)
-      s
-      0
-  in
-  n > 1
+let is_merge_node g pc = is_merge_node' g.block_order g.preds pc
 
 let is_loop_header g pc =
   let s = try Hashtbl.find g.preds pc with Not_found -> Addr.Set.empty in
