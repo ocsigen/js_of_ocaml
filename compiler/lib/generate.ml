@@ -651,11 +651,12 @@ module DTree = struct
     | CLt of int32
     | CLe of int32
 
+  type 'a branch = int list * 'a
+
   type 'a t =
     | If of cond * 'a t * 'a t
-    | Switch of (int list * 'a t) array
-    | Branch of 'a
-    | Empty
+    | Switch of 'a branch array
+    | Branch of 'a branch
 
   let normalize a =
     a
@@ -666,7 +667,7 @@ module DTree = struct
     |> List.sort ~cmp:(fun (_, l1) (_, l2) -> compare (List.length l1) (List.length l2))
     |> Array.of_list
 
-  let build_if b1 b2 = If (IsTrue, Branch b1, Branch b2)
+  let build_if b1 b2 = If (IsTrue, Branch ([ 1 ], b1), Branch ([ 0 ], b2))
 
   let build_switch (a : cont array) : 'a t =
     let m = Config.Param.switch_max_case () in
@@ -681,15 +682,15 @@ module DTree = struct
       in
       let array_len = Array.length array_norm in
       if array_len = 1 (* remaining cases all jump to the same branch *)
-      then Branch (fst array_norm.(0))
+      then Branch (snd array_norm.(0), fst array_norm.(0))
       else
         try
           (* try to optimize when there are only 2 branch *)
           match array_norm with
-          | [| (b1, [ i1 ]); (b2, _l2) |] ->
-              If (CEq (Int32.of_int i1), Branch b1, Branch b2)
-          | [| (b1, _l1); (b2, [ i2 ]) |] ->
-              If (CEq (Int32.of_int i2), Branch b2, Branch b1)
+          | [| (b1, ([ i1 ] as l1)); (b2, l2) |] ->
+              If (CEq (Int32.of_int i1), Branch (l1, b1), Branch (l2, b2))
+          | [| (b1, l1); (b2, ([ i2 ] as l2)) |] ->
+              If (CEq (Int32.of_int i2), Branch (l2, b2), Branch (l1, b1))
           | [| (b1, l1); (b2, l2) |] ->
               let bound l1 =
                 match l1, List.rev l1 with
@@ -699,9 +700,9 @@ module DTree = struct
               let min1, max1 = bound l1 in
               let min2, max2 = bound l2 in
               if max1 < min2
-              then If (CLt (Int32.of_int max1), Branch b2, Branch b1)
+              then If (CLt (Int32.of_int max1), Branch (l2, b2), Branch (l1, b1))
               else if max2 < min1
-              then If (CLt (Int32.of_int max2), Branch b1, Branch b2)
+              then If (CLt (Int32.of_int max2), Branch (l1, b1), Branch (l2, b2))
               else raise Not_found
           | _ -> raise Not_found
         with Not_found -> (
@@ -712,7 +713,7 @@ module DTree = struct
             nbcases := !nbcases + List.length (snd array_norm.(i))
           done;
           if !nbcases <= m
-          then Switch (Array.map array_norm ~f:(fun (x, l) -> l, Branch x))
+          then Switch (Array.map array_norm ~f:(fun (x, l) -> l, x))
           else
             let h = (up + low) / 2 in
             let b1 = loop low h and b2 = loop (succ h) up in
@@ -722,7 +723,8 @@ module DTree = struct
             | _, lower_bound2 :: _ -> If (CLe (Int32.of_int lower_bound2), b2, b1))
     in
     let len = Array.length ai in
-    if len = 0 then Empty else loop 0 (len - 1)
+    assert (len > 0);
+    loop 0 (len - 1)
 
   let rec fold_cont f b acc =
     match b with
@@ -730,22 +732,20 @@ module DTree = struct
         let acc = fold_cont f b1 acc in
         let acc = fold_cont f b2 acc in
         acc
-    | Switch a -> Array.fold_left a ~init:acc ~f:(fun acc (_, b) -> fold_cont f b acc)
-    | Branch (pc, _) -> f pc acc
-    | Empty -> acc
+    | Switch a -> Array.fold_left a ~init:acc ~f:(fun acc (_, (pc, _)) -> f pc acc)
+    | Branch (_, (pc, _)) -> f pc acc
 
   let nbcomp a =
     let rec loop c = function
-      | Empty -> c
       | Branch _ -> c
       | If (_, a, b) ->
           let c = succ c in
           let c = loop c a in
           let c = loop c b in
           c
-      | Switch a ->
+      | Switch _ ->
           let c = succ c in
-          Array.fold_left a ~init:c ~f:(fun acc (_, b) -> loop acc b)
+          c
     in
     loop 0 a
 end
@@ -761,9 +761,13 @@ let fold_children blocks pc f accu =
       accu
   | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
-      let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
-      let accu = DTree.fold_cont f a1 accu in
-      let accu = DTree.fold_cont f a2 accu in
+      let switch a acc =
+        match a with
+        | [||] -> acc
+        | _ -> DTree.fold_cont f (DTree.build_switch a) acc
+      in
+      let accu = switch a1 accu in
+      let accu = switch a2 accu in
       accu
 
 let build_graph ctx pc =
@@ -1780,13 +1784,22 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
     , interm
     , Some (a, branch) )
 
-and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
+and compile_decision_tree kind st loop_stack backs frontier interm loc cx dtree =
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop cx : _ -> bool * _ = function
-    | DTree.Empty -> assert false
-    | DTree.Branch cont ->
-        if debug () then Format.eprintf "@[<hv 2>case {@;";
+    | DTree.Branch (l, cont) ->
+        if debug ()
+        then
+          Format.eprintf
+            "@[<hv 2>case %s(%a)  {@;"
+            kind
+            Format.(
+              pp_print_list
+                ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+                (fun fmt pc -> Format.fprintf fmt "%d" pc))
+            l;
+
         let never, code = compile_branch st [] cont loop_stack backs frontier interm in
         if debug () then Format.eprintf "}@]@;";
         never, code
@@ -1813,8 +1826,8 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
         let len = Array.length a in
         let last_index = len - 1 in
         let arr =
-          Array.mapi a ~f:(fun i (ints, cont) ->
-              let never, cont = loop cx cont in
+          Array.mapi a ~f:(fun i ((ints, _) as branch) ->
+              let never, cont = loop cx (Branch branch) in
               if not never then all_never := false;
               let cont =
                 if never || (* default case *) i = last_index
@@ -1905,6 +1918,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, b =
           compile_decision_tree
+            "Bool"
             st
             loop_stack
             backs
@@ -1919,6 +1933,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
+            "Tag"
             st
             loop_stack
             backs
@@ -1933,6 +1948,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
+            "Int"
             st
             loop_stack
             backs
@@ -1948,6 +1964,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
            refer to it *)
         let never1, b1 =
           compile_decision_tree
+            "Int"
             st
             loop_stack
             backs
@@ -1959,6 +1976,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         in
         let never2, b2 =
           compile_decision_tree
+            "Tag"
             st
             loop_stack
             backs
