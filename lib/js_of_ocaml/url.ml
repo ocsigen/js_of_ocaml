@@ -309,18 +309,10 @@ module Current = struct
        else l##.search)
 
   let get_fragment () =
-    (* location.hash doesn't have the same behavior depending on the browser
-       Firefox bug : https://bugzilla.mozilla.org/show_bug.cgi?id=483304 *)
-    (* let s = Js.to_bytestring (l##hash) in *)
-    (* if String.length s > 0 && s.[0] = '#' *)
-    (* then String.sub s 1 (String.length s - 1) *)
-    (* else s; *)
-    Js.Opt.case
-      (l##.href##_match (new%js Js.regExp (Js.string "#(.*)")))
-      (fun () -> "")
-      (fun res ->
-        let res = Js.match_result res in
-        Js.to_string (Js.Unsafe.get res 1))
+    let s = Js.to_bytestring l##.hash in
+    if String.length s > 0 && Char.equal s.[0] '#'
+    then String.sub s 1 (String.length s - 1)
+    else s
 
   let set_fragment s = l##.hash := Js.bytestring s
 
