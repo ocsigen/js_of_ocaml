@@ -120,6 +120,9 @@
          ta_set:(a,b,i)=>a.set(b,i),
          ta_new:(len)=>new Uint8Array(len),
          ta_copy:(ta,t,s,n)=>ta.copyWithin(t,s,n),
+         ta_bytes:(a)=>
+           new Uint8Array(a.buffer, a.byteOffset,
+                          a.length * a.BYTES_PER_ELEMENT),
          wrap_callback:(f)=>function (){
              var n = arguments.length;
              if(n > 0) {

@@ -1,6 +1,7 @@
 (module
    (import "bindings" "log" (func $log_js (param anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_get"
       (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_to_typed_array"
@@ -25,6 +26,8 @@
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
    (import "bindings" "ta_len"
       (func $ta_len (param (ref extern)) (result i32)))
+   (import "bindings" "ta_bytes"
+      (func $ta_bytes (param anyref) (result anyref)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
 
@@ -114,9 +117,12 @@
 
    (func (export "bigstring_of_array_buffer") (param (ref eq)) (result (ref eq))
        (return_call $caml_ba_from_typed_array
-          (call $wrap (call $ta_create (i32.const 12) (local.get $0)))))
+          (call $wrap
+             (call $ta_create (i32.const 12) (call $unwrap (local.get $0))))))
 
-   (export "bigstring_of_typed_array" (func $caml_ba_from_typed_array))
+   (func (export "bigstring_of_typed_array") (param (ref eq)) (result (ref eq))
+       (return_call $caml_ba_from_typed_array
+          (call $wrap (call $ta_bytes (call $unwrap (local.get $0))))))
 
    (func (export "caml_bigstring_memset")
       (param $s (ref eq)) (param $pos (ref eq)) (param $len (ref eq))
