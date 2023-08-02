@@ -655,7 +655,6 @@ module DTree = struct
     | If of cond * 'a t * 'a t
     | Switch of (int list * 'a t) array
     | Branch of 'a
-    | Empty
 
   let normalize a =
     a
@@ -722,7 +721,8 @@ module DTree = struct
             | _, lower_bound2 :: _ -> If (CLe (Int32.of_int lower_bound2), b2, b1))
     in
     let len = Array.length ai in
-    if len = 0 then Empty else loop 0 (len - 1)
+    assert (len > 0);
+    loop 0 (len - 1)
 
   let rec fold_cont f b acc =
     match b with
@@ -732,11 +732,9 @@ module DTree = struct
         acc
     | Switch a -> Array.fold_left a ~init:acc ~f:(fun acc (_, b) -> fold_cont f b acc)
     | Branch (pc, _) -> f pc acc
-    | Empty -> acc
 
   let nbcomp a =
     let rec loop c = function
-      | Empty -> c
       | Branch _ -> c
       | If (_, a, b) ->
           let c = succ c in
@@ -761,9 +759,13 @@ let fold_children blocks pc f accu =
       accu
   | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
   | Switch (_, a1, a2) ->
-      let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
-      let accu = DTree.fold_cont f a1 accu in
-      let accu = DTree.fold_cont f a2 accu in
+      let switch a acc =
+        match a with
+        | [||] -> acc
+        | _ -> DTree.fold_cont f (DTree.build_switch a) acc
+      in
+      let accu = switch a1 accu in
+      let accu = switch a2 accu in
       accu
 
 let build_graph ctx pc =
@@ -1781,7 +1783,6 @@ and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop cx : _ -> bool * _ = function
-    | DTree.Empty -> assert false
     | DTree.Branch cont ->
         if debug () then Format.eprintf "@[<hv 2>case {@;";
         let never, code = compile_branch st [] cont loop_stack backs frontier interm in
