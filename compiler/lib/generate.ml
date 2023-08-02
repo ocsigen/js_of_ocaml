@@ -1781,12 +1781,22 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
     , interm
     , Some (a, branch) )
 
-and compile_decision_tree st loop_stack backs frontier interm loc cx dtree =
+and compile_decision_tree kind st loop_stack backs frontier interm loc cx dtree =
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop cx : _ -> bool * _ = function
-    | DTree.Branch (_, cont) ->
-        if debug () then Format.eprintf "@[<hv 2>case {@;";
+    | DTree.Branch (l, cont) ->
+        if debug ()
+        then
+          Format.eprintf
+            "@[<hv 2>case %s(%a)  {@;"
+            kind
+            Format.(
+              pp_print_list
+                ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+                (fun fmt pc -> Format.fprintf fmt "%d" pc))
+            l;
+
         let never, code = compile_branch st [] cont loop_stack backs frontier interm in
         if debug () then Format.eprintf "}@]@;";
         never, code
@@ -1905,6 +1915,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, b =
           compile_decision_tree
+            "Bool"
             st
             loop_stack
             backs
@@ -1919,6 +1930,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
+            "Tag"
             st
             loop_stack
             backs
@@ -1933,6 +1945,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
+            "Int"
             st
             loop_stack
             backs
@@ -1948,6 +1961,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
            refer to it *)
         let never1, b1 =
           compile_decision_tree
+            "Int"
             st
             loop_stack
             backs
@@ -1959,6 +1973,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         in
         let never2, b2 =
           compile_decision_tree
+            "Tag"
             st
             loop_stack
             backs
