@@ -1585,11 +1585,7 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
     | true ->
         if debug () then Format.eprintf "@[<hv 2>for(;;) {@,";
         let never_body, body =
-          let lab =
-            match loop_stack with
-            | (_, (l, _)) :: _ -> J.Label.succ l
-            | [] -> J.Label.zero
-          in
+          let lab = J.Label.fresh () in
           let lab_used = ref false in
           let loop_stack = (pc, (lab, lab_used)) :: loop_stack in
           let never_body, body =

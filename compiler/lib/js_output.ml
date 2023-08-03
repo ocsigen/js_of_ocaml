@@ -60,6 +60,10 @@ end) =
 struct
   open D
 
+  let nane_of_label = function
+    | Javascript.Label.L _ -> assert false
+    | Javascript.Label.S n -> n
+
   let debug_enabled = Config.Flag.debuginfo ()
 
   let output_debug_info f loc =
@@ -1260,7 +1264,7 @@ struct
         last_semi ()
     | Continue_statement (Some s) ->
         PP.string f "continue ";
-        let (Utf8 l) = Javascript.Label.to_string s in
+        let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
     | Break_statement None ->
@@ -1268,7 +1272,7 @@ struct
         last_semi ()
     | Break_statement (Some s) ->
         PP.string f "break ";
-        let (Utf8 l) = Javascript.Label.to_string s in
+        let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
     | Return_statement e -> (
@@ -1309,7 +1313,7 @@ struct
             (* There MUST be a space between the return and its
                argument. A line return will not work *))
     | Labelled_statement (i, s) ->
-        let (Utf8 l) = Javascript.Label.to_string i in
+        let (Utf8 l) = nane_of_label i in
         PP.string f l;
         PP.string f ":";
         PP.space f;

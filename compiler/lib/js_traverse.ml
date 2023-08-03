@@ -996,6 +996,8 @@ class rename_variable =
 
     val decl = StringSet.empty
 
+    val labels = StringMap.empty
+
     method private update_state scope params iter_body =
       let declared_names = declared scope params iter_body in
       {<subst = StringSet.fold
@@ -1031,6 +1033,30 @@ class rename_variable =
 
     method statement s =
       match s with
+      | Labelled_statement (l, (s, loc)) ->
+          let l, m =
+            match l with
+            | L _ -> l, m
+            | S (Utf8 u) ->
+                let l = Label.fresh () in
+                let m = {<labels = StringMap.add u l labels>} in
+                l, m
+          in
+          Labelled_statement (l, (m#statement s, loc))
+      | Break_statement (Some l) -> (
+          match l with
+          | L _ -> s
+          | S (Utf8 l) -> (
+              match StringMap.find_opt l labels with
+              | None -> s
+              | Some l -> Break_statement (Some l)))
+      | Continue_statement (Some l) -> (
+          match l with
+          | L _ -> s
+          | S (Utf8 l) -> (
+              match StringMap.find_opt l labels with
+              | None -> s
+              | Some l -> Continue_statement (Some l)))
       | Function_declaration (id, (k, params, body, nid)) ->
           let ids = bound_idents_of_params params in
           let m' = m#update_state (Fun_block None) ids body in
