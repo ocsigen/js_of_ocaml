@@ -93,10 +93,10 @@ let build_graph blocks pc =
   let preds = reverse_graph succs in
   List.iter !poptraps ~f:(fun (enter_pc, leave_pc) ->
       if leave_try_body block_order preds blocks leave_pc
-      then
+      then (
         (* Add an edge to limit the [try] body *)
-        Hashtbl.add succs enter_pc (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc)));
-  let preds = reverse_graph succs in
+        Hashtbl.add succs enter_pc (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc));
+        Hashtbl.add preds leave_pc (Addr.Set.add enter_pc (Hashtbl.find preds leave_pc))));
   { succs; preds; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
