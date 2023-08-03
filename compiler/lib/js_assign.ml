@@ -329,11 +329,48 @@ class traverse record_block =
       super#record_block b
   end
 
+class traverse_labels h =
+  object
+    inherit Js_traverse.iter as super
+
+    val ldepth = 0
+
+    method fun_decl (_k, _params, body, _loc) =
+      let m = {<ldepth = 0>} in
+      m#function_body body
+
+    method statement =
+      function
+      | Labelled_statement (L l, (s, _)) ->
+          let m = {<ldepth = ldepth + 1>} in
+          Hashtbl.add h l ldepth;
+          m#statement s
+      | s -> super#statement s
+  end
+
+class name ident label =
+  object (m)
+    inherit Js_traverse.subst ident as super
+
+    method statement =
+      function
+      | Labelled_statement (l, (s, loc)) ->
+          Labelled_statement (label l, (m#statement s, loc))
+      | Break_statement (Some l) -> Break_statement (Some (label l))
+      | Continue_statement (Some l) -> Continue_statement (Some (label l))
+      | s -> super#statement s
+  end
+
 let program' (module Strategy : Strategy) p =
   let nv = Var.count () in
   let state = Strategy.create nv in
+  let labels = Hashtbl.create 20 in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
+  let () =
+    let o = new traverse_labels labels in
+    o#program p
+  in
   mapper#record_block Normal;
   let free =
     IdentSet.filter
@@ -350,7 +387,7 @@ let program' (module Strategy : Strategy) p =
       | S _ -> ()
       | V x -> names.(Var.idx x) <- "")
     free;
-  let color = function
+  let ident = function
     | V v -> (
         let name = names.(Var.idx v) in
         match name, has_free_var with
@@ -359,7 +396,18 @@ let program' (module Strategy : Strategy) p =
         | _, (true | false) -> ident ~var:v (Utf8_string.of_string_exn name))
     | x -> x
   in
-  let p = (new Js_traverse.subst color)#program p in
+  let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
+  let max_label_depth = Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in
+  let lname_per_depth =
+    Array.init (max_label_depth + 1) ~f:(fun i -> Var_printer.to_string label_printer i)
+  in
+  let label = function
+    | Label.S _ as l -> l
+    | L v ->
+        let i = Hashtbl.find labels v in
+        S (Utf8_string.of_string_exn lname_per_depth.(i))
+  in
+  let p = (new name ident label)#program p in
   (if has_free_var
    then
      let () =

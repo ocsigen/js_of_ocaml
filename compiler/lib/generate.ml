@@ -1014,11 +1014,6 @@ let throw_statement ctx cx k loc =
         , loc )
       ]
 
-let next_label scope_stack =
-  match scope_stack with
-  | (_, (l, _, _)) :: _ -> J.Label.succ l
-  | [] -> J.Label.zero
-
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
@@ -1400,7 +1395,7 @@ and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
     | true ->
         if debug () then Format.eprintf "@[<hv 2>for(;;) {@,";
         let never_body, body =
-          let lab = next_label scope_stack in
+          let lab = J.Label.fresh () in
           let lab_used = ref false in
           let exit_branch_used = ref false in
           let scope_stack = (pc, (lab, lab_used, Loop)) :: scope_stack in
@@ -1463,7 +1458,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
     match l with
     | [] -> compile_conditional st queue ~fall_through block.branch scope_stack
     | x :: xs -> (
-        let l = next_label scope_stack in
+        let l = J.Label.fresh () in
         let used = ref false in
         let scope_stack = (x, (l, used, Forward)) :: scope_stack in
         let _never_inner, inner = loop ~scope_stack ~fall_through:(Block x) xs in
@@ -1515,7 +1510,7 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
         let all_never = ref true in
         let len = Array.length a in
         let last_index = len - 1 in
-        let lab = next_label scope_stack in
+        let lab = J.Label.fresh () in
         let label_used = ref false in
         let exit_branch_used = ref false in
         let scope_stack =
