@@ -35,14 +35,14 @@ let times = Debug.find "times"
 
 (** Definition of a variable [x]. *)
 type def =
-  | Expr of expr (** [x] is defined by an expression. *)
-  | Param (** [x] is a block or closure parameter. *)
+  | Expr of expr (* [x] is defined by an expression. *)
+  | Param (* [x] is a block or closure parameter. *)
 
 (** Liveness of a variable [x], forming a lattice structure. *)
 type live =
-  | Top (** [x] is live and not a block. *)
-  | Live of IntSet.t (** [x] is a live block with a (non-empty) set of live fields. *)
-  | Dead (** [x] is dead. *)
+  | Top (* [x] is live and not a block. *)
+  | Live of IntSet.t (* [x] is a live block with a (non-empty) set of live fields. *)
+  | Dead (* [x] is dead. *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -131,7 +131,7 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
                 | _ -> ())
               known);
         add_use Compute x f;
-        List.iter ~f:(add_use Compute x) args
+        (* List.iter ~f:(add_use Compute x) args *)
     | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
@@ -171,26 +171,6 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
     prog.blocks;
   uses
 
-(** Return the set of variables used in a given expression *)
-let expr_vars e =
-  let vars = Var.ISet.empty () in
-  (match e with
-  | Apply { f; args; _ } ->
-      Var.ISet.add vars f;
-      List.iter ~f:(Var.ISet.add vars) args
-  | Block (_, params, _) -> Array.iter ~f:(Var.ISet.add vars) params
-  | Field (z, _) -> Var.ISet.add vars z
-  | Constant _ -> ()
-  | Closure (params, _) -> List.iter ~f:(Var.ISet.add vars) params
-  | Prim (_, args) ->
-      List.iter
-        ~f:(fun v ->
-          match v with
-          | Pv v -> Var.ISet.add vars v
-          | Pc _ -> ())
-        args);
-  vars
-
 (** Compute the initial liveness of each variable in the program. 
 
     A variable [x] is marked as [Top] if 
@@ -222,14 +202,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     match i with
     | Let (x, e) ->
         if not (pure_expr pure_funs e)
-        then (
-          let vars = expr_vars e in
-          Var.ISet.iter add_top vars;
-          add_top x;
-          match e with
-          | Apply { args; _ } ->
-              List.iter ~f:(fun x -> if variable_may_escape x then add_top x) args
-          | _ -> ())
+        then add_top x
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live x i;
@@ -284,6 +257,7 @@ let propagate uses defs live_vars live_table x =
                     if Var.equal v x && IntSet.mem i fields then found := true)
                   vars;
                 if !found then Top else Dead
+            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
@@ -402,7 +376,7 @@ module Print = struct
     Format.eprintf "Usages:\n";
     Array.iteri
       ~f:(fun i ds ->
-        Format.eprintf "v%d: { " i;
+        Format.eprintf "%a: { " Var.print (Var.of_idx i);
         Var.Map.iter
           (fun d k ->
             Format.eprintf
@@ -418,7 +392,7 @@ module Print = struct
 
   let print_liveness live_vars =
     Format.eprintf "Liveness:\n";
-    Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars
+    Array.iteri ~f:(fun i l -> Format.eprintf "%a: %s\n" Var.print (Var.of_idx i) (live_to_string l)) live_vars
 
   let print_live_tbl live_table =
     Format.eprintf "Liveness with dependencies:\n";
