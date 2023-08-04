@@ -25,6 +25,14 @@
          (array.get $block (global.get $caml_global_data)
                     (global.get $OUT_OF_MEMORY_EXN))))
 
+   (global $SYS_ERROR_EXN i32 (i32.const 1))
+
+   (func (export "caml_raise_sys_error") (param $msg (ref $string))
+       (return_call $caml_raise_with_arg
+           (array.get $block (global.get $caml_global_data)
+              (global.get $SYS_ERROR_EXN))
+           (local.get 0)))
+
    (global $FAILURE_EXN i32 (i32.const 2))
 
    (func (export "caml_failwith_tag") (result (ref eq))
