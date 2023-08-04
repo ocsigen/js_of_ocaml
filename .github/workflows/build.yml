@@ -1,8 +1,5 @@
 name: build
 
-env:
-  DUNE_CONFIG__BACKGROUND_DIGESTS: disabled
-
 on:
   pull_request:
   push:
