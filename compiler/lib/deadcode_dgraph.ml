@@ -85,6 +85,11 @@ let definitions nv prog =
         block.body)
     prog.blocks;
   defs
+  
+let variable_may_escape x (global_info : Global_flow.info) =
+  match global_info.info_variable_may_escape.(Var.idx x) with
+  | Escape | Escape_constant -> true
+  | No -> false
 
 (** Type of variable usage. *)  
 type usage_kind =
@@ -131,7 +136,7 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
                 | _ -> ())
               known);
         add_use Compute x f;
-        List.iter ~f:(add_use Compute x) args
+        List.iter ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a) args
     | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
@@ -213,23 +218,18 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
     | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
   in
-  let variable_may_escape x =
-    match global_info.info_variable_may_escape.(Var.idx x) with
-    | Escape | Escape_constant -> true
-    | No -> false
-  in
   let live_instruction i =
     match i with
-    | Let (x, e) ->
+    | Let (_x, e) ->
         if not (pure_expr pure_funs e)
         then (
           let vars = expr_vars e in
-          Var.ISet.iter add_top vars;
-          add_top x;
-          match e with
-          | Apply { args; _ } ->
-              List.iter ~f:(fun x -> if variable_may_escape x then add_top x) args
-          | _ -> ())
+          Var.ISet.iter add_top vars;)
+        else (match e with
+          | Apply { f; args; _} ->
+              add_top f;
+              List.iter ~f:(fun x -> if variable_may_escape x global_info then add_top x) args
+          | _ -> ()) 
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live x i;
@@ -244,7 +244,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
     | Stop -> ()
-    | Return x -> if variable_may_escape x then add_top x
+    | Return x -> if variable_may_escape x global_info then add_top x
     | Raise (x, _) -> add_top x
     | Cond (x, _, _) -> add_top x
     | Switch (x, _, _) -> add_top x
