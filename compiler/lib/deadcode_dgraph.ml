@@ -166,9 +166,8 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
       | Cond (_, cont1, cont2) ->
           add_cont_deps cont1;
           add_cont_deps cont2
-      | Switch (_, a1, a2) ->
-          Array.iter ~f:add_cont_deps a1;
-          Array.iter ~f:add_cont_deps a2
+      | Switch (_, a) ->
+          Array.iter ~f:add_cont_deps a;
       | Pushtrap (cont, _, cont_h, _) ->
           add_cont_deps cont;
           add_cont_deps cont_h
@@ -247,7 +246,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     | Return x -> if variable_may_escape x global_info then add_top x
     | Raise (x, _) -> add_top x
     | Cond (x, _, _) -> add_top x
-    | Switch (x, _, _) -> add_top x
+    | Switch (x, _) -> add_top x
     | Branch _ | Poptrap _ | Pushtrap _ -> ()
   in
   Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
@@ -378,8 +377,8 @@ let zero prog sentinal live_table =
         | Raise (_, _) | Stop -> last
         | Branch cont -> Branch (zero_cont cont)
         | Cond (x, cont1, cont2) -> Cond (x, zero_cont cont1, zero_cont cont2)
-        | Switch (x, a1, a2) ->
-            Switch (x, Array.map ~f:zero_cont a1, Array.map ~f:zero_cont a2)
+        | Switch (x, a) ->
+            Switch (x, Array.map ~f:zero_cont a)
         | Pushtrap (cont1, x, cont2, pcs) ->
             Pushtrap (zero_cont cont1, x, zero_cont cont2, pcs)
         | Poptrap cont -> Poptrap (zero_cont cont)

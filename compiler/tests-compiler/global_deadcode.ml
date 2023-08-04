@@ -73,3 +73,14 @@ let%expect_test "Substitutes unused fields with undefined" =
   [%expect {|
     var _c_ = undefined;
     //end |}]
+
+let%expect_test "Sets unused return value to undefined" =
+  let program =
+    compile_and_parse
+      {|
+
+      |}
+  in print_fun_decl program (Some "f");
+  [%expect {| not found |}];
+  print_var_decl program "__";
+  [%expect {| var __ = not found |}]

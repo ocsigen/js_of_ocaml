@@ -124,10 +124,10 @@ let%expect_test _ =
   [%expect
     {|
     function match_expr(param){
-     var switch$1, switch$0, _c_, _b_, _a_;
+     var _c_, _b_, _a_;
+     a:
      if(param){
       _a_ = param[1];
-      switch$0 = 0;
       if(_a_){
        _b_ = _a_[1];
        if(_b_){
@@ -135,13 +135,10 @@ let%expect_test _ =
        }
        else if(! param[2]) return 2;
       }
-      else if(! param[2]) switch$0 = 1;
-      if(! switch$0){
-       _c_ = param[2];
-       switch$1 = 0;
-       if(_c_ && ! _c_[1]) switch$1 = 1;
-       if(! switch$1) return 4;
-      }
+      else if(! param[2]) break a;
+      _c_ = param[2];
+      if(_c_ && ! _c_[1]) break a;
+      return 4;
      }
      return 1;
     }
@@ -150,8 +147,9 @@ let%expect_test _ =
   [%expect
     {|
     function match_expr(param){
+     a:
      if(param){
-      var _a_ = param[1], switch$0 = 0;
+      var _a_ = param[1];
       if(_a_){
        var _b_ = _a_[1];
        if(_b_){
@@ -159,12 +157,10 @@ let%expect_test _ =
        }
        else if(! param[2]) return 2;
       }
-      else if(! param[2]) switch$0 = 1;
-      if(! switch$0){
-       var _c_ = param[2], switch$1 = 0;
-       if(_c_ && ! _c_[1]) switch$1 = 1;
-       if(! switch$1) return 4;
-      }
+      else if(! param[2]) break a;
+      var _c_ = param[2];
+      if(_c_ && ! _c_[1]) break a;
+      return 4;
      }
      return 1;
     }

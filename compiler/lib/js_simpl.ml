@@ -216,7 +216,7 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
               if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
             in
             [ J.Variable_statement (Var, [ DeclPattern (p1, (exp, loc)) ]), loc ]
-        | _ -> assert false
+        | _ -> raise Not_assignment
       with Not_assignment -> (
         try
           let e1 = expression_of_statement iftrue in

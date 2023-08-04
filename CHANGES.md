@@ -1,5 +1,9 @@
 # Dev (2023-??-??) - ??
 
+## Features/Changes
+* Compiler: change control-flow compilation strategy (#1496)
+
+## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
 * Compiler: fix global flow analysis (#1494)
 

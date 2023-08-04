@@ -51,13 +51,11 @@ module Num : sig
 end
 
 module Label : sig
-  type t
+  type t =
+    | L of Code.Var.t
+    | S of Utf8_string.t
 
-  val zero : t
-
-  val succ : t -> t
-
-  val to_string : t -> Utf8_string.t
+  val fresh : unit -> t
 
   val of_string : Utf8_string.t -> t
 end

@@ -73,34 +73,35 @@ let fun2 () =
   [%expect
     {|
     function fun1(param){
-     var switch$0 = 0;
-     try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
-     catch(_e_){
-      var _d_ = caml_wrap_exception(_e_);
-      if(_d_[1] !== A) throw caml_maybe_attach_backtrace(_d_, 0);
-      var i = _d_[2];
-      if(2 !== i) return i + 2 | 0;
-      var i$0 = i;
-      switch$0 = 1;
+     a:
+     {
+      try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
+      catch(_e_){
+       var _d_ = caml_wrap_exception(_e_);
+       if(_d_[1] !== A) throw caml_maybe_attach_backtrace(_d_, 0);
+       var i = _d_[2];
+       if(2 !== i) return i + 2 | 0;
+       var i$0 = i;
+       break a;
+      }
+      if(0 !== i$1) return i$1 + 1 | 0;
+      var i$0 = i$1;
      }
-     if(! switch$0){if(0 !== i$1) return i$1 + 1 | 0; var i$0 = i$1;}
      return i$0;
     }
     //end
     function fun2(param){
-     var switch$0 = 0;
-     try{var i$0 = caml_call1(Stdlib_Random[5], 2);}
-     catch(_c_){
-      var _a_ = caml_wrap_exception(_c_), switch$1 = 0;
-      if(_a_[1] === A){
-       var _b_ = _a_[2];
-       if(2 === _b_){var i = _b_; switch$0 = 1;} else switch$1 = 1;
+     a:
+     {
+      try{var i$0 = caml_call1(Stdlib_Random[5], 2);}
+      catch(_c_){
+       var _a_ = caml_wrap_exception(_c_);
+       if(_a_[1] === A){var _b_ = _a_[2]; if(2 === _b_){var i = _b_; break a;}}
+       throw caml_maybe_attach_backtrace(_a_, 0);
       }
-      else
-       switch$1 = 1;
-      if(switch$1) throw caml_maybe_attach_backtrace(_a_, 0);
+      if(0 !== i$0) return i$0 + 1 | 0;
+      var i = i$0;
      }
-     if(! switch$0){if(0 !== i$0) return i$0 + 1 | 0; var i = i$0;}
      return i;
     }
     //end |}]
