@@ -156,7 +156,6 @@ let ()  = M.myfun M.x
     {|
     function myfun(x){
      var x$0 = x;
-     a:
      for(;;){
       if(! x$0) return 0;
       var
@@ -320,13 +319,8 @@ let ()  = M.myfun M.x
        len = 0,
        param = l;
       for(;;){
-       if(param){
-        var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
-        continue;
-       }
-       if(2 <= len) sort(len, l);
-       var x$0 = next;
-       continue a;
+       if(! param){if(2 <= len) sort(len, l); var x$0 = next; break;}
+       var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
       }
      }
     }
@@ -496,11 +490,13 @@ let ()  = M.run ()
        even = closures$0[1];
       even(i);
       var _e_ = i + 1 | 0;
-      if(4 !== i){var i = _e_; continue;}
-      var
-       _c_ = caml_call1(Stdlib_List[9], delayed[1]),
-       _d_ = function(f){return caml_call1(f, 0);};
-      return caml_call2(Stdlib_List[17], _d_, _c_);
+      if(4 === i){
+       var
+        _c_ = caml_call1(Stdlib_List[9], delayed[1]),
+        _d_ = function(f){return caml_call1(f, 0);};
+       return caml_call2(Stdlib_List[17], _d_, _c_);
+      }
+      var i = _e_;
      }
     }
     //end |}]
@@ -566,7 +562,6 @@ let ()  = M.run ()
     {|
     function run(param){
      var i = 0;
-     a:
      for(;;){
       var
        closures =
@@ -618,13 +613,15 @@ let ()  = M.run ()
        even = closures$0[1],
        param$0 = even(i);
       for(;;){
-       if(759635106 > param$0[1]){var f = param$0[2], param$0 = f(0); continue;}
-       var _g_ = i + 1 | 0;
-       if(4 !== i){var i = _g_; continue a;}
-       var
-        _e_ = caml_call1(Stdlib_List[9], delayed[1]),
-        _f_ = function(f){return caml_call1(f, 0);};
-       return caml_call2(Stdlib_List[17], _f_, _e_);
+       if(759635106 <= param$0[1]){
+        var _g_ = i + 1 | 0;
+        if(4 !== i){var i = _g_; break;}
+        var
+         _e_ = caml_call1(Stdlib_List[9], delayed[1]),
+         _f_ = function(f){return caml_call1(f, 0);};
+        return caml_call2(Stdlib_List[17], _f_, _e_);
+       }
+       var f = param$0[2], param$0 = f(0);
       }
      }
     }

@@ -143,20 +143,10 @@ end
 
 module Label = struct
   type t =
-    | L of int
+    | L of Code.Var.t
     | S of Utf8_string.t
 
-  let printer = Var_printer.create Var_printer.Alphabet.javascript
-
-  let zero = L 0
-
-  let succ = function
-    | L t -> L (succ t)
-    | S _ -> assert false
-
-  let to_string = function
-    | L t -> Utf8_string.of_string_exn (Var_printer.to_string printer t)
-    | S s -> s
+  let fresh () = L (Code.Var.fresh ())
 
   let of_string s = S s
 end
