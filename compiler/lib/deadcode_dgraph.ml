@@ -41,7 +41,7 @@ type def =
 (** Liveness of a variable [x], forming a lattice structure. *)
 type live =
   | Top (** [x] is live and not a block. *)
-  | Live of IntSet.t (** [x] is a live block with a (non-empty) set of live fields. *)
+  | Live of live IntMap.t (** [x] is a live block with a (non-empty) set of live fields. *)
   | Dead (** [x] is dead. *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -49,19 +49,21 @@ module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Domain = struct
   type t = live
 
-  let equal l1 l2 =
+  let rec equal l1 l2 =
     match l1, l2 with
     | Top, Top | Dead, Dead -> true
-    | Live f1, Live f2 -> IntSet.equal f1 f2
+    | Live f1, Live f2 -> IntMap.equal equal f1 f2
     | _ -> false
 
   let bot = Dead
 
   (** Join the liveness according to lattice structure. *)
-  let join l1 l2 =
+  let rec join l1 l2 =
     match l1, l2 with
     | _, Top | Top, _ -> Top
-    | Live f1, Live f2 -> Live (IntSet.union f1 f2)
+    | Live f1, Live f2 -> 
+        let fields = IntMap.union (fun _ l1 l2 -> Some (join l1 l2)) f1 f2 in 
+        Live fields
     | Dead, Live f | Live f, Dead -> Live f
     | Dead, Dead -> Dead
 end
@@ -211,19 +213,22 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
     let idx = Var.idx v in
     live_vars.(idx) <- Top
   in
-  let add_live v i =
+  let add_live v i l =
     let idx = Var.idx v in
     match live_vars.(idx) with
-    | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
-    | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
+    | Live fields -> live_vars.(idx) <- Live (IntMap.add i l fields)
+    | _ -> live_vars.(idx) <- Live (IntMap.singleton i l)
   in
   let live_instruction i =
     match i with
-    | Let (_x, e) ->
+    | Let (_, e) ->
+        (* We add all variables in impure expressions as top to ensure they aren't removed. *)
         if not (pure_expr pure_funs e)
         then (
           let vars = expr_vars e in
           Var.ISet.iter add_top vars;)
+        (* We might be able to do better in pure fn applications. The function itself must be kept but
+           arguments might be dead if they don't escape. *)
         else (match e with
           | Apply { f; args; _} ->
               add_top f;
@@ -231,13 +236,13 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
           | _ -> ()) 
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
-        add_live x i;
+        add_live x i Top;
         add_top y
     | Array_set (x, y, z) ->
         add_top x;
         add_top y;
         add_top z
-    | Offset_ref (x, i) -> add_live x i
+    | Offset_ref (x, i) -> add_live x i Top
   in
   let live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
@@ -277,17 +282,19 @@ let propagate uses defs live_vars live_table x =
         | Live fields -> (
             match defs.(Var.idx y) with
             | Expr (Block (_, vars, _)) ->
-                let found = ref false in
-                Array.iteri
-                  ~f:(fun i v ->
-                    if Var.equal v x && IntSet.mem i fields then found := true)
+                let live = ref Dead in
+                Array.iteri ~f:(fun i v -> 
+                  if Var.equal v x
+                    then match IntMap.find_opt i fields with
+                    | Some l -> live := l
+                    | None -> ())
                   vars;
-                if !found then Top else Dead
+                !live
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
             match defs.(Var.idx y) with
-            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
+            | Expr (Field (_, i)) -> Live (IntMap.singleton i Top)
             | _ -> Top))
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
@@ -352,7 +359,7 @@ let zero prog sentinal live_table =
             | Live fields ->
                 let vars =
                   Array.mapi
-                    ~f:(fun i v -> if IntSet.mem i fields then v else sentinal)
+                    ~f:(fun i v -> if IntMap.mem i fields then v else sentinal)
                     vars
                   |> compact_vars
                 in
@@ -393,7 +400,7 @@ let zero prog sentinal live_table =
 module Print = struct
   let live_to_string = function
     | Live fields ->
-        "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+        "live { " ^ IntMap.fold (fun i _ s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
     | Top -> "top"
     | Dead -> "dead"
 
@@ -428,7 +435,7 @@ end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p =
-  let sentinal = Var.fresh () in
+  let sentinal = Var.fresh_n "sentinal" in
   let undefined = Prim (Extern "%undefined", []) in
   let instr, loc = Let (sentinal, undefined), Before 0 in
   Code.prepend p [ instr, loc ], sentinal
