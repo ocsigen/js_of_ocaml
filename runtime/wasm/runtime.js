@@ -270,7 +270,7 @@
            fs.openSync(p,open_flags.reduce((f,v,i)=>(flags&(1<<i))?(f|v):f,0),
                        perm),
          close:(fd)=>fs.closeSync(fd),
-         write:(fd,b,o,l)=>fs.writeSync(fd,b,o,l),
+         write:(fd,b,o,l)=>fs?fs.writeSync(fd,b,o,l):(console.log(new TextDecoder().decode(b.slice(o,o+l))),l),
          read:(fd,b,o,l,p)=>fs.readSync(fd,b,o,l,p),
          file_size:(fd)=>fs.fstatSync(fd,{bigint:true}).size,
          register_channel,
