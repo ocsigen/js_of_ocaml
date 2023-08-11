@@ -36,9 +36,9 @@ let%expect_test "rec-fun" =
      for(;;){
       if(! param$0){
        var
-        _a_ = caml_call1(Stdlib_List[9], acc$0),
-        _b_ = caml_call1(Stdlib_List[9], _a_);
-       return caml_call1(Stdlib_List[9], _b_);
+        _a_ = caml_call1(Stdlib_List[10], acc$0),
+        _b_ = caml_call1(Stdlib_List[10], _a_);
+       return caml_call1(Stdlib_List[10], _b_);
       }
       var
        xs = param$0[2],
@@ -78,9 +78,9 @@ let rec fun_with_loop acc = function
      for(;;){
       if(! param$0){
        var
-        _c_ = caml_call1(Stdlib_List[9], acc$0),
-        _d_ = caml_call1(Stdlib_List[9], _c_);
-       return caml_call1(Stdlib_List[9], _d_);
+        _c_ = caml_call1(Stdlib_List[10], acc$0),
+        _d_ = caml_call1(Stdlib_List[10], _c_);
+       return caml_call1(Stdlib_List[10], _d_);
       }
       var x = param$0[1];
       if(1 === x && ! param$0[2]){
@@ -476,7 +476,7 @@ let add_substitute =
            var
             match$0 =
               [0,
-               caml_call3(Stdlib_String[15], s, start$0, stop$0 - start$0 | 0),
+               caml_call3(Stdlib_String[16], s, start$0, stop$0 - start$0 | 0),
                stop$0];
            break a;
           }
@@ -500,7 +500,7 @@ let add_substitute =
              match$0 =
                [0,
                 caml_call3
-                 (Stdlib_String[15], s, new_start, (stop - start$0 | 0) - 1 | 0),
+                 (Stdlib_String[16], s, new_start, (stop - start$0 | 0) - 1 | 0),
                 stop + 1 | 0];
             break;
            }

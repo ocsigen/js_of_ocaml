@@ -492,9 +492,9 @@ let ()  = M.run ()
       var _e_ = i + 1 | 0;
       if(4 === i){
        var
-        _c_ = caml_call1(Stdlib_List[9], delayed[1]),
+        _c_ = caml_call1(Stdlib_List[10], delayed[1]),
         _d_ = function(f){return caml_call1(f, 0);};
-       return caml_call2(Stdlib_List[17], _d_, _c_);
+       return caml_call2(Stdlib_List[18], _d_, _c_);
       }
       var i = _e_;
      }
@@ -617,9 +617,9 @@ let ()  = M.run ()
         var _g_ = i + 1 | 0;
         if(4 !== i){var i = _g_; break;}
         var
-         _e_ = caml_call1(Stdlib_List[9], delayed[1]),
+         _e_ = caml_call1(Stdlib_List[10], delayed[1]),
          _f_ = function(f){return caml_call1(f, 0);};
-        return caml_call2(Stdlib_List[17], _f_, _e_);
+        return caml_call2(Stdlib_List[18], _f_, _e_);
        }
        var f = param$0[2], param$0 = f(0);
       }

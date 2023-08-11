@@ -199,7 +199,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function loop3(param, cont){
-     var _f_ = Stdlib_List[9];
+     var _f_ = Stdlib_List[10];
      return caml_cps_call2
              (_f_,
               _e_,
