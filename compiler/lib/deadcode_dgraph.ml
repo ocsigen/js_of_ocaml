@@ -286,10 +286,14 @@ let propagate uses defs live_vars live_table x =
                 Array.iteri ~f:(fun i v -> 
                   if Var.equal v x
                     then match IntMap.find_opt i fields with
-                    | Some l -> live := l
+                    | Some l -> live := Domain.join !live l
                     | None -> ())
                   vars;
                 !live
+            | Expr (Field (_, i)) ->(
+                match IntMap.find_opt i fields with
+                  | Some l -> l
+                  | None -> Dead)
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
@@ -334,7 +338,7 @@ let zero prog sentinal live_table =
     | Dead -> false
     | _ -> true
   in
-  let zero_var x = if not (is_live x) then sentinal else x in
+  let zero_var x = if is_live x then x else sentinal in
   let zero_cont ((pc, args) : cont) =
     match Addr.Map.find_opt pc prog.blocks with
     | Some block ->
