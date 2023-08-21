@@ -27,7 +27,10 @@ let onIE = Js.to_bool (caml_js_on_ie ())
 
 external html_escape : js_string t -> js_string t = "caml_js_html_escape"
 
-external decode_html_entities : js_string t -> js_string t = "caml_js_html_entities"
+external html_entities : js_string t -> js_string t opt = "caml_js_html_entities"
+
+let decode_html_entities s =
+  Js.Opt.get (html_entities s) (fun () -> failwith ("Invalid entity " ^ Js.to_string s))
 
 class type cssStyleDeclaration =
   object
