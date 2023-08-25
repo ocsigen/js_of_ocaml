@@ -428,7 +428,7 @@ end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p =
-  let sentinal = Var.fresh () in
+  let sentinal = Var.fresh_n "sentinal" in
   let undefined = Prim (Extern "%undefined", []) in
   let instr, loc = Let (sentinal, undefined), Before 0 in
   Code.prepend p [ instr, loc ], sentinal
