@@ -412,7 +412,7 @@ module Print = struct
     Format.eprintf "Usages:\n";
     Array.iteri
       ~f:(fun i ds ->
-        Format.eprintf "%a: { " Var.print (Var.of_idx i);
+        Format.eprintf "v%d: { " i;
         Var.Map.iter
           (fun d k ->
             Format.eprintf
@@ -428,7 +428,7 @@ module Print = struct
 
   let print_liveness live_vars =
     Format.eprintf "Liveness:\n";
-    Array.iteri ~f:(fun i l -> Format.eprintf "%a: %s\n" Var.print (Var.of_idx i) (live_to_string l)) live_vars
+    Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars
 
   let print_live_tbl live_table =
     Format.eprintf "Liveness with dependencies:\n";
