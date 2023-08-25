@@ -64,14 +64,14 @@ let%expect_test "Substitutes unused fields with undefined" =
   print_fun_decl program (Some "f");
   [%expect {|
     function f(b, x){
-     var t = b ? [0, 1, _c_, x] : [0, 3, _c_, 4], v = t[3], u = t[1];
+     var t = b ? [0, 1, sentinal, x] : [0, 3, sentinal, 4], v = t[3], u = t[1];
      return [0, u, v];
     }
     //end |}];
   (* And that variable is defined as `undefined` *)
-  print_var_decl program "_c_";
+  print_var_decl program "sentinal";
   [%expect {|
-    var _c_ = undefined;
+    var sentinal = undefined;
     //end |}]
 
 let%expect_test "Sets unused return value to undefined" =
