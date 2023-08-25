@@ -369,31 +369,31 @@ let ()  = M.run ()
           if(2 >= n >>> 0)
            switch(n){
              case 0:
-              return sentinal;
+              return _a_;
              case 1:
-              odd(0); return sentinal;
-             default: odd(1); return sentinal;
+              odd(0); return _a_;
+             default: odd(1); return _a_;
            }
           odd(n - 1 | 0);
-          return sentinal;
+          return _a_;
          },
        odd =
          function(n){
           if(2 >= n >>> 0)
            switch(n){
              case 0:
-              return sentinal;
+              return _a_;
              case 1:
-              even(0); return sentinal;
-             default: even(1); return sentinal;
+              even(0); return _a_;
+             default: even(1); return _a_;
            }
           even(n - 1 | 0);
-          return sentinal;
+          return _a_;
          };
       even(i);
-      var _a_ = i + 1 | 0;
+      var _b_ = i + 1 | 0;
       if(4 === i) return 0;
-      var i = _a_;
+      var i = _b_;
      }
     }
     //end |}]
@@ -467,13 +467,13 @@ let ()  = M.run ()
                 f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
                delayed[1] = [0, f, delayed[1]];
                f(0);
-               return sentinal;
+               return _c_;
               case 1:
-               odd(0); return sentinal;
-              default: odd(1); return sentinal;
+               odd(0); return _c_;
+              default: odd(1); return _c_;
             }
            odd(n - 1 | 0);
-           return sentinal;
+           return _c_;
           }
           function odd(n){
            if(2 >= n >>> 0)
@@ -483,13 +483,13 @@ let ()  = M.run ()
                 f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
                delayed[1] = [0, f, delayed[1]];
                f(0);
-               return sentinal;
+               return _c_;
               case 1:
-               even(0); return sentinal;
-              default: even(1); return sentinal;
+               even(0); return _c_;
+              default: even(1); return _c_;
             }
            even(n - 1 | 0);
-           return sentinal;
+           return _c_;
           }
           var block = [0, even, odd];
           return block;
@@ -497,14 +497,14 @@ let ()  = M.run ()
        closures$0 = closures(i),
        even = closures$0[1];
       even(i);
-      var _e_ = i + 1 | 0;
+      var _f_ = i + 1 | 0;
       if(4 === i){
        var
-        _c_ = caml_call1(Stdlib_List[9], delayed[1]),
-        _d_ = function(f){return caml_call1(f, 0);};
-       return caml_call2(Stdlib_List[17], _d_, _c_);
+        _d_ = caml_call1(Stdlib_List[9], delayed[1]),
+        _e_ = function(f){return caml_call1(f, 0);};
+       return caml_call2(Stdlib_List[17], _e_, _d_);
       }
-      var i = _e_;
+      var i = _f_;
      }
     }
     //end |}]
