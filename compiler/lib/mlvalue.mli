@@ -18,7 +18,7 @@
  *)
 
 module Block : sig
-  val make : tag:int -> args:Javascript.expression list -> Javascript.expression
+  val make : tag:int -> args:Javascript.element list -> Javascript.expression
 
   val tag : Javascript.expression -> Javascript.expression
 
@@ -26,7 +26,7 @@ module Block : sig
 end
 
 module Array : sig
-  val make : tag:int -> args:Javascript.expression list -> Javascript.expression
+  val make : tag:int -> args:Javascript.element list -> Javascript.expression
 
   val length : Javascript.expression -> Javascript.expression
 

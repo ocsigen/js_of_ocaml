@@ -285,12 +285,14 @@ module Ctx = struct
     ; should_export : bool
     ; effect_warning : bool ref
     ; cps_calls : Effects.cps_calls
+    ; sentinal : Var.t option
     }
 
   let initial
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
+      ~sentinal
       blocks
       live
       cps_calls
@@ -304,6 +306,7 @@ module Ctx = struct
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; cps_calls
+    ; sentinal
     }
 end
 
@@ -444,7 +447,7 @@ let rec constant_rec ~ctx x level instrs =
   | Float_array a ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
-          ~args:(Array.to_list (Array.map a ~f:float_const))
+          ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
       , instrs )
   | Int64 i ->
       let p =
@@ -490,9 +493,9 @@ let rec constant_rec ~ctx x level instrs =
                       let instrs =
                         (J.variable_declaration [ J.V v, (js, J.N) ], J.N) :: instrs
                       in
-                      J.EVar (J.V v) :: acc, instrs
-                  | _ -> js :: acc, instrs)
-            else List.rev l, instrs
+                      J.Element (J.EVar (J.V v)) :: acc, instrs
+                  | _ -> J.Element js :: acc, instrs)
+            else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> int32 i, instrs
@@ -1035,6 +1038,14 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
+            let cx =
+              match cx with
+              | J.EVar (J.V v) -> (
+                  match ctx.sentinal with
+                  | Some s -> if Var.equal v s then J.ElementHole else J.Element cx
+                  | None -> J.Element cx)
+              | _ -> J.Element cx
+            in
             cx :: args, or_p prop prop', queue)
           (Array.to_list a)
           ~init:([], const_p, queue)
@@ -1792,6 +1803,7 @@ let f
     ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
+    ~sentinal
     debug =
   let t' = Timer.make () in
   let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
@@ -1803,6 +1815,7 @@ let f
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
+      ~sentinal
       p.blocks
       live_vars
       cps_calls

@@ -104,15 +104,22 @@ let exact_calls profile p =
       | O3 -> false
       | O1 | O2 -> true
     in
-    if Config.Flag.globaldeadcode () then
+    if Config.Flag.globaldeadcode ()
+    then
       let p, sentinal = Deadcode_dgraph.add_sentinal p in
       let info = Global_flow.f ~fast p in
       let p = Deadcode_dgraph.f p sentinal info in
-      Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-    else 
+      let p =
+        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+      in
+      p, Some sentinal
+    else
       let info = Global_flow.f ~fast p in
-      Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-  else p
+      let p =
+        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+      in
+      p, None
+  else p, None
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -181,7 +188,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), cps_calls) =
+    ((p, live_vars), cps_calls, sentinal) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -191,6 +198,7 @@ let generate
     ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
+    ~sentinal
     d
 
 let debug_linker = Debug.find "linker"
@@ -585,8 +593,11 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls profile
-    +> effects
-    +> map_fst (Generate_closure.f +> deadcode')
+    +> (fun (p, sentinal) ->
+         let p, cps_calls = effects p in
+         p, cps_calls, sentinal)
+    +> fun (p, cps_calls, sentinal) ->
+    deadcode' (Generate_closure.f p), cps_calls, sentinal
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
@@ -598,7 +609,10 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r = opt p in
+  let r : (Code.program * Deadcode.variable_uses) * Effects.cps_calls * Code.Var.t option
+      =
+    opt p
+  in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 

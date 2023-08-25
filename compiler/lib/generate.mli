@@ -25,6 +25,7 @@ val f :
   -> cps_calls:Effects.cps_calls
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
+  -> sentinal:Code.Var.t option
   -> Parse_bytecode.Debug.t
   -> Javascript.program
 

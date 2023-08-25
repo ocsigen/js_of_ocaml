@@ -64,7 +64,7 @@ let%expect_test "Substitutes unused fields with undefined" =
   print_fun_decl program (Some "f");
   [%expect {|
     function f(b, x){
-     var t = b ? [0, 1, sentinal, x] : [0, 3, sentinal, 4], v = t[3], u = t[1];
+     var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
      return [0, u, v];
     }
     //end |}];
