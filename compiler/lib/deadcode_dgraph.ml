@@ -278,7 +278,7 @@ let propagate uses defs live_vars live_table x =
         match Var.Tbl.get live_table y with
         (* If y is dead, then x is dead. *)
         | Dead -> Dead
-        (* If y is a live block, then x is live if it is used in a live field *)
+        (* If y is a live block, then x is the join of liveness fields that are x *)
         | Live fields -> (
             match defs.(Var.idx y) with
             | Expr (Block (_, vars, _)) ->
@@ -292,7 +292,7 @@ let propagate uses defs live_vars live_table x =
                 !live
             | Expr (Field (_, i)) ->(
                 match IntMap.find_opt i fields with
-                  | Some l -> l
+                  | Some l -> Live (IntMap.singleton i l)
                   | None -> Dead)
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
