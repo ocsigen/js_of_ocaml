@@ -35,7 +35,6 @@ let%expect_test _ =
         (List.concat
            [ [ "--disable"; "inline" ]
            ; [ "--disable"; "deadcode" ]
-           ; [ "--disable"; "globaldeadcode" ]
            ; [ "--disable"; "staticeval" ]
            ; [ "--enable"; "shortvar" ]
            ; [ "--debug"; "shortvar" ]

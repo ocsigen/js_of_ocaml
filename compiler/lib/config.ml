@@ -58,7 +58,7 @@ module Flag = struct
 
   let deadcode = o ~name:"deadcode" ~default:true
 
-  let globaldeadcode = o ~name:"globaldeadcode" ~default:true
+  let globaldeadcode = o ~name:"globaldeadcode" ~default:false
 
   let shortvar = o ~name:"shortvar" ~default:true
 
