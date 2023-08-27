@@ -366,29 +366,25 @@ let ()  = M.run ()
       var
        even =
          function(n){
-          if(2 >= n >>> 0)
-           switch(n){
-             case 0:
-              return sentinal;
-             case 1:
-              odd(0); return sentinal;
-             default: odd(1); return sentinal;
-           }
-          odd(n - 1 | 0);
-          return sentinal;
+          if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+          switch(n){
+            case 0:
+             return 1;
+            case 1:
+             return 1 - (1 - odd(0));
+            default: return 1 - (1 - odd(1));
+          }
          },
        odd =
          function(n){
-          if(2 >= n >>> 0)
-           switch(n){
-             case 0:
-              return sentinal;
-             case 1:
-              even(0); return sentinal;
-             default: even(1); return sentinal;
-           }
-          even(n - 1 | 0);
-          return sentinal;
+          if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
+          switch(n){
+            case 0:
+             return 0;
+            case 1:
+             return 1 - (1 - even(0));
+            default: return 1 - (1 - even(1));
+          }
          };
       even(i);
       var _a_ = i + 1 | 0;
@@ -460,36 +456,32 @@ let ()  = M.run ()
        closures =
          function(i){
           function even(n){
-           if(2 >= n >>> 0)
-            switch(n){
-              case 0:
-               var
-                f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
-               delayed[1] = [0, f, delayed[1]];
-               f(0);
-               return sentinal;
-              case 1:
-               odd(0); return sentinal;
-              default: odd(1); return sentinal;
-            }
-           odd(n - 1 | 0);
-           return sentinal;
+           if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+           switch(n){
+             case 0:
+              var
+               f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
+              delayed[1] = [0, f, delayed[1]];
+              f(0);
+              return 1;
+             case 1:
+              return 1 - (1 - odd(0));
+             default: return 1 - (1 - odd(1));
+           }
           }
           function odd(n){
-           if(2 >= n >>> 0)
-            switch(n){
-              case 0:
-               var
-                f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
-               delayed[1] = [0, f, delayed[1]];
-               f(0);
-               return sentinal;
-              case 1:
-               even(0); return sentinal;
-              default: even(1); return sentinal;
-            }
-           even(n - 1 | 0);
-           return sentinal;
+           if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
+           switch(n){
+             case 0:
+              var
+               f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
+              delayed[1] = [0, f, delayed[1]];
+              f(0);
+              return 0;
+             case 1:
+              return 1 - (1 - even(0));
+             default: return 1 - (1 - even(1));
+           }
           }
           var block = [0, even, odd];
           return block;

@@ -4,6 +4,7 @@ let%expect_test "Eliminates unused functions from functor" =
   let program =
     (* Create two instances of Set functor so compiler can't inline one implementation. *)
     compile_and_parse_whole_program
+    ~flags: ["--enable"; "globaldeadcode"]
       {|
       module Int_set = Set.Make (Int);;
       module String_set = Set.Make (String);;
@@ -49,9 +50,10 @@ let%expect_test "Eliminates unused functions from functor" =
   print_fun_decl program (Some "inter");
   [%expect {| not found |}]
 
-let%expect_test "Substitutes unused fields with undefined" =
+let%expect_test "Omit unused fields" =
   let program =
     compile_and_parse
+    ~flags:["--enable"; "globaldeadcode"]
       {|
       let f b x =
         let t = if b then (1, 2, x) else (3, x, 4) in
@@ -60,7 +62,7 @@ let%expect_test "Substitutes unused fields with undefined" =
       in print_int (fst (f true 1) + snd (f false 2))
       |}
   in 
-  (* Expect second field in each triple to be replaced by a sentinal variable. *)
+  (* Expect second field in each triple to be omitted. *)
   print_fun_decl program (Some "f");
   [%expect {|
     function f(b, x){
@@ -68,19 +70,3 @@ let%expect_test "Substitutes unused fields with undefined" =
      return [0, u, v];
     }
     //end |}];
-  (* And that variable is defined as `undefined` *)
-  print_var_decl program "sentinal";
-  [%expect {|
-    var sentinal = undefined;
-    //end |}]
-
-let%expect_test "Sets unused return value to undefined" =
-  let program =
-    compile_and_parse
-      {|
-
-      |}
-  in print_fun_decl program (Some "f");
-  [%expect {| not found |}];
-  print_var_decl program "__";
-  [%expect {| var __ = not found |}]

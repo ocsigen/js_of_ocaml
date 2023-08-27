@@ -57,7 +57,7 @@ let%expect_test "direct calls without --enable effects" =
   [%expect
     {|
     function test1(param){
-     function f(g, x){caml_call1(g, x); return sentinal;}
+     function f(g, x){return caml_call1(g, x);}
      var _d_ = 7;
      f(function(x){return x + 1 | 0;}, _d_);
      var _e_ = 4.;
@@ -66,7 +66,7 @@ let%expect_test "direct calls without --enable effects" =
     }
     //end
     function test2(param){
-     function f(g, x){caml_call1(g, x); return sentinal;}
+     function f(g, x){return caml_call1(g, x);}
      var _c_ = 7;
      f(function(x){return x + 1 | 0;}, _c_);
      f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
