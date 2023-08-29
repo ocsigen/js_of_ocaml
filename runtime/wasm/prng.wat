@@ -5,38 +5,14 @@
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_i32"
       (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
-
-   (type $string (array (mut i8)))
-   (type $value->value->int->int
-      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $value->int
-      (func (param (ref eq)) (result i32)))
-   (type $custom_operations
-      (struct
-         (field $cust_id (ref $string))
-         (field $cust_compare (ref null $value->value->int->int))
-         (field $cust_compare_ext (ref null $value->value->int->int))
-         (field $cust_hash (ref null $value->int))
-         ;; ZZZ
-      ))
-   (type $custom (struct (field (ref $custom_operations))))
-   (type $int_array (array (mut i32)))
-   (type $bigarray
-      (sub $custom
-         (struct
-            (field (ref $custom_operations))
-            (field (mut (ref extern))) ;; data
-            (field (ref $int_array)) ;; size in each dimension
-            (field i8) ;; number of dimensions
-            (field i8) ;; kind
-            (field i8)))) ;; layout
+   (import "bigarray" "caml_ba_get_data"
+      (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
    (func (export "caml_lxm_next") (param $v (ref eq)) (result (ref eq))
       (local $data (ref extern))
       (local $a i64) (local $s i64) (local $q0 i64) (local $q1 i64)
       (local $z i64)
-      (local.set $data
-         (struct.get $bigarray 1 (ref.cast (ref $bigarray) (local.get $v))))
+      (local.set $data (call $caml_ba_get_data (local.get $v)))
       (local.set $a
          (i64.or
             (i64.extend_i32_u

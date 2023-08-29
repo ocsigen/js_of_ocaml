@@ -1,26 +1,15 @@
 (module
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "custom" "caml_is_custom"
+      (func $caml_is_custom (param (ref eq)) (result i32)))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
-   (type $value->value->int->int
-      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $value->int
-      (func (param (ref eq)) (result i32)))
-   (type $custom_operations
-      (struct
-         (field $cust_id (ref $string))
-         (field $cust_compare (ref null $value->value->int->int))
-         (field $cust_compare_ext (ref null $value->value->int->int))
-         (field $cust_hash (ref null $value->int))
-         ;; ZZZ
-      ))
-   (type $custom (struct (field (ref $custom_operations))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (struct (;(field i32);) (field (ref $function_1))))
+   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
       (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
 
@@ -183,7 +172,7 @@
          (then (return (i31.new (global.get $string_tag)))))
       (if (ref.test (ref $float) (local.get $v))
          (then (return (i31.new (global.get $float_tag)))))
-      (if (ref.test (ref $custom) (local.get $v))
+      (if (call $caml_is_custom (local.get $v))
          (then (return (i31.new (global.get $custom_tag)))))
       (if (ref.test (ref $closure) (local.get $v))
          (then (return (i31.new (global.get $closure_tag)))))

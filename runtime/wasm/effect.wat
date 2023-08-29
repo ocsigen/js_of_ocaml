@@ -16,7 +16,7 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (struct (;(field i32);) (field (ref $function_1))))
+   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $function_3
       (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $closure_3
@@ -48,7 +48,7 @@
    ;; Capturing the current continuation
 
    (type $cont_func (func (param (ref $pair)) (param (ref eq))))
-   (type $cont (struct (field $cont_func (ref $cont_func))))
+   (type $cont (sub (struct (field $cont_func (ref $cont_func)))))
 
    (type $called_with_continuation
       (func (param (ref $cont)) (param (ref eq))))

@@ -61,6 +61,13 @@
          (array.new_data $string $index_out_of_bounds
             (i32.const 0) (i32.const 19))))
 
+   (global $END_OF_FILE_EXN i32 (i32.const 4))
+
+   (func (export "caml_raise_end_of_file")
+      (return_call $caml_raise_constant
+         (array.get $block (global.get $caml_global_data)
+                    (global.get $END_OF_FILE_EXN))))
+
    (global $ZERO_DIVIDE_EXN i32 (i32.const 5))
 
    (func (export "caml_raise_zero_divide")

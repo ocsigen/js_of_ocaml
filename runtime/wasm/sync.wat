@@ -8,19 +8,24 @@
    (import "custom" "custom_next_id" (func $custom_next_id (result i64)))
 
    (type $string (array (mut i8)))
-   (type $value->value->int->int
+   (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $value->int
+   (type $hash
       (func (param (ref eq)) (result i32)))
+   (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
+   (type $serialize
+      (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
+   (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field $cust_id (ref $string))
-         (field $cust_compare (ref null $value->value->int->int))
-         (field $cust_compare_ext (ref null $value->value->int->int))
-         (field $cust_hash (ref null $value->int))
-         ;; ZZZ
-      ))
-   (type $custom (struct (field (ref $custom_operations))))
+         (field $id (ref $string))
+         (field $compare (ref null $compare))
+         (field $compare_ext (ref null $compare))
+         (field $hash (ref null $hash))
+         (field $fixed_length (ref null $fixed_length))
+         (field $serialize (ref null $serialize))
+         (field $deserialize (ref null $deserialize))))
+   (type $custom (sub (struct (field (ref $custom_operations)))))
    (type $custom_with_id
       (sub $custom
          (struct
@@ -33,8 +38,11 @@
             (i32.const 95) (i32.const 109) (i32.const 117) (i32.const 116)
             (i32.const 101) (i32.const 120))
          (ref.func $custom_compare_id)
-         (ref.null $value->value->int->int)
-         (ref.func $custom_hash_id)))
+         (ref.null $compare)
+         (ref.func $custom_hash_id)
+         (ref.null $fixed_length)
+         (ref.null $serialize)
+         (ref.null $deserialize)))
 
    (type $mutex
       (sub final $custom_with_id

@@ -1,5 +1,9 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
+   (import "io" "caml_getblock"
+      (func $caml_getblock
+         (param (ref eq)) (param (ref $string)) (param i32) (param i32)
+         (result i32)))
+   (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
 
    (type $string (array (mut i8)))
    (type $int_array (array (mut i32)))
@@ -21,10 +25,41 @@
       (return_call $MD5Final (local.get $ctx)))
 
    (func (export "caml_md5_chan")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_md5_chan"))
-      (array.new $string (i32.const 0) (i32.const 16)))
+      (param $ch (ref eq)) (param $vlen (ref eq)) (result (ref eq))
+      (local $len i32) (local $read i32)
+      (local $buf (ref $string))
+      (local $ctx (ref $context))
+      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $buf (array.new $string (i32.const 0) (i32.const 4096)))
+      (local.set $ctx (call $MD5Init))
+      (if (i32.lt_s (local.get $len) (i32.const 0))
+         (then
+            (loop $loop
+               (local.set $read
+                  (call $caml_getblock (local.get $ch) (local.get $buf)
+                     (i32.const 0) (i32.const 4096)))
+               (if (local.get $read)
+                  (then
+                     (call $MD5Update (local.get $ctx) (local.get $buf)
+                        (i32.const 0) (local.get $read))
+                     (br $loop)))))
+         (else
+            (loop $loop
+               (if (local.get $len)
+                  (then
+                     (local.set $read
+                        (call $caml_getblock (local.get $ch) (local.get $buf)
+                           (i32.const 0)
+                           (select (local.get $len) (i32.const 4096)
+                              (i32.le_u (local.get $len) (i32.const 4096)))))
+                     (if (i32.eqz (local.get $read))
+                        (then (call $caml_raise_end_of_file)))
+                     (call $MD5Update (local.get $ctx) (local.get $buf)
+                        (i32.const 0) (local.get $read))
+                     (local.set $len
+                        (i32.sub (local.get $len) (local.get $read)))
+                     (br $loop))))))
+      (return_call $MD5Final (local.get $ctx)))
 
    (func $xx
       (param $q i32) (param $a i32) (param $b i32) (param $x i32) (param $s i32)

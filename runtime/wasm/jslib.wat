@@ -65,7 +65,7 @@
    (type $string (array (mut i8)))
    (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (struct (;(field i32);) (field (ref $function_1))))
+   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
       (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
 

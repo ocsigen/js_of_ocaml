@@ -49,11 +49,40 @@ module Type = struct
           ; typ = W.Func { W.params = [ value ]; result = [ I32 ] }
           })
 
+  let fixed_length_type =
+    register_type "fixed_length" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false; typ = Value I32 }; { mut = false; typ = Value I32 } ]
+          })
+
+  let serialize_type =
+    register_type "serialize" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Func { W.params = [ value; value ]; result = [ I32; I32 ] }
+          })
+
+  let deserialize_type =
+    register_type "deserialize" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Func { W.params = [ value ]; result = [ value; I32 ] }
+          })
+
   let custom_operations_type =
     register_type "custom_operations" (fun () ->
         let* string = string_type in
         let* compare = compare_type in
         let* hash = hash_type in
+        let* fixed_length = fixed_length_type in
+        let* serialize = serialize_type in
+        let* deserialize = deserialize_type in
         return
           { supertype = None
           ; final = true
@@ -69,6 +98,15 @@ module Type = struct
                   ; typ = Value (Ref { nullable = true; typ = Type compare })
                   }
                 ; { mut = false; typ = Value (Ref { nullable = true; typ = Type hash }) }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = true; typ = Type fixed_length })
+                  }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = true; typ = Type serialize })
+                  }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = true; typ = Type deserialize })
+                  }
                 ]
           })
 

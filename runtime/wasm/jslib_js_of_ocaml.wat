@@ -38,5 +38,5 @@
             (call $caml_js_global (i31.new (i32.const 0)))
             (call $wrap (string.const "XMLHttpRequest")))
          (call $caml_js_from_array
-            (array.new_fixed $block (i31.new (i32.const 0))))))
+            (array.new_fixed $block 1 (i31.new (i32.const 0))))))
 )

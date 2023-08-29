@@ -7,19 +7,25 @@
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
-   (type $value->value->int->int
+
+   (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $value->int
+   (type $hash
       (func (param (ref eq)) (result i32)))
+   (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
+   (type $serialize
+      (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
+   (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field $cust_id (ref $string))
-         (field $cust_compare (ref null $value->value->int->int))
-         (field $cust_compare_ext (ref null $value->value->int->int))
-         (field $cust_hash (ref null $value->int))
-         ;; ZZZ
-      ))
-   (type $custom (struct (field (ref $custom_operations))))
+         (field $id (ref $string))
+         (field $compare (ref null $compare))
+         (field $compare_ext (ref null $compare))
+         (field $hash (ref null $hash))
+         (field $fixed_length (ref null $fixed_length))
+         (field $serialize (ref null $serialize))
+         (field $deserialize (ref null $deserialize))))
+   (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (func $caml_hash_mix_int (export "caml_hash_mix_int")
       (param $h i32) (param $d i32) (result i32)
@@ -260,10 +266,10 @@
                   (drop (block $not_custom (result (ref eq))
                      (local.set $h
                         (call $caml_hash_mix_int (local.get $h)
-                           (call_ref $value->int
+                           (call_ref $hash
                               (local.get $v)
                               (br_on_null $loop
-                                 (struct.get $custom_operations $cust_hash
+                                 (struct.get $custom_operations $hash
                                     (struct.get $custom 0
                                        (br_on_cast_fail $not_custom
                                           (ref eq) (ref $custom)

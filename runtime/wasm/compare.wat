@@ -19,7 +19,7 @@
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (struct (;(field i32);) (field (ref $function_1))))
+   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
 
    (type $int_array (array (mut i32)))
    (type $block_array (array (mut (ref $block))))
@@ -28,19 +28,25 @@
               (field (ref $block_array)) ;; first value
               (field (ref $block_array)) ;; second value
               (field (ref $int_array)))) ;; position in value
-   (type $value->value->int->int
+
+   (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $value->int
+   (type $hash
       (func (param (ref eq)) (result i32)))
+   (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
+   (type $serialize
+      (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
+   (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
    (type $custom_operations
       (struct
-         (field $cust_id (ref $string))
-         (field $cust_compare (ref null $value->value->int->int))
-         (field $cust_compare_ext (ref null $value->value->int->int))
-         (field $cust_hash (ref null $value->int))
-         ;; ZZZ
-      ))
-   (type $custom (struct (field (ref $custom_operations))))
+         (field $id (ref $string))
+         (field $compare (ref null $compare))
+         (field $compare_ext (ref null $compare))
+         (field $hash (ref null $hash))
+         (field $fixed_length (ref null $fixed_length))
+         (field $serialize (ref null $serialize))
+         (field $deserialize (ref null $deserialize))))
+   (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $dummy_block (ref $block)
       (array.new $block (i31.new (i32.const 0)) (i32.const 0)))
@@ -240,10 +246,10 @@
                          (br_on_cast_fail $v2_not_custom (ref eq) (ref $custom)
                             (local.get $v2)))
                      (local.set $res
-                        (call_ref $value->value->int->int
+                        (call_ref $compare
                            (local.get $v1) (local.get $v2) (local.get $total)
                            (br_on_null $v2_not_comparable
-                              (struct.get $custom_operations $cust_compare_ext
+                              (struct.get $custom_operations $compare_ext
                                  (struct.get $custom 0 (local.get $c2))))))
                      (br_if $next_item (i32.eqz (local.get $res)))
                      (return (local.get $res)))))
@@ -273,10 +279,10 @@
                                $v1_not_custom (ref eq) (ref $custom)
                                (local.get $v1)))
                         (local.set $res
-                           (call_ref $value->value->int->int
+                           (call_ref $compare
                               (local.get $v1) (local.get $v2) (local.get $total)
                               (br_on_null $v1_not_comparable
-                                 (struct.get $custom_operations $cust_compare_ext
+                                 (struct.get $custom_operations $compare_ext
                                     (struct.get $custom 0 (local.get $c1))))))
                         (br_if $next_item (i32.eqz (local.get $res)))
                         (return (local.get $res)))))
@@ -421,18 +427,18 @@
                            (i31.get_s
                               (ref.cast (ref i31)
                                  (call $caml_string_compare
-                                    (struct.get $custom_operations $cust_id
+                                    (struct.get $custom_operations $id
                                        (struct.get $custom 0
                                           (local.get $c1)))
-                                    (struct.get $custom_operations $cust_id
+                                    (struct.get $custom_operations $id
                                        (struct.get $custom 0
                                           (local.get $c2)))))))))
                   (block $not_comparable
                      (local.set $res
-                        (call_ref $value->value->int->int
+                        (call_ref $compare
                            (local.get $v1) (local.get $v2) (local.get $total)
                            (br_on_null $not_comparable
-                              (struct.get $custom_operations $cust_compare
+                              (struct.get $custom_operations $compare
                                  (struct.get $custom 0 (local.get $c1))))))
                      (br_if $next_item (i32.eqz (local.get $res)))
                      (return (local.get $res)))

@@ -297,7 +297,7 @@
          weak_new:(v)=>new WeakRef(v),
          weak_deref:(w)=>{var v = w.deref(); return v==undefined?null:v},
          weak_map_new:()=>new WeakMap,
-         weak_map_get:(m,x)=>m.get(x),
+         weak_map_get:(m,x)=>{var v = m.get(x); return v==undefined?null:v},
          weak_map_set:(m,x,v)=>m.set(x,v),
          weak_map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
