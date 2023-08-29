@@ -30,11 +30,9 @@ let heap_type (ty : heap_type) =
   | I31 -> Atom "i31"
   | Type t -> index t
 
-let ref_type' { nullable; typ } =
+let ref_type { nullable; typ } =
   let r = [ heap_type typ ] in
-  if nullable then Atom "null" :: r else r
-
-let ref_type r = List (Atom "ref" :: ref_type' r)
+  List (Atom "ref" :: (if nullable then Atom "null" :: r else r))
 
 let value_type (t : value_type) =
   match t with
@@ -280,10 +278,8 @@ let expression_or_instructions ctx in_function =
         [ List
             (Atom "array.new_fixed"
             :: index typ
-            :: ((match target with
-                | `Binaryen -> []
-                | `Reference -> [ Atom (string_of_int (List.length l)) ])
-               @ List.concat (List.map ~f:expression l)))
+            :: Atom (string_of_int (List.length l))
+            :: List.concat (List.map ~f:expression l))
         ]
     | ArrayNewData (typ, data, e, e') ->
         [ List
@@ -312,14 +308,8 @@ let expression_or_instructions ctx in_function =
             :: Atom (string_of_int i)
             :: expression e)
         ]
-    | RefCast (ty, e) -> (
-        match target with
-        | `Binaryen -> [ List (Atom "ref.cast" :: (ref_type' ty @ expression e)) ]
-        | `Reference -> [ List (Atom "ref.cast" :: ref_type ty :: expression e) ])
-    | RefTest (ty, e) -> (
-        match target with
-        | `Binaryen -> [ List (Atom "ref.test" :: (ref_type' ty @ expression e)) ]
-        | `Reference -> [ List (Atom "ref.test" :: ref_type ty :: expression e) ])
+    | RefCast (ty, e) -> [ List (Atom "ref.cast" :: ref_type ty :: expression e) ]
+    | RefTest (ty, e) -> [ List (Atom "ref.test" :: ref_type ty :: expression e) ]
     | RefEq (e, e') -> [ List (Atom "ref.eq" :: (expression e @ expression e')) ]
     | RefNull ty -> [ List [ Atom "ref.null"; heap_type ty ] ]
     | Br_on_cast (i, ty, ty', e) ->
@@ -370,10 +360,7 @@ let expression_or_instructions ctx in_function =
             (Atom "if"
             :: (block_type ty
                @ expression e
-               @ (let l1 = remove_nops l1 in
-                  if Poly.equal target `Binaryen && List.is_empty l1
-                  then [ List [ Atom "then"; Atom "nop" ] ]
-                  else list ~always:true "then" instructions l1)
+               @ list ~always:true "then" instructions (remove_nops l1)
                @ list "else" instructions (remove_nops l2)))
         ]
     | Try (ty, body, catches, catch_all) ->
