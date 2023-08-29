@@ -132,7 +132,7 @@
    (func $caml_hash_mix_jsstring
       (param $h i32) (param $s (ref eq)) (result i32)
       (return_call $caml_hash_mix_int (local.get $h)
-         (string.hash (ref.cast string (call $unwrap (local.get $s))))))
+         (string.hash (ref.cast (ref string) (call $unwrap (local.get $s))))))
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
@@ -151,11 +151,11 @@
       (local $len i32)
       (local $tag i32)
       (local $str anyref)
-      (local.set $sz (i31.get_u (ref.cast i31 (local.get $limit))))
+      (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $limit))))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
          (then (local.set $sz (global.get $HASH_QUEUE_SIZE))))
-      (local.set $num (i31.get_u (ref.cast i31 (local.get $count))))
-      (local.set $h (i31.get_s (ref.cast i31 (local.get $seed))))
+      (local.set $num (i31.get_u (ref.cast (ref i31) (local.get $count))))
+      (local.set $h (i31.get_s (ref.cast (ref i31) (local.get $seed))))
       (array.set $block
          (global.get $caml_hash_queue) (i32.const 0) (local.get $obj))
       (local.set $rd (i32.const 0))
@@ -195,7 +195,7 @@
                            (local.get $v)))
                      (local.set $tag
                         (i31.get_u
-                           (ref.cast i31
+                           (ref.cast (ref i31)
                               (array.get $block (local.get $b) (i32.const 0)))))
                      (if (i32.eq (local.get $tag) (global.get $forward_tag))
                         (then
@@ -228,7 +228,7 @@
                            (local.set $h
                               (call $caml_hash_mix_int (local.get $h)
                                  (i31.get_s
-                                    (ref.cast i31
+                                    (ref.cast (ref i31)
                                        (array.get $block
                                           (local.get $b) (i32.const 2))))))
                            (br $loop)))
@@ -296,7 +296,7 @@
          (i32.and
             (call $caml_hash_mix_final
                (call $caml_hash_mix_string
-                  (i31.get_s (ref.cast i31 (local.get 0)))
-                  (ref.cast $string (local.get 1))))
+                  (i31.get_s (ref.cast (ref i31) (local.get 0)))
+                  (ref.cast (ref $string) (local.get 1))))
             (i32.const 0x3FFFFFFF))))
 )

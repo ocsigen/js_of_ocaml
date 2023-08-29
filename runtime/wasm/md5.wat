@@ -15,9 +15,9 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $ctx (ref $context))
       (local.set $ctx (call $MD5Init))
-      (call $MD5Update (local.get $ctx) (ref.cast $string (local.get 0))
-         (i31.get_u (ref.cast i31 (local.get 1)))
-         (i31.get_u (ref.cast i31 (local.get 2))))
+      (call $MD5Update (local.get $ctx) (ref.cast (ref $string) (local.get 0))
+         (i31.get_u (ref.cast (ref i31) (local.get 1)))
+         (i31.get_u (ref.cast (ref i31) (local.get 2))))
       (return_call $MD5Final (local.get $ctx)))
 
    (func (export "caml_md5_chan")
@@ -373,7 +373,7 @@
 
    (func $MD5Init (result (ref $context))
        (struct.new $context
-          (array.new_fixed $int_array
+          (array.new_fixed $int_array 4
              (i32.const 0x67452301) (i32.const 0xEFCDAB89)
              (i32.const 0x98BADCFE) (i32.const 0x10325476))
           (i64.const 0)

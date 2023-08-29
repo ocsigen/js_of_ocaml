@@ -25,17 +25,17 @@
       (local $i1 i64) (local $i2 i64)
       (local.set $i1
          (struct.get $custom_with_id $id
-            (ref.cast $custom_with_id (local.get 0))))
+            (ref.cast (ref $custom_with_id) (local.get 0))))
       (local.set $i2
          (struct.get $custom_with_id $id
-            (ref.cast $custom_with_id (local.get 1))))
+            (ref.cast (ref $custom_with_id) (local.get 1))))
       (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                (i64.lt_s (local.get $i1) (local.get $i2))))
 
    (func (export "custom_hash_id") (param (ref eq)) (result i32)
       (i32.wrap_i64
          (struct.get $custom_with_id $id
-           (ref.cast $custom_with_id (local.get 0)))))
+           (ref.cast (ref $custom_with_id) (local.get 0)))))
 
    (global $next_id (mut i64) (i64.const 0))
 

@@ -6,7 +6,7 @@
 
    (func $get (param $a (ref eq)) (param $i i32) (result i32)
       (local $s (ref $string))
-      (local.set $s (ref.cast $string (local.get $a)))
+      (local.set $s (ref.cast (ref $string) (local.get $a)))
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
          (i32.or (array.get_u $string (local.get $s) (local.get $i))
@@ -54,11 +54,12 @@
       (local $lex_check_code (ref $string))
       (local $lex_trans (ref $string))
       (local $lex_default (ref $string))
-      (local.set $tbl (ref.cast $block (local.get $vtbl)))
-      (local.set $lexbuf (ref.cast $block (local.get $vlexbuf)))
-      (local.set $state (i31.get_s (ref.cast i31 (local.get $start_state))))
+      (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
+      (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
+      (local.set $state
+         (i31.get_s (ref.cast (ref i31) (local.get $start_state))))
       (local.set $buffer
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $lexbuf) (global.get $lex_buffer))))
       (if (i32.ge_s (local.get $state) (i32.const 0))
          (then
@@ -73,22 +74,22 @@
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_base
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_base))))
       (local.set $lex_backtrk
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
       (local.set $lex_check
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_check))))
       (local.set $lex_check_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_check_code))))
       (local.set $lex_trans
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_trans))))
       (local.set $lex_default
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_default))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
@@ -107,11 +108,11 @@
                   (i31.new (local.get $backtrk)))))
          (if (i32.ge_s
                 (i31.get_s
-                   (ref.cast i31
+                   (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_curr_pos))))
                 (i31.get_s
-                   (ref.cast i31
+                   (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_buffer_len)))))
             (then
@@ -127,7 +128,7 @@
             (else
                (local.set $pos
                   (i31.get_u
-                     (ref.cast i31
+                     (ref.cast (ref i31)
                         (array.get $block (local.get $lexbuf)
                            (global.get $lex_curr_pos)))))
                (local.set $c
@@ -172,7 +173,7 @@
       (local $dst i32) (local $src i32)
       (local $mem (ref $block))
       (local.set $mem
-         (ref.cast $block
+         (ref.cast (ref $block)
             (array.get $block (local.get $lexbuf) (global.get $lex_mem))))
       (loop $loop
          (local.set $dst (array.get_u $string (local.get $s) (local.get $i)))
@@ -220,11 +221,12 @@
       (local $lex_trans_code (ref $string))
       (local $lex_default (ref $string))
       (local $lex_default_code (ref $string))
-      (local.set $tbl (ref.cast $block (local.get $vtbl)))
-      (local.set $lexbuf (ref.cast $block (local.get $vlexbuf)))
-      (local.set $state (i31.get_s (ref.cast i31 (local.get $start_state))))
+      (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
+      (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
+      (local.set $state
+         (i31.get_s (ref.cast (ref i31) (local.get $start_state))))
       (local.set $buffer
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $lexbuf) (global.get $lex_buffer))))
       (if (i32.ge_s (local.get $state) (i32.const 0))
          (then
@@ -239,37 +241,37 @@
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_code))))
       (local.set $lex_base
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_base))))
       (local.set $lex_base_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_base_code))))
       (local.set $lex_backtrk
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
       (local.set $lex_backtrk_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_backtrk_code))))
       (local.set $lex_check
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_check))))
       (local.set $lex_check_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_check_code))))
       (local.set $lex_trans
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_trans))))
       (local.set $lex_trans_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_trans_code))))
       (local.set $lex_default
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_default))))
       (local.set $lex_default_code
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tbl) (global.get $lex_default_code))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
@@ -296,11 +298,11 @@
                   (i31.new (local.get $backtrk)))))
          (if (i32.ge_s
                 (i31.get_s
-                   (ref.cast i31
+                   (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_curr_pos))))
                 (i31.get_s
-                   (ref.cast i31
+                   (ref.cast (ref i31)
                       (array.get $block (local.get $lexbuf)
                          (global.get $lex_buffer_len)))))
             (then
@@ -316,7 +318,7 @@
             (else
                (local.set $pos
                   (i31.get_u
-                     (ref.cast i31
+                     (ref.cast (ref i31)
                         (array.get $block (local.get $lexbuf)
                            (global.get $lex_curr_pos)))))
                (local.set $c

@@ -24,7 +24,7 @@
 
    (func $get (param $a (ref eq)) (param $i i32) (result i32)
       (local $s (ref $string))
-      (local.set $s (ref.cast $string (local.get $a)))
+      (local.set $s (ref.cast (ref $string) (local.get $a)))
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
          (i32.or (array.get_u $string (local.get $s) (local.get $i))
@@ -104,7 +104,7 @@
       (param $vnames (ref eq)) (param $number i32) (result (ref eq))
       (local $names (ref $string)) (local $i i32) (local $len i32)
       (local $name (ref $string))
-      (local.set $names (ref.cast $string (local.get $vnames)))
+      (local.set $names (ref.cast (ref $string) (local.get $vnames)))
       (loop $loop
          (if (i32.eqz (array.get $string (local.get $names) (local.get $i)))
             (then
@@ -128,7 +128,7 @@
 
    (func $output (param (ref eq))
       (local $s (ref $string))
-      (local.set $s (ref.cast $string (local.get 0)))
+      (local.set $s (ref.cast (ref $string) (local.get 0)))
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
             (local.get $s) (i31.new (i32.const 0))
@@ -137,7 +137,7 @@
    (func $output_nl
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
-            (array.new_fixed $string (i32.const 10))
+            (array.new_fixed $string 1 (i32.const 10))
             (i31.new (i32.const 0)) (i31.new (i32.const 1))))
       (drop (call $caml_ml_flush (global.get $caml_stderr))))
 
@@ -147,14 +147,14 @@
    (func $output_int (param i32)
       (call $output
          (call $caml_format_int
-            (array.new_fixed $string (i32.const 37) (i32.const 100))
+            (array.new_fixed $string 2 (i32.const 37) (i32.const 100))
             (i31.new (local.get 0)))))
 
    (func $print_token
       (param $tables (ref $block)) (param $state i32) (param $tok (ref eq))
       (local $b (ref $block))
       (local $v (ref eq))
-      (if (ref.test i31 (local.get $tok))
+      (if (ref.test (ref i31) (local.get $tok))
          (then
             (call $output_str (string.const "State "))
             (call $output_int (local.get $state))
@@ -163,32 +163,34 @@
                (call $token_name
                   (array.get $block (local.get $tables)
                      (global.get $tbl_names_const))
-                  (i31.get_u (ref.cast i31 (local.get $tok)))))
+                  (i31.get_u (ref.cast (ref i31) (local.get $tok)))))
             (call $output_nl))
          (else
             (call $output_str (string.const "State "))
             (call $output_int (local.get $state))
             (call $output_str (string.const ": read token "))
-            (local.set $b (ref.cast $block (local.get $tok)))
+            (local.set $b (ref.cast (ref $block) (local.get $tok)))
             (call $output
                (call $token_name
                   (array.get $block (local.get $tables)
                      (global.get $tbl_names_block))
                   (i31.get_u
-                     (ref.cast i31
+                     (ref.cast (ref i31)
                         (array.get $block (local.get $b) (i32.const 0))))))
             (call $output_str (string.const "("))
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
-            (if (ref.test i31 (local.get $v))
+            (if (ref.test (ref i31) (local.get $v))
                (then
-                  (call $output_int (i31.get_s (ref.cast i31 (local.get $v)))))
-            (else (if (ref.test $string (local.get $v))
+                  (call $output_int
+                     (i31.get_s (ref.cast (ref i31) (local.get $v)))))
+            (else (if (ref.test (ref $string) (local.get $v))
                (then (call $output (local.get $v)))
-            (else (if (ref.test $float (local.get $v))
+            (else (if (ref.test (ref $float) (local.get $v))
                (then
                   (call $output
                      (call $caml_format_float
-                        (array.new_fixed $string (i32.const 37) (i32.const 103))
+                        (array.new_fixed $string 2
+                           (i32.const 37) (i32.const 103))
                         (local.get $v))))
             (else
                (call $output_str (string.const "_"))))))))
@@ -213,47 +215,47 @@
       (local $tbl_lhs (ref $string))
       (local $tbl_gindex (ref $string))
       (local $tbl_dgoto (ref $string))
-      (local.set $tables (ref.cast $block (local.get $vtables)))
+      (local.set $tables (ref.cast (ref $block) (local.get $vtables)))
       (local.set $tbl_defred
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_defred))))
       (local.set $tbl_sindex
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_sindex))))
       (local.set $tbl_check
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_check))))
       (local.set $tbl_rindex
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_rindex))))
       (local.set $tbl_table
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_table))))
       (local.set $tbl_len
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_len))))
       (local.set $tbl_lhs
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_lhs))))
       (local.set $tbl_gindex
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_gindex))))
       (local.set $tbl_dgoto
-         (ref.cast $string
+         (ref.cast (ref $string)
             (array.get $block (local.get $tables) (global.get $tbl_dgoto))))
-      (local.set $env (ref.cast $block (local.get $venv)))
-      (local.set $cmd (i31.get_s (ref.cast i31 (local.get $vcmd))))
+      (local.set $env (ref.cast (ref $block) (local.get $venv)))
+      (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))
       (local.set $sp
          (i31.get_s
-            (ref.cast i31
+            (ref.cast (ref i31)
                (array.get $block (local.get $env) (global.get $env_sp)))))
       (local.set $state
          (i31.get_s
-            (ref.cast i31
+            (ref.cast (ref i31)
                (array.get $block (local.get $env) (global.get $env_state)))))
       (local.set $errflag
          (i31.get_s
-            (ref.cast i31
+            (ref.cast (ref i31)
                (array.get $block (local.get $env) (global.get $env_errflag)))))
       (block $exit
        (loop $next
@@ -286,7 +288,7 @@
                         (br $next)))
                   (if (i32.ge_s
                          (i31.get_s
-                            (ref.cast i31
+                            (ref.cast (ref i31)
                                (array.get $block (local.get $env)
                                   (global.get $env_curr_char))))
                          (i32.const 0))
@@ -304,12 +306,12 @@
                        (array.set $block (local.get $env)
                           (global.get $env_curr_char)
                           (array.get $block
-                             (ref.cast $block
+                             (ref.cast (ref $block)
                                 (array.get $block (local.get $tables)
                                    (global.get $tbl_transl_block)))
                              (i32.add
                                 (i31.get_u
-                                   (ref.cast i31
+                                   (ref.cast (ref i31)
                                       (array.get $block
                                          (local.get $arg) (i32.const 0))))
                                 (i32.const 1))))
@@ -319,11 +321,11 @@
                     (array.set $block (local.get $env)
                        (global.get $env_curr_char)
                        (array.get $block
-                          (ref.cast $block
+                          (ref.cast (ref $block)
                              (array.get $block (local.get $tables)
                                 (global.get $tbl_transl_const)))
                           (i32.add
-                             (i31.get_u (ref.cast i31 (local.get $varg)))
+                             (i31.get_u (ref.cast (ref i31) (local.get $varg)))
                              (i32.const 1))))
                     (array.set $block (local.get $env) (global.get $env_lval)
                        (i31.new (i32.const 0))))
@@ -337,7 +339,7 @@
                 (local.set $n2
                     (i32.add (local.get $n1)
                        (i31.get_s
-                          (ref.cast i31
+                          (ref.cast (ref i31)
                              (array.get $block (local.get $env)
                                 (global.get $env_curr_char))))))
                 (if (i32.and
@@ -346,7 +348,7 @@
                    (then
                       (if (i32.le_s (local.get $n2)
                              (i31.get_s
-                                (ref.cast i31
+                                (ref.cast (ref i31)
                                    (array.get $block (local.get $tables)
                                       (global.get $tbl_tablesize)))))
                          (then
@@ -364,7 +366,7 @@
                 (local.set $n2
                    (i32.add (local.get $n1)
                       (i31.get_s
-                         (ref.cast i31
+                         (ref.cast (ref i31)
                             (array.get $block (local.get $env)
                                (global.get $env_curr_char))))))
                 (if (i32.and
@@ -373,7 +375,7 @@
                    (then
                       (if (i32.le_s (local.get $n2)
                              (i31.get_s
-                                (ref.cast i31
+                                (ref.cast (ref i31)
                                    (array.get $block (local.get $tables)
                                       (global.get $tbl_tablesize)))))
                          (then
@@ -401,9 +403,9 @@
                      (loop $loop2
                        (local.set $state1
                           (i31.get_s
-                             (ref.cast i31
+                             (ref.cast (ref i31)
                                 (array.get $block
-                                   (ref.cast $block
+                                   (ref.cast (ref $block)
                                       (array.get $block (local.get $env)
                                          (global.get $env_s_stack)))
                                    (i32.add (local.get $sp) (i32.const 1))))))
@@ -418,7 +420,7 @@
                           (then
                              (if (i32.le_s (local.get $n2)
                                     (i31.get_s
-                                       (ref.cast i31
+                                       (ref.cast (ref i31)
                                           (array.get $block (local.get $tables)
                                              (global.get $tbl_tablesize)))))
                                 (then
@@ -446,7 +448,7 @@
                              (call $output_nl)))
                        (if (i32.le_s (local.get $sp)
                               (i31.get_s
-                                 (ref.cast i31
+                                 (ref.cast (ref i31)
                                     (array.get $block (local.get $env)
                                        (global.get $env_stackbase)))))
                           (then
@@ -498,7 +500,7 @@
              (local.set $sp (i32.add (local.get $sp) (i32.const 1)))
              (if (i32.ge_s (local.get $sp)
                     (i31.get_s
-                       (ref.cast i31
+                       (ref.cast (ref i31)
                            (array.get $block (local.get $env)
                               (global.get $env_stacksize)))))
                 (then
@@ -507,23 +509,23 @@
              ;; Fall through
             ;; STACKS_GROWN_1:
             (array.set $block
-               (ref.cast $block
+               (ref.cast (ref $block)
                   (array.get $block (local.get $env) (global.get $env_s_stack)))
                (i32.add (local.get $sp) (i32.const 1))
                (i31.new (local.get $state)))
             (array.set $block
-               (ref.cast $block
+               (ref.cast (ref $block)
                   (array.get $block (local.get $env) (global.get $env_v_stack)))
                (i32.add (local.get $sp) (i32.const 1))
                (array.get $block (local.get $env) (global.get $env_lval)))
             (array.set $block
-               (ref.cast $block
+               (ref.cast (ref $block)
                   (array.get $block (local.get $env)
                      (global.get $env_symb_start_stack)))
                (i32.add (local.get $sp) (i32.const 1))
                (array.get $block (local.get $env) (global.get $env_symb_start)))
             (array.set $block
-               (ref.cast $block
+               (ref.cast (ref $block)
                   (array.get $block (local.get $env)
                      (global.get $env_symb_end_stack)))
                (i32.add (local.get $sp) (i32.const 1))
@@ -550,9 +552,9 @@
            (local.set $m (call $get (local.get $tbl_lhs) (local.get $n)))
            (local.set $state1
               (i31.get_s
-                 (ref.cast i31
+                 (ref.cast (ref i31)
                     (array.get $block
-                       (ref.cast $block
+                       (ref.cast (ref $block)
                           (array.get $block (local.get $env)
                              (global.get $env_s_stack)))
                        (local.get $sp)))))
@@ -565,7 +567,7 @@
                  (then
                     (if (i32.le_s (local.get $n2)
                            (i31.get_s
-                              (ref.cast i31
+                              (ref.cast (ref i31)
                                  (array.get $block (local.get $tables)
                                     (global.get $tbl_tablesize)))))
                        (then
@@ -582,7 +584,7 @@
                  (call $get (local.get $tbl_dgoto) (local.get $m))))
            (if (i32.ge_s (local.get $sp)
                   (i31.get_s
-                     (ref.cast i31
+                     (ref.cast (ref i31)
                         (array.get $block (local.get $env)
                            (global.get $env_stacksize)))))
               (then
@@ -594,26 +596,26 @@
           (br $exit))
          ;; SEMANTIC_ACTION_COMPUTED:
          (array.set $block
-            (ref.cast $block
+            (ref.cast (ref $block)
                (array.get $block (local.get $env) (global.get $env_s_stack)))
             (i32.add (local.get $sp) (i32.const 1))
             (i31.new (local.get $state)))
          (array.set $block
-            (ref.cast $block
+            (ref.cast (ref $block)
                (array.get $block (local.get $env) (global.get $env_v_stack)))
             (i32.add (local.get $sp) (i32.const 1))
             (local.get $varg))
          (local.set $asp
             (i31.get_s
-               (ref.cast i31
+               (ref.cast (ref i31)
                   (array.get $block (local.get $env) (global.get $env_asp)))))
          (array.set $block
-            (ref.cast $block
+            (ref.cast (ref $block)
                (array.get $block (local.get $env)
                   (global.get $env_symb_end_stack)))
             (i32.add (local.get $sp) (i32.const 1))
             (array.get $block
-               (ref.cast $block
+               (ref.cast (ref $block)
                   (array.get $block (local.get $env)
                      (global.get $env_symb_end_stack)))
                (i32.add (local.get $asp) (i32.const 1))))
@@ -621,12 +623,12 @@
             (then
             ;; This is an epsilon production. Take symb_start equal to symb_end.
                (array.set $block
-                  (ref.cast $block
+                  (ref.cast (ref $block)
                      (array.get $block (local.get $env)
                         (global.get $env_symb_start_stack)))
                   (i32.add (local.get $sp) (i32.const 1))
                   (array.get $block
-                     (ref.cast $block
+                     (ref.cast (ref $block)
                         (array.get $block (local.get $env)
                            (global.get $env_symb_end_stack)))
                      (i32.add (local.get $asp) (i32.const 1))))))
@@ -646,6 +648,7 @@
    (func (export "caml_set_parser_trace") (param (ref eq)) (result (ref eq))
       (local $oldflag i32)
       (local.set $oldflag (global.get $caml_parser_trace))
-      (global.set $caml_parser_trace (i31.get_s (ref.cast i31 (local.get 0))))
+      (global.set $caml_parser_trace
+         (i31.get_s (ref.cast (ref i31) (local.get 0))))
       (i31.new (local.get $oldflag)))
 )

@@ -15,7 +15,7 @@
    (func $caml_raise_with_arg (export "caml_raise_with_arg")
       (param $tag (ref eq)) (param $arg (ref eq))
       (throw $ocaml_exception
-         (array.new_fixed $block
+         (array.new_fixed $block 3
             (i31.new (i32.const 0)) (local.get $tag) (local.get $arg))))
 
    (global $OUT_OF_MEMORY_EXN i32 (i32.const 0))

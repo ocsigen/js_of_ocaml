@@ -33,7 +33,7 @@
       (local $s (ref $string))
       (local.set $pos (struct.get $buffer 0 (local.get $buf)))
       (local.set $data (struct.get $buffer 1 (local.get $buf)))
-      (local.set $s (ref.cast $string (local.get $v)))
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (i32.add (local.get $pos) (local.get $len))
                     (array.len (local.get $data)))
@@ -53,7 +53,7 @@
       (local $v (ref eq))
       (local $bucket (ref $block))
       (local $i i32) (local $len i32)
-      (local.set $exn (ref.cast $block (local.get 0)))
+      (local.set $exn (ref.cast (ref $block) (local.get 0)))
       (if (result anyref)
           (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (i31.new (i32.const 0)))
@@ -65,7 +65,7 @@
             (call $add_string
                (local.get $buf)
                (array.get $block
-                  (ref.cast $block
+                  (ref.cast (ref $block)
                      (array.get $block (local.get $exn) (i32.const 1)))
                   (i32.const 1)))
             (local.set $bucket
@@ -79,8 +79,9 @@
                               (array.get $block (local.get $exn) (i32.const 1)))))
                      (local.set $v
                         (array.get $block (local.get $exn) (i32.const 2)))
-                     (br_if $default (i32.eqz (ref.test $block (local.get $v))))
-                     (local.set $bucket (ref.cast $block (local.get $v)))
+                     (br_if $default
+                        (i32.eqz (ref.test (ref $block) (local.get $v))))
+                     (local.set $bucket (ref.cast (ref $block) (local.get $v)))
                      (br_if $default
                         (i32.eqz
                            (ref.eq
@@ -97,14 +98,14 @@
                  (loop $loop
                     (local.set $v
                        (array.get $block (local.get $bucket) (local.get $i)))
-                    (if (ref.test i31 (local.get $v))
+                    (if (ref.test (ref i31) (local.get $v))
                        (then
                            (call $add_string (local.get $buf)
                               (call $caml_format_int
-                                  (array.new_fixed $string
+                                  (array.new_fixed $string 2
                                      (i32.const 37) (i32.const 100)) ;; %d
-                                  (ref.cast i31 (local.get $v)))))
-                    (else (if (ref.test $string (local.get $v))
+                                  (ref.cast (ref i31) (local.get $v)))))
+                    (else (if (ref.test (ref $string) (local.get $v))
                        (then
                           (call $add_char (local.get $buf)
                              (i32.const 34)) ;; '\"'
@@ -121,7 +122,7 @@
                              (i32.const 44)) ;; ','
                           (br $loop))))
                  (call $add_char (local.get $buf) (i32.const 41)))) ;; '\)'
-           (string.new_wtf8_array replace
+           (string.new_lossy_utf8_array
               (struct.get $buffer 1 (local.get $buf)) (i32.const 0)
               (struct.get $buffer 0 (local.get $buf))))
          (else

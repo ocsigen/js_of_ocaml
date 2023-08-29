@@ -19,7 +19,7 @@
    (func (export "caml_gc_counters") (param (ref eq)) (result (ref eq))
       (local $f (ref eq))
       (local.set $f (struct.new $float (f64.const 0)))
-      (array.new_fixed $block (i31.new (i32.const 0))
+      (array.new_fixed $block 4 (i31.new (i32.const 0))
          (local.get $f) (local.get $f) (local.get $f)))
 
    (export "caml_gc_quick_stat" (func $caml_gc_stat))
@@ -27,7 +27,7 @@
       (param (ref eq)) (result (ref eq))
       (local $f (ref eq))
       (local.set $f (struct.new $float (f64.const 0)))
-      (array.new_fixed $block (i31.new (i32.const 0))
+      (array.new_fixed $block 18 (i31.new (i32.const 0))
          (local.get $f) (local.get $f) (local.get $f)
          (i31.new (i32.const 0)) (i31.new (i32.const 0))
          (i31.new (i32.const 0)) (i31.new (i32.const 0))
@@ -41,7 +41,7 @@
       (i31.new (i32.const 0)))
 
    (func (export "caml_gc_get") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block
+      (array.new_fixed $block 12
          (i31.new (i32.const 0)) (i31.new (i32.const 0))
          (i31.new (i32.const 0)) (i31.new (i32.const 0))
          (i31.new (i32.const 0)) (i31.new (i32.const 0))

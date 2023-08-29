@@ -26,7 +26,7 @@
 
    (global $int64_ops (export "int64_ops") (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string (i32.const 95) (i32.const 106)) ;; "_j"
+         (array.new_fixed $string 2 (i32.const 95) (i32.const 106)) ;; "_j"
          (ref.func $int64_cmp)
          (ref.null $value->value->int->int)
          (ref.func $int64_hash)))
@@ -37,14 +37,17 @@
    (func $int64_cmp
       (param $v1 (ref eq)) (param $v2 (ref eq)) (param i32) (result i32)
       (local $i1 i64) (local $i2 i64)
-      (local.set $i1 (struct.get $int64 1 (ref.cast $int64 (local.get $v1))))
-      (local.set $i2 (struct.get $int64 1 (ref.cast $int64 (local.get $v2))))
+      (local.set $i1
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v1))))
+      (local.set $i2
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v2))))
       (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                (i64.lt_s (local.get $i1) (local.get $i2))))
 
    (func $int64_hash (param $v (ref eq)) (result i32)
       (local $i i64)
-      (local.set $i (struct.get $int64 1 (ref.cast $int64 (local.get $v))))
+      (local.set $i
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))
       (i32.xor
          (i32.wrap_i64 (local.get $i))
          (i32.wrap_i64 (i64.shr_u (local.get $i) (i64.const 32)))))
@@ -54,11 +57,11 @@
       (struct.new $int64 (global.get $int64_ops) (local.get $i)))
 
    (func (export "Int64_val") (param (ref eq)) (result i64)
-      (struct.get $int64 1 (ref.cast $int64 (local.get 0))))
+      (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
 
    (func (export "caml_int64_bswap") (param (ref eq)) (result (ref eq))
       (local $i i64)
-      (local.set $i (struct.get $int64 1 (ref.cast $int64 (local.get 0))))
+      (local.set $i (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
       (return_call $caml_copy_int64
          (i64.or
             (i64.or
@@ -75,13 +78,15 @@
    (func (export "caml_int64_compare")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $i1 i64) (local $i2 i64)
-      (local.set $i1 (struct.get $int64 1 (ref.cast $int64 (local.get 0))))
-      (local.set $i2 (struct.get $int64 1 (ref.cast $int64 (local.get 1))))
+      (local.set $i1
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
+      (local.set $i2
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
       (i31.new (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                         (i64.lt_s (local.get $i1) (local.get $i2)))))
 
    (global $INT64_ERRMSG (ref $string)
-      (array.new_fixed $string ;; "Int64.of_string"
+      (array.new_fixed $string 15 ;; "Int64.of_string"
          (i32.const 73) (i32.const 110) (i32.const 116) (i32.const 54)
          (i32.const 52) (i32.const 46) (i32.const 111) (i32.const 102)
          (i32.const 95) (i32.const 115) (i32.const 116) (i32.const 114)
@@ -93,7 +98,7 @@
       (local $signedness i32) (local $sign i32) (local $base i32)
       (local $res i64) (local $threshold i64)
       (local $t (i32 i32 i32 i32))
-      (local.set $s (ref.cast $string (local.get $v)))
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
       (if (i32.eqz (local.get $len))
         (then (call $caml_failwith (global.get $INT64_ERRMSG))))
@@ -195,8 +200,8 @@
       (local $i i32)
       (local $n i64)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast $string (local.get 0)))
-      (local.set $d (struct.get $int64 1 (ref.cast $int64 (local.get 1))))
+      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
             (if (i32.eq (array.get_u $string (local.get $s) (i32.const 1))

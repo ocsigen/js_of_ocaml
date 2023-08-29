@@ -28,7 +28,7 @@
    (tag $ocaml_exit (export "ocaml_exit") (param i32))
 
    (func (export "caml_sys_exit") (param (ref eq)) (result (ref eq))
-      (throw $ocaml_exit (i31.get_s (ref.cast i31 (local.get 0)))))
+      (throw $ocaml_exit (i31.get_s (ref.cast (ref i31) (local.get 0)))))
 
    (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
    (func $caml_sys_getenv (export "caml_sys_getenv")
@@ -37,7 +37,7 @@
       (local.set $res
          (call $getenv
             (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
-      (if (i32.eqz (ref.test string (local.get $res)))
+      (if (i32.eqz (ref.test (ref string) (local.get $res)))
          (then
             (call $caml_raise_not_found)))
       (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
@@ -49,7 +49,7 @@
    (func (export "caml_sys_executable_name")
       (param (ref eq)) (result (ref eq))
       (array.get $block
-         (ref.cast $block (call $caml_js_to_string_array (call $argv)))
+         (ref.cast (ref $block) (call $caml_js_to_string_array (call $argv)))
          (i32.const 1)))
 
    (export "caml_sys_time_include_children" (func $caml_sys_time))
@@ -123,7 +123,7 @@
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
       ;; (call $log_js (string.const "caml_sys_get_config"))
-      (array.new_fixed $block (i31.new (i32.const 0))
+      (array.new_fixed $block 4 (i31.new (i32.const 0))
          (array.new_data $string $Unix (i32.const 0) (i32.const 4))
          (i31.new (i32.const 32))
          (i31.new (i32.const 0))))
@@ -133,10 +133,10 @@
       (i31.new (i32.const 0)))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $string))
+      (array.new_fixed $string 0))
 
    (func (export "caml_runtime_parameters") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $string))
+      (array.new_fixed $string 0))
 
    (func (export "caml_install_signal_handler")
       (param (ref eq)) (result (ref eq))
@@ -147,7 +147,7 @@
    (func (export "caml_ml_enable_runtime_warnings")
       (param (ref eq)) (result (ref eq))
       (global.set $caml_runtime_warnings
-         (i31.get_u (ref.cast i31 (local.get 0))))
+         (i31.get_u (ref.cast (ref i31) (local.get 0))))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_runtime_warnings_enabled")

@@ -31,7 +31,7 @@
       (local $f (ref eq))
       (return_call_ref $function_1 (struct.get $pair 1 (local.get $p))
          (local.tee $f (struct.get $pair 0 (local.get $p)))
-         (struct.get $closure 0 (ref.cast $closure (local.get $f)))))
+         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
 
    ;; Low-level primitives
 
@@ -65,12 +65,12 @@
    (func $invoke_promise_resolver (param $p (ref $pair)) (param (ref eq))
       (call $resume_fiber
          (struct.get $cont_resume $cont_resolver
-            (ref.cast $cont_resume (local.get 1)))
+            (ref.cast (ref $cont_resume) (local.get 1)))
          (local.get $p)))
 
    (func $apply_continuation (param $resolver (ref extern)) (param $v (ref eq))
       (local $t (ref $thunk))
-      (local.set $t (ref.cast $thunk (local.get $v)))
+      (local.set $t (ref.cast (ref $thunk) (local.get $v)))
       (return_call_ref $called_with_continuation
          (struct.new $cont_resume
             (ref.func $invoke_promise_resolver) (local.get $resolver))
@@ -82,7 +82,7 @@
       (param $v (ref eq))
       (result (ref eq))
       (return_call $apply_pair
-         (ref.cast $pair
+         (ref.cast (ref $pair)
             (call $suspend_fiber
                (global.get $current_suspender)
                (ref.func $apply_continuation)
@@ -112,7 +112,7 @@
                   (string.const "Effect.Unhandled")))
             (local.get $eff)))
       (call $caml_raise_constant
-         (array.new_fixed $block (i31.new (i32.const 248))
+         (array.new_fixed $block 3 (i31.new (i32.const 248))
             (array.new_data $string $effect_unhandled
                (i32.const 0) (i32.const 16))
             (call $caml_fresh_oo_id (i31.new (i32.const 0)))))
@@ -126,8 +126,8 @@
          (call $push_stack
             (ref.as_non_null
                (struct.get $continuation 0
-                  (ref.cast $continuation (local.get $cont))))
-            (ref.cast $cont (local.get $k))))
+                  (ref.cast (ref $continuation) (local.get $cont))))
+            (ref.cast (ref $cont) (local.get $k))))
       (call_ref $cont_func
          (struct.new $pair
             (struct.new $closure (ref.func $raise_unhandled))
@@ -144,7 +144,7 @@
 
    (global $fiber_stack (mut (ref null $fiber))
       (struct.new $fiber
-         (array.new_fixed $handlers
+         (array.new_fixed $handlers 3
             (i31.new (i32.const 0))
             (i31.new (i32.const 0))
             (struct.new $closure_3
@@ -192,9 +192,10 @@
    (func $do_resume (param $k (ref $cont)) (param $vp (ref eq))
       (local $p (ref $pair))
       (local $stack (ref $fiber))
-      (local.set $p (ref.cast $pair (local.get $vp)))
-      (local.set $stack (ref.cast $fiber (struct.get $pair 0 (local.get $p))))
-      (local.set $p (ref.cast $pair (struct.get $pair 1 (local.get $p))))
+      (local.set $p (ref.cast (ref $pair) (local.get $vp)))
+      (local.set $stack
+         (ref.cast (ref $fiber) (struct.get $pair 0 (local.get $p))))
+      (local.set $p (ref.cast (ref $pair) (struct.get $pair 1 (local.get $p))))
       (local.set $k (call $push_stack (local.get $stack) (local.get $k)))
       (call_ref $cont_func (local.get $p) (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
@@ -230,13 +231,13 @@
       (param $k (ref eq)) (param $venv (ref eq)) (result (ref eq))
       (local $env (ref $call_handler_env))
       (local $handler (ref $closure_3))
-      (local.set $env (ref.cast $call_handler_env (local.get $venv)))
+      (local.set $env (ref.cast (ref $call_handler_env) (local.get $venv)))
       (return_call_ref $function_3
          (struct.get $call_handler_env $eff (local.get $env))
          (struct.get $call_handler_env $cont (local.get $env))
          (local.get $k)
          (local.tee $handler
-            (ref.cast $closure_3
+            (ref.cast (ref $closure_3)
               (struct.get $call_handler_env $handler (local.get $env))))
          (struct.get $closure_3 1 (local.get $handler))))
 
@@ -246,10 +247,10 @@
       (local $handler (ref eq))
       (local $k1 (ref $cont))
       (local $p (ref $pair))
-      (local.set $p (ref.cast $pair (local.get $vp)))
+      (local.set $p (ref.cast (ref $pair) (local.get $vp)))
       (local.set $eff (struct.get $pair 0 (local.get $p)))
       (local.set $cont
-         (ref.cast $continuation (struct.get $pair 1 (local.get $p))))
+         (ref.cast (ref $continuation) (struct.get $pair 1 (local.get $p))))
       (local.set $handler
          (array.get $handlers
             (struct.get $fiber $fiber_handlers (global.get $fiber_stack))
@@ -310,7 +311,7 @@
             (do
                (try (result (ref eq))
                   (do
-                     (call $apply_pair (ref.cast $pair (local.get $p))))
+                     (call $apply_pair (ref.cast (ref $pair) (local.get $p))))
                   (catch $javascript_exception
                      (throw $ocaml_exception
                         (call $caml_wrap_exception (pop externref))))))
@@ -327,7 +328,7 @@
       (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
       (result (ref eq))
       (struct.new $fiber
-         (array.new_fixed $handlers
+         (array.new_fixed $handlers 3
             (local.get $hv) (local.get $hx) (local.get $hf))
          (struct.new $cont (ref.func $initial_cont))
          (ref.null extern)
@@ -340,7 +341,7 @@
       (local $cont (ref $continuation))
       (local $stack (ref $fiber))
       (block $used
-         (local.set $cont (ref.cast $continuation (local.get 0)))
+         (local.set $cont (ref.cast (ref $continuation) (local.get 0)))
          (local.set $stack
             (br_on_null $used (struct.get $continuation 0 (local.get $cont))))
          (struct.set $continuation 0 (local.get $cont) (ref.null $fiber))
@@ -352,21 +353,21 @@
       (param $heff (ref eq)) (result (ref eq))
       (local $stack (ref $fiber))
       (local.set $stack
-         (ref.cast $fiber
+         (ref.cast (ref $fiber)
             (call $caml_continuation_use_noexc (local.get $cont))))
       (block $used
          (struct.set $fiber $fiber_handlers
             (br_on_null $used (local.get $stack))
-            (array.new_fixed $handlers
+            (array.new_fixed $handlers 3
                (local.get $hval) (local.get $hexn) (local.get $heff))))
       (local.get $stack))
 
    (func (export $caml_get_continuation_callstack)
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (i31.new (i32.const 0))))
 
    (func (export "caml_is_continuation") (param (ref eq)) (result i32)
-      (ref.test $continuation (local.get 0)))
+      (ref.test (ref $continuation) (local.get 0)))
 
    (func (export "caml_initialize_effects") (param $s externref)
       (global.set $current_suspender (local.get $s)))

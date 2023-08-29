@@ -29,7 +29,7 @@
 
    (global $mutex_ops (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string ;; "_mutex"
+         (array.new_fixed $string 6 ;; "_mutex"
             (i32.const 95) (i32.const 109) (i32.const 117) (i32.const 116)
             (i32.const 101) (i32.const 120))
          (ref.func $custom_compare_id)
@@ -51,7 +51,7 @@
 
    (func (export "caml_ml_mutex_lock") (param (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
-      (local.set $t (ref.cast $mutex (local.get 0)))
+      (local.set $t (ref.cast (ref $mutex) (local.get 0)))
       (if (struct.get $mutex $state (local.get $t))
          (then
             (call $caml_failwith
@@ -62,7 +62,7 @@
 
    (func (export "caml_ml_try_lock") (param (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
-      (local.set $t (ref.cast $mutex (local.get 0)))
+      (local.set $t (ref.cast (ref $mutex) (local.get 0)))
       (if (result (ref eq)) (struct.get $mutex $state (local.get $t))
          (then
             (i31.new (i32.const 0)))
@@ -71,7 +71,8 @@
             (i31.new (i32.const 1)))))
 
    (func (export "caml_ml_mutex_unlock") (param (ref eq)) (result (ref eq))
-      (struct.set $mutex $state (ref.cast $mutex (local.get 0)) (i32.const 0))
+      (struct.set $mutex $state
+         (ref.cast (ref $mutex) (local.get 0)) (i32.const 0))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_condition_new") (param (ref eq)) (result (ref eq))

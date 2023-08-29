@@ -21,15 +21,15 @@
    (type $chars (array i8))
 
    (global $infinity (ref $chars)
-      (array.new_fixed $chars
+      (array.new_fixed $chars 8
          (i32.const 105) (i32.const 110) (i32.const 102) (i32.const 105)
          (i32.const 110) (i32.const 105) (i32.const 116) (i32.const 121)))
 
    (global $nan (ref $chars)
-      (array.new_fixed $chars (i32.const 110) (i32.const 97) (i32.const 110)))
+      (array.new_fixed $chars 3 (i32.const 110) (i32.const 97) (i32.const 110)))
 
    (func (export "Double_val") (param (ref eq)) (result f64)
-      (struct.get $float 0 (ref.cast $float (local.get 0))))
+      (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
 
    (func (export "caml_hexstring_of_float")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
@@ -38,11 +38,11 @@
       (local $i i32) (local $j i32) (local $d i32) (local $txt (ref $chars))
       (local $len i32) (local $s (ref $string))
       (local $unit i64) (local $half i64) (local $mask i64) (local $frac i64)
-      (local.set $prec (i31.get_s (ref.cast i31 (local.get 1))))
-      (local.set $style (i31.get_s (ref.cast i31 (local.get 2))))
+      (local.set $prec (i31.get_s (ref.cast (ref i31) (local.get 1))))
+      (local.set $style (i31.get_s (ref.cast (ref i31) (local.get 2))))
       (local.set $b
          (i64.reinterpret_f64
-            (struct.get $float 0 (ref.cast $float (local.get 0)))))
+            (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
       (local.set $sign (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 63))))
       (local.set $exp
           (i32.and (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 52)))
@@ -237,7 +237,8 @@
          (local.get $uppercase)))
 
    (global $inf (ref $chars)
-      (array.new_fixed $chars (i32.const 105) (i32.const 110) (i32.const 102)))
+      (array.new_fixed $chars 3
+         (i32.const 105) (i32.const 110) (i32.const 102)))
 
    (func (export "caml_format_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
@@ -249,9 +250,10 @@
       (local $i i32) (local $len i32) (local $c i32)
       (local $s (ref $string)) (local $txt (ref $chars))
       (local $num (ref string))
-      (local.set $f (struct.get $float 0 (ref.cast $float (local.get 1))))
+      (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
-      (local.set $format (call $parse_format (ref.cast $string (local.get 0))))
+      (local.set $format
+         (call $parse_format (ref.cast (ref $string) (local.get 0))))
       (local.set $sign_style (tuple.extract 0 (local.get $format)))
       (local.set $precision (tuple.extract 1 (local.get $format)))
       (local.set $conversion (tuple.extract 2 (local.get $format)))
@@ -290,11 +292,11 @@
                (call $format_float
                   (local.get $precision) (local.get $conversion)
                   (f64.abs (local.get $f))))
-            (local.set $len (string.measure_wtf8 wtf8 (local.get $num)))
+            (local.set $len (string.measure_wtf8 (local.get $num)))
             (local.set $s
                (array.new $string (i32.const 0)
                   (i32.add (local.get $len) (local.get $i))))
-            (drop (string.encode_wtf8_array replace
+            (drop (string.encode_lossy_utf8_array
                      (local.get $num) (local.get $s) (local.get $i)))
             (br $sign (local.get $s))))
       (if (local.get $negative)
@@ -474,7 +476,7 @@
       (local $s' (ref $string))
       (local $negative i32) (local $c i32)
       (local $f f64)
-      (local.set $s (ref.cast $string (local.get 0)))
+      (local.set $s (ref.cast (ref $string) (local.get 0)))
       (local.set $len (array.len (local.get $s)))
       (loop $count
          (if (i32.lt_u (local.get $i) (local.get $len))
@@ -641,8 +643,8 @@
    (func (export "caml_nextafter_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $x f64) (local $y f64) (local $i i64) (local $j i64)
-      (local.set $x (struct.get $float 0 (ref.cast $float (local.get 0))))
-      (local.set $y (struct.get $float 0 (ref.cast $float (local.get 1))))
+      (local.set $x (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
+      (local.set $y (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (if (f64.ne (local.get $x) (local.get $x)) (then (return (local.get 0))))
       (if (f64.ne (local.get $y) (local.get $y)) (then (return (local.get 1))))
       (if (f64.eq (local.get $x) (local.get $y))
@@ -664,7 +666,7 @@
    (func (export "caml_classify_float") (param (ref eq)) (result (ref eq))
       (local $a f64)
       (local.set $a
-         (f64.abs (struct.get $float 0 (ref.cast $float (local.get 0)))))
+         (f64.abs (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
       (i31.new
          (if (result i32) (f64.ge (local.get $a) (f64.const 0x1p-1022))
             (then
@@ -681,7 +683,7 @@
 
    (func (export "caml_modf_float") (param (ref eq)) (result (ref eq))
       (local $x f64) (local $a f64) (local $i f64) (local $f f64)
-      (local.set $x (struct.get $float 0 (ref.cast $float (local.get 0))))
+      (local.set $x (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
       (local.set $a (f64.abs (local.get $x)))
       (if (f64.ge (local.get $a) (f64.const 0))
          (then
@@ -697,7 +699,7 @@
          (else ;; zero or nan
             (local.set $i (local.get $x))
             (local.set $f (local.get $x))))
-      (array.new_fixed $block (i31.new (i32.const 0))
+      (array.new_fixed $block 3 (i31.new (i32.const 0))
          (struct.new $float (local.get $f)) (struct.new $float (local.get $i))))
 
    (func $ldexp (param $x f64) (param $n i32) (result f64)
@@ -733,8 +735,9 @@
    (func (export "caml_ldexp_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (struct.new $float
-         (call $ldexp (struct.get $float 0 (ref.cast $float (local.get 0)))
-            (i31.get_s (ref.cast i31 (local.get 1))))))
+         (call $ldexp
+            (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))
+            (i31.get_s (ref.cast (ref i31) (local.get 1))))))
 
    (func $frexp (param $x f64) (result f64 i32)
       (local $y i64)
@@ -769,8 +772,9 @@
    (func (export "caml_frexp_float") (param (ref eq)) (result (ref eq))
       (local $r (f64 i32))
       (local.set $r
-         (call $frexp (struct.get $float 0 (ref.cast $float (local.get 0)))))
-      (array.new_fixed $block (i31.new (i32.const 0))
+         (call $frexp
+            (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
+      (array.new_fixed $block 3 (i31.new (i32.const 0))
          (struct.new $float (tuple.extract 0 (local.get $r)))
          (i31.new (tuple.extract 1 (local.get $r)))))
 
@@ -779,7 +783,7 @@
          (i32.wrap_i64
             (i64.shr_u
                (i64.reinterpret_f64
-                  (struct.get $float 0 (ref.cast $float (local.get 0))))
+                  (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
                (i64.const 63)))))
 
    (func $erf (param $x f64) (result f64)
@@ -821,12 +825,14 @@
 
    (func (export "caml_erf_float") (param (ref eq)) (result (ref eq))
       (struct.new $float
-         (call $erf (struct.get $float 0 (ref.cast $float (local.get 0))))))
+         (call $erf
+            (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))))
 
    (func (export "caml_erfc_float") (param (ref eq)) (result (ref eq))
       (struct.new $float
          (f64.sub (f64.const 1)
-            (call $erf (struct.get $float 0 (ref.cast $float (local.get 0)))))))
+            (call $erf
+               (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))))
 
    (func (export "caml_fma_float")
       (param $x (ref eq)) (param $y (ref eq)) (param $z (ref eq))
@@ -834,15 +840,16 @@
       ;; ZZZ not accurate
       (struct.new $float
          (f64.add
-            (f64.mul (struct.get $float 0 (ref.cast $float (local.get $x)))
-                     (struct.get $float 0 (ref.cast $float (local.get $y))))
-            (struct.get $float 0 (ref.cast $float (local.get $z))))))
+            (f64.mul
+               (struct.get $float 0 (ref.cast (ref $float) (local.get $x)))
+               (struct.get $float 0 (ref.cast (ref $float) (local.get $y))))
+            (struct.get $float 0 (ref.cast (ref $float) (local.get $z))))))
 
    (func (export "caml_float_compare")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $x f64) (local $y f64)
-      (local.set $x (struct.get $float 0 (ref.cast $float (local.get 0))))
-      (local.set $y (struct.get $float 0 (ref.cast $float (local.get 1))))
+      (local.set $x (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
+      (local.set $y (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (i31.new
          (i32.add
             (i32.sub (f64.gt (local.get $x) (local.get $y))

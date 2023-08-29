@@ -36,7 +36,7 @@
       (local $a i64) (local $s i64) (local $q0 i64) (local $q1 i64)
       (local $z i64)
       (local.set $data
-         (struct.get $bigarray 1 (ref.cast $bigarray (local.get $v))))
+         (struct.get $bigarray 1 (ref.cast (ref $bigarray) (local.get $v))))
       (local.set $a
          (i64.or
             (i64.extend_i32_u

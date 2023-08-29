@@ -12,7 +12,7 @@
    (func $caml_make_vect (export "caml_make_vect")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $b (ref $block))
-      (local.set $sz (i31.get_s (ref.cast i31 (local.get $n))))
+      (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
       (if (i32.lt_s (local.get $sz) (i32.const 0))
          (then
             (call $caml_invalid_argument
@@ -25,7 +25,8 @@
       (array.set $block (local.get $b) (i32.const 0)
          (i31.new
             (select (global.get $double_array_tag) (i32.const 0)
-               (i32.and (local.get $sz) (ref.test $float (local.get $v))))))
+               (i32.and
+                  (local.get $sz) (ref.test (ref $float) (local.get $v))))))
       (local.get $b))
 
    (export "caml_make_float_vect" (func $caml_floatarray_create))
@@ -39,8 +40,8 @@
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
-      (local.set $len (i31.get_u (ref.cast i31 (local.get $vlen))))
-      (local.set $a1 (ref.cast $block (local.get $a)))
+      (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $a1 (ref.cast (ref $block) (local.get $a)))
       (local.set $a2 (array.new $block (i31.new (i32.const 0))
                         (i32.add (local.get $len) (i32.const 1))))
       (array.set $block (local.get $a2) (i32.const 0)
@@ -49,7 +50,8 @@
          (then
             (array.copy $block $block
                (local.get $a2) (i32.const 1) (local.get $a1)
-               (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
+               (i32.add
+                  (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))
                (local.get $len))))
       (local.get $a2))
 
@@ -57,9 +59,9 @@
       (param $va1 (ref eq)) (param $va2 (ref eq)) (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $a (ref $block))
       (local $l1 i32) (local $l2 i32)
-      (local.set $a1 (ref.cast $block (local.get $va1)))
+      (local.set $a1 (ref.cast (ref $block) (local.get $va1)))
       (local.set $l1 (array.len (local.get $a1)))
-      (local.set $a2 (ref.cast $block (local.get $va2)))
+      (local.set $a2 (ref.cast (ref $block) (local.get $va2)))
       (local.set $l2 (array.len (local.get $a2)))
       (local.set $a
          (array.new $block (i31.new (i32.const 0))
@@ -97,7 +99,7 @@
                 (i32.add (local.get $len)
                    (i32.sub
                       (array.len
-                         (ref.cast $block
+                         (ref.cast (ref $block)
                             (array.get $block (local.get $b) (i32.const 1))))
                       (i32.const 1))))
              (if (ref.eq (array.get $block (local.get $b) (i32.const 0))
@@ -118,7 +120,7 @@
              (local.set $b
                 (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
              (local.set $a'
-                (ref.cast $block
+                (ref.cast (ref $block)
                    (array.get $block (local.get $b) (i32.const 1))))
              (local.set $len
                 (i32.sub (array.len (local.get $a')) (i32.const 1)))
@@ -138,19 +140,21 @@
       (param $len (ref eq))
       (result (ref eq))
       (array.copy $block $block
-         (ref.cast $block (local.get $a2))
-         (i32.add (i31.get_s (ref.cast i31 (local.get $i2))) (i32.const 1))
-         (ref.cast $block (local.get $a1))
-         (i32.add (i31.get_s (ref.cast i31 (local.get $i1))) (i32.const 1))
-         (i31.get_s (ref.cast i31 (local.get $len))))
+         (ref.cast (ref $block) (local.get $a2))
+         (i32.add
+            (i31.get_s (ref.cast (ref i31) (local.get $i2))) (i32.const 1))
+         (ref.cast (ref $block) (local.get $a1))
+         (i32.add
+            (i31.get_s (ref.cast (ref i31) (local.get $i1))) (i32.const 1))
+         (i31.get_s (ref.cast (ref i31) (local.get $len))))
       (i31.new (i32.const 0)))
 
    (func (export "caml_array_fill")
       (param $a (ref eq)) (param $i (ref eq)) (param $len (ref eq))
       (param $v (ref eq)) (result (ref eq))
-      (array.fill $block (ref.cast $block (local.get $a))
-         (i32.add (i31.get_u (ref.cast i31 (local.get $i))) (i32.const 1))
+      (array.fill $block (ref.cast (ref $block) (local.get $a))
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))
          (local.get $v)
-         (i31.get_u (ref.cast i31 (local.get $len))))
+         (i31.get_u (ref.cast (ref i31) (local.get $len))))
       (i31.new (i32.const 0)))
 )

@@ -30,7 +30,7 @@
             (local.set $a
                (br_on_cast_fail $tail (ref null eq) (ref $assoc) (local.get $l)))
             (if (i31.get_u
-                   (ref.cast i31
+                   (ref.cast (ref i31)
                        (call $caml_string_equal
                           (local.get $s)
                           (struct.get $assoc 0 (local.get $a)))))
@@ -47,7 +47,7 @@
          (array.get $assoc_array (global.get $named_value_table)
             (i32.rem_u
                (i31.get_s
-                  (ref.cast i31
+                  (ref.cast (ref i31)
                      (call $caml_string_hash
                         (i31.new (i32.const 0)) (local.get $s))))
                (global.get $Named_value_size)))))
@@ -59,7 +59,7 @@
       (local.set $h
          (i32.rem_u
             (i31.get_s
-               (ref.cast i31
+               (ref.cast (ref i31)
                   (call $caml_string_hash
                      (i31.new (i32.const 0)) (local.get 0))))
             (global.get $Named_value_size)))
@@ -71,7 +71,7 @@
             (array.set $assoc_array
                (global.get $named_value_table) (local.get $h)
                (struct.new $assoc
-                  (ref.cast $string (local.get 0))
+                  (ref.cast (ref $string) (local.get 0))
                   (local.get 1) (local.get $r)))))
       (i31.new (i32.const 0)))
 
@@ -81,7 +81,7 @@
    (func (export "caml_register_global")
       (param (ref eq)) (param $v (ref eq)) (param (ref eq)) (result (ref eq))
       (local $i i32)
-      (local.set $i (i31.get_u (ref.cast i31 (local.get 0))))
+      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get 0))))
       (if (i32.lt_u (local.get $i) (array.len (global.get $caml_global_data)))
          (then
             (array.set $block (global.get $caml_global_data)

@@ -8,7 +8,8 @@
    (func (export "caml_format_int")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (return_call $format_int
-         (local.get 0) (i31.get_s (ref.cast i31 (local.get 1))) (i32.const 1)))
+         (local.get 0)
+         (i31.get_s (ref.cast (ref i31) (local.get 1))) (i32.const 1)))
 
    (func $parse_sign_and_base (export "parse_sign_and_base")
       (param $s (ref $string)) (result i32 i32 i32 i32)
@@ -83,7 +84,7 @@
       (local $signedness i32) (local $sign i32) (local $base i32)
       (local $res i32) (local $threshold i32)
       (local $t (i32 i32 i32 i32))
-      (local.set $s (ref.cast $string (local.get $v)))
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
       (if (i32.eqz (local.get $len))
         (then (call $caml_failwith (local.get $errmsg))))
@@ -138,7 +139,7 @@
       (local.get $res))
 
    (global $INT_ERRMSG (ref $string)
-      (array.new_fixed $string ;; "Int.of_string"
+      (array.new_fixed $string 13 ;; "Int.of_string"
          (i32.const 73) (i32.const 110) (i32.const 116) (i32.const 46)
          (i32.const 111) (i32.const 102) (i32.const 95) (i32.const 115)
          (i32.const 116) (i32.const 114) (i32.const 105) (i32.const 110)
@@ -152,7 +153,7 @@
 
    (func (export "caml_bswap16") (param (ref eq)) (result (ref eq))
       (local $x i32)
-      (local.set $x (i31.get_s (ref.cast i31 (local.get 0))))
+      (local.set $x (i31.get_s (ref.cast (ref i31) (local.get 0))))
       (i31.new
          (i32.or
             (i32.shl (i32.and (local.get $x) (i32.const 0xFF)) (i32.const 8))
@@ -162,14 +163,14 @@
    (type $chars (array i8))
 
    (global $lowercase_hex_table (export "lowercase_hex_table") (ref $chars)
-      (array.new_fixed $chars
+      (array.new_fixed $chars 16
          (i32.const 48) (i32.const 49) (i32.const 50) (i32.const 51)
          (i32.const 52) (i32.const 53) (i32.const 54) (i32.const 55)
          (i32.const 56) (i32.const 57) (i32.const 97) (i32.const 98)
          (i32.const 99) (i32.const 100) (i32.const 101) (i32.const 102)))
 
    (global $uppercase_hex_table (export "uppercase_hex_table") (ref $chars)
-      (array.new_fixed $chars
+      (array.new_fixed $chars 16
          (i32.const 48) (i32.const 49) (i32.const 50) (i32.const 51)
          (i32.const 52) (i32.const 53) (i32.const 54) (i32.const 55)
          (i32.const 56) (i32.const 57) (i32.const 65) (i32.const 66)
@@ -283,7 +284,7 @@
       (local $i i32)
       (local $n i32)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast $string (local.get 0)))
+      (local.set $s (ref.cast (ref $string) (local.get 0)))
       (if (i32.eq (array.len (local.get $s)) (i32.const 2))
          (then
             (if (i32.eq (array.get_u $string (local.get $s) (i32.const 1))

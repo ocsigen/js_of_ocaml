@@ -224,8 +224,10 @@
                      (br_on_cast_fail $v2_not_forward (ref eq) (ref $block)
                         (local.get $v2)))
                   (local.set $t2
-                     (i31.get_u (ref.cast i31 (array.get $block (local.get $b2)
-                                                 (i32.const 0)))))
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block (local.get $b2)
+                              (i32.const 0)))))
                   (if (i32.eq (local.get $t2) (global.get $forward_tag))
                      (then
                         (local.set $v2
@@ -247,7 +249,7 @@
                      (return (local.get $res)))))
                ;; v1 long < v2 block
                (return (i32.const -1))))
-            (if (ref.test i31 (local.get $v2))
+            (if (ref.test (ref i31) (local.get $v2))
                (then
                   ;; check for forward tag
                   (drop (block $v1_not_forward (result (ref eq))
@@ -255,7 +257,7 @@
                         (br_on_cast_fail $v1_not_forward (ref eq) (ref $block)
                            (local.get $v1)))
                      (local.set $t1
-                        (i31.get_u (ref.cast i31
+                        (i31.get_u (ref.cast (ref i31)
                                       (array.get $block (local.get $b1)
                                          (i32.const 0)))))
                      (if (i32.eq (local.get $t1) (global.get $forward_tag))
@@ -287,14 +289,14 @@
                         (local.get $v1)))
                   (local.set $t1
                      (i31.get_u
-                        (ref.cast i31
+                        (ref.cast (ref i31)
                            (array.get $block (local.get $b1) (i32.const 0)))))
                   (local.set $b2
                      (br_on_cast_fail $heterogeneous (ref eq) (ref $block)
                         (local.get $v2)))
                   (local.set $t2
                      (i31.get_u
-                        (ref.cast i31
+                        (ref.cast (ref i31)
                            (array.get $block (local.get $b2) (i32.const 0)))))
                   (drop (br_if $heterogeneous (i31.new (i32.const 0))
                      (i32.ne (local.get $t1) (local.get $t2))))
@@ -316,8 +318,9 @@
                            (ref.eq (local.get $v1) (local.get $v2)))
                         (return
                            (i32.sub
-                              (i31.get_s (ref.cast i31 (local.get $v1)))
-                              (i31.get_s (ref.cast i31 (local.get $v2)))))))
+                              (i31.get_s (ref.cast (ref i31) (local.get $v1)))
+                              (i31.get_s
+                                 (ref.cast (ref i31) (local.get $v2)))))))
                   (local.set $s1 (array.len (local.get $b1)))
                   (local.set $s2 (array.len (local.get $b2)))
                   ;; compare size first
@@ -332,12 +335,12 @@
                               (then
                                  (local.set $f1
                                     (struct.get $float 0
-                                       (ref.cast $float
+                                       (ref.cast (ref $float)
                                           (array.get $block (local.get $b1)
                                              (local.get $i)))))
                                  (local.set $f2
                                     (struct.get $float 0
-                                       (ref.cast $float
+                                       (ref.cast (ref $float)
                                           (array.get $block (local.get $b2)
                                           (local.get $i)))))
                                  (if (f64.lt (local.get $f1) (local.get $f2))
@@ -416,7 +419,7 @@
                      (then
                         (return
                            (i31.get_s
-                              (ref.cast i31
+                              (ref.cast (ref i31)
                                  (call $caml_string_compare
                                     (struct.get $custom_operations $cust_id
                                        (struct.get $custom 0
@@ -465,10 +468,11 @@
                            (call $equals (local.get $js1) (local.get $js2)))
                         (return (global.get $unordered))))
                   (br $heterogeneous (i31.new (i32.const 0)))))
-               (if (ref.test $closure (local.get $v1))
+               (if (ref.test (ref $closure) (local.get $v1))
                   (then
                      (drop (br_if $heterogeneous (i31.new (i32.const 0))
-                              (i32.eqz (ref.test $closure (local.get $v2)))))
+                              (i32.eqz
+                                 (ref.test (ref $closure) (local.get $v2)))))
                      (call $clear_compare_stack)
                      (call $caml_invalid_argument
                         (array.new_data $string $functional_value
@@ -485,19 +489,21 @@
                (i31.new (i32.const 0)))) ;; fall through
             ;; heterogeneous comparison
             (local.set $t1
-               (i31.get_u (ref.cast i31 (call $caml_obj_tag (local.get $v1)))))
+               (i31.get_u
+                  (ref.cast (ref i31) (call $caml_obj_tag (local.get $v1)))))
             (local.set $t2
-               (i31.get_u (ref.cast i31 (call $caml_obj_tag (local.get $v2)))))
+               (i31.get_u
+                  (ref.cast (ref i31) (call $caml_obj_tag (local.get $v2)))))
             (if (i32.eq (local.get $t1) (global.get $forward_tag))
                (then
                   (local.set $v1
-                     (array.get $block (ref.cast $block (local.get $v1))
+                     (array.get $block (ref.cast (ref $block) (local.get $v1))
                         (i32.const 1)))
                   (br $loop)))
             (if (i32.eq (local.get $t2) (global.get $forward_tag))
                (then
                   (local.set $v2
-                     (array.get $block (ref.cast $block (local.get $v2))
+                     (array.get $block (ref.cast (ref $block) (local.get $v2))
                         (i32.const 1)))
                   (br $loop)))
             (local.set $res (i32.sub (local.get $t1) (local.get $t2)))

@@ -62,7 +62,7 @@
    (func $caml_raise_no_such_file (param $vname (ref eq))
       (local $name (ref $string)) (local $msg (ref $string))
       (local $len i32)
-      (local.set $name (ref.cast $string (local.get $vname)))
+      (local.set $name (ref.cast (ref $string) (local.get $vname)))
       (local.set $len (array.len (local.get $name)))
       (local.set $msg
          (array.new $string (i32.const 0)

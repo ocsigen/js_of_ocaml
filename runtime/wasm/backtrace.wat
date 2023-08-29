@@ -7,7 +7,7 @@
 
    (func (export "caml_get_exception_raw_backtrace")
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (i31.new (i32.const 0))))
 
    (func (export "caml_backtrace_status")
       (param (ref eq)) (result (ref eq))
@@ -15,7 +15,7 @@
 
    (func (export "caml_convert_raw_backtrace")
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (i31.new (i32.const 0))))
 
    (func (export "caml_raw_backtrace_next_slot")
       (param (ref eq)) (result (ref eq))
@@ -41,7 +41,7 @@
 
    (func (export "caml_get_current_callstack")
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (i31.new (i32.const 0))))
 
    (func (export "caml_ml_debug_info_status")
       (param (ref eq)) (result (ref eq))
