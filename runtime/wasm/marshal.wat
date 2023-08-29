@@ -21,6 +21,8 @@
       (func $caml_really_getblock
          (param (ref eq)) (param (ref $string)) (param i32) (param i32)
          (result i32)))
+   (import "io" "caml_flush_if_unbuffered"
+      (func $caml_flush_if_unbuffered (param (ref eq))))
    (import "custom" "caml_init_custom_operations"
       (func $caml_init_custom_operations))
    (import "custom" "caml_find_custom_operations"
@@ -1378,7 +1380,7 @@
                (br_on_null $done
                   (struct.get $output_block $next (local.get $blk))))
             (br $loop)))
-      ;; ZZZ flush if unbuffered
+      (call $caml_flush_if_unbuffered (local.get $ch))
       (i31.new (i32.const 0)))
 
    (func (export "caml_serialize_int_1") (param $vs (ref eq)) (param $i i32)

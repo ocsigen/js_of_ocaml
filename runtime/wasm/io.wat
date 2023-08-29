@@ -87,7 +87,7 @@
             (field $curr (mut i32))
             (field $max (mut i32))
             (field $size (mut i32))
-            (field $flags (mut i32))))) ;; flags
+            (field $unbuffered (mut i32)))))
 
    (global $fd_offsets (export "fd_offsets") (mut (ref $offset_array))
       (array.new $offset_array (i64.const 0) (i32.const 3)))
@@ -543,6 +543,13 @@
       (loop $loop
          (br_if $loop (i32.eqz (call $caml_flush_partial (local.get $ch))))))
 
+   (func $caml_flush_if_unbuffered (export "caml_flush_if_unbuffered")
+      (param $vch (ref eq))
+      (local $ch (ref $channel))
+      (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (if (struct.get $channel $unbuffered (local.get $ch))
+         (then (call $caml_flush (local.get $ch)))))
+
    (func $caml_ml_flush (export "caml_ml_flush")
       (param $vch (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
@@ -637,6 +644,7 @@
                (local.set $pos (i32.add (local.get $pos) (local.get $written)))
                (local.set $len (i32.sub (local.get $len) (local.get $written)))
                (br $loop))))
+      (call $caml_flush_if_unbuffered (local.get $ch))
       (i31.new (i32.const 0)))
 
    (func $caml_putch (param $ch (ref $channel)) (param $c $i32)
@@ -655,7 +663,7 @@
       (param $ch (ref eq)) (param $c (ref eq)) (result (ref eq))
       (call $caml_putch (ref.cast (ref $channel) (local.get $ch))
          (i31.get_u (ref.cast (ref i31) (local.get 1))))
-      ;; ZZZ flush if unbuffered
+      (call $caml_flush_if_unbuffered (local.get $ch))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_output_int")
@@ -670,18 +678,26 @@
       (call $caml_putch (local.get $ch)
          (i32.shr_u (local.get $n) (i32.const 8)))
       (call $caml_putch (local.get $ch) (local.get $n))
-      ;; ZZZ flush if unbuffered
+      (call $caml_flush_if_unbuffered (local.get $ch))
       (i31.new (i32.const 0)))
 
-   (func (export "caml_ml_is_buffered") (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_ml_is_buffered"))
-      (i31.new (i32.const 1)))
+   (func (export "caml_ml_is_buffered") (param $ch (ref eq)) (result (ref eq))
+      (i31.new
+         (i32.eqz
+            (struct.get $channel $unbuffered
+               (ref.cast (ref $channel) (local.get $ch))))))
 
    (func (export "caml_ml_set_buffered")
-      (param (ref eq) (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_ml_set_buffered"))
+      (param $vch (ref eq)) (param $mode (ref eq)) (result (ref eq))
+      (local $ch (ref $channel))
+      (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (if (i31.get_s (ref.cast (ref i31) (local.get $mode)))
+         (then
+            (struct.set $channel $unbuffered (local.get $ch) (i32.const 0)))
+         (else
+            (struct.set $channel $unbuffered (local.get $ch) (i32.const 1))
+            (if (i32.ne (struct.get $channel $fd (local.get $ch)) (i32.const -1))
+               (then (call $caml_flush (local.get $ch))))))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_set_channel_refill")
