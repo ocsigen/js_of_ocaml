@@ -978,7 +978,7 @@ module Math = struct
   let exp2 x = power (return (W.Const (F64 2.))) x
 end
 
-let exception_handler_body ~typ b =
+let exception_handler_body ~typ ~context b =
   let externref = W.Ref { nullable = true; typ = Extern } in
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
   let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
@@ -990,7 +990,7 @@ let exception_handler_body ~typ b =
   in
   try_
     { params = []; result = typ }
-    b
+    (b (`Skip :: context))
     js_tag
     (let* () = store ~always:true ~typ:externref x (return (W.Pop externref)) in
      let* exn = load x in
