@@ -17,6 +17,7 @@
    (import "bindings" "argv" (func $argv (result (ref extern))))
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
+   (import "bindings" "time" (func $time (result f64)))
    (import "bindings" "array_length"
       (func $array_length (param (ref extern)) (result i32)))
    (import "bindings" "array_get"
@@ -24,6 +25,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
+   (type $float (struct (field f64)))
 
    (tag $ocaml_exit (export "ocaml_exit") (param i32))
 
@@ -55,9 +57,7 @@
    (export "caml_sys_time_include_children" (func $caml_sys_time))
    (func $caml_sys_time (export "caml_sys_time")
       (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_sys_time"))
-      (i31.new (i32.const 0)))
+      (struct.new $float (f64.mul (call $time) (f64.const 0.001))))
 
    (func (export "caml_sys_system_command")
       (param (ref eq)) (result (ref eq))

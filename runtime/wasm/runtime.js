@@ -282,11 +282,13 @@
            var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
            return res.signal?128:res.status
          },
+         time:()=>performance.now(),
          getcwd:()=>isNode?process.cwd():'/static',
          chdir:(x)=>process.chdir(x),
          unlink:(p)=>fs.unlinkSync(p),
          readdir:(p)=>fs.readdirSync(p),
          file_exists:(p)=>+fs.existsSync(p),
+         rename:(o,n)=>fs.renameSync(o, n),
          start_fiber:(x)=>start_fiber(x),
          suspend_fiber:
          wrap_fun(

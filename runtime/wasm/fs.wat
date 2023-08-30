@@ -7,6 +7,7 @@
       (func $readdir (param anyref) (result (ref extern))))
    (import "bindings" "file_exists"
       (func $file_exists (param anyref) (result (ref eq))))
+   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_string_of_jsstring"
@@ -47,9 +48,10 @@
       (i31.new (i32.const 0)))
 
    (func (export "caml_sys_rename")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_sys_rename"))
+      (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
+      (call $rename
+         (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $n))))
       (i31.new (i32.const 0)))
 
    (func (export "caml_sys_file_exists")
