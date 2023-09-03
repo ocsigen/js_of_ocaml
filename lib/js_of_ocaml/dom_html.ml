@@ -1351,6 +1351,8 @@ class type anchorElement = object
 
   method coords : js_string t prop
 
+  method download : js_string t prop
+
   method href : js_string t prop
 
   method hreflang : js_string t prop
