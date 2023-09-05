@@ -805,15 +805,15 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* tag = register_import ~name:exception_name (Tag Value.value) in
               instr (Throw (tag, e))
           | Pushtrap (cont, x, cont', _) ->
-              let context' = extend_context fall_through context in
-              let* tag = register_import ~name:exception_name (Tag Value.value) in
-              try_
-                { params = []; result = result_typ }
-                (exception_handler_body ~typ:result_typ ~context:context' (fun context' ->
-                     translate_branch result_typ fall_through pc cont context' stack_ctx))
-                tag
-                (let* () = store ~always:true x (return (W.Pop Value.value)) in
-                 translate_branch result_typ fall_through pc cont' context' stack_ctx)
+              handle_exceptions
+                ~result_typ
+                ~fall_through
+                ~context:(extend_context fall_through context)
+                (fun ~result_typ ~fall_through ~context ->
+                  translate_branch result_typ fall_through pc cont context stack_ctx)
+                x
+                (fun ~result_typ ~fall_through ~context ->
+                  translate_branch result_typ fall_through pc cont' context stack_ctx)
           | Poptrap cont ->
               translate_branch result_typ fall_through pc cont context stack_ctx)
     and translate_branch result_typ fall_through src (dst, args) context stack_ctx =

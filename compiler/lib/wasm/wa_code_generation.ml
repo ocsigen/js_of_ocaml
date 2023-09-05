@@ -385,10 +385,11 @@ let if_ ty e l1 l2 =
   | W.UnOp (I32 Eqz, e') -> instr (If (ty, e', instrs2, instrs1))
   | _ -> instr (If (ty, e, instrs1, instrs2))
 
-let try_ ty body exception_name handler =
+let try_ ty body handlers =
   let* body = blk body in
-  let* handler = blk handler in
-  instr (Try (ty, body, [ exception_name, handler ], None))
+  let tags = List.map ~f:fst handlers in
+  let* handler_bodies = expression_list blk (List.map ~f:snd handlers) in
+  instr (Try (ty, body, List.combine tags handler_bodies, None))
 
 let need_apply_fun ~arity st =
   let ctx = st.context in

@@ -253,10 +253,19 @@ module type S = sig
     val round : expression -> expression
   end
 
-  val exception_handler_body :
-       typ:Wa_ast.value_type list
-    -> context:[ `Block of Code.Addr.t | `Skip ] list
-    -> ([ `Block of Code.Addr.t | `Skip ] list -> unit Wa_code_generation.t)
+  val handle_exceptions :
+       result_typ:Wa_ast.value_type list
+    -> fall_through:'a
+    -> context:([> `Skip ] as 'b) list
+    -> (   result_typ:Wa_ast.value_type list
+        -> fall_through:[> `Block of int ]
+        -> context:'b list
+        -> unit Wa_code_generation.t)
+    -> Wa_ast.var
+    -> (   result_typ:Wa_ast.value_type list
+        -> fall_through:'a
+        -> context:'b list
+        -> unit Wa_code_generation.t)
     -> unit Wa_code_generation.t
 
   val entry_point :

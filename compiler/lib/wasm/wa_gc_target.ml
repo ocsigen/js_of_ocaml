@@ -978,23 +978,31 @@ module Math = struct
   let exp2 x = power (return (W.Const (F64 2.))) x
 end
 
-let exception_handler_body ~typ ~context b =
-  let externref = W.Ref { nullable = true; typ = Extern } in
+let externref = W.Ref { nullable = true; typ = Extern }
+
+let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
   let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
-  let x = Code.Var.fresh () in
   let* f =
     register_import
       ~name:"caml_wrap_exception"
       (Fun { params = [ externref ]; result = [ Value.value ] })
   in
-  try_
-    { params = []; result = typ }
-    (b (`Skip :: context))
-    js_tag
-    (let* () = store ~always:true ~typ:externref x (return (W.Pop externref)) in
-     let* exn = load x in
-     instr (Throw (ocaml_tag, W.Call (f, [ exn ]))))
+  block
+    { params = []; result = result_typ }
+    (let* () =
+       try_
+         { params = []; result = [] }
+         (body ~result_typ:[] ~fall_through:(`Block (-1)) ~context:(`Skip :: context))
+         [ ocaml_tag, store ~always:true x (return (W.Pop Value.value))
+         ; ( js_tag
+           , let exn = Code.Var.fresh () in
+             let* () = store ~always:true ~typ:externref exn (return (W.Pop externref)) in
+             let* exn = load exn in
+             store ~always:true x (return (W.Call (f, [ exn ]))) )
+         ]
+     in
+     exn_handler ~result_typ ~fall_through ~context)
 
 let entry_point ~context =
   let code =

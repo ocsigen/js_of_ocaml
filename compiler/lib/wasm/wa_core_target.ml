@@ -606,7 +606,15 @@ module Math = struct
   let fmod f g = binary "fmod" f g
 end
 
-let exception_handler_body ~typ:_ ~context b = b context
+let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
+  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
+  try_
+    { params = []; result = result_typ }
+    (body ~result_typ ~fall_through:(`Block (-1)) ~context)
+    [ ( ocaml_tag
+      , let* () = store ~always:true x (return (W.Pop Value.value)) in
+        exn_handler ~result_typ ~fall_through ~context )
+    ]
 
 let entry_point ~context:_ =
   let code =
