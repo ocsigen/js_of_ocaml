@@ -158,7 +158,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function loop1(b, cont){
-     var all = [0, 0], _m_ = Stdlib[79];
+     var _m_ = Stdlib[79];
      return caml_cps_call2
              (_m_,
               cst_static_examples_ml,
@@ -169,7 +169,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                         (_o_,
                          ic,
                          function(line){
-                          all[1] = [0, line, all[1]];
                           return b
                                   ? caml_cps_call2(Stdlib[53], line, _n_)
                                   : caml_cps_exact_call1(_n_, 0);
@@ -180,7 +179,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function loop2(param, cont){
-     var all = [0, 0], _h_ = Stdlib[79];
+     var _h_ = Stdlib[79];
      return caml_cps_call2
              (_h_,
               cst_static_examples_ml$0,
@@ -192,7 +191,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                         (_k_,
                          ic,
                          function(line){
-                          all[1] = [0, line, all[1]];
                           return caml_cps_call2(Stdlib[53], line, _j_);
                          });
                }
