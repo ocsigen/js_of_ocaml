@@ -276,7 +276,7 @@ let gen_missing js missing =
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
 let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
-  if not standalone
+  if not (linkall || standalone)
   then { runtime_code = js; always_required_codes = [] }
   else
     let t = Timer.make () in
@@ -313,7 +313,7 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
     let all_external = StringSet.union prim prov in
     let used = StringSet.inter free all_external in
     let linkinfos = Linker.init () in
-    let linkinfos, missing = Linker.resolve_deps ~linkall linkinfos used in
+    let linkinfos, missing = Linker.resolve_deps ~standalone ~linkall linkinfos used in
     (* gen_missing may use caml_failwith *)
     let linkinfos, missing =
       if (not (StringSet.is_empty missing)) && Config.Flag.genprim ()
@@ -336,18 +336,60 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
               let name = Utf8_string.of_string_exn name in
               Property (PNI name, EVar (ident name)))
         in
-        ( Expression_statement
-            (EBin
-               ( Eq
-               , dot
-                   (EVar (ident Constant.global_object_))
-                   (Utf8_string.of_string_exn "jsoo_runtime")
-               , EObj all ))
-        , N )
+        (if standalone
+         then
+           ( Expression_statement
+               (EBin
+                  ( Eq
+                  , dot
+                      (EVar (ident Constant.global_object_))
+                      (Utf8_string.of_string_exn "jsoo_runtime")
+                  , EObj all ))
+           , N )
+         else
+           ( Expression_statement
+               (call
+                  (dot
+                     (EVar (ident (Utf8_string.of_string_exn "Object")))
+                     (Utf8_string.of_string_exn "assign"))
+                  [ dot
+                      (EVar (ident Constant.global_object_))
+                      (Utf8_string.of_string_exn "jsoo_runtime")
+                  ; EObj all
+                  ]
+                  N)
+           , N ))
         :: js
       else js
     in
-    Linker.link js linkinfos
+    let missing = Linker.missing linkinfos in
+    let output = Linker.link ~standalone js linkinfos in
+    if not (List.is_empty missing)
+    then
+      { output with
+        runtime_code =
+          (let open Javascript in
+           ( Variable_statement
+               ( Var
+               , [ DeclPattern
+                     ( ObjectBinding
+                         { list =
+                             List.map
+                               ~f:(fun name ->
+                                 let name = Utf8_string.of_string_exn name in
+                                 Prop_ident (ident name, None))
+                               missing
+                         ; rest = None
+                         }
+                     , ( dot
+                           (EVar (ident Constant.global_object_))
+                           (Utf8_string.of_string_exn "jsoo_runtime")
+                       , N ) )
+                 ] )
+           , N )
+           :: output.runtime_code)
+      }
+    else output
 
 let check_js js =
   let t = Timer.make () in

@@ -393,6 +393,7 @@ type state =
   { ids : IntSet.t
   ; always_required_codes : always_required list
   ; codes : (Javascript.program pack * bool) list
+  ; missing : StringSet.t
   }
 
 type output =
@@ -596,10 +597,9 @@ let load_files ?(ignore_always_annotation = false) ~target_env l =
 
 (* resolve *)
 let rec resolve_dep_name_rev visited path nm =
-  let x =
-    try Hashtbl.find provided nm with Not_found -> error "missing dependency '%s'@." nm
-  in
-  resolve_dep_id_rev visited path x.id
+  match Hashtbl.find provided nm with
+  | x -> resolve_dep_id_rev visited path x.id
+  | exception Not_found -> { visited with missing = StringSet.add nm visited.missing }
 
 and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids
@@ -630,9 +630,17 @@ let init () =
   { ids = IntSet.empty
   ; always_required_codes = List.rev_map !always_included ~f:proj_always_required
   ; codes = []
+  ; missing = StringSet.empty
   }
 
-let resolve_deps ?(linkall = false) visited_rev used =
+let list_all () =
+  Hashtbl.fold (fun nm _ set -> StringSet.add nm set) provided StringSet.empty
+
+let check_missing state =
+  if not (StringSet.is_empty state.missing)
+  then error "missing dependency '%s'@." (StringSet.choose state.missing)
+
+let resolve_deps ?(standalone = true) ?(linkall = false) visited_rev used =
   (* link the special files *)
   let missing, visited_rev =
     if linkall
@@ -657,9 +665,10 @@ let resolve_deps ?(linkall = false) visited_rev used =
         used
         (StringSet.empty, visited_rev)
   in
+  if standalone then check_missing visited_rev;
   visited_rev, missing
 
-let link program (state : state) =
+let link ?(standalone = true) program (state : state) =
   let always, always_required =
     List.partition
       ~f:(function
@@ -676,6 +685,7 @@ let link program (state : state) =
         in
         { state with codes = (Ok always.program, false) :: state.codes })
   in
+  if standalone then check_missing state;
   let codes =
     List.map state.codes ~f:(fun (x, has_macro) ->
         let c = unpack x in
@@ -697,6 +707,8 @@ let all state =
       with Not_found -> acc)
     state.ids
     []
+
+let missing state = StringSet.elements state.missing
 
 let origin ~name =
   try

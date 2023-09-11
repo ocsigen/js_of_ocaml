@@ -120,7 +120,7 @@ let run
         Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   let runtime_files =
-    if toplevel || dynlink
+    if (not no_runtime) && (toplevel || dynlink)
     then
       let add_if_absent x l = if List.mem x ~set:l then l else x :: l in
       runtime_files |> add_if_absent "+toplevel.js" |> add_if_absent "+dynlink.js"
@@ -247,9 +247,22 @@ let run
     Pretty_print.string fmt (Unit_info.to_string uinfo);
     output code ~source_map ~standalone ~linkall:false output_file
   in
+  let output_runtime ~standalone ~source_map ((_, fmt) as output_file) =
+    assert (not standalone);
+    let uinfo = Unit_info.of_primitives (Linker.list_all () |> StringSet.elements) in
+    Pretty_print.string fmt "\n";
+    Pretty_print.string fmt (Unit_info.to_string uinfo);
+    let code =
+      { Parse_bytecode.code = Code.empty
+      ; cmis = StringSet.empty
+      ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
+      }
+    in
+    output code ~source_map ~standalone ~linkall:true output_file
+  in
   (if runtime_only
    then (
-     let prims = Primitive.get_external () |> StringSet.elements in
+     let prims = Linker.list_all () |> StringSet.elements in
      assert (List.length prims > 0);
      let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`JavaScript in
      let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
@@ -331,6 +344,7 @@ let run
              cmo
              ic
          in
+         let linkall = linkall || toplevel || dynlink in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          output_gen
            ~standalone:false
@@ -338,7 +352,13 @@ let run
            ~build_info:(Build_info.create `Cmo)
            ~source_map
            output_file
-           (output_partial cmo code)
+           (fun ~standalone ~source_map output ->
+             let source_map =
+               if linkall
+               then output_runtime ~standalone ~source_map output
+               else source_map
+             in
+             output_partial cmo code ~standalone ~source_map output)
      | `Cma cma when keep_unit_names ->
          List.iter cma.lib_units ~f:(fun cmo ->
              let output_file =
@@ -376,7 +396,11 @@ let run
                (`Name output_file)
                (output_partial cmo code))
      | `Cma cma ->
+         let linkall = linkall || toplevel || dynlink in
          let f ~standalone ~source_map output =
+           let source_map =
+             if linkall then output_runtime ~standalone ~source_map output else source_map
+           in
            List.fold_left cma.lib_units ~init:source_map ~f:(fun source_map cmo ->
                let t1 = Timer.make () in
                let code =

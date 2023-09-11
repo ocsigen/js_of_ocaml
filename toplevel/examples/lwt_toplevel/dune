@@ -71,7 +71,12 @@
 (rule
  (targets test_dynlink.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --toplevel %{dep:test_dynlink.cmo})))
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --toplevel
+   %{read-strings:effects_flags.txt}
+   %{dep:test_dynlink.cmo})))
 
 (rule
  (targets export.txt)

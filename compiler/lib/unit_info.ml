@@ -37,6 +37,15 @@ let empty =
   ; effects_without_cps = false
   }
 
+let of_primitives l =
+  { provides = StringSet.empty
+  ; requires = StringSet.empty
+  ; primitives = l
+  ; crcs = StringMap.empty
+  ; force_link = true
+  ; effects_without_cps = false
+  }
+
 let of_cmo (cmo : Cmo_format.compilation_unit) =
   let open Ocaml_compiler in
   let provides = StringSet.singleton (Cmo_format.name cmo) in
