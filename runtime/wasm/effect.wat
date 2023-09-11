@@ -119,11 +119,11 @@
                   (string.const "Effect.Unhandled")))
             (local.get $eff)))
       (call $caml_raise_constant
-         (array.new_fixed $block 3 (i31.new (i32.const 248))
+         (array.new_fixed $block 3 (ref.i31 (i32.const 248))
             (array.new_data $string $effect_unhandled
                (i32.const 0) (i32.const 16))
-            (call $caml_fresh_oo_id (i31.new (i32.const 0)))))
-      (i31.new (i32.const 0)))
+            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
+      (ref.i31 (i32.const 0)))
 
    (func $uncaught_effect_handler
       (param $eff (ref eq)) (param $cont (ref eq)) (param $k (ref eq))
@@ -141,7 +141,7 @@
             (local.get $eff))
          (local.get $k')
          (struct.get $cont $cont_func (local.get $k')))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func $dummy_fun (param (ref eq)) (param (ref eq)) (result (ref eq))
       (unreachable))
@@ -152,8 +152,8 @@
    (global $stack (mut (ref null $fiber))
       (struct.new $fiber
          (struct.new $handlers
-            (i31.new (i32.const 0))
-            (i31.new (i32.const 0))
+            (ref.i31 (i32.const 0))
+            (ref.i31 (i32.const 0))
             (struct.new $closure_3
                (ref.func $dummy_fun)
                (ref.func $uncaught_effect_handler)))
@@ -212,7 +212,7 @@
       (result (ref eq))
       (local $k (ref $cont))
       (local $pair (ref $pair))
-      (if (ref.eq (local.get $stack) (i31.new (i32.const 0)))
+      (if (ref.eq (local.get $stack) (ref.i31 (i32.const 0)))
          (then
             (call $caml_raise_constant
                (ref.as_non_null
@@ -353,7 +353,7 @@
             (br_on_null $used (struct.get $continuation 0 (local.get $cont))))
          (struct.set $continuation 0 (local.get $cont) (ref.null eq))
          (return (local.get $stack)))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_continuation_use_and_update_handler_noexc")
       (param $cont (ref eq)) (param $hval (ref eq)) (param $hexn (ref eq))
@@ -366,12 +366,12 @@
                (local.get $stack))
             (struct.new $handlers
                (local.get $hval) (local.get $hexn) (local.get $heff)))
-         (i31.new (i32.const 0))))
+         (ref.i31 (i32.const 0))))
       (local.get $stack))
 
    (func (export $caml_get_continuation_callstack)
       (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (func (export "caml_is_continuation") (param (ref eq)) (result i32)
       (ref.test (ref $continuation) (local.get 0)))
@@ -415,7 +415,7 @@
    (func (export "caml_push_trap") (param $h (ref eq)) (result (ref eq))
       (global.set $exn_stack
          (struct.new $exn_stack (local.get $h) (global.get $exn_stack)))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func $raise_exception
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
@@ -501,11 +501,11 @@
    (global $default_fiber_stack (ref null $cps_fiber)
       (struct.new $cps_fiber
          (struct.new $handlers
-            (i31.new (i32.const 0)) (i31.new (i32.const 0))
+            (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))
             (struct.new $cps_closure_3
                (ref.func $dummy_cps_fun)
                (ref.func $cps_uncaught_effect_handler)))
-         (i31.new (i32.const 0))
+         (ref.i31 (i32.const 0))
          (ref.null $exn_stack)
          (ref.null $cps_fiber)))
 
@@ -621,7 +621,7 @@
          (ref.as_non_null
             (call $caml_named_value
                (string.const "Effect.Continuation_already_resumed"))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_perform_effect")
       (param $eff (ref eq)) (param $vcont (ref eq)) (param $k0 (ref eq))
@@ -703,7 +703,7 @@
                (struct.get $continuation 0
                   (ref.cast (ref $continuation) (local.get $k))))
             (local.get $ms)))
-      (call $raise_unhandled (local.get $eff) (i31.new (i32.const 0))))
+      (call $raise_unhandled (local.get $eff) (ref.i31 (i32.const 0))))
 
    (func (export "caml_cps_initialize_effects")
       (global.set $caml_trampoline_ref (ref.func $caml_trampoline)))

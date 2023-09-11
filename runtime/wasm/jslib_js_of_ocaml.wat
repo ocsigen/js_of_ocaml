@@ -18,7 +18,7 @@
    (type $block (array (mut (ref eq))))
 
    (func (export "caml_js_on_ie") (param (ref eq)) (result (ref eq))
-      (i31.new (call $caml_js_on_ie)))
+      (ref.i31 (call $caml_js_on_ie)))
 
    (func (export "caml_js_html_escape") (param (ref eq)) (result (ref eq))
       (return_call $wrap
@@ -29,14 +29,14 @@
          (call $caml_js_html_entities (call $unwrap (local.get 0)))))
 
    (func (export "caml_js_get_console") (param (ref eq)) (result (ref eq))
-      (return_call $caml_js_get (call $caml_js_global (i31.new (i32.const 0)))
+      (return_call $caml_js_get (call $caml_js_global (ref.i31 (i32.const 0)))
          (call $wrap (string.const "console"))))
 
    (func (export "caml_xmlhttprequest_create") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_new
          (call $caml_js_get
-            (call $caml_js_global (i31.new (i32.const 0)))
+            (call $caml_js_global (ref.i31 (i32.const 0)))
             (call $wrap (string.const "XMLHttpRequest")))
          (call $caml_js_from_array
-            (array.new_fixed $block 1 (i31.new (i32.const 0))))))
+            (array.new_fixed $block 1 (ref.i31 (i32.const 0))))))
 )

@@ -144,7 +144,7 @@
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
 
    (global $caml_hash_queue (ref $block)
-      (array.new $block (i31.new (i32.const 0)) (global.get $HASH_QUEUE_SIZE)))
+      (array.new $block (ref.i31 (i32.const 0)) (global.get $HASH_QUEUE_SIZE)))
 
    (func (export "caml_hash")
       (param $count (ref eq)) (param $limit (ref eq)) (param $seed (ref eq))
@@ -220,7 +220,7 @@
                                        (ref.eq
                                           (array.get $block (local.get $b)
                                              (i32.const 0))
-                                          (i31.new (global.get $forward_tag)))))
+                                          (ref.i31 (global.get $forward_tag)))))
                                  (local.set $i
                                     (i32.add (local.get $i) (i32.const 1)))
                                  (br_if $loop
@@ -286,19 +286,19 @@
                            (string.hash
                               (br_on_cast_fail $not_jsstring anyref (ref string)
                                  (local.get $str)))))
-                     (i31.new (i32.const 0))))
+                     (ref.i31 (i32.const 0))))
                   ;; closures and continuations and other js values are ignored
                   (br $loop)))))
       ;; clear the queue to avoid a memory leak
       (array.fill $block (global.get $caml_hash_queue)
-         (i32.const 0) (i31.new (i32.const 0)) (local.get $wr))
-      (i31.new (i32.and (call $caml_hash_mix_final (local.get $h))
+         (i32.const 0) (ref.i31 (i32.const 0)) (local.get $wr))
+      (ref.i31 (i32.and (call $caml_hash_mix_final (local.get $h))
                         (i32.const 0x3FFFFFFF))))
 
    (func (export "caml_string_hash")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $h i32)
-      (i31.new
+      (ref.i31
          (i32.and
             (call $caml_hash_mix_final
                (call $caml_hash_mix_string

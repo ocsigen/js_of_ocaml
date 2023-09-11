@@ -270,7 +270,7 @@ let expression_or_instructions ctx in_function =
             :: index f
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
-    | I31New e -> [ List (Atom "i31.new" :: expression e) ]
+    | RefI31 e -> [ List (Atom "ref.i31" :: expression e) ]
     | I31Get (s, e) -> [ List (Atom (signage "i31.get" s) :: expression e) ]
     | ArrayNew (typ, e, e') ->
         [ List (Atom "array.new" :: index typ :: (expression e @ expression e')) ]

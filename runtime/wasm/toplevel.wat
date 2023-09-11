@@ -1,5 +1,5 @@
 (module
    (func (export "caml_terminfo_rows")
       (param (ref eq)) (result (ref eq))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 )

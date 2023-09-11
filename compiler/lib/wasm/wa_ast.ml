@@ -139,7 +139,7 @@ type expression =
   | Pop of value_type
   | RefFunc of var
   | Call_ref of var * expression * expression list
-  | I31New of expression
+  | RefI31 of expression
   | I31Get of signage * expression
   | ArrayNew of var * expression * expression
   | ArrayNewFixed of var * expression list

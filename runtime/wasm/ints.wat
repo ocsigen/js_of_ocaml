@@ -147,14 +147,14 @@
 
    (func (export "caml_int_of_string")
       (param $v (ref eq)) (result (ref eq))
-      (i31.new
+      (ref.i31
          (call $parse_int
             (local.get $v) (i32.const 31) (global.get $INT_ERRMSG))))
 
    (func (export "caml_bswap16") (param (ref eq)) (result (ref eq))
       (local $x i32)
       (local.set $x (i31.get_s (ref.cast (ref i31) (local.get 0))))
-      (i31.new
+      (ref.i31
          (i32.or
             (i32.shl (i32.and (local.get $x) (i32.const 0xFF)) (i32.const 8))
             (i32.and

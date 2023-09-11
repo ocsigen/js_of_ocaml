@@ -66,25 +66,25 @@
                (array.new_data $string $lock_failure
                   (i32.const 0) (i32.const 46)))))
       (struct.set $mutex $state (local.get $t) (i32.const 1))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_try_lock") (param (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
       (local.set $t (ref.cast (ref $mutex) (local.get 0)))
       (if (result (ref eq)) (struct.get $mutex $state (local.get $t))
          (then
-            (i31.new (i32.const 0)))
+            (ref.i31 (i32.const 0)))
          (else
             (struct.set $mutex $state (local.get $t) (i32.const 1))
-            (i31.new (i32.const 1)))))
+            (ref.i31 (i32.const 1)))))
 
    (func (export "caml_ml_mutex_unlock") (param (ref eq)) (result (ref eq))
       (struct.set $mutex $state
          (ref.cast (ref $mutex) (local.get 0)) (i32.const 0))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_condition_new") (param (ref eq)) (result (ref eq))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (data $condition_failure "Condition.wait: cannot wait")
 
@@ -93,12 +93,12 @@
       (call $caml_failwith
          (array.new_data $string $condition_failure
             (i32.const 0) (i32.const 27)))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_condition_signal") (param (ref eq)) (result (ref eq))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_condition_broadcast")
       (param (ref eq)) (result (ref eq))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 )

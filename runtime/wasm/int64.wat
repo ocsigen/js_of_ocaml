@@ -106,7 +106,7 @@
          (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
       (local.set $i2
          (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
-      (i31.new (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
+      (ref.i31 (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                         (i64.lt_s (local.get $i1) (local.get $i2)))))
 
    (global $INT64_ERRMSG (ref $string)
@@ -176,7 +176,7 @@
       (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
       ;; ZZZ does not really make sense
       (call $log_js (string.const "caml_int64_create_lo_mi_hi"))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func $format_int64_default (param $d i64) (result (ref eq))
       (local $s (ref $string))

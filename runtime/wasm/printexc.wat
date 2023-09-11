@@ -56,7 +56,7 @@
       (local.set $exn (ref.cast (ref $block) (local.get 0)))
       (if (result anyref)
           (ref.eq (array.get $block (local.get $exn) (i32.const 0))
-                  (i31.new (i32.const 0)))
+                  (ref.i31 (i32.const 0)))
          (then
             (local.set $buf
                (struct.new $buffer
@@ -86,7 +86,7 @@
                         (i32.eqz
                            (ref.eq
                               (array.get $block (local.get $bucket) (i32.const 0))
-                              (i31.new (i32.const 0)))))
+                              (ref.i31 (i32.const 0)))))
                     (local.set $i (i32.const 1))
                     (br $continue (local.get $bucket)))
                  (local.set $i (i32.const 2))

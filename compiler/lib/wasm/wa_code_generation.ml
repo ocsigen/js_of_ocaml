@@ -208,7 +208,7 @@ let blk l st =
 let cast ?(nullable = false) typ e =
   let* e = e in
   match typ, e with
-  | W.I31, W.I31New _ -> return e
+  | W.I31, W.RefI31 _ -> return e
   | _ -> return (W.RefCast ({ W.nullable; typ }, e))
 
 module Arith = struct
@@ -297,18 +297,18 @@ module Arith = struct
     let* n = n in
     match n with
     | W.I31Get (S, n') -> return n'
-    | _ -> return (W.I31New n)
+    | _ -> return (W.RefI31 n)
 
   let of_int31 n =
     let* n = n in
     match n with
-    | W.I31New (Const (I32 n)) -> return (W.Const (I32 (Int31.wrap n)))
+    | W.RefI31 (Const (I32 n)) -> return (W.Const (I32 (Int31.wrap n)))
     | _ -> return (W.I31Get (S, n))
 end
 
 let is_small_constant e =
   match e with
-  | W.ConstSym _ | W.Const _ | W.I31New (W.Const _) | W.RefFunc _ -> return true
+  | W.ConstSym _ | W.Const _ | W.RefI31 (W.Const _) | W.RefFunc _ -> return true
   | W.GlobalGet (V name) -> global_is_constant name
   | _ -> return false
 

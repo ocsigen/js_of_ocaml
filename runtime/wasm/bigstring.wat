@@ -133,9 +133,9 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
                (return
-                  (select (i31.new (i32.const -1)) (i31.new (i32.const 1))
+                  (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                      (i32.lt_u (local.get $c1) (local.get $c2)))))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_memcmp_string")
       (param $s1 (ref eq)) (param $vpos1 (ref eq))
@@ -162,9 +162,9 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
                (return
-                  (select (i31.new (i32.const -1)) (i31.new (i32.const 1))
+                  (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                      (i32.lt_u (local.get $c1) (local.get $c2)))))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_memchr")
       (param $s (ref eq)) (param $vc (ref eq))
@@ -181,11 +181,11 @@
                (if (i32.eq (local.get $c)
                       (call $ta_get_ui8 (local.get $d) (local.get $pos)))
                   (then
-                     (return (i31.new (local.get $pos)))))
+                     (return (ref.i31 (local.get $pos)))))
                (local.set $len (i32.sub (local.get $len) (i32.const 1)))
                (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
                (br $loop))))
-     (i31.new (i32.const -1)))
+     (ref.i31 (i32.const -1)))
 
    (export "caml_bigstring_blit_string_to_ba"
       (func $caml_bigstring_blit_bytes_to_ba))
@@ -207,12 +207,12 @@
             (then
                (call $ta_set_ui8 (local.get $d2)
                   (i32.add (local.get $pos2) (local.get $i))
-                  (i31.new
+                  (ref.i31
                      (array.get_u $string (local.get $s1)
                         (i32.add (local.get $pos1) (local.get $i)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_blit_ba_to_bytes")
       (param $ba1 (ref eq)) (param $vpos1 (ref eq))
@@ -235,7 +235,7 @@
                      (i32.add (local.get $pos1) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_blit_ba_to_ba")
       (param $ba1 (ref eq)) (param $vpos1 (ref eq))
@@ -253,5 +253,5 @@
          (call $ta_subarray (local.get $d1)
             (local.get $pos1) (i32.add (local.get $pos1) (local.get $len)))
          (local.get $pos2))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 )

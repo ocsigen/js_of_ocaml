@@ -23,7 +23,7 @@
             (i32.add (local.get $sz) (i32.const 1))))
       ;; ZZZ float array
       (array.set $block (local.get $b) (i32.const 0)
-         (i31.new
+         (ref.i31
             (select (global.get $double_array_tag) (i32.const 0)
                (i32.and
                   (local.get $sz) (ref.test (ref $float) (local.get $v))))))
@@ -42,7 +42,7 @@
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $a1 (ref.cast (ref $block) (local.get $a)))
-      (local.set $a2 (array.new $block (i31.new (i32.const 0))
+      (local.set $a2 (array.new $block (ref.i31 (i32.const 0))
                         (i32.add (local.get $len) (i32.const 1))))
       (array.set $block (local.get $a2) (i32.const 0)
          (array.get $block (local.get $a1) (i32.const 0)))
@@ -64,17 +64,17 @@
       (local.set $a2 (ref.cast (ref $block) (local.get $va2)))
       (local.set $l2 (array.len (local.get $a2)))
       (local.set $a
-         (array.new $block (i31.new (i32.const 0))
+         (array.new $block (ref.i31 (i32.const 0))
             (i32.sub (i32.add (local.get $l1) (local.get $l2)) (i32.const 1))))
       ;; ZZZ float array
       (array.set $block (local.get $a) (i32.const 0)
-         (i31.new
+         (ref.i31
             (select (global.get $double_array_tag) (i32.const 0)
                (i32.or
                   (ref.eq (array.get $block (local.get $a1) (i32.const 0))
-                     (i31.new (global.get $double_array_tag)))
+                     (ref.i31 (global.get $double_array_tag)))
                   (ref.eq (array.get $block (local.get $a2) (i32.const 0))
-                     (i31.new (global.get $double_array_tag)))))))
+                     (ref.i31 (global.get $double_array_tag)))))))
       (array.copy $block $block
          (local.get $a) (i32.const 1) (local.get $a1) (i32.const 1)
          (i32.sub (local.get $l1) (i32.const 1)))
@@ -103,16 +103,16 @@
                             (array.get $block (local.get $b) (i32.const 1))))
                       (i32.const 1))))
              (if (ref.eq (array.get $block (local.get $b) (i32.const 0))
-                    (i31.new (global.get $double_array_tag)))
+                    (ref.i31 (global.get $double_array_tag)))
                  (then (local.set $isfloat (i32.const 1))))
              (local.set $l (array.get $block (local.get $b) (i32.const 2)))
              (br $compute_length))))
       (local.set $a
-         (array.new $block (i31.new (i32.const 0)) (local.get $len)))
+         (array.new $block (ref.i31 (i32.const 0)) (local.get $len)))
       (if (local.get $isfloat)
          (then
             (array.set $block (local.get $a) (i32.const 0)
-               (i31.new (global.get $double_array_tag)))))
+               (ref.i31 (global.get $double_array_tag)))))
       (local.set $l (local.get 0))
       (local.set $i (i32.const 1))
       (loop $fill
@@ -147,7 +147,7 @@
          (i32.add
             (i31.get_s (ref.cast (ref i31) (local.get $i1))) (i32.const 1))
          (i31.get_s (ref.cast (ref i31) (local.get $len))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_array_fill")
       (param $a (ref eq)) (param $i (ref eq)) (param $len (ref eq))
@@ -156,5 +156,5 @@
          (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))
          (local.get $v)
          (i31.get_u (ref.cast (ref i31) (local.get $len))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 )

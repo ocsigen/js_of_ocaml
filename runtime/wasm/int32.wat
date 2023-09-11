@@ -111,7 +111,7 @@
          (struct.get $int32 1 (ref.cast (ref $int32) (local.get 0))))
       (local.set $i2
          (struct.get $int32 1 (ref.cast (ref $int32) (local.get 1))))
-      (i31.new (i32.sub (i32.gt_s (local.get $i1) (local.get $i2))
+      (ref.i31 (i32.sub (i32.gt_s (local.get $i1) (local.get $i2))
                         (i32.lt_s (local.get $i1) (local.get $i2)))))
 
    (global $nativeint_ops (export "nativeint_ops") (ref $custom_operations)

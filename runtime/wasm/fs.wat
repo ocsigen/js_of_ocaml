@@ -62,7 +62,7 @@
                         (call $caml_jsstring_of_string (local.get $name)))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
-            (return (i31.new (i32.const 0))))))
+            (return (ref.i31 (i32.const 0))))))
 
    (func (export "caml_sys_remove")
       (param $name (ref eq)) (result (ref eq))
@@ -113,8 +113,8 @@
       ;; ZZZ
       (call $log_js (string.const "caml_read_file_content"))
       (call $caml_raise_no_such_file (local.get 0))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_fs_init") (result (ref eq))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 )

@@ -323,10 +323,10 @@
                (i32.eq (local.get $code)
                  (global.get $CODE_DOUBLE_ARRAY32_BIG)))))
       (local.set $dest
-         (array.new $block (i31.new (i32.const 0))
+         (array.new $block (ref.i31 (i32.const 0))
             (i32.add (local.get $len) (i32.const 1))))
       (array.set $block (local.get $dest) (i32.const 0)
-         (i31.new (global.get $double_array_tag)))
+         (ref.i31 (global.get $double_array_tag)))
       (loop $loop
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (if (i32.le_u (local.get $i) (local.get $len))
@@ -430,7 +430,7 @@
       (call $caml_failwith
          (array.new_data $string $unknown_custom
             (i32.const 0) (i32.const 44)))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func $intern_rec
       (param $s (ref $intern_state)) (param $h (ref $marshal_header))
@@ -445,7 +445,7 @@
       (local $str (ref $string))
       (local $v (ref eq))
       (call $caml_init_custom_operations)
-      (local.set $res (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (local.set $res (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
       (local.set $sp
          (struct.new $stack_item
             (local.get $res) (i32.const 0) (ref.null $stack_item)))
@@ -453,8 +453,8 @@
       (if (local.get $size)
          (then
             (struct.set $intern_state $obj_table (local.get $s)
-               (array.new $block (i31.new (i32.const 0)) (local.get $size)))))
-      (local.set $v (i31.new (i32.const 0))) ;; keep validator happy
+               (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))))
+      (local.set $v (ref.i31 (i32.const 0))) ;; keep validator happy
       (block $exit
        (loop $loop
         (local.set $item (br_on_null $exit (local.get $sp)))
@@ -486,7 +486,7 @@
                       (else
                          ;; Small int
                          (local.set $v
-                            (i31.new
+                            (ref.i31
                                (i32.and (local.get $code) (i32.const 0x3F))))
                          (br $done))))
                 (else
@@ -585,13 +585,13 @@
                                   (i32.const 0) (i32.const 30)))
                             (br $done))
                            ;; INT32
-                           (local.set $v (i31.new (call $read32 (local.get $s))))
+                           (local.set $v (ref.i31 (call $read32 (local.get $s))))
                            (br $done))
                           ;; INT16
-                          (local.set $v (i31.new (call $read16s (local.get $s))))
+                          (local.set $v (ref.i31 (call $read16s (local.get $s))))
                           (br $done))
                          ;; INT8
-                         (local.set $v (i31.new (call $read8s (local.get $s))))
+                         (local.set $v (ref.i31 (call $read8s (local.get $s))))
                          (br $done))
                         ))))
             ;; read_shared
@@ -620,10 +620,10 @@
           (br $done))
          ;; read_block
          (local.set $b
-            (array.new $block (i31.new (i32.const 0))
+            (array.new $block (ref.i31 (i32.const 0))
                (i32.add (local.get $size) (i32.const 1))))
          (array.set $block (local.get $b) (i32.const 0)
-            (i31.new (local.get $tag)))
+            (ref.i31 (local.get $tag)))
          (if (local.get $size)
             (then
                (call $register_object (local.get $s) (local.get $b))
@@ -704,7 +704,7 @@
             (call $bad_object
                (array.new_data $string $marshal_data_size
                   (i32.const 0) (i32.const 17)))))
-      (i31.new (call $read32 (local.get $s))))
+      (ref.i31 (call $read32 (local.get $s))))
 
    (type $output_block
       (struct
@@ -741,7 +741,7 @@
             (local.set $b
                (br_on_cast_fail $done (ref eq) (ref $block) (local.get $flags)))
             (if (ref.eq (array.get $block (local.get $b) (i32.const 1))
-                   (i31.new (i32.const 0)))
+                   (ref.i31 (i32.const 0)))
                (then (local.set $no_sharing (i32.const 1))))
             (local.set $flags (array.get $block (local.get $b) (i32.const 2)))
             (br $parse_flags))))
@@ -943,7 +943,7 @@
          (i32.add (local.get $pos) (i32.const 1)))
       (call $weak_map_set
          (struct.get $extern_state $pos_table (local.get $s))
-         (local.get $obj) (i31.new (local.get $pos))))
+         (local.get $obj) (ref.i31 (local.get $pos))))
 
    (func $extern_size
       (param $s (ref $extern_state)) (param $s32 i32) (param $s64 i32)
@@ -1348,7 +1348,7 @@
       (array.copy $string $string
          (local.get $buf) (local.get $pos)
          (tuple.extract 1 (local.get $r)) (i32.const 0) (i32.const 20))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_output_value")
       (param $ch (ref eq)) (param $v (ref eq)) (param $flags (ref eq))
@@ -1381,7 +1381,7 @@
                   (struct.get $output_block $next (local.get $blk))))
             (br $loop)))
       (call $caml_flush_if_unbuffered (local.get $ch))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_serialize_int_1") (param $vs (ref eq)) (param $i i32)
       (local $s (ref $extern_state))

@@ -449,7 +449,7 @@
        (array.set $int_array
           (local.get $group_end) (i32.const 0) (local.get $pos))
        (local.set $res
-          (array.new $block (i31.new (i32.const 0))
+          (array.new $block (ref.i31 (i32.const 0))
              (i32.add (i32.shl (local.get $numgroups) (i32.const 1))
                 (i32.const 1))))
        (local.set $i (i32.const 0))
@@ -469,26 +469,26 @@
                    (then
                       (array.set $block (local.get $res)
                          (i32.add (local.get $j) (i32.const 1))
-                         (i31.new (i32.const -1)))
+                         (ref.i31 (i32.const -1)))
                       (array.set $block (local.get $res)
                          (i32.add (local.get $j) (i32.const 2))
-                         (i31.new (i32.const -1))))
+                         (ref.i31 (i32.const -1))))
                    (else
                       (array.set $block (local.get $res)
                          (i32.add (local.get $j) (i32.const 1))
-                         (i31.new
+                         (ref.i31
                             (array.get $int_array (local.get $group_start)
                                (local.get $i))))
                       (array.set $block (local.get $res)
                          (i32.add (local.get $j) (i32.const 2))
-                         (i31.new
+                         (ref.i31
                             (array.get $int_array (local.get $group_end)
                                (local.get $i))))))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop))))
        (return (local.get $res)))
       ;; reject
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (data $search_forward "Str.search_forward")
 
@@ -516,7 +516,7 @@
                (return (local.get $res))))
          (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
          (br_if $loop (i32.le_u (local.get $pos) (local.get $len))))
-      (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (data $search_backward "Str.search_backward")
 
@@ -544,7 +544,7 @@
                (return (local.get $res))))
          (local.set $pos (i32.sub (local.get $pos) (i32.const 1)))
          (br_if $loop (i32.ge_s (local.get $pos) (i32.const 0))))
-      (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (data $string_match "Str.string_match")
 
@@ -569,7 +569,7 @@
        (if (ref.test (ref $block) (local.get $res))
           (then
             (return (local.get $res))))
-      (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (data $string_partial_match "Str.string_partial_match")
 
@@ -594,7 +594,7 @@
        (if (ref.test (ref $block) (local.get $res))
           (then
             (return (local.get $res))))
-      (array.new_fixed $block 1 (i31.new (i32.const 0))))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (data $illegal_backslash "Str.replace: illegal backslash sequence")
    (data $unmatched_group "Str.replace: reference to unmatched group")

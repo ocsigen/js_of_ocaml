@@ -667,7 +667,7 @@
       (local $a f64)
       (local.set $a
          (f64.abs (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
-      (i31.new
+      (ref.i31
          (if (result i32) (f64.ge (local.get $a) (f64.const 0x1p-1022))
             (then
                (if (result i32) (f64.lt (local.get $a) (f64.const infinity))
@@ -699,7 +699,7 @@
          (else ;; zero or nan
             (local.set $i (local.get $x))
             (local.set $f (local.get $x))))
-      (array.new_fixed $block 3 (i31.new (i32.const 0))
+      (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $f)) (struct.new $float (local.get $i))))
 
    (func $ldexp (param $x f64) (param $n i32) (result f64)
@@ -774,12 +774,12 @@
       (local.set $r
          (call $frexp
             (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
-      (array.new_fixed $block 3 (i31.new (i32.const 0))
+      (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (tuple.extract 0 (local.get $r)))
-         (i31.new (tuple.extract 1 (local.get $r)))))
+         (ref.i31 (tuple.extract 1 (local.get $r)))))
 
    (func (export "caml_signbit_float") (param (ref eq)) (result (ref eq))
-      (i31.new
+      (ref.i31
          (i32.wrap_i64
             (i64.shr_u
                (i64.reinterpret_f64
@@ -850,7 +850,7 @@
       (local $x f64) (local $y f64)
       (local.set $x (struct.get $float 0 (ref.cast (ref $float) (local.get 0))))
       (local.set $y (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
-      (i31.new
+      (ref.i31
          (i32.add
             (i32.sub (f64.gt (local.get $x) (local.get $y))
                      (f64.lt (local.get $x) (local.get $y)))

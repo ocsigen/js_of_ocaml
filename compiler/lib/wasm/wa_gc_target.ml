@@ -379,7 +379,7 @@ end
 module Value = struct
   let value = Type.value
 
-  let unit = return (W.I31New (Const (I32 0l)))
+  let unit = return (W.RefI31 (Const (I32 0l)))
 
   let val_int = Arith.to_int31
 
@@ -387,7 +387,7 @@ module Value = struct
 
   let check_is_not_zero i =
     let* i = i in
-    return (W.UnOp (I32 Eqz, RefEq (i, W.I31New (Const (I32 0l)))))
+    return (W.UnOp (I32 Eqz, RefEq (i, W.RefI31 (Const (I32 0l)))))
 
   let check_is_int i =
     let* i = i in
@@ -453,7 +453,7 @@ module Memory = struct
         l
     in
     let* ty = Type.block_type in
-    return (W.ArrayNewFixed (ty, I31New (Const (I32 (Int32.of_int tag))) :: l))
+    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
   (*ZZZ Float array?*)
 
   let wasm_cast ty e =
@@ -625,7 +625,7 @@ module Constant = struct
 
   let rec translate_rec c =
     match c with
-    | Code.Int (Regular, i) -> return (true, W.I31New (Const (I32 i)))
+    | Code.Int (Regular, i) -> return (true, W.RefI31 (Const (I32 i)))
     | Tuple (tag, a, _) ->
         let* ty = Type.block_type in
         let* l =
@@ -639,9 +639,9 @@ module Constant = struct
         in
         let l = List.rev l in
         let l' =
-          List.map ~f:(fun (const, v) -> if const then v else W.I31New (Const (I32 0l))) l
+          List.map ~f:(fun (const, v) -> if const then v else W.RefI31 (Const (I32 0l))) l
         in
-        let c = W.ArrayNewFixed (ty, I31New (Const (I32 (Int32.of_int tag))) :: l') in
+        let c = W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l') in
         if List.exists ~f:(fun (const, _) -> not const) l
         then
           let* c = store_in_global c in
@@ -695,7 +695,7 @@ module Constant = struct
           ( true
           , W.ArrayNewFixed
               ( bl_ty
-              , I31New (Const (I32 (Int32.of_int Obj.double_array_tag)))
+              , RefI31 (Const (I32 (Int32.of_int Obj.double_array_tag)))
                 :: List.map ~f:(fun f -> W.StructNew (ty, [ Const (F64 f) ])) l ) )
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
@@ -720,7 +720,7 @@ module Constant = struct
           ~constant:true
           (V name)
           { mut = true; typ = Type.value }
-          (W.I31New (Const (I32 0l)))
+          (W.RefI31 (Const (I32 0l)))
       in
       let* () = register_init_code (instr (W.GlobalSet (V name, c))) in
       return (W.GlobalGet (V name))
@@ -803,7 +803,7 @@ module Closure = struct
                    (W.StructNew
                       ( env_typ
                       , List.init ~len:function_count ~f:(fun _ ->
-                            W.I31New (W.Const (I32 0l)))
+                            W.RefI31 (W.Const (I32 0l)))
                         @ l )))
             else
               let* env = get_closure_env g in

@@ -49,7 +49,7 @@
                (i31.get_s
                   (ref.cast (ref i31)
                      (call $caml_string_hash
-                        (i31.new (i32.const 0)) (local.get $s))))
+                        (ref.i31 (i32.const 0)) (local.get $s))))
                (global.get $Named_value_size)))))
 
    (func (export "caml_register_named_value")
@@ -61,7 +61,7 @@
             (i31.get_s
                (ref.cast (ref i31)
                   (call $caml_string_hash
-                     (i31.new (i32.const 0)) (local.get 0))))
+                     (ref.i31 (i32.const 0)) (local.get 0))))
             (global.get $Named_value_size)))
       (local.set $r
          (array.get $assoc_array
@@ -73,10 +73,10 @@
                (struct.new $assoc
                   (ref.cast (ref $string) (local.get 0))
                   (local.get 1) (local.get $r)))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (global $caml_global_data (export "caml_global_data") (mut (ref $block))
-      (array.new $block (i31.new (i32.const 0)) (i32.const 12)))
+      (array.new $block (ref.i31 (i32.const 0)) (i32.const 12)))
 
    (func (export "caml_register_global")
       (param (ref eq)) (param $v (ref eq)) (param (ref eq)) (result (ref eq))
@@ -86,7 +86,7 @@
          (then
             (array.set $block (global.get $caml_global_data)
                (local.get $i) (local.get $v))))
-      (i31.new (i32.const 0)))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_get_global_data") (param (ref eq)) (result (ref eq))
       (global.get $caml_global_data))
