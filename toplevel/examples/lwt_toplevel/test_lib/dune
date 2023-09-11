@@ -1,5 +1,5 @@
 (library
-  (name test_lib_jsoo)
-  (modes byte)
-  (js_of_ocaml
-     (javascript_files stubs.js)))
+ (name test_lib_jsoo)
+ (modes byte)
+ (js_of_ocaml
+  (javascript_files stubs.js)))
