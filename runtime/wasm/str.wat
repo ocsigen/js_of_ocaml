@@ -28,7 +28,7 @@
          (i32.const 0xFF) (i32.const 0xFF)   ;; 0xE0-0xFF:
          (i32.const 0x7F) (i32.const 0xFF))) ;; Latin-1 accented lowercase
 
-   (rec (type $stack (struct (field (ref null $stack)))))
+   (type $stack (sub (struct (field (ref null $stack)))))
    (type $pos
       (sub final $stack
          (struct
