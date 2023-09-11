@@ -12,8 +12,11 @@ type context =
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable cps_apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable cps_curry_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
+  ; mutable cps_dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wa_ast.instruction list
   }
 
@@ -139,11 +142,11 @@ val get_closure_env : Code.Var.t -> Code.Var.t t
 
 val is_closure : Code.Var.t -> bool t
 
-val need_apply_fun : arity:int -> Code.Var.t t
+val need_apply_fun : cps:bool -> arity:int -> Code.Var.t t
 
-val need_curry_fun : arity:int -> Code.Var.t t
+val need_curry_fun : cps:bool -> arity:int -> Code.Var.t t
 
-val need_dummy_fun : arity:int -> Code.Var.t t
+val need_dummy_fun : cps:bool -> arity:int -> Code.Var.t t
 
 val function_body :
      context:context

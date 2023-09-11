@@ -7,6 +7,8 @@
    (import "string" "caml_string_cat"
       (func $caml_string_cat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "obj" "caml_is_closure"
+      (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
@@ -105,8 +107,6 @@
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -1202,7 +1202,7 @@
                      (i32.add (tuple.extract 1 (local.get $r)) (i32.const 15))
                         (i32.const 3)))
                (br $next_item)))
-            (if (ref.test (ref $closure) (local.get $v))
+            (if (call $caml_is_closure (local.get $v))
                (then
                   (call $caml_invalid_argument
                      (array.new_data $string $func_value

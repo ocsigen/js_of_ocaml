@@ -6,6 +6,8 @@
    (import "obj" "double_array_tag" (global $double_array_tag i32))
    (import "obj" "caml_obj_tag"
       (func $caml_obj_tag (param (ref eq)) (result (ref eq))))
+   (import "obj" "caml_is_closure"
+      (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "effect" "caml_is_continuation"
@@ -18,8 +20,6 @@
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
 
    (type $int_array (array (mut i32)))
    (type $block_array (array (mut (ref $block))))
@@ -474,11 +474,10 @@
                            (call $equals (local.get $js1) (local.get $js2)))
                         (return (global.get $unordered))))
                   (br $heterogeneous (i31.new (i32.const 0)))))
-               (if (ref.test (ref $closure) (local.get $v1))
+               (if (call $caml_is_closure (local.get $v1))
                   (then
                      (drop (br_if $heterogeneous (i31.new (i32.const 0))
-                              (i32.eqz
-                                 (ref.test (ref $closure) (local.get $v2)))))
+                              (i32.eqz (call $caml_is_closure (local.get $v2)))))
                      (call $clear_compare_stack)
                      (call $caml_invalid_argument
                         (array.new_data $string $functional_value

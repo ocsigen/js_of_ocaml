@@ -3,7 +3,7 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5)
-   (= %{profile} using-effects)))
+   (or (= %{profile} using-effects) (= %{profile} wasm-effects))))
  (inline_tests
   ;; This requires the unreleased dune 3.7 to work
   (enabled_if true)

@@ -5,6 +5,9 @@
  (wasm
   (flags
    (:standard -w -38)))
+ (wasm-effects
+  (flags
+   (:standard -w -38)))
  (_
   (flags
    (:standard -w -38))

@@ -13,6 +13,12 @@
   (binaries (tools/node_wrapper.sh as node))
   (js_of_ocaml
    (target wasm)))
+ (wasm-effects
+  (binaries (tools/node_wrapper.sh as node))
+  (js_of_ocaml
+   (flags
+    (:standard --enable effects))
+   (target wasm)))
  (bench_no_debug
   (flags
    (:standard \ -g))

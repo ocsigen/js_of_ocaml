@@ -28,8 +28,11 @@ type context =
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
+  ; mutable cps_apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
+  ; mutable cps_curry_funs : Var.t IntMap.t
   ; mutable dummy_funs : Var.t IntMap.t
+  ; mutable cps_dummy_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
   }
 
@@ -42,8 +45,11 @@ let make_context () =
   ; types = Hashtbl.create 128
   ; closure_envs = Var.Map.empty
   ; apply_funs = IntMap.empty
+  ; cps_apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
+  ; cps_curry_funs = IntMap.empty
   ; dummy_funs = IntMap.empty
+  ; cps_dummy_funs = IntMap.empty
   ; init_code = []
   }
 
@@ -391,31 +397,55 @@ let try_ ty body handlers =
   let* handler_bodies = expression_list blk (List.map ~f:snd handlers) in
   instr (Try (ty, body, List.combine tags handler_bodies, None))
 
-let need_apply_fun ~arity st =
+let need_apply_fun ~cps ~arity st =
   let ctx = st.context in
-  ( (try IntMap.find arity ctx.apply_funs
-     with Not_found ->
-       let x = Var.fresh_n (Printf.sprintf "apply_%d" arity) in
-       ctx.apply_funs <- IntMap.add arity x ctx.apply_funs;
-       x)
+  ( (if cps
+     then (
+       try IntMap.find arity ctx.cps_apply_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "cps_apply_%d" arity) in
+         ctx.cps_apply_funs <- IntMap.add arity x ctx.cps_apply_funs;
+         x)
+     else
+       try IntMap.find arity ctx.apply_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "apply_%d" arity) in
+         ctx.apply_funs <- IntMap.add arity x ctx.apply_funs;
+         x)
   , st )
 
-let need_curry_fun ~arity st =
+let need_curry_fun ~cps ~arity st =
   let ctx = st.context in
-  ( (try IntMap.find arity ctx.curry_funs
-     with Not_found ->
-       let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
-       ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
-       x)
+  ( (if cps
+     then (
+       try IntMap.find arity ctx.cps_curry_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "cps_curry_%d" arity) in
+         ctx.cps_curry_funs <- IntMap.add arity x ctx.cps_curry_funs;
+         x)
+     else
+       try IntMap.find arity ctx.curry_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
+         ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
+         x)
   , st )
 
-let need_dummy_fun ~arity st =
+let need_dummy_fun ~cps ~arity st =
   let ctx = st.context in
-  ( (try IntMap.find arity ctx.dummy_funs
-     with Not_found ->
-       let x = Var.fresh_n (Printf.sprintf "dummy_%d" arity) in
-       ctx.dummy_funs <- IntMap.add arity x ctx.dummy_funs;
-       x)
+  ( (if cps
+     then (
+       try IntMap.find arity ctx.cps_dummy_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "cps_dummy_%d" arity) in
+         ctx.cps_dummy_funs <- IntMap.add arity x ctx.cps_dummy_funs;
+         x)
+     else
+       try IntMap.find arity ctx.dummy_funs
+       with Not_found ->
+         let x = Var.fresh_n (Printf.sprintf "dummy_%d" arity) in
+         ctx.dummy_funs <- IntMap.add arity x ctx.dummy_funs;
+         x)
   , st )
 
 let init_code context = instrs context.init_code

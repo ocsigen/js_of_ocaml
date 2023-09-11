@@ -60,17 +60,22 @@ module type S = sig
       -> expression
 
     val load_function_pointer :
-         arity:int
+         cps:bool
+      -> arity:int
       -> ?skip_cast:bool
       -> expression
       -> ([ `Index | `Ref of Wa_ast.var ] * Wa_ast.expression) Wa_code_generation.t
 
     val load_real_closure :
-      arity:int -> expression -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
+         cps:bool
+      -> arity:int
+      -> expression
+      -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
 
     val check_function_arity :
          Code.Var.t
-      -> int
+      -> cps:bool
+      -> arity:int
       -> (typ:Wa_ast.value_type option -> expression -> expression)
       -> unit Wa_code_generation.t
       -> unit Wa_code_generation.t
@@ -173,18 +178,21 @@ module type S = sig
          context:Wa_code_generation.context
       -> closures:Wa_closure_conversion.closure Code.Var.Map.t
       -> stack_ctx:Stack.ctx
+      -> cps:bool
       -> Code.Var.t
       -> expression
 
     val bind_environment :
          context:Wa_code_generation.context
       -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+      -> cps:bool
       -> Code.Var.t
       -> unit Wa_code_generation.t
 
     val curry_allocate :
          stack_ctx:Stack.ctx
       -> x:Code.Var.t
+      -> cps:bool
       -> arity:int
       -> int
       -> f:Code.Var.t
@@ -193,12 +201,13 @@ module type S = sig
       -> Wa_ast.expression Wa_code_generation.t
 
     val curry_load :
-         arity:int
+         cps:bool
+      -> arity:int
       -> int
       -> Code.Var.t
       -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
 
-    val dummy : arity:int -> Wa_ast.expression Wa_code_generation.t
+    val dummy : cps:bool -> arity:int -> Wa_ast.expression Wa_code_generation.t
   end
 
   module Math : sig

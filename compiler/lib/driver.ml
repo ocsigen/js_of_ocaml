@@ -88,14 +88,14 @@ let phi p =
 
 let ( +> ) f g x = g (f x)
 
-let map_fst f (x, y) = f x, y
+let map_fst f (x, y, z) = f x, y, z
 
 let effects p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
-  else p, (Code.Var.Set.empty : Effects.cps_calls)
+  else p, (Code.Var.Set.empty : Effects.cps_calls), (Code.Var.Set.empty : Effects.in_cps)
 
 let exact_calls profile p =
   if not (Config.Flag.effects ())
@@ -179,7 +179,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), cps_calls) =
+    ((p, live_vars), cps_calls, _) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -615,8 +615,8 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   match target with
   | `JavaScript formatter -> emit formatter r
   | `Wasm ch ->
-      let (p, live_vars), _ = r in
-      Wa_generate.f ch ~live_vars p;
+      let (p, live_vars), _, in_cps = r in
+      Wa_generate.f ch ~live_vars ~in_cps p;
       None
 
 let full_no_source_map ~target ~standalone ~wrap_with_fun ~profile ~linkall d p =

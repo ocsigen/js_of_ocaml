@@ -83,5 +83,5 @@ let () =
            | Any -> "true"
            | GE5 -> "(>= %{ocaml_version} 5)"
            | No_effects -> "(<> %{profile} using-effects)"
-           | Not_wasm -> "(<> %{profile} wasm)")
+           | Not_wasm -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))")
            basename)

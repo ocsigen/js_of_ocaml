@@ -18,4 +18,6 @@
 
 type cps_calls = Code.Var.Set.t
 
-val f : Code.program * Deadcode.variable_uses -> Code.program * cps_calls
+type in_cps = Code.Var.Set.t
+
+val f : Code.program * Deadcode.variable_uses -> Code.program * cps_calls * in_cps

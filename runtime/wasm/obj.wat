@@ -4,6 +4,8 @@
       (func $caml_is_custom (param (ref eq)) (result i32)))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
+   (import "effect" "caml_trampoline_ref"
+      (global $caml_trampoline_ref (mut (ref null $function_1))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -12,15 +14,17 @@
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
       (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
+   (type $function_2
+      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $cps_closure (sub (struct (field (ref $function_2)))))
+   (type $cps_closure_last_arg
+      (sub $cps_closure (struct (field (ref $function_2)))))
 
    (type $int_array (array (mut i32)))
 
    (type $dummy_closure_1
       (sub final $closure_last_arg
          (struct (field (ref $function_1)) (field (mut (ref null $closure))))))
-
-   (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
 
    (type $closure_2
       (sub $closure
@@ -55,6 +59,12 @@
          (struct (field (ref $function_1)) (field (ref $function_4))
             (field (mut (ref null $closure_4))))))
 
+   (type $cps_dummy_closure
+      (sub final $cps_closure_last_arg
+         (struct
+            (field (ref $function_2))
+            (field (mut (ref null $cps_closure))))))
+
    (global $forcing_tag i32 (i32.const 244))
    (global $cont_tag i32 (i32.const 245))
    (global $lazy_tag (export "lazy_tag") i32 (i32.const 246))
@@ -66,6 +76,16 @@
    (global $float_tag i32 (i32.const 253))
    (global $double_array_tag (export "double_array_tag") i32 (i32.const 254))
    (global $custom_tag i32 (i32.const 255))
+
+   (func $caml_is_closure (export "caml_is_closure")
+      (param $v (ref eq)) (result i32)
+      (i32.or (ref.test (ref $closure) (local.get $v))
+              (ref.test (ref $cps_closure) (local.get $v))))
+
+   (func (export "caml_is_last_arg")
+      (param $v (ref eq)) (result i32)
+      (i32.or (ref.test (ref $closure_last_arg) (local.get $v))
+              (ref.test (ref $cps_closure_last_arg) (local.get $v))))
 
    (func (export "caml_alloc_dummy") (param $size (ref eq)) (result (ref eq))
       (array.new $block (i31.new (i32.const 0))
@@ -108,6 +128,12 @@
             (br_on_cast_fail $not_closure_4 (ref eq) (ref $dummy_closure_4)
                (local.get $dummy))
             (ref.cast (ref $closure_4) (local.get $newval)))
+         (return (i31.new (i32.const 0)))))
+      (drop (block $not_cps_closure (result (ref eq))
+         (struct.set $cps_dummy_closure 1
+            (br_on_cast_fail $not_cps_closure (ref eq) (ref $cps_dummy_closure)
+               (local.get $dummy))
+            (ref.cast (ref $cps_closure) (local.get $newval)))
          (return (i31.new (i32.const 0)))))
       ;; ZZZ float array
       (unreachable))
@@ -174,7 +200,7 @@
          (then (return (i31.new (global.get $float_tag)))))
       (if (call $caml_is_custom (local.get $v))
          (then (return (i31.new (global.get $custom_tag)))))
-      (if (ref.test (ref $closure) (local.get $v))
+      (if (call $caml_is_closure (local.get $v))
          (then (return (i31.new (global.get $closure_tag)))))
       (if (call $caml_is_continuation (local.get $v))
          (then (return (i31.new (global.get $cont_tag)))))
@@ -374,4 +400,17 @@
 
    (func (export "caml_obj_reachable_words") (param (ref eq)) (result (ref eq))
       (i31.new (i32.const 0)))
+
+   (func (export "caml_callback_1")
+      (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
+      (drop (block $cps (result (ref eq))
+         (return_call_ref $function_1 (local.get $x)
+            (local.get $f)
+            (struct.get $closure 0
+               (br_on_cast_fail $cps (ref eq) (ref $closure)
+                  (local.get $f))))))
+      (return_call_ref $function_1
+         (local.get $f)
+         (array.new_fixed $block 2 (i31.new (i32.const 0)) (local.get $x))
+         (ref.as_non_null (global.get $caml_trampoline_ref))))
 )

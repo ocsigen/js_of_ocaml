@@ -42,7 +42,7 @@
 (library
  ;; lib/tests/test_json.ml
  (name test_json_75)
- (enabled_if (<> %{profile} wasm))
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_json)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))

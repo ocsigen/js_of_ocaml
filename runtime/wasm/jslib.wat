@@ -59,6 +59,13 @@
       (func $caml_failwith_tag (result (ref eq))))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param anyref) (result (ref null eq))))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "obj" "caml_is_closure"
+      (func $caml_is_closure (param (ref eq)) (result i32)))
+   (import "obj" "caml_is_last_arg"
+      (func $caml_is_last_arg (param (ref eq)) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
@@ -66,8 +73,9 @@
    (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
-   (type $closure_last_arg
-      (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
+   (type $function_2
+      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $cps_closure (sub (struct (field (ref $function_2)))))
 
    (func $wrap (export "wrap") (param anyref) (result (ref eq))
       (block $is_eq (result (ref eq))
@@ -123,12 +131,8 @@
          (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get 0))))))
 
   (func (export "caml_js_pure_expr")
-     (param (ref eq)) (result (ref eq))
-     (return_call_ref $function_1
-        (i31.new (i32.const 0))
-        (local.get 0)
-        (struct.get $closure 0
-           (ref.cast (ref $closure) (local.get 0)))))
+     (param $f (ref eq)) (result (ref eq))
+     (return_call $caml_callback_1 (local.get $f) (i31.new (i32.const 0))))
 
    (func (export "caml_js_fun_call")
       (param $f (ref eq)) (param $args (ref eq)) (result (ref eq))
@@ -341,44 +345,38 @@
       (param $f (ref eq)) (param $count i32) (param $args (ref extern))
       (param $kind i32) ;; 0 ==> strict / 2 ==> unsafe
       (result anyref)
-      (local $acc (ref eq)) (local $i i32)
+      (local $acc (ref eq)) (local $i i32) (local $arg (ref eq))
       (local.set $acc (local.get $f))
       (if (i32.eq (local.get $kind) (i32.const 2))
          (then
             (loop $loop
                (local.set $f (local.get $acc))
                (local.set $acc
-                  (call_ref $function_1
+                  (call $caml_callback_1 (local.get $acc)
                      (call $wrap
                         (call $get (local.get $args)
-                           (i31.new (local.get $i))))
-                     (local.get $acc)
-                     (struct.get $closure 0
-                        (ref.cast (ref $closure) (local.get $acc)))))
+                           (i31.new (local.get $i))))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop
-                  (i32.eqz (ref.test (ref $closure_last_arg) (local.get $f))))))
+                  (i32.eqz (call $caml_is_last_arg (local.get $f))))))
          (else
             (local.set $i (i32.const 0))
-            (drop (block $done (result (ref eq))
+            (block $done
                (loop $loop
                   (if (i32.lt_u (local.get $i) (local.get $count))
                      (then
+                        (br_if $done
+                           (i32.eqz (call $caml_is_closure (local.get $acc))))
                         (local.set $acc
-                           (call_ref $function_1
+                           (call $caml_callback_1 (local.get $acc)
                               (call $wrap
                                  (call $get (local.get $args)
-                                    (i31.new (local.get $i))))
-                              (local.get $acc)
-                              (struct.get $closure 0
-                                 (br_on_cast_fail $done (ref eq) (ref $closure)
-                                    (local.get $acc)))))
+                                    (i31.new (local.get $i))))))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                        (br $loop))))
-               (i31.new (i32.const 0))))
+                        (br $loop)))))
             (if (local.get $kind)
                (then
-                  (if (ref.test (ref $closure) (local.get $acc))
+                  (if (call $caml_is_closure (local.get $acc))
                      (then (local.set $acc
                               (call $caml_js_wrap_callback
                                  (local.get $acc)))))))))

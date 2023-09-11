@@ -15,6 +15,7 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   type ctx =
     { live : int array
+    ; in_cps : Effects.in_cps
     ; blocks : block Addr.Map.t
     ; closures : Wa_closure_conversion.closure Var.Map.t
     ; global_context : Wa_code_generation.context
@@ -75,7 +76,8 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   let rec translate_expr ctx stack_ctx x e =
     match e with
-    | Apply { f; args; exact } when exact || List.length args = 1 ->
+    | Apply { f; args; exact }
+      when exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1 ->
         let* () = Stack.perform_spilling stack_ctx (`Instr x) in
         let rec loop acc l =
           match l with
@@ -83,7 +85,12 @@ module Generate (Target : Wa_target_sig.S) = struct
               let arity = List.length args in
               let funct = Var.fresh () in
               let* closure = tee funct (load f) in
-              let* kind, funct = Memory.load_function_pointer ~arity (load funct) in
+              let* kind, funct =
+                Memory.load_function_pointer
+                  ~cps:(Var.Set.mem x ctx.in_cps)
+                  ~arity
+                  (load funct)
+              in
               Stack.kill_variables stack_ctx;
               let* b = is_closure f in
               if b
@@ -108,7 +115,9 @@ module Generate (Target : Wa_target_sig.S) = struct
         loop [] args
     | Apply { f; args; _ } ->
         let* () = Stack.perform_spilling stack_ctx (`Instr x) in
-        let* apply = need_apply_fun ~arity:(List.length args) in
+        let* apply =
+          need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
+        in
         let* args = expression_list load args in
         let* closure = load f in
         Stack.kill_variables stack_ctx;
@@ -117,12 +126,18 @@ module Generate (Target : Wa_target_sig.S) = struct
         Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n) -> Memory.field (load x) n
     | Closure _ ->
-        Closure.translate ~context:ctx.global_context ~closures:ctx.closures ~stack_ctx x
+        Closure.translate
+          ~context:ctx.global_context
+          ~closures:ctx.closures
+          ~stack_ctx
+          ~cps:(Var.Set.mem x ctx.in_cps)
+          x
     | Constant c -> Constant.translate c
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int (_, arity)) ])
-      when Poly.(target = `GC) -> Closure.dummy ~arity:(Int32.to_int arity)
+      when Poly.(target = `GC) ->
+        Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Int32.to_int arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->
-        Closure.dummy ~arity:1
+        Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:1
     | Prim (p, l) -> (
         let l = List.map ~f:transl_prim_arg l in
         match p, l with
@@ -561,8 +576,25 @@ module Generate (Target : Wa_target_sig.S) = struct
             Value.val_int
               Arith.(
                 (Value.int_val j < Value.int_val i) - (Value.int_val i < Value.int_val j))
+        | Extern "%js_array", l ->
+            let* l =
+              List.fold_right
+                ~f:(fun x acc ->
+                  let* x = x in
+                  let* acc = acc in
+                  return (`Expr x :: acc))
+                l
+                ~init:(return [])
+            in
+            Memory.allocate stack_ctx x ~tag:0 l
         | Extern name, l ->
             (*ZZZ Different calling convention when large number of parameters *)
+            let name =
+              match name with
+              | "caml_callback" -> "caml_trampoline"
+              | "caml_alloc_stack" when Config.Flag.effects () -> "caml_cps_alloc_stack"
+              | _ -> name
+            in
             let* f = register_import ~name (Fun (func_type (List.length l))) in
             let* () = Stack.perform_spilling stack_ctx (`Instr x) in
             let rec loop acc l =
@@ -846,7 +878,11 @@ module Generate (Target : Wa_target_sig.S) = struct
       let* () = bind_parameters in
       match name_opt with
       | Some f ->
-          Closure.bind_environment ~context:ctx.global_context ~closures:ctx.closures f
+          Closure.bind_environment
+            ~context:ctx.global_context
+            ~closures:ctx.closures
+            ~cps:(Var.Set.mem f ctx.in_cps)
+            f
       | None -> return ()
     in
     (*
@@ -906,18 +942,21 @@ module Generate (Target : Wa_target_sig.S) = struct
   let f
       (p : Code.program)
       ~live_vars
-       (*
-    ~cps_calls
+      ~in_cps (*
     ~should_export
     ~warn_on_unhandled_effect
-      _debug *)
-      =
+      _debug *) =
     let p, closures = Wa_closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
     let ctx =
-      { live = live_vars; blocks = p.blocks; closures; global_context = make_context () }
+      { live = live_vars
+      ; in_cps
+      ; blocks = p.blocks
+      ; closures
+      ; global_context = make_context ()
+      }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
@@ -958,13 +997,52 @@ let init () =
     ; "caml_ensure_stack_capacity", "%identity"
     ]
 
-let f ch (p : Code.program) ~live_vars =
+(* Make sure we can use [br_table] for switches *)
+let fix_switch_branches p =
+  let p' = ref p in
+  let updates = ref Addr.Map.empty in
+  let fix_branches l =
+    Array.iteri
+      ~f:(fun i ((pc, args) as cont) ->
+        if not (List.is_empty args)
+        then
+          l.(i) <-
+            ( (let l = try Addr.Map.find pc !updates with Not_found -> [] in
+               try List.assoc args l
+               with Not_found ->
+                 let pc' = !p'.free_pc in
+                 p' :=
+                   { !p' with
+                     blocks =
+                       Addr.Map.add
+                         pc'
+                         { params = []; body = []; branch = Branch cont, No }
+                         !p'.blocks
+                   ; free_pc = pc' + 1
+                   };
+                 updates := Addr.Map.add pc ((args, pc') :: l) !updates;
+                 pc')
+            , [] ))
+      l
+  in
+  Addr.Map.iter
+    (fun _ block ->
+      match fst block.branch with
+      | Switch (_, l, l') ->
+          fix_branches l;
+          fix_branches l'
+      | _ -> ())
+    p.blocks;
+  !p'
+
+let f ch (p : Code.program) ~live_vars ~in_cps =
+  let p = if Config.Flag.effects () then fix_switch_branches p else p in
   match target with
   | `Core ->
       let module G = Generate (Wa_core_target) in
-      let fields = G.f ~live_vars p in
+      let fields = G.f ~live_vars ~in_cps p in
       Wa_asm_output.f ch fields
   | `GC ->
       let module G = Generate (Wa_gc_target) in
-      let fields = G.f ~live_vars p in
+      let fields = G.f ~live_vars ~in_cps p in
       Wa_wat_output.f ch fields

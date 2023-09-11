@@ -4,6 +4,9 @@
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (import "sync" "caml_ml_mutex_unlock"
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (func (export "caml_atomic_cas")
       (param $ref (ref eq)) (param $o (ref eq)) (param $n (ref eq))
@@ -77,10 +80,7 @@
       (global.set $caml_domain_latest_id
          (i32.add (local.get $id) (i32.const 1)))
       (local.set $old (global.get $caml_domain_id))
-      (drop (call_ref $function_1 (i31.new (i32.const 0))
-               (local.get $f)
-                  (struct.get $closure 0
-                     (ref.cast (ref $closure) (local.get $f)))))
+      (drop (call $caml_callback_1 (local.get $f) (i31.new (i32.const 0))))
       (global.set $caml_domain_id (local.get $old))
       (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
       (i31.new (local.get $id)))
