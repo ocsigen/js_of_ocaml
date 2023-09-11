@@ -1,4 +1,4 @@
-(lang dune 3.7)
+(lang dune 3.11)
 (using menhir 2.0)
 (name js_of_ocaml)
 

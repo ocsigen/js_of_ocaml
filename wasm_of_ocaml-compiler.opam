@@ -12,7 +12,7 @@ homepage: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 doc: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
-  "dune" {>= "3.7"}
+  "dune" {>= "3.11"}
   "ocaml" {>= "4.08" & < "5.1"}
   "js_of_ocaml" {= version}
   "num" {with-test}
