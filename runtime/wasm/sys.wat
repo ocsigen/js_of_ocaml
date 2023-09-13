@@ -13,6 +13,11 @@
       (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_js_to_string_array"
       (func $caml_js_to_string_array (param $a (ref extern)) (result (ref eq))))
+   (import "jslib" "caml_js_meth_call"
+      (func $caml_js_meth_call
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "fail" "caml_raise_sys_error"
+      (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "bindings" "argv" (func $argv (result (ref extern))))
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
@@ -22,6 +27,8 @@
       (func $array_length (param (ref extern)) (result i32)))
    (import "bindings" "array_get"
       (func $array_get (param (ref extern)) (param i32) (result anyref)))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -62,8 +69,14 @@
    (func (export "caml_sys_system_command")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
-      (return_call $system
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+      (try
+         (do
+            (return
+               (call $system
+                  (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (return (ref.i31 (i32.const 0))))))
 
    (func (export "caml_sys_random_seed")
       (param (ref eq)) (result (ref eq))
@@ -154,4 +167,12 @@
       (param (ref eq)) (result (ref eq))
       (i31.new (global.get $caml_runtime_warnings)))
 
+   (func $caml_handle_sys_error (export "caml_handle_sys_error")
+      (param $exn externref)
+      (call $caml_raise_sys_error
+         (call $caml_string_of_jsstring
+            (call $caml_js_meth_call
+               (call $wrap (extern.internalize (local.get $exn)))
+               (call $wrap (string.const "toString"))
+               (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )

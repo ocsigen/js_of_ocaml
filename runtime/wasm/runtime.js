@@ -280,11 +280,12 @@
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
            var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
-           return res.signal?128:res.status
+           if(res.error)throw error; return res.signal?255:res.status
          },
          time:()=>performance.now(),
          getcwd:()=>isNode?process.cwd():'/static',
          chdir:(x)=>process.chdir(x),
+         mkdir:(p,m)=>fs.mkdirSync(p,m),
          unlink:(p)=>fs.unlinkSync(p),
          readdir:(p)=>fs.readdirSync(p),
          file_exists:(p)=>+fs.existsSync(p),

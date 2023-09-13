@@ -2,6 +2,7 @@
    (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
    (import "bindings" "chdir" (func $chdir (param anyref)))
+   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "bindings" "unlink" (func $unlink (param anyref)))
    (import "bindings" "readdir"
       (func $readdir (param anyref) (result (ref extern))))
@@ -18,6 +19,10 @@
       (func $caml_js_to_string_array (param $a (ref extern)) (result (ref eq))))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
+   (import "sys" "caml_handle_sys_error"
+      (func $caml_handle_sys_error (param externref)))
 
    (type $string (array (mut i8)))
 
@@ -26,38 +31,64 @@
       (return_call $caml_string_of_jsstring (call $wrap (call $getcwd))))
 
    (func (export "caml_sys_chdir")
-      (param (ref eq)) (result (ref eq))
-      (call $chdir (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
-      (i31.new (i32.const 0)))
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $chdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_sys_mkdir")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_js (string.const "caml_sys_mkdir"))
-      (i31.new (i32.const 0)))
+      (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $mkdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+               (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_sys_read_directory")
-      (param (ref eq)) (result (ref eq))
-      (return_call $caml_js_to_string_array
-         (call $readdir
-            (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (return
+               (call $caml_js_to_string_array
+                  (call $readdir
+                     (call $unwrap
+                        (call $caml_jsstring_of_string (local.get $name)))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (return (i31.new (i32.const 0))))))
 
    (func (export "caml_sys_remove")
-      (param (ref eq)) (result (ref eq))
-      (call $unlink (call $unwrap (call $caml_jsstring_of_string (local.get 0))))
-      (i31.new (i32.const 0)))
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $unlink
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_sys_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
-      (call $rename
-         (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
-         (call $unwrap (call $caml_jsstring_of_string (local.get $n))))
-      (i31.new (i32.const 0)))
+      (try
+         (do
+            (call $rename
+               (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
+               (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_sys_file_exists")
-      (param (ref eq)) (result (ref eq))
+      (param $name (ref eq)) (result (ref eq))
       (return_call $file_exists
-         (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
 
    (data $no_such_file ": No such file or directory")
 

@@ -49,6 +49,10 @@
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
+   (import "sys" "caml_handle_sys_error"
+      (func $caml_handle_sys_error (param externref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -174,18 +178,27 @@
       (result (ref eq))
       (local $fd i32) (local $flags i32) (local $offset i64)
       (local.set $flags (call $convert_flag_list (local.get $vflags)))
-      (local.set $fd
-         (call $open
-            (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
-            (local.get $flags)
-            (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
-      (if (i32.and (local.get $flags) (i32.const 4)) ;; O_APPEND
-         (then (local.set $offset (call $file_size (local.get $fd)))))
+      (try
+         (do
+            (local.set $fd
+               (call $open
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $path)))
+                  (local.get $flags)
+                  (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
+            (if (i32.and (local.get $flags) (i32.const 4)) ;; O_APPEND
+               (then (local.set $offset (call $file_size (local.get $fd))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
       (call $initialize_fd_offset (local.get $fd) (local.get $offset))
       (i31.new (local.get $fd)))
 
    (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
-      (call $close (i31.get_u (ref.cast (ref i31) (local.get 0))))
+      (try
+         (do
+            (call $close (i31.get_u (ref.cast (ref i31) (local.get 0)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
       (i31.new (i32.const 0)))
 
    (func (export "caml_ml_set_channel_name")
@@ -254,23 +267,27 @@
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
       (local.set $offset
          (array.get $offset_array (global.get $fd_offsets) (local.get $fd)))
-      (local.set $n
-         (if (result i32)
-             (array.get_u $string (global.get $fd_seeked) (local.get $fd))
-            (then
-               (call $read
-                  (local.get $fd)
-                  (struct.get $channel $buffer (local.get $ch))
-                  (local.get $pos)
-                  (local.get $len)
-                  (local.get $offset)))
-            (else
-               (call $read'
-                  (local.get $fd)
-                  (struct.get $channel $buffer (local.get $ch))
-                  (local.get $pos)
-                  (local.get $len)
-                  (ref.null noextern)))))
+      (try
+         (do
+            (local.set $n
+               (if (result i32)
+                   (array.get_u $string (global.get $fd_seeked) (local.get $fd))
+                  (then
+                     (call $read
+                        (local.get $fd)
+                        (struct.get $channel $buffer (local.get $ch))
+                        (local.get $pos)
+                        (local.get $len)
+                        (local.get $offset)))
+                  (else
+                     (call $read'
+                        (local.get $fd)
+                        (struct.get $channel $buffer (local.get $ch))
+                        (local.get $pos)
+                        (local.get $len)
+                        (ref.null noextern))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
       (array.set $offset_array
          (global.get $fd_offsets) (local.get $fd)
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
@@ -635,23 +652,28 @@
             (local.set $offset
                (array.get $offset_array
                   (global.get $fd_offsets) (local.get $fd)))
-            (local.set $written
-               (if (result i32)
-                   (array.get_u $string (global.get $fd_seeked) (local.get $fd))
-                  (then
-                     (call $write
-                        (local.get $fd)
-                        (local.get $buf)
-                        (i32.const 0)
-                        (local.get $towrite)
-                        (local.get $offset)))
-                  (else
-                     (call $write'
-                        (local.get $fd)
-                        (local.get $buf)
-                        (i32.const 0)
-                        (local.get $towrite)
-                        (ref.null noextern)))))
+            (try
+               (do
+                  (local.set $written
+                     (if (result i32)
+                         (array.get_u $string (global.get $fd_seeked)
+                            (local.get $fd))
+                        (then
+                           (call $write
+                              (local.get $fd)
+                              (local.get $buf)
+                              (i32.const 0)
+                              (local.get $towrite)
+                              (local.get $offset)))
+                        (else
+                           (call $write'
+                              (local.get $fd)
+                              (local.get $buf)
+                              (i32.const 0)
+                              (local.get $towrite)
+                              (ref.null noextern))))))
+               (catch $javascript_exception
+                  (call $caml_handle_sys_error (pop externref))))
             (array.set $offset_array
                (global.get $fd_offsets) (local.get $fd)
                (i64.add

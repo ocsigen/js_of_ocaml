@@ -27,11 +27,11 @@
 
    (global $SYS_ERROR_EXN i32 (i32.const 1))
 
-   (func (export "caml_raise_sys_error") (param $msg (ref $string))
+   (func (export "caml_raise_sys_error") (param $msg (ref eq))
        (return_call $caml_raise_with_arg
            (array.get $block (global.get $caml_global_data)
               (global.get $SYS_ERROR_EXN))
-           (local.get 0)))
+           (local.get $msg)))
 
    (global $FAILURE_EXN i32 (i32.const 2))
 
