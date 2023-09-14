@@ -11,11 +11,11 @@
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
-   (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
-   (import "bindings" "weak_map_get"
-      (func $weak_map_get (param (ref any)) (param (ref eq)) (result i31ref)))
-   (import "bindings" "weak_map_set"
-      (func $weak_map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
+   (import "bindings" "map_new" (func $map_new (result (ref any))))
+   (import "bindings" "map_get"
+      (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
+   (import "bindings" "map_set"
+      (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
    (import "io" "caml_really_putblock"
       (func $caml_really_putblock
          (param (ref eq)) (param (ref $string)) (param i32) (param i32)))
@@ -751,7 +751,7 @@
          (i32.const 0)
          (i32.const 0)
          (i32.const 0)
-         (call $weak_map_new)
+         (call $map_new)
          (struct.get $output_block $data (local.get $output))
          (local.get $pos)
          (struct.get $output_block $end (local.get $output))
@@ -928,7 +928,7 @@
          (return
             (i31.get_s
                (br_on_null $not_found
-                  (call $weak_map_get
+                  (call $map_get
                      (struct.get $extern_state $pos_table (local.get $s))
                      (local.get $obj))))))
       (i32.const -1))
@@ -941,7 +941,7 @@
       (local.set $pos (struct.get $extern_state $obj_counter (local.get $s)))
       (struct.set $extern_state $obj_counter (local.get $s)
          (i32.add (local.get $pos) (i32.const 1)))
-      (call $weak_map_set
+      (call $map_set
          (struct.get $extern_state $pos_table (local.get $s))
          (local.get $obj) (ref.i31 (local.get $pos))))
 

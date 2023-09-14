@@ -9,12 +9,10 @@
    (import "bindings" "weak_deref"
       (func $weak_deref (param anyref) (result eqref)))
    (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
-   (import "bindings" "weak_map_get"
-      (func $weak_map_get (param (ref any)) (param (ref eq)) (result anyref)))
-   (import "bindings" "weak_map_set"
-      (func $weak_map_set (param (ref any)) (param (ref eq)) (param (ref any))))
-   (import "bindings" "weak_map_delete"
-      (func $weak_map_delete (param (ref any)) (param (ref eq))))
+   (import "bindings" "map_get"
+      (func $map_get (param (ref any)) (param (ref eq)) (result anyref)))
+   (import "bindings" "map_set"
+      (func $map_set (param (ref any)) (param (ref eq)) (param (ref any))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (type $block (array (mut (ref eq))))
@@ -64,7 +62,7 @@
                            (call $weak_deref (call $unwrap (local.get $v)))))
                      (local.set $m
                         (br_on_null $released
-                           (call $weak_map_get (local.get $m) (local.get $v))))
+                           (call $map_get (local.get $m) (local.get $v))))
                      (br $loop))))
             (return
               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
@@ -111,7 +109,7 @@
                      (br_on_null $released
                         (call $weak_deref (call $unwrap (local.get $v)))))
                   (local.set $m' (call $weak_map_new))
-                  (call $weak_map_set (local.get $m') (local.get $v)
+                  (call $map_set (local.get $m') (local.get $v)
                      (local.get $m))
                   (local.set $m (local.get $m'))
                   (br $loop))
