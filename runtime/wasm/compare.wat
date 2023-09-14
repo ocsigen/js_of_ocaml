@@ -19,6 +19,7 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
+   (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
 
    (type $int_array (array (mut i32)))
@@ -202,6 +203,7 @@
       (local $t1 i32) (local $t2 i32)
       (local $s1 i32) (local $s2 i32)
       (local $f1 f64) (local $f2 f64)
+      (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
       (local $str1 (ref $string)) (local $str2 (ref $string))
       (local $c1 (ref $custom)) (local $c2 (ref $custom))
       (local $js1 anyref) (local $js2 anyref)
@@ -333,41 +335,6 @@
                   (if (i32.ne (local.get $s1) (local.get $s2))
                      (then
                         (return (i32.sub (local.get $s1) (local.get $s2)))))
-                  (if (i32.eq (local.get $t1) (global.get $double_array_tag))
-                     (then
-                        (local.set $i (i32.const 1))
-                        (loop $float_array
-                           (if (i32.lt_s (local.get $i) (local.get $s1))
-                              (then
-                                 (local.set $f1
-                                    (struct.get $float 0
-                                       (ref.cast (ref $float)
-                                          (array.get $block (local.get $b1)
-                                             (local.get $i)))))
-                                 (local.set $f2
-                                    (struct.get $float 0
-                                       (ref.cast (ref $float)
-                                          (array.get $block (local.get $b2)
-                                          (local.get $i)))))
-                                 (if (f64.lt (local.get $f1) (local.get $f2))
-                                    (then (return (i32.const -1))))
-                                 (if (f64.gt (local.get $f1) (local.get $f2))
-                                    (then (return (i32.const 1))))
-                                 (if (f64.ne (local.get $f1) (local.get $f2))
-                                    (then
-                                       (if (i32.eqz (local.get $total))
-                                          (then
-                                             (return (global.get $unordered))))
-                                       (if (f64.eq (local.get $f1)
-                                                   (local.get $f1))
-                                          (then (return (i32.const 1))))
-                                       (if (f64.eq (local.get $f2)
-                                                   (local.get $f2))
-                                          (then (return (i32.const -1))))))
-                                 (local.set $i
-                                    (i32.add (local.get $i) (i32.const 1)))
-                                 (br $float_array))))
-                        (br $next_item)))
                   (br_if $next_item (i32.eq (local.get $s1) (i32.const 1)))
                   (if (i32.gt_u (local.get $s1) (i32.const 2))
                      (then
@@ -412,6 +379,49 @@
                      (call $compare_strings (local.get $str1) (local.get $str2)))
                   (br_if $next_item (i32.eqz (local.get $res)))
                   (return (local.get $res))))
+               (drop (block $v1_not_float_array (result (ref eq))
+                  (local.set $fa1
+                     (br_on_cast_fail $v1_not_float_array
+                        (ref eq) (ref $float_array)
+                        (local.get $v1)))
+                  (local.set $fa2
+                      (br_on_cast_fail $heterogeneous
+                         (ref eq) (ref $float_array)
+                         (local.get $v2)))
+                  (local.set $s1 (array.len (local.get $fa1)))
+                  (local.set $s2 (array.len (local.get $fa2)))
+                  (if (i32.ne (local.get $s1) (local.get $s2))
+                     (then
+                        (return (i32.sub (local.get $s1) (local.get $s2)))))
+                  (local.set $i (i32.const 0))
+                  (loop $float_array
+                     (if (i32.lt_s (local.get $i) (local.get $s1))
+                        (then
+                           (local.set $f1
+                              (array.get $float_array (local.get $fa1)
+                                 (local.get $i)))
+                           (local.set $f2
+                              (array.get $float_array (local.get $fa2)
+                                 (local.get $i)))
+                           (if (f64.lt (local.get $f1) (local.get $f2))
+                              (then (return (i32.const -1))))
+                           (if (f64.gt (local.get $f1) (local.get $f2))
+                              (then (return (i32.const 1))))
+                           (if (f64.ne (local.get $f1) (local.get $f2))
+                              (then
+                                 (if (i32.eqz (local.get $total))
+                                    (then
+                                       (return (global.get $unordered))))
+                                 (if (f64.eq (local.get $f1)
+                                             (local.get $f1))
+                                    (then (return (i32.const 1))))
+                                 (if (f64.eq (local.get $f2)
+                                             (local.get $f2))
+                                    (then (return (i32.const -1))))))
+                           (local.set $i
+                              (i32.add (local.get $i) (i32.const 1)))
+                           (br $float_array))))
+                  (br $next_item)))
                (drop (block $v1_not_custom (result (ref eq))
                   (local.set $c1
                      (br_on_cast_fail $v1_not_custom (ref eq) (ref $custom)
@@ -447,7 +457,6 @@
                      (array.new_data $string $abstract_value
                         (i32.const 0) (i32.const 23)))
                   (ref.i31 (i32.const 0))))
-               ;; ZZZ float array (unboxed)
                (drop (block $v1_not_js (result (ref eq))
                   (local.set $js1
                      (struct.get $js 0

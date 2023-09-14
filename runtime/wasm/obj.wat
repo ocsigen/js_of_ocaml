@@ -10,6 +10,7 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
+   (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
@@ -92,10 +93,16 @@
                  (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
                           (i32.const 1))))
 
+   (func (export "caml_alloc_dummy_float")
+      (param $size (ref eq)) (result (ref eq))
+      (array.new $float_array (f64.const 0)
+         (i31.get_u (ref.cast (ref i31) (local.get $size)))))
+
    (func (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
       (local $i i32)
-      (local $dst (ref $block)) (local $src (ref $block))
+      (local $dst (ref $block)) (local $fdst (ref $float_array))
+      (local $src (ref $block))
       (drop (block $not_block (result (ref eq))
          (local.set $dst
             (br_on_cast_fail $not_block (ref eq) (ref $block)
@@ -104,6 +111,15 @@
          (array.copy $block $block
             (local.get $dst) (i32.const 0) (local.get $src) (i32.const 0)
             (array.len (local.get $dst)))
+         (return (ref.i31 (i32.const 0)))))
+      (drop (block $not_float_array (result (ref eq))
+         (local.set $fdst
+            (br_on_cast_fail $not_float_array (ref eq) (ref $float_array)
+               (local.get $dummy)))
+         (array.copy $float_array $float_array
+            (local.get $fdst) (i32.const 0)
+            (ref.cast (ref $float_array) (local.get $newval)) (i32.const 0)
+            (array.len (local.get $fdst)))
          (return (ref.i31 (i32.const 0)))))
       (drop (block $not_closure_1 (result (ref eq))
          (struct.set $dummy_closure_1 1
@@ -135,12 +151,12 @@
                (local.get $dummy))
             (ref.cast (ref $cps_closure) (local.get $newval)))
          (return (ref.i31 (i32.const 0)))))
-      ;; ZZZ float array
       (unreachable))
 
    (func $caml_obj_dup (export "caml_obj_dup")
       (param (ref eq)) (result (ref eq))
       (local $orig (ref $block)) (local $res (ref $block))
+      (local $forig (ref $float_array)) (local $fres (ref $float_array))
       (local $s (ref $string)) (local $s' (ref $string))
       (local $len i32)
       (drop (block $not_block (result (ref eq))
@@ -154,6 +170,17 @@
             (local.get $res) (i32.const 1) (local.get $orig) (i32.const 1)
             (i32.sub (local.get $len) (i32.const 1)))
          (return (local.get $res))))
+      (drop (block $not_float_array (result (ref eq))
+         (local.set $forig
+            (br_on_cast_fail $not_float_array (ref eq) (ref $float_array)
+               (local.get 0)))
+         (local.set $len (array.len (local.get $forig)))
+         (local.set $fres
+            (array.new $float_array (f64.const 0) (local.get $len)))
+         (array.copy $float_array $float_array
+            (local.get $fres) (i32.const 0) (local.get $forig) (i32.const 0)
+            (local.get $len))
+         (return (local.get $fres))))
       (drop (block $not_string (result (ref eq))
          (local.set $s (br_on_cast_fail $not_string (ref eq) (ref $string)
             (local.get 0)))
@@ -177,7 +204,7 @@
    (func (export "caml_obj_block")
       (param $tag (ref eq)) (param $size (ref eq)) (result (ref eq))
       (local $res (ref $block))
-      ;; ZZZ float array / specific types
+      ;; ZZZ float array / specific types?
       (local.set $res
          (array.new $block
             (ref.i31 (i32.const 0))
@@ -198,13 +225,14 @@
          (then (return (ref.i31 (global.get $string_tag)))))
       (if (ref.test (ref $float) (local.get $v))
          (then (return (ref.i31 (global.get $float_tag)))))
+      (if (ref.test (ref $float_array) (local.get $v))
+         (then (return (ref.i31 (global.get $double_array_tag)))))
       (if (call $caml_is_custom (local.get $v))
          (then (return (ref.i31 (global.get $custom_tag)))))
       (if (call $caml_is_closure (local.get $v))
          (then (return (ref.i31 (global.get $closure_tag)))))
       (if (call $caml_is_continuation (local.get $v))
          (then (return (ref.i31 (global.get $cont_tag)))))
-      ;; ZZZ float array
       (ref.i31 (global.get $abstract_tag)))
 
    (func (export "caml_obj_make_forward")

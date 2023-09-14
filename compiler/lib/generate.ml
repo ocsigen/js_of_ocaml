@@ -1131,6 +1131,8 @@ let _ =
   register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ -> J.EBin (J.Mod, cx, cy));
   register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
+  register_tern_prim "caml_array_unsafe_set_addr" (fun cx cy cz _ ->
+      J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.array []);
   register_un_prim "caml_obj_dup" `Mutable (fun cx loc ->
       J.call (J.dot cx (Utf8_string.of_string_exn "slice")) [] loc);
@@ -2154,6 +2156,8 @@ let init () =
     ; "caml_floatarray_unsafe_get", "caml_array_unsafe_get"
     ; "caml_array_unsafe_set_float", "caml_array_unsafe_set"
     ; "caml_floatarray_unsafe_set", "caml_array_unsafe_set"
+    ; "caml_check_bound_gen", "caml_check_bound"
+    ; "caml_check_bound_float", "caml_check_bound"
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"

@@ -33,6 +33,14 @@ module Type = struct
           ; typ = W.Struct [ { mut = false; typ = Value F64 } ]
           })
 
+  let float_array_type =
+    register_type "float_array" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Array { mut = true; typ = Value F64 }
+          })
+
   let compare_type =
     register_type "compare" (fun () ->
         return
@@ -443,19 +451,6 @@ module Value = struct
 end
 
 module Memory = struct
-  let allocate _ _ ~tag l =
-    let* l =
-      expression_list
-        (fun v ->
-          match v with
-          | `Var y -> load y
-          | `Expr e -> return e)
-        l
-    in
-    let* ty = Type.block_type in
-    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
-  (*ZZZ Float array?*)
-
   let wasm_cast ty e =
     let* e = e in
     return (W.RefCast ({ nullable = false; typ = Type ty }, e))
@@ -491,16 +486,151 @@ module Memory = struct
     let* e'' = e'' in
     instr (W.ArraySet (ty, e, e', e''))
 
+  let box_float _ _ e =
+    let* ty = Type.float_type in
+    let* e = e in
+    return (W.StructNew (ty, [ e ]))
+
+  let unbox_float e =
+    let* ty = Type.float_type in
+    wasm_struct_get ty (wasm_cast ty e) 0
+
+  let allocate _ _ ~tag l =
+    if tag = 254
+    then
+      let* l =
+        expression_list
+          (fun v ->
+            unbox_float
+              (match v with
+              | `Var y -> load y
+              | `Expr e -> return e))
+          l
+      in
+      let* ty = Type.float_array_type in
+      return (W.ArrayNewFixed (ty, l))
+    else
+      let* l =
+        expression_list
+          (fun v ->
+            match v with
+            | `Var y -> load y
+            | `Expr e -> return e)
+          l
+      in
+      let* ty = Type.block_type in
+      return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+
   let tag e = Value.int_val (wasm_array_get e (Arith.const 0l))
 
-  let block_length e =
-    let* ty = Type.block_type in
-    let* e = wasm_cast ty e in
-    Arith.(return (W.ArrayLen e) - const 1l)
+  let array_length e =
+    let* block = Type.block_type in
+    let* e = e in
+    Arith.(
+      return (W.ArrayLen (W.RefCast ({ nullable = false; typ = Type block }, e)))
+      - const 1l)
+
+  let float_array_length e =
+    let* float_array = Type.float_array_type in
+    let* e = e in
+    return (W.ArrayLen (W.RefCast ({ nullable = false; typ = Type float_array }, e)))
+
+  let gen_array_length e =
+    let a = Code.Var.fresh_n "a" in
+    block_expr
+      { params = []; result = [ I32 ] }
+      (let* () = store a e in
+       let* () =
+         drop
+           (block_expr
+              { params = []; result = [ Type.value ] }
+              (let* block = Type.block_type in
+               let* a = load a in
+               let* e =
+                 Arith.(
+                   return
+                     (W.ArrayLen
+                        (W.Br_on_cast_fail
+                           ( 0
+                           , { nullable = false; typ = Eq }
+                           , { nullable = false; typ = Type block }
+                           , a )))
+                   - const 1l)
+               in
+               instr (Br (1, Some e))))
+       in
+       let* e = float_array_length (load a) in
+       instr (W.Push e))
 
   let array_get e e' = wasm_array_get e Arith.(Value.int_val e' + const 1l)
 
   let array_set e e' e'' = wasm_array_set e Arith.(Value.int_val e' + const 1l) e''
+
+  let float_array_get e e' =
+    box_float () () (wasm_array_get ~ty:Type.float_array_type e (Value.int_val e'))
+
+  let float_array_set e e' e'' =
+    wasm_array_set ~ty:Type.float_array_type e (Value.int_val e') (unbox_float e'')
+
+  let gen_array_get e e' =
+    let a = Code.Var.fresh_n "a" in
+    let i = Code.Var.fresh_n "i" in
+    block_expr
+      { params = []; result = [ Value.value ] }
+      (let* () = store a e in
+       let* () = store ~typ:I32 i (Value.int_val e') in
+       let* () =
+         drop
+           (block_expr
+              { params = []; result = [ Value.value ] }
+              (let* block = Type.block_type in
+               let* a = load a in
+               let* e =
+                 wasm_array_get
+                   (return
+                      (W.Br_on_cast_fail
+                         ( 0
+                         , { nullable = false; typ = Eq }
+                         , { nullable = false; typ = Type block }
+                         , a )))
+                   Arith.(load i + const 1l)
+               in
+               instr (Br (1, Some e))))
+       in
+       let* e =
+         box_float () () (wasm_array_get ~ty:Type.float_array_type (load a) (load i))
+       in
+       instr (W.Push e))
+
+  let gen_array_set e e' e'' =
+    let a = Code.Var.fresh_n "a" in
+    let i = Code.Var.fresh_n "i" in
+    let v = Code.Var.fresh_n "v" in
+    let* () = store a e in
+    let* () = store ~typ:I32 i (Value.int_val e') in
+    let* () = store v e'' in
+    block
+      { params = []; result = [] }
+      (let* () =
+         drop
+           (block_expr
+              { params = []; result = [ Value.value ] }
+              (let* block = Type.block_type in
+               let* a = load a in
+               let* () =
+                 wasm_array_set
+                   (return
+                      (W.Br_on_cast_fail
+                         ( 0
+                         , { nullable = false; typ = Eq }
+                         , { nullable = false; typ = Type block }
+                         , a )))
+                   Arith.(load i + const 1l)
+                   (load v)
+               in
+               instr (Br (1, None))))
+       in
+       wasm_array_set ~ty:Type.float_array_type (load a) (load i) (unbox_float (load v)))
 
   let bytes_length e =
     let* ty = Type.string_type in
@@ -559,15 +689,6 @@ module Memory = struct
             instr (W.Return (Some e))))
     in
     if_mismatch
-
-  let box_float _ _ e =
-    let* ty = Type.float_type in
-    let* e = e in
-    return (W.StructNew (ty, [ e ]))
-
-  let unbox_float e =
-    let* ty = Type.float_type in
-    wasm_struct_get ty (wasm_cast ty e) 0
 
   let make_int32 ~kind e =
     let* custom_operations = Type.custom_operations_type in
@@ -688,15 +809,9 @@ module Constant = struct
         return (true, W.StructNew (ty, [ Const (F64 f) ]))
     | Float_array l ->
         let l = Array.to_list l in
-        let* bl_ty = Type.block_type in
-        let* ty = Type.float_type in
+        let* ty = Type.float_array_type in
         (*ZZZ Boxed array? *)
-        return
-          ( true
-          , W.ArrayNewFixed
-              ( bl_ty
-              , RefI31 (Const (I32 (Int32.of_int Obj.double_array_tag)))
-                :: List.map ~f:(fun f -> W.StructNew (ty, [ Const (F64 f) ])) l ) )
+        return (true, W.ArrayNewFixed (ty, List.map ~f:(fun f -> W.Const (F64 f)) l))
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
         return (true, e)

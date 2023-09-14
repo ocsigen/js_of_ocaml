@@ -1480,7 +1480,17 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile infos (pc + 2) state ((Let (x, Field (y, n)), loc) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          (( Let
+               ( x
+               , Prim
+                   ( Extern "caml_floatarray_unsafe_get"
+                   , [ Pv y; Pc (Int (Regular, Int32.of_int n)) ] ) )
+           , loc )
+          :: instrs)
     | SETFIELD0 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1554,7 +1564,13 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, n, z), loc) :: instrs)
+          (( Let
+               ( x
+               , Prim
+                   ( Extern "caml_floatarray_unsafe_set"
+                   , [ Pv y; Pc (Int (Regular, Int32.of_int n)); Pv z ] ) )
+           , loc )
+          :: instrs)
     | VECTLENGTH ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in

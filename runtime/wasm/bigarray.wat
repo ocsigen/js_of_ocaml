@@ -96,6 +96,7 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
+   (type $float_array (array (mut f64)))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -783,23 +784,17 @@
                  ;; complex64
                  (local.set $i (i32.shl (local.get $i) (i32.const 1)))
                  (return
-                    (array.new_fixed $block 3
-                       (ref.i31 (global.get $double_array_tag))
-                       (struct.new $float
-                          (call $ta_get_f64 (local.get $data) (local.get $i)))
-                       (struct.new $float
-                          (call $ta_get_f64 (local.get $data)
-                             (i32.add (local.get $i) (i32.const 1)))))))
+                    (array.new_fixed $float_array 2
+                       (call $ta_get_f64 (local.get $data) (local.get $i))
+                       (call $ta_get_f64 (local.get $data)
+                          (i32.add (local.get $i) (i32.const 1))))))
                 ;; complex32
                 (local.set $i (i32.shl (local.get $i) (i32.const 1)))
                 (return
-                   (array.new_fixed $block 3
-                      (ref.i31 (global.get $double_array_tag))
-                      (struct.new $float
-                         (call $ta_get_f32 (local.get $data) (local.get $i)))
-                      (struct.new $float
-                         (call $ta_get_f32 (local.get $data)
-                            (i32.add (local.get $i) (i32.const 1)))))))
+                   (array.new_fixed $float_array 2
+                      (call $ta_get_f32 (local.get $data) (local.get $i))
+                      (call $ta_get_f32 (local.get $data)
+                         (i32.add (local.get $i) (i32.const 1))))))
                ;; nativeint
                (return_call $caml_copy_nativeint
                   (call $ta_get_i32 (local.get $data) (local.get $i))))
@@ -843,7 +838,7 @@
    (func $caml_ba_set_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (param $v (ref eq))
       (local $data (ref extern))
-      (local $b (ref $block)) (local $l i64)
+      (local $b (ref $float_array)) (local $l i64)
       (local.set $data (struct.get $bigarray $ba_data (local.get $ba)))
       (block $float32
        (block $float64
@@ -863,29 +858,21 @@
                      (struct.get $bigarray $ba_kind (local.get $ba))))
                  ;; complex64
                  (local.set $i (i32.shl (local.get $i) (i32.const 1)))
-                 (local.set $b (ref.cast (ref $block) (local.get $v)))
+                 (local.set $b (ref.cast (ref $float_array) (local.get $v)))
                  (call $ta_set_f64 (local.get $data) (local.get $i)
-                    (struct.get $float 0
-                       (ref.cast (ref $float)
-                          (array.get $block (local.get $b) (i32.const 1)))))
+                    (array.get $float_array (local.get $b) (i32.const 0)))
                  (call $ta_set_f64 (local.get $data)
                     (i32.add (local.get $i) (i32.const 1))
-                    (struct.get $float 0
-                       (ref.cast (ref $float)
-                         (array.get $block (local.get $b) (i32.const 2)))))
+                    (array.get $float_array (local.get $b) (i32.const 1)))
                  (return))
                 ;; complex32
                 (local.set $i (i32.shl (local.get $i) (i32.const 1)))
-                (local.set $b (ref.cast (ref $block) (local.get $v)))
+                (local.set $b (ref.cast (ref $float_array) (local.get $v)))
                 (call $ta_set_f32 (local.get $data) (local.get $i)
-                   (struct.get $float 0
-                      (ref.cast (ref $float)
-                         (array.get $block (local.get $b) (i32.const 1)))))
+                   (array.get $float_array (local.get $b) (i32.const 0)))
                 (call $ta_set_f32 (local.get $data)
                    (i32.add (local.get $i) (i32.const 1))
-                   (struct.get $float 0
-                      (ref.cast (ref $float)
-                         (array.get $block (local.get $b) (i32.const 2)))))
+                   (array.get $float_array (local.get $b) (i32.const 1)))
                 (return))
                ;; nativeint
                (call $ta_set_i32 (local.get $data) (local.get $i)
@@ -1460,7 +1447,7 @@
       (local $l i64)
       (local $i i32) (local $len i32) (local $i1 i32) (local $i2 i32)
       (local $f1 f64) (local $f2 f64)
-      (local $b (ref $block))
+      (local $b (ref $float_array))
       (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
       (local.set $data (struct.get $bigarray $ba_data (local.get $ba)))
       (block $float
@@ -1474,15 +1461,11 @@
                (struct.get $bigarray $ba_kind (local.get $ba))))
             ;; complex64
             (local.set $len (call $ta_length (local.get $data)))
-            (local.set $b (ref.cast (ref $block) (local.get $v)))
+            (local.set $b (ref.cast (ref $float_array) (local.get $v)))
             (local.set $f1
-               (struct.get $float 0
-                  (ref.cast (ref $float)
-                     (array.get $block (local.get $b) (i32.const 1)))))
+               (array.get $float_array (local.get $b) (i32.const 0)))
             (local.set $f2
-               (struct.get $float 0
-                  (ref.cast (ref $float)
-                     (array.get $block (local.get $b) (i32.const 2)))))
+               (array.get $float_array (local.get $b) (i32.const 1)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
@@ -1496,15 +1479,9 @@
             (return (ref.i31 (i32.const 0))))
            ;; complex32
            (local.set $len (call $ta_length (local.get $data)))
-           (local.set $b (ref.cast (ref $block) (local.get $v)))
-           (local.set $f1
-              (struct.get $float 0
-                 (ref.cast (ref $float)
-                    (array.get $block (local.get $b) (i32.const 1)))))
-           (local.set $f2
-              (struct.get $float 0
-                 (ref.cast (ref $float)
-                    (array.get $block (local.get $b) (i32.const 2)))))
+           (local.set $b (ref.cast (ref $float_array) (local.get $v)))
+           (local.set $f1 (array.get $float_array (local.get $b) (i32.const 0)))
+           (local.set $f2 (array.get $float_array (local.get $b) (i32.const 1)))
            (loop $loop
               (if (i32.lt_u (local.get $i) (local.get $len))
                  (then

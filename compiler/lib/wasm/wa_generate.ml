@@ -141,11 +141,14 @@ module Generate (Target : Wa_target_sig.S) = struct
     | Prim (p, l) -> (
         let l = List.map ~f:transl_prim_arg l in
         match p, l with
-        (*ZZZ array operations need to deal with array of unboxed floats *)
-        | Extern ("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"), [ x; y ] ->
-            Memory.array_get x y
-        | Extern ("caml_array_unsafe_set" | "caml_floatarray_unsafe_set"), [ x; y; z ] ->
+        | Extern "caml_array_unsafe_get", [ x; y ] -> Memory.gen_array_get x y
+        | Extern "caml_floatarray_unsafe_get", [ x; y ] -> Memory.float_array_get x y
+        | Extern "caml_array_unsafe_set", [ x; y; z ] ->
+            seq (Memory.gen_array_set x y z) Value.unit
+        | Extern "caml_array_unsafe_set_addr", [ x; y; z ] ->
             seq (Memory.array_set x y z) Value.unit
+        | Extern "caml_floatarray_unsafe_set", [ x; y; z ] ->
+            seq (Memory.float_array_set x y z) Value.unit
         | Extern ("caml_string_unsafe_get" | "caml_bytes_unsafe_get"), [ x; y ] ->
             Memory.bytes_get x y
         | Extern ("caml_string_unsafe_set" | "caml_bytes_unsafe_set"), [ x; y; z ] ->
@@ -226,7 +229,29 @@ module Generate (Target : Wa_target_sig.S) = struct
             seq
               (if_
                  { params = []; result = [] }
-                 (Arith.uge (Value.int_val y) (Memory.block_length x))
+                 (Arith.uge (Value.int_val y) (Memory.array_length x))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              x
+        | Extern "caml_check_bound_gen", [ x; y ] ->
+            let* f =
+              register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
+            in
+            seq
+              (if_
+                 { params = []; result = [] }
+                 (Arith.uge (Value.int_val y) (Memory.gen_array_length x))
+                 (instr (CallInstr (f, [])))
+                 (return ()))
+              x
+        | Extern "caml_check_bound_float", [ x; y ] ->
+            let* f =
+              register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
+            in
+            seq
+              (if_
+                 { params = []; result = [] }
+                 (Arith.uge (Value.int_val y) (Memory.float_array_length x))
                  (instr (CallInstr (f, [])))
                  (return ()))
               x
@@ -615,7 +640,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         | Ult, [ x; y ] -> Value.ult x y
         | Array_get, [ x; y ] -> Memory.array_get x y
         | IsInt, [ x ] -> Value.is_int x
-        | Vectlength, [ x ] -> Value.val_int (Memory.block_length x)
+        | Vectlength, [ x ] -> Value.val_int (Memory.gen_array_length x)
         | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
             assert false)
 
@@ -992,10 +1017,7 @@ end
 let init () =
   List.iter
     ~f:(fun (nm, nm') -> Primitive.alias nm nm')
-    [ "caml_alloc_dummy_float", "caml_alloc_dummy" (*ZZZ*)
-    ; "caml_make_array", "%identity"
-    ; "caml_ensure_stack_capacity", "%identity"
-    ]
+    [ "caml_make_array", "%identity"; "caml_ensure_stack_capacity", "%identity" ]
 
 (* Make sure we can use [br_table] for switches *)
 let fix_switch_branches p =

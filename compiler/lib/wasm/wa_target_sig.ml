@@ -90,13 +90,27 @@ module type S = sig
 
     val array_set : expression -> expression -> expression -> unit Wa_code_generation.t
 
+    val float_array_get : expression -> expression -> expression
+
+    val float_array_set :
+      expression -> expression -> expression -> unit Wa_code_generation.t
+
+    val gen_array_get : expression -> expression -> expression
+
+    val gen_array_set :
+      expression -> expression -> expression -> unit Wa_code_generation.t
+
+    val array_length : expression -> expression
+
+    val float_array_length : expression -> expression
+
+    val gen_array_length : expression -> expression
+
     val bytes_length : expression -> expression
 
     val bytes_get : expression -> expression -> expression
 
     val bytes_set : expression -> expression -> expression -> unit Wa_code_generation.t
-
-    val block_length : expression -> expression
 
     val box_float : Stack.ctx -> Code.Var.t -> expression -> expression
 

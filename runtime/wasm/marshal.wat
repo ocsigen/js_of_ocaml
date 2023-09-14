@@ -106,6 +106,7 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
+   (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
 
    (type $compare
@@ -277,7 +278,7 @@
       (local.get $res))
 
    (func $readfloat
-      (param $s (ref $intern_state)) (param $code i32) (result (ref eq))
+      (param $s (ref $intern_state)) (param $code i32) (result f64)
       (local $src (ref $string)) (local $pos i32) (local $res i32)
       (local $d i64)
       (local $i i32)
@@ -308,13 +309,12 @@
                      (i64.const 8)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.lt_u (local.get $i) (i32.const 8))))))
-      (struct.new $float (f64.reinterpret_i64 (local.get $d))))
+      (f64.reinterpret_i64 (local.get $d)))
 
    (func $readfloats
       (param $s (ref $intern_state)) (param $code i32) (param $len i32)
       (result (ref eq))
-      ;; ZZZ float array
-      (local $dest (ref $block))
+      (local $dest (ref $float_array))
       (local $i i32)
       (local.set $code
          (select (global.get $CODE_DOUBLE_BIG) (global.get $CODE_DOUBLE_LITTLE)
@@ -322,17 +322,13 @@
                (i32.eq (local.get $code) (global.get $CODE_DOUBLE_ARRAY8_BIG))
                (i32.eq (local.get $code)
                  (global.get $CODE_DOUBLE_ARRAY32_BIG)))))
-      (local.set $dest
-         (array.new $block (ref.i31 (i32.const 0))
-            (i32.add (local.get $len) (i32.const 1))))
-      (array.set $block (local.get $dest) (i32.const 0)
-         (ref.i31 (global.get $double_array_tag)))
+      (local.set $dest (array.new $float_array (f64.const 0) (local.get $len)))
       (loop $loop
-         (local.set $i (i32.add (local.get $i) (i32.const 1)))
-         (if (i32.le_u (local.get $i) (local.get $len))
+         (if (i32.lt_u (local.get $i) (local.get $len))
             (then
-               (array.set $block (local.get $dest) (local.get $i)
+               (array.set $float_array (local.get $dest) (local.get $i)
                   (call $readfloat (local.get $s) (local.get $code)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (local.get $dest))
 
@@ -550,8 +546,9 @@
                                     (br $read_double_array))
                                    ;; DOUBLE
                                    (local.set $v
-                                      (call $readfloat
-                                         (local.get $s) (local.get $code)))
+                                      (struct.new $float
+                                         (call $readfloat
+                                            (local.get $s) (local.get $code))))
                                    (call $register_object
                                       (local.get $s) (local.get $v))
                                    (br $done))
@@ -890,23 +887,21 @@
          (br_if $loop (i32.lt_u (local.get $i) (i32.const 8)))))
 
    (func $writefloats
-      (param $s (ref $extern_state)) (param $b (ref $block))
+      (param $s (ref $extern_state)) (param $b (ref $float_array))
       (local $pos i32) (local $sz i32) (local $buf (ref $string)) (local $d i64)
       (local $i i32) (local $j i32)
-      (local.set $sz (i32.sub (array.len (local.get $b)) (i32.const 1)))
+      (local.set $sz (array.len (local.get $b)))
       (local.set $pos
          (call $reserve_extern_output
             (local.get $s) (i32.shl (local.get $sz) (i32.const 3))))
       (local.set $buf (struct.get $extern_state $buf (local.get $s)))
-      (local.set $j (i32.const 1))
+      (local.set $j (i32.const 0))
       (loop $loop2
-         (if (i32.le_u (local.get $j) (local.get $sz))
+         (if (i32.lt_u (local.get $j) (local.get $sz))
             (then
                (local.set $d
                   (i64.reinterpret_f64
-                     (struct.get $float 0
-                        (ref.cast (ref $float)
-                           (array.get $block (local.get $b) (local.get $j))))))
+                     (array.get $float_array (local.get $b) (local.get $j))))
                (local.set $i (i32.const 0))
                (loop $loop
                   (array.set $string (local.get $buf)
@@ -1022,7 +1017,7 @@
       (call $writefloat (local.get $s) (local.get $v)))
 
    (func $extern_float_array
-      (param $s (ref $extern_state)) (param $v (ref $block))
+      (param $s (ref $extern_state)) (param $v (ref $float_array))
       (local $nfloats i32)
       (local.set $nfloats (array.len (local.get $v)))
       (if (i32.lt_u (local.get $nfloats) (i32.const 0x100))
@@ -1105,6 +1100,7 @@
       (local $sp (ref null $stack_item))
       (local $item (ref $stack_item))
       (local $b (ref $block)) (local $str (ref $string))
+      (local $fa (ref $float_array))
       (local $hd i32) (local $tag i32) (local $sz i32)
       (local $pos i32)
       (local $r (i32 i32))
@@ -1140,13 +1136,6 @@
                            (local.get $pos)))
                      (br $next_item)))
                (call $extern_record_location (local.get $s) (local.get $v))
-               (if (i32.eq (local.get $tag) (global.get $double_array_tag))
-                  (then
-                     (call $extern_float_array (local.get $s) (local.get $b))
-                     (call $extern_size (local.get $s)
-                        (i32.mul (local.get $sz) (i32.const 2))
-                        (local.get $sz))
-                     (br $next_item)))
                (call $extern_header
                   (local.get $s) (local.get $sz) (local.get $tag))
                (call $extern_size
@@ -1188,6 +1177,16 @@
                      (br_on_cast_fail $not_float (ref eq) (ref $float)
                         (local.get $v))))
                (call $extern_size (local.get $s) (i32.const 2) (i32.const 1))
+               (br $next_item)))
+            (drop (block $not_float_array (result (ref eq))
+               (local.set $fa
+                  (br_on_cast_fail $not_float_array (ref eq) (ref $float_array)
+                     (local.get $v)))
+               (local.set $sz (array.len (local.get $fa)))
+               (call $extern_float_array (local.get $s) (local.get $fa))
+               (call $extern_size (local.get $s)
+                  (i32.mul (local.get $sz) (i32.const 2))
+                  (local.get $sz))
                (br $next_item)))
             (drop (block $not_custom (result (ref eq))
                (local.set $r

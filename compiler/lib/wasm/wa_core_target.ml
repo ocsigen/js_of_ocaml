@@ -99,6 +99,20 @@ module Memory = struct
 
   let array_set e e' e'' = mem_store Arith.(e + ((e' - const 1l) lsl const 1l)) e''
 
+  let float_array_get = array_get
+
+  let float_array_set = array_set
+
+  let gen_array_get = array_get
+
+  let gen_array_set = array_set
+
+  let array_length = block_length
+
+  let float_array_length = array_length
+
+  let gen_array_length = array_length
+
   let bytes_length e =
     let l = Code.Var.fresh () in
     Arith.(

@@ -153,7 +153,11 @@ let expr_deps blocks st x e =
   match e with
   | Constant _ | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) | Block _
     -> ()
-  | Prim ((Extern ("caml_check_bound" | "caml_array_unsafe_get") | Array_get), l) ->
+  | Prim
+      ( ( Extern
+            ("caml_check_bound" | "caml_array_unsafe_get" | "caml_floatarray_unsafe_get")
+        | Array_get )
+      , l ) ->
       (* The analysis knowns about these primitives, and will compute
          an approximation of the value they return based on an
          approximation of their arguments *)
@@ -415,7 +419,9 @@ let propagate st ~update approx x =
                 known
           | Top -> Top)
       | Prim (Extern "caml_check_bound", [ Pv y; _ ]) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim
+          ( (Array_get | Extern ("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"))
+          , [ Pv y; _ ] ) -> (
           if st.fast
           then Domain.others
           else
