@@ -90,7 +90,7 @@ function caml_fatal_uncaught_exception(err){
       var msg = caml_format_exception(err);
       var at_exit = caml_named_value("Pervasives.do_at_exit");
       if(at_exit) caml_callback(at_exit, [0]);
-      console.error("Fatal error: exception " + msg + "\n");
+      console.error("Fatal error: exception " + msg);
       if(err.js_error) throw err.js_error;
     }
   }
