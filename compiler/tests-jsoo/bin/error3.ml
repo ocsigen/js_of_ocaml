@@ -1,10 +1,8 @@
+external unregister : string -> unit = "caml_unregister_named_value"
+
 let () =
   match Array.to_list Sys.argv with
-  | _ :: "unregister" :: _ ->
-      let null = Array.unsafe_get [| 1 |] 1 in
-      Callback.register "Printexc.handle_uncaught_exception" null
+  | _ :: "unregister" :: _ -> unregister "Printexc.handle_uncaught_exception"
   | _ -> ()
 
-let null : _ -> _ -> _ = Array.unsafe_get [||] 0
-
-let _ = null 1 2
+let _ = (Obj.magic Js_of_ocaml.Js.null : int -> int -> unit) 1 2

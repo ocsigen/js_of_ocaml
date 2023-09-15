@@ -1,6 +1,12 @@
 (executables
  (names error1 error2 error3)
- (modes byte js))
+ (modes exe js)
+ (foreign_stubs
+  (language c)
+  (names named_value_stubs))
+ (js_of_ocaml
+  (javascript_files runtime.js))
+ (libraries js_of_ocaml))
 
 (rule
  (target error1.actual)
