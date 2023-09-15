@@ -1,6 +1,7 @@
 (executables
  (names error1 error2 error3)
- (modes byte js))
+ (modes js)
+ (libraries js_of_ocaml))
 
 (rule
  (target error1.actual)

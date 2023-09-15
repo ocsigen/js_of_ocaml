@@ -131,7 +131,16 @@ var caml_named_values = {};
 //Provides: caml_register_named_value (const,mutable)
 //Requires: caml_named_values, caml_jsbytes_of_string
 function caml_register_named_value(nm,v) {
-  caml_named_values[caml_jsbytes_of_string(nm)] = v;
+  nm = caml_jsbytes_of_string(nm);
+  if (!caml_named_values.hasOwnProperty(nm)) caml_named_values[nm] = v;
+  return 0;
+}
+
+//Provides: caml_unregister_named_value (const)
+//Requires: caml_named_values, caml_jsbytes_of_string
+function caml_unregister_named_value(nm) {
+  nm = caml_jsbytes_of_string(nm);
+  delete caml_named_values[nm];
   return 0;
 }
 
