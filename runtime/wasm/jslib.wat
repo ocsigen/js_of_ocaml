@@ -382,14 +382,20 @@
                                  (local.get $acc)))))))))
       (return_call $unwrap (local.get $acc)))
 
+   (func $caml_jsstring_of_substring (export "caml_jsstring_of_substring")
+      (param $s (ref $string)) (param $pos i32) (param $len i32)
+      (result (ref eq))
+      (struct.new $js
+         (string.new_lossy_utf8_array (local.get $s) (local.get $pos)
+            (i32.add (local.get $pos) (local.get $len)))))
+
    (export "caml_js_from_string" (func $caml_jsstring_of_string))
    (func $caml_jsstring_of_string (export "caml_jsstring_of_string")
       (param (ref eq)) (result (ref eq))
       (local $s (ref $string))
       (local.set $s (ref.cast (ref $string) (local.get 0)))
-      (struct.new $js
-         (string.new_lossy_utf8_array (local.get $s) (i32.const 0)
-           (array.len (local.get $s)))))
+      (return_call $caml_jsstring_of_substring
+         (local.get $s) (i32.const 0) (array.len (local.get $s))))
 
    (func $caml_jsbytes_of_string (export "caml_jsbytes_of_string")
       (param (ref eq)) (result (ref eq))
