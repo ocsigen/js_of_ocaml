@@ -349,8 +349,7 @@
                       (at_exit, 1, [0], 0);
                 console.error (
                     "Fatal error: exception " +
-                        wasmModule.instance.exports.caml_format_exception(exn) +
-                        "\n"
+                        wasmModule.instance.exports.caml_format_exception(exn)
                 )
             }
             isNode && process.exit(2)
