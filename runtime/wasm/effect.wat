@@ -6,7 +6,7 @@
    (import "obj" "caml_fresh_oo_id"
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "stdlib" "caml_named_value"
-      (func $caml_named_value (param anyref) (result (ref null eq))))
+      (func $caml_named_value (param (ref $string)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
@@ -112,16 +112,19 @@
 
    (func $raise_unhandled
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $effect_unhandled (ref $string))
+      (local.set $effect_unhandled
+         (array.new_data $string $effect_unhandled
+            (i32.const 0) (i32.const 16)))
       (block $null
          (call $caml_raise_with_arg
             (br_on_null $null
                (call $caml_named_value
-                  (string.const "Effect.Unhandled")))
+                  (local.get $effect_unhandled)))
             (local.get $eff)))
       (call $caml_raise_constant
          (array.new_fixed $block 3 (ref.i31 (i32.const 248))
-            (array.new_data $string $effect_unhandled
-               (i32.const 0) (i32.const 16))
+            (local.get $effect_unhandled)
             (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
       (ref.i31 (i32.const 0)))
 
@@ -207,6 +210,8 @@
       (return_call_ref $cont_func (local.get $p) (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
 
+   (data $already_resumed "Effect.Continuation_already_resumed")
+
    (func (export "%resume")
       (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq))
       (result (ref eq))
@@ -217,7 +222,8 @@
             (call $caml_raise_constant
                (ref.as_non_null
                   (call $caml_named_value
-                     (string.const "Effect.Continuation_already_resumed"))))))
+                     (array.new_data $string $already_resumed
+                        (i32.const 0) (i32.const 35)))))))
       (call $capture_continuation
          (ref.func $do_resume)
           (struct.new $pair
@@ -620,7 +626,8 @@
       (call $caml_raise_constant
          (ref.as_non_null
             (call $caml_named_value
-               (string.const "Effect.Continuation_already_resumed"))))
+               (array.new_data $string $already_resumed
+                  (i32.const 0) (i32.const 35)))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_perform_effect")

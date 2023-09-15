@@ -1,7 +1,7 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "exit", "named_values", "format_exn", "callback"],
+    "reaches": ["init","exn"],
     "root": true
   },
   {
@@ -9,20 +9,8 @@
     "export": "_initialize"
   },
   {
-    "name": "named_values",
-    "export": "caml_named_value"
-  },
-  {
-    "name": "format_exn",
-    "export": "caml_format_exception"
-  },
-  {
     "name": "exn",
-    "export": "ocaml_exception"
-  },
-  {
-    "name": "exit",
-    "export": "ocaml_exit"
+    "export": "caml_handle_uncaught_exception"
   },
   {
     "name": "callback",

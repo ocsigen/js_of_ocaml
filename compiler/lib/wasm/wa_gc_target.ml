@@ -1188,7 +1188,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      in
      exn_handler ~result_typ ~fall_through ~context)
 
-let entry_point ~context =
+let entry_point ~context ~toplevel_fun =
   let code =
     let* f =
       register_import
@@ -1202,6 +1202,12 @@ let entry_point ~context =
     let* _ = add_var suspender in
     let* s = load suspender in
     let* () = instr (W.CallInstr (f, [ s ])) in
-    init_code context
+    let* () = init_code context in
+    let* main =
+      register_import
+        ~name:"caml_main"
+        (Fun { params = [ W.Ref { nullable = false; typ = Func } ]; result = [] })
+    in
+    instr (W.CallInstr (main, [ RefFunc toplevel_fun ]))
   in
   { W.params = [ W.Ref { nullable = true; typ = Extern } ]; result = [] }, code

@@ -292,5 +292,7 @@ module type S = sig
     -> unit Wa_code_generation.t
 
   val entry_point :
-    context:Wa_code_generation.context -> Wa_ast.func_type * unit Wa_code_generation.t
+       context:Wa_code_generation.context
+    -> toplevel_fun:Wa_ast.var
+    -> Wa_ast.func_type * unit Wa_code_generation.t
 end

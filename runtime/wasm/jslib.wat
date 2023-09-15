@@ -58,7 +58,7 @@
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
    (import "stdlib" "caml_named_value"
-      (func $caml_named_value (param anyref) (result (ref null eq))))
+      (func $caml_named_value (param (ref $string)) (result (ref null eq))))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -564,6 +564,11 @@
                (br $loop))))
       (local.get $l))
 
+   (global $jsError (ref $string)
+      (array.new_fixed $string 7 ;; 'jsError'
+         (i32.const 106) (i32.const 115) (i32.const 69) (i32.const 114)
+         (i32.const 114) (i32.const 111) (i32.const 114)))
+
    (func (export "caml_wrap_exception") (param (externref)) (result (ref eq))
       (local $exn anyref)
       (local.set $exn (extern.internalize (local.get 0)))
@@ -572,7 +577,7 @@
          (return
             (array.new_fixed $block 3 (ref.i31 (i32.const 0))
                (br_on_null $undef
-                  (call $caml_named_value (string.const "jsError")))
+                  (call $caml_named_value (global.get $jsError)))
                (call $wrap (local.get $exn)))))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (call $caml_failwith_tag)
@@ -591,7 +596,7 @@
                   (ref.i31 (i32.const 0)))
          (then
             (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
-                   (call $caml_named_value (string.const "jsError")))
+                   (call $caml_named_value (global.get $jsError)))
                (then
                   (return
                      (array.new_fixed $block 2 (ref.i31 (i32.const 0))
@@ -606,7 +611,7 @@
                   (ref.i31 (i32.const 0)))
          (then
             (if (ref.eq (array.get $block (local.get $exn) (i32.const 1))
-                   (call $caml_named_value (string.const "jsError")))
+                   (call $caml_named_value (global.get $jsError)))
                (then
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))

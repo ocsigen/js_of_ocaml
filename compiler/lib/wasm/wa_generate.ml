@@ -942,11 +942,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     :: acc
 
   let entry_point ctx toplevel_fun entry_name =
-    let typ, code = entry_point ~context:ctx.global_context in
-    let body =
-      let* () = code in
-      drop (return (W.Call (toplevel_fun, [])))
-    in
+    let typ, body = entry_point ~context:ctx.global_context ~toplevel_fun in
     let locals, body =
       function_body
         ~context:ctx.global_context

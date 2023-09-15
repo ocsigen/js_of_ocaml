@@ -47,14 +47,15 @@
       (struct.set $buffer 0 (local.get $buf)
          (i32.add (local.get $pos) (local.get $len))))
 
-   (func (export "caml_format_exception") (param (ref eq)) (result anyref)
+   (func (export "caml_format_exception") (param (ref eq)) (result (ref eq))
       (local $exn (ref $block))
       (local $buf (ref $buffer))
       (local $v (ref eq))
       (local $bucket (ref $block))
       (local $i i32) (local $len i32)
+      (local $s (ref $string))
       (local.set $exn (ref.cast (ref $block) (local.get 0)))
-      (if (result anyref)
+      (if (result (ref eq))
           (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (ref.i31 (i32.const 0)))
          (then
@@ -124,11 +125,14 @@
                              (i32.const 32)) ;; ' '
                           (br $loop))))
                  (call $add_char (local.get $buf) (i32.const 41)))) ;; '\)'
-           (string.new_lossy_utf8_array
-              (struct.get $buffer 1 (local.get $buf)) (i32.const 0)
-              (struct.get $buffer 0 (local.get $buf))))
+            (local.set $s
+               (array.new $string (i32.const 0)
+                  (struct.get $buffer 0 (local.get $buf))))
+            (array.copy $string $string
+               (local.get $s) (i32.const 0)
+               (struct.get $buffer 1 (local.get $buf)) (i32.const 0)
+               (struct.get $buffer 0 (local.get $buf)))
+            (local.get $s))
          (else
-            (call $unwrap
-               (call $caml_jsstring_of_string
-                  (array.get $block (local.get $exn) (i32.const 1)))))))
+            (array.get $block (local.get $exn) (i32.const 1)))))
 )

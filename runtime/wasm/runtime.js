@@ -270,12 +270,13 @@
            fs.openSync(p,open_flags.reduce((f,v,i)=>(flags&(1<<i))?(f|v):f,0),
                        perm),
          close:(fd)=>fs.closeSync(fd),
-         write:(fd,b,o,l,p)=>fs?fs.writeSync(fd,b,o,l,p==null?p:Number(p)):(console.log(new TextDecoder().decode(b.slice(o,o+l))),l),
+         write:(fd,b,o,l,p)=>fs?fs.writeSync(fd,b,o,l,p==null?p:Number(p)):(console[fd==2?'error':'log'](typeof b=='string'?b:new TextDecoder().decode(b.slice(o,o+l))),l),
          read:(fd,b,o,l,p)=>fs.readSync(fd,b,o,l,p),
          file_size:(fd)=>fs.fstatSync(fd,{bigint:true}).size,
          register_channel,
          unregister_channel,
          channel_list,
+         exit:(n)=>isNode&&process.exit(n),
          argv:()=>isNode?process.argv.slice(1):['a.out'],
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
@@ -290,6 +291,7 @@
          readdir:(p)=>fs.readdirSync(p),
          file_exists:(p)=>+fs.existsSync(p),
          rename:(o,n)=>fs.renameSync(o, n),
+         throw:(e)=>{throw e},
          start_fiber:(x)=>start_fiber(x),
          suspend_fiber:
          wrap_fun(
@@ -310,53 +312,27 @@
           isNode?await WebAssembly.instantiate(await code, imports)
                 :await WebAssembly.instantiateStreaming(code,imports)
 
-    caml_callback = wasmModule.instance.exports.caml_callback;
-    caml_alloc_tm = wasmModule.instance.exports.caml_alloc_tm;
+    var {caml_callback,caml_alloc_tm, caml_start_fiber,
+         caml_handle_uncaught_exception, _initialize} =
+        wasmModule.instance.exports;
 
     start_fiber = wrap_fun(
         {parameters: ['eqref'], results: ['externref']},
-        wasmModule.instance.exports.caml_start_fiber,
-        {promising: 'first'}
+        caml_start_fiber, {promising: 'first'}
     )
     var _initialize = wrap_fun(
         {parameters: [], results: ['externref']},
-        wasmModule.instance.exports._initialize,
-        {promising: 'first'}
+        _initialize, {promising: 'first'}
     )
-
-    try {
-        await _initialize()
-    } catch (e) {
-        if (e instanceof WebAssembly.Exception) {
-          const exit_tag = wasmModule.instance.exports.ocaml_exit;
-          if (exit_tag && e.is(exit_tag))
-            isNode && process.exit(e.getArg(exit_tag, 0));
-          const exn_tag = wasmModule.instance.exports.ocaml_exception;
-          if (exn_tag && e.is(exn_tag)) {
-            var exn = e.getArg(exn_tag, 0)
-            var handle_uncaught_exception =
-              wasmModule.instance.exports.caml_named_value
-                ('Printexc.handle_uncaught_exception');
-            if (handle_uncaught_exception)
-              wasmModule.instance.exports.caml_callback
-                (handle_uncaught_exception, 2, [exn, 0], 0)
-            else {
-                var at_exit =
-                    wasmModule.instance.exports.caml_named_value
-                      ('Pervasives.do_at_exit');
-                if (at_exit)
-                    wasmModule.instance.exports.caml_callback
-                      (at_exit, 1, [0], 0);
-                console.error (
-                    "Fatal error: exception " +
-                        wasmModule.instance.exports.caml_format_exception(exn)
-                )
-            }
-            isNode && process.exit(2)
-          }
-        } else {
-            throw e;
-        }
+    var process = globalThis.process;
+    if(process && process.on) {
+        process.on('uncaughtException', (err, origin) =>
+            caml_handle_uncaught_exception(err))
     }
+    else if(globalThis.addEventListener){
+        globalThis.addEventListener('error', event=>
+            event.error&&caml_handle_uncaught_exception(event.error))
+    }
+    await _initialize();
 })(((joo_global_object,globalThis)=>(x)=>eval(x))(globalThis,globalThis),
    PRIMITIVES);
