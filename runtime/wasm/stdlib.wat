@@ -122,6 +122,7 @@
             (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
+   ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
    (func (export "caml_unregister_named_value")
       (param $name (ref eq)) (result (ref eq))
       (local $h i32)
