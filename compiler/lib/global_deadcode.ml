@@ -178,23 +178,25 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
 
 (** Return the set of variables used in a given expression *)
 let expr_vars e =
-  let vars = Var.ISet.empty () in
-  (match e with
+  let vars = Var.Set.empty in
+  match e with
   | Apply { f; args; _ } ->
-      Var.ISet.add vars f;
-      List.iter ~f:(Var.ISet.add vars) args
-  | Block (_, params, _) -> Array.iter ~f:(Var.ISet.add vars) params
-  | Field (z, _) -> Var.ISet.add vars z
-  | Constant _ -> ()
-  | Closure (params, _) -> List.iter ~f:(Var.ISet.add vars) params
+      let vars = Var.Set.add f vars in
+      List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars args
+  | Block (_, params, _) ->
+      Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
+  | Field (z, _) -> Var.Set.add z vars
+  | Constant _ -> vars
+  | Closure (params, _) ->
+      List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
   | Prim (_, args) ->
-      List.iter
-        ~f:(fun v ->
+      List.fold_left
+        ~f:(fun acc v ->
           match v with
-          | Pv v -> Var.ISet.add vars v
-          | Pc _ -> ())
-        args);
-  vars
+          | Pv v -> Var.Set.add v vars
+          | Pc _ -> acc)
+        ~init:vars
+        args
 
 (** Compute the initial liveness of each variable in the program. 
 
