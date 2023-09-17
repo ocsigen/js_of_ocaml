@@ -104,19 +104,19 @@ let exact_calls profile p =
       | O3 -> false
       | O1 | O2 -> true
     in
-    let p, info, sentinal =
+    let p, info, deadcode_sentinal =
       if Config.Flag.globaldeadcode ()
       then
-        let p, sentinal = Global_deadcode.add_sentinal p in
+        let p, deadcode_sentinal = Global_deadcode.add_sentinal p in
         let info = Global_flow.f ~fast p in
-        let p = Global_deadcode.f p sentinal info in
-        p, info, Some sentinal
+        let p = Global_deadcode.f p deadcode_sentinal info in
+        p, info, Some deadcode_sentinal
       else
         let info = Global_flow.f ~fast p in
         p, info, None
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
-    p, sentinal
+    p, deadcode_sentinal
   else p, None
 
 let print p =
@@ -186,7 +186,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), cps_calls, sentinal) =
+    ((p, live_vars), cps_calls, deadcode_sentinal) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -196,7 +196,7 @@ let generate
     ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
-    ~sentinal
+    ~deadcode_sentinal
     d
 
 let debug_linker = Debug.find "linker"
@@ -591,11 +591,11 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls profile
-    +> (fun (p, sentinal) ->
+    +> (fun (p, deadcode_sentinal) ->
          let p, cps_calls = effects p in
-         p, cps_calls, sentinal)
-    +> fun (p, cps_calls, sentinal) ->
-    deadcode' (Generate_closure.f p), cps_calls, sentinal
+         p, cps_calls, deadcode_sentinal)
+    +> fun (p, cps_calls, deadcode_sentinal) ->
+    deadcode' (Generate_closure.f p), cps_calls, deadcode_sentinal
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone

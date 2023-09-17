@@ -285,14 +285,14 @@ module Ctx = struct
     ; should_export : bool
     ; effect_warning : bool ref
     ; cps_calls : Effects.cps_calls
-    ; sentinal : Var.t option
+    ; deadcode_sentinal : Var.t option
     }
 
   let initial
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~sentinal
+      ~deadcode_sentinal
       blocks
       live
       cps_calls
@@ -306,7 +306,7 @@ module Ctx = struct
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; cps_calls
-    ; sentinal
+    ; deadcode_sentinal
     }
 end
 
@@ -1041,7 +1041,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let cx =
               match cx with
               | J.EVar (J.V v) -> (
-                  match ctx.sentinal with
+                  match ctx.deadcode_sentinal with
                   | Some s -> if Var.equal v s then J.ElementHole else J.Element cx
                   | None -> J.Element cx)
               | _ -> J.Element cx
@@ -1595,7 +1595,7 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
     | Return x ->
         let (_px, cx), queue = access_queue queue x in
         let return_expr = 
-          match st.ctx.sentinal with
+          match st.ctx.deadcode_sentinal with
             | Some sentinal when Var.equal sentinal x -> None
             | _ -> Some cx
         in
@@ -1808,7 +1808,7 @@ let f
     ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
-    ~sentinal
+    ~deadcode_sentinal
     debug =
   let t' = Timer.make () in
   let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
@@ -1820,7 +1820,7 @@ let f
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~sentinal
+      ~deadcode_sentinal
       p.blocks
       live_vars
       cps_calls
