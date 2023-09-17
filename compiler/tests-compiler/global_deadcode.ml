@@ -69,4 +69,22 @@ let%expect_test "Omit unused fields" =
      var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
      return [0, u, v];
     }
-    //end |}];
+    //end |}]
+
+let%expect_test "Omit unused return expressions" =
+  let program =
+    compile_and_parse
+    ~flags:["--enable"; "globaldeadcode"]
+      {|
+      let f x =
+        print_int x; 
+        x + 1
+      in 
+      ignore (f 5 + f 6)
+      |}
+  in 
+  (* Expect return value of f to be omitted. *)
+  print_fun_decl program (Some "f");
+  [%expect "
+    function f(x){caml_call1(Stdlib[44], x); return;}
+    //end"];
