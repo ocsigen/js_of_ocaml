@@ -106,9 +106,9 @@ let exact_calls profile p =
     in
     if Config.Flag.globaldeadcode ()
     then
-      let p, sentinal = Deadcode_dgraph.add_sentinal p in
+      let p, sentinal = Global_deadcode.add_sentinal p in
       let info = Global_flow.f ~fast p in
-      let p = Deadcode_dgraph.f p sentinal info in
+      let p = Global_deadcode.f p sentinal info in
       let p =
         Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
       in
