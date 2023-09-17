@@ -35,14 +35,14 @@ let times = Debug.find "times"
 
 (** Definition of a variable [x]. *)
 type def =
-  | Expr of expr (** [x] is defined by an expression. *)
-  | Param (** [x] is a block or closure parameter. *)
+  | Expr of expr  (** [x] is defined by an expression. *)
+  | Param  (** [x] is a block or closure parameter. *)
 
 (** Liveness of a variable [x], forming a lattice structure. *)
 type live =
-  | Top (** [x] is live and not a block. *)
-  | Live of IntSet.t (** [x] is a live block with a (non-empty) set of live fields. *)
-  | Dead (** [x] is dead. *)
+  | Top  (** [x] is live and not a block. *)
+  | Live of IntSet.t  (** [x] is a live block with a (non-empty) set of live fields. *)
+  | Dead  (** [x] is dead. *)
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -85,16 +85,16 @@ let definitions nv prog =
         block.body)
     prog.blocks;
   defs
-  
+
 let variable_may_escape x (global_info : Global_flow.info) =
   match global_info.info_variable_may_escape.(Var.idx x) with
   | Escape | Escape_constant -> true
   | No -> false
 
-(** Type of variable usage. *)  
+(** Type of variable usage. *)
 type usage_kind =
-  | Compute (** variable y is used to compute x *)
-  | Propagate (** values of y propagate to x *)
+  | Compute  (** variable y is used to compute x *)
+  | Propagate  (** values of y propagate to x *)
 
 (** Compute the adjacency list for the dependency graph of given program. An edge between
     variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
@@ -136,7 +136,9 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
                 | _ -> ())
               known);
         add_use Compute x f;
-        List.iter ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a) args
+        List.iter
+          ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a)
+          args
     | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
@@ -166,8 +168,7 @@ let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array
       | Cond (_, cont1, cont2) ->
           add_cont_deps cont1;
           add_cont_deps cont2
-      | Switch (_, a) ->
-          Array.iter ~f:add_cont_deps a;
+      | Switch (_, a) -> Array.iter ~f:add_cont_deps a
       | Pushtrap (cont, _, cont_h, _) ->
           add_cont_deps cont;
           add_cont_deps cont_h
@@ -219,16 +220,19 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
   in
   let live_instruction i =
     match i with
-    | Let (_x, e) ->
+    | Let (_x, e) -> (
         if not (pure_expr pure_funs e)
-        then (
+        then
           let vars = expr_vars e in
-          Var.ISet.iter add_top vars;)
-        else (match e with
-          | Apply { f; args; _} ->
+          Var.ISet.iter add_top vars
+        else
+          match e with
+          | Apply { f; args; _ } ->
               add_top f;
-              List.iter ~f:(fun x -> if variable_may_escape x global_info then add_top x) args
-          | _ -> ()) 
+              List.iter
+                ~f:(fun x -> if variable_may_escape x global_info then add_top x)
+                args
+          | _ -> ())
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live x i;
@@ -263,7 +267,7 @@ let variables deps =
     that uses [x]. *)
 let propagate uses defs live_vars live_table x =
   let idx = Var.idx x in
-  (** Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
+  (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
       ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
        the contribution depends on the liveness of [y] and its definition. *)
   let contribution y usage_kind =
@@ -377,8 +381,7 @@ let zero prog sentinal live_table =
         | Raise (_, _) | Stop -> last
         | Branch cont -> Branch (zero_cont cont)
         | Cond (x, cont1, cont2) -> Cond (x, zero_cont cont1, zero_cont cont2)
-        | Switch (x, a) ->
-            Switch (x, Array.map ~f:zero_cont a)
+        | Switch (x, a) -> Switch (x, Array.map ~f:zero_cont a)
         | Pushtrap (cont1, x, cont2, pcs) ->
             Pushtrap (zero_cont cont1, x, zero_cont cont2, pcs)
         | Poptrap cont -> Poptrap (zero_cont cont)
