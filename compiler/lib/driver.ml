@@ -116,7 +116,7 @@ let exact_calls profile p =
         p, info, None
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
-    p, Some sentinal
+    p, sentinal
   else p, None
 
 let print p =
@@ -607,10 +607,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r : (Code.program * Deadcode.variable_uses) * Effects.cps_calls * Code.Var.t option
-      =
-    opt p
-  in
+  let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 
