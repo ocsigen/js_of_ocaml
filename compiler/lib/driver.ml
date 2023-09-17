@@ -104,21 +104,19 @@ let exact_calls profile p =
       | O3 -> false
       | O1 | O2 -> true
     in
-    if Config.Flag.globaldeadcode ()
-    then
-      let p, sentinal = Global_deadcode.add_sentinal p in
-      let info = Global_flow.f ~fast p in
-      let p = Global_deadcode.f p sentinal info in
-      let p =
-        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-      in
-      p, Some sentinal
-    else
-      let info = Global_flow.f ~fast p in
-      let p =
-        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-      in
-      p, None
+    let p, info, sentinal =
+      if Config.Flag.globaldeadcode ()
+      then
+        let p, sentinal = Global_deadcode.add_sentinal p in
+        let info = Global_flow.f ~fast p in
+        let p = Global_deadcode.f p sentinal info in
+        p, info, Some sentinal
+      else
+        let info = Global_flow.f ~fast p in
+        p, info, None
+    in
+    let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
+    p, Some sentinal
   else p, None
 
 let print p =
