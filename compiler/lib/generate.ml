@@ -1594,7 +1594,12 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
     match last with
     | Return x ->
         let (_px, cx), queue = access_queue queue x in
-        true, flush_all queue [ J.Return_statement (Some cx), loc ]
+        let return_expr = 
+          match st.ctx.sentinal with
+            | Some sentinal when Var.equal sentinal x -> None
+            | _ -> Some cx
+        in
+        true, flush_all queue [ J.Return_statement return_expr, loc ]
     | Raise (x, k) ->
         let (_px, cx), queue = access_queue queue x in
         true, flush_all queue (throw_statement st.ctx cx k loc)
