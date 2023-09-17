@@ -325,9 +325,7 @@ let zero prog sentinal live_table =
     while !i >= 0 && Var.equal vars.(!i) sentinal do
       i := !i - 1
     done;
-    let compacted = Array.make (!i + 1) sentinal in
-    Array.blit ~src:vars ~src_pos:0 ~dst:compacted ~dst_pos:0 ~len:(!i + 1);
-    compacted
+    Array.sub vars ~pos:0 ~len:(!i + 1)
   in
   let is_live v =
     match Var.Tbl.get live_table v with
