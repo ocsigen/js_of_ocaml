@@ -222,12 +222,11 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
   in
   let live_instruction i =
     match i with
-    | Let (_x, e) -> (
+    | Let (_x, e) ->
         if not (pure_expr pure_funs e)
-        then
+        then (
           let vars = expr_vars e in
-          Var.ISet.iter add_top vars
-        else
+          Var.Set.iter add_top vars;
           match e with
           | Apply { f; args; _ } ->
               add_top f;
@@ -235,6 +234,7 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
           | _ -> ())
+        else ()
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live x i;
@@ -289,6 +289,7 @@ let propagate uses defs live_vars live_table x =
                     if Var.equal v x && IntSet.mem i fields then found := true)
                   vars;
                 if !found then Top else Dead
+            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
@@ -334,25 +335,10 @@ let zero prog sentinal live_table =
     | _ -> true
   in
   let zero_var x = if is_live x then x else sentinal in
-  let zero_cont ((pc, args) : cont) =
-    match Addr.Map.find_opt pc prog.blocks with
-    | Some block ->
-        let args =
-          List.map2
-            ~f:(fun param arg -> if is_live param then arg else sentinal)
-            block.params
-            args
-        in
-        pc, args
-    | None -> pc, args
-  in
   let zero_instr instr =
     match instr with
     | Let (x, e) -> (
         match e with
-        | Closure (args, cont) ->
-            let cont = zero_cont cont in
-            Let (x, Closure (args, cont))
         | Block (start, vars, is_array) -> (
             match Var.Tbl.get live_table x with
             | Live fields ->
@@ -380,13 +366,7 @@ let zero prog sentinal live_table =
       let last =
         match last with
         | Return x -> Return (zero_var x)
-        | Raise (_, _) | Stop -> last
-        | Branch cont -> Branch (zero_cont cont)
-        | Cond (x, cont1, cont2) -> Cond (x, zero_cont cont1, zero_cont cont2)
-        | Switch (x, a) -> Switch (x, Array.map ~f:zero_cont a)
-        | Pushtrap (cont1, x, cont2, pcs) ->
-            Pushtrap (zero_cont cont1, x, zero_cont cont2, pcs)
-        | Poptrap cont -> Poptrap (zero_cont cont)
+        | _ -> last
       in
       last, loc
     in
