@@ -395,7 +395,13 @@ module Value = struct
 
   let check_is_not_zero i =
     let* i = i in
-    return (W.UnOp (I32 Eqz, RefEq (i, W.RefI31 (Const (I32 0l)))))
+    match i with
+    | W.LocalGet x -> (
+        let* x_opt = get_i31_value x in
+        match x_opt with
+        | Some x' -> return (W.LocalGet x')
+        | None -> return (W.UnOp (I32 Eqz, RefEq (i, W.RefI31 (Const (I32 0l))))))
+    | _ -> return (W.UnOp (I32 Eqz, RefEq (i, W.RefI31 (Const (I32 0l)))))
 
   let check_is_int i =
     let* i = i in

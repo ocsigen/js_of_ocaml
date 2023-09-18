@@ -110,6 +110,8 @@ val define_var : Wa_ast.var -> expression -> unit t
 
 val is_small_constant : Wa_ast.expression -> bool t
 
+val get_i31_value : int -> int option t
+
 type type_def =
   { supertype : Wa_ast.var option
   ; final : bool

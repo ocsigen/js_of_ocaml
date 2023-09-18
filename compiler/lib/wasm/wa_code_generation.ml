@@ -312,6 +312,68 @@ let is_small_constant e =
   | W.GlobalGet (V name) -> global_is_constant name
   | _ -> return false
 
+let un_op_is_smi op =
+  match op with
+  | W.Clz | Ctz | Popcnt | Eqz -> true
+  | TruncSatF64 _ | ReinterpretF -> false
+
+let bin_op_is_smi (op : W.int_bin_op) =
+  match op with
+  | W.Add | Sub | Mul | Div _ | Rem _ | And | Or | Xor | Shl | Shr _ | Rotl | Rotr ->
+      false
+  | Eq | Ne | Lt _ | Gt _ | Le _ | Ge _ -> true
+
+let is_smi e =
+  match e with
+  | W.Const (I32 i) -> Int32.equal (Int31.wrap i) i
+  | UnOp ((I32 op | I64 op), _) -> un_op_is_smi op
+  | BinOp ((I32 op | I64 op), _, _) -> bin_op_is_smi op
+  | Const (I64 _ | F32 _ | F64 _)
+  | ConstSym _
+  | UnOp ((F32 _ | F64 _), _)
+  | BinOp ((F32 _ | F64 _), _, _)
+  | I32WrapI64 _
+  | I64ExtendI32 _
+  | F32DemoteF64 _
+  | F64PromoteF32 _
+  | Load _
+  | Load8 _
+  | LocalGet _
+  | LocalTee _
+  | GlobalGet _
+  | BlockExpr _
+  | Call_indirect _
+  | Call _
+  | MemoryGrow _
+  | Seq _
+  | Pop _
+  | RefFunc _
+  | Call_ref _
+  | RefI31 _
+  | I31Get _
+  | ArrayNew _
+  | ArrayNewFixed _
+  | ArrayNewData _
+  | ArrayGet _
+  | ArrayLen _
+  | StructNew _
+  | StructGet _
+  | RefCast _
+  | RefNull _
+  | ExternInternalize _
+  | ExternExternalize _
+  | Br_on_cast _
+  | Br_on_cast_fail _ -> false
+  | RefTest _ | RefEq _ -> true
+
+let get_i31_value x st =
+  match st.instrs with
+  | LocalSet (x', RefI31 e) :: rem when x = x' && is_smi e ->
+      let x = Var.fresh_n "cond" in
+      let x, st = add_var ~typ:I32 x st in
+      Some x, { st with instrs = LocalSet (x', RefI31 (LocalTee (x, e))) :: rem }
+  | _ -> None, st
+
 let load x =
   let* x = var x in
   match x with
