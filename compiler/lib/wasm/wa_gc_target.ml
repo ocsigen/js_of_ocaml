@@ -459,7 +459,13 @@ end
 module Memory = struct
   let wasm_cast ty e =
     let* e = e in
-    return (W.RefCast ({ nullable = false; typ = Type ty }, e))
+    match e with
+    | W.LocalGet x ->
+        return
+          (W.RefCast
+             ( { nullable = false; typ = Type ty }
+             , W.LocalTee (x, W.RefCast ({ nullable = false; typ = Type ty }, e)) ))
+    | _ -> return (W.RefCast ({ nullable = false; typ = Type ty }, e))
 
   let wasm_struct_get ty e i =
     let* e = e in
@@ -531,15 +537,13 @@ module Memory = struct
 
   let array_length e =
     let* block = Type.block_type in
-    let* e = e in
-    Arith.(
-      return (W.ArrayLen (W.RefCast ({ nullable = false; typ = Type block }, e)))
-      - const 1l)
+    let* e = wasm_cast block e in
+    Arith.(return (W.ArrayLen e) - const 1l)
 
   let float_array_length e =
     let* float_array = Type.float_array_type in
-    let* e = e in
-    return (W.ArrayLen (W.RefCast ({ nullable = false; typ = Type float_array }, e)))
+    let* e = wasm_cast float_array e in
+    return (W.ArrayLen e)
 
   let gen_array_length e =
     let a = Code.Var.fresh_n "a" in
