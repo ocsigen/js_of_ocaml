@@ -978,13 +978,19 @@ module Closure = struct
       | [ _ ] ->
           let* typ = Type.env_type ~cps ~arity free_variable_count in
           let* _ = add_var f in
-          (*ZZZ Store env with right type in local variable? *)
+          let env = Code.Var.fresh_n "env" in
+          let* () =
+            store
+              ~typ:(W.Ref { nullable = false; typ = Type typ })
+              env
+              Memory.(wasm_cast typ (load f))
+          in
           snd
             (List.fold_left
                ~f:(fun (i, prev) x ->
                  ( i + 1
                  , let* () = prev in
-                   define_var x Memory.(wasm_struct_get typ (wasm_cast typ (load f)) i) ))
+                   define_var x Memory.(wasm_struct_get typ (load env) i) ))
                ~init:(offset, return ())
                free_variables)
       | functions ->
