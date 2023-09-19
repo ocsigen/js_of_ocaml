@@ -32,7 +32,6 @@ let%expect_test "uncaugh error" =
     {|
     Fatal error: exception Not_found
 
-
     process exited with error code 2
      %{NODE} test.js |}];
   compile_and_run_bytecode prog;
@@ -57,7 +56,6 @@ let _ = raise C |}
     {|
     Fatal error: exception Test.C
 
-
     process exited with error code 2
      %{NODE} test.js |}];
   let prog =
@@ -74,7 +72,6 @@ let _ = raise (D(2,"test",43L))
     {|
     Fatal error: exception Test.D(2, "test", _)
 
-
     process exited with error code 2
      %{NODE} test.js |}];
   let prog =
@@ -89,7 +86,6 @@ let _ = assert false |}
     {|
     Fatal error: exception Assert_failure("test.ml", 4, 8)
 
-
     process exited with error code 2
      %{NODE} test.js |}];
   let prog =
@@ -103,7 +99,6 @@ let () = Callback.register "Printexc.handle_uncaught_exception" null
   [%expect
     {|
     Fatal error: exception Match_failure("test.ml", 4, 33)
-
 
     process exited with error code 2
      %{NODE} test.js |}];
