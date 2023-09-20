@@ -186,7 +186,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), cps_calls, deadcode_sentinal) =
+    (((p, live_vars), cps_calls), deadcode_sentinal)  =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -591,11 +591,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls profile
-    +> (fun (p, deadcode_sentinal) ->
-         let p, cps_calls = effects p in
-         p, cps_calls, deadcode_sentinal)
-    +> fun (p, cps_calls, deadcode_sentinal) ->
-    deadcode' (Generate_closure.f p), cps_calls, deadcode_sentinal
+    +> map_fst (effects +> map_fst (Generate_closure.f +> deadcode'))
   in
   let emit =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
