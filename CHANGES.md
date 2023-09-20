@@ -3,6 +3,7 @@
 ## Features/Changes
 * Compiler: change control-flow compilation strategy (#1496)
 * Lib: add download attribute to anchor element
+* Dead code elimination of unused references (#2076)
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
