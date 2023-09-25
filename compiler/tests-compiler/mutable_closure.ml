@@ -91,6 +91,10 @@ let%expect_test _ =
 
   let indirect = ref []
 
+  let list_map = List.map
+  (* Avoid to expose the offset of stdlib modules *)
+  let () = ignore (list_map (fun f -> f ()) [])
+
   let fun1 () =
     for i = 0 to 3 do
       let rec f = function
@@ -105,7 +109,7 @@ let%expect_test _ =
       direct := f i :: !direct;
       indirect := (fun () -> f i) :: !indirect
     done;
-    let indirect = List.map (fun f -> f ()) !indirect in
+    let indirect = list_map (fun f -> f ()) !indirect in
     let direct = !direct in
     assert (indirect = direct)
 |}
@@ -160,12 +164,12 @@ let%expect_test _ =
       var _g_ = i + 1 | 0;
       if(3 === i){
        var
-        _c_ = indirect[1],
-        _d_ = function(f){return caml_call1(f, 0);},
-        indirect$0 = caml_call2(Stdlib_List[20], _d_, _c_),
+        _d_ = indirect[1],
+        indirect$0 =
+          caml_call2(list_map, function(f){return caml_call1(f, 0);}, _d_),
         direct$0 = direct[1];
        if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-       throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
+       throw caml_maybe_attach_backtrace([0, Assert_failure, _c_], 1);
       }
       var i = _g_;
      }
