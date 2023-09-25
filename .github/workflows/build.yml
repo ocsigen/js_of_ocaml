@@ -23,6 +23,7 @@ jobs:
           - 4.11.x
           - 4.12.x
           - 4.13.x
+          - 5.0.x
         skip-test:
           - true
         skip-doc:
@@ -46,17 +47,17 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: 5.0.x
+            ocaml-compiler: 5.1.x
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: 5.0.x
+            ocaml-compiler: 5.1.x
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: ocaml.5.0.0,ocaml-option-mingw
+            ocaml-compiler: ocaml.5.1.0,ocaml-option-mingw
             skip-effects: false
             skip-test: false
             skip-doc: true
