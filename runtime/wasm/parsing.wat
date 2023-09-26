@@ -141,14 +141,14 @@
             (ref.i31 (i32.const 0)) (ref.i31 (i32.const 1))))
       (drop (call $caml_ml_flush (global.get $caml_stderr))))
 
-   (func $output_str (param (ref string))
-      (call $output (call $caml_string_of_jsstring (call $wrap (local.get 0)))))
-
    (func $output_int (param i32)
       (call $output
          (call $caml_format_int
             (array.new_fixed $string 2 (i32.const 37) (i32.const 100))
             (ref.i31 (local.get 0)))))
+
+   (data $State "State ")
+   (data $read_token ": read token ")
 
    (func $print_token
       (param $tables (ref $block)) (param $state i32) (param $tok (ref eq))
@@ -156,9 +156,11 @@
       (local $v (ref eq))
       (if (ref.test (ref i31) (local.get $tok))
          (then
-            (call $output_str (string.const "State "))
+            (call $output
+               (array.new_data $string $State (i32.const 0) (i32.const 6)))
             (call $output_int (local.get $state))
-            (call $output_str (string.const ": read token "))
+            (call $output
+               (array.new_data $string $read_token (i32.const 0) (i32.const 13)))
             (call $output
                (call $token_name
                   (array.get $block (local.get $tables)
@@ -166,9 +168,11 @@
                   (i31.get_u (ref.cast (ref i31) (local.get $tok)))))
             (call $output_nl))
          (else
-            (call $output_str (string.const "State "))
+            (call $output
+               (array.new_data $string $State (i32.const 0) (i32.const 6)))
             (call $output_int (local.get $state))
-            (call $output_str (string.const ": read token "))
+            (call $output
+               (array.new_data $string $read_token (i32.const 0) (i32.const 13)))
             (local.set $b (ref.cast (ref $block) (local.get $tok)))
             (call $output
                (call $token_name
@@ -177,7 +181,7 @@
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $b) (i32.const 0))))))
-            (call $output_str (string.const "("))
+            (call $output (array.new_fixed $string 1 (i32.const 40))) ;; "("
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
             (if (ref.test (ref i31) (local.get $v))
                (then
@@ -193,9 +197,17 @@
                            (i32.const 37) (i32.const 103))
                         (local.get $v))))
             (else
-               (call $output_str (string.const "_"))))))))
-            (call $output_str (string.const ")"))
+               (call $output
+                  (array.new_fixed $string 1 (i32.const 95))))))))) ;; '_'
+            (call $output (array.new_fixed $string 1 (i32.const 41))) ;; ")"
             (call $output_nl))))
+
+   (data $recovering_in_state "Recovering in state ")
+   (data $discarding_state "Discarding state ")
+   (data $no_more_states_to_discard "No more states to discard")
+   (data $discarding_last_token_read "Discarding last token read")
+   (data $shift_to_state ": shift to state ")
+   (data $reduce_by_rule ": reduce by rule ")
 
    (func (export "caml_parse_engine")
       (param $vtables (ref eq)) (param $venv (ref eq)) (param $vcmd (ref eq))
@@ -431,9 +443,11 @@
                                       (then
                                          (if (global.get $caml_parser_trace)
                                             (then
-                                               (call $output_str
-                                                  (string.const
-                                                     "Recovering in state "))
+                                               (call $output
+                                                  (array.new_data $string
+                                                     $recovering_in_state
+                                                     (i32.const 0)
+                                                     (i32.const 20)))
                                                (call $output_int
                                                   (local.get $state1))
                                                (call $output_nl)))
@@ -442,8 +456,9 @@
                                          (br $next)))))))
                        (if (global.get $caml_parser_trace)
                           (then
-                             (call $output_str
-                                (string.const "Discarding state "))
+                             (call $output
+                                (array.new_data $string $discarding_state
+                                   (i32.const 0) (i32.const 17)))
                              (call $output_int (local.get $state1))
                              (call $output_nl)))
                        (if (i32.le_s (local.get $sp)
@@ -454,9 +469,10 @@
                           (then
                              (if (global.get $caml_parser_trace)
                                 (then
-                                   (call $output_str
-                                      (string.const
-                                         "No more states to discard"))
+                                   (call $output
+                                      (array.new_data $string
+                                          $no_more_states_to_discard
+                                          (i32.const 0) (i32.const 25)))
                                    (call $output_nl)))
                              (return (ref.i31 (global.get $RAISE_PARSE_ERROR)))))
                        (local.set $sp (i32.sub (local.get $sp) (i32.const 1)))
@@ -470,8 +486,9 @@
                            (return (ref.i31 (global.get $RAISE_PARSE_ERROR)))))
                      (if (global.get $caml_parser_trace)
                         (then
-                           (call $output_str
-                              (string.const "Discarding last token read"))
+                           (call $output
+                              (array.new_data $string $discarding_last_token_read
+                                 (i32.const 0) (i32.const 26)))
                            (call $output_nl)))
                      (array.set $block (local.get $env)
                         (global.get $env_curr_char)
@@ -489,9 +506,13 @@
              ;; shift_recover:
              (if (global.get $caml_parser_trace)
                 (then
-                   (call $output_str (string.const "State "))
+                   (call $output
+                      (array.new_data $string $State
+                         (i32.const 0) (i32.const 6)))
                    (call $output_int (local.get $state))
-                   (call $output_str (string.const ": shift to state "))
+                   (call $output
+                      (array.new_data $string $shift_to_state
+                         (i32.const 0) (i32.const 17)))
                    (call $output_int
                       (call $get (local.get $tbl_table) (local.get $n2)))
                    (call $output_nl)))
@@ -535,9 +556,12 @@
            ;; reduce:
            (if (global.get $caml_parser_trace)
               (then
-                 (call $output_str (string.const "State "))
+                 (call $output
+                    (array.new_data $string $State (i32.const 0) (i32.const 6)))
                  (call $output_int (local.get $state))
-                 (call $output_str (string.const ": reduce by rule "))
+                 (call $output
+                    (array.new_data $string $reduce_by_rule
+                       (i32.const 0) (i32.const 17)))
                  (call $output_int (local.get $n))
                  (call $output_nl)))
            (local.set $m (call $get (local.get $tbl_len) (local.get $n)))

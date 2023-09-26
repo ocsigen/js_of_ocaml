@@ -1,7 +1,10 @@
 (module
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
+   (import "jsstring" "jsstring_hash"
+      (func $jsstring_hash (param i32) (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -134,11 +137,6 @@
                (array.get_u $string (local.get $s) (local.get $i))))
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
-
-   (func $caml_hash_mix_jsstring
-      (param $h i32) (param $s (ref eq)) (result i32)
-      (return_call $caml_hash_mix_int (local.get $h)
-         (string.hash (ref.cast (ref string) (call $unwrap (local.get $s))))))
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
@@ -281,11 +279,11 @@
                         (struct.get $js 0
                            (br_on_cast_fail $not_jsstring (ref eq) (ref $js)
                               (local.get $v))))
+                     (drop (br_if $not_jsstring
+                        (ref.i31 (i32.const 0))
+                        (i32.eqz (call $jsstring_test (local.get $str)))))
                      (local.set $h
-                        (call $caml_hash_mix_int (local.get $h)
-                           (string.hash
-                              (br_on_cast_fail $not_jsstring anyref (ref string)
-                                 (local.get $str)))))
+                        (call $jsstring_hash (local.get $h) (local.get $str)))
                      (ref.i31 (i32.const 0))))
                   ;; closures and continuations and other js values are ignored
                   (br $loop)))))

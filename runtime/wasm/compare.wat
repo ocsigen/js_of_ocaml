@@ -15,6 +15,10 @@
    (import "string" "caml_string_compare"
       (func $caml_string_compare
         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
+   (import "jsstring" "jsstring_compare"
+      (func $jsstring_compare (param anyref) (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -466,15 +470,16 @@
                      (struct.get $js 0
                         (br_on_cast_fail $heterogeneous (ref eq) (ref $js)
                            (local.get $v2))))
-                  (drop (block $not_jsstring (result anyref)
+                  (block $not_jsstring
+                     (br_if $not_jsstring
+                        (i32.eqz (call $jsstring_test (local.get $js1))))
+                     (br_if $not_jsstring
+                         (i32.eqz (call $jsstring_test (local.get $js2))))
                      (local.set $res
-                        (string.compare
-                           (br_on_cast_fail $not_jsstring anyref (ref string)
-                              (local.get $js1))
-                           (br_on_cast_fail $not_jsstring anyref (ref string)
-                              (local.get $js2))))
+                        (call $jsstring_compare
+                           (local.get $js1) (local.get $js2)))
                      (br_if $next_item (i32.eqz (local.get $res)))
-                     (return (local.get $res))))
+                     (return (local.get $res)))
                   ;; We cannot order two JavaScript objects,
                   ;; but we can tell whether they are equal or not
                   (if (i32.eqz (local.get $total))

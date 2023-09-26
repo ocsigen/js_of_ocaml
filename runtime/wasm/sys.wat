@@ -29,6 +29,8 @@
       (func $array_get (param (ref extern)) (param i32) (result anyref)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -46,7 +48,7 @@
       (local.set $res
          (call $getenv
             (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
-      (if (i32.eqz (ref.test (ref string) (local.get $res)))
+      (if (i32.eqz (call $jsstring_test (local.get $res)))
          (then
             (call $caml_raise_not_found)))
       (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
@@ -167,12 +169,14 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_runtime_warnings)))
 
+   (data $toString "toString")
+
    (func $caml_handle_sys_error (export "caml_handle_sys_error")
       (param $exn externref)
       (call $caml_raise_sys_error
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
                (call $wrap (extern.internalize (local.get $exn)))
-               (call $wrap (string.const "toString"))
+               (array.new_data $string $toString (i32.const 0) (i32.const 8))
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )

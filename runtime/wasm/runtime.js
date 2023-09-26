@@ -10,8 +10,6 @@
     const isNode = globalThis?.process?.versions?.node;
     const code = isNode?loadRelative(src):fetch(src);
 
-    var caml_callback, caml_alloc_tm;
-
     let math =
         {cos:Math.cos, sin:Math.sin, tan:Math.tan,
          acos:Math.acos, asin:Math.asin, atan:Math.atan,
@@ -72,6 +70,22 @@
        }
     }
 
+    const decoder = new TextDecoder('utf-8', {ignoreBOM: 1});
+    const encoder = new TextEncoder;
+
+    function hash_int(h,d) {
+      d = Math.imul(d, 0xcc9e2d51|0);
+      d = (d << 15) | (d >>> 17); // ROTL32(d, 15);
+      d = Math.imul(d, 0x1b873593);
+      h ^= d;
+      h = (h << 13) | (h >>> 19);   //ROTL32(h, 13);
+      return (((h + (h << 2))|0) + (0xe6546b64|0))|0;
+    }
+    function hash_string(h,s) {
+      for (var i = 0; i < s.length; i++) h = hash_int(h,s.charCodeAt(i));
+      return h ^ s.length;
+    }
+
     let bindings =
         {jstag:WebAssembly.JSTag,
          identity:(x)=>x,
@@ -94,6 +108,24 @@
          array_length:(a)=>a.length,
          array_get:(a,i)=>a[i],
          array_set:(a,i,v)=>a[i]=v,
+         read_string:(l)=>
+           decoder.decode(new Uint8Array(buffer, 0, l)),
+         read_string_stream:(l, stream)=>
+           decoder.decode(new Uint8Array(buffer, 0, l), {stream}),
+         append_string:(s1,s2)=>s1+s2,
+         write_string:(s)=>{
+           var start = 0, len = s.length;
+           while (1) {
+             let {read,written} = encoder.encodeInto(s.slice(start), out_buffer);
+             len -= read;
+             if (!len) return written;
+             caml_extract_string(written);
+             start += read;
+           }
+         },
+         compare_strings:(s1,s2)=>(s1<s2)?-1:+(s1>s2),
+         hash_string,
+         is_string:(v)=>+(typeof v==="string"),
          ta_create:(k,sz)=> new(typed_arrays[k])(sz),
          ta_normalize:(a)=>
            a instanceof Uint32Array?
@@ -270,7 +302,7 @@
            fs.openSync(p,open_flags.reduce((f,v,i)=>(flags&(1<<i))?(f|v):f,0),
                        perm),
          close:(fd)=>fs.closeSync(fd),
-         write:(fd,b,o,l,p)=>fs?fs.writeSync(fd,b,o,l,p==null?p:Number(p)):(console[fd==2?'error':'log'](typeof b=='string'?b:new TextDecoder().decode(b.slice(o,o+l))),l),
+         write:(fd,b,o,l,p)=>fs?fs.writeSync(fd,b,o,l,p==null?p:Number(p)):(console[fd==2?'error':'log'](typeof b=='string'?b:decoder.decode(b.slice(o,o+l))),l),
          read:(fd,b,o,l,p)=>fs.readSync(fd,b,o,l,p),
          file_size:(fd)=>fs.fstatSync(fd,{bigint:true}).size,
          register_channel,
@@ -312,9 +344,13 @@
           isNode?await WebAssembly.instantiate(await code, imports)
                 :await WebAssembly.instantiateStreaming(code,imports)
 
-    var {caml_callback,caml_alloc_tm, caml_start_fiber,
-         caml_handle_uncaught_exception, _initialize} =
+    var {caml_callback, caml_alloc_tm, caml_start_fiber,
+         caml_handle_uncaught_exception, caml_buffer,
+         caml_extract_string, _initialize} =
         wasmModule.instance.exports;
+
+    var buffer = caml_buffer?.buffer
+    var out_buffer = buffer&&new Uint8Array(buffer,0,buffer.length)
 
     start_fiber = wrap_fun(
         {parameters: ['eqref'], results: ['externref']},

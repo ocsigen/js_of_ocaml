@@ -4,7 +4,7 @@
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "bindings" "format_float"
       (func $format_float
-         (param i32) (param i32) (param f64) (result (ref string))))
+         (param i32) (param i32) (param f64) (result anyref)))
    (import "bindings" "identity"
       (func $parse_float (param anyref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
@@ -13,6 +13,9 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
       (global $lowercase_hex_table (ref $chars)))
+   (import "jsstring" "string_of_jsstring"
+      (func $string_of_jsstring
+         (param anyref) (param i32) (result (ref $string))))
 
    (type $float (struct (field f64)))
    (type $string (array (mut i8)))
@@ -249,7 +252,7 @@
       (local $exp i32) (local $m i64)
       (local $i i32) (local $len i32) (local $c i32)
       (local $s (ref $string)) (local $txt (ref $chars))
-      (local $num (ref string))
+      (local $num anyref)
       (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
       (local.set $format
@@ -292,12 +295,8 @@
                (call $format_float
                   (local.get $precision) (local.get $conversion)
                   (f64.abs (local.get $f))))
-            (local.set $len (string.measure_wtf8 (local.get $num)))
             (local.set $s
-               (array.new $string (i32.const 0)
-                  (i32.add (local.get $len) (local.get $i))))
-            (drop (string.encode_lossy_utf8_array
-                     (local.get $num) (local.get $s) (local.get $i)))
+               (call $string_of_jsstring (local.get $num) (local.get $i)))
             (br $sign (local.get $s))))
       (if (local.get $negative)
          (then
