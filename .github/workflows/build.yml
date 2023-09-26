@@ -23,6 +23,7 @@ jobs:
           - 4.11.x
           - 4.12.x
           - 4.13.x
+          - 5.0.x
         skip-test:
           - true
         skip-doc:
@@ -46,17 +47,17 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: 5.0.x
+            ocaml-compiler: 5.1.x
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: 5.0.x
+            ocaml-compiler: 5.1.x
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: ocaml.5.0.0,ocaml-option-mingw
+            ocaml-compiler: ocaml.5.1.0,ocaml-option-mingw
             skip-effects: false
             skip-test: false
             skip-doc: true
@@ -85,7 +86,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
-            dra27: https://github.com/dra27/opam-repository.git#windows-5.0
+            dra27: https://github.com/hhugo/opam-repository.git#for-jsoo-ci-windows
             default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
           dune-cache: true

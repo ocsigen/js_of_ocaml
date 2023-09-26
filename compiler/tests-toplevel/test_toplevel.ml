@@ -10,6 +10,7 @@ Missing_module.f;;
   let lexbuf = Lexing.from_string content in
   while true do
     try
+      Location.reset ();
       let phr = !Toploop.parse_toplevel_phrase lexbuf in
       if not (Toploop.execute_phrase true Format.std_formatter phr) then raise Exit
     with

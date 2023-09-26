@@ -206,7 +206,12 @@ let eval_expectation expectation ~output =
   if s.str = output then
     None
   else
-    let s = { s with str = output } in
+    let trimmed = String.trim output in
+    let normalized = if String.exists ~f:(function '\n' -> true | _ -> false) output
+      then "\n" ^ trimmed ^ "\n"
+      else trimmed
+    in
+    let s = { s with str = normalized } in
     Some (
       if !Clflags.principal then
         { expectation with principal = s }
