@@ -3,63 +3,21 @@ name: build
 on:
   pull_request:
   push:
-    branches:
-      - master
-  schedule:
-    # Prime the caches every Monday
-    - cron: 0 1 * * MON
 
 jobs:
   build:
+    env:
+      OPAMJOBS: 2
+      OPAMYES: true
+
     strategy:
       fail-fast: false
       matrix:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - 4.08.x
-          - 4.09.x
-          - 4.10.x
-          - 4.11.x
-          - 4.12.x
-          - 4.13.x
-        skip-test:
-          - true
-        skip-doc:
-          - true
-        skip-effects:
-          - true
-        include:
-          - os: ubuntu-latest
-            ocaml-compiler: 4.14.x
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: macos-latest
-            ocaml-compiler: 4.14.x
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: 4.14.x
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: ubuntu-latest
-            ocaml-compiler: 5.0.x
-            skip-effects: false
-            skip-test: false
-            skip-doc: false
-          - os: macos-latest
-            ocaml-compiler: 5.0.x
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: ocaml.5.0.0,ocaml-option-mingw
-            skip-effects: false
-            skip-test: false
-            skip-doc: true
+          - 4.14.x
+          - 5.00.x
 
     runs-on: ${{ matrix.os }}
 
@@ -70,84 +28,173 @@ jobs:
           git config --global core.eol lf
           git config --global core.ignorecase false
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Use Node.js 16.x
+      - name: Install node
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: v21.0.0-v8-canary20230928fe8cd53052
 
-
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        if: runner.os == 'Windows'
-        uses: ocaml/setup-ocaml@v2
+      - name: Restore cached binaryen
+        id: cache-binaryen
+        uses: actions/cache/restore@v3
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          opam-repositories: |
-            dra27: https://github.com/dra27/opam-repository.git#windows-5.0
-            default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
-            opam: https://github.com/ocaml/opam-repository.git
-          dune-cache: true
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          path: binaryen
+          key: ${{ runner.os }}-binaryen-version_116
 
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        if: runner.os != 'Windows'
-        uses: ocaml/setup-ocaml@v2
+      - name: Checkout binaryen
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: ${{ matrix.os != 'macos-latest' }}
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          repository: WebAssembly/binaryen
+          path: binaryen
+          submodules: true
+          ref: version_116
 
-      - run: opam pin add zarith git+https://github.com/hhugo/Zarith.git#win-fix
-        if: runner.os == 'Windows'
+      - name: Install ninja
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        run: sudo apt-get install ninja-build
 
-      - run: opam install . --best-effort
-        if: ${{ matrix.skip-test }}
-
-      - run: opam install . --with-test
-        if: ${{ !matrix.skip-test }}
-
-      - run: opam exec -- make all
-        if: ${{ !matrix.skip-test }}
-
-      - run: opam exec -- make tests
-        if: ${{ !matrix.skip-test }}
-
-      - run: opam exec -- dune build @all @runtest --profile using-effects
-        if: ${{ !matrix.skip-effects }}
-
-      - run: opam exec -- git diff --exit-code
-        if: ${{ !matrix.skip-test }}
-
-      - name: build doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+      - name: Build binaryen
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        working-directory: ./binaryen
         run: |
-          opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
-          opam exec -- make doc
+          cmake -G Ninja .
+          ninja
 
-      - name: synchronize doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Cache binaryen
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
         with:
-          branch: wikidoc
-          folder: doc-dev
-          clean: true
-          target-folder: doc/dev/
+          path: binaryen
+          key: ${{ runner.os }}-binaryen-version_116
 
-  lint-fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Set binaryen's path
+        run: |
+          echo "$GITHUB_WORKSPACE/binaryen/bin" >> $GITHUB_PATH
 
-      - name: Use OCaml 4.14.x
+      - name: Restore cached OCaml
+        id: cache-ocaml
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            ~/.opam
+            _opam
+            /opt/hostedtoolcache/opam/2.1.5/x86_64/opam
+          key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
+
+      - name: Install OCaml ${{ matrix.ocaml-compiler }}
+        if: steps.cache-ocaml.outputs.cache-hit != 'true'
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.14.x
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
+          opam-depext: true
+          opam-depext-flags: --with-test
 
-      - name: Lint fmt
-        uses: ocaml/setup-ocaml/lint-fmt@v2
+      - name: Install packages
+        if: steps.cache-ocaml.outputs.cache-hit
+        run: sudo apt-get install bubblewrap
+
+      - name: Set opam path
+        if: steps.cache-ocaml.outputs.cache-hit
+        run: |
+          echo /opt/hostedtoolcache/opam/2.1.5/x86_64 >> $GITHUB_PATH
+
+      - name: Cache OCaml
+        if: steps.cache-ocaml.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ~/.opam
+            _opam
+            /opt/hostedtoolcache/opam/2.1.5/x86_64/opam
+          key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
+
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.11 https://github.com/ocaml-wasm/dune.git#wasm
+
+      - name: Pin packages
+        run: |
+          opam pin add -n alcotest https://github.com/ocaml-wasm/alcotest.git#wasm
+          opam pin add -n async_js https://github.com/ocaml-wasm/async_js.git#wasm
+          opam pin add -n base https://github.com/ocaml-wasm/base.git#wasm
+          opam pin add -n base_bigstring https://github.com/ocaml-wasm/base_bigstring.git#wasm
+          opam pin add -n bigstringaf https://github.com/ocaml-wasm/bigstringaf.git#wasm
+          opam pin add -n bin_prot https://github.com/ocaml-wasm/bin_prot.git#wasm
+          opam pin add -n bonsai https://github.com/ocaml-wasm/bonsai.git#wasm
+          opam pin add -n brr https://github.com/ocaml-wasm/brr.git#wasm
+          opam pin add -n core https://github.com/ocaml-wasm/core.git#wasm
+          opam pin add -n core_kernel https://github.com/ocaml-wasm/core_kernel.git#wasm
+          opam pin add -n cstruct https://github.com/ocaml-wasm/ocaml-cstruct.git#wasm
+          opam pin add -n gen_js_api https://github.com/ocaml-wasm/gen_js_api.git#wasm
+          opam pin add -n incr_dom https://github.com/ocaml-wasm/incr_dom.git#wasm
+          opam pin add -n js_of_ocaml_patches https://github.com/ocaml-wasm/js_of_ocaml_patches.git#wasm
+          opam pin add -n ppx_css https://github.com/ocaml-wasm/ppx_css.git#wasm
+          opam pin add -n ppx_expect https://github.com/ocaml-wasm/ppx_expect.git#wasm
+          opam pin add -n ppx_inline_test https://github.com/ocaml-wasm/ppx_inline_test.git#wasm
+          opam pin add -n string_dict https://github.com/ocaml-wasm/string_dict.git#wasm
+          opam pin add -n time_now https://github.com/ocaml-wasm/time_now.git#wasm
+          opam pin add -n virtual_dom https://github.com/ocaml-wasm/virtual_dom.git#wasm
+          opam pin add -n zarith_stubs_js https://github.com/ocaml-wasm/zarith_stubs_js.git#wasm
+
+      - name: Update dune and test dependencies
+        run: opam install dune num cohttp-lwt-unix graphics ppx_expect zarith.1.12
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: wasm_of_ocaml
+
+      - name: Build wasm_of_ocaml
+        working-directory: ./wasm_of_ocaml
+        run: |
+           for i in *.opam; do opam pin add -n `basename $i .opam`.`< VERSION` .; done
+           opam install `basename -s .opam *.opam`
+
+      - name: Run tests
+        working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @all @runtest --profile wasm
+
+      - name: Run tests with CPS effects
+        if: ${{ matrix.ocaml-compiler >= '5.' }}
+        working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @all @runtest --profile wasm-effects
+
+      - name: Install bonsai and zarith_stubs_js
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        run: opam install dune bonsai zarith_stubs_js
+
+      - name: Checkout zarith_stubs_js
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ocaml-wasm/zarith_stubs_js
+          path: zarith
+          ref: wasm
+
+      - name: Run zarith_stubs_js tests
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./zarith
+        run: |
+           opam exec -- dune build @runtest --profile wasm
+
+      - name: Checkout bonsai
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ocaml-wasm/bonsai
+          path: bonsai
+          ref: wasm
+
+      - name: Install bonsai dependencies
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./bonsai
+        run: |
+           sudo apt-get install libgraph-easy-perl
+           npm install deasync
+
+      - name: Run bonsai tests
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./bonsai
+        run: |
+           opam exec -- dune build @runtest --profile wasm
