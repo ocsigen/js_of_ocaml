@@ -199,6 +199,7 @@ caml_build_symbols
 caml_is_printable
 caml_maybe_print_stats
 caml_register_global
+caml_unregister_named_value
 
 From +str.js:
 caml_str_initialize

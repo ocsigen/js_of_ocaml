@@ -82,7 +82,7 @@
 (library
  ;; lib/tests/test_sys.ml
  (name test_sys_75)
- (enabled_if (>= %{ocaml_version} 5))
+ (enabled_if (and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_sys)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))

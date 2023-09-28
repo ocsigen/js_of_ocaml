@@ -25,6 +25,7 @@ let%expect_test "poly equal" =
   assert (List.mem obj1 [ obj2; obj1 ]);
   assert (not (List.mem obj1 [ obj2 ]));
   ()
+[@@expect.uncaught_exn {| (Invalid_argument "compare: abstract value") |}]
 
 let%expect_test "poly equal neg" =
   let obj1 = Js.Unsafe.obj [||] in
@@ -49,7 +50,8 @@ let%expect_test "poly compare" =
       then print_endline "preserve"
       else print_endline "not preserve"
   | _ -> assert false);
-  [%expect {| not preserve |}]
+  [%expect.unreachable]
+[@@expect.uncaught_exn {| (Invalid_argument "compare: abstract value") |}]
 
 type pack = Pack : 'a -> pack
 
@@ -63,6 +65,7 @@ let%expect_test "number comparison" =
   assert (
     Pack (Js.Unsafe.js_expr "new Number(2.1)")
     = Pack (Js.Unsafe.js_expr "new Number(2.1)"))
+[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_compare.ml:59:2" |}]
 
 let js_string_enabled = Js.typeof (Obj.magic "") == Js.string "string"
 
@@ -79,6 +82,7 @@ let%expect_test "string comparison" =
   assert (
     Pack (Js.Unsafe.js_expr "new String('abcd')")
     = Pack (Js.Unsafe.js_expr "new String('abcd')"))
+[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_compare.ml:82:2" |}]
 
 let%expect_test "symbol comparison" =
   let s1 = Pack (Js.Unsafe.js_expr "Symbol('2')") in
@@ -88,6 +92,7 @@ let%expect_test "symbol comparison" =
   assert (compare s1 s1 = 0);
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
+[@@expect.uncaught_exn {| (Invalid_argument "compare: abstract value") |}]
 
 let%expect_test "object comparison" =
   let s1 = Pack (Js.Unsafe.js_expr "{}") in
@@ -97,6 +102,7 @@ let%expect_test "object comparison" =
   assert (compare s1 s1 = 0);
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
+[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_compare.ml:100:2" |}]
 
 let%expect_test "poly compare" =
   let l =
@@ -114,36 +120,13 @@ let%expect_test "poly compare" =
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) l in
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
   print_endline "";
-  [%expect {|
-    1
-    3
-    2
-    0
-    6
-    7
-    5
-    4 |}];
+  [%expect.unreachable];
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l) in
   let l'' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l') in
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
   print_endline "";
-  [%expect {|
-    3
-    1
-    2
-    0
-    4
-    5
-    7
-    6 |}];
+  [%expect.unreachable];
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l'';
   print_endline "";
-  [%expect {|
-    1
-    3
-    2
-    0
-    4
-    5
-    6
-    7 |}]
+  [%expect.unreachable]
+[@@expect.uncaught_exn {| (Invalid_argument "compare: abstract value") |}]

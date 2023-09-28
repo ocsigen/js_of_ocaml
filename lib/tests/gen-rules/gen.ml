@@ -81,7 +81,10 @@ let () =
            (Hashtbl.hash prefix mod 100)
            (match enabled_if basename with
            | Any -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)"
+           | GE5 ->
+               (* ZZZ /static not yet implemented *)
+               "(and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} \
+                wasm-effects))"
            | No_effects -> "(<> %{profile} using-effects)"
            | Not_wasm -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))")
            basename)

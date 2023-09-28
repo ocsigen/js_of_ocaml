@@ -105,9 +105,9 @@ let option var = Js.Optdef.get var (fun () -> Js.Unsafe.coerce (new%js Js.array_
 
 class type style =
   object
-    method border : float Js.t Js.optdef Js.readonly_prop
+    method border : Js.number Js.t Js.optdef Js.readonly_prop
 
-    method padding : float Js.t Js.optdef Js.readonly_prop
+    method padding : Js.number Js.t Js.optdef Js.readonly_prop
 
     method backgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 

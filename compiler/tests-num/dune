@@ -9,6 +9,7 @@
 
 (rule
  (target main.referencejs)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps main.bc.js)
  (action
   (with-stdout-to
@@ -25,6 +26,8 @@
 
 (rule
  (alias runtest)
+ ;; ZZZ Need to modify the num library
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps main.reference main.referencejs)
  (action
   (diff main.reference main.referencejs)))

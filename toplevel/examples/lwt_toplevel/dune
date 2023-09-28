@@ -1,5 +1,6 @@
 (executables
  (names toplevel)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-tyxml
@@ -121,6 +122,7 @@
 
 (rule
  (targets toplevel.js)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (action
   (run
    %{bin:js_of_ocaml}
