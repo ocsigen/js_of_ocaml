@@ -279,6 +279,7 @@ let eval_expect_file mapper fname ~file_contents =
       List.fold_left phrases ~init:true ~f:(fun acc phrase ->
         acc &&
         try
+          Location.reset ();
           exec_phrase ppf phrase
         with exn ->
           Location.report_exception ppf exn;
