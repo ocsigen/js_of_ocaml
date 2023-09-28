@@ -363,6 +363,7 @@ module Output () = struct
              ^^ string "}")
     | Br (i, Some e) -> expression e ^^ instruction (Br (i, None))
     | Br (i, None) -> line (string "br " ^^ integer i)
+    | Br_if (i, e) -> expression e ^^ line (string "br_if " ^^ integer i)
     | Return (Some e) -> expression e ^^ instruction (Return None)
     | Return None -> line (string "return")
     | CallInstr (x, l) -> concat_map expression l ^^ line (string "call " ^^ index x)

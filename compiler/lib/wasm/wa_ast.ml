@@ -168,6 +168,7 @@ and instruction =
   | If of func_type * expression * instruction list * instruction list
   | Br_table of expression * int list * int
   | Br of int * expression option
+  | Br_if of int * expression
   | Return of expression option
   | CallInstr of var * expression list
   | Nop

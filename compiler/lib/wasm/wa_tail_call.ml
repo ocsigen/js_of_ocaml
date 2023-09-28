@@ -26,6 +26,7 @@ let rec instruction ~tail i =
   | GlobalSet _
   | Br_table _
   | Br _
+  | Br_if _
   | Return _
   | Throw _
   | Rethrow _

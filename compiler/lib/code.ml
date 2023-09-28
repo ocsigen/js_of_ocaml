@@ -616,6 +616,24 @@ let fold_children blocks pc f accu =
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
       accu
 
+let fold_children_skip_try_body blocks pc f accu =
+  let block = Addr.Map.find pc blocks in
+  match fst block.branch with
+  | Return _ | Raise _ | Stop -> accu
+  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
+  | Pushtrap (_, _, (pc_h, _), pcs) ->
+      let accu = Addr.Set.fold f pcs accu in
+      let accu = f pc_h accu in
+      accu
+  | Cond (_, (pc1, _), (pc2, _)) ->
+      let accu = f pc1 accu in
+      let accu = f pc2 accu in
+      accu
+  | Switch (_, a1, a2) ->
+      let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
+      let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
+      accu
+
 type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
 
 type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
