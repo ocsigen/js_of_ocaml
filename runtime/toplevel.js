@@ -50,9 +50,37 @@ function caml_get_section_table () {
 
 //Provides: caml_reify_bytecode
 //Requires: caml_failwith,caml_callback
+//Requires: caml_string_of_array, caml_ba_to_typed_array
+//Version: >= 5.2
 function caml_reify_bytecode (code, debug,_digest) {
-  if(globalThis.toplevelCompile)
+  if(globalThis.toplevelCompile){
+    code=caml_string_of_array(caml_ba_to_typed_array(code));
     return [0, 0, caml_callback(globalThis.toplevelCompile, [code,debug])];
+  }
+  else caml_failwith("Toplevel not initialized (toplevelCompile)")
+}
+
+//Provides: caml_reify_bytecode
+//Requires: caml_failwith,caml_callback
+//Requires: caml_string_of_array, caml_uint8_array_of_bytes
+//Version: < 5.2
+function caml_reify_bytecode (code, debug,_digest) {
+  if(globalThis.toplevelCompile){
+    var len = 0;
+    var all = [];
+    for(var i = 1;  i < code.length; i++) {
+      var a = caml_uint8_array_of_bytes(code[i]);
+      all.push(a);
+      len += a.length;
+    }
+    code = new Uint8Array(len);
+    for(var i = 0, len = 0; i < all.length; i++){
+      code.set(all[i], len);
+      len += all[i].length;
+    }
+    code = caml_string_of_array(code);
+    return [0, 0, caml_callback(globalThis.toplevelCompile, [code,debug])];
+  }
   else caml_failwith("Toplevel not initialized (toplevelCompile)")
 }
 
