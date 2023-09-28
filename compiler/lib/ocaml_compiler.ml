@@ -194,6 +194,19 @@ module Symtable = struct
     let get i = Char.code (Bytes.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
+  [@@if ocaml_version < (5, 2, 0)]
+
+  let reloc_ident name =
+    let buf = Bigarray.(Array1.create char c_layout 4) in
+    let () =
+      try Symtable.patch_object buf [ reloc_get_of_string name, 0 ]
+      with _ -> Symtable.patch_object buf [ reloc_set_of_string name, 0 ]
+    in
+
+    let get i = Char.code (Bigarray.Array1.get buf i) in
+    let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
+    n
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in

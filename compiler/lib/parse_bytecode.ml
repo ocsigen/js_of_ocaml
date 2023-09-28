@@ -267,11 +267,33 @@ end = struct
   let find_rec { events_by_pc; _ } pc =
     try
       let { event; _ } = Int_table.find events_by_pc pc in
-      Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_rec
-      |> List.map ~f:(fun (i, ident) ->
-             (if new_closure_repr then i / 3 else i / 2), ident)
-      |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+      let env = event.ev_compenv in
+      let names =
+        Ocaml_compiler.Ident.table_contents env.ce_rec
+        |> List.map ~f:(fun (i, ident) ->
+               (if new_closure_repr then i / 3 else i / 2), ident)
+      in
+      List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
+  [@@if ocaml_version < (5, 2, 0)]
+
+  let find_rec { events_by_pc; _ } pc =
+    try
+      let { event; _ } = Int_table.find events_by_pc pc in
+      let env = event.ev_compenv in
+      let names =
+        match env.ce_closure with
+        | Not_in_closure -> raise Not_found
+        | In_closure { entries; _ } ->
+            Ocaml_compiler.Ident.table_contents entries
+            |> List.filter_map ~f:(fun (ent, ident) ->
+                   match ent with
+                   | Function i -> Some (i / 3, ident)
+                   | Free_variable _ -> None)
+      in
+      List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
+    with Not_found -> []
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let mem { events_by_pc; _ } pc = Int_table.mem events_by_pc pc
 

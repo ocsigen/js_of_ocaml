@@ -55,7 +55,7 @@ end
 module Ident : sig
   type 'a tbl = 'a Ident.tbl
 
-  val table_contents : int Ident.tbl -> (int * Ident.t) list
+  val table_contents : 'a Ident.tbl -> ('a * Ident.t) list
 end
 
 module Cmo_format : sig
