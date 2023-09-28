@@ -4,6 +4,8 @@
 * Compiler: change control-flow compilation strategy (#1496)
 * Lib: add download attribute to anchor element
 * Dead code elimination of unused references (#2076)
+* Misc: switch CI to OCaml 5.1
+* Misc: preliminary support for OCaml 5.2
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
