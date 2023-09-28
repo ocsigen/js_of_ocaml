@@ -262,6 +262,14 @@ function caml_ml_input (chanid, b, i, l) {
   return caml_ml_input_block(chanid, ba, i, l)
 }
 
+//Provides: caml_ml_input_bigarray
+//Requires: caml_ml_input_block
+//Requires: caml_ba_to_typed_array
+function caml_ml_input_bigarray (chanid, b, i, l) {
+  var ba = caml_ba_to_typed_array(b);
+  return caml_ml_input_block(chanid, ba, i, l)
+}
+
 //Provides: caml_ml_input_block
 //Requires: caml_refill, caml_ml_channels
 function caml_ml_input_block (chanid, ba, i, l) {
@@ -458,14 +466,12 @@ function caml_ml_flush (chanid) {
 
 //output to out_channel
 
-//Provides: caml_ml_output_bytes
+//Provides: caml_ml_output_ta
 //Requires: caml_ml_flush,caml_ml_bytes_length
-//Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels, caml_string_of_bytes
-//Requires: caml_uint8_array_of_bytes
-function caml_ml_output_bytes(chanid,buffer,offset,len) {
+//Requires: caml_raise_sys_error, caml_ml_channels
+function caml_ml_output_ta(chanid,buffer,offset,len) {
   var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
-  var buffer = caml_uint8_array_of_bytes(buffer);
   buffer = buffer.subarray(offset, offset + len);
   if(chan.buffer_curr + buffer.length > chan.buffer.length) {
     var b = new Uint8Array(chan.buffer_curr + buffer.length);
@@ -503,6 +509,23 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
   }
   return 0;
 }
+
+//Provides: caml_ml_output_bytes
+//Requires: caml_uint8_array_of_bytes, caml_ml_output_ta
+function caml_ml_output_bytes(chanid,buffer,offset,len) {
+  var buffer = caml_uint8_array_of_bytes(buffer);
+  return caml_ml_output_ta(chanid,buffer,offset,len);
+}
+
+
+//Provides: caml_ml_output_bigarray
+//Requires: caml_ba_to_typed_array, caml_ml_output_ta
+function caml_ml_output_bigarray(chanid,buffer,offset,len) {
+  var buffer = caml_ba_to_typed_array(buffer);
+  return caml_ml_output_ta(chanid,buffer,offset,len);
+}
+
+
 
 //Provides: caml_ml_output
 //Requires: caml_ml_output_bytes, caml_bytes_of_string
