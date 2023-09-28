@@ -160,6 +160,7 @@ caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
 From +domain.js:
+caml_atomic_make_contended
 caml_ml_domain_set_name
 
 From +effect.js:
@@ -178,6 +179,7 @@ caml_eventlog_resume
 caml_gc_huge_fallback_count
 caml_get_major_bucket
 caml_get_major_credit
+caml_memprof_discard
 caml_memprof_set
 
 From +graphics.js:
@@ -232,6 +234,10 @@ caml_gr_window_id
 From +ints.js:
 caml_div
 caml_mod
+
+From +io.js:
+caml_ml_input_bigarray
+caml_ml_output_bigarray
 
 From +jslib.js:
 caml_is_js
