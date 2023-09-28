@@ -75,6 +75,9 @@ function caml_memprof_stop(unit) {
   return 0;
 }
 
+//Provides: caml_memprof_discard
+function caml_memprof_discard(t) { return 0 }
+
 //Provides: caml_eventlog_resume
 function caml_eventlog_resume(unit) { return 0; }
 
