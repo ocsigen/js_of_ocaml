@@ -2,18 +2,15 @@ open Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 module J = Jsoo_runtime.Js
 
-let split_primitives p =
-  let len = String.length p in
-  let rec split beg cur =
-    if cur >= len
-    then []
-    else if Char.equal p.[cur] '\000'
-    then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
-    else split beg (cur + 1)
-  in
-  Array.of_list (split 0 0)
+type bytecode_sections =
+  { symb : Ocaml_compiler.Symtable.GlobalMap.t
+  ; crcs : (string * Digest.t option) list
+  ; prim : string list
+  ; dlpt : string list
+  }
+[@@ocaml.warning "-unused-field"]
 
-external get_section_table : unit -> (string * Obj.t) list = "caml_get_section_table"
+external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_sections"
 
 let () =
   let global = J.pure_js_expr "globalThis" in
@@ -22,7 +19,7 @@ let () =
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :
       unit -> J.t =
-    let prims = split_primitives (Symtable.data_primitive_names ()) in
+    let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
     let b = Buffer.create 100 in
     let fmt = Pretty_print.to_buffer b in
     Driver.configure fmt;
@@ -47,9 +44,9 @@ let () =
       flush stderr;
       res
   in
-  let toc = get_section_table () in
+  let toc = get_bytecode_sections () in
   let sym =
-    let t : Ocaml_compiler.Symtable.GlobalMap.t = Obj.obj (List.assoc "SYMB" toc) in
+    let t : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
     Ocaml_compiler.Symtable.GlobalMap.fold
       (fun i n acc -> StringMap.add (Ocaml_compiler.Symtable.Global.name i) n acc)
       t
