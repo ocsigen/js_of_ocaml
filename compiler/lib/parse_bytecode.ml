@@ -2647,6 +2647,14 @@ let read_primitives toc ic =
   assert (Char.equal (String.get prim (String.length prim - 1)) '\000');
   String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
+type bytesections =
+  { symb : Ocaml_compiler.Symtable.GlobalMap.t
+  ; crcs : (string * Digest.t option) list
+  ; prim : string list
+  ; dlpt : string list
+  }
+[@@ocaml.warning "-unused-field"]
+
 let from_exe
     ?(includes = [])
     ~linkall
@@ -2736,7 +2744,7 @@ let from_exe
   let body =
     if link_info
     then
-      let symtable_js =
+      let symbols_array =
         Ocaml_compiler.Symtable.GlobalMap.fold
           (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
           symbols
@@ -2744,17 +2752,12 @@ let from_exe
         |> Array.of_list
       in
       (* Include linking information *)
-      let toc =
-        [ "SYMB", Obj.repr symbols
-        ; "SYJS", Obj.repr symtable_js
-        ; "CRCS", Obj.repr crcs
-        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
-        ]
-      in
+      let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let infos =
-        [ "toc", Constants.parse (Obj.repr toc)
+        [ "sections", Constants.parse (Obj.repr sections)
+        ; "symbols", Constants.parse (Obj.repr symbols_array)
         ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
         ]
       in
@@ -3168,15 +3171,10 @@ let link_info ~symtable ~primitives ~crcs =
   let body = [] in
   let body =
     (* Include linking information *)
-    let toc =
-      [ "SYMB", Obj.repr symtable
-      ; "SYJS", Obj.repr symtable_js
-      ; "CRCS", Obj.repr crcs
-      ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
-      ]
-    in
+    let toc = { symb = symtable; crcs; prim = primitives; dlpt = [] } in
     let infos =
       [ "toc", Constants.parse (Obj.repr toc)
+      ; "tocjs", Constants.parse (Obj.repr symtable_js)
       ; "prim_count", Int (Int32.of_int (List.length primitives))
       ]
     in

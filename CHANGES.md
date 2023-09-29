@@ -3,6 +3,7 @@
 ## Features/Changes
 * Mics: fix support for OCaml 5.2
 * Compiler: no longer rely on IIFE for scoping variable inside loops
+* Compiler: avoid parsing bytecode sections twice, jsoo counter part of ocaml#12599
 * Lib: add ellipse to canvasRenderingContext2D (@FayCarsons, #1555)
 
 ## Bug fixes

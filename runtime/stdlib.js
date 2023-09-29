@@ -146,15 +146,7 @@ var caml_global_data = [0];
 
 //Provides: caml_build_symbols
 //Requires: caml_jsstring_of_string
-function caml_build_symbols(toc) {
-  var symb;
-  while(toc) {
-    if(caml_jsstring_of_string(toc[1][1]) == "SYJS") {
-      symb = toc[1][2];
-      break;
-    }
-    else toc = toc[2]
-  }
+function caml_build_symbols(symb) {
   var r = {};
   if(symb) {
     for(var i = 1; i < symb.length; i++){
@@ -173,11 +165,11 @@ function caml_register_global (n, v, name_opt) {
     if(globalThis.toplevelReloc) {
       n = caml_callback(globalThis.toplevelReloc, [name]);
     }
-    else if (caml_global_data.toc) {
-      if(!caml_global_data.symbols) {
-        caml_global_data.symbols = caml_build_symbols(caml_global_data.toc)
+    else if (caml_global_data.symbols) {
+      if(!caml_global_data.symidx) {
+        caml_global_data.symidx = caml_build_symbols(caml_global_data.symbols)
       }
-      var nid = caml_global_data.symbols[name]
+      var nid = caml_global_data.symidx[name]
       if(nid >= 0)
         n = nid
       else {

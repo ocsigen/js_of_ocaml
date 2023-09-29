@@ -50,6 +50,8 @@ module Symtable : sig
   val reloc_ident : string -> int
 
   val current_state : unit -> GlobalMap.t
+
+  val all_primitives : unit -> string list
 end
 
 module Cmo_format : sig

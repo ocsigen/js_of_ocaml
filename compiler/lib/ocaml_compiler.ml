@@ -211,6 +211,24 @@ module Symtable = struct
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in
     Obj.magic x
+
+  let all_primitives () : string list =
+    let split_primitives p =
+      let len = String.length p in
+      let rec split beg cur =
+        if cur >= len
+        then []
+        else if Char.equal p.[cur] '\000'
+        then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
+        else split beg (cur + 1)
+      in
+      split 0 0
+    in
+    split_primitives (Symtable.data_primitive_names ())
+  [@@if ocaml_version < (5, 3)]
+
+  let all_primitives () : string list = Symtable.data_primitive_names ()
+  [@@if ocaml_version >= (5, 3)]
 end
 
 module Cmo_format = struct
