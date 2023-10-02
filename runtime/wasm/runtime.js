@@ -1,4 +1,3 @@
-#!/usr/bin/env -S node --experimental-wasm-stringref --experimental-wasm-gc
 (async function (eval_function, js) {
     "use strict";
     const src = 'CODE';

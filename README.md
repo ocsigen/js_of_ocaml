@@ -4,11 +4,11 @@ Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssem
 
 ## Requirements
 
-Wasm_of_ocaml relies on the Binaryen toolchain. At the moment, you need to install it [from the main branch on GitHub](https://github.com/WebAssembly/binaryen/).
+Wasm_of_ocaml relies on the Binaryen toolchain ([version 116](https://github.com/WebAssembly/binaryen/releases/tag/version_116) or greater).
 
 ## Supported engines
 
-The generated code works with [Chrome beta](https://www.google.com/chrome/beta/) and [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230711fb76fe1ec2/). For Chrome, you need to enable WebAssembly Garbage Collection and WebAssembly Stringref from chrome://flags/. For node, you need to use the following flags:`--experimental-wasm-gc  --experimental-wasm-stringref`.
+The generated code works with Chrome 11.9 (currently, [Chrome Beta](https://www.google.com/chrome/beta/) or [Chrome for developpers](https://www.google.com/chrome/dev/)), [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and Firefox 120 (currently, [Firefox nightly](https://www.mozilla.org/en-US/firefox/channel/desktop/)).
 
 ## Installation
 
@@ -42,14 +42,14 @@ This outputs a file `cubes.js` which loads the WebAssembly code from file `cube.
 python3 -m http.server 8000 --directory .
 ```
 
-As a larger example, you can try [CAMLBOY](https://github.com/linoscope/CAMLBOY). You need to install a forked version of [Brr](https://github.com/ocaml-wasm/brr/tree/wasm). Once the Js_of_ocaml UI is compiled (with `dune build`), you can generate WebAssembly code instead with the following command:
+As a larger example, you can try [CAMLBOY](https://github.com/linoscope/CAMLBOY). You need to install a forked version of [Brr](https://github.com/ocaml-wasm/brr/tree/wasm). Once the Js_of_ocaml UI is compiled (with `dune build --profile release`), you can generate WebAssembly code instead with the following command:
 ```
 wasm_of_ocaml _build/default/bin/web/index.bc-for-jsoo
 ```
 
 ## Implementation status
 
-A large part of the runtime is [implemented](https://github.com/ocaml-wasm/wasm_of_ocaml/issues/5). File-related functions, marshaling and dynamic linking are not supported yet.
+A large part of the runtime is [implemented](https://github.com/ocaml-wasm/wasm_of_ocaml/issues/5). File-related functions and dynamic linking are not supported yet.
 
 Separate compilation is not implemented yet.
 
