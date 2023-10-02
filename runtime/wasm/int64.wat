@@ -1,5 +1,5 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
+   (import "jslib" "log_str" (func $log_str (param (ref $string))))
    (import "ints" "parse_sign_and_base"
       (func $parse_sign_and_base
          (param (ref $string)) (result i32 i32 i32 i32)))
@@ -172,10 +172,14 @@
          (then (local.set $res (i64.sub (i64.const 0) (local.get $res)))))
       (return_call $caml_copy_int64 (local.get $res)))
 
+   (data $caml_int64_create_lo_mi_hi "caml_int64_create_lo_mi_hi")
+
    (func (export "caml_int64_create_lo_mi_hi")
       (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
       ;; ZZZ does not really make sense
-      (call $log_js (string.const "caml_int64_create_lo_mi_hi"))
+      (call $log_str
+         (array.new_data $string $caml_int64_create_lo_mi_hi
+            (i32.const 0) (i32.const 26)))
       (ref.i31 (i32.const 0)))
 
    (func $format_int64_default (param $d i64) (result (ref eq))

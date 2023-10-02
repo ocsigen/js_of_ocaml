@@ -1,5 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_normalize"

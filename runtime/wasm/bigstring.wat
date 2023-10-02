@@ -1,5 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_get"

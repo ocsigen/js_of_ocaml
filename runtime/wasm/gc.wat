@@ -1,6 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
-
    (type $float (struct (field f64)))
    (type $block (array (mut (ref eq))))
 

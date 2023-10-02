@@ -1,5 +1,5 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
+   (import "jslib" "log_str" (func $log_str (param (ref $string))))
    (import "custom" "caml_register_custom_operations"
       (func $caml_register_custom_operations
          (param $ops (ref $custom_operations))))
@@ -362,37 +362,51 @@
          (if (local.get $len1) (then (br $loop))))
       (i31.new (i32.const 1)))
 
+   (data $mult_nat "mult_nat")
+
    (func (export "mult_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vlen2 (ref eq))
       (param $nat3 (ref eq)) (param $vofs3 (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "mult_nat"))
+      (call $log_str
+         (array.new_data $string $mult_nat (i32.const 0) (i32.const 8)))
       (unreachable))
+
+   (data $square_nat "square_nat")
 
    (func (export "square_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vlen2 (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "square_nat"))
+      (call $log_str
+         (array.new_data $string $square_nat (i32.const 0) (i32.const 10)))
       (unreachable))
+
+   (data $shift_left_nat "shift_left_nat")
 
    (func (export "shift_left_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vnbits (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "shift_left_nat"))
+      (call $log_str
+         (array.new_data $string $shift_left_nat (i32.const 0) (i32.const 14)))
       (unreachable))
+
+   (data $shift_right_nat "shift_right_nat")
 
    (func (export "shift_right_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vnbits (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "shift_right_nat"))
+      (call $log_str
+         (array.new_data $string $shift_right_nat (i32.const 0) (i32.const 15)))
       (unreachable))
+
+   (data $div_digit_nat "div_digit_nat")
 
    (func (export "div_digit_nat")
       (param $natq (ref eq)) (param $ofsq (ref eq))
@@ -400,16 +414,22 @@
       (param $nat1 (ref eq)) (param $ofs1 (ref eq)) (param $len (ref eq))
       (param $nat2 (ref eq)) (param $ofs2 (ref eq)) (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "div_digit_nat"))
+      (call $log_str
+         (array.new_data $string $div_digit_nat (i32.const 0) (i32.const 13)))
       (unreachable))
+
+   (data $div_nat "div_nat")
 
    (func (export "div_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vlen2 (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "div_nat"))
+      (call $log_str
+         (array.new_data $string $div_nat (i32.const 0) (i32.const 7)))
       (unreachable))
+
+   (data $add_nat "add_nat")
 
    (func (export "add_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
@@ -417,8 +437,11 @@
       (param $carry_in (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "add_nat"))
+      (call $log_str
+         (array.new_data $string $add_nat (i32.const 0) (i32.const 7)))
       (unreachable))
+
+   (data $sub_nat "sub_nat")
 
    (func (export "sub_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
@@ -426,14 +449,18 @@
       (param $carry_in (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "sub_nat"))
+      (call $log_str
+         (array.new_data $string $sub_nat (i32.const 0) (i32.const 7)))
       (unreachable))
+
+   (data $complement_nat "complement_nat")
 
    (func (export "complement_nat")
       (param $nat (ref eq)) (param $vofs (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       ;; ZZZ
-      (call $log_js (string.const "complement_nat"))
+      (call $log_str
+         (array.new_data $string $complement_nat (i32.const 0) (i32.const 14)))
       (unreachable))
 
    (func (export "land_digit_nat")
@@ -487,19 +514,28 @@
             (array.get $data (local.get $data2) (local.get $ofs2))))
       (ref.i31 (i32.const 0)))
 
+   (data $hash_nat "hash_nat")
+
    (func $hash_nat (param (ref eq)) (result i32)
       ;; ZZZ
-      (call $log_js (string.const "hash_nat"))
+      (call $log_str
+         (array.new_data $string $hash_nat (i32.const 0) (i32.const 8)))
       (unreachable))
+
+   (data $serialize_nat "serialize_nat")
 
    (func $serialize_nat
       (param (ref eq)) (param (ref eq)) (result i32) (result i32)
       ;; ZZZ
-      (call $log_js (string.const "serialize_nat"))
+      (call $log_str
+         (array.new_data $string $serialize_nat (i32.const 0) (i32.const 13)))
       (unreachable))
+
+   (data $deserialize_nat "deserialize_nat")
 
    (func $deserialize_nat (param (ref eq)) (result (ref eq)) (result i32)
       ;; ZZZ
-      (call $log_js (string.const "deserialize_nat"))
+      (call $log_str
+         (array.new_data $string $serialize_nat (i32.const 0) (i32.const 15)))
       (unreachable))
 )

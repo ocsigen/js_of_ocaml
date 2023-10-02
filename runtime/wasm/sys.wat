@@ -1,5 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "ta_length"
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_get_i32"

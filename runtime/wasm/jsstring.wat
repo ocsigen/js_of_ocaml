@@ -1,6 +1,4 @@
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
-
    (import "bindings" "read_string"
       (func $read_string (param i32) (result anyref)))
    (import "bindings" "read_string_stream"
