@@ -186,9 +186,6 @@ let expr_vars e =
   | Block (_, params, _) ->
       Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
   | Field (z, _) -> Var.Set.add z vars
-  | Constant _ -> vars
-  | Closure (params, _) ->
-      List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
   | Prim (_, args) ->
       List.fold_left
         ~f:(fun acc v ->
@@ -197,6 +194,7 @@ let expr_vars e =
           | Pc _ -> acc)
         ~init:vars
         args
+  | Constant _ | Closure (_, _) -> vars
 
 (** Compute the initial liveness of each variable in the program. 
 
