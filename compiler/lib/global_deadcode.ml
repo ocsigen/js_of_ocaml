@@ -432,14 +432,17 @@ let f p sentinal global_info =
   let live_table = solver vars uses defs live_vars in
   (* Print debug info *)
   if debug ()
-    then (
-      Code.Print.program (fun _ _ -> "") p;
-      Print.print_liveness live_vars;
-      Print.print_uses uses;
-      Print.print_live_tbl live_table;
-      Format.eprintf "After Elimination:\n";
-      Code.Print.program (fun _ _ -> "") p);
+  then (
+    Format.eprintf "Before Zeroing:\n";
+    Code.Print.program (fun _ _ -> "") p;
+    Print.print_liveness live_vars;
+    Print.print_uses uses;
+    Print.print_live_tbl live_table);
   (* Zero out dead fields *)
   let p = zero p sentinal live_table in
+  if debug ()
+  then (
+    Format.printf "After Zeroing:\n";
+    Code.Print.program (fun _ _ -> "") p);
   if times () then Format.eprintf "  deadcode dgraph.: %a@." Timer.print t;
   p
