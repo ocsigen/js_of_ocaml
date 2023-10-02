@@ -2,6 +2,8 @@
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
    (import "bindings" "identity" (func $to_bool (param anyref) (result i32)))
+   (import "bindings" "identity" (func $to_int32 (param anyref) (result i32)))
+   (import "bindings" "identity" (func $from_int32 (param i32) (result anyref)))
    (import "bindings" "from_bool" (func $from_bool (param i32) (result anyref)))
    (import "bindings" "eval" (func $eval (param anyref) (result anyref)))
    (import "bindings" "get"
@@ -72,6 +74,14 @@
    (import "jsstring" "string_of_jsstring"
       (func $string_of_jsstring
          (param anyref) (param i32) (result (ref $string))))
+   (import "int32" "caml_copy_int32"
+      (func $caml_copy_int32 (param i32) (result (ref eq))))
+   (import "int32" "Int32_val"
+      (func $Int32_val (param (ref eq)) (result i32)))
+   (import "int32" "caml_copy_nativeint"
+      (func $caml_copy_nativeint (param i32) (result (ref eq))))
+   (import "int32" "Nativeint_val"
+      (func $Nativeint_val (param (ref eq)) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
@@ -135,6 +145,20 @@
    (func (export "caml_js_from_bool") (param (ref eq)) (result (ref eq))
       (struct.new $js
          (call $from_bool (i31.get_s (ref.cast (ref i31) (local.get 0))))))
+
+   (func (export "caml_js_to_int32") (param (ref eq)) (result (ref eq))
+      (return_call $caml_copy_int32
+         (call $to_int32 (call $unwrap (local.get 0)))))
+
+   (func (export "caml_js_from_int32") (param (ref eq)) (result (ref eq))
+      (return_call $wrap (call $from_int32 (call $Int32_val (local.get 0)))))
+
+   (func (export "caml_js_to_nativeint") (param (ref eq)) (result (ref eq))
+      (return_call $caml_copy_nativeint
+         (call $to_int32 (call $unwrap (local.get 0)))))
+
+   (func (export "caml_js_from_nativeint") (param (ref eq)) (result (ref eq))
+      (return_call $wrap (call $from_int32 (call $Nativeint_val (local.get 0)))))
 
   (func (export "caml_js_pure_expr")
      (param $f (ref eq)) (result (ref eq))
