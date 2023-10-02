@@ -220,19 +220,18 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
   in
   let live_instruction i =
     match i with
-    | Let (_x, e) ->
+    | Let (_x, e) -> (
         if not (pure_expr pure_funs e)
-        then (
-          let vars = expr_vars e in
-          Var.Set.iter add_top vars;
+        then
           match e with
           | Apply { f; args; _ } ->
               add_top f;
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
-          | _ -> ())
-        else ()
+          | _ ->
+              let vars = expr_vars e in
+              Var.Set.iter add_top vars)
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live x i;
