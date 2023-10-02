@@ -87,7 +87,10 @@
     }
 
     let bindings =
-        {jstag:WebAssembly.JSTag,
+        {jstag:
+         WebAssembly.JSTag||
+         // ZZZ not supported in Firefox yet
+         new WebAssembly.Tag({parameters:['externref'],results:[]}),
          identity:(x)=>x,
          from_bool:(x)=>!!x,
          get:(x,y)=>x[y],
