@@ -397,6 +397,13 @@ let ()  = M.run ()
 let%expect_test _ =
   let prog =
     {|
+
+let list_rev = List.rev
+let list_iter = List.iter
+(* Avoid to expose the offset of stdlib modules *)
+let () = ignore (list_rev [])
+let () = ignore (list_iter (fun f -> f ()) [])
+
 module M : sig
   val run : unit -> unit
 end = struct
@@ -426,7 +433,7 @@ end = struct
    for i = 0 to 4 do
      ignore (even (i) : bool)
    done;
-   List.iter (fun f -> f ()) (List.rev !delayed)
+   list_iter (fun f -> f ()) (list_rev !delayed)
 end
 
 let ()  = M.run ()
@@ -460,7 +467,7 @@ let ()  = M.run ()
            switch(n){
              case 0:
               var
-               f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
+               f = function(param){return caml_call2(Stdlib_Printf[2], _c_, i);};
               delayed[1] = [0, f, delayed[1]];
               f(0);
               return 1;
@@ -474,7 +481,7 @@ let ()  = M.run ()
            switch(n){
              case 0:
               var
-               f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i);};
+               f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i);};
               delayed[1] = [0, f, delayed[1]];
               f(0);
               return 0;
@@ -491,10 +498,8 @@ let ()  = M.run ()
       even(i);
       var _e_ = i + 1 | 0;
       if(4 === i){
-       var
-        _c_ = caml_call1(Stdlib_List[9], delayed[1]),
-        _d_ = function(f){return caml_call1(f, 0);};
-       return caml_call2(Stdlib_List[17], _d_, _c_);
+       var _d_ = caml_call1(list_rev, delayed[1]);
+       return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _d_);
       }
       var i = _e_;
      }
@@ -504,6 +509,13 @@ let ()  = M.run ()
 let%expect_test _ =
   let prog =
     {|
+
+let list_rev = List.rev
+let list_iter = List.iter
+(* Avoid to expose the offset of stdlib modules *)
+let () = ignore (list_rev [])
+let () = ignore (list_iter (fun f -> f ()) [])
+
 module M : sig
   val run : unit -> unit
 end = struct
@@ -537,7 +549,7 @@ end = struct
       in
       ignore (r  (even (i)) : bool)
    done;
-   List.iter (fun f -> f ()) (List.rev !delayed)
+   list_iter (fun f -> f ()) (list_rev !delayed)
 end
 
 let ()  = M.run ()
@@ -575,11 +587,11 @@ let ()  = M.run ()
                       748545554,
                       function(param){
                        function f(param){
-                        return caml_call2(Stdlib_Printf[2], _c_, i);
+                        return caml_call2(Stdlib_Printf[2], _d_, i);
                        }
                        delayed[1] = [0, f, delayed[1]];
                        f(0);
-                       return _d_;
+                       return _e_;
                       }];
              case 1:
               return [0, 748545554, function(param){return odd(0);}];
@@ -595,11 +607,11 @@ let ()  = M.run ()
                       748545554,
                       function(param){
                        function f(param){
-                        return caml_call2(Stdlib_Printf[2], _a_, i);
+                        return caml_call2(Stdlib_Printf[2], _b_, i);
                        }
                        delayed[1] = [0, f, delayed[1]];
                        f(0);
-                       return _b_;
+                       return _c_;
                       }];
              case 1:
               return [0, 748545554, function(param){return even(0);}];
@@ -616,10 +628,8 @@ let ()  = M.run ()
        if(759635106 <= param$0[1]){
         var _g_ = i + 1 | 0;
         if(4 !== i){var i = _g_; break;}
-        var
-         _e_ = caml_call1(Stdlib_List[9], delayed[1]),
-         _f_ = function(f){return caml_call1(f, 0);};
-        return caml_call2(Stdlib_List[17], _f_, _e_);
+        var _f_ = caml_call1(list_rev, delayed[1]);
+        return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _f_);
        }
        var f = param$0[2], param$0 = f(0);
       }

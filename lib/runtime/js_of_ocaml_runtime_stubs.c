@@ -76,6 +76,14 @@ void caml_js_from_float () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_float!\n");
   exit(1);
 }
+void caml_js_from_int32 () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_int32!\n");
+  exit(1);
+}
+void caml_js_from_nativeint () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_nativeint!\n");
+  exit(1);
+}
 void caml_js_from_string () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_from_string!\n");
   exit(1);
@@ -112,6 +120,10 @@ void caml_js_set () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_set!\n");
   exit(1);
 }
+void caml_js_strict_equals () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_strict_equals!\n");
+  exit(1);
+}
 void caml_js_to_array () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_array!\n");
   exit(1);
@@ -126,6 +138,14 @@ void caml_js_to_byte_string () {
 }
 void caml_js_to_float () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_float!\n");
+  exit(1);
+}
+void caml_js_to_int32 () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_int32!\n");
+  exit(1);
+}
+void caml_js_to_nativeint () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_js_to_nativeint!\n");
   exit(1);
 }
 void caml_js_to_string () {

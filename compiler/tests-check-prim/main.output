@@ -53,6 +53,7 @@ caml_atomic_cas
 caml_atomic_exchange
 caml_atomic_fetch_add
 caml_atomic_load
+caml_atomic_make_contended
 caml_domain_dls
 caml_domain_dls_get
 caml_domain_dls_set
@@ -83,6 +84,7 @@ jsoo_create_file
 jsoo_create_file_extern
 
 From +gc.js:
+caml_memprof_discard
 caml_memprof_set
 
 From +graphics.js:
@@ -143,6 +145,8 @@ caml_mod
 
 From +io.js:
 caml_input_value_to_outside_heap
+caml_ml_input_bigarray
+caml_ml_output_bigarray
 
 From +jslib.js:
 caml_is_js

@@ -365,11 +365,11 @@ and mousewheelEvent = object
 
   method wheelDeltaY : int optdef readonly_prop
 
-  method deltaX : float readonly_prop
+  method deltaX : number_t readonly_prop
 
-  method deltaY : float readonly_prop
+  method deltaY : number_t readonly_prop
 
-  method deltaZ : float readonly_prop
+  method deltaZ : number_t readonly_prop
 
   method deltaMode : delta_mode readonly_prop
 end
@@ -560,13 +560,13 @@ and pointerEvent = object
 
   method pointerId : int Js.readonly_prop
 
-  method width : float Js.readonly_prop
+  method width : number_t Js.readonly_prop
 
-  method height : float Js.readonly_prop
+  method height : number_t Js.readonly_prop
 
-  method pressure : float Js.readonly_prop
+  method pressure : number_t Js.readonly_prop
 
-  method tangentialPressure : float Js.readonly_prop
+  method tangentialPressure : number_t Js.readonly_prop
 
   method tiltX : int Js.readonly_prop
 
@@ -620,7 +620,7 @@ and animationEvent = object
 
   method animationName : js_string t readonly_prop
 
-  method elapsedTime : float readonly_prop
+  method elapsedTime : number_t readonly_prop
 
   method pseudoElement : js_string t readonly_prop
 end
@@ -630,7 +630,7 @@ and transitionEvent = object
 
   method propertyName : js_string t readonly_prop
 
-  method elapsedTime : float readonly_prop
+  method elapsedTime : number_t readonly_prop
 
   method pseudoElement : js_string t readonly_prop
 end
@@ -740,17 +740,17 @@ and element = object
 end
 
 and clientRect = object
-  method top : float readonly_prop
+  method top : number_t readonly_prop
 
-  method right : float readonly_prop
+  method right : number_t readonly_prop
 
-  method bottom : float readonly_prop
+  method bottom : number_t readonly_prop
 
-  method left : float readonly_prop
+  method left : number_t readonly_prop
 
-  method width : float optdef readonly_prop
+  method width : number_t optdef readonly_prop
 
-  method height : float optdef readonly_prop
+  method height : number_t optdef readonly_prop
 end
 
 and clientRectList = object
@@ -1608,9 +1608,9 @@ end
 class type timeRanges = object
   method length : int readonly_prop
 
-  method start : int -> float meth
+  method start : int -> number_t meth
 
-  method end_ : int -> float meth
+  method end_ : int -> number_t meth
 end
 
 type networkState =
@@ -1647,9 +1647,9 @@ class type mediaElement = object
 
   method currentSrc : js_string t readonly_prop
 
-  method currentTime : float prop
+  method currentTime : number_t prop
 
-  method duration : float readonly_prop
+  method duration : number_t readonly_prop
 
   method ended : bool t readonly_prop
 
@@ -1665,7 +1665,7 @@ class type mediaElement = object
 
   method paused : bool t readonly_prop
 
-  method playbackRate : float prop
+  method playbackRate : number_t prop
 
   method played : timeRanges t readonly_prop
 
@@ -1681,7 +1681,7 @@ class type mediaElement = object
 
   method src : js_string t prop
 
-  method volume : float prop
+  method volume : number_t prop
 
   method oncanplay : ('self t, mediaEvent t) event_listener writeonly_prop
 
@@ -1745,7 +1745,7 @@ class type canvasElement = object
 
   method toDataURL_type : js_string t -> js_string t meth
 
-  method toDataURL_type_compression : js_string t -> float -> js_string t meth
+  method toDataURL_type_compression : js_string t -> number_t -> js_string t meth
 
   method getContext : js_string t -> canvasRenderingContext2D t meth
 end
@@ -1757,17 +1757,19 @@ and canvasRenderingContext2D = object
 
   method restore : unit meth
 
-  method scale : float -> float -> unit meth
+  method scale : number_t -> number_t -> unit meth
 
-  method rotate : float -> unit meth
+  method rotate : number_t -> unit meth
 
-  method translate : float -> float -> unit meth
+  method translate : number_t -> number_t -> unit meth
 
-  method transform : float -> float -> float -> float -> float -> float -> unit meth
+  method transform :
+    number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method setTransform : float -> float -> float -> float -> float -> float -> unit meth
+  method setTransform :
+    number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method globalAlpha : float prop
+  method globalAlpha : number_t prop
 
   method globalCompositeOperation : js_string t prop
 
@@ -1783,10 +1785,17 @@ and canvasRenderingContext2D = object
 
   method fillStyle_pattern : canvasPattern t writeonly_prop
 
-  method createLinearGradient : float -> float -> float -> float -> canvasGradient t meth
+  method createLinearGradient :
+    number_t -> number_t -> number_t -> number_t -> canvasGradient t meth
 
   method createRadialGradient :
-    float -> float -> float -> float -> float -> float -> canvasGradient t meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> canvasGradient t meth
 
   method createPattern : imageElement t -> js_string t -> canvasPattern t meth
 
@@ -1794,45 +1803,47 @@ and canvasRenderingContext2D = object
 
   method createPattern_fromVideo : videoElement t -> js_string t -> canvasPattern t meth
 
-  method lineWidth : float prop
+  method lineWidth : number_t prop
 
   method lineCap : js_string t prop
 
   method lineJoin : js_string t prop
 
-  method miterLimit : float prop
+  method miterLimit : number_t prop
 
-  method shadowOffsetX : float prop
+  method shadowOffsetX : number_t prop
 
-  method shadowOffsetY : float prop
+  method shadowOffsetY : number_t prop
 
-  method shadowBlur : float prop
+  method shadowBlur : number_t prop
 
   method shadowColor : js_string t prop
 
-  method clearRect : float -> float -> float -> float -> unit meth
+  method clearRect : number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method fillRect : float -> float -> float -> float -> unit meth
+  method fillRect : number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method strokeRect : float -> float -> float -> float -> unit meth
+  method strokeRect : number_t -> number_t -> number_t -> number_t -> unit meth
 
   method beginPath : unit meth
 
   method closePath : unit meth
 
-  method moveTo : float -> float -> unit meth
+  method moveTo : number_t -> number_t -> unit meth
 
-  method lineTo : float -> float -> unit meth
+  method lineTo : number_t -> number_t -> unit meth
 
-  method quadraticCurveTo : float -> float -> float -> float -> unit meth
+  method quadraticCurveTo : number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method bezierCurveTo : float -> float -> float -> float -> float -> float -> unit meth
+  method bezierCurveTo :
+    number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method arcTo : float -> float -> float -> float -> float -> unit meth
+  method arcTo : number_t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method rect : float -> float -> float -> float -> unit meth
+  method rect : number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method arc : float -> float -> float -> float -> float -> bool t -> unit meth
+  method arc :
+    number_t -> number_t -> number_t -> number_t -> number_t -> bool t -> unit meth
 
   method fill : unit meth
 
@@ -1840,9 +1851,9 @@ and canvasRenderingContext2D = object
 
   method clip : unit meth
 
-  method isPointInPath : float -> float -> bool t meth
+  method isPointInPath : number_t -> number_t -> bool t meth
 
-  method drawFocusRing : #element t -> float -> float -> bool t -> bool t meth
+  method drawFocusRing : #element t -> number_t -> number_t -> bool t -> bool t meth
 
   method font : js_string t prop
 
@@ -1850,80 +1861,82 @@ and canvasRenderingContext2D = object
 
   method textBaseline : js_string t prop
 
-  method fillText : js_string t -> float -> float -> unit meth
+  method fillText : js_string t -> number_t -> number_t -> unit meth
 
-  method fillText_withWidth : js_string t -> float -> float -> float -> unit meth
+  method fillText_withWidth : js_string t -> number_t -> number_t -> number_t -> unit meth
 
-  method strokeText : js_string t -> float -> float -> unit meth
+  method strokeText : js_string t -> number_t -> number_t -> unit meth
 
-  method strokeText_withWidth : js_string t -> float -> float -> float -> unit meth
+  method strokeText_withWidth :
+    js_string t -> number_t -> number_t -> number_t -> unit meth
 
   method measureText : js_string t -> textMetrics t meth
 
-  method drawImage : imageElement t -> float -> float -> unit meth
+  method drawImage : imageElement t -> number_t -> number_t -> unit meth
 
   method drawImage_withSize :
-    imageElement t -> float -> float -> float -> float -> unit meth
+    imageElement t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
   method drawImage_full :
        imageElement t
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
     -> unit meth
 
-  method drawImage_fromCanvas : canvasElement t -> float -> float -> unit meth
+  method drawImage_fromCanvas : canvasElement t -> number_t -> number_t -> unit meth
 
   method drawImage_fromCanvasWithSize :
-    canvasElement t -> float -> float -> float -> float -> unit meth
+    canvasElement t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
   method drawImage_fullFromCanvas :
        canvasElement t
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
     -> unit meth
 
-  method drawImage_fromVideoWithVideo : videoElement t -> float -> float -> unit meth
+  method drawImage_fromVideoWithVideo :
+    videoElement t -> number_t -> number_t -> unit meth
 
   method drawImage_fromVideoWithSize :
-    videoElement t -> float -> float -> float -> float -> unit meth
+    videoElement t -> number_t -> number_t -> number_t -> number_t -> unit meth
 
   method drawImage_fullFromVideo :
        videoElement t
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
-    -> float
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
     -> unit meth
 
   method createImageData : int -> int -> imageData t meth
 
-  method getImageData : float -> float -> float -> float -> imageData t meth
+  method getImageData : number_t -> number_t -> number_t -> number_t -> imageData t meth
 
-  method putImageData : imageData t -> float -> float -> unit meth
+  method putImageData : imageData t -> number_t -> number_t -> unit meth
 end
 
 and canvasGradient = object
-  method addColorStop : float -> js_string t -> unit meth
+  method addColorStop : number_t -> js_string t -> unit meth
 end
 
 and textMetrics = object
-  method width : float readonly_prop
+  method width : number_t readonly_prop
 end
 
 and imageData = object
@@ -2274,16 +2287,16 @@ class type window = object
 
   method print : unit meth
 
-  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
+  method setInterval : (unit -> unit) Js.callback -> number_t -> interval_id meth
 
   method clearInterval : interval_id -> unit meth
 
-  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
+  method setTimeout : (unit -> unit) Js.callback -> number_t -> timeout_id meth
 
   method clearTimeout : timeout_id -> unit meth
 
   method requestAnimationFrame :
-    (float -> unit) Js.callback -> animation_frame_request_id meth
+    (number_t -> unit) Js.callback -> animation_frame_request_id meth
 
   method cancelAnimationFrame : animation_frame_request_id -> unit meth
 
@@ -2330,7 +2343,7 @@ class type window = object
 
   method _URL : _URL t readonly_prop
 
-  method devicePixelRatio : float readonly_prop
+  method devicePixelRatio : number_t readonly_prop
 end
 
 let window : window t = Js.Unsafe.global
@@ -2458,8 +2471,8 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
                  Js.Unsafe.coerce
                    (document##createElement (Js.string "<input name=\"x\">"))
                in
-               el##.tagName##toLowerCase == Js.string "input"
-               && el##.name == Js.string "x"
+               Js.equals el##.tagName##toLowerCase (Js.string "input")
+               && Js.equals el##.name (Js.string "x")
              with _ -> false
           then `Extended
           else `Standard;
@@ -2642,12 +2655,12 @@ let html_element : htmlElement t constr = Js.Unsafe.global##._HTMLElement
 
 module CoerceTo = struct
   let element : #Dom.node Js.t -> element Js.t Js.opt =
-    if def html_element == undefined
+    if not (Js.Optdef.test (def html_element))
     then
       (* ie < 9 does not have HTMLElement: we have to cheat to check
          that something is an html element *)
       fun e ->
-      if def (Js.Unsafe.coerce e)##.innerHTML == undefined
+      if not (Js.Optdef.test (def (Js.Unsafe.coerce e)##.innerHTML))
       then Js.null
       else Js.some (Js.Unsafe.coerce e)
     else
@@ -2655,7 +2668,7 @@ module CoerceTo = struct
       if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce tag (e : #element t) =
-    if e##.tagName##toLowerCase == Js.string tag
+    if Js.equals e##.tagName##toLowerCase (Js.string tag)
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 
@@ -2782,7 +2795,7 @@ module CoerceTo = struct
   let video e = unsafeCoerce "video" e
 
   let unsafeCoerceEvent constr (ev : #event t) =
-    if def constr != undefined && Js.instanceof ev constr
+    if Js.Optdef.test (def constr) && Js.instanceof ev constr
     then Js.some (Js.Unsafe.coerce ev)
     else Js.null
 
@@ -2826,8 +2839,8 @@ let elementClientPosition (e : #element t) =
   let r = e##getBoundingClientRect in
   let body = document##.body in
   let html = document##.documentElement in
-  ( truncate r##.left - body##.clientLeft - html##.clientLeft
-  , truncate r##.top - body##.clientTop - html##.clientTop )
+  ( truncate (Js.to_float r##.left) - body##.clientLeft - html##.clientLeft
+  , truncate (Js.to_float r##.top) - body##.clientTop - html##.clientTop )
 
 let getDocumentScroll () =
   let body = document##.body in
@@ -3314,7 +3327,7 @@ module Keyboard_key = struct
     let key = Optdef.get evt##.key empty_string in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
-    | 1 -> char_of_int (int_of_float (key##charCodeAt 0))
+    | 1 -> char_of_int (int_of_float (Js.to_float (key##charCodeAt 0)))
     | _ -> None
 end
 
@@ -3569,14 +3582,14 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
         let req = List.find (fun c -> Js.Optdef.test c) l in
         fun callback -> Js.Unsafe.fun_call req [| Js.Unsafe.inject callback |]
       with Not_found ->
-        let now () = (new%js Js.date_now)##getTime in
+        let now () = Js.to_float (new%js Js.date_now)##getTime in
         let last = ref (now ()) in
         fun callback ->
           let t = now () in
           let dt = !last +. (1000. /. 60.) -. t in
           let dt = if Poly.(dt < 0.) then 0. else dt in
           last := t;
-          ignore (window##setTimeout callback dt))
+          ignore (window##setTimeout callback (Js.float dt)))
 
 (****)
 
@@ -3603,7 +3616,7 @@ let setTimeout callback d : timeout_id_safe =
       if Poly.(d > overflow_limit) then overflow_limit, d -. overflow_limit else d, 0.
     in
     let cb = if Poly.(remain = 0.) then callback else loop remain in
-    id := Some (window##setTimeout (Js.wrap_callback cb) step)
+    id := Some (window##setTimeout (Js.wrap_callback cb) (Js.float step))
   in
   loop d ();
   id

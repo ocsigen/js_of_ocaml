@@ -21,18 +21,18 @@ type int_list = int list[@@deriving json]
 include
   struct
     let _ = fun (_ : int_list) -> ()
-    let rec (int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list) =
+    let rec int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list =
       fun buf ->
         Deriving_Json.read_list (fun buf -> Deriving_Json.Json_int.read buf)
           buf
     let _ = int_list_of_json
-    let rec (int_list_to_json : Buffer.t -> int_list -> unit) =
+    let rec int_list_to_json : Buffer.t -> int_list -> unit =
       fun buf ->
         fun a ->
           Deriving_Json.write_list
             (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_list_to_json
-    let (int_list_json : int_list Deriving_Json.t) =
+    let int_list_json : int_list Deriving_Json.t =
       Deriving_Json.make int_list_to_json int_list_of_json
     let _ = int_list_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -51,18 +51,18 @@ type int_ref = int ref[@@deriving json]
 include
   struct
     let _ = fun (_ : int_ref) -> ()
-    let rec (int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref) =
+    let rec int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref =
       fun buf ->
         Deriving_Json.read_ref (fun buf -> Deriving_Json.Json_int.read buf)
           buf
     let _ = int_ref_of_json
-    let rec (int_ref_to_json : Buffer.t -> int_ref -> unit) =
+    let rec int_ref_to_json : Buffer.t -> int_ref -> unit =
       fun buf ->
         fun a ->
           Deriving_Json.write_ref
             (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_ref_to_json
-    let (int_ref_json : int_ref Deriving_Json.t) =
+    let int_ref_json : int_ref Deriving_Json.t =
       Deriving_Json.make int_ref_to_json int_ref_of_json
     let _ = int_ref_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -81,18 +81,18 @@ type int_option = int option[@@deriving json]
 include
   struct
     let _ = fun (_ : int_option) -> ()
-    let rec (int_option_of_json : Deriving_Json_lexer.lexbuf -> int_option) =
+    let rec int_option_of_json : Deriving_Json_lexer.lexbuf -> int_option =
       fun buf ->
         Deriving_Json.read_option
           (fun buf -> Deriving_Json.Json_int.read buf) buf
     let _ = int_option_of_json
-    let rec (int_option_to_json : Buffer.t -> int_option -> unit) =
+    let rec int_option_to_json : Buffer.t -> int_option -> unit =
       fun buf ->
         fun a ->
           Deriving_Json.write_option
             (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_option_to_json
-    let (int_option_json : int_option Deriving_Json.t) =
+    let int_option_json : int_option Deriving_Json.t =
       Deriving_Json.make int_option_to_json int_option_of_json
     let _ = int_option_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -111,18 +111,18 @@ type int_array = int array[@@deriving json]
 include
   struct
     let _ = fun (_ : int_array) -> ()
-    let rec (int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array) =
+    let rec int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array =
       fun buf ->
         Deriving_Json.read_array (fun buf -> Deriving_Json.Json_int.read buf)
           buf
     let _ = int_array_of_json
-    let rec (int_array_to_json : Buffer.t -> int_array -> unit) =
+    let rec int_array_to_json : Buffer.t -> int_array -> unit =
       fun buf ->
         fun a ->
           Deriving_Json.write_array
             (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_array_to_json
-    let (int_array_json : int_array Deriving_Json.t) =
+    let int_array_json : int_array Deriving_Json.t =
       Deriving_Json.make int_array_to_json int_array_of_json
     let _ = int_array_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -141,7 +141,7 @@ type tuple1 = (int * string)[@@deriving json]
 include
   struct
     let _ = fun (_ : tuple1) -> ()
-    let rec (tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1) =
+    let rec tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1 =
       fun buf ->
         Deriving_Json_lexer.read_lbracket buf;
         ignore (Deriving_Json_lexer.read_tag_1 0 buf);
@@ -151,7 +151,7 @@ include
          (let b = Deriving_Json.Json_string.read buf in
           Deriving_Json_lexer.read_rbracket buf; (a, b)))
     let _ = tuple1_of_json
-    let rec (tuple1_to_json : Buffer.t -> tuple1 -> unit) =
+    let rec tuple1_to_json : Buffer.t -> tuple1 -> unit =
       fun buf ->
         fun a ->
           let (a, b) = a in
@@ -161,7 +161,7 @@ include
            Deriving_Json.Json_string.write buf b);
           Buffer.add_string buf "]"
     let _ = tuple1_to_json
-    let (tuple1_json : tuple1 Deriving_Json.t) =
+    let tuple1_json : tuple1 Deriving_Json.t =
       Deriving_Json.make tuple1_to_json tuple1_of_json
     let _ = tuple1_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -189,7 +189,7 @@ type variant1 =
 include
   struct
     let _ = fun (_ : variant1) -> ()
-    let rec (variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1) =
+    let rec variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1 =
       fun buf ->
         match Deriving_Json_lexer.read_case buf with
         | `NCst 0 ->
@@ -201,7 +201,7 @@ include
         | `Cst 0 -> A
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
     let _ = variant1_of_json
-    let rec (variant1_to_json : Buffer.t -> variant1 -> unit) =
+    let rec variant1_to_json : Buffer.t -> variant1 -> unit =
       fun buf ->
         function
         | D a ->
@@ -212,7 +212,7 @@ include
         | B -> Deriving_Json.Json_int.write buf 1
         | A -> Deriving_Json.Json_int.write buf 0
     let _ = variant1_to_json
-    let (variant1_json : variant1 Deriving_Json.t) =
+    let variant1_json : variant1 Deriving_Json.t =
       Deriving_Json.make variant1_to_json variant1_of_json
     let _ = variant1_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -236,7 +236,7 @@ type variant2 =
 include
   struct
     let _ = fun (_ : variant2) -> ()
-    let rec (variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2) =
+    let rec variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2 =
       fun buf ->
         match Deriving_Json_lexer.read_case buf with
         | `NCst 1 ->
@@ -249,7 +249,7 @@ include
               Deriving_Json_lexer.read_rbracket buf; D a))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
     let _ = variant2_of_json
-    let rec (variant2_to_json : Buffer.t -> variant2 -> unit) =
+    let rec variant2_to_json : Buffer.t -> variant2 -> unit =
       fun buf ->
         function
         | E a ->
@@ -262,7 +262,7 @@ include
               Deriving_Json.Json_string.write buf a);
              Buffer.add_string buf "]")
     let _ = variant2_to_json
-    let (variant2_json : variant2 Deriving_Json.t) =
+    let variant2_json : variant2 Deriving_Json.t =
       Deriving_Json.make variant2_to_json variant2_of_json
     let _ = variant2_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -288,7 +288,7 @@ type record1 = {
 include
   struct
     let _ = fun (_ : record1) -> ()
-    let rec (record1_of_json : Deriving_Json_lexer.lexbuf -> record1) =
+    let rec record1_of_json : Deriving_Json_lexer.lexbuf -> record1 =
       fun buf ->
         Deriving_Json_lexer.read_lbracket buf;
         ignore (Deriving_Json_lexer.read_tag_2 0 254 buf);
@@ -301,7 +301,7 @@ include
              Deriving_Json.read_option (fun buf -> record1_of_json buf) buf in
            Deriving_Json_lexer.read_rbracket buf; { f = a; g = b; h = c })))
     let _ = record1_of_json
-    let rec (record1_to_json : Buffer.t -> record1 -> unit) =
+    let rec record1_to_json : Buffer.t -> record1 -> unit =
       fun buf ->
         fun { f; g; h } ->
           Buffer.add_string buf "[0";
@@ -313,7 +313,7 @@ include
              (fun buf -> fun a -> record1_to_json buf a) buf h);
           Buffer.add_string buf "]"
     let _ = record1_to_json
-    let (record1_json : record1 Deriving_Json.t) =
+    let record1_json : record1 Deriving_Json.t =
       Deriving_Json.make record1_to_json record1_of_json
     let _ = record1_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -335,11 +335,11 @@ type poly1 = [ `A  | `B of string ][@@deriving json]
 include
   struct
     let _ = fun (_ : poly1) -> ()
-    let rec (poly1_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+    let rec poly1_recognize : [ `NCst of int  | `Cst of int ] -> bool =
       function | `Cst 65 -> true | `NCst 66 -> true | _ -> false
     let _ = poly1_recognize
-    let rec (poly1_of_json_with_tag :
-      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly1)
+    let rec poly1_of_json_with_tag :
+      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly1
       =
       fun buf ->
         function
@@ -349,12 +349,12 @@ include
              (let v = Deriving_Json.Json_string.read buf in
               Deriving_Json_lexer.read_rbracket buf; `B v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
-    and (poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1) =
+    and poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1 =
       fun buf ->
         poly1_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
     let _ = poly1_of_json_with_tag
     and _ = poly1_of_json
-    let rec (poly1_to_json : Buffer.t -> [> poly1] -> unit) =
+    let rec poly1_to_json : Buffer.t -> [> poly1] -> unit =
       fun buf ->
         fun a ->
           match a with
@@ -368,7 +368,7 @@ include
                 Deriving_Json.Json_string.write buf b);
                Buffer.add_string buf "]")
     let _ = poly1_to_json
-    let (poly1_json : poly1 Deriving_Json.t) =
+    let poly1_json : poly1 Deriving_Json.t =
       Deriving_Json.make poly1_to_json poly1_of_json
     let _ = poly1_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -394,14 +394,14 @@ type poly2 = [ | poly1 | `C of int ][@@deriving json]
 include
   struct
     let _ = fun (_ : poly2) -> ()
-    let rec (poly2_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+    let rec poly2_recognize : [ `NCst of int  | `Cst of int ] -> bool =
       function
       | x when poly1_recognize x -> true
       | `NCst 67 -> true
       | _ -> false
     let _ = poly2_recognize
-    let rec (poly2_of_json_with_tag :
-      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly2)
+    let rec poly2_of_json_with_tag :
+      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly2
       =
       fun buf ->
         function
@@ -412,12 +412,12 @@ include
              (let v = Deriving_Json.Json_int.read buf in
               Deriving_Json_lexer.read_rbracket buf; `C v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
-    and (poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2) =
+    and poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2 =
       fun buf ->
         poly2_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
     let _ = poly2_of_json_with_tag
     and _ = poly2_of_json
-    let rec (poly2_to_json : Buffer.t -> [> poly2] -> unit) =
+    let rec poly2_to_json : Buffer.t -> [> poly2] -> unit =
       fun buf ->
         fun a ->
           match a with
@@ -431,7 +431,7 @@ include
                 Deriving_Json.Json_int.write buf b);
                Buffer.add_string buf "]")
     let _ = poly2_to_json
-    let (poly2_json : poly2 Deriving_Json.t) =
+    let poly2_json : poly2 Deriving_Json.t =
       Deriving_Json.make poly2_to_json poly2_of_json
     let _ = poly2_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -464,8 +464,8 @@ type inline_record =
 include
   struct
     let _ = fun (_ : inline_record) -> ()
-    let rec (inline_record_of_json :
-      Deriving_Json_lexer.lexbuf -> inline_record) =
+    let rec inline_record_of_json :
+      Deriving_Json_lexer.lexbuf -> inline_record =
       fun buf ->
         match Deriving_Json_lexer.read_case buf with
         | `NCst 1 ->
@@ -480,7 +480,7 @@ include
                Deriving_Json_lexer.read_rbracket buf; I { name = a; age = b })))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
     let _ = inline_record_of_json
-    let rec (inline_record_to_json : Buffer.t -> inline_record -> unit) =
+    let rec inline_record_to_json : Buffer.t -> inline_record -> unit =
       fun buf ->
         function
         | J { empty } ->
@@ -496,7 +496,7 @@ include
               Deriving_Json.Json_int.write buf age);
              Buffer.add_string buf "]")
     let _ = inline_record_to_json
-    let (inline_record_json : inline_record Deriving_Json.t) =
+    let inline_record_json : inline_record Deriving_Json.t =
       Deriving_Json.make inline_record_to_json inline_record_of_json
     let _ = inline_record_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -516,22 +516,21 @@ type 'a t = 'a array[@@deriving json]
 include
   struct
     let _ = fun (_ : 'a t) -> ()
-    let rec (of_json :
+    let rec of_json :
       (Deriving_Json_lexer.lexbuf -> 'a) ->
-        Deriving_Json_lexer.lexbuf -> 'a t)
+        Deriving_Json_lexer.lexbuf -> 'a t
       =
       fun poly_a ->
         fun buf -> Deriving_Json.read_array (fun buf -> poly_a buf) buf
     let _ = of_json
-    let rec (to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit)
-      =
+    let rec to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit =
       fun poly_a ->
         fun buf ->
           fun a ->
             Deriving_Json.write_array (fun buf -> fun a -> poly_a buf a) buf
               a
     let _ = to_json
-    let (json : 'a Deriving_Json.t -> 'a t Deriving_Json.t) =
+    let json : 'a Deriving_Json.t -> 'a t Deriving_Json.t =
       fun poly_a ->
         Deriving_Json.make (to_json (Deriving_Json.write poly_a))
           (of_json (Deriving_Json.read poly_a))
@@ -553,10 +552,10 @@ type ('a, 'b) t = ('a array * 'b)[@@deriving json]
 include
   struct
     let _ = fun (_ : ('a, 'b) t) -> ()
-    let rec (of_json :
+    let rec of_json :
       (Deriving_Json_lexer.lexbuf -> 'a) ->
         (Deriving_Json_lexer.lexbuf -> 'b) ->
-          Deriving_Json_lexer.lexbuf -> ('a, 'b) t)
+          Deriving_Json_lexer.lexbuf -> ('a, 'b) t
       =
       fun poly_a ->
         fun poly_b ->
@@ -569,9 +568,9 @@ include
              (let b = poly_b buf in
               Deriving_Json_lexer.read_rbracket buf; (a, b)))
     let _ = of_json
-    let rec (to_json :
+    let rec to_json :
       (Buffer.t -> 'a -> unit) ->
-        (Buffer.t -> 'b -> unit) -> Buffer.t -> ('a, 'b) t -> unit)
+        (Buffer.t -> 'b -> unit) -> Buffer.t -> ('a, 'b) t -> unit
       =
       fun poly_a ->
         fun poly_b ->
@@ -586,8 +585,8 @@ include
                poly_b buf b);
               Buffer.add_string buf "]"
     let _ = to_json
-    let (json :
-      'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t)
+    let json :
+      'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t
       =
       fun poly_a ->
         fun poly_b ->
@@ -621,20 +620,20 @@ type t =
 include
   struct
     let _ = fun (_ : t) -> ()
-    let rec (of_json : Deriving_Json_lexer.lexbuf -> t) =
+    let rec of_json : Deriving_Json_lexer.lexbuf -> t =
       fun buf ->
         match Deriving_Json_lexer.read_case buf with
         | `Cst 1 -> B
         | `Cst 0 -> A
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
     let _ = of_json
-    let rec (to_json : Buffer.t -> t -> unit) =
+    let rec to_json : Buffer.t -> t -> unit =
       fun buf ->
         function
         | B -> Deriving_Json.Json_int.write buf 1
         | A -> Deriving_Json.Json_int.write buf 0
     let _ = to_json
-    let (json : t Deriving_Json.t) = Deriving_Json.make to_json of_json
+    let json : t Deriving_Json.t = Deriving_Json.make to_json of_json
     let _ = json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
 type t = A | B
@@ -704,13 +703,13 @@ type id' = int[@@deriving json]
 include
   struct
     let _ = fun (_ : id') -> ()
-    let rec (id'_of_json : Deriving_Json_lexer.lexbuf -> id') =
+    let rec id'_of_json : Deriving_Json_lexer.lexbuf -> id' =
       fun buf -> Deriving_Json.Json_int.read buf
     let _ = id'_of_json
-    let rec (id'_to_json : Buffer.t -> id' -> unit) =
+    let rec id'_to_json : Buffer.t -> id' -> unit =
       fun buf -> fun a -> Deriving_Json.Json_int.write buf a
     let _ = id'_to_json
-    let (id'_json : id' Deriving_Json.t) =
+    let id'_json : id' Deriving_Json.t =
       Deriving_Json.make id'_to_json id'_of_json
     let _ = id'_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
@@ -734,14 +733,14 @@ type poly3 =
 include
   struct
     let _ = fun (_ : poly3) -> ()
-    let rec (poly3_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+    let rec poly3_recognize : [ `NCst of int  | `Cst of int ] -> bool =
       function
       | x when poly1_recognize x -> true
       | `NCst 67 -> true
       | _ -> false
     let _ = poly3_recognize
-    let rec (poly3_of_json_with_tag :
-      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly3)
+    let rec poly3_of_json_with_tag :
+      Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly3
       =
       fun buf ->
         function
@@ -772,12 +771,12 @@ include
                   (Deriving_Json_lexer.read_vcase buf) in
               Deriving_Json_lexer.read_rbracket buf; `C v))
         | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
-    and (poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3) =
+    and poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3 =
       fun buf ->
         poly3_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
     let _ = poly3_of_json_with_tag
     and _ = poly3_of_json
-    let rec (poly3_to_json : Buffer.t -> [> poly3] -> unit) =
+    let rec poly3_to_json : Buffer.t -> [> poly3] -> unit =
       fun buf ->
         fun a ->
           match a with
@@ -815,7 +814,7 @@ include
                       Buffer.add_string buf "]")));
                Buffer.add_string buf "]")
     let _ = poly3_to_json
-    let (poly3_json : poly3 Deriving_Json.t) =
+    let poly3_json : poly3 Deriving_Json.t =
       Deriving_Json.make poly3_to_json poly3_of_json
     let _ = poly3_json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;

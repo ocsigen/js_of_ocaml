@@ -206,7 +206,12 @@ let eval_expectation expectation ~output =
   if s.str = output then
     None
   else
-    let s = { s with str = output } in
+    let trimmed = String.trim output in
+    let normalized = if String.exists ~f:(function '\n' -> true | _ -> false) output
+      then "\n" ^ trimmed ^ "\n"
+      else trimmed
+    in
+    let s = { s with str = normalized } in
     Some (
       if !Clflags.principal then
         { expectation with principal = s }
@@ -274,6 +279,7 @@ let eval_expect_file mapper fname ~file_contents =
       List.fold_left phrases ~init:true ~f:(fun acc phrase ->
         acc &&
         try
+          Location.reset ();
           exec_phrase ppf phrase
         with exn ->
           Location.report_exception ppf exn;

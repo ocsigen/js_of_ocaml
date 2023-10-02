@@ -88,7 +88,7 @@ let () =
 let %s = Js_of_ocaml_compiler.Builtins.register
   ~name:%S
   ~content:{frag|%s|frag}
-  ~fragments:(Some {frag|%s|frag})
+  ~fragments:(Some %S)
 |}
             (to_ident (Filename.chop_extension name))
             name
