@@ -23,7 +23,7 @@
     let typed_arrays =
       [Float32Array, Float64Array, Int8Array, Uint8Array, Int16Array,
        Uint16Array, Int32Array, Int32Array, Int32Array, Int32Array,
-       Float32Array, Float64Array, Uint8Array]
+       Float32Array, Float64Array, Uint8Array, Uint8ClampedArray]
 
     const fs = isNode&&require('fs')
 

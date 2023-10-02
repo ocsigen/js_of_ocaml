@@ -741,6 +741,8 @@
             (call $caml_invalid_argument
                (array.new_data $string $ta_unsupported_kind
                   (i32.const 0) (i32.const 41)))))
+      (if (i32.eq (local.get $kind) (i32.const 13)) ;; Uint8ClampedArray
+         (then (local.set $kind (i32.const 3))))
       (local.set $len (call $ta_length (local.get $data)))
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then
