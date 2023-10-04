@@ -23,8 +23,13 @@ let%expect_test "rec-fun" =
   let program =
     compile_and_parse
       {|
-    let rec fun_with_loop acc = function
-  | [] -> List.rev (List.rev (List.rev acc))
+
+let list_rev = List.rev
+(* Avoid to expose the offset of stdlib modules *)
+let () = ignore (list_rev [])
+
+let rec fun_with_loop acc = function
+  | [] -> list_rev (list_rev (list_rev acc))
   | x :: xs -> fun_with_loop (x :: acc) xs
 |}
   in
@@ -34,12 +39,9 @@ let%expect_test "rec-fun" =
     function fun_with_loop(acc, param){
      var acc$0 = acc, param$0 = param;
      for(;;){
-      if(! param$0){
-       var
-        _a_ = caml_call1(Stdlib_List[9], acc$0),
-        _b_ = caml_call1(Stdlib_List[9], _a_);
-       return caml_call1(Stdlib_List[9], _b_);
-      }
+      if(! param$0)
+       return caml_call1
+               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
       var
        xs = param$0[2],
        x = param$0[1],
@@ -54,8 +56,13 @@ let%expect_test "rec-fun-2" =
   let program =
     compile_and_parse
       {|
+let list_rev = List.rev
+(* Avoid to expose the offset of stdlib modules *)
+let () = ignore (list_rev [])
+
+
 let rec fun_with_loop acc = function
-  | [] -> List.rev (List.rev (List.rev acc))
+  | [] -> list_rev (list_rev (list_rev acc))
   | [ 1 ] ->
       let a = ref acc in
       for i = 0 to 10 do
@@ -76,12 +83,9 @@ let rec fun_with_loop acc = function
     function fun_with_loop(acc, param){
      var acc$0 = acc, param$0 = param;
      for(;;){
-      if(! param$0){
-       var
-        _c_ = caml_call1(Stdlib_List[9], acc$0),
-        _d_ = caml_call1(Stdlib_List[9], _c_);
-       return caml_call1(Stdlib_List[9], _d_);
-      }
+      if(! param$0)
+       return caml_call1
+               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
       var x = param$0[1];
       if(1 === x && ! param$0[2]){
        var a$0 = [0, acc$0], i$0 = 0;
@@ -338,6 +342,13 @@ let%expect_test "buffer.add_substitute" =
   let program =
     compile_and_parse
       {|
+let string_length = String.length
+let string_sub = String.sub
+
+(* Avoid to expose the offset of stdlib modules *)
+let () = ignore (string_length "asd")
+let () = ignore (string_sub "asd" 0 3)
+
 let add_substitute =
   let closing = function
     | '(' -> ')'
@@ -358,7 +369,7 @@ let add_substitute =
       then if k = 0 then i else advance (k - 1) (i + 1) lim
       else advance k (i + 1) lim
     in
-    advance k start (String.length s)
+    advance k start (string_length s)
   in
   let advance_to_non_alpha s start =
     let rec advance i lim =
@@ -369,7 +380,7 @@ let add_substitute =
         | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> advance (i + 1) lim
         | _ -> i
     in
-    advance start (String.length s)
+    advance start (string_length s)
   in
   (* We are just at the beginning of an ident in s, starting at start. *)
   let find_ident s start lim =
@@ -381,18 +392,18 @@ let add_substitute =
       | ('(' | '{') as c ->
           let new_start = start + 1 in
           let stop = advance_to_closing c (closing c) 0 s new_start in
-          String.sub s new_start (stop - start - 1), stop + 1
+          string_sub s new_start (stop - start - 1), stop + 1
       (* Regular ident *)
       | _ ->
           let stop = advance_to_non_alpha s (start + 1) in
-          String.sub s start (stop - start), stop
+          string_sub s start (stop - start), stop
   in
   let add_char = Buffer.add_char in
   let add_string = Buffer.add_string in
   (* Substitute $ident, $(ident), or ${ident} in s,
       according to the function mapping f. *)
   let add_substitute b f s =
-    let lim = String.length s in
+    let lim = string_length s in
     let rec subst previous i =
       if i < lim
       then (
@@ -476,7 +487,7 @@ let add_substitute =
            var
             match$0 =
               [0,
-               caml_call3(Stdlib_String[15], s, start$0, stop$0 - start$0 | 0),
+               caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0),
                stop$0];
            break a;
           }
@@ -499,8 +510,7 @@ let add_substitute =
             var
              match$0 =
                [0,
-                caml_call3
-                 (Stdlib_String[15], s, new_start, (stop - start$0 | 0) - 1 | 0),
+                caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
                 stop + 1 | 0];
             break;
            }

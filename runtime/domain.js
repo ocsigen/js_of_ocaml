@@ -42,6 +42,11 @@ function caml_atomic_exchange(ref, v) {
   return r;
 }
 
+//Provides: caml_atomic_make_contended
+function caml_atomic_make_contended(a) {
+  return [0, a]
+}
+
 //Provides: caml_ml_domain_unique_token
 var caml_ml_domain_unique_token_ = [0]
 function caml_ml_domain_unique_token(unit) {
@@ -65,12 +70,31 @@ var caml_domain_id = 0;
 //Requires: caml_ml_mutex_unlock
 //Requires: caml_domain_id
 //Requires: caml_callback
+//Version: >= 5.2
+var caml_domain_latest_idx = 1
+function caml_domain_spawn(f,term_sync){
+    var id = caml_domain_latest_idx++;
+    var old = caml_domain_id;
+    caml_domain_id = id;
+    var res = caml_callback(f,[0]);
+    caml_domain_id = old;
+    caml_ml_mutex_unlock(term_sync[2]);
+    //TODO: fix exn case
+    term_sync[1] = [0, [0, res]];
+    return id;
+}
+
+//Provides: caml_domain_spawn
+//Requires: caml_ml_mutex_unlock
+//Requires: caml_domain_id
+//Requires: caml_callback
+//Version: < 5.2
 var caml_domain_latest_idx = 1
 function caml_domain_spawn(f,mutex){
     var id = caml_domain_latest_idx++;
     var old = caml_domain_id;
     caml_domain_id = id;
-    caml_callback(f,[0]);
+    var res = caml_callback(f,[0]);
     caml_domain_id = old;
     caml_ml_mutex_unlock(mutex);
     return id;

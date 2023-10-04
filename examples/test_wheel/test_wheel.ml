@@ -21,9 +21,9 @@ let () =
         let wheelDelta = event##.wheelDelta in
         let wheelDeltaX = event##.wheelDeltaX in
         let wheelDeltaY = event##.wheelDeltaY in
-        Printf.printf "deltaX: %f; " deltaX;
-        Printf.printf "deltaY: %f; " deltaY;
-        Printf.printf "deltaZ: %f; " deltaZ;
+        Printf.printf "deltaX: %f; " (Js.to_float deltaX);
+        Printf.printf "deltaY: %f; " (Js.to_float deltaY);
+        Printf.printf "deltaZ: %f; " (Js.to_float deltaZ);
         Printf.printf
           "deltaMode: %s; "
           (match deltaMode with

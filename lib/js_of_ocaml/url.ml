@@ -304,7 +304,7 @@ module Current = struct
 
   let arguments =
     decode_arguments_js_string
-      (if l##.search##charAt 0 == Js.string "?"
+      (if Js.equals (l##.search##charAt 0) (Js.string "?")
        then l##.search##slice_end 1
        else l##.search)
 
