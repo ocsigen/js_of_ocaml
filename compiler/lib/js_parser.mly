@@ -260,6 +260,8 @@ decl:
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | generator_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
+ | async_generator_decl
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | async_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | lexical_decl    { $1, p $symbolstartpos }
@@ -431,6 +433,18 @@ async_decl:
 async_function_expr:
  | T_ASYNC T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
+
+(*************************************************************************)
+(* async generators                                                *)
+(*************************************************************************)
+
+async_generator_decl:
+ | T_ASYNC T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
+   { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
+
+async_generator_expr:
+ | T_ASYNC T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
+   { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
 (* Class declaration *)
@@ -766,6 +780,7 @@ primary_with_stmt:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 
 primary_expr_no_braces:
@@ -988,6 +1003,7 @@ primary_for_consise_body:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 assignment_expr_for_consise_body:
  | conditional_expr(primary_for_consise_body) { $1 }
