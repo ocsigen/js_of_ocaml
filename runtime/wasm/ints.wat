@@ -94,6 +94,8 @@
       (local.set $sign (tuple.extract 2 (local.get $t)))
       (local.set $base (tuple.extract 3 (local.get $t)))
       (local.set $threshold (i32.div_u (i32.const -1) (local.get $base)))
+      (if (i32.ge_s (local.get $i) (local.get $len))
+         (then (call $caml_failwith (local.get $errmsg))))
       (local.set $d
          (call $parse_digit (array.get_u $string (local.get $s) (local.get $i))))
       (if (i32.ge_u (local.get $d) (local.get $base))

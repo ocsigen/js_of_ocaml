@@ -43,6 +43,5 @@
             (call $caml_js_global (ref.i31 (i32.const 0)))
             (array.new_data $string $XMLHttpRequest
                (i32.const 0) (i32.const 14)))
-         (call $caml_js_from_array
-            (array.new_fixed $block 1 (ref.i31 (i32.const 0))))))
+         (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
 )

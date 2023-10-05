@@ -141,7 +141,7 @@
 
    (func (export "caml_js_to_bool") (param (ref eq)) (result (ref eq))
       (ref.i31
-         (call $to_bool (struct.get $js 0 (ref.cast (ref $js) (local.get 0))))))
+         (call $to_bool (call $unwrap (local.get 0)))))
 
    (func (export "caml_js_from_bool") (param (ref eq)) (result (ref eq))
       (struct.new $js
