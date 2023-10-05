@@ -14,6 +14,9 @@
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "obj" "caml_callback_2"
+      (func $caml_callback_2
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "string" "caml_string_cat"
       (func $caml_string_cat
@@ -180,15 +183,14 @@
             (block $exit
                (block $not_registered
                   (drop
-                     (call $caml_callback_1
-                        (call $caml_callback_1
-                           (br_on_null $not_registered
-                              (call $caml_named_value
-                                  (array.new_data $string
-                                     $handle_uncaught_exception
-                                     (i32.const 0) (i32.const 34))))
-                           (local.get $exn))
-                     (ref.i31 (i32.const 0))))
+                     (call $caml_callback_2
+                        (br_on_null $not_registered
+                           (call $caml_named_value
+                               (array.new_data $string
+                                  $handle_uncaught_exception
+                                  (i32.const 0) (i32.const 34))))
+                        (local.get $exn)
+                        (ref.i31 (i32.const 0))))
                   (br $exit))
                (block $null
                   (drop
