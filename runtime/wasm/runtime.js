@@ -6,8 +6,12 @@
       const f = path.join(path.dirname(require.main.filename),src);
       return require('fs/promises').readFile(f)
     }
+    function fetchRelative(src) {
+      const url = new URL (src, document.currentScript?.src || document.baseURI).href
+      return fetch(url)
+    }
     const isNode = globalThis?.process?.versions?.node;
-    const code = isNode?loadRelative(src):fetch(src);
+    const code = isNode?loadRelative(src):fetchRelative(src);
 
     let math =
         {cos:Math.cos, sin:Math.sin, tan:Math.tan,
