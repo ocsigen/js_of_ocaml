@@ -11,8 +11,9 @@
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
 * Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
+* Runtime: Dynlink should be able to find symbols in jsoo_runtime #1517
 * Compiler: fix global flow analysis (#1494)
-* COmpiler: fix js parser/printer wrt async functions (#1515)
+* Compiler: fix js parser/printer wrt async functions (#1515)
 
 # 5.4.0 (2023-07-06) - Lille
 
