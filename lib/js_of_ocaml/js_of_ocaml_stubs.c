@@ -4,6 +4,10 @@ void caml_bytes_of_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_array!");
 }
 
+void caml_custom_identifier () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_custom_identifier!");
+}
+
 void caml_js_error_of_exception () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_error_of_exception!");
 }
