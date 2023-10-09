@@ -409,16 +409,14 @@ let%expect_test _ =
   [%expect {|
     Result: other |}]
 
-(*ZZZ
-  let%expect_test _ =
-    let open Js_of_ocaml in
-    let f = Js.wrap_callback (fun s -> print_endline s) in
-    Js.export "f" f;
-    let () =
-      Js.Unsafe.fun_call
-        (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
-        [| Js.Unsafe.coerce (Js.string "hello") |]
-    in
-    ();
-    [%expect {| hello |}]
-*)
+let%expect_test _ =
+  let open Js_of_ocaml in
+  let f = Js.wrap_callback (fun s -> print_endline (Js.to_string s)) in
+  Js.export "f" f;
+  let () =
+    Js.Unsafe.fun_call
+      (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
+      [| Js.Unsafe.coerce (Js.string "hello") |]
+  in
+  ();
+  [%expect {| hello |}]
