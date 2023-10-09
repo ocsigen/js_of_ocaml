@@ -86,6 +86,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
+   (type $float_array (array (mut f64)))
    (type $string (array (mut i8)))
    (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
@@ -270,32 +271,69 @@
       (struct.new $js (local.get $o)))
 
    (func $caml_js_from_array (export "caml_js_from_array")
-      (param (ref eq)) (result (ref eq))
+      (param $va (ref eq)) (result (ref eq))
       (local $a (ref $block))
+      (local $fa (ref $float_array))
       (local $a' (ref extern))
       (local $i i32) (local $l i32)
-      (local.set $a (ref.cast (ref $block) (local.get 0)))
-      (local.set $l (i32.sub (array.len (local.get $a)) (i32.const 1)))
-      (local.set $a' (call $new_array (local.get $l)))
-      (local.set $i (i32.const 0))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $l))
-            (then
-               (call $array_set (local.get $a') (local.get $i)
-                  (call $unwrap (array.get $block (local.get $a)
-                                   (i32.add (local.get $i) (i32.const 1)))))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
-      (struct.new $js (extern.internalize (local.get $a'))))
+      (drop (block $not_array (result (ref eq))
+         (local.set $a
+            (br_on_cast_fail $not_array (ref eq) (ref $block) (local.get $va)))
+         (local.set $l (i32.sub (array.len (local.get $a)) (i32.const 1)))
+         (local.set $a' (call $new_array (local.get $l)))
+         (local.set $i (i32.const 0))
+         (loop $loop
+            (if (i32.lt_u (local.get $i) (local.get $l))
+               (then
+                  (call $array_set (local.get $a') (local.get $i)
+                     (call $unwrap (array.get $block (local.get $a)
+                                      (i32.add (local.get $i) (i32.const 1)))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br $loop))))
+         (return (struct.new $js (extern.internalize (local.get $a'))))))
+     (local.set $fa (ref.cast (ref $float_array) (local.get $va)))
+     (local.set $l (array.len (local.get $fa)))
+     (local.set $a' (call $new_array (local.get $l)))
+     (local.set $i (i32.const 0))
+     (loop $loop
+        (if (i32.lt_u (local.get $i) (local.get $l))
+           (then
+              (call $array_set (local.get $a') (local.get $i)
+                 (struct.new $float
+                    (array.get $float_array (local.get $fa) (local.get $i))))
+              (local.set $i (i32.add (local.get $i) (i32.const 1)))
+              (br $loop))))
+     (struct.new $js (extern.internalize (local.get $a'))))
 
    (func (export "caml_js_to_array")
       (param (ref eq)) (result (ref eq))
       (local $a (ref extern))
       (local $a' (ref $block))
+      (local $fa (ref $float_array))
       (local $i i32) (local $l i32)
       (local.set $a
          (ref.as_non_null (extern.externalize (call $unwrap (local.get 0)))))
       (local.set $l (call $array_length (local.get $a)))
+      (if (local.get $l)
+         (then
+            (if (ref.test (ref $float)
+                   (call $array_get (local.get $a) (i32.const 0)))
+               (then
+                  (local.set $fa
+                     (array.new $float_array (f64.const 0) (local.get $l)))
+                  (local.set $i (i32.const 0))
+                  (loop $loop
+                     (if (i32.lt_u (local.get $i) (local.get $l))
+                        (then
+                           (array.set $float_array (local.get $fa)
+                              (local.get $i)
+                              (struct.get $float 0
+                                 (ref.cast (ref $float)
+                                    (call $array_get
+                                       (local.get $a) (local.get $i)))))
+                           (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                           (br $loop))))
+                  (return (local.get $fa))))))
       (local.set $a'
          (array.new $block (ref.i31 (i32.const 0))
             (i32.add (local.get $l) (i32.const 1))))
