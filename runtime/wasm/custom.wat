@@ -109,4 +109,8 @@
       (call $caml_register_custom_operations (global.get $int64_ops))
       (call $caml_register_custom_operations (global.get $bigarray_ops))
       (global.set $initialized (i32.const 1)))
+
+  (func (export "caml_custom_identifier") (param $v (ref eq)) (result (ref eq))
+     (struct.get $custom_operations $id
+        (struct.get $custom 0 (ref.cast (ref $custom) (local.get $v)))))
 )
