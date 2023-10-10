@@ -285,7 +285,7 @@ module Ctx = struct
     ; should_export : bool
     ; effect_warning : bool ref
     ; cps_calls : Effects.cps_calls
-    ; deadcode_sentinal : Var.t option
+    ; deadcode_sentinal : Var.t
     }
 
   let initial
@@ -1042,10 +1042,10 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (prop', cx), queue = access_queue queue x in
             let cx =
               match cx with
-              | J.EVar (J.V v) -> (
-                  match ctx.deadcode_sentinal with
-                  | Some s -> if Var.equal v s then J.ElementHole else J.Element cx
-                  | None -> J.Element cx)
+              | J.EVar (J.V v) ->
+                  if Var.equal v ctx.deadcode_sentinal
+                  then J.ElementHole
+                  else J.Element cx
               | _ -> J.Element cx
             in
             cx :: args, or_p prop prop', queue)
@@ -1596,10 +1596,8 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
     match last with
     | Return x ->
         let (_px, cx), queue = access_queue queue x in
-        let return_expr = 
-          match st.ctx.deadcode_sentinal with
-            | Some sentinal when Var.equal sentinal x -> None
-            | _ -> Some cx
+        let return_expr =
+          if Var.equal st.ctx.deadcode_sentinal x then None else Some cx
         in
         true, flush_all queue [ J.Return_statement return_expr, loc ]
     | Raise (x, k) ->

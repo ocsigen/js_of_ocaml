@@ -110,14 +110,14 @@ let exact_calls profile p =
         let p, deadcode_sentinal = Global_deadcode.add_sentinal p in
         let info = Global_flow.f ~fast p in
         let p = Global_deadcode.f p deadcode_sentinal info in
-        p, info, Some deadcode_sentinal
+        p, info, deadcode_sentinal
       else
         let info = Global_flow.f ~fast p in
-        p, info, None
+        p, info, Code.Var.fresh () (* If deadcode is not run, this field is set to a dummy fresh variable *)
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
     p, deadcode_sentinal
-  else p, None
+  else p, Code.Var.fresh ()
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -186,7 +186,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    (((p, live_vars), cps_calls), deadcode_sentinal)  =
+    (((p, live_vars), cps_calls), deadcode_sentinal) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
