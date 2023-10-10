@@ -2,15 +2,16 @@
 
 ## Features/Changes
 * Compiler: change control-flow compilation strategy (#1496)
+* Compiler: Dead code elimination of unused references (#2076)
 * Lib: add download attribute to anchor element
-* Dead code elimination of unused references (#2076)
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
-* Compiler: fix global flow analysis (#1494)
 * Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
+* Compiler: fix global flow analysis (#1494)
+* COmpiler: fix js parser/printer wrt async functions (#1515)
 
 # 5.4.0 (2023-07-06) - Lille
 

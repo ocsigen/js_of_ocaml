@@ -353,9 +353,12 @@ let rec offer_one t (lexbuf : Lexer.t) =
            * one LineTerminator, then a semicolon is automatically inserted before the
            * restricted token. *)
         match State.Cursor.last_token h, tok with
-        | ( Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _)
+        | ( Some
+              (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC), _, _), _)
           , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _, _) as tok) ) -> tok
-        | Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _), _
+        | ( Some
+              (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC), _, _), _)
+          , _ )
           when nl_separated h tok && acceptable t T_VIRTUAL_SEMICOLON ->
             (* restricted token can also appear as regular identifier such
                as in [x.return]. In such case, feeding a virtual semicolon
