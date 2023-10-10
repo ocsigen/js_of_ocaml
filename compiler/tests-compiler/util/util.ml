@@ -491,6 +491,14 @@ class find_function_declaration r n =
 
 let print_program p = print_string (program_to_string p)
 
+let find_function program n =
+  let r = ref [] in
+  let o = new find_function_declaration r (Some n) in
+  ignore (o#program program);
+  match !r with
+  | [ (_, fd) ] -> fd
+  | _ -> raise Not_found
+
 let print_fun_decl program n =
   let r = ref [] in
   let o = new find_function_declaration r n in
