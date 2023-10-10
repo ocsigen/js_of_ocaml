@@ -444,6 +444,14 @@ class find_variable_declaration r n =
       super#variable_declaration k v
   end
 
+let find_variable program n =
+  let r = ref [] in
+  let o = new find_variable_declaration r n in
+  ignore (o#program program);
+  match !r with
+  | [ DeclIdent (_, Some (expression, _)) ] -> expression
+  | _ -> raise Not_found
+
 let print_var_decl program n =
   let r = ref [] in
   let o = new find_variable_declaration r n in

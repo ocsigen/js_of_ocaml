@@ -71,6 +71,8 @@ val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string option -> unit
 
+val find_variable : Javascript.program -> string -> Javascript.expression
+
 val compile_and_run :
      ?debug:bool
   -> ?skip_modern:bool

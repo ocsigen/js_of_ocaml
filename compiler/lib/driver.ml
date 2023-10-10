@@ -113,7 +113,11 @@ let exact_calls profile p =
         p, info, deadcode_sentinal
       else
         let info = Global_flow.f ~fast p in
-        p, info, Code.Var.fresh () (* If deadcode is not run, this field is set to a dummy fresh variable *)
+        let deadcode_sentinal =
+          (* If deadcode is not enabled, this field is set to a dummy fresh variable *)
+          Code.Var.fresh ()
+        in
+        p, info, deadcode_sentinal
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
     p, deadcode_sentinal
