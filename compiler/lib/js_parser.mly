@@ -217,19 +217,22 @@ T_BACKQUOTE
 (* Macros *)
 (*************************************************************************)
 
-listc(X):
+listc_rev(X):
  | X              { [$1] }
- | listc(X) "," X { $1 @ [$3] }
+ | listc_rev(X) "," X { $3 :: $1 }
 
-listc_with_empty_trail(X):
- | e=elision               { (List.map (fun () -> None) e) }
- | x=X e=elision           { Some x :: (List.map (fun () -> None) e) }
- | listc_with_empty_trail(X) x=X e=elision { $1 @ [Some x] @ (List.map (fun () -> None) e) }
+%inline listc(X):
+ | listc_rev(X) { List.rev $1 }
+
+listc_with_empty_trail_rev(X):
+ | e=elision               { (List.rev_map (fun () -> None) e) }
+ | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
+ | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
 
 listc_with_empty(X):
   | X                           { [ Some $1 ] }
-  | listc_with_empty_trail(X)   { $1 }
-  | listc_with_empty_trail(X) X { $1 @ [Some $2 ] }
+  | listc_with_empty_trail_rev(X)   { List.rev $1 }
+  | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
