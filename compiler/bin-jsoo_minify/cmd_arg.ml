@@ -42,7 +42,9 @@ let options =
   let build_t common files output_file use_stdin =
     `Ok { common; use_stdin; output_file; files }
   in
-  let t = Term.(const build_t $ Jsoo_cmdline.Arg.t $ files $ output_file $ use_stdin) in
+  let t =
+    Term.(const build_t $ Lazy.force Jsoo_cmdline.Arg.t $ files $ output_file $ use_stdin)
+  in
   Term.ret t
 
 let info =
