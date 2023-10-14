@@ -779,18 +779,33 @@ class free =
         }
 
     method use_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with use = IdentSet.add x state_.use }
 
     method def_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
 
     method def_local x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method fun_decl (k, params, body, nid) =
