@@ -126,7 +126,7 @@ let options =
   let t =
     Term.(
       const build_t
-      $ Jsoo_cmdline.Arg.t
+      $ Lazy.force Jsoo_cmdline.Arg.t
       $ no_sourcemap
       $ sourcemap
       $ sourcemap_inline_in_js

@@ -365,7 +365,7 @@ let options =
   let t =
     Term.(
       const build_t
-      $ Jsoo_cmdline.Arg.t
+      $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
       $ set_env
       $ dynlink
@@ -604,7 +604,7 @@ let options_runtime_only =
   let t =
     Term.(
       const build_t
-      $ Jsoo_cmdline.Arg.t
+      $ Lazy.force Jsoo_cmdline.Arg.t
       $ toplevel
       $ no_cmis
       $ set_param
