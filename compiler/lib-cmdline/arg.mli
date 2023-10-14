@@ -30,6 +30,6 @@ type t =
   ; custom_header : string option
   }
 
-val t : t Cmdliner.Term.t
+val t : t Cmdliner.Term.t Lazy.t
 
 val eval : t -> unit
