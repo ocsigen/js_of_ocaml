@@ -706,8 +706,9 @@ let check_vs_string s toks =
   in
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _, _) :: rest -> loop offset pos rest
-    | ((Js_token.T_STRING (_, codepoint_len) as x), p1, _p2) :: rest ->
+    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
+    | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
         let bytes_idx = codepoint_idx - offset in
         let bytes_len =
@@ -733,7 +734,8 @@ let check_vs_string s toks =
               a
               b);
         loop offset (bytes_idx + bytes_len + 1) rest
-    | (x, p1, _p2) :: rest ->
+    | (x, loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx; _ } = Parse_info.t_of_pos p1 in
         let idx = idx - offset in
         let str = Js_token.to_string x in
@@ -760,8 +762,9 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.T_EOF, _, _) ] | [] -> Printf.printf "\n"
-    | (tok, p1, _p2) :: xs ->
+    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
+    | (tok, loc) :: xs ->
+        let p1 = Loc.p1 loc in
         let pos = Parse_info.t_of_pos p1 in
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with

@@ -14,17 +14,6 @@ module Lex_mode = struct
     | REGEXP
 end
 
-module Loc = struct
-  (* line numbers are 1-indexed; column numbers are 0-indexed *)
-
-  type t =
-    { source : string option
-    ; start : Lexing.position
-    ; _end : Lexing.position
-    }
-  [@@ocaml.warning "-69"]
-end
-
 module Parse_error = struct
   type t =
     | Unexpected of string
@@ -45,28 +34,20 @@ module Lex_env = struct
   type lex_state = { lex_errors_acc : (Loc.t * Parse_error.t) list } [@@ocaml.unboxed]
 
   type t =
-    { lex_source : string option
-    ; lex_lb : Sedlexing.lexbuf
+    { lex_lb : Sedlexing.lexbuf
     ; lex_state : lex_state
     ; lex_mode_stack : Lex_mode.t list
+    ; lex_last_loc : Loc.t ref
     }
   [@@ocaml.warning "-69"]
-
-  let source env = env.lex_source
 
   let empty_lex_state = { lex_errors_acc = [] }
 
   let create lex_lb =
-    let s, _ = Sedlexing.lexing_positions lex_lb in
-    let lex_source =
-      match s.pos_fname with
-      | "" -> None
-      | s -> Some s
-    in
-    { lex_source
-    ; lex_lb
+    { lex_lb
     ; lex_state = empty_lex_state
     ; lex_mode_stack = [ Lex_mode.NORMAL ]
+    ; lex_last_loc = ref (Loc.create Lexing.dummy_pos Lexing.dummy_pos)
     }
 end
 
@@ -84,7 +65,7 @@ let pop_mode env =
 module Lex_result = struct
   type t =
     { lex_token : Js_token.t
-    ; lex_loc : Lexing.position * Lexing.position
+    ; lex_loc : Loc.t
     ; lex_errors : (Loc.t * Parse_error.t) list
     }
   [@@ocaml.warning "-69"]
@@ -239,9 +220,9 @@ let is_valid_identifier_name s =
   | js_id_start, Star js_id_continue, eof -> true
   | _ -> false
 
-let loc_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
+let loc_of_lexbuf _env (lexbuf : Sedlexing.lexbuf) =
   let start_offset, stop_offset = Sedlexing.lexing_positions lexbuf in
-  { Loc.source = Lex_env.source env; start = start_offset; _end = stop_offset }
+  Loc.create start_offset stop_offset
 
 let lex_error (env : Lex_env.t) loc err : Lex_env.t =
   let lex_errors_acc = (loc, err) :: env.lex_state.lex_errors_acc in
@@ -821,12 +802,14 @@ let wrap f =
     let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
     let t = f env env.Lex_env.lex_lb in
     let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
-    t, (start, stop)
+    t, Loc.create ~last_line:(Loc.line_end' !(env.lex_last_loc)) start stop
   in
   let rec helper comments env =
     Sedlexing.start env.Lex_env.lex_lb;
-    match f env with
-    | Token (env, t), lex_loc ->
+    let res, lex_loc = f env in
+    match res with
+    | Token (env, t) ->
+        env.lex_last_loc := lex_loc;
         let lex_token = t in
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         if lex_errors_acc = []
@@ -834,14 +817,15 @@ let wrap f =
         else
           ( { env with lex_state = Lex_env.empty_lex_state }
           , { Lex_result.lex_token; lex_loc; lex_errors = List.rev lex_errors_acc } )
-    | Comment (env, comment), lex_loc ->
+    | Comment (env, comment) ->
+        env.lex_last_loc := lex_loc;
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         ( env
         , { Lex_result.lex_token = TComment comment
           ; lex_loc
           ; lex_errors = List.rev lex_errors_acc
           } )
-    | Continue env, _ -> helper comments env
+    | Continue env -> helper comments env
   in
   fun env -> helper [] env
 
