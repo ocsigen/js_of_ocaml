@@ -3,6 +3,7 @@
 ## Features/Changes
 * Compiler: change control-flow compilation strategy (#1496)
 * Compiler: Dead code elimination of unused references (#2076)
+* Compiler: reduce memory consumption (#1516)
 * Lib: add download attribute to anchor element
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
