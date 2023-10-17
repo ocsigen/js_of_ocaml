@@ -43,7 +43,7 @@ module Domain = struct
     match l1, l2 with
     | Top, Top | Dead, Dead -> true
     | Live f1, Live f2 -> IntSet.equal f1 f2
-    | _ -> false
+    | Top, (Dead | Live _) | Live _, (Dead | Top) | Dead, (Live _ | Top) -> false
 
   let bot = Dead
 
