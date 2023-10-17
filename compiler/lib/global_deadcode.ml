@@ -420,8 +420,10 @@ let add_sentinal p =
   Code.prepend p [ instr, loc ], sentinal
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f p sentinal global_info =
+let f p global_info =
   let t = Timer.make () in
+  (* Add sentinal variable *)
+  let p, sentinal = add_sentinal p in
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute usages *)
@@ -447,4 +449,4 @@ let f p sentinal global_info =
     Format.printf "After Zeroing:\n";
     Code.Print.program (fun _ _ -> "") p);
   if times () then Format.eprintf "  deadcode dgraph.: %a@." Timer.print t;
-  p
+  p, sentinal

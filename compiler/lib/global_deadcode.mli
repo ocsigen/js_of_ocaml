@@ -29,6 +29,4 @@ dead variables that are then removed by [deadcode.ml]. In particular it allows f
 in functors, which the original deadcode elimination cannot. 
 *)
 
-val add_sentinal : Code.program -> Code.program * Code.Var.t
-
-val f : Code.program -> Code.Var.t -> Global_flow.info -> Code.program
+val f : Code.program -> Global_flow.info -> (Code.program * Code.Var.t)
