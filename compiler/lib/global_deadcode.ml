@@ -96,8 +96,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
   let uses = Var.Tbl.make () Var.Map.empty in
   let add_use kind x y = Var.Tbl.set uses y (Var.Map.add x kind (Var.Tbl.get uses y)) in
   let add_arg_dep params args =
-    try List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
-    with Invalid_argument _ -> ()
+    List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
   in
   let add_cont_deps (pc, args) =
     match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
@@ -118,7 +117,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
                 | Expr (Closure (params, _)) ->
                     (* If the function is under/over-applied then global flow will mark arguments and return value as escaping.
                        So we only need to consider the case when there is an exact application. *)
-                    if List.length params = List.length args
+                    if List.compare_lengths params args = 0
                     then (
                       let return_values = Var.Map.find k global_info.info_return_vals in
                       Var.Set.iter (add_use Propagate x) return_values;
@@ -143,15 +142,15 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
   in
   Addr.Map.iter
     (fun _ block ->
-      (* Add deps from block body *)
+      (* Add uses from block body *)
       List.iter
         ~f:(fun (i, _) ->
           match i with
           | Let (x, e) -> add_expr_uses x e
-          | Assign (x, y) -> add_use Compute x y
+          | Assign (x, y) -> add_use Propagate x y
           | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
-      (* Add deps from block branch *)
+      (* Add uses from block branch *)
       match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_deps cont
