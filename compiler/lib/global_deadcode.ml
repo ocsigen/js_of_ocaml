@@ -185,8 +185,8 @@ let expr_vars e =
         ~init:vars
         args
   (* We can ignore closures. We want the set of previously defined variables used
-    in the expression, so not parameters. The continuation may use some variables 
-    but we will add these when we visit the body  *)
+     in the expression, so not parameters. The continuation may use some variables
+     but we will add these when we visit the body *)
   | Constant _ | Closure (_, _) -> vars
 
 (** Compute the initial liveness of each variable in the program. 
@@ -212,10 +212,10 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
   in
   let live_instruction i =
     match i with
+    (* If e is impure, set all variables in e as Top. The only exception is for function applications,
+       where we may be able to do better. Global flow gives us information about which arguments in
+       a function application esacpe, so set only these as top. *)
     | Let (_, e) -> (
-        (* If e is impure, set all variables in e as Top. The only exception is for function applications, 
-           where we may be able to do better. Global flow gives us information about which arguments in
-           a function application esacpe, so set only these as top.  *)
         if not (pure_expr pure_funs e)
         then
           match e with
@@ -322,7 +322,7 @@ let zero prog sentinal live_table =
     while !i >= 0 && Var.equal vars.(!i) sentinal do
       i := !i - 1
     done;
-    Array.sub vars ~pos:0 ~len:(!i + 1)
+    if !i < Array.length vars - 1 then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
   in
   let is_live v =
     match Var.Tbl.get live_table v with
@@ -349,21 +349,25 @@ let zero prog sentinal live_table =
         | Apply ap ->
             let args = List.map ~f:zero_var ap.args in
             Let (x, Apply { ap with args })
-        | _ -> instr)
-    | _ -> instr
+        | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) -> instr)
+    | Assign (_, _) | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
+        instr
   in
   let zero_block block =
     (* Analyze block instructions *)
     let body = List.map ~f:(fun (instr, loc) -> zero_instr instr, loc) block.body in
     (* Analyze branch *)
     let branch =
-      let last, loc = block.branch in
-      let last =
-        match last with
-        | Return x -> Return (zero_var x)
-        | _ -> last
-      in
-      last, loc
+      (* Zero out return values in last instruction, otherwise do nothing. *)
+      match block.branch with
+      | Return x, loc -> Return (zero_var x), loc
+      | Raise (_, _), _
+      | Stop, _
+      | Branch _, _
+      | Cond (_, _, _), _
+      | Switch (_, _), _
+      | Pushtrap (_, _, _, _), _
+      | Poptrap _, _ -> block.branch
     in
     { block with body; branch }
   in
