@@ -208,7 +208,9 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
   in
   let live_instruction i =
     match i with
-    | Let (_x, e) -> (
+    | Let (_, e) -> (
+        (* If e is an impure application, we only need to set escaping arguments
+           as top. Otherwise, set all variables in e as top.  *)
         if not (pure_expr pure_funs e)
         then
           match e with
@@ -217,7 +219,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
-          | _ ->
+          | Block (_, _, _) | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) ->
               let vars = expr_vars e in
               Var.Set.iter add_top vars)
     | Assign (_, _) -> ()
@@ -319,7 +321,7 @@ let zero prog sentinal live_table =
   let is_live v =
     match Var.Tbl.get live_table v with
     | Dead -> false
-    | _ -> true
+    | Top | Live _ -> true
   in
   let zero_var x = if is_live x then x else sentinal in
   let zero_instr instr =
@@ -389,7 +391,9 @@ module Print = struct
 
   let print_liveness live_vars =
     Format.eprintf "Liveness:\n";
-    Var.Tbl.iter (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l)) live_vars
+    Var.Tbl.iter
+      (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
+      live_vars
 
   let print_live_tbl live_table =
     Format.eprintf "Liveness with dependencies:\n";
