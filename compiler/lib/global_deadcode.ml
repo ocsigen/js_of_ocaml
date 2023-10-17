@@ -58,7 +58,7 @@ end
 
 module Solver = G.Solver (Domain)
 
-let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
+let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e
 
 let definitions nv prog =
   let defs = Array.make nv Param in
