@@ -16,33 +16,41 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: current_libs
-var current_libs = [0, globalThis]
+//Provides: get_current_libs
+var current_libs;
+function get_current_libs  () {
+  if(!current_libs)
+    current_libs = [0, globalThis, globalThis.jsoo_runtime]
+  return current_libs
+}
 
 //Provides: caml_dynlink_open_lib
-//Requires: current_libs, caml_failwith
+//Requires: get_current_libs, caml_failwith
 //Requires: caml_jsstring_of_string
 function caml_dynlink_open_lib (_mode,file) {
   var name = caml_jsstring_of_string(file);
   console.log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
+  var current_libs = get_current_libs();
   current_libs.push({});
   return current_libs.length;
 }
 
 //Provides: caml_dynlink_close_lib
-//Requires: current_libs
+//Requires: get_current_libs
 function caml_dynlink_close_lib (idx) {
+  var current_libs = get_current_libs();
   current_libs[idx]=null;
   return 0;
 }
 
 //Provides: caml_dynlink_lookup_symbol
-//Requires: current_libs
+//Requires: get_current_libs
 //Requires: caml_jsstring_of_string
 function caml_dynlink_lookup_symbol (idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
   console.log("Dynlink: looking for symbol", name);
+  var current_libs = get_current_libs();
   if(current_libs[idx] && current_libs[idx][name])
     return {name: name, symbol: current_libs[idx][name]};
   return 0;
@@ -56,8 +64,9 @@ function caml_dynlink_add_primitive (dll_addr) {
 }
 
 //Provides: caml_dynlink_get_current_libs
-//Requires: current_libs
+//Requires: get_current_libs
 function caml_dynlink_get_current_libs () {
+  var current_libs = get_current_libs();
   var len = current_libs.length;
   var a = new Array(len);
   for(var i=0; i < len; i++)
