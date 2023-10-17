@@ -71,7 +71,7 @@ let definitions nv prog =
           match i with
           | Let (x, e) -> set_def x (Expr e)
           | Assign (x, _) -> set_def x Param
-          | _ -> ())
+          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body)
     prog.blocks;
   defs
