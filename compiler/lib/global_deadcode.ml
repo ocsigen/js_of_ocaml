@@ -183,6 +183,9 @@ let expr_vars e =
           | Pc _ -> acc)
         ~init:vars
         args
+  (* We can ignore closures. We want the set of previously defined variables used
+    in the expression, so not parameters. The continuation may use some variables 
+    but we will add these when we visit the body  *)
   | Constant _ | Closure (_, _) -> vars
 
 (** Compute the initial liveness of each variable in the program. 
