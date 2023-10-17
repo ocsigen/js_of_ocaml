@@ -60,9 +60,9 @@ module Solver = G.Solver (Domain)
 
 let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e
 
-let definitions nv prog =
-  let defs = Array.make nv Param in
-  let set_def x d = defs.(Var.idx x) <- d in
+let definitions prog =
+  let defs = Var.Tbl.make () Param in
+  let set_def x d = Var.Tbl.set defs x d in
   Addr.Map.iter
     (fun _ block ->
       (* Add defs from block body *)
@@ -92,9 +92,9 @@ type usage_kind =
     
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
-let usages nv prog (global_info : Global_flow.info) : usage_kind Var.Map.t array =
-  let uses = Array.make nv Var.Map.empty in
-  let add_use kind x y = uses.(Var.idx y) <- Var.Map.add x kind uses.(Var.idx y) in
+let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.t =
+  let uses = Var.Tbl.make () Var.Map.empty in
+  let add_use kind x y = Var.Tbl.set uses y (Var.Map.add x kind (Var.Tbl.get uses y)) in
   let add_arg_dep params args =
     try List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
     with Invalid_argument _ -> ()
@@ -196,17 +196,16 @@ let expr_vars e =
     + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
     
     A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
-let liveness nv prog pure_funs (global_info : Global_flow.info) =
-  let live_vars = Array.make nv Dead in
-  let add_top v =
-    let idx = Var.idx v in
-    live_vars.(idx) <- Top
-  in
-  let add_live v i =
-    let idx = Var.idx v in
-    match live_vars.(idx) with
-    | Live fields -> live_vars.(idx) <- Live (IntSet.add i fields)
-    | _ -> live_vars.(idx) <- Live (IntSet.singleton i)
+let liveness prog pure_funs (global_info : Global_flow.info) =
+  let live_vars = Var.Tbl.make () Dead in
+  let add_top v = Var.Tbl.set live_vars v Top in
+  let add_live_field v i =
+    let live_fields =
+      match Var.Tbl.get live_vars v with
+      | Live fields -> Live (IntSet.add i fields)
+      | Top | Dead -> Live (IntSet.singleton i)
+    in
+    Var.Tbl.set live_vars v live_fields
   in
   let live_instruction i =
     match i with
@@ -224,13 +223,13 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
               Var.Set.iter add_top vars)
     | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
-        add_live x i;
+        add_live_field x i;
         add_top y
     | Array_set (x, y, z) ->
         add_top x;
         add_top y;
         add_top z
-    | Offset_ref (x, i) -> add_live x i
+    | Offset_ref (x, i) -> add_live_field x i
   in
   let live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
@@ -245,17 +244,21 @@ let liveness nv prog pure_funs (global_info : Global_flow.info) =
   Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
   live_vars
 
-(* Returns the set of variables given the adjacency list of variable dependencies. *)
+(* Returns the set of variables given a table of variables. *)
 let variables deps =
   let vars = Var.ISet.empty () in
-  Array.iteri ~f:(fun i _ -> Var.ISet.add vars (Var.of_idx i)) deps;
+  Var.Tbl.iter (fun v _ -> Var.ISet.add vars v) deps;
   vars
 
 (** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
     defined by joining its current liveness and the contribution of each vairable [y]
     that uses [x]. *)
-let propagate uses defs live_vars live_table x =
-  let idx = Var.idx x in
+let propagate
+    (uses : usage_kind Var.Map.t Var.Tbl.t)
+    (defs : def Var.Tbl.t)
+    (live_vars : live Var.Tbl.t)
+    live_table
+    x =
   (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
       ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
        the contribution depends on the liveness of [y] and its definition. *)
@@ -268,7 +271,7 @@ let propagate uses defs live_vars live_table x =
         | Dead -> Dead
         (* If y is a live block, then x is the join of liveness fields that are x *)
         | Live fields -> (
-            match defs.(Var.idx y) with
+            match Var.Tbl.get defs y with
             | Expr (Block (_, vars, _)) ->
                 let found = ref false in
                 Array.iteri
@@ -280,7 +283,7 @@ let propagate uses defs live_vars live_table x =
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
-            match defs.(Var.idx y) with
+            match Var.Tbl.get defs y with
             | Expr (Field (_, i)) -> Live (IntSet.singleton i)
             | _ -> Top))
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
@@ -288,13 +291,13 @@ let propagate uses defs live_vars live_table x =
   in
   Var.Map.fold
     (fun y usage_kind live -> Domain.join (contribution y usage_kind) live)
-    uses.(idx)
-    (Domain.join live_vars.(idx) (Var.Tbl.get live_table x))
+    (Var.Tbl.get uses x)
+    (Domain.join (Var.Tbl.get live_vars x) (Var.Tbl.get live_table x))
 
 let solver vars uses defs live_vars =
   let g =
     { G.domain = vars
-    ; G.iter_children = (fun f x -> Var.Map.iter (fun y _ -> f y) uses.(Var.idx x))
+    ; G.iter_children = (fun f x -> Var.Map.iter (fun y _ -> f y) (Var.Tbl.get uses x))
     }
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
@@ -369,9 +372,9 @@ module Print = struct
 
   let print_uses uses =
     Format.eprintf "Usages:\n";
-    Array.iteri
-      ~f:(fun i ds ->
-        Format.eprintf "v%d: { " i;
+    Var.Tbl.iter
+      (fun v ds ->
+        Format.eprintf "%a: { " Var.print v;
         Var.Map.iter
           (fun d k ->
             Format.eprintf
@@ -387,7 +390,7 @@ module Print = struct
 
   let print_liveness live_vars =
     Format.eprintf "Liveness:\n";
-    Array.iteri ~f:(fun i l -> Format.eprintf "v%d: %s\n" i (live_to_string l)) live_vars
+    Var.Tbl.iter (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l)) live_vars
 
   let print_live_tbl live_table =
     Format.eprintf "Liveness with dependencies:\n";
@@ -406,14 +409,13 @@ let add_sentinal p =
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
 let f p sentinal global_info =
   let t = Timer.make () in
-  let nv = Var.count () in
   (* Compute definitions *)
-  let defs = definitions nv p in
+  let defs = definitions p in
   (* Compute usages *)
-  let uses = usages nv p global_info in
+  let uses = usages p global_info in
   (* Compute initial liveness *)
   let pure_funs = Pure_fun.f p in
-  let live_vars = liveness nv p pure_funs global_info in
+  let live_vars = liveness p pure_funs global_info in
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
   let live_table = solver vars uses defs live_vars in
