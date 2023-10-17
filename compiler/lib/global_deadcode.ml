@@ -147,6 +147,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
         ~f:(fun (i, _) ->
           match i with
           | Let (x, e) -> add_expr_uses x e
+          (* For assignment, propagate liveness from new to old variable like a block parameter *)
           | Assign (x, y) -> add_use Propagate x y
           | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
@@ -212,8 +213,9 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
   let live_instruction i =
     match i with
     | Let (_, e) -> (
-        (* If e is an impure application, we only need to set escaping arguments
-           as top. Otherwise, set all variables in e as top.  *)
+        (* If e is impure, set all variables in e as Top. The only exception is for function applications, 
+           where we may be able to do better. Global flow gives us information about which arguments in
+           a function application esacpe, so set only these as top.  *)
         if not (pure_expr pure_funs e)
         then
           match e with
@@ -225,7 +227,6 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
           | Block (_, _, _) | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) ->
               let vars = expr_vars e in
               Var.Set.iter add_top vars)
-    | Assign (_, _) -> ()
     | Set_field (x, i, y) ->
         add_live_field x i;
         add_top y
@@ -234,6 +235,8 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
         add_top y;
         add_top z
     | Offset_ref (x, i) -> add_live_field x i
+    (* Assignment can be ignored. Liveness of old variable is just propagated to new variable. See [usages]. *)
+    | Assign (_, _) -> ()
   in
   let live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
