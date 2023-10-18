@@ -316,7 +316,7 @@ let zero prog sentinal live_table =
     while !i >= 0 && Var.equal vars.(!i) sentinal do
       i := !i - 1
     done;
-    if !i < Array.length vars - 1 then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
+    if !i + 1 < Array.length vars then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
   in
   let is_live v =
     match Var.Tbl.get live_table v with
@@ -407,17 +407,16 @@ module Print = struct
 end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
-let add_sentinal p =
-  let sentinal = Var.fresh_n "sentinal" in
+let add_sentinal p sentinal =
   let undefined = Prim (Extern "%undefined", []) in
-  let instr, loc = Let (sentinal, undefined), Before 0 in
-  Code.prepend p [ instr, loc ], sentinal
+  let instr, loc = Let (sentinal, undefined), noloc in
+  Code.prepend p [ instr, loc ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f p global_info =
+let f p ~deadcode_sentinal global_info =
   let t = Timer.make () in
   (* Add sentinal variable *)
-  let p, sentinal = add_sentinal p in
+  let p = add_sentinal p deadcode_sentinal in
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute usages *)
@@ -437,10 +436,10 @@ let f p global_info =
     Print.print_uses uses;
     Print.print_live_tbl live_table);
   (* Zero out dead fields *)
-  let p = zero p sentinal live_table in
+  let p = zero p deadcode_sentinal live_table in
   if debug ()
   then (
     Format.printf "After Zeroing:\n";
     Code.Print.program (fun _ _ -> "") p);
   if times () then Format.eprintf "  deadcode dgraph.: %a@." Timer.print t;
-  p, sentinal
+  p
