@@ -214,7 +214,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
     match i with
     (* If e is impure, set all variables in e as Top. The only exception is for function applications,
        where we may be able to do better. Global flow gives us information about which arguments in
-       a function application esacpe, so set only these as top. *)
+       a function application escape, so set only these as top. *)
     | Let (_, e) -> (
         if not (pure_expr pure_funs e)
         then
@@ -260,12 +260,7 @@ let variables deps =
 (** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
     defined by joining its current liveness and the contribution of each vairable [y]
     that uses [x]. *)
-let propagate
-    (uses : usage_kind Var.Map.t Var.Tbl.t)
-    (defs : def Var.Tbl.t)
-    (live_vars : live Var.Tbl.t)
-    live_table
-    x =
+let propagate uses defs live_vars live_table x =
   (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
       ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
        the contribution depends on the liveness of [y] and its definition. *)
