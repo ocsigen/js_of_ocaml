@@ -241,12 +241,11 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
   let live_block block =
     List.iter ~f:(fun (i, _) -> live_instruction i) block.body;
     match fst block.branch with
-    | Stop -> ()
     | Return x -> if variable_may_escape x global_info then add_top x
     | Raise (x, _) -> add_top x
     | Cond (x, _, _) -> add_top x
     | Switch (x, _) -> add_top x
-    | Branch _ | Poptrap _ | Pushtrap _ -> ()
+    | Stop | Branch _ | Poptrap _ | Pushtrap _ -> ()
   in
   Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
   live_vars
