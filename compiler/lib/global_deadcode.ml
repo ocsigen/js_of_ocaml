@@ -317,7 +317,7 @@ let zero prog sentinal live_table =
     while !i >= 0 && Var.equal vars.(!i) sentinal do
       i := !i - 1
     done;
-    if !i < Array.length vars - 1 then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
+    if !i + 1 < Array.length vars then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
   in
   let is_live v =
     match Var.Tbl.get live_table v with
