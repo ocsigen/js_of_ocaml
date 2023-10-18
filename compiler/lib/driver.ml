@@ -97,6 +97,10 @@ let effects p =
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
 let exact_calls profile p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh ()
+  in
   if not (Config.Flag.effects ())
   then
     let fast =
@@ -104,23 +108,15 @@ let exact_calls profile p =
       | O3 -> false
       | O1 | O2 -> true
     in
-    let p, info, deadcode_sentinal =
+    let info = Global_flow.f ~fast p in
+    let p =
       if Config.Flag.globaldeadcode ()
-      then
-        let info = Global_flow.f ~fast p in
-        let p, deadcode_sentinal = Global_deadcode.f p info in
-        p, info, deadcode_sentinal
-      else
-        let info = Global_flow.f ~fast p in
-        let deadcode_sentinal =
-          (* If deadcode is not enabled, this field is set to a dummy fresh variable *)
-          Code.Var.fresh ()
-        in
-        p, info, deadcode_sentinal
+      then Global_deadcode.f p ~deadcode_sentinal info
+      else p
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
     p, deadcode_sentinal
-  else p, Code.Var.fresh ()
+  else p, deadcode_sentinal
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
