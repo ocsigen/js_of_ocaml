@@ -58,8 +58,6 @@ end
 
 module Solver = G.Solver (Domain)
 
-let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e
-
 let definitions prog =
   let defs = Var.Tbl.make () Param in
   let set_def x d = Var.Tbl.set defs x d in
@@ -192,7 +190,7 @@ let expr_vars e =
 (** Compute the initial liveness of each variable in the program. 
 
     A variable [x] is marked as [Top] if 
-    + It is used in an impure expression (as defined by [pure_expr]);
+    + It is used in an impure expression (as defined by [Pure_fun.pure_expr]);
     + It is used in a conditonal/switch;
     + It is raised by an exception;
     + It is used in another stateful instruction (like setting a block or array field);
@@ -216,7 +214,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
        where we may be able to do better. Global flow gives us information about which arguments in
        a function application escape, so set only these as top. *)
     | Let (_, e) -> (
-        if not (pure_expr pure_funs e)
+        if not (Pure_fun.pure_expr pure_funs e)
         then
           match e with
           | Apply { f; args; _ } ->
