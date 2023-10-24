@@ -154,6 +154,7 @@ function caml_unix_lstat(name) {
 function caml_unix_lstat_64(name) {
   var r = caml_unix_lstat(name);
   r[9] = caml_int64_of_int32(r[9]);
+  return r;
 }
 
 //Provides: caml_unix_mkdir
