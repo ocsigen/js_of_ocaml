@@ -135,6 +135,7 @@ function caml_unix_stat(name) {
 function caml_unix_stat_64(name) {
   var r = caml_unix_stat(name);
   r[9] = caml_int64_of_int32(r[9]);
+  return r;
 }
 
 //Provides: caml_unix_lstat
