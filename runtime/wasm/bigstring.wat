@@ -25,8 +25,8 @@
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_set"
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
-   (import "bindings" "ta_len"
-      (func $ta_len (param (ref extern)) (result i32)))
+   (import "bindings" "ta_length"
+      (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_bytes"
       (func $ta_bytes (param anyref) (result anyref)))
    (import "hash" "caml_hash_mix_int"
@@ -39,7 +39,7 @@
       (local $data (ref extern))
       (local $len i32) (local $i i32) (local $w i32)
       (local.set $data (call $caml_ba_get_data (local.get $b)))
-      (local.set $len (call $ta_len (local.get $data)))
+      (local.set $len (call $ta_length (local.get $data)))
       (loop $loop
          (if (i32.le_u (i32.add (local.get $i) (i32.const 4)) (local.get $len))
             (then

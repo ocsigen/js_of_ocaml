@@ -141,8 +141,8 @@
       (local.get $res))
 
    (global $INT_ERRMSG (ref $string)
-      (array.new_fixed $string 13 ;; "Int.of_string"
-         (i32.const 73) (i32.const 110) (i32.const 116) (i32.const 46)
+      (array.new_fixed $string 13 ;; "int.of_string"
+         (i32.const 105) (i32.const 110) (i32.const 116) (i32.const 95)
          (i32.const 111) (i32.const 102) (i32.const 95) (i32.const 115)
          (i32.const 116) (i32.const 114) (i32.const 105) (i32.const 110)
          (i32.const 103)))

@@ -506,6 +506,7 @@
                            (local.set $j
                               (i32.add (local.get $j) (i32.const 1)))))
                      (br $copy))))
+            (local.set $len (array.len (local.get $s')))
             (local.set $s (local.get $s'))))
       (block $error
          (br_if $error (i32.eqz (local.get $len)))
@@ -632,12 +633,12 @@
                                        ))))))))))))))))))
          (local.set $f
             (call $parse_float
-               (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+               (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith
          (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
-      (return (struct.new $float (f64.const 0))))
+      (return (i31.new (i32.const 0))))
 
    (func (export "caml_nextafter_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))

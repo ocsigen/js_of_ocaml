@@ -149,6 +149,16 @@
       (param $i i32) (result (ref eq))
       (struct.new $int32 (global.get $nativeint_ops) (local.get $i)))
 
+   (func (export "caml_nativeint_bswap") (param (ref eq)) (result (ref eq))
+      (local $i i32)
+      (local.set $i (struct.get $int32 1 (ref.cast (ref $int32) (local.get 0))))
+      (return_call $caml_copy_nativeint
+         (i32.or
+            (i32.rotr (i32.and (local.get $i) (i32.const 0x00FF00FF))
+                      (i32.const 8))
+            (i32.rotl (i32.and (local.get $i) (i32.const 0xFF00FF00))
+                      (i32.const 8)))))
+
    (global $NATIVEINT_ERRMSG (ref $string)
       (array.new_fixed $string 16 ;; "Nativeint.of_string"
          (i32.const 78) (i32.const 97) (i32.const 116) (i32.const 105)
