@@ -12,6 +12,7 @@
 * Runtime: fix Dom_html.onIE (#1493)
 * Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
 * Runtime: Dynlink should be able to find symbols in jsoo_runtime #1517
+* Runtime: fix Unix.lstat, Unix.LargeFile.lstat (#1519)
 * Compiler: fix global flow analysis (#1494)
 * Compiler: fix js parser/printer wrt async functions (#1515)
 
