@@ -22,6 +22,7 @@
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
+   (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
          (field $id (ref $string))
@@ -30,7 +31,8 @@
          (field $hash (ref null $hash))
          (field $fixed_length (ref null $fixed_length))
          (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))))
+         (field $deserialize (ref null $deserialize))
+         (field $dup (ref null $dup))))
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $int64_ops (export "int64_ops") (ref $custom_operations)
@@ -41,7 +43,8 @@
          (ref.func $int64_hash)
          (struct.new $fixed_length (i32.const 8) (i32.const 8))
          (ref.func $int64_serialize)
-         (ref.func $int64_deserialize)))
+         (ref.func $int64_deserialize)
+         (ref.func $int64_dup)))
 
    (type $int64
       (sub final $custom (struct (field (ref $custom_operations)) (field i64))))
@@ -75,6 +78,10 @@
          (struct.new $int64 (global.get $int64_ops)
             (call $caml_deserialize_int_8 (local.get $s)))
          (i32.const 8)))
+
+   (func $int64_dup (param $v (ref eq)) (result (ref eq))
+      (struct.new $int64 (global.get $int64_ops)
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v)))))
 
    (func $caml_copy_int64 (export "caml_copy_int64")
       (param $i i64) (result (ref eq))

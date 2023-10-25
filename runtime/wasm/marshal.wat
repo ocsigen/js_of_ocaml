@@ -117,6 +117,7 @@
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
+   (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
          (field $id (ref $string))
@@ -125,7 +126,8 @@
          (field $hash (ref null $hash))
          (field $fixed_length (ref null $fixed_length))
          (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))))
+         (field $deserialize (ref null $deserialize))
+         (field $dup (ref null $dup))))
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $Intext_magic_number_small i32 (i32.const 0x8495A6BE))

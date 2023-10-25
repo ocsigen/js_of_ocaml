@@ -24,6 +24,7 @@
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
+   (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
          (field $id (ref $string))
@@ -32,7 +33,8 @@
          (field $hash (ref null $hash))
          (field $fixed_length (ref null $fixed_length))
          (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))))
+         (field $deserialize (ref null $deserialize))
+         (field $dup (ref null $dup))))
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $int32_ops (export "int32_ops") (ref $custom_operations)
@@ -43,7 +45,8 @@
          (ref.func $int32_hash)
          (struct.new $fixed_length (i32.const 4) (i32.const 4))
          (ref.func $int32_serialize)
-         (ref.func $int32_deserialize)))
+         (ref.func $int32_deserialize)
+         (ref.func $int32_dup)))
 
    (type $int32
       (sub final $custom (struct (field (ref $custom_operations)) (field i32))))
@@ -72,6 +75,13 @@
          (struct.new $int32 (global.get $int32_ops)
             (call $caml_deserialize_int_4 (local.get $s)))
          (i32.const 4)))
+
+   (func $int32_dup (param $v (ref eq)) (result (ref eq))
+      (local $d (ref $int32))
+      (local.set $d (ref.cast (ref $int32) (local.get $v)))
+      (struct.new $int32
+         (struct.get $int32 0 (local.get $d))
+         (struct.get $int32 1 (local.get $d))))
 
    (func $caml_copy_int32 (export "caml_copy_int32")
       (param $i i32) (result (ref eq))
@@ -122,7 +132,8 @@
          (ref.func $int32_hash)
          (struct.new $fixed_length (i32.const 4) (i32.const 8))
          (ref.func $nativeint_serialize)
-         (ref.func $nativeint_deserialize)))
+         (ref.func $nativeint_deserialize)
+         (ref.func $int32_dup)))
 
    (func $nativeint_serialize
       (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)

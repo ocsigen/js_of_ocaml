@@ -83,6 +83,14 @@ module Type = struct
           ; typ = W.Func { W.params = [ value ]; result = [ value; I32 ] }
           })
 
+  let dup_type =
+    register_type "dup" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Func { W.params = [ value ]; result = [ value ] }
+          })
+
   let custom_operations_type =
     register_type "custom_operations" (fun () ->
         let* string = string_type in
@@ -91,6 +99,7 @@ module Type = struct
         let* fixed_length = fixed_length_type in
         let* serialize = serialize_type in
         let* deserialize = deserialize_type in
+        let* dup = dup_type in
         return
           { supertype = None
           ; final = true
@@ -115,6 +124,7 @@ module Type = struct
                 ; { mut = false
                   ; typ = Value (Ref { nullable = true; typ = Type deserialize })
                   }
+                ; { mut = false; typ = Value (Ref { nullable = true; typ = Type dup }) }
                 ]
           })
 

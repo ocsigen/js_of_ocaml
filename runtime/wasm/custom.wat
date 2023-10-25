@@ -18,6 +18,7 @@
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
+   (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
          (field $id (ref $string))
@@ -26,7 +27,8 @@
          (field $hash (ref null $hash))
          (field $fixed_length (ref null $fixed_length))
          (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))))
+         (field $deserialize (ref null $deserialize))
+         (field $dup (ref null $dup))))
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (type $custom_with_id
@@ -37,6 +39,16 @@
 
    (func (export "caml_is_custom") (param (ref eq)) (result i32)
       (ref.test (ref $custom) (local.get 0)))
+
+   (func (export "caml_dup_custom") (param $v (ref eq)) (result (ref eq))
+      (call_ref $dup (local.get $v)
+         (ref.as_non_null
+            (struct.get $custom_operations $dup
+               (struct.get $custom 0
+                  (block $custom (result (ref $custom))
+                     (drop (br_on_cast $custom (ref eq) (ref $custom)
+                        (local.get $v)))
+                     (unreachable)))))))
 
    (func (export "custom_compare_id")
       (param (ref eq)) (param (ref eq)) (param i32) (result i32)

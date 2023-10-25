@@ -105,6 +105,7 @@
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
+   (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
          (field $id (ref $string))
@@ -113,7 +114,8 @@
          (field $hash (ref null $hash))
          (field $fixed_length (ref null $fixed_length))
          (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))))
+         (field $deserialize (ref null $deserialize))
+         (field $dup (ref null $dup))))
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $bigarray_ops (export "bigarray_ops") (ref $custom_operations)
@@ -128,7 +130,8 @@
          (ref.func $bigarray_hash)
          (ref.null $fixed_length)
          (ref.func $bigarray_serialize)
-         (ref.func $bigarray_deserialize)))
+         (ref.func $bigarray_deserialize)
+         (ref.null $dup)))
 
    (type $int_array (array (mut i32)))
 

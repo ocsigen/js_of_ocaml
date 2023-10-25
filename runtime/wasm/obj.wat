@@ -2,6 +2,8 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "custom" "caml_is_custom"
       (func $caml_is_custom (param (ref eq)) (result i32)))
+   (import "custom" "caml_dup_custom"
+      (func $caml_dup_custom (param (ref eq)) (result (ref eq))))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "effect" "caml_trampoline_ref"
@@ -190,8 +192,13 @@
             (local.get $s') (i32.const 0) (local.get $s) (i32.const 0)
             (local.get $len))
          (return (local.get $s'))))
-      ;; ZZZ Deal with other values?
-      (unreachable))
+      (drop (block $not_float (result (ref eq))
+         (return
+            (struct.new $float
+               (struct.get $float 0
+                  (br_on_cast_fail $not_float (ref eq) (ref $float)
+                     (local.get 0)))))))
+      (call $caml_dup_custom (local.get 0)))
 
    (func (export "caml_obj_with_tag")
       (param $tag (ref eq)) (param (ref eq)) (result (ref eq))
