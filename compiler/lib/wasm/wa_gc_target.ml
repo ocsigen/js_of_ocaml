@@ -41,6 +41,16 @@ module Type = struct
           ; typ = W.Array { mut = true; typ = Value F64 }
           })
 
+  let js_type =
+    register_type "js" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false; typ = Value (Ref { nullable = true; typ = Any }) } ]
+          })
+
   let compare_type =
     register_type "compare" (fun () ->
         return
@@ -764,6 +774,23 @@ module Constant = struct
     let* () = register_global (V name) { mut = false; typ = Type.value } c in
     return (W.GlobalGet (V name))
 
+  let str_js_utf8 s =
+    let b = Buffer.create (String.length s) in
+    String.iter s ~f:(function
+        | '\\' -> Buffer.add_string b "\\\\"
+        | c -> Buffer.add_char b c);
+    Buffer.contents b
+
+  let str_js_byte s =
+    let b = Buffer.create (String.length s) in
+    String.iter s ~f:(function
+        | '\\' -> Buffer.add_string b "\\\\"
+        | '\128' .. '\255' as c ->
+            Buffer.add_string b "\\x";
+            Buffer.add_char_hex b c
+        | c -> Buffer.add_char b c);
+    Buffer.contents b
+
   let rec translate_rec c =
     match c with
     | Code.Int (Regular, i) -> return (true, W.RefI31 (Const (I32 i)))
@@ -805,7 +832,22 @@ module Constant = struct
           in
           return (true, c)
         else return (true, c)
-    | NativeString (Byte s | Utf (Utf8 s)) | String s ->
+    | NativeString s ->
+        let s =
+          match s with
+          | Utf (Utf8 s) -> str_js_utf8 s
+          | Byte s -> str_js_byte s
+        in
+        let* i = register_string s in
+        let* x =
+          register_import
+            ~import_module:"strings"
+            ~name:(string_of_int i)
+            (Global { mut = false; typ = Ref { nullable = false; typ = Any } })
+        in
+        let* ty = Type.js_type in
+        return (true, W.StructNew (ty, [ GlobalGet (V x) ]))
+    | String s ->
         let* ty = Type.string_type in
         if String.length s > string_length_threshold
         then

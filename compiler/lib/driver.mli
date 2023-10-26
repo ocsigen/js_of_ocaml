@@ -29,7 +29,7 @@ val f :
   -> ?source_map:Source_map.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.t option
+  -> Source_map.t option * string list
 
 val f' :
      ?standalone:bool

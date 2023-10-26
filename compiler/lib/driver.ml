@@ -613,14 +613,15 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   match target with
-  | `JavaScript formatter -> emit formatter r
+  | `JavaScript formatter ->
+      let source_map = emit formatter r in
+      source_map, []
   | `Wasm ch ->
       let (p, live_vars), _, in_cps = r in
-      Wa_generate.f ch ~live_vars ~in_cps p;
-      None
+      None, Wa_generate.f ch ~live_vars ~in_cps p
 
 let full_no_source_map ~target ~standalone ~wrap_with_fun ~profile ~linkall d p =
-  let (_ : Source_map.t option) =
+  let (_ : Source_map.t option * string list) =
     full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None d p
   in
   ()

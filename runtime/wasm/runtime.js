@@ -1,4 +1,4 @@
-(async function (eval_function, js) {
+(async function (eval_function, js, strings) {
     "use strict";
     const src = 'CODE';
     function loadRelative(src) {
@@ -345,7 +345,7 @@
          map_set:(m,x,v)=>m.set(x,v),
          log:(x)=>console.log('ZZZZZ', x)
         }
-    const imports = {Math:math,bindings:bindings,env:{},js:js}
+    const imports = {Math:math,bindings,env:{},js,strings}
     const wasmModule =
           isNode?await WebAssembly.instantiate(await code, imports)
                 :await WebAssembly.instantiateStreaming(code,imports)
@@ -377,4 +377,4 @@
     }
     await _initialize();
 })(((joo_global_object,jsoo_exports,globalThis)=>(x)=>eval(x))(globalThis,globalThis?.module?.exports||globalThis,globalThis),
-   PRIMITIVES);
+   PRIMITIVES, STRINGS);

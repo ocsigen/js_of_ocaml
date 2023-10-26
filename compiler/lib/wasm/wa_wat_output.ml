@@ -26,6 +26,7 @@ let heap_type (ty : heap_type) =
   match ty with
   | Func -> Atom "func"
   | Extern -> Atom "extern"
+  | Any -> Atom "any"
   | Eq -> Atom "eq"
   | I31 -> Atom "i31"
   | Type t -> index t

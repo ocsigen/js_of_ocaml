@@ -179,7 +179,7 @@ let run
   let output (one : Parse_bytecode.one) ~standalone ~source_map ~linkall output_file =
     check_debug one;
     let init_pseudo_fs = fs_external && standalone in
-    let sm =
+    let sm, _ =
       match output_file with
       | `Stdout, fmt ->
           let instr =

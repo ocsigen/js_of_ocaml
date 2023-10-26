@@ -73,7 +73,7 @@ function jsoo_create_file_extern(name,content){
   let code = Code.prepend Code.empty instr in
   Filename.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
-      let (_ : Source_map.t option) =
+      let (_ : Source_map.t option), _ =
         Driver.f
           ~target:(`JavaScript pfs_fmt)
           ~standalone:true

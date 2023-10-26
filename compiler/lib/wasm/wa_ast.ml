@@ -11,6 +11,7 @@ type packed_type =
 type heap_type =
   | Func
   | Extern
+  | Any
   | Eq
   | I31
   | Type of var

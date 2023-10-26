@@ -18,6 +18,9 @@ type context =
   ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wa_ast.instruction list
+  ; mutable string_count : int
+  ; mutable strings : string list
+  ; mutable string_index : int StringMap.t
   }
 
 val make_context : unit -> context
@@ -135,6 +138,8 @@ val get_data_segment : Code.Var.t -> (bool * Wa_ast.data list) t
 val register_init_code : unit t -> unit t
 
 val init_code : context -> unit t
+
+val register_string : string -> int t
 
 val get_context : context t
 

@@ -34,6 +34,9 @@ type context =
   ; mutable dummy_funs : Var.t IntMap.t
   ; mutable cps_dummy_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
+  ; mutable string_count : int
+  ; mutable strings : string list
+  ; mutable string_index : int StringMap.t
   }
 
 let make_context () =
@@ -51,6 +54,9 @@ let make_context () =
   ; dummy_funs = IntMap.empty
   ; cps_dummy_funs = IntMap.empty
   ; init_code = []
+  ; string_count = 0
+  ; strings = []
+  ; string_index = StringMap.empty
   }
 
 type var =
@@ -170,6 +176,16 @@ let register_init_code code st =
   let (), st' = code st' in
   st.context.init_code <- st'.instrs @ st.context.init_code;
   (), st
+
+let register_string s st =
+  let context = st.context in
+  try StringMap.find s context.string_index, st
+  with Not_found ->
+    let n = context.string_count in
+    context.string_count <- 1 + context.string_count;
+    context.strings <- s :: context.strings;
+    context.string_index <- StringMap.add s n context.string_index;
+    n, st
 
 let set_closure_env f env st =
   st.context.closure_envs <- Var.Map.add f env st.context.closure_envs;

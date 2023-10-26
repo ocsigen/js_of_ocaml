@@ -162,7 +162,7 @@ let escape_string s =
   done;
   Buffer.contents b
 
-let build_js_runtime primitives wasm_file output_file =
+let build_js_runtime primitives (strings : string list) wasm_file output_file =
   let always_required_js, primitives =
     let l =
       StringSet.fold
@@ -187,15 +187,28 @@ let build_js_runtime primitives wasm_file output_file =
   let f = Pretty_print.to_buffer b' in
   Pretty_print.set_compact f (not (Config.Flag.pretty ()));
   ignore (Js_output.program f [ primitives ]);
+  let b'' = Buffer.create 1024 in
+  let f = Pretty_print.to_buffer b'' in
+  Pretty_print.set_compact f (not (Config.Flag.pretty ()));
+  ignore
+    (Js_output.program
+       f
+       [ ( Javascript.Expression_statement
+             (EArr
+                (List.map
+                   ~f:(fun s -> Javascript.Element (EStr (Utf8_string.of_string_exn s)))
+                   strings))
+         , Javascript.N )
+       ]);
   let s = Wa_runtime.js_runtime in
   let rec find pat i =
     if String.equal (String.sub s ~pos:i ~len:(String.length pat)) pat
     then i
     else find pat (i + 1)
   in
-  let i = String.index s '\n' + 1 in
-  let j = find "CODE" 0 in
-  let k = find "PRIMITIVES" 0 in
+  let i = find "CODE" 0 in
+  let j = find "PRIMITIVES" 0 in
+  let k = find "STRINGS" 0 in
   let rec trim_semi s =
     let l = String.length s in
     if l = 0
@@ -207,13 +220,14 @@ let build_js_runtime primitives wasm_file output_file =
   in
   write_file
     output_file
-    (String.sub s ~pos:0 ~len:i
-    ^ Buffer.contents b
-    ^ String.sub s ~pos:i ~len:(j - i)
+    (Buffer.contents b
+    ^ String.sub s ~pos:0 ~len:i
     ^ escape_string (Filename.basename wasm_file)
-    ^ String.sub s ~pos:(j + 4) ~len:(k - j - 4)
+    ^ String.sub s ~pos:(i + 4) ~len:(j - i - 4)
     ^ trim_semi (Buffer.contents b')
-    ^ String.sub s ~pos:(k + 10) ~len:(String.length s - k - 10))
+    ^ String.sub s ~pos:(j + 10) ~len:(k - j - 10)
+    ^ trim_semi (Buffer.contents b'')
+    ^ String.sub s ~pos:(k + 7) ~len:(String.length s - k - 7))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Wa_generate.init ();
@@ -256,7 +270,7 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
   let need_debug = Config.Flag.debuginfo () in
   let output (one : Parse_bytecode.one) ~standalone ch =
     let code = one.code in
-    let _ =
+    let _, strings =
       Driver.f
         ~target:(`Wasm ch)
         ~standalone
@@ -266,7 +280,8 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
         one.debug
         code
     in
-    if times () then Format.eprintf "compilation: %a@." Timer.print t
+    if times () then Format.eprintf "compilation: %a@." Timer.print t;
+    strings
   in
   (let kind, ic, close_ic, include_dirs =
      let ch = open_in_bin input_file in
@@ -296,9 +311,9 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
        let wat_file = Filename.chop_extension (fst output_file) ^ ".wat" in
        let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
-       output_gen wat_file (output code ~standalone:true);
+       let strings = output_gen wat_file (output code ~standalone:true) in
        let primitives = link_and_optimize runtime_wasm_files wat_file wasm_file in
-       build_js_runtime primitives wasm_file (fst output_file)
+       build_js_runtime primitives strings wasm_file (fst output_file)
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
   Debug.stop_profiling ()

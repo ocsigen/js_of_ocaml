@@ -123,13 +123,13 @@ let specialize_instr ~target info i =
       match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (NativeString s) ]))
       | _ -> i)
-  | ( Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ]))
-    , `JavaScript ) -> (
+  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])), _
+    -> (
       match the_string_of info y with
       | Some s when String.is_valid_utf_8 s ->
           Let (x, Constant (NativeString (Native_string.of_string s)))
       | Some _ | None -> i)
-  | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])), `JavaScript -> (
+  | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])), _ -> (
       match the_string_of info y with
       | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
       | None -> i)

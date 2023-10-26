@@ -994,9 +994,10 @@ module Generate (Target : Wa_target_sig.S) = struct
           W.Data { name; read_only = true; active; contents })
         (Var.Map.bindings ctx.global_context.data_segments)
     in
-    List.rev_append
-      ctx.global_context.other_fields
-      (imports @ functions @ (start_function :: constant_data))
+    ( List.rev_append
+        ctx.global_context.other_fields
+        (imports @ functions @ (start_function :: constant_data))
+    , List.rev ctx.global_context.strings )
 end
 
 let init () =
@@ -1047,9 +1048,11 @@ let f ch (p : Code.program) ~live_vars ~in_cps =
   match target with
   | `Core ->
       let module G = Generate (Wa_core_target) in
-      let fields = G.f ~live_vars ~in_cps p in
-      Wa_asm_output.f ch fields
+      let fields, strings = G.f ~live_vars ~in_cps p in
+      Wa_asm_output.f ch fields;
+      strings
   | `GC ->
       let module G = Generate (Wa_gc_target) in
-      let fields = G.f ~live_vars ~in_cps p in
-      Wa_wat_output.f ch fields
+      let fields, strings = G.f ~live_vars ~in_cps p in
+      Wa_wat_output.f ch fields;
+      strings

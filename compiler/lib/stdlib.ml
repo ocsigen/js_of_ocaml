@@ -1163,13 +1163,16 @@ module Filename = struct
     in
     try
       let ch = open_out_bin f_tmp in
-      (try f ch
-       with e ->
-         close_out ch;
-         raise e);
+      let res =
+        try f ch
+        with e ->
+          close_out ch;
+          raise e
+      in
       close_out ch;
       (try Sys.remove file with Sys_error _ -> ());
-      Sys.rename f_tmp file
+      Sys.rename f_tmp file;
+      res
     with exc ->
       Sys.remove f_tmp;
       raise exc
