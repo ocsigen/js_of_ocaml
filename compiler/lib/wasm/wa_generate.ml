@@ -520,13 +520,8 @@ module Generate (Target : Wa_target_sig.S) = struct
             in
             Memory.allocate stack_ctx x ~tag:0 l
         | Extern name, l ->
+            let name = Primitive.resolve name in
             (*ZZZ Different calling convention when large number of parameters *)
-            let name =
-              match name with
-              | "caml_callback" -> "caml_trampoline"
-              | "caml_alloc_stack" when Config.Flag.effects () -> "caml_cps_alloc_stack"
-              | _ -> name
-            in
             let* f = register_import ~name (Fun (func_type (List.length l))) in
             let* () = Stack.perform_spilling stack_ctx (`Instr x) in
             let rec loop acc l =
@@ -1001,9 +996,19 @@ module Generate (Target : Wa_target_sig.S) = struct
 end
 
 let init () =
-  List.iter
-    ~f:(fun (nm, nm') -> Primitive.alias nm nm')
-    [ "caml_make_array", "%identity"; "caml_ensure_stack_capacity", "%identity" ]
+  let l =
+    [ "caml_make_array", "%identity"
+    ; "caml_ensure_stack_capacity", "%identity"
+    ; "caml_callback", "caml_trampoline"
+    ]
+  in
+
+  let l =
+    if Config.Flag.effects ()
+    then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l
+    else l
+  in
+  List.iter ~f:(fun (nm, nm') -> Primitive.alias nm nm') l
 
 (* Make sure we can use [br_table] for switches *)
 let fix_switch_branches p =

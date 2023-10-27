@@ -230,8 +230,8 @@ let build_js_runtime primitives (strings : string list) wasm_file output_file =
     ^ String.sub s ~pos:(k + 7) ~len:(String.length s - k - 7))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
-  Wa_generate.init ();
   Jsoo_cmdline.Arg.eval common;
+  Wa_generate.init ();
   (match output_file with
   | name, _ when debug_mem () -> Debug.start_profiling name
   | _, _ -> ());
