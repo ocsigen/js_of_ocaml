@@ -620,6 +620,8 @@ module Math = struct
   let fmod f g = binary "fmod" f g
 end
 
+let internal_primitives = Hashtbl.create 0
+
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
   try_

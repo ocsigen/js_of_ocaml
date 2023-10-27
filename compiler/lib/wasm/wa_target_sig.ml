@@ -276,6 +276,9 @@ module type S = sig
     val round : expression -> expression
   end
 
+  val internal_primitives :
+    (string, (Code.prim_arg -> expression) -> Code.prim_arg list -> expression) Hashtbl.t
+
   val handle_exceptions :
        result_typ:Wa_ast.value_type list
     -> fall_through:'a

@@ -37,6 +37,7 @@ type context =
   ; mutable string_count : int
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
+  ; mutable fragments : Javascript.expression StringMap.t
   }
 
 let make_context () =
@@ -57,6 +58,7 @@ let make_context () =
   ; string_count = 0
   ; strings = []
   ; string_index = StringMap.empty
+  ; fragments = StringMap.empty
   }
 
 type var =
@@ -186,6 +188,12 @@ let register_string s st =
     context.strings <- s :: context.strings;
     context.string_index <- StringMap.add s n context.string_index;
     n, st
+
+let register_fragment name f st =
+  let context = st.context in
+  if not (StringMap.mem name context.fragments)
+  then context.fragments <- StringMap.add name (f ()) context.fragments;
+  (), st
 
 let set_closure_env f env st =
   st.context.closure_envs <- Var.Map.add f env st.context.closure_envs;

@@ -21,6 +21,7 @@ type context =
   ; mutable string_count : int
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
+  ; mutable fragments : Javascript.expression StringMap.t
   }
 
 val make_context : unit -> context
@@ -140,6 +141,8 @@ val register_init_code : unit t -> unit t
 val init_code : context -> unit t
 
 val register_string : string -> int t
+
+val register_fragment : string -> (unit -> Javascript.expression) -> unit t
 
 val get_context : context t
 

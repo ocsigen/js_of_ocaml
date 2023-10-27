@@ -1230,6 +1230,155 @@ module Math = struct
   let exp2 x = power (return (W.Const (F64 2.))) x
 end
 
+module JavaScript = struct
+  let anyref = W.Ref { nullable = true; typ = Any }
+
+  let invoke_fragment name args =
+    let* f =
+      register_import
+        ~import_module:"fragments"
+        ~name
+        (Fun { params = List.map ~f:(fun _ -> anyref) args; result = [ anyref ] })
+    in
+    let* wrap =
+      register_import ~name:"wrap" (Fun { params = [ anyref ]; result = [ Type.value ] })
+    in
+    let* unwrap =
+      register_import
+        ~name:"unwrap"
+        (Fun { params = [ Type.value ]; result = [ anyref ] })
+    in
+    let* args =
+      expression_list
+        (fun e ->
+          let* e = e in
+          return (W.Call (unwrap, [ e ])))
+        args
+    in
+    return (W.Call (wrap, [ Call (f, args) ]))
+end
+
+let internal_primitives = Hashtbl.create 100
+
+let () =
+  let register name f = Hashtbl.add internal_primitives name f in
+  let module J = Javascript in
+  register "%caml_js_opt_call" (fun transl_prim_arg l ->
+      let arity = List.length l - 2 in
+      let name = Printf.sprintf "call_%d" arity in
+      let* () =
+        register_fragment name (fun () ->
+            let f = Utf8_string.of_string_exn "f" in
+            let o = Utf8_string.of_string_exn "o" in
+            let params =
+              List.init ~len:arity ~f:(fun i ->
+                  Utf8_string.of_string_exn (Printf.sprintf "x%d" i))
+            in
+            EArrow
+              ( J.fun_
+                  (List.map ~f:J.ident (f :: params))
+                  [ ( Return_statement
+                        (Some
+                           (J.call
+                              (J.dot
+                                 (EVar (J.ident f))
+                                 (Utf8_string.of_string_exn "call"))
+                              (List.map ~f:(fun x -> J.EVar (J.ident x)) (o :: params))
+                              N))
+                    , N )
+                  ]
+                  N
+              , AUnknown ))
+      in
+      let l = List.map ~f:transl_prim_arg l in
+      JavaScript.invoke_fragment name l);
+  register "%caml_js_opt_fun_call" (fun transl_prim_arg l ->
+      let arity = List.length l - 1 in
+      let name = Printf.sprintf "fun_call_%d" arity in
+      let* () =
+        register_fragment name (fun () ->
+            let f = Utf8_string.of_string_exn "f" in
+            let params =
+              List.init ~len:arity ~f:(fun i ->
+                  Utf8_string.of_string_exn (Printf.sprintf "x%d" i))
+            in
+            EArrow
+              ( J.fun_
+                  (List.map ~f:J.ident (f :: params))
+                  [ ( Return_statement
+                        (Some
+                           (J.call
+                              (EVar (J.ident f))
+                              (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
+                              N))
+                    , N )
+                  ]
+                  N
+              , AUnknown ))
+      in
+      let l = List.map ~f:transl_prim_arg l in
+      JavaScript.invoke_fragment name l);
+  register "%caml_js_opt_meth_call" (fun transl_prim_arg l ->
+      match l with
+      | o :: Code.Pc (NativeString (Utf meth)) :: args ->
+          let arity = List.length args in
+          let name =
+            let (Utf8 name) = meth in
+            Printf.sprintf "meth_call_%d_%s" arity name
+          in
+          let* () =
+            register_fragment name (fun () ->
+                let o = Utf8_string.of_string_exn "o" in
+                let params =
+                  List.init ~len:arity ~f:(fun i ->
+                      Utf8_string.of_string_exn (Printf.sprintf "x%d" i))
+                in
+                EArrow
+                  ( J.fun_
+                      (List.map ~f:J.ident (o :: params))
+                      [ ( Return_statement
+                            (Some
+                               (J.call
+                                  (J.dot (EVar (J.ident o)) meth)
+                                  (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
+                                  N))
+                        , N )
+                      ]
+                      N
+                  , AUnknown ))
+          in
+          let o = transl_prim_arg o in
+          let args = List.map ~f:transl_prim_arg args in
+          JavaScript.invoke_fragment name (o :: args)
+      | _ -> assert false);
+  register "%caml_js_opt_new" (fun transl_prim_arg l ->
+      let arity = List.length l - 1 in
+      let name = Printf.sprintf "new_%d" arity in
+      let* () =
+        register_fragment name (fun () ->
+            let c = Utf8_string.of_string_exn "c" in
+            let params =
+              List.init ~len:arity ~f:(fun i ->
+                  Utf8_string.of_string_exn (Printf.sprintf "x%d" i))
+            in
+            EArrow
+              ( J.fun_
+                  (List.map ~f:J.ident (c :: params))
+                  [ ( Return_statement
+                        (Some
+                           (ENew
+                              ( EVar (J.ident c)
+                              , Some
+                                  (List.map ~f:(fun x -> J.Arg (EVar (J.ident x))) params)
+                              )))
+                    , N )
+                  ]
+                  N
+              , AUnknown ))
+      in
+      let l = List.map ~f:transl_prim_arg l in
+      JavaScript.invoke_fragment name l)
+
 let externref = W.Ref { nullable = true; typ = Extern }
 
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =

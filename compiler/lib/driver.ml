@@ -615,13 +615,13 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
   match target with
   | `JavaScript formatter ->
       let source_map = emit formatter r in
-      source_map, []
+      source_map, ([], [])
   | `Wasm ch ->
       let (p, live_vars), _, in_cps = r in
       None, Wa_generate.f ch ~live_vars ~in_cps p
 
 let full_no_source_map ~target ~standalone ~wrap_with_fun ~profile ~linkall d p =
-  let (_ : Source_map.t option * string list) =
+  let (_ : Source_map.t option * _) =
     full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None d p
   in
   ()

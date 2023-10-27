@@ -1,4 +1,4 @@
-(async function (eval_function, js, strings) {
+(async function (eval_function, js, strings, fragments) {
     "use strict";
     const src = 'CODE';
     function loadRelative(src) {
@@ -345,7 +345,7 @@
          map_set:(m,x,v)=>m.set(x,v),
          log:(x)=>console.log('ZZZZZ', x)
         }
-    const imports = {Math:math,bindings,env:{},js,strings}
+    const imports = {Math:math,bindings,env:{},js,strings,fragments}
     const wasmModule =
           isNode?await WebAssembly.instantiate(await code, imports)
                 :await WebAssembly.instantiateStreaming(code,imports)

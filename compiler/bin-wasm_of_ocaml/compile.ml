@@ -162,7 +162,7 @@ let escape_string s =
   done;
   Buffer.contents b
 
-let build_js_runtime primitives (strings : string list) wasm_file output_file =
+let build_js_runtime primitives (strings, fragments) wasm_file output_file =
   let always_required_js, primitives =
     let l =
       StringSet.fold
@@ -200,6 +200,21 @@ let build_js_runtime primitives (strings : string list) wasm_file output_file =
                    strings))
          , Javascript.N )
        ]);
+  let fragment_buffer = Buffer.create 1024 in
+  let f = Pretty_print.to_buffer fragment_buffer in
+  Pretty_print.set_compact f (not (Config.Flag.pretty ()));
+  ignore
+    (Js_output.program
+       f
+       [ ( Javascript.Expression_statement
+             (EObj
+                (List.map
+                   ~f:(fun (nm, f) ->
+                     let id = Utf8_string.of_string_exn nm in
+                     Javascript.Property (PNI id, f))
+                   fragments))
+         , Javascript.N )
+       ]);
   let s = Wa_runtime.js_runtime in
   let rec find pat i =
     if String.equal (String.sub s ~pos:i ~len:(String.length pat)) pat
@@ -227,6 +242,8 @@ let build_js_runtime primitives (strings : string list) wasm_file output_file =
     ^ trim_semi (Buffer.contents b')
     ^ String.sub s ~pos:(j + 10) ~len:(k - j - 10)
     ^ trim_semi (Buffer.contents b'')
+    ^ ","
+    ^ trim_semi (Buffer.contents fragment_buffer)
     ^ String.sub s ~pos:(k + 7) ~len:(String.length s - k - 7))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
