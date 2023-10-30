@@ -4,7 +4,6 @@ let%expect_test "Eliminates unused functions from functor" =
   let program =
     (* Create two instances of Set functor so compiler can't inline one implementation. *)
     compile_and_parse_whole_program
-      ~flags:[ "--enable"; "globaldeadcode" ]
       {|
       module Int_set = Set.Make (Int);;
       module String_set = Set.Make (String);;
@@ -95,7 +94,6 @@ let%expect_test "Eliminates unused functions from functor" =
 let%expect_test "Omit unused fields" =
   let program =
     compile_and_parse
-      ~flags:[ "--enable"; "globaldeadcode" ]
       {|
       let f b x =
         let t = if b then (1, 2, x) else (3, x, 4) in
@@ -117,7 +115,6 @@ let%expect_test "Omit unused fields" =
 let%expect_test "Omit unused return expressions" =
   let program =
     compile_and_parse
-      ~flags:[ "--enable"; "globaldeadcode" ]
       {|
       let f x =
         print_int x;
