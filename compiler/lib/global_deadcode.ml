@@ -232,7 +232,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
         add_top x;
         add_top y;
         add_top z
-    | Offset_ref (x, i) -> add_live_field x i
+    | Offset_ref (x, _) -> add_live_field x 0
     (* Assignment can be ignored. Liveness of old variable is just propagated to new variable. See [usages]. *)
     | Assign (_, _) -> ()
   in
