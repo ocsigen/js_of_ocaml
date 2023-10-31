@@ -89,18 +89,27 @@ let ( +> ) f g x = g (f x)
 
 let map_fst f (x, y) = f x, y
 
-let effects p =
+let effects ~deadcode_sentinal p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
-    p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
+    let p, live_vars = Deadcode.f p in
+    let p = Effects.remove_empty_blocks ~live_vars p in
+    let p, live_vars = Deadcode.f p in
+    let p, live_vars =
+      if Config.Flag.globaldeadcode ()
+      then
+        let info = Global_flow.f ~fast:false p in
+        let p = Global_deadcode.f p ~deadcode_sentinal info in
+        Deadcode.f p
+      else p, live_vars
+    in
+    let info = Global_flow.f ~fast:false p in
+    let p, cps = p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f in
+    p, cps)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
-let exact_calls profile p =
-  let deadcode_sentinal =
-    (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh ()
-  in
+let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
   then
     let fast =
@@ -114,9 +123,8 @@ let exact_calls profile p =
       then Global_deadcode.f p ~deadcode_sentinal info
       else p
     in
-    let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
-    p, deadcode_sentinal
-  else p, deadcode_sentinal
+    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+  else p
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -185,7 +193,8 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    (((p, live_vars), cps_calls), deadcode_sentinal) =
+    ~deadcode_sentinal
+    ((p, live_vars), cps_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -583,17 +592,26 @@ let configure formatter =
 
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
   let exported_runtime = not standalone in
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh_n "undef"
+  in
   let opt =
     specialize_js_once
     +> (match profile with
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
-    +> exact_calls profile
-    +> map_fst (effects +> map_fst (Generate_closure.f +> deadcode'))
+    +> exact_calls ~deadcode_sentinal profile
+    +> (effects ~deadcode_sentinal +> map_fst (Generate_closure.f +> deadcode'))
   in
   let emit =
-    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    generate
+      d
+      ~exported_runtime
+      ~wrap_with_fun
+      ~warn_on_unhandled_effect:standalone
+      ~deadcode_sentinal
     +> link ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
     +> coloring

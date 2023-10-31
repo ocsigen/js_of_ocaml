@@ -39,7 +39,7 @@ let () =
   [%expect
     {|
     function bug(param){
-     var g = [0, function(x){return function(_d_){return _d_;};}];
+     var g = [0, function(x){return function(_c_){return _c_;};}];
      return [0, function(param){return caml_call1(g[1], 1);}, g];
     }
     //end |}]

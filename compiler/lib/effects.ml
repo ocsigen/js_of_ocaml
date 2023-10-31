@@ -923,13 +923,12 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 
 (****)
 
-let f (p, live_vars) =
+let f ~flow_info ~live_vars p =
   let t = Timer.make () in
-  let p = remove_empty_blocks ~live_vars p in
-  let flow_info = Global_flow.f ~fast:false p in
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in
   let p = split_blocks ~cps_needed p in
   let p, cps_calls = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
+  Code.invariant p;
   p, cps_calls
