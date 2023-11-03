@@ -63,7 +63,7 @@
             (field $cont_resolver externref))))
 
    (func $invoke_promise_resolver (param $p (ref $pair)) (param (ref eq))
-      (call $resume_fiber
+      (return_call $resume_fiber
          (struct.get $cont_resume $cont_resolver
             (ref.cast (ref $cont_resume) (local.get 1)))
          (local.get $p)))
@@ -224,7 +224,7 @@
                   (call $caml_named_value
                      (array.new_data $string $already_resumed
                         (i32.const 0) (i32.const 35)))))))
-      (call $capture_continuation
+      (return_call $capture_continuation
          (ref.func $do_resume)
           (struct.new $pair
              (local.get $stack)
@@ -290,7 +290,7 @@
    (func $reperform (export "%reperform")
       (param $eff (ref eq)) (param $cont (ref eq))
       (result (ref eq))
-      (call $capture_continuation
+      (return_call $capture_continuation
          (ref.func $do_perform)
          (struct.new $pair (local.get $eff) (local.get $cont))))
 
@@ -325,18 +325,17 @@
                         (call $caml_wrap_exception (pop externref))))))
             (catch $ocaml_exception
                (local.set $exn (pop (ref eq)))
-               (call $call_handler
+               (return_call $call_handler
                   (struct.get $handlers $exn
                      (struct.get $fiber $handlers (global.get $stack)))
-                  (local.get $exn))
-               (return))))
-      (call $call_handler
+                  (local.get $exn)))))
+      (return_call $call_handler
          (struct.get $handlers $value
             (struct.get $fiber $handlers (global.get $stack)))
          (local.get $res)))
 
    (func $initial_cont (param $p (ref $pair)) (param (ref eq))
-      (call $start_fiber (local.get $p)))
+      (return_call $start_fiber (local.get $p)))
 
    (func (export "caml_alloc_stack")
       (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
