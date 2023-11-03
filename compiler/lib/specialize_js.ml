@@ -86,7 +86,7 @@ let specialize_instr ~target info i =
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_object", [ a ])), `JavaScript -> (
+  | Let (x, Prim (Extern "caml_js_object", [ a ])), _ -> (
       try
         let a =
           match the_def_of info a with

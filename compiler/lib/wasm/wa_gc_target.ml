@@ -1377,6 +1377,101 @@ let () =
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg l in
+      JavaScript.invoke_fragment name l);
+  register "caml_js_get" (fun transl_prim_arg l ->
+      match l with
+      | [ x; Code.Pc (NativeString (Utf prop)) ] when J.is_ident' prop ->
+          let name =
+            let (Utf8 name) = prop in
+            Printf.sprintf "get_%s" name
+          in
+          let* () =
+            register_fragment name (fun () ->
+                let o = Utf8_string.of_string_exn "o" in
+                EArrow
+                  ( J.fun_
+                      [ J.ident o ]
+                      [ Return_statement (Some (J.dot (EVar (J.ident o)) prop)), N ]
+                      N
+                  , AUnknown ))
+          in
+          JavaScript.invoke_fragment name [ transl_prim_arg x ]
+      | [ _; _ ] ->
+          let* f = register_import ~name:"caml_js_get" (Fun (Type.func_type 1)) in
+          let l = List.map ~f:transl_prim_arg l in
+          let* l = expression_list (fun e -> e) l in
+          return (W.Call (f, l))
+      | _ -> assert false);
+  register "caml_js_set" (fun transl_prim_arg l ->
+      match l with
+      | [ x; Code.Pc (NativeString (Utf prop)); y ] when J.is_ident' prop ->
+          let name =
+            let (Utf8 name) = prop in
+            Printf.sprintf "set_%s" name
+          in
+          let* () =
+            register_fragment name (fun () ->
+                let o = Utf8_string.of_string_exn "o" in
+                let v = Utf8_string.of_string_exn "v" in
+                EArrow
+                  ( J.fun_
+                      [ J.ident o; J.ident v ]
+                      [ ( Return_statement
+                            (Some
+                               (J.EBin
+                                  (J.Eq, J.dot (EVar (J.ident o)) prop, EVar (J.ident v))))
+                        , N )
+                      ]
+                      N
+                  , AUnknown ))
+          in
+          let l = List.map ~f:transl_prim_arg [ x; y ] in
+          JavaScript.invoke_fragment name l
+      | [ _; _; _ ] ->
+          let* f = register_import ~name:"caml_js_set" (Fun (Type.func_type 2)) in
+          let l = List.map ~f:transl_prim_arg l in
+          let* l = expression_list (fun e -> e) l in
+          return (W.Call (f, l))
+      | _ -> assert false);
+  let counter = ref (-1) in
+  register "%caml_js_opt_object" (fun transl_prim_arg l ->
+      let rec split kl vl l =
+        match l with
+        | [] -> List.rev kl, List.rev vl
+        | Code.Pc (NativeString (Utf k)) :: v :: r -> split (k :: kl) (v :: vl) r
+        | _ -> assert false
+      in
+      let kl, vl = split [] [] l in
+      let name =
+        incr counter;
+        Printf.sprintf "obj_%d" !counter
+      in
+      let* () =
+        register_fragment name (fun () ->
+            let arity = List.length kl in
+            let params =
+              List.init ~len:arity ~f:(fun i ->
+                  Utf8_string.of_string_exn (Printf.sprintf "x%d" i))
+            in
+            EArrow
+              ( J.fun_
+                  (List.map ~f:J.ident params)
+                  [ ( Return_statement
+                        (Some
+                           (EObj
+                              (List.map2
+                                 ~f:(fun k x ->
+                                   J.Property
+                                     ( (if J.is_ident' k then J.PNI k else J.PNS k)
+                                     , EVar (J.ident x) ))
+                                 kl
+                                 params)))
+                    , N )
+                  ]
+                  N
+              , AUnknown ))
+      in
+      let l = List.map ~f:transl_prim_arg vl in
       JavaScript.invoke_fragment name l)
 
 let externref = W.Ref { nullable = true; typ = Extern }
