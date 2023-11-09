@@ -378,3 +378,65 @@ function f () {
           2: f(){const
           3: a=2;return function(){var
           4: a=a+2;return a}} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+function test() {
+  var x = {a:1,b:2}
+  function f (a, b = x.b) {
+    return (a + b);
+  }
+  console.log(f(1));
+}
+test()
+|}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: function test() {
+          3:   var x = {a:1,b:2}
+          4:   function f (a, b = x.b) {
+          5:     return (a + b);
+          6:   }
+          7:   console.log(f(1));
+          8: }
+          9: test()
+        $ cat "test.min.js"
+          1: function
+          2: test(){var
+          3: b={a:1,b:2};function
+          4: a(a,b=b.b){return a+b}console.log(a(1))}test(); |}];
+      print_endline (run_javascript js_min_file);
+      [%expect
+        {|
+  /tmp/build_f4b6d0_dune/jsoo-test9c182b/test.min.js:4
+  a(a,b=b.b){return a+b}console.log(a(1))}test();
+        ^
+
+  ReferenceError: Cannot access 'b' before initialization
+      at a (/tmp/build_f4b6d0_dune/jsoo-test9c182b/test.min.js:4:7)
+      at test (/tmp/build_f4b6d0_dune/jsoo-test9c182b/test.min.js:4:35)
+      at Object.<anonymous> (/tmp/build_f4b6d0_dune/jsoo-test9c182b/test.min.js:4:41)
+      at Module._compile (node:internal/modules/cjs/loader:1267:14)
+      at Module._extensions..js (node:internal/modules/cjs/loader:1321:10)
+      at Module.load (node:internal/modules/cjs/loader:1125:32)
+      at Module._load (node:internal/modules/cjs/loader:965:12)
+      at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:83:12)
+      at node:internal/main/run_main_module:23:47
+
+  Node.js v20.0.0
+
+  process exited with error code 1
+   node test.min.js |}])
