@@ -813,6 +813,7 @@ class free =
       let ids = bound_idents_of_params params in
       List.iter ids ~f:tbody#def_var;
       let body = tbody#function_body body in
+      let params = tbody#formal_parameter_list params in
       tbody#record_block (Params params);
       m#merge_info tbody;
       k, params, body, nid
@@ -827,6 +828,7 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           let ident =
             match ident with
             | Some i ->
@@ -866,6 +868,7 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           tbody#record_block (Params params);
           m#def_var id;
           m#merge_info tbody;
