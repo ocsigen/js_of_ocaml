@@ -332,7 +332,8 @@ end = struct
     | v1 :: r1, v2 :: r2 ->
         Var.propagate_name v1 v2;
         propagate r1 r2
-    | _ -> ()
+    | [], [] -> ()
+    | _ -> assert false
 
   let fold t f acc =
     Int_table.fold (fun k { event; _ } acc -> f k event acc) t.events_by_pc acc
@@ -646,8 +647,6 @@ module State = struct
 
   let set_accu st x loc = { st with accu = Var (x, loc) }
 
-  let clear_accu st = { st with accu = Dummy }
-
   let peek n st = elt_to_var (List.nth st.stack n)
 
   let grab n st = List.map (list_start n st.stack) ~f:elt_to_var, pop n st
@@ -811,7 +810,7 @@ let get_global state instrs i loc =
         g.vars.(i) <- Some x;
         x, state, instrs)
 
-let tagged_blocks = ref Addr.Set.empty
+let tagged_blocks = ref Addr.Map.empty
 
 let compiled_blocks = ref Addr.Map.empty
 
@@ -854,27 +853,44 @@ let ( ||| ) x y =
   | _ -> x
 
 let rec compile_block blocks debug_data code pc state =
-  if not (Addr.Set.mem pc !tagged_blocks)
-  then (
-    let limit = Blocks.next blocks pc in
-    assert (limit > pc);
-    if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block pc state in
-    tagged_blocks := Addr.Set.add pc !tagged_blocks;
-    let instr, last, state' =
-      compile { blocks; code; limit; debug = debug_data } pc state []
-    in
-    assert (not (Addr.Map.mem pc !compiled_blocks));
-    compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
-    match fst last with
-    | Branch (pc', _) | Poptrap (pc', _) ->
-        compile_block blocks debug_data code pc' state'
-    | Cond (_, (pc1, _), (pc2, _)) ->
-        compile_block blocks debug_data code pc1 state';
-        compile_block blocks debug_data code pc2 state'
-    | Switch (_, _) -> ()
-    | Pushtrap _ -> ()
-    | Raise _ | Return _ | Stop -> ())
+  match Addr.Map.find_opt pc !tagged_blocks with
+  | Some old_state -> (
+      let rec check (xs : State.elt list) (ys : State.elt list) =
+        match xs, ys with
+        | Var _ :: xs, Var _ :: ys -> check xs ys
+        | Dummy :: xs, Dummy :: ys -> check xs ys
+        | [], [] -> ()
+        | Var _ :: _, Dummy :: _ -> assert false
+        | Dummy :: _, Var _ :: _ -> assert false
+        | _ :: _, [] -> assert false
+        | [], _ :: _ -> assert false
+      in
+      check old_state.State.stack state.State.stack;
+      match old_state.State.accu, state.State.accu with
+      | Dummy, Dummy -> ()
+      | Var _, Var _ -> ()
+      | Var _, Dummy -> assert false
+      | Dummy, Var _ -> assert false)
+  | None -> (
+      let limit = Blocks.next blocks pc in
+      assert (limit > pc);
+      if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
+      let state = State.start_block pc state in
+      tagged_blocks := Addr.Map.add pc state !tagged_blocks;
+      let instr, last, state' =
+        compile { blocks; code; limit; debug = debug_data } pc state []
+      in
+      assert (not (Addr.Map.mem pc !compiled_blocks));
+      compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
+      match fst last with
+      | Branch (pc', _) -> compile_block blocks debug_data code pc' state'
+      | Cond (_, (pc1, _), (pc2, _)) ->
+          compile_block blocks debug_data code pc1 state';
+          compile_block blocks debug_data code pc2 state'
+      | Poptrap (_, _) -> ()
+      | Switch (_, _) -> ()
+      | Pushtrap _ -> ()
+      | Raise _ | Return _ | Stop -> ())
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
@@ -1208,7 +1224,9 @@ and compile infos pc state instrs =
         let state' = State.start_function state env 0 in
         let params, state' = State.make_stack nparams state' loc in
         if debug_parser () then Format.printf ") {@.";
-        let state' = State.clear_accu state' in
+        (* We can't use [Dummy] here as it breaks the stack shape
+           invariant. *)
+        let _dummy, state' = State.fresh_var state' No in
         compile_block infos.blocks infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
         let args = State.stack_vars state' in
@@ -1265,7 +1283,9 @@ and compile infos pc state instrs =
               let state' = State.start_function state env offset in
               let params, state' = State.make_stack nparams state' loc in
               if debug_parser () then Format.printf ") {@.";
-              let state' = State.clear_accu state' in
+              (* We can't use [Dummy] here as it breaks the stack
+                 shape invariant. *)
+              let _dummy, state' = State.fresh_var state' No in
               compile_block infos.blocks infos.debug code addr state';
               if debug_parser () then Format.printf "}@.";
               let args = State.stack_vars state' in
@@ -1677,7 +1697,7 @@ and compile infos pc state instrs =
             let isint_branch = pc + 1 in
             let isblock_branch = pc + 2 in
             let () =
-              tagged_blocks := Addr.Set.add isint_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isint_branch state !tagged_blocks;
               let i_state = State.start_block isint_branch state in
               let i_args = State.stack_vars i_state in
               compiled_blocks :=
@@ -1687,7 +1707,7 @@ and compile infos pc state instrs =
                   !compiled_blocks
             in
             let () =
-              tagged_blocks := Addr.Set.add isblock_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isblock_branch state !tagged_blocks;
               let x_tag = Var.fresh () in
               let b_state = State.start_block isblock_branch state in
               let b_args = State.stack_vars b_state in
@@ -1723,7 +1743,7 @@ and compile infos pc state instrs =
         let handler_addr = pc + 1 + gets code (pc + 1) in
         let x, handler_state = State.fresh_var handler_ctx_state loc in
 
-        tagged_blocks := Addr.Set.add interm_addr !tagged_blocks;
+        tagged_blocks := Addr.Map.add interm_addr state !tagged_blocks;
         compiled_blocks :=
           Addr.Map.add
             interm_addr
@@ -2492,7 +2512,7 @@ let parse_bytecode code globals debug_data =
   in
   pushpop := Addr.Map.empty;
   compiled_blocks := Addr.Map.empty;
-  tagged_blocks := Addr.Set.empty;
+  tagged_blocks := Addr.Map.empty;
   p
 
 (* HACK - override module *)

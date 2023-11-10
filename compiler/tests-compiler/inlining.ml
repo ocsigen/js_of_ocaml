@@ -24,11 +24,19 @@ let%expect_test "inline recursive function" =
     let rec f () = f ()
     and g () = f ()
   |} in
+  print_fun_decl program (Some "f$0");
   print_fun_decl program (Some "f");
   print_fun_decl program (Some "g");
   [%expect
     {|
-    function f(param){for(;;) ;}
+    function f$0(counter, param){
+     var _a_ = 0;
+     if(counter >= 50) return caml_trampoline_return(f$0, [0, _a_]);
+     var counter$0 = counter + 1 | 0;
+     return f$0(counter$0, _a_);
+    }
+    //end
+    function f(param){return caml_trampoline(f$0(0, param));}
     //end
     function g(param){return f(0);}
     //end |}]
