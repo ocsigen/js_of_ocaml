@@ -110,7 +110,7 @@ let exact_calls profile p =
     in
     let info = Global_flow.f ~fast p in
     let p =
-      if Config.Flag.globaldeadcode ()
+      if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
       then Global_deadcode.f p ~deadcode_sentinal info
       else p
     in
