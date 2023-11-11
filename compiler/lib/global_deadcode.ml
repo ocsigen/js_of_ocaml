@@ -178,7 +178,7 @@ let expr_vars e =
       List.fold_left
         ~f:(fun acc v ->
           match v with
-          | Pv v -> Var.Set.add v vars
+          | Pv v -> Var.Set.add v acc
           | Pc _ -> acc)
         ~init:vars
         args
