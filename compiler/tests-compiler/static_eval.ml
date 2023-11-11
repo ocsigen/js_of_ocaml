@@ -88,7 +88,7 @@ let%expect_test "static eval of Sys.backend_type" =
     compile_and_parse_whole_program
       {|
     exception Myfun of (unit -> int)
-    let myfun () = 
+    let myfun () =
       let constant = match Sys.backend_type with
       | Other "js_of_ocaml" -> 42
       | Native -> 1
@@ -114,7 +114,7 @@ let%expect_test "static eval of string get" =
         | Cons of { mutable key: 'a;
                     mutable data: 'b;
                     mutable next: ('a, 'b) bucketlist }
-      
+
       let copy_bucketlist = function
         | Empty -> Empty
         | Cons {key; data; next} ->

@@ -217,11 +217,11 @@ let%expect_test "delete" =
     compile_and_parse
       {|
       let delete_a o =
-        Js.delete o (Js.string "aaa") 
+        Js.delete o (Js.string "aaa")
        let delete_b o  =
-        Js.delete o (Js.string "a b") 
+        Js.delete o (Js.string "a b")
        let delete_c o  =
-        Js.delete o (Js.string "npiπ") 
+        Js.delete o (Js.string "npiπ")
       |}
   in
   print_fun_decl program (Some "delete_a");
