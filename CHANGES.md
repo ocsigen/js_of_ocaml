@@ -16,6 +16,7 @@
 * Compiler: fix global flow analysis (#1494)
 * Compiler: fix js parser/printer wrt async functions (#1515)
 * Compiler: fix free variables pass wrt parameters' default value (#1521)
+* Compiler: fix free variables for classes
 
 # 5.4.0 (2023-07-06) - Lille
 

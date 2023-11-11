@@ -842,6 +842,15 @@ class free =
           tbody#record_block (Params params);
           m#merge_info tbody;
           EFun (ident, (k, params, body, nid))
+      | EClass (ident_o, cl_decl) ->
+          let ident_o =
+            Option.map
+              ~f:(fun id ->
+                m#def_var id;
+                m#ident id)
+              ident_o
+          in
+          EClass (ident_o, m#class_decl cl_decl)
       | _ -> super#expression x
 
     method record_block _ = ()
@@ -873,6 +882,9 @@ class free =
           m#def_var id;
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
+      | Class_declaration (id, cl_decl) ->
+          m#def_var id;
+          Class_declaration (id, m#class_decl cl_decl)
       | Block b -> Block (m#block b)
       | Try_statement (b, w, f) ->
           let same_level = level in
