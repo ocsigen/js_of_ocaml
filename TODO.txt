@@ -12,10 +12,6 @@ Compiler optimizations
 
 - cross-function optimizations
 
-- deadcode elimination inside blocks
-  (for instance, elimination of function which are defined in a
-   functor but are not used)
-
 - should we rebind variables from a deeper level ?
   (only if used more than once...)
 
