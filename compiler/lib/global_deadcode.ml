@@ -86,8 +86,8 @@ type usage_kind =
 
 (** Compute the adjacency list for the dependency graph of given program. An edge between
     variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
-    as [Propagate] if [x] is applied as a closure or block argument the parameter [y]. 
-    
+    as [Propagate] if [x] is applied as a closure or block argument the parameter [y].
+
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
 let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.t =
@@ -187,15 +187,15 @@ let expr_vars e =
      but we will add these when we visit the body *)
   | Constant _ | Closure (_, _) -> vars
 
-(** Compute the initial liveness of each variable in the program. 
+(** Compute the initial liveness of each variable in the program.
 
-    A variable [x] is marked as [Top] if 
+    A variable [x] is marked as [Top] if
     + It is used in an impure expression (as defined by [Pure_fun.pure_expr]);
     + It is used in a conditonal/switch;
     + It is raised by an exception;
     + It is used in another stateful instruction (like setting a block or array field);
     + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
-    
+
     A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
 let liveness prog pure_funs (global_info : Global_flow.info) =
   let live_vars = Var.Tbl.make () Dead in
@@ -301,12 +301,12 @@ let solver vars uses defs live_vars =
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
 
-(** Replace each instance of a dead variable with a sentinal value. 
-  Blocks that end in dead variables are compacted to the first live entry. 
+(** Replace each instance of a dead variable with a sentinal value.
+  Blocks that end in dead variables are compacted to the first live entry.
   Dead variables are replaced when
     + They appear in a dead field of a block; or
     + They are returned; or
-    + They are applied to a function. 
+    + They are applied to a function.
  *)
 let zero prog sentinal live_table =
   let compact_vars vars =
