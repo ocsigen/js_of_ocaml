@@ -304,8 +304,8 @@ let%expect_test _ =
       let js_prog =
         {|
 (function () {
-  class f {
-    f() {
+  class longname {
+    longname() {
       const y = 2;
       return v
     }
@@ -327,8 +327,8 @@ let%expect_test _ =
         $ cat "test.js"
           1:
           2: (function () {
-          3:   class f {
-          4:     f() {
+          3:   class longname {
+          4:     longname() {
           5:       const y = 2;
           6:       return v
           7:     }
@@ -338,9 +338,9 @@ let%expect_test _ =
          11:
         $ cat "test.min.js"
           1: (function(){class
-          2: f{f(){const
+          2: a{longname(){const
           3: a=2;return v}}const
-          4: a=y}()); |}])
+          4: b=y}()); |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->

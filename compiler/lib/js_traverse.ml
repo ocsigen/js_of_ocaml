@@ -958,7 +958,12 @@ class rename_variable =
 
        inherit iter as super
 
-       method expression _ = ()
+       method expression e =
+         match e with
+         | EClass (ido, _) ->
+             Option.iter ido ~f:decl_var;
+             super#expression e
+         | _ -> super#expression e
 
        method fun_decl _ = ()
 
@@ -968,6 +973,9 @@ class rename_variable =
              decl_var id;
              self#fun_decl fd
          | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
+         | (Fun_block _ | Lexical_block), Class_declaration (id, _) ->
+             decl_var id;
+             super#statement x
          | (Fun_block _ | Lexical_block), _ -> super#statement x
 
        method variable_declaration k l =
