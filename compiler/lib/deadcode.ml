@@ -130,7 +130,7 @@ let rec filter_args st pl al =
   match pl, al with
   | x :: pl, y :: al ->
       if st.live.(Var.idx x) > 0 then y :: filter_args st pl al else filter_args st pl al
-  | [], _ -> []
+  | [], [] -> []
   | _ -> assert false
 
 let filter_cont blocks st (pc, args) =
@@ -184,7 +184,8 @@ let rec add_arg_dep defs params args =
   | x :: params, y :: args ->
       add_def defs x (Var y);
       add_arg_dep defs params args
-  | _ -> ()
+  | [], [] -> ()
+  | _ -> assert false
 
 let add_cont_dep blocks defs (pc, args) =
   match try Some (Addr.Map.find pc blocks) with Not_found -> None with
