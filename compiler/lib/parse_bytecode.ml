@@ -332,7 +332,8 @@ end = struct
     | v1 :: r1, v2 :: r2 ->
         Var.propagate_name v1 v2;
         propagate r1 r2
-    | _ -> ()
+    | [], [] -> ()
+    | _ -> assert false
 
   let fold t f acc =
     Int_table.fold (fun k { event; _ } acc -> f k event acc) t.events_by_pc acc
@@ -558,6 +559,7 @@ module State = struct
   type elt =
     | Var of Var.t * loc
     | Dummy
+    | Unset
 
   let elt_to_var e =
     match e with
@@ -567,7 +569,8 @@ module State = struct
   let print_elt f v =
     match v with
     | Var (x, _) -> Format.fprintf f "%a" Var.print x
-    | Dummy -> Format.fprintf f "???"
+    | Dummy -> Format.fprintf f "٭"
+    | Unset -> Format.fprintf f "∅"
 
   type handler =
     { block_pc : Addr.t
@@ -617,6 +620,7 @@ module State = struct
           stack =
             (match st.accu with
             | Dummy -> Dummy
+            | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
             :: st.stack
         }
@@ -631,6 +635,7 @@ module State = struct
           accu =
             (match List.nth st.stack n with
             | Dummy -> Dummy
+            | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
         }
 
@@ -642,11 +647,11 @@ module State = struct
     List.fold_left (st.accu :: st.stack) ~init:[] ~f:(fun l e ->
         match e with
         | Var (x, _) -> x :: l
-        | Dummy -> l)
+        | Dummy | Unset -> l)
 
   let set_accu st x loc = { st with accu = Var (x, loc) }
 
-  let clear_accu st = { st with accu = Dummy }
+  let clear_accu st = { st with accu = Unset }
 
   let peek n st = elt_to_var (List.nth st.stack n)
 
@@ -660,20 +665,21 @@ module State = struct
   let assign st n = { st with stack = st_assign st.stack n st.accu }
 
   let start_function state env offset =
-    { state with accu = Dummy; stack = []; env; env_offset = offset; handlers = [] }
+    { state with accu = Unset; stack = []; env; env_offset = offset; handlers = [] }
 
   let start_block current_pc state =
     let stack =
       List.fold_right state.stack ~init:[] ~f:(fun e stack ->
           match e with
           | Dummy -> Dummy :: stack
+          | Unset -> Unset :: stack
           | Var (x, l) ->
               let y = Var.fork x in
               Var (y, l) :: stack)
     in
     let state = { state with stack; current_pc } in
     match state.accu with
-    | Dummy -> state
+    | Dummy | Unset -> state
     | Var (x, loc) ->
         let y, state = fresh_var state loc in
         Var.propagate_name x y;
@@ -692,7 +698,7 @@ module State = struct
     | x :: _ -> x.block_pc
 
   let initial g =
-    { accu = Dummy
+    { accu = Unset
     ; stack = []
     ; env = [||]
     ; env_offset = 0
@@ -811,7 +817,7 @@ let get_global state instrs i loc =
         g.vars.(i) <- Some x;
         x, state, instrs)
 
-let tagged_blocks = ref Addr.Set.empty
+let tagged_blocks = ref Addr.Map.empty
 
 let compiled_blocks = ref Addr.Map.empty
 
@@ -854,27 +860,73 @@ let ( ||| ) x y =
   | _ -> x
 
 let rec compile_block blocks debug_data code pc state =
-  if not (Addr.Set.mem pc !tagged_blocks)
-  then (
-    let limit = Blocks.next blocks pc in
-    assert (limit > pc);
-    if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block pc state in
-    tagged_blocks := Addr.Set.add pc !tagged_blocks;
-    let instr, last, state' =
-      compile { blocks; code; limit; debug = debug_data } pc state []
-    in
-    assert (not (Addr.Map.mem pc !compiled_blocks));
-    compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
-    match fst last with
-    | Branch (pc', _) | Poptrap (pc', _) ->
-        compile_block blocks debug_data code pc' state'
-    | Cond (_, (pc1, _), (pc2, _)) ->
-        compile_block blocks debug_data code pc1 state';
-        compile_block blocks debug_data code pc2 state'
-    | Switch (_, _) -> ()
-    | Pushtrap _ -> ()
-    | Raise _ | Return _ | Stop -> ())
+  match Addr.Map.find_opt pc !tagged_blocks with
+  | Some old_state -> (
+      (* Check that the shape of the stack is compatible with the one used to compile the block *)
+      let rec check (xs : State.elt list) (ys : State.elt list) =
+        match xs, ys with
+        | Var _ :: xs, Var _ :: ys -> check xs ys
+        | Dummy :: xs, Dummy :: ys -> check xs ys
+        | Unset :: _, _ -> assert false
+        | _, Unset :: _ -> assert false
+        | [], [] -> ()
+        | Var _ :: _, Dummy :: _ -> assert false
+        | Dummy :: _, Var _ :: _ -> assert false
+        | _ :: _, [] -> assert false
+        | [], _ :: _ -> assert false
+      in
+      check old_state.State.stack state.State.stack;
+      match old_state.State.accu, state.State.accu with
+      | Dummy, Dummy -> ()
+      | Var _, Var _ -> ()
+      | Unset, Unset -> ()
+      | Var _, Dummy -> assert false
+      | Dummy, Var _ -> assert false
+      | Unset, _ | _, Unset -> assert false)
+  | None -> (
+      let limit = Blocks.next blocks pc in
+      assert (limit > pc);
+      if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
+      let state = State.start_block pc state in
+      tagged_blocks := Addr.Map.add pc state !tagged_blocks;
+      let instr, last, state' =
+        compile { blocks; code; limit; debug = debug_data } pc state []
+      in
+      assert (not (Addr.Map.mem pc !compiled_blocks));
+      (* When jumping to a block that was already compiled and the
+         [accu] was [Unset] for that block, we make the current accu
+         [Unset] *)
+      let adjust_state pc =
+        match state', Addr.Map.find_opt pc !compiled_blocks with
+        | _, None -> state'
+        | { State.accu = Var _; _ }, Some ({ State.accu = Unset; _ }, _, _) ->
+            State.clear_accu state'
+        | _ -> state'
+      in
+      let mk_cont pc =
+        let state = adjust_state pc in
+        pc, State.stack_vars state
+      in
+      let last =
+        match last with
+        | Branch (pc, _), loc -> Branch (mk_cont pc), loc
+        | Cond (x, (pc1, _), (pc2, _)), loc -> Cond (x, mk_cont pc1, mk_cont pc2), loc
+        | Poptrap (pc, _), loc -> Poptrap (mk_cont pc), loc
+        | Switch (x, a), loc ->
+            Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc)), loc
+        | (Raise _ | Return _ | Stop), _ -> last
+        | Pushtrap _, _ -> assert false
+      in
+      compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
+      match fst last with
+      | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
+      | Cond (_, (pc1, _), (pc2, _)) ->
+          compile_block blocks debug_data code pc1 (adjust_state pc1);
+          compile_block blocks debug_data code pc2 (adjust_state pc2)
+      | Poptrap (_, _) -> ()
+      | Switch (_, _) -> ()
+      | Raise _ | Return _ | Stop -> ()
+      | Pushtrap _ -> assert false)
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
@@ -893,9 +945,9 @@ and compile infos pc state instrs =
       instrs, (Stop, noloc), state)
     else (
       State.name_vars state infos.debug pc;
-      let stack = State.stack_vars state in
-      if debug_parser () then Format.eprintf "Branch %d (%a) @." pc Print.var_list stack;
-      instrs, (Branch (pc, stack), Code.noloc), state)
+      if debug_parser ()
+      then Format.eprintf "Branch %d (%a) @." pc Print.var_list (State.stack_vars state);
+      instrs, (Branch (pc, []), Code.noloc), state)
   else (
     if debug_parser () then Format.eprintf "%4d " pc;
     State.name_vars state infos.debug pc;
@@ -1639,23 +1691,20 @@ and compile infos pc state instrs =
     | BRANCH ->
         let offset = gets code (pc + 1) in
         if debug_parser () then Format.printf "... (branch)@.";
-        instrs, (Branch (pc + offset + 1, State.stack_vars state), loc), state
+        instrs, (Branch (pc + offset + 1, []), loc), state
     | BRANCHIF ->
         let offset = gets code (pc + 1) in
         let x, loc_x = State.accu state in
         let loc = loc ||| loc_x in
-        let args = State.stack_vars state in
-        instrs, (Cond (x, (pc + offset + 1, args), (pc + 2, args)), loc), state
+        instrs, (Cond (x, (pc + offset + 1, []), (pc + 2, [])), loc), state
     | BRANCHIFNOT ->
         let offset = gets code (pc + 1) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
-        instrs, (Cond (x, (pc + 2, args), (pc + offset + 1, args)), loc), state
+        instrs, (Cond (x, (pc + 2, []), (pc + offset + 1, [])), loc), state
     | SWITCH -> (
         if debug_parser () then Format.printf "switch ...@.";
         let sz = getu code (pc + 1) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let isize = sz land 0XFFFF in
         let bsize = sz lsr 16 in
         let base = pc + 2 in
@@ -1666,18 +1715,18 @@ and compile infos pc state instrs =
         Array.iter bt ~f:(fun pc' ->
             compile_block infos.blocks infos.debug code pc' state);
         match isize, bsize with
-        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, args)), loc), state
+        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, [])), loc), state
         | 0, _ ->
             let x_tag = Var.fresh () in
             let instrs =
               (Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc) :: instrs
             in
-            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, args)), loc), state
+            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, [])), loc), state
         | _, _ ->
             let isint_branch = pc + 1 in
             let isblock_branch = pc + 2 in
             let () =
-              tagged_blocks := Addr.Set.add isint_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isint_branch state !tagged_blocks;
               let i_state = State.start_block isint_branch state in
               let i_args = State.stack_vars i_state in
               compiled_blocks :=
@@ -1687,7 +1736,7 @@ and compile infos pc state instrs =
                   !compiled_blocks
             in
             let () =
-              tagged_blocks := Addr.Set.add isblock_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isblock_branch state !tagged_blocks;
               let x_tag = Var.fresh () in
               let b_state = State.start_block isblock_branch state in
               let b_args = State.stack_vars b_state in
@@ -1705,7 +1754,7 @@ and compile infos pc state instrs =
             let isint_var = Var.fresh () in
             let instrs = (Let (isint_var, Prim (IsInt, [ Pv x ])), loc) :: instrs in
             ( instrs
-            , (Cond (isint_var, (isint_branch, args), (isblock_branch, args)), loc)
+            , (Cond (isint_var, (isint_branch, []), (isblock_branch, [])), loc)
             , state ))
     | BOOLNOT ->
         let y, _ = State.accu state in
@@ -1723,7 +1772,7 @@ and compile infos pc state instrs =
         let handler_addr = pc + 1 + gets code (pc + 1) in
         let x, handler_state = State.fresh_var handler_ctx_state loc in
 
-        tagged_blocks := Addr.Set.add interm_addr !tagged_blocks;
+        tagged_blocks := Addr.Map.add interm_addr state !tagged_blocks;
         compiled_blocks :=
           Addr.Map.add
             interm_addr
@@ -1751,7 +1800,7 @@ and compile infos pc state instrs =
               :: State.Dummy
               :: state.State.stack
           };
-        instrs, (Branch (interm_addr, State.stack_vars state), loc), state
+        instrs, (Branch (interm_addr, []), loc), state
     | POPTRAP ->
         let addr = pc + 1 in
         let handler_addr = State.addr_of_current_handler state in
@@ -1766,7 +1815,7 @@ and compile infos pc state instrs =
           code
           addr
           (State.pop 4 (State.pop_handler state));
-        instrs, (Poptrap (addr, State.stack_vars state), loc), state
+        instrs, (Poptrap (addr, []), loc), state
     | RERAISE | RAISE_NOTRACE | RAISE ->
         let x, _ = State.accu state in
         let kind =
@@ -2192,81 +2241,72 @@ and compile infos pc state instrs =
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BNEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BLTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BLEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BGTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BGEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BULTINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BUGEINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
-
         ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | ULTINT ->
         let y, _ = State.accu state in
@@ -2492,7 +2532,7 @@ let parse_bytecode code globals debug_data =
   in
   pushpop := Addr.Map.empty;
   compiled_blocks := Addr.Map.empty;
-  tagged_blocks := Addr.Set.empty;
+  tagged_blocks := Addr.Map.empty;
   p
 
 (* HACK - override module *)

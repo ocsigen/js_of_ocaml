@@ -926,6 +926,8 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 let f (p, live_vars) =
   let t = Timer.make () in
   let p = remove_empty_blocks ~live_vars p in
+  (* [remove_empty_blocks] can affect [Deadcode.variable_uses] *)
+  let p, live_vars = Deadcode.f p in
   let flow_info = Global_flow.f ~fast:false p in
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in

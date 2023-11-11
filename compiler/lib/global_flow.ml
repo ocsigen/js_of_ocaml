@@ -139,7 +139,8 @@ let rec arg_deps st ?ignore params args =
       | Some y' when Var.equal y y' -> ()
       | _ -> add_assign_def st x y);
       arg_deps st params args
-  | _ -> ()
+  | [], [] -> ()
+  | _ -> assert false
 
 let cont_deps blocks st ?ignore (pc, args) =
   let block = Addr.Map.find pc blocks in
