@@ -347,7 +347,7 @@ end = struct
 
  let run () =
    for i = 0 to 4 do
-     ignore (even (i) : bool)
+     if even (i) then print_string ""
    done
 end
 
@@ -386,7 +386,7 @@ let ()  = M.run ()
             default: return 1 - (1 - even(1));
           }
          };
-      even(i);
+      if(even(i)) caml_call1(Stdlib[42], cst);
       var _a_ = i + 1 | 0;
       if(4 === i) return 0;
       var i = _a_;
@@ -431,7 +431,7 @@ end = struct
 
  let run () =
    for i = 0 to 4 do
-     ignore (even (i) : bool)
+     if even (i) then print_string ""
    done;
    list_iter (fun f -> f ()) (list_rev !delayed)
 end
@@ -495,7 +495,7 @@ let ()  = M.run ()
          },
        closures$0 = closures(i),
        even = closures$0[1];
-      even(i);
+      if(even(i)) caml_call1(Stdlib[42], cst);
       var _e_ = i + 1 | 0;
       if(4 === i){
        var _d_ = caml_call1(list_rev, delayed[1]);

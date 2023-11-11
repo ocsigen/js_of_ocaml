@@ -25,6 +25,8 @@ module Flag : sig
 
   val deadcode : unit -> bool
 
+  val globaldeadcode : unit -> bool
+
   val optcall : unit -> bool
 
   val shortvar : unit -> bool

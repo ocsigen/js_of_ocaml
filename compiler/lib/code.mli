@@ -222,6 +222,10 @@ module Print : sig
     | Instr of (instr * loc)
     | Last of (last * loc)
 
+  val expr : Format.formatter -> expr -> unit
+
+  val constant : Format.formatter -> constant -> unit
+
   val var_list : Format.formatter -> Var.t list -> unit
 
   val instr : Format.formatter -> instr * loc -> unit

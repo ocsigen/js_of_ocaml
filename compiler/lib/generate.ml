@@ -285,12 +285,14 @@ module Ctx = struct
     ; should_export : bool
     ; effect_warning : bool ref
     ; cps_calls : Effects.cps_calls
+    ; deadcode_sentinal : Var.t
     }
 
   let initial
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
+      ~deadcode_sentinal
       blocks
       live
       cps_calls
@@ -304,6 +306,7 @@ module Ctx = struct
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; cps_calls
+    ; deadcode_sentinal
     }
 end
 
@@ -444,7 +447,7 @@ let rec constant_rec ~ctx x level instrs =
   | Float_array a ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
-          ~args:(Array.to_list (Array.map a ~f:float_const))
+          ~args:(Array.to_list (Array.map a ~f:(fun x -> J.Element (float_const x))))
       , instrs )
   | Int64 i ->
       let p =
@@ -490,9 +493,9 @@ let rec constant_rec ~ctx x level instrs =
                       let instrs =
                         (J.variable_declaration [ J.V v, (js, J.N) ], J.N) :: instrs
                       in
-                      J.EVar (J.V v) :: acc, instrs
-                  | _ -> js :: acc, instrs)
-            else List.rev l, instrs
+                      J.Element (J.EVar (J.V v)) :: acc, instrs
+                  | _ -> J.Element js :: acc, instrs)
+            else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> int32 i, instrs
@@ -1037,6 +1040,14 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
+            let cx =
+              match cx with
+              | J.EVar (J.V v) ->
+                  if Var.equal v ctx.deadcode_sentinal
+                  then J.ElementHole
+                  else J.Element cx
+              | _ -> J.Element cx
+            in
             cx :: args, or_p prop prop', queue)
           (Array.to_list a)
           ~init:([], const_p, queue)
@@ -1133,6 +1144,9 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             prim, const_p, queue
         | Extern "%closure", _ -> assert false
+        | Extern "%undefined", [] ->
+            J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue
+        | Extern "%undefined", _ -> assert false
         | Extern "%caml_js_opt_call", f :: o :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let (po, co), queue = access_queue' ~ctx queue o in
@@ -1582,7 +1596,10 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
     match last with
     | Return x ->
         let (_px, cx), queue = access_queue queue x in
-        true, flush_all queue [ J.Return_statement (Some cx), loc ]
+        let return_expr =
+          if Var.equal st.ctx.deadcode_sentinal x then None else Some cx
+        in
+        true, flush_all queue [ J.Return_statement return_expr, loc ]
     | Raise (x, k) ->
         let (_px, cx), queue = access_queue queue x in
         true, flush_all queue (throw_statement st.ctx cx k loc)
@@ -1791,6 +1808,7 @@ let f
     ~cps_calls
     ~should_export
     ~warn_on_unhandled_effect
+    ~deadcode_sentinal
     debug =
   let t' = Timer.make () in
   let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
@@ -1802,6 +1820,7 @@ let f
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
+      ~deadcode_sentinal
       p.blocks
       live_vars
       cps_calls
