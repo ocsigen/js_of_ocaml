@@ -18,14 +18,6 @@ module Parse_error : sig
   val to_string : t -> string
 end
 
-module Loc : sig
-  type t =
-    { source : string option
-    ; start : Lexing.position
-    ; _end : Lexing.position
-    }
-end
-
 module Lex_env : sig
   type t
 
@@ -37,7 +29,7 @@ module Lex_result : sig
 
   val token : t -> Js_token.t
 
-  val loc : t -> Lexing.position * Lexing.position
+  val loc : t -> Loc.t
 
   val errors : t -> (Loc.t * Parse_error.t) list
 end

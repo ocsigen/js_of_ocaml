@@ -45,7 +45,7 @@ let%expect_test _ =
  *   | 0 -> print_endline "BUG"
  *   | _ -> ())|};
  *   [%expect {||}]
- * 
+ *
  * let%expect_test _ =
  *   compile_and_run
  *     {|

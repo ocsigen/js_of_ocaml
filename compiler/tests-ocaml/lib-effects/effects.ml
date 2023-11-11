@@ -178,7 +178,7 @@ let invert (type a) ~(iter : (a -> unit) -> unit) : a Seq.t =
       | M.Yield v -> Some (fun (k: (b,_) continuation) ->
           Seq.Cons (v, continue k))
       | _ -> None }
-    
+
 let s = invert ~iter:(Fun.flip String.iter "OCaml")
 let next = Seq.to_dispenser s;;
 

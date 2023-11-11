@@ -35,28 +35,31 @@ type t =
   }
 
 let debug =
-  let doc = "enable debug [$(docv)]." in
-  let all = List.map (Debug.available ()) ~f:(fun s -> s, s) in
-  let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
-  in
-  Term.(const List.flatten $ arg)
+  lazy
+    (let doc = "enable debug [$(docv)]." in
+     let all = List.map (Debug.available ()) ~f:(fun s -> s, s) in
+     let arg =
+       Arg.(value & opt_all (list (enum all)) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
+     in
+     Term.(const List.flatten $ arg))
 
 let enable =
-  let doc = "Enable optimization [$(docv)]." in
-  let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
-  let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info [ "enable" ] ~docv:"OPT" ~doc)
-  in
-  Term.(const List.flatten $ arg)
+  lazy
+    (let doc = "Enable optimization [$(docv)]." in
+     let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
+     let arg =
+       Arg.(value & opt_all (list (enum all)) [] & info [ "enable" ] ~docv:"OPT" ~doc)
+     in
+     Term.(const List.flatten $ arg))
 
 let disable =
-  let doc = "Disable optimization [$(docv)]." in
-  let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
-  let arg =
-    Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
-  in
-  Term.(const List.flatten $ arg)
+  lazy
+    (let doc = "Disable optimization [$(docv)]." in
+     let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
+     let arg =
+       Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
+     in
+     Term.(const List.flatten $ arg))
 
 let pretty =
   let doc = "Pretty print the output." in
@@ -86,31 +89,32 @@ let custom_header =
   Arg.(value & opt (some string) None & info [ "custom-header" ] ~doc)
 
 let t =
-  Term.(
-    const (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
-        let enable = if pretty then "pretty" :: enable else enable in
-        let enable = if debuginfo then "debuginfo" :: enable else enable in
-        let disable = if noinline then "inline" :: disable else disable in
-        let disable_if_pretty name disable =
-          if pretty && not (List.mem name ~set:enable) then name :: disable else disable
-        in
-        let disable = disable_if_pretty "shortvar" disable in
-        let disable = disable_if_pretty "share" disable in
-        { debug = { enable = debug; disable = [] }
-        ; optim = { enable; disable }
-        ; quiet
-        ; werror
-        ; custom_header = c_header
-        })
-    $ debug
-    $ enable
-    $ disable
-    $ pretty
-    $ debuginfo
-    $ noinline
-    $ is_quiet
-    $ is_werror
-    $ custom_header)
+  lazy
+    Term.(
+      const (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
+          let enable = if pretty then "pretty" :: enable else enable in
+          let enable = if debuginfo then "debuginfo" :: enable else enable in
+          let disable = if noinline then "inline" :: disable else disable in
+          let disable_if_pretty name disable =
+            if pretty && not (List.mem name ~set:enable) then name :: disable else disable
+          in
+          let disable = disable_if_pretty "shortvar" disable in
+          let disable = disable_if_pretty "share" disable in
+          { debug = { enable = debug; disable = [] }
+          ; optim = { enable; disable }
+          ; quiet
+          ; werror
+          ; custom_header = c_header
+          })
+      $ Lazy.force debug
+      $ Lazy.force enable
+      $ Lazy.force disable
+      $ pretty
+      $ debuginfo
+      $ noinline
+      $ is_quiet
+      $ is_werror
+      $ custom_header)
 
 let on_off on off t =
   List.iter ~f:on t.enable;

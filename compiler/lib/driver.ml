@@ -105,7 +105,7 @@ let effects p =
     , (Code.Var.Set.empty : Effects.cps_calls)
     , (Code.Var.Set.empty : Effects.single_version_closures) )
 
-let exact_calls profile p =
+let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
   then
     let fast =
@@ -114,7 +114,13 @@ let exact_calls profile p =
       | O1 | O2 -> true
     in
     let info = Global_flow.f ~fast p in
-    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+    let p =
+      if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
+      then Global_deadcode.f p ~deadcode_sentinal info
+      else p
+    in
+    let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
+    p
   else p
 
 let print p =
@@ -184,6 +190,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
+    ~deadcode_sentinal
     ((p, live_vars), cps_calls, single_version_closures) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
@@ -195,6 +202,7 @@ let generate
     ~single_version_closures
     ~should_export
     ~warn_on_unhandled_effect
+    ~deadcode_sentinal
     d
 
 let debug_linker = Debug.find "linker"
@@ -581,6 +589,10 @@ let configure formatter =
   Code.Var.set_stable (Config.Flag.stable_var ())
 
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh ()
+  in
   let exported_runtime = not standalone in
   let opt =
     specialize_js_once
@@ -588,7 +600,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
-    +> exact_calls profile
+    +> exact_calls profile ~deadcode_sentinal
     +> effects
     +> fun (p, cps_calls, single_version_closures) ->
     let p, single_version_closures = Generate_closure.f (p, single_version_closures) in
@@ -596,7 +608,12 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
     p, cps_calls, single_version_closures
   in
   let emit =
-    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    generate
+      d
+      ~exported_runtime
+      ~wrap_with_fun
+      ~warn_on_unhandled_effect:standalone
+      ~deadcode_sentinal
     +> link ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
     +> coloring

@@ -42,7 +42,8 @@ let rec arg_deps vars deps defs params args =
       add_dep deps x y;
       add_def vars defs x y;
       arg_deps vars deps defs params args
-  | _ -> ()
+  | [], [] -> ()
+  | _ -> assert false
 
 let cont_deps blocks vars deps defs (pc, args) =
   let block = Addr.Map.find pc blocks in

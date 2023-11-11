@@ -304,8 +304,8 @@ let%expect_test _ =
       let js_prog =
         {|
 (function () {
-  class f {
-    f() {
+  class longname {
+    longname() {
       const y = 2;
       return v
     }
@@ -327,8 +327,8 @@ let%expect_test _ =
         $ cat "test.js"
           1:
           2: (function () {
-          3:   class f {
-          4:     f() {
+          3:   class longname {
+          4:     longname() {
           5:       const y = 2;
           6:       return v
           7:     }
@@ -338,9 +338,9 @@ let%expect_test _ =
          11:
         $ cat "test.min.js"
           1: (function(){class
-          2: f{f(){const
+          2: a{longname(){const
           3: a=2;return v}}const
-          4: a=y}()); |}])
+          4: b=y}()); |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -378,3 +378,45 @@ function f () {
           2: f(){const
           3: a=2;return function(){var
           4: a=a+2;return a}} |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let js_prog =
+        {|
+function test() {
+  var x = {a:1,b:2}
+  function f (a, b = x.b) {
+    return (a + b);
+  }
+  console.log(f(1));
+}
+test()
+|}
+      in
+      let js_file =
+        js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+      in
+      let js_min_file =
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+      in
+      print_file (Filetype.path_of_js_file js_file);
+      print_file (Filetype.path_of_js_file js_min_file);
+      [%expect
+        {|
+        $ cat "test.js"
+          1:
+          2: function test() {
+          3:   var x = {a:1,b:2}
+          4:   function f (a, b = x.b) {
+          5:     return (a + b);
+          6:   }
+          7:   console.log(f(1));
+          8: }
+          9: test()
+        $ cat "test.min.js"
+          1: function
+          2: test(){var
+          3: c={a:1,b:2};function
+          4: a(a,b=c.b){return a+b}console.log(a(1))}test(); |}];
+      print_endline (run_javascript js_min_file);
+      [%expect {| 3 |}])

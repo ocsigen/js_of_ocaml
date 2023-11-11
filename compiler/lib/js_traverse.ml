@@ -779,18 +779,33 @@ class free =
         }
 
     method use_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with use = IdentSet.add x state_.use }
 
     method def_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
 
     method def_local x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method fun_decl (k, params, body, nid) =
@@ -798,6 +813,7 @@ class free =
       let ids = bound_idents_of_params params in
       List.iter ids ~f:tbody#def_var;
       let body = tbody#function_body body in
+      let params = tbody#formal_parameter_list params in
       tbody#record_block (Params params);
       m#merge_info tbody;
       k, params, body, nid
@@ -812,6 +828,7 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           let ident =
             match ident with
             | Some i ->
@@ -825,6 +842,15 @@ class free =
           tbody#record_block (Params params);
           m#merge_info tbody;
           EFun (ident, (k, params, body, nid))
+      | EClass (ident_o, cl_decl) ->
+          let ident_o =
+            Option.map
+              ~f:(fun id ->
+                m#def_var id;
+                m#ident id)
+              ident_o
+          in
+          EClass (ident_o, m#class_decl cl_decl)
       | _ -> super#expression x
 
     method record_block _ = ()
@@ -851,10 +877,14 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           tbody#record_block (Params params);
           m#def_var id;
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
+      | Class_declaration (id, cl_decl) ->
+          m#def_var id;
+          Class_declaration (id, m#class_decl cl_decl)
       | Block b -> Block (m#block b)
       | Try_statement (b, w, f) ->
           let same_level = level in
@@ -928,7 +958,12 @@ class rename_variable =
 
        inherit iter as super
 
-       method expression _ = ()
+       method expression e =
+         match e with
+         | EClass (ido, _) ->
+             Option.iter ido ~f:decl_var;
+             super#expression e
+         | _ -> super#expression e
 
        method fun_decl _ = ()
 
@@ -938,6 +973,9 @@ class rename_variable =
              decl_var id;
              self#fun_decl fd
          | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
+         | (Fun_block _ | Lexical_block), Class_declaration (id, _) ->
+             decl_var id;
+             super#statement x
          | (Fun_block _ | Lexical_block), _ -> super#statement x
 
        method variable_declaration k l =

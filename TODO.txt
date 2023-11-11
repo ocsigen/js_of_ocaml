@@ -7,14 +7,7 @@ Compiler optimizations
 - constant hoisting (including functions, out of loops and functions)
 - inline also partially applied functions
 
-- we should check stack compatibility when parsing:
-  when jumping somewhere, the stack should keep the same shape
-
 - cross-function optimizations
-
-- deadcode elimination inside blocks
-  (for instance, elimination of function which are defined in a
-   functor but are not used)
 
 - should we rebind variables from a deeper level ?
   (only if used more than once...)

@@ -26,6 +26,7 @@ val f :
   -> single_version_closures:Effects.single_version_closures
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
+  -> deadcode_sentinal:Code.Var.t
   -> Parse_bytecode.Debug.t
   -> Javascript.program
 

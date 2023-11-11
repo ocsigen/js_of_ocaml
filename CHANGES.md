@@ -1,17 +1,26 @@
 # Dev (2023-??-??) - ??
 
 ## Features/Changes
+* Compiler: global dead code elimination (Micah Cantor, #1503)
 * Compiler: change control-flow compilation strategy (#1496)
+* Compiler: Dead code elimination of unused references (#2076)
+* Compiler: reduce memory consumption (#1516)
 * Lib: add download attribute to anchor element
-* Dead code elimination of unused references (#2076)
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
 * Effects: add an optional feature of "dynamic switching" between CPS and direct style, resulting in much better performance when no effect handler is installed
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
-* Compiler: fix global flow analysis (#1494)
 * Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
+* Runtime: Dynlink should be able to find symbols in jsoo_runtime #1517
+* Runtime: fix Unix.lstat, Unix.LargeFile.lstat (#1519)
+* Compiler: fix global flow analysis (#1494)
+* Compiler: fix js parser/printer wrt async functions (#1515)
+* Compiler: fix free variables pass wrt parameters' default value (#1521)
+* Compiler: fix free variables for classes
+* Compiler: fix internal invariant (continuation)
+* Lib: Url.Current.set_fragment need not any urlencode (#1497)
 
 # 5.4.0 (2023-07-06) - Lille
 

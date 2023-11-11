@@ -217,19 +217,22 @@ T_BACKQUOTE
 (* Macros *)
 (*************************************************************************)
 
-listc(X):
+listc_rev(X):
  | X              { [$1] }
- | listc(X) "," X { $1 @ [$3] }
+ | listc_rev(X) "," X { $3 :: $1 }
 
-listc_with_empty_trail(X):
- | e=elision               { (List.map (fun () -> None) e) }
- | x=X e=elision           { Some x :: (List.map (fun () -> None) e) }
- | listc_with_empty_trail(X) x=X e=elision { $1 @ [Some x] @ (List.map (fun () -> None) e) }
+%inline listc(X):
+ | listc_rev(X) { List.rev $1 }
+
+listc_with_empty_trail_rev(X):
+ | e=elision               { (List.rev_map (fun () -> None) e) }
+ | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
+ | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
 
 listc_with_empty(X):
   | X                           { [ Some $1 ] }
-  | listc_with_empty_trail(X)   { $1 }
-  | listc_with_empty_trail(X) X { $1 @ [Some $2 ] }
+  | listc_with_empty_trail_rev(X)   { List.rev $1 }
+  | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
@@ -259,6 +262,8 @@ decl:
  | function_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | generator_decl
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
+ | async_generator_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | async_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
@@ -431,6 +436,18 @@ async_decl:
 async_function_expr:
  | T_ASYNC T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
+
+(*************************************************************************)
+(* async generators                                                *)
+(*************************************************************************)
+
+async_generator_decl:
+ | T_ASYNC T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
+   { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
+
+async_generator_expr:
+ | T_ASYNC T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
+   { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
 (* Class declaration *)
@@ -766,6 +783,7 @@ primary_with_stmt:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 
 primary_expr_no_braces:
@@ -988,6 +1006,7 @@ primary_for_consise_body:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 assignment_expr_for_consise_body:
  | conditional_expr(primary_for_consise_body) { $1 }

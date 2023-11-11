@@ -450,6 +450,14 @@ class find_variable_declaration r n =
       super#variable_declaration k v
   end
 
+let find_variable program n =
+  let r = ref [] in
+  let o = new find_variable_declaration r n in
+  ignore (o#program program);
+  match !r with
+  | [ DeclIdent (_, Some (expression, _)) ] -> expression
+  | _ -> raise Not_found
+
 let print_var_decl program n =
   let r = ref [] in
   let o = new find_variable_declaration r n in
@@ -488,6 +496,14 @@ class find_function_declaration r n =
   end
 
 let print_program p = print_string (program_to_string p)
+
+let find_function program n =
+  let r = ref [] in
+  let o = new find_function_declaration r (Some n) in
+  ignore (o#program program);
+  match !r with
+  | [ (_, fd) ] -> fd
+  | _ -> raise Not_found
 
 let print_fun_decl program n =
   let r = ref [] in

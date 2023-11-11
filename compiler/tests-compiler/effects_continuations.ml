@@ -103,43 +103,43 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     {|
 
     function exceptions(s, cont){
-     try{var _I_ = runtime.caml_int_of_string(s), n = _I_;}
-     catch(_M_){
-      var _B_ = caml_wrap_exception(_M_);
+     try{var _G_ = runtime.caml_int_of_string(s), n = _G_;}
+     catch(_K_){
+      var _B_ = caml_wrap_exception(_K_);
       if(_B_[1] !== Stdlib[7]){
        var raise$1 = caml_pop_trap();
        return raise$1(caml_maybe_attach_backtrace(_B_, 0));
       }
-      var n = 0, _C_ = 0;
+      var n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _H_ = 7, m = _H_;
+      var _F_ = 7, m = _F_;
      }
-     catch(_L_){
-      var _D_ = caml_wrap_exception(_L_);
-      if(_D_ !== Stdlib[8]){
+     catch(_J_){
+      var _C_ = caml_wrap_exception(_J_);
+      if(_C_ !== Stdlib[8]){
        var raise$0 = caml_pop_trap();
-       return raise$0(caml_maybe_attach_backtrace(_D_, 0));
+       return raise$0(caml_maybe_attach_backtrace(_C_, 0));
       }
-      var m = 0, _E_ = 0;
+      var m = 0;
      }
      runtime.caml_push_trap
-      (function(_K_){
-        if(_K_ === Stdlib[8]) return cont(0);
+      (function(_I_){
+        if(_I_ === Stdlib[8]) return cont(0);
         var raise = caml_pop_trap();
-        return raise(caml_maybe_attach_backtrace(_K_, 0));
+        return raise(caml_maybe_attach_backtrace(_I_, 0));
        });
      if(caml_string_equal(s, cst)){
-      var _F_ = Stdlib[8], raise = caml_pop_trap();
-      return raise(caml_maybe_attach_backtrace(_F_, 1));
+      var _D_ = Stdlib[8], raise = caml_pop_trap();
+      return raise(caml_maybe_attach_backtrace(_D_, 1));
      }
-     var _G_ = Stdlib[79];
+     var _E_ = Stdlib[79];
      return caml_cps_call2
-             (_G_,
+             (_E_,
               cst_toto,
-              function(_J_){caml_pop_trap(); return cont([0, [0, _J_, n, m]]);});
+              function(_H_){caml_pop_trap(); return cont([0, [0, _H_, n, m]]);});
     }
     //end
     function cond1(b, cont){

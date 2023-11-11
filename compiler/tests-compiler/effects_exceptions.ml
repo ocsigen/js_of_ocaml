@@ -57,43 +57,43 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     {|
 
     function exceptions(s, cont){
-     try{var _s_ = runtime.caml_int_of_string(s), n = _s_;}
-     catch(_w_){
-      var _l_ = caml_wrap_exception(_w_);
+     try{var _q_ = runtime.caml_int_of_string(s), n = _q_;}
+     catch(_u_){
+      var _l_ = caml_wrap_exception(_u_);
       if(_l_[1] !== Stdlib[7]){
        var raise$1 = caml_pop_trap();
        return raise$1(caml_maybe_attach_backtrace(_l_, 0));
       }
-      var n = 0, _m_ = 0;
+      var n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _r_ = 7, m = _r_;
+      var _p_ = 7, m = _p_;
      }
-     catch(_v_){
-      var _n_ = caml_wrap_exception(_v_);
-      if(_n_ !== Stdlib[8]){
+     catch(_t_){
+      var _m_ = caml_wrap_exception(_t_);
+      if(_m_ !== Stdlib[8]){
        var raise$0 = caml_pop_trap();
-       return raise$0(caml_maybe_attach_backtrace(_n_, 0));
+       return raise$0(caml_maybe_attach_backtrace(_m_, 0));
       }
-      var m = 0, _o_ = 0;
+      var m = 0;
      }
      caml_push_trap
-      (function(_u_){
-        if(_u_ === Stdlib[8]) return cont(0);
+      (function(_s_){
+        if(_s_ === Stdlib[8]) return cont(0);
         var raise = caml_pop_trap();
-        return raise(caml_maybe_attach_backtrace(_u_, 0));
+        return raise(caml_maybe_attach_backtrace(_s_, 0));
        });
      if(caml_string_equal(s, cst)){
-      var _p_ = Stdlib[8], raise = caml_pop_trap();
-      return raise(caml_maybe_attach_backtrace(_p_, 1));
+      var _n_ = Stdlib[8], raise = caml_pop_trap();
+      return raise(caml_maybe_attach_backtrace(_n_, 1));
      }
-     var _q_ = Stdlib[79];
+     var _o_ = Stdlib[79];
      return caml_cps_call2
-             (_q_,
+             (_o_,
               cst_toto,
-              function(_t_){caml_pop_trap(); return cont([0, [0, _t_, n, m]]);});
+              function(_r_){caml_pop_trap(); return cont([0, [0, _r_, n, m]]);});
     }
     //end |}];
   print_fun_decl code (Some "handler_is_loop");

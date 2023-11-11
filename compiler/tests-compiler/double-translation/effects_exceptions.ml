@@ -58,32 +58,32 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     {|
 
     function exceptions$0(s){
-     try{var _G_ = caml_int_of_string(s), n = _G_;}
-     catch(_J_){
-      var _z_ = caml_wrap_exception(_J_);
+     try{var _E_ = caml_int_of_string(s), n = _E_;}
+     catch(_H_){
+      var _z_ = caml_wrap_exception(_H_);
       if(_z_[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(_z_, 0);
-      var n = 0, _A_ = 0;
+      var n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _F_ = 7, m = _F_;
+      var _D_ = 7, m = _D_;
      }
-     catch(_I_){
-      var _B_ = caml_wrap_exception(_I_);
-      if(_B_ !== Stdlib[8]) throw caml_maybe_attach_backtrace(_B_, 0);
-      var m = 0, _C_ = 0;
+     catch(_G_){
+      var _A_ = caml_wrap_exception(_G_);
+      if(_A_ !== Stdlib[8]) throw caml_maybe_attach_backtrace(_A_, 0);
+      var m = 0;
      }
      try{
       if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _E_ = [0, [0, caml_doublecall1(Stdlib[79], cst_toto), n, m]];
-      return _E_;
+      var _C_ = [0, [0, caml_doublecall1(Stdlib[79], cst_toto), n, m]];
+      return _C_;
      }
-     catch(_H_){
-      var _D_ = caml_wrap_exception(_H_);
-      if(_D_ === Stdlib[8]) return 0;
-      throw caml_maybe_attach_backtrace(_D_, 0);
+     catch(_F_){
+      var _B_ = caml_wrap_exception(_F_);
+      if(_B_ === Stdlib[8]) return 0;
+      throw caml_maybe_attach_backtrace(_B_, 0);
      }
     }
     //end

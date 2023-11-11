@@ -75,6 +75,10 @@ val print_fun_decl : Javascript.program -> string option -> unit
 (* Prints the two versions of a doubly translated function *)
 val print_double_fun_decl : Javascript.program -> string -> unit
 
+val find_variable : Javascript.program -> string -> Javascript.expression
+
+val find_function : Javascript.program -> string -> Javascript.function_declaration
+
 val compile_and_run :
      ?debug:bool
   -> ?skip_modern:bool

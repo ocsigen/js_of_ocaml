@@ -341,6 +341,20 @@ let%expect_test "async/await" =
            const glslang = await glslangModule.default();
            return glslang.compileGLSL(src, "compute");
          }
+
+
+    async
+    function test() { }
+
+    async function test() { }
+
+    async
+    function* test() { }
+
+    async function * test() { }
+
+    1 + async function * test() { }
+
  |};
 
   [%expect
@@ -355,7 +369,14 @@ let%expect_test "async/await" =
      glslang = await  /*<<fake:7:33>>*/ glslangModule.default();
      /*<<fake:8:11>>*/ return  /*<<fake:8:18>>*/ glslang.compileGLSL
             (src, "compute");
-    /*<<fake:2:9>>*/ } |}]
+    /*<<fake:2:9>>*/ }
+    /*<<fake:12:4>>*/ async;
+    /*<<fake:13:4>>*/ function test(){ /*<<fake:13:22>>*/ }
+    /*<<fake:15:4>>*/ async function test(){ /*<<fake:15:4>>*/ }
+    /*<<fake:17:4>>*/ async;
+    /*<<fake:18:4>>*/ function* test(){ /*<<fake:18:4>>*/ }
+    /*<<fake:20:4>>*/ async function* test(){ /*<<fake:20:4>>*/ }
+    /*<<fake:22:4>>*/ 1 + async function* test(){ /*<<fake:22:8>>*/ }; |}]
 
 let%expect_test "get/set property" =
   (* GH#1017 *)
@@ -685,8 +706,9 @@ let check_vs_string s toks =
   in
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _, _) :: rest -> loop offset pos rest
-    | ((Js_token.T_STRING (_, codepoint_len) as x), p1, _p2) :: rest ->
+    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
+    | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
         let bytes_idx = codepoint_idx - offset in
         let bytes_len =
@@ -712,7 +734,8 @@ let check_vs_string s toks =
               a
               b);
         loop offset (bytes_idx + bytes_len + 1) rest
-    | (x, p1, _p2) :: rest ->
+    | (x, loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx; _ } = Parse_info.t_of_pos p1 in
         let idx = idx - offset in
         let str = Js_token.to_string x in
@@ -739,8 +762,9 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.T_EOF, _, _) ] | [] -> Printf.printf "\n"
-    | (tok, p1, _p2) :: xs ->
+    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
+    | (tok, loc) :: xs ->
+        let p1 = Loc.p1 loc in
         let pos = Parse_info.t_of_pos p1 in
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
@@ -948,6 +972,18 @@ a:while(true){
     do { x } while (true) y
     do ; while (true) y
 
+    async
+    function test() { }
+
+    async function test() { }
+
+    async
+    function* test() { }
+
+    async function * test() { }
+
+    1 + async function * test() { }
+
 |};
   [%expect
     {|
@@ -974,7 +1010,14 @@ a:while(true){
     26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
     27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual),
     29: 4:do, 7:{, 9:x (identifier), 0:; (virtual), 11:}, 13:while, 19:(, 20:true, 24:), 0:; (virtual), 26:y (identifier), 0:; (virtual),
-    30: 4:do, 7:;, 9:while, 15:(, 16:true, 20:), 0:; (virtual), 22:y (identifier), 0:; (virtual), |}]
+    30: 4:do, 7:;, 9:while, 15:(, 16:true, 20:), 0:; (virtual), 22:y (identifier), 0:; (virtual),
+    32: 4:async, 0:; (virtual),
+    33: 4:function, 13:test (identifier), 17:(, 18:), 20:{, 22:},
+    35: 4:async, 10:function, 19:test (identifier), 23:(, 24:), 26:{, 28:},
+    37: 4:async, 0:; (virtual),
+    38: 4:function, 12:*, 14:test (identifier), 18:(, 19:), 21:{, 23:},
+    40: 4:async, 10:function, 19:*, 21:test (identifier), 25:(, 26:), 28:{, 30:},
+    42: 4:1, 6:+, 8:async, 14:function, 23:*, 25:test (identifier), 29:(, 30:), 32:{, 34:}, 0:; (virtual), |}]
 
 let%expect_test _ =
   parse_print_token

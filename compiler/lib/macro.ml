@@ -47,7 +47,7 @@ class macro_mapper ~flags =
               let tag = Int32.to_int (J.Num.to_int32 tag) in
               let args =
                 List.map args ~f:(function
-                    | J.Arg e -> m#expression e
+                    | J.Arg e -> J.Element (m#expression e)
                     | J.ArgSpread _ -> assert false)
               in
               Mlvalue.Block.make ~tag ~args
