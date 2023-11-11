@@ -19,6 +19,7 @@
 * Compiler: fix free variables pass wrt parameters' default value (#1521)
 * Compiler: fix free variables for classes
 * Compiler: fix internal invariant (continuation)
+* Lib: Url.Current.set_fragment need not any urlencode (#1497)
 
 # 5.4.0 (2023-07-06) - Lille
 
