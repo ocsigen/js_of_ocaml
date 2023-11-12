@@ -96,11 +96,7 @@ let effects p =
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
-let exact_calls profile p =
-  let deadcode_sentinal =
-    (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh ()
-  in
+let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
   then
     let fast =
@@ -115,8 +111,8 @@ let exact_calls profile p =
       else p
     in
     let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
-    p, deadcode_sentinal
-  else p, deadcode_sentinal
+    p
+  else p
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -185,7 +181,8 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    (((p, live_vars), cps_calls), deadcode_sentinal) =
+    ~deadcode_sentinal
+    ((p, live_vars), cps_calls) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -582,6 +579,10 @@ let configure formatter =
   Code.Var.set_stable (Config.Flag.stable_var ())
 
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh ()
+  in
   let exported_runtime = not standalone in
   let opt =
     specialize_js_once
@@ -589,11 +590,17 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
-    +> exact_calls profile
-    +> map_fst (effects +> map_fst (Generate_closure.f +> deadcode'))
+    +> exact_calls profile ~deadcode_sentinal
+    +> effects
+    +> map_fst (Generate_closure.f +> deadcode')
   in
   let emit =
-    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    generate
+      d
+      ~exported_runtime
+      ~wrap_with_fun
+      ~warn_on_unhandled_effect:standalone
+      ~deadcode_sentinal
     +> link ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
     +> coloring
