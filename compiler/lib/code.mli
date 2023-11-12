@@ -99,6 +99,8 @@ module Var : sig
 
     val set : 'a t -> key -> 'a -> unit
 
+    val length : 'a t -> int
+
     val make : size -> 'a -> 'a t
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit

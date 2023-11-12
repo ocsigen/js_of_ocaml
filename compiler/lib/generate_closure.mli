@@ -20,4 +20,5 @@
 
 open Code
 
-val f : program -> program
+val f :
+  program * Effects.single_version_closures -> program * Effects.single_version_closures

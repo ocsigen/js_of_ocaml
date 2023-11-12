@@ -179,6 +179,7 @@ module Fragment = struct
     ; code : Javascript.program pack
     ; js_string : bool option
     ; effects : bool option
+    ; double_translate : bool option
     ; fragment_target : Target_env.t option
     ; aliases : StringSet.t
     }
@@ -249,6 +250,7 @@ module Fragment = struct
                 ; code = Ok code
                 ; js_string = None
                 ; effects = None
+                ; double_translate = None
                 ; fragment_target = None
                 ; aliases = StringSet.empty
                 }
@@ -299,6 +301,15 @@ module Fragment = struct
                         if Option.is_some fragment.effects
                         then Format.eprintf "Duplicated effects in %s\n" (loc pi);
                         { fragment with effects = Some b }
+                    | (`Ifnot "doubletranslate" | `If "doubletranslate") as i ->
+                        let b =
+                          match i with
+                          | `If _ -> true
+                          | `Ifnot _ -> false
+                        in
+                        if Option.is_some fragment.double_translate
+                        then Format.eprintf "Duplicated doubletranslate in %s\n" (loc pi);
+                        { fragment with double_translate = Some b }
                     | `If name when Option.is_some (Target_env.of_string name) ->
                         if Option.is_some fragment.fragment_target
                         then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
@@ -439,6 +450,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; code
       ; js_string
       ; effects
+      ; double_translate
       ; fragment_target
       ; aliases
       ; has_macro
@@ -453,9 +465,15 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
         | Some true, false | Some false, true -> true
         | None, _ | Some true, true | Some false, false -> false
       in
+      let ignore_because_of_double_translate =
+        match double_translate, Config.Flag.double_translation () with
+        | Some true, false | Some false, true -> true
+        | None, _ | Some true, true | Some false, false -> false
+      in
       if (not version_constraint_ok)
          || ignore_because_of_js_string
          || ignore_because_of_effects
+         || ignore_because_of_double_translate
       then `Ignored
       else
         match provides with

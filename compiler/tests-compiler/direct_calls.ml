@@ -131,45 +131,45 @@ let%expect_test "direct calls with --enable effects" =
     {|
     function test1(param, cont){
      function f(g, x){return g(x);}
-     var _k_ = 7;
-     f(function(x){return x + 1 | 0;}, _k_);
-     var _l_ = 4.;
-     f(function(x){return x * 2.;}, _l_);
+     var _w_ = 7;
+     f(function(x){return x + 1 | 0;}, _w_);
+     var _x_ = 4.;
+     f(function(x){return x * 2.;}, _x_);
      return cont(0);
     }
     //end
     function test2(param, cont){
      function f(g, x, cont){return caml_cps_exact_call2(g, x, cont);}
-     var _f_ = 7;
+     var _t_ = 7;
      function _g_(x, cont){return cont(x + 1 | 0);}
      return caml_cps_exact_call3
              (f,
               _g_,
-              _f_,
-              function(_h_){
-               function _i_(x, cont){
+              _t_,
+              function(_u_){
+               function _e_(x, cont){
                 return caml_cps_call3(Stdlib[28], x, cst_a$0, cont);
                }
                return caml_cps_exact_call3
-                       (f, _i_, cst_a, function(_j_){return cont(0);});
+                       (f, _e_, cst_a, function(_v_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F([0]), M2 = F([0]), _e_ = M2[1].call(null, 2);
-     return cont([0, M1[1].call(null, 1), _e_]);
+     var M1 = F([0]), M2 = F([0]), _s_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _s_]);
     }
     //end
     function test4(x, cont){
      function F(symbol){
-      function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _a_, x, cont);}
+      function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _o_, x, cont);}
       return [0, f];
      }
-     var M1 = F([0]), M2 = F([0]), _b_ = 1, _c_ = M1[1];
+     var M1 = F([0]), M2 = F([0]), _p_ = 1, _q_ = M1[1];
      return caml_cps_exact_call2
-             (_c_,
-              _b_,
-              function(_d_){return caml_cps_exact_call2(M2[1], 2, cont);});
+             (_q_,
+              _p_,
+              function(_r_){return caml_cps_exact_call2(M2[1], 2, cont);});
     }
     //end |}]

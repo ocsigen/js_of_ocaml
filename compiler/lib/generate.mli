@@ -23,6 +23,7 @@ val f :
   -> exported_runtime:bool
   -> live_vars:Deadcode.variable_uses
   -> cps_calls:Effects.cps_calls
+  -> single_version_closures:Effects.single_version_closures
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
   -> deadcode_sentinal:Code.Var.t

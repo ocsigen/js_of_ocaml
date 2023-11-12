@@ -158,6 +158,6 @@ let f p =
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
   Array.iteri subst ~f:(fun idx y ->
       if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-  let p = Subst.program (Subst.from_array subst) p in
+  let p = Subst.Excluding_Binders.program (Subst.from_array subst) p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   p

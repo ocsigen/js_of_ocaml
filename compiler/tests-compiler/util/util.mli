@@ -35,6 +35,7 @@ val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 val compile_cmo_to_javascript :
      ?flags:string list
   -> ?effects:bool
+  -> ?doubletranslate:bool
   -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
@@ -71,6 +72,9 @@ val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string option -> unit
 
+(* Prints the two versions of a doubly translated function *)
+val print_double_fun_decl : Javascript.program -> string -> unit
+
 val find_variable : Javascript.program -> string -> Javascript.expression
 
 val find_function : Javascript.program -> string -> Javascript.function_declaration
@@ -91,6 +95,7 @@ val compile_and_parse :
      ?debug:bool
   -> ?flags:string list
   -> ?effects:bool
+  -> ?doubletranslate:bool
   -> ?use_js_string:bool
   -> string
   -> Javascript.program

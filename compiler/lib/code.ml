@@ -106,6 +106,8 @@ module Var : sig
 
     val set : 'a t -> key -> 'a -> unit
 
+    val length : 'a t -> int
+
     val make : size -> 'a -> 'a t
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
@@ -211,6 +213,8 @@ end = struct
     let get t x = t.(x)
 
     let set t x v = t.(x) <- v
+
+    let length t = Array.length t
 
     let make () v = Array.make (count ()) v
 

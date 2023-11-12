@@ -8,6 +8,7 @@
 * Lib: add download attribute to anchor element
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
+* Effects: add an optional feature of "dynamic switching" between CPS and direct style, resulting in much better performance when no effect handler is installed
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)
