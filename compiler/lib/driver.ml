@@ -87,8 +87,6 @@ let phi p =
 
 let ( +> ) f g x = g (f x)
 
-let map_triple_fst f (x, y, z) = f x, y, z
-
 let effects p =
   if Config.Flag.effects ()
   then (
@@ -96,10 +94,8 @@ let effects p =
     p
     |> Deadcode.f
        +> Effects.f
-       +>
-       if Config.Flag.double_translation ()
-       then Fun.id
-       else map_triple_fst Lambda_lifting.f)
+       +> fun (x, y, z) ->
+       if Config.Flag.double_translation () then x, y, z else Lambda_lifting.f x, y, z)
   else
     ( p
     , (Code.Var.Set.empty : Effects.cps_calls)
