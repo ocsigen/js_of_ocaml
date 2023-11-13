@@ -30900,11 +30900,11 @@
             function(n, m){
                /*<<?>>*/ return function(obj){
                 /*<<camlinternalOO.ml:490:18>>*/  /*<<camlinternalOO.ml:490:44>>*/ var
-                _k_ =
+                _l_ =
                    /*<<camlinternalOO.ml:490:44>>*/ caml_call1
                    (obj[1][1 + m], obj);
                 /*<<camlinternalOO.ml:490:44>>*/ return  /*<<camlinternalOO.ml:490:44>>*/ caml_call2
-                       (obj[1][1 + n], obj, _k_); /*<<camlinternalOO.ml:490:60>>*/ };
+                       (obj[1][1 + n], obj, _l_); /*<<camlinternalOO.ml:490:60>>*/ };
              }
              (n$15, m$1);
          break;
@@ -30931,8 +30931,8 @@
           clo$0 =
             function(m, n){
                /*<<?>>*/ return function(obj){
-                /*<<camlinternalOO.ml:495:4>>*/ var _j_ = obj[1 + n];
-               return caml_call1(caml_get_public_method(_j_, m, 0), _j_); /*<<camlinternalOO.ml:496:32>>*/ };
+                /*<<camlinternalOO.ml:495:4>>*/ var _k_ = obj[1 + n];
+               return caml_call1(caml_get_public_method(_k_, m, 0), _k_); /*<<camlinternalOO.ml:496:32>>*/ };
              }
              (m$3, n$16);
          break;
@@ -30946,8 +30946,8 @@
           clo$0 =
             function(m, e, n){
                /*<<?>>*/ return function(obj){
-                /*<<camlinternalOO.ml:499:4>>*/ var _i_ = obj[1 + e][1 + n];
-               return caml_call1(caml_get_public_method(_i_, m, 0), _i_); /*<<camlinternalOO.ml:502:34>>*/ };
+                /*<<camlinternalOO.ml:499:4>>*/ var _j_ = obj[1 + e][1 + n];
+               return caml_call1(caml_get_public_method(_j_, m, 0), _j_); /*<<camlinternalOO.ml:502:34>>*/ };
              }
              (m$4, e$4, n$17);
          break;
@@ -30961,11 +30961,11 @@
             function(m, n){
                /*<<?>>*/ return function(obj){
                 /*<<camlinternalOO.ml:505:4>>*/  /*<<camlinternalOO.ml:505:14>>*/ var
-                _l_ =
+                _i_ =
                    /*<<camlinternalOO.ml:505:14>>*/ caml_call1
                    (obj[1][1 + n], obj);
                 /*<<camlinternalOO.ml:505:14>>*/ return  /*<<camlinternalOO.ml:505:14>>*/ caml_call1
-                       (caml_get_public_method(_l_, m, 0), _l_); /*<<camlinternalOO.ml:505:59>>*/ };
+                       (caml_get_public_method(_i_, m, 0), _i_); /*<<camlinternalOO.ml:505:59>>*/ };
              }
              (m$5, n$18);
       }
