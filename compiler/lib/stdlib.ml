@@ -369,6 +369,10 @@ module Option = struct
     | None -> None
     | Some v -> Some (f v)
 
+  let to_list = function
+    | None -> []
+    | Some x -> [ x ]
+
   let bind ~f x =
     match x with
     | None -> None

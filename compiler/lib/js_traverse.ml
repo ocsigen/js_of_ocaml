@@ -35,6 +35,8 @@ class type mapper = object
 
   method class_decl : Javascript.class_declaration -> Javascript.class_declaration
 
+  method class_element : Javascript.class_element -> Javascript.class_element
+
   method initialiser :
        Javascript.expression * Javascript.location
     -> Javascript.expression * Javascript.location
@@ -108,7 +110,7 @@ class map : mapper =
       ; body = List.map x.body ~f:m#class_element
       }
 
-    method private class_element x =
+    method class_element x =
       match x with
       | CEMethod (s, n, meth) -> CEMethod (s, m#class_element_name n, m#method_ meth)
       | CEField (s, n, i) -> CEField (s, m#class_element_name n, m#initialiser_o i)
@@ -305,6 +307,8 @@ class map : mapper =
 class type iterator = object
   method fun_decl : Javascript.function_declaration -> unit
 
+  method class_decl : Javascript.class_declaration -> unit
+
   method early_error : Javascript.early_error -> unit
 
   method expression : Javascript.expression -> unit
@@ -373,7 +377,7 @@ class iter : iterator =
       m#formal_parameter_list params;
       m#function_body body
 
-    method private class_decl x =
+    method class_decl x =
       Option.iter x.extends ~f:m#expression;
       List.iter x.body ~f:m#class_element
 
@@ -826,14 +830,19 @@ class free =
           m#merge_info tbody;
           EFun (ident, (k, params, body, nid))
       | EClass (ident_o, cl_decl) ->
+          let same_level = level in
+          let cbody = {<state_ = empty; level = same_level>} in
           let ident_o =
             Option.map
               ~f:(fun id ->
-                m#def_var id;
-                m#ident id)
+                cbody#def_var id;
+                id)
               ident_o
           in
-          EClass (ident_o, m#class_decl cl_decl)
+          let cl_decl = cbody#class_decl cl_decl in
+          cbody#record_block Normal;
+          m#merge_block_info cbody;
+          EClass (ident_o, cl_decl)
       | _ -> super#expression x
 
     method record_block _ = ()
@@ -853,6 +862,16 @@ class free =
       m#merge_block_info tbody;
       b
 
+    method class_element x =
+      match x with
+      | CEStaticBLock l ->
+          let tbody = {<state_ = empty; level = level + 1>} in
+          let l = tbody#statements l in
+          tbody#record_block Normal;
+          m#merge_info tbody;
+          CEStaticBLock l
+      | _ -> super#class_element x
+
     method statement x =
       match x with
       | Function_declaration (id, (k, params, body, nid)) ->
@@ -865,9 +884,56 @@ class free =
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
       | Class_declaration (id, cl_decl) ->
+          let same_level = level in
+          let cbody = {<state_ = empty; level = same_level>} in
+          let cl_decl = cbody#class_decl cl_decl in
+          cbody#record_block Normal;
+          m#merge_block_info cbody;
           m#def_var id;
-          Class_declaration (id, m#class_decl cl_decl)
+          Class_declaration (id, cl_decl)
       | Block b -> Block (m#block b)
+      | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, loc)) ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = List.map ~f:(m'#variable_declaration k) l in
+          let e1 = Option.map ~f:m'#expression e1 in
+          let e2 = Option.map ~f:m'#expression e2 in
+          let st = m'#statement st in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          For_statement (Right (k, l), e1, e2, (st, m#loc loc))
+      | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = m'#for_binding k l in
+          let e2 = m'#expression e2 in
+          let st = m'#statement st in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          ForIn_statement (Right (k, l), e2, (st, m#loc loc))
+      | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = m'#for_binding k l in
+          let e2 = m'#expression e2 in
+          let st = m'#statement st in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          ForOf_statement (Right (k, l), e2, (st, m#loc loc))
+      | Switch_statement (e, l, def, l') ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = List.map l ~f:(fun (e, s) -> m'#switch_case e, m'#statements s) in
+          let l' = List.map l' ~f:(fun (e, s) -> m'#switch_case e, m'#statements s) in
+          let def =
+            match def with
+            | None -> None
+            | Some l -> Some (m'#statements l)
+          in
+          let e = m#expression e in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          Switch_statement (e, l, def, l')
       | Try_statement (b, w, f) ->
           let same_level = level in
           let b = m#block b in
@@ -940,14 +1006,11 @@ class rename_variable =
 
        inherit iter as super
 
-       method expression e =
-         match e with
-         | EClass (ido, _) ->
-             Option.iter ido ~f:decl_var;
-             super#expression e
-         | _ -> super#expression e
+       method expression _ = ()
 
        method fun_decl _ = ()
+
+       method class_decl _ = ()
 
        method statement x =
          match scope, x with
@@ -955,9 +1018,26 @@ class rename_variable =
              decl_var id;
              self#fun_decl fd
          | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
-         | (Fun_block _ | Lexical_block), Class_declaration (id, _) ->
+         | (Lexical_block | Fun_block _), Class_declaration (id, cl_decl) ->
              decl_var id;
-             super#statement x
+             self#class_decl cl_decl
+         | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             List.iter ~f:(m#variable_declaration k) l;
+             m#statement st
+         | _, ForOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, ForIn_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, Switch_statement (_, l, def, l') ->
+             let m = {<depth = depth + 1>} in
+             List.iter l ~f:(fun (_, s) -> m#statements s);
+             Option.iter def ~f:(fun l -> m#statements l);
+             List.iter l' ~f:(fun (_, s) -> m#statements s)
          | (Fun_block _ | Lexical_block), _ -> super#statement x
 
        method variable_declaration k l =
@@ -998,7 +1078,7 @@ class rename_variable =
 
     val labels = StringMap.empty
 
-    method private update_state scope params iter_body =
+    method update_state scope params iter_body =
       let declared_names = declared scope params iter_body in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
@@ -1011,6 +1091,13 @@ class rename_variable =
       | V _ -> x
       | S { name = Utf8 name; _ } -> (
           try V (StringMap.find name subst) with Not_found -> x)
+
+    method class_element x =
+      match x with
+      | CEStaticBLock l ->
+          let m' = m#update_state (Fun_block None) [] l in
+          CEStaticBLock (m'#statements l)
+      | _ -> super#class_element x
 
     method fun_decl (k, params, body, nid) =
       let ids = bound_idents_of_params params in
@@ -1029,6 +1116,9 @@ class rename_variable =
           EFun
             ( Option.map ident ~f:m'#ident
             , (k, m'#formal_parameter_list params, m'#function_body body, m#loc nid) )
+      | EClass (Some id, cl_decl) ->
+          let m' = m#update_state Lexical_block [ id ] [] in
+          EClass (Some (m'#ident id), m'#class_decl cl_decl)
       | _ -> super#expression e
 
     method statement s =
@@ -1063,6 +1153,28 @@ class rename_variable =
           Function_declaration
             ( m#ident id
             , (k, m'#formal_parameter_list params, m'#function_body body, m#loc nid) )
+      | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, loc)) ->
+          let ids = List.concat_map ~f:bound_idents_of_variable_declaration l in
+          let m' = m#update_state Lexical_block ids [] in
+          For_statement
+            ( Right (k, List.map ~f:(m'#variable_declaration k) l)
+            , Option.map ~f:m'#expression e1
+            , Option.map ~f:m'#expression e2
+            , (m'#statement st, m'#loc loc) )
+      | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let ids = bound_idents_of_binding l in
+          let m' = m#update_state Lexical_block ids [] in
+          ForOf_statement
+            ( Right (k, m'#for_binding k l)
+            , m'#expression e2
+            , (m'#statement st, m'#loc loc) )
+      | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let ids = bound_idents_of_binding l in
+          let m' = m#update_state Lexical_block ids [] in
+          ForOf_statement
+            ( Right (k, m'#for_binding k l)
+            , m'#expression e2
+            , (m'#statement st, m'#loc loc) )
       | Block l ->
           let m' = m#update_state Lexical_block [] l in
           Block (m'#statements l)
@@ -1106,6 +1218,22 @@ class rename_variable =
                 Some (i, m'#statements catch)
           in
           Try_statement (block, catch, final)
+      | Switch_statement (e, l, def, l') ->
+          let all =
+            let r = ref [] in
+            Option.iter def ~f:(fun l -> r := List.rev_append l !r);
+            List.iter l ~f:(fun (_, s) -> r := List.rev_append s !r);
+            List.iter l' ~f:(fun (_, s) -> r := List.rev_append s !r);
+            !r
+          in
+          let m' = m#update_state Lexical_block [] all in
+          Switch_statement
+            ( m#expression e
+            , List.map l ~f:(fun (e, s) -> m'#switch_case e, m'#statements s)
+            , (match def with
+              | None -> None
+              | Some l -> Some (m'#statements l))
+            , List.map l' ~f:(fun (e, s) -> m'#switch_case e, m'#statements s) )
       | _ -> super#statement s
   end
 
