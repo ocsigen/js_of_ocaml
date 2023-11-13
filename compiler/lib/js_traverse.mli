@@ -34,6 +34,8 @@ class type mapper = object
 
   method class_decl : Javascript.class_declaration -> Javascript.class_declaration
 
+  method class_element : Javascript.class_element -> Javascript.class_element
+
   method initialiser : expression * location -> expression * location
 
   method initialiser_o : (expression * location) option -> (expression * location) option
@@ -66,6 +68,8 @@ end
 
 class type iterator = object
   method fun_decl : Javascript.function_declaration -> unit
+
+  method class_decl : Javascript.class_declaration -> unit
 
   method early_error : Javascript.early_error -> unit
 
@@ -147,7 +151,15 @@ end
 
 class free : freevar
 
-class rename_variable : mapper
+type scope =
+  | Lexical_block
+  | Fun_block of ident option
+
+class rename_variable : object ('a)
+  inherit mapper
+
+  method update_state : scope -> Javascript.ident list -> Javascript.statement_list -> 'a
+end
 
 class share_constant : mapper
 
