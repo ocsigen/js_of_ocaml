@@ -50,7 +50,7 @@ let%expect_test "let inside forloop" =
       1: (function(){
       2:    let v1 = 2;
       3:    var v2 = 0;
-      4:    for(let v1 = 0; v1 < 2; v1++) v2 += v1;
+      4:    for(let v3 = 0; v3 < 2; v3++) v2 += v3;
       5:    console.log(v2);
       6:    console.log(v1);
       7:   }
@@ -79,7 +79,7 @@ let%expect_test "let inside forin" =
       1: (function(){
       2:    let v2 = 2;
       3:    var v3 = 0, v1 = [1, 2, 3];
-      4:    for(let v2 in v1){console.log(v2); v3 += v1[v2];}
+      4:    for(let v4 of v1){console.log(v4); v3 += v1[v4];}
       5:    console.log(v3);
       6:    console.log(v2);
       7:   }
@@ -110,7 +110,7 @@ let%expect_test "let inside forof" =
       1: (function(){
       2:    let v1 = 2;
       3:    var v2 = 0;
-      4:    for(let v1 of [1, 2, 3]){console.log(v1); v2 += v1;}
+      4:    for(let v3 of [1, 2, 3]){console.log(v3); v2 += v3;}
       5:    console.log(v2);
       6:    console.log(v1);
       7:   }
@@ -141,7 +141,7 @@ let%expect_test "let inside switch" =
       1: (function(){
       2:    let v1 = 2;
       3:    var v2 = 0;
-      4:    switch(v2){case 0: let v1 = 3; console.log(v1);
+      4:    switch(v2){case 0: let v3 = 3; console.log(v3);
       5:    }
       6:    console.log(v1);
       7:   }
@@ -179,7 +179,7 @@ let%expect_test "let and var inside class static block" =
       6:    z
       7:    =
       8:    2
-      9:    static{let v2 = 3; var v3 = v2; this.z = v3;}
+      9:    static{let v5 = 3; var v6 = v5; this.z = v6;}
      10:    getZ(){return this.z;}
      11:    }
      12:    var v1 = new v4;
@@ -187,6 +187,56 @@ let%expect_test "let and var inside class static block" =
      14:   }
      15:   ());
     0 2 3 |}]
+
+let%expect_test "named class expression" =
+  test
+    {|
+(function () {
+  var y = 0;
+  class z {
+    static z = 0;
+  }
+  const x = class z {
+    static z = 2;
+    static {
+      let x = 3;
+      var y = x;
+      this.z = y;
+    }
+    create(){ return new z }
+    getZ(){ return this.z }
+  }
+  var t = new x;
+  console.log(y, x.z, z.z);
+})()
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: (function(){
+      2:    var v3 = 0;
+      3:    class
+      4:    v4{static
+      5:    z
+      6:    =
+      7:    0
+      8:    }
+      9:    const
+     10:     v2 =
+     11:       class
+     12:       v5{static
+     13:       z
+     14:       =
+     15:       2
+     16:       static{let v6 = 3; var v7 = v6; this.z = v7;}
+     17:       create(){return new v5;}
+     18:       getZ(){return this.z;}
+     19:       };
+     20:    var v1 = new v2;
+     21:    console.log(v3, v2.z, v4.z);
+     22:   }
+     23:   ());
+    0 3 0 |}]
 
 let%expect_test "let inside block" =
   test
