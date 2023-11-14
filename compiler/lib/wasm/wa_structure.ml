@@ -87,8 +87,14 @@ let build_graph blocks pc =
       if leave_try_body block_order preds blocks leave_pc
       then (
         (* Add an edge to limit the [try] body *)
-        Hashtbl.add succs enter_pc (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc));
-        Hashtbl.add preds leave_pc (Addr.Set.add enter_pc (Hashtbl.find preds leave_pc))));
+        Hashtbl.replace
+          succs
+          enter_pc
+          (Addr.Set.add leave_pc (Hashtbl.find succs enter_pc));
+        Hashtbl.replace
+          preds
+          leave_pc
+          (Addr.Set.add enter_pc (Hashtbl.find preds leave_pc))));
   { succs; preds; reverse_post_order = !l; block_order }
 
 let reversed_dominator_tree g =
@@ -139,3 +145,87 @@ let sort_in_post_order g l =
     ~cmp:(fun b b' ->
       compare (Hashtbl.find g.block_order b') (Hashtbl.find g.block_order b))
     l
+
+(* Compute a map from each block to the set of loops it belongs to *)
+let mark_loops g =
+  let in_loop = Hashtbl.create 16 in
+  Hashtbl.iter
+    (fun pc preds ->
+      let rec mark_loop pc' =
+        if not (Addr.Set.mem pc (get_edges in_loop pc'))
+        then (
+          add_edge in_loop pc' pc;
+          if pc' <> pc then Addr.Set.iter mark_loop (Hashtbl.find g.preds pc'))
+      in
+      Addr.Set.iter (fun pc' -> if is_backward g pc' pc then mark_loop pc') preds)
+    g.preds;
+  in_loop
+
+let rec measure blocks g pc limit =
+  let b = Addr.Map.find pc blocks in
+  let limit = limit - List.length b.body in
+  if limit < 0
+  then limit
+  else
+    Addr.Set.fold
+      (fun pc limit -> if limit < 0 then limit else measure blocks g pc limit)
+      (get_edges g.succs pc)
+      limit
+
+let is_small blocks g pc = measure blocks g pc 20 >= 0
+
+(* V8 uses the distance between the position of a backward jump and
+   the loop header as an estimation of the cost of executing the loop,
+   to decide whether to optimize a function containing a loop. So, for
+   a large function when the loop includes all the remaining code, the
+   estimation can be widely off. In particular, it may decide to
+   optimize the toplevel code, which is especially costly since it is
+   very large, and uncessary since it is executed only once. *)
+let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
+  let add_edge pred succ =
+    Hashtbl.replace succs pred (Addr.Set.add succ (Hashtbl.find succs pred));
+    Hashtbl.replace preds succ (Addr.Set.add pred (Hashtbl.find preds succ))
+  in
+  let in_loop = mark_loops g in
+  let dom = dominator_tree g in
+  let root = List.hd reverse_post_order in
+  let rec traverse ignored pc =
+    let succs = get_edges dom pc in
+    let loops = get_edges in_loop pc in
+    let block = Addr.Map.find pc blocks in
+    Addr.Set.iter
+      (fun pc' ->
+        (* Whatever is in the scope of an exception handler should not be
+           moved outside *)
+        let ignored =
+          match fst block.branch with
+          | Pushtrap ((body_pc, _), _, _, _) when pc' = body_pc ->
+              Addr.Set.union ignored loops
+          | _ -> ignored
+        in
+        let loops' = get_edges in_loop pc' in
+        let left_loops = Addr.Set.diff (Addr.Set.diff loops loops') ignored in
+        (* If we leave a loop, we add an edge from a predecessor of
+           the loop header to the current block, so that it is
+           considered outside of the loop. *)
+        if not (Addr.Set.is_empty left_loops || is_small blocks g pc')
+        then
+          Addr.Set.iter
+            (fun pc0 ->
+              match
+                Addr.Set.find_first
+                  (fun pc -> is_forward g pc pc0)
+                  (get_edges g.preds pc0)
+              with
+              | pc -> add_edge pc pc'
+              | exception Not_found -> ())
+            left_loops;
+        traverse ignored pc')
+      succs
+  in
+  traverse Addr.Set.empty root
+
+let build_graph blocks pc =
+  let g = build_graph blocks pc in
+  shrink_loops blocks g;
+  g
