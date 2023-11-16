@@ -389,11 +389,15 @@ let program' (module Strategy : Strategy) p =
     free;
   let ident = function
     | V v -> (
-        let name = names.(Var.idx v) in
-        match name, has_free_var with
-        | "", true -> V v
-        | "", false -> assert false
-        | _, (true | false) -> ident ~var:v (Utf8_string.of_string_exn name))
+        if Config.Flag.stable_var ()
+        then
+          ident ~var:v (Utf8_string.of_string_exn (Printf.sprintf "v%d" (Code.Var.idx v)))
+        else
+          let name = names.(Var.idx v) in
+          match name, has_free_var with
+          | "", true -> V v
+          | "", false -> assert false
+          | _, (true | false) -> ident ~var:v (Utf8_string.of_string_exn name))
     | x -> x
   in
   let label_printer = Var_printer.create Var_printer.Alphabet.javascript in

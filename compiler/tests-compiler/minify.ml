@@ -50,10 +50,7 @@ console.log("xx =", xx);
         js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
       in
       let js_min_file =
-        js_file
-        |> jsoo_minify
-             ~flags:[ "--enable"; "stable_var"; "--enable"; "shortvar" ]
-             ~pretty:false
+        js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
       in
       print_file (Filetype.path_of_js_file js_file);
       run_javascript js_file |> print_endline;

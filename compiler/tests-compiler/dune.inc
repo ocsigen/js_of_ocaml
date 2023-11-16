@@ -600,6 +600,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/scopes.ml
+ (name scopes_15)
+ (enabled_if true)
+ (modules scopes)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/side_effect.ml
  (name side_effect_15)
  (enabled_if true)

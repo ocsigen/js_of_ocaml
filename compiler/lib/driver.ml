@@ -602,7 +602,8 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls ~deadcode_sentinal profile
-    +> (effects ~deadcode_sentinal +> map_fst (Generate_closure.f +> deadcode'))
+    +> effects ~deadcode_sentinal
+    +> map_fst (Generate_closure.f +> deadcode')
   in
   let emit =
     generate
