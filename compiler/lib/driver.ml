@@ -96,15 +96,14 @@ let effects ~deadcode_sentinal p =
     let p, live_vars = Deadcode.f p in
     let p = Effects.remove_empty_blocks ~live_vars p in
     let p, live_vars = Deadcode.f p in
+    let info = Global_flow.f ~fast:false p in
     let p, live_vars =
       if Config.Flag.globaldeadcode ()
       then
-        let info = Global_flow.f ~fast:false p in
         let p = Global_deadcode.f p ~deadcode_sentinal info in
         Deadcode.f p
       else p, live_vars
     in
-    let info = Global_flow.f ~fast:false p in
     let p, cps = p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f in
     p, cps)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
