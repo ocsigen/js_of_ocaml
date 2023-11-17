@@ -352,7 +352,8 @@ let zero prog sentinal live_table =
     let branch =
       (* Zero out return values in last instruction, otherwise do nothing. *)
       match block.branch with
-      | Return x, loc -> Return (zero_var x), loc
+      | Return x, loc ->
+          if Config.Flag.effects () then block.branch else Return (zero_var x), loc
       | Raise (_, _), _
       | Stop, _
       | Branch _, _
@@ -412,6 +413,7 @@ let add_sentinal p sentinal =
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
 let f p ~deadcode_sentinal global_info =
+  Code.invariant p;
   let t = Timer.make () in
   (* Add sentinal variable *)
   let p = add_sentinal p deadcode_sentinal in

@@ -89,11 +89,23 @@ let ( +> ) f g x = g (f x)
 
 let map_fst f (x, y) = f x, y
 
-let effects p =
+let effects ~deadcode_sentinal p =
   if Config.Flag.effects ()
   then (
     if debug () then Format.eprintf "Effects...@.";
-    p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
+    let p, live_vars = Deadcode.f p in
+    let p = Effects.remove_empty_blocks ~live_vars p in
+    let p, live_vars = Deadcode.f p in
+    let info = Global_flow.f ~fast:false p in
+    let p, live_vars =
+      if Config.Flag.globaldeadcode ()
+      then
+        let p = Global_deadcode.f p ~deadcode_sentinal info in
+        Deadcode.f p
+      else p, live_vars
+    in
+    let p, cps = p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f in
+    p, cps)
   else p, (Code.Var.Set.empty : Effects.cps_calls)
 
 let exact_calls profile ~deadcode_sentinal p =
@@ -110,8 +122,7 @@ let exact_calls profile ~deadcode_sentinal p =
       then Global_deadcode.f p ~deadcode_sentinal info
       else p
     in
-    let p = Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p in
-    p
+    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
   else p
 
 let print p =
@@ -579,19 +590,19 @@ let configure formatter =
   Code.Var.set_stable (Config.Flag.stable_var ())
 
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
+  let exported_runtime = not standalone in
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh ()
+    Code.Var.fresh_n "undef"
   in
-  let exported_runtime = not standalone in
   let opt =
     specialize_js_once
     +> (match profile with
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
-    +> exact_calls profile ~deadcode_sentinal
-    +> effects
+    +> exact_calls ~deadcode_sentinal profile
+    +> effects ~deadcode_sentinal
     +> map_fst (Generate_closure.f +> deadcode')
   in
   let emit =
