@@ -51,7 +51,8 @@
             (field (mut (ref null $closure_3))))))
 
    (type $function_4
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+         (result (ref eq))))
 
    (type $closure_4
       (sub $closure
