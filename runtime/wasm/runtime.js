@@ -7,7 +7,8 @@
       return require('fs/promises').readFile(f)
     }
     function fetchRelative(src) {
-      const url = new URL (src, document.currentScript?.src || document.baseURI).href
+      const base = globalThis?.document?.currentScript?.src;
+      const url = base?new URL(src, base):src;
       return fetch(url)
     }
     const isNode = globalThis?.process?.versions?.node;
