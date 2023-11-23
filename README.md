@@ -8,12 +8,13 @@ Wasm_of_ocaml relies on the Binaryen toolchain ([version 116](https://github.com
 
 ## Supported engines
 
-The generated code works with Chrome 11.9 (currently, [Chrome Beta](https://www.google.com/chrome/beta/) or [Chrome for developpers](https://www.google.com/chrome/dev/)), [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and Firefox 120 (currently, [Firefox nightly](https://www.mozilla.org/en-US/firefox/channel/desktop/)).
+The generated code works with Chrome 11.9, [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and Firefox 121 (currently, [Firefox Beta](https://www.mozilla.org/en-US/firefox/channel/desktop/)).
 
 ## Installation
 
 The following commands will perform a minimal installation:
 ```
+opam pin add dune.3.11 https://github.com/ocaml-wasm/dune.git
 opam pin add -n --with-version 5.3.0 .
 opam install wasm_of_ocaml-compiler
 ```
