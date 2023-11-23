@@ -109,41 +109,29 @@ jobs:
             /opt/hostedtoolcache/opam/2.1.5/x86_64/opam
           key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
-      - name: Pin dune
-        run: |
-          opam pin add -n dune.3.11 https://github.com/ocaml-wasm/dune.git#wasm
-
-      - name: Pin packages
-        run: |
-          opam pin add -n alcotest https://github.com/ocaml-wasm/alcotest.git#wasm
-          opam pin add -n async_js https://github.com/ocaml-wasm/async_js.git#wasm
-          opam pin add -n base https://github.com/ocaml-wasm/base.git#wasm
-          opam pin add -n base_bigstring https://github.com/ocaml-wasm/base_bigstring.git#wasm
-          opam pin add -n bigstringaf https://github.com/ocaml-wasm/bigstringaf.git#wasm
-          opam pin add -n bin_prot https://github.com/ocaml-wasm/bin_prot.git#wasm
-          opam pin add -n bonsai https://github.com/ocaml-wasm/bonsai.git#wasm
-          opam pin add -n brr https://github.com/ocaml-wasm/brr.git#wasm
-          opam pin add -n core https://github.com/ocaml-wasm/core.git#wasm
-          opam pin add -n core_kernel https://github.com/ocaml-wasm/core_kernel.git#wasm
-          opam pin add -n cstruct https://github.com/ocaml-wasm/ocaml-cstruct.git#wasm
-          opam pin add -n gen_js_api https://github.com/ocaml-wasm/gen_js_api.git#wasm
-          opam pin add -n incr_dom https://github.com/ocaml-wasm/incr_dom.git#wasm
-          opam pin add -n js_of_ocaml_patches https://github.com/ocaml-wasm/js_of_ocaml_patches.git#wasm
-          opam pin add -n ppx_css https://github.com/ocaml-wasm/ppx_css.git#wasm
-          opam pin add -n ppx_expect https://github.com/ocaml-wasm/ppx_expect.git#wasm
-          opam pin add -n ppx_inline_test https://github.com/ocaml-wasm/ppx_inline_test.git#wasm
-          opam pin add -n string_dict https://github.com/ocaml-wasm/string_dict.git#wasm
-          opam pin add -n time_now https://github.com/ocaml-wasm/time_now.git#wasm
-          opam pin add -n virtual_dom https://github.com/ocaml-wasm/virtual_dom.git#wasm
-          opam pin add -n zarith_stubs_js https://github.com/ocaml-wasm/zarith_stubs_js.git#wasm
-
-      - name: Update dune and test dependencies
-        run: opam install dune num cohttp-lwt-unix graphics ppx_expect zarith.1.12
-
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           path: wasm_of_ocaml
+
+      - name: Checkout Jane Street opam repository
+        uses: actions/checkout@v4
+        with:
+          repository: janestreet/opam-repository
+          path: jane-street/opam-repository
+
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.11 https://github.com/ocaml-wasm/dune.git#wasm
+
+      - name: Install opam file parser
+        run: opam install opam-format ocamlfind
+
+      - name: Checkout Jane Street packages
+        run: opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
+
+      - name: Update dune and test dependencies
+        run: opam install dune num cohttp-lwt-unix graphics ppx_expect zarith.1.12
 
       - name: Build wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
@@ -160,41 +148,47 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @all @runtest --profile wasm-effects
 
-      - name: Install bonsai and zarith_stubs_js
+      - name: Run Base tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        run: opam install dune bonsai zarith_stubs_js
+        working-directory: ./jane-street/lib/base
+        run: opam exec -- dune runtest
 
-      - name: Checkout zarith_stubs_js
+      - name: Run Base bigstring tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        uses: actions/checkout@v4
-        with:
-          repository: ocaml-wasm/zarith_stubs_js
-          path: zarith
-          ref: wasm
+        working-directory: ./jane-street/lib/base_bigstring
+        run: opam exec -- dune runtest
 
-      - name: Run zarith_stubs_js tests
+      - name: Run Core tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        working-directory: ./zarith
-        run: |
-           opam exec -- dune build @runtest --profile wasm
+        working-directory: ./jane-street/lib/core
+        run: opam exec -- dune runtest
 
-      - name: Checkout bonsai
+      - name: Run Bignum tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        uses: actions/checkout@v4
-        with:
-          repository: ocaml-wasm/bonsai
-          path: bonsai
-          ref: wasm
+        working-directory: ./jane-street/lib/bignum
+        run: opam exec -- dune runtest
 
-      - name: Install bonsai dependencies
+      - name: Run Bin_prot tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        working-directory: ./bonsai
-        run: |
-           sudo apt-get install libgraph-easy-perl
-           npm install deasync
+        working-directory: ./jane-street/lib/bin_prot
+        run: opam exec -- dune runtest
 
-      - name: Run bonsai tests
+      - name: Run String_dict tests
         if: ${{ matrix.ocaml-compiler < '5.' }}
-        working-directory: ./bonsai
-        run: |
-           opam exec -- dune build @runtest --profile wasm
+        working-directory: ./jane-street/lib/string_dict
+        run: opam exec -- dune runtest
+
+      - name: Run Zarith tests
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./jane-street/lib/zarith_stubs_js
+        run: opam exec -- dune runtest
+
+      - name: Run Virtual_dom tests
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./jane-street/lib/virtual_dom
+        run: opam exec -- dune runtest
+
+      - name: Run Bonsai tests
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./jane-street/lib/bonsai
+        run: opam exec -- dune runtest
