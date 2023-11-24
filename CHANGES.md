@@ -3,6 +3,7 @@
 ## Features/Changes
 * Compiler: global dead code elimination (Micah Cantor, #1503)
 * Compiler: change control-flow compilation strategy (#1496)
+* Compiler: loop no longer absorb the whole continuation
 * Compiler: Dead code elimination of unused references (#2076)
 * Compiler: reduce memory consumption (#1516)
 * Compiler: support for es6 import and export construct

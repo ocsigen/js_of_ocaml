@@ -20,17 +20,12 @@
 
 (*XXX
   Patterns:
-  => loops should avoid absorbing the whole continuation...
-     (detect when the continuation does not loop anymore and close
-      the loop at this point)
   => should have special code for switches that include the preceding
      if statement when possible
   => if e1 then {if e2 then P else Q} else {if e3 then P else Q}
   => if e then return e1; return e2
   => if e then var x = e1; else var x = e2;
   => while (true) {.... if (e) continue; break; }
-
-  - CLEAN UP!!!
 *)
 
 open! Stdlib
