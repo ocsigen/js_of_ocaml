@@ -67,6 +67,10 @@ let vartok pos tok =
 
 let utf8_s = Stdlib.Utf8_string.of_string_exn
 
+let name_of_ident = function
+  | S { name; _} -> name
+  | V _ -> assert false
+
 %}
 
 (*************************************************************************)
@@ -120,6 +124,7 @@ T_PACKAGE
 T_DEBUGGER
 T_GET T_SET
 T_FROM
+T_AS
 T_TARGET
 T_META
 (*-----------------------------------------*)
@@ -249,6 +254,9 @@ program:
 
 module_item:
   | item { $symbolstartpos, $1 }
+  | import_decl { $symbolstartpos, $1 }
+  | export_decl { $symbolstartpos, $1 }
+
 
 (*************************************************************************)
 (* statement                                                           *)
@@ -268,6 +276,131 @@ decl:
  | lexical_decl    { $1, p $symbolstartpos }
  | class_decl
    { let i,f = $1 in Class_declaration (i,f), p $symbolstartpos }
+
+(*************************************************************************)
+(* Namespace *)
+(*************************************************************************)
+(*----------------------------*)
+(* import *)
+(*----------------------------*)
+
+import_decl:
+ | T_IMPORT kind=import_clause from=from_clause sc
+    { let pos = $symbolstartpos in
+      Import ({ from; kind }, pi pos), p pos }
+ | T_IMPORT from=module_specifier sc
+    { let pos = $symbolstartpos in
+      Import ({ from; kind = SideEffect }, pi pos), p pos }
+
+import_clause:
+ | import_default                            { Default $1 }
+ | import_default "," "*" T_AS id=binding_id { Namespace (Some $1, id) }
+ | "*" T_AS id=binding_id                    { Namespace (None, id) }
+ | import_default "," x=named_imports { Named (Some $1, x) }
+ | x=named_imports                    { Named (None, x) }
+
+import_default: binding_id { $1 }
+
+named_imports:
+ | "{" "}"                             { [] }
+ | "{" listc(import_specifier) "}"     { $2 }
+ | "{" listc(import_specifier) "," "}" { $2 }
+
+(* also valid for export *)
+from_clause: T_FROM module_specifier {$2 }
+
+import_specifier:
+ | binding_id                 { (name_of_ident $1, $1) }
+ | string_or_ident T_AS binding_id         {
+   let (_,s,_) = $1 in
+   (s, $3) }
+
+%inline string_or_ident:
+ | T_STRING { `String, fst $1, $symbolstartpos }
+ | T_DEFAULT { `Ident, Stdlib.Utf8_string.of_string_exn "default", $symbolstartpos }
+ | id { `Ident, $1, $symbolstartpos }
+
+module_specifier:
+  | T_STRING { (fst $1) }
+
+(*----------------------------*)
+(* export *)
+(*----------------------------*)
+
+export_decl:
+  | T_EXPORT names=export_clause sc {
+    let exception Invalid of Lexing.position in
+    let k =
+      try
+        let names =
+          List.map (fun ((k, id,pos), (_,s,_)) ->
+                     match k with
+                     | `Ident -> (var (p pos) id, s)
+                     | `String -> raise (Invalid pos))
+          names
+        in
+        (ExportNames names)
+      with Invalid pos ->
+         CoverExportFrom (early_error (pi pos))
+    in
+    let pos = $symbolstartpos in
+    Export (k, pi pos), p pos }
+ | T_EXPORT v=variable_stmt
+    {
+      let pos = $symbolstartpos in
+      let k = match v with
+        | Variable_statement (k,l) -> ExportVar (k, l)
+        | _ -> assert false
+      in
+      Export (k, pi pos), p pos }
+ | T_EXPORT d=decl
+    { let k = match d with
+        | Variable_statement (k,l),_ -> ExportVar (k,l)
+        | Function_declaration (id, decl),_ -> ExportFun (id,decl)
+        | Class_declaration (id, decl),_ -> ExportClass (id,decl)
+        | _ -> assert false
+      in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ (* in theory just func/gen/class, no lexical_decl *)
+ | T_EXPORT T_DEFAULT e=assignment_expr sc
+    {
+      let k = match e with
+      | EFun (Some id, decl) ->
+         ExportDefaultFun (id,decl)
+      | EClass (Some id, decl) ->
+         ExportDefaultClass (id, decl)
+      | e -> ExportDefaultExpression e
+      in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+| T_EXPORT "*" T_FROM from=module_specifier sc {
+    let kind = Export_all None in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}),pi pos), p pos
+  }
+ | T_EXPORT "*" T_AS id=string_or_ident T_FROM from=module_specifier sc {
+    let (_,id,_) = id in
+    let kind = Export_all (Some id) in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}), pi pos), p pos
+  }
+| T_EXPORT names=export_clause T_FROM from=module_specifier sc {
+    let names = List.map (fun ((_,a,_), (_,b,_)) -> a, b) names in
+    let kind = Export_names names in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}), pi pos), p pos
+  }
+
+export_specifier:
+ | string_or_ident                       { ($1, $1) }
+ | string_or_ident T_AS string_or_ident  { ($1, $3) }
+
+export_clause:
+ | "{" "}"                              { [] }
+ | "{" listc(export_specifier) "}"      { $2 }
+ | "{" listc(export_specifier) ","  "}" { $2 }
+
 
 (*************************************************************************)
 (* Variable decl *)

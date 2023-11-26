@@ -148,6 +148,7 @@ type t =
   | T_BACKQUOTE
   | T_DOLLARCURLY
   | T_ENCAPSED_STRING of string
+  | T_AS
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
@@ -303,6 +304,7 @@ let to_string = function
   | T_BACKQUOTE -> "`"
   | T_DOLLARCURLY -> "${"
   | T_ENCAPSED_STRING s -> s
+  | T_AS -> "as"
 
 let to_string_extra x =
   to_string x
@@ -375,4 +377,5 @@ let is_keyword s =
   | "from" -> Some T_FROM
   | "target" -> Some T_TARGET
   | "meta" -> Some T_META
+  | "as" -> Some T_AS
   | _ -> None

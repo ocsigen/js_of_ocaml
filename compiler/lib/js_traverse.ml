@@ -71,6 +71,10 @@ class type mapper = object
   method program : Javascript.program -> Javascript.program
 
   method function_body : statement_list -> statement_list
+
+  method import : import -> import
+
+  method export : export -> export
 end
 
 (* generic js ast walk/map *)
@@ -187,6 +191,47 @@ class map : mapper =
             , match final with
               | None -> None
               | Some s -> Some (m#block s) )
+      | Import (import, loc) -> Import (m#import import, loc)
+      | Export (export, loc) -> Export (m#export export, loc)
+
+    method import { from; kind } =
+      let kind =
+        match kind with
+        | Namespace (iopt, i) -> Namespace (Option.map ~f:m#ident iopt, m#ident i)
+        | Named (iopt, l) ->
+            Named
+              (Option.map ~f:m#ident iopt, List.map ~f:(fun (s, id) -> s, m#ident id) l)
+        | Default import_default -> Default (m#ident import_default)
+        | SideEffect -> SideEffect
+      in
+      { from; kind }
+
+    method export e =
+      match e with
+      | ExportVar (k, l) -> (
+          match m#statement (Variable_statement (k, l)) with
+          | Variable_statement (k, l) -> ExportVar (k, l)
+          | _ -> assert false)
+      | ExportFun (id, f) -> (
+          match m#statement (Function_declaration (id, f)) with
+          | Function_declaration (id, f) -> ExportFun (id, f)
+          | _ -> assert false)
+      | ExportClass (id, f) -> (
+          match m#statement (Class_declaration (id, f)) with
+          | Class_declaration (id, f) -> ExportClass (id, f)
+          | _ -> assert false)
+      | ExportNames l -> ExportNames (List.map ~f:(fun (id, s) -> m#ident id, s) l)
+      | ExportDefaultFun (id, decl) -> (
+          match m#statement (Function_declaration (id, decl)) with
+          | Function_declaration (id, decl) -> ExportDefaultFun (id, decl)
+          | _ -> assert false)
+      | ExportDefaultClass (id, decl) -> (
+          match m#statement (Class_declaration (id, decl)) with
+          | Class_declaration (id, decl) -> ExportDefaultClass (id, decl)
+          | _ -> assert false)
+      | ExportDefaultExpression e -> ExportDefaultExpression (m#expression e)
+      | ExportFrom l -> ExportFrom l
+      | CoverExportFrom e -> CoverExportFrom (m#early_error e)
 
     method statement_o x =
       match x with
@@ -340,6 +385,10 @@ class type iterator = object
   method program : Javascript.program -> unit
 
   method function_body : Javascript.statement_list -> unit
+
+  method import : import -> unit
+
+  method export : export -> unit
 end
 
 (* generic js ast iterator *)
@@ -466,6 +515,31 @@ class iter : iterator =
           match final with
           | None -> ()
           | Some s -> m#block s)
+      | Import (x, _loc) -> m#import x
+      | Export (x, _loc) -> m#export x
+
+    method import { from = _; kind } =
+      match kind with
+      | Namespace (iopt, i) ->
+          Option.iter ~f:m#ident iopt;
+          m#ident i
+      | Named (iopt, l) ->
+          Option.iter ~f:m#ident iopt;
+          List.iter ~f:(fun (_, id) -> m#ident id) l
+      | Default import_default -> m#ident import_default
+      | SideEffect -> ()
+
+    method export e =
+      match e with
+      | ExportVar (k, l) -> m#statement (Variable_statement (k, l))
+      | ExportFun (id, f) -> m#statement (Function_declaration (id, f))
+      | ExportClass (id, f) -> m#statement (Class_declaration (id, f))
+      | ExportNames l -> List.iter ~f:(fun (id, _) -> m#ident id) l
+      | ExportDefaultFun (id, decl) -> m#statement (Function_declaration (id, decl))
+      | ExportDefaultClass (id, decl) -> m#statement (Class_declaration (id, decl))
+      | ExportDefaultExpression e -> m#expression e
+      | ExportFrom { from = _; kind = _ } -> ()
+      | CoverExportFrom e -> m#early_error e
 
     method statement_o x =
       match x with
@@ -968,6 +1042,17 @@ class free =
             | Some f -> Some (m#block f)
           in
           Try_statement (b, w, f)
+      | Import ({ from = _; kind }, _) ->
+          (match kind with
+          | Namespace (iopt, i) ->
+              Option.iter ~f:m#def_local iopt;
+              m#def_local i
+          | Named (iopt, l) ->
+              Option.iter ~f:m#def_local iopt;
+              List.iter ~f:(fun (_, id) -> m#def_local id) l
+          | Default import_default -> m#def_local import_default
+          | SideEffect -> ());
+          super#statement x
       | _ -> super#statement x
 
     method for_binding k x =
@@ -985,10 +1070,11 @@ class free =
   end
 
 type scope =
+  | Module
   | Lexical_block
   | Fun_block of ident option
 
-class rename_variable =
+class rename_variable ~esm =
   let declared scope params body =
     let declared_names = ref StringSet.empty in
     let decl_var x =
@@ -997,6 +1083,7 @@ class rename_variable =
       | _ -> ()
     in
     (match scope with
+    | Module -> ()
     | Lexical_block -> ()
     | Fun_block None -> ()
     | Fun_block (Some x) -> decl_var x);
@@ -1014,13 +1101,14 @@ class rename_variable =
 
        method statement x =
          match scope, x with
-         | Fun_block _, Function_declaration (id, fd) ->
+         | (Fun_block _ | Module), Function_declaration (id, fd) ->
              decl_var id;
              self#fun_decl fd
          | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
-         | (Lexical_block | Fun_block _), Class_declaration (id, cl_decl) ->
+         | (Fun_block _ | Module), Class_declaration (id, cl_decl) ->
              decl_var id;
              self#class_decl cl_decl
+         | Lexical_block, Class_declaration (_, cl_decl) -> self#class_decl cl_decl
          | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
              let m = {<depth = depth + 1>} in
              List.iter ~f:(m#variable_declaration k) l;
@@ -1038,13 +1126,35 @@ class rename_variable =
              List.iter l ~f:(fun (_, s) -> m#statements s);
              Option.iter def ~f:(fun l -> m#statements l);
              List.iter l' ~f:(fun (_, s) -> m#statements s)
-         | (Fun_block _ | Lexical_block), _ -> super#statement x
+         | _, Import ({ kind; from = _ }, _loc) -> (
+             match kind with
+             | Namespace (iopt, i) ->
+                 Option.iter ~f:decl_var iopt;
+                 decl_var i
+             | Named (iopt, l) ->
+                 Option.iter ~f:decl_var iopt;
+                 List.iter ~f:(fun (_, id) -> decl_var id) l
+             | Default import_default -> decl_var import_default
+             | SideEffect -> ())
+         | (Fun_block _ | Lexical_block | Module), _ -> super#statement x
+
+       method export e =
+         match e with
+         | ExportVar (_k, _l) -> ()
+         | ExportFun (_id, _f) -> ()
+         | ExportClass (_id, _f) -> ()
+         | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
+         | ExportDefaultFun (id, decl) -> self#statement (Function_declaration (id, decl))
+         | ExportDefaultClass (id, decl) -> self#statement (Class_declaration (id, decl))
+         | ExportDefaultExpression e -> self#expression e
+         | ExportFrom { from = _; kind = _ } -> ()
+         | CoverExportFrom _ -> ()
 
        method variable_declaration k l =
          if match scope, k with
-            | (Lexical_block | Fun_block _), (Let | Const) -> depth = 0
+            | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
             | Lexical_block, Var -> false
-            | Fun_block _, Var -> true
+            | (Fun_block _ | Module), Var -> true
          then
            let ids = bound_idents_of_variable_declaration l in
            List.iter ids ~f:decl_var
@@ -1055,9 +1165,9 @@ class rename_variable =
 
        method for_binding k p =
          if match scope, k with
-            | (Lexical_block | Fun_block _), (Let | Const) -> depth = 0
+            | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
             | Lexical_block, Var -> false
-            | Fun_block _, Var -> true
+            | (Fun_block _ | Module), Var -> true
          then
            match p with
            | BindingIdent i -> decl_var i
@@ -1105,8 +1215,13 @@ class rename_variable =
       k, m'#formal_parameter_list params, m'#function_body body, m#loc nid
 
     method program p =
-      let m' = m#update_state Lexical_block [] p in
-      m'#statements p
+      if esm
+      then
+        let m' = m#update_state Module [] p in
+        m'#statements p
+      else
+        let m' = m#update_state Lexical_block [] p in
+        m'#statements p
 
     method expression e =
       match e with

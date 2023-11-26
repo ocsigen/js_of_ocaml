@@ -346,6 +346,8 @@ and statement =
   | Throw_statement of expression
   | Try_statement of block * (formal_parameter option * block) option * block option
   | Debugger_statement
+  | Import of import * Parse_info.t
+  | Export of export * Parse_info.t
 
 and ('left, 'right) either =
   | Left of 'left
@@ -421,6 +423,44 @@ and binding_property =
 and function_body = statement_list
 
 and program = statement_list
+
+and export =
+  | ExportVar of variable_declaration_kind * variable_declaration list
+  | ExportFun of ident * function_declaration
+  | ExportClass of ident * class_declaration
+  | ExportNames of (ident * Utf8_string.t) list
+  (* default *)
+  | ExportDefaultFun of ident * function_declaration
+  | ExportDefaultClass of ident * class_declaration
+  | ExportDefaultExpression of expression
+  (* from *)
+  | ExportFrom of
+      { kind : export_from_kind
+      ; from : Utf8_string.t
+      }
+  | CoverExportFrom of early_error
+
+and export_from_kind =
+  | Export_all of Utf8_string.t option
+  | Export_names of (Utf8_string.t * Utf8_string.t) list
+
+and import =
+  { from : Utf8_string.t
+  ; kind : import_kind
+  }
+
+and import_default = ident
+
+and import_kind =
+  | Namespace of import_default option * ident
+  (* import * as name from "fname" *)
+  (* import defaultname, * as name from "fname" *)
+  | Named of import_default option * (Utf8_string.t * ident) list
+  (* import { 'a' as a, ...} from "fname" *)
+  (* import defaultname, { 'a' as a, ...} from "fname" *)
+  | Default of import_default
+  (* import defaultname from "fname" *)
+  | SideEffect (* import "fname" *)
 
 and program_with_annots = (statement_list * (Js_token.Annot.t * Parse_info.t) list) list
 

@@ -315,7 +315,7 @@ let output_js js =
       | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
     free;
   let js =
-    if Config.Flag.shortvar () then (new Js_traverse.rename_variable)#program js else js
+    if Config.Flag.shortvar () then (new Js_traverse.rename_variable ~esm:false)#program js else js
   in
   let js = (new Js_traverse.simpl)#program js in
   let js = (new Js_traverse.clean)#program js in

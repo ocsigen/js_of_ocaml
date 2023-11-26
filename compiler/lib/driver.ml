@@ -560,7 +560,7 @@ if (typeof module === 'object' && module.exports) {
     if Config.Flag.shortvar ()
     then (
       let t5 = Timer.make () in
-      let js = (new Js_traverse.rename_variable)#program js in
+      let js = (new Js_traverse.rename_variable ~esm:false)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
       js)
     else js

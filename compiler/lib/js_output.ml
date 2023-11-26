@@ -289,7 +289,9 @@ struct
     | Try_statement _
     | Function_declaration _
     | Class_declaration _
-    | Debugger_statement -> false
+    | Debugger_statement
+    | Import _
+    | Export _ -> false
 
   let starts_with ~obj ~funct ~let_identifier ~async_identifier l e =
     let rec traverse l e =
@@ -367,6 +369,13 @@ struct
     done;
     Buffer.add_char b quote;
     PP.string f (Buffer.contents b)
+
+  let pp_string_lit f (Stdlib.Utf8_string.Utf8 s) =
+    let quote = best_string_quote s in
+    pp_string f ~quote s
+
+  let pp_ident_or_string_lit f (Stdlib.Utf8_string.Utf8 s_lit as s) =
+    if is_ident s_lit then PP.string f s_lit else pp_string_lit f s
 
   let rec comma_list f f_elt l =
     match l with
@@ -523,9 +532,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EStr (Utf8 s) ->
-        let quote = best_string_quote s in
-        pp_string f ~quote s
+    | EStr x -> pp_string_lit f x
     | ETemplate l -> template f l
     | EBool b -> PP.string f (if b then "true" else "false")
     | ENum num ->
@@ -833,9 +840,7 @@ struct
   and property_name f n =
     match n with
     | PNI (Utf8 s) -> PP.string f s
-    | PNS (Utf8 s) ->
-        let quote = best_string_quote s in
-        pp_string f ~quote s
+    | PNS s -> pp_string_lit f s
     | PNN v -> expression Expression f (ENum v)
     | PComputed e ->
         PP.string f "[";
@@ -1408,6 +1413,140 @@ struct
             PP.break f;
             PP.string f "finally";
             block f b);
+        PP.end_group f
+    | Import ({ kind; from }, _loc) ->
+        PP.start_group f 0;
+        PP.string f "import";
+        (match kind with
+        | SideEffect -> ()
+        | Default i ->
+            PP.space f;
+            ident f i
+        | Namespace (def, i) ->
+            Option.iter def ~f:(fun def ->
+                PP.space f;
+                ident f def;
+                PP.string f ",");
+            PP.space f;
+            PP.string f "* as ";
+            ident f i
+        | Named (def, l) ->
+            Option.iter def ~f:(fun def ->
+                PP.space f;
+                ident f def;
+                PP.string f ",");
+            PP.space f;
+            PP.string f "{";
+            PP.space f;
+            comma_list
+              f
+              (fun f (s, i) ->
+                if match i with
+                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                   | _ -> false
+                then ident f i
+                else (
+                  pp_ident_or_string_lit f s;
+                  PP.string f " as ";
+                  ident f i))
+              l;
+            PP.space f;
+            PP.string f "}");
+        (match kind with
+        | SideEffect -> ()
+        | _ ->
+            PP.space f;
+            PP.string f "from");
+        PP.space f;
+        pp_string_lit f from;
+        PP.string f ";";
+        PP.end_group f
+    | Export (e, _loc) ->
+        PP.start_group f 0;
+        PP.string f "export";
+        (match e with
+        | ExportNames l ->
+            PP.space f;
+            PP.string f "{";
+            PP.space f;
+            comma_list
+              f
+              (fun f (i, s) ->
+                if match i with
+                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                   | _ -> false
+                then ident f i
+                else (
+                  ident f i;
+                  PP.string f " as ";
+                  pp_ident_or_string_lit f s))
+              l;
+            PP.space f;
+            PP.string f "};"
+        | ExportFrom { kind; from } ->
+            PP.space f;
+            (match kind with
+            | Export_all None -> PP.string f "*"
+            | Export_all (Some s) ->
+                PP.string f "* as ";
+                pp_ident_or_string_lit f s
+            | Export_names l ->
+                PP.string f "{";
+                PP.space f;
+                comma_list
+                  f
+                  (fun f (a, b) ->
+                    if Stdlib.Utf8_string.equal a b
+                    then pp_ident_or_string_lit f a
+                    else (
+                      pp_ident_or_string_lit f a;
+                      PP.string f " as ";
+                      pp_ident_or_string_lit f b))
+                  l;
+                PP.space f;
+                PP.string f "}");
+            PP.space f;
+            PP.string f "from";
+            PP.space f;
+            pp_string_lit f from;
+            PP.string f ";"
+        | ExportDefaultExpression ((EFun _ | EClass _) as e) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            expression Expression f e
+        | ExportDefaultExpression e ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            parenthesized_expression
+              ~last_semi
+              ~obj:true
+              ~funct:true
+              ~let_identifier:true
+              Expression
+              f
+              e
+        | ExportDefaultFun (id, decl) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            statement f (Function_declaration (id, decl), loc)
+        | ExportDefaultClass (id, decl) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            statement f (Class_declaration (id, decl), loc)
+        | ExportFun (id, decl) ->
+            PP.space f;
+            statement f (Function_declaration (id, decl), loc)
+        | ExportClass (id, decl) ->
+            PP.space f;
+            statement f (Class_declaration (id, decl), loc)
+        | ExportVar (k, l) ->
+            PP.space f;
+            variable_declaration_list k (not can_omit_semi) f l
+        | CoverExportFrom e -> early_error e);
         PP.end_group f
 
   and statement_list f ?skip_last_semi b =
