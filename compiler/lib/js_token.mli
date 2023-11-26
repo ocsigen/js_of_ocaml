@@ -147,6 +147,7 @@ type t =
   | T_BACKQUOTE
   | T_DOLLARCURLY
   | T_ENCAPSED_STRING of string
+  | T_AS
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF

@@ -64,6 +64,10 @@ class type mapper = object
   method program : program -> program
 
   method function_body : statement_list -> statement_list
+
+  method import : import -> import
+
+  method export : export -> export
 end
 
 class type iterator = object
@@ -102,6 +106,10 @@ class type iterator = object
   method program : Javascript.program -> unit
 
   method function_body : Javascript.statement_list -> unit
+
+  method import : import -> unit
+
+  method export : export -> unit
 end
 
 class map : mapper
@@ -152,10 +160,11 @@ end
 class free : freevar
 
 type scope =
+  | Module
   | Lexical_block
   | Fun_block of ident option
 
-class rename_variable : object ('a)
+class rename_variable : esm:bool -> object ('a)
   inherit mapper
 
   method update_state : scope -> Javascript.ident list -> Javascript.statement_list -> 'a
