@@ -10,6 +10,12 @@ Wasm_of_ocaml relies on the Binaryen toolchain ([version 116](https://github.com
 
 The generated code works with Chrome 11.9, [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and Firefox 121 (currently, [Firefox Beta](https://www.mozilla.org/en-US/firefox/channel/desktop/)).
 
+In particular, the output code requires the following [Wasm extensions](https://webassembly.org/roadmap/) to run:
+- [the GC extension](https://github.com/WebAssembly/gc), including functional references and 31-bit integers
+- [the tail-call extension](https://github.com/WebAssembly/tail-call/blob/main/proposals/tail-call/Overview.md)
+- [the exception handling extension](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
+
+
 ## Installation
 
 The following commands will perform a minimal installation:
