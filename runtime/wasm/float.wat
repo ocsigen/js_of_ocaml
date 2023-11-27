@@ -713,7 +713,7 @@
                   (local.set $x (f64.mul (local.get $x) (f64.const 0x1p1023)))
                   (local.set $n (i32.sub (local.get $n) (i32.const 1023)))
                   (if (i32.gt_s (local.get $n) (i32.const 1023))
-                     (then (local.set $n (i32.const 1023))))))
+                     (then (local.set $n (i32.const 1023)))))))
          (else
             (if (i32.lt_s (local.get $n) (i32.const -1022))
                (then
@@ -725,7 +725,7 @@
                            (f64.mul (local.get $x) (f64.const 0x1p-969)))
                         (local.set $n (i32.add (local.get $n) (i32.const 969)))
                         (if (i32.lt_s (local.get $n) (i32.const -1022))
-                           (then (local.set $n (i32.const -1022)))))))))))
+                           (then (local.set $n (i32.const -1022))))))))))
       (f64.mul (local.get $x)
          (f64.reinterpret_i64
             (i64.shl (i64.add (i64.extend_i32_s (local.get $n))
