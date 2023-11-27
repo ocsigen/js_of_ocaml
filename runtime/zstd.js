@@ -1,5 +1,6 @@
 
 //Provides: zstd_decompress
+//Version: >= 5.1
 var zstd_decompress = (function () {
 "use strict";
 // aliases for shorter compressed code (most minifers don't do this)
@@ -644,3 +645,35 @@ return function decompress(dat, buf) {
     return cct(bufs, ol);
 }
 }) ()
+
+
+//Provides: caml_decompress_input
+//Version: > 5.1.0
+var caml_decompress_input = null
+
+//Provides: caml_decompress_input
+//Version: < 5.1.0
+var caml_decompress_input = null
+
+//Provides: caml_zstd_initialize
+//Requires: caml_decompress_input
+//Requires: zstd_decompress
+//Version: >= 5.1.1
+function caml_zstd_initialize(unit) {
+  caml_decompress_input = zstd_decompress;
+  return 1
+}
+
+//Provides: caml_decompress_input
+//Version: >= 5.1
+//Version: < 5.1.1
+//Requires: zstd_decompress
+var caml_decompress_input = zstd_decompress;
+
+
+//Provides: caml_compression_available
+//Requires: caml_decompress_input
+//Version: >= 5.1.1
+function caml_compression_available() {
+  return caml_decompress_input ? 1 : 0;
+}

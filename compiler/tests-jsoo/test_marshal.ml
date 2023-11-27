@@ -147,12 +147,11 @@ let%expect_test _ =
     | _ -> assert false
   in
   let s =
-    match Sys.backend_type with
-    | Other "js_of_ocaml" -> Marshal.from_string data 0
-    | Other _ | Native | Bytecode ->
-        if ocaml_5_1 && not (Sys.win32 || Sys.cygwin)
-        then Marshal.from_string data 0
-        else String.make 10000 'c'
+    (* This would only work on OCaml 5.1.0 if we were not linking
+       against compiler-libs *)
+    if ocaml_5_1 && not (Sys.win32 || Sys.cygwin)
+    then Marshal.from_string data 0
+    else String.make 10000 'c'
   in
   Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
   [%expect {| cccccccccccccccccccc ... (10000) |}]
