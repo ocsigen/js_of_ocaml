@@ -9,6 +9,7 @@
 * Lib: add download attribute to anchor element
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
+* Misc: support for OCaml 5.1.1
 
 ## Bug fixes
 * Runtime: fix Dom_html.onIE (#1493)

@@ -273,8 +273,8 @@ var caml_custom_ops =
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_custom_ops
-//Requires: zstd_decompress
 //Requires: UInt8ArrayReader
+//Requires: caml_decompress_input
 function caml_input_value_from_reader(reader, ofs) {
   function readvlq(overflow) {
     var c = reader.read8u();
@@ -483,10 +483,14 @@ function caml_input_value_from_reader(reader, ofs) {
     }
   }
   if(compressed) {
-    var data = reader.readuint8array(data_len);
-    var res = new Uint8Array(uncompressed_data_len);
-    var res = zstd_decompress(data, res);
-    var reader = new UInt8ArrayReader(res, 0);
+    if(caml_decompress_input) {
+      var data = reader.readuint8array(data_len);
+      var res = new Uint8Array(uncompressed_data_len);
+      var res = caml_decompress_input(data, res);
+      var reader = new UInt8ArrayReader(res, 0);
+    } else {
+      caml_failwith("input_value: compressed object, cannot decompress");
+    }
   }
   var res = intern_rec (reader);
   while (stack.length > 0) {
