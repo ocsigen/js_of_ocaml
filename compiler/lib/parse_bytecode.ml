@@ -468,11 +468,7 @@ end = struct
         | Some name when same_ident name ident_32 -> Int (Int32, (Obj.magic x : int32))
         | Some name when same_ident name ident_native ->
             let i : nativeint = Obj.magic x in
-            Int
-              ( Native
-              , match target with
-                | `JavaScript -> Int32.of_nativeint_warning_on_overflow i
-                | `Wasm -> Int31.of_nativeint_warning_on_overflow i )
+            Int (Native, Int32.of_nativeint_warning_on_overflow i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
