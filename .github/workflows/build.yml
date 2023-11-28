@@ -124,20 +124,23 @@ jobs:
         run: |
           opam pin add -n dune.3.13 https://github.com/ocaml-wasm/dune.git#wasm
 
+      - name: Pin wasm_of_ocaml
+        working-directory: ./wasm_of_ocaml
+        run: |
+           for i in *.opam; do opam pin add -n `basename $i .opam`.`< VERSION` .; done
+
       - name: Install opam file parser
-        run: opam install opam-format ocamlfind
+        run: opam install opam-format ocamlfind dune graphics
 
       - name: Checkout Jane Street packages
         run: opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
-      - name: Update dune and test dependencies
-        run: opam install dune num cohttp-lwt-unix graphics ppx_expect zarith.1.12
+      - name: Update test dependencies
+        run: opam install num cohttp-lwt-unix ppx_expect
 
-      - name: Build wasm_of_ocaml
+      - name: Install wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
-        run: |
-           for i in *.opam; do opam pin add -n `basename $i .opam`.`< VERSION` .; done
-           opam install `basename -s .opam *.opam`
+        run: opam install `basename -s .opam *.opam`
 
       - name: Run tests
         working-directory: ./wasm_of_ocaml
