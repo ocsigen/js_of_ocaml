@@ -167,21 +167,20 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      a:
-      for(;;)
+      for(;;){
        for(;;){
-        if(10 <= caml_div(k, j)){
-         var _b_ = j + 1 | 0;
-         if(10 !== j){var j = _b_; break;}
-         var _a_ = k + 1 | 0;
-         if(10 === k) return 0;
-         var k = _a_;
-         break a;
-        }
+        if(10 <= caml_div(k, j)) break;
         try{caml_div(k, j);}
         catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
+       var _b_ = j + 1 | 0;
+       if(10 === j) break;
+       var j = _b_;
+      }
+      var _a_ = k + 1 | 0;
+      if(10 === k) return 0;
+      var k = _a_;
      }
     }
     //end |}]
@@ -569,29 +568,31 @@ let () = print_endline (trim " ")
       len = caml_ml_bytes_length(s$0),
       i = [0, 0];
      for(;;){
-      if(i[1] < len && is_space(caml_bytes_unsafe_get(s$0, i[1]))){i[1]++; continue;}
-      var j = [0, len - 1 | 0];
-      for(;;){
-       if(i[1] > j[1]) break;
-       if(! is_space(caml_bytes_unsafe_get(s$0, j[1]))) break;
-       j[1] += - 1;
-      }
-      a:
-      {
-       if(i[1] <= j[1]){
-        var len$0 = (j[1] - i[1] | 0) + 1 | 0, ofs = i[1];
-        if
-         (0 <= ofs && 0 <= len$0 && (caml_ml_bytes_length(s$0) - len$0 | 0) >= ofs){
-         var r = caml_create_bytes(len$0);
-         caml_blit_bytes(s$0, ofs, r, 0, len$0);
-         var b = r;
-         break a;
-        }
-        throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
-       }
-       var b = empty;
-      }
-      return caml_string_of_bytes(copy(b));
+      if(i[1] >= len) break;
+      if(! is_space(caml_bytes_unsafe_get(s$0, i[1]))) break;
+      i[1]++;
      }
+     var j = [0, len - 1 | 0];
+     for(;;){
+      if(i[1] > j[1]) break;
+      if(! is_space(caml_bytes_unsafe_get(s$0, j[1]))) break;
+      j[1] += - 1;
+     }
+     a:
+     {
+      if(i[1] <= j[1]){
+       var len$0 = (j[1] - i[1] | 0) + 1 | 0, ofs = i[1];
+       if
+        (0 <= ofs && 0 <= len$0 && (caml_ml_bytes_length(s$0) - len$0 | 0) >= ofs){
+        var r = caml_create_bytes(len$0);
+        caml_blit_bytes(s$0, ofs, r, 0, len$0);
+        var b = r;
+        break a;
+       }
+       throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
+      }
+      var b = empty;
+     }
+     return caml_string_of_bytes(copy(b));
     }
     //end |}]

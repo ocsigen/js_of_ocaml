@@ -5239,15 +5239,17 @@
      len = caml_ml_bytes_length(s),
       /*<<bytes.ml:157:10>>*/ i = [0, 0];
     for(;;){
-      /*<<bytes.ml:158:20>>*/ if
-      (i[1] < len && is_space(caml_bytes_unsafe_get(s, i[1]))){i[1]++; continue;}
-      /*<<bytes.ml:161:10>>*/  /*<<bytes.ml:161:10>>*/ var
-      j = [0, len - 1 | 0];
-     for(;;){
-       /*<<bytes.ml:162:20>>*/ if
-       (i[1] <= j[1] && is_space(caml_bytes_unsafe_get(s, j[1]))){j[1] += -1; continue;}
-      return i[1] <= j[1] ? sub(s, i[1], (j[1] - i[1] | 0) + 1 | 0) : empty;
-     }
+     if(i[1] >= len) break;
+      /*<<bytes.ml:158:20>>*/ if(! is_space(caml_bytes_unsafe_get(s, i[1])))
+      break;
+     i[1]++;
+    }
+     /*<<bytes.ml:161:10>>*/  /*<<bytes.ml:161:10>>*/ var
+     j = [0, len - 1 | 0];
+    for(;;){
+      /*<<bytes.ml:162:20>>*/ if
+      (i[1] <= j[1] && is_space(caml_bytes_unsafe_get(s, j[1]))){j[1] += -1; continue;}
+     return i[1] <= j[1] ? sub(s, i[1], (j[1] - i[1] | 0) + 1 | 0) : empty;
     }
     /*<<bytes.ml:168:9>>*/ }
    function unsafe_escape(s){
@@ -31156,9 +31158,10 @@
             /*<<camlinternalMod.ml:75:7>>*/ cl[1 + j] = n$0[1 + j];
             /*<<camlinternalMod.ml:75:7>>*/  /*<<camlinternalMod.ml:75:7>>*/ var
             _c_ = j + 1 | 0;
-           if(3 === j) break a;
+           if(3 === j) break;
            var j = _c_;
           }
+          break a;
          }
           /*<<camlinternalMod.ml:72:5>>*/ throw  /*<<camlinternalMod.ml:72:5>>*/ caml_maybe_attach_backtrace
                 ([0, Assert_failure, _a_], 1);
