@@ -529,3 +529,69 @@ let add_substitute =
      }
     }
     //end |}]
+
+let%expect_test "Bytes.trim" =
+  let program =
+    compile_and_parse_whole_program
+      {|
+let is_space = function
+  | ' ' | '\012' | '\n' | '\r' | '\t' -> true
+  | _ -> false
+
+let trim s =
+  let open Bytes in
+  let len = length s in
+  let i = ref 0 in
+  while !i < len && is_space (unsafe_get s !i) do
+    incr i
+  done;
+  let j = ref (len - 1) in
+  while !j >= !i && is_space (unsafe_get s !j) do
+    decr j
+  done;
+  if !j >= !i then
+    sub s !i (!j - !i + 1)
+  else
+    empty
+
+let trim x = x |> Bytes.of_string |> trim |> Bytes.to_string
+
+let () = print_endline (trim "  ")
+let () = print_endline (trim " ")
+|}
+  in
+  print_fun_decl program (Some "trim");
+  [%expect
+    {|
+    function trim(x){
+     var
+      s$0 = copy(caml_bytes_of_string(x)),
+      len = caml_ml_bytes_length(s$0),
+      i = [0, 0];
+     for(;;){
+      if(i[1] < len && is_space(caml_bytes_unsafe_get(s$0, i[1]))){i[1]++; continue;}
+      var j = [0, len - 1 | 0];
+      for(;;){
+       if(i[1] > j[1]) break;
+       if(! is_space(caml_bytes_unsafe_get(s$0, j[1]))) break;
+       j[1] += - 1;
+      }
+      a:
+      {
+       if(i[1] <= j[1]){
+        var len$0 = (j[1] - i[1] | 0) + 1 | 0, ofs = i[1];
+        if
+         (0 <= ofs && 0 <= len$0 && (caml_ml_bytes_length(s$0) - len$0 | 0) >= ofs){
+         var r = caml_create_bytes(len$0);
+         caml_blit_bytes(s$0, ofs, r, 0, len$0);
+         var b = r;
+         break a;
+        }
+        throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
+       }
+       var b = empty;
+      }
+      return caml_string_of_bytes(copy(b));
+     }
+    }
+    //end |}]
