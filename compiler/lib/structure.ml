@@ -189,15 +189,18 @@ let mark_loops g =
   in_loop
 
 let rec measure blocks g pc limit =
-  let b = Addr.Map.find pc blocks in
-  let limit = limit - List.length b.body in
-  if limit < 0
-  then limit
+  if is_loop_header g pc
+  then -1
   else
-    Addr.Set.fold
-      (fun pc limit -> if limit < 0 then limit else measure blocks g pc limit)
-      (get_edges g.succs pc)
-      limit
+    let b = Addr.Map.find pc blocks in
+    let limit = limit - List.length b.body in
+    if limit < 0
+    then limit
+    else
+      Addr.Set.fold
+        (fun pc limit -> if limit < 0 then limit else measure blocks g pc limit)
+        (get_edges g.succs pc)
+        limit
 
 let is_small blocks g pc = measure blocks g pc 20 >= 0
 
@@ -225,20 +228,16 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
         in
         let loops' = get_edges in_loop pc' in
         let left_loops = Addr.Set.diff (Addr.Set.diff loops loops') ignored in
-        (* If we leave a loop, we add an edge from a predecessor of
+        (* If we leave a loop, we add an edge from predecessors of
            the loop header to the current block, so that it is
            considered outside of the loop. *)
         if not (Addr.Set.is_empty left_loops || is_small blocks g pc')
         then
           Addr.Set.iter
             (fun pc0 ->
-              match
-                Addr.Set.find_first
-                  (fun pc -> is_forward g pc pc0)
-                  (get_edges g.preds pc0)
-              with
-              | pc -> add_edge pc pc'
-              | exception Not_found -> ())
+              Addr.Set.iter
+                (fun pc -> if is_forward g pc pc0 then add_edge pc pc')
+                (get_edges g.preds pc0))
             left_loops;
         traverse ignored pc')
       succs
