@@ -249,9 +249,8 @@ let build_js_runtime primitives (strings, fragments) wasm_file output_file =
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Jsoo_cmdline.Arg.eval common;
   Wa_generate.init ();
-  (match output_file with
-  | name, _ when debug_mem () -> Debug.start_profiling name
-  | _, _ -> ());
+  let output_file = fst output_file in
+  if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   let t = Timer.make () in
   let include_dirs = List.filter_map [ "+stdlib/" ] ~f:(fun d -> Findlib.find [] d) in
@@ -326,11 +325,15 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
            ic
        in
        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-       let wat_file = Filename.chop_extension (fst output_file) ^ ".wat" in
-       let wasm_file = Filename.chop_extension (fst output_file) ^ ".wasm" in
+       let wat_file = Filename.chop_extension output_file ^ ".wat" in
+       let wasm_file =
+         if Filename.check_suffix output_file ".wasm.js"
+         then Filename.chop_extension output_file
+         else Filename.chop_extension output_file ^ ".wasm"
+       in
        let strings = output_gen wat_file (output code ~standalone:true) in
        let primitives = link_and_optimize runtime_wasm_files wat_file wasm_file in
-       build_js_runtime primitives strings wasm_file (fst output_file)
+       build_js_runtime primitives strings wasm_file output_file
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
   Debug.stop_profiling ()

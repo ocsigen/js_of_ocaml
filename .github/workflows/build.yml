@@ -122,7 +122,7 @@ jobs:
 
       - name: Pin dune
         run: |
-          opam pin add -n dune.3.11 https://github.com/ocaml-wasm/dune.git#wasm
+          opam pin add -n dune.3.13 https://github.com/ocaml-wasm/dune.git#wasm
 
       - name: Install opam file parser
         run: opam install opam-format ocamlfind

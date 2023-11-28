@@ -25,11 +25,11 @@ let do_pin = StringSet.of_list [ "base"; "ppx_expect"; "ppx_inline_test"; "time_
 let aliases = [ "ocaml-cstruct", "cstruct" ]
 
 let dune_workspace =
-  {|(lang dune 3.11)
+  {|(lang dune 3.13)
 (env
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
-  (js_of_ocaml (target wasm))
+  (js_of_ocaml (targets wasm))
   (flags :standard -warn-error -8-32-34-49-52-55 -w -67-69)))
 |}
 
