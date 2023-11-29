@@ -73,7 +73,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                      [11, caml_string_of_jsbytes("abc"), 0],
                      caml_string_of_jsbytes("abc")];
                  function g(param, cont){
-                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
+                  var _f_ = Stdlib_Printf[2];
+                  return caml_cps_call2
+                          (_f_, _a_, function(_g_){return cont(undef);});
                  }
                  caml_callback(g, [undef]);
                  var _b_ = 1;
