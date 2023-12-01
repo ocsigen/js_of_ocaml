@@ -1,4 +1,4 @@
-# Dev (2023-??-??) - ??
+# Dev (2023-12-01) - Lille
 
 ## Features/Changes
 * Compiler: global dead code elimination (Micah Cantor, #1503)
@@ -6,7 +6,7 @@
 * Compiler: loop no longer absorb the whole continuation
 * Compiler: Dead code elimination of unused references (#2076)
 * Compiler: reduce memory consumption (#1516)
-* Compiler: support for es6 import and export construct
+* Compiler: support for import and export construct in the js parser/printer
 * Lib: add download attribute to anchor element
 * Misc: switch CI to OCaml 5.1
 * Misc: preliminary support for OCaml 5.2
