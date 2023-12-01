@@ -15,6 +15,12 @@ In particular, the output code requires the following [Wasm extensions](https://
 - [the tail-call extension](https://github.com/WebAssembly/tail-call/blob/main/proposals/tail-call/Overview.md)
 - [the exception handling extension](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
+OCaml 5.x code using effect handlers can be compiled in two different ways:
+One can enable the CPS transformation from `js_of_ocaml` by passing the
+`--enable=effects` flag. Without the flag `wasm_of_ocaml` will instead emit code
+utilizing
+- [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md)
+
 
 ## Installation
 
