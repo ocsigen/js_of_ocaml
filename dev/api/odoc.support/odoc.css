@@ -1,12 +1,97 @@
 @charset "UTF-8";
 /* Copyright (c) 2016 The odoc contributors. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   odoc 2.2.0 */
+   odoc 2.3.0 */
 
 /* Fonts */
-@import url('https://fonts.googleapis.com/css?family=Fira+Mono:400,500');
-@import url('https://fonts.googleapis.com/css?family=Noticia+Text:400,400i,700');
-@import url('https://fonts.googleapis.com/css?family=Fira+Sans:400,400i,500,500i,600,600i,700,700i');
+/* noticia-text-regular - latin */
+@font-face {
+  font-family: 'Noticia Text';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/noticia-text-v15-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noticia-text-italic - latin */
+@font-face {
+  font-family: 'Noticia Text';
+  font-style: italic;
+  font-weight: 400;
+  src: url('fonts/noticia-text-v15-latin-italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* noticia-text-700 - latin */
+@font-face {
+  font-family: 'Noticia Text';
+  font-style: normal;
+  font-weight: 700;
+  src: url('fonts/noticia-text-v15-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-mono-regular - latin */
+@font-face {
+  font-family: 'Fira Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/fira-mono-v14-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-mono-500 - latin */
+@font-face {
+  font-family: 'Fira Mono';
+  font-style: normal;
+  font-weight: 500;
+  src: url('fonts/fira-mono-v14-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-regular - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: url('fonts/fira-sans-v17-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-italic - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: url('fonts/fira-sans-v17-latin-italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-500 - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: url('fonts/fira-sans-v17-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-500italic - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 500;
+  src: url('fonts/fira-sans-v17-latin-500italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-700 - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: url('fonts/fira-sans-v17-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
+/* fira-sans-700italic - latin */
+@font-face {
+  font-family: 'Fira Sans';
+  font-style: italic;
+  font-weight: 700;
+  src: url('fonts/fira-sans-v17-latin-700italic.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+}
+
 
 :root,
 .light:root {
@@ -14,6 +99,7 @@
 
   --color: #333333;
   --link-color: #2C94BD;
+  --source-color: grey;
   --anchor-hover: #555;
   --anchor-color: #d5d5d5;
   --xref-shadow: #cc6666;
@@ -33,6 +119,7 @@
   --toc-list-border: #ccc;
 
   --spec-summary-border-color: #5c9cf5;
+  --spec-label-color: green;
   --spec-summary-background: var(--code-background);
   --spec-summary-hover-background: #ebeff2;
   --spec-details-after-background: rgba(0, 4, 15, 0.05);
@@ -72,6 +159,8 @@
   --hljs-type: #ac885b;
   --hljs-meta: #82aaff;
   --hljs-variable: #cf6a4c;
+
+  --spec-label-color: lightgreen;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -118,6 +207,8 @@
     --hljs-type: #ac885b;
     --hljs-meta: #82aaff;
     --hljs-variable: #cf6a4c;
+
+    --spec-label-color: lightgreen;
   }
 }
 
@@ -142,6 +233,7 @@ table {
 
 html {
   font-size: 15px;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -149,16 +241,23 @@ body {
   background: #FFFFFF;
   color: var(--color);
   background-color: var(--main-background);
+  font-family: "Noticia Text", Georgia, serif;
+  line-height: 1.5;
 }
 
 body {
-  max-width: 100ex;
   margin-left: calc(10vw + 20ex);
   margin-right: 4ex;
   margin-top: 20px;
   margin-bottom: 50px;
-  font-family: "Noticia Text", Georgia, serif;
-  line-height: 1.5;
+}
+
+body.odoc {
+  max-width: 100ex;
+}
+
+body.odoc-src {
+  margin-right: calc(10vw + 20ex);
 }
 
 header {
@@ -238,6 +337,10 @@ a {
   color: var(--link-color);
 }
 
+.odoc-src pre a {
+  color: inherit;
+}
+
 a:hover {
   box-shadow: 0 1px 0 0 var(--link-color);
 }
@@ -287,6 +390,14 @@ a.anchor {
 }
 .xref-unresolved:hover {
   box-shadow: 0 1px 0 0 var(--xref-shadow);
+}
+
+/* Source links float inside preformated text or headings. */
+a.source_link {
+  float: right;
+  color: var(--source-color);
+  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+  font-size: initial;
 }
 
 /* Section and document divisions.
@@ -372,32 +483,32 @@ tt, code, pre {
   font-weight: 400;
 }
 
-pre {
+.odoc pre {
   padding: 0.1em;
   border: 1px solid var(--pre-border-color);
   border-radius: 5px;
   overflow-x: auto;
 }
 
-p code,
-li code {
+.odoc p code,
+.odoc li code {
   background-color: var(--li-code-background);
   color: var(--li-code-color);
   border-radius: 3px;
   padding: 0 0.3ex;
 }
 
-p a > code {
+p a > code, li a > code {
   color: var(--link-color);
 }
 
-code {
+.odoc code {
   white-space: pre-wrap;
 }
 
 /* Code blocks (e.g. Examples) */
 
-pre code {
+.odoc pre code {
   font-size: 0.893rem;
 }
 
@@ -417,6 +528,10 @@ pre code {
   border-left: 4px solid var(--spec-summary-border-color);
   border-right: 5px solid transparent;
   padding: 0.35em 0.5em;
+}
+
+.spec .label, .spec .optlabel {
+  color: var(--spec-label-color);
 }
 
 li:not(:last-child) > .def-doc {
@@ -535,6 +650,12 @@ td.def-doc *:first-child {
 .at-tags { list-style-type: none; margin-left: -3ex; }
 .at-tags li { padding-left: 3ex; text-indent: -3ex; }
 .at-tags .at-tag { text-transform: capitalize }
+
+/* Alert emoji */
+
+.alert::before, .deprecated::before {
+  content: '⚠️ ';
+}
 
 /* Lists of modules */
 
@@ -674,10 +795,26 @@ td.def-doc *:first-child {
   padding-left: 12px;
 }
 
+/* Tables */
+
+.odoc-table {
+  margin: 1em;
+}
+
+.odoc-table td, .odoc-table th {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  border: 1px solid black;
+}
+
+.odoc-table th {
+  font-weight: bold;
+}
+
 /* Mobile adjustements. */
 
-@media only screen and (max-width: 95ex) {
-  body.odoc {
+@media only screen and (max-width: 110ex) {
+  body {
     margin: 2em;
   }
   .odoc-toc {
@@ -702,6 +839,47 @@ td.def-doc *:first-child {
   body nav:first-child {
     visibility: hidden;
   }
+}
+
+/* Source code. */
+
+.source_container {
+  display: flex;
+}
+
+.source_line_column {
+  padding-right: 0.5em;
+  text-align: right;
+  background: #eee8d5;
+}
+
+.source_line {
+  padding: 0 1em;
+}
+
+.source_code {
+  flex-grow: 1;
+  background: #fdf6e3;
+  padding: 0 0.3em;
+  color: #657b83;
+}
+
+/* Source directories */
+
+.odoc-directory::before {
+  content: "📁";
+  margin: 0.3em;
+  font-size: 1.3em;
+}
+
+.odoc-file::before {
+  content: "📄";
+  margin: 0.3em;
+  font-size: 1.3em;
+}
+
+.odoc-folder-list {
+  list-style: none;
 }
 
 /* Syntax highlighting (based on github-gist) */
@@ -775,6 +953,34 @@ td.def-doc *:first-child {
 
 .hljs-link {
   text-decoration: underline;
+}
+
+.VAL, .TYPE, .LET, .REC, .IN, .OPEN, .NONREC, .MODULE, .METHOD, .LETOP, .INHERIT, .INCLUDE, .FUNCTOR, .EXTERNAL, .CONSTRAINT, .ASSERT, .AND, .END, .CLASS, .STRUCT, .SIG {
+  color: #859900;;
+}
+
+.WITH, .WHILE, .WHEN, .VIRTUAL, .TRY, .TO, .THEN, .PRIVATE, .OF, .NEW, .MUTABLE, .MATCH, .LAZY, .IF, .FUNCTION, .FUN, .FOR, .EXCEPTION, .ELSE, .TO, .DOWNTO, .DO, .DONE, .BEGIN, .AS {
+  color: #cb4b16;
+}
+
+.TRUE, .FALSE {
+  color: #b58900;
+}
+
+.failwith, .INT, .SEMISEMI, .LIDENT {
+  color: #2aa198;
+}
+
+.STRING, .CHAR, .UIDENT {
+  color: #b58900;
+}
+
+.DOCSTRING {
+  color: #268bd2;
+}
+
+.COMMENT {
+  color: #93a1a1;
 }
 
 /*---------------------------------------------------------------------------
