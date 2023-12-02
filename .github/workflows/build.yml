@@ -72,15 +72,14 @@ jobs:
           git config --global core.ignorecase false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v3
+      - name: Set-up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: lts/*
 
-
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         if: runner.os == 'Windows'
         uses: ocaml/setup-ocaml@v2
         with:
@@ -93,7 +92,7 @@ jobs:
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         if: runner.os != 'Windows'
         uses: ocaml/setup-ocaml@v2
         with:
@@ -121,13 +120,13 @@ jobs:
         if: ${{ !matrix.skip-test }}
 
       - name: build doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master'}}
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master'}}
         run: |
           opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
           opam exec -- make doc
 
       - name: synchronize doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master' }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: wikidoc
@@ -139,9 +138,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Use OCaml 4.14.x
+      - name: Set-up OCaml 4.14.x
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: 4.14.x
