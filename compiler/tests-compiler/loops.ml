@@ -84,12 +84,12 @@ let rec fun_with_loop acc = function
        return caml_call1
                (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
       var x = param$0[1];
-      if(Object.is(1, x) && ! param$0[2]){
+      if(1 === x && ! param$0[2]){
        var a$0 = [0, acc$0], i$0 = 0;
        for(;;){
         a$0[1] = [0, 1, a$0[1]];
         var _b_ = i$0 + 1 | 0;
-        if(Object.is(10, i$0)) return a$0[1];
+        if(10 === i$0) return a$0[1];
         i$0 = _b_;
        }
       }
@@ -97,7 +97,7 @@ let rec fun_with_loop acc = function
       for(;;){
        a[1] = [0, 1, a[1]];
        var _a_ = i + 1 | 0;
-       if(Object.is(10, i)) break;
+       if(10 === i) break;
        i = _a_;
       }
       var acc$1 = [0, x, a[1]];
@@ -133,11 +133,11 @@ let for_for_while () =
       for(;;){
        for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
        var _b_ = j + 1 | 0;
-       if(Object.is(10, j)) break;
+       if(10 === j) break;
        j = _b_;
       }
       var _a_ = k + 1 | 0;
-      if(Object.is(10, k)) return 0;
+      if(10 === k) return 0;
       k = _a_;
      }
     }
@@ -174,11 +174,11 @@ let for_for_while () =
         id[1]++;
        }
        var _b_ = j + 1 | 0;
-       if(Object.is(10, j)) break;
+       if(10 === j) break;
        j = _b_;
       }
       var _a_ = k + 1 | 0;
-      if(Object.is(10, k)) return 0;
+      if(10 === k) return 0;
       k = _a_;
      }
     }
@@ -312,7 +312,7 @@ in loop x
      var x$1 = x;
      for(;;){
       if(Object.is(0, x$1)) return 1;
-      if(Object.is(1, x$1)) break;
+      if(1 === x$1) break;
       var x$2 = x$1 + 1 | 0;
       x$1 = x$2;
      }
@@ -437,12 +437,12 @@ let add_substitute =
      var lim$1 = caml_ml_string_length(s), previous = 32, i$4 = 0;
      for(;;){
       if(i$4 >= lim$1){
-       var _b_ = Object.is(92, previous) ? 1 : 0;
+       var _b_ = 92 === previous ? 1 : 0;
        return _b_ ? caml_call2(add_char, b, previous) : _b_;
       }
       var previous$0 = caml_string_get(s, i$4);
-      if(Object.is(36, previous$0))
-       if(Object.is(92, previous)){
+      if(36 === previous$0)
+       if(92 === previous){
         caml_call2(add_char, b, previous$0);
         var i$5 = i$4 + 1 | 0;
         previous = 32;
@@ -454,7 +454,7 @@ let add_substitute =
         var opening = caml_string_get(s, start$0);
         a:
         {
-         if(! Object.is(40, opening) && ! Object.is(123, opening)){
+         if(40 !== opening && 123 !== opening){
           var start = start$0 + 1 | 0, lim$0 = caml_ml_string_length(s);
           b:
           {
@@ -470,7 +470,7 @@ let add_substitute =
                if(97 <= match){
                 if(123 <= match) break d;
                }
-               else if(! Object.is(95, match)) break d;
+               else if(95 !== match) break d;
               }
               else if(58 <= match){
                if(65 > match) break;
@@ -491,10 +491,10 @@ let add_substitute =
           break a;
          }
          var new_start = start$0 + 1 | 0, k$2 = 0;
-         if(Object.is(40, opening))
+         if(40 === opening)
           var closing = 41;
          else{
-          if(! Object.is(123, opening))
+          if(123 !== opening)
            throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
           var closing = 125;
          }
@@ -525,14 +525,14 @@ let add_substitute =
         previous = 32;
         i$4 = next_i;
        }
-      else if(Object.is(92, previous)){
+      else if(92 === previous){
        caml_call2(add_char, b, 92);
        caml_call2(add_char, b, previous$0);
        var i$6 = i$4 + 1 | 0;
        previous = 32;
        i$4 = i$6;
       }
-      else if(Object.is(92, previous$0)){
+      else if(92 === previous$0){
        var i$7 = i$4 + 1 | 0;
        previous = previous$0;
        i$4 = i$7;
