@@ -97,6 +97,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          allow-prerelease-opam: true
           dune-cache: true
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
@@ -144,6 +145,7 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: 4.14.x
+          allow-prerelease-opam: true
           dune-cache: true
 
       - name: Lint fmt
