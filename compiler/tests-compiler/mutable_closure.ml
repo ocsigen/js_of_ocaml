@@ -124,7 +124,7 @@ let%expect_test _ =
       var
        f$0 =
          function(counter, n){
-          if(Object.is(- 1, n)){
+          if(- 1 === n){
            var _f_ = - 2;
            if(counter >= 50) return caml_trampoline_return(g$0, [0, _f_]);
            var counter$1 = counter + 1 | 0;
@@ -139,7 +139,7 @@ let%expect_test _ =
        f = function(n){return caml_trampoline(f$1(0, n));},
        g =
          function(counter, n){
-          if(Object.is(- 1, n)){
+          if(- 1 === n){
            var _d_ = - 2;
            if(counter >= 50) return caml_trampoline_return(f$1, [0, _d_]);
            var counter$1 = counter + 1 | 0;
@@ -157,7 +157,7 @@ let%expect_test _ =
       let f$2 = f;
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
       var _c_ = i + 1 | 0;
-      if(Object.is(3, i)) break;
+      if(3 === i) break;
       i = _c_;
      }
      var

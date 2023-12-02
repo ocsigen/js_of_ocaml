@@ -80,7 +80,7 @@ let fun2 () =
        var _d_ = caml_wrap_exception(_e_);
        if(! Object.is(_d_[1], A)) throw caml_maybe_attach_backtrace(_d_, 0);
        var i = _d_[2];
-       if(! Object.is(2, i)) return i + 2 | 0;
+       if(2 !== i) return i + 2 | 0;
        var i$0 = i;
        break a;
       }
@@ -98,7 +98,7 @@ let fun2 () =
        var _a_ = caml_wrap_exception(_c_);
        if(Object.is(_a_[1], A)){
         var _b_ = _a_[2];
-        if(Object.is(2, _b_)){var i = _b_; break a;}
+        if(2 === _b_){var i = _b_; break a;}
        }
        throw caml_maybe_attach_backtrace(_a_, 0);
       }

@@ -57,7 +57,7 @@ let () = myfun ()
       var _c_ = app(f, i);
       caml_call2(Stdlib_Printf[3], _a_, _c_);
       var _b_ = i + 1 | 0;
-      if(Object.is(4, i)) return 0;
+      if(4 === i) return 0;
       i = _b_;
      }
     }
