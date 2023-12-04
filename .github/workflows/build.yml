@@ -66,6 +66,7 @@ jobs:
 
     steps:
       - name: Set git to use LF
+        if: runner.ocaml-compiler < 5.2
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
