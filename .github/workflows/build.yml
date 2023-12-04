@@ -61,6 +61,11 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: true
+          - os: ubuntu-latest
+            ocaml-compiler: ocaml-variants.5.3.0+trunk
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
@@ -83,8 +88,7 @@ jobs:
             default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
           dune-cache: true
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          opam-depext: false
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         if: runner.os != 'Windows'
@@ -93,8 +97,15 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           allow-prerelease-opam: true
           dune-cache: true
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          opam-depext: false
+
+      - run: opam pin add ppxlib git+https://github.com/hhugo/ppxlib.git#jsoo-ocaml-52 --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
+
+      - run: opam pin add ocaml-compiler-libs git+https://github.com/art-w/ocaml-compiler-libs.git#ocaml-5.2-trunk --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
+
+      - run: opam pin add ./ --no-action
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
