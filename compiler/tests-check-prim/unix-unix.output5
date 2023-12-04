@@ -4,7 +4,6 @@ Missing
 From unix.bc:
 caml_alloc_dummy_function
 caml_continuation_use
-caml_drop_continuation
 caml_dynlink_add_primitive
 caml_dynlink_close_lib
 caml_dynlink_get_current_libs
@@ -283,7 +282,6 @@ caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
-caml_get_section_table
 caml_static_alloc
 caml_static_free
 caml_terminfo_backup
