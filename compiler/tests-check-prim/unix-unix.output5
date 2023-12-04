@@ -4,7 +4,6 @@ Missing
 From unix.bc:
 caml_alloc_dummy_function
 caml_continuation_use
-caml_drop_continuation
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_unix_accept
@@ -240,7 +239,6 @@ caml_set_static_env
 caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
-caml_get_section_table
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 

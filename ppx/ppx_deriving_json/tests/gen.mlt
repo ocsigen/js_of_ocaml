@@ -170,7 +170,6 @@ type variant1 =
 
 [%%expect
 {|
-
 type variant1 =
   | A
   | B
@@ -219,7 +218,6 @@ type variant2 =
 
 [%%expect
 {|
-
 type variant2 =
   | D of string
   | E of variant1 [@@deriving json]
@@ -436,7 +434,6 @@ type inline_record =
 
 [%%expect
 {|
-
 type inline_record =
   | I of {
   name: string ;
@@ -580,7 +577,6 @@ val json :
 
 type t = A | B [@@deriving json]
 [%%expect {|
-
 type t =
   | A
   | B [@@deriving json]
