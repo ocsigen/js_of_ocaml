@@ -219,7 +219,7 @@ val nfkc : normalization t
 
 (** Specification of Javascript number objects. *)
 
-type number_t
+type number_t = float
 
 class type number = object
   method toString : js_string t meth
