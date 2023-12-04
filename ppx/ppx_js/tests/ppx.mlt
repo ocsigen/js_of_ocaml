@@ -274,7 +274,8 @@ Error: This expression has type
            < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
          < set : int -> unit; .. > Js_of_ocaml.Js.gen_prop
-       Types for method set are incompatible
+       The method set has type float -> unit,
+       but the expected method type was int -> unit
 |}]
 
 ;;
@@ -325,7 +326,7 @@ Error: This expression has type
        is not compatible with type
          float Js_of_ocaml.Js.prop =
            < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
-       Types for method get are incompatible
+       The method get has type int, but the expected method type was float
 |}]
 
 ;;
@@ -349,7 +350,8 @@ Error: This expression has type
          Js_of_ocaml.Js.t
        but an expression was expected of type
          < m : int Js_of_ocaml.Js.meth; .. > Js_of_ocaml.Js.t
-       Types for method m are incompatible
+       The method m has type string Js_of_ocaml.Js.meth,
+       but the expected method type was int Js_of_ocaml.Js.meth
 |}]
 
 ;;
@@ -479,7 +481,8 @@ Error: This expression has type
        is not compatible with type
          int Js_of_ocaml.Js.prop =
            < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
-       Types for method get are incompatible
+       The method get has type int Js_of_ocaml.Js.optdef,
+       but the expected method type was int
 |}]
 
 ;;

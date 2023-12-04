@@ -99,10 +99,7 @@ jobs:
           dune-cache: true
           opam-depext: false
 
-      - run: opam pin add ppxlib git+https://github.com/hhugo/ppxlib.git#jsoo-ocaml-52 --no-action
-        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
-
-      - run: opam pin add ocaml-compiler-libs git+https://github.com/art-w/ocaml-compiler-libs.git#ocaml-5.2-trunk --no-action
+      - run: opam pin add ppxlib git+https://github.com/hhugo/ppxlib.git#trunk-support-53 --no-action
         if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
 
       - run: opam pin add ./ --no-action

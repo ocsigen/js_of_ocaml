@@ -37,6 +37,11 @@ function caml_ml_runtime_events_resume() {
   return 0;
 }
 
+//Provides: caml_ml_runtime_events_are_active
+function caml_ml_runtime_events_are_active() {
+    return 0;
+}
+
 //Provides: caml_runtime_events_create_cursor
 function caml_runtime_events_create_cursor(target) {
   return {};

@@ -36,7 +36,7 @@ let predefined_exceptions =
 let new_closure_repr =
   match Ocaml_version.v with
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> true
+  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 | `V5_03 -> true
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -2439,9 +2439,8 @@ and compile infos pc state instrs =
             arg;
         let state =
           match Ocaml_version.v with
-          | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01
-            -> State.pop 2 state
-          | `V5_02 -> State.pop 3 state
+          | #Ocaml_version.v4 | `V5_00 | `V5_01 -> State.pop 2 state
+          | `V5_02 | `V5_03 -> State.pop 3 state
         in
 
         compile
@@ -2554,7 +2553,7 @@ let parse_bytecode code globals debug_data =
 
 let override_global =
   match Ocaml_version.v with
-  | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
+  | `V4_13 | `V4_14 | #Ocaml_version.v5 -> []
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
       let jsmodule name func =
         Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
