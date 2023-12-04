@@ -61,7 +61,7 @@ let%expect_test "let rec" =
         Stdlib_Hashtbl = global_data.Stdlib__Hashtbl,
         letrec_function_context = [],
         c = [],
-        d = runtime.caml_make_vect(5, 0),
+        d = runtime.caml_array_make(5, 0),
         default$0 = 42;
        function a(x){return b(x);}
        function b(x){
