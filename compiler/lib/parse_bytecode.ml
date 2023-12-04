@@ -558,7 +558,7 @@ let resize_globals g size =
 module State = struct
   type elt =
     | Var of Var.t * loc
-    | Dummy
+    | Dummy of string
     | Unset
 
   let elt_to_var e =
@@ -569,7 +569,7 @@ module State = struct
   let print_elt f v =
     match v with
     | Var (x, _) -> Format.fprintf f "%a" Var.print x
-    | Dummy -> Format.fprintf f "٭"
+    | Dummy _ -> Format.fprintf f "٭"
     | Unset -> Format.fprintf f "∅"
 
   type handler =
@@ -619,7 +619,7 @@ module State = struct
         { st with
           stack =
             (match st.accu with
-            | Dummy -> Dummy
+            | Dummy x -> Dummy x
             | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
             :: st.stack
@@ -634,7 +634,7 @@ module State = struct
         { st with
           accu =
             (match List.nth st.stack n with
-            | Dummy -> Dummy
+            | Dummy x -> Dummy x
             | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
         }
@@ -647,7 +647,7 @@ module State = struct
     List.fold_left (st.accu :: st.stack) ~init:[] ~f:(fun l e ->
         match e with
         | Var (x, _) -> x :: l
-        | Dummy | Unset -> l)
+        | Dummy _ | Unset -> l)
 
   let set_accu st x loc = { st with accu = Var (x, loc) }
 
@@ -671,7 +671,7 @@ module State = struct
     let stack =
       List.fold_right state.stack ~init:[] ~f:(fun e stack ->
           match e with
-          | Dummy -> Dummy :: stack
+          | Dummy x -> Dummy x :: stack
           | Unset -> Unset :: stack
           | Var (x, l) ->
               let y = Var.fork x in
@@ -679,7 +679,7 @@ module State = struct
     in
     let state = { state with stack; current_pc } in
     match state.accu with
-    | Dummy | Unset -> state
+    | Dummy _ | Unset -> state
     | Var (x, loc) ->
         let y, state = fresh_var state loc in
         Var.propagate_name x y;
@@ -866,22 +866,22 @@ let rec compile_block blocks debug_data code pc state =
       let rec check (xs : State.elt list) (ys : State.elt list) =
         match xs, ys with
         | Var _ :: xs, Var _ :: ys -> check xs ys
-        | Dummy :: xs, Dummy :: ys -> check xs ys
+        | Dummy _ :: xs, Dummy _ :: ys -> check xs ys
         | Unset :: _, _ -> assert false
         | _, Unset :: _ -> assert false
         | [], [] -> ()
-        | Var _ :: _, Dummy :: _ -> assert false
-        | Dummy :: _, Var _ :: _ -> assert false
+        | Var _ :: _, Dummy _ :: _ -> assert false
+        | Dummy _ :: _, Var _ :: _ -> assert false
         | _ :: _, [] -> assert false
         | [], _ :: _ -> assert false
       in
       check old_state.State.stack state.State.stack;
       match old_state.State.accu, state.State.accu with
-      | Dummy, Dummy -> ()
+      | Dummy _, Dummy _ -> ()
       | Var _, Var _ -> ()
       | Unset, Unset -> ()
-      | Var _, Dummy -> assert false
-      | Dummy, Var _ -> assert false
+      | Var _, Dummy _ -> assert false
+      | Dummy _, Var _ -> assert false
       | Unset, _ | _, Unset -> assert false)
   | None -> (
       let limit = Blocks.next blocks pc in
@@ -1086,7 +1086,10 @@ and compile infos pc state instrs =
           { state with
             State.stack =
               (* See interp.c *)
-              State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack
+              State.Dummy "push_retaddr(retaddr)"
+              :: State.Dummy "push_retaddr(env)"
+              :: State.Dummy "push_retaddr(extra_args)"
+              :: state.State.stack
           }
           instrs
     | APPLY ->
@@ -1246,8 +1249,8 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
         let env = List.map vals ~f:(fun (x, loc) -> State.Var (x, loc)) in
         let env =
-          let code = State.Dummy in
-          let closure_info = State.Dummy in
+          let code = State.Dummy "closure(code)" in
+          let closure_info = State.Dummy "closure(info)" in
           if new_closure_repr then code :: closure_info :: env else code :: env
         in
         let env = Array.of_list env in
@@ -1294,13 +1297,13 @@ and compile infos pc state instrs =
         let env = ref (List.map vals ~f:(fun (x, loc) -> State.Var (x, loc))) in
         List.iter !vars ~f:(fun (i, x) ->
             let code = State.Var (x, noloc) in
-            let closure_info = State.Dummy in
+            let closure_info = State.Dummy "closurerec(info)" in
             if new_closure_repr
             then env := code :: closure_info :: !env
             else env := code :: !env;
             if i > 0
             then
-              let infix_tag = State.Dummy in
+              let infix_tag = State.Dummy "closurerec(infix_tag)" in
               env := infix_tag :: !env);
         let env = Array.of_list !env in
         let state = !state in
@@ -1794,10 +1797,10 @@ and compile infos pc state instrs =
           { (State.push_handler handler_ctx_state) with
             State.stack =
               (* See interp.c *)
-              State.Dummy
-              :: State.Dummy
-              :: State.Dummy
-              :: State.Dummy
+              State.Dummy "pushtrap(pc)"
+              :: State.Dummy "pushtrap(sp_off)"
+              :: State.Dummy "pushtrap(env)"
+              :: State.Dummy "pushtrap(extra_args)"
               :: state.State.stack
           };
         instrs, (Branch (interm_addr, []), loc), state
