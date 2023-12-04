@@ -102,7 +102,7 @@ fun (obj : int) -> obj##m
 [%%expect
 {|
 Line _, characters 19-22:
-Error: This expression has type int but an expression was expected of type
+Error: The value obj has type int but an expression was expected of type
          < .. > Js_of_ocaml.Js.t
 |}]
 
@@ -122,7 +122,7 @@ fun (obj : < m : float Js.prop > Js.t) -> obj##m
 [%%expect
 {|
 Line _, characters 42-48:
-Error: This expression has type
+Error: The method call x#m has type
          float Js_of_ocaml.Js.prop =
            < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type 'res Js_of_ocaml.Js.meth
@@ -144,7 +144,7 @@ fun (obj : < m : int -> int Js.meth > Js.t) -> obj##m + 1
 [%%expect
 {|
 Line _, characters 47-53:
-Error: This expression has type int -> int Js_of_ocaml.Js.meth
+Error: The method call x#m has type int -> int Js_of_ocaml.Js.meth
        but an expression was expected of type 'res Js_of_ocaml.Js.meth
 |}]
 
@@ -154,7 +154,7 @@ fun (obj : < m : int Js.meth > Js.t) -> obj##m 1
 [%%expect
 {|
 Line _, characters 40-46:
-Error: This expression has type int Js_of_ocaml.Js.meth
+Error: The method call x#m has type int Js_of_ocaml.Js.meth
        but an expression was expected of type int -> 'res Js_of_ocaml.Js.meth
 |}]
 
@@ -189,7 +189,7 @@ fun (obj : int) -> obj##.p
 [%%expect
 {|
 Line _, characters 19-22:
-Error: This expression has type int but an expression was expected of type
+Error: The value obj has type int but an expression was expected of type
          < .. > Js_of_ocaml.Js.t
 |}]
 
@@ -209,7 +209,7 @@ fun (obj : < p : float Js.writeonly_prop > Js.t) -> obj##.p + 1
 [%%expect
 {|
 Line _, characters 58-59:
-Error: This expression has type
+Error: The method call x#p has type
          float Js_of_ocaml.Js.writeonly_prop =
            < set : float -> unit > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
@@ -235,7 +235,7 @@ fun (obj : int) -> obj##.p := 2
 [%%expect
 {|
 Line _, characters 19-22:
-Error: This expression has type int but an expression was expected of type
+Error: The value obj has type int but an expression was expected of type
          < .. > Js_of_ocaml.Js.t
 |}]
 
@@ -255,7 +255,7 @@ fun (obj : < p : float Js.readonly_prop > Js.t) -> obj##.p := 1
 [%%expect
 {|
 Line _, characters 51-58:
-Error: This expression has type
+Error: The method call x#p has type
          float Js_of_ocaml.Js.readonly_prop =
            < get : float > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
@@ -269,7 +269,7 @@ fun (obj : < p : float Js.prop > Js.t) -> obj##.p := 1
 [%%expect
 {|
 Line _, characters 42-49:
-Error: This expression has type
+Error: The method call x#p has type
          float Js_of_ocaml.Js.prop =
            < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
