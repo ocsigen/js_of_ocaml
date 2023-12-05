@@ -120,47 +120,39 @@ let%expect_test _ =
     function fun1(param){
      var i = 0;
      for(;;){
-      var
-       closures =
-         function(i){
-          function f(counter, n){
-           if(- 1 === n){
-            var _j_ = - 2;
-            if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
-            var counter$1 = counter + 1 | 0;
-            return g(counter$1, _j_);
-           }
-           if(0 === n) return i;
-           var _k_ = n - 1 | 0;
-           if(counter >= 50) return caml_trampoline_return(g, [0, _k_]);
-           var counter$0 = counter + 1 | 0;
-           return g(counter$0, _k_);
-          }
-          function g(counter, n){
-           if(- 1 === n){
-            var _h_ = - 2;
-            if(counter >= 50) return caml_trampoline_return(f, [0, _h_]);
-            var counter$1 = counter + 1 | 0;
-            return f(counter$1, _h_);
-           }
-           if(0 === n) return i;
-           var _i_ = n - 1 | 0;
-           if(counter >= 50) return caml_trampoline_return(f, [0, _i_]);
-           var counter$0 = counter + 1 | 0;
-           return f(counter$0, _i_);
-          }
-          function f$0(n){return caml_trampoline(f(0, n));}
-          function g$0(n){return caml_trampoline(g(0, n));}
-          var block = [0, f$0, g$0];
-          return block;
-         },
-       closures$0 = closures(i),
-       f = closures$0[1],
-       _e_ = direct[1];
+      let i$0 = i;
+      function f$0(counter, n){
+       if(- 1 === n){
+        var _j_ = - 2;
+        if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
+        var counter$1 = counter + 1 | 0;
+        return g(counter$1, _j_);
+       }
+       if(0 === n) return i$0;
+       var _k_ = n - 1 | 0;
+       if(counter >= 50) return caml_trampoline_return(g, [0, _k_]);
+       var counter$0 = counter + 1 | 0;
+       return g(counter$0, _k_);
+      }
+      function f(n){return caml_trampoline(f$0(0, n));}
+      function g(counter, n){
+       if(- 1 === n){
+        var _h_ = - 2;
+        if(counter >= 50) return caml_trampoline_return(f$0, [0, _h_]);
+        var counter$1 = counter + 1 | 0;
+        return f$0(counter$1, _h_);
+       }
+       if(0 === n) return i$0;
+       var _i_ = n - 1 | 0;
+       if(counter >= 50) return caml_trampoline_return(f$0, [0, _i_]);
+       var counter$0 = counter + 1 | 0;
+       return f$0(counter$0, _i_);
+      }
+      var _e_ = direct[1];
       direct[1] = [0, f(i), _e_];
+      let i$1 = i, f$1 = f;
       var _f_ = indirect[1];
-      indirect[1] =
-       [0, function(i, f){return function(param){return f(i);};}(i, f), _f_];
+      indirect[1] = [0, function(param){return f$1(i$1);}, _f_];
       var _g_ = i + 1 | 0;
       if(3 === i){
        var

@@ -281,6 +281,7 @@ module Ctx = struct
     ; effect_warning : bool ref
     ; cps_calls : Effects.cps_calls
     ; deadcode_sentinal : Var.t
+    ; mutated_vars : Code.Var.Set.t Code.Addr.Map.t
     }
 
   let initial
@@ -288,6 +289,7 @@ module Ctx = struct
       ~exported_runtime
       ~should_export
       ~deadcode_sentinal
+      ~mutated_vars
       blocks
       live
       cps_calls
@@ -302,6 +304,7 @@ module Ctx = struct
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; cps_calls
     ; deadcode_sentinal
+    ; mutated_vars
     }
 end
 
@@ -1383,9 +1386,73 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
 
-and translate_instrs ctx expr_queue instr last =
+and translate_instrs (ctx : Ctx.t) expr_queue instr last =
   match instr with
   | [] -> [], expr_queue
+  | (Let (_, Closure _), _) :: _ -> (
+      let names, mut, pcs, all, rem = collect_closures ctx instr in
+      match Code.Var.Set.cardinal mut with
+      | 0 ->
+          let st_rev, expr_queue =
+            List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
+                let l, expr_queue = translate_instr ctx expr_queue i in
+                List.rev_append l st_rev, expr_queue)
+          in
+          let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
+          List.rev_append st_rev instrs, expr_queue
+      | _ ->
+          let muts =
+            Code.Var.Set.diff mut names
+            |> Code.Var.Set.elements
+            |> List.map ~f:(fun x -> x, Code.Var.fork x)
+          in
+          (* Rewrite blocks using well-scoped closure variables *)
+          let ctx =
+            let map =
+              List.fold_left muts ~init:Var.Map.empty ~f:(fun acc (x, x') ->
+                  Var.Map.add x x' acc)
+            in
+            let p, _visited =
+              List.fold_left
+                pcs
+                ~init:(ctx.blocks, Addr.Set.empty)
+                ~f:(fun (blocks, visited) pc ->
+                  Subst.cont' (Subst.from_map map) pc blocks visited)
+            in
+            { ctx with blocks = p }
+          in
+          (* Let bind mutable variables that are part of closures *)
+          let let_bindings_rev, expr_queue =
+            let expr_queue, st_rev, l_rev =
+              List.fold_left
+                muts
+                ~init:(expr_queue, [], [])
+                ~f:(fun (expr_queue, st_rev, l_rev) (v, v') ->
+                  let instrs, ((_px, cx), expr_queue) =
+                    access_queue_may_flush expr_queue v' v
+                  in
+                  let l_rev = (J.V v', (cx, J.N)) :: l_rev in
+                  expr_queue, List.rev_append instrs st_rev, l_rev)
+            in
+            (J.variable_declaration ~kind:Let (List.rev l_rev), J.N) :: st_rev, expr_queue
+          in
+          (* Mutually recursive need to be properly scoped. *)
+          let st_rev, expr_queue =
+            List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
+                let l, expr_queue = translate_instr ctx expr_queue i in
+                let l_rev =
+                  List.rev_map l ~f:(fun (e, loc') ->
+                      match e with
+                      (* FIXME: This pattern is too fragile *)
+                      | J.Variable_statement
+                          (Var, [ DeclIdent (x, Some (J.EFun (None, dcl), _loc)) ]) ->
+                          J.Function_declaration (x, dcl), loc'
+                      | _ -> e, loc')
+                in
+                List.append l_rev st_rev, expr_queue)
+          in
+          let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
+          List.rev_append let_bindings_rev (List.rev_append st_rev instrs), expr_queue)
   | instr :: rem ->
       let st, expr_queue = translate_instr ctx expr_queue instr in
       let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
@@ -1750,6 +1817,14 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@;";
   res
 
+and collect_closures ctx l =
+  match l with
+  | ((Let (x, Closure (_, (pc, _))), _loc) as i) :: rem ->
+      let names', mut', pcs', i', rem' = collect_closures ctx rem in
+      let mut = Code.Addr.Map.find pc ctx.Ctx.mutated_vars in
+      Code.Var.Set.add x names', Code.Var.Set.union mut mut', pc :: pcs', i :: i', rem'
+  | _ -> Code.Var.Set.empty, Code.Var.Set.empty, [], [], l
+
 let generate_shared_value ctx =
   let strings =
     ( J.variable_declaration
@@ -1808,12 +1883,14 @@ let f
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
+  let mutated_vars = Freevars.f p in
   let ctx =
     Ctx.initial
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
       ~deadcode_sentinal
+      ~mutated_vars
       p.blocks
       live_vars
       cps_calls
