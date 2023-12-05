@@ -60,7 +60,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{var _n_ = runtime.caml_int_of_string(s), n = _n_;}
      catch(_r_){
       var _i_ = caml_wrap_exception(_r_);
-      if(_i_[1] !== Stdlib[7]){
+      if(! Object.is(_i_[1], Stdlib[7])){
        var raise$1 = caml_pop_trap();
        return raise$1(caml_maybe_attach_backtrace(_i_, 0));
       }
@@ -73,7 +73,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      }
      catch(_q_){
       var _j_ = caml_wrap_exception(_q_);
-      if(_j_ !== Stdlib[8]){
+      if(! Object.is(_j_, Stdlib[8])){
        var raise$0 = caml_pop_trap();
        return raise$0(caml_maybe_attach_backtrace(_j_, 0));
       }
@@ -81,7 +81,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      }
      caml_push_trap
       (function(_p_){
-        if(_p_ === Stdlib[8]) return cont(0);
+        if(Object.is(_p_, Stdlib[8])) return cont(0);
         var raise = caml_pop_trap();
         return raise(caml_maybe_attach_backtrace(_p_, 0));
        });
