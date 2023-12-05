@@ -52,6 +52,7 @@ let%expect_test _ =
       var counter$0 = counter + 1 | 0;
       return even$0(counter$0, _g_);
      }
+     function odd(x){return caml_trampoline(odd$0(0, x));}
      function even$0(counter, x){
       if(0 === x) return 1;
       var _f_ = x - 1 | 0;
@@ -59,7 +60,6 @@ let%expect_test _ =
       var counter$0 = counter + 1 | 0;
       return odd$0(counter$0, _f_);
      }
-     function odd(x){return caml_trampoline(odd$0(0, x));}
      function even(x){return caml_trampoline(even$0(0, x));}
      var _c_ = even(1);
      if(odd(1) === _c_)
@@ -97,10 +97,10 @@ let%expect_test _ =
      function odd$0(x){
       return 0 === x ? 0 : caml_trampoline_return(even$0, [0, x - 1 | 0]);
      }
+     function odd(x){return caml_trampoline(odd$0(x));}
      function even$0(x){
       return 0 === x ? 1 : caml_trampoline_return(odd$0, [0, x - 1 | 0]);
      }
-     function odd(x){return caml_trampoline(odd$0(x));}
      function even(x){return caml_trampoline(even$0(x));}
      var _c_ = even(1);
      if(odd(1) === _c_)

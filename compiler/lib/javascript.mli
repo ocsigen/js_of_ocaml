@@ -439,7 +439,8 @@ val array : expression list -> expression
 
 val call : expression -> expression list -> location -> expression
 
-val variable_declaration : (ident * initialiser) list -> statement
+val variable_declaration :
+  ?kind:variable_declaration_kind -> (ident * initialiser) list -> statement
 
 val list : 'a list -> ('a, _) list_with_rest
 

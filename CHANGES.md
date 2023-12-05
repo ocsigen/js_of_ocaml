@@ -8,6 +8,7 @@
 ## Features/Changes
 * Compiler: try to preserve clorures ordering between ml and js
 * Compiler: js-parser accept for await
+* Compiler: no longer rely on IIFE for scoping variable inside loops
 
 ## Bug fixes
 * Compiler: js-parser now accept all the line terminators defined in the spec
