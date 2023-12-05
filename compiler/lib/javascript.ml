@@ -556,8 +556,8 @@ end)
 
 let dot e l = EDot (e, ANormal, l)
 
-let variable_declaration l =
-  Variable_statement (Var, List.map l ~f:(fun (i, e) -> DeclIdent (i, Some e)))
+let variable_declaration ?(kind = Var) l =
+  Variable_statement (kind, List.map l ~f:(fun (i, e) -> DeclIdent (i, Some e)))
 
 let array l = EArr (List.map l ~f:(fun x -> Element x))
 
