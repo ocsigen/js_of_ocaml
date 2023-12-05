@@ -57,7 +57,7 @@ let%expect_test "direct calls without --enable effects" =
   [%expect
     {|
     function test1(param){
-     function f(g, x){caml_call1(g, x); return;}
+     function f(g, x){return caml_call1(g, x);}
      var _d_ = 7;
      f(function(x){return x + 1 | 0;}, _d_);
      var _e_ = 4.;
@@ -66,7 +66,7 @@ let%expect_test "direct calls without --enable effects" =
     }
     //end
     function test2(param){
-     function f(g, x){caml_call1(g, x); return;}
+     function f(g, x){return caml_call1(g, x);}
      var _c_ = 7;
      f(function(x){return x + 1 | 0;}, _c_);
      f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
@@ -130,16 +130,14 @@ let%expect_test "direct calls with --enable effects" =
   [%expect
     {|
     function test1(param, cont){
-     function f(g, x){g(undef); return;}
+     function f(g, x){return g(undef);}
      f(function(x){return;}, undef);
      f(function(x){return;}, undef);
      return cont(0);
     }
     //end
     function test2(param, cont){
-     function f(g, x, cont){
-      return caml_cps_exact_call2(g, x, function(_m_){return cont(undef);});
-     }
+     function f(g, x, cont){return caml_cps_exact_call2(g, x, cont);}
      var _f_ = 7;
      function _g_(x, cont){return cont(undef);}
      return caml_cps_exact_call3
@@ -148,9 +146,7 @@ let%expect_test "direct calls with --enable effects" =
               _f_,
               function(_h_){
                function _i_(x, cont){
-                var _k_ = Stdlib[28];
-                return caml_cps_call3
-                        (_k_, x, cst_a$0, function(_l_){return cont(undef);});
+                return caml_cps_call3(Stdlib[28], x, cst_a$0, cont);
                }
                return caml_cps_exact_call3
                        (f, _i_, cst_a, function(_j_){return cont(0);});

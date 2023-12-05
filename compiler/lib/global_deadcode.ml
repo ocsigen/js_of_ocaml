@@ -352,7 +352,14 @@ let zero prog sentinal live_table =
     let branch =
       (* Zero out return values in last instruction, otherwise do nothing. *)
       match block.branch with
-      | Return x, loc -> Return (zero_var x), loc
+      | Return x, loc ->
+          let tc =
+            (* We don't want to break tailcalls. *)
+            match List.last body with
+            | Some (Let (x', Apply _), _) when Code.Var.equal x' x -> true
+            | Some _ | None -> false
+          in
+          if tc then Return x, loc else Return (zero_var x), loc
       | Raise (_, _), _
       | Stop, _
       | Branch _, _
