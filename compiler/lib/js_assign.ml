@@ -257,7 +257,9 @@ module Preserve : Strategy = struct
   let record_block t scope (b : Js_traverse.block) =
     let defs =
       match b with
-      | Catch (p, _) -> bound_idents_of_binding p
+      | Catch (p, _) ->
+          bound_idents_of_binding p
+          @ Javascript.IdentSet.elements scope.Js_traverse.def_local
       | Normal -> Javascript.IdentSet.elements scope.Js_traverse.def_local
       | Params _ ->
           Javascript.IdentSet.elements
