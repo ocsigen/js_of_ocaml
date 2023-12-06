@@ -382,6 +382,7 @@ let program' (module Strategy : Strategy) p =
       mapper#get_free
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
+  let unallocated_names = ref Var.Set.empty in
   let names = Strategy.allocate_variables state ~count:mapper#get_count in
   (* ignore the choosen name for escaping/free [V _] variables *)
   IdentSet.iter
@@ -396,10 +397,11 @@ let program' (module Strategy : Strategy) p =
           ident ~var:v (Utf8_string.of_string_exn (Printf.sprintf "v%d" (Code.Var.idx v)))
         else
           let name = names.(Var.idx v) in
-          match name, has_free_var with
-          | "", true -> V v
-          | "", false -> assert false
-          | _, (true | false) -> ident ~var:v (Utf8_string.of_string_exn name))
+          match name with
+          | "" ->
+              unallocated_names := Var.Set.add v !unallocated_names;
+              V v
+          | _ -> ident ~var:v (Utf8_string.of_string_exn name))
     | x -> x
   in
   let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
@@ -414,7 +416,7 @@ let program' (module Strategy : Strategy) p =
         S (Utf8_string.of_string_exn lname_per_depth.(i))
   in
   let p = (new name ident label)#program p in
-  (if has_free_var
+  (if has_free_var || Var.Set.cardinal !unallocated_names > 0
    then
      let () =
        if not (debug_shortvar () || debug ())
