@@ -580,7 +580,6 @@ type state =
   ; dom : Structure.graph
   ; visited_blocks : Addr.Set.t ref
   ; ctx : Ctx.t
-  ; blocks : Code.block Addr.Map.t
   }
 
 module DTree = struct
@@ -699,10 +698,9 @@ end
 
 let build_graph ctx pc =
   let visited_blocks = ref Addr.Set.empty in
-  let blocks = ctx.Ctx.blocks in
-  let structure = Structure.build_graph blocks pc in
+  let structure = Structure.build_graph ctx.Ctx.blocks pc in
   let dom = Structure.dominator_tree structure in
-  { visited_blocks; structure; dom; ctx; blocks }
+  { visited_blocks; structure; dom; ctx }
 
 (****)
 
@@ -1443,7 +1441,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
     assert false);
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
-  let block = Addr.Map.find pc st.blocks in
+  let block = Addr.Map.find pc st.ctx.blocks in
   let seq, queue = translate_instrs st.ctx queue block.body block.branch in
   let nbbranch =
     match fst block.branch with
