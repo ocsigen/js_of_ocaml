@@ -1,4 +1,4 @@
-# Dev (2023-12-01) - Lille
+# 5.5.2 (2023-12-01) - Lille
 
 ## Features/Changes
 * Compiler: global dead code elimination (Micah Cantor, #1503)
