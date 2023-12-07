@@ -29,6 +29,7 @@ type closure_info =
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; mutated_vars : Code.Var.Set.t
   ; loc : Code.loc
+  ; pos : int
   }
 
 type 'a int_ext =
@@ -67,13 +68,13 @@ let rec collect_apply pc blocks visited tc =
           (fun pc (visited, tc) -> collect_apply pc blocks visited tc)
           (visited, tc)
 
-let rec collect_closures blocks mutated_vars l =
+let rec collect_closures blocks mutated_vars l pos =
   match l with
   | (Let (f_name, Closure (args, ((pc, _) as cont))), loc) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
-      let l, rem = collect_closures blocks mutated_vars rem in
+      let l, rem = collect_closures blocks mutated_vars rem (succ pos) in
       let mutated_vars = Addr.Map.find pc mutated_vars in
-      { f_name; args; cont; tc; mutated_vars; loc } :: l, rem
+      { f_name; args; cont; tc; mutated_vars; loc; pos } :: l, rem
   | rem -> [], rem
 
 let group_closures ~tc_only closures_map =
@@ -255,7 +256,7 @@ module Trampoline = struct
               in
               blocks, free_pc, instr_real :: instrs, instr_wrapper :: instrs_wrapper)
         in
-        free_pc, blocks, { int = instrs; ext = instrs_wrapper }
+        free_pc, blocks, { int = List.rev instrs; ext = List.rev instrs_wrapper }
 end
 
 module Ident = struct
@@ -388,19 +389,38 @@ let rewrite_mutable
         in
         free_pc, blocks, body
 
+let sort_components closures_map components =
+  let pos_of_var x = (Var.Map.find x closures_map).pos in
+  let pos_of_comp : _ -> int = function
+    | SCC.No_loop x -> pos_of_var x
+    | SCC.Has_loop all ->
+        List.fold_left all ~init:max_int ~f:(fun acc x -> min (pos_of_var x) acc)
+  in
+
+  List.sort components ~cmp:(fun x y -> compare (pos_of_comp x) (pos_of_comp y))
+  |> List.map ~f:(function
+         | SCC.No_loop _ as x -> x
+         | SCC.Has_loop l ->
+             SCC.Has_loop
+               (List.sort l ~cmp:(fun a b -> compare (pos_of_var a) (pos_of_var b))))
+
 let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _ * _ list
     =
   match body with
   | (Let (_, Closure _), _) :: _ ->
-      let closures, rem = collect_closures blocks mutated_vars body in
+      let closures, rem = collect_closures blocks mutated_vars body 0 in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)
       in
-      let components = group_closures ~tc_only:false closures_map in
+      let components =
+        group_closures ~tc_only:false closures_map
+        |> Array.to_list
+        |> sort_components closures_map
+      in
       let free_pc, blocks, closures =
         List.fold_left
-          (Array.to_list components)
+          components
           ~init:(free_pc, blocks, [])
           ~f:(fun (free_pc, blocks, acc) component ->
             let free_pc, blocks, closures =
@@ -414,6 +434,7 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _
                          (fun v _ -> List.exists all ~f:(Var.equal v))
                          closures_map)
                     |> Array.to_list
+                    |> sort_components closures_map
               in
               List.fold_left
                 ~init:(free_pc, blocks, { int = []; ext = [] })
@@ -437,7 +458,7 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _
       let free_pc, blocks, rem =
         rewrite_closures mutated_vars rewrite_list free_pc blocks rem
       in
-      free_pc, blocks, List.flatten closures @ rem
+      free_pc, blocks, List.flatten (List.rev closures) @ rem
   | i :: rem ->
       let free_pc, blocks, rem =
         rewrite_closures mutated_vars rewrite_list free_pc blocks rem
