@@ -185,7 +185,7 @@ and property_name =
 and expression =
   | ESeq of expression * expression
   | ECond of expression * expression * expression
-  | EAssignTarget of binding_pattern
+  | EAssignTarget of assignment_target
   (* EAssignTarget is used on the LHS of assignment and in for-loops.
      for({name} in o);
      for([fst] in o);
@@ -334,6 +334,22 @@ and binding_pattern =
   | ObjectBinding of (binding_property, binding_ident) list_with_rest
   | ArrayBinding of (binding_element option, binding) list_with_rest
 
+and object_target_elt =
+  | TargetPropertyId of ident * initialiser option
+  | TargetProperty of property_name * expression
+  | TargetPropertySpread of expression
+  | TargetPropertyMethod of property_name * method_
+
+and array_target_elt =
+  | TargetElementId of ident * initialiser option
+  | TargetElementHole
+  | TargetElement of expression
+  | TargetElementSpread of expression
+
+and assignment_target =
+  | ObjectTarget of object_target_elt list
+  | ArrayTarget of array_target_elt list
+
 and binding_ident = ident
 
 and binding_property =
@@ -424,4 +440,4 @@ val early_error : ?reason:string -> Parse_info.t -> early_error
 
 val fun_ : ident list -> statement_list -> location -> function_declaration
 
-val assignment_pattern_of_expr : binop option -> expression -> binding_pattern option
+val assignment_target_of_expr : binop option -> expression -> expression

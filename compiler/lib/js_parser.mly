@@ -673,16 +673,14 @@ iteration_stmt:
    { For_statement (Right l, c, incr, st) }
 
  | T_FOR "(" left=left_hand_side_expr T_IN right=expr ")" body=stmt
-   { match assignment_pattern_of_expr None left with
-      | None -> ForIn_statement (Left left, right, body)
-      | Some b -> ForIn_statement (Left (EAssignTarget b), right, body) }
+   { let left = assignment_target_of_expr None left in
+     ForIn_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_IN right=expr ")" body=stmt
    { ForIn_statement (Right left, right, body) }
 
  | T_FOR "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
-    { match assignment_pattern_of_expr None left with
-      | None -> ForOf_statement (Left left, right, body)
-      | Some b -> ForOf_statement (Left (EAssignTarget b), right, body) }
+    { let left = assignment_target_of_expr None left in
+      ForOf_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
    { ForOf_statement (Right left, right, body) }
 
@@ -751,9 +749,8 @@ assignment_expr:
  | conditional_expr(d1) { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-        | None -> EBin (op, e1, e2)
-        | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  | arrow_function { $1 }
  | async_arrow_function { $1 }
@@ -1066,9 +1063,8 @@ assignment_expr_no_in:
  | conditional_expr_no_in { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr_no_in
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-        | None -> EBin (op, e1, e2)
-        | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
 
 conditional_expr_no_in:
@@ -1109,9 +1105,8 @@ assignment_expr_no_stmt:
  | conditional_expr(primary_no_stmt) { $1 }
  | e1=left_hand_side_expr_(primary_no_stmt) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-      | None -> EBin (op, e1, e2)
-      | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  (* es6: *)
  | arrow_function { $1 }
@@ -1134,9 +1129,8 @@ assignment_expr_for_consise_body:
  | conditional_expr(primary_for_consise_body) { $1 }
  | e1=left_hand_side_expr_(primary_for_consise_body) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-      | None -> EBin (op, e1, e2)
-      | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  (* es6: *)
  | arrow_function { $1 }

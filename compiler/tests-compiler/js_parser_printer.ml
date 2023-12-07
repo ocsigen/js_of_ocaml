@@ -416,22 +416,20 @@ let%expect_test "assignment pattern" =
 
   [%expect
     {|
-     /*<<fake:2:4>>*/ var x, y, rest;
-     /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
-     /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
-     /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
-     /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
-     {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
-     /*<<fake:9:4>>*/ [x, y] = [1, 2];
-     /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
-     /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
-     /*<<fake:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
-     /*<<fake:15:4>>*/ for
-    ([a, b, {c, d =  /*<<fake:15:17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
-      /*<<fake:15:43>>*/ ;
-     /*<<fake:17:4>>*/ for
-    ([a, b, {c, d =  /*<<fake:17:17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
-      /*<<fake:17:43>>*/ ; |}]
+    /*<<fake:2:4>>*/ var x, y, rest;
+    /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
+    /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
+    /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
+    /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
+    {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+    /*<<fake:9:4>>*/ [x, y] = [1, 2];
+    /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
+    /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
+    /*<<fake:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
+    /*<<fake:15:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] in 3)
+     /*<<fake:15:43>>*/ ;
+    /*<<fake:17:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] of 3)
+     /*<<fake:17:43>>*/ ; |}]
 
 let%expect_test "string template" =
   (* GH#1017 *)
@@ -629,6 +627,22 @@ var e = new (class f {})
   [%expect
     {|
     var e = new f; var e = new f(); var e = new class f{}; var e = new class f{}; |}]
+
+let%expect_test "assignment targets" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+ [a,b,c, {a,b}] = [];
+ [[[x = 5]], {a,b}, ...rest] = [];
+ ({a: [a,b] = f(), b = 3, ...rest} = {});
+|};
+  [%expect
+    {|
+    [a, b, c, {a, b}] = [];
+    [[[x = 5]], {a, b}, ...rest] = [];
+    ({a: [a, b] = f(), b = 3, ...rest} = {}); |}]
 
 let%expect_test "error reporting" =
   (try

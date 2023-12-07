@@ -255,7 +255,29 @@ class map : mapper =
       | ESeq (e1, e2) -> ESeq (m#expression e1, m#expression e2)
       | ECond (e1, e2, e3) -> ECond (m#expression e1, m#expression e2, m#expression e3)
       | EBin (b, e1, e2) -> EBin (b, m#expression e1, m#expression e2)
-      | EAssignTarget p -> EAssignTarget (m#binding_pattern p)
+      | EAssignTarget x -> (
+          match x with
+          | ArrayTarget l ->
+              EAssignTarget
+                (ArrayTarget
+                   (List.map l ~f:(function
+                       | TargetElementHole -> TargetElementHole
+                       | TargetElementId (i, e) ->
+                           TargetElementId (m#ident i, m#initialiser_o e)
+                       | TargetElement e -> TargetElement (m#expression e)
+                       | TargetElementSpread e -> TargetElementSpread (m#expression e))))
+          | ObjectTarget l ->
+              EAssignTarget
+                (ObjectTarget
+                   (List.map l ~f:(function
+                       | TargetPropertyId (i, e) ->
+                           TargetPropertyId (m#ident i, m#initialiser_o e)
+                       | TargetProperty (i, e) ->
+                           TargetProperty (m#property_name i, m#expression e)
+                       | TargetPropertyMethod (n, x) ->
+                           TargetPropertyMethod (m#property_name n, m#method_ x)
+                       | TargetPropertySpread e -> TargetPropertySpread (m#expression e))))
+          )
       | EUn (b, e1) -> EUn (b, m#expression e1)
       | ECallTemplate (e1, t, loc) ->
           ECallTemplate (m#expression e1, m#template t, m#loc loc)
@@ -570,7 +592,28 @@ class iter : iterator =
       | EBin (_, e1, e2) ->
           m#expression e1;
           m#expression e2
-      | EAssignTarget p -> m#binding_pattern p
+      | EAssignTarget x -> (
+          match x with
+          | ArrayTarget l ->
+              List.iter l ~f:(function
+                  | TargetElementHole -> ()
+                  | TargetElementId (i, e) ->
+                      m#ident i;
+                      m#initialiser_o e
+                  | TargetElement e -> m#expression e
+                  | TargetElementSpread e -> m#expression e)
+          | ObjectTarget l ->
+              List.iter l ~f:(function
+                  | TargetPropertyId (i, e) ->
+                      m#ident i;
+                      m#initialiser_o e
+                  | TargetProperty (i, e) ->
+                      m#property_name i;
+                      m#expression e
+                  | TargetPropertyMethod (n, x) ->
+                      m#property_name n;
+                      m#method_ x
+                  | TargetPropertySpread e -> m#expression e))
       | EUn (_, e1) -> m#expression e1
       | ECall (e1, _ak, e2, _) ->
           m#expression e1;

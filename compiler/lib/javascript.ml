@@ -272,7 +272,7 @@ and property_name =
 and expression =
   | ESeq of expression * expression
   | ECond of expression * expression * expression
-  | EAssignTarget of binding_pattern
+  | EAssignTarget of assignment_target
   | EBin of binop * expression * expression
   | EUn of unop * expression
   | ECall of expression * access_kind * arguments * location
@@ -413,6 +413,22 @@ and binding =
 and binding_pattern =
   | ObjectBinding of (binding_property, binding_ident) list_with_rest
   | ArrayBinding of (binding_element option, binding) list_with_rest
+
+and object_target_elt =
+  | TargetPropertyId of ident * initialiser option
+  | TargetProperty of property_name * expression
+  | TargetPropertySpread of expression
+  | TargetPropertyMethod of property_name * method_
+
+and array_target_elt =
+  | TargetElementId of ident * initialiser option
+  | TargetElementHole
+  | TargetElement of expression
+  | TargetElementSpread of expression
+
+and assignment_target =
+  | ObjectTarget of object_target_elt list
+  | ArrayTarget of array_target_elt list
 
 and binding_ident = ident
 
@@ -557,51 +573,33 @@ let fun_ params body loc =
   , body
   , loc )
 
-let rec assignment_pattern_of_expr x =
+let rec assignment_target_of_expr' x =
   match x with
   | EObj l ->
-      let rest, l =
-        match List.rev l with
-        | PropertySpread (EVar x) :: l -> Some x, List.rev l
-        | _ -> None, l
-      in
       let list =
         List.map l ~f:(function
-            | Property (PNI (Utf8 i), EVar (S { name = Utf8 i2; loc = N; _ } as ident))
-              when String.equal i i2 -> Prop_ident (ident, None)
-            | Property (n, e) -> Prop_binding (n, binding_element_of_expression e)
-            | CoverInitializedName (_, i, e) -> Prop_ident (i, Some e)
-            | _ -> raise Not_found)
+            | Property (PNI n, EVar (S { name = n'; _ } as id))
+              when Utf8_string.equal n n' -> TargetPropertyId (id, None)
+            | Property (n, e) -> TargetProperty (n, assignment_target_of_expr' e)
+            | CoverInitializedName (_, i, (e, loc)) ->
+                TargetPropertyId (i, Some (assignment_target_of_expr' e, loc))
+            | PropertySpread e -> TargetPropertySpread (assignment_target_of_expr' e)
+            | PropertyMethod (n, m) -> TargetPropertyMethod (n, m))
       in
-      ObjectBinding { list; rest }
+      EAssignTarget (ObjectTarget list)
   | EArr l ->
-      let rest, l =
-        match List.rev l with
-        | ElementSpread e :: l -> Some (binding_of_expression e), List.rev l
-        | _ -> None, l
-      in
       let list =
         List.map l ~f:(function
-            | ElementHole -> None
-            | Element e -> Some (binding_element_of_expression e)
-            | ElementSpread _ -> raise Not_found)
+            | ElementHole -> TargetElementHole
+            | Element (EVar x) -> TargetElementId (x, None)
+            | Element (EBin (Eq, EVar x, rhs)) -> TargetElementId (x, Some (rhs, N))
+            | Element e -> TargetElement (assignment_target_of_expr' e)
+            | ElementSpread e -> TargetElementSpread (assignment_target_of_expr' e))
       in
-      ArrayBinding { list; rest }
-  | _ -> raise Not_found
+      EAssignTarget (ArrayTarget list)
+  | _ -> x
 
-and binding_element_of_expression e =
-  match e with
-  | EBin (Eq, e1, e2) -> binding_of_expression e1, Some (e2, N)
-  | e -> binding_of_expression e, None
-
-and binding_of_expression e =
-  match e with
-  | EVar x -> BindingIdent x
-  | EObj _ as x -> BindingPattern (assignment_pattern_of_expr x)
-  | EArr _ as x -> BindingPattern (assignment_pattern_of_expr x)
-  | _ -> raise Not_found
-
-let assignment_pattern_of_expr op x =
+and assignment_target_of_expr op x =
   match op with
-  | None | Some Eq -> ( try Some (assignment_pattern_of_expr x) with Not_found -> None)
-  | _ -> None
+  | None | Some Eq -> assignment_target_of_expr' x
+  | _ -> x

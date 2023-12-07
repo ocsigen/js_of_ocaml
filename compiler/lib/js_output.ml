@@ -303,8 +303,8 @@ struct
       | ESeq (e, _) -> Prec.(l <= Expression) && traverse Expression e
       | ECond (e, _, _) ->
           Prec.(l <= ConditionalExpression) && traverse ShortCircuitExpression e
-      | EAssignTarget (ObjectBinding _) -> obj
-      | EAssignTarget (ArrayBinding _) -> false
+      | EAssignTarget (ObjectTarget _) -> obj
+      | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e, _) ->
           let out, lft, _rght = op_prec op in
           Prec.(l <= out) && traverse lft e
@@ -690,7 +690,56 @@ struct
         if Prec.(l > out) then PP.string f ")";
         PP.end_group f;
         PP.end_group f
-    | EAssignTarget p -> pattern f p
+    | EAssignTarget t -> (
+        let property f p =
+          match p with
+          | TargetPropertyId (id, None) -> ident f id
+          | TargetPropertyId (id, Some (e, _)) ->
+              ident f id;
+              PP.space f;
+              PP.string f "=";
+              PP.space f;
+              expression AssignementExpression f e
+          | TargetProperty (pn, e) ->
+              PP.start_group f 0;
+              property_name f pn;
+              PP.string f ":";
+              PP.space f;
+              expression AssignementExpression f e;
+              PP.end_group f
+          | TargetPropertySpread e ->
+              PP.string f "...";
+              expression AssignementExpression f e
+          | TargetPropertyMethod (n, m) -> method_ f property_name n m
+        in
+        let element f p =
+          match p with
+          | TargetElementHole -> ()
+          | TargetElementId (id, None) -> ident f id
+          | TargetElementId (id, Some (e, _)) ->
+              ident f id;
+              PP.space f;
+              PP.string f "=";
+              PP.space f;
+              expression AssignementExpression f e
+          | TargetElement e -> expression AssignementExpression f e
+          | TargetElementSpread e ->
+              PP.string f "...";
+              expression AssignementExpression f e
+        in
+        match t with
+        | ObjectTarget list ->
+            PP.start_group f 1;
+            PP.string f "{";
+            comma_list f property list;
+            PP.string f "}";
+            PP.end_group f
+        | ArrayTarget list ->
+            PP.start_group f 1;
+            PP.string f "[";
+            comma_list f element list;
+            PP.string f "]";
+            PP.end_group f)
     | EArr el ->
         PP.start_group f 1;
         PP.string f "[";
