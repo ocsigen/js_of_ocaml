@@ -541,10 +541,9 @@ export default function* () { /* … */ }
     $ cat "test.min.js"
       1: export function* generatorFunctionName(){} |}];
   t {| export const { name1, name2: bar } = o; |};
-  [%expect
-    {|
+  [%expect {|
     $ cat "test.min.js"
-      1: export const {name1: name1, name2: bar} = o; |}];
+      1: export const {name1, name2: bar} = o; |}];
   t {| export const [ name1, name2 ] = array; |};
   [%expect {|
     $ cat "test.min.js"
