@@ -49,15 +49,15 @@ let () = myfun ()
       var
        closures =
          function(i){
-          function g(x){return app(f, x);}
           function f(x){
            return 0 === x ? 1 : runtime.caml_mul(i, app(g, x - 1 | 0));
           }
-          var block = [0, g, f];
+          function g(x){return app(f, x);}
+          var block = [0, f, g];
           return block;
          },
        closures$0 = closures(i),
-       g = closures$0[1],
+       g = closures$0[2],
        _b_ = g(i);
       caml_call2(Stdlib_Printf[3], _a_, _b_);
       var _c_ = i + 1 | 0;

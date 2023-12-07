@@ -160,84 +160,6 @@ let ()  = M.myfun M.x
       if(! x$0) return 0;
       var
        next = x$0[1],
-       rev_sort =
-         function(n, l){
-          if(2 === n){
-           if(l){
-            var match = l[2];
-            if(match){
-             var
-              tl = match[2],
-              x2 = match[1],
-              x1 = l[1],
-              s =
-                0 < caml_int_compare(x1, x2)
-                 ? [0, x1, [0, x2, 0]]
-                 : [0, x2, [0, x1, 0]];
-             return [0, s, tl];
-            }
-           }
-          }
-          else if(3 === n && l){
-           var _d_ = l[2];
-           if(_d_){
-            var match$2 = _d_[2];
-            if(match$2){
-             var
-              tl$1 = match$2[2],
-              x3 = match$2[1],
-              x2$0 = _d_[1],
-              x1$0 = l[1],
-              s$0 =
-                0 < caml_int_compare(x1$0, x2$0)
-                 ? 0
-                   < caml_int_compare(x2$0, x3)
-                   ? [0, x1$0, [0, x2$0, [0, x3, 0]]]
-                   : 0
-                     < caml_int_compare(x1$0, x3)
-                     ? [0, x1$0, [0, x3, [0, x2$0, 0]]]
-                     : [0, x3, [0, x1$0, [0, x2$0, 0]]]
-                 : 0
-                   < caml_int_compare(x1$0, x3)
-                   ? [0, x2$0, [0, x1$0, [0, x3, 0]]]
-                   : 0
-                     < caml_int_compare(x2$0, x3)
-                     ? [0, x2$0, [0, x3, [0, x1$0, 0]]]
-                     : [0, x3, [0, x2$0, [0, x1$0, 0]]];
-             return [0, s$0, tl$1];
-            }
-           }
-          }
-          var
-           n1 = n >> 1,
-           n2 = n - n1 | 0,
-           match$0 = sort(n1, l),
-           l2$0 = match$0[2],
-           s1 = match$0[1],
-           match$1 = sort(n2, l2$0),
-           tl$0 = match$1[2],
-           s2 = match$1[1],
-           l1 = s1,
-           l2 = s2,
-           accu = 0;
-          for(;;){
-           if(l1){
-            if(l2){
-             var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
-             if(0 < caml_int_compare(h1, h2)){
-              var accu$0 = [0, h2, accu], l2 = t2, accu = accu$0;
-              continue;
-             }
-             var accu$1 = [0, h1, accu], l1 = t1, accu = accu$1;
-             continue;
-            }
-            var _c_ = rev_append(l1, accu);
-           }
-           else
-            var _c_ = rev_append(l2, accu);
-           return [0, _c_, tl$0];
-          }
-         },
        sort =
          function(n, l){
           if(2 === n){
@@ -257,14 +179,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _b_ = l[2];
-           if(_b_){
-            var match$2 = _b_[2];
+           var _d_ = l[2];
+           if(_d_){
+            var match$2 = _d_[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = _b_[1],
+              x2$0 = _d_[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -307,6 +229,84 @@ let ()  = M.myfun M.x
               continue;
              }
              var accu$1 = [0, h2, accu], l2 = t2, accu = accu$1;
+             continue;
+            }
+            var _c_ = rev_append(l1, accu);
+           }
+           else
+            var _c_ = rev_append(l2, accu);
+           return [0, _c_, tl$0];
+          }
+         },
+       rev_sort =
+         function(n, l){
+          if(2 === n){
+           if(l){
+            var match = l[2];
+            if(match){
+             var
+              tl = match[2],
+              x2 = match[1],
+              x1 = l[1],
+              s =
+                0 < caml_int_compare(x1, x2)
+                 ? [0, x1, [0, x2, 0]]
+                 : [0, x2, [0, x1, 0]];
+             return [0, s, tl];
+            }
+           }
+          }
+          else if(3 === n && l){
+           var _b_ = l[2];
+           if(_b_){
+            var match$2 = _b_[2];
+            if(match$2){
+             var
+              tl$1 = match$2[2],
+              x3 = match$2[1],
+              x2$0 = _b_[1],
+              x1$0 = l[1],
+              s$0 =
+                0 < caml_int_compare(x1$0, x2$0)
+                 ? 0
+                   < caml_int_compare(x2$0, x3)
+                   ? [0, x1$0, [0, x2$0, [0, x3, 0]]]
+                   : 0
+                     < caml_int_compare(x1$0, x3)
+                     ? [0, x1$0, [0, x3, [0, x2$0, 0]]]
+                     : [0, x3, [0, x1$0, [0, x2$0, 0]]]
+                 : 0
+                   < caml_int_compare(x1$0, x3)
+                   ? [0, x2$0, [0, x1$0, [0, x3, 0]]]
+                   : 0
+                     < caml_int_compare(x2$0, x3)
+                     ? [0, x2$0, [0, x3, [0, x1$0, 0]]]
+                     : [0, x3, [0, x2$0, [0, x1$0, 0]]];
+             return [0, s$0, tl$1];
+            }
+           }
+          }
+          var
+           n1 = n >> 1,
+           n2 = n - n1 | 0,
+           match$0 = sort(n1, l),
+           l2$0 = match$0[2],
+           s1 = match$0[1],
+           match$1 = sort(n2, l2$0),
+           tl$0 = match$1[2],
+           s2 = match$1[1],
+           l1 = s1,
+           l2 = s2,
+           accu = 0;
+          for(;;){
+           if(l1){
+            if(l2){
+             var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
+             if(0 < caml_int_compare(h1, h2)){
+              var accu$0 = [0, h2, accu], l2 = t2, accu = accu$0;
+              continue;
+             }
+             var accu$1 = [0, h1, accu], l1 = t1, accu = accu$1;
              continue;
             }
             var _a_ = rev_append(l1, accu);
@@ -366,17 +366,6 @@ let ()  = M.run ()
      var i = 0;
      for(;;){
       var
-       even =
-         function(n){
-          if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
-          switch(n){
-            case 0:
-             return 1;
-            case 1:
-             return 1 - (1 - odd(0));
-            default: return 1 - (1 - odd(1));
-          }
-         },
        odd =
          function(n){
           if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
@@ -386,6 +375,17 @@ let ()  = M.run ()
             case 1:
              return 1 - (1 - even(0));
             default: return 1 - (1 - even(1));
+          }
+         },
+       even =
+         function(n){
+          if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+          switch(n){
+            case 0:
+             return 1;
+            case 1:
+             return 1 - (1 - odd(0));
+            default: return 1 - (1 - odd(1));
           }
          };
       if(even(i)) caml_call1(Stdlib[42], cst);
@@ -464,20 +464,6 @@ let ()  = M.run ()
       var
        closures =
          function(i){
-          function even(n){
-           if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
-           switch(n){
-             case 0:
-              var
-               f = function(param){return caml_call2(Stdlib_Printf[2], _c_, i);};
-              delayed[1] = [0, f, delayed[1]];
-              f(0);
-              return 1;
-             case 1:
-              return 1 - (1 - odd(0));
-             default: return 1 - (1 - odd(1));
-           }
-          }
           function odd(n){
            if(2 < n >>> 0) return 1 - (1 - even(n - 1 | 0));
            switch(n){
@@ -492,11 +478,25 @@ let ()  = M.run ()
              default: return 1 - (1 - even(1));
            }
           }
-          var block = [0, even, odd];
+          function even(n){
+           if(2 < n >>> 0) return 1 - (1 - odd(n - 1 | 0));
+           switch(n){
+             case 0:
+              var
+               f = function(param){return caml_call2(Stdlib_Printf[2], _c_, i);};
+              delayed[1] = [0, f, delayed[1]];
+              f(0);
+              return 1;
+             case 1:
+              return 1 - (1 - odd(0));
+             default: return 1 - (1 - odd(1));
+           }
+          }
+          var block = [0, odd, even];
           return block;
          },
        closures$0 = closures(i),
-       even = closures$0[1];
+       even = closures$0[2];
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _e_ = i + 1 | 0;
       if(4 === i){
@@ -580,26 +580,6 @@ let ()  = M.run ()
       var
        closures =
          function(i){
-          function even(n){
-           if(2 < n >>> 0)
-            return [0, 748545554, function(param){return odd(n - 1 | 0);}];
-           switch(n){
-             case 0:
-              return [0,
-                      748545554,
-                      function(param){
-                       function f(param){
-                        return caml_call2(Stdlib_Printf[2], _d_, i);
-                       }
-                       delayed[1] = [0, f, delayed[1]];
-                       f(0);
-                       return _e_;
-                      }];
-             case 1:
-              return [0, 748545554, function(param){return odd(0);}];
-             default: return [0, 748545554, function(param){return odd(1);}];
-           }
-          }
           function odd(n){
            if(2 < n >>> 0)
             return [0, 748545554, function(param){return even(n - 1 | 0);}];
@@ -620,11 +600,31 @@ let ()  = M.run ()
              default: return [0, 748545554, function(param){return even(1);}];
            }
           }
-          var block = [0, even, odd];
+          function even(n){
+           if(2 < n >>> 0)
+            return [0, 748545554, function(param){return odd(n - 1 | 0);}];
+           switch(n){
+             case 0:
+              return [0,
+                      748545554,
+                      function(param){
+                       function f(param){
+                        return caml_call2(Stdlib_Printf[2], _d_, i);
+                       }
+                       delayed[1] = [0, f, delayed[1]];
+                       f(0);
+                       return _e_;
+                      }];
+             case 1:
+              return [0, 748545554, function(param){return odd(0);}];
+             default: return [0, 748545554, function(param){return odd(1);}];
+           }
+          }
+          var block = [0, odd, even];
           return block;
          },
        closures$0 = closures(i),
-       even = closures$0[1],
+       even = closures$0[2],
        param$0 = even(i);
       for(;;){
        if(759635106 <= param$0[1]) break;
