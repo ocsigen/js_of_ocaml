@@ -76,7 +76,6 @@ end = struct
         List.iter l ~f:(fun (loc, e) ->
             let f = Loc.filename loc in
             let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
-
             Printf.eprintf
               "Lexer error: %s: %s\n"
               loc

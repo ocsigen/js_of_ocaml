@@ -22,6 +22,8 @@ open Javascript
 class type mapper = object
   method loc : Javascript.location -> Javascript.location
 
+  method parse_info : Parse_info.t -> Parse_info.t
+
   method expression : expression -> expression
 
   method expression_o : expression option -> expression option
