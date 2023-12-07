@@ -328,9 +328,33 @@ type result =
   | Comment of Lex_env.t * string
   | Continue of Lex_env.t
 
+let newline lexbuf =
+  let start = Sedlexing.lexeme_start lexbuf in
+  let stop = Sedlexing.lexeme_end lexbuf in
+  let len = stop - start in
+  let pending = ref false in
+  for i = 0 to len - 1 do
+    match Uchar.to_int (Sedlexing.lexeme_char lexbuf i) with
+    | 0x000d -> pending := true
+    | 0x000a -> pending := false
+    | 0x2028 | 0x2029 ->
+        if !pending
+        then (
+          pending := false;
+          Sedlexing.new_line lexbuf);
+        Sedlexing.new_line lexbuf
+    | _ ->
+        if !pending
+        then (
+          pending := false;
+          Sedlexing.new_line lexbuf)
+  done;
+  if !pending then Sedlexing.new_line lexbuf
+
 let rec comment env buf lexbuf =
   match%sedlex lexbuf with
   | line_terminator_sequence ->
+      newline lexbuf;
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | "*/" ->
@@ -407,6 +431,7 @@ let string_escape env lexbuf =
       let env = illegal env (loc_of_lexbuf env lexbuf) in
       env, str
   | line_terminator_sequence ->
+      newline lexbuf;
       let str = lexeme lexbuf in
       env, str
   | any ->
@@ -425,7 +450,9 @@ let rec string_quote env q buf lexbuf =
       else (
         Buffer.add_string buf q';
         string_quote env q buf lexbuf)
-  | '\\', line_terminator_sequence -> string_quote env q buf lexbuf
+  | '\\', line_terminator_sequence ->
+      newline lexbuf;
+      string_quote env q buf lexbuf
   | '\\' ->
       let env, str = string_escape env lexbuf in
       if String.equal str "" || String.get q 0 <> String.get str 0
@@ -451,7 +478,9 @@ let rec string_quote env q buf lexbuf =
 
 let token (env : Lex_env.t) lexbuf : result =
   match%sedlex lexbuf with
-  | line_terminator_sequence -> Continue env
+  | line_terminator_sequence ->
+      newline lexbuf;
+      Continue env
   | Plus whitespace -> Continue env
   | "/*" ->
       let buf = Buffer.create 127 in
@@ -702,6 +731,7 @@ let rec regexp_class env buf lexbuf =
       Buffer.add_char buf ']';
       env
   | line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env
@@ -719,6 +749,7 @@ let rec regexp_body env buf lexbuf =
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
   | '\\', line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
@@ -738,6 +769,7 @@ let rec regexp_body env buf lexbuf =
       let env = regexp_class env buf lexbuf in
       regexp_body env buf lexbuf
   | line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
@@ -751,7 +783,9 @@ let rec regexp_body env buf lexbuf =
 let regexp env lexbuf =
   match%sedlex lexbuf with
   | eof -> Token (env, T_EOF)
-  | line_terminator_sequence -> Continue env
+  | line_terminator_sequence ->
+      newline lexbuf;
+      Continue env
   | Plus whitespace -> Continue env
   | "//" ->
       let buf = Buffer.create 127 in
