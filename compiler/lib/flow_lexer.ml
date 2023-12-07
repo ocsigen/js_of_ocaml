@@ -142,7 +142,7 @@ let scinumber =
     , Opt ('-' | '+')
     , underscored_digit )]
 
-let wholenumber = [%sedlex.regexp? underscored_digit, Opt '.']
+let integer = [%sedlex.regexp? underscored_digit]
 
 let floatnumber = [%sedlex.regexp? Opt underscored_digit, '.', underscored_decimal]
 
@@ -152,11 +152,7 @@ let octbigint = [%sedlex.regexp? octnumber, 'n']
 
 let hexbigint = [%sedlex.regexp? hexnumber, 'n']
 
-let scibigint = [%sedlex.regexp? scinumber, 'n']
-
 let wholebigint = [%sedlex.regexp? underscored_digit, 'n']
-
-let floatbigint = [%sedlex.regexp? (floatnumber | underscored_digit, '.'), 'n']
 
 (* https://tc39.github.io/ecma262/#sec-white-space *)
 let whitespace =
@@ -570,19 +566,6 @@ let token (env : Lex_env.t) lexbuf : result =
           | hexnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token hexnumber")
   | hexnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
-  | scibigint, word ->
-      (* Numbers cannot be immediately followed by words *)
-      recover env lexbuf ~f:(fun env lexbuf ->
-          match%sedlex lexbuf with
-          | scibigint ->
-              let loc = loc_of_lexbuf env lexbuf in
-              let env = lex_error env loc Parse_error.InvalidSciBigInt in
-              Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-          | _ -> failwith "unreachable token scibigint")
-  | scibigint ->
-      let loc = loc_of_lexbuf env lexbuf in
-      let env = lex_error env loc Parse_error.InvalidSciBigInt in
-      Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
   | scinumber, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
@@ -590,33 +573,31 @@ let token (env : Lex_env.t) lexbuf : result =
           | scinumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token scinumber")
   | scinumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
-  | floatbigint, word ->
-      (* Numbers cannot be immediately followed by words *)
-      recover env lexbuf ~f:(fun env lexbuf ->
-          match%sedlex lexbuf with
-          | floatbigint ->
-              let loc = loc_of_lexbuf env lexbuf in
-              let env = lex_error env loc Parse_error.InvalidFloatBigInt in
-              Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-          | _ -> failwith "unreachable token floatbigint")
   | wholebigint, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
           match%sedlex lexbuf with
           | wholebigint -> Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token wholebigint")
-  | floatbigint ->
-      let loc = loc_of_lexbuf env lexbuf in
-      let env = lex_error env loc Parse_error.InvalidFloatBigInt in
-      Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
   | wholebigint -> Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-  | (wholenumber | floatnumber), word ->
+  | integer, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
           match%sedlex lexbuf with
-          | wholenumber | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+          | integer -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token wholenumber")
-  | wholenumber | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+  | integer, '.', word -> (
+      Sedlexing.rollback lexbuf;
+      match%sedlex lexbuf with
+      | integer -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+      | _ -> failwith "unreachable token wholenumber")
+  | floatnumber, word ->
+      (* Numbers cannot be immediately followed by words *)
+      recover env lexbuf ~f:(fun env lexbuf ->
+          match%sedlex lexbuf with
+          | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+          | _ -> failwith "unreachable token wholenumber")
+  | integer, Opt '.' | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
   (* Syntax *)
   | "{" ->
       let env = push_mode env NORMAL in
