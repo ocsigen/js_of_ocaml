@@ -319,8 +319,8 @@ import_specifier:
 
 %inline string_or_ident:
  | T_STRING { `String, fst $1, $symbolstartpos }
- | T_DEFAULT { `Ident, Stdlib.Utf8_string.of_string_exn "default", $symbolstartpos }
  | id { `Ident, $1, $symbolstartpos }
+ | ident_keyword { `Ident, $1, $symbolstartpos }
 
 module_specifier:
   | T_STRING { (fst $1) }
