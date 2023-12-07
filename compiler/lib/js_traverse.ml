@@ -23,6 +23,8 @@ open Javascript
 class type mapper = object
   method loc : Javascript.location -> Javascript.location
 
+  method parse_info : Parse_info.t -> Parse_info.t
+
   method expression : Javascript.expression -> Javascript.expression
 
   method expression_o : Javascript.expression option -> Javascript.expression option
@@ -80,14 +82,20 @@ end
 (* generic js ast walk/map *)
 class map : mapper =
   object (m)
-    method loc i = i
+    method loc =
+      function
+      | N -> N
+      | U -> U
+      | Pi x -> Pi (m#parse_info x)
+
+    method parse_info i = i
 
     method ident i =
       match i with
       | V v -> V v
       | S { name; var; loc } -> S { name; var; loc = m#loc loc }
 
-    method private early_error e = e
+    method private early_error { reason; loc } = { reason; loc = m#parse_info loc }
 
     method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, m#loc pc)
 
@@ -191,8 +199,8 @@ class map : mapper =
             , match final with
               | None -> None
               | Some s -> Some (m#block s) )
-      | Import (import, loc) -> Import (m#import import, loc)
-      | Export (export, loc) -> Export (m#export export, loc)
+      | Import (import, loc) -> Import (m#import import, m#parse_info loc)
+      | Export (export, loc) -> Export (m#export export, m#parse_info loc)
 
     method import { from; kind } =
       let kind =

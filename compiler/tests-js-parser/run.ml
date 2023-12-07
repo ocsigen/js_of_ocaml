@@ -1,6 +1,13 @@
 open Js_of_ocaml_compiler
 open Stdlib
 
+let exe =
+  match Sys.os_type with
+  | "Cygwin" | "Win32" -> fun x -> x ^ ".exe"
+  | "Unix" | _ -> fun x -> x
+
+let node = try Sys.getenv "NODE" with Not_found -> exe "node"
+
 let failure_expected = ref false
 
 let flags, files =
@@ -20,24 +27,11 @@ let fail = ref []
 
 let pass = ref []
 
-let rs =
-  [ Str.regexp_string "import"
-  ; Str.regexp_string "export"
-  ; Str.regexp_string "with"
-  ; Str.regexp_string "<!--"
-  ; Str.regexp_string "-->"
-  ]
-
-let has_unsupported_syntax c =
-  List.exists rs ~f:(fun r ->
-      try
-        let (_ : int) = Str.search_forward r c 0 in
-        true
-      with Not_found -> false)
-
 class clean_loc =
   object
     inherit Js_traverse.map
+
+    method! parse_info _ = Parse_info.zero
 
     method! loc _ = N
   end
@@ -55,6 +49,15 @@ let p_to_string p =
 let patdiff = false
 
 let vs_explicit = false
+
+let accepted_by_node file =
+  let ic_oc = Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||] in
+  let pid = Unix.process_full_pid ic_oc in
+  let _pid, status = Unix.waitpid [] pid in
+  match status with
+  | WEXITED 0 -> true
+  | WEXITED _ -> false
+  | WSIGNALED _ | WSTOPPED _ -> assert false
 
 let () =
   List.iter files ~f:(fun filename ->
@@ -91,13 +94,18 @@ let () =
              let p1 = clean_loc p1 and p2 = clean_loc p2 in
              let p1s = p_to_string p1 and p2s = p_to_string p2 in
              if Poly.(p1 <> p2)
-             then (
-               Printf.printf ">>>>>>> MISMATCH %s <<<<<<<<<<\n" filename;
-               Printf.printf "%s\n\n%s\n" p1s p2s)
+             then
+               if String.equal p1s p2s
+               then (
+                 Printf.printf ">>>>>>> AST MISMATCH %s <<<<<<<<<<\n" filename;
+                 Printf.printf "%s\n\n" p1s)
+               else (
+                 Printf.printf ">>>>>>> MISMATCH %s <<<<<<<<<<\n" filename;
+                 Printf.printf "%s\n\n%s\n" p1s p2s)
            with _ -> ());
         add pass
       with Parse_js.Parsing_error loc ->
-        if has_unsupported_syntax content
+        if not (accepted_by_node filename)
         then add unsupported_syntax
         else fail := (filename, loc, content) :: !fail);
   Printf.printf "Summary:\n";
@@ -106,11 +114,14 @@ let () =
   Printf.printf "  pass : %d\n" (List.length !pass);
   let l = !fail in
   if !failure_expected
-  then
+  then (
     List.iter !pass ~f:(fun (f, c) ->
         Printf.printf "succeded to parse %s\n" f;
-        Printf.printf "%s\n\n" c)
-  else
+        Printf.printf "%s\n\n" c);
+    match !pass with
+    | [] -> exit 0
+    | _ -> exit 1)
+  else (
     List.iter l ~f:(fun (f, (pi : Parse_info.t), c) ->
         Printf.printf "failed to parse %s:%d:%d\n" f pi.line pi.col;
         List.iteri (String.split_on_char ~sep:'\n' c) ~f:(fun i c ->
@@ -122,4 +133,7 @@ let () =
                   Buffer.add_utf_8_uchar b u);
               Printf.printf "%s\n" (Buffer.contents b))
             else Printf.printf "%s\n" c);
-        Printf.printf "\n")
+        Printf.printf "\n");
+    match !fail with
+    | [] -> exit 0
+    | _ -> exit 1)
