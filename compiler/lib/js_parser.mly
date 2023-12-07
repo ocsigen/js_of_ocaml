@@ -329,6 +329,16 @@ module_specifier:
 (* export *)
 (*----------------------------*)
 
+export_fun_class:
+ | function_expr       { $1 }
+ | class_expr          { $1 }
+ (* es6: *)
+ | generator_expr      { $1 }
+ (* es7: *)
+ | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
+
+
 export_decl:
   | T_EXPORT names=export_clause sc {
     let exception Invalid of Lexing.position in
@@ -364,8 +374,17 @@ export_decl:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- (* in theory just func/gen/class, no lexical_decl *)
- | T_EXPORT T_DEFAULT e=assignment_expr sc
+ | T_EXPORT T_DEFAULT e=assignment_expr_no_stmt sc
+    {
+      let k = ExportDefaultExpression e in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ | T_EXPORT T_DEFAULT e=object_literal sc
+    {
+      let k = ExportDefaultExpression e in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ | T_EXPORT T_DEFAULT e=export_fun_class
     {
       let k = match e with
       | EFun (Some id, decl) ->
