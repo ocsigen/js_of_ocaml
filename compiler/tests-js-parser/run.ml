@@ -16,6 +16,18 @@ let flags, files =
   |> List.tl
   |> List.partition ~f:(fun x -> Char.equal (String.get x 0) '-')
 
+let files =
+  List.concat_map files ~f:(fun path ->
+      if Sys.is_directory path
+      then
+        Sys.readdir path
+        |> Array.to_list
+        |> List.filter_map ~f:(fun name ->
+               if Filename.check_suffix name ".js"
+               then Some (Filename.concat path name)
+               else None)
+      else [ path ])
+
 let () =
   List.iter flags ~f:(function
       | "-fail" -> failure_expected := true

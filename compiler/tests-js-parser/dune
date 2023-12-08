@@ -6,7 +6,7 @@
  (alias runtest)
  (deps
   (:js_files
-   (glob_files pass/*.js))
+   (glob_files_rec pass/*.js))
   package.json)
  (action
-  (run ./run.exe %{js_files})))
+  (run ./run.exe pass)))
