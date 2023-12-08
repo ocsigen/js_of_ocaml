@@ -1,6 +1,16 @@
 # 5.5.2 (2023-12-01) - Lille
 
 ## Features/Changes
+* Compiler: try to preserve clorures ordering between ml and js
+
+## Bug fixes
+* Compiler: js-parser now accept all the line terminators defined in the spec
+* Compiler: js-parser: fix support for LHS assignment target
+* Compiler: js-parser: fix parser of default export
+
+# 5.5.2 (2023-12-01) - Lille
+
+## Features/Changes
 * Compiler: global dead code elimination (Micah Cantor, #1503)
 * Compiler: change control-flow compilation strategy (#1496)
 * Compiler: loop no longer absorb the whole continuation
