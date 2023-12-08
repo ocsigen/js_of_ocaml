@@ -669,11 +669,3 @@ function caml_zstd_initialize(unit) {
 //Version: < 5.1.1
 //Requires: zstd_decompress
 var caml_decompress_input = zstd_decompress;
-
-
-//Provides: caml_compression_available
-//Requires: caml_decompress_input
-//Version: >= 5.1.1
-function caml_compression_available() {
-  return caml_decompress_input ? 1 : 0;
-}
