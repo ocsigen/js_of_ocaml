@@ -713,6 +713,11 @@ iteration_stmt:
       ForOf_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
    { ForOf_statement (Right left, right, body) }
+ | T_FOR T_AWAIT "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
+    { let left = assignment_target_of_expr None left in
+      ForAwaitOf_statement (Left left, right, body) }
+ | T_FOR T_AWAIT "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
+   { ForAwaitOf_statement (Right left, right, body) }
 
 initializer_no_in:
  | "=" e=assignment_expr_no_in { e, p $symbolstartpos }

@@ -160,6 +160,7 @@ let rec depth = function
   | For_statement (_, _, _, (s, _)) -> depth s + 1
   | ForIn_statement (_, _, (s, _)) -> depth s + 1
   | ForOf_statement (_, _, (s, _)) -> depth s + 1
+  | ForAwaitOf_statement (_, _, (s, _)) -> depth s + 1
   | Continue_statement _ -> 1
   | Break_statement _ -> 1
   | Return_statement _ -> 1

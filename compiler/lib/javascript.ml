@@ -336,6 +336,10 @@ and statement =
       (expression, variable_declaration_kind * for_binding) either
       * expression
       * (statement * location)
+  | ForAwaitOf_statement of
+      (expression, variable_declaration_kind * for_binding) either
+      * expression
+      * (statement * location)
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
