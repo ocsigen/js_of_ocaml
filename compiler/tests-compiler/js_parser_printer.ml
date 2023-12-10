@@ -451,6 +451,27 @@ let%expect_test "assignment pattern" =
     /*<<fake:17:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] of 3)
      /*<<fake:17:43>>*/ ; |}]
 
+let%expect_test "for loops" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    for(x in 3);
+    for(x of 3);
+    async function f(x) {
+    for await(x of 3);
+    }
+ |};
+
+  [%expect
+    {|
+    /*<<fake:2:4>>*/ for(x in 3)  /*<<fake:2:15>>*/ ;
+    /*<<fake:3:4>>*/ for(x of 3)  /*<<fake:3:15>>*/ ;
+    /*<<fake:4:4>>*/ async function f(x){
+     /*<<fake:5:4>>*/ for await(x of 3)  /*<<fake:5:21>>*/ ;
+    /*<<fake:4:4>>*/ } |}]
+
 let%expect_test "string template" =
   (* GH#1017 *)
   print

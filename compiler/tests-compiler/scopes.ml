@@ -79,7 +79,7 @@ let%expect_test "let inside forin" =
       1: (function(){
       2:    let v2 = 2;
       3:    var v3 = 0, v1 = [1, 2, 3];
-      4:    for(let v4 of v1){console.log(v4); v3 += v1[v4];}
+      4:    for(let v4 in v1){console.log(v4); v3 += v1[v4];}
       5:    console.log(v3);
       6:    console.log(v2);
       7:   }
@@ -120,6 +120,31 @@ let%expect_test "let inside forof" =
     3
     6
     2 |}]
+
+let%expect_test "let inside forawaitof" =
+  test
+    {|
+async function f () {
+  let x = 2
+  var y = 0;
+  for await(let x of [1,2,3]) {
+    console.log(x);
+    y += x;
+  }
+  console.log(y);
+  console.log(x);
+}
+|};
+  [%expect
+    {|
+    $ cat "test.min.js"
+      1: async function f(){
+      2:  let v1 = 2;
+      3:  var v2 = 0;
+      4:  for await(let v3 of [1, 2, 3]){console.log(v3); v2 += v3;}
+      5:  console.log(v2);
+      6:  console.log(v1);
+      7: } |}]
 
 let%expect_test "let inside switch" =
   test

@@ -176,6 +176,13 @@ class map : mapper =
             | Right (k, d) -> Right (k, m#for_binding k d)
           in
           ForOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+      | ForAwaitOf_statement (e1, e2, (s, loc)) ->
+          let e1 =
+            match e1 with
+            | Left e -> Left (m#expression e)
+            | Right (k, d) -> Right (k, m#for_binding k d)
+          in
+          ForAwaitOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
       | Return_statement e -> Return_statement (m#expression_o e)
@@ -516,7 +523,12 @@ class iter : iterator =
           (match e1 with
           | Left e -> m#expression e
           | Right (k, d) -> m#for_binding k d);
-
+          m#expression e2;
+          m#statement s
+      | ForAwaitOf_statement (e1, e2, (s, _)) ->
+          (match e1 with
+          | Left e -> m#expression e
+          | Right (k, d) -> m#for_binding k d);
           m#expression e2;
           m#statement s
       | Continue_statement _ -> ()
@@ -1063,6 +1075,15 @@ class free =
           m'#record_block Normal;
           m#merge_block_info m';
           ForOf_statement (Right (k, l), e2, (st, m#loc loc))
+      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = m'#for_binding k l in
+          let e2 = m'#expression e2 in
+          let st = m'#statement st in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          ForAwaitOf_statement (Right (k, l), e2, (st, m#loc loc))
       | Switch_statement (e, l, def, l') ->
           let same_level = level in
           let m' = {<state_ = empty; level = same_level>} in
@@ -1183,6 +1204,10 @@ class rename_variable ~esm =
              List.iter ~f:(m#variable_declaration k) l;
              m#statement st
          | _, ForOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, ForAwaitOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
              let m = {<depth = depth + 1>} in
              m#for_binding k l;
              m#statement st
@@ -1352,10 +1377,17 @@ class rename_variable ~esm =
             ( Right (k, m'#for_binding k l)
             , m'#expression e2
             , (m'#statement st, m'#loc loc) )
+      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let ids = bound_idents_of_binding l in
+          let m' = m#update_state Lexical_block ids [] in
+          ForAwaitOf_statement
+            ( Right (k, m'#for_binding k l)
+            , m'#expression e2
+            , (m'#statement st, m'#loc loc) )
       | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
           let ids = bound_idents_of_binding l in
           let m' = m#update_state Lexical_block ids [] in
-          ForOf_statement
+          ForIn_statement
             ( Right (k, m'#for_binding k l)
             , m'#expression e2
             , (m'#statement st, m'#loc loc) )
@@ -1632,6 +1664,7 @@ class clean =
       | For_statement (p1, p2, p3, st) -> For_statement (p1, p2, p3, b st)
       | ForIn_statement (param, e, st) -> ForIn_statement (param, e, b st)
       | ForOf_statement (param, e, st) -> ForOf_statement (param, e, b st)
+      | ForAwaitOf_statement (param, e, st) -> ForAwaitOf_statement (param, e, b st)
       | Switch_statement (e, l, Some [], []) -> Switch_statement (e, l, None, [])
       | s -> s
   end

@@ -275,6 +275,7 @@ struct
     | For_statement (_, _, _, st)
     | ForIn_statement (_, _, st) -> ends_with_if_without_else st
     | ForOf_statement (_, _, st) -> ends_with_if_without_else st
+    | ForAwaitOf_statement (_, _, st) -> ends_with_if_without_else st
     | If_statement (_, _, None) -> true
     | Block _
     | Variable_statement _
@@ -1302,6 +1303,28 @@ struct
               Expression
               f
               e
+        | Right (k, v) -> for_binding f k v);
+        PP.space f;
+        PP.string f "of";
+        PP.break f;
+        PP.space f;
+        expression Expression f e2;
+        PP.string f ")";
+        PP.end_group f;
+        PP.end_group f;
+        statement1 ~last f s;
+        PP.end_group f
+    | ForAwaitOf_statement (e1, e2, s) ->
+        PP.start_group f 0;
+        PP.start_group f 0;
+        PP.string f "for await";
+        PP.break f;
+        PP.start_group f 1;
+        PP.string f "(";
+        (match e1 with
+        | Left e ->
+            (* Should not starts with "let" *)
+            parenthesized_expression ~let_identifier:true Expression f e
         | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "of";

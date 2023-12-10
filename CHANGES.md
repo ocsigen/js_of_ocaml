@@ -2,12 +2,14 @@
 
 ## Features/Changes
 * Compiler: try to preserve clorures ordering between ml and js
+* Compiler: js-parser accept for await
 
 ## Bug fixes
 * Compiler: js-parser now accept all the line terminators defined in the spec
 * Compiler: js-parser: fix support for LHS assignment target
 * Compiler: js-parser: fix parser of default export
 * Compiler: js-parser: allow 'as' as ident
+* Compiler: js-parser: fix for in rewriting
 
 # 5.5.2 (2023-12-01) - Lille
 
