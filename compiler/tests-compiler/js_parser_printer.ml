@@ -676,6 +676,17 @@ let%expect_test "assignment targets" =
     [[[x = 5]], {a, b}, ...rest] = [];
     ({a: [a, b] = f(), b = 3, ...rest} = {}); |}]
 
+let%expect_test "as keyword" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+const as = () => () => ts(void 0, void 0, void 0, function* () {})
+|};
+  [%expect {|
+    const as = ()=>()=>ts(void 0, void 0, void 0, function*(){}); |}]
+
 let%expect_test "error reporting" =
   (try
      print ~invalid:true ~compact:false {|

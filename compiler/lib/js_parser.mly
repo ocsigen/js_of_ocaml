@@ -1184,7 +1184,7 @@ ident:
 (* add here keywords which are not considered reserved by ECMA *)
 ident_semi_keyword:
  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
- (* can have AS and ASYNC here but need to restrict arrow_function then *)
+ | T_AS { T_AS }
  | T_ASYNC { T_ASYNC }
  | T_FROM { T_FROM }
  | T_GET { T_GET }
