@@ -648,12 +648,24 @@ return function decompress(dat, buf) {
 
 
 //Provides: caml_decompress_input
-//Version: > 5.1.0
+//Version: < 5.1.0
 var caml_decompress_input = null
 
 //Provides: caml_decompress_input
-//Version: < 5.1.0
+//Version: >= 5.1.0
+//Version: < 5.1.1
+//Requires: zstd_decompress
+var caml_decompress_input = zstd_decompress;
+
+//Provides: caml_decompress_input
+//Version: >= 5.1.1
+//Version: < 5.2.0
 var caml_decompress_input = null
+
+//Provides: caml_decompress_input
+//Version: >= 5.2
+//Requires: zstd_decompress
+var caml_decompress_input = zstd_decompress;
 
 //Provides: caml_zstd_initialize
 //Requires: caml_decompress_input
@@ -664,8 +676,3 @@ function caml_zstd_initialize(unit) {
   return 1
 }
 
-//Provides: caml_decompress_input
-//Version: >= 5.1
-//Version: < 5.1.1
-//Requires: zstd_decompress
-var caml_decompress_input = zstd_decompress;
