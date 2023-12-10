@@ -2429,10 +2429,17 @@ and compile infos pc state instrs =
             func
             Var.print
             arg;
+        let state =
+          match Ocaml_version.v with
+          | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01
+            -> State.pop 2 state
+          | `V5_02 -> State.pop 3 state
+        in
+
         compile
           infos
           (pc + 1)
-          (State.pop 2 state)
+          state
           ((Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])), loc)
           :: instrs)
     | RESUMETERM ->
