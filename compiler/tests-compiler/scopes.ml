@@ -199,18 +199,15 @@ let%expect_test "let and var inside class static block" =
       1: (function(){
       2:    let v2 = 2;
       3:    var v3 = 0;
-      4:    class
-      5:    v4{static
-      6:    z
-      7:    =
-      8:    2
-      9:    static{let v5 = 3; var v6 = v5; this.z = v6;}
-     10:    getZ(){return this.z;}
-     11:    }
-     12:    var v1 = new v4;
-     13:    console.log(v3, v2, v4.z);
-     14:   }
-     15:   ());
+      4:    class v4{
+      5:       static z = 2;
+      6:       static {let v5 = 3; var v6 = v5; this.z = v6;}
+      7:       getZ(){return this.z;}
+      8:     }
+      9:    var v1 = new v4;
+     10:    console.log(v3, v2, v4.z);
+     11:   }
+     12:   ());
     0 2 3 |}]
 
 let%expect_test "named class expression" =
@@ -240,27 +237,19 @@ let%expect_test "named class expression" =
     $ cat "test.min.js"
       1: (function(){
       2:    var v3 = 0;
-      3:    class
-      4:    v4{static
-      5:    z
-      6:    =
-      7:    0
-      8:    }
-      9:    const
-     10:     v2 =
-     11:       class
-     12:       v5{static
-     13:       z
-     14:       =
-     15:       2
-     16:       static{let v6 = 3; var v7 = v6; this.z = v7;}
-     17:       create(){return new v5;}
-     18:       getZ(){return this.z;}
-     19:       };
-     20:    var v1 = new v2;
-     21:    console.log(v3, v2.z, v4.z);
-     22:   }
-     23:   ());
+      3:    class v4{static z = 0;}
+      4:    const
+      5:     v2 =
+      6:       class v5{
+      7:          static z = 2;
+      8:          static {let v6 = 3; var v7 = v6; this.z = v7;}
+      9:          create(){return new v5;}
+     10:          getZ(){return this.z;}
+     11:        };
+     12:    var v1 = new v2;
+     13:    console.log(v3, v2.z, v4.z);
+     14:   }
+     15:   ());
     0 3 0 |}]
 
 let%expect_test "let inside block" =
