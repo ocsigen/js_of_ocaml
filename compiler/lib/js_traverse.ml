@@ -327,6 +327,7 @@ class map : mapper =
       | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
       | ETemplate t -> ETemplate (m#template t)
       | EYield e -> EYield (m#expression_o e)
+      | EYieldDelegate e -> EYieldDelegate (m#expression_o e)
       | CoverParenthesizedExpressionAndArrowParameterList e ->
           CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
       | CoverCallExpressionAndAsyncArrowHead e ->
@@ -680,6 +681,7 @@ class iter : iterator =
       | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
       | ETemplate l -> m#template l
       | EYield e -> m#expression_o e
+      | EYieldDelegate e -> m#expression_o e
       | CoverParenthesizedExpressionAndArrowParameterList e -> m#early_error e
       | CoverCallExpressionAndAsyncArrowHead e -> m#early_error e
 

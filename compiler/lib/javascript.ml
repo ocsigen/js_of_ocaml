@@ -293,6 +293,7 @@ and expression =
   | EObj of property_list
   | ERegexp of string * string option
   | EYield of expression option
+  | EYieldDelegate of expression option
   | CoverParenthesizedExpressionAndArrowParameterList of early_error
   | CoverCallExpressionAndAsyncArrowHead of early_error
 
