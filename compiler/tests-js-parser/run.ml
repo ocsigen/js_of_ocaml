@@ -16,17 +16,21 @@ let flags, files =
   |> List.tl
   |> List.partition ~f:(fun x -> Char.equal (String.get x 0) '-')
 
+let rec ls_files path =
+  match Unix.lstat path with
+  | { st_kind = S_DIR; _ } ->
+      Sys.readdir path
+      |> Array.to_list
+      |> List.concat_map ~f:(fun name -> ls_files (Filename.concat path name))
+  | { st_kind = S_REG; _ } -> [ path ]
+  | { st_kind = S_CHR | S_BLK | S_LNK | S_FIFO | S_SOCK; _ } -> []
+
 let files =
   List.concat_map files ~f:(fun path ->
-      if Sys.is_directory path
-      then
-        Sys.readdir path
-        |> Array.to_list
-        |> List.filter_map ~f:(fun name ->
-               if Filename.check_suffix name ".js"
-               then Some (Filename.concat path name)
-               else None)
-      else [ path ])
+      let l = ls_files path in
+      List.filter l ~f:(fun name -> Filename.check_suffix name ".js"))
+
+let () = Printf.eprintf "Found %d files\n%!" (List.length files)
 
 let () =
   List.iter flags ~f:(function
@@ -63,22 +67,44 @@ let patdiff = false
 let vs_explicit = false
 
 let accepted_by_node file =
-  let ic_oc = Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||] in
-  let pid = Unix.process_full_pid ic_oc in
-  let _pid, status = Unix.waitpid [] pid in
-  match status with
-  | WEXITED 0 -> true
-  | WEXITED _ -> false
-  | WSIGNALED _ | WSTOPPED _ -> assert false
+  try
+    let ((ic, oc, ec) as ic_oc) =
+      Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||]
+    in
+    let pid = Unix.process_full_pid ic_oc in
+    let _pid, status = Unix.waitpid [] pid in
+    close_in ic;
+    close_out oc;
+    close_in ec;
+    match status with
+    | WEXITED 0 -> true
+    | WEXITED _ -> false
+    | WSIGNALED _ | WSTOPPED _ -> assert false
+  with _ ->
+    Printf.eprintf "Failed with node %s\n%!" file;
+    false
 
 let () =
-  List.iter files ~f:(fun filename ->
+  let total = List.length files in
+  List.iteri files ~f:(fun i filename ->
+      let () = Printf.eprintf "%d/%d\r%!" i total in
+
       let ic = open_in_bin filename in
       let content = In_channel.input_all ic in
+      let errors = ref [] in
       let add r = r := (filename, content) :: !r in
       close_in ic;
       try
-        let p1 = Parse_js.Lexer.of_string ~filename content |> Parse_js.parse in
+        let p1 =
+          Parse_js.Lexer.of_string
+            ~report_error:(fun e -> errors := e :: !errors)
+            ~filename
+            content
+          |> Parse_js.parse
+        in
+        (match List.rev !errors with
+        | [] -> ()
+        | l -> if accepted_by_node filename then List.iter ~f:Parse_js.Lexer.print_error l);
         if patdiff
         then (
           let s = p_to_string (clean_loc p1) in
@@ -116,10 +142,12 @@ let () =
                  Printf.printf "%s\n\n%s\n" p1s p2s)
            with _ -> ());
         add pass
-      with Parse_js.Parsing_error loc ->
-        if not (accepted_by_node filename)
-        then add unsupported_syntax
-        else fail := (filename, loc, content) :: !fail);
+      with
+      | Parse_js.Parsing_error loc ->
+          if not (accepted_by_node filename)
+          then add unsupported_syntax
+          else fail := (filename, loc, content) :: !fail
+      | e -> Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e));
   Printf.printf "Summary:\n";
   Printf.printf "  skip : %d\n" (List.length !unsupported_syntax);
   Printf.printf "  fail : %d\n" (List.length !fail);

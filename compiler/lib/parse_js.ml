@@ -21,11 +21,20 @@ open! Stdlib
 module Lexer : sig
   type t
 
+  type error
+
   val of_file : string -> t
 
   val of_channel : in_channel -> t
 
-  val of_string : ?pos:Lexing.position -> ?filename:string -> string -> t
+  val of_string :
+       ?report_error:(error -> unit)
+    -> ?pos:Lexing.position
+    -> ?filename:string
+    -> string
+    -> t
+
+  val print_error : error -> unit
 
   val curr_pos : t -> Lexing.position
 
@@ -37,8 +46,11 @@ module Lexer : sig
 
   val dummy_pos : Lexing.position
 end = struct
+  type error = Loc.t * Flow_lexer.Parse_error.t
+
   type t =
     { l : Sedlexing.lexbuf
+    ; report_error : error -> unit
     ; mutable env : Flow_lexer.Lex_env.t
     }
 
@@ -46,7 +58,13 @@ end = struct
 
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
-  let create l = { l; env = Flow_lexer.Lex_env.create l }
+  let print_error (loc, e) =
+    let f = Loc.filename loc in
+    let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
+    Printf.eprintf "Lexer error: %s: %s\n" loc (Flow_lexer.Parse_error.to_string e)
+
+  let create ?(report_error = print_error) l =
+    { l; env = Flow_lexer.Lex_env.create l; report_error }
 
   let of_file file : t =
     let ic = open_in file in
@@ -56,7 +74,7 @@ end = struct
 
   let of_channel ci : t = create (Sedlexing.Utf8.from_channel ci)
 
-  let of_string ?(pos = zero_pos) ?filename s =
+  let of_string ?report_error ?(pos = zero_pos) ?filename s =
     let l = Sedlexing.Utf8.from_string s in
     let pos =
       match filename with
@@ -65,28 +83,21 @@ end = struct
     in
     Sedlexing.set_position l pos;
     Option.iter filename ~f:(Sedlexing.set_filename l);
-    create l
+    create ?report_error l
 
   let curr_pos lexbuf = snd (Sedlexing.lexing_positions lexbuf.l)
 
-  let report_errors res =
+  let report_errors t res =
     match Flow_lexer.Lex_result.errors res with
     | [] -> ()
-    | l ->
-        List.iter l ~f:(fun (loc, e) ->
-            let f = Loc.filename loc in
-            let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
-            Printf.eprintf
-              "Lexer error: %s: %s\n"
-              loc
-              (Flow_lexer.Parse_error.to_string e))
+    | l -> List.iter l ~f:t.report_error
 
   let token (t : t) =
     let env, res = Flow_lexer.lex t.env in
     t.env <- env;
     let tok = Flow_lexer.Lex_result.token res in
     let loc = Flow_lexer.Lex_result.loc res in
-    report_errors res;
+    report_errors t res;
     tok, loc
 
   let rollback t = Sedlexing.rollback t.l
@@ -97,7 +108,7 @@ end = struct
     t.env <- env;
     let tok = Flow_lexer.Lex_result.token res in
     let loc = Flow_lexer.Lex_result.loc res in
-    report_errors res;
+    report_errors t res;
     tok, loc
 end
 
