@@ -527,36 +527,24 @@ class x extends p {
 
   [%expect
     {|
-     /*<<fake:2:0>>*/ class
-    x
-    extends
-    p{constructor(){
-      /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super(a, b, c);
-     /*<<fake:3:4>>*/ }
-    foo(){
-      /*<<fake:8:6>>*/  /*<<fake:8:12>>*/ var s = super[d];
-      /*<<fake:9:6>>*/  /*<<fake:9:12>>*/ var s = super.d;
-     /*<<fake:6:4>>*/ }
-    static
-    bar(){
-      /*<<fake:14:6>>*/  /*<<fake:14:12>>*/ var s = super[d];
-      /*<<fake:15:6>>*/  /*<<fake:15:12>>*/ var s = super.d;
-     /*<<fake:12:11>>*/ }
-    x
-    =
-     /*<<fake:17:5>>*/ 3
-    static
-    y
-    =
-     /*<<fake:19:12>>*/ 5
-    #z
-    =
-     /*<<fake:21:6>>*/ 6
-    static
-    #t
-    =
-     /*<<fake:23:13>>*/ 2
-    static{ /*<<fake:25:12>>*/  /*<<fake:25:18>>*/ var x = 3;}
+    /*<<fake:2:0>>*/ class x extends p {
+      constructor(){
+        /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super(a, b, c);
+       /*<<fake:3:4>>*/ }
+      foo(){
+        /*<<fake:8:6>>*/  /*<<fake:8:12>>*/ var s = super[d];
+        /*<<fake:9:6>>*/  /*<<fake:9:12>>*/ var s = super.d;
+       /*<<fake:6:4>>*/ }
+      static
+      bar(){
+        /*<<fake:14:6>>*/  /*<<fake:14:12>>*/ var s = super[d];
+        /*<<fake:15:6>>*/  /*<<fake:15:12>>*/ var s = super.d;
+       /*<<fake:12:11>>*/ }
+      x =  /*<<fake:17:5>>*/ 3;
+      static y =  /*<<fake:19:12>>*/ 5;
+      #z =  /*<<fake:21:6>>*/ 6;
+      static #t =  /*<<fake:23:13>>*/ 2;
+      static { /*<<fake:25:12>>*/  /*<<fake:25:18>>*/ var x = 3;}
     } |}]
 
 let%expect_test "ite" =

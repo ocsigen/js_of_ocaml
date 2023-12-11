@@ -435,14 +435,7 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident i l b pc
-    | EClass (i, cl_decl) ->
-        PP.string f "class";
-        (match i with
-        | None -> ()
-        | Some i ->
-            PP.space f;
-            ident f i);
-        class_declaration f cl_decl
+    | EClass (i, cl_decl) -> class_declaration f i cl_decl
     | EArrow ((k, p, b, pc), _) ->
         if Prec.(l > AssignementExpression)
         then (
@@ -1103,11 +1096,7 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident (Some i) l b loc'
-    | Class_declaration (i, cl_decl) ->
-        PP.string f "class";
-        PP.space f;
-        ident f i;
-        class_declaration f cl_decl
+    | Class_declaration (i, cl_decl) -> class_declaration f (Some i) cl_decl
     | Empty_statement -> PP.string f ";"
     | Debugger_statement ->
         PP.string f "debugger";
@@ -1599,23 +1588,39 @@ struct
     PP.string f "}";
     PP.end_group f
 
-  and class_declaration f x =
+  and class_declaration f i x =
+    PP.start_group f 1;
+    PP.start_group f 0;
+    PP.start_group f 0;
+    PP.string f "class";
+    (match i with
+    | None -> ()
+    | Some i ->
+        PP.space f;
+        ident f i);
+    PP.end_group f;
     Option.iter x.extends ~f:(fun e ->
         PP.space f;
         PP.string f "extends";
         PP.space f;
-        expression Expression f e);
+        expression Expression f e;
+        PP.space f);
+    PP.end_group f;
+    PP.start_group f 2;
     PP.string f "{";
-    List.iter x.body ~f:(fun x ->
-        match x with
+    PP.break f;
+    List.iter_last x.body ~f:(fun last x ->
+        (match x with
         | CEMethod (static, n, m) ->
+            PP.start_group f 0;
             if static
             then (
               PP.string f "static";
               PP.space f);
             method_ f class_element_name n m;
-            PP.break f
+            PP.end_group f
         | CEField (static, n, i) ->
+            PP.start_group f 0;
             if static
             then (
               PP.string f "static";
@@ -1629,12 +1634,19 @@ struct
                 PP.space f;
                 output_debug_info f loc;
                 expression Expression f e);
-            PP.break f
+            PP.string f ";";
+            PP.end_group f
         | CEStaticBLock l ->
+            PP.start_group f 0;
             PP.string f "static";
+            PP.space f;
             block f l;
-            PP.break f);
-    PP.string f "}"
+            PP.end_group f);
+        if not last then PP.break f);
+    PP.end_group f;
+    PP.break f;
+    PP.string f "}";
+    PP.end_group f
 
   and class_element_name f x =
     match x with
