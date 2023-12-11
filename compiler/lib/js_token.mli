@@ -152,6 +152,7 @@ type t =
   | T_ERROR of string
   | T_EOF
   | T_VIRTUAL_SEMICOLON
+  | T_VIRTUAL_SEMICOLON_DO_WHILE
   | T_DECR_NB
   | T_INCR_NB
   | T_LPAREN_ARROW

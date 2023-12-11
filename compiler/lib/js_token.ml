@@ -153,6 +153,7 @@ type t =
   | T_ERROR of string
   | T_EOF
   | T_VIRTUAL_SEMICOLON
+  | T_VIRTUAL_SEMICOLON_DO_WHILE
   | T_DECR_NB
   | T_INCR_NB
   | T_LPAREN_ARROW
@@ -264,6 +265,7 @@ let to_string = function
   | T_TYPEOF -> "typeof"
   | T_VOID -> "void"
   | T_VIRTUAL_SEMICOLON -> ";"
+  | T_VIRTUAL_SEMICOLON_DO_WHILE -> ";"
   | T_ARROW -> "=>"
   | T_AT -> "@"
   | T_POUND -> "#"
@@ -316,6 +318,7 @@ let to_string_extra x =
   | T_DECR_NB -> " (DECR_NB)"
   | T_DECR -> " (DECR)"
   | T_VIRTUAL_SEMICOLON -> " (virtual)"
+  | T_VIRTUAL_SEMICOLON_DO_WHILE -> " (virtual-do-while)"
   | TAnnot _ -> "(annot)"
   | T_ERROR _ -> "(error)"
   | T_LPAREN_ARROW -> "(arrow)"

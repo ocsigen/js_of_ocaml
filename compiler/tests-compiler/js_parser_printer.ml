@@ -751,7 +751,8 @@ let check_vs_string s toks =
   in
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _) :: rest -> loop offset pos rest
+    | (Js_token.(T_VIRTUAL_SEMICOLON | T_VIRTUAL_SEMICOLON_DO_WHILE), _) :: rest ->
+        loop offset pos rest
     | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
         let p1 = Loc.p1 loc in
         let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
