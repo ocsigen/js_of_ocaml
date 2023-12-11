@@ -231,7 +231,7 @@ listc_rev(X):
  | listc_rev(X) { List.rev $1 }
 
 listc_with_empty_trail_rev(X):
- | e=elision               { (List.rev_map (fun () -> None) e) }
+ | e=elision               { (List.rev_map (fun () -> None) (() :: e)) }
  | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
  | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
 
@@ -239,6 +239,15 @@ listc_with_empty(X):
   | X                           { [ Some $1 ] }
   | listc_with_empty_trail_rev(X)   { List.rev $1 }
   | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
+
+listc_with_empty2(X,Y):
+  | X                           { [ Some $1 ], None }
+  | Y                           { [ ], Some $1 }
+  | listc_with_empty_trail_rev(X)   { List.rev $1, None }
+  | listc_with_empty_trail_rev(X) X { List.rev (Some $2 :: $1), None }
+  | listc_with_empty_trail_rev(X) Y { List.rev ($1), Some $2 }
+
+
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
@@ -506,15 +515,10 @@ binding_element:
  * type like for the (call)argument type.
  *)
 array_binding_pattern:
-  | "[" "]"                      { ArrayBinding (list []) }
-  | "[" r=binding_element_rest "]"     { ArrayBinding {list = []; rest = Some r }}
-  | "[" l=binding_element_list "]" { ArrayBinding (list l) }
-  | "[" l=binding_element_list r=binding_element_rest "]"
-    { ArrayBinding {list=l;rest= Some r} }
-
-(* can't use listc() here, it's $1 not [$1] below *)
-binding_element_list:
-  | l=listc_with_empty(binding_element) { l }
+  | "[" "]" { ArrayBinding (list []) }
+  | "[" l=listc_with_empty2(binding_element, binding_element_rest) "]" {
+        ArrayBinding {list = fst l; rest = snd l }
+  }
 
 binding_element_rest:
  (* can appear only at the end of a array_binding_pattern in ECMA *)
