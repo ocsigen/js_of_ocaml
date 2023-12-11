@@ -327,7 +327,8 @@ struct
       | EUn _
       | ENew _
       | EClass _
-      | EYield _ -> false
+      | EYield _
+      | EYieldDelegate _ -> false
       | CoverCallExpressionAndAsyncArrowHead e
       | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
     in
@@ -867,16 +868,22 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
-    | EYield e -> (
+    | EYield _ | EYieldDelegate _ -> (
+        let kw, e =
+          match e with
+          | EYield e -> "yield", e
+          | EYieldDelegate e -> "yield*", e
+          | _ -> assert false
+        in
         match e with
-        | None -> PP.string f "yield"
+        | None -> PP.string f kw
         | Some e ->
             if Prec.(l > AssignementExpression)
             then (
               PP.start_group f 1;
               PP.string f "(");
             PP.start_group f 7;
-            PP.string f "yield";
+            PP.string f kw;
             PP.non_breaking_space f;
             PP.start_group f 0;
             expression AssignementExpression f e;
