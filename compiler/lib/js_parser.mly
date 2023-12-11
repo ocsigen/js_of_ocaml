@@ -905,7 +905,9 @@ access:
 
 member_expr(x):
  | e=primary_expr(x)
-     { e }
+    { e }
+ | T_IMPORT "." T_META
+    { EDot (vartok $startpos($1) T_IMPORT,ANormal,(Stdlib.Utf8_string.of_string_exn "meta")) }
  | e1=member_expr(x) "[" e2=expr "]"
      { (EAccess (e1,ANormal, e2)) }
  | e1=member_expr(x) T_PLING_PERIOD "[" e2=expr "]"
