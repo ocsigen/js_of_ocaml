@@ -859,7 +859,7 @@ let%expect_test "invalid ident" =
      2: 4:var, 8:\uD83B\uDE62, 21:=, 23:42, 25:;, 27:// invalid surrogate escape sequence,
      3: 4:var, 8:\u{1F42B}, 18:=, 20:2, 21:;, 23:// U+1F42B is not a valid id,
     Lexer error: fake:2:8: Illegal Unicode escape
-    Lexer error: fake:3:8: Unexpected token ILLEGAL |}]
+    Lexer error: fake:3:8: Unexpected "\240\159\144\171" is not a valid identifier |}]
 
 let%expect_test "string" =
   parse_print_token
