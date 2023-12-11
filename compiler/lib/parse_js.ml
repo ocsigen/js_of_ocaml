@@ -180,12 +180,15 @@ end = struct
             | (T_RPAREN | T_RCURLY | T_RBRACKET), _ ->
                 let stack = tok :: stack in
                 rewind stack h
-            | T_LPAREN, [ T_RPAREN ] | T_LBRACKET, [ T_RBRACKET ] | T_LCURLY, [ T_RCURLY ]
-              -> Some (tok, loc, h)
-            | T_LPAREN, T_RPAREN :: stack
+            | (T_LPAREN | T_LPAREN_ARROW), [ T_RPAREN ]
+            | T_LBRACKET, [ T_RBRACKET ]
+            | T_LCURLY, [ T_RCURLY ] -> Some (tok, loc, h)
+            | (T_LPAREN | T_LPAREN_ARROW), T_RPAREN :: stack
             | T_LBRACKET, T_RBRACKET :: stack
             | T_LCURLY, T_RCURLY :: stack -> rewind stack h
-            | T_LPAREN, _ | T_LBRACKET, _ | T_LCURLY, _ -> assert false
+            | T_LPAREN, _ -> assert false
+            | T_LBRACKET, _ -> assert false
+            | T_LCURLY, _ -> assert false
             | _, [] -> None
             | _, (_ :: _ as stack) -> rewind stack h)
       in
