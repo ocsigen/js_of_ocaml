@@ -171,6 +171,7 @@ T_BACKQUOTE
 (*-----------------------------------------*)
 
 %token T_VIRTUAL_SEMICOLON
+%token T_VIRTUAL_SEMICOLON_DO_WHILE
 %token T_LPAREN_ARROW
 %token T_INCR_NB T_DECR_NB
 
@@ -693,6 +694,8 @@ if_stmt:
 
 iteration_stmt:
  | T_DO body=stmt T_WHILE "(" condition=expr ")" sc
+    { Do_while_statement (body, condition) }
+ | T_DO body=stmt T_WHILE "(" condition=expr ")" T_VIRTUAL_SEMICOLON_DO_WHILE
     { Do_while_statement (body, condition) }
  | T_WHILE "(" condition=expr ")" body=stmt
      { While_statement (condition, body) }

@@ -385,33 +385,6 @@ let token_to_ident t =
   let name = Js_token.to_string t in
   Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name)
 
-let end_of_do_whle prev =
-  match State.Cursor.rewind_block prev with
-  | None -> false
-  | Some (T_LPAREN, _, prev) -> (
-      match State.Cursor.last_token prev with
-      | None -> false
-      | Some (T_WHILE, _, prev) -> (
-          match State.Cursor.last_token prev with
-          | None -> false
-          | Some (T_SEMICOLON, _, prev) -> (
-              match State.Cursor.last_token prev with
-              | None -> false
-              | Some (T_DO, _, _) -> true
-              | Some (_, _, _) -> false)
-          | Some (T_RCURLY, _, _) -> (
-              match State.Cursor.rewind_block prev with
-              | None -> false
-              | Some (T_LCURLY, _, prev) -> (
-                  match State.Cursor.last_token prev with
-                  | None -> false
-                  | Some (T_DO, _, _) -> true
-                  | Some (_, _, _) -> false)
-              | Some _ -> assert false)
-          | Some (_, _, _) -> false)
-      | Some (_, _, _) -> false)
-  | Some _ -> assert false
-
 let recover error_checkpoint previous_checkpoint =
   (* 7.9.1 - 1 *)
   (* When, as the program is parsed from left to right, a token (called the offending token)
@@ -465,9 +438,8 @@ let recover error_checkpoint previous_checkpoint =
                      && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                   State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | T_RPAREN
-                when end_of_do_whle rest
-                     && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+                when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE
+                -> State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | _ -> error_checkpoint)))
 
 let parse_aux the_parser (lexbuf : Lexer.t) =
