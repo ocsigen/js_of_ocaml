@@ -20,9 +20,18 @@
 module Lexer : sig
   type t
 
+  type error
+
   val of_file : string -> t
 
-  val of_string : ?pos:Lexing.position -> ?filename:string -> string -> t
+  val of_string :
+       ?report_error:(error -> unit)
+    -> ?pos:Lexing.position
+    -> ?filename:string
+    -> string
+    -> t
+
+  val print_error : error -> unit
 
   val of_channel : in_channel -> t
 end
