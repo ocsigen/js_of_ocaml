@@ -693,9 +693,7 @@ if_stmt:
      { If_statement (c, t, None) }
 
 iteration_stmt:
- | T_DO body=stmt T_WHILE "(" condition=expr ")" sc
-    { Do_while_statement (body, condition) }
- | T_DO body=stmt T_WHILE "(" condition=expr ")" T_VIRTUAL_SEMICOLON_DO_WHILE
+ | T_DO body=stmt T_WHILE "(" condition=expr ")" endrule(sc | T_VIRTUAL_SEMICOLON_DO_WHILE { () } )
     { Do_while_statement (body, condition) }
  | T_WHILE "(" condition=expr ")" body=stmt
      { While_statement (condition, body) }
