@@ -10,6 +10,10 @@ let node = try Sys.getenv "NODE" with Not_found -> exe "node"
 
 let failure_expected = ref false
 
+let progress = ref false
+
+let verbose = ref false
+
 let flags, files =
   Sys.argv
   |> Array.to_list
@@ -30,11 +34,13 @@ let files =
       let l = ls_files path in
       List.filter l ~f:(fun name -> Filename.check_suffix name ".js"))
 
-let () = Printf.eprintf "Found %d files\n%!" (List.length files)
+let () = if !verbose then Printf.eprintf "Found %d files\n%!" (List.length files)
 
 let () =
   List.iter flags ~f:(function
-      | "-fail" -> failure_expected := true
+      | "--fail" -> failure_expected := true
+      | "-p" | "--progress" -> progress := true
+      | "-v" | "--verbose" -> verbose := true
       | f -> failwith ("unrecognised flag " ^ f))
 
 let unsupported_syntax = ref []
@@ -67,27 +73,107 @@ let patdiff = false
 let vs_explicit = false
 
 let accepted_by_node file =
-  try
-    let ((ic, oc, ec) as ic_oc) =
-      Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||]
-    in
-    let pid = Unix.process_full_pid ic_oc in
-    let _pid, status = Unix.waitpid [] pid in
-    close_in ic;
-    close_out oc;
-    close_in ec;
-    match status with
-    | WEXITED 0 -> true
-    | WEXITED _ -> false
-    | WSIGNALED _ | WSTOPPED _ -> assert false
-  with _ ->
-    Printf.eprintf "Failed with node %s\n%!" file;
-    false
+  let ((ic, oc, ec) as ic_oc) =
+    Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||]
+  in
+  let pid = Unix.process_full_pid ic_oc in
+  let _pid, status = Unix.waitpid [] pid in
+  close_in ic;
+  close_out oc;
+  close_in ec;
+  match status with
+  | WEXITED 0 -> true
+  | WEXITED _ -> false
+  | WSIGNALED _ | WSTOPPED _ -> assert false
+
+let string s =
+  let l = String.length s in
+  let b = Buffer.create (String.length s + 2) in
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    match c with
+    | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> Buffer.add_string b "\\0"
+    | '\b' -> Buffer.add_string b "\\b"
+    | '\t' -> Buffer.add_string b "\\t"
+    | '\n' -> Buffer.add_string b "\\n"
+    (* This escape sequence is not supported by IE < 9
+       | '\011' -> "\\v"
+    *)
+    | '\012' -> Buffer.add_string b "\\f"
+    (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
+    | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
+    | '\r' -> Buffer.add_string b "\\r"
+    | '\000' .. '\031' | '\127' ->
+        Buffer.add_string b "\\x";
+        Buffer.add_char_hex b c
+    | _ -> Buffer.add_char b c
+  done;
+  Buffer.contents b
+
+let token_equal : Js_token.t -> Js_token.t -> bool =
+ fun a b ->
+  match a, b with
+  | T_SEMICOLON, T_VIRTUAL_SEMICOLON | T_VIRTUAL_SEMICOLON, T_SEMICOLON -> true
+  | T_DECR_NB, T_DECR | T_DECR, T_DECR_NB | T_INCR_NB, T_INCR | T_INCR, T_INCR_NB -> true
+  | T_IDENTIFIER (Utf8 a, _), T_IDENTIFIER (Utf8 b, _) -> String.equal a b
+  | T_STRING (Utf8 a, _), T_STRING (Utf8 b, _) ->
+      String.equal a b || String.equal (string a) (string b)
+  | a, T_IDENTIFIER (Utf8 b, _) when Poly.(Some a = Js_token.is_keyword b) -> true
+  | T_IDENTIFIER (Utf8 a, _), b when Poly.(Some b = Js_token.is_keyword a) -> true
+  | a, b -> Poly.(a = b)
+
+let rec check_toks
+    (a : (Js_token.t * _) list)
+    (stack_a : Js_token.t list)
+    (b : (Js_token.t * _) list)
+    (stack_b : Js_token.t list) : bool =
+  match a, b with
+  | ((TComment _ | T_EOF), _) :: a, b -> check_toks a stack_a b stack_b
+  | a, ((TComment _ | T_EOF), _) :: b -> check_toks a stack_a b stack_b
+  | (ta, _) :: ra, (tb, _) :: rb -> (
+      if token_equal ta tb
+      then check_toks ra stack_a rb stack_b
+      else
+        match ta, stack_a, tb, stack_b with
+        | T_SEMICOLON, _, T_RCURLY, _ -> check_toks ra stack_a b stack_b
+        | T_RCURLY, _, T_SEMICOLON, _ -> check_toks a stack_a rb stack_b
+        | T_COMMA, _, (T_RCURLY | T_RBRACKET), _ -> check_toks ra stack_a b stack_b
+        | (T_RCURLY | T_RBRACKET), _, T_COMMA, _ -> check_toks a stack_a rb stack_b
+        | T_RPAREN, T_LPAREN :: stack_a, _, _ -> check_toks ra stack_a b stack_b
+        | _, _, T_RPAREN, T_LPAREN :: stack_b -> check_toks a stack_a rb stack_b
+        | (T_LPAREN as o), stack_a, _, _ -> check_toks ra (o :: stack_a) b stack_b
+        | _, _, (T_RPAREN as o), stack_b -> check_toks a stack_a rb (o :: stack_b)
+        | _ ->
+            if !verbose
+            then
+              Printf.eprintf
+                "token mismatch %s <> %s\n"
+                (Js_token.to_string ta)
+                (Js_token.to_string tb);
+
+            false)
+  | [], [] -> true
+  | [], (tb, _) :: rb -> (
+      match tb, stack_b with
+      | T_RPAREN, T_LPAREN :: stack_b -> check_toks a stack_a rb stack_b
+      | T_SEMICOLON, _ -> check_toks a stack_a rb stack_b
+      | _ ->
+          if !verbose
+          then Printf.eprintf "token mismatch <EOF> vs %s\n" (Js_token.to_string tb);
+          false)
+  | (ta, _) :: ra, [] -> (
+      match ta, stack_a with
+      | T_RPAREN, T_LPAREN :: stack_a -> check_toks ra stack_a b stack_b
+      | T_SEMICOLON, _ -> check_toks ra stack_b b stack_b
+      | _ ->
+          if !verbose
+          then Printf.eprintf "token mismatch %s vs <EOF>\n" (Js_token.to_string ta);
+          false)
 
 let () =
   let total = List.length files in
   List.iteri files ~f:(fun i filename ->
-      let () = Printf.eprintf "%d/%d\r%!" i total in
+      let () = if !progress then Printf.eprintf "%d/%d\r%!" i total in
 
       let ic = open_in_bin filename in
       let content = In_channel.input_all ic in
@@ -95,15 +181,31 @@ let () =
       let add r = r := (filename, content) :: !r in
       close_in ic;
       try
-        let p1 =
+        let p1, toks1 =
           Parse_js.Lexer.of_string
             ~report_error:(fun e -> errors := e :: !errors)
             ~filename
             content
-          |> Parse_js.parse
+          |> Parse_js.parse'
         in
+        let p1 = List.concat_map p1 ~f:snd in
         (match List.rev !errors with
-        | [] -> ()
+        | [] -> (
+            let s = p_to_string p1 in
+            try
+              let p2, toks2 =
+                Parse_js.Lexer.of_string
+                  ~report_error:(fun e -> errors := e :: !errors)
+                  ~filename
+                  s
+                |> Parse_js.parse'
+              in
+              let p2 = List.concat_map p2 ~f:snd in
+              if Poly.(clean_loc p1 = clean_loc p2)
+              then ()
+              else if not (check_toks toks1 [] toks2 [])
+              then Printf.eprintf "error for %s\n%s\n%s\n" filename s (p_to_string p2)
+            with _ -> if false then Printf.eprintf "cannot parse back %s\n" filename)
         | l -> if accepted_by_node filename then List.iter ~f:Parse_js.Lexer.print_error l);
         if patdiff
         then (
