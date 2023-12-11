@@ -279,6 +279,7 @@ and expression =
   | ECallTemplate of expression * template * location
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
+  | EDotPrivate of expression * identifier
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of ident option * function_declaration

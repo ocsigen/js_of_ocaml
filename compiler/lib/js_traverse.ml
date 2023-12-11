@@ -300,6 +300,7 @@ class map : mapper =
           ECall (m#expression e1, ak, List.map e2 ~f:m#argument, m#loc loc)
       | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
       | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
+      | EDotPrivate (e1, id) -> EDotPrivate (m#expression e1, id)
       | ENew (e1, args) ->
           ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args)
       | EVar v -> EVar (m#ident v)
@@ -645,6 +646,7 @@ class iter : iterator =
           m#expression e1;
           m#expression e2
       | EDot (e1, _ak, _) -> m#expression e1
+      | EDotPrivate (e1, _) -> m#expression e1
       | ENew (e1, Some args) ->
           m#expression e1;
           List.iter args ~f:m#argument
