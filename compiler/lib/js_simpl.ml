@@ -72,6 +72,7 @@ let rec enot_rec e =
     | J.ECallTemplate _
     | J.EAccess _
     | J.EDot _
+    | J.EDotPrivate _
     | J.ENew _
     | J.EVar _
     | J.EFun _

@@ -919,7 +919,8 @@ member_expr(x):
      { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
-
+  | e1=member_expr(x) "." T_POUND i=field_name
+    { (EDotPrivate(e1,i)) }
 primary_expr(x):
  | e=primary_expr_no_braces
  | e=x { e }
