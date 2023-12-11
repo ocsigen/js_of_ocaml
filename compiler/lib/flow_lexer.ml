@@ -224,8 +224,13 @@ let lex_error (env : Lex_env.t) loc err : Lex_env.t =
   let lex_errors_acc = (loc, err) :: env.lex_state.lex_errors_acc in
   { env with lex_state = { lex_errors_acc } }
 
-let illegal (env : Lex_env.t) (loc : Loc.t) =
-  lex_error env loc (Parse_error.Unexpected "token ILLEGAL")
+let illegal (env : Lex_env.t) (loc : Loc.t) reason =
+  let reason =
+    match reason with
+    | "" -> "token ILLEGAL"
+    | s -> s
+  in
+  lex_error env loc (Parse_error.Unexpected reason)
 
 let decode_identifier =
   let sub_lexeme lexbuf trim_start trim_end =
@@ -315,7 +320,7 @@ let decode_identifier =
     id_char env loc buf lexbuf
 
 let recover env lexbuf ~f =
-  let env = illegal env (loc_of_lexbuf env lexbuf) in
+  let env = illegal env (loc_of_lexbuf env lexbuf) "recovery" in
   Sedlexing.rollback lexbuf;
   f env lexbuf
 
@@ -364,7 +369,7 @@ let rec comment env buf lexbuf =
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | _ ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
 
 let drop_line env =
@@ -385,7 +390,7 @@ let rec line_comment env buf lexbuf =
       line_comment env buf lexbuf
   | _ -> failwith "unreachable line_comment"
 
-let string_escape env lexbuf =
+let string_escape ~accept_invalid env lexbuf =
   match%sedlex lexbuf with
   | eof | '\\' ->
       let str = lexeme lexbuf in
@@ -420,11 +425,17 @@ let string_escape env lexbuf =
       let hex = String.sub str 2 (String.length str - 3) in
       let code = int_of_string ("0x" ^ hex) in
       (* 11.8.4.1 *)
-      let env = if code > 0x10FFFF then illegal env (loc_of_lexbuf env lexbuf) else env in
+      let env =
+        if code > 0x10FFFF && not accept_invalid
+        then illegal env (loc_of_lexbuf env lexbuf) "unicode escape out of range"
+        else env
+      in
       env, str
   | 'u' | 'x' | '0' .. '7' ->
       let str = lexeme lexbuf in
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env =
+        if accept_invalid then env else illegal env (loc_of_lexbuf env lexbuf) ""
+      in
       env, str
   | line_terminator_sequence ->
       newline lexbuf;
@@ -450,7 +461,7 @@ let rec string_quote env q buf lexbuf =
       newline lexbuf;
       string_quote env q buf lexbuf
   | '\\' ->
-      let env, str = string_escape env lexbuf in
+      let env, str = string_escape ~accept_invalid:false env lexbuf in
       if String.equal str "" || String.get q 0 <> String.get str 0
       then Buffer.add_string buf "\\";
       Buffer.add_string buf str;
@@ -458,13 +469,13 @@ let rec string_quote env q buf lexbuf =
   | '\n' ->
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       string_quote env q buf lexbuf
   (* env, end_pos_of_lexbuf env lexbuf *)
   | eof ->
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl ("'" | '"' | '\\' | '\n' | eof)) | any ->
@@ -688,13 +699,19 @@ let token (env : Lex_env.t) lexbuf : result =
               | None -> (
                   match is_valid_identifier_name decoded with
                   | true -> env
-                  | false -> illegal env (loc_of_lexbuf env lexbuf))
-              | Some _ -> illegal env (loc_of_lexbuf env lexbuf)
+                  | false ->
+                      illegal
+                        env
+                        (loc_of_lexbuf env lexbuf)
+                        (Printf.sprintf "%S is not a valid identifier" decoded))
+              | Some _ ->
+                  (* accept keyword as ident if escaped *)
+                  env
             in
             Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw)))
   | eof -> Token (env, T_EOF)
   | any ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
   | _ -> failwith "unreachable token"
 
@@ -783,7 +800,7 @@ let regexp env lexbuf =
       let env, flags = regexp_body env buf lexbuf in
       Token (env, T_REGEXP (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), flags))
   | any ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
   | _ -> failwith "unreachable regexp"
 
@@ -804,12 +821,12 @@ let backquote env lexbuf =
   | '\\' ->
       let buf = Buffer.create 127 in
       Buffer.add_char buf '\\';
-      let env, str = string_escape env lexbuf in
+      let env, str = string_escape ~accept_invalid:true env lexbuf in
       Buffer.add_string buf str;
       Token (env, T_ENCAPSED_STRING (Buffer.contents buf))
   | eof -> Token (env, T_EOF)
   | _ ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
 
 let wrap f =
