@@ -761,7 +761,7 @@ finally:
  | T_FINALLY b=block { b }
 
 debugger_stmt:
- | T_DEBUGGER { Debugger_statement }
+ | T_DEBUGGER sc { Debugger_statement }
 
 (*----------------------------*)
 (* auxillary stmts *)
