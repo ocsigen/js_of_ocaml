@@ -236,13 +236,21 @@ class map : mapper =
           | Class_declaration (id, f) -> ExportClass (id, f)
           | _ -> assert false)
       | ExportNames l -> ExportNames (List.map ~f:(fun (id, s) -> m#ident id, s) l)
-      | ExportDefaultFun (id, decl) -> (
+      | ExportDefaultFun (Some id, decl) -> (
           match m#statement (Function_declaration (id, decl)) with
-          | Function_declaration (id, decl) -> ExportDefaultFun (id, decl)
+          | Function_declaration (id, decl) -> ExportDefaultFun (Some id, decl)
           | _ -> assert false)
-      | ExportDefaultClass (id, decl) -> (
+      | ExportDefaultFun (None, decl) -> (
+          match m#expression (EFun (None, decl)) with
+          | EFun (None, decl) -> ExportDefaultFun (None, decl)
+          | _ -> assert false)
+      | ExportDefaultClass (Some id, decl) -> (
           match m#statement (Class_declaration (id, decl)) with
-          | Class_declaration (id, decl) -> ExportDefaultClass (id, decl)
+          | Class_declaration (id, decl) -> ExportDefaultClass (Some id, decl)
+          | _ -> assert false)
+      | ExportDefaultClass (None, decl) -> (
+          match m#expression (EClass (None, decl)) with
+          | EClass (None, decl) -> ExportDefaultClass (None, decl)
           | _ -> assert false)
       | ExportDefaultExpression e -> ExportDefaultExpression (m#expression e)
       | ExportFrom l -> ExportFrom l
@@ -579,8 +587,10 @@ class iter : iterator =
       | ExportFun (id, f) -> m#statement (Function_declaration (id, f))
       | ExportClass (id, f) -> m#statement (Class_declaration (id, f))
       | ExportNames l -> List.iter ~f:(fun (id, _) -> m#ident id) l
-      | ExportDefaultFun (id, decl) -> m#statement (Function_declaration (id, decl))
-      | ExportDefaultClass (id, decl) -> m#statement (Class_declaration (id, decl))
+      | ExportDefaultFun (Some id, decl) -> m#statement (Function_declaration (id, decl))
+      | ExportDefaultFun (None, decl) -> m#expression (EFun (None, decl))
+      | ExportDefaultClass (Some id, decl) -> m#statement (Class_declaration (id, decl))
+      | ExportDefaultClass (None, decl) -> m#expression (EClass (None, decl))
       | ExportDefaultExpression e -> m#expression e
       | ExportFrom { from = _; kind = _ } -> ()
       | CoverExportFrom e -> m#early_error e
@@ -1242,8 +1252,12 @@ class rename_variable ~esm =
          | ExportFun (_id, _f) -> ()
          | ExportClass (_id, _f) -> ()
          | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
-         | ExportDefaultFun (id, decl) -> self#statement (Function_declaration (id, decl))
-         | ExportDefaultClass (id, decl) -> self#statement (Class_declaration (id, decl))
+         | ExportDefaultFun (Some id, decl) ->
+             self#statement (Function_declaration (id, decl))
+         | ExportDefaultClass (Some id, decl) ->
+             self#statement (Class_declaration (id, decl))
+         | ExportDefaultFun (None, decl) -> self#fun_decl decl
+         | ExportDefaultClass (None, decl) -> self#class_decl decl
          | ExportDefaultExpression e -> self#expression e
          | ExportFrom { from = _; kind = _ } -> ()
          | CoverExportFrom _ -> ()

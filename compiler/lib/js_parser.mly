@@ -397,11 +397,11 @@ export_decl:
  | T_EXPORT T_DEFAULT e=export_fun_class
     {
       let k = match e with
-      | EFun (Some id, decl) ->
+      | EFun (id, decl) ->
          ExportDefaultFun (id,decl)
-      | EClass (Some id, decl) ->
+      | EClass (id, decl) ->
          ExportDefaultClass (id, decl)
-      | e -> ExportDefaultExpression e
+      | _ -> assert false
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }

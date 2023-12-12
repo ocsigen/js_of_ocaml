@@ -372,8 +372,8 @@ and export =
   | ExportClass of ident * class_declaration
   | ExportNames of (ident * Utf8_string.t) list
   (* default *)
-  | ExportDefaultFun of ident * function_declaration
-  | ExportDefaultClass of ident * class_declaration
+  | ExportDefaultFun of ident option * function_declaration
+  | ExportDefaultClass of ident option * class_declaration
   | ExportDefaultExpression of expression
   (* from *)
   | ExportFrom of

@@ -431,15 +431,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EFun (i, (k, l, b, pc)) ->
-        let prefix =
-          match k with
-          | { async = false; generator = false } -> "function"
-          | { async = true; generator = false } -> "async function"
-          | { async = true; generator = true } -> "async function*"
-          | { async = false; generator = true } -> "function*"
-        in
-        function_declaration f prefix ident i l b pc
+    | EFun (i, decl) -> function_declaration' f i decl
     | EClass (i, cl_decl) -> class_declaration f i cl_decl
     | EArrow ((k, p, b, pc), _) ->
         if Prec.(l > AssignementExpression)
@@ -1158,15 +1150,7 @@ struct
     match s with
     | Block b -> block f b
     | Variable_statement (k, l) -> variable_declaration_list k (not can_omit_semi) f l
-    | Function_declaration (i, (k, l, b, loc')) ->
-        let prefix =
-          match k with
-          | { async = false; generator = false } -> "function"
-          | { async = true; generator = false } -> "async function"
-          | { async = true; generator = true } -> "async function*"
-          | { async = false; generator = true } -> "function*"
-        in
-        function_declaration f prefix ident (Some i) l b loc'
+    | Function_declaration (i, decl) -> function_declaration' f (Some i) decl
     | Class_declaration (i, cl_decl) -> class_declaration f (Some i) cl_decl
     | Empty_statement -> PP.string f ";"
     | Debugger_statement ->
@@ -1592,11 +1576,6 @@ struct
             PP.space f;
             pp_string_lit f from;
             PP.string f ";"
-        | ExportDefaultExpression ((EFun _ | EClass _) as e) ->
-            PP.space f;
-            PP.string f "default";
-            PP.space f;
-            expression Expression f e
         | ExportDefaultExpression e ->
             PP.space f;
             PP.string f "default";
@@ -1609,22 +1588,22 @@ struct
               Expression
               f
               e
-        | ExportDefaultFun (id, decl) ->
+        | ExportDefaultFun (i, decl) ->
             PP.space f;
             PP.string f "default";
             PP.space f;
-            statement f (Function_declaration (id, decl), loc)
+            function_declaration' f i decl
         | ExportDefaultClass (id, decl) ->
             PP.space f;
             PP.string f "default";
             PP.space f;
-            statement f (Class_declaration (id, decl), loc)
+            class_declaration f id decl
         | ExportFun (id, decl) ->
             PP.space f;
-            statement f (Function_declaration (id, decl), loc)
+            function_declaration' f (Some id) decl
         | ExportClass (id, decl) ->
             PP.space f;
-            statement f (Class_declaration (id, decl), loc)
+            class_declaration f (Some id) decl
         | ExportVar (k, l) ->
             PP.space f;
             variable_declaration_list k (not can_omit_semi) f l
@@ -1680,6 +1659,17 @@ struct
     output_debug_info f loc;
     PP.string f "}";
     PP.end_group f
+
+  and function_declaration' : type a. 'pp -> _ -> _ -> unit =
+   fun f (name : _ option) (k, l, b, loc') ->
+    let prefix =
+      match k with
+      | { async = false; generator = false } -> "function"
+      | { async = true; generator = false } -> "async function"
+      | { async = true; generator = true } -> "async function*"
+      | { async = false; generator = true } -> "function*"
+    in
+    function_declaration f prefix ident name l b loc'
 
   and class_declaration f i x =
     PP.start_group f 1;
