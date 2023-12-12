@@ -449,7 +449,6 @@ struct
             PP.non_breaking_space f
         | { async = false; generator = false } -> ()
         | { async = true | false; generator = true } -> assert false);
-        PP.break f;
         (match p with
         | { list = [ ((BindingIdent _, None) as x) ]; rest = None } ->
             formal_parameter f x;
