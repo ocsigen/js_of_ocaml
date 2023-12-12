@@ -58,3 +58,5 @@ val compact : t -> bool
 val set_needed_space_function : t -> (char -> char -> bool) -> unit
 
 val set_adjust_indentation_function : t -> (int -> int) -> unit
+
+val check : t -> unit

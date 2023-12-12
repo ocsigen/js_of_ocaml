@@ -144,6 +144,8 @@ let rec push st e =
           st.cur <- st.cur + st.w;
           st.l <- []))
 
+let check st = assert (List.is_empty st.prev_indents)
+
 (****)
 
 let string st (s : string) =

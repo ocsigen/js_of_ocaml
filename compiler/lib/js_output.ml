@@ -878,7 +878,7 @@ struct
             PP.end_group f;
             if Prec.(l > AssignementExpression)
             then (
-              PP.start_group f 1;
+              PP.end_group f;
               PP.string f ")"
               (* There MUST be a space between the yield and its
                  argument. A line return will not work *)))
@@ -1879,6 +1879,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
         in
         Some { sm with Source_map.sources; names; sources_content; mappings }
   in
+  PP.check f;
   (if stats ()
    then
      let size i = Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
