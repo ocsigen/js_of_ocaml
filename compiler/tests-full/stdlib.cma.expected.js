@@ -1136,8 +1136,8 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    ocaml_version = "5.1.0",
-    ocaml_release = [0, 5, 1, 0, 0],
+    ocaml_version = "5.1.1",
+    ocaml_release = [0, 5, 1, 1, 0],
     Stdlib = global_data.Stdlib,
      /*<<sys.ml.in:36:22>>*/ executable_name =
        /*<<sys.ml.in:36:22>>*/ runtime.caml_sys_executable_name(0),
@@ -7193,7 +7193,6 @@
     runtime = globalThis.jsoo_runtime,
     cst_Marshal_from_bytes$1 = "Marshal.from_bytes",
     caml_marshal_data_size = runtime.caml_marshal_data_size,
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length;
     /*<<?>>*/ function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) == 1
@@ -7202,11 +7201,8 @@
    }
    var
     global_data = runtime.caml_get_global_data(),
-    Assert_failure = global_data.Assert_failure,
     Stdlib_Bytes = global_data.Stdlib__Bytes,
     Stdlib = global_data.Stdlib,
-    _a_ = [0, 3, 0],
-    _b_ = [0, "marshal.ml", 75, 9],
     cst_Marshal_from_bytes = cst_Marshal_from_bytes$1,
     cst_Marshal_from_bytes$0 = cst_Marshal_from_bytes$1,
     cst_Marshal_data_size = "Marshal.data_size",
@@ -7251,17 +7247,6 @@
             ( /*<<marshal.ml:68:13>>*/ caml_call1(Stdlib_Bytes[45], buff),
              ofs);
     /*<<marshal.ml:68:46>>*/ }
-   function compression_supported(param){
-     /*<<marshal.ml:71:2>>*/ var
-      /*<<marshal.ml:71:10>>*/ s =
-        /*<<marshal.ml:71:10>>*/ runtime.caml_output_value_to_string(0, _a_),
-      /*<<marshal.ml:72:8>>*/ match =
-        /*<<marshal.ml:72:8>>*/ runtime.caml_string_get(s, 3);
-    if(189 === match)  /*<<marshal.ml:73:14>>*/ return 1;
-    if(190 === match)  /*<<marshal.ml:74:14>>*/ return 0;
-     /*<<marshal.ml:75:9>>*/ throw  /*<<marshal.ml:75:9>>*/ caml_maybe_attach_backtrace
-           ([0, Assert_failure, _b_], 1);
-    /*<<marshal.ml:75:21>>*/ }
    var
     Stdlib_Marshal =
       [0,
@@ -7272,9 +7257,8 @@
        from_string,
        header_size,
        data_size,
-       total_size,
-       compression_supported];
-   runtime.caml_register_global(9, Stdlib_Marshal, "Stdlib__Marshal");
+       total_size];
+   runtime.caml_register_global(6, Stdlib_Marshal, "Stdlib__Marshal");
    return;
    /*<<?>>*/ }
   (globalThis));
