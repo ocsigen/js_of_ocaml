@@ -311,6 +311,9 @@ struct
           Prec.(l <= out) && traverse lft e
       | EUn ((IncrA | DecrA), e) ->
           Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
+      | ECallTemplate (EFun _, _, _) ->
+          (* We force parens around the function in that case.*)
+          false
       | ECallTemplate (e, _, _)
       | ECall (e, _, _, _)
       | EAccess (e, _, _)
@@ -512,7 +515,7 @@ struct
           PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
-        expression CallOrMemberExpression f e;
+        parenthesized_expression ~funct:true CallOrMemberExpression f e;
         PP.break f;
         PP.start_group f 1;
         template f t;
