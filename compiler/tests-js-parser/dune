@@ -3,10 +3,17 @@
  (libraries js_of_ocaml_compiler unix str))
 
 (rule
- (alias runtest)
+ (alias runtest-parser)
  (deps
-  (:js_files
-   (glob_files_rec pass/*.js))
+  (glob_files_rec pass/*.js)
   package.json)
  (action
   (run ./run.exe pass)))
+
+(rule
+ (alias runtest-parser)
+ (deps
+  (glob_files_rec test262/test/language/*.js)
+  package.json)
+ (action
+  (run ./run.exe test262/test/language)))
