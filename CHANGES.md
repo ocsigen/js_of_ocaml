@@ -9,7 +9,11 @@
 * Compiler: js-parser: fix support for LHS assignment target
 * Compiler: js-parser: fix parser of default export
 * Compiler: js-parser: allow 'as' as ident
-* Compiler: js-parser: fix for in rewriting
+* Compiler: js-parser: fix for-in rewriting
+* Compiler: js-parser: fix yield pretty print
+* Compiler: js-parser: fix async arrow function
+* Compiler: js-parser: fix class printing
+* Compiler: js-parser: fix #privateName
 
 # 5.5.2 (2023-12-01) - Lille
 
