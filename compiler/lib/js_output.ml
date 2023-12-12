@@ -1662,8 +1662,7 @@ struct
     PP.string f "}";
     PP.end_group f
 
-  and function_declaration' : type a. 'pp -> _ -> _ -> unit =
-   fun f (name : _ option) (k, l, b, loc') ->
+  and function_declaration' f (name : _ option) (k, l, b, loc') =
     let prefix =
       match k with
       | { async = false; generator = false } -> "function"
