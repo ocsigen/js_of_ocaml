@@ -318,7 +318,7 @@ struct
       | ECall (e, _, _, _)
       | EAccess (e, _, _)
       | EDot (e, _, _)
-      | EDotPrivate (e, _) -> traverse CallOrMemberExpression e
+      | EDotPrivate (e, _, _) -> traverse CallOrMemberExpression e
       | EArrow _
       | EVar _
       | EStr _
@@ -775,7 +775,7 @@ struct
         | ANormal -> PP.string f "."
         | ANullish -> PP.string f "?.");
         PP.string f nm
-    | EDotPrivate (e, Utf8 nm) ->
+    | EDotPrivate (e, access_kind, Utf8 nm) ->
         (* We keep tracks of whether call expression are allowed
            without parentheses within this expression *)
         let l' =
@@ -784,7 +784,9 @@ struct
           | _ -> CallOrMemberExpression
         in
         expression l' f e;
-        PP.string f ".#";
+        (match access_kind with
+        | ANormal -> PP.string f ".#"
+        | ANullish -> PP.string f "?.#");
         PP.string f nm
     | ENew (e, None) ->
         if Prec.(l > NewExpression)

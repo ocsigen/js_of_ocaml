@@ -927,7 +927,9 @@ member_expr(x):
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
   | e1=member_expr(x) "." T_POUND i=field_name
-    { (EDotPrivate(e1,i)) }
+    { (EDotPrivate(e1,ANormal,i)) }
+  | e1=member_expr(x) T_PLING_PERIOD T_POUND i=field_name
+    { (EDotPrivate(e1,ANullish,i)) }
 primary_expr(x):
  | e=primary_expr_no_braces
  | e=x { e }
