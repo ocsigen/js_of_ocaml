@@ -639,7 +639,7 @@ class_element:
 
 class_property_name:
   | property_name { PropName $1 }
-  | T_POUND ident { PrivName $2 }
+  | T_POUND id { PrivName $2 }
 
 method_definition(name):
  | T_GET name=name args=call_signature "{" b=function_body "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
@@ -896,6 +896,8 @@ call_expr(x):
  | T_SUPER a=arguments { ECall(vartok $startpos($1) T_SUPER,ANormal, a, p $symbolstartpos) }
  | e=call_expr(x) a=access i=method_name
     { EDot (e,a,i) }
+ | e=call_expr(x) a=access T_POUND i=method_name
+    { EDotPrivate (e,a,i) }
 
 new_expr(x):
  | e=member_expr(x)    { e }
@@ -926,10 +928,8 @@ member_expr(x):
      { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
-  | e1=member_expr(x) "." T_POUND i=field_name
-    { (EDotPrivate(e1,ANormal,i)) }
-  | e1=member_expr(x) T_PLING_PERIOD T_POUND i=field_name
-    { (EDotPrivate(e1,ANullish,i)) }
+  | e1=member_expr(x) a=access T_POUND i=field_name
+    { (EDotPrivate(e1,a,i)) }
 primary_expr(x):
  | e=primary_expr_no_braces
  | e=x { e }
@@ -950,6 +950,7 @@ primary_with_stmt:
 primary_expr_no_braces:
  | T_THIS                { EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "this")) }
  | i=ident               { EVar i }
+ | T_POUND id            { EPrivName $2 }
  | n=null_literal        { n }
  | b=boolean_literal     { b }
  | n=numeric_literal     { ENum (Num.of_string_unsafe n) }

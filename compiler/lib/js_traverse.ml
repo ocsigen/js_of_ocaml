@@ -131,7 +131,7 @@ class map : mapper =
     method private class_element_name x =
       match x with
       | PropName n -> PropName (m#property_name n)
-      | PrivName x -> PrivName (m#ident x)
+      | PrivName x -> PrivName x
 
     method block l = m#statements l
 
@@ -336,6 +336,7 @@ class map : mapper =
       | ETemplate t -> ETemplate (m#template t)
       | EYield e -> EYield (m#expression_o e)
       | EYieldDelegate e -> EYieldDelegate (m#expression_o e)
+      | EPrivName i -> EPrivName i
       | CoverParenthesizedExpressionAndArrowParameterList e ->
           CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
       | CoverCallExpressionAndAsyncArrowHead e ->
@@ -490,7 +491,7 @@ class iter : iterator =
     method private class_element_name x =
       match x with
       | PropName n -> m#property_name n
-      | PrivName x -> m#ident x
+      | PrivName (Utf8 _) -> ()
 
     method statement s =
       match s with
@@ -692,6 +693,7 @@ class iter : iterator =
       | ETemplate l -> m#template l
       | EYield e -> m#expression_o e
       | EYieldDelegate e -> m#expression_o e
+      | EPrivName (Utf8 _) -> ()
       | CoverParenthesizedExpressionAndArrowParameterList e -> m#early_error e
       | CoverCallExpressionAndAsyncArrowHead e -> m#early_error e
 
