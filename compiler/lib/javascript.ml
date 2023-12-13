@@ -294,6 +294,7 @@ and expression =
   | ERegexp of string * string option
   | EYield of expression option
   | EYieldDelegate of expression option
+  | EPrivName of identifier
   | CoverParenthesizedExpressionAndArrowParameterList of early_error
   | CoverCallExpressionAndAsyncArrowHead of early_error
 
@@ -397,7 +398,7 @@ and class_element =
 
 and class_element_name =
   | PropName of property_name
-  | PrivName of ident
+  | PrivName of identifier
 
 and ('a, 'b) list_with_rest =
   { list : 'a list

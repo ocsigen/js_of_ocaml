@@ -331,7 +331,8 @@ struct
       | ENew _
       | EClass _
       | EYield _
-      | EYieldDelegate _ -> false
+      | EYieldDelegate _
+      | EPrivName _ -> false
       | CoverCallExpressionAndAsyncArrowHead e
       | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
     in
@@ -884,6 +885,9 @@ struct
               PP.string f ")"
               (* There MUST be a space between the yield and its
                  argument. A line return will not work *)))
+    | EPrivName (Utf8 i) ->
+        PP.string f "#";
+        PP.string f i
     | CoverCallExpressionAndAsyncArrowHead e
     | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
 
@@ -1737,9 +1741,9 @@ struct
   and class_element_name f x =
     match x with
     | PropName n -> property_name f n
-    | PrivName i ->
+    | PrivName (Utf8 i) ->
         PP.string f "#";
-        ident f i
+        PP.string f i
 
   and program f s = statement_list f s
 end

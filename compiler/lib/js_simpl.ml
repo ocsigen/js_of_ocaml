@@ -75,6 +75,7 @@ let rec enot_rec e =
     | J.EDotPrivate _
     | J.ENew _
     | J.EVar _
+    | J.EPrivName _
     | J.EFun _
     | J.EArrow _
     | J.EStr _
