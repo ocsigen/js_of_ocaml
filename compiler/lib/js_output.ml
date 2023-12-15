@@ -386,12 +386,13 @@ struct
   let pp_ident_or_string_lit f (Stdlib.Utf8_string.Utf8 s_lit as s) =
     if is_ident s_lit then PP.string f s_lit else pp_string_lit f s
 
-  let rec comma_list f f_elt l =
+  let rec comma_list f ~force_last_comma f_elt l =
     match l with
     | [] -> ()
     | [ x ] ->
         PP.start_group f 0;
         f_elt f x;
+        if force_last_comma x then PP.string f ",";
         PP.end_group f
     | x :: r ->
         PP.start_group f 0;
@@ -399,9 +400,9 @@ struct
         PP.end_group f;
         PP.string f ",";
         PP.space f;
-        comma_list f f_elt r
+        comma_list f ~force_last_comma f_elt r
 
-  let comma_list_rest f f_elt l f_rest rest =
+  let comma_list_rest f ~force_last_comma f_elt l f_rest rest =
     match l, rest with
     | [], None -> ()
     | [], Some rest ->
@@ -409,9 +410,9 @@ struct
         PP.string f "...";
         f_rest f rest;
         PP.end_group f
-    | l, None -> comma_list f f_elt l
+    | l, None -> comma_list f ~force_last_comma f_elt l
     | l, Some r ->
-        comma_list f f_elt l;
+        comma_list f ~force_last_comma:(fun _ -> false) f_elt l;
         PP.string f ",";
         PP.space f;
         PP.start_group f 0;
@@ -731,13 +732,13 @@ struct
         | ObjectTarget list ->
             PP.start_group f 1;
             PP.string f "{";
-            comma_list f property list;
+            comma_list f ~force_last_comma:(fun _ -> false) property list;
             PP.string f "}";
             PP.end_group f
         | ArrayTarget list ->
             PP.start_group f 1;
             PP.string f "[";
-            comma_list f element list;
+            comma_list f ~force_last_comma:(function TargetElementHole -> true | _ -> false) element list;
             PP.string f "]";
             PP.end_group f)
     | EArr el ->
@@ -911,7 +912,7 @@ struct
         expression Expression f e;
         PP.string f "]"
 
-  and property_list f l = comma_list f property l
+  and property_list f l = comma_list f ~force_last_comma:(fun _ -> false) property l
 
   and property f p =
     match p with
@@ -959,7 +960,7 @@ struct
         in
         function_declaration f "" fpn (Some ()) l b loc'
 
-  and element_list f el = comma_list f element el
+  and element_list f el = comma_list f ~force_last_comma:(function ElementHole -> true | _ -> false)element el
 
   and element f (e : element) =
     match e with
@@ -977,7 +978,7 @@ struct
   and formal_parameter f e = binding_element f e
 
   and formal_parameter_list f { list; rest } =
-    comma_list_rest f formal_parameter list binding rest
+    comma_list_rest f ~force_last_comma:(fun _ -> false) formal_parameter list binding rest
 
   and function_body f b = statement_list f ~skip_last_semi:true b
 
@@ -990,7 +991,7 @@ struct
         expression AssignementExpression f e);
     PP.end_group f
 
-  and arguments f l = comma_list f argument l
+  and arguments f l = comma_list f ~force_last_comma:(fun _ -> false) argument l
 
   and variable_declaration f x =
     match x with
@@ -1064,13 +1065,13 @@ struct
     | ObjectBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "{";
-        comma_list_rest f binding_property list ident rest;
+        comma_list_rest f ~force_last_comma:(fun _ -> false) binding_property list ident rest;
         PP.string f "}";
         PP.end_group f
     | ArrayBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "[";
-        comma_list_rest f binding_array_elt list binding rest;
+        comma_list_rest f ~force_last_comma:(function None -> true | Some _ -> false) binding_array_elt list binding rest;
         PP.string f "]";
         PP.end_group f
 
@@ -1516,6 +1517,7 @@ struct
             PP.space f;
             comma_list
               f
+              ~force_last_comma:(fun _ -> false)
               (fun f (s, i) ->
                 if match i with
                    | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
@@ -1545,7 +1547,7 @@ struct
             PP.space f;
             PP.string f "{";
             PP.space f;
-            comma_list
+            comma_list ~force_last_comma:(fun _ -> false)
               f
               (fun f (i, s) ->
                 if match i with
@@ -1569,7 +1571,7 @@ struct
             | Export_names l ->
                 PP.string f "{";
                 PP.space f;
-                comma_list
+                comma_list ~force_last_comma:(fun _ -> false)
                   f
                   (fun f (a, b) ->
                     if Stdlib.Utf8_string.equal a b
