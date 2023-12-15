@@ -799,9 +799,9 @@ assignment_expr:
     }
  | arrow_function { $1 }
  | async_arrow_function { $1 }
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYieldDelegate (Some e) }
+ | T_YIELD { EYield { delegate= false; expr = None } }
+ | T_YIELD e=assignment_expr { EYield {delegate=false; expr = (Some e) } }
+ | T_YIELD "*" e=assignment_expr { EYield {delegate=true; expr = (Some e) } }
 
 left_hand_side_expr: left_hand_side_expr_(d1) { $1 }
 
@@ -1158,9 +1158,9 @@ assignment_expr_no_stmt:
  | arrow_function { $1 }
  | async_arrow_function { $1 }
  (* es6: *)
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYieldDelegate (Some e) }
+ | T_YIELD { EYield {delegate = false; expr = None} }
+ | T_YIELD e=assignment_expr { EYield {delegate = false; expr = Some e } }
+ | T_YIELD "*" e=assignment_expr { EYield { delegate = true; expr = (Some e) } }
 
 
 primary_for_consise_body:
@@ -1183,9 +1183,9 @@ assignment_expr_for_consise_body:
  | arrow_function { $1 }
  | async_arrow_function { $1 }
  (* es6: *)
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYieldDelegate (Some e) }
+ | T_YIELD { EYield { delegate = false; expr = None } }
+ | T_YIELD e=assignment_expr { EYield {delegate = false; expr = (Some e) } }
+ | T_YIELD "*" e=assignment_expr { EYield {delegate = true; expr = (Some e) } }
 
 (* no object_literal here *)
 primary_no_stmt: T_ERROR TComment { assert false }

@@ -334,8 +334,7 @@ class map : mapper =
                      CoverInitializedName (m#early_error e, a, b)))
       | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
       | ETemplate t -> ETemplate (m#template t)
-      | EYield e -> EYield (m#expression_o e)
-      | EYieldDelegate e -> EYieldDelegate (m#expression_o e)
+      | EYield { delegate; expr } -> EYield { delegate; expr = m#expression_o expr }
       | EPrivName i -> EPrivName i
       | CoverParenthesizedExpressionAndArrowParameterList e ->
           CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
@@ -691,8 +690,7 @@ class iter : iterator =
               | CoverInitializedName (e, _, _) -> m#early_error e)
       | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
       | ETemplate l -> m#template l
-      | EYield e -> m#expression_o e
-      | EYieldDelegate e -> m#expression_o e
+      | EYield { delegate = _; expr } -> m#expression_o expr
       | EPrivName (Utf8 _) -> ()
       | CoverParenthesizedExpressionAndArrowParameterList e -> m#early_error e
       | CoverCallExpressionAndAsyncArrowHead e -> m#early_error e

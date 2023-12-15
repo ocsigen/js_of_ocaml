@@ -292,8 +292,10 @@ and expression =
   | ENum of Num.t
   | EObj of property_list
   | ERegexp of string * string option
-  | EYield of expression option
-  | EYieldDelegate of expression option
+  | EYield of
+      { delegate : bool
+      ; expr : expression option
+      }
   | EPrivName of identifier
   | CoverParenthesizedExpressionAndArrowParameterList of early_error
   | CoverCallExpressionAndAsyncArrowHead of early_error

@@ -84,7 +84,6 @@ let rec enot_rec e =
     | J.EObj _
     | J.ERegexp _
     | J.EYield _
-    | J.EYieldDelegate _
     | J.ETemplate _
     | J.EAssignTarget _
     | J.EClass _
