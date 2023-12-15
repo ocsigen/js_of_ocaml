@@ -331,7 +331,6 @@ struct
       | EUn _
       | ENew _
       | EYield _
-      | EYieldDelegate _
       | EPrivName _ -> false
       | CoverCallExpressionAndAsyncArrowHead e
       | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
@@ -865,12 +864,11 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
-    | EYield _ | EYieldDelegate _ -> (
-        let kw, e =
-          match e with
-          | EYield e -> "yield", e
-          | EYieldDelegate e -> "yield*", e
-          | _ -> assert false
+    | EYield { delegate; expr = e } -> (
+        let kw =
+          match delegate with
+          | false -> "yield"
+          | true -> "yield*"
         in
         match e with
         | None -> PP.string f kw
