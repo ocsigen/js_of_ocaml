@@ -294,11 +294,12 @@ struct
     | Import _
     | Export _ -> false
 
-  let starts_with ~obj ~funct ~let_identifier ~async_identifier l e =
+  let starts_with ~obj ~funct ~class_ ~let_identifier ~async_identifier l e =
     let rec traverse l e =
       match e with
       | EObj _ -> obj
       | EFun _ -> funct
+      | EClass _ -> class_
       | EVar (S { name = Utf8 "let"; _ }) -> let_identifier
       | EVar (S { name = Utf8 "async"; _ }) -> async_identifier
       | ESeq (e, _) -> Prec.(l <= Expression) && traverse Expression e
@@ -329,7 +330,6 @@ struct
       | ERegexp _
       | EUn _
       | ENew _
-      | EClass _
       | EYield _
       | EYieldDelegate _
       | EPrivName _ -> false
@@ -1118,12 +1118,13 @@ struct
       ?(last_semi = fun () -> ())
       ?(obj = false)
       ?(funct = false)
+      ?(class_ = false)
       ?(let_identifier = false)
       ?(async_identifier = false)
       l
       f
       e =
-    if starts_with ~obj ~funct ~let_identifier ~async_identifier l e
+    if starts_with ~obj ~funct ~class_ ~let_identifier ~async_identifier l e
     then (
       PP.start_group f 1;
       PP.string f "(";
@@ -1172,6 +1173,7 @@ struct
           ~last_semi
           ~obj:true
           ~funct:true
+          ~class_:true
           ~let_identifier:true
           Expression
           f
@@ -1592,6 +1594,7 @@ struct
               ~last_semi
               ~obj:true
               ~funct:true
+              ~class_:true
               ~let_identifier:true
               Expression
               f
