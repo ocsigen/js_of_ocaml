@@ -231,22 +231,27 @@ listc_rev(X):
  | listc_rev(X) { List.rev $1 }
 
 listc_with_empty_trail_rev(X):
- | e=elision               { (List.rev_map (fun () -> None) (() :: e)) }
- | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
- | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
+ | ","                { [ None ] }
+ | X ","              { [ Some $1 ] }
+ | listc_with_empty_trail_rev(X) X "," { Some $2 :: $1 }
+ | listc_with_empty_trail_rev(X) "," { None :: $1 }
 
 listc_with_empty(X):
-  | X                           { [ Some $1 ] }
-  | listc_with_empty_trail_rev(X)   { List.rev $1 }
-  | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
+  | listc_with_empty_trail_rev(X) x=X? {
+                                       match x with
+                                       | None -> List.rev $1
+                                       | Some _ -> List.rev (x :: $1)
+                                     }
+  | x=X                              { [ Some x ] }
+  | (* empty *)                       { [] }
 
 listc_with_empty2(X,Y):
-  | X                           { [ Some $1 ], None }
-  | Y                           { [ ], Some $1 }
-  | listc_with_empty_trail_rev(X)   { List.rev $1, None }
-  | listc_with_empty_trail_rev(X) X { List.rev (Some $2 :: $1), None }
-  | listc_with_empty_trail_rev(X) Y { List.rev ($1), Some $2 }
-
+  | listc_with_empty_trail_rev(X) x=X { List.rev (Some x :: $1), None }
+  | listc_with_empty_trail_rev(X)     { List.rev $1, None }
+  | listc_with_empty_trail_rev(X) y=Y { List.rev $1, Some y }
+  | X                                 { [Some $1], None }
+  | Y                                 { [], Some $1 }
+  | (* empty *)                       { [], None }
 
 optl(X):
  | (* empty *) { [] }
@@ -515,7 +520,6 @@ binding_element:
  * type like for the (call)argument type.
  *)
 array_binding_pattern:
-  | "[" "]" { ArrayBinding (list []) }
   | "[" l=listc_with_empty2(binding_element, binding_element_rest) "]" {
         ArrayBinding {list = fst l; rest = snd l }
   }
@@ -1017,7 +1021,6 @@ assignment_operator:
 (*----------------------------*)
 
 array_literal:
-  | "[" "]" { EArr [] }
   | "[" l=listc_with_empty (element) "]"
     { (EArr (List.map (function None -> ElementHole | Some x -> x) l)) }
 
@@ -1288,7 +1291,3 @@ property_name:
 sc:
  | ";"                 { $1 }
  | T_VIRTUAL_SEMICOLON { $1 }
-
-elision:
- | ","         { [] }
- | elision "," { () :: $1 }
