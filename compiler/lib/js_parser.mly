@@ -172,6 +172,7 @@ T_BACKQUOTE
 
 %token T_VIRTUAL_SEMICOLON
 %token T_VIRTUAL_SEMICOLON_DO_WHILE
+%token T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT
 %token T_LPAREN_ARROW
 %token T_INCR_NB T_DECR_NB
 
@@ -399,7 +400,7 @@ export_decl:
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=export_fun_class
+ | T_EXPORT T_DEFAULT e=export_fun_class endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
       | EFun (id, decl) ->

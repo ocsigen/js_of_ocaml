@@ -154,6 +154,7 @@ type t =
   | T_EOF
   | T_VIRTUAL_SEMICOLON
   | T_VIRTUAL_SEMICOLON_DO_WHILE
+  | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT
   | T_DECR_NB
   | T_INCR_NB
   | T_LPAREN_ARROW
@@ -266,6 +267,7 @@ let to_string = function
   | T_VOID -> "void"
   | T_VIRTUAL_SEMICOLON -> ";"
   | T_VIRTUAL_SEMICOLON_DO_WHILE -> ";"
+  | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT -> ";"
   | T_ARROW -> "=>"
   | T_AT -> "@"
   | T_POUND -> "#"
@@ -319,6 +321,7 @@ let to_string_extra x =
   | T_DECR -> " (DECR)"
   | T_VIRTUAL_SEMICOLON -> " (virtual)"
   | T_VIRTUAL_SEMICOLON_DO_WHILE -> " (virtual-do-while)"
+  | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT -> " (virtual-export-default)"
   | TAnnot _ -> "(annot)"
   | T_ERROR _ -> "(error)"
   | T_LPAREN_ARROW -> "(arrow)"
