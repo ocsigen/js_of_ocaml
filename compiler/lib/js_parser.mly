@@ -1034,20 +1034,25 @@ encaps:
 (* TODO conflict with as then in indent_keyword_bis *)
 arrow_function:
   | i=ident T_ARROW b=arrow_body
-    { EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
   | T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
 async_arrow_function:
-  | T_ASYNC i=ident T_ARROW b=arrow_body { EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
+  | T_ASYNC i=ident T_ARROW b=arrow_body {
+      let b,consise = b in
+      EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
   | T_ASYNC T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
 
 (* was called consise body in spec *)
 arrow_body:
- | "{" b=function_body "}" { b }
- | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)] }
+ | "{" b=function_body "}" { b, false }
+ | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* no in                    *)

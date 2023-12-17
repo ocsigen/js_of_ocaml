@@ -200,7 +200,7 @@ and expression =
   | EVar of ident
   | EFun of ident option * function_declaration
   | EClass of ident option * class_declaration
-  | EArrow of function_declaration * arrow_info
+  | EArrow of function_declaration * bool * arrow_info
   | EStr of Utf8_string.t
   (* A UTF-8 encoded string that may contain escape sequences. *)
   | ETemplate of template

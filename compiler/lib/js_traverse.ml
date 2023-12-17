@@ -270,7 +270,7 @@ class map : mapper =
           let idopt = Option.map ~f:m#ident idopt in
           EFun (idopt, m#fun_decl fun_decl)
       | EClass (id, cl_decl) -> EClass (Option.map ~f:m#ident id, m#class_decl cl_decl)
-      | EArrow (fun_decl, x) -> EArrow (m#fun_decl fun_decl, x)
+      | EArrow (fun_decl, consise, x) -> EArrow (m#fun_decl fun_decl, consise, x)
       | EArr l ->
           EArr
             (List.map l ~f:(function
@@ -595,7 +595,7 @@ class iter : iterator =
       | EClass (i, cl_decl) ->
           Option.iter ~f:m#ident i;
           m#class_decl cl_decl
-      | EArrow (fun_decl, _) -> m#fun_decl fun_decl
+      | EArrow (fun_decl, _, _) -> m#fun_decl fun_decl
       | EArr l ->
           List.iter l ~f:(function
               | ElementHole -> ()
@@ -1590,9 +1590,9 @@ let use_fun_context l =
 
        method expression x =
          match x with
-         | EArrow (_, ANo_fun_context) -> ()
-         | EArrow (_, AUse_parent_fun_context) -> raise True
-         | EArrow (fun_decl, AUnknown) -> super#fun_decl fun_decl
+         | EArrow (_, _, ANo_fun_context) -> ()
+         | EArrow (_, _, AUse_parent_fun_context) -> raise True
+         | EArrow (fun_decl, _, AUnknown) -> super#fun_decl fun_decl
          | _ -> super#expression x
     end)
       #statements
@@ -1632,11 +1632,11 @@ class simpl =
       | EFun
           (None, (({ generator = false; async = true | false }, _, body, _) as fun_decl))
         when Config.Flag.es6 () && not (use_fun_context body) ->
-          EArrow (fun_decl, ANo_fun_context)
-      | EArrow (((_, _, body, _) as fun_decl), AUnknown) ->
+          EArrow (fun_decl, false, ANo_fun_context)
+      | EArrow (((_, _, body, _) as fun_decl), consise, AUnknown) ->
           if use_fun_context body
-          then EArrow (fun_decl, AUse_parent_fun_context)
-          else EArrow (fun_decl, ANo_fun_context)
+          then EArrow (fun_decl, consise, AUse_parent_fun_context)
+          else EArrow (fun_decl, consise, ANo_fun_context)
       | e -> e
 
     method statement s =
