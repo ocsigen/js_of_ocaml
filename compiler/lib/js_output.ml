@@ -738,7 +738,13 @@ struct
         | ArrayTarget list ->
             PP.start_group f 1;
             PP.string f "[";
-            comma_list f ~force_last_comma:(function TargetElementHole -> true | _ -> false) element list;
+            comma_list
+              f
+              ~force_last_comma:(function
+                | TargetElementHole -> true
+                | _ -> false)
+              element
+              list;
             PP.string f "]";
             PP.end_group f)
     | EArr el ->
@@ -960,7 +966,14 @@ struct
         in
         function_declaration f "" fpn (Some ()) l b loc'
 
-  and element_list f el = comma_list f ~force_last_comma:(function ElementHole -> true | _ -> false)element el
+  and element_list f el =
+    comma_list
+      f
+      ~force_last_comma:(function
+        | ElementHole -> true
+        | _ -> false)
+      element
+      el
 
   and element f (e : element) =
     match e with
@@ -978,7 +991,13 @@ struct
   and formal_parameter f e = binding_element f e
 
   and formal_parameter_list f { list; rest } =
-    comma_list_rest f ~force_last_comma:(fun _ -> false) formal_parameter list binding rest
+    comma_list_rest
+      f
+      ~force_last_comma:(fun _ -> false)
+      formal_parameter
+      list
+      binding
+      rest
 
   and function_body f b = statement_list f ~skip_last_semi:true b
 
@@ -1065,13 +1084,27 @@ struct
     | ObjectBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "{";
-        comma_list_rest f ~force_last_comma:(fun _ -> false) binding_property list ident rest;
+        comma_list_rest
+          f
+          ~force_last_comma:(fun _ -> false)
+          binding_property
+          list
+          ident
+          rest;
         PP.string f "}";
         PP.end_group f
     | ArrayBinding { list; rest } ->
         PP.start_group f 1;
         PP.string f "[";
-        comma_list_rest f ~force_last_comma:(function None -> true | Some _ -> false) binding_array_elt list binding rest;
+        comma_list_rest
+          f
+          ~force_last_comma:(function
+            | None -> true
+            | Some _ -> false)
+          binding_array_elt
+          list
+          binding
+          rest;
         PP.string f "]";
         PP.end_group f
 
@@ -1547,7 +1580,8 @@ struct
             PP.space f;
             PP.string f "{";
             PP.space f;
-            comma_list ~force_last_comma:(fun _ -> false)
+            comma_list
+              ~force_last_comma:(fun _ -> false)
               f
               (fun f (i, s) ->
                 if match i with
@@ -1571,7 +1605,8 @@ struct
             | Export_names l ->
                 PP.string f "{";
                 PP.space f;
-                comma_list ~force_last_comma:(fun _ -> false)
+                comma_list
+                  ~force_last_comma:(fun _ -> false)
                   f
                   (fun f (a, b) ->
                     if Stdlib.Utf8_string.equal a b

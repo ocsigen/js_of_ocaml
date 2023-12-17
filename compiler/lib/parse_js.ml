@@ -453,9 +453,12 @@ let recover error_checkpoint previous_checkpoint =
                   State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | T_RPAREN
                 when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE
-                -> State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover                       | T_RCURLY
-                when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT
                 -> State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+              | T_RCURLY
+                when acceptable
+                       previous_checkpoint
+                       Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
+                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | _ -> error_checkpoint)))
 
 let parse_aux the_parser (lexbuf : Lexer.t) =
