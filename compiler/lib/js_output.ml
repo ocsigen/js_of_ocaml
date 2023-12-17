@@ -437,7 +437,7 @@ struct
           PP.end_group f)
     | EFun (i, decl) -> function_declaration' f i decl
     | EClass (i, cl_decl) -> class_declaration f i cl_decl
-    | EArrow ((k, p, b, pc), _) ->
+    | EArrow ((k, p, b, pc), consise, _) ->
         if Prec.(l > AssignementExpression)
         then (
           PP.start_group f 1;
@@ -461,15 +461,15 @@ struct
             PP.string f ")=>";
             PP.end_group f);
         PP.end_group f;
-        (match b with
-        | [ (Return_statement (Some e), loc) ] ->
+        (match b, consise with
+        | [ (Return_statement (Some e), loc) ], true ->
             (* Should not starts with '{' *)
             PP.start_group f 1;
             PP.break1 f;
             output_debug_info f loc;
             parenthesized_expression ~obj:true AssignementExpression f e;
             PP.end_group f
-        | l ->
+        | l, _ ->
             let b =
               match l with
               | [ (Block l, _) ] -> l
