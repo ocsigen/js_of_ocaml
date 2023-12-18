@@ -338,6 +338,52 @@ struct
     in
     traverse l e
 
+  let contains ~in_ l e =
+    let rec traverse l e =
+      match e with
+      | EObj _ -> false
+      | EFun _ -> false
+      | EClass _ -> false
+      | EVar (S { name = Utf8 "in"; _ }) -> true
+      | ESeq (e1, e2) ->
+          Prec.(l <= Expression) && (traverse Expression e1 || traverse Expression e2)
+      | ECond (e1, e2, e3) ->
+          Prec.(l <= ConditionalExpression)
+          && (traverse ShortCircuitExpression e1
+             || traverse ShortCircuitExpression e2
+             || traverse ShortCircuitExpression e3)
+      | EAssignTarget (ObjectTarget _) -> false
+      | EAssignTarget (ArrayTarget _) -> false
+      | EBin (op, e1, e2) ->
+          let out, lft, rght = op_prec op in
+          Prec.(l <= out) && (Poly.(op = In && in_) || traverse lft e1 || traverse rght e2)
+      | EUn ((IncrA | DecrA | IncrB | DecrB), e) ->
+          Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
+      | EUn (_, e) -> Prec.(l <= UnaryExpression) && traverse UnaryExpression e
+      | ECallTemplate (EFun _, _, _) ->
+          (* We force parens around the function in that case.*)
+          false
+      | ECallTemplate (e, _, _)
+      | ECall (e, _, _, _)
+      | EAccess (e, _, _)
+      | EDot (e, _, _)
+      | EDotPrivate (e, _, _) -> traverse CallOrMemberExpression e
+      | EArrow _
+      | EVar _
+      | EStr _
+      | ETemplate _
+      | EArr _
+      | EBool _
+      | ENum _
+      | ERegexp _
+      | ENew _
+      | EYield _
+      | EPrivName _ -> false
+      | CoverCallExpressionAndAsyncArrowHead e
+      | CoverParenthesizedExpressionAndArrowParameterList e -> early_error e
+    in
+    traverse l e
+
   let best_string_quote s =
     let simple = ref 0 and double = ref 0 in
     for i = 0 to String.length s - 1 do
@@ -1011,7 +1057,7 @@ struct
 
   and arguments f l = comma_list f ~force_last_comma:(fun _ -> false) argument l
 
-  and variable_declaration f x =
+  and variable_declaration f ?(in_ = true) x =
     match x with
     | DeclIdent (i, None) -> ident f i
     | DeclIdent (i, Some (e, loc)) ->
@@ -1024,7 +1070,16 @@ struct
         PP.end_group f;
         PP.start_group f 1;
         PP.space f;
+        let p = (not in_) && contains ~in_:true Expression e in
+        if p
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         expression AssignementExpression f e;
+        if p
+        then (
+          PP.string f ")";
+          PP.end_group f);
         PP.end_group f;
         PP.end_group f
     | DeclPattern (p, (e, loc)) ->
@@ -1037,7 +1092,16 @@ struct
         PP.end_group f;
         PP.start_group f 1;
         PP.space f;
+        let p = (not in_) && contains ~in_:true Expression e in
+        if p
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         expression AssignementExpression f e;
+        if p
+        then (
+          PP.string f ")";
+          PP.end_group f);
         PP.end_group f;
         PP.end_group f
 
@@ -1107,15 +1171,15 @@ struct
         PP.string f "]";
         PP.end_group f
 
-  and variable_declaration_list_aux f l =
+  and variable_declaration_list_aux f ?in_ l =
     match l with
     | [] -> assert false
-    | [ d ] -> variable_declaration f d
+    | [ d ] -> variable_declaration f ?in_ d
     | d :: r ->
-        variable_declaration f d;
+        variable_declaration f ?in_ d;
         PP.string f ",";
         PP.space f;
-        variable_declaration_list_aux f r
+        variable_declaration_list_aux f ?in_ r
 
   and variable_declaration_kind f kind =
     match kind with
@@ -1123,7 +1187,7 @@ struct
     | Let -> PP.string f "let"
     | Const -> PP.string f "const"
 
-  and variable_declaration_list kind close f = function
+  and variable_declaration_list ?in_ kind close f = function
     | [] -> ()
     | [ x ] ->
         let x, loc =
@@ -1136,14 +1200,14 @@ struct
         output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
-        variable_declaration f x;
+        variable_declaration f ?in_ x;
         if close then PP.string f ";";
         PP.end_group f
     | l ->
         PP.start_group f 1;
         variable_declaration_kind f kind;
         PP.space f;
-        variable_declaration_list_aux f l;
+        variable_declaration_list_aux f ?in_ l;
         if close then PP.string f ";";
         PP.end_group f
 
@@ -1154,10 +1218,11 @@ struct
       ?(class_ = false)
       ?(let_identifier = false)
       ?(async_identifier = false)
+      ?(force = false)
       l
       f
       e =
-    if starts_with ~obj ~funct ~class_ ~let_identifier ~async_identifier l e
+    if force || starts_with ~obj ~funct ~class_ ~let_identifier ~async_identifier l e
     then (
       PP.start_group f 1;
       PP.string f "(";
@@ -1282,9 +1347,10 @@ struct
         (match e1 with
         | Left None -> ()
         | Left (Some e) ->
-            (* Should not starts with "let [" *)
-            parenthesized_expression ~let_identifier:true Expression f e
-        | Right (k, l) -> variable_declaration_list k false f l);
+            (* Should not starts with "let [" and should not contain "in" *)
+            let force = contains ~in_:true Expression e in
+            parenthesized_expression ~force ~let_identifier:true Expression f e
+        | Right (k, l) -> variable_declaration_list k ~in_:false false f l);
         PP.string f ";";
         (match e2 with
         | None -> ()
