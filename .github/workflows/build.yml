@@ -57,7 +57,7 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: ocaml.5.1.0,ocaml-option-mingw
+            ocaml-compiler: ocaml.5.1.1,ocaml-option-mingw
             skip-effects: false
             skip-test: false
             skip-doc: true
