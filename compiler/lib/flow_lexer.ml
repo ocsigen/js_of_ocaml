@@ -462,8 +462,9 @@ let rec string_quote env q buf lexbuf =
       string_quote env q buf lexbuf
   | '\\' ->
       let env, str = string_escape ~accept_invalid:false env lexbuf in
-      if String.equal str "" || String.get q 0 <> String.get str 0
-      then Buffer.add_string buf "\\";
+      (match str with
+      | "'" | "\"" -> ()
+      | _ -> Buffer.add_string buf "\\");
       Buffer.add_string buf str;
       string_quote env q buf lexbuf
   | '\n' ->
