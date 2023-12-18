@@ -1,7 +1,7 @@
 @charset "UTF-8";
 /* Copyright (c) 2016 The odoc contributors. All rights reserved.
    Distributed under the ISC license, see terms at the end of the file.
-   odoc 2.3.0 */
+   odoc 2.4.0 */
 
 /* Fonts */
 /* noticia-text-regular - latin */
@@ -95,7 +95,10 @@
 
 :root,
 .light:root {
-   --main-background: #FFFFFF;
+
+  scroll-padding-top: calc(var(--search-bar-height) + var(--search-padding-top) + 1em);
+
+  --main-background: #FFFFFF;
 
   --color: #333333;
   --link-color: #2C94BD;
@@ -116,6 +119,7 @@
   --toc-color: #1F2D3D;
   --toc-before-color: #777;
   --toc-background: #f6f8fa;
+  --toc-background-emph: #ecf0f5;
   --toc-list-border: #ccc;
 
   --spec-summary-border-color: #5c9cf5;
@@ -124,6 +128,12 @@
   --spec-summary-hover-background: #ebeff2;
   --spec-details-after-background: rgba(0, 4, 15, 0.05);
   --spec-details-after-shadow: rgba(204, 204, 204, 0.53);
+
+  --search-results-border: #bbb;
+  --search-results-shadow: #bbb;
+
+  --search-snake: #82aaff;
+
 }
 
 .dark:root {
@@ -151,6 +161,7 @@
   --li-code-color: #999;
   --toc-color: #777;
   --toc-background: #252525;
+  --toc-background-emph: #2a2a2a;
 
   --hljs-link: #999;
   --hljs-keyword: #cda869;
@@ -161,6 +172,10 @@
   --hljs-variable: #cf6a4c;
 
   --spec-label-color: lightgreen;
+
+  --search-results-border: #505050;
+  --search-results-shadow: #404040;
+
 }
 
 @media (prefers-color-scheme: dark) {
@@ -195,6 +210,7 @@
     --toc-color: #777;
     --toc-before-color: #777;
     --toc-background: #252525;
+    --toc-background-emph: #2a2a2a;
     --toc-list-border: #ccc;
     --spec-summary-hover-background: #ebeff2;
     --spec-details-after-background: rgba(0, 4, 15, 0.05);
@@ -209,6 +225,10 @@
     --hljs-variable: #cf6a4c;
 
     --spec-label-color: lightgreen;
+
+    --search-results-border: #505050;
+    --search-results-shadow: #404040;
+
   }
 }
 
@@ -246,26 +266,50 @@ body {
 }
 
 body {
-  margin-left: calc(10vw + 20ex);
-  margin-right: 4ex;
-  margin-top: 20px;
-  margin-bottom: 50px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 4ex;
 }
 
 body.odoc {
-  max-width: 100ex;
+  max-width: 132ex;
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  column-gap: 4ex;
+  row-gap: 2ex;
 }
 
 body.odoc-src {
   margin-right: calc(10vw + 20ex);
 }
 
+.odoc-content {
+  grid-row: 4;
+  grid-column: 2;
+}
+
+.odoc-preamble > *:first-child {
+  /* This make the first thing in the preamble align with the sidebar */
+  padding-top: 0;
+  margin-top: 0;
+}
+
 header {
   margin-bottom: 30px;
 }
 
+header.odoc-preamble {
+  grid-column: 2;
+  grid-row: 3;
+}
+
 nav {
-  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+  font-family: "Fira Sans", sans-serif;
+}
+
+nav.odoc-nav {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 /* Basic markup elements */
@@ -396,7 +440,7 @@ a.anchor {
 a.source_link {
   float: right;
   color: var(--source-color);
-  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+  font-family: "Fira Sans", sans-serif;
   font-size: initial;
 }
 
@@ -405,11 +449,15 @@ a.source_link {
    we restart the sequence there like h2  */
 
 h1, h2, h3, h4, h5, h6, .h7, .h8, .h9, .h10 {
-  font-family: "Fira Sans", Helvetica, Arial, sans-serif;
+  font-family: "Fira Sans", sans-serif;
   font-weight: 400;
   padding-top: 0.1em;
   line-height: 1.2;
   overflow-wrap: break-word;
+}
+
+.odoc-preamble h1 {
+  margin-top: 10px;
 }
 
 h1 {
@@ -459,7 +507,7 @@ h4 {
   font-size: 1.12em;
 }
 
-/* Comment delimiters, hidden but accessible to screen readers and 
+/* Comment delimiters, hidden but accessible to screen readers and
    selected for copy/pasting */
 
 /* Taken from bootstrap */
@@ -479,7 +527,7 @@ h4 {
 /* Preformatted and code */
 
 tt, code, pre {
-  font-family: "Fira Mono", courier;
+  font-family: "Fira Mono", monospace;
   font-weight: 400;
 }
 
@@ -549,10 +597,10 @@ div.odoc-spec,.odoc-include {
 
 .spec.type .variant, .spec.type .record {
   margin-left: 2ch;
+}
+
+.spec.type li.variant, .spec.type li.record {
   list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  row-gap: 4px;
 }
 
 .spec.type .record > code, .spec.type .variant > code {
@@ -569,9 +617,8 @@ div.odoc-spec,.odoc-include {
   padding: 0.25em 0.5em;
   margin-left: 10%;
   border-radius: 3px;
-  flex-grow:1;
   background: var(--main-background);
-  box-shadow: 2px 2px 4px lightgrey;
+  box-shadow: 1px 1px 2px lightgrey;
 }
 
 div.def {
@@ -739,19 +786,32 @@ td.def-doc *:first-child {
   line-height: 1.2;
 }
 
+/* When a search bar is present, we need the sticky sidebar to be a bit lower,
+   so `top` is higher  */
+
+.odoc-search + * + .odoc-toc {
+  --toc-top: calc(var(--search-bar-height) + var(--search-padding-top) + 20px);
+  max-height: calc(100vh - 2 * var(--toc-top));
+  top: var(--toc-top)
+}
+
 .odoc-toc {
-  position: fixed;
-  top: 0px;
-  bottom: 0px;
-  left: 0px;
-  max-width: 30ex;
-  min-width: 26ex;
-  width: 20%;
+  --toc-top: 20px;
+  width: 28ex;
   background: var(--toc-background);
   overflow: auto;
   color: var(--toc-color);
   padding-left: 2ex;
   padding-right: 2ex;
+  grid-row-start: 3;
+  grid-row-end: 5;
+  grid-column: 1;
+  height: fit-content;
+  border: solid 1px var(--border);
+  border-radius: 5px;
+  position:sticky;
+  max-height: calc(100vh - 2 * var(--toc-top));
+  top: var(--toc-top)
 }
 
 .odoc-toc ul li a {
@@ -759,13 +819,285 @@ td.def-doc *:first-child {
   font-size: 0.95em;
   color: var(--color);
   font-weight: 400;
-  line-height: 1.6em;
+  line-height: 1.2em;
   display: block;
 }
 
-.odoc-toc ul li a:hover {
+.odoc-sidebar ul li a:hover {
   box-shadow: none;
   text-decoration: underline;
+}
+
+:root {
+  --search-bar-height: 25px;
+  --search-padding-top: 1rem;
+}
+
+.odoc-search {
+  position: sticky;
+  top: 0;
+  background: var(--main-background);
+  /* This amounts to fit-content when the search is not active, but when you
+  have the search results displayed, you do not want the height of the search
+  container to change.  */
+  height: calc(var(--search-bar-height) + var(--search-padding-top));
+  width: 100%;
+  padding-top: var(--search-padding-top);
+  z-index: 1;
+  grid-row: 1;
+  grid-column-start: 1;
+  grid-column-end: 3;
+}
+
+
+.odoc-search .search-inner {
+  width: 100%;
+  position: relative;
+  left: 0;
+  display: grid;
+  /* The second column is for the search snake, which has 0 width */
+  grid-template-columns: 1fr 0fr;
+  grid-row-gap: 1rem;
+  /* The second row is for the search results. It has a width, but only */
+  grid-template-rows: min-content 0px;
+  background: transparent;
+}
+
+.odoc-search .search-bar {
+  position: relative;
+  z-index: 2;
+  font-size: 1em;
+  transition: font-size 0.3s;
+  box-shadow: 0px 0px 0.2rem 0.3em var(--main-background);
+  height: var(--search-bar-height);
+}
+
+.odoc-search:focus-within .search-bar {
+  font-size: 1.1em;
+}
+
+.odoc-search:not(:focus-within) .search-result {
+  display: none;
+}
+
+.odoc-search .search-result:empty {
+  display: none;
+}
+
+.odoc-search .search-result {
+  grid-row: 2;
+  background: var(--toc-background);
+  position: absolute;
+  left: 0;
+  right: 0;
+  border: solid;
+  border-color: var(--search-results-border);
+  border-width: 1px;
+  border-radius: 6px;
+  box-shadow: 0 3px 10px 2px var(--search-results-shadow), 0 0 3px 4px var(--main-background), 0px -1rem 0px 0px var(--main-background);
+  /* Works better on smallish screens with this */
+  max-height: calc(min(40rem, 50vh));
+  overflow-y: auto;
+}
+
+.search-bar {
+  /* inputs are of fixed size by default, even if you display:block them */
+  width: 100%;
+}
+
+
+.odoc-search .search-no-result {
+  color: var(--color);
+  border-bottom: var(--search-results-border) solid 1px;
+  background-color: inherit;
+  outline: 0;
+  padding: 10px;
+  padding-right: 0.5rem;
+}
+
+.search-bar-container {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1rem solid var(--main-background);
+}
+
+.search-snake {
+  grid-row: 1;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  width: 0;
+  z-index: 2;
+  position: relative;
+  left: 0;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  /* Otherwise the search snake flickers for very fast searches. */
+  transition: opacity 0.2s;
+  opacity: 0;
+}
+
+.search-snake.search-busy {
+  opacity: 1;
+}
+
+.search-snake:before {
+  content: " ";
+  display: block;
+  aspect-ratio: 1 / 1;
+  height: 100%;
+  margin-right: 4px;
+  border-radius: 50%;
+  border: 3px solid #aaa;
+  border-color: var(--search-snake) transparent var(--search-snake) transparent;
+  animation: search-snake 1.2s linear infinite;
+  position: absolute;
+  right: 0;
+}
+
+@keyframes search-snake {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+:root {
+  --kind-font-size-factor: 0.8;
+}
+
+.odoc-search .search-entry {
+  color: var(--color);
+  display: grid;
+  /* Possible kinds are the following :
+     "doc" "type" "mod" "exn" "class" "meth" "cons" "sig" "cons" "field" "val"
+     and "ext".
+     As the longest is 5 characters (and the font monospace), we give 5
+     character size to the column. However the font used for kind is a little
+     smaller, so we adjust by this factor.
+     */
+  grid-template-columns: [kinds] calc(var(--kind-font-size-factor) * 5ch) [titles] 1fr;
+  column-gap: 0.5rem;
+  border-bottom: var(--search-results-border) solid 1px;
+  background-color: inherit;
+  outline: 0;
+  padding: 0.4rem 0.4rem 0.7rem 0.7rem;
+}
+.odoc-search .search-entry p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.odoc-search .search-entry:focus-visible {
+  box-shadow: none;
+  background-color: var(--target-background);
+}
+
+.odoc-search .search-entry:hover {
+  box-shadow: none;
+  background-color: var(--toc-background-emph);
+}
+
+.odoc-search .search-entry .entry-kind {
+  grid-row: 1/2;
+  grid-column: 1/2;
+  line-height: 1.4rem;
+  font-size: calc(var(--kind-font-size-factor) * 1em);
+  font-weight: bold;
+  text-align: right;
+  position: relative;
+  bottom: 0;
+}
+
+.odoc-search .search-entry pre {
+  border: none;
+  margin: 0;
+}
+
+.odoc-search .search-entry pre code {
+  font-size: 1em;
+  background-color: var(--li-code-background);
+  color: var(--li-code-color);
+  border-radius: 3px;
+  padding: 0 0.3ex;
+}
+
+.odoc-search .search-entry .entry-title {
+  width: 100%;
+  display: block;
+  grid-column: 2/2;
+  grid-row: 1/2;
+  align-self: end;
+  line-height: 1.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.odoc-search .entry-name {
+  font-weight: bold;
+}
+
+.odoc-search .prefix-name {
+  font-weight: bold;
+}
+
+.odoc-search .search-entry .prefix-name {
+  opacity: 0.7;
+}
+
+.odoc-search .entry-rhs {
+  white-space: nowrap;
+}
+
+.odoc-search .search-entry .entry-content {
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.odoc-search .search-entry .entry-comment {
+  max-height: 1.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95em;
+  grid-row: 2/2;
+  grid-column: 2/2;
+}
+
+.odoc-search .search-entry .entry-comment ul {
+  white-space: nowrap;
+  display: inline;
+}
+
+.odoc-search .search-entry .entry-comment li {
+  display: inline;
+  white-space: nowrap;
+}
+
+.odoc-search .search-entry .entry-comment ul>li::before {
+  content: '•';
+}
+
+.odoc-search .search-entry .entry-comment div {
+  display: inline;
+  white-space: nowrap;
+}
+
+.odoc-search .search-entry .entry-comment p {
+  display: inline;
+  white-space: nowrap;
+}
+
+.odoc-search .search-entry .entry-comment code {
+  display: inline;
+  white-space: nowrap;
 }
 
 /* First level titles */
@@ -776,6 +1108,7 @@ td.def-doc *:first-child {
 
 .odoc-toc li ul {
   margin: 0px;
+  padding-top: 0.25em;
 }
 
 .odoc-toc ul {
@@ -783,8 +1116,9 @@ td.def-doc *:first-child {
 }
 
 .odoc-toc ul li {
-  margin: 0;
+  padding: 0.25em 0;
 }
+
 .odoc-toc>ul>li {
   margin-bottom: 0.3em;
 }
@@ -801,7 +1135,8 @@ td.def-doc *:first-child {
   margin: 1em;
 }
 
-.odoc-table td, .odoc-table th {
+.odoc-table td,
+.odoc-table th {
   padding-left: 0.5em;
   padding-right: 0.5em;
   border: 1px solid black;
@@ -816,7 +1151,13 @@ td.def-doc *:first-child {
 @media only screen and (max-width: 110ex) {
   body {
     margin: 2em;
+    padding: 0;
   }
+
+  body.odoc {
+    display: block;
+  }
+
   .odoc-toc {
     position: static;
     width: auto;
@@ -836,6 +1177,7 @@ td.def-doc *:first-child {
     color: black;
     background: white;
   }
+
   body nav:first-child {
     visibility: hidden;
   }
@@ -955,23 +1297,74 @@ td.def-doc *:first-child {
   text-decoration: underline;
 }
 
-.VAL, .TYPE, .LET, .REC, .IN, .OPEN, .NONREC, .MODULE, .METHOD, .LETOP, .INHERIT, .INCLUDE, .FUNCTOR, .EXTERNAL, .CONSTRAINT, .ASSERT, .AND, .END, .CLASS, .STRUCT, .SIG {
-  color: #859900;;
+.VAL,
+.TYPE,
+.LET,
+.REC,
+.IN,
+.OPEN,
+.NONREC,
+.MODULE,
+.METHOD,
+.LETOP,
+.INHERIT,
+.INCLUDE,
+.FUNCTOR,
+.EXTERNAL,
+.CONSTRAINT,
+.ASSERT,
+.AND,
+.END,
+.CLASS,
+.STRUCT,
+.SIG {
+  color: #859900;
+  ;
 }
 
-.WITH, .WHILE, .WHEN, .VIRTUAL, .TRY, .TO, .THEN, .PRIVATE, .OF, .NEW, .MUTABLE, .MATCH, .LAZY, .IF, .FUNCTION, .FUN, .FOR, .EXCEPTION, .ELSE, .TO, .DOWNTO, .DO, .DONE, .BEGIN, .AS {
+.WITH,
+.WHILE,
+.WHEN,
+.VIRTUAL,
+.TRY,
+.TO,
+.THEN,
+.PRIVATE,
+.OF,
+.NEW,
+.MUTABLE,
+.MATCH,
+.LAZY,
+.IF,
+.FUNCTION,
+.FUN,
+.FOR,
+.EXCEPTION,
+.ELSE,
+.TO,
+.DOWNTO,
+.DO,
+.DONE,
+.BEGIN,
+.AS {
   color: #cb4b16;
 }
 
-.TRUE, .FALSE {
+.TRUE,
+.FALSE {
   color: #b58900;
 }
 
-.failwith, .INT, .SEMISEMI, .LIDENT {
+.failwith,
+.INT,
+.SEMISEMI,
+.LIDENT {
   color: #2aa198;
 }
 
-.STRING, .CHAR, .UIDENT {
+.STRING,
+.CHAR,
+.UIDENT {
   color: #b58900;
 }
 
