@@ -12,8 +12,12 @@ function initialize_nat() {
 //Provides: MlNat
 function MlNat(x){
   this.data = new Int32Array(x);
+  // For num < 1.5
   // length_nat isn't external, so we have to make the Obj.size
-  // work out right. The +2 to array length seems to work.
+  // work out right.
+  // We add +2 to the array length:
+  // - +1 for the tag
+  // - +1 for the custom_ops slot
   this.length = this.data.length + 2
 }
 
@@ -30,6 +34,10 @@ function caml_hash_nat(x) {
   return h;
 }
 
+//Provides: length_nat
+function length_nat(x) {
+  return x.data.length;
+}
 
 //Provides: nat_of_array
 //Requires: MlNat
