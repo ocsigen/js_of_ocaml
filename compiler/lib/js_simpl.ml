@@ -166,7 +166,6 @@ let rec depth = function
   | Continue_statement _ -> 1
   | Break_statement _ -> 1
   | Return_statement _ -> 1
-  (* | With_statement of expression * statement *)
   | Labelled_statement (_, (s, _)) -> depth s
   | Switch_statement (_, c1, None, c2) ->
       max
@@ -181,6 +180,7 @@ let rec depth = function
   | Throw_statement _ -> 1
   | Try_statement (b, _, None) -> depth_block b + 1
   | Try_statement (b, _, Some b2) -> max (depth_block b) (depth_block b2) + 1
+  | With_statement (_, (st, _)) -> depth st + 1
   | Debugger_statement -> 1
   | Import _ -> 1
   | Export _ -> 1
