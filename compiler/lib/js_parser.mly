@@ -678,6 +678,7 @@ stmt1:
  | switch_stmt     { $1 }
  | throw_stmt      { $1 }
  | try_stmt        { $1 }
+ | with_stmt       { $1 }
  | debugger_stmt   { $1 }
 
 label:
@@ -752,6 +753,9 @@ labelled_stmt:
 
 throw_stmt:
  | T_THROW e=expr sc { (Throw_statement e) }
+
+with_stmt:
+ | T_WITH "(" e=expr ")" s=stmt { (With_statement (e,s)) }
 
 try_stmt:
  | T_TRY b=block c=catch { (Try_statement (b, Some c, None)) }

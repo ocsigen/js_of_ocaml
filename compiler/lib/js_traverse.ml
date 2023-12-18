@@ -206,6 +206,8 @@ class map : mapper =
             , match final with
               | None -> None
               | Some s -> Some (m#block s) )
+      | With_statement (e, (s, loc)) ->
+          With_statement (m#expression e, (m#statement s, m#loc loc))
       | Import (import, loc) -> Import (m#import import, m#parse_info loc)
       | Export (export, loc) -> Export (m#export export, m#parse_info loc)
 
@@ -567,6 +569,9 @@ class iter : iterator =
           match final with
           | None -> ()
           | Some s -> m#block s)
+      | With_statement (e, (s, _)) ->
+          m#expression e;
+          m#statement s
       | Import (x, _loc) -> m#import x
       | Export (x, _loc) -> m#export x
 

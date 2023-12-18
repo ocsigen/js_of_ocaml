@@ -348,7 +348,7 @@ and statement =
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
-  (* | With_statement of expression * statement *)
+  | With_statement of expression * (statement * location)
   | Labelled_statement of Label.t * (statement * location)
   | Switch_statement of
       expression * case_clause list * statement_list option * case_clause list

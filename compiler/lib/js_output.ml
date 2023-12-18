@@ -273,6 +273,7 @@ struct
     | If_statement (_, _, Some st)
     | While_statement (_, st)
     | For_statement (_, _, _, st)
+    | With_statement (_, st)
     | ForIn_statement (_, _, st) -> ends_with_if_without_else st
     | ForOf_statement (_, _, st) -> ends_with_if_without_else st
     | ForAwaitOf_statement (_, _, st) -> ends_with_if_without_else st
@@ -1521,6 +1522,14 @@ struct
             PP.break f;
             PP.string f "finally";
             block f b);
+        PP.end_group f
+    | With_statement (e, s) ->
+        PP.start_group f 0;
+        PP.string f "with(";
+        expression Expression f e;
+        PP.string f ")";
+        PP.break f;
+        statement f s;
         PP.end_group f
     | Import ({ kind; from }, _loc) ->
         PP.start_group f 0;
