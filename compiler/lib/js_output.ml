@@ -1312,7 +1312,7 @@ struct
         (match e1 with
         | Left e ->
             (* Should not starts with "let [" *)
-            parenthesized_expression ~let_identifier:true Expression f e
+            parenthesized_expression ~let_identifier:true LeftHandSideExpression f e
         | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "in";
@@ -1337,7 +1337,7 @@ struct
             parenthesized_expression
               ~let_identifier:true
               ~async_identifier:true
-              Expression
+              LeftHandSideExpression
               f
               e
         | Right (k, v) -> for_binding f k v);
@@ -1345,7 +1345,7 @@ struct
         PP.string f "of";
         PP.break f;
         PP.space f;
-        expression Expression f e2;
+        expression AssignementExpression f e2;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -1361,13 +1361,13 @@ struct
         (match e1 with
         | Left e ->
             (* Should not starts with "let" *)
-            parenthesized_expression ~let_identifier:true Expression f e
+            parenthesized_expression ~let_identifier:true LeftHandSideExpression f e
         | Right (k, v) -> for_binding f k v);
         PP.space f;
         PP.string f "of";
         PP.break f;
         PP.space f;
-        expression Expression f e2;
+        expression AssignementExpression f e2;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
@@ -1740,7 +1740,7 @@ struct
         PP.space f;
         PP.string f "extends";
         PP.space f;
-        expression Expression f e;
+        expression LeftHandSideExpression f e;
         PP.space f);
     PP.end_group f;
     PP.start_group f 2;
@@ -1770,7 +1770,7 @@ struct
                 PP.string f "=";
                 PP.space f;
                 output_debug_info f loc;
-                expression Expression f e);
+                expression AssignementExpression f e);
             PP.string f ";";
             PP.end_group f
         | CEStaticBLock l ->
