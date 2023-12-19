@@ -54,6 +54,16 @@
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))
 
+   (import "bindings" "map_new" (func $map_new (result (ref extern))))
+   (import "bindings" "map_get"
+      (func $map_get
+         (param (ref extern)) (param i32) (result (ref $fd_offset))))
+   (import "bindings" "map_set"
+      (func $map_set
+         (param (ref extern)) (param i32) (param (ref $fd_offset))))
+   (import "bindings" "map_delete"
+      (func $map_delete (param (ref extern)) (param i32)))
+
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $offset_array (array (mut i64)))
@@ -109,38 +119,35 @@
             (field $size (mut i32))
             (field $unbuffered (mut i32)))))
 
-   (global $fd_offsets (export "fd_offsets") (mut (ref $offset_array))
-      (array.new $offset_array (i64.const 0) (i32.const 3)))
-   (global $fd_seeked (mut (ref $string))
-      (array.new $string (i32.const 0) (i32.const 3)))
+   (type $fd_offset
+      (struct (field $offset (mut i64)) (field $seeked (mut i32))))
+
+   (global $fd_offsets (mut externref) (ref.null extern))
+
+   (func $get_fd_offsets (result (ref extern))
+      (local $m (ref extern))
+      (if (ref.is_null (global.get $fd_offsets))
+         (then
+            (local.set $m (call $map_new))
+            (call $map_set (local.get $m) (i32.const 0)
+               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+            (call $map_set (local.get $m) (i32.const 1)
+               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+            (call $map_set (local.get $m) (i32.const 2)
+               (struct.new $fd_offset (i64.const 0) (i32.const 0)))
+            (global.set $fd_offsets (local.get $m))))
+      (ref.as_non_null (global.get $fd_offsets)))
 
    (func $initialize_fd_offset (param $fd i32) (param $offset i64)
-      (local $len i32)
-      (local $a (ref $offset_array))
-      (local $b (ref $string))
-      (local.set $len (array.len (global.get $fd_offsets)))
-      (if (i32.ge_u (local.get $fd) (local.get $len))
-         (then
-            (loop $loop
-               (local.set $len (i32.shl (local.get $len) (i32.const 1)))
-               (br_if $loop (i32.ge_u (local.get $fd) (local.get $len))))
-            (local.set $a
-               (array.new $offset_array (i64.const 0) (local.get $len)))
-            (array.copy $offset_array $offset_array
-               (local.get $a) (i32.const 0)
-               (global.get $fd_offsets) (i32.const 0)
-               (array.len (global.get $fd_offsets)))
-            (global.set $fd_offsets (local.get $a))
-            (local.set $b
-               (array.new $string (i32.const 0) (local.get $len)))
-            (array.copy $string $string
-               (local.get $b) (i32.const 0)
-               (global.get $fd_seeked) (i32.const 0)
-               (array.len (global.get $fd_seeked)))
-            (global.set $fd_seeked (local.get $b))))
-      (array.set $offset_array (global.get $fd_offsets) (local.get $fd)
-        (local.get $offset))
-      (array.set $string (global.get $fd_seeked) (local.get $fd) (i32.const 0)))
+      (call $map_set (call $get_fd_offsets)
+         (local.get $fd)
+         (struct.new $fd_offset (local.get $offset) (i32.const 0))))
+
+   (func $release_fd_offset (param $fd i32)
+      (call $map_delete (call $get_fd_offsets) (local.get $fd)))
+
+   (func $get_fd_offset (param $fd i32) (result (ref $fd_offset))
+      (call $map_get (call $get_fd_offsets) (local.get $fd)))
 
    (global $IO_BUFFER_SIZE i32 (i32.const 65536))
 
@@ -197,9 +204,12 @@
       (ref.i31 (local.get $fd)))
 
    (func (export "caml_sys_close") (param (ref eq)) (result (ref eq))
+      (local $fd i32)
+      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get 0))))
+      (call $release_fd_offset (local.get $fd))
       (try
          (do
-            (call $close (i31.get_u (ref.cast (ref i31) (local.get 0)))))
+            (call $close (local.get $fd)))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))))
       (ref.i31 (i32.const 0)))
@@ -259,22 +269,24 @@
          (then
             (struct.set $channel $fd (local.get $ch) (i32.const -1))
             (call $unregister_channel (local.get $ch))
+            (call $release_fd_offset (local.get $fd))
             (call $close (local.get $fd))))
       (ref.i31 (i32.const 0)))
 
    (func $caml_do_read
       (param $ch (ref $channel)) (param $pos i32) (param $len i32) (result i32)
       (local $fd i32)
+      (local $fd_offset (ref $fd_offset))
       (local $offset i64)
       (local $n i32)
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
-      (local.set $offset
-         (array.get $offset_array (global.get $fd_offsets) (local.get $fd)))
+      (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
+      (local.set $offset (struct.get $fd_offset $offset (local.get $fd_offset)))
       (try
          (do
             (local.set $n
                (if (result i32)
-                   (array.get_u $string (global.get $fd_seeked) (local.get $fd))
+                   (struct.get $fd_offset $seeked (local.get $fd_offset))
                   (then
                      (call $read
                         (local.get $fd)
@@ -291,8 +303,8 @@
                         (ref.null noextern))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))))
-      (array.set $offset_array
-         (global.get $fd_offsets) (local.get $fd)
+      (struct.set $fd_offset $offset
+         (local.get $fd_offset)
          (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
       (local.get $n))
 
@@ -455,9 +467,9 @@
       (ref.i31
          (i32.sub
             (i32.wrap_i64
-               (array.get $offset_array
-                  (global.get $fd_offsets)
-                  (struct.get $channel $fd (local.get $ch))))
+               (struct.get $fd_offset $offset
+                  (call $get_fd_offset
+                     (struct.get $channel $fd (local.get $ch)))))
             (i32.sub
               (struct.get $channel $max (local.get $ch))
               (struct.get $channel $curr (local.get $ch))))))
@@ -468,9 +480,9 @@
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_copy_int64
          (i64.sub
-            (array.get $offset_array
-               (global.get $fd_offsets)
-               (struct.get $channel $fd (local.get $ch)))
+            (struct.get $fd_offset $offset
+               (call $get_fd_offset
+                  (struct.get $channel $fd (local.get $ch))))
             (i64.extend_i32_s
                (i32.sub
                   (struct.get $channel $max (local.get $ch))
@@ -483,9 +495,9 @@
       (ref.i31
          (i32.add
             (i32.wrap_i64
-               (array.get $offset_array
-                  (global.get $fd_offsets)
-                  (struct.get $channel $fd (local.get $ch))))
+               (struct.get $fd_offset $offset
+                  (call $get_fd_offset
+                     (struct.get $channel $fd (local.get $ch)))))
             (struct.get $channel $curr (local.get $ch)))))
 
    (func (export "caml_ml_pos_out_64")
@@ -494,17 +506,19 @@
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_copy_int64
          (i64.add
-            (array.get $offset_array
-               (global.get $fd_offsets)
-               (struct.get $channel $fd (local.get $ch)))
+            (struct.get $fd_offset $offset
+               (call $get_fd_offset
+                  (struct.get $channel $fd (local.get $ch))))
             (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
 
    (func $caml_seek_in
       (param $ch (ref $channel)) (param $dest i64) (result (ref eq))
       (local $fd i32) (local $offset i64)
+      (local $fd_offset (ref $fd_offset))
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
+      (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
-         (array.get $offset_array (global.get $fd_offsets) (local.get $fd)))
+         (struct.get $fd_offset $offset (local.get $fd_offset)))
       (if (i32.and
              (i64.ge_s
                 (local.get $dest)
@@ -521,9 +535,9 @@
                      (i64.sub (local.get $offset) (local.get $dest))))))
          (else
             ;; ZZZ Check for error
-            (array.set $offset_array (global.get $fd_offsets) (local.get $fd)
+            (struct.set $fd_offset $offset (local.get $fd_offset)
                (local.get $dest))
-            (array.set $string (global.get $fd_seeked) (local.get $fd)
+            (struct.set $fd_offset $seeked (local.get $fd_offset)
                (i32.const 1))
             (struct.set $channel $curr (local.get $ch) (i32.const 0))
             (struct.set $channel $max (local.get $ch) (i32.const 0))))
@@ -543,30 +557,30 @@
    (func (export "caml_ml_seek_out")
       (param $vch (ref eq)) (param $voffset (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
+      (local $fd_offset (ref $fd_offset))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
       ;; ZZZ Check for error
-      (array.set $offset_array
-         (global.get $fd_offsets)
-         (struct.get $channel $fd (local.get $ch))
+      (local.set $fd_offset
+         (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
+      (struct.set $fd_offset $offset (local.get $fd_offset)
          (i64.extend_i32_s
             (i31.get_s (ref.cast (ref i31) (local.get $voffset)))))
-      (array.set $string (global.get $fd_seeked)
-         (struct.get $channel $fd (local.get $ch)) (i32.const 1))
+      (struct.set $fd_offset $seeked (local.get $fd_offset) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_seek_out_64")
       (param $vch (ref eq)) (param $voffset (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
+      (local $fd_offset (ref $fd_offset))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
       ;; ZZZ Check for error
-      (array.set $offset_array
-         (global.get $fd_offsets)
-         (struct.get $channel $fd (local.get $ch))
+      (local.set $fd_offset
+         (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
+      (struct.set $fd_offset $offset (local.get $fd_offset)
          (call $Int64_val (local.get $voffset)))
-      (array.set $string (global.get $fd_seeked)
-         (struct.get $channel $fd (local.get $ch)) (i32.const 1))
+      (struct.set $fd_offset $seeked (local.get $fd_offset) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_input_scan_line")
@@ -646,21 +660,21 @@
 
    (func $caml_flush_partial (param $ch (ref $channel)) (result i32)
       (local $towrite i32) (local $written i32) (local $fd i32)
+      (local $fd_offset (ref $fd_offset))
       (local $offset i64) (local $buf (ref extern))
       (local.set $towrite (struct.get $channel $curr (local.get $ch)))
       (if (i32.gt_u (local.get $towrite) (i32.const 0))
          (then
             (local.set $buf (struct.get $channel $buffer (local.get $ch)))
             (local.set $fd (struct.get $channel $fd (local.get $ch)))
+            (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
             (local.set $offset
-               (array.get $offset_array
-                  (global.get $fd_offsets) (local.get $fd)))
+               (struct.get $fd_offset $offset (local.get $fd_offset)))
             (try
                (do
                   (local.set $written
                      (if (result i32)
-                         (array.get_u $string (global.get $fd_seeked)
-                            (local.get $fd))
+                         (struct.get $fd_offset $seeked (local.get $fd_offset))
                         (then
                            (call $write
                               (local.get $fd)
@@ -677,8 +691,8 @@
                               (ref.null noextern))))))
                (catch $javascript_exception
                   (call $caml_handle_sys_error (pop externref))))
-            (array.set $offset_array
-               (global.get $fd_offsets) (local.get $fd)
+            (struct.set $fd_offset $offset
+               (local.get $fd_offset)
                (i64.add
                   (local.get $offset)
                   (i64.extend_i32_u (local.get $written))))
@@ -832,7 +846,9 @@
       (struct.set $channel $fd
          (ref.cast (ref $channel) (local.get 0)) (local.get 1)))
 
-   (func (export "caml_ml_get_channel_offset") (param (ref eq)) (result i64)
-      (array.get $offset_array (global.get $fd_offsets)
-         (struct.get $channel $fd (ref.cast (ref $channel) (local.get 0)))))
+   (func (export "caml_ml_get_channel_offset") (param $ch (ref eq)) (result i64)
+      (struct.get $fd_offset $offset
+         (call $get_fd_offset
+            (struct.get $channel $fd
+               (ref.cast (ref $channel) (local.get $ch))))))
 )

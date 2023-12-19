@@ -344,6 +344,7 @@
          map_new:()=>new Map,
          map_get:(m,x)=>{var v = m.get(x); return v==undefined?null:v},
          map_set:(m,x,v)=>m.set(x,v),
+         map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
         }
     const imports = {Math:math,bindings,env:{},js,strings,fragments}
