@@ -1445,8 +1445,8 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
                       match e with
                       (* FIXME: This pattern is too fragile *)
                       | J.Variable_statement
-                          (Var, [ DeclIdent (x, Some (J.EFun (None, dcl), _loc)) ]) ->
-                          J.Function_declaration (x, dcl), loc'
+                          (Var, [ DeclIdent (x, Some (J.EFun (None, dcl), loc)) ]) ->
+                          J.Function_declaration (x, dcl), loc
                       | _ -> e, loc')
                 in
                 List.append l_rev st_rev, expr_queue)
