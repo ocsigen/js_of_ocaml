@@ -270,7 +270,12 @@
             (struct.set $channel $fd (local.get $ch) (i32.const -1))
             (call $unregister_channel (local.get $ch))
             (call $release_fd_offset (local.get $fd))
-            (call $close (local.get $fd))))
+            (try
+               (do
+                  (call $close (local.get $fd)))
+               (catch $javascript_exception
+                  ;; ignore exception
+                  (drop (pop externref))))))
       (ref.i31 (i32.const 0)))
 
    (func $caml_do_read
