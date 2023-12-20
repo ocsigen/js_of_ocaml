@@ -473,7 +473,7 @@ function caml_uint8_array_of_bytes (s) {
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 function caml_uint8_array_of_string (s) {
   var l = caml_ml_string_length(s);
-  var a = new Array(l);
+  var a = new Uint8Array(l);
   var i = 0;
   for (; i < l; i++) a[i] = caml_string_unsafe_get(s,i);
   return a;

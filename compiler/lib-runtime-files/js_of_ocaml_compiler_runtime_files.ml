@@ -57,6 +57,7 @@ let runtime =
     ; effect
     ; zstd
     ; runtime_events
+    ; blake2
     ]
 
 include Files
