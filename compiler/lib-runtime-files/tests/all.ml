@@ -15,6 +15,7 @@ let%expect_test _ =
     +backtrace.js
     +bigarray.js
     +bigstring.js
+    +blake2.js
     +compare.js
     +domain.js
     +dynlink.js
@@ -59,6 +60,7 @@ let%expect_test _ =
     +backtrace.js
     +bigarray.js
     +bigstring.js
+    +blake2.js
     +compare.js
     +domain.js
     +effect.js
