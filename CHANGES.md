@@ -1,4 +1,4 @@
-# dev (2023-??-??) - Lille
+# 5.6.0 (2024-01-02) - Lille
 
 ## Features/Changes
 * Compiler: try to preserve clorures ordering between ml and js
