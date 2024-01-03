@@ -189,6 +189,7 @@ function caml_ml_set_binary_mode(chanid,mode){
 
 //Provides: caml_ml_is_binary_mode
 //Requires: caml_ml_channels
+//Version: >= 5.2
 function caml_ml_is_binary_mode(chanid) {
   var chan = caml_ml_channels[chanid];
   return chan.file.flags.binary 
