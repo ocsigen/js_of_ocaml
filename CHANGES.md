@@ -1,3 +1,8 @@
+# dev - ???
+
+## Features/Changes
+* Mics: fix support for OCaml 5.2
+
 # 5.6.0 (2024-01-02) - Lille
 
 ## Features/Changes
