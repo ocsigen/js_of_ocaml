@@ -187,6 +187,13 @@ function caml_ml_set_binary_mode(chanid,mode){
   return 0;
 }
 
+//Provides: caml_ml_is_binary_mode
+//Requires: caml_ml_channels
+function caml_ml_is_binary_mode(chanid) {
+  var chan = caml_ml_channels[chanid];
+  return chan.file.flags.binary 
+}
+
 //Input from in_channel
 
 //Provides: caml_ml_close_channel
