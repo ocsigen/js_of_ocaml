@@ -1,4 +1,5 @@
 //Provides: blake2b
+//Version: >= 5.2
 var blake2b = (function () {
 // Blake2B in pure Javascript
 // Adapted from the reference implementation in RFC7693
@@ -306,6 +307,7 @@ function blake2bFinal (ctx) {
 //Provides: caml_blake2_create
 //Requires: caml_uint8_array_of_string
 //Requires: blake2b
+//Version: >= 5.2
 function caml_blake2_create(hashlen, key){
   key = caml_uint8_array_of_string(key);
   if(key.length > 64) {
@@ -317,6 +319,7 @@ function caml_blake2_create(hashlen, key){
 //Provides: caml_blake2_final
 //Requires: caml_string_of_array
 //Requires: blake2b
+//Version: >= 5.2
 function caml_blake2_final(ctx, hashlen) {
   var r = blake2b.Final(ctx);
   return caml_string_of_array(r);
@@ -325,6 +328,7 @@ function caml_blake2_final(ctx, hashlen) {
 //Provides: caml_blake2_update
 //Requires: blake2b
 //Requires: caml_uint8_array_of_string
+//Version: >= 5.2
 function caml_blake2_update(ctx, buf, ofs, len){
   var input = caml_uint8_array_of_string(buf);
   input = input.subarray(ofs, ofs + len);
@@ -336,6 +340,7 @@ function caml_blake2_update(ctx, buf, ofs, len){
 //Requires: caml_blake2_create
 //Requires: caml_blake2_update
 //Requires: caml_blake2_final
+//Version: >= 5.2
 function caml_blake2_string(hashlen, key, buf, ofs, len) {
   var ctx = caml_blake2_create (hashlen, key);
   caml_blake2_update(ctx, buf, ofs, len);

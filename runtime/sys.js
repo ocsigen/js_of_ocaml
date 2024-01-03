@@ -344,6 +344,7 @@ function caml_spacetime_only_works_for_native_code() {
 }
 
 //Provides: caml_xdg_defaults
+//Version: >= 5.2
 function caml_xdg_defaults(_unit) {
   return 0; // empty list
 }
