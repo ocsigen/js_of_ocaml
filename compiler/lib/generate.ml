@@ -1393,13 +1393,19 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
       let names, mut, pcs, all, rem = collect_closures ctx instr in
       match Code.Var.Set.cardinal mut with
       | 0 ->
-          let st_rev, expr_queue =
-            List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
-                let l, expr_queue = translate_instr ctx expr_queue i in
+          let st_rev, expr_queue_fun =
+            List.fold_left all ~init:([], []) ~f:(fun (st_rev, expr_queue) i ->
+                let l, expr_queue_fun = translate_instr ctx [] i in
+                let expr_queue =
+                  match expr_queue_fun with
+                  | [] -> expr_queue
+                  | [ x ] -> x :: expr_queue
+                  | _ -> assert false
+                in
                 List.rev_append l st_rev, expr_queue)
           in
-          let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
-          List.rev_append st_rev instrs, expr_queue
+          let instrs, expr_queue_after = translate_instrs ctx expr_queue_fun rem last in
+          flush_all expr_queue (List.rev_append st_rev instrs), expr_queue_after
       | _ ->
           let muts =
             Code.Var.Set.diff mut names
@@ -1436,7 +1442,7 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
             in
             (J.variable_declaration ~kind:Let (List.rev l_rev), J.N) :: st_rev, expr_queue
           in
-          (* Mutually recursive need to be properly scoped. *)
+          (* Mutually recursive functions need to be properly scoped. *)
           let st_rev, expr_queue =
             List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
                 let l, expr_queue = translate_instr ctx expr_queue i in
