@@ -52,12 +52,6 @@ module Symtable : sig
   val current_state : unit -> GlobalMap.t
 end
 
-module Ident : sig
-  type 'a tbl = 'a Ident.tbl
-
-  val table_contents : 'a Ident.tbl -> ('a * Ident.t) list
-end
-
 module Cmo_format : sig
   type t = Cmo_format.compilation_unit
 

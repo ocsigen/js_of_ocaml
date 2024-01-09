@@ -256,8 +256,10 @@ end = struct
     try
       let { event; _ } = Int_table.find events_by_pc pc in
       let l =
-        Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_stack
-        |> List.map ~f:(fun (i, ident) -> event.ev_stacksize - i, ident)
+        Ident.fold_name
+          (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
+          event.ev_compenv.ce_stack
+          []
         |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
       in
 
@@ -269,9 +271,10 @@ end = struct
       let { event; _ } = Int_table.find events_by_pc pc in
       let env = event.ev_compenv in
       let names =
-        Ocaml_compiler.Ident.table_contents env.ce_rec
-        |> List.map ~f:(fun (i, ident) ->
-               (if new_closure_repr then i / 3 else i / 2), ident)
+        Ident.fold_name
+          (fun ident i acc -> ((if new_closure_repr then i / 3 else i / 2), ident) :: acc)
+          env.ce_rec
+          []
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
@@ -285,11 +288,13 @@ end = struct
         match env.ce_closure with
         | Not_in_closure -> raise Not_found
         | In_closure { entries; _ } ->
-            Ocaml_compiler.Ident.table_contents entries
-            |> List.filter_map ~f:(fun (ent, ident) ->
-                   match ent with
-                   | Function i -> Some (i / 3, ident)
-                   | Free_variable _ -> None)
+            Ident.fold_name
+              (fun ident ent acc ->
+                match ent with
+                | Function i -> (i / 3, ident) :: acc
+                | Free_variable _ -> acc)
+              entries
+              []
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
