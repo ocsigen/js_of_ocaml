@@ -235,29 +235,3 @@ module Cmo_format = struct
 
   let force_link (t : t) = t.cu_force_link
 end
-
-module Ident = struct
-  [@@@ocaml.warning "-unused-field"]
-
-  (* Copied from ocaml/typing/ident.ml *)
-  type 'a tbl' =
-    | Empty
-    | Node of 'a tbl' * 'a data * 'a tbl' * int
-
-  and 'a data =
-    { ident : Ident.t
-    ; data : 'a
-    ; previous : 'a data option
-    }
-
-  type 'a tbl = 'a Ident.tbl
-
-  let rec table_contents_rec t rem =
-    match t with
-    | Empty -> rem
-    | Node (l, v, r, _) ->
-        table_contents_rec l ((v.data, v.ident) :: table_contents_rec r rem)
-
-  let table_contents (t : 'a tbl) =
-    table_contents_rec (Obj.magic (t : 'a tbl) : 'a tbl') []
-end
