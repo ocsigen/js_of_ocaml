@@ -1671,6 +1671,9 @@ and canvasRenderingContext2D = object
   method arc :
     number_t -> number_t -> number_t -> number_t -> number_t -> bool t -> unit meth
 
+  method ellipse :
+    number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> bool t -> unit meth
+
   method fill : unit meth
 
   method stroke : unit meth

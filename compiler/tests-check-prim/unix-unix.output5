@@ -262,6 +262,7 @@ caml_to_js_string
 
 From +nat.js:
 compare_nat_real
+length_nat
 
 From +obj.js:
 caml_obj_is_block
