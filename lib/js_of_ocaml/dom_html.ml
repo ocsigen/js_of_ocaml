@@ -1846,7 +1846,15 @@ and canvasRenderingContext2D = object
     number_t -> number_t -> number_t -> number_t -> number_t -> bool t -> unit meth
 
   method ellipse :
-    number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> number_t -> bool t -> unit meth
+       number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> bool t
+    -> unit meth
 
   method fill : unit meth
 
