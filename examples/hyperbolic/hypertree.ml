@@ -583,47 +583,21 @@ let from_screen canvas x y =
 
 let pi = 4. *. atan 1.
 
-let ellipse_arc c cx cy rx ry start fin clock_wise =
-  c##save;
-  c##translate (Js.float cx) (Js.float cy);
-  c##scale (Js.float rx) (Js.float ry);
-  c##arc
-    (Js.float 0.)
-    (Js.float 0.)
-    (Js.float 1.)
-    (Js.float start)
-    (Js.float fin)
-    clock_wise;
-  c##restore
-
 let arc c (rx, ry, dx, dy) z0 z1 z2 =
   let rd = norm (sub z1 z0) in
   let start = atan2 (z1.y -. z0.y) (z1.x -. z0.x) in
   let fin = atan2 (z2.y -. z0.y) (z2.x -. z0.x) in
   c##beginPath;
   let alpha = mod_float (fin -. start +. (2. *. pi)) (2. *. pi) in
-  (*
-Firebug.console##log_4(start, fin, alpha, (alpha > pi));
-*)
-  if rx = ry
-  then
-    c##arc
-      (Js.float ((z0.x *. rx) +. dx))
-      (Js.float ((z0.y *. rx) +. dy))
-      (Js.float (rd *. rx))
-      (Js.float start)
-      (Js.float fin)
-      (Js.bool (alpha > pi))
-  else
-    ellipse_arc
-      c
-      ((z0.x *. rx) +. dx)
-      ((z0.y *. ry) +. dy)
-      (rd *. rx)
-      (rd *. ry)
-      start
-      fin
-      (Js.bool (alpha > pi));
+  c##ellipse
+    ((z0.x *. rx) +. dx)
+    ((z0.y *. ry) +. dy)
+    (rd *. rx)
+    (rd *. ry)
+    0.
+    start
+    fin
+    (Js.bool (alpha > pi));
   c##stroke
 
 let line c (rx, ry, dx, dy) z1 z2 =
@@ -671,7 +645,7 @@ let draw canvas vertices edges nodes boxes =
     (Js.float (float canvas##.height));
   let padding = Js.to_float (opt_style style##.padding (Js.float 0.)) in
   c##beginPath;
-  ellipse_arc c dx dy (rx +. padding) (ry +. padding) 0. 7. Js._false;
+  c##ellipse dx dy (rx +. padding) (ry +. padding) 0. 0. 7. Js._false;
   Js.Optdef.iter style##.backgroundColor (fun color ->
       c##.fillStyle := color;
       c##fill);
