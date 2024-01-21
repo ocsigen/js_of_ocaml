@@ -246,6 +246,15 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
     | Stop | Branch _ | Poptrap _ | Pushtrap _ -> ()
   in
   Addr.Map.iter (fun _ block -> live_block block) prog.blocks;
+  Code.traverse
+    { Code.fold = Code.fold_children }
+    (fun pc () ->
+      match Addr.Map.find pc prog.blocks with
+      | { branch = Return x, _; _ } -> add_top x
+      | _ -> ())
+    prog.start
+    prog.blocks
+    ();
   live_vars
 
 (* Returns the set of variables given a table of variables. *)

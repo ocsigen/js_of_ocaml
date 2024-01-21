@@ -5,6 +5,9 @@
 * Compiler: no longer rely on IIFE for scoping variable inside loops
 * Lib: add ellipse to canvasRenderingContext2D (@FayCarsons, #1555)
 
+## Bug fixes
+* Compiler: fix global dead code elimination in a toplevel context
+
 # 5.6.0 (2024-01-02) - Lille
 
 ## Features/Changes
