@@ -1,4 +1,5 @@
 hello
+- : int = 2
 Line 4, characters 2-4:
 Error: Syntax error
 Line 5, characters 0-16:
