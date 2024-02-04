@@ -23,4 +23,6 @@ val iter_block_free_vars : (Code.Var.t -> unit) -> Code.block -> unit
 
 val iter_block_bound_vars : (Code.Var.t -> unit) -> Code.block -> unit
 
+val f_mutable : Code.program -> Code.Var.Set.t Code.Addr.Map.t
+
 val f : Code.program -> Code.Var.Set.t Code.Addr.Map.t

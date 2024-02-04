@@ -100,9 +100,10 @@ let rec fun_with_loop acc = function
       for(;;){
        a[1] = [0, 1, a[1]];
        var _a_ = i + 1 | 0;
-       if(10 === i){var acc$1 = [0, x, a[1]], acc$0 = acc$1, param$0 = xs; break;}
+       if(10 === i) break;
        var i = _a_;
       }
+      var acc$1 = [0, x, a[1]], acc$0 = acc$1, param$0 = xs;
      }
     }
     //end
@@ -130,19 +131,15 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      a:
-      for(;;)
-       for(;;){
-        if(10 <= runtime.caml_mul(k, j)){
-         var _b_ = j + 1 | 0;
-         if(10 !== j){var j = _b_; break;}
-         var _a_ = k + 1 | 0;
-         if(10 === k) return 0;
-         var k = _a_;
-         break a;
-        }
-        id[1]++;
-       }
+      for(;;){
+       for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
+       var _b_ = j + 1 | 0;
+       if(10 === j) break;
+       var j = _b_;
+      }
+      var _a_ = k + 1 | 0;
+      if(10 === k) return 0;
+      var k = _a_;
      }
     }
     //end |}]
@@ -170,21 +167,20 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      a:
-      for(;;)
+      for(;;){
        for(;;){
-        if(10 <= caml_div(k, j)){
-         var _b_ = j + 1 | 0;
-         if(10 !== j){var j = _b_; break;}
-         var _a_ = k + 1 | 0;
-         if(10 === k) return 0;
-         var k = _a_;
-         break a;
-        }
+        if(10 <= caml_div(k, j)) break;
         try{caml_div(k, j);}
         catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
+       var _b_ = j + 1 | 0;
+       if(10 === j) break;
+       var j = _b_;
+      }
+      var _a_ = k + 1 | 0;
+      if(10 === k) return 0;
+      var k = _a_;
      }
     }
     //end |}]
@@ -314,26 +310,25 @@ in loop x
      var x$1 = x;
      for(;;){
       if(0 === x$1) return 1;
-      if(1 === x$1){
-       var x$0 = 2;
-       for(;;){
-        a:
-        {
-         if(3 >= x$0 >>> 0)
-          switch(x$0){
-            case 0:
-             var _a_ = 1; break a;
-            case 2:
-             var n = caml_call1(Stdlib_Random[5], 2), _a_ = n + n | 0; break a;
-            case 3:
-             var n$0 = caml_call1(Stdlib_Random[5], 2), x$0 = n$0; continue;
-          }
-         var _a_ = 2;
-        }
-        return _a_ + 2 | 0;
-       }
-      }
+      if(1 === x$1) break;
       var x$2 = x$1 + 1 | 0, x$1 = x$2;
+     }
+     var x$0 = 2;
+     for(;;){
+      a:
+      {
+       if(3 >= x$0 >>> 0)
+        switch(x$0){
+          case 0:
+           var _a_ = 1; break a;
+          case 2:
+           var n = caml_call1(Stdlib_Random[5], 2), _a_ = n + n | 0; break a;
+          case 3:
+           var n$0 = caml_call1(Stdlib_Random[5], 2), x$0 = n$0; continue;
+        }
+       var _a_ = 2;
+      }
+      return _a_ + 2 | 0;
      }
     }
     //end |}]
@@ -455,42 +450,39 @@ let add_substitute =
         a:
         {
          if(40 !== opening && 123 !== opening){
-          var
-           start = start$0 + 1 | 0,
-           lim$0 = caml_ml_string_length(s),
-           i$2 = start;
-          for(;;){
-           b:
+          var start = start$0 + 1 | 0, lim$0 = caml_ml_string_length(s);
+          b:
+          {
+           c:
            {
-            if(lim$0 > i$2){
-             var match = caml_string_get(s, i$2);
-             c:
-             {
+            d:
+            {
+             var i$2 = start;
+             for(;;){
+              if(lim$0 <= i$2) break c;
+              var match = caml_string_get(s, i$2);
               if(91 <= match){
                if(97 <= match){
-                if(123 > match) break c;
+                if(123 <= match) break d;
                }
-               else if(95 === match) break c;
+               else if(95 !== match) break d;
               }
               else if(58 <= match){
-               if(65 <= match) break c;
+               if(65 > match) break;
               }
-              else if(48 <= match) break c;
-              var stop$0 = i$2;
-              break b;
+              else if(48 > match) break d;
+              var i$3 = i$2 + 1 | 0, i$2 = i$3;
              }
-             var i$3 = i$2 + 1 | 0, i$2 = i$3;
-             continue;
             }
-            var stop$0 = lim$0;
+            var stop$0 = i$2;
+            break b;
            }
-           var
-            match$0 =
-              [0,
-               caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0),
-               stop$0];
-           break a;
+           var stop$0 = lim$0;
           }
+          var
+           match$0 =
+             [0, caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0), stop$0];
+          break a;
          }
          var new_start = start$0 + 1 | 0, k$2 = 0;
          if(40 === opening)
@@ -506,19 +498,17 @@ let add_substitute =
           if(caml_string_get(s, stop) === opening)
            var i = stop + 1 | 0, k$0 = k + 1 | 0, k = k$0, stop = i;
           else if(caml_string_get(s, stop) === closing){
-           if(0 === k){
-            var
-             match$0 =
-               [0,
-                caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
-                stop + 1 | 0];
-            break;
-           }
+           if(0 === k) break;
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0, k = k$1, stop = i$0;
           }
           else
            var i$1 = stop + 1 | 0, stop = i$1;
          }
+         var
+          match$0 =
+            [0,
+             caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
+             stop + 1 | 0];
         }
         var next_i = match$0[2], ident = match$0[1];
         caml_call2(add_string, b, caml_call1(f, ident));
@@ -578,28 +568,31 @@ let () = print_endline (trim " ")
       len = caml_ml_bytes_length(s$0),
       i = [0, 0];
      for(;;){
-      if(i[1] < len && is_space(caml_bytes_unsafe_get(s$0, i[1]))){i[1]++; continue;}
-      var j = [0, len - 1 | 0];
-      for(;;){
-       if(i[1] <= j[1] && is_space(caml_bytes_unsafe_get(s$0, j[1]))){j[1] += - 1; continue;}
-       a:
-       {
-        if(i[1] <= j[1]){
-         var len$0 = (j[1] - i[1] | 0) + 1 | 0, ofs = i[1];
-         if
-          (0 <= ofs && 0 <= len$0
-           && (caml_ml_bytes_length(s$0) - len$0 | 0) >= ofs){
-          var r = caml_create_bytes(len$0);
-          caml_blit_bytes(s$0, ofs, r, 0, len$0);
-          var b = r;
-          break a;
-         }
-         throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
-        }
-        var b = empty;
-       }
-       return caml_string_of_bytes(copy(b));
-      }
+      if(i[1] >= len) break;
+      if(! is_space(caml_bytes_unsafe_get(s$0, i[1]))) break;
+      i[1]++;
      }
+     var j = [0, len - 1 | 0];
+     for(;;){
+      if(i[1] > j[1]) break;
+      if(! is_space(caml_bytes_unsafe_get(s$0, j[1]))) break;
+      j[1] += - 1;
+     }
+     a:
+     {
+      if(i[1] <= j[1]){
+       var len$0 = (j[1] - i[1] | 0) + 1 | 0, ofs = i[1];
+       if
+        (0 <= ofs && 0 <= len$0 && (caml_ml_bytes_length(s$0) - len$0 | 0) >= ofs){
+        var r = caml_create_bytes(len$0);
+        caml_blit_bytes(s$0, ofs, r, 0, len$0);
+        var b = r;
+        break a;
+       }
+       throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
+      }
+      var b = empty;
+     }
+     return caml_string_of_bytes(copy(b));
     }
     //end |}]

@@ -282,6 +282,7 @@ module Ctx = struct
     ; cps_calls : Effects.cps_calls
     ; deadcode_sentinal : Var.t
     ; mutated_vars : Code.Var.Set.t Code.Addr.Map.t
+    ; freevars : Code.Var.Set.t Code.Addr.Map.t
     }
 
   let initial
@@ -290,6 +291,7 @@ module Ctx = struct
       ~should_export
       ~deadcode_sentinal
       ~mutated_vars
+      ~freevars
       blocks
       live
       cps_calls
@@ -305,6 +307,7 @@ module Ctx = struct
     ; cps_calls
     ; deadcode_sentinal
     ; mutated_vars
+    ; freevars
     }
 end
 
@@ -701,7 +704,7 @@ end
 
 let build_graph ctx pc =
   let visited_blocks = ref Addr.Set.empty in
-  let structure = Structure.build_graph ctx.Ctx.blocks pc in
+  let structure = Structure.build_graph ctx.Ctx.blocks ctx.Ctx.freevars pc in
   let dom = Structure.dominator_tree structure in
   { visited_blocks; structure; dom; ctx }
 
@@ -1889,7 +1892,8 @@ let f
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
-  let mutated_vars = Freevars.f p in
+  let mutated_vars = Freevars.f_mutable p in
+  let freevars = Freevars.f p in
   let ctx =
     Ctx.initial
       ~warn_on_unhandled_effect
@@ -1897,6 +1901,7 @@ let f
       ~should_export
       ~deadcode_sentinal
       ~mutated_vars
+      ~freevars
       p.blocks
       live_vars
       cps_calls
