@@ -64,7 +64,8 @@ let () = my_ref := 2
     1 |}];
   let program = Util.compile_and_parse prog in
   Util.print_program program;
-  [%expect{|
+  [%expect
+    {|
     (function(globalThis){
        "use strict";
        var runtime = globalThis.jsoo_runtime;
@@ -109,6 +110,121 @@ let () = my_ref := 2
         my_ref[1] = 2;
         var Test = [0, my_ref];
         runtime.caml_register_global(4, Test, "Test");
+        return;
+       }
+      }
+      (globalThis));
+    //end |}]
+
+let%expect_test _ =
+  let prog =
+    {|
+let my_ref = ref 1
+
+module _ : sig end = struct
+  type 'a thing =
+    | Thing of 'a
+    | No
+
+  let f2 t =
+    match t with
+    | Thing 1 -> true
+    | Thing _ | No -> false
+  ;;
+
+  let length = function
+    | Thing i -> i
+    | No -> -1
+  ;;
+
+  let () =
+    let init = Thing 1 in
+    let nesting = 1 in
+    let rec handle_state t =
+      let this_will_be_undefined () = if f2 t then 1 else 2 in
+      match length t with
+      | 0 ->
+        let g () = 2 + this_will_be_undefined () in
+        g () + g ()
+      | 1 ->
+        if Stdlib.Int.equal nesting 0
+        then nesting
+        else
+          let g () = if Random.int 3 > 1 then 2 + this_will_be_undefined () else 1 in
+          g () + g ()
+      | _ -> handle_state (Thing 0)
+    in
+    print_endline (Int.to_string (handle_state init))
+  ;;
+
+  let _ : _ thing = No
+end
+
+let () = my_ref := 2
+|}
+  in
+  Util.compile_and_run prog;
+  [%expect {|
+    2 |}];
+  let program = Util.compile_and_parse prog in
+  Util.print_program program;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime;
+       function caml_call1(f, a0){
+        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+                ? f(a0)
+                : runtime.caml_call_gen(f, [a0]);
+       }
+       function caml_call2(f, a0, a1){
+        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+                ? f(a0, a1)
+                : runtime.caml_call_gen(f, [a0, a1]);
+       }
+       var
+        global_data = runtime.caml_get_global_data(),
+        t$0 = [0, 0],
+        init = [0, 1],
+        Stdlib_Random = global_data.Stdlib__Random,
+        Stdlib_Int = global_data.Stdlib__Int,
+        Stdlib = global_data.Stdlib,
+        my_ref = [0, 1],
+        t = init,
+        nesting = 1;
+       for(;;){
+        let t$1 = t;
+        function this_will_be_undefined(param){
+         var _e_ = 1 === t$1[1] ? 1 : 0;
+         return _e_ ? 1 : 2;
+        }
+        var i = t[1];
+        if(0 === i)
+         var
+          g = function(param){return 2 + this_will_be_undefined(0) | 0;},
+          _a_ = g(0),
+          _c_ = g(0) + _a_ | 0;
+        else{
+         if(1 !== i){var t = t$0; continue;}
+         if(caml_call2(Stdlib_Int[8], nesting, 0))
+          var _c_ = nesting;
+         else
+          var
+           g$0 =
+             function(param){
+              return 1 < caml_call1(Stdlib_Random[5], 3)
+                      ? 2 + this_will_be_undefined(0) | 0
+                      : 1;
+             },
+           _b_ = g$0(0),
+           _c_ = g$0(0) + _b_ | 0;
+        }
+        var _d_ = caml_call1(Stdlib_Int[12], _c_);
+        caml_call1(Stdlib[46], _d_);
+        my_ref[1] = 2;
+        var Test = [0, my_ref];
+        runtime.caml_register_global(5, Test, "Test");
         return;
        }
       }
