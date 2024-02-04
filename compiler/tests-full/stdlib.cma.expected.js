@@ -17522,21 +17522,21 @@
         var _cP_ = fmt$0[1];
         if(0 === _cP_[0]){
          var rest$17 = fmt$0[2], fmt$1 = _cP_[1][1];
-         let acc = acc$0, k = k$0, rest = rest$17;
-         function k$1(kacc){
+         let acc = acc$0, k$1 = k$0, rest = rest$17;
+         function k(kacc){
            /*<<camlinternalFormat.ml:1597:6>>*/ return make_printf
-                  (k, [1, acc, [0, kacc]], rest);
+                  (k$1, [1, acc, [0, kacc]], rest);
           /*<<camlinternalFormat.ml:1597:70>>*/ }
-         var k$0 = k$1, acc$0 = 0, fmt$0 = fmt$1;
+         var k$0 = k, acc$0 = 0, fmt$0 = fmt$1;
         }
         else{
          var rest$18 = fmt$0[2], fmt$2 = _cP_[1][1];
-         let acc = acc$0, k = k$0, rest = rest$18;
-         function k$2(kacc){
+         let acc = acc$0, k$1 = k$0, rest = rest$18;
+         function k(kacc){
            /*<<camlinternalFormat.ml:1601:6>>*/ return make_printf
-                  (k, [1, acc, [1, kacc]], rest);
+                  (k$1, [1, acc, [1, kacc]], rest);
           /*<<camlinternalFormat.ml:1601:70>>*/ }
-         var k$0 = k$2, acc$0 = 0, fmt$0 = fmt$2;
+         var k$0 = k, acc$0 = 0, fmt$0 = fmt$2;
         }
         break;
        case 19:
@@ -18162,21 +18162,21 @@
         var _cl_ = fmt$0[1];
         if(0 === _cl_[0]){
          var rest$23 = fmt$0[2], fmt$1 = _cl_[1][1];
-         let k = k$0, rest = rest$23;
-         function k$1(koc){
+         let k$1 = k$0, rest = rest$23;
+         function k(koc){
            /*<<camlinternalFormat.ml:1854:33>>*/ return make_iprintf
-                  (k, koc, rest);
+                  (k$1, koc, rest);
           /*<<camlinternalFormat.ml:1854:56>>*/ }
-         var k$0 = k$1, fmt$0 = fmt$1;
+         var k$0 = k, fmt$0 = fmt$1;
         }
         else{
          var rest$24 = fmt$0[2], fmt$2 = _cl_[1][1];
-         let k = k$0, rest = rest$24;
-         function k$2(koc){
+         let k$1 = k$0, rest = rest$24;
+         function k(koc){
            /*<<camlinternalFormat.ml:1856:33>>*/ return make_iprintf
-                  (k, koc, rest);
+                  (k$1, koc, rest);
           /*<<camlinternalFormat.ml:1856:56>>*/ }
-         var k$0 = k$2, fmt$0 = fmt$2;
+         var k$0 = k, fmt$0 = fmt$2;
         }
         break;
        case 19:
