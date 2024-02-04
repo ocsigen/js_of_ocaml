@@ -246,5 +246,5 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
 
 let build_graph blocks pc =
   let g = build_graph blocks pc in
-  shrink_loops blocks g;
+  if false then shrink_loops blocks g;
   g
