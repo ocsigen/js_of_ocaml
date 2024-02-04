@@ -315,11 +315,9 @@ let ()  = M.myfun M.x
       }
       var len = 0, param = l;
       for(;;){
-       if(! param) break;
+       if(! param){if(2 <= len) sort(len, l); var x$0 = next; break;}
        var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
       }
-      if(2 <= len) sort(len, l);
-      var x$0 = next;
      }
     }
     //end |}]
@@ -604,15 +602,14 @@ let ()  = M.run ()
       }
       var param$0 = even(i);
       for(;;){
-       if(759635106 <= param$0[1]) break;
+       if(759635106 <= param$0[1]){
+        var _g_ = i + 1 | 0;
+        if(4 !== i){var i = _g_; break;}
+        var _f_ = caml_call1(list_rev, delayed[1]);
+        return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _f_);
+       }
        var f = param$0[2], param$0 = f(0);
       }
-      var _g_ = i + 1 | 0;
-      if(4 === i){
-       var _f_ = caml_call1(list_rev, delayed[1]);
-       return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _f_);
-      }
-      var i = _g_;
      }
     }
     //end |}]

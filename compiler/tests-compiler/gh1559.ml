@@ -64,23 +64,53 @@ let () = my_ref := 2
     1 |}];
   let program = Util.compile_and_parse prog in
   Util.print_program program;
-  [%expect.unreachable]
-[@@expect.uncaught_exn
-  {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-
-  (Failure "non-zero exit code")
-  Raised at Stdlib__Buffer.add_channel in file "buffer.ml", line 211, characters 18-35
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string.loop in file "compiler/tests-compiler/util/util.ml", line 169, characters 4-52
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string in file "compiler/tests-compiler/util/util.ml", line 172, characters 7-14
-
-  Trailing output
-  ---------------
-  Some variables escaped (#1). Use [--debug js_assign] for more info.
-  /home/hugo/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
-  Error: File "compiler/lib/js_assign.ml", line 442, characters 5-11: Assertion failed
-
-  process exited with error code 125
-   /home/hugo/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe --pretty --sourcemap --disable=effects --disable=use-js-string --disable header test.cmo -o test.js |}]
+  [%expect{|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime;
+       function caml_call1(f, a0){
+        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+                ? f(a0)
+                : runtime.caml_call_gen(f, [a0]);
+       }
+       function caml_call2(f, a0, a1){
+        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+                ? f(a0, a1)
+                : runtime.caml_call_gen(f, [a0, a1]);
+       }
+       var
+        global_data = runtime.caml_get_global_data(),
+        t$0 = [0, 0],
+        init = [0, 1],
+        Stdlib_Int = global_data.Stdlib__Int,
+        Stdlib = global_data.Stdlib,
+        my_ref = [0, 1],
+        t = init,
+        nesting = 1;
+       for(;;){
+        let t$1 = t;
+        function this_will_be_undefined(param){
+         var _c_ = 1 === t$1[1] ? 1 : 0;
+         return _c_ ? 1 : 2;
+        }
+        var i = t[1];
+        if(0 === i)
+         var _a_ = this_will_be_undefined(0);
+        else{
+         if(1 !== i){var t = t$0; continue;}
+         var
+          _a_ =
+            caml_call2(Stdlib_Int[8], nesting, 0)
+             ? nesting
+             : this_will_be_undefined(0);
+        }
+        var _b_ = caml_call1(Stdlib_Int[12], _a_);
+        caml_call1(Stdlib[46], _b_);
+        my_ref[1] = 2;
+        var Test = [0, my_ref];
+        runtime.caml_register_global(4, Test, "Test");
+        return;
+       }
+      }
+      (globalThis));
+    //end |}]
