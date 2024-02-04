@@ -1054,7 +1054,7 @@ class free =
           let body = tbody#function_body body in
           let params = tbody#formal_parameter_list params in
           tbody#record_block (Params params);
-          m#def_var id;
+          m#def_local id;
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
       | Class_declaration (id, cl_decl) ->
@@ -1063,7 +1063,7 @@ class free =
           let cl_decl = cbody#class_decl cl_decl in
           cbody#record_block Normal;
           m#merge_block_info cbody;
-          m#def_var id;
+          m#def_local id;
           Class_declaration (id, cl_decl)
       | Block b -> Block (m#block b)
       | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, loc)) ->
