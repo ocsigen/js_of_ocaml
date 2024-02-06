@@ -4,6 +4,7 @@
 #include "caml/memory.h"
 
 CAMLprim value flush_stdout_stderr (value unit) {
+  (void)unit;
   CAMLparam0 ();   /* v is ignored */
   fflush(stderr);
   fflush(stdout);
