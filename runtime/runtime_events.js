@@ -19,18 +19,21 @@ function caml_runtime_events_user_resolve() {
   return 0;
 }
 
-//Provides: caml_runtime_events_start
-function caml_runtime_events_start() {
+//Provides: caml_ml_runtime_events_start
+//Alias: caml_runtime_events_start
+function caml_ml_runtime_events_start() {
   return 0;
 }
 
-//Provides: caml_runtime_events_pause
-function caml_runtime_events_pause() {
+//Provides: caml_ml_runtime_events_pause
+//Alias: caml_runtime_events_pause
+function caml_ml_runtime_events_pause() {
   return 0;
 }
 
-//Provides: caml_runtime_events_resume
-function caml_runtime_events_resume() {
+//Provides: caml_ml_runtime_events_resume
+//Alias: caml_runtime_events_resume
+function caml_ml_runtime_events_resume() {
   return 0;
 }
 

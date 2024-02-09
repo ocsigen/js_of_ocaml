@@ -48,6 +48,7 @@ function caml_atomic_make_contended(a) {
 }
 
 //Provides: caml_ml_domain_unique_token
+//Version: < 5.2
 var caml_ml_domain_unique_token_ = [0]
 function caml_ml_domain_unique_token(unit) {
   return caml_ml_domain_unique_token_
