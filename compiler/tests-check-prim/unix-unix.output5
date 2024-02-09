@@ -10,8 +10,6 @@ caml_dynlink_close_lib
 caml_dynlink_get_current_libs
 caml_dynlink_lookup_symbol
 caml_dynlink_open_lib
-caml_get_current_environment
-caml_get_section_table
 caml_int64_add_native
 caml_int64_and_native
 caml_int64_div_native
@@ -22,13 +20,8 @@ caml_int64_or_native
 caml_int64_sub_native
 caml_int64_xor_native
 caml_int_as_pointer
-caml_invoke_traced_function
-caml_realloc_global
-caml_reify_bytecode
 caml_reset_afl_instrumentation
 caml_signbit
-caml_static_release_bytecode
-caml_terminfo_rows
 caml_unix_accept
 caml_unix_access
 caml_unix_alarm
@@ -270,6 +263,9 @@ caml_obj_set_tag
 caml_obj_truncate
 
 From +runtime_events.js:
+caml_ml_runtime_events_pause
+caml_ml_runtime_events_resume
+caml_ml_runtime_events_start
 caml_runtime_events_create_cursor
 caml_runtime_events_free_cursor
 caml_runtime_events_read_poll
@@ -298,6 +294,15 @@ caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
+
+From +toplevel.js:
+caml_dynlink_get_bytecode_sections
+caml_static_alloc
+caml_static_free
+caml_terminfo_backup
+caml_terminfo_resume
+caml_terminfo_setup
+caml_terminfo_standout
 
 From +unix.js:
 caml_unix_cleanup
