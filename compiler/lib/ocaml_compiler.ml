@@ -225,10 +225,10 @@ module Symtable = struct
       split 0 0
     in
     split_primitives (Symtable.data_primitive_names ())
-  [@@if ocaml_version < (5, 3)]
+  [@@if ocaml_version < (5, 2)]
 
   let all_primitives () : string list = Symtable.data_primitive_names ()
-  [@@if ocaml_version >= (5, 3)]
+  [@@if ocaml_version >= (5, 2)]
 end
 
 module Cmo_format = struct

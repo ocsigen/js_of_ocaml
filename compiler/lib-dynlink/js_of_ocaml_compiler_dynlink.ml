@@ -12,6 +12,20 @@ type bytecode_sections =
 
 external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_sections"
 
+let normalize_bytecode code =
+  match Ocaml_version.v with
+  | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 -> code
+  | `V5_00 | `V5_01 -> code
+  | `V5_02 ->
+      (* starting with ocaml 5.2, The toplevel no longer append [RETURN 1] *)
+      let { Instr.opcode; _ } = Instr.find RETURN in
+      let len = String.length code in
+      let b = Bytes.create (len + 8) in
+      Bytes.blit_string ~src:code ~src_pos:0 ~dst:b ~dst_pos:0 ~len;
+      Bytes.set_int32_le b len (Int32.of_int opcode);
+      Bytes.set_int32_le b (len + 4) 1l;
+      Bytes.to_string b
+
 let () =
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
@@ -19,6 +33,7 @@ let () =
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :
       unit -> J.t =
+    let s = normalize_bytecode s in
     let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
     let b = Buffer.create 100 in
     let fmt = Pretty_print.to_buffer b in
