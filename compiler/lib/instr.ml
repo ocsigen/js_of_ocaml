@@ -367,6 +367,11 @@ let ops =
   in
   ops
 
+let find i =
+  match Array.find_opt ~f:(fun { code; _ } -> Poly.(i = code)) ops with
+  | None -> assert false
+  | Some x -> x
+
 let get code i = Char.code code.[i]
 
 let getu code pc =

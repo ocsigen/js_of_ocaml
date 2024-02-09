@@ -1113,6 +1113,17 @@ end
 module Array = struct
   include ArrayLabels
 
+  let find_opt ~f:p a =
+    let n = length a in
+    let rec loop i =
+      if i = n
+      then None
+      else
+        let x = unsafe_get a i in
+        if p x then Some x else loop (succ i)
+    in
+    loop 0
+
   let fold_right_i a ~f ~init:x =
     let r = ref x in
     for i = Array.length a - 1 downto 0 do
