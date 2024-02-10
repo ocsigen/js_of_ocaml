@@ -52,7 +52,7 @@ let create kind =
   let version =
     match Compiler_version.git_version with
     | "" -> Compiler_version.s
-    | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
+    | v -> Printf.sprintf "%s+%s" Compiler_version.s v
   in
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
   ; "effects", string_of_bool (Config.Flag.effects ())
