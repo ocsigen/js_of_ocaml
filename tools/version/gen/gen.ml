@@ -14,6 +14,23 @@ let git_version =
   close_in ic;
   git_version
 
+let drop_prefix ~prefix s =
+  let plen = String.length prefix in
+  if plen > String.length s
+  then None
+  else
+    try
+      for i = 0 to String.length prefix - 1 do
+        if not (Char.equal s.[i] prefix.[i]) then raise Exit
+      done;
+      Some (String.sub s plen (String.length s - plen))
+    with Exit -> None
+
+let git_version =
+  match drop_prefix ~prefix:(version ^ "-") git_version with
+  | Some v -> v
+  | None -> git_version
+
 let () = Printf.printf {|
 let s = "%s"
 let git_version = "%s"
