@@ -224,9 +224,7 @@ let f p =
           then (
             BitSet.set visited pc;
             let block = Addr.Map.find pc p.blocks in
-            List.iter params ~f:(fun x -> Code.Var.ISet.add bound x);
             iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
-            List.iter args ~f:using;
             iter_block_free_vars using block;
             List.iter block.body ~f:(function
                 | Let (_, Closure (_, (pc_clo, _))), _ ->
@@ -234,6 +232,8 @@ let f p =
                 | _ -> ());
             Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
         in
+        List.iter params ~f:(fun x -> Code.Var.ISet.add bound x);
+        List.iter args ~f:using;
         traverse pc;
         Code.Addr.Map.add pc !free acc)
       Code.Addr.Map.empty
