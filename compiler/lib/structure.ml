@@ -224,7 +224,13 @@ let rec measure blocks g pc limit =
   then -1
   else
     let b = Addr.Map.find pc blocks in
-    let limit = limit - List.length b.body in
+    let limit =
+      List.fold_left b.body ~init:limit ~f:(fun acc x ->
+          match x with
+          (* A closure is never small *)
+          | Let (_, Closure _), _ -> -1
+          | _ -> acc - 1)
+    in
     if limit < 0
     then limit
     else

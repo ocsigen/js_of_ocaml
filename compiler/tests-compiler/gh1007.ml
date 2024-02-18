@@ -483,12 +483,11 @@ let ()  = M.run ()
       }
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _e_ = i + 1 | 0;
-      if(4 === i){
-       var _d_ = caml_call1(list_rev, delayed[1]);
-       return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _d_);
-      }
+      if(4 === i) break;
       var i = _e_;
      }
+     var _d_ = caml_call1(list_rev, delayed[1]);
+     return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _d_);
     }
     //end |}]
 
@@ -608,11 +607,10 @@ let ()  = M.run ()
        var f = param$0[2], param$0 = f(0);
       }
       var _g_ = i + 1 | 0;
-      if(4 === i){
-       var _f_ = caml_call1(list_rev, delayed[1]);
-       return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _f_);
-      }
+      if(4 === i) break;
       var i = _g_;
      }
+     var _f_ = caml_call1(list_rev, delayed[1]);
+     return caml_call2(list_iter, function(f){return caml_call1(f, 0);}, _f_);
     }
     //end |}]
