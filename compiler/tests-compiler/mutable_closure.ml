@@ -153,17 +153,16 @@ let%expect_test _ =
       let i$1 = i, f$1 = f;
       indirect[1] = [0, function(param){return f$1(i$1);}, indirect[1]];
       var _f_ = i + 1 | 0;
-      if(3 === i){
-       var
-        _d_ = indirect[1],
-        indirect$0 =
-          caml_call2(list_map, function(f){return caml_call1(f, 0);}, _d_),
-        direct$0 = direct[1];
-       if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-       throw caml_maybe_attach_backtrace([0, Assert_failure, _c_], 1);
-      }
+      if(3 === i) break;
       var i = _f_;
      }
+     var
+      _d_ = indirect[1],
+      indirect$0 =
+        caml_call2(list_map, function(f){return caml_call1(f, 0);}, _d_),
+      direct$0 = direct[1];
+     if(runtime.caml_equal(indirect$0, direct$0)) return 0;
+     throw caml_maybe_attach_backtrace([0, Assert_failure, _c_], 1);
     }
     //end|}]
 

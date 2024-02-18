@@ -11177,33 +11177,35 @@
            /*<<?>>*/ return rev_seq_of_enum(_f_, _g_);};
          /*<<set.ml:610:57>>*/ }
         function to_seq_from(low, s){
-          /*<<set.ml:613:6>>*/ var s$0 = s, c = 0;
-          /*<<set.ml:613:28>>*/ for(;;){
-          if(s$0){
-            /*<<set.ml:616:24>>*/ var
-            r = s$0[3],
-            v = s$0[2],
-            l = s$0[1],
-             /*<<set.ml:616:24>>*/ n =
-               /*<<set.ml:616:24>>*/ caml_call2(Ord[1], v, low);
-           if(0 !== n){
-            if(0 <= n){
+          /*<<set.ml:613:6>>*/ a:
+         {
+          b:
+          {
+           var s$0 = s, c = 0;
+            /*<<set.ml:613:28>>*/ for(;;){
+            if(! s$0) break;
+             /*<<set.ml:616:24>>*/ var
+             r = s$0[3],
+             v = s$0[2],
+             l = s$0[1],
+              /*<<set.ml:616:24>>*/ n =
+                /*<<set.ml:616:24>>*/ caml_call2(Ord[1], v, low);
+            if(0 === n) break b;
+            if(0 <= n)
               /*<<set.ml:619:31>>*/ var
                /*<<set.ml:619:31>>*/ c$0 = [0, v, r, c],
               s$0 = l,
               c = c$0;
-             continue;
-            }
-            var s$0 = r;
-            continue;
+            else
+             var s$0 = r;
            }
-           var _d_ = [0, v, r, c];
-          }
-          else
            var _d_ = c;
-           /*<<set.ml:622:19>>*/ return function(_e_){
-            /*<<?>>*/ return seq_of_enum(_d_, _e_);};
+           break a;
+          }
+          var _d_ = [0, v, r, c];
          }
+          /*<<set.ml:622:19>>*/ return function(_e_){
+           /*<<?>>*/ return seq_of_enum(_d_, _e_);};
          /*<<set.ml:622:34>>*/ }
         return [0,
                 empty,
@@ -12178,34 +12180,36 @@
            /*<<?>>*/ return rev_seq_of_enum(_g_, _h_);};
          /*<<map.ml:534:40>>*/ }
         function to_seq_from(low, m){
-          /*<<map.ml:537:6>>*/ var m$0 = m, c = 0;
-          /*<<map.ml:537:28>>*/ for(;;){
-          if(m$0){
-            /*<<map.ml:540:24>>*/ var
-            r = m$0[4],
-            d = m$0[3],
-            v = m$0[2],
-            l = m$0[1],
-             /*<<map.ml:540:24>>*/ n =
-               /*<<map.ml:540:24>>*/ caml_call2(Ord[1], v, low);
-           if(0 !== n){
-            if(0 <= n){
+          /*<<map.ml:537:6>>*/ a:
+         {
+          b:
+          {
+           var m$0 = m, c = 0;
+            /*<<map.ml:537:28>>*/ for(;;){
+            if(! m$0) break;
+             /*<<map.ml:540:24>>*/ var
+             r = m$0[4],
+             d = m$0[3],
+             v = m$0[2],
+             l = m$0[1],
+              /*<<map.ml:540:24>>*/ n =
+                /*<<map.ml:540:24>>*/ caml_call2(Ord[1], v, low);
+            if(0 === n) break b;
+            if(0 <= n)
               /*<<map.ml:543:31>>*/ var
                /*<<map.ml:543:31>>*/ c$0 = [0, v, d, r, c],
               m$0 = l,
               c = c$0;
-             continue;
-            }
-            var m$0 = r;
-            continue;
+            else
+             var m$0 = r;
            }
-           var _e_ = [0, v, d, r, c];
-          }
-          else
            var _e_ = c;
-           /*<<map.ml:546:19>>*/ return function(_f_){
-            /*<<?>>*/ return seq_of_enum(_e_, _f_);};
+           break a;
+          }
+          var _e_ = [0, v, d, r, c];
          }
+          /*<<map.ml:546:19>>*/ return function(_f_){
+           /*<<?>>*/ return seq_of_enum(_e_, _f_);};
          /*<<map.ml:546:34>>*/ }
         return [0,
                 empty,
