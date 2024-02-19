@@ -86,8 +86,8 @@ let () = my_ref := 2
         Stdlib_Int = global_data.Stdlib__Int,
         Stdlib = global_data.Stdlib,
         my_ref = [0, 1],
-        t = init,
-        nesting = 1;
+        nesting = 1,
+        t = init;
        for(;;){
         let t$1 = t;
         function this_will_be_undefined(param){
@@ -191,8 +191,8 @@ let () = my_ref := 2
         Stdlib_Int = global_data.Stdlib__Int,
         Stdlib = global_data.Stdlib,
         my_ref = [0, 1],
-        t = init,
-        nesting = 1;
+        nesting = 1,
+        t = init;
        for(;;){
         let t$1 = t;
         function this_will_be_undefined(param){

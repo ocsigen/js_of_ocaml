@@ -9241,9 +9241,9 @@
     Stdlib = global_data.Stdlib,
     Stdlib_Sys = global_data.Stdlib__Sys,
     Assert_failure = global_data.Assert_failure,
-    _b_ = [0, "int32.ml", 69, 6],
     zero = 0,
     one = 1,
+    _b_ = [0, "int32.ml", 69, 6],
     minus_one = -1;
    function succ(n){
      /*<<int32.ml:48:13>>*/ return n + 1 | 0;
@@ -25405,10 +25405,10 @@
     cst_Stdlib_Format_String_tag = "Stdlib.Format.String_tag";
    function id(x){ /*<<format.ml:23:11>>*/ return x; /*<<format.ml:23:12>>*/ }
     /*<<format.ml:91:13>>*/ var
-     /*<<format.ml:91:13>>*/ String_tag =
-      [248, cst_Stdlib_Format_String_tag, runtime.caml_fresh_oo_id(0)],
     zero = 0,
-    unknown = -1;
+    unknown = -1,
+     /*<<format.ml:91:13>>*/ String_tag =
+      [248, cst_Stdlib_Format_String_tag, runtime.caml_fresh_oo_id(0)];
    function pp_enqueue(state, token){
      /*<<format.ml:219:2>>*/ state[13] = state[13] + token[3] | 0;
     return caml_call2(Stdlib_Queue[3], token, state[28]);
@@ -26179,7 +26179,8 @@
      /*<<format.ml:941:2>>*/ initialize_scan_stack(scan_stack);
      /*<<format.ml:942:2>>*/  /*<<format.ml:942:2>>*/ caml_call2
      (Stdlib_Stack[3], [0, 1, sys_tok], scan_stack);
-     /*<<format.ml:950:20>>*/ var
+     /*<<format.ml:942:2>>*/ var
+      /*<<format.ml:942:2>>*/ pp_margin = 78,
      _a3_ = Stdlib[19],
       /*<<format.ml:950:20>>*/ _a4_ =
         /*<<format.ml:950:20>>*/ caml_call1(Stdlib_Stack[2], 0),
@@ -26193,10 +26194,10 @@
             _a6_,
             _a5_,
             _a4_,
-            78,
+            pp_margin,
             10,
             68,
-            78,
+            pp_margin,
             0,
             1,
             1,
@@ -27554,6 +27555,7 @@
     Stdlib_Printf = global_data.Stdlib__Printf,
     Stdlib_Int = global_data.Stdlib__Int,
     Stdlib_Buffer = global_data.Stdlib__Buffer,
+    null_char = 0,
     _r_ = [0, 91],
     _q_ = [0, 123],
     cst_end_of_input_not_found = "end of input not found",
@@ -27650,8 +27652,7 @@
     cst_octal = "octal",
     cst_hexadecimal = "hexadecimal",
     cst_a_Char = "a Char",
-    cst_a_String = "a String",
-    null_char = 0;
+    cst_a_String = "a String";
    function next_char(ib){
      /*<<scanf.ml:165:4>>*/ try{
       /*<<scanf.ml:166:14>>*/  /*<<scanf.ml:166:14>>*/ var

@@ -507,7 +507,6 @@ let constant ~ctx x level =
 
 type queue_elt =
   { prop : int
-  ; cardinal : int
   ; ce : J.expression
   ; loc : J.location
   ; deps : Code.Var.Set.t
@@ -516,13 +515,7 @@ type queue_elt =
 let access_queue queue x =
   try
     let elt = List.assoc x queue in
-    if elt.cardinal = 1
-    then ((elt.prop, elt.deps), elt.ce), List.remove_assoc x queue
-    else
-      ( ((elt.prop, elt.deps), elt.ce)
-      , List.map queue ~f:(function
-            | x', elt when Var.equal x x' -> x', { elt with cardinal = pred elt.cardinal }
-            | x -> x) )
+    ((elt.prop, elt.deps), elt.ce), List.remove_assoc x queue
   with Not_found -> ((fst const_p, Code.Var.Set.singleton x), var x), queue
 
 let access_queue' ~ctx queue x =
@@ -566,7 +559,7 @@ let flush_queue expr_queue prop (l : J.statement_list) =
 
 let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
-let enqueue expr_queue prop x ce loc cardinal acc =
+let enqueue expr_queue prop x ce loc acc =
   let instrs, expr_queue =
     if Config.Flag.compact ()
     then if is_mutable prop then flush_queue expr_queue prop [] else [], expr_queue
@@ -577,7 +570,7 @@ let enqueue expr_queue prop x ce loc cardinal acc =
     List.fold_left expr_queue ~init:deps ~f:(fun deps (x', elt) ->
         if Code.Var.Set.mem x' deps then Code.Var.Set.union elt.deps deps else deps)
   in
-  instrs @ acc, (x, { prop; deps; ce; loc; cardinal }) :: expr_queue
+  instrs @ acc, (x, { prop; deps; ce; loc }) :: expr_queue
 
 (****)
 
@@ -1341,14 +1334,8 @@ and translate_instr ctx expr_queue instr =
           flush_queue expr_queue prop (instrs @ [ J.Expression_statement ce, loc ])
       | 1, _
         when Config.Flag.compact () && ((not (Config.Flag.pretty ())) || not (keep_name x))
-        -> enqueue expr_queue prop x ce loc 1 instrs
-      (* We could inline more.
-         size_v : length of the variable after serialization
-         size_c : length of the constant after serialization
-         num : number of occurrence
-         size_c * n < size_v * n + size_v + 1 + size_c
-      *)
-      | n, Constant (Int _ | Float _) -> enqueue expr_queue prop x ce loc n instrs
+        -> enqueue expr_queue prop x ce loc instrs
+      | 1, Constant (Int _ | Float _) -> enqueue expr_queue prop x ce loc instrs
       | _ ->
           flush_queue
             expr_queue
