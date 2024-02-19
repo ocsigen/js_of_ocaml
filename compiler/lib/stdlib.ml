@@ -589,6 +589,20 @@ module Bytes = struct
   include BytesLabels
 
   let sub_string b ~pos:ofs ~len = unsafe_to_string (Bytes.sub b ofs len)
+
+  let fold_left ~f ~init b =
+    let r = ref init in
+    for i = 0 to length b - 1 do
+      r := f !r (unsafe_get b i)
+    done;
+    !r
+
+  let fold_right ~f b ~init =
+    let r = ref init in
+    for i = length b - 1 downto 0 do
+      r := f (unsafe_get b i) !r
+    done;
+    !r
 end
 
 module String = struct
@@ -998,6 +1012,10 @@ module String = struct
         | _ -> false
     in
     loop (length b - 1) b 0
+
+  let fold_left ~f ~init s = Bytes.fold_left ~f ~init (Bytes.unsafe_of_string s)
+
+  let fold_right ~f s ~init = Bytes.fold_right ~f ~init (Bytes.unsafe_of_string s)
 end
 
 module Utf8_string : sig
