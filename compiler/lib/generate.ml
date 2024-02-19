@@ -1062,7 +1062,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~force:After (After pc) in
-      let fv = Addr.Map.find pc ctx.freevars in
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
@@ -1078,7 +1077,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | _ -> clo
       in
       let clo = J.EFun (None, J.fun_ (List.map args ~f:(fun v -> J.V v)) clo loc) in
-      (clo, (fst const_p, fv), queue), []
+      (clo, flush_p, queue), []
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, queue), instrs
