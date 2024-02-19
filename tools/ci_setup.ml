@@ -40,34 +40,33 @@ diff --git a/sexp_grammar_validation.opam b/sexp_grammar_validation.opam
 new file mode 100644
 index 0000000..e69de29
 diff --git a/validation/src/dune b/validation/src/dune
-index 5c51676..b371eaa 100644
+index 91933ec..849e4d7 100644
 --- a/validation/src/dune
 +++ b/validation/src/dune
-@@ -1,4 +1,5 @@
- (library (name sexp_grammar_validation)
+@@ -1,5 +1,6 @@
+ (library
+  (name sexp_grammar_validation)
 + (public_name sexp_grammar_validation)
   (libraries bignum.bigint core
-   expect_test_helpers_core.expect_test_helpers_base sexp_grammar)
-  (preprocess (pps ppx_jane)))
-\ No newline at end of file
+    expect_test_helpers_core.expect_test_helpers_base sexp_grammar)
+  (preprocess
 |}
     )
   ; ( "bignum"
     , {bignum|
 diff --git a/test/src/dune b/test/src/dune
-index 89ab13d..12133a8 100644
+index f93ae3f..3f00557 100644
 --- a/test/src/dune
 +++ b/test/src/dune
-@@ -1,4 +1,5 @@
- (library (name bignum_test)
+@@ -2,5 +2,6 @@
+  (name bignum_test)
   (libraries bigint bignum core expect_test_helpers_core
-   sexp_grammar_validation)
-- (preprocess (pps ppx_jane)))
-\ No newline at end of file
+    sexp_grammar_validation)
 + (inline_tests (flags -drop-tag no-js -drop-tag no-wasm -drop-tag 64-bits-only) (modes js))
-+ (preprocess (pps ppx_jane)))
+  (preprocess
+   (pps ppx_jane)))
 diff --git a/test/src/test_bignum.ml b/test/src/test_bignum.ml
-index 47ca701..a096d6c 100644
+index c6d09fb..61b1e5b 100644
 --- a/test/src/test_bignum.ml
 +++ b/test/src/test_bignum.ml
 @@ -3,6 +3,11 @@ open! Expect_test_helpers_core
@@ -79,10 +78,10 @@ index 47ca701..a096d6c 100644
 +  module Z = Z
 +end
 +
- let%test_unit "Bignum.(//)" =
-   let open Bignum.O in
-   for i = -4 to 4 do
-@@ -62,7 +67,7 @@ let%expect_test "Bignum.sexp_of_t does use Scientific Notation" =
+ let%expect_test "Bignum.abs" =
+   let test t =
+     let t' = require_no_allocation [%here] (fun () -> abs t) in
+@@ -71,7 +76,7 @@ let%expect_test "Bignum.sexp_of_t does use Scientific Notation" =
  let compare_floats ~of_float x =
    let x' = x |> of_float |> Bignum.to_float in
    if not (Float.( = ) x x' || (Float.is_nan x && Float.is_nan x'))
@@ -91,7 +90,7 @@ index 47ca701..a096d6c 100644
  ;;
  
  let%expect_test "roundtrip: f |> Bignum.of_float_decimal |> Bignum.to_float" =
-@@ -774,7 +779,7 @@ let%test_module _ =
+@@ -783,7 +788,7 @@ let%test_module _ =
           -1073741825 -> ( 6) \001\253\255\255\255\191 |}]
      ;;
  
@@ -100,7 +99,7 @@ index 47ca701..a096d6c 100644
        bin_io_tests (module V2);
        [%expect
          {|
-@@ -802,6 +807,34 @@ let%test_module _ =
+@@ -811,6 +816,34 @@ let%test_module _ =
           -1073741825 -> ( 6) \001\253\255\255\255\191 |}]
      ;;
  
