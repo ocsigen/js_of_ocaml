@@ -1424,11 +1424,9 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
                 muts
                 ~init:(expr_queue, [], [])
                 ~f:(fun (expr_queue, st_rev, l_rev) (v, v') ->
-                  let instrs, ((_px, cx), expr_queue) =
-                    access_queue_may_flush expr_queue v' v
-                  in
+                  let (_px, cx), expr_queue = access_queue expr_queue v in
                   let l_rev = (J.V v', (cx, J.N)) :: l_rev in
-                  expr_queue, List.rev_append instrs st_rev, l_rev)
+                  expr_queue, st_rev, l_rev)
             in
             (J.variable_declaration ~kind:Let (List.rev l_rev), J.N) :: st_rev, expr_queue
           in
