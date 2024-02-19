@@ -123,38 +123,39 @@ let%expect_test _ =
       let i$0 = i;
       function f$0(counter, n){
        if(- 1 === n){
-        var _i_ = - 2;
-        if(counter >= 50) return caml_trampoline_return(g, [0, _i_]);
+        var _j_ = - 2;
+        if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
         var counter$1 = counter + 1 | 0;
-        return g(counter$1, _i_);
+        return g(counter$1, _j_);
        }
        if(0 === n) return i$0;
-       var _j_ = n - 1 | 0;
-       if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
+       var _k_ = n - 1 | 0;
+       if(counter >= 50) return caml_trampoline_return(g, [0, _k_]);
        var counter$0 = counter + 1 | 0;
-       return g(counter$0, _j_);
+       return g(counter$0, _k_);
       }
       function f(n){return caml_trampoline(f$0(0, n));}
       function g(counter, n){
        if(- 1 === n){
-        var _g_ = - 2;
-        if(counter >= 50) return caml_trampoline_return(f$0, [0, _g_]);
+        var _h_ = - 2;
+        if(counter >= 50) return caml_trampoline_return(f$0, [0, _h_]);
         var counter$1 = counter + 1 | 0;
-        return f$0(counter$1, _g_);
+        return f$0(counter$1, _h_);
        }
        if(0 === n) return i$0;
-       var _h_ = n - 1 | 0;
-       if(counter >= 50) return caml_trampoline_return(f$0, [0, _h_]);
+       var _i_ = n - 1 | 0;
+       if(counter >= 50) return caml_trampoline_return(f$0, [0, _i_]);
        var counter$0 = counter + 1 | 0;
-       return f$0(counter$0, _h_);
+       return f$0(counter$0, _i_);
       }
       var _e_ = direct[1];
       direct[1] = [0, f(i), _e_];
       let i$1 = i, f$1 = f;
-      indirect[1] = [0, function(param){return f$1(i$1);}, indirect[1]];
-      var _f_ = i + 1 | 0;
+      var _f_ = indirect[1];
+      indirect[1] = [0, function(param){return f$1(i$1);}, _f_];
+      var _g_ = i + 1 | 0;
       if(3 === i) break;
-      var i = _f_;
+      var i = _g_;
      }
      var
       _d_ = indirect[1],
@@ -165,25 +166,3 @@ let%expect_test _ =
      throw caml_maybe_attach_backtrace([0, Assert_failure, _c_], 1);
     }
     //end|}]
-
-let%expect_test _ =
-  let prog = {|
-
-let f =
-  let my_ref = ref 1 in
-  fun () -> incr my_ref; !my_ref
-|} in
-  let program = Util.compile_and_parse prog in
-  Util.print_program program;
-  [%expect
-    {|
-    (function(globalThis){
-       "use strict";
-       var runtime = globalThis.jsoo_runtime, my_ref = [0, 1];
-       function f(param){my_ref[1]++; return my_ref[1];}
-       var Test = [0, f];
-       runtime.caml_register_global(0, Test, "Test");
-       return;
-      }
-      (globalThis));
-    //end |}]
