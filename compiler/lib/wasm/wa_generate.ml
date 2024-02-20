@@ -971,6 +971,7 @@ module Generate (Target : Wa_target_sig.S) = struct
              (fun ~result_typ ~fall_through ~context ->
                translate_branch result_typ fall_through (-1) cont context stack_ctx))
     in
+    let body = post_process_function_body ~param_count ~locals body in
     W.Function
       { name =
           (match name_opt with

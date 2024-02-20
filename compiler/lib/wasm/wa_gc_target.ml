@@ -1500,6 +1500,8 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      in
      exn_handler ~result_typ ~fall_through ~context)
 
+let post_process_function_body = Wa_initialize_locals.f
+
 let entry_point ~context ~toplevel_fun =
   let code =
     let* f =

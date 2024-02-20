@@ -632,6 +632,8 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
         exn_handler ~result_typ ~fall_through ~context )
     ]
 
+let post_process_function_body ~param_count:_ ~locals:_ instrs = instrs
+
 let entry_point ~context:_ ~toplevel_fun =
   let code =
     let declare_global name =
