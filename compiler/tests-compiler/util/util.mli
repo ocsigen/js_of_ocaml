@@ -77,6 +77,7 @@ val find_function : Javascript.program -> string -> Javascript.function_declarat
 
 val compile_and_run :
      ?debug:bool
+  -> ?pretty:bool
   -> ?skip_modern:bool
   -> ?flags:string list
   -> ?effects:bool
@@ -89,6 +90,7 @@ val compile_and_run_bytecode : ?unix:bool -> string -> unit
 
 val compile_and_parse :
      ?debug:bool
+  -> ?pretty:bool
   -> ?flags:string list
   -> ?effects:bool
   -> ?use_js_string:bool
@@ -97,6 +99,7 @@ val compile_and_parse :
 
 val compile_and_parse_whole_program :
      ?debug:bool
+  -> ?pretty:bool
   -> ?flags:string list
   -> ?effects:bool
   -> ?use_js_string:bool
