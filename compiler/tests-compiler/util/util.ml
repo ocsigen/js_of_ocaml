@@ -505,6 +505,7 @@ let compile_and_run_bytecode ?unix s =
 
 let compile_and_run
     ?debug
+    ?pretty
     ?(skip_modern = false)
     ?(flags = [])
     ?effects
@@ -520,6 +521,7 @@ let compile_and_run
       in
       let output_without_stdlib_modern =
         compile_bc_to_javascript
+          ?pretty
           ~flags
           ?effects
           ?use_js_string
@@ -546,33 +548,29 @@ let compile_and_run
           print_string output_with_stdlib_modern;
           print_endline "==========================================="))
 
-let compile_and_parse_whole_program ?(debug = true) ?flags ?effects ?use_js_string ?unix s
-    =
+let compile_and_parse_whole_program
+    ?(debug = true)
+    ?pretty
+    ?flags
+    ?effects
+    ?use_js_string
+    ?unix
+    s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_bc ?unix ~debug
-      |> compile_bc_to_javascript
-           ?flags
-           ?effects
-           ?use_js_string
-           ~pretty:true
-           ~sourcemap:debug
+      |> compile_bc_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse ?(debug = true) ?flags ?effects ?use_js_string s =
+let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
-      |> compile_cmo_to_javascript
-           ?flags
-           ?effects
-           ?use_js_string
-           ~pretty:true
-           ~sourcemap:debug
+      |> compile_cmo_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
       |> parse_js)
 
 let normalize_path s =
