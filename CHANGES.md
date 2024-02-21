@@ -9,6 +9,7 @@
 ## Bug fixes
 * Compiler: fix global dead code elimination in a toplevel context
 * Compiler: fix exit-loop-early optim in presence of closure (#1561)
+* Compiler: remove quadratic behavior in generate.ml (#1531, #1567)
 
 # 5.6.0 (2024-01-02) - Lille
 
