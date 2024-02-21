@@ -527,22 +527,6 @@ let access_queue' ~ctx queue x =
       (const_p, js), queue
   | Pv x -> access_queue queue x
 
-let access_queue_may_flush queue v x =
-  let tx, queue = access_queue queue x in
-  let _, instrs, queue =
-    List.fold_left
-      queue
-      ~init:(Code.Var.Set.singleton v, [], [])
-      ~f:(fun (deps, instrs, queue) ((y, elt) as eq) ->
-        if not (Code.Var.Set.disjoint deps elt.deps)
-        then
-          ( Code.Var.Set.add y deps
-          , (J.variable_declaration [ J.V y, (elt.ce, elt.loc) ], elt.loc) :: instrs
-          , queue )
-        else deps, instrs, eq :: queue)
-  in
-  instrs, (tx, List.rev queue)
-
 let should_flush (cond, _) prop = cond <> fst const_p && cond + prop >= fst flush_p
 
 let flush_queue expr_queue prop (l : J.statement_list) =
@@ -566,10 +550,6 @@ let enqueue expr_queue prop x ce loc acc =
     else flush_queue expr_queue flush_p []
   in
   let prop, deps = prop in
-  let deps =
-    List.fold_left expr_queue ~init:deps ~f:(fun deps (x', elt) ->
-        if Code.Var.Set.mem x' deps then Code.Var.Set.union elt.deps deps else deps)
-  in
   instrs @ acc, (x, { prop; deps; ce; loc }) :: expr_queue
 
 (****)
@@ -736,23 +716,38 @@ let visit_all params args =
   in
   l
 
-let parallel_renaming params args continuation queue =
-  let l = List.rev (visit_all params args) in
-  List.fold_left
-    l
-    ~f:(fun continuation (y, x) queue ->
-      let instrs, ((px, cx), queue) = access_queue_may_flush queue y x in
-      let st, queue =
-        flush_queue
-          queue
-          px
-          (instrs @ [ J.variable_declaration [ J.V y, (cx, J.N) ], J.N ])
-      in
-      let never, code = continuation queue in
-      never, st @ code)
-    ~init:continuation
-    queue
-
+let parallel_renaming back_edge params args continuation queue =
+  let l = visit_all params args in
+  let queue, before, renaming, _ =
+    List.fold_left
+      l
+      ~init:(queue, [], [], Code.Var.Set.empty)
+      ~f:(fun (queue, before, renaming, seen) (y, x) ->
+        let (((_, deps_x) as px), cx), queue = access_queue queue x in
+        let seen' = Code.Var.Set.add y seen in
+        if back_edge && not Code.Var.Set.(is_empty (inter seen deps_x))
+        then
+          let before, queue =
+            flush_queue
+              queue
+              px
+              ((J.variable_declaration [ J.V x, (cx, J.N) ], J.N) :: before)
+          in
+          let renaming =
+            (J.variable_declaration [ J.V y, (J.EVar (J.V x), J.N) ], J.N) :: renaming
+          in
+          queue, before, renaming, seen'
+        else
+          let renaming, queue =
+            flush_queue
+              queue
+              px
+              ((J.variable_declaration [ J.V y, (cx, J.N) ], J.N) :: renaming)
+          in
+          queue, before, renaming, seen')
+  in
+  let never, code = continuation queue in
+  never, List.rev_append before (List.rev_append renaming code)
 (****)
 
 let apply_fun_raw ctx f params exact cps =
@@ -1727,21 +1722,27 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
      | Switch _ | Cond _ | Pushtrap _ -> Format.eprintf "}@]@;");
   res
 
-and compile_argument_passing ctx queue (pc, args) continuation =
+and compile_argument_passing ctx queue (pc, args) back_edge continuation =
   if List.is_empty args
   then continuation queue
   else
     let block = Addr.Map.find pc ctx.Ctx.blocks in
-    parallel_renaming block.params args continuation queue
+    parallel_renaming back_edge block.params args continuation queue
 
 and compile_branch st queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
-  compile_argument_passing st.ctx queue cont (fun queue ->
+  let scope = List.assoc_opt pc scope_stack in
+  let back_edge =
+    match scope with
+    | Some (_l, _used, Loop) -> true
+    | None | Some _ -> false
+  in
+  compile_argument_passing st.ctx queue cont back_edge (fun queue ->
       if match fall_through with
          | Block pc' -> pc' = pc
          | Return -> false
       then false, flush_all queue []
       else
-        match List.assoc_opt pc scope_stack with
+        match scope with
         | Some (l, used, Loop) ->
             (* Loop back to the beginning of the loop using continue.
                We can skip the label if we're not inside a nested loop. *)
