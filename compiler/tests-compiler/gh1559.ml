@@ -90,11 +90,10 @@ let () = my_ref := 2
         t = init;
        for(;;){
         let t$1 = t;
-        function this_will_be_undefined(param){
-         var _c_ = 1 === t$1[1] ? 1 : 0;
-         return _c_ ? 1 : 2;
-        }
-        var i = t[1];
+        var
+         this_will_be_undefined =
+           function(param){var _c_ = 1 === t$1[1] ? 1 : 0; return _c_ ? 1 : 2;},
+         i = t[1];
         if(0 === i)
          var _a_ = this_will_be_undefined(0);
         else{
@@ -195,11 +194,10 @@ let () = my_ref := 2
         t = init;
        for(;;){
         let t$1 = t;
-        function this_will_be_undefined(param){
-         var _e_ = 1 === t$1[1] ? 1 : 0;
-         return _e_ ? 1 : 2;
-        }
-        var i = t[1];
+        var
+         this_will_be_undefined =
+           function(param){var _e_ = 1 === t$1[1] ? 1 : 0; return _e_ ? 1 : 2;},
+         i = t[1];
         if(0 === i)
          var
           g = function(param){return 2 + this_will_be_undefined(0) | 0;},

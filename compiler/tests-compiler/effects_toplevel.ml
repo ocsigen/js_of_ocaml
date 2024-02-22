@@ -76,21 +76,20 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
                  }
                  caml_callback(g, [undef]);
-                 var _b_ = 1;
-                 function _c_(i){
+                 function _b_(i){
                   return caml_cps_exact_call2
                           (g,
                            undef,
-                           function(_d_){
-                            var _e_ = i + 1 | 0;
-                            if(5 !== i) return caml_cps_exact_call1(_c_, _e_);
+                           function(_c_){
+                            var _d_ = i + 1 | 0;
+                            if(5 !== i) return caml_cps_exact_call1(_b_, _d_);
                             caml_callback(g, [undef]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
                             return;
                            });
                  }
-                 return _c_(_b_);
+                 return _b_(1);
                 },
                 []);
       }

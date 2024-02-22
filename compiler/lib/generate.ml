@@ -1050,6 +1050,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~force:After (After pc) in
+      let fv = Addr.Map.find pc ctx.freevars in
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
@@ -1065,7 +1066,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | _ -> clo
       in
       let clo = J.EFun (None, J.fun_ (List.map args ~f:(fun v -> J.V v)) clo loc) in
-      (clo, flush_p, queue), []
+      (clo, (fst const_p, fv), queue), []
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, queue), instrs
@@ -1374,74 +1375,97 @@ and translate_instr ctx expr_queue instr =
 and translate_instrs (ctx : Ctx.t) expr_queue instr last =
   match instr with
   | [] -> [], expr_queue
-  | (Let (_, Closure _), _) :: _ -> (
-      let names, mut, pcs, all, rem = collect_closures ctx instr in
-      match Code.Var.Set.cardinal mut with
-      | 0 ->
-          let st_rev, expr_queue_fun =
-            List.fold_left all ~init:([], []) ~f:(fun (st_rev, expr_queue) i ->
-                let l, expr_queue_fun = translate_instr ctx [] i in
-                let expr_queue =
-                  match expr_queue_fun with
-                  | [] -> expr_queue
-                  | [ x ] -> x :: expr_queue
-                  | _ -> assert false
-                in
-                List.rev_append l st_rev, expr_queue)
+  | (Let (_, Closure _), _) :: _ ->
+      let names, muts, fvs, pcs, all, rem = collect_closures ctx instr in
+      let muts_map =
+        Code.Var.Set.diff muts names
+        |> Code.Var.Set.elements
+        |> List.map ~f:(fun x -> x, Code.Var.fork x)
+      in
+      (* Rewrite blocks using well-scoped closure variables *)
+      let ctx =
+        if List.is_empty muts_map
+        then ctx
+        else
+          let map =
+            List.fold_left muts_map ~init:Var.Map.empty ~f:(fun acc (x, x') ->
+                Var.Map.add x x' acc)
           in
-          let instrs, expr_queue_after = translate_instrs ctx expr_queue_fun rem last in
-          flush_all expr_queue (List.rev_append st_rev instrs), expr_queue_after
-      | _ ->
-          let muts =
-            Code.Var.Set.diff mut names
-            |> Code.Var.Set.elements
-            |> List.map ~f:(fun x -> x, Code.Var.fork x)
+          let p, _visited =
+            List.fold_left
+              pcs
+              ~init:(ctx.blocks, Addr.Set.empty)
+              ~f:(fun (blocks, visited) pc ->
+                Subst.cont' (Subst.from_map map) pc blocks visited)
           in
-          (* Rewrite blocks using well-scoped closure variables *)
-          let ctx =
-            let map =
-              List.fold_left muts ~init:Var.Map.empty ~f:(fun acc (x, x') ->
-                  Var.Map.add x x' acc)
+          { ctx with blocks = p }
+      in
+      (* Let bind mutable variables that are part of closures *)
+      let let_bindings_rev, expr_queue =
+        let expr_queue, l_rev =
+          List.fold_left
+            muts_map
+            ~init:(expr_queue, [])
+            ~f:(fun (expr_queue, l_rev) (v, v') ->
+              let (_px, cx), expr_queue = access_queue expr_queue v in
+              let l_rev = (J.V v', (cx, J.N)) :: l_rev in
+              expr_queue, l_rev)
+        in
+        match List.rev l_rev with
+        | [] -> [], expr_queue
+        | l -> [ J.variable_declaration ~kind:Let l, J.N ], expr_queue
+      in
+      (* flush variables part of closures env *)
+      let fv_bindings_rev, expr_queue =
+        let expr_queue, l_rev =
+          Code.Var.Set.fold
+            (fun v (expr_queue, l_rev) ->
+              let (px, cx), expr_queue = access_queue expr_queue v in
+              if Code.Var.Set.(equal (snd px) (singleton v))
+              then expr_queue, l_rev
+              else
+                let l_rev = (J.V v, (cx, J.N)) :: l_rev in
+                expr_queue, l_rev)
+            fvs
+            (expr_queue, [])
+        in
+        match List.rev l_rev with
+        | [] -> [], expr_queue
+        | l -> [ J.variable_declaration l, J.N ], expr_queue
+      in
+      (* Mutually recursive functions need to be properly scoped. *)
+      let funs_rev, expr_queue =
+        List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
+            let x' =
+              match i with
+              | Let (x', _), _ -> x'
+              | _ -> assert false
             in
-            let p, _visited =
-              List.fold_left
-                pcs
-                ~init:(ctx.blocks, Addr.Set.empty)
-                ~f:(fun (blocks, visited) pc ->
-                  Subst.cont' (Subst.from_map map) pc blocks visited)
-            in
-            { ctx with blocks = p }
-          in
-          (* Let bind mutable variables that are part of closures *)
-          let let_bindings_rev, expr_queue =
-            let expr_queue, st_rev, l_rev =
-              List.fold_left
-                muts
-                ~init:(expr_queue, [], [])
-                ~f:(fun (expr_queue, st_rev, l_rev) (v, v') ->
-                  let (_px, cx), expr_queue = access_queue expr_queue v in
-                  let l_rev = (J.V v', (cx, J.N)) :: l_rev in
-                  expr_queue, st_rev, l_rev)
-            in
-            (J.variable_declaration ~kind:Let (List.rev l_rev), J.N) :: st_rev, expr_queue
-          in
-          (* Mutually recursive functions need to be properly scoped. *)
-          let st_rev, expr_queue =
-            List.fold_left all ~init:([], expr_queue) ~f:(fun (st_rev, expr_queue) i ->
-                let l, expr_queue = translate_instr ctx expr_queue i in
-                let l_rev =
-                  List.rev_map l ~f:(fun (e, loc') ->
-                      match e with
-                      (* FIXME: This pattern is too fragile *)
-                      | J.Variable_statement
-                          (Var, [ DeclIdent (x, Some (J.EFun (None, dcl), loc)) ]) ->
-                          J.Function_declaration (x, dcl), loc
-                      | _ -> e, loc')
-                in
-                List.append l_rev st_rev, expr_queue)
-          in
-          let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
-          List.rev_append let_bindings_rev (List.rev_append st_rev instrs), expr_queue)
+            let l, expr_queue = translate_instr ctx expr_queue i in
+            if Code.Var.Set.mem x' muts
+            then
+              let st_rev =
+                match l with
+                (* FIXME: This pattern is too fragile *)
+                | [ ( J.Variable_statement
+                        ( Var
+                        , [ DeclIdent ((J.V x as xid), Some (J.EFun (None, dcl), loc)) ]
+                        )
+                    , _ )
+                  ] ->
+                    assert (Var.equal x x');
+                    (J.Function_declaration (xid, dcl), loc) :: st_rev
+                | [] -> assert false
+                | [ _ ] | _ :: _ :: _ -> assert false
+              in
+              st_rev, expr_queue
+            else List.rev_append l st_rev, expr_queue)
+      in
+      let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
+      ( List.rev_append
+          let_bindings_rev
+          (List.rev_append fv_bindings_rev (List.rev_append funs_rev instrs))
+      , expr_queue )
   | instr :: rem ->
       let st, expr_queue = translate_instr ctx expr_queue instr in
       let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
@@ -1815,10 +1839,16 @@ and compile_closure ctx (pc, args) =
 and collect_closures ctx l =
   match l with
   | ((Let (x, Closure (_, (pc, _))), _loc) as i) :: rem ->
-      let names', mut', pcs', i', rem' = collect_closures ctx rem in
+      let names', mut', fv', pcs', i', rem' = collect_closures ctx rem in
       let mut = Code.Addr.Map.find pc ctx.Ctx.mutated_vars in
-      Code.Var.Set.add x names', Code.Var.Set.union mut mut', pc :: pcs', i :: i', rem'
-  | _ -> Code.Var.Set.empty, Code.Var.Set.empty, [], [], l
+      let fv = Addr.Map.find pc ctx.freevars in
+      ( Code.Var.Set.add x names'
+      , Code.Var.Set.union mut mut'
+      , Code.Var.Set.union fv fv'
+      , pc :: pcs'
+      , i :: i'
+      , rem' )
+  | _ -> Code.Var.Set.empty, Code.Var.Set.empty, Code.Var.Set.empty, [], [], l
 
 let generate_shared_value ctx =
   let strings =
