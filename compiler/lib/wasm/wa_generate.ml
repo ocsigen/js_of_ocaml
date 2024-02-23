@@ -775,10 +775,11 @@ module Generate (Target : Wa_target_sig.S) = struct
     let dom = Wa_structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
-      let is_switch =
+      let keep_ouside pc' =
         match fst block.branch with
         | Switch _ -> true
-        | _ -> false
+        | Cond (_, (pc1, _), (pc2, _)) when pc' = pc1 && pc' = pc2 -> true
+        | _ -> Wa_structure.is_merge_node g pc'
       in
       let code ~context =
         translate_node_within
@@ -789,7 +790,7 @@ module Generate (Target : Wa_target_sig.S) = struct
             (pc
             |> Wa_structure.get_edges dom
             |> Addr.Set.elements
-            |> List.filter ~f:(fun pc' -> is_switch || Wa_structure.is_merge_node g pc')
+            |> List.filter ~f:keep_ouside
             |> Wa_structure.sort_in_post_order g)
           ~context
       in
@@ -917,13 +918,13 @@ module Generate (Target : Wa_target_sig.S) = struct
           parallel_renaming block.params args
       in
       let* () = Stack.adjust_stack stack_ctx ~src ~dst in
-      if (src >= 0 && Wa_structure.is_backward g src dst)
-         || Wa_structure.is_merge_node g dst
-      then
-        match fall_through with
-        | `Block dst' when dst = dst' -> return ()
-        | _ -> instr (Br (label_index context dst, None))
-      else translate_tree result_typ fall_through dst context
+      match fall_through with
+      | `Block dst' when dst = dst' -> return ()
+      | _ ->
+          if (src >= 0 && Wa_structure.is_backward g src dst)
+             || Wa_structure.is_merge_node g dst
+          then instr (Br (label_index context dst, None))
+          else translate_tree result_typ fall_through dst context
     in
     let bind_parameters =
       List.fold_left
