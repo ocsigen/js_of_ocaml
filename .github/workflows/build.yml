@@ -29,13 +29,13 @@ jobs:
           git config --global core.ignorecase false
 
       - name: Install node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: v22.0.0-v8-canary20231204cf8ac0f493
 
       - name: Restore cached binaryen
         id: cache-binaryen
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: binaryen
           key: ${{ runner.os }}-binaryen-version_116
@@ -62,7 +62,7 @@ jobs:
 
       - name: Cache binaryen
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: binaryen
           key: ${{ runner.os }}-binaryen-version_116
@@ -73,7 +73,7 @@ jobs:
 
       - name: Restore cached OCaml
         id: cache-ocaml
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.opam
@@ -101,7 +101,7 @@ jobs:
 
       - name: Cache OCaml
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: |
             ~/.opam
