@@ -355,7 +355,6 @@ let is_smi e =
   | Const (I64 _ | F32 _ | F64 _)
   | ConstSym _
   | UnOp ((F32 _ | F64 _), _)
-  | BinOp ((F32 _ | F64 _), _, _)
   | I32WrapI64 _
   | I64ExtendI32 _
   | F32DemoteF64 _
@@ -388,7 +387,7 @@ let is_smi e =
   | ExternExternalize _
   | Br_on_cast _
   | Br_on_cast_fail _ -> false
-  | RefTest _ | RefEq _ -> true
+  | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
 
 let get_i31_value x st =
   match st.instrs with
