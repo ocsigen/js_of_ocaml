@@ -32,6 +32,21 @@ let command cmdline =
   assert (res = 0)
 (*ZZZ*)
 
+let gen_file file f =
+  let f_tmp =
+    Filename.temp_file_name
+      ~temp_dir:(Filename.dirname file)
+      (Filename.basename file)
+      ".tmp"
+  in
+  try
+    f f_tmp;
+    (try Sys.remove file with Sys_error _ -> ());
+    Sys.rename f_tmp file
+  with exc ->
+    (try Sys.remove f_tmp with Sys_error _ -> ());
+    raise exc
+
 let write_file name contents =
   let ch = open_out name in
   output_string ch contents;
@@ -232,8 +247,10 @@ let build_js_runtime primitives (strings, fragments) wasm_file output_file =
       | ';' | '\n' -> trim_semi (String.sub s ~pos:0 ~len:(l - 1))
       | _ -> s
   in
+  gen_file output_file
+  @@ fun tmp_output_file ->
   write_file
-    output_file
+    tmp_output_file
     (Buffer.contents b
     ^ String.sub s ~pos:0 ~len:i
     ^ escape_string (Filename.basename wasm_file)
@@ -324,14 +341,17 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
            ic
        in
        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-       let wat_file = Filename.chop_extension output_file ^ ".wat" in
+       gen_file (Filename.chop_extension output_file ^ ".wat")
+       @@ fun wat_file ->
        let wasm_file =
          if Filename.check_suffix output_file ".wasm.js"
          then Filename.chop_extension output_file
          else Filename.chop_extension output_file ^ ".wasm"
        in
+       gen_file wasm_file
+       @@ fun tmp_wasm_file ->
        let strings = output_gen wat_file (output code ~standalone:true) in
-       let primitives = link_and_optimize runtime_wasm_files wat_file wasm_file in
+       let primitives = link_and_optimize runtime_wasm_files wat_file tmp_wasm_file in
        build_js_runtime primitives strings wasm_file output_file
    | `Cmo _ | `Cma _ -> assert false);
    close_ic ());
