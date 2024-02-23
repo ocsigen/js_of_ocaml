@@ -289,11 +289,11 @@ module Generate (Target : Wa_target_sig.S) = struct
                   x
                   (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
             | Extern "caml_int32_float_of_bits", [ i ] ->
-                let* i = Memory.unbox_int64 i in
+                let* i = Memory.unbox_int32 i in
                 Memory.box_float
                   stack_ctx
                   x
-                  (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
+                  (return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i))))
             | Extern "caml_int32_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
                 Memory.box_int32 stack_ctx x (return (W.UnOp (I32 (TruncSatF64 S), f)))

@@ -226,7 +226,7 @@ let expression_or_instructions ctx in_function =
     | I32WrapI64 e -> [ List (Atom "i32.wrap_i64" :: expression e) ]
     | I64ExtendI32 (s, e) -> [ List (Atom (signage "i64.extend_i32" s) :: expression e) ]
     | F32DemoteF64 e -> [ List (Atom "f32.demote_f64" :: expression e) ]
-    | F64PromoteF32 e -> [ List (Atom "f64.promote_f64" :: expression e) ]
+    | F64PromoteF32 e -> [ List (Atom "f64.promote_f32" :: expression e) ]
     | Load (offset, e') ->
         let offs _ i =
           if Int32.equal i 0l then [] else [ Atom (Printf.sprintf "offset=%ld" i) ]
