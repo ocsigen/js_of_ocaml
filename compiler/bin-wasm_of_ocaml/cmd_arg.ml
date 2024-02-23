@@ -49,6 +49,14 @@ let options =
     let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
+  let no_sourcemap =
+    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
+  in
+  let sourcemap =
+    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
+  in
   let sourcemap_inline_in_js =
     let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
     Arg.(value & flag & info [ "source-map-inline" ] ~doc)
@@ -61,7 +69,7 @@ let options =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
-  let build_t common set_param profile _ output_file input_file runtime_files =
+  let build_t common set_param profile _ _ _ output_file input_file runtime_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       match output_file with
@@ -77,6 +85,8 @@ let options =
       $ Jsoo_cmdline.Arg.t
       $ set_param
       $ profile
+      $ no_sourcemap
+      $ sourcemap
       $ sourcemap_inline_in_js
       $ output_file
       $ input_file
