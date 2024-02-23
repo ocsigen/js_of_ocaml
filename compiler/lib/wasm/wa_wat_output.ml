@@ -601,9 +601,14 @@ let f ch fields =
     (List
        (Atom "module"
        :: (List.concat (List.map ~f:import fields)
-          @ [ List
-                [ Atom "memory"; Atom (string_of_int ((heap_base + 0xffff) / 0x10000)) ]
-            ]
+          @ (if Code.Var.Map.is_empty addresses
+             then []
+             else
+               [ List
+                   [ Atom "memory"
+                   ; Atom (string_of_int ((heap_base + 0xffff) / 0x10000))
+                   ]
+               ])
           @ funct_table
           @ funct_decl
           @ other_fields)))

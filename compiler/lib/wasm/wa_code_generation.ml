@@ -446,7 +446,8 @@ let drop e =
   match e with
   | W.Seq (l, e') ->
       let* b = is_small_constant e' in
-      if b then instrs l else instr (Drop e)
+      let* () = instrs l in
+      if b then return () else instr (Drop e')
   | _ -> instr (Drop e)
 
 let push e =
