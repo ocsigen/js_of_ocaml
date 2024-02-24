@@ -47,10 +47,14 @@ let () = myfun ()
      var i = 1;
      for(;;){
       let i$0 = i;
-      function f(x){
-       return 0 === x ? 1 : runtime.caml_mul(i$0, app(g, x - 1 | 0));
-      }
-      function g(x){return app(f, x);}
+      var
+       f =
+         function(x){
+          return 0 === x ? 1 : runtime.caml_mul(i$0, app(g$0, x - 1 | 0));
+         };
+      let f$0 = f;
+      var g = function(x){return app(f$0, x);};
+      let g$0 = g;
       var _b_ = g(i);
       caml_call2(Stdlib_Printf[3], _a_, _b_);
       var _c_ = i + 1 | 0;
