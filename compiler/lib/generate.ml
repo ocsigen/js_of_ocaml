@@ -1397,7 +1397,7 @@ and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * 
                  | Some x' -> x' ))
       in
       let muts_map =
-        List.fold_left muts_map_l ~init:Var.Map.empty ~f:(fun acc (x, x') ->
+        List.fold_left muts_map_l ~init:old_muts_map ~f:(fun acc (x, x') ->
             Var.Map.add x x' acc)
       in
       let fvs =
