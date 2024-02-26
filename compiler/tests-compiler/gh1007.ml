@@ -237,9 +237,7 @@ let ()  = M.myfun M.x
             var _c_ = rev_append(l2, accu);
            return [0, _c_, tl$0];
           }
-         };
-      let sort$0 = sort;
-      var
+         },
        rev_sort =
          function(n, l){
           if(2 === n){
@@ -318,7 +316,7 @@ let ()  = M.myfun M.x
            return [0, _a_, tl$0];
           }
          };
-      let rev_sort$0 = rev_sort;
+      let sort$0 = sort, rev_sort$0 = rev_sort;
       var len = 0, param = l;
       for(;;){
        if(! param) break;
@@ -378,9 +376,7 @@ let ()  = M.run ()
              return 1 - (1 - even$0(0));
             default: return 1 - (1 - even$0(1));
           }
-         };
-      let odd$0 = odd;
-      var
+         },
        even =
          function(n){
           if(2 < n >>> 0) return 1 - (1 - odd$0(n - 1 | 0));
@@ -392,7 +388,7 @@ let ()  = M.run ()
             default: return 1 - (1 - odd$0(1));
           }
          };
-      let even$0 = even;
+      let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _a_ = i + 1 | 0;
       if(4 === i) return 0;
@@ -466,7 +462,6 @@ let ()  = M.run ()
     function run(param){
      var i = 0;
      for(;;){
-      let i$0 = i;
       var
        odd =
          function(n){
@@ -482,9 +477,7 @@ let ()  = M.run ()
              return 1 - (1 - even$0(0));
             default: return 1 - (1 - even$0(1));
           }
-         };
-      let odd$0 = odd;
-      var
+         },
        even =
          function(n){
           if(2 < n >>> 0) return 1 - (1 - odd$0(n - 1 | 0));
@@ -500,7 +493,7 @@ let ()  = M.run ()
             default: return 1 - (1 - odd$0(1));
           }
          };
-      let even$0 = even;
+      let odd$0 = odd, even$0 = even, i$0 = i;
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _c_ = i + 1 | 0;
       if(4 === i) break;
@@ -582,7 +575,6 @@ let ()  = M.run ()
     function run(param){
      var i = 0;
      for(;;){
-      let i$0 = i;
       var
        odd =
          function(n){
@@ -604,9 +596,7 @@ let ()  = M.run ()
              return [0, 748545554, function(param){return even$0(0);}];
             default: return [0, 748545554, function(param){return even$0(1);}];
           }
-         };
-      let odd$0 = odd;
-      var
+         },
        even =
          function(n){
           if(2 < n >>> 0)
@@ -628,7 +618,7 @@ let ()  = M.run ()
             default: return [0, 748545554, function(param){return odd$0(1);}];
           }
          };
-      let even$0 = even;
+      let odd$0 = odd, even$0 = even, i$0 = i;
       var param$0 = even(i);
       for(;;){
        if(759635106 <= param$0[1]) break;

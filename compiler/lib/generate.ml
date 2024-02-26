@@ -552,11 +552,11 @@ let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 let enqueue expr_queue prop x ce loc acc =
   let instrs, expr_queue =
     if Config.Flag.compact ()
-    then if is_mutable prop then flush_queue expr_queue prop [] else [], expr_queue
-    else flush_queue expr_queue flush_p []
+    then if is_mutable prop then flush_queue expr_queue prop acc else acc, expr_queue
+    else flush_queue expr_queue flush_p acc
   in
   let prop, deps = prop in
-  instrs @ acc, (x, { prop; deps; ce; loc }) :: expr_queue
+  instrs, (x, { prop; deps; ce; loc }) :: expr_queue
 
 (****)
 
@@ -1378,13 +1378,21 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
 
-and translate_instrs (ctx : Ctx.t) expr_queue instr last =
-  match instr with
-  | [] -> [], expr_queue
+and translate_instrs (ctx : Ctx.t) expr_queue instrs acc_rev =
+  match instrs with
+  | [] -> List.rev acc_rev, expr_queue
   | (Let (_, Closure _), _) :: _ ->
-      let names, muts, fvs, pcs, all, rem = collect_closures ctx instr in
+      let pcs, all, rem = collect_closures instrs in
+      let muts =
+        List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
+            Code.Var.Set.union acc (Code.Addr.Map.find pc ctx.Ctx.mutated_vars))
+      in
       let muts_map =
         Code.Var.Set.elements muts |> List.map ~f:(fun x -> x, Code.Var.fork x)
+      in
+      let fvs =
+        List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
+            Code.Var.Set.union acc (Addr.Map.find pc ctx.freevars))
       in
       (* Rewrite blocks using well-scoped closure variables *)
       let ctx =
@@ -1405,25 +1413,22 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
           { ctx with blocks = p }
       in
       (* Let bind mutable variables that are part of closures *)
-      let let_bindings_rev, expr_queue =
+      let let_bindings, expr_queue =
         let expr_queue, l_rev =
           List.fold_left
             muts_map
             ~init:(expr_queue, [])
             ~f:(fun (expr_queue, l_rev) (v, v') ->
-              if Code.Var.Set.mem v names
-              then expr_queue, l_rev
-              else
-                let (_px, cx, locx), expr_queue = access_queue_loc expr_queue v in
-                let l_rev = (J.V v', (cx, locx)) :: l_rev in
-                expr_queue, l_rev)
+              let (_px, cx, locx), expr_queue = access_queue_loc expr_queue v in
+              let l_rev = (J.V v', (cx, locx)) :: l_rev in
+              expr_queue, l_rev)
         in
         match List.rev l_rev with
         | [] -> [], expr_queue
         | l -> [ J.variable_declaration ~kind:Let l, J.N ], expr_queue
       in
-      (* flush variables part of closures env *)
-      let fv_bindings_rev, expr_queue =
+      (* flush variables part of closures env from the queue *)
+      let fv_bindings, expr_queue =
         let expr_queue, l_rev =
           Code.Var.Set.fold
             (fun v (expr_queue, l_rev) ->
@@ -1451,33 +1456,22 @@ and translate_instrs (ctx : Ctx.t) expr_queue instr last =
             let l, expr_queue = translate_instr ctx expr_queue i in
             if Code.Var.Set.mem x' fvs
             then
-              let i, expr_queue =
-                match l with
-                | [ i ] -> i, expr_queue
-                | [] ->
-                    let (_px, cx, locx), expr_queue = access_queue_loc expr_queue x' in
-                    (J.variable_declaration [ J.V x', (cx, locx) ], locx), expr_queue
-                | _ :: _ :: _ -> assert false
-              in
-              match List.assoc_opt x' muts_map with
-              | Some x'' ->
-                  ( ( J.variable_declaration ~kind:Let [ J.V x'', (J.EVar (J.V x'), J.N) ]
-                    , J.N )
-                    :: i
-                    :: st_rev
+              match l with
+              | [ i ] -> i :: st_rev, expr_queue
+              | [] ->
+                  let (_px, cx, locx), expr_queue = access_queue_loc expr_queue x' in
+                  ( (J.variable_declaration [ J.V x', (cx, locx) ], locx) :: st_rev
                   , expr_queue )
-              | None -> i :: st_rev, expr_queue
+              | _ :: _ :: _ -> assert false
             else List.rev_append l st_rev, expr_queue)
       in
-      let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
-      ( List.rev_append
-          let_bindings_rev
-          (List.rev_append fv_bindings_rev (List.rev_append funs_rev instrs))
-      , expr_queue )
+      let acc_rev = fv_bindings @ acc_rev in
+      let acc_rev = funs_rev @ acc_rev in
+      let acc_rev = let_bindings @ acc_rev in
+      translate_instrs ctx expr_queue rem acc_rev
   | instr :: rem ->
       let st, expr_queue = translate_instr ctx expr_queue instr in
-      let instrs, expr_queue = translate_instrs ctx expr_queue rem last in
-      st @ instrs, expr_queue
+      translate_instrs ctx expr_queue rem (List.rev_append st acc_rev)
 
 (* Compile loops. *)
 and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
@@ -1530,7 +1524,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   let block = Addr.Map.find pc st.ctx.blocks in
-  let seq, queue = translate_instrs st.ctx queue block.body block.branch in
+  let seq, queue = translate_instrs st.ctx queue block.body [] in
   let nbbranch =
     match fst block.branch with
     | Switch (_, a) ->
@@ -1543,7 +1537,6 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
         fun pc -> DTree.nbbranch dtree pc
     | _ -> fun _pc -> 0
   in
-
   let new_scopes =
     Structure.get_edges st.dom pc
     |> Addr.Set.elements
@@ -1844,19 +1837,12 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@;";
   res
 
-and collect_closures ctx l =
+and collect_closures l =
   match l with
-  | ((Let (x, Closure (_, (pc, _))), _loc) as i) :: rem ->
-      let names', mut', fv', pcs', i', rem' = collect_closures ctx rem in
-      let mut = Code.Addr.Map.find pc ctx.Ctx.mutated_vars in
-      let fv = Addr.Map.find pc ctx.freevars in
-      ( Code.Var.Set.add x names'
-      , Code.Var.Set.union mut mut'
-      , Code.Var.Set.union fv fv'
-      , pc :: pcs'
-      , i :: i'
-      , rem' )
-  | _ -> Code.Var.Set.empty, Code.Var.Set.empty, Code.Var.Set.empty, [], [], l
+  | ((Let (_, Closure (_, (pc, _))), _loc) as i) :: rem ->
+      let pcs', i', rem' = collect_closures rem in
+      pc :: pcs', i :: i', rem'
+  | _ -> [], [], l
 
 let generate_shared_value ctx =
   let strings =

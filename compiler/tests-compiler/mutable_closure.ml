@@ -120,7 +120,6 @@ let%expect_test _ =
     function fun1(param){
      var i = 0;
      for(;;){
-      let i$0 = i;
       var
        f$0 =
          function(counter, n){
@@ -135,9 +134,7 @@ let%expect_test _ =
           if(counter >= 50) return caml_trampoline_return(g$0, [0, _g_]);
           var counter$0 = counter + 1 | 0;
           return g$0(counter$0, _g_);
-         };
-      let f$1 = f$0;
-      var
+         },
        f = function(n){return caml_trampoline(f$1(0, n));},
        g =
          function(counter, n){
@@ -153,7 +150,7 @@ let%expect_test _ =
           var counter$0 = counter + 1 | 0;
           return f$1(counter$0, _e_);
          };
-      let g$0 = g;
+      let i$0 = i, g$0 = g, f$1 = f$0;
       var _b_ = direct[1];
       direct[1] = [0, f(i), _b_];
       let i$1 = i, f$2 = f;
