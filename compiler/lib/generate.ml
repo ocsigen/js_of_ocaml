@@ -1378,17 +1378,27 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
 
-and translate_instrs (ctx : Ctx.t) expr_queue instrs acc_rev =
+and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * _ =
   match instrs with
-  | [] -> List.rev acc_rev, expr_queue
+  | [] -> acc_rev, expr_queue
   | (Let (_, Closure _), _) :: _ ->
       let pcs, all, rem = collect_closures instrs in
       let muts =
         List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
             Code.Var.Set.union acc (Code.Addr.Map.find pc ctx.Ctx.mutated_vars))
       in
+      let old_muts_map = muts_map in
+      let muts_map_l =
+        Code.Var.Set.elements muts
+        |> List.map ~f:(fun x ->
+               ( x
+               , match Code.Var.Map.find_opt x old_muts_map with
+                 | None -> Code.Var.fork x
+                 | Some x' -> x' ))
+      in
       let muts_map =
-        Code.Var.Set.elements muts |> List.map ~f:(fun x -> x, Code.Var.fork x)
+        List.fold_left muts_map_l ~init:Var.Map.empty ~f:(fun acc (x, x') ->
+            Var.Map.add x x' acc)
       in
       let fvs =
         List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
@@ -1396,19 +1406,15 @@ and translate_instrs (ctx : Ctx.t) expr_queue instrs acc_rev =
       in
       (* Rewrite blocks using well-scoped closure variables *)
       let ctx =
-        if List.is_empty muts_map
+        if List.is_empty muts_map_l
         then ctx
         else
-          let map =
-            List.fold_left muts_map ~init:Var.Map.empty ~f:(fun acc (x, x') ->
-                Var.Map.add x x' acc)
-          in
+          let subst = Subst.from_map muts_map in
           let p, _visited =
             List.fold_left
               pcs
               ~init:(ctx.blocks, Addr.Set.empty)
-              ~f:(fun (blocks, visited) pc ->
-                Subst.cont' (Subst.from_map map) pc blocks visited)
+              ~f:(fun (blocks, visited) pc -> Subst.cont' subst pc blocks visited)
           in
           { ctx with blocks = p }
       in
@@ -1416,12 +1422,15 @@ and translate_instrs (ctx : Ctx.t) expr_queue instrs acc_rev =
       let let_bindings, expr_queue =
         let expr_queue, l_rev =
           List.fold_left
-            muts_map
+            muts_map_l
             ~init:(expr_queue, [])
             ~f:(fun (expr_queue, l_rev) (v, v') ->
-              let (_px, cx, locx), expr_queue = access_queue_loc expr_queue v in
-              let l_rev = (J.V v', (cx, locx)) :: l_rev in
-              expr_queue, l_rev)
+              if Code.Var.Map.mem v old_muts_map
+              then expr_queue, l_rev
+              else
+                let (_px, cx, locx), expr_queue = access_queue_loc expr_queue v in
+                let l_rev = (J.V v', (cx, locx)) :: l_rev in
+                expr_queue, l_rev)
         in
         match List.rev l_rev with
         | [] -> [], expr_queue
@@ -1468,10 +1477,17 @@ and translate_instrs (ctx : Ctx.t) expr_queue instrs acc_rev =
       let acc_rev = fv_bindings @ acc_rev in
       let acc_rev = funs_rev @ acc_rev in
       let acc_rev = let_bindings @ acc_rev in
-      translate_instrs ctx expr_queue rem acc_rev
+      translate_instrs_rev ctx expr_queue rem acc_rev muts_map
   | instr :: rem ->
       let st, expr_queue = translate_instr ctx expr_queue instr in
-      translate_instrs ctx expr_queue rem (List.rev_append st acc_rev)
+      let acc_rev = List.rev_append st acc_rev in
+      translate_instrs_rev ctx expr_queue rem acc_rev muts_map
+
+and translate_instrs (ctx : Ctx.t) expr_queue instrs =
+  let st_rev, expr_queue =
+    translate_instrs_rev (ctx : Ctx.t) expr_queue instrs [] Var.Map.empty
+  in
+  List.rev st_rev, expr_queue
 
 (* Compile loops. *)
 and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
@@ -1524,7 +1540,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   let block = Addr.Map.find pc st.ctx.blocks in
-  let seq, queue = translate_instrs st.ctx queue block.body [] in
+  let seq, queue = translate_instrs st.ctx queue block.body in
   let nbbranch =
     match fst block.branch with
     | Switch (_, a) ->

@@ -153,8 +153,8 @@ let%expect_test _ =
       let i$0 = i, g$0 = g, f$1 = f$0;
       var _b_ = direct[1];
       direct[1] = [0, f(i), _b_];
-      let i$1 = i, f$2 = f;
-      indirect[1] = [0, function(param){return f$2(i$1);}, indirect[1]];
+      let f$2 = f;
+      indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
       var _c_ = i + 1 | 0;
       if(3 === i) break;
       var i = _c_;
