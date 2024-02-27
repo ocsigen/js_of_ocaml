@@ -843,16 +843,16 @@
       /*<<stdlib.ml:563:21>>*/ var
        /*<<stdlib.ml:563:21>>*/ f_yet_to_run = [0, 1],
        /*<<stdlib.ml:564:2>>*/ old_exit =
-         /*<<stdlib.ml:564:2>>*/ caml_atomic_load(exit_function),
+         /*<<stdlib.ml:564:2>>*/ caml_atomic_load(exit_function);
+     let f_yet_to_run$0 = f_yet_to_run, old_exit$0 = old_exit;
+      /*<<stdlib.ml:570:2>>*/ var
       new_exit =
         function(param){
           /*<<stdlib.ml:566:4>>*/ if(caml_atomic_cas(f_yet_to_run$0, 1, 0))
            /*<<stdlib.ml:566:59>>*/  /*<<stdlib.ml:566:59>>*/ caml_call1(f, 0);
           /*<<stdlib.ml:566:59>>*/ return  /*<<stdlib.ml:566:59>>*/ caml_call1
                  (old_exit$0, 0);
-         /*<<stdlib.ml:567:15>>*/ };
-     let f_yet_to_run$0 = f_yet_to_run, old_exit$0 = old_exit;
-      /*<<stdlib.ml:570:2>>*/ var
+         /*<<stdlib.ml:567:15>>*/ },
       success = caml_atomic_cas(exit_function, old_exit, new_exit),
        /*<<stdlib.ml:570:2>>*/ _g_ = 1 - success;
      if(! _g_)  /*<<stdlib.ml:570:2>>*/ return _g_;
@@ -14445,11 +14445,13 @@
                        : buffer_add_char(buf, c);
              /*<<camlinternalFormat.ml:361:35>>*/ };
           /*<<camlinternalFormat.ml:363:2>>*/ buffer_add_char(buf, 91);
-          /*<<camlinternalFormat.ml:365:7>>*/ var
-           /*<<camlinternalFormat.ml:365:7>>*/ set =
+          /*<<camlinternalFormat.ml:365:7>>*/  /*<<camlinternalFormat.ml:365:7>>*/ var
+          set =
             is_in_char_set(char_set, 0)
              ? (buffer_add_char(buf, 94), rev_char_set(char_set))
-             : char_set,
+             : char_set;
+         let set$0 = set;
+         var
           is_alone =
             function(c){
               /*<<camlinternalFormat.ml:316:6>>*/ var
@@ -14472,7 +14474,6 @@
               var _dl_ = _di_;
               /*<<camlinternalFormat.ml:318:43>>*/ return _dl_;
              /*<<camlinternalFormat.ml:318:68>>*/ };
-         let set$0 = set;
           /*<<camlinternalFormat.ml:319:7>>*/ if(is_alone(93))
            /*<<camlinternalFormat.ml:319:25>>*/ buffer_add_char(buf, 93);
          a:
@@ -17422,28 +17423,30 @@
        case 18:
         var _cO_ = fmt$0[1];
         if(0 === _cO_[0]){
+         var rest$17 = fmt$0[2], fmt$1 = _cO_[1][1];
+         let acc = acc$0, k = k$0, rest = rest$17;
          var
-          rest$17 = fmt$0[2],
-          fmt$1 = _cO_[1][1],
           k$1 =
             function(kacc){
               /*<<camlinternalFormat.ml:1597:6>>*/ return make_printf
                      (k, [1, acc, [0, kacc]], rest);
-             /*<<camlinternalFormat.ml:1597:70>>*/ };
-         let acc = acc$0, k = k$0, rest = rest$17;
-         var k$0 = k$1, acc$0 = 0, fmt$0 = fmt$1;
+             /*<<camlinternalFormat.ml:1597:70>>*/ },
+          k$0 = k$1,
+          acc$0 = 0,
+          fmt$0 = fmt$1;
         }
         else{
+         var rest$18 = fmt$0[2], fmt$2 = _cO_[1][1];
+         let acc = acc$0, k = k$0, rest = rest$18;
          var
-          rest$18 = fmt$0[2],
-          fmt$2 = _cO_[1][1],
           k$2 =
             function(kacc){
               /*<<camlinternalFormat.ml:1601:6>>*/ return make_printf
                      (k, [1, acc, [1, kacc]], rest);
-             /*<<camlinternalFormat.ml:1601:70>>*/ };
-         let acc = acc$0, k = k$0, rest = rest$18;
-         var k$0 = k$2, acc$0 = 0, fmt$0 = fmt$2;
+             /*<<camlinternalFormat.ml:1601:70>>*/ },
+          k$0 = k$2,
+          acc$0 = 0,
+          fmt$0 = fmt$2;
         }
         break;
        case 19:
@@ -18068,28 +18071,28 @@
        case 18:
         var _cl_ = fmt$0[1];
         if(0 === _cl_[0]){
+         var rest$23 = fmt$0[2], fmt$1 = _cl_[1][1];
+         let k = k$0, rest = rest$23;
          var
-          rest$23 = fmt$0[2],
-          fmt$1 = _cl_[1][1],
           k$1 =
             function(koc){
               /*<<camlinternalFormat.ml:1854:33>>*/ return make_iprintf
                      (k, koc, rest);
-             /*<<camlinternalFormat.ml:1854:56>>*/ };
-         let k = k$0, rest = rest$23;
-         var k$0 = k$1, fmt$0 = fmt$1;
+             /*<<camlinternalFormat.ml:1854:56>>*/ },
+          k$0 = k$1,
+          fmt$0 = fmt$1;
         }
         else{
+         var rest$24 = fmt$0[2], fmt$2 = _cl_[1][1];
+         let k = k$0, rest = rest$24;
          var
-          rest$24 = fmt$0[2],
-          fmt$2 = _cl_[1][1],
           k$2 =
             function(koc){
               /*<<camlinternalFormat.ml:1856:33>>*/ return make_iprintf
                      (k, koc, rest);
-             /*<<camlinternalFormat.ml:1856:56>>*/ };
-         let k = k$0, rest = rest$24;
-         var k$0 = k$2, fmt$0 = fmt$2;
+             /*<<camlinternalFormat.ml:1856:56>>*/ },
+          k$0 = k$2,
+          fmt$0 = fmt$2;
         }
         break;
        case 19:
@@ -20842,6 +20845,7 @@
          throw caml_maybe_attach_backtrace(_X_, 0);
         }
        }
+       let s$0 = s, follow$2 = follow$0;
        var
         no_arg =
           function(param){
@@ -21044,8 +21048,6 @@
            }
            /*<<arg.ml:276:54>>*/ };
        let
-        s$0 = s,
-        follow$2 = follow$0,
         no_arg$0 = no_arg,
         get_arg$0 = get_arg,
         consume_arg$0 = consume_arg,
@@ -25054,15 +25056,15 @@
           /*<<weak.ml:164:6>>*/ for(;;){
           if(length(ob) <= oi)  /*<<weak.ml:164:28>>*/ return 0;
           if(check(ob, oi)){
-            /*<<weak.ml:166:20>>*/ var
-             /*<<weak.ml:166:20>>*/ oh = caml_check_bound(t[2], j)[1 + j],
+            /*<<weak.ml:166:20>>*/  /*<<weak.ml:166:20>>*/ var
+            oh = caml_check_bound(t[2], j)[1 + j];
+           let oi$0 = oi;
+            /*<<weak.ml:223:16>>*/ var
             setter =
               function(nb, ni, param){
                 /*<<weak.ml:222:29>>*/ return blit(ob, oi$0, nb, ni, 1);
-               /*<<weak.ml:222:47>>*/ };
-           let oi$0 = oi;
-            /*<<weak.ml:223:16>>*/  /*<<weak.ml:223:16>>*/ var
-            h = caml_check_bound(oh, oi)[1 + oi];
+               /*<<weak.ml:222:47>>*/ },
+             /*<<weak.ml:223:16>>*/ h = caml_check_bound(oh, oi)[1 + oi];
             /*<<weak.ml:224:35>>*/ add_aux
             (newt, setter, 0, h, get_index(newt, h));
            var i$0 = oi + 1 | 0, oi = i$0;
@@ -30766,6 +30768,7 @@
       if(typeof shape === "number")
        switch(shape){
          case 0:
+          let i$1 = i;
           var
            fn =
              function(x){
@@ -30777,7 +30780,7 @@
                /*<<camlinternalMod.ml:32:11>>*/ return  /*<<camlinternalMod.ml:32:11>>*/ caml_call1
                       (fn, x);
               /*<<camlinternalMod.ml:32:16>>*/ };
-          let fn$0 = fn, i$1 = i;
+          let fn$0 = fn;
           var init = fn;
           break;
          case 1:

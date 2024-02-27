@@ -120,6 +120,7 @@ let%expect_test _ =
     function fun1(param){
      var i = 0;
      for(;;){
+      let i$0 = i;
       var
        f$0 =
          function(counter, n){
@@ -150,7 +151,7 @@ let%expect_test _ =
           var counter$0 = counter + 1 | 0;
           return f$1(counter$0, _e_);
          };
-      let i$0 = i, g$0 = g, f$1 = f$0;
+      let f$1 = f$0, g$0 = g;
       var _b_ = direct[1];
       direct[1] = [0, f(i), _b_];
       let f$2 = f;

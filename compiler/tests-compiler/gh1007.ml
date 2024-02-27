@@ -462,6 +462,7 @@ let ()  = M.run ()
     function run(param){
      var i = 0;
      for(;;){
+      let i$0 = i;
       var
        odd =
          function(n){
@@ -493,7 +494,7 @@ let ()  = M.run ()
             default: return 1 - (1 - odd$0(1));
           }
          };
-      let odd$0 = odd, even$0 = even, i$0 = i;
+      let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _c_ = i + 1 | 0;
       if(4 === i) break;
@@ -575,6 +576,7 @@ let ()  = M.run ()
     function run(param){
      var i = 0;
      for(;;){
+      let i$0 = i;
       var
        odd =
          function(n){
@@ -618,7 +620,7 @@ let ()  = M.run ()
             default: return [0, 748545554, function(param){return odd$0(1);}];
           }
          };
-      let odd$0 = odd, even$0 = even, i$0 = i;
+      let odd$0 = odd, even$0 = even;
       var param$0 = even(i);
       for(;;){
        if(759635106 <= param$0[1]) break;
