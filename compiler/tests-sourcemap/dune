@@ -21,7 +21,7 @@
 (rule
  (target dump)
  (enabled_if
-  (<> %{profile} using-effects))
+  (= %{profile} dev))
  (action
   (with-stdout-to
    %{target}
@@ -30,7 +30,7 @@
 (rule
  (alias runtest)
  (enabled_if
-  (<> %{profile} using-effects))
+  (= %{profile} dev))
  (deps dump.reference dump)
  (action
   (diff dump.reference dump)))
