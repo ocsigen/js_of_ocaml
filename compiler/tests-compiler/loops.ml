@@ -42,12 +42,9 @@ let rec fun_with_loop acc = function
       if(! param$0)
        return caml_call1
                (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
-      var
-       xs = param$0[2],
-       x = param$0[1],
-       acc$1 = [0, x, acc$0],
-       acc$0 = acc$1,
-       param$0 = xs;
+      var xs = param$0[2], x = param$0[1], acc$1 = [0, x, acc$0];
+      acc$0 = acc$1;
+      param$0 = xs;
      }
     }
     //end |}]
@@ -93,7 +90,7 @@ let rec fun_with_loop acc = function
         a$0[1] = [0, 1, a$0[1]];
         var _b_ = i$0 + 1 | 0;
         if(10 === i$0) return a$0[1];
-        var i$0 = _b_;
+        i$0 = _b_;
        }
       }
       var xs = param$0[2], a = [0, acc$0], i = 0;
@@ -101,9 +98,11 @@ let rec fun_with_loop acc = function
        a[1] = [0, 1, a[1]];
        var _a_ = i + 1 | 0;
        if(10 === i) break;
-       var i = _a_;
+       i = _a_;
       }
-      var acc$1 = [0, x, a[1]], acc$0 = acc$1, param$0 = xs;
+      var acc$1 = [0, x, a[1]];
+      acc$0 = acc$1;
+      param$0 = xs;
      }
     }
     //end
@@ -135,11 +134,11 @@ let for_for_while () =
        for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
        var _b_ = j + 1 | 0;
        if(10 === j) break;
-       var j = _b_;
+       j = _b_;
       }
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
-      var k = _a_;
+      k = _a_;
      }
     }
     //end |}]
@@ -176,11 +175,11 @@ let for_for_while () =
        }
        var _b_ = j + 1 | 0;
        if(10 === j) break;
-       var j = _b_;
+       j = _b_;
       }
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
-      var k = _a_;
+      k = _a_;
      }
     }
     //end |}]
@@ -216,7 +215,9 @@ let rec equal eq xs ys =
       var match = caml_call1(xs$0, 0), match$0 = caml_call1(ys$0, 0);
       if(match){
        if(match$0){
-        var ys$1 = match$0[2], xs$1 = match[2], xs$0 = xs$1, ys$0 = ys$1;
+        var ys$1 = match$0[2], xs$1 = match[2];
+        xs$0 = xs$1;
+        ys$0 = ys$1;
         continue;
        }
       }
@@ -271,7 +272,7 @@ let f t x =
         if(val && ! val[2]){
          var y = val[1], _b_ = y === (x$0 + 1 | 0) ? 1 : 0;
          if(_b_){var _d_ = _b_; break a;}
-         var x$0 = y;
+         x$0 = y;
          continue;
         }
         var _d_ = 0;
@@ -311,7 +312,8 @@ in loop x
      for(;;){
       if(0 === x$1) return 1;
       if(1 === x$1) break;
-      var x$2 = x$1 + 1 | 0, x$1 = x$2;
+      var x$2 = x$1 + 1 | 0;
+      x$1 = x$2;
      }
      var x$0 = 2;
      for(;;){
@@ -324,7 +326,7 @@ in loop x
           case 2:
            var n = caml_call1(Stdlib_Random[5], 2), _a_ = n + n | 0; break a;
           case 3:
-           var n$0 = caml_call1(Stdlib_Random[5], 2), x$0 = n$0; continue;
+           var n$0 = caml_call1(Stdlib_Random[5], 2); x$0 = n$0; continue;
         }
        var _a_ = 2;
       }
@@ -441,7 +443,9 @@ let add_substitute =
       if(36 === previous$0)
        if(92 === previous){
         caml_call2(add_char, b, previous$0);
-        var i$5 = i$4 + 1 | 0, previous = 32, i$4 = i$5;
+        var i$5 = i$4 + 1 | 0;
+        previous = 32;
+        i$4 = i$5;
        }
        else{
         var start$0 = i$4 + 1 | 0;
@@ -471,7 +475,8 @@ let add_substitute =
                if(65 > match) break;
               }
               else if(48 > match) break d;
-              var i$3 = i$2 + 1 | 0, i$2 = i$3;
+              var i$3 = i$2 + 1 | 0;
+              i$2 = i$3;
              }
             }
             var stop$0 = i$2;
@@ -495,14 +500,18 @@ let add_substitute =
          var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
          for(;;){
           if(lim <= stop) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-          if(caml_string_get(s, stop) === opening)
-           var i = stop + 1 | 0, k$0 = k + 1 | 0, k = k$0, stop = i;
+          if(caml_string_get(s, stop) === opening){
+           var i = stop + 1 | 0, k$0 = k + 1 | 0;
+           k = k$0;
+           stop = i;
+          }
           else if(caml_string_get(s, stop) === closing){
            if(0 === k) break;
-           var i$0 = stop + 1 | 0, k$1 = k - 1 | 0, k = k$1, stop = i$0;
+           var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
+           k = k$1;
+           stop = i$0;
           }
-          else
-           var i$1 = stop + 1 | 0, stop = i$1;
+          else{var i$1 = stop + 1 | 0; stop = i$1;}
          }
          var
           match$0 =
@@ -512,18 +521,26 @@ let add_substitute =
         }
         var next_i = match$0[2], ident = match$0[1];
         caml_call2(add_string, b, caml_call1(f, ident));
-        var previous = 32, i$4 = next_i;
+        previous = 32;
+        i$4 = next_i;
        }
       else if(92 === previous){
        caml_call2(add_char, b, 92);
        caml_call2(add_char, b, previous$0);
-       var i$6 = i$4 + 1 | 0, previous = 32, i$4 = i$6;
+       var i$6 = i$4 + 1 | 0;
+       previous = 32;
+       i$4 = i$6;
       }
-      else if(92 === previous$0)
-       var i$7 = i$4 + 1 | 0, previous = previous$0, i$4 = i$7;
+      else if(92 === previous$0){
+       var i$7 = i$4 + 1 | 0;
+       previous = previous$0;
+       i$4 = i$7;
+      }
       else{
        caml_call2(add_char, b, previous$0);
-       var i$8 = i$4 + 1 | 0, previous = previous$0, i$4 = i$8;
+       var i$8 = i$4 + 1 | 0;
+       previous = previous$0;
+       i$4 = i$8;
       }
      }
     }

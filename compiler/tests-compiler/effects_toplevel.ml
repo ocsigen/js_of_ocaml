@@ -37,7 +37,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
 
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
         caml_callback = runtime.caml_callback,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;

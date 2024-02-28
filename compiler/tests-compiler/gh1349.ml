@@ -49,7 +49,7 @@ let%expect_test _ =
     short variable occurrences: 26/26
     (function(a){
        "use strict";
-       var f = a.jsoo_runtime;
+       const f = a.jsoo_runtime;
        function b(a, b){
         function d(a){return f.caml_div(a, 0);}
         var g = a < b ? 1 : 2;

@@ -158,7 +158,7 @@ let%expect_test _ =
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
       var _c_ = i + 1 | 0;
       if(3 === i) break;
-      var i = _c_;
+      i = _c_;
      }
      var
       indirect$0 =
@@ -182,7 +182,8 @@ let f =
     {|
     (function(globalThis){
        "use strict";
-       var runtime = globalThis.jsoo_runtime, my_ref = [0, 1];
+       const runtime = globalThis.jsoo_runtime;
+       var my_ref = [0, 1];
        function f(param){my_ref[1]++; return my_ref[1];}
        var Test = [0, f];
        runtime.caml_register_global(0, Test, "Test");

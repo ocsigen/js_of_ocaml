@@ -46,7 +46,7 @@ with Exit ->
     {|
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_wrap_exception = runtime.caml_wrap_exception;
@@ -109,7 +109,7 @@ with Exit ->
     {|
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
@@ -195,7 +195,7 @@ with Exit ->
     {|
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,

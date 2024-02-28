@@ -349,8 +349,9 @@ let%expect_test "string sharing" =
         str_npi_xcf_x80 = "npi\xcf\x80",
         str_abcdef = "abcdef",
         str_abc_def = "abc\\def",
-        str_npi = "npiπ",
-        runtime = globalThis.jsoo_runtime,
+        str_npi = "npiπ";
+       const runtime = globalThis.jsoo_runtime;
+       var
         s3 = str_abcdef,
         s6 = str_npi_xcf_x80,
         s9 = str_abc_def,
@@ -402,12 +403,13 @@ let%expect_test "string sharing" =
 
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
         cst_npi = "npi\xcf\x80",
         cst_abc_def = "abc\\def",
         cst_abcdef = "abcdef",
-        cst_npi$0 = "npiπ",
+        cst_npi$0 = "npiπ";
+       var
         s3 = cst_abcdef,
         s6 = cst_npi,
         s9 = cst_abc_def,
@@ -462,9 +464,11 @@ let%expect_test "string sharing" =
         str_npi_xcf_x80 = "npi\xcf\x80",
         str_abcdef = "abcdef",
         str_abc_def = "abc\\def",
-        str_npi = "npiπ",
+        str_npi = "npiπ";
+       const
         runtime = globalThis.jsoo_runtime,
-        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
+       var
         s3 = caml_string_of_jsbytes(str_abcdef),
         s6 = caml_string_of_jsbytes(str_npi_xcf_x80),
         s9 = caml_string_of_jsbytes(str_abc_def),
@@ -515,9 +519,10 @@ let%expect_test "string sharing" =
     {|
     (function(globalThis){
        "use strict";
-       var
+       const
         runtime = globalThis.jsoo_runtime,
-        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
+       var
         s3 = caml_string_of_jsbytes("abcdef"),
         s6 = caml_string_of_jsbytes("npi\xcf\x80"),
         s9 = caml_string_of_jsbytes("abc\\def"),

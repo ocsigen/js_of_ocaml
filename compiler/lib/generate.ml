@@ -492,7 +492,8 @@ let rec constant_rec ~ctx x level instrs =
                   | J.EArr _ ->
                       let v = Code.Var.fresh_n "partial" in
                       let instrs =
-                        (J.variable_declaration [ J.V v, (js, J.N) ], J.N) :: instrs
+                        (J.variable_declaration ~kind:Const [ J.V v, (js, J.N) ], J.N)
+                        :: instrs
                       in
                       J.Element (J.EVar (J.V v)) :: acc, instrs
                   | _ -> J.Element js :: acc, instrs)
@@ -543,7 +544,10 @@ let flush_queue expr_queue prop (l : J.statement_list) =
   in
   let instrs =
     List.map instrs ~f:(fun (x, elt) ->
-        J.variable_declaration [ J.V x, (elt.ce, elt.loc) ], elt.loc)
+        ( J.variable_declaration
+            ~kind:Var (* We don't know the current scope *)
+            [ J.V x, (elt.ce, elt.loc) ]
+        , elt.loc ))
   in
   List.rev_append instrs l, expr_queue
 
@@ -737,19 +741,24 @@ let parallel_renaming back_edge params args continuation queue =
             flush_queue
               queue
               px
-              ((J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before)
+              ((J.variable_declaration ~kind:Const [ J.V x, (cx, locx) ], locx) :: before)
           in
           let renaming =
-            (J.variable_declaration [ J.V y, (J.EVar (J.V x), J.N) ], J.N) :: renaming
+            (if back_edge
+             then
+               J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V y), J.EVar (J.V x))), J.N
+             else J.variable_declaration ~kind:Var [ J.V y, (J.EVar (J.V x), J.N) ], J.N)
+            :: renaming
           in
           queue, before, renaming, seen'
         else
-          let renaming, queue =
-            flush_queue
-              queue
-              px
-              ((J.variable_declaration [ J.V y, (cx, J.N) ], J.N) :: renaming)
+          let renaming =
+            (if back_edge
+             then J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V y), cx)), J.N
+             else J.variable_declaration ~kind:Var [ J.V y, (cx, J.N) ], J.N)
+            :: renaming
           in
+          let renaming, queue = flush_queue queue px renaming in
           queue, before, renaming, seen')
   in
   let never, code = continuation queue in
@@ -1342,7 +1351,7 @@ and translate_instr ctx expr_queue instr =
           flush_queue
             expr_queue
             prop
-            (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
+            (instrs @ [ J.variable_declaration ~kind:Var [ J.V x, (ce, loc) ], loc ]))
   | Set_field (x, n, y) ->
       let loc = source_location ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
@@ -1478,7 +1487,8 @@ and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * 
               | [] ->
                   let (_px, cx, locx), expr_queue = access_queue_loc expr_queue x' in
                   ( mut_rec
-                  , (J.variable_declaration [ J.V x', (cx, locx) ], locx) :: st_rev
+                  , (J.variable_declaration ~kind:Var [ J.V x', (cx, locx) ], locx)
+                    :: st_rev
                   , expr_queue )
               | _ :: _ :: _ -> assert false
             else mut_rec, List.rev_append l st_rev, expr_queue)
@@ -1671,10 +1681,11 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
   in
   let cx, binds =
     match cx with
-    | (J.EVar _ | _) when DTree.nbcomp dtree <= 1 -> cx, []
+    | J.EVar _ -> cx, []
+    | _ when DTree.nbcomp dtree <= 1 -> cx, []
     | _ ->
         let v = J.V (Code.Var.fresh ()) in
-        J.EVar v, [ J.variable_declaration [ v, (cx, J.N) ], J.N ]
+        J.EVar v, [ J.variable_declaration ~kind:Const [ v, (cx, J.N) ], J.N ]
   in
   let never, code = loop cx scope_stack dtree in
   never, binds @ code
@@ -1726,7 +1737,8 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
           | _ ->
               let handler_var = Code.Var.fork x in
               ( handler_var
-              , (J.variable_declaration [ J.V x, (wrap_exn handler_var, J.N) ], J.N)
+              , ( J.variable_declaration ~kind:Var [ J.V x, (wrap_exn handler_var, J.N) ]
+                , J.N )
                 :: handler )
         in
 
@@ -1873,6 +1885,7 @@ and collect_closures l =
 let generate_shared_value ctx =
   let strings =
     ( J.variable_declaration
+        ~kind:Const
         ((match ctx.Ctx.exported_runtime with
          | None -> []
          | Some (_, { contents = false }) -> []

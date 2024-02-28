@@ -104,14 +104,12 @@ let%expect_test _ =
     //end |}]
 
 let%expect_test _ =
-  let compile ~enable s =
-    let enable_disable = if enable then "--enable" else "--disable" in
-    let flags = [ enable_disable; "vardecl" ] in
+  let compile s =
+    let flags = [] in
     compile_and_parse ~flags s
   in
-  let program ~enable =
+  let program =
     compile
-      ~enable
       {|
     let match_expr = function
       | [] | [None] | _ :: None :: _ -> 1
@@ -120,30 +118,7 @@ let%expect_test _ =
       | _ -> 4
     |}
   in
-  with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:true) (Some "match_expr"));
-  [%expect
-    {|
-    function match_expr(param){
-     var _c_, _b_, _a_;
-     a:
-     if(param){
-      _a_ = param[1];
-      if(_a_){
-       _b_ = _a_[1];
-       if(_b_){
-        if(2 === _b_[1] && ! param[2]) return 3;
-       }
-       else if(! param[2]) return 2;
-      }
-      else if(! param[2]) break a;
-      _c_ = param[2];
-      if(_c_ && ! _c_[1]) break a;
-      return 4;
-     }
-     return 1;
-    }
-    //end |}];
-  with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
+  with_temp_dir ~f:(fun () -> print_fun_decl program (Some "match_expr"));
   [%expect
     {|
     function match_expr(param){

@@ -442,15 +442,6 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       js)
     else js
   in
-  let js =
-    if Config.Flag.compact_vardecl ()
-    then (
-      let t2 = Timer.make () in
-      let js = (new Js_traverse.compact_vardecl)#program js in
-      if times () then Format.eprintf "    compact var decl: %a@." Timer.print t2;
-      js)
-    else js
-  in
   (* pack *)
   let wrap_in_iife ~use_strict js =
     let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in

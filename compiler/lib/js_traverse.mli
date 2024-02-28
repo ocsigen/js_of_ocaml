@@ -174,12 +174,6 @@ end
 
 class share_constant : mapper
 
-class compact_vardecl : object ('a)
-  inherit free
-
-  method exc : IdentSet.t
-end
-
 class clean : mapper
 
 class simpl : mapper

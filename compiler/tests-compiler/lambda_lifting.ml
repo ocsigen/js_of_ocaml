@@ -22,8 +22,8 @@ Printf.printf "%d\n" (f 3)
     {|
     (function(globalThis){
        "use strict";
+       const runtime = globalThis.jsoo_runtime;
        var
-        runtime = globalThis.jsoo_runtime,
         global_data = runtime.caml_get_global_data(),
         Stdlib_Printf = global_data.Stdlib__Printf,
         _b_ =

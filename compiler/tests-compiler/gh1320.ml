@@ -58,7 +58,7 @@ let () = myfun ()
       caml_call2(Stdlib_Printf[3], _a_, _b_);
       var _c_ = i + 1 | 0;
       if(4 === i) return 0;
-      var i = _c_;
+      i = _c_;
      }
     }
     //end |}]

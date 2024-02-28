@@ -153,7 +153,8 @@ let%expect_test "static eval of string get" =
        next$0 = param$0[3],
        prec$0 = [0, key$0, data$0, next$0];
       prec[3] = prec$0;
-      var prec = prec$0, param$0 = next$0;
+      prec = prec$0;
+      param$0 = next$0;
      }
     }
     //end |}]
@@ -182,7 +183,7 @@ let%expect_test "static eval of tags" =
     {|
     (function(globalThis){
        "use strict";
-       var runtime = globalThis.jsoo_runtime;
+       const runtime = globalThis.jsoo_runtime;
        function caml_call1(f, a0){
         return (f.l >= 0 ? f.l : f.l = f.length) == 1
                 ? f(a0)

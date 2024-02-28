@@ -64,7 +64,7 @@ let%expect_test _ =
         2: //# unitInfo: Provides: Test
         3: (function(globalThis){
         4:    "use strict";
-        5:    var runtime = globalThis.jsoo_runtime;
+        5:    const runtime = globalThis.jsoo_runtime;
         6:    function id(x){return x;}
         7:    var Test = [0, id];
         8:    runtime.caml_register_global(0, Test, "Test");

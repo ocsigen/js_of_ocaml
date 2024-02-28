@@ -35,7 +35,7 @@ let rec f x y z =
     {|
     (function(a){
        "use strict";
-       var b = a.jsoo_runtime;
+       const b = a.jsoo_runtime;
        b.caml_register_global
         (0,
          [0,
@@ -43,7 +43,10 @@ let rec f x y z =
            var f = a, e = b, d = c;
            for(;;){
             if(0 === f && 0 === e && 0 === d) return 1;
-            var g = (d + f | 0) + e | 0, f = f + d | 0, e = e - d | 0, d = g;
+            const a = (d + f | 0) + e | 0;
+            f = f + d | 0;
+            e = e - d | 0;
+            d = a;
            }
           }],
          "Test");
