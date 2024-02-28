@@ -121,48 +121,72 @@ let%expect_test _ =
      var i = 0;
      for(;;){
       let i$0 = i;
-      function f$0(counter, n){
-       if(- 1 === n){
-        var _j_ = - 2;
-        if(counter >= 50) return caml_trampoline_return(g, [0, _j_]);
-        var counter$1 = counter + 1 | 0;
-        return g(counter$1, _j_);
-       }
-       if(0 === n) return i$0;
-       var _k_ = n - 1 | 0;
-       if(counter >= 50) return caml_trampoline_return(g, [0, _k_]);
-       var counter$0 = counter + 1 | 0;
-       return g(counter$0, _k_);
-      }
-      function f(n){return caml_trampoline(f$0(0, n));}
-      function g(counter, n){
-       if(- 1 === n){
-        var _h_ = - 2;
-        if(counter >= 50) return caml_trampoline_return(f$0, [0, _h_]);
-        var counter$1 = counter + 1 | 0;
-        return f$0(counter$1, _h_);
-       }
-       if(0 === n) return i$0;
-       var _i_ = n - 1 | 0;
-       if(counter >= 50) return caml_trampoline_return(f$0, [0, _i_]);
-       var counter$0 = counter + 1 | 0;
-       return f$0(counter$0, _i_);
-      }
-      var _e_ = direct[1];
-      direct[1] = [0, f(i), _e_];
-      let i$1 = i, f$1 = f;
-      var _f_ = indirect[1];
-      indirect[1] = [0, function(param){return f$1(i$1);}, _f_];
-      var _g_ = i + 1 | 0;
+      var
+       f$0 =
+         function(counter, n){
+          if(- 1 === n){
+           var _f_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(g$0, [0, _f_]);
+           var counter$1 = counter + 1 | 0;
+           return g$0(counter$1, _f_);
+          }
+          if(0 === n) return i$0;
+          var _g_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(g$0, [0, _g_]);
+          var counter$0 = counter + 1 | 0;
+          return g$0(counter$0, _g_);
+         },
+       f = function(n){return caml_trampoline(f$1(0, n));},
+       g =
+         function(counter, n){
+          if(- 1 === n){
+           var _d_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(f$1, [0, _d_]);
+           var counter$1 = counter + 1 | 0;
+           return f$1(counter$1, _d_);
+          }
+          if(0 === n) return i$0;
+          var _e_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(f$1, [0, _e_]);
+          var counter$0 = counter + 1 | 0;
+          return f$1(counter$0, _e_);
+         };
+      let f$1 = f$0, g$0 = g;
+      var _b_ = direct[1];
+      direct[1] = [0, f(i), _b_];
+      let f$2 = f;
+      indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
+      var _c_ = i + 1 | 0;
       if(3 === i) break;
-      var i = _g_;
+      var i = _c_;
      }
      var
-      _d_ = indirect[1],
       indirect$0 =
-        caml_call2(list_map, function(f){return caml_call1(f, 0);}, _d_),
+        caml_call2(list_map, function(f){return caml_call1(f, 0);}, indirect[1]),
       direct$0 = direct[1];
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-     throw caml_maybe_attach_backtrace([0, Assert_failure, _c_], 1);
+     throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
     }
     //end|}]
+
+let%expect_test _ =
+  let prog = {|
+
+let f =
+  let my_ref = ref 1 in
+  fun () -> incr my_ref; !my_ref
+|} in
+  let program = Util.compile_and_parse prog in
+  Util.print_program program;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime, my_ref = [0, 1];
+       function f(param){my_ref[1]++; return my_ref[1];}
+       var Test = [0, f];
+       runtime.caml_register_global(0, Test, "Test");
+       return;
+      }
+      (globalThis));
+    //end |}]

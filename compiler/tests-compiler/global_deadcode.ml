@@ -40,30 +40,30 @@ let%expect_test "Eliminates unused functions from functor" =
     function create(l, v, r){
      if(l) var h = l[4], hl = h; else var hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
-     var _m_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-     return [0, l, v, r, _m_];
+     var _k_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+     return [0, l, v, r, _k_];
     }
     function bal(l, v, r){
      if(l) var h = l[4], hl = h; else var hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
      if((hr + 2 | 0) < hl){
       if(! l) return invalid_arg(_b_);
-      var lr = l[3], lv = l[2], ll = l[1], _h_ = height(lr);
-      if(_h_ <= height(ll)) return create(ll, lv, create(lr, v, r));
+      var lr = l[3], lv = l[2], ll = l[1], _f_ = height(lr);
+      if(_f_ <= height(ll)) return create(ll, lv, create(lr, v, r));
       if(! lr) return invalid_arg(_a_);
-      var lrr = lr[3], lrv = lr[2], lrl = lr[1], _i_ = create(lrr, v, r);
-      return create(create(ll, lv, lrl), lrv, _i_);
+      var lrr = lr[3], lrv = lr[2], lrl = lr[1], _g_ = create(lrr, v, r);
+      return create(create(ll, lv, lrl), lrv, _g_);
      }
      if((hl + 2 | 0) >= hr){
-      var _l_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-      return [0, l, v, r, _l_];
+      var _j_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+      return [0, l, v, r, _j_];
      }
      if(! r) return invalid_arg(_d_);
-     var rr = r[3], rv = r[2], rl = r[1], _j_ = height(rl);
-     if(_j_ <= height(rr)) return create(create(l, v, rl), rv, rr);
+     var rr = r[3], rv = r[2], rl = r[1], _h_ = height(rl);
+     if(_h_ <= height(rr)) return create(create(l, v, rl), rv, rr);
      if(! rl) return invalid_arg(_c_);
-     var rlr = rl[3], rlv = rl[2], rll = rl[1], _k_ = create(rlr, rv, rr);
-     return create(create(l, v, rll), rlv, _k_);
+     var rlr = rl[3], rlv = rl[2], rll = rl[1], _i_ = create(rlr, rv, rr);
+     return create(create(l, v, rll), rlv, _i_);
     }
     function add(x, t){
      if(! t) return [0, 0, x, 0, 1];
@@ -74,7 +74,6 @@ let%expect_test "Eliminates unused functions from functor" =
      return l === ll ? t : bal(ll, v, r);
     }
     function singleton(x){return [0, 0, x, 0, 1];}
-    var empty = 0;
     function find(x, param){
      var param$0 = param;
      for(;;){
@@ -88,7 +87,7 @@ let%expect_test "Eliminates unused functions from functor" =
       var r$0 = 0 <= c ? r : l, param$0 = r$0;
      }
     }
-    return [0, empty, add, singleton, find];
+    return [0, 0, add, singleton, find];
     //end |}]
 
 let%expect_test "Omit unused fields" =

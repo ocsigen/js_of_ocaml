@@ -188,37 +188,6 @@ let mark_loops g =
     g.preds;
   in_loop
 
-let mark_uses blocks freevars in_loop g =
-  let defs = Hashtbl.create 16 in
-  List.iter g.reverse_post_order ~f:(fun pc ->
-      match Addr.Set.elements (get_edges in_loop pc) with
-      | [] -> ()
-      | loops ->
-          let block = Addr.Map.find pc blocks in
-          List.iter block.body ~f:(function
-              | Let (x, Closure _), _ -> Hashtbl.replace defs x loops
-              | _ -> ()));
-  List.iter g.reverse_post_order ~f:(fun pc ->
-      let rec mark_loop def_pc pc' =
-        if not (Addr.Set.mem def_pc (get_edges in_loop pc'))
-        then (
-          add_edge in_loop pc' def_pc;
-          if pc' <> def_pc
-          then Addr.Set.iter (mark_loop def_pc) (Hashtbl.find g.preds pc'))
-      in
-      let block = Addr.Map.find pc blocks in
-      let using x =
-        match Hashtbl.find_opt defs x with
-        | None -> ()
-        | Some def_pcs -> List.iter def_pcs ~f:(fun def_pc -> mark_loop def_pc pc)
-      in
-      Freevars.iter_block_free_vars using block;
-      List.iter block.body ~f:(fun (i, _) ->
-          match i with
-          | Let (_, Closure (_, (pc', _))) ->
-              Code.Var.Set.iter using (Code.Addr.Map.find pc' freevars)
-          | _ -> ()))
-
 let rec measure blocks g pc limit =
   if is_loop_header g pc
   then -1
@@ -241,13 +210,12 @@ let rec measure blocks g pc limit =
 
 let is_small blocks g pc = measure blocks g pc 20 >= 0
 
-let shrink_loops blocks freevars ({ succs; preds; reverse_post_order; _ } as g) =
+let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
   let add_edge pred succ =
     Hashtbl.replace succs pred (Addr.Set.add succ (Hashtbl.find succs pred));
     Hashtbl.replace preds succ (Addr.Set.add pred (Hashtbl.find preds succ))
   in
   let in_loop = mark_loops g in
-  mark_uses blocks freevars in_loop g;
   let dom = dominator_tree g in
   let root = List.hd reverse_post_order in
   let rec traverse ignored pc =
@@ -282,7 +250,7 @@ let shrink_loops blocks freevars ({ succs; preds; reverse_post_order; _ } as g) 
   in
   traverse Addr.Set.empty root
 
-let build_graph blocks freevars pc =
+let build_graph blocks pc =
   let g = build_graph blocks pc in
-  shrink_loops blocks freevars g;
+  shrink_loops blocks g;
   g

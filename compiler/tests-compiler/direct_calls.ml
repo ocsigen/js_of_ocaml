@@ -58,17 +58,14 @@ let%expect_test "direct calls without --enable effects" =
     {|
     function test1(param){
      function f(g, x){return caml_call1(g, x);}
-     var _d_ = 7;
-     f(function(x){return x + 1 | 0;}, _d_);
-     var _e_ = 4.;
-     f(function(x){return x * 2.;}, _e_);
+     f(function(x){return x + 1 | 0;}, 7);
+     f(function(x){return x * 2.;}, 4.);
      return 0;
     }
     //end
     function test2(param){
      function f(g, x){return caml_call1(g, x);}
-     var _c_ = 7;
-     f(function(x){return x + 1 | 0;}, _c_);
+     f(function(x){return x + 1 | 0;}, 7);
      f(function(x){return caml_call2(Stdlib[28], x, cst_a$0);}, cst_a);
      return 0;
     }
@@ -138,26 +135,25 @@ let%expect_test "direct calls with --enable effects" =
     //end
     function test2(param, cont){
      function f(g, x, cont){return caml_cps_exact_call2(g, x, cont);}
-     var _f_ = 7;
      return caml_cps_exact_call3
              (f,
               function(x, cont){return cont(undef);},
-              _f_,
-              function(_g_){
+              7,
+              function(_d_){
                return caml_cps_exact_call3
                        (f,
                         function(x, cont){
                          return caml_cps_call3(Stdlib[28], x, cst_a$0, cont);
                         },
                         cst_a,
-                        function(_h_){return cont(0);});
+                        function(_e_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(undef), M2 = F(undef), _e_ = M2[1].call(null, 2);
-     return cont([0, M1[1].call(null, 1), _e_]);
+     var M1 = F(undef), M2 = F(undef), _c_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _c_]);
     }
     //end
     function test4(x, cont){
@@ -165,10 +161,10 @@ let%expect_test "direct calls with --enable effects" =
       function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _a_, x, cont);}
       return [0, f];
      }
-     var M1 = F(undef), M2 = F(undef), _b_ = 1, _c_ = M1[1];
+     var M1 = F(undef), M2 = F(undef);
      return caml_cps_exact_call2
-             (_c_,
-              _b_,
-              function(_d_){return caml_cps_exact_call2(M2[1], 2, cont);});
+             (M1[1],
+              1,
+              function(_b_){return caml_cps_exact_call2(M2[1], 2, cont);});
     }
     //end |}]
