@@ -111,7 +111,7 @@
   (js_of_ocaml-ppx (= :version))
   (react (>= 1.2.1))
   (reactiveData (>= 0.2))
-  (tyxml (>= 4.3))
+  (tyxml (>= 4.6))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (and (>= 0.22.0) :with-test))
