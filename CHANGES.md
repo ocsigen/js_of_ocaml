@@ -3,6 +3,9 @@
 ## Features/Changes
 * Compiler: only flush the necessary env for closures (#1568)
 
+## Bug fixes
+* Compiler: fix --enable=vardecl
+
 # 5.7.0 (2024-02-16) - Lille
 
 ## Features/Changes
