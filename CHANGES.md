@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler: only flush the necessary env for closures (#1568)
+* Library: dialog element support
 
 ## Bug fixes
 * Compiler: fix --enable=vardecl
