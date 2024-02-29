@@ -27,6 +27,7 @@ let ocaml_version =
   | _ -> assert false
 
 let ok () = print_endline "OK"
+
 let ko size = Printf.printf "size=%d, ocaml_version=%s" size Sys.ocaml_version
 
 let%expect_test "stat" =
@@ -36,7 +37,7 @@ let%expect_test "stat" =
   | 17 when ocaml_version >= (4, 12) -> ok ()
   | 16 when ocaml_version < (4, 12) -> ok ()
   | _ -> ko size);
-  [%expect{| OK |}]
+  [%expect {| OK |}]
 
 let%expect_test "quick_stat" =
   let s = Gc.quick_stat () in
@@ -45,7 +46,7 @@ let%expect_test "quick_stat" =
   | 17 when ocaml_version >= (4, 12) -> ok ()
   | 16 when ocaml_version < (4, 12) -> ok ()
   | _ -> ko size);
-  [%expect{| OK |}]
+  [%expect {| OK |}]
 
 let%expect_test "control" =
   let s = Gc.get () in
@@ -53,4 +54,4 @@ let%expect_test "control" =
   (match size with
   | 11 when ocaml_version >= (4, 8) -> ok ()
   | _ -> ko size);
-  [%expect{| OK |}]
+  [%expect {| OK |}]
