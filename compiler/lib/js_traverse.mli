@@ -175,9 +175,9 @@ end
 class share_constant : mapper
 
 class compact_vardecl : object ('a)
-  inherit free
+  inherit map
 
-  method exc : IdentSet.t
+  method pack : Javascript.statement_list -> Javascript.statement_list
 end
 
 class clean : mapper

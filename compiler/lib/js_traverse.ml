@@ -1477,78 +1477,20 @@ class rename_variable ~esm =
   end
 
 class compact_vardecl =
+  let expr_eq id e = EBin (Eq, EVar id, e) in
   object (m)
-    inherit free as super
-
-    val mutable exc_ = IdentSet.empty
+    inherit map as super
 
     val mutable insert_ = IdentSet.empty
 
-    method exc = exc_
+    method private var x = insert_ <- IdentSet.add x insert_
 
-    method private translate l =
-      List.filter_map l ~f:(function
-          | DeclPattern _ -> None
-          | DeclIdent (id, eopt) -> (
-              match eopt with
-              | None -> None
-              | Some (e, _) -> Some (EBin (Eq, EVar id, e))))
-
-    method private translate_st l =
-      let l = m#translate l in
-      match l with
-      | [] -> Empty_statement
-      | x :: l ->
-          Expression_statement (List.fold_left l ~init:x ~f:(fun acc e -> ESeq (acc, e)))
-
-    method private translate_ex l =
-      let l = m#translate l in
-      match l with
-      | [] -> None
-      | x :: l -> Some (List.fold_left l ~init:x ~f:(fun acc e -> ESeq (acc, e)))
-
-    method private except_ids l =
-      exc_ <- List.fold_left l ~init:exc_ ~f:(fun acc s -> IdentSet.add s acc)
-
-    method private except_ident e = exc_ <- IdentSet.add e exc_
-
-    method statement s =
-      let s = super#statement s in
-      match s with
-      | Function_declaration (id, fun_decl) ->
-          let fun_decl = m#fun_decl fun_decl in
-          m#except_ident id;
-          Function_declaration (id, fun_decl)
-      | Variable_statement (_, l) -> m#translate_st l
-      | For_statement (Right (Var, l), e2, e3, s) ->
-          For_statement (Left (m#translate_ex l), e2, e3, s)
-      | Try_statement (b, w, f) ->
-          (match w with
-          | None -> ()
-          | Some (None, _) -> ()
-          | Some (Some (id, _), _) ->
-              let ids = bound_idents_of_binding id in
-              m#except_ids ids);
-          Try_statement (b, w, f)
-      | s -> s
-
-    method record_block block =
-      (match block with
-      | Catch (id, _) ->
-          let ids = bound_idents_of_binding id in
-          m#except_ids ids
-      | Params p ->
-          let s = bound_idents_of_params p in
-          m#except_ids s
-      | Normal -> ());
-      super#record_block block
-
-    method merge_info from =
-      super#merge_info from;
-      let all =
-        IdentSet.fold (fun e acc -> IdentSet.add e acc) from#state.def_var IdentSet.empty
-      in
-      insert_ <- IdentSet.diff all from#exc
+    method fun_decl (k, params, body, nid) =
+      let m' = {<>} in
+      let params = m'#formal_parameter_list params in
+      let body = m'#function_body body in
+      let body = m'#pack body in
+      k, params, body, m#loc nid
 
     method private split x =
       let rec loop = function
@@ -1557,14 +1499,15 @@ class compact_vardecl =
       in
       loop x
 
-    method private pack (all : IdentSet.t) sources =
+    method pack rest =
+      let all = insert_ in
       let may_flush rem vars s instr =
         if List.is_empty vars
         then rem, [], s :: instr
         else rem, [], s :: (Variable_statement (Var, List.rev vars), N) :: instr
       in
       let rem, vars, instr =
-        List.fold_left sources ~init:(all, [], []) ~f:(fun (rem, vars, instr) (s, loc) ->
+        List.fold_left rest ~init:(all, [], []) ~f:(fun (rem, vars, instr) (s, loc) ->
             match s with
             | Expression_statement e ->
                 let l = m#split e in
@@ -1592,41 +1535,24 @@ class compact_vardecl =
           (Variable_statement (Var, List.rev_append l l'), loc) :: rest
       | l, _ -> (Variable_statement (Var, l), N) :: instr
 
-    method fun_decl (k, params, body, nid) =
-      let all = IdentSet.diff insert_ exc_ in
-      let body = m#pack all body in
-      k, params, body, nid
-
-    method expression x =
-      let x = super#expression x in
-      match x with
-      | EFun (ident, fun_decl) ->
-          let fun_decl = m#fun_decl fun_decl in
-          Option.iter ~f:m#except_ident ident;
-          EFun (ident, fun_decl)
-      | _ -> x
-
-    method statements l =
-      let l = super#statements l in
-      let l =
-        List.fold_left l ~init:[] ~f:(fun acc (x, loc) ->
-            match x with
-            | Expression_statement e ->
-                let l = m#split e in
-                let l =
-                  List.fold_left l ~init:acc ~f:(fun acc e ->
-                      (Expression_statement e, N) :: acc)
-                in
-                l
-            | _ -> (x, loc) :: acc)
-      in
-      List.rev l
+    method statements s =
+      let s = super#statements s in
+      List.concat_map s ~f:(fun (s, loc) ->
+          match s with
+          | Variable_statement (Var, l) ->
+              List.filter_map l ~f:(function
+                  | DeclIdent (x, Some (init, loc)) ->
+                      m#var x;
+                      Some (Expression_statement (expr_eq x init), loc)
+                  | DeclIdent (x, None) ->
+                      m#var x;
+                      None
+                  | DeclPattern _ as x -> Some (Variable_statement (Var, [ x ]), loc))
+          | s -> [ s, loc ])
 
     method program p =
       let p = super#program p in
-      m#merge_info m;
-      let all = IdentSet.diff insert_ exc_ in
-      let body = m#pack all p in
+      let body = m#pack p in
       body
   end
 
