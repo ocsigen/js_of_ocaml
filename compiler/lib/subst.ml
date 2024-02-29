@@ -55,8 +55,7 @@ let last s (l, loc) =
     match l with
     | Stop -> l
     | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2, pcs) ->
-        Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
+    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, x, subst_cont s cont2)
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
     | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)

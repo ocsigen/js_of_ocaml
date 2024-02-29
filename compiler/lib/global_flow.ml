@@ -275,7 +275,7 @@ let program_deps st { blocks; _ } =
                       block.body)
                   h
             | Expr _ | Phi _ -> ())
-      | Pushtrap (cont, x, cont_h, _) ->
+      | Pushtrap (cont, x, cont_h) ->
           add_var st x;
           st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
           cont_deps blocks st cont_h;

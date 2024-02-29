@@ -158,7 +158,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
           add_cont_deps cont1;
           add_cont_deps cont2
       | Switch (_, a) -> Array.iter ~f:add_cont_deps a
-      | Pushtrap (cont, _, cont_h, _) ->
+      | Pushtrap (cont, _, cont_h) ->
           add_cont_deps cont;
           add_cont_deps cont_h
       | Poptrap cont -> add_cont_deps cont)
@@ -380,7 +380,7 @@ let zero prog sentinal live_table =
       | Branch _, _
       | Cond (_, _, _), _
       | Switch (_, _), _
-      | Pushtrap (_, _, _, _), _
+      | Pushtrap (_, _, _), _
       | Poptrap _, _ -> block.branch
     in
     { block with body; branch }

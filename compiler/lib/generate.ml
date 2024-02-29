@@ -1704,7 +1704,7 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
         in
         true, flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont scope_stack ~fall_through
-    | Pushtrap (c1, x, e1, _) ->
+    | Pushtrap (c1, x, e1) ->
         let never_body, body = compile_branch st [] c1 scope_stack ~fall_through in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
         let never_handler, handler = compile_branch st [] e1 scope_stack ~fall_through in
