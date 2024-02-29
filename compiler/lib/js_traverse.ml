@@ -1486,7 +1486,7 @@ class compact_vardecl =
     method private var x = insert_ <- IdentSet.add x insert_
 
     method fun_decl (k, params, body, nid) =
-      let m' = {<>} in
+      let m' = {<insert_ = IdentSet.empty>} in
       let params = m'#formal_parameter_list params in
       let body = m'#function_body body in
       let body = m'#pack body in
