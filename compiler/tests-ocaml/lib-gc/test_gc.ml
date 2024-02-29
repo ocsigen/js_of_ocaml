@@ -1,6 +1,6 @@
 (* TEST *)
 
-type stat = Gc.stat =
+type stat =
   { minor_words : float;
     promoted_words : float;
     major_words : float;
@@ -17,7 +17,8 @@ type stat = Gc.stat =
     compactions : int;
     top_heap_words : int;
     stack_size: int;
-    forced_major_collections: int}
+    forced_major_collections: int
+  }
 
 type control =
   { minor_heap_size : int;
