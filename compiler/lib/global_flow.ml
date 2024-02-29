@@ -154,6 +154,7 @@ let expr_deps blocks st x e =
   match e with
   | Constant _ | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) | Block _
     -> ()
+  | Special _ -> ()
   | Prim ((Extern ("caml_check_bound" | "caml_array_unsafe_get") | Array_get), l) ->
       (* The analysis knowns about these primitives, and will compute
          an approximation of the value they return based on an
@@ -460,6 +461,7 @@ let propagate st ~update approx x =
              block *)
           Domain.bot
       | Prim (Extern _, _) -> Domain.others
+      | Special _ -> Domain.others
       | Apply { f; args; _ } -> (
           match Var.Tbl.get approx f with
           | Values { known; others } ->

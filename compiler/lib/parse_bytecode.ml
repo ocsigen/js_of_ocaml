@@ -2556,9 +2556,7 @@ let override_global =
   match Ocaml_version.v with
   | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
-      let jsmodule name func =
-        Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
-      in
+      let jsmodule name func = Special (Override_module (name, func)) in
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
             let x = Var.fresh_n "internalMod" in

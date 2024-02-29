@@ -129,6 +129,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
     | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
+    | Special _ -> ()
     | Closure (_, cont) -> add_cont_deps cont
     | Prim (_, args) ->
         List.iter
@@ -185,7 +186,7 @@ let expr_vars e =
   (* We can ignore closures. We want the set of previously defined variables used
      in the expression, so not parameters. The continuation may use some variables
      but we will add these when we visit the body *)
-  | Constant _ | Closure (_, _) -> vars
+  | Constant _ | Closure (_, _) | Special _ -> vars
 
 (** Compute the initial liveness of each variable in the program.
 
@@ -222,7 +223,12 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
-          | Block (_, _, _) | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) ->
+          | Block (_, _, _)
+          | Field (_, _)
+          | Closure (_, _)
+          | Constant _
+          | Prim (_, _)
+          | Special _ ->
               let vars = expr_vars e in
               Var.Set.iter add_top vars)
     | Set_field (x, i, y) ->
@@ -350,7 +356,7 @@ let zero prog sentinal live_table =
         | Apply ap ->
             let args = List.map ~f:zero_var ap.args in
             Let (x, Apply { ap with args })
-        | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) -> instr)
+        | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr)
     | Assign (_, _) | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
         instr
   in
@@ -422,8 +428,7 @@ end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p sentinal =
-  let undefined = Prim (Extern "%undefined", []) in
-  let instr, loc = Let (sentinal, undefined), noloc in
+  let instr, loc = Let (sentinal, Special Undefined), noloc in
   Code.prepend p [ instr, loc ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
