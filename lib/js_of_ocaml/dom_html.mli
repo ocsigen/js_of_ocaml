@@ -1114,26 +1114,25 @@ class type dListElement = element
 
 class type liElement = element
 
-class type dialogElement =
-  object
-    inherit element
+class type dialogElement = object
+  inherit element
 
-    method close : unit meth
+  method close : unit meth
 
-    method close_returnValue : js_string t -> unit meth
+  method close_returnValue : js_string t -> unit meth
 
-    method open_ : bool t prop
+  method open_ : bool t prop
 
-    method returnValue : js_string t prop
+  method returnValue : js_string t prop
 
-    method show : unit meth
+  method show : unit meth
 
-    method showModal : unit meth
+  method showModal : unit meth
 
-    method oncancel : ('self t, event t) event_listener prop
+  method oncancel : ('self t, event t) event_listener prop
 
-    method onclose : ('self t, event t) event_listener prop
-  end
+  method onclose : ('self t, event t) event_listener prop
+end
 
 class type divElement = element
 
