@@ -1114,6 +1114,26 @@ class type dListElement = element
 
 class type liElement = element
 
+class type dialogElement = object
+  inherit element
+
+  method close : unit meth
+
+  method close_returnValue : js_string t -> unit meth
+
+  method open_ : bool t prop
+
+  method returnValue : js_string t prop
+
+  method show : unit meth
+
+  method showModal : unit meth
+
+  method oncancel : ('self t, event t) event_listener prop
+
+  method onclose : ('self t, event t) event_listener prop
+end
+
 class type divElement = element
 
 class type paragraphElement = element
@@ -2297,7 +2317,11 @@ val eventRelatedTarget : #mouseEvent t -> element t opt
 module Event : sig
   type 'a typ = 'a Dom.Event.typ
 
+  val cancel : event t typ
+
   val click : mouseEvent t typ
+
+  val close : event t typ
 
   val copy : clipboardEvent t typ
 
@@ -2773,6 +2797,8 @@ val createDl : document t -> dListElement t
 
 val createLi : document t -> liElement t
 
+val createDialog : document t -> dialogElement t
+
 val createDiv : document t -> divElement t
 
 val createEmbed : document t -> embedElement t
@@ -2919,6 +2945,7 @@ type taggedElement =
   | Col of tableColElement t
   | Colgroup of tableColElement t
   | Del of modElement t
+  | Dialog of dialogElement t
   | Div of divElement t
   | Dl of dListElement t
   | Embed of embedElement t

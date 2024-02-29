@@ -770,7 +770,11 @@ let invoke_handler = Dom.invoke_handler
 module Event = struct
   type 'a typ = 'a Dom.Event.typ
 
+  let cancel = Dom.Event.make "cancel"
+
   let click = Dom.Event.make "click"
+
+  let close = Dom.Event.make "close"
 
   let copy = Dom.Event.make "copy"
 
@@ -1288,6 +1292,26 @@ class type oListElement = element
 class type dListElement = element
 
 class type liElement = element
+
+class type dialogElement = object
+  inherit element
+
+  method close : unit meth
+
+  method close_returnValue : js_string t -> unit meth
+
+  method open_ : bool t prop
+
+  method returnValue : js_string t prop
+
+  method show : unit meth
+
+  method showModal : unit meth
+
+  method oncancel : ('self t, event t) event_listener prop
+
+  method onclose : ('self t, event t) event_listener prop
+end
 
 class type divElement = element
 
@@ -2537,6 +2561,8 @@ let createDl doc : dListElement t = unsafeCreateElement doc "dl"
 
 let createLi doc : liElement t = unsafeCreateElement doc "li"
 
+let createDialog doc : dialogElement t = unsafeCreateElement doc "dialog"
+
 let createDiv doc : divElement t = unsafeCreateElement doc "div"
 
 let createEmbed doc : embedElement t = unsafeCreateElement doc "embed"
@@ -3360,6 +3386,7 @@ type taggedElement =
   | Col of tableColElement t
   | Colgroup of tableColElement t
   | Del of modElement t
+  | Dialog of dialogElement t
   | Div of divElement t
   | Dl of dListElement t
   | Embed of embedElement t
