@@ -73,7 +73,7 @@ let build_graph blocks pc =
         (fun pc' ->
           let englobing_exn_handlers =
             match fst block.branch with
-            | Pushtrap ((body_pc, _), _, _, _) when pc' = body_pc ->
+            | Pushtrap ((body_pc, _), _, _) when pc' = body_pc ->
                 pc :: englobing_exn_handlers
             | Poptrap (leave_pc, _) -> (
                 match englobing_exn_handlers with
@@ -228,7 +228,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
            moved outside *)
         let ignored =
           match fst block.branch with
-          | Pushtrap ((body_pc, _), _, _, _) when pc' = body_pc ->
+          | Pushtrap ((body_pc, _), _, _) when pc' = body_pc ->
               Addr.Set.union ignored loops
           | _ -> ignored
         in

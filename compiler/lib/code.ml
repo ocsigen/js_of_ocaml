@@ -360,7 +360,7 @@ type last =
   | Branch of cont
   | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array
-  | Pushtrap of cont * Var.t * cont * Addr.Set.t
+  | Pushtrap of cont * Var.t * cont
   | Poptrap of cont
 
 type block =
@@ -514,17 +514,8 @@ module Print = struct
         Format.fprintf f "switch %a {" Var.print x;
         Array.iteri a1 ~f:(fun i c -> Format.fprintf f "int %d -> %a; " i cont c);
         Format.fprintf f "}"
-    | Pushtrap (cont1, x, cont2, pcs) ->
-        Format.fprintf
-          f
-          "pushtrap %a handler %a => %a continuation %s"
-          cont
-          cont1
-          Var.print
-          x
-          cont
-          cont2
-          (String.concat ~sep:", " (List.map (Addr.Set.elements pcs) ~f:string_of_int))
+    | Pushtrap (cont1, x, cont2) ->
+        Format.fprintf f "pushtrap %a handler %a => %a" cont cont1 Var.print x cont cont2
     | Poptrap c -> Format.fprintf f "poptrap %a" cont c
 
   type xinstr =
@@ -600,7 +591,7 @@ let fold_children blocks pc f accu =
   match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap ((pc', _), _, (pc_h, _), _) ->
+  | Pushtrap ((pc', _), _, (pc_h, _)) ->
       let accu = f pc' accu in
       let accu = f pc_h accu in
       accu
@@ -634,6 +625,39 @@ let rec traverse' { fold } f pc visited blocks acc =
   else visited, acc
 
 let traverse fold f pc blocks acc = snd (traverse' fold f pc Addr.Set.empty blocks acc)
+
+let poptraps blocks pc =
+  let rec loop blocks pc visited depth acc =
+    if Addr.Set.mem pc visited
+    then acc, visited
+    else
+      let visited = Addr.Set.add pc visited in
+      let block = Addr.Map.find pc blocks in
+      match fst block.branch with
+      | Return _ | Raise _ | Stop -> acc, visited
+      | Branch (pc', _) -> loop blocks pc' visited depth acc
+      | Poptrap (pc', _) ->
+          if depth = 0
+          then Addr.Set.add pc' acc, visited
+          else loop blocks pc' visited (depth - 1) acc
+      | Pushtrap ((pc', _), _, (pc_h, _)) ->
+          let acc, visited = loop blocks pc' visited (depth + 1) acc in
+          let acc, visited = loop blocks pc_h visited depth acc in
+          acc, visited
+      | Cond (_, (pc1, _), (pc2, _)) ->
+          let acc, visited = loop blocks pc1 visited depth acc in
+          let acc, visited = loop blocks pc2 visited depth acc in
+          acc, visited
+      | Switch (_, a) ->
+          let acc, visited =
+            Array.fold_right
+              ~init:(acc, visited)
+              ~f:(fun (pc, _) (acc, visited) -> loop blocks pc visited depth acc)
+              a
+          in
+          acc, visited
+  in
+  loop blocks pc Addr.Set.empty 0 Addr.Set.empty |> fst
 
 let rec preorder_traverse' { fold } f pc visited blocks acc =
   if not (Addr.Set.mem pc visited)
@@ -737,7 +761,7 @@ let invariant { blocks; start; _ } =
           check_cont cont1;
           check_cont cont2
       | Switch (_x, a1) -> Array.iteri a1 ~f:(fun _ cont -> check_cont cont)
-      | Pushtrap (cont1, _x, cont2, _pcs) ->
+      | Pushtrap (cont1, _x, cont2) ->
           check_cont cont1;
           check_cont cont2
       | Poptrap cont -> check_cont cont
