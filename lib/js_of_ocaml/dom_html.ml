@@ -3407,7 +3407,7 @@ type taggedElement =
   | Ol of oListElement t
   | Optgroup of optGroupElement t
   | Option of optionElement t
-  | P of paramElement t
+  | P of paragraphElement t
   | Param of paramElement t
   | Pre of preElement t
   | Q of quoteElement t

@@ -2963,7 +2963,7 @@ type taggedElement =
   | Ol of oListElement t
   | Optgroup of optGroupElement t
   | Option of optionElement t
-  | P of paramElement t
+  | P of paragraphElement t
   | Param of paramElement t
   | Pre of preElement t
   | Q of quoteElement t
@@ -3095,7 +3095,7 @@ module CoerceTo : sig
 
   val option : #element t -> optionElement t opt
 
-  val p : #element t -> paramElement t opt
+  val p : #element t -> paragraphElement t opt
 
   val param : #element t -> paramElement t opt
 
