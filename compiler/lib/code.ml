@@ -332,7 +332,6 @@ type prim_arg =
 type special =
   | Undefined
   | Alias_prim of string
-  | Override_module of string * string
 
 type expr =
   | Apply of
@@ -472,7 +471,6 @@ module Print = struct
   let special f s =
     match s with
     | Undefined -> Format.fprintf f "undefined"
-    | Override_module (m, n) -> Format.fprintf f "override %s.%s" m n
     | Alias_prim s -> Format.fprintf f "alias %s" s
 
   let expr f e =

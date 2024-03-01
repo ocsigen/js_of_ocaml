@@ -179,7 +179,6 @@ type prim_arg =
 type special =
   | Undefined
   | Alias_prim of string
-  | Override_module of string * string
 
 type expr =
   | Apply of
