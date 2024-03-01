@@ -554,10 +554,7 @@ module State = struct
     | Var (x, _) -> Format.fprintf f "%a" Var.print x
     | Dummy -> Format.fprintf f "???"
 
-  type handler =
-    { block_pc : Addr.t
-    ; stack : elt list
-    }
+  type handler = { stack : elt list }
 
   type t =
     { accu : elt
@@ -566,7 +563,6 @@ module State = struct
     ; env_offset : int
     ; handlers : handler list
     ; globals : globals
-    ; current_pc : Addr.t
     }
 
   let fresh_var state loc =
@@ -647,7 +643,7 @@ module State = struct
   let start_function state env offset =
     { state with accu = Dummy; stack = []; env; env_offset = offset; handlers = [] }
 
-  let start_block current_pc state =
+  let start_block _current_pc state =
     let stack =
       List.fold_right state.stack ~init:[] ~f:(fun e stack ->
           match e with
@@ -656,7 +652,7 @@ module State = struct
               let y = Var.fork x in
               Var (y, l) :: stack)
     in
-    let state = { state with stack; current_pc } in
+    let state = { state with stack } in
     match state.accu with
     | Dummy -> state
     | Var (x, loc) ->
@@ -665,26 +661,12 @@ module State = struct
         state
 
   let push_handler state =
-    { state with
-      handlers = { block_pc = state.current_pc; stack = state.stack } :: state.handlers
-    }
+    { state with handlers = { stack = state.stack } :: state.handlers }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
-  let addr_of_current_handler state =
-    match state.handlers with
-    | [] -> assert false
-    | x :: _ -> x.block_pc
-
   let initial g =
-    { accu = Dummy
-    ; stack = []
-    ; env = [||]
-    ; env_offset = 0
-    ; handlers = []
-    ; globals = g
-    ; current_pc = -1
-    }
+    { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
 
   let rec print_stack f l =
     match l with
@@ -831,8 +813,6 @@ let get_global ~target state instrs i loc =
 let tagged_blocks = ref Addr.Set.empty
 
 let compiled_blocks = ref Addr.Map.empty
-
-let pushpop = ref Addr.Map.empty
 
 let method_cache_id = ref 1
 
@@ -1727,8 +1707,7 @@ and compile infos pc state instrs =
             , ( Pushtrap
                   ( (body_addr, State.stack_vars state)
                   , x
-                  , (handler_addr, State.stack_vars handler_state)
-                  , Addr.Set.empty )
+                  , (handler_addr, State.stack_vars handler_state) )
               , loc ) )
             !compiled_blocks;
         compile_block
@@ -1756,12 +1735,6 @@ and compile infos pc state instrs =
         instrs, (Branch (interm_addr, State.stack_vars state), loc), state
     | POPTRAP ->
         let addr = pc + 1 in
-        let handler_addr = State.addr_of_current_handler state in
-        let set =
-          try Addr.Set.add addr (Addr.Map.find handler_addr !pushpop)
-          with Not_found -> Addr.Set.singleton addr
-        in
-        pushpop := Addr.Map.add handler_addr set !pushpop;
         compile_block
           infos.blocks
           infos.debug
@@ -2449,20 +2422,6 @@ and compile infos pc state instrs =
 
 (****)
 
-let match_exn_traps (blocks : 'a Addr.Map.t) =
-  Addr.Map.fold
-    (fun pc conts' blocks ->
-      match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (cont1, x, cont2, conts), loc; _ } as block ->
-          assert (Addr.Set.is_empty conts);
-          let branch = Pushtrap (cont1, x, cont2, conts'), loc in
-          Addr.Map.add pc { block with branch } blocks
-      | _ -> assert false)
-    !pushpop
-    blocks
-
-(****)
-
 type one =
   { code : Code.program
   ; cmis : StringSet.t
@@ -2491,12 +2450,10 @@ let parse_bytecode code globals debug_data ~target =
             { params = State.stack_vars state; body = instr; branch = last })
           !compiled_blocks
       in
-      let blocks = match_exn_traps blocks in
       let free_pc = String.length code / 4 in
       { start; blocks; free_pc })
     else Code.empty
   in
-  pushpop := Addr.Map.empty;
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Set.empty;
   p

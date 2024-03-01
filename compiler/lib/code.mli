@@ -212,7 +212,7 @@ type last =
   | Branch of cont
   | Cond of Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * Addr.Set.t
+  | Pushtrap of cont * Var.t * cont
   | Poptrap of cont
 
 type block =
@@ -275,6 +275,8 @@ val fold_closures_outermost_first :
 val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs
+
+val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
 
 val traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c

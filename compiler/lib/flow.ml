@@ -122,7 +122,7 @@ let program_deps { blocks; _ } =
       | Switch (_, a1, a2) ->
           Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
           Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
-      | Pushtrap (cont, x, cont_h, _) ->
+      | Pushtrap (cont, x, cont_h) ->
           add_param_def vars defs x;
           cont_deps blocks vars deps defs cont_h;
           cont_deps blocks vars deps defs cont)

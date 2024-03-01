@@ -758,7 +758,7 @@ let fold_children blocks pc f accu =
   match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+  | Pushtrap ((pc1, _), _, (pc2, _)) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
@@ -805,7 +805,7 @@ let build_graph ctx pc =
       List.iter pc_succs ~f:(fun pc' ->
           let pushtrap =
             match fst b.branch with
-            | Pushtrap ((pc1, _), _, (pc2, _), _remove) ->
+            | Pushtrap ((pc1, _), _, (pc2, _)) ->
                 if pc' = pc1
                 then (
                   Hashtbl.add poptrap pc Addr.Set.empty;
@@ -1866,7 +1866,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         in
         true, flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont loop_stack backs frontier interm
-    | Pushtrap (c1, x, e1, _) ->
+    | Pushtrap (c1, x, e1) ->
         let never_body, body = compile_branch st [] c1 loop_stack backs frontier interm in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
         let never_handler, handler =

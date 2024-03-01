@@ -69,7 +69,7 @@ let iter_last_free_var f l =
       f x;
       Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c);
       Array.iter a2 ~f:(fun c -> iter_cont_free_vars f c)
-  | Pushtrap (cont1, _, cont2, _) ->
+  | Pushtrap (cont1, _, cont2) ->
       iter_cont_free_vars f cont1;
       iter_cont_free_vars f cont2
 
@@ -85,7 +85,7 @@ let iter_instr_bound_vars f i =
 let iter_last_bound_vars f l =
   match l with
   | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ()
-  | Pushtrap (_, x, _, _) -> f x
+  | Pushtrap (_, x, _) -> f x
 
 let iter_block_bound_vars f block =
   List.iter ~f block.params;

@@ -959,7 +959,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                 let* e = load x in
                 let* tag = register_import ~name:exception_name (Tag Value.value) in
                 instr (Throw (tag, e))
-            | Pushtrap (cont, x, cont', _) ->
+            | Pushtrap (cont, x, cont') ->
                 handle_exceptions
                   ~result_typ
                   ~fall_through

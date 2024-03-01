@@ -444,8 +444,7 @@ let drop_exception_handler blocks =
   Addr.Map.fold
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2, addrset), loc; _ } as b
-        -> (
+      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2), loc; _ } as b -> (
           try
             let visited = do_not_raise addr Addr.Set.empty blocks in
             let b = { b with branch = Branch cont1, loc } in
@@ -456,9 +455,7 @@ let drop_exception_handler blocks =
                   let b = Addr.Map.find pc2 blocks in
                   let branch =
                     match b.branch with
-                    | Poptrap ((addr, _) as cont), loc ->
-                        assert (Addr.Set.mem addr addrset);
-                        Branch cont, loc
+                    | Poptrap cont, loc -> Branch cont, loc
                     | x -> x
                   in
                   let b = { b with branch } in

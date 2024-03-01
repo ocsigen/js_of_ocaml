@@ -191,7 +191,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
               List.iter ~f:mark_needed englobing_exn_handlers;
               mark_continuation dst x
           | _ -> ())
-      | Pushtrap (_, x, (handler_pc, _), _) -> mark_continuation handler_pc x
+      | Pushtrap (_, x, (handler_pc, _)) -> mark_continuation handler_pc x
       | Poptrap _ | Raise _ -> (
           match englobing_exn_handlers with
           | handler_pc :: _ -> Hashtbl.add matching_exn_handler pc handler_pc
@@ -203,7 +203,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
         (fun pc visited ->
           let englobing_exn_handlers =
             match block.branch with
-            | Pushtrap (_, _, (handler_pc, _), _), _ when pc <> handler_pc ->
+            | Pushtrap (_, _, (handler_pc, _)), _ when pc <> handler_pc ->
                 handler_pc :: englobing_exn_handlers
             | Poptrap _, _ -> List.tl englobing_exn_handlers
             | _ -> englobing_exn_handlers
@@ -438,7 +438,7 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
       ( alloc_jump_closures
       , ( Switch (x, Array.map c1 ~f:cps_jump_cont, Array.map c2 ~f:cps_jump_cont)
         , last_loc ) )
-  | Pushtrap (body_cont, exn, ((handler_pc, _) as handler_cont), _) -> (
+  | Pushtrap (body_cont, exn, ((handler_pc, _) as handler_cont)) -> (
       assert (Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
       | false -> alloc_jump_closures, (last, last_loc)
@@ -931,8 +931,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
                | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
                | Switch (x, a1, a2) ->
                    Switch (x, Array.map ~f:resolve a1, Array.map ~f:resolve a2)
-               | Pushtrap (cont1, x, cont2, s) ->
-                   Pushtrap (resolve cont1, x, resolve cont2, s)
+               | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
                | Poptrap cont -> Poptrap (resolve cont)
                | Return _ | Raise _ | Stop -> branch
              in
