@@ -367,7 +367,7 @@ let the_cond_of info x =
             | Float_array _
             | Int64 _ )) -> Non_zero
       | Expr (Block (_, _, _)) -> Non_zero
-      | Expr (Field _ | Closure _ | Prim _ | Apply _) -> Unknown
+      | Expr (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | Param | Phi _ -> Unknown)
     Unknown
     (fun u v ->
@@ -416,6 +416,7 @@ let rec do_not_raise pc visited blocks =
             match e with
             | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
+            | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()
             | Prim (Extern _, _) -> raise May_raise
             | Prim (_, _) -> ()));

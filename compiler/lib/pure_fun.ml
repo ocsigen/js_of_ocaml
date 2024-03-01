@@ -25,6 +25,7 @@ open Code
 let pure_expr pure_funs e =
   match e with
   | Block _ | Field _ | Closure _ | Constant _ -> true
+  | Special (Alias_prim _ | Undefined) -> true
   | Apply { f; exact; _ } -> exact && Var.Set.mem f pure_funs
   | Prim (p, _l) -> (
       match p with

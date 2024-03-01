@@ -31,6 +31,7 @@ let expr s e =
   | Block (n, a, k) -> Block (n, Array.map a ~f:(fun x -> s x), k)
   | Field (x, n) -> Field (s x, n)
   | Closure (l, pc) -> Closure (l, subst_cont s pc)
+  | Special _ -> e
   | Prim (p, l) ->
       Prim
         ( p

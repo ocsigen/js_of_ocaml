@@ -64,6 +64,7 @@ and mark_expr st e =
   | Block (_, a, _) -> Array.iter a ~f:(fun x -> mark_var st x)
   | Field (x, _) -> mark_var st x
   | Closure (_, (pc, _)) -> mark_reachable st pc
+  | Special _ -> ()
   | Prim (_, l) ->
       List.iter l ~f:(fun x ->
           match x with

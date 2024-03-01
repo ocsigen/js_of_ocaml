@@ -28,7 +28,7 @@ let function_arity info x =
       (fun x ->
         match info.info_defs.(Var.idx x) with
         | Expr (Closure (l, _)) -> Some (List.length l)
-        | Expr (Prim (Extern "%closure", [ Pc (String prim) ])) -> (
+        | Expr (Special (Alias_prim prim)) -> (
             try Some (Primitive.arity prim) with Not_found -> None)
         | Expr (Apply { f; args; _ }) -> (
             if List.mem f ~set:acc

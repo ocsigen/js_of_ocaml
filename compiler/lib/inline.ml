@@ -167,6 +167,7 @@ let simple blocks cont mapping =
                    })
           | Prim (prim, args) ->
               `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
+          | Special _ -> `Exp exp
           | Block (tag, args, aon) ->
               `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
           | Field (x, i) -> `Exp (Field (map_var mapping x, i))
@@ -252,9 +253,7 @@ let inline ~first_class_primitives live_vars closures pc (outer, blocks, free_pc
                 if Code.Var.compare y y' = 0
                    && Primitive.has_arity prim len
                    && args_equal l args
-                then
-                  ( (Let (x, Prim (Extern "%closure", [ Pc (String prim) ])), loc) :: rem
-                  , state )
+                then (Let (x, Special (Alias_prim prim)), loc) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)

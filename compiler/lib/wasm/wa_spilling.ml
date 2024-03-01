@@ -167,7 +167,7 @@ let function_deps blocks ~context ~closures pc params =
           match i with
           | Let (x, e) -> (
               match e with
-              | Constant _ -> mark_non_spillable x
+              | Constant _ | Special _ -> mark_non_spillable x
               | Prim (p, _) when no_pointer p -> mark_non_spillable x
               | Closure _
                 when List.is_empty (function_free_variables ~context ~closures x) ->
@@ -205,7 +205,7 @@ let propagate_through_expr ~context ~closures s x e =
       if List.is_empty (function_free_variables ~context ~closures x)
       then s
       else Var.Set.empty
-  | Constant _ | Field _ -> s
+  | Constant _ | Field _ | Special _ -> s
 
 let propagate_through_instr ~context ~closures s (i, _) =
   match i with
@@ -310,7 +310,7 @@ let spilled_variables
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded' x reloaded)
                         fv
                         ~init:Var.Set.empty
-                  | Constant _ -> Var.Set.empty
+                  | Constant _ | Special _ -> Var.Set.empty
                   | Field (x, _) -> check_spilled ~ctx loaded x Var.Set.empty)
               | Assign (_, x) | Offset_ref (x, _) ->
                   check_spilled ~ctx loaded x Var.Set.empty
@@ -490,7 +490,7 @@ let spilling blocks st env bound_vars spilled_vars live_info pc params =
                       in
                       instr_info := Var.Map.add x sp !instr_info;
                       stack, Var.Set.empty
-                  | Prim _ | Constant _ | Field _ -> stack, vars)
+                  | Prim _ | Constant _ | Field _ | Special _ -> stack, vars)
               | Assign _ | Offset_ref _ | Set_field _ | Array_set _ -> stack, vars
             in
             let vars =

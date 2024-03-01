@@ -80,7 +80,7 @@ let traverse_expression x e st =
         ~f:(fun st x -> use x st)
         ~init:st
         (Code.Var.Map.find x st.closures).Wa_closure_conversion.free_variables
-  | Constant _ -> st
+  | Constant _ | Special _ -> st
   | Prim (_, args) ->
       List.fold_left
         ~f:(fun st a ->

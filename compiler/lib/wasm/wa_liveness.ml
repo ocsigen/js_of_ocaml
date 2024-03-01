@@ -110,7 +110,7 @@ let expr_used ~context ~closures ~ctx x e s =
   | Block (_, a, _) -> add_array ~ctx s a
   | Prim (_, l) -> add_prim_args ~ctx s l
   | Closure _ -> add_list ~ctx s (function_free_variables ~context ~closures x)
-  | Constant _ -> s
+  | Constant _ | Special _ -> s
   | Field (x, _) -> add_var ~ctx s x
 
 let propagate_through_instr ~context ~closures ~ctx (i, _) s =
@@ -185,7 +185,7 @@ let compute_instr_info ~blocks ~context ~closures ~domain ~ctx st =
                   | Apply _ | Prim _ ->
                       Var.Map.add x (Var.Set.remove x live_vars) live_info
                   | Block _ | Closure _ -> Var.Map.add x live_vars' live_info
-                  | Constant _ | Field _ -> live_info)
+                  | Constant _ | Field _ | Special _ -> live_info)
               | Assign _ | Offset_ref _ | Set_field _ | Array_set _ -> live_info
             in
             live_vars', live_info)

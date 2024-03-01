@@ -36,6 +36,7 @@ let iter_expr_free_vars f e =
   | Block (_, a, _) -> Array.iter ~f a
   | Field (x, _) -> f x
   | Closure _ -> ()
+  | Special _ -> ()
   | Prim (_, l) ->
       List.iter l ~f:(fun x ->
           match x with

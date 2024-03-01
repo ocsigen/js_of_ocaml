@@ -334,6 +334,10 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
+type special =
+  | Undefined
+  | Alias_prim of string
+
 type expr =
   | Apply of
       { f : Var.t
@@ -345,6 +349,7 @@ type expr =
   | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
+  | Special of special
 
 type instr =
   | Let of Var.t * expr
@@ -476,6 +481,11 @@ module Print = struct
     | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | _ -> assert false
 
+  let special f s =
+    match s with
+    | Undefined -> Format.fprintf f "undefined"
+    | Alias_prim s -> Format.fprintf f "alias %s" s
+
   let expr f e =
     match e with
     | Apply { f = g; args; exact } ->
@@ -492,6 +502,7 @@ module Print = struct
     | Closure (l, c) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
+    | Special s -> special f s
 
   let instr f (i, _loc) =
     match i with
@@ -756,6 +767,7 @@ let invariant { blocks; start; _ } =
           check_cont cont
       | Constant _ -> ()
       | Prim (_, _) -> ()
+      | Special _ -> ()
     in
     let check_instr (i, _loc) =
       match i with

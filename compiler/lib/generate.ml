@@ -165,7 +165,7 @@ module Share = struct
                   if (not exact) || cps
                   then add_apply { arity = List.length args; exact; cps } share
                   else share
-              | Let (_, Prim (Extern "%closure", [ Pc (String name) ])) ->
+              | Let (_, Special (Alias_prim name)) ->
                   let name = Primitive.resolve name in
                   let share =
                     if Primitive.exists name then add_prim name share else share
@@ -1261,6 +1261,11 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, queue), instrs
+  | Special (Alias_prim name) ->
+      let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
+      (prim, const_p, queue), []
+  | Special Undefined ->
+      (J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue), []
   | Prim (Extern "debugger", _) ->
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement
@@ -1319,10 +1324,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
                 ~init:([], const_p, queue)
             in
             J.array args, prop, queue
-        | Extern "%closure", [ Pc (String name) ] ->
-            let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
-            prim, const_p, queue
-        | Extern "%closure", _ -> assert false
         | Extern "%caml_js_opt_call", f :: o :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let (po, co), queue = access_queue' ~ctx queue o in
@@ -1393,9 +1394,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
            | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
            ]}
         *)
-        | Extern "%overrideMod", [ Pc (String m); Pc (String f) ] ->
-            runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p, queue
-        | Extern "%overrideMod", _ -> assert false
         | Extern "%caml_js_opt_object", fields ->
             let rec build_fields queue l =
               match l with
