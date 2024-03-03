@@ -24,6 +24,7 @@ var caml_parser_trace = 0;
 //Requires: caml_lex_array, caml_parser_trace,caml_jsstring_of_string
 //Requires: caml_ml_output, caml_ml_string_length, caml_string_of_jsbytes
 //Requires: caml_jsbytes_of_string, MlBytes
+//Requires: caml_sys_fds
 function caml_parse_engine(tables, env, cmd, arg) {
   var ERRCODE = 256;
 
@@ -82,7 +83,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
   function log(x) {
     var s = caml_string_of_jsbytes(x + "\n");
-    caml_ml_output(2, s, 0, caml_ml_string_length(s));
+    caml_ml_output(caml_sys_fds[2].chanid, s, 0, caml_ml_string_length(s));
   }
 
   function token_name(names, number) {
