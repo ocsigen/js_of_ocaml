@@ -102,7 +102,7 @@ jobs:
           opam-depext: ${{ !matrix.skip-test }}
           opam-depext-flags: --with-test
 
-      - run: opam pin add ppxlib git+https://github.com/hhugo/ppx_expect.git#jsoo-leak-chan --no-action
+      - run: opam pin add ppx_expect git+https://github.com/hhugo/ppx_expect.git#jsoo-leak-chan --no-action
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
