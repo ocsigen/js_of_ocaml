@@ -20,7 +20,7 @@
  (depends
   (ocaml (and (>= 4.08) (< 5.4)))
   (num :with-test)
-  (ppx_expect (and (>= v0.14.2) :with-test))
+  (ppx_expect (and (>= v0.16.1) :with-test))
   (ppxlib (>= 0.15.0))
   (re :with-test)
   (cmdliner (>= 1.1.0))
