@@ -32,6 +32,7 @@
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
 * Runtime: fix incorrect pos_in after unmarshalling
 * Runtime: make float_of_string stricter (#1609)
+* Runtime: no longer leak channels
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
 * Compiler: Fixed the static evaluation of some equalities (#1659)
