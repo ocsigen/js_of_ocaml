@@ -45,23 +45,23 @@
     "reaches": ["callback"]
   },
   {
-    "name": "meth_wrap_callback",
-    "import": ["bindings", "meth_wrap_callback"],
+    "name": "wrap_meth_callback",
+    "import": ["bindings", "wrap_meth_callback"],
     "reaches": ["callback"]
   },
   {
-    "name": "meth_wrap_callback_args",
-    "import": ["bindings", "meth_wrap_callback_args"],
+    "name": "wrap_meth_callback_args",
+    "import": ["bindings", "wrap_meth_callback_args"],
     "reaches": ["callback"]
   },
   {
-    "name": "meth_wrap_callback_strict",
-    "import": ["bindings", "meth_wrap_callback_strict"],
+    "name": "wrap_meth_callback_strict",
+    "import": ["bindings", "wrap_meth_callback_strict"],
     "reaches": ["callback"]
   },
   {
-    "name": "meth_wrap_callback_unsafe",
-    "import": ["bindings", "meth_wrap_callback_unsafe"],
+    "name": "wrap_meth_callback_unsafe",
+    "import": ["bindings", "wrap_meth_callback_unsafe"],
     "reaches": ["callback"]
   },
   {
