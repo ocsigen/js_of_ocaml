@@ -508,10 +508,18 @@
                      (br $copy))))
             (local.set $len (array.len (local.get $s')))
             (local.set $s (local.get $s'))))
+      (local.set $i (i32.const 0))
+      (loop $skip_spaces
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (if (i32.eq (i32.const 32) ;; ' '
+                           (array.get $string (local.get $s) (local.get $i)))
+                  (then
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $skip_spaces))))))
       (block $error
-         (br_if $error (i32.eqz (local.get $len)))
+         (br_if $error (i32.eq (local.get $i) (local.get $len)))
          (local.set $c (array.get_u $string (local.get $s) (i32.const 0)))
-         (local.set $i (i32.const 0))
          (if (i32.eq (local.get $c) (i32.const 45)) ;; '-'
             (then
                (local.set $negative (i32.const 1))
