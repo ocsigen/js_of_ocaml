@@ -93,6 +93,10 @@ let rec write b v =
             (Int64.logand (Int64.shift_right i 24) mask24)
             (Int64.logand (Int64.shift_right i 48) mask16)
       | id -> failwith (Printf.sprintf "Json.output: unsupported custom value %s " id)
+    else if t = Obj.abstract_tag
+    then
+      (* Presumably a JavaScript value *)
+      Buffer.add_string b (Js.to_string (Unsafe.global##_JSON##stringify v))
     else failwith (Printf.sprintf "Json.output: unsupported tag %d " t)
 
 let to_json v =
