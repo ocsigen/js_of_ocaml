@@ -111,7 +111,7 @@
          new_obj:()=>({}),
          new:(c,args)=>new c(...args),
          global_this:globalThis,
-         iter_props:(o,f)=>{for (var nm in o) if(o.hasOwnsProperty(nm)) f(nm)},
+         iter_props:(o,f)=>{for (var nm in o) if(o.hasOwnProperty(nm)) f(nm)},
          array_length:(a)=>a.length,
          array_get:(a,i)=>a[i],
          array_set:(a,i,v)=>a[i]=v,
