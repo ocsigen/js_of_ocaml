@@ -378,5 +378,5 @@
             event.error&&caml_handle_uncaught_exception(event.error))
     }
     await _initialize();
-})(((joo_global_object,jsoo_exports,globalThis)=>(x)=>eval(x))(globalThis,globalThis?.module?.exports||globalThis,globalThis),
+})(((joo_global_object,jsoo_exports,globalThis)=>(x)=>eval("("+x+")"))(globalThis,globalThis?.module?.exports||globalThis,globalThis),
    PRIMITIVES, STRINGS);

@@ -102,7 +102,7 @@ let%expect_test "object comparison" =
   assert (compare s1 s1 = 0);
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
-[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_compare.ml:100:2" |}]
+[@@expect.uncaught_exn {| (Invalid_argument "compare: abstract value") |}]
 
 let%expect_test "poly compare" =
   let l =
