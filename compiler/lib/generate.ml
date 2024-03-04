@@ -731,8 +731,9 @@ let parallel_renaming back_edge params args continuation queue =
       ~f:(fun (queue, before, renaming, seen) (y, x) ->
         let (((_, deps_x) as px), cx, locx), queue = access_queue_loc queue x in
         let seen' = Code.Var.Set.add y seen in
-        if back_edge && not Code.Var.Set.(is_empty (inter seen deps_x))
+        if not Code.Var.Set.(is_empty (inter seen deps_x))
         then
+          let () = assert back_edge in
           let before, queue =
             flush_queue
               queue
@@ -1778,9 +1779,11 @@ and compile_argument_passing ctx queue (pc, args) back_edge continuation =
 and compile_branch st queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
   let scope = List.assoc_opt pc scope_stack in
   let back_edge =
-    match scope with
-    | Some (_l, _used, Loop) -> true
-    | None | Some _ -> false
+    List.exists
+      ~f:(function
+        | pc', (_, _, Loop) when pc' = pc -> true
+        | _ -> false)
+      scope_stack
   in
   compile_argument_passing st.ctx queue cont back_edge (fun queue ->
       if match fall_through with

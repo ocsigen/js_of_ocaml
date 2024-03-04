@@ -7,6 +7,7 @@
 ## Bug fixes
 * Compiler: fix --enable=vardecl
 * Lib: fix paragraph construction and coercion
+* Compiler: fix parallel renaming (bug introduced in #1567)
 
 # 5.7.0 (2024-02-16) - Lille
 
