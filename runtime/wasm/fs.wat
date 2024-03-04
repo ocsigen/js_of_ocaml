@@ -121,4 +121,13 @@
 
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (data $caml_sys_is_directory "caml_sys_is_directory")
+
+   (func (export "caml_sys_is_directory") (param (ref eq)) (result (ref eq))
+      ;; ZZZ
+      (call $log_str
+         (array.new_data $string $caml_sys_is_directory
+            (i32.const 0) (i32.const 21)))
+      (ref.i31 (i32.const 0)))
 )
