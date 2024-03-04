@@ -192,7 +192,7 @@ function caml_ml_set_binary_mode(chanid,mode){
 //Version: >= 5.2
 function caml_ml_is_binary_mode(chanid) {
   var chan = caml_ml_channels[chanid];
-  return chan.file.flags.binary 
+  return chan.file.flags.binary
 }
 
 //Input from in_channel
@@ -202,8 +202,14 @@ function caml_ml_is_binary_mode(chanid) {
 //Requires: caml_sys_close
 function caml_ml_close_channel (chanid) {
   var chan = caml_ml_channels[chanid];
-  chan.opened = false;
-  caml_sys_close(chan.fd)
+  if(chan.opened) {
+    chan.opened = false;
+    caml_sys_close(chan.fd);
+    chan.fd = -1;
+    chan.buffer = new Uint8Array(0);
+    chan.buffer_curr = 0;
+    chan.buffer_max = 0;
+  }
   return 0;
 }
 
