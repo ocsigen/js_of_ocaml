@@ -14,9 +14,9 @@ external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_
 
 let normalize_bytecode code =
   match Ocaml_version.v with
-  | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 -> code
-  | `V5_00 | `V5_01 -> code
-  | `V5_02 ->
+  | #Ocaml_version.v4 -> code
+  | `V5_00 | `V5_01  -> code
+  | `V5_02 | `V5_03 ->
       (* starting with ocaml 5.2, The toplevel no longer append [RETURN 1] *)
       let { Instr.opcode; _ } = Instr.find RETURN in
       let len = String.length code in

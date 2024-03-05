@@ -61,16 +61,15 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: true
+          - os: ubuntu-latest
+            ocaml-compiler: ocaml-variants.5.3.0+trunk
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Set git to use LF
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.ignorecase false
-
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -89,8 +88,7 @@ jobs:
             default: https://github.com/ocaml-opam/opam-repository-mingw.git#sunset
             opam: https://github.com/ocaml/opam-repository.git
           dune-cache: true
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          opam-depext: false
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         if: runner.os != 'Windows'
@@ -99,8 +97,12 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           allow-prerelease-opam: true
           dune-cache: true
-          opam-depext: ${{ !matrix.skip-test }}
-          opam-depext-flags: --with-test
+          opam-depext: false
+
+      - run: opam pin add ppxlib git+https://github.com/hhugo/ppxlib.git#trunk-support-53 --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
+
+      - run: opam pin add ./ --no-action
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}

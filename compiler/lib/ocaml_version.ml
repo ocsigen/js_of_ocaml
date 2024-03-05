@@ -64,6 +64,23 @@ let rec compare v v' =
       | 0 -> compare xs ys
       | n -> n)
 
+type v4 =
+  [ `V4_08
+  | `V4_09
+  | `V4_10
+  | `V4_11
+  | `V4_12
+  | `V4_13
+  | `V4_14
+  ]
+
+type v5 =
+  [ `V5_00
+  | `V5_01
+  | `V5_02
+  | `V5_03
+  ]
+
 let v =
   match current with
   | 4 :: 8 :: _ -> `V4_08
@@ -76,6 +93,7 @@ let v =
   | 5 :: 0 :: _ -> `V5_00
   | 5 :: 1 :: _ -> `V5_01
   | 5 :: 2 :: _ -> `V5_02
+  | 5 :: 3 :: _ -> `V5_03
   | _ ->
       if compare current [ 4; 4 ] < 0
       then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."

@@ -16,7 +16,6 @@ type int_list = int list [@@deriving json]
 
 [%%expect
 {|
-
 type int_list = int list[@@deriving json]
 include
   struct
@@ -27,10 +26,9 @@ include
           buf
     let _ = int_list_of_json
     let rec int_list_to_json : Buffer.t -> int_list -> unit =
-      fun buf ->
-        fun a ->
-          Deriving_Json.write_list
-            (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+      fun buf a ->
+        Deriving_Json.write_list
+          (fun buf a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_list_to_json
     let int_list_json : int_list Deriving_Json.t =
       Deriving_Json.make int_list_to_json int_list_of_json
@@ -46,7 +44,6 @@ type int_ref = int ref [@@deriving json]
 
 [%%expect
 {|
-
 type int_ref = int ref[@@deriving json]
 include
   struct
@@ -57,10 +54,9 @@ include
           buf
     let _ = int_ref_of_json
     let rec int_ref_to_json : Buffer.t -> int_ref -> unit =
-      fun buf ->
-        fun a ->
-          Deriving_Json.write_ref
-            (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+      fun buf a ->
+        Deriving_Json.write_ref
+          (fun buf a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_ref_to_json
     let int_ref_json : int_ref Deriving_Json.t =
       Deriving_Json.make int_ref_to_json int_ref_of_json
@@ -76,7 +72,6 @@ type int_option = int option [@@deriving json]
 
 [%%expect
 {|
-
 type int_option = int option[@@deriving json]
 include
   struct
@@ -87,10 +82,9 @@ include
           (fun buf -> Deriving_Json.Json_int.read buf) buf
     let _ = int_option_of_json
     let rec int_option_to_json : Buffer.t -> int_option -> unit =
-      fun buf ->
-        fun a ->
-          Deriving_Json.write_option
-            (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+      fun buf a ->
+        Deriving_Json.write_option
+          (fun buf a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_option_to_json
     let int_option_json : int_option Deriving_Json.t =
       Deriving_Json.make int_option_to_json int_option_of_json
@@ -106,7 +100,6 @@ type int_array = int array [@@deriving json]
 
 [%%expect
 {|
-
 type int_array = int array[@@deriving json]
 include
   struct
@@ -117,10 +110,9 @@ include
           buf
     let _ = int_array_of_json
     let rec int_array_to_json : Buffer.t -> int_array -> unit =
-      fun buf ->
-        fun a ->
-          Deriving_Json.write_array
-            (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+      fun buf a ->
+        Deriving_Json.write_array
+          (fun buf a -> Deriving_Json.Json_int.write buf a) buf a
     let _ = int_array_to_json
     let int_array_json : int_array Deriving_Json.t =
       Deriving_Json.make int_array_to_json int_array_of_json
@@ -136,7 +128,6 @@ type tuple1 = int * string [@@deriving json]
 
 [%%expect
 {|
-
 type tuple1 = (int * string)[@@deriving json]
 include
   struct
@@ -152,14 +143,13 @@ include
           Deriving_Json_lexer.read_rbracket buf; (a, b)))
     let _ = tuple1_of_json
     let rec tuple1_to_json : Buffer.t -> tuple1 -> unit =
-      fun buf ->
-        fun a ->
-          let (a, b) = a in
-          Buffer.add_string buf "[0";
-          ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
-           Buffer.add_string buf ",";
-           Deriving_Json.Json_string.write buf b);
-          Buffer.add_string buf "]"
+      fun buf a ->
+        let (a, b) = a in
+        Buffer.add_string buf "[0";
+        ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+         Buffer.add_string buf ",";
+         Deriving_Json.Json_string.write buf b);
+        Buffer.add_string buf "]"
     let _ = tuple1_to_json
     let tuple1_json : tuple1 Deriving_Json.t =
       Deriving_Json.make tuple1_to_json tuple1_of_json
@@ -180,7 +170,6 @@ type variant1 =
 
 [%%expect
 {|
-
 type variant1 =
   | A
   | B
@@ -229,7 +218,6 @@ type variant2 =
 
 [%%expect
 {|
-
 type variant2 =
   | D of string
   | E of variant1 [@@deriving json]
@@ -280,7 +268,6 @@ type record1 =
 
 [%%expect
 {|
-
 type record1 = {
   f: variant1 ;
   g: variant2 ;
@@ -302,16 +289,15 @@ include
            Deriving_Json_lexer.read_rbracket buf; { f = a; g = b; h = c })))
     let _ = record1_of_json
     let rec record1_to_json : Buffer.t -> record1 -> unit =
-      fun buf ->
-        fun { f; g; h } ->
-          Buffer.add_string buf "[0";
-          (((Buffer.add_string buf ","; variant1_to_json buf f);
-            Buffer.add_string buf ",";
-            variant2_to_json buf g);
-           Buffer.add_string buf ",";
-           Deriving_Json.write_option
-             (fun buf -> fun a -> record1_to_json buf a) buf h);
-          Buffer.add_string buf "]"
+      fun buf { f; g; h } ->
+        Buffer.add_string buf "[0";
+        (((Buffer.add_string buf ","; variant1_to_json buf f);
+          Buffer.add_string buf ",";
+          variant2_to_json buf g);
+         Buffer.add_string buf ",";
+         Deriving_Json.write_option (fun buf a -> record1_to_json buf a) buf
+           h);
+        Buffer.add_string buf "]"
     let _ = record1_to_json
     let record1_json : record1 Deriving_Json.t =
       Deriving_Json.make record1_to_json record1_of_json
@@ -330,7 +316,6 @@ type poly1 =
 
 [%%expect
 {|
-
 type poly1 = [ `A  | `B of string ][@@deriving json]
 include
   struct
@@ -355,18 +340,16 @@ include
     let _ = poly1_of_json_with_tag
     and _ = poly1_of_json
     let rec poly1_to_json : Buffer.t -> [> poly1] -> unit =
-      fun buf ->
-        fun a ->
-          match a with
-          | `A -> Deriving_Json.Json_int.write buf 65
-          | `B a ->
-              let (a, b) = (66, a) in
-              (Buffer.add_string buf "[0";
-               ((Buffer.add_string buf ",";
-                 Deriving_Json.Json_int.write buf a);
-                Buffer.add_string buf ",";
-                Deriving_Json.Json_string.write buf b);
-               Buffer.add_string buf "]")
+      fun buf a ->
+        match a with
+        | `A -> Deriving_Json.Json_int.write buf 65
+        | `B a ->
+            let (a, b) = (66, a) in
+            (Buffer.add_string buf "[0";
+             ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+              Buffer.add_string buf ",";
+              Deriving_Json.Json_string.write buf b);
+             Buffer.add_string buf "]")
     let _ = poly1_to_json
     let poly1_json : poly1 Deriving_Json.t =
       Deriving_Json.make poly1_to_json poly1_of_json
@@ -389,7 +372,6 @@ type poly2 =
 
 [%%expect
 {|
-
 type poly2 = [ | poly1 | `C of int ][@@deriving json]
 include
   struct
@@ -418,18 +400,16 @@ include
     let _ = poly2_of_json_with_tag
     and _ = poly2_of_json
     let rec poly2_to_json : Buffer.t -> [> poly2] -> unit =
-      fun buf ->
-        fun a ->
-          match a with
-          | #poly1 as a -> poly1_to_json buf a
-          | `C a ->
-              let (a, b) = (67, a) in
-              (Buffer.add_string buf "[0";
-               ((Buffer.add_string buf ",";
-                 Deriving_Json.Json_int.write buf a);
-                Buffer.add_string buf ",";
-                Deriving_Json.Json_int.write buf b);
-               Buffer.add_string buf "]")
+      fun buf a ->
+        match a with
+        | #poly1 as a -> poly1_to_json buf a
+        | `C a ->
+            let (a, b) = (67, a) in
+            (Buffer.add_string buf "[0";
+             ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+              Buffer.add_string buf ",";
+              Deriving_Json.Json_int.write buf b);
+             Buffer.add_string buf "]")
     let _ = poly2_to_json
     let poly2_json : poly2 Deriving_Json.t =
       Deriving_Json.make poly2_to_json poly2_of_json
@@ -454,7 +434,6 @@ type inline_record =
 
 [%%expect
 {|
-
 type inline_record =
   | I of {
   name: string ;
@@ -511,7 +490,6 @@ val inline_record_json : inline_record Deriving_Json.t = <abstr>
 
 type 'a t = 'a array [@@deriving json]
 [%%expect {|
-
 type 'a t = 'a array[@@deriving json]
 include
   struct
@@ -520,15 +498,11 @@ include
       (Deriving_Json_lexer.lexbuf -> 'a) ->
         Deriving_Json_lexer.lexbuf -> 'a t
       =
-      fun poly_a ->
-        fun buf -> Deriving_Json.read_array (fun buf -> poly_a buf) buf
+      fun poly_a buf -> Deriving_Json.read_array (fun buf -> poly_a buf) buf
     let _ = of_json
     let rec to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit =
-      fun poly_a ->
-        fun buf ->
-          fun a ->
-            Deriving_Json.write_array (fun buf -> fun a -> poly_a buf a) buf
-              a
+      fun poly_a buf a ->
+        Deriving_Json.write_array (fun buf a -> poly_a buf a) buf a
     let _ = to_json
     let json : 'a Deriving_Json.t -> 'a t Deriving_Json.t =
       fun poly_a ->
@@ -547,7 +521,6 @@ val json : 'a Deriving_Json.t -> 'a t Deriving_Json.t = <fun>
 
 type ('a,'b) t = ('a array * 'b) [@@deriving json]
 [%%expect {|
-
 type ('a, 'b) t = ('a array * 'b)[@@deriving json]
 include
   struct
@@ -557,44 +530,35 @@ include
         (Deriving_Json_lexer.lexbuf -> 'b) ->
           Deriving_Json_lexer.lexbuf -> ('a, 'b) t
       =
-      fun poly_a ->
-        fun poly_b ->
-          fun buf ->
-            Deriving_Json_lexer.read_lbracket buf;
-            ignore (Deriving_Json_lexer.read_tag_1 0 buf);
-            Deriving_Json_lexer.read_comma buf;
-            (let a = Deriving_Json.read_array (fun buf -> poly_a buf) buf in
-             Deriving_Json_lexer.read_comma buf;
-             (let b = poly_b buf in
-              Deriving_Json_lexer.read_rbracket buf; (a, b)))
+      fun poly_a poly_b buf ->
+        Deriving_Json_lexer.read_lbracket buf;
+        ignore (Deriving_Json_lexer.read_tag_1 0 buf);
+        Deriving_Json_lexer.read_comma buf;
+        (let a = Deriving_Json.read_array (fun buf -> poly_a buf) buf in
+         Deriving_Json_lexer.read_comma buf;
+         (let b = poly_b buf in Deriving_Json_lexer.read_rbracket buf; (a, b)))
     let _ = of_json
     let rec to_json :
       (Buffer.t -> 'a -> unit) ->
         (Buffer.t -> 'b -> unit) -> Buffer.t -> ('a, 'b) t -> unit
       =
-      fun poly_a ->
-        fun poly_b ->
-          fun buf ->
-            fun a ->
-              let (a, b) = a in
-              Buffer.add_string buf "[0";
-              ((Buffer.add_string buf ",";
-                Deriving_Json.write_array (fun buf -> fun a -> poly_a buf a)
-                  buf a);
-               Buffer.add_string buf ",";
-               poly_b buf b);
-              Buffer.add_string buf "]"
+      fun poly_a poly_b buf a ->
+        let (a, b) = a in
+        Buffer.add_string buf "[0";
+        ((Buffer.add_string buf ",";
+          Deriving_Json.write_array (fun buf a -> poly_a buf a) buf a);
+         Buffer.add_string buf ",";
+         poly_b buf b);
+        Buffer.add_string buf "]"
     let _ = to_json
     let json :
       'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t
       =
-      fun poly_a ->
-        fun poly_b ->
-          Deriving_Json.make
-            ((to_json (Deriving_Json.write poly_a))
-               (Deriving_Json.write poly_b))
-            ((of_json (Deriving_Json.read poly_a))
-               (Deriving_Json.read poly_b))
+      fun poly_a poly_b ->
+        Deriving_Json.make
+          ((to_json (Deriving_Json.write poly_a))
+             (Deriving_Json.write poly_b))
+          ((of_json (Deriving_Json.read poly_a)) (Deriving_Json.read poly_b))
     let _ = json
   end[@@ocaml.doc "@inline"][@@merlin.hide ];;
 type ('a, 'b) t = 'a array * 'b
@@ -613,7 +577,6 @@ val json :
 
 type t = A | B [@@deriving json]
 [%%expect {|
-
 type t =
   | A
   | B [@@deriving json]
@@ -644,24 +607,19 @@ val json : t Deriving_Json.t = <abstr>
 
 let x = [%json: t option]
 [%%expect {|
-
 let x =
   Deriving_Json.make
-    (fun buf ->
-       fun a ->
-         Deriving_Json.write_option (fun buf -> fun a -> to_json buf a) buf a)
+    (fun buf a ->
+       Deriving_Json.write_option (fun buf a -> to_json buf a) buf a)
     (fun buf -> Deriving_Json.read_option (fun buf -> of_json buf) buf);;
 val x : t option Deriving_Json.t = <abstr>
 |}];;
 
 let y = [%to_json: t list]
 [%%expect {|
-
 let y x =
   let buf = Buffer.create 50 in
-  ((fun buf ->
-      fun a ->
-        Deriving_Json.write_list (fun buf -> fun a -> to_json buf a) buf a))
+  ((fun buf a -> Deriving_Json.write_list (fun buf a -> to_json buf a) buf a))
     buf x;
   Buffer.contents buf;;
 val y : t list -> string = <fun>
@@ -669,12 +627,9 @@ val y : t list -> string = <fun>
 
 let z = [%json_of: t array]
 [%%expect {|
-
 let z x =
   let buf = Buffer.create 50 in
-  ((fun buf ->
-      fun a ->
-        Deriving_Json.write_array (fun buf -> fun a -> to_json buf a) buf a))
+  ((fun buf a -> Deriving_Json.write_array (fun buf a -> to_json buf a) buf a))
     buf x;
   Buffer.contents buf;;
 val z : t array -> string = <fun>
@@ -698,7 +653,6 @@ val t : string -> t * t = <fun>
 ;;
 type id' = int [@@deriving json]
 [%%expect {|
-
 type id' = int[@@deriving json]
 include
   struct
@@ -707,7 +661,7 @@ include
       fun buf -> Deriving_Json.Json_int.read buf
     let _ = id'_of_json
     let rec id'_to_json : Buffer.t -> id' -> unit =
-      fun buf -> fun a -> Deriving_Json.Json_int.write buf a
+      fun buf a -> Deriving_Json.Json_int.write buf a
     let _ = id'_to_json
     let id'_json : id' Deriving_Json.t =
       Deriving_Json.make id'_to_json id'_of_json
@@ -726,7 +680,6 @@ type poly3 =
 
 [%%expect
 {|
-
 type poly3 =
   [ | poly1 | `C of [ `p1 of poly1  | `p2 of poly2  | `p3 of poly3 ] ]
 [@@deriving json]
@@ -777,42 +730,40 @@ include
     let _ = poly3_of_json_with_tag
     and _ = poly3_of_json
     let rec poly3_to_json : Buffer.t -> [> poly3] -> unit =
-      fun buf ->
-        fun a ->
-          match a with
-          | #poly1 as a -> poly1_to_json buf a
-          | `C a ->
-              let (a, b) = (67, a) in
-              (Buffer.add_string buf "[0";
-               ((Buffer.add_string buf ",";
-                 Deriving_Json.Json_int.write buf a);
-                Buffer.add_string buf ",";
-                (match b with
-                 | `p1 a ->
-                     let (a, b) = (25025, a) in
-                     (Buffer.add_string buf "[0";
-                      ((Buffer.add_string buf ",";
-                        Deriving_Json.Json_int.write buf a);
-                       Buffer.add_string buf ",";
-                       poly1_to_json buf b);
-                      Buffer.add_string buf "]")
-                 | `p2 a ->
-                     let (a, b) = (25026, a) in
-                     (Buffer.add_string buf "[0";
-                      ((Buffer.add_string buf ",";
-                        Deriving_Json.Json_int.write buf a);
-                       Buffer.add_string buf ",";
-                       poly2_to_json buf b);
-                      Buffer.add_string buf "]")
-                 | `p3 a ->
-                     let (a, b) = (25027, a) in
-                     (Buffer.add_string buf "[0";
-                      ((Buffer.add_string buf ",";
-                        Deriving_Json.Json_int.write buf a);
-                       Buffer.add_string buf ",";
-                       poly3_to_json buf b);
-                      Buffer.add_string buf "]")));
-               Buffer.add_string buf "]")
+      fun buf a ->
+        match a with
+        | #poly1 as a -> poly1_to_json buf a
+        | `C a ->
+            let (a, b) = (67, a) in
+            (Buffer.add_string buf "[0";
+             ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+              Buffer.add_string buf ",";
+              (match b with
+               | `p1 a ->
+                   let (a, b) = (25025, a) in
+                   (Buffer.add_string buf "[0";
+                    ((Buffer.add_string buf ",";
+                      Deriving_Json.Json_int.write buf a);
+                     Buffer.add_string buf ",";
+                     poly1_to_json buf b);
+                    Buffer.add_string buf "]")
+               | `p2 a ->
+                   let (a, b) = (25026, a) in
+                   (Buffer.add_string buf "[0";
+                    ((Buffer.add_string buf ",";
+                      Deriving_Json.Json_int.write buf a);
+                     Buffer.add_string buf ",";
+                     poly2_to_json buf b);
+                    Buffer.add_string buf "]")
+               | `p3 a ->
+                   let (a, b) = (25027, a) in
+                   (Buffer.add_string buf "[0";
+                    ((Buffer.add_string buf ",";
+                      Deriving_Json.Json_int.write buf a);
+                     Buffer.add_string buf ",";
+                     poly3_to_json buf b);
+                    Buffer.add_string buf "]")));
+             Buffer.add_string buf "]")
     let _ = poly3_to_json
     let poly3_json : poly3 Deriving_Json.t =
       Deriving_Json.make poly3_to_json poly3_of_json
