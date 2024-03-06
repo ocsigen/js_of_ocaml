@@ -43,7 +43,8 @@
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
 
-   (global $current_suspender (mut (externref)) (ref.null extern))
+   (global $current_suspender (export "current_suspender")
+      (mut (externref)) (ref.null extern))
 
    ;; Capturing the current continuation
 
