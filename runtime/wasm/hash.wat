@@ -64,7 +64,7 @@
          (call $caml_hash_mix_int (local.get $h) (i32.wrap_i64 (local.get $d)))
          (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 32)))))
 
-   (func $caml_hash_mix_float (export "caml_hash_mix_float")
+   (func $caml_hash_mix_double (export "caml_hash_mix_double")
       (param $h i32) (param $d f64) (result i32)
       (local $i i64)
       (local.set $i (i64.reinterpret_f64 (local.get $d)))
@@ -78,7 +78,7 @@
          (then (local.set $i (i64.const 0))))
       (return_call $caml_hash_mix_int64 (local.get $h) (local.get $i)))
 
-   (func $caml_hash_mix_float32 (export "caml_hash_mix_float32")
+   (func $caml_hash_mix_float (export "caml_hash_mix_float")
       (param $h i32) (param $d f32) (result i32)
       (local $i i32)
       (local.set $i (i32.reinterpret_f32 (local.get $d)))
@@ -257,7 +257,7 @@
                         (br $block_iter))))
                   (drop (block $not_float (result (ref eq))
                      (local.set $h
-                        (call $caml_hash_mix_float (local.get $h)
+                        (call $caml_hash_mix_double (local.get $h)
                            (struct.get $float 0
                               (br_on_cast_fail $not_float (ref eq) (ref $float)
                                  (local.get $v)))))

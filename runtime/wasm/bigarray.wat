@@ -67,10 +67,10 @@
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
    (import "hash" "caml_hash_mix_int64"
       (func $caml_hash_mix_int64 (param i32) (param i64) (result i32)))
+   (import "hash" "caml_hash_mix_double"
+      (func $caml_hash_mix_double (param i32) (param f64) (result i32)))
    (import "hash" "caml_hash_mix_float"
-      (func $caml_hash_mix_float (param i32) (param f64) (result i32)))
-   (import "hash" "caml_hash_mix_float32"
-      (func $caml_hash_mix_float32 (param i32) (param f32) (result i32)))
+      (func $caml_hash_mix_float (param i32) (param f32) (result i32)))
    (import "marshal" "caml_serialize_int_1"
       (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
    (import "marshal" "caml_serialize_int_2"
@@ -342,7 +342,7 @@
           (if (i32.lt_u (local.get $i) (local.get $len))
              (then
                 (local.set $h
-                   (call $caml_hash_mix_float32 (local.get $h)
+                   (call $caml_hash_mix_float (local.get $h)
                       (f32.demote_f64
                          (call $ta_get_f32 (local.get $data) (local.get $i)))))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -355,7 +355,7 @@
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (local.set $h
-                  (call $caml_hash_mix_float (local.get $h)
+                  (call $caml_hash_mix_double (local.get $h)
                      (call $ta_get_f64 (local.get $data) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
