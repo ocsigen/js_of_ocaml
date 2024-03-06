@@ -65,9 +65,6 @@
                         (then
                            (global.get $infinity))
                         (else
-                           (local.set $sign (i32.const 0))
-                           (local.set $i
-                              (i32.ne (local.get $style) (i32.const 45)))
                            (global.get $nan))))
                   (local.set $len (array.len (local.get $txt)))
                   (local.set $s
