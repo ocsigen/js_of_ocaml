@@ -1721,17 +1721,33 @@ class simpl =
       let s = super#statements s in
       List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
           match st with
+          (* if (1) e1 ... --> e1 *)
           | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
+          (* if (0) e1 else e2 --> e2 *)
           | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
+          (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
               (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
             -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
+          (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
           | If_statement
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
+          (* The following optimizations cause the generated JS to compress less.
+             (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)
+             | If_statement
+                 (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
+                 (Expression_statement (ECond (e1, e2, e3)), loc) :: rem
+             (* if (!e1) e2 --> e1 || e2 *)
+             | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
+                 (Expression_statement (EBin (Or, e1, e2)), loc) :: rem
+             (* if (e1) e2 --> e1 && e2 *)
+             | If_statement (e1, (Expression_statement e2, _), None) ->
+                 (Expression_statement (EBin (And, e1, e2)), loc) :: rem
+          *)
           | Variable_statement (((Var | Let | Const) as k), l1) ->
               let x = List.map l1 ~f:(fun d -> Variable_statement (k, [ d ]), loc) in
               x @ rem
