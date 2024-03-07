@@ -4,6 +4,8 @@
 * Compiler: es6 now generate consise body
 * Compiler: codegen: optimize Offset_ref for negative offsets
 * Compiler: codegen: change argument passing of back edges.
+* Compiler: codegen: use Array destruction to assign args of back
+  edges with es6.
 
 ## Bug fixes
 
