@@ -713,34 +713,64 @@ let visit_all params args =
   l
 
 let parallel_renaming back_edge params args continuation queue =
-  let l = visit_all params args in
-  let queue, before, renaming, _ =
-    List.fold_left
-      l
-      ~init:(queue, [], [], Code.Var.Set.empty)
-      ~f:(fun (queue, before, renaming, seen) (y, x) ->
-        let ((_, deps_x), cx, locx), queue = access_queue_loc queue x in
-        let seen' = Code.Var.Set.add y seen in
-        if not Code.Var.Set.(is_empty (inter seen deps_x))
-        then
-          let () = assert back_edge in
-          let before = (J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before in
-          let renaming = (y, J.EVar (J.V x)) :: renaming in
-          queue, before, renaming, seen'
-        else
-          let renaming = (y, cx) :: renaming in
-          queue, before, renaming, seen')
-  in
-  let renaming =
-    if back_edge
-    then
-      List.map renaming ~f:(fun (t, e) ->
-          J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V t), e)), J.N)
-    else
-      List.map renaming ~f:(fun (t, e) -> J.variable_declaration [ J.V t, (e, J.N) ], J.N)
-  in
-  let never, code = continuation queue in
-  never, List.rev_append before (List.rev_append renaming code)
+  if back_edge && Config.Flag.es6 ()
+     (* This is likely slower than using explicit temp variable
+        but let's experiment with es6 a bit *)
+  then
+    let args, params =
+      List.map2 args params ~f:(fun a p -> if Var.equal a p then None else Some (a, p))
+      |> List.filter_map ~f:(fun x -> x)
+      |> List.split
+    in
+    let args, _, queue =
+      List.fold_left args ~init:([], const_p, queue) ~f:(fun (acc, p, queue) a ->
+          let (px, cx), queue = access_queue queue a in
+          cx :: acc, or_p px p, queue)
+    in
+    let never, code = continuation queue in
+    match params, args with
+    | [ p ], [ a ] ->
+        never, (J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V p), a)), J.N) :: code
+    | params, args ->
+        let lhs =
+          J.EAssignTarget
+            (J.ArrayTarget (List.map params ~f:(fun p -> J.TargetElementId (J.V p, None))))
+        in
+        let rhs = J.EArr (List.rev_map args ~f:(fun x -> J.Element x)) in
+        never, (J.Expression_statement (J.EBin (J.Eq, lhs, rhs)), J.N) :: code
+  else
+    let l = visit_all params args in
+    (* if not back_edge
+     * then assert (Poly.( = ) l (List.rev_map2 params args ~f:(fun a b -> a, b))); *)
+    let queue, before, renaming, _ =
+      List.fold_left
+        l
+        ~init:(queue, [], [], Code.Var.Set.empty)
+        ~f:(fun (queue, before, renaming, seen) (y, x) ->
+          let ((_, deps_x), cx, locx), queue = access_queue_loc queue x in
+          let seen' = Code.Var.Set.add y seen in
+          if not Code.Var.Set.(is_empty (inter seen deps_x))
+          then
+            let () = assert back_edge in
+            let before = (J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before in
+            let renaming = (y, J.EVar (J.V x)) :: renaming in
+            queue, before, renaming, seen'
+          else
+            let renaming = (y, cx) :: renaming in
+            queue, before, renaming, seen')
+    in
+    let renaming =
+      if back_edge
+      then
+        List.map renaming ~f:(fun (t, e) ->
+            J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V t), e)), J.N)
+      else
+        List.map renaming ~f:(fun (t, e) ->
+            J.variable_declaration [ J.V t, (e, J.N) ], J.N)
+    in
+    let never, code = continuation queue in
+    never, List.rev_append before (List.rev_append renaming code)
+
 (****)
 
 let apply_fun_raw ctx f params exact cps =
