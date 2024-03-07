@@ -12,6 +12,10 @@
       (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
    (import "marshal" "caml_deserialize_int_8"
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
+   (import "ints" "lowercase_hex_table"
+      (global $lowercase_hex_table (ref $chars)))
+   (import "ints" "uppercase_hex_table"
+      (global $uppercase_hex_table (ref $chars)))
 
    (type $string (array (mut i8)))
    (type $compare
@@ -217,12 +221,6 @@
       (local.get $s))
 
    (type $chars (array i8))
-
-   (import "ints" "lowercase_hex_table"
-      (global $lowercase_hex_table (ref $chars)))
-
-   (import "ints" "uppercase_hex_table"
-      (global $uppercase_hex_table (ref $chars)))
 
    (func (export "caml_int64_format")
       (param (ref eq)) (param (ref eq)) (result (ref eq))

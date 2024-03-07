@@ -26,6 +26,7 @@
    (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "bindings" "exit" (func $exit (param i32)))
+   (import "bindings" "throw" (func $throw (param externref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -160,8 +161,6 @@
    (data $do_at_exit "Pervasives.do_at_exit")
 
    (global $uncaught_exception (mut externref) (ref.null extern))
-
-   (import "bindings" "throw" (func $throw (param externref)))
 
    (func $reraise_exception (result (ref eq))
       (call $throw (global.get $uncaught_exception))

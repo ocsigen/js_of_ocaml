@@ -344,7 +344,7 @@
       (array.new $int_array (i32.const 0) (i32.const 8)))
 
    (func (export "caml_get_public_method")
-      (param $obj (ref eq) (ref eq) (ref eq)) (result (ref eq))
+      (param $obj (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $meths (ref $block))
       (local $tag i32) (local $cacheid i32) (local $ofs i32)
       (local $li i32) (local $mi i32) (local $hi i32)

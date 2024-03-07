@@ -992,7 +992,7 @@
             (local.get $d)))))))
 
    (func $extern_header
-      (param $s (ref $extern_state)) (param $sz (i32)) (param $tag i32)
+      (param $s (ref $extern_state)) (param $sz i32) (param $tag i32)
       (if (i32.and (i32.lt_u (local.get $tag) (i32.const 16))
              (i32.lt_u (local.get $sz) (i32.const 8)))
          (then

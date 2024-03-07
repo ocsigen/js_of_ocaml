@@ -561,11 +561,11 @@
                      (array.set $string (local.get $s'')
                         (local.get $n)
                         (i32.sub
-                           (i32.or
+                           (i32.add
                               (i32.shl (local.get $c) (i32.const 6))
                               (array.get_u $string (local.get $s')
                                  (i32.add (local.get $i) (i32.const 1))))
-                           (i32.const 0X3080)))
+                           (i32.const 0x3080)))
                      (local.set $i (i32.add (local.get $i) (i32.const 2)))))
                (local.set $n (i32.add (local.get $n) (i32.const 1)))
                (br $fill))))
@@ -631,7 +631,7 @@
 
    (data $toString "toString")
 
-   (func (export "caml_wrap_exception") (param (externref)) (result (ref eq))
+   (func (export "caml_wrap_exception") (param externref) (result (ref eq))
       (local $exn anyref)
       (local.set $exn (extern.internalize (local.get 0)))
       ;; ZZZ special case for stack overflows?
@@ -656,7 +656,7 @@
    (func (export "caml_js_error_option_of_exception")
       (param (ref eq)) (result (ref eq))
       (local $exn (ref $block))
-      (local.set $exn (ref.cast (ref $block) (local.get $0)))
+      (local.set $exn (ref.cast (ref $block) (local.get 0)))
       (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (ref.i31 (i32.const 0)))
          (then
@@ -671,7 +671,7 @@
    (func (export "caml_js_error_of_exception")
       (param (ref eq)) (result (ref eq))
       (local $exn (ref $block))
-      (local.set $exn (ref.cast (ref $block) (local.get $0)))
+      (local.set $exn (ref.cast (ref $block) (local.get 0)))
       (if (ref.eq (array.get $block (local.get $exn) (i32.const 0))
                   (ref.i31 (i32.const 0)))
          (then

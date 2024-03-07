@@ -26,9 +26,9 @@
             (if (i32.eq (local.get $c) (i32.const 45))
                (then
                   (local.set $sign (i32.const -1))
-                  (local.set $i (i32.const 1))))
+                  (local.set $i (i32.const 1)))
                (else (if (i32.eq (local.get $c) (i32.const 43))
-                  (then (local.set $i (i32.const 1)))))))
+                  (then (local.set $i (i32.const 1))))))))
       (if (i32.lt_s (i32.add (local.get $i) (i32.const 1)) (local.get $len))
          (then (if (i32.eq (array.get_u $string (local.get $s) (local.get $i))
                            (i32.const 48))

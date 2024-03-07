@@ -404,7 +404,7 @@
       (param $vlen (ref eq)) (result (ref eq))
       (local $ch (ref $channel)) (local $s (ref $string))
       (local $pos i32) (local $len i32) (local $curr i32)
-      (local $i i32) (local $avail i32) (local $nread $i32)
+      (local $i i32) (local $avail i32) (local $nread i32)
       (local $buf (ref extern))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (local.set $s (ref.cast (ref $string) (local.get $vs)))
@@ -770,7 +770,7 @@
       (call $caml_flush_if_unbuffered (local.get $ch))
       (ref.i31 (i32.const 0)))
 
-   (func $caml_putch (param $ch (ref $channel)) (param $c $i32)
+   (func $caml_putch (param $ch (ref $channel)) (param $c i32)
       (local $curr i32)
       (if (i32.ge_u (struct.get $channel $curr (local.get $ch))
              (struct.get $channel $size (local.get $ch)))

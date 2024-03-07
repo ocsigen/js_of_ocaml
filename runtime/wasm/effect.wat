@@ -12,6 +12,13 @@
       (tag $javascript_exception (param externref)))
    (import "jslib" "caml_wrap_exception"
       (func $caml_wrap_exception (param externref) (result (ref eq))))
+   (import "bindings" "start_fiber" (func $start_fiber (param (ref eq))))
+   (import "bindings" "suspend_fiber"
+      (func $suspend_fiber
+         (param externref) (param $f funcref) (param $env eqref)
+         (result eqref)))
+   (import "bindings" "resume_fiber"
+      (func $resume_fiber (param externref) (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -35,16 +42,8 @@
 
    ;; Low-level primitives
 
-   (import "bindings" "start_fiber" (func $start_fiber (param (ref eq))))
-   (import "bindings" "suspend_fiber"
-      (func $suspend_fiber
-         (param externref) (param $f funcref) (param $env eqref)
-         (result eqref)))
-   (import "bindings" "resume_fiber"
-      (func $resume_fiber (param externref) (param (ref eq))))
-
-   (global $current_suspender (export "current_suspender")
-      (mut (externref)) (ref.null extern))
+   (global $current_suspender (export "current_suspender") (mut externref)
+      (ref.null extern))
 
    ;; Capturing the current continuation
 
@@ -375,7 +374,7 @@
          (ref.i31 (i32.const 0))))
       (local.get $stack))
 
-   (func (export $caml_get_continuation_callstack)
+   (func (export "caml_get_continuation_callstack")
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
@@ -532,7 +531,7 @@
             (do
                (local.set $res
                   (if (result (ref eq))
-                      (i32.eq (array.len $block (local.get $args)) (i32.const 1))
+                      (i32.eq (array.len (local.get $args)) (i32.const 1))
                      (then
                         (call_ref $function_1 (global.get $identity)
                            (local.get $f)

@@ -72,7 +72,8 @@
       (local.set $carry (i31.get_s (ref.cast (ref i31) (local.get $carry_in))))
       (local.set $ofs (i31.get_s (ref.cast (ref i31) (local.get $vofs))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (if (i32.eqz (local.get $carry)) (return (ref.i31 (i32.const 0))))
+      (if (i32.eqz (local.get $carry))
+         (then (return (ref.i31 (i32.const 0)))))
       (loop $loop
          (if (i32.lt_s (local.get $i) (local.get $len))
             (then
@@ -101,7 +102,8 @@
       (local.set $carry (i31.get_s (ref.cast (ref i31) (local.get $carry_in))))
       (local.set $ofs (i31.get_s (ref.cast (ref i31) (local.get $vofs))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (if (i32.eqz (local.get $carry)) (return (ref.i31 (i32.const 0))))
+      (if (i32.eqz (local.get $carry))
+         (then (return (ref.i31 (i32.const 0)))))
       (loop $loop
          (if (i32.lt_s (local.get $i) (local.get $len))
             (then

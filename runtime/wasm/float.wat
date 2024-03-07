@@ -410,7 +410,7 @@
                            (then
                               (return (f64.const 0)))
                            (else
-                              (return (f64.const infinity))))))
+                              (return (f64.const inf))))))
                   (if (i32.and (i32.ge_u (local.get $c) (i32.const 48))
                                (i32.le_u (local.get $c) (i32.const 57)))
                      (then
@@ -575,8 +575,8 @@
                            (return
                               (struct.new $float
                                  (select
-                                    (f64.const -infinity)
-                                    (f64.const infinity)
+                                    (f64.const -inf)
+                                    (f64.const inf)
                                     (local.get $negative))))))))))))
          (if (i32.eq (i32.add (local.get $i) (i32.const 8)) (local.get $len))
             (then
@@ -632,8 +632,8 @@
                                        (return
                                           (struct.new $float
                                              (select
-                                                (f64.const -infinity)
-                                                (f64.const infinity)
+                                                (f64.const -inf)
+                                                (f64.const inf)
                                                 (local.get $negative))))
                                        ))))))))))))))))))
          (local.set $f
@@ -675,7 +675,7 @@
       (ref.i31
          (if (result i32) (f64.ge (local.get $a) (f64.const 0x1p-1022))
             (then
-               (if (result i32) (f64.lt (local.get $a) (f64.const infinity))
+               (if (result i32) (f64.lt (local.get $a) (f64.const inf))
                   (then (i32.const 0)) ;; normal
                   (else (i32.const 3)))) ;; infinity
             (else
@@ -692,7 +692,7 @@
       (local.set $a (f64.abs (local.get $x)))
       (if (f64.ge (local.get $a) (f64.const 0))
          (then
-            (if (f64.lt (local.get $a) (f64.const infinity))
+            (if (f64.lt (local.get $a) (f64.const inf))
                (then ;; normal
                   (local.set $i (f64.floor (local.get $a)))
                   (local.set $f (f64.sub (local.get $a) (local.get $i)))

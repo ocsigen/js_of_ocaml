@@ -276,7 +276,7 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-                  (drop (block $not_jsstring anyref
+                  (drop (block $not_jsstring (result anyref)
                      (local.set $str
                         (struct.get $js 0
                            (br_on_cast_fail $not_jsstring (ref eq) (ref $js)
