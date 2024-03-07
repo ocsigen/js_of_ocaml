@@ -31,6 +31,9 @@
       (func $caml_find_custom_operations
          (param (ref $string)) (result (ref null $custom_operations))))
 
+   (global $caml_marshal_header_size (export "caml_marshal_header_size")
+      (mut i32) (i32.const 20))
+
    (global $input_val_from_string (ref $string)
       (array.new_fixed $string 21
          (i32.const 105) (i32.const 110) (i32.const 112) (i32.const 117)
@@ -703,7 +706,11 @@
             (call $bad_object
                (array.new_data $string $marshal_data_size
                   (i32.const 0) (i32.const 17)))))
-      (ref.i31 (call $read32 (local.get $s))))
+      (ref.i31
+         (i32.add
+            (i32.sub (i32.const 20)
+               (global.get $caml_marshal_header_size))
+            (call $read32 (local.get $s)))))
 
    (type $output_block
       (struct
