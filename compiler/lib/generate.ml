@@ -18,16 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*XXX
-  Patterns:
-  => should have special code for switches that include the preceding
-     if statement when possible
-  => if e1 then {if e2 then P else Q} else {if e3 then P else Q}
-  => if e then return e1; return e2
-  => if e then var x = e1; else var x = e2;
-  => while (true) {.... if (e) continue; break; }
-*)
-
 open! Stdlib
 
 let debug = Debug.find "gen"
@@ -568,7 +558,7 @@ type state =
   }
 
 module DTree = struct
-  (* This as to be kept in sync with the way we build conditionals
+  (* This has to be kept in sync with the way we build conditionals
      and switches! *)
 
   type cond =

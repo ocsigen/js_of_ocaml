@@ -516,10 +516,6 @@ binding_element:
 
 (* array destructuring *)
 
-(* TODO use elision below.
- * invent a new Hole category or maybe an array_argument special
- * type like for the (call)argument type.
- *)
 array_binding_pattern:
   | "[" l=listc_with_empty2(binding_element, binding_element_rest) "]" {
         ArrayBinding {list = fst l; rest = snd l }
