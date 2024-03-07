@@ -719,28 +719,18 @@ let parallel_renaming back_edge params args continuation queue =
       l
       ~init:(queue, [], [], Code.Var.Set.empty)
       ~f:(fun (queue, before, renaming, seen) (y, x) ->
-        let (((_, deps_x) as px), cx, locx), queue = access_queue_loc queue x in
+        let ((_, deps_x), cx, locx), queue = access_queue_loc queue x in
         let seen' = Code.Var.Set.add y seen in
         if not Code.Var.Set.(is_empty (inter seen deps_x))
         then
           let () = assert back_edge in
-          let before, queue =
-            flush_queue
-              queue
-              px
-              ((J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before)
-          in
+          let before = (J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before in
           let renaming =
             (J.variable_declaration [ J.V y, (J.EVar (J.V x), J.N) ], J.N) :: renaming
           in
           queue, before, renaming, seen'
         else
-          let renaming, queue =
-            flush_queue
-              queue
-              px
-              ((J.variable_declaration [ J.V y, (cx, J.N) ], J.N) :: renaming)
-          in
+          let renaming = (J.variable_declaration [ J.V y, (cx, J.N) ], J.N) :: renaming in
           queue, before, renaming, seen')
   in
   let never, code = continuation queue in
