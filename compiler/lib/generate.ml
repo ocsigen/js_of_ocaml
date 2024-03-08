@@ -994,17 +994,6 @@ let _ =
       bool (J.EBin (J.InstanceOf, cx, cy)));
   register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))
 
-(* This is not correct when switching the js-string flag *)
-(* {[
-    register_un_prim "caml_jsstring_of_string" `Mutable (fun cx loc ->
-      J.ECall (J.EDot (cx, "toString"), [], loc));
-    register_bin_prim "caml_string_notequal" `Pure (fun cx cy _ ->
-      J.EBin (J.NotEqEq, cx, cy));
-    register_bin_prim "caml_string_equal" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.EqEq, cx, cy)))
-     ]}
-*)
-
 (****)
 (* when raising ocaml exception and [improved_stacktrace] is enabled,
    tag the ocaml exception with a Javascript error (that contain js stacktrace).
@@ -1271,6 +1260,16 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             let prim_kind = kind (Primitive.kind name) in
             J.call prim [] loc, prim_kind, queue
+        | Extern "caml_string_notequal", [ a; b ] when Config.Flag.use_js_string () ->
+            let (px, cx), queue = access_queue' ~ctx queue a in
+            let (py, cy), queue = access_queue' ~ctx queue b in
+            let prop = or_p px py in
+            bool (J.EBin (J.NotEqEq, cx, cy)), prop, queue
+        | Extern "caml_string_equal", [ a; b ] when Config.Flag.use_js_string () ->
+            let (px, cx), queue = access_queue' ~ctx queue a in
+            let (py, cy), queue = access_queue' ~ctx queue b in
+            let prop = or_p px py in
+            bool (J.EBin (J.EqEq, cx, cy)), prop, queue
         | Extern name, l -> (
             let name = Primitive.resolve name in
             match internal_prim name with
