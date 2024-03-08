@@ -118,6 +118,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: janestreet/opam-repository
+          ref: feaf8f831051fd5f316963b28efd728cf0b0eca1
           path: jane-street/opam-repository
 
       - name: Pin dune

@@ -191,6 +191,8 @@ let exec_async ~delay cmd =
   in
   fun () -> ignore (Unix.close_process_out p)
 
+let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = g (f ())
+
 let sync_exec f l =
   let l = List.mapi f l in
   List.iter (fun f -> f ()) l
@@ -215,16 +217,26 @@ let install_others others =
   let others = StringSet.elements (StringSet.diff others omitted_others) in
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
-let clone delay ?branch nm src =
+let clone delay ?branch ?(depth = 1) nm src =
   exec_async
     ~delay
     (Printf.sprintf
-       "git clone -q --depth 1 %s%s jane-street/lib/%s"
+       "git clone -q --depth %d %s%s jane-street/lib/%s"
+       depth
        (match branch with
        | None -> ""
        | Some b -> Printf.sprintf "-b %s " b)
        src
        nm)
+
+let clone' delay ?branch ?commit nm src =
+  match commit with
+  | None -> clone delay ?branch nm src
+  | Some commit ->
+      let* () = clone delay ?branch ~depth:10 nm src in
+      exec_async
+        ~delay:0
+        (Printf.sprintf "cd jane-street/lib/%s && git checkout %s" nm commit)
 
 let () =
   Out_channel.(
@@ -241,9 +253,21 @@ let () =
   sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
     (fun i nm ->
-      clone
+      let branch = if is_forked nm then Some "wasm" else None in
+      let commit =
+        if is_forked nm
+        then None
+        else
+          Some
+            (let _, opam = List.assoc nm packages in
+             let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
+             let tar_file = Filename.basename url in
+             String.sub tar_file 0 (String.index tar_file '.'))
+      in
+      clone'
         i
-        ?branch:(if is_forked nm then Some "wasm" else None)
+        ?branch
+        ?commit
         nm
         (Printf.sprintf
            "https://github.com/%s/%s"
