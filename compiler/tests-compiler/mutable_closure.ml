@@ -158,7 +158,7 @@ let%expect_test _ =
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
       var _c_ = i + 1 | 0;
       if(3 === i) break;
-      var i = _c_;
+      i = _c_;
      }
      var
       indirect$0 =

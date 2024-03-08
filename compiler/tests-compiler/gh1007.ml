@@ -225,10 +225,14 @@ let ()  = M.myfun M.x
             if(l2){
              var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
              if(0 < caml_int_compare(h1, h2)){
-              var accu$0 = [0, h1, accu], l1 = t1, accu = accu$0;
+              var accu$0 = [0, h1, accu];
+              l1 = t1;
+              accu = accu$0;
               continue;
              }
-             var accu$1 = [0, h2, accu], l2 = t2, accu = accu$1;
+             var accu$1 = [0, h2, accu];
+             l2 = t2;
+             accu = accu$1;
              continue;
             }
             var _c_ = rev_append(l1, accu);
@@ -303,10 +307,14 @@ let ()  = M.myfun M.x
             if(l2){
              var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
              if(0 < caml_int_compare(h1, h2)){
-              var accu$0 = [0, h2, accu], l2 = t2, accu = accu$0;
+              var accu$0 = [0, h2, accu];
+              l2 = t2;
+              accu = accu$0;
               continue;
              }
-             var accu$1 = [0, h1, accu], l1 = t1, accu = accu$1;
+             var accu$1 = [0, h1, accu];
+             l1 = t1;
+             accu = accu$1;
              continue;
             }
             var _a_ = rev_append(l1, accu);
@@ -320,10 +328,12 @@ let ()  = M.myfun M.x
       var len = 0, param = l;
       for(;;){
        if(! param) break;
-       var l$0 = param[2], len$0 = len + 1 | 0, len = len$0, param = l$0;
+       var l$0 = param[2], len$0 = len + 1 | 0;
+       len = len$0;
+       param = l$0;
       }
       if(2 <= len) sort(len, l);
-      var x$0 = next;
+      x$0 = next;
      }
     }
     //end |}]
@@ -392,7 +402,7 @@ let ()  = M.run ()
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _a_ = i + 1 | 0;
       if(4 === i) return 0;
-      var i = _a_;
+      i = _a_;
      }
     }
     //end |}]
@@ -498,7 +508,7 @@ let ()  = M.run ()
       if(even(i)) caml_call1(Stdlib[42], cst);
       var _c_ = i + 1 | 0;
       if(4 === i) break;
-      var i = _c_;
+      i = _c_;
      }
      return caml_call2
              (list_iter,
@@ -624,11 +634,12 @@ let ()  = M.run ()
       var param$0 = even(i);
       for(;;){
        if(759635106 <= param$0[1]) break;
-       var f = param$0[2], param$0 = f(0);
+       var f = param$0[2];
+       param$0 = f(0);
       }
       var _e_ = i + 1 | 0;
       if(4 === i) break;
-      var i = _e_;
+      i = _e_;
      }
      return caml_call2
              (list_iter,
