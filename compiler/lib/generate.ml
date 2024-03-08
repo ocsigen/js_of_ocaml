@@ -1306,11 +1306,12 @@ and translate_instr ctx expr_queue instr =
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
-        (* "switcher" is emitted by the OCaml compiler when compiling
-           pattern matching, it does not help much to keep it in the
-           generated js, let's drop it *)
         | Some "" -> false
-        | Some s -> (not (generated_name s)) && not (String.is_prefix s ~prefix:"jsoo_")
+        | Some s ->
+            (* "switcher" is emitted by the OCaml compiler when compiling
+               pattern matching, it does not help much to keep it in the
+               generated js, let's drop it *)
+            (not (generated_name s)) && not (String.is_prefix s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
       | 0, _ ->
@@ -1480,7 +1481,10 @@ and translate_instrs (ctx : Ctx.t) expr_queue instrs =
 (* Compile loops. *)
 and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
   if (not (List.is_empty queue))
-     && (Structure.is_loop_header st.structure pc || not (Config.Flag.inline ()))
+     && (Structure.is_loop_header st.structure pc
+        || (* Do not inline expressions across block boundaries when --no-inline is used
+              Single-stepping in the debugger should work better this way (fixes #290). *)
+        not (Config.Flag.inline ()))
   then
     let never, code = compile_block st [] pc scope_stack ~fall_through in
     never, flush_all queue code
