@@ -6,6 +6,7 @@
 * Compiler: codegen: change argument passing of back edges.
 * Compiler: codegen: use Array destruction to assign args of back
   edges with es6.
+* Compiler: codegen: specialize string equality
 
 ## Bug fixes
 
