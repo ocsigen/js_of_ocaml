@@ -7,6 +7,7 @@
 * Compiler: codegen: use Array destruction to assign args of back
   edges with es6.
 * Compiler: codegen: specialize string equality
+* Compiler: codegen: more specialization for %int_add, %int_sub
 
 ## Bug fixes
 

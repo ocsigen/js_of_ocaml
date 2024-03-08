@@ -927,8 +927,16 @@ let _ =
   register_un_prim "%direct_obj_tag" `Mutator (fun cx _loc -> Mlvalue.Block.tag cx);
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
-  register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
-  register_bin_prim "%int_sub" `Pure (fun cx cy _ -> to_int (J.EBin (J.Minus, cx, cy)));
+  register_bin_prim "%int_add" `Pure (fun cx cy _ ->
+      match cx, cy with
+      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
+          to_int (J.EBin (J.Plus, cz, J.ENum (J.Num.add m (J.Num.neg n))))
+      | _ -> to_int (plus_int cx cy));
+  register_bin_prim "%int_sub" `Pure (fun cx cy _ ->
+      match cx, cy with
+      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
+          to_int (J.EBin (J.Minus, cz, J.ENum (J.Num.add n m)))
+      | _ -> to_int (J.EBin (J.Minus, cx, cy)));
   register_bin_prim "%direct_int_mul" `Pure (fun cx cy _ ->
       to_int (J.EBin (J.Mul, cx, cy)));
   register_bin_prim "%direct_int_div" `Pure (fun cx cy _ ->

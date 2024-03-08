@@ -338,7 +338,7 @@ end
     113:      /*<<test.ml:64:2>>*/ if(! backtrace)
     114:       /*<<test.ml:66:6>>*/ return  /*<<test.ml:66:6>>*/ caml_call2
     115:              (Stdlib_Printf[1], outchan, _d_);
-    116:     var a = backtrace[1], _f_ = a.length - 1 - 1 | 0, _e_ = 0;
+    116:     var a = backtrace[1], _f_ = a.length - 2 | 0, _e_ = 0;
     117:     if(_f_ >= 0){
     118:      var i = _e_;
     119:      for(;;){
