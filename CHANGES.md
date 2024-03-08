@@ -1,3 +1,12 @@
+# dev (2024-??) - ??
+
+## Features/Changes
+* Compiler: es6 now generate consise body
+* Compiler: codegen: optimize Offset_ref for negative offsets
+* Compiler: codegen: change argument passing of back edges.
+
+## Bug fixes
+
 # 5.7.1 (2024-03-05) - Lille
 
 ## Features/Changes
