@@ -1675,7 +1675,12 @@ class simpl =
       | EFun
           (None, (({ generator = false; async = true | false }, _, body, _) as fun_decl))
         when Config.Flag.es6 () && not (use_fun_context body) ->
-          EArrow (fun_decl, false, ANo_fun_context)
+          let consise =
+            match body with
+            | [ (Return_statement _, _) ] -> true
+            | _ -> false
+          in
+          EArrow (fun_decl, consise, ANo_fun_context)
       | EArrow (((_, _, body, _) as fun_decl), consise, AUnknown) ->
           if use_fun_context body
           then EArrow (fun_decl, consise, AUse_parent_fun_context)
