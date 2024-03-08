@@ -593,7 +593,7 @@ let () = print_endline (trim " ")
      for(;;){
       if(i[1] > j[1]) break;
       if(! is_space(caml_bytes_unsafe_get(s$0, j[1]))) break;
-      j[1] += - 1;
+      j[1]--;
      }
      a:
      {

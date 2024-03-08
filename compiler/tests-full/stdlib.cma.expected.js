@@ -5174,7 +5174,7 @@
      j = [0, len - 1 | 0];
     for(;;){
       /*<<bytes.ml:162:20>>*/ if
-      (i[1] <= j[1] && is_space(caml_bytes_unsafe_get(s, j[1]))){j[1] += -1; continue;}
+      (i[1] <= j[1] && is_space(caml_bytes_unsafe_get(s, j[1]))){j[1]--; continue;}
      return i[1] <= j[1] ? sub(s, i[1], (j[1] - i[1] | 0) + 1 | 0) : empty;
     }
     /*<<bytes.ml:168:9>>*/ }
@@ -7960,7 +7960,7 @@
           /*<<array.ml:393:25>>*/ _o_ = caml_check_bound(dst, _n_)[1 + _n_],
          _p_ = j[1] + 1 | 0;
          /*<<array.ml:393:8>>*/ caml_check_bound(dst, _p_)[1 + _p_] = _o_;
-        j[1] += -1;
+        j[1]--;
        }
        var _q_ = j[1] + 1 | 0;
         /*<<array.ml:396:6>>*/ caml_check_bound(dst, _q_)[1 + _q_] = e;
@@ -8902,7 +8902,7 @@
          (dst,
           j[1] + 1 | 0,
            /*<<float.ml:503:27>>*/ caml_array_get(dst, j[1]));
-        j[1] += -1;
+        j[1]--;
        }
         /*<<float.ml:506:8>>*/  /*<<float.ml:506:8>>*/ caml_array_set
         (dst, j[1] + 1 | 0, e);
@@ -16993,7 +16993,7 @@
          /*<<camlinternalFormat.ml:1443:29>>*/ put(95);
         left[1] = 3;
        }
-       left[1] += -1;
+       left[1]--;
         /*<<camlinternalFormat.ml:1443:61>>*/ put(c);
       }
        /*<<camlinternalFormat.ml:1440:4>>*/  /*<<camlinternalFormat.ml:1440:4>>*/ var
