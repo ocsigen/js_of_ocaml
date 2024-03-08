@@ -10,7 +10,7 @@ let f x =
     |}
   in
   let flags = [ "--enable"; "es6" ] in
-  let program = Util.compile_and_parse ~effects:false ~flags prog in
+  let program = Util.compile_and_parse ~effects:false ~pretty:true ~flags prog in
   Util.print_program program;
   [%expect
     {|
@@ -18,9 +18,20 @@ let f x =
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        f = x=>{var g = y=>{return (x + y | 0) + 7 | 0;}; return g;},
+        f = x=>{var g = y=>(x + y | 0) + 7 | 0; return g;},
         Test = [0, f];
        runtime.caml_register_global(0, Test, "Test");
+       return;})
+     (globalThis);
+    //end |}];
+  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags prog in
+  Util.print_program program;
+  [%expect
+    {|
+    (a=>{
+       "use strict";
+       var b = a.jsoo_runtime;
+       b.caml_register_global(0, [0, b=>a=>(b + a | 0) + 7 | 0], "Test");
        return;})
      (globalThis);
     //end |}]
