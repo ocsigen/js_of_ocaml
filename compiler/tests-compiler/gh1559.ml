@@ -98,7 +98,7 @@ let () = my_ref := 2
           i = t[1];
          if(0 === i){var _a_ = this_will_be_undefined(0); break a;}
          if(1 === i) break;
-         var t = t$0;
+         t = t$0;
         }
         var
          _a_ =
@@ -205,7 +205,7 @@ let () = my_ref := 2
            i = t[1];
           if(0 === i) break;
           if(1 === i) break b;
-          var t = t$0;
+          t = t$0;
          }
          var
           g = function(param){return 2 + this_will_be_undefined(0) | 0;},

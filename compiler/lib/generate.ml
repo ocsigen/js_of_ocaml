@@ -725,13 +725,19 @@ let parallel_renaming back_edge params args continuation queue =
         then
           let () = assert back_edge in
           let before = (J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before in
-          let renaming =
-            (J.variable_declaration [ J.V y, (J.EVar (J.V x), J.N) ], J.N) :: renaming
-          in
+          let renaming = (y, J.EVar (J.V x)) :: renaming in
           queue, before, renaming, seen'
         else
-          let renaming = (J.variable_declaration [ J.V y, (cx, J.N) ], J.N) :: renaming in
+          let renaming = (y, cx) :: renaming in
           queue, before, renaming, seen')
+  in
+  let renaming =
+    if back_edge
+    then
+      List.map renaming ~f:(fun (t, e) ->
+          J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V t), e)), J.N)
+    else
+      List.map renaming ~f:(fun (t, e) -> J.variable_declaration [ J.V t, (e, J.N) ], J.N)
   in
   let never, code = continuation queue in
   never, List.rev_append before (List.rev_append renaming code)
