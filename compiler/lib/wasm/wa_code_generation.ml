@@ -39,9 +39,11 @@ type context =
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
+  ; mutable globalized_variables : Var.Set.t
+  ; value_type : W.value_type
   }
 
-let make_context () =
+let make_context ~value_type =
   { constants = Hashtbl.create 128
   ; data_segments = Var.Map.empty
   ; constant_globals = Var.Map.empty
@@ -61,6 +63,8 @@ let make_context () =
   ; strings = []
   ; string_index = StringMap.empty
   ; fragments = StringMap.empty
+  ; globalized_variables = Var.Set.empty
+  ; value_type
   }
 
 type var =
@@ -166,6 +170,10 @@ let register_global name ?(constant = false) typ init st =
           }
           st.context.constant_globals);
   (), st
+
+let global_is_registered name =
+  let* ctx = get_context in
+  return (Var.Map.mem name ctx.constant_globals)
 
 let global_is_constant name =
   let* ctx = get_context in
@@ -444,6 +452,10 @@ let tee ?typ x e =
     let* i = add_var ?typ x in
     return (W.LocalTee (i, e))
 
+let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
+
+let value_type st = st.context.value_type, st
+
 let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
@@ -455,8 +467,30 @@ let rec store ?(always = false) ?typ x e =
       if b && not always
       then register_constant x e
       else
-        let* i = add_var ?typ x in
-        instr (LocalSet (i, e))
+        let* b = should_make_global x in
+        if b
+        then
+          let* typ =
+            match typ with
+            | Some typ -> return typ
+            | None -> value_type
+          in
+          let* () =
+            let* b = global_is_registered x in
+            if b
+            then return ()
+            else
+              register_global
+                ~constant:true
+                (V x)
+                { mut = true; typ }
+                (W.RefI31 (Const (I32 0l)))
+          in
+          let* () = register_constant x (W.GlobalGet (V x)) in
+          instr (GlobalSet (V x, e))
+        else
+          let* i = add_var ?typ x in
+          instr (LocalSet (i, e))
 
 let assign x e =
   let* x = var x in
@@ -566,7 +600,7 @@ let need_dummy_fun ~cps ~arity st =
 
 let init_code context = instrs context.init_code
 
-let function_body ~context ~value_type ~param_count ~body =
+let function_body ~context ~param_count ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
@@ -580,7 +614,7 @@ let function_body ~context ~value_type ~param_count ~body =
   let body = Wa_tail_call.f body in
   let locals =
     local_types
-    |> Array.map ~f:(fun v -> Option.value ~default:value_type v)
+    |> Array.map ~f:(fun v -> Option.value ~default:context.value_type v)
     |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
     |> Array.to_list
   in

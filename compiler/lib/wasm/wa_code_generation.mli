@@ -23,9 +23,11 @@ type context =
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
+  ; mutable globalized_variables : Code.Var.Set.t
+  ; value_type : Wa_ast.value_type
   }
 
-val make_context : unit -> context
+val make_context : value_type:Wa_ast.value_type -> context
 
 type 'a t
 
@@ -163,7 +165,6 @@ val need_dummy_fun : cps:bool -> arity:int -> Code.Var.t t
 
 val function_body :
      context:context
-  -> value_type:Wa_ast.value_type
   -> param_count:int
   -> body:unit t
   -> Wa_ast.value_type list * Wa_ast.instruction list

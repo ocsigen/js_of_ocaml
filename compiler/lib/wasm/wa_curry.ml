@@ -82,9 +82,7 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       loop m [] f None
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:2 ~body
-    in
+    let locals, body = function_body ~context ~param_count:2 ~body in
     W.Function { name; exported_name = None; typ = func_type 1; locals; body }
 
   let curry_name n m = Printf.sprintf "curry_%d_%d" n m
@@ -142,9 +140,7 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       Stack.perform_spilling stack_ctx (`Instr ret)
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:2 ~body
-    in
+    let locals, body = function_body ~context ~param_count:2 ~body in
     W.Function { name; exported_name = None; typ = func_type 1; locals; body }
     :: functions
 
@@ -185,9 +181,7 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       loop m [] f None
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:3 ~body
-    in
+    let locals, body = function_body ~context ~param_count:3 ~body in
     W.Function { name; exported_name = None; typ = func_type 2; locals; body }
 
   let cps_curry_name n m = Printf.sprintf "cps_curry_%d_%d" n m
@@ -248,9 +242,7 @@ module Make (Target : Wa_target_sig.S) = struct
       let* c = call ~cps:false ~arity:1 (load cont) [ e ] in
       instr (W.Return (Some c))
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:3 ~body
-    in
+    let locals, body = function_body ~context ~param_count:3 ~body in
     W.Function { name; exported_name = None; typ = func_type 2; locals; body }
     :: functions
 
@@ -309,9 +301,7 @@ module Make (Target : Wa_target_sig.S) = struct
          in
          build_applies (load f) l)
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:(arity + 1) ~body
-    in
+    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
     W.Function { name; exported_name = None; typ = func_type arity; locals; body }
 
   let cps_apply ~context ~arity ~name =
@@ -372,9 +362,7 @@ module Make (Target : Wa_target_sig.S) = struct
          let* () = push (call ~cps:true ~arity:2 (load f) [ x; iterate ]) in
          Stack.perform_spilling stack_ctx (`Instr ret))
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:(arity + 1) ~body
-    in
+    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
     W.Function { name; exported_name = None; typ = func_type arity; locals; body }
 
   let dummy ~context ~cps ~arity ~name =
@@ -399,9 +387,7 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       instr (W.Return (Some e))
     in
-    let locals, body =
-      function_body ~context ~value_type:Value.value ~param_count:(arity + 1) ~body
-    in
+    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
     W.Function { name; exported_name = None; typ = func_type arity; locals; body }
 
   let f ~context =

@@ -922,6 +922,11 @@ module Closure = struct
   let translate ~context ~closures ~stack_ctx:_ ~cps f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
+    assert (
+      not
+        (List.exists
+           ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
+           free_variables));
     let arity = List.assoc f info.functions in
     let arity = if cps then arity - 1 else arity in
     let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
@@ -1028,15 +1033,15 @@ module Closure = struct
           else res
 
   let bind_environment ~context ~closures ~cps f =
-    if Hashtbl.mem context.constants f
+    let info = Code.Var.Map.find f closures in
+    let free_variables = get_free_variables ~context info in
+    let free_variable_count = List.length free_variables in
+    if free_variable_count = 0
     then
       (* The closures are all constants and the environment is empty. *)
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
-      let info = Code.Var.Map.find f closures in
-      let free_variables = get_free_variables ~context info in
-      let free_variable_count = List.length free_variables in
       let arity = List.assoc f info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in

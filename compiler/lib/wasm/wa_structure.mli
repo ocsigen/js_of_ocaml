@@ -15,3 +15,5 @@ val is_merge_node : control_flow_graph -> Code.Addr.t -> bool
 val is_backward : control_flow_graph -> Code.Addr.t -> Code.Addr.t -> bool
 
 val sort_in_post_order : control_flow_graph -> Code.Addr.t list -> Code.Addr.t list
+
+val blocks_in_reverse_post_order : control_flow_graph -> Code.Addr.t list
