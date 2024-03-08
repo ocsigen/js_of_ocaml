@@ -1333,23 +1333,19 @@ and translate_instr ctx expr_queue instr =
         expr_queue
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Block.field cx n, cy)), loc ]
-  | Offset_ref (x, 1) ->
-      let loc = source_location ctx pc in
-      (* FIX: may overflow.. *)
-      let (_px, cx), expr_queue = access_queue expr_queue x in
-      flush_queue
-        expr_queue
-        mutator_p
-        [ J.Expression_statement (J.EUn (J.IncrA, Mlvalue.Block.field cx 0)), loc ]
   | Offset_ref (x, n) ->
       let loc = source_location ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
-      flush_queue
-        expr_queue
-        mutator_p
-        [ J.Expression_statement (J.EBin (J.PlusEq, Mlvalue.Block.field cx 0, int n)), loc
-        ]
+      let expr = Mlvalue.Block.field cx 0 in
+      let expr' =
+        match n with
+        | 1 -> J.EUn (J.IncrA, expr)
+        | -1 -> J.EUn (J.DecrA, expr)
+        | n when n < 0 (* *) -> J.EBin (J.MinusEq, expr, int (-n))
+        | n (*   n > 0    *) -> J.EBin (J.PlusEq, expr, int n)
+      in
+      flush_queue expr_queue mutator_p [ J.Expression_statement expr', loc ]
   | Array_set (x, y, z) ->
       let loc = source_location ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
