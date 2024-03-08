@@ -19,7 +19,7 @@
 
 open Source_map
 
-let json t =
+let json ?replace_mappings t =
   let rewrite_path path =
     if Filename.is_relative path
     then path
@@ -38,7 +38,8 @@ let json t =
           | Some s -> rewrite_path s) )
     ; "names", `List (List.map (fun s -> `String s) t.names)
     ; "sources", `List (List.map (fun s -> `String (rewrite_path s)) t.sources)
-    ; "mappings", `String (string_of_mapping t.mappings)
+    ; ( "mappings"
+      , `String (Option.value ~default:(string_of_mapping t.mappings) replace_mappings) )
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with
@@ -51,7 +52,7 @@ let json t =
                 l) )
     ]
 
-let invalid () = invalid_arg "Source_map.of_json"
+let invalid () = invalid_arg "Source_map_io.of_json"
 
 let string name rest =
   try
@@ -88,34 +89,44 @@ let list_string_opt name rest =
     | _ -> invalid ()
   with Not_found -> None
 
-let of_json json =
-  match json with
-  | `Assoc (("version", `Float version) :: rest) when int_of_float version = 3 ->
-      let def v d =
-        match v with
-        | None -> d
-        | Some v -> v
-      in
-      let file = string "file" rest in
-      let sourceroot = string "sourceRoot" rest in
-      let names = list_string "names" rest in
-      let sources = list_string "sources" rest in
-      let sources_content = list_string_opt "sourcesContent" rest in
-      let mappings = string "mappings" rest in
-      { version = int_of_float version
+let of_json ~parse_mappings json =
+  let parse ~version rest =
+    let def v d =
+      match v with
+      | None -> d
+      | Some v -> v
+    in
+    let file = string "file" rest in
+    let sourceroot = string "sourceRoot" rest in
+    let names = list_string "names" rest in
+    let sources = list_string "sources" rest in
+    let sources_content = list_string_opt "sourcesContent" rest in
+    let mappings = string "mappings" rest in
+    ( { version
       ; file = def file ""
       ; sourceroot
       ; names = def names []
       ; sources_content
       ; sources = def sources []
-      ; mappings = mapping_of_string (def mappings "")
+      ; mappings = (if parse_mappings then mapping_of_string (def mappings "") else [])
       }
+    , if parse_mappings then None else mappings )
+  in
+  match json with
+  | `Assoc (("version", `Float version) :: rest) when int_of_float version = 3 ->
+      parse ~version:3 rest
+  | `Assoc (("version", `Int 3) :: rest) -> parse ~version:3 rest
   | _ -> invalid ()
 
-let of_string s = of_json (Yojson.Basic.from_string s)
+let of_string s = of_json ~parse_mappings:true (Yojson.Basic.from_string s) |> fst
 
 let to_string m = Yojson.Basic.to_string (json m)
 
-let to_file m file = Yojson.Basic.to_file file (json m)
+let to_file ?mappings m ~file =
+  let replace_mappings = mappings in
+  Yojson.Basic.to_file file (json ?replace_mappings m)
+
+let of_file_no_mappings filename =
+  of_json ~parse_mappings:false (Yojson.Basic.from_file filename)
 
 let enabled = true

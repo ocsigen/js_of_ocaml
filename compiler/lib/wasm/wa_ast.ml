@@ -187,6 +187,8 @@ and instruction =
   | Return_call_indirect of func_type * expression * expression list
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
+  | Location of Code.loc * instruction
+      (** Instruction with attached location information *)
 
 type import_desc =
   | Fun of func_type

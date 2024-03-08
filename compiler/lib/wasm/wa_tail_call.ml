@@ -1,5 +1,22 @@
 open! Stdlib
 
+let rec get_return ~tail i =
+  match i with
+  | Wa_ast.Location (_, i') -> get_return ~tail i'
+  | Return (Some (LocalGet y)) -> Some y
+  | Push (LocalGet y) when tail -> Some y
+  | _ -> None
+
+let rec rewrite_tail_call ~y i =
+  match i with
+  | Wa_ast.Location (loc, i') ->
+      Option.map ~f:(fun i -> Wa_ast.Location (loc, i)) (rewrite_tail_call ~y i')
+  | LocalSet (x, Call (symb, l)) when x = y -> Some (Return_call (symb, l))
+  | LocalSet (x, Call_indirect (ty, e, l)) when x = y ->
+      Some (Return_call_indirect (ty, e, l))
+  | LocalSet (x, Call_ref (ty, e, l)) when x = y -> Some (Return_call_ref (ty, e, l))
+  | _ -> None
+
 let rec instruction ~tail i =
   match i with
   | Wa_ast.Loop (ty, l) -> Wa_ast.Loop (ty, instructions ~tail l)
@@ -17,6 +34,7 @@ let rec instruction ~tail i =
   | Push (Call (symb, l)) when tail -> Return_call (symb, l)
   | Push (Call_indirect (ty, e, l)) when tail -> Return_call_indirect (ty, e, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
+  | Location (loc, i) -> Location (loc, instruction ~tail i)
   | Push (Call_ref _) -> i
   | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
   | Drop _
@@ -43,20 +61,15 @@ and instructions ~tail l =
   match l with
   | [] -> []
   | [ i ] -> [ instruction ~tail i ]
-  | [ LocalSet (x, Call (symb, l)); Return (Some (LocalGet y)) ] when x = y ->
-      [ Return_call (symb, l) ]
-  | [ LocalSet (x, Call_indirect (ty, e, l)); Return (Some (LocalGet y)) ] when x = y ->
-      [ Return_call_indirect (ty, e, l) ]
-  | [ LocalSet (x, Call_ref (ty, e, l)); Return (Some (LocalGet y)) ] when x = y ->
-      [ Return_call_ref (ty, e, l) ]
-  | [ LocalSet (x, Call (symb, l)); Push (LocalGet y) ] when tail && x = y ->
-      [ Return_call (symb, l) ]
-  | [ LocalSet (x, Call_indirect (ty, e, l)); Push (LocalGet y) ] when tail && x = y ->
-      [ Return_call_indirect (ty, e, l) ]
-  | [ LocalSet (x, Call_ref (ty, e, l)); Push (LocalGet y) ] when tail && x = y ->
-      [ Return_call_ref (ty, e, l) ]
   | i :: Nop :: rem -> instructions ~tail (i :: rem)
   | i :: i' :: Nop :: rem -> instructions ~tail (i :: i' :: rem)
+  | [ i; i' ] -> (
+      match get_return ~tail i' with
+      | None -> [ instruction ~tail:false i; instruction ~tail i' ]
+      | Some y -> (
+          match rewrite_tail_call ~y i with
+          | None -> [ instruction ~tail:false i; instruction ~tail i' ]
+          | Some i'' -> [ i'' ]))
   | i :: rem -> instruction ~tail:false i :: instructions ~tail rem
 
 let f l = instructions ~tail:true l

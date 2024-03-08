@@ -28,6 +28,7 @@ type t =
   ; runtime_files : string list
   ; output_file : string * bool
   ; input_file : string
+  ; enable_source_maps : bool
   ; params : (string * string) list
   }
 
@@ -50,11 +51,11 @@ let options =
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let no_sourcemap =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    let doc = "Disable sourcemap output." in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in
   let sourcemap =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    let doc = "Output source locations in a separate sourcemap file." in
     Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
   in
   let sourcemap_inline_in_js =
@@ -69,7 +70,16 @@ let options =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
-  let build_t common set_param profile _ _ _ output_file input_file runtime_files =
+  let build_t
+      common
+      set_param
+      profile
+      sourcemap
+      no_sourcemap
+      _
+      output_file
+      input_file
+      runtime_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       match output_file with
@@ -77,7 +87,16 @@ let options =
       | None -> chop_extension input_file ^ ".js", false
     in
     let params : (string * string) list = List.flatten set_param in
-    `Ok { common; params; profile; output_file; input_file; runtime_files }
+    let enable_source_maps = (not no_sourcemap) && sourcemap in
+    `Ok
+      { common
+      ; params
+      ; profile
+      ; output_file
+      ; input_file
+      ; runtime_files
+      ; enable_source_maps
+      }
   in
   let t =
     Term.(
@@ -85,8 +104,8 @@ let options =
       $ Jsoo_cmdline.Arg.t
       $ set_param
       $ profile
-      $ no_sourcemap
       $ sourcemap
+      $ no_sourcemap
       $ sourcemap_inline_in_js
       $ output_file
       $ input_file

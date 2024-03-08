@@ -604,23 +604,30 @@ module Generate (Target : Wa_target_sig.S) = struct
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
-  and translate_instr ctx stack_ctx context (i, _) =
-    match i with
-    | Assign (x, y) ->
-        let* () = assign x (load y) in
-        Stack.assign stack_ctx x
-    | Let (x, e) ->
-        if ctx.live.(Var.idx x) = 0
-        then drop (translate_expr ctx stack_ctx context x e)
-        else store x (translate_expr ctx stack_ctx context x e)
-    | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
-    | Offset_ref (x, n) ->
-        Memory.set_field
-          (load x)
-          0
-          (Value.val_int
-             Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
-    | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
+  and emit_location loc instrs =
+    match loc with
+    | No -> instrs
+    | Before _ | After _ -> with_location loc instrs
+
+  and translate_instr ctx stack_ctx context (i, loc) =
+    emit_location
+      loc
+      (match i with
+      | Assign (x, y) ->
+          let* () = assign x (load y) in
+          Stack.assign stack_ctx x
+      | Let (x, e) ->
+          if ctx.live.(Var.idx x) = 0
+          then drop (translate_expr ctx stack_ctx context x e)
+          else store x (translate_expr ctx stack_ctx context x e)
+      | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
+      | Offset_ref (x, n) ->
+          Memory.set_field
+            (load x)
+            0
+            (Value.val_int
+               Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
+      | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z))
 
   and translate_instrs ctx stack_ctx context l =
     match l with
@@ -823,92 +830,96 @@ module Generate (Target : Wa_target_sig.S) = struct
             else code ~context
           in
           translate_tree result_typ fall_through pc' context
-      | [] -> (
+      | [] ->
           let block = Addr.Map.find pc ctx.blocks in
           let* global_context = get_context in
           let stack_ctx = Stack.start_block ~context:global_context stack_info pc in
           let* () = translate_instrs ctx stack_ctx context block.body in
           let* () = Stack.perform_reloads stack_ctx (`Branch (fst block.branch)) in
           let* () = Stack.perform_spilling stack_ctx (`Block pc) in
-          match fst block.branch with
-          | Branch cont ->
-              translate_branch result_typ fall_through pc cont context stack_ctx
-          | Return x -> (
-              let* e = load x in
-              match fall_through with
-              | `Return -> instr (Push e)
-              | `Block _ -> instr (Return (Some e)))
-          | Cond (x, cont1, cont2) ->
-              let context' = extend_context fall_through context in
-              if_
-                { params = []; result = result_typ }
-                (Value.check_is_not_zero (load x))
-                (translate_branch result_typ fall_through pc cont1 context' stack_ctx)
-                (translate_branch result_typ fall_through pc cont2 context' stack_ctx)
-          | Stop -> (
-              let* e = Value.unit in
-              match fall_through with
-              | `Return -> instr (Push e)
-              | `Block _ -> instr (Return (Some e)))
-          | Switch (x, a1, a2) ->
-              let l =
-                List.filter
-                  ~f:(fun pc' -> Stack.stack_adjustment_needed stack_ctx ~src:pc ~dst:pc')
-                  (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc)))
-              in
-              let br_table e a context =
-                let len = Array.length a in
-                let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
-                let dest (pc, args) =
-                  assert (List.is_empty args);
-                  label_index context pc
+          let branch, loc = block.branch in
+          emit_location
+            loc
+            (match branch with
+            | Branch cont ->
+                translate_branch result_typ fall_through pc cont context stack_ctx
+            | Return x -> (
+                let* e = load x in
+                match fall_through with
+                | `Return -> instr (Push e)
+                | `Block _ -> instr (Return (Some e)))
+            | Cond (x, cont1, cont2) ->
+                let context' = extend_context fall_through context in
+                if_
+                  { params = []; result = result_typ }
+                  (Value.check_is_not_zero (load x))
+                  (translate_branch result_typ fall_through pc cont1 context' stack_ctx)
+                  (translate_branch result_typ fall_through pc cont2 context' stack_ctx)
+            | Stop -> (
+                let* e = Value.unit in
+                match fall_through with
+                | `Return -> instr (Push e)
+                | `Block _ -> instr (Return (Some e)))
+            | Switch (x, a1, a2) ->
+                let l =
+                  List.filter
+                    ~f:(fun pc' ->
+                      Stack.stack_adjustment_needed stack_ctx ~src:pc ~dst:pc')
+                    (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc)))
                 in
-                let* e = e in
-                instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
-              in
-              let rec nest l context =
-                match l with
-                | pc' :: rem ->
-                    let* () =
-                      Wa_code_generation.block
-                        { params = []; result = [] }
-                        (nest rem (`Block pc' :: context))
-                    in
-                    let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
-                    instr (Br (label_index context pc', None))
-                | [] -> (
-                    match a1, a2 with
-                    | [||], _ -> br_table (Memory.tag (load x)) a2 context
-                    | _, [||] -> br_table (Value.int_val (load x)) a1 context
-                    | _ ->
-                        (*ZZZ Use Br_on_cast *)
-                        let context' = extend_context fall_through context in
-                        if_
-                          { params = []; result = result_typ }
-                          (Value.check_is_int (load x))
-                          (br_table (Value.int_val (load x)) a1 context')
-                          (br_table (Memory.tag (load x)) a2 context'))
-              in
-              nest l context
-          | Raise (x, _) ->
-              let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Value.value) in
-              instr (Throw (tag, e))
-          | Pushtrap (cont, x, cont', _) ->
-              handle_exceptions
-                ~result_typ
-                ~fall_through
-                ~context:(extend_context fall_through context)
-                (wrap_with_handlers
-                   p
-                   (fst cont)
-                   (fun ~result_typ ~fall_through ~context ->
-                     translate_branch result_typ fall_through pc cont context stack_ctx))
-                x
-                (fun ~result_typ ~fall_through ~context ->
-                  translate_branch result_typ fall_through pc cont' context stack_ctx)
-          | Poptrap cont ->
-              translate_branch result_typ fall_through pc cont context stack_ctx)
+                let br_table e a context =
+                  let len = Array.length a in
+                  let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
+                  let dest (pc, args) =
+                    assert (List.is_empty args);
+                    label_index context pc
+                  in
+                  let* e = e in
+                  instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
+                in
+                let rec nest l context =
+                  match l with
+                  | pc' :: rem ->
+                      let* () =
+                        Wa_code_generation.block
+                          { params = []; result = [] }
+                          (nest rem (`Block pc' :: context))
+                      in
+                      let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
+                      instr (Br (label_index context pc', None))
+                  | [] -> (
+                      match a1, a2 with
+                      | [||], _ -> br_table (Memory.tag (load x)) a2 context
+                      | _, [||] -> br_table (Value.int_val (load x)) a1 context
+                      | _ ->
+                          (*ZZZ Use Br_on_cast *)
+                          let context' = extend_context fall_through context in
+                          if_
+                            { params = []; result = result_typ }
+                            (Value.check_is_int (load x))
+                            (br_table (Value.int_val (load x)) a1 context')
+                            (br_table (Memory.tag (load x)) a2 context'))
+                in
+                nest l context
+            | Raise (x, _) ->
+                let* e = load x in
+                let* tag = register_import ~name:exception_name (Tag Value.value) in
+                instr (Throw (tag, e))
+            | Pushtrap (cont, x, cont', _) ->
+                handle_exceptions
+                  ~result_typ
+                  ~fall_through
+                  ~context:(extend_context fall_through context)
+                  (wrap_with_handlers
+                     p
+                     (fst cont)
+                     (fun ~result_typ ~fall_through ~context ->
+                       translate_branch result_typ fall_through pc cont context stack_ctx))
+                  x
+                  (fun ~result_typ ~fall_through ~context ->
+                    translate_branch result_typ fall_through pc cont' context stack_ctx)
+            | Poptrap cont ->
+                translate_branch result_typ fall_through pc cont context stack_ctx)
     and translate_branch result_typ fall_through src (dst, args) context stack_ctx =
       let* () =
         if List.is_empty args
@@ -1110,7 +1121,7 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let f ch (p : Code.program) ~live_vars ~in_cps =
+let f ch (p : Code.program) ~live_vars ~in_cps ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
   match target with
   | `Core ->
@@ -1121,5 +1132,5 @@ let f ch (p : Code.program) ~live_vars ~in_cps =
   | `GC ->
       let module G = Generate (Wa_gc_target) in
       let fields, js_code = G.f ~live_vars ~in_cps p in
-      Wa_wat_output.f ch fields;
+      Wa_wat_output.f ~debug ch fields;
       js_code

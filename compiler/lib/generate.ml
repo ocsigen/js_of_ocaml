@@ -341,10 +341,13 @@ let bool e = J.ECond (e, one, zero)
 
 (****)
 
-let source_location ctx ?force (pc : Code.loc) =
-  match Parse_bytecode.Debug.find_loc ctx.Ctx.debug ?force pc with
+let source_location debug ?force (pc : Code.loc) =
+  match Parse_bytecode.Debug.find_loc debug ?force pc with
   | Some pi -> J.Pi pi
   | None -> J.N
+
+let source_location_ctx ctx ?force (pc : Code.loc) =
+  source_location ctx.Ctx.debug ?force pc
 
 (****)
 
@@ -1240,13 +1243,13 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
-      let loc = source_location ctx ~force:After (After pc) in
+      let loc = source_location_ctx ctx ~force:After (After pc) in
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
         | (st, x) :: rem ->
             let loc =
-              match x, source_location ctx (Before pc) with
+              match x, source_location_ctx ctx (Before pc) with
               | (J.U | J.N), (J.U | J.N) -> J.U
               | x, (J.U | J.N) -> x
               | (J.U | J.N), x -> x
@@ -1495,14 +1498,14 @@ and translate_instr ctx expr_queue instr =
   let instr, pc = instr in
   match instr with
   | Assign (x, y) ->
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
         expr_queue
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =
         match Code.Var.get_name x with
@@ -1533,7 +1536,7 @@ and translate_instr ctx expr_queue instr =
             prop
             (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
   | Set_field (x, n, y) ->
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
@@ -1541,7 +1544,7 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Block.field cx n, cy)), loc ]
   | Offset_ref (x, 1) ->
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
@@ -1549,7 +1552,7 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EUn (J.IncrA, Mlvalue.Block.field cx 0)), loc ]
   | Offset_ref (x, n) ->
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
@@ -1558,7 +1561,7 @@ and translate_instr ctx expr_queue instr =
         [ J.Expression_statement (J.EBin (J.PlusEq, Mlvalue.Block.field cx 0, int n)), loc
         ]
   | Array_set (x, y, z) ->
-      let loc = source_location ctx pc in
+      let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       let (_pz, cz), expr_queue = access_queue expr_queue z in
@@ -1619,7 +1622,7 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
                      else (
                        if debug () then Format.eprintf "break;@;}@]@,";
                        body @ [ J.Break_statement None, J.N ])) )
-            , source_location st.ctx (Code.location_of_pc pc) )
+            , source_location_ctx st.ctx (Code.location_of_pc pc) )
           in
           let label = if !lab_used then Some lab else None in
           let for_loop =
@@ -1854,7 +1857,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
      | Stop -> Format.eprintf "stop;@;"
      | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
      | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
-  let loc = source_location st.ctx pc in
+  let loc = source_location_ctx st.ctx pc in
   let res =
     match last with
     | Return x ->

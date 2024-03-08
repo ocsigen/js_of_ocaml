@@ -43,5 +43,4 @@
 (install
  (section man)
  (package wasm_of_ocaml-compiler)
- (files
-  wasm_of_ocaml.1))
+ (files wasm_of_ocaml.1))

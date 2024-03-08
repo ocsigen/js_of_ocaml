@@ -22,7 +22,9 @@ type profile
 
 type 'a target =
   | JavaScript : Pretty_print.t -> Source_map.t option target
-  | Wasm : (Deadcode.variable_uses * Effects.in_cps * Code.program) target
+  | Wasm
+      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
+        target
 
 val f :
      target:'result target
