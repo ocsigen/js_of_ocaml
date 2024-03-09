@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+
 type profile
 
 type optimized_result =
@@ -26,6 +28,7 @@ type optimized_result =
   ; trampolined_calls : Effects.trampolined_calls
   ; in_cps : Effects.in_cps
   ; deadcode_sentinal : Code.Var.t
+  ; shapes : Shape.t StringMap.t
   }
 
 val optimize : profile:profile -> Code.program -> optimized_result
@@ -39,7 +42,7 @@ val f :
   -> formatter:Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.info
+  -> Source_map.info * Shape.t StringMap.t
 
 val f' :
      ?standalone:bool
