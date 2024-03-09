@@ -64,4 +64,6 @@ val the_native_string_of :
 val the_int :
   target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Targetint.t option
 
+val the_shape_of : pure:Code.Var.Set.t -> Info.t -> Code.Var.t -> Shape.t
+
 val f : ?skip_param:bool -> Code.program -> Code.program * Info.t
