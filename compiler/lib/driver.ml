@@ -646,6 +646,29 @@ if (typeof module === 'object' && module.exports) {
   if times () then Format.eprintf "  optimizing: %a@." Timer.print t;
   js
 
+let collects_shapes p =
+  let _, info = Flow.f p in
+  let l = ref StringMap.empty in
+  Code.Addr.Map.iter
+    (fun _ block ->
+      List.iter block.Code.body ~f:(fun (i, _) ->
+          match i with
+          | Code.Let
+              ( _
+              , Prim
+                  ( Extern "caml_register_global"
+                  , [ _code; Pv block; Pc (NativeString name) ] ) ) ->
+              let shape = Flow.the_shape_of info block in
+              let name =
+                match name with
+                | Byte s -> s
+                | Utf (Utf8 s) -> s
+              in
+              l := StringMap.add name shape !l
+          | _ -> ()))
+    p.blocks;
+  !l
+
 let configure formatter =
   let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact formatter (not pretty);
@@ -689,7 +712,15 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r = opt p in
+  let (((prog, _), _) as r) = opt p in
+  let shapes = collects_shapes prog in
+  StringMap.iter
+    (fun name shape ->
+      Shape.set_shape ~name shape;
+      Pretty_print.string
+        formatter
+        (Printf.sprintf "//# shape: %s:%s\n" name (Shape.to_string shape)))
+    shapes;
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 
