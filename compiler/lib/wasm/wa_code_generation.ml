@@ -24,7 +24,8 @@ type context =
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
   ; mutable imports : (Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
-  ; types : (string, Var.t) Hashtbl.t
+  ; type_names : (string, Var.t) Hashtbl.t
+  ; types : (Var.t, Wa_ast.type_field) Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
@@ -46,6 +47,7 @@ let make_context () =
   ; constant_globals = Var.Map.empty
   ; other_fields = []
   ; imports = StringMap.empty
+  ; type_names = Hashtbl.create 128
   ; types = Hashtbl.create 128
   ; closure_envs = Var.Map.empty
   ; apply_funs = IntMap.empty
@@ -114,14 +116,42 @@ type type_def =
 let register_type nm gen_typ st =
   let context = st.context in
   let { supertype; final; typ }, st = gen_typ () st in
-  ( (try Hashtbl.find context.types nm
+  ( (try Hashtbl.find context.type_names nm
      with Not_found ->
        let name = Var.fresh_n nm in
-       context.other_fields <-
-         Type [ { name; typ; supertype; final } ] :: context.other_fields;
-       Hashtbl.add context.types nm name;
+       let type_field = { Wa_ast.name; typ; supertype; final } in
+       context.other_fields <- Type [ type_field ] :: context.other_fields;
+       Hashtbl.add context.type_names nm name;
+       Hashtbl.add context.types name type_field;
        name)
   , st )
+
+let rec type_index_sub ty ty' st =
+  if Var.equal ty ty'
+  then true, st
+  else
+    let type_field = Hashtbl.find st.context.types ty in
+    match type_field.supertype with
+    | None -> false, st
+    | Some ty -> type_index_sub ty ty' st
+
+let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
+  match ty, ty' with
+  | Func, Func
+  | Extern, Extern
+  | (Any | Eq | I31 | Type _), Any
+  | (Eq | I31 | Type _), Eq
+  | I31, I31 -> true, st
+  | Type t, Type t' -> type_index_sub t t' st
+  (* Func and Extern are only in suptyping relation with themselves *)
+  | Func, _
+  | _, Func
+  | Extern, _
+  | _, Extern
+  (* Any has no supertype *)
+  | Any, _
+  (* I31, struct and arrays have no subtype (of a different kind) *)
+  | _, (I31 | Type _) -> false, st
 
 let register_global name ?(constant = false) typ init st =
   st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;

@@ -490,13 +490,17 @@ module Memory = struct
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast (_, GlobalGet (V nm)) -> (
+    | W.RefCast ({ typ; _ }, GlobalGet (V nm)) -> (
         let* init = get_global nm in
         match init with
-        | Some (W.StructNew (_, l)) ->
-            let e = List.nth l i in
-            let* b = is_small_constant e in
-            if b then return e else return (W.StructGet (None, ty, i, e))
+        | Some (W.StructNew (ty', l)) ->
+            let* b = heap_type_sub (Type ty') typ in
+            if b
+            then
+              let e' = List.nth l i in
+              let* b = is_small_constant e' in
+              if b then return e' else return (W.StructGet (None, ty, i, e))
+            else return (W.StructGet (None, ty, i, e))
         | _ -> return (W.StructGet (None, ty, i, e)))
     | _ -> return (W.StructGet (None, ty, i, e))
 

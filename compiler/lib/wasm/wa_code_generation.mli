@@ -8,7 +8,8 @@ type context =
   ; mutable constant_globals : constant_global Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
   ; mutable imports : (Code.Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
-  ; types : (string, Code.Var.t) Hashtbl.t
+  ; type_names : (string, Code.Var.t) Hashtbl.t
+  ; types : (Code.Var.t, Wa_ast.type_field) Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
@@ -123,6 +124,8 @@ type type_def =
   }
 
 val register_type : string -> (unit -> type_def t) -> Wa_ast.var t
+
+val heap_type_sub : Wa_ast.heap_type -> Wa_ast.heap_type -> bool t
 
 val register_import :
   ?import_module:string -> name:string -> Wa_ast.import_desc -> Wa_ast.var t
