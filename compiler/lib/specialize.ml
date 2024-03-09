@@ -23,29 +23,36 @@ open Flow
 
 let function_arity info x =
   let rec arity info x acc =
-    get_approx
-      info
-      (fun x ->
-        match Flow.Info.def info x with
-        | Some (Closure (l, _)) -> Some (List.length l)
-        | Some (Special (Alias_prim prim)) -> (
-            try Some (Primitive.arity prim) with Not_found -> None)
-        | Some (Apply { f; args; _ }) -> (
-            if List.mem f ~set:acc
-            then None
-            else
-              match arity info f (f :: acc) with
-              | Some n ->
-                  let diff = n - List.length args in
-                  if diff > 0 then Some diff else None
-              | None -> None)
-        | _ -> None)
-      None
-      (fun u v ->
-        match u, v with
-        | Some n, Some m when n = m -> u
-        | _ -> None)
-      x
+    match Shape.get x with
+    | Some shape -> (
+        match shape with
+        | Function { arity; _ } -> Some arity
+        | Block _ | Bot _ -> None)
+    | None ->
+        get_approx
+          info
+          (fun x ->
+            match Info.def info x with
+            | Some (Closure (l, _)) -> Some (List.length l)
+            | Some (Special (Alias_prim prim)) -> (
+                try Some (Primitive.arity prim) with Not_found -> None)
+            | Some (Apply { f; args; _ }) -> (
+                if List.mem f ~set:acc
+                then None
+                else
+                  match arity info f (f :: acc) with
+                  | Some n ->
+                      let diff = n - List.length args in
+                      if diff > 0 then Some diff else None
+                  | None -> None)
+            | Some _ -> None
+            | None -> None)
+          None
+          (fun u v ->
+            match u, v with
+            | Some n, Some m when n = m -> u
+            | _ -> None)
+          x
   in
   arity info x []
 

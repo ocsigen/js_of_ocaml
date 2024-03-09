@@ -62,24 +62,25 @@ let%expect_test _ =
       $ cat "test.js"
         1:
         2: //# unitInfo: Provides: Test
-        3: (function(globalThis){
-        4:    "use strict";
-        5:    var runtime = globalThis.jsoo_runtime;
-        6:    function id(x){return x;}
-        7:    var Test = [0, id];
-        8:    runtime.caml_register_global(0, Test, "Test");
-        9:    return;
-       10:   }
-       11:   (globalThis));
-       12:
-       13: //# sourceMappingURL=test.map
-      /dune-root/test.ml:1:4 -> 6:12
-      /dune-root/test.ml:1:7 -> 6:15
-      /dune-root/test.ml:1:11 -> 6:18
-      /dune-root/test.ml:1:7 -> 6:25
-      /dune-root/test.ml:1:12 -> 6:27
-      /dune-root/test.ml:1:4 -> 7:18
-      null -> 10:2
+        3: //# shape: Test:[F(1)]
+        4: (function(globalThis){
+        5:    "use strict";
+        6:    var runtime = globalThis.jsoo_runtime;
+        7:    function id(x){return x;}
+        8:    var Test = [0, id];
+        9:    runtime.caml_register_global(0, Test, "Test");
+       10:    return;
+       11:   }
+       12:   (globalThis));
+       13:
+       14: //# sourceMappingURL=test.map
+      /dune-root/test.ml:1:4 -> 7:12
+      /dune-root/test.ml:1:7 -> 7:15
+      /dune-root/test.ml:1:11 -> 7:18
+      /dune-root/test.ml:1:7 -> 7:25
+      /dune-root/test.ml:1:12 -> 7:27
+      /dune-root/test.ml:1:4 -> 8:18
+      null -> 11:2
     |}]
 
 let%expect_test _ =

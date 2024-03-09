@@ -186,15 +186,17 @@ type mutability_state =
   ; possibly_mutable : Code.Var.ISet.t
   }
 
-let rec block_escape st x =
+let rec block_escape st ?(mut = Maybe_mutable) x =
   Var.Set.iter
     (fun y ->
       if not (Code.Var.ISet.mem st.may_escape y)
       then (
         Code.Var.ISet.add st.may_escape y;
-        Code.Var.ISet.add st.possibly_mutable y;
+        (match mut with
+        | Maybe_mutable -> Code.Var.ISet.add st.possibly_mutable y
+        | Immutable -> ());
         match st.defs.(Var.idx y) with
-        | Expr (Block (_, l, _, _)) -> Array.iter l ~f:(fun z -> block_escape st z)
+        | Expr (Block (_, l, _, mut)) -> Array.iter l ~f:(fun z -> block_escape st ~mut z)
         | _ -> ()))
     (Var.Tbl.get st.known_origins x)
 
@@ -226,7 +228,9 @@ let expr_escape st _x e =
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
                 | Expr (Constant (Tuple _)) -> ()
-                | Expr (Block (_, a, _, _)) ->
+                | Expr (Block (_, a, _, Immutable)) ->
+                    Array.iter a ~f:(fun x -> block_escape st ~mut:Immutable x)
+                | Expr (Block (_, a, _, Maybe_mutable)) ->
                     Array.iter a ~f:(fun x -> block_escape st x)
                 | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
@@ -392,6 +396,29 @@ let direct_approx (info : Info.t) x =
           | _ -> None)
         y
   | _ -> None
+
+let rec the_shape_of info x =
+  get_approx
+    info
+    (fun x ->
+      if Var.ISet.mem info.info_possibly_mutable x
+      then Shape.Bot "possibly_mutable"
+      else
+        match info.info_defs.(Var.idx x) with
+        | Expr (Block (_, a, _, Immutable)) ->
+            Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
+        | Expr (Closure (l, _)) ->
+            Shape.Function { arity = List.length l; pure = false; res = Bot "unk" }
+        | Expr (Special (Alias_prim name)) -> (
+            try
+              let arity = Primitive.arity name in
+              let pure = Primitive.is_pure name in
+              Shape.Function { arity; pure; res = Bot "unk" }
+            with _ -> Bot "other")
+        | _ -> Shape.Bot "other")
+    (Bot "init")
+    (fun _u _v -> Shape.Bot "merge")
+    x
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
