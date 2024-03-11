@@ -160,8 +160,6 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
   | Int of int32
-  | Null
-  | Undefined
 
 val constant_equal : constant -> constant -> bool option
 
@@ -180,6 +178,7 @@ type prim_arg =
 
 type special =
   | Undefined
+  | Null
   | Alias_prim of string
 
 type expr =

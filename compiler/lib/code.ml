@@ -282,13 +282,9 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
   | Int of int32
-  | Null
-  | Undefined
 
 let rec constant_equal a b =
   match a, b with
-  | Null, Null -> Some true
-  | Undefined, Undefined -> Some true
   | String a, String b -> Some (String.equal a b)
   | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | Tuple (ta, a, _), Tuple (tb, b, _) ->
@@ -311,46 +307,18 @@ let rec constant_equal a b =
   | Int _, Float _ | Float _, Int _ -> None
   | Tuple ((0 | 254), _, _), Float_array _ -> None
   | Float_array _, Tuple ((0 | 254), _, _) -> None
-  | ( Tuple _
-    , ( String _
-      | NativeString _
-      | Int64 _
-      | Int _
-      | Float _
-      | Float_array _
-      | Null
-      | Undefined ) ) -> Some false
-  | ( Float_array _
-    , (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Tuple _ | Null | Undefined)
-    ) -> Some false
-  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _ | Null | Undefined) ->
+  | Tuple _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
       Some false
-  | ( NativeString _
-    , (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _ | Null | Undefined) ) ->
+  | Float_array _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
       Some false
-  | ( Int64 _
-    , ( String _
-      | NativeString _
-      | Int _
-      | Float _
-      | Tuple _
-      | Float_array _
-      | Null
-      | Undefined ) ) -> Some false
-  | ( Float _
-    , ( String _ | NativeString _ | Float_array _ | Int64 _
-      | Tuple (_, _, _)
-      | Null | Undefined ) ) -> Some false
-  | ( Int _
-    , ( String _ | NativeString _ | Float_array _ | Int64 _
-      | Tuple (_, _, _)
-      | Null | Undefined ) ) -> Some false
-  | ( Null
-    , ( Int _ | Float _ | String _ | NativeString _ | Float_array _ | Int64 _ | Undefined
-      | Tuple (_, _, _) ) ) -> Some false
-  | ( Undefined
-    , ( Int _ | Float _ | String _ | NativeString _ | Float_array _ | Int64 _ | Null
-      | Tuple (_, _, _) ) ) -> Some false
+  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
+  | NativeString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
+  | Int64 _, (String _ | NativeString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
+      Some false
+  | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+      Some false
+  | Int _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+      Some false
 
 type loc =
   | No
@@ -363,6 +331,7 @@ type prim_arg =
 
 type special =
   | Undefined
+  | Null
   | Alias_prim of string
 
 type expr =
@@ -425,7 +394,6 @@ module Print = struct
 
   let rec constant f x =
     match x with
-    | Null | Undefined -> Format.fprintf f "Null"
     | String s -> Format.fprintf f "%S" s
     | NativeString (Byte s) -> Format.fprintf f "%Sj" s
     | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
@@ -504,6 +472,7 @@ module Print = struct
   let special f s =
     match s with
     | Undefined -> Format.fprintf f "undefined"
+    | Null -> Format.fprintf f "null"
     | Alias_prim s -> Format.fprintf f "alias %s" s
 
   let expr f e =
