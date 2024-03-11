@@ -1242,11 +1242,11 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let rec build_fields queue l =
               match l with
               | [] -> const_p, [], queue
-              | Pc (NativeString (Utf nm)) :: Pc (Int omit) :: x :: r ->
+              | Pc (NativeString (Utf nm)) :: Pc (Int _omit) :: x :: r ->
                   let (prop, cx), queue = access_queue' ~ctx queue x in
                   let prop', r', queue = build_fields queue r in
                   let p_name = if J.is_ident' nm then J.PNI nm else J.PNS nm in
-                  or_p prop prop', (p_name, cx) :: r', queue
+                  or_p prop prop', J.Property (p_name, cx) :: r', queue
               | _ -> assert false
             in
             let prop, fields, queue = build_fields queue fields in
