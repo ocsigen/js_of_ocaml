@@ -67,7 +67,9 @@ let specialize_instr info i =
                 match info.info_defs.(Var.idx x) with
                 | Expr (Constant (Int i)) -> `CConst (Int32.to_int i)
                 | Expr (Block (0, _, _)) ->
-                    if info.info_possibly_mutable.(Var.idx x) then `Unknown else `Block
+                    if Code.Var.ISet.mem info.info_possibly_mutable x
+                    then `Unknown
+                    else `Block
                 | Expr (Constant (Tuple (0, [| a |], _))) -> `CBlock a
                 | _ -> `Unknown)
               `Unknown

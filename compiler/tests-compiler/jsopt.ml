@@ -577,12 +577,12 @@ let%expect_test "nullable_of_option" =
   in
   print_var_decl program "some";
   print_var_decl program "none";
-  print_fun_decl program (Some "f");
+  print_var_decl program "f";
   [%expect
     {|
     var some = "a";
     //end
     var none = null;
     //end
-    function f(x){return runtime.caml_js_nullable(x)}
+    var f = runtime.caml_js_nullable;
     //end |}]
