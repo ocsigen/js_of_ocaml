@@ -422,8 +422,6 @@ let ocaml_string ~ctx ~loc s =
 
 let rec constant_rec ~ctx x level instrs =
   match x with
-  | Null -> s_var "null", instrs
-  | Undefined -> s_var "undefined", instrs
   | String s ->
       let e =
         if String.is_ascii s
@@ -1097,6 +1095,8 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       (prim, const_p, queue), []
   | Special Undefined ->
       (J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue), []
+  | Special Null ->
+      (J.(EVar (ident (Utf8_string.of_string_exn "null"))), const_p, queue), []
   | Prim (Extern "debugger", _) ->
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement

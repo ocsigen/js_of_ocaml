@@ -90,7 +90,7 @@ let specialize_instr info i =
       match the_option_of info a, a with
       | `Block, Pv a -> Let (x, Field (a, 0))
       | `CBlock a, _ -> Let (x, Constant a)
-      | `CConst 0, _ -> Let (x, Constant Null)
+      | `CConst 0, _ -> Let (x, Special Null)
       | `Block, Pc _ | `CConst _, _ | `Unknown, _ -> i)
   | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])) -> (
       match the_def_of info a with
@@ -164,8 +164,8 @@ let specialize_instr info i =
                   let drop =
                     match omit with
                     | Pc (Int 1l) -> (
-                        match the_const_of info (Pv v) with
-                        | Some Undefined -> true
+                        match the_def_of info (Pv v) with
+                        | Some (Special Undefined) -> true
                         | _ -> false)
                     | _ -> false
                   in
@@ -179,10 +179,6 @@ let specialize_instr info i =
                       | Some _ | None -> raise Exit
                     in
                     [ k; omit; Pv v ]
-              | Some
-                  (Constant
-                    (Tuple (0, [| String _; Int 1l; Undefined |], (NotArray | Unknown))))
-                -> []
               | Some (Constant (Tuple (0, [| String k; omit; v |], (NotArray | Unknown))))
                 when String.is_valid_utf_8 k ->
                   [ Pc (NativeString (Native_string.of_string k)); Pc omit; Pc v ]

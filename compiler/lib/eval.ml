@@ -329,8 +329,8 @@ let the_cond_of info x =
     (fun x ->
       match info.info_defs.(Var.idx x) with
       | Expr (Constant (Int 0l)) -> Zero
-      | Expr (Constant Null) -> Zero
-      | Expr (Constant Undefined) -> Zero
+      | Expr (Special Null) -> Zero
+      | Expr (Special Undefined) -> Zero
       | Expr
           (Constant
             ( Int _
