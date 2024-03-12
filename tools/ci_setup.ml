@@ -191,7 +191,7 @@ let exec_async ~delay cmd =
   in
   fun () -> ignore (Unix.close_process_out p)
 
-let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = g (f ())
+let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = fun () -> g (f ()) ()
 
 let sync_exec f l =
   let l = List.mapi f l in
