@@ -127,27 +127,26 @@
          (i32.const 95) (i32.const 115) (i32.const 116) (i32.const 114)
          (i32.const 105) (i32.const 110) (i32.const 103)))
 
-   (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
-      (local $s (ref $string))
-      (local $i i32) (local $len i32) (local $d i32) (local $c i32)
-      (local $signedness i32) (local $sign i32) (local $base i32)
+   ;; Parse a sequence of digits into an i64 as dicted by $base,
+   ;; $signedness and $sign. The sequence is read in $s starting from $i.
+   ;; In case of failure raise [Failure $errmsg].
+   ;; Used by $caml_int64_of_string below and by $caml_uint64_of_string in
+   ;; package "integers".
+   (func $caml_i64_of_digits (export "caml_i64_of_digits")
+      (param $base i32) (param $signedness i32) (param $sign i32)
+      (param $s (ref $string)) (param $i i32) (param $errmsg (ref $string))
+      (result i64)
+      (local $len i32) (local $d i32) (local $c i32)
       (local $res i64) (local $threshold i64)
-      (local $t (i32 i32 i32 i32))
-      (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
       (if (i32.eqz (local.get $len))
-        (then (call $caml_failwith (global.get $INT64_ERRMSG))))
-      (local.set $t (call $parse_sign_and_base (local.get $s)))
-      (local.set $i (tuple.extract 0 (local.get $t)))
-      (local.set $signedness (tuple.extract 1 (local.get $t)))
-      (local.set $sign (tuple.extract 2 (local.get $t)))
-      (local.set $base (tuple.extract 3 (local.get $t)))
+        (then (call $caml_failwith (local.get $errmsg))))
       (local.set $threshold
          (i64.div_u (i64.const -1) (i64.extend_i32_u (local.get $base))))
       (local.set $d
          (call $parse_digit (array.get_u $string (local.get $s) (local.get $i))))
       (if (i32.ge_u (local.get $d) (local.get $base))
-         (then (call $caml_failwith (global.get $INT64_ERRMSG))))
+         (then (call $caml_failwith (local.get $errmsg))))
       (local.set $res (i64.extend_i32_u (local.get $d)))
       (loop $loop
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -157,15 +156,15 @@
                (br_if $loop (i32.eq (local.get $c) (i32.const 95))) ;; '_'
                (local.set $d (call $parse_digit (local.get $c)))
                (if (i32.ge_u (local.get $d) (local.get $base))
-                  (then (call $caml_failwith (global.get $INT64_ERRMSG))))
+                  (then (call $caml_failwith (local.get $errmsg))))
                (if (i64.gt_u (local.get $res) (local.get $threshold))
-                  (then (call $caml_failwith (global.get $INT64_ERRMSG))))
+                  (then (call $caml_failwith (local.get $errmsg))))
                (local.set $res
                   (i64.add (i64.mul (local.get $res)
                               (i64.extend_i32_u (local.get $base)))
                            (i64.extend_i32_u (local.get $d))))
                (if (i64.lt_u (local.get $res) (i64.extend_i32_u (local.get $d)))
-                  (then (call $caml_failwith (global.get $INT64_ERRMSG))))
+                  (then (call $caml_failwith (local.get $errmsg))))
                (br $loop))))
       (if (local.get $signedness)
          (then
@@ -173,15 +172,34 @@
                (then
                   (if (i64.ge_u (local.get $res)
                                 (i64.shl (i64.const 1) (i64.const 63)))
-                     (then (call $caml_failwith (global.get $INT64_ERRMSG)))))
+                     (then (call $caml_failwith (local.get $errmsg)))))
                (else
                   (if (i64.gt_u (local.get $res)
                                 (i64.shl (i64.const 1) (i64.const 63)))
                      (then
-                        (call $caml_failwith (global.get $INT64_ERRMSG))))))))
+                        (call $caml_failwith (local.get $errmsg))))))))
       (if (i32.lt_s (local.get $sign) (i32.const 0))
          (then (local.set $res (i64.sub (i64.const 0) (local.get $res)))))
-      (return_call $caml_copy_int64 (local.get $res)))
+      (local.get $res))
+
+   (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
+      (local $s (ref $string))
+      (local $i i32) (local $signedness i32) (local $sign i32) (local $base i32)
+      (local $t (i32 i32 i32 i32))
+      (local.set $s (ref.cast (ref $string) (local.get $v)))
+      (local.set $t (call $parse_sign_and_base (local.get $s)))
+      (local.set $i (tuple.extract 0 (local.get $t)))
+      (local.set $signedness (tuple.extract 1 (local.get $t)))
+      (local.set $sign (tuple.extract 2 (local.get $t)))
+      (local.set $base (tuple.extract 3 (local.get $t)))
+      (return_call
+        $caml_copy_int64
+        (call $caml_i64_of_digits (local.get $base)
+                                  (local.get $signedness)
+                                  (local.get $sign)
+                                  (local.get $s)
+                                  (local.get $i)
+                                  (global.get $INT64_ERRMSG))))
 
    (data $caml_int64_create_lo_mi_hi "caml_int64_create_lo_mi_hi")
 
