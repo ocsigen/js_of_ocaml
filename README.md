@@ -4,7 +4,7 @@ Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssem
 
 ## Requirements
 
-Wasm_of_ocaml relies on the Binaryen toolchain ([version 116](https://github.com/WebAssembly/binaryen/releases/tag/version_116) or greater).
+Wasm_of_ocaml relies on the Binaryen toolchain; currently, only [version 116](https://github.com/WebAssembly/binaryen/releases/tag/version_116) is supported. Binaryen commands must be in the PATH for wasm_of_ocaml to function.
 
 ## Supported engines
 
