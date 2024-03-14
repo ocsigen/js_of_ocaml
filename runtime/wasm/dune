@@ -7,9 +7,12 @@
    (target runtime.wasm)
    (deps args (glob_files *.wat))
    (action
-      (pipe-stdout
-         (run wasm-merge -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{read-lines:args} -o -)
-         (run wasm-opt -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory - -O3 -o %{target}))))
+      (progn
+         (system "which wasm-merge > /dev/null || (echo 'Error: Binaryen tools not found in the PATH'; false)")
+         (system "wasm-merge --version | grep -q 'version 116' || (echo 'Error: Binaryen version 116 is currently required'; false)")
+         (pipe-stdout
+            (run wasm-merge -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory %{read-lines:args} -o -)
+            (run wasm-opt -g --enable-gc --enable-exception-handling --enable-reference-types --enable-tail-call --enable-strings --enable-multivalue --enable-bulk-memory - -O3 -o %{target})))))
 
 (rule (target args)
    (deps args.ml (glob_files *.wat))
