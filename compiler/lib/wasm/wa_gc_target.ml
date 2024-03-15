@@ -1274,42 +1274,37 @@ let () =
   in
   let register_js_expr prim_name =
     register prim_name (fun transl_prim_arg l ->
-      let* wrap =
-        register_import
-          ~name:"wrap"
-          (Fun { params = [ JavaScript.anyref ]; result = [ Value.value ] })
-      in
-      match l with
-      | Code.[ Pc (String str) ] ->
-        (try
-           let lex = Parse_js.Lexer.of_string str in
-           let e = Parse_js.parse_expr lex in
-           let name = Printf.sprintf "js_expr_%x" (String.hash str) in
-           let* () = register_fragment name (fun () ->
-             EArrow
-               ( J.fun_
-                   []
-                   [ (Return_statement (Some e), N) ]
-                   N
-               , AUnknown ))
-           in
-           let* js_val = JavaScript.invoke_fragment name [] in
-           return (W.Call (wrap, [ js_val ]))
-         with Parse_js.Parsing_error pi ->
-           failwith
-             (Printf.sprintf
-                "Parse error in argument of %s %S at position %d:%d"
-                prim_name
-                str
-                pi.Parse_info.line
-                pi.Parse_info.col))
-      | [ Pv _ ] ->
-          call_prim ~transl_prim_arg prim_name l
-      | [] | _ :: _ ->
-         failwith (Printf.sprintf "Wrong number argument to primitive %s" prim_name)
-    )
+        let* wrap =
+          register_import
+            ~name:"wrap"
+            (Fun { params = [ JavaScript.anyref ]; result = [ Value.value ] })
+        in
+        match l with
+        | Code.[ Pc (String str) ] -> (
+            try
+              let lex = Parse_js.Lexer.of_string str in
+              let e = Parse_js.parse_expr lex in
+              let name = Printf.sprintf "js_expr_%x" (String.hash str) in
+              let* () =
+                register_fragment name (fun () ->
+                    EArrow (J.fun_ [] [ Return_statement (Some e), N ] N, AUnknown))
+              in
+              let* js_val = JavaScript.invoke_fragment name [] in
+              return (W.Call (wrap, [ js_val ]))
+            with Parse_js.Parsing_error pi ->
+              failwith
+                (Printf.sprintf
+                   "Parse error in argument of %s %S at position %d:%d"
+                   prim_name
+                   str
+                   pi.Parse_info.line
+                   pi.Parse_info.col))
+        | [ Pv _ ] -> call_prim ~transl_prim_arg prim_name l
+        | [] | _ :: _ ->
+            failwith (Printf.sprintf "Wrong number argument to primitive %s" prim_name))
   in
-  List.iter ~f:register_js_expr
+  List.iter
+    ~f:register_js_expr
     [ "caml_js_expr"; "caml_pure_js_expr"; "caml_js_var"; "caml_js_eval_string" ];
   register "%caml_js_opt_call" (fun transl_prim_arg l ->
       let arity = List.length l - 2 in
@@ -1444,8 +1439,7 @@ let () =
                   , AUnknown ))
           in
           JavaScript.invoke_fragment name [ transl_prim_arg x ]
-      | [ _; _ ] ->
-          call_prim ~transl_prim_arg "caml_js_get" l
+      | [ _; _ ] -> call_prim ~transl_prim_arg "caml_js_get" l
       | _ -> assert false);
   register "caml_js_set" (fun transl_prim_arg l ->
       match l with
@@ -1472,8 +1466,7 @@ let () =
           in
           let l = List.map ~f:transl_prim_arg [ x; y ] in
           JavaScript.invoke_fragment name l
-      | [ _; _; _ ] ->
-          call_prim ~transl_prim_arg "caml_js_set" l
+      | [ _; _; _ ] -> call_prim ~transl_prim_arg "caml_js_set" l
       | _ -> assert false);
   let counter = ref (-1) in
   register "%caml_js_opt_object" (fun transl_prim_arg l ->
