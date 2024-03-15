@@ -60,7 +60,7 @@
                      (local.set $signedness (i32.const 0))
                      (local.set $i (i32.add (local.get $i)
                         (i32.const 2)))))))))))))))
-      (tuple.make
+      (tuple.make 4
          (local.get $i) (local.get $signedness) (local.get $sign)
          (local.get $base)))
 
@@ -83,16 +83,16 @@
       (local $i i32) (local $len i32) (local $d i32) (local $c i32)
       (local $signedness i32) (local $sign i32) (local $base i32)
       (local $res i32) (local $threshold i32)
-      (local $t (i32 i32 i32 i32))
+      (local $t (tuple i32 i32 i32 i32))
       (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $len (array.len (local.get $s)))
       (if (i32.eqz (local.get $len))
         (then (call $caml_failwith (local.get $errmsg))))
       (local.set $t (call $parse_sign_and_base (local.get $s)))
-      (local.set $i (tuple.extract 0 (local.get $t)))
-      (local.set $signedness (tuple.extract 1 (local.get $t)))
-      (local.set $sign (tuple.extract 2 (local.get $t)))
-      (local.set $base (tuple.extract 3 (local.get $t)))
+      (local.set $i (tuple.extract 4 0 (local.get $t)))
+      (local.set $signedness (tuple.extract 4 1 (local.get $t)))
+      (local.set $sign (tuple.extract 4 2 (local.get $t)))
+      (local.set $base (tuple.extract 4 3 (local.get $t)))
       (local.set $threshold (i32.div_u (i32.const -1) (local.get $base)))
       (if (i32.ge_s (local.get $i) (local.get $len))
          (then (call $caml_failwith (local.get $errmsg))))
@@ -269,7 +269,7 @@
          (call $caml_invalid_argument
             (array.new_data $string $format_error
                (i32.const 0) (i32.const 22))))
-      (tuple.make
+      (tuple.make 5
          (local.get $sign_style)
          (local.get $alternate)
          (local.get $signed)
@@ -279,7 +279,7 @@
    (func $format_int (export "format_int")
       (param (ref eq)) (param $d i32) (param $small i32) (result (ref eq))
       (local $s (ref $string))
-      (local $format (i32 i32 i32 i32 i32))
+      (local $format (tuple i32 i32 i32 i32 i32))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
       (local $base i32) (local $uppercase i32)
       (local $negative i32)
@@ -293,11 +293,11 @@
                         (i32.const 100)) ;; 'd'
                (then (return_call $format_int_default (local.get $d))))))
       (local.set $format (call $parse_int_format (local.get $s)))
-      (local.set $sign_style (tuple.extract 0 (local.get $format)))
-      (local.set $alternate (tuple.extract 1 (local.get $format)))
-      (local.set $signed (tuple.extract 2 (local.get $format)))
-      (local.set $base (tuple.extract 3 (local.get $format)))
-      (local.set $uppercase (tuple.extract 4 (local.get $format)))
+      (local.set $sign_style (tuple.extract 5 0 (local.get $format)))
+      (local.set $alternate (tuple.extract 5 1 (local.get $format)))
+      (local.set $signed (tuple.extract 5 2 (local.get $format)))
+      (local.set $base (tuple.extract 5 3 (local.get $format)))
+      (local.set $uppercase (tuple.extract 5 4 (local.get $format)))
       (if (i32.lt_s (local.get $d) (i32.const 0))
          (then
             (if (local.get $signed)

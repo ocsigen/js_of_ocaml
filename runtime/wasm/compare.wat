@@ -95,8 +95,9 @@
                (local.get $i) (global.get $dummy_block))
             (struct.set $compare_stack 0 (local.get $stack)
                (i32.sub (local.get $i) (i32.const 1)))))
-      (tuple.make (array.get $block (local.get $v1) (local.get $p))
-                  (array.get $block (local.get $v2) (local.get $p))))
+      (tuple.make 2
+         (array.get $block (local.get $v1) (local.get $p))
+         (array.get $block (local.get $v2) (local.get $p))))
 
    (func $push_compare_stack (param $stack (ref $compare_stack))
       (param $v1 (ref $block)) (param $v2 (ref $block)) (param $p i32)
@@ -213,7 +214,7 @@
       (local $str1 (ref $string)) (local $str2 (ref $string))
       (local $c1 (ref $custom)) (local $c2 (ref $custom))
       (local $js1 anyref) (local $js2 anyref)
-      (local $tuple ((ref eq) (ref eq)))
+      (local $tuple (tuple (ref eq) (ref eq)))
       (local $res i32)
       (loop $loop
          (block $next_item
@@ -538,8 +539,8 @@
          (if (call $compare_stack_is_not_empty (local.get $stack))
             (then
                (local.set $tuple (call $pop_compare_stack (local.get $stack)))
-               (local.set $v1 (tuple.extract 0 (local.get $tuple)))
-               (local.set $v2 (tuple.extract 1 (local.get $tuple)))
+               (local.set $v1 (tuple.extract 2 0 (local.get $tuple)))
+               (local.set $v2 (tuple.extract 2 1 (local.get $tuple)))
                (br $loop))))
      (i32.const 0))
 
