@@ -1,10 +1,8 @@
 (module
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "caml_jsstring_of_string"
-      (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "bindings" "format_float"
       (func $format_float
-         (param i32) (param i32) (param f64) (result anyref)))
+         (param i32) (param i32) (param i32) (param f64) (result anyref)))
    (import "bindings" "identity"
       (func $parse_float (param anyref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
@@ -13,9 +11,10 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
       (global $lowercase_hex_table (ref $chars)))
+   (import "jsstring" "jsstring_of_string"
+      (func $jsstring_of_string (param (ref $string)) (result anyref)))
    (import "jsstring" "string_of_jsstring"
-      (func $string_of_jsstring
-         (param anyref) (param i32) (result (ref $string))))
+      (func $string_of_jsstring (param anyref) (result (ref $string))))
 
    (type $float (struct (field f64)))
    (type $string (array (mut i8)))
@@ -291,9 +290,9 @@
             (local.set $num
                (call $format_float
                   (local.get $precision) (local.get $conversion)
+                  (local.get $i)
                   (f64.abs (local.get $f))))
-            (local.set $s
-               (call $string_of_jsstring (local.get $num) (local.get $i)))
+            (local.set $s (call $string_of_jsstring (local.get $num)))
             (br $sign (local.get $s))))
       (if (local.get $negative)
          (then
@@ -637,8 +636,7 @@
                                                 (local.get $negative))))
                                        ))))))))))))))))))
          (local.set $f
-            (call $parse_float
-               (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
+            (call $parse_float (call $jsstring_of_string (local.get $s))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith

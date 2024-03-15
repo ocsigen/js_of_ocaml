@@ -218,7 +218,7 @@
              return caml_callback(f, args.length, args, 2);
          },
          wrap_fun_arguments:(f)=>function(){return f(arguments)},
-         format_float:(prec, conversion, x)=>{
+         format_float:(prec, conversion, pad, x)=>{
            function toFixed(x,dp) {
              if (Math.abs(x) < 1.0) {
                return x.toFixed(dp);
@@ -273,7 +273,7 @@
              }
              break;
            }
-           return s
+           return pad?" "+s:s
          },
          gettimeofday:()=>(new Date()).getTime() / 1000,
          gmtime:(t)=>{

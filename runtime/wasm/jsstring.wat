@@ -33,18 +33,18 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
 
-   (func $jsstring_of_substring (export "jsstring_of_substring")
-      (param $s (ref $string)) (param $pos i32) (param $len i32)
-      (result anyref)
+   (func (export "jsstring_of_string") (param $s (ref $string)) (result anyref)
       (local $s' anyref)
       (local $continued i32)
+      (local $pos i32) (local $len i32)
+      (local.set $len (array.len (local.get $s)))
       (if (i32.le_u (local.get $len) (global.get $buffer_size))
          (then
             (call $write_to_buffer
-               (local.get $s) (local.get $pos) (local.get $len))
+               (local.get $s) (i32.const 0) (local.get $len))
             (return_call $read_string (local.get $len))))
       (call $write_to_buffer
-         (local.get $s) (local.get $pos) (global.get $buffer_size))
+         (local.get $s) (i32.const 0) (global.get $buffer_size))
       (local.set $s'
          (call $read_string_stream (global.get $buffer_size) (i32.const 1)))
       (loop $loop
@@ -81,19 +81,18 @@
       (struct (field $s (ref $string)) (field $next (ref null $stack))))
    (global $stack (mut (ref null $stack)) (ref.null $stack))
 
-   (func $string_of_jsstring (export "string_of_jsstring")
-      (param $s anyref) (param $ofs i32) (result (ref $string))
-      (local $len i32)
+   (func (export "string_of_jsstring")
+      (param $s anyref) (result (ref $string))
+      (local $ofs i32) (local $len i32)
       (local $s' (ref $string)) (local $s'' (ref $string))
       (local $item (ref $stack))
       (local.set $len (call $write_string (local.get $s)))
       (if (ref.is_null (global.get $stack))
          (then
             (local.set $s'
-               (array.new $string
-                  (i32.const 0) (i32.add (local.get $len) (local.get $ofs))))
+               (array.new $string (i32.const 0) (local.get $len)))
             (call $read_from_buffer
-               (local.get $s') (local.get $ofs) (local.get $len))
+               (local.get $s') (i32.const 0) (local.get $len))
             (return (local.get $s'))))
       (block $done
          (local.set $item (br_on_null $done (global.get $stack)))
