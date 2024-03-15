@@ -37,7 +37,7 @@
 | effects        | false    | Enable support for effect handlers     |
 | debuginfo      | false    | Output debug information (location)    |
 | deadcode       | true     | Deadcode elimination                   |
-| glboaldeadcode | true     | Global deadcode elimination            |
+| globaldeadcode | true     | Global deadcode elimination            |
 | inline         | true     | Code inlining                          |
 | shortvar       | true     | Shorten variable names                 |
 | staticeval     | true     | Static evaluation of constants         |
