@@ -52,6 +52,8 @@ class type mapper = object
     -> Javascript.for_binding
     -> Javascript.for_binding
 
+  method binding_property : Javascript.binding_property -> Javascript.binding_property
+
   method variable_declaration :
        Javascript.variable_declaration_kind
     -> Javascript.variable_declaration
@@ -376,7 +378,7 @@ class map : mapper =
       | None -> None
       | Some (b, e) -> Some (m#binding b, m#initialiser_o e)
 
-    method private binding_property x =
+    method binding_property x =
       match x with
       | Prop_binding (i, e) -> Prop_binding (m#property_name i, m#binding_element e)
       | Prop_ident (i, e) -> Prop_ident (m#ident i, m#initialiser_o e)
@@ -1340,6 +1342,12 @@ class rename_variable ~esm =
         let m' = m#update_state Lexical_block [] p in
         m'#statements p
 
+    method binding_property x =
+      match x, super#binding_property x with
+      | Prop_ident (S { name = old_name; _ }, _), Prop_ident (V v, e) ->
+          Prop_binding (PNI old_name, (BindingIdent (V v), e))
+      | _, x -> x
+
     method expression e =
       match e with
       | EFun (ident, (k, params, body, nid)) ->
@@ -1351,6 +1359,24 @@ class rename_variable ~esm =
       | EClass (Some id, cl_decl) ->
           let m' = m#update_state Lexical_block [ id ] [] in
           EClass (Some (m'#ident id), m'#class_decl cl_decl)
+      | EAssignTarget (ObjectTarget l_old) ->
+          let l_new =
+            match super#expression e with
+            | EAssignTarget (ObjectTarget l_new) -> l_new
+            | _ -> assert false
+          in
+          let l_res =
+            List.map2 l_old l_new ~f:(fun a b ->
+                match a, b with
+                | ( TargetPropertyId (S { name = old_name; _ }, _)
+                  , TargetPropertyId (V v, rhs) ) -> (
+                    match rhs with
+                    | None -> TargetProperty (PNI old_name, EVar (V v))
+                    | Some (e, _) ->
+                        TargetProperty (PNI old_name, EBin (Eq, EVar (V v), e)))
+                | _, b -> b)
+          in
+          EAssignTarget (ObjectTarget l_res)
       | _ -> super#expression e
 
     method statement s =
