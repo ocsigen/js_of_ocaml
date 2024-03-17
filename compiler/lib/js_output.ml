@@ -747,12 +747,23 @@ struct
               PP.string f "=";
               PP.space f;
               expression AssignementExpression f e
-          | TargetProperty (pn, e) ->
+          | TargetProperty (pn, e, None) ->
               PP.start_group f 0;
               property_name f pn;
               PP.string f ":";
               PP.space f;
               expression AssignementExpression f e;
+              PP.end_group f
+          | TargetProperty (pn, e, Some (ini, _)) ->
+              PP.start_group f 0;
+              property_name f pn;
+              PP.string f ":";
+              PP.space f;
+              expression AssignementExpression f e;
+              PP.space f;
+              PP.string f "=";
+              PP.space f;
+              expression AssignementExpression f ini;
               PP.end_group f
           | TargetPropertySpread e ->
               PP.string f "...";

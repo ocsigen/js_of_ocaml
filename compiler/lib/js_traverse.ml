@@ -299,8 +299,9 @@ class map : mapper =
                    (List.map l ~f:(function
                        | TargetPropertyId (i, e) ->
                            TargetPropertyId (m#ident i, m#initialiser_o e)
-                       | TargetProperty (i, e) ->
-                           TargetProperty (m#property_name i, m#expression e)
+                       | TargetProperty (n, e, i) ->
+                           TargetProperty
+                             (m#property_name n, m#expression e, m#initialiser_o i)
                        | TargetPropertyMethod (n, x) ->
                            TargetPropertyMethod (m#property_name n, m#method_ x)
                        | TargetPropertySpread e -> TargetPropertySpread (m#expression e))))
@@ -646,9 +647,10 @@ class iter : iterator =
                   | TargetPropertyId (i, e) ->
                       m#ident i;
                       m#initialiser_o e
-                  | TargetProperty (i, e) ->
-                      m#property_name i;
-                      m#expression e
+                  | TargetProperty (n, e, i) ->
+                      m#property_name n;
+                      m#expression e;
+                      m#initialiser_o i
                   | TargetPropertyMethod (n, x) ->
                       m#property_name n;
                       m#method_ x
@@ -1369,11 +1371,8 @@ class rename_variable ~esm =
             List.map2 l_old l_new ~f:(fun a b ->
                 match a, b with
                 | ( TargetPropertyId (S { name = old_name; _ }, _)
-                  , TargetPropertyId (V v, rhs) ) -> (
-                    match rhs with
-                    | None -> TargetProperty (PNI old_name, EVar (V v))
-                    | Some (e, _) ->
-                        TargetProperty (PNI old_name, EBin (Eq, EVar (V v), e)))
+                  , TargetPropertyId (V v, rhs) ) ->
+                    TargetProperty (PNI old_name, EVar (V v), rhs)
                 | _, b -> b)
           in
           EAssignTarget (ObjectTarget l_res)

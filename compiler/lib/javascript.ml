@@ -425,7 +425,7 @@ and binding_pattern =
 
 and object_target_elt =
   | TargetPropertyId of ident * initialiser option
-  | TargetProperty of property_name * expression
+  | TargetProperty of property_name * expression * initialiser option
   | TargetPropertySpread of expression
   | TargetPropertyMethod of property_name * method_
 
@@ -589,7 +589,13 @@ let rec assignment_target_of_expr' x =
         List.map l ~f:(function
             | Property (PNI n, EVar (S { name = n'; _ } as id))
               when Utf8_string.equal n n' -> TargetPropertyId (id, None)
-            | Property (n, e) -> TargetProperty (n, assignment_target_of_expr' e)
+            | Property (n, e) ->
+                let e, i =
+                  match e with
+                  | EBin (Eq, e, i) -> e, Some (i, N)
+                  | _ -> e, None
+                in
+                TargetProperty (n, assignment_target_of_expr' e, i)
             | CoverInitializedName (_, i, (e, loc)) ->
                 TargetPropertyId (i, Some (assignment_target_of_expr' e, loc))
             | PropertySpread e -> TargetPropertySpread (assignment_target_of_expr' e)

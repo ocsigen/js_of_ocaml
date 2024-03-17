@@ -343,7 +343,7 @@ and binding_pattern =
 
 and object_target_elt =
   | TargetPropertyId of ident * initialiser option
-  | TargetProperty of property_name * expression
+  | TargetProperty of property_name * expression * initialiser option
   | TargetPropertySpread of expression
   | TargetPropertyMethod of property_name * method_
 
