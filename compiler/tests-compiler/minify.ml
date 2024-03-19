@@ -417,3 +417,58 @@ test()
           4: a(a,b=c.b){return a+b}console.log(a(1))}test(); |}];
       print_endline (run_javascript js_min_file);
       [%expect {| 3 |}])
+
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let minify js_prog =
+        let js_file =
+          js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+        in
+        let js_min_file =
+          js_file |> jsoo_minify ~flags:[ "--enable"; "shortvar" ] ~pretty:false
+        in
+        print_file (Filetype.path_of_js_file js_min_file)
+      in
+      minify {|
+function f (x) {
+  let {toto} = x;
+  return toto;
+}
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: function
+          2: f(a){let{toto:b}=a;return b} |}];
+      minify
+        {|
+function g(x) {
+  var toto, test, tata; 
+  for( { toto : tata = test } in x ) {
+    console.log(tata);
+  }
+}
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: function
+          2: g(a){var
+          3: d,c,b;for({toto:b=c}in
+          4: a)console.log(b)} |}];
+      minify
+        {|
+function h(x) {
+  var toto;
+  for( { toto } in x ) {
+    console.log(toto);
+  }
+}
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: function
+          2: h(a){var
+          3: b;for({toto:b}in
+          4: a)console.log(b)} |}])

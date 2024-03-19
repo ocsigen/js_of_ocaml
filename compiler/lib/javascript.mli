@@ -285,7 +285,7 @@ and block = statement_list
 and statement_list = (statement * location) list
 
 and variable_declaration =
-  | DeclIdent of binding_ident * initialiser option
+  | DeclIdent of ident * initialiser option
   | DeclPattern of binding_pattern * initialiser
 
 and variable_declaration_kind =
@@ -334,16 +334,16 @@ and for_binding = binding
 and binding_element = binding * initialiser option
 
 and binding =
-  | BindingIdent of binding_ident
+  | BindingIdent of ident
   | BindingPattern of binding_pattern
 
 and binding_pattern =
-  | ObjectBinding of (binding_property, binding_ident) list_with_rest
+  | ObjectBinding of (binding_property, ident) list_with_rest
   | ArrayBinding of (binding_element option, binding) list_with_rest
 
 and object_target_elt =
-  | TargetPropertyId of ident * initialiser option
-  | TargetProperty of property_name * expression
+  | TargetPropertyId of ident_prop * initialiser option
+  | TargetProperty of property_name * expression * initialiser option
   | TargetPropertySpread of expression
   | TargetPropertyMethod of property_name * method_
 
@@ -357,11 +357,11 @@ and assignment_target =
   | ObjectTarget of object_target_elt list
   | ArrayTarget of array_target_elt list
 
-and binding_ident = ident
+and ident_prop = Prop_and_ident of ident
 
 and binding_property =
   | Prop_binding of property_name * binding_element
-  | Prop_ident of binding_ident * initialiser option
+  | Prop_ident of ident_prop * initialiser option
 
 and function_body = statement_list
 

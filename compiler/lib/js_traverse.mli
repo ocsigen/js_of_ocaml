@@ -47,6 +47,8 @@ class type mapper = object
     -> Javascript.for_binding
     -> Javascript.for_binding
 
+  method binding_property : Javascript.binding_property -> Javascript.binding_property
+
   method variable_declaration :
        Javascript.variable_declaration_kind
     -> Javascript.variable_declaration

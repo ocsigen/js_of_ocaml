@@ -52,6 +52,8 @@ class type mapper = object
     -> Javascript.for_binding
     -> Javascript.for_binding
 
+  method binding_property : Javascript.binding_property -> Javascript.binding_property
+
   method variable_declaration :
        Javascript.variable_declaration_kind
     -> Javascript.variable_declaration
@@ -295,10 +297,11 @@ class map : mapper =
               EAssignTarget
                 (ObjectTarget
                    (List.map l ~f:(function
-                       | TargetPropertyId (i, e) ->
-                           TargetPropertyId (m#ident i, m#initialiser_o e)
-                       | TargetProperty (i, e) ->
-                           TargetProperty (m#property_name i, m#expression e)
+                       | TargetPropertyId (Prop_and_ident i, e) ->
+                           TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
+                       | TargetProperty (n, e, i) ->
+                           TargetProperty
+                             (m#property_name n, m#expression e, m#initialiser_o i)
                        | TargetPropertyMethod (n, x) ->
                            TargetPropertyMethod (m#property_name n, m#method_ x)
                        | TargetPropertySpread e -> TargetPropertySpread (m#expression e))))
@@ -376,10 +379,11 @@ class map : mapper =
       | None -> None
       | Some (b, e) -> Some (m#binding b, m#initialiser_o e)
 
-    method private binding_property x =
+    method binding_property x =
       match x with
       | Prop_binding (i, e) -> Prop_binding (m#property_name i, m#binding_element e)
-      | Prop_ident (i, e) -> Prop_ident (m#ident i, m#initialiser_o e)
+      | Prop_ident (Prop_and_ident i, e) ->
+          Prop_ident (Prop_and_ident (m#ident i), m#initialiser_o e)
 
     method expression_o x =
       match x with
@@ -641,12 +645,13 @@ class iter : iterator =
                   | TargetElementSpread e -> m#expression e)
           | ObjectTarget l ->
               List.iter l ~f:(function
-                  | TargetPropertyId (i, e) ->
+                  | TargetPropertyId (Prop_and_ident i, e) ->
                       m#ident i;
                       m#initialiser_o e
-                  | TargetProperty (i, e) ->
-                      m#property_name i;
-                      m#expression e
+                  | TargetProperty (n, e, i) ->
+                      m#property_name n;
+                      m#expression e;
+                      m#initialiser_o i
                   | TargetPropertyMethod (n, x) ->
                       m#property_name n;
                       m#method_ x
@@ -736,7 +741,7 @@ class iter : iterator =
     method private binding_property x =
       match x with
       | Prop_binding ((_ : property_name), e) -> m#binding_element e
-      | Prop_ident (i, e) ->
+      | Prop_ident (Prop_and_ident i, e) ->
           m#ident i;
           m#initialiser_o e
 
@@ -1340,6 +1345,14 @@ class rename_variable ~esm =
         let m' = m#update_state Lexical_block [] p in
         m'#statements p
 
+    method binding_property x =
+      match x with
+      | Prop_ident (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), e)
+        when StringMap.mem name' subst ->
+          let x = Prop_binding (PNI name, (BindingIdent ident, e)) in
+          super#binding_property x
+      | x -> x
+
     method expression e =
       match e with
       | EFun (ident, (k, params, body, nid)) ->
@@ -1351,6 +1364,16 @@ class rename_variable ~esm =
       | EClass (Some id, cl_decl) ->
           let m' = m#update_state Lexical_block [ id ] [] in
           EClass (Some (m'#ident id), m'#class_decl cl_decl)
+      | EAssignTarget (ObjectTarget l) ->
+          let l =
+            List.map l ~f:(function
+                | TargetPropertyId
+                    (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), rhs)
+                  when StringMap.mem name' subst ->
+                    TargetProperty (PNI name, EVar ident, rhs)
+                | b -> b)
+          in
+          super#expression (EAssignTarget (ObjectTarget l))
       | _ -> super#expression e
 
     method statement s =
