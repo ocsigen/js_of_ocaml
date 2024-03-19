@@ -12,6 +12,8 @@
 
 ## Bug fixes
 
+* Compiler: fix variable renaming for property binding and assignment target
+
 # 5.7.1 (2024-03-05) - Lille
 
 ## Features/Changes
