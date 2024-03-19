@@ -740,8 +740,8 @@ struct
     | EAssignTarget t -> (
         let property f p =
           match p with
-          | TargetPropertyId (id, None) -> ident f id
-          | TargetPropertyId (id, Some (e, _)) ->
+          | TargetPropertyId (Prop_and_ident id, None) -> ident f id
+          | TargetPropertyId (Prop_and_ident id, Some (e, _)) ->
               ident f id;
               PP.space f;
               PP.string f "=";
@@ -1123,8 +1123,8 @@ struct
         PP.string f ":";
         PP.space f;
         binding_element f e
-    | Prop_ident (i, None) -> ident f i
-    | Prop_ident (i, Some (e, loc)) ->
+    | Prop_ident (Prop_and_ident i, None) -> ident f i
+    | Prop_ident (Prop_and_ident i, Some (e, loc)) ->
         ident f i;
         PP.space f;
         PP.string f "=";

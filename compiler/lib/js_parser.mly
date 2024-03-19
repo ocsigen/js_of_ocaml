@@ -503,7 +503,7 @@ object_binding_pattern:
     { ObjectBinding {list=l;rest= Some r} }
 
 binding_property:
-  | i=ident e=initializer_? { Prop_ident (i, e) }
+  | i=ident e=initializer_? { Prop_ident (Prop_and_ident i, e) }
   | pn=property_name ":" e=binding_element { Prop_binding (pn, e) }
 
 binding_property_rest:

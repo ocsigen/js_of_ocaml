@@ -297,8 +297,8 @@ class map : mapper =
               EAssignTarget
                 (ObjectTarget
                    (List.map l ~f:(function
-                       | TargetPropertyId (i, e) ->
-                           TargetPropertyId (m#ident i, m#initialiser_o e)
+                       | TargetPropertyId (Prop_and_ident i, e) ->
+                           TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
                        | TargetProperty (n, e, i) ->
                            TargetProperty
                              (m#property_name n, m#expression e, m#initialiser_o i)
@@ -382,7 +382,8 @@ class map : mapper =
     method binding_property x =
       match x with
       | Prop_binding (i, e) -> Prop_binding (m#property_name i, m#binding_element e)
-      | Prop_ident (i, e) -> Prop_ident (m#ident i, m#initialiser_o e)
+      | Prop_ident (Prop_and_ident i, e) ->
+          Prop_ident (Prop_and_ident (m#ident i), m#initialiser_o e)
 
     method expression_o x =
       match x with
@@ -644,7 +645,7 @@ class iter : iterator =
                   | TargetElementSpread e -> m#expression e)
           | ObjectTarget l ->
               List.iter l ~f:(function
-                  | TargetPropertyId (i, e) ->
+                  | TargetPropertyId (Prop_and_ident i, e) ->
                       m#ident i;
                       m#initialiser_o e
                   | TargetProperty (n, e, i) ->
@@ -740,7 +741,7 @@ class iter : iterator =
     method private binding_property x =
       match x with
       | Prop_binding ((_ : property_name), e) -> m#binding_element e
-      | Prop_ident (i, e) ->
+      | Prop_ident (Prop_and_ident i, e) ->
           m#ident i;
           m#initialiser_o e
 
@@ -1345,10 +1346,12 @@ class rename_variable ~esm =
         m'#statements p
 
     method binding_property x =
-      match x, super#binding_property x with
-      | Prop_ident (S { name = old_name; _ }, _), Prop_ident (V v, e) ->
-          Prop_binding (PNI old_name, (BindingIdent (V v), e))
-      | _, x -> x
+      match x with
+      | Prop_ident (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), e)
+        when StringMap.mem name' subst ->
+          let x = Prop_binding (PNI name, (BindingIdent ident, e)) in
+          super#binding_property x
+      | x -> x
 
     method expression e =
       match e with
@@ -1361,21 +1364,16 @@ class rename_variable ~esm =
       | EClass (Some id, cl_decl) ->
           let m' = m#update_state Lexical_block [ id ] [] in
           EClass (Some (m'#ident id), m'#class_decl cl_decl)
-      | EAssignTarget (ObjectTarget l_old) ->
-          let l_new =
-            match super#expression e with
-            | EAssignTarget (ObjectTarget l_new) -> l_new
-            | _ -> assert false
+      | EAssignTarget (ObjectTarget l) ->
+          let l =
+            List.map l ~f:(function
+                | TargetPropertyId
+                    (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), rhs)
+                  when StringMap.mem name' subst ->
+                    TargetProperty (PNI name, EVar ident, rhs)
+                | b -> b)
           in
-          let l_res =
-            List.map2 l_old l_new ~f:(fun a b ->
-                match a, b with
-                | ( TargetPropertyId (S { name = old_name; _ }, _)
-                  , TargetPropertyId (V v, rhs) ) ->
-                    TargetProperty (PNI old_name, EVar (V v), rhs)
-                | _, b -> b)
-          in
-          EAssignTarget (ObjectTarget l_res)
+          super#expression (EAssignTarget (ObjectTarget l))
       | _ -> super#expression e
 
     method statement s =
