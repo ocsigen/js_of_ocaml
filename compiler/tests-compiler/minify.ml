@@ -435,7 +435,8 @@ function f (x) {
   return toto;
 }
 |};
-      [%expect {|
+      [%expect
+        {|
         $ cat "test.min.js"
           1: function
           2: f(a){let{toto:b}=a;return b} |}];
@@ -448,7 +449,8 @@ function g(x) {
   }
 }
 |};
-      [%expect {|
+      [%expect
+        {|
         $ cat "test.min.js"
           1: function
           2: g(a){var
@@ -463,7 +465,8 @@ function h(x) {
   }
 }
 |};
-      [%expect {|
+      [%expect
+        {|
         $ cat "test.min.js"
           1: function
           2: h(a){var
