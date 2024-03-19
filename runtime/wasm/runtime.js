@@ -320,7 +320,7 @@
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
            var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
-           if(res.error)throw error; return res.signal?255:res.status
+           if(res.error)throw res.error; return res.signal?255:res.status
          },
          time:()=>performance.now(),
          getcwd:()=>isNode?process.cwd():'/static',

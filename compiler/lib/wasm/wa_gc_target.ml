@@ -1276,7 +1276,7 @@ let () =
             in
             EArrow
               ( J.fun_
-                  (List.map ~f:J.ident (f :: params))
+                  (List.map ~f:J.ident (f :: o :: params))
                   [ ( Return_statement
                         (Some
                            (J.call

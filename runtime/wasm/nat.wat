@@ -372,7 +372,8 @@
    (func (export "mult_nat")
       (param $nat1 (ref eq)) (param $vofs1 (ref eq)) (param $vlen1 (ref eq))
       (param $nat2 (ref eq)) (param $vofs2 (ref eq)) (param $vlen2 (ref eq))
-      (param $nat3 (ref eq)) (param $vofs3 (ref eq)) (result (ref eq))
+      (param $nat3 (ref eq)) (param $vofs3 (ref eq)) (param $vlen3 (ref eq))
+      (result (ref eq))
       ;; ZZZ
       (call $log_str
          (array.new_data $string $mult_nat (i32.const 0) (i32.const 8)))

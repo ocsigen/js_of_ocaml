@@ -153,7 +153,7 @@
       (array.new_fixed $string 0))
 
    (func (export "caml_install_signal_handler")
-      (param (ref eq)) (result (ref eq))
+      (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
    (global $caml_runtime_warnings (mut i32) (i32.const 0))

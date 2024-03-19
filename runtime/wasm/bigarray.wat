@@ -119,7 +119,6 @@
    (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $bigarray_ops (export "bigarray_ops") (ref $custom_operations)
-      ;; ZZZ
       (struct.new $custom_operations
          (array.new_fixed $string 9 ;; "_bigarr02"
             (i32.const 95) (i32.const 98) (i32.const 105) (i32.const 103)

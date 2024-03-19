@@ -375,7 +375,7 @@
       (local.get $stack))
 
    (func (export "caml_get_continuation_callstack")
-      (param (ref eq)) (result (ref eq))
+      (param (ref eq) (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
    (func (export "caml_is_continuation") (param (ref eq)) (result i32)
@@ -398,7 +398,7 @@
          (struct (field (ref $function_2)) (field (ref $function_4)))))
 
    (type $iterator
-     (sub $closure
+     (sub final $closure
        (struct
           (field (ref $function_1))
           (field $i (mut i32))
@@ -711,6 +711,6 @@
             (local.get $ms)))
       (call $raise_unhandled (local.get $eff) (ref.i31 (i32.const 0))))
 
-   (func (export "caml_cps_initialize_effects")
+   (func (export "caml_cps_initialize_effects") (param externref)
       (global.set $caml_trampoline_ref (ref.func $caml_trampoline)))
 )
