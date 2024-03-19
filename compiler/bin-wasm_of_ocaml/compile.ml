@@ -250,6 +250,7 @@ let build_js_runtime primitives (strings, fragments) wasm_file output_file =
   let i = find "CODE" 0 in
   let j = find "PRIMITIVES" 0 in
   let k = find "STRINGS" 0 in
+  let l = find "FRAGMENTS" 0 in
   let rec trim_semi s =
     let l = String.length s in
     if l = 0
@@ -270,9 +271,9 @@ let build_js_runtime primitives (strings, fragments) wasm_file output_file =
     ^ trim_semi (Buffer.contents b')
     ^ String.sub s ~pos:(j + 10) ~len:(k - j - 10)
     ^ trim_semi (Buffer.contents b'')
-    ^ ","
+    ^ String.sub s ~pos:(k + 7) ~len:(l - k - 7)
     ^ trim_semi (Buffer.contents fragment_buffer)
-    ^ String.sub s ~pos:(k + 7) ~len:(String.length s - k - 7))
+    ^ String.sub s ~pos:(l + 9) ~len:(String.length s - l - 9))
 
 let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; params } =
   Jsoo_cmdline.Arg.eval common;

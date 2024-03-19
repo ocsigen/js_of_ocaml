@@ -1263,6 +1263,49 @@ let internal_primitives = Hashtbl.create 100
 let () =
   let register name f = Hashtbl.add internal_primitives name f in
   let module J = Javascript in
+  let call_prim ~transl_prim_arg name args =
+    let arity = List.length args in
+    (* [Type.func_type] counts one additional argument for the closure environment (absent
+       here) *)
+    let* f = register_import ~name (Fun (Type.func_type (arity - 1))) in
+    let args = List.map ~f:transl_prim_arg args in
+    let* args = expression_list Fun.id args in
+    return (W.Call (f, args))
+  in
+  let register_js_expr prim_name =
+    register prim_name (fun transl_prim_arg l ->
+        let* wrap =
+          register_import
+            ~name:"wrap"
+            (Fun { params = [ JavaScript.anyref ]; result = [ Value.value ] })
+        in
+        match l with
+        | Code.[ Pc (String str) ] -> (
+            try
+              let lex = Parse_js.Lexer.of_string str in
+              let e = Parse_js.parse_expr lex in
+              let name = Printf.sprintf "js_expr_%x" (String.hash str) in
+              let* () =
+                register_fragment name (fun () ->
+                    EArrow (J.fun_ [] [ Return_statement (Some e), N ] N, AUnknown))
+              in
+              let* js_val = JavaScript.invoke_fragment name [] in
+              return (W.Call (wrap, [ js_val ]))
+            with Parse_js.Parsing_error pi ->
+              failwith
+                (Printf.sprintf
+                   "Parse error in argument of %s %S at position %d:%d"
+                   prim_name
+                   str
+                   pi.Parse_info.line
+                   pi.Parse_info.col))
+        | [ Pv _ ] -> call_prim ~transl_prim_arg prim_name l
+        | [] | _ :: _ ->
+            failwith (Printf.sprintf "Wrong number argument to primitive %s" prim_name))
+  in
+  List.iter
+    ~f:register_js_expr
+    [ "caml_js_expr"; "caml_pure_js_expr"; "caml_js_var"; "caml_js_eval_string" ];
   register "%caml_js_opt_call" (fun transl_prim_arg l ->
       let arity = List.length l - 2 in
       let name = Printf.sprintf "call_%d" arity in
@@ -1396,11 +1439,7 @@ let () =
                   , AUnknown ))
           in
           JavaScript.invoke_fragment name [ transl_prim_arg x ]
-      | [ _; _ ] ->
-          let* f = register_import ~name:"caml_js_get" (Fun (Type.func_type 1)) in
-          let l = List.map ~f:transl_prim_arg l in
-          let* l = expression_list (fun e -> e) l in
-          return (W.Call (f, l))
+      | [ _; _ ] -> call_prim ~transl_prim_arg "caml_js_get" l
       | _ -> assert false);
   register "caml_js_set" (fun transl_prim_arg l ->
       match l with
@@ -1427,11 +1466,7 @@ let () =
           in
           let l = List.map ~f:transl_prim_arg [ x; y ] in
           JavaScript.invoke_fragment name l
-      | [ _; _; _ ] ->
-          let* f = register_import ~name:"caml_js_set" (Fun (Type.func_type 2)) in
-          let l = List.map ~f:transl_prim_arg l in
-          let* l = expression_list (fun e -> e) l in
-          return (W.Call (f, l))
+      | [ _; _; _ ] -> call_prim ~transl_prim_arg "caml_js_set" l
       | _ -> assert false);
   let counter = ref (-1) in
   register "%caml_js_opt_object" (fun transl_prim_arg l ->

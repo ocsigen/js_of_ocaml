@@ -41,7 +41,7 @@ let specialize_instr ~target info i =
         , Prim
             ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
             , [ (Pv _ as y) ] ) )
-    , `JavaScript )
+    , _ )
     when Config.Flag.safe_string () -> (
       match the_string_of info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))

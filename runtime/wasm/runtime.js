@@ -379,4 +379,5 @@
     }
     await _initialize();
 })(((joo_global_object,jsoo_exports,globalThis)=>(x)=>eval("("+x+")"))(globalThis,globalThis?.module?.exports||globalThis,globalThis),
-   PRIMITIVES, STRINGS);
+   PRIMITIVES, STRINGS,
+   ((joo_global_object,jsoo_exports,globalThis)=>FRAGMENTS)(globalThis,globalThis?.module?.exports||globalThis,globalThis))
