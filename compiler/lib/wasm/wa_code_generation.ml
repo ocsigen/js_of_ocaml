@@ -24,7 +24,8 @@ type context =
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
   ; mutable imports : (Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
-  ; types : (string, Var.t) Hashtbl.t
+  ; type_names : (string, Var.t) Hashtbl.t
+  ; types : (Var.t, Wa_ast.type_field) Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
@@ -38,14 +39,17 @@ type context =
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
+  ; mutable globalized_variables : Var.Set.t
+  ; value_type : W.value_type
   }
 
-let make_context () =
+let make_context ~value_type =
   { constants = Hashtbl.create 128
   ; data_segments = Var.Map.empty
   ; constant_globals = Var.Map.empty
   ; other_fields = []
   ; imports = StringMap.empty
+  ; type_names = Hashtbl.create 128
   ; types = Hashtbl.create 128
   ; closure_envs = Var.Map.empty
   ; apply_funs = IntMap.empty
@@ -59,6 +63,8 @@ let make_context () =
   ; strings = []
   ; string_index = StringMap.empty
   ; fragments = StringMap.empty
+  ; globalized_variables = Var.Set.empty
+  ; value_type
   }
 
 type var =
@@ -114,14 +120,42 @@ type type_def =
 let register_type nm gen_typ st =
   let context = st.context in
   let { supertype; final; typ }, st = gen_typ () st in
-  ( (try Hashtbl.find context.types nm
+  ( (try Hashtbl.find context.type_names nm
      with Not_found ->
        let name = Var.fresh_n nm in
-       context.other_fields <-
-         Type [ { name; typ; supertype; final } ] :: context.other_fields;
-       Hashtbl.add context.types nm name;
+       let type_field = { Wa_ast.name; typ; supertype; final } in
+       context.other_fields <- Type [ type_field ] :: context.other_fields;
+       Hashtbl.add context.type_names nm name;
+       Hashtbl.add context.types name type_field;
        name)
   , st )
+
+let rec type_index_sub ty ty' st =
+  if Var.equal ty ty'
+  then true, st
+  else
+    let type_field = Hashtbl.find st.context.types ty in
+    match type_field.supertype with
+    | None -> false, st
+    | Some ty -> type_index_sub ty ty' st
+
+let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
+  match ty, ty' with
+  | Func, Func
+  | Extern, Extern
+  | (Any | Eq | I31 | Type _), Any
+  | (Eq | I31 | Type _), Eq
+  | I31, I31 -> true, st
+  | Type t, Type t' -> type_index_sub t t' st
+  (* Func and Extern are only in suptyping relation with themselves *)
+  | Func, _
+  | _, Func
+  | Extern, _
+  | _, Extern
+  (* Any has no supertype *)
+  | Any, _
+  (* I31, struct and arrays have no subtype (of a different kind) *)
+  | _, (I31 | Type _) -> false, st
 
 let register_global name ?(constant = false) typ init st =
   st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;
@@ -136,6 +170,10 @@ let register_global name ?(constant = false) typ init st =
           }
           st.context.constant_globals);
   (), st
+
+let global_is_registered name =
+  let* ctx = get_context in
+  return (Var.Map.mem name ctx.constant_globals)
 
 let global_is_constant name =
   let* ctx = get_context in
@@ -416,6 +454,10 @@ let tee ?typ x e =
     let* i = add_var ?typ x in
     return (W.LocalTee (i, e))
 
+let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
+
+let value_type st = st.context.value_type, st
+
 let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
@@ -427,8 +469,30 @@ let rec store ?(always = false) ?typ x e =
       if b && not always
       then register_constant x e
       else
-        let* i = add_var ?typ x in
-        instr (LocalSet (i, e))
+        let* b = should_make_global x in
+        if b
+        then
+          let* typ =
+            match typ with
+            | Some typ -> return typ
+            | None -> value_type
+          in
+          let* () =
+            let* b = global_is_registered x in
+            if b
+            then return ()
+            else
+              register_global
+                ~constant:true
+                (V x)
+                { mut = true; typ }
+                (W.RefI31 (Const (I32 0l)))
+          in
+          let* () = register_constant x (W.GlobalGet (V x)) in
+          instr (GlobalSet (V x, e))
+        else
+          let* i = add_var ?typ x in
+          instr (LocalSet (i, e))
 
 let assign x e =
   let* x = var x in
@@ -538,7 +602,7 @@ let need_dummy_fun ~cps ~arity st =
 
 let init_code context = instrs context.init_code
 
-let function_body ~context ~value_type ~param_count ~body =
+let function_body ~context ~param_count ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
@@ -552,7 +616,7 @@ let function_body ~context ~value_type ~param_count ~body =
   let body = Wa_tail_call.f body in
   let locals =
     local_types
-    |> Array.map ~f:(fun v -> Option.value ~default:value_type v)
+    |> Array.map ~f:(fun v -> Option.value ~default:context.value_type v)
     |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
     |> Array.to_list
   in

@@ -543,13 +543,17 @@ module Memory = struct
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast (_, GlobalGet (V nm)) -> (
+    | W.RefCast ({ typ; _ }, GlobalGet (V nm)) -> (
         let* init = get_global nm in
         match init with
-        | Some (W.StructNew (_, l)) ->
-            let e = List.nth l i in
-            let* b = is_small_constant e in
-            if b then return e else return (W.StructGet (None, ty, i, e))
+        | Some (W.StructNew (ty', l)) ->
+            let* b = heap_type_sub (Type ty') typ in
+            if b
+            then
+              let e' = List.nth l i in
+              let* b = is_small_constant e' in
+              if b then return e' else return (W.StructGet (None, ty, i, e))
+            else return (W.StructGet (None, ty, i, e))
         | _ -> return (W.StructGet (None, ty, i, e)))
     | _ -> return (W.StructGet (None, ty, i, e))
 
@@ -971,6 +975,11 @@ module Closure = struct
   let translate ~context ~closures ~stack_ctx:_ ~cps f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
+    assert (
+      not
+        (List.exists
+           ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
+           free_variables));
     let arity = List.assoc f info.functions in
     let arity = if cps then arity - 1 else arity in
     let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
@@ -1077,15 +1086,15 @@ module Closure = struct
           else res
 
   let bind_environment ~context ~closures ~cps f =
-    if Hashtbl.mem context.constants f
+    let info = Code.Var.Map.find f closures in
+    let free_variables = get_free_variables ~context info in
+    let free_variable_count = List.length free_variables in
+    if free_variable_count = 0
     then
       (* The closures are all constants and the environment is empty. *)
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
-      let info = Code.Var.Map.find f closures in
-      let free_variables = get_free_variables ~context info in
-      let free_variable_count = List.length free_variables in
       let arity = List.assoc f info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in

@@ -954,10 +954,12 @@ module Generate (Target : Wa_target_sig.S) = struct
       | None -> 0
       | Some _ -> List.length params + 1
     in
+    (match name_opt with
+    | None -> ctx.global_context.globalized_variables <- Wa_globalize.f p g ctx.closures
+    | Some _ -> ());
     let locals, body =
       function_body
         ~context:ctx.global_context
-        ~value_type:Value.value
         ~param_count
         ~body:
           (let* () = build_initial_env in
@@ -990,7 +992,6 @@ module Generate (Target : Wa_target_sig.S) = struct
     let locals, body =
       function_body
         ~context:ctx.global_context
-        ~value_type:Value.value
         ~param_count:(List.length typ.W.params)
         ~body
     in
@@ -1020,7 +1021,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       ; in_cps
       ; blocks = p.blocks
       ; closures
-      ; global_context = make_context ()
+      ; global_context = make_context ~value_type:Value.value
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in

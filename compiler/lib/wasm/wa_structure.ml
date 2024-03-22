@@ -146,6 +146,8 @@ let sort_in_post_order g l =
       compare (Hashtbl.find g.block_order b') (Hashtbl.find g.block_order b))
     l
 
+let blocks_in_reverse_post_order g = g.reverse_post_order
+
 (* Compute a map from each block to the set of loops it belongs to *)
 let mark_loops g =
   let in_loop = Hashtbl.create 16 in
