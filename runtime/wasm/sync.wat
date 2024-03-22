@@ -71,7 +71,7 @@
       (struct.set $mutex $state (local.get $t) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_ml_try_lock") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_mutex_try_lock") (param (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
       (local.set $t (ref.cast (ref $mutex) (local.get 0)))
       (if (result (ref eq)) (struct.get $mutex $state (local.get $t))
