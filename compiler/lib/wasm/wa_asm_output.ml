@@ -301,6 +301,13 @@ module Output () = struct
     | MemoryGrow (mem, e) -> expression e ^^ line (string "memory.grow " ^^ integer mem)
     | Seq (l, e') -> concat_map instruction l ^^ expression e'
     | Pop _ -> empty
+    | IfExpr (ty, e, e1, e2) ->
+        expression e
+        ^^ line (string "if" ^^ block_type { params = []; result = [ ty ] })
+        ^^ indent (expression e1)
+        ^^ line (string "else")
+        ^^ indent (expression e2)
+        ^^ line (string "end_if")
     | RefFunc _
     | Call_ref _
     | RefI31 _

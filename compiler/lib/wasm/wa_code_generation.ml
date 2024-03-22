@@ -347,11 +347,13 @@ let bin_op_is_smi (op : W.int_bin_op) =
       false
   | Eq | Ne | Lt _ | Gt _ | Le _ | Ge _ -> true
 
-let is_smi e =
+let rec is_smi e =
   match e with
   | W.Const (I32 i) -> Int32.equal (Int31.wrap i) i
   | UnOp ((I32 op | I64 op), _) -> un_op_is_smi op
   | BinOp ((I32 op | I64 op), _, _) -> bin_op_is_smi op
+  | I31Get (S, _) -> true
+  | I31Get (U, _)
   | Const (I64 _ | F32 _ | F64 _)
   | ConstSym _
   | UnOp ((F32 _ | F64 _), _)
@@ -373,7 +375,6 @@ let is_smi e =
   | RefFunc _
   | Call_ref _
   | RefI31 _
-  | I31Get _
   | ArrayNew _
   | ArrayNewFixed _
   | ArrayNewData _
@@ -388,6 +389,7 @@ let is_smi e =
   | Br_on_cast _
   | Br_on_cast_fail _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
+  | IfExpr (_, _, ift, iff) -> is_smi ift && is_smi iff
 
 let get_i31_value x st =
   match st.instrs with
