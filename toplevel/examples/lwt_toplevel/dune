@@ -149,4 +149,5 @@
 
 (alias
  (name default)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps toplevel.js toplevel.bc.js index.html))

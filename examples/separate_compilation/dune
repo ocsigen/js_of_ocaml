@@ -110,12 +110,14 @@
 
 (rule
  (alias runtest)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps bin.reference bin.referencejs)
  (action
   (diff bin.reference bin.referencejs)))
 
 (alias
  (name default)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps
   myruntime.js
   stdlib.cma.js

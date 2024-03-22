@@ -1,11 +1,13 @@
 (executable
  (name main)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules main)
  (libraries dynlink js_of_ocaml-compiler.dynlink)
  (modes byte))
 
 (rule
  (target main.js)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps plugin.cmo export)
  (action
   (run
@@ -25,6 +27,7 @@
 
 (rule
  (target main.out)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps plugin.cmo)
  (action
   (with-outputs-to
@@ -33,5 +36,6 @@
 
 (rule
  (alias runtest)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (action
   (diff main.out.expected main.out)))

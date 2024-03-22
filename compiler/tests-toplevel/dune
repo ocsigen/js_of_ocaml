@@ -1,5 +1,6 @@
 (executables
  (names test_toplevel)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (libraries js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
  (flags
   (:standard -linkall))
@@ -7,11 +8,13 @@
 
 (rule
  (targets test_toplevel.js)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (action
   (run %{bin:js_of_ocaml} --toplevel %{dep:test_toplevel.bc} -o %{targets})))
 
 (rule
  (target test_toplevel.referencejs)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps test_toplevel.js)
  (action
   (with-stdout-to
@@ -20,6 +23,7 @@
 
 (rule
  (alias runtest)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps test_toplevel.reference test_toplevel.referencejs)
  (action
   (diff test_toplevel.reference test_toplevel.referencejs)))

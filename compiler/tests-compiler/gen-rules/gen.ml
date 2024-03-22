@@ -85,9 +85,13 @@ let () =
            basename
            (Hashtbl.hash prefix mod 100)
            (match lib_enabled_if basename with
-           | Any -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)")
+           | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
+           | GE5 ->
+               "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= \
+                %{ocaml_version} 5))")
            basename
            (match test_enabled_if basename with
-           | Any -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)"))
+           | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
+           | GE5 ->
+               "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= \
+                %{ocaml_version} 5))"))

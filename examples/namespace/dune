@@ -59,5 +59,6 @@
 
 (rule
  (alias runtest)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (action
   (diff %{dep:for-node.expected} %{dep:for-node.actual})))

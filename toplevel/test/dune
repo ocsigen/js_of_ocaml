@@ -36,6 +36,7 @@
 
 (rule
  (alias runtest)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (deps test_toplevel.reference test_toplevel.referencejs)
  (action
   (diff test_toplevel.reference test_toplevel.referencejs)))
