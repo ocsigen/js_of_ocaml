@@ -440,7 +440,7 @@ struct
         (match k with
         | { async = true; generator = false } ->
             PP.string f "async";
-            PP.space f
+            PP.non_breaking_space f
         | { async = false; generator = false } -> ()
         | { async = true | false; generator = true } -> assert false);
         PP.break f;
@@ -878,7 +878,7 @@ struct
                PP.space f
            | { async = true; generator = false } ->
                PP.string f "async";
-               PP.space f
+               PP.non_breaking_space f
            | { async = true; generator = true } ->
                PP.string f "async*";
                PP.space f);
