@@ -135,7 +135,12 @@ val register_import :
   ?import_module:string -> name:string -> Wa_ast.import_desc -> Wa_ast.var t
 
 val register_global :
-  Wa_ast.symbol -> ?constant:bool -> Wa_ast.global_type -> Wa_ast.expression -> unit t
+     Wa_ast.symbol
+  -> ?exported_name:string
+  -> ?constant:bool
+  -> Wa_ast.global_type
+  -> Wa_ast.expression
+  -> unit t
 
 val get_global : Code.Var.t -> Wa_ast.expression option t
 

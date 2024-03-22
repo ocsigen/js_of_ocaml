@@ -157,8 +157,9 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   (* I31, struct and arrays have no subtype (of a different kind) *)
   | _, (I31 | Type _) -> false, st
 
-let register_global name ?(constant = false) typ init st =
-  st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;
+let register_global name ?exported_name ?(constant = false) typ init st =
+  st.context.other_fields <-
+    W.Global { name; exported_name; typ; init } :: st.context.other_fields;
   (match name with
   | S _ -> ()
   | V name ->
