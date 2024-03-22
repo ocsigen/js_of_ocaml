@@ -59,7 +59,7 @@ let collect_free_vars program var_depth depth pc closures =
 
 let mark_bound_variables var_depth block depth =
   Freevars.iter_block_bound_vars (fun x -> var_depth.(Var.idx x) <- depth) block;
-  List.iter block.body ~f:(fun( i,_) ->
+  List.iter block.body ~f:(fun (i, _) ->
       match i with
       | Let (_, Closure (params, _)) ->
           List.iter params ~f:(fun x -> var_depth.(Var.idx x) <- depth + 1)

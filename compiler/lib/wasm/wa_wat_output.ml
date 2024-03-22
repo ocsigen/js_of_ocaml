@@ -333,11 +333,10 @@ let expression_or_instructions ctx in_function =
     | ExternExternalize e -> [ List (Atom "extern.externalize" :: expression e) ]
     | IfExpr (ty, cond, ift, iff) ->
         [ List
-            (Atom "if"
-            :: (block_type { params = []; result = [ ty ] })
-               @ expression cond
-               @ [ List (Atom "then" :: expression ift) ]
-               @ [ List (Atom "else" :: expression iff) ])
+            ((Atom "if" :: block_type { params = []; result = [ ty ] })
+            @ expression cond
+            @ [ List (Atom "then" :: expression ift) ]
+            @ [ List (Atom "else" :: expression iff) ])
         ]
   and instruction i =
     match i with

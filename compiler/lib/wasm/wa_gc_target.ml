@@ -440,8 +440,7 @@ module Value = struct
     let* i' = i' in
     return (W.RefEq (i, i'))
 
-  let ref ty =
-    { W.nullable = false; typ = Type ty }
+  let ref ty = { W.nullable = false; typ = Type ty }
 
   let ref_test typ e =
     let* e = e in
@@ -468,11 +467,11 @@ module Value = struct
     let* x = x in
     return (f x)
 
-  let (>>|) x f = map f x
+  let ( >>| ) x f = map f x
 
   let eq_gen ~negate x y =
-    let xv  = Code.Var.fresh () in
-    let yv  = Code.Var.fresh () in
+    let xv = Code.Var.fresh () in
+    let yv = Code.Var.fresh () in
     let* js = Type.js_type in
     let n =
       if_expr
@@ -480,27 +479,24 @@ module Value = struct
         (* We mimic an "and" on the two conditions, but in a way that is nicer to the
            binaryen optimizer. *)
         (if_expr
-          I32
-          (ref_test (ref js) (load xv))
-          (ref_test (ref js) (load yv))
-          (Arith.const 0l))
+           I32
+           (ref_test (ref js) (load xv))
+           (ref_test (ref js) (load yv))
+           (Arith.const 0l))
         (caml_js_strict_equals (load xv) (load yv)
-          >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-          >>| (fun e -> W.I31Get (S, e)))
+        >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
+        >>| fun e -> W.I31Get (S, e))
         (ref_eq (load xv) (load yv))
     in
     seq
       (let* () = store xv x in
-        let* () = store yv y in
-        return ())
+       let* () = store yv y in
+       return ())
       (val_int (if negate then Arith.eqz n else n))
 
+  let eq x y = eq_gen ~negate:false x y
 
-  let eq x y =
-    eq_gen ~negate:false x y
-
-  let neq x y =
-    eq_gen ~negate:true x y
+  let neq x y = eq_gen ~negate:true x y
 
   let ult = binop Arith.(ult)
 
