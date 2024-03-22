@@ -31,7 +31,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: v22.0.0-v8-canary20231204cf8ac0f493
+          node-version: v22.0.0-v8-canary2024030314ed92e804
 
       - name: Restore cached binaryen
         id: cache-binaryen
