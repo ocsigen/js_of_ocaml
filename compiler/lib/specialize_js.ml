@@ -468,7 +468,7 @@ let f_once_after p =
     match Config.target (), Config.effects () with
     | `JavaScript, `Disabled -> true
     | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
-    | `JavaScript, `Jspi -> assert false
+    | `JavaScript, (`Jspi | `Native) -> assert false
   in
   let f = function
     | Let (x, Closure (l, (pc, []), _)) as i -> (

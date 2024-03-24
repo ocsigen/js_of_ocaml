@@ -176,7 +176,7 @@ let effects_and_exact_calls
         | `JavaScript -> Lambda_lifting.f p
       in
       p, trampolined_calls, in_cps, None, shapes
-  | `Disabled | `Jspi ->
+  | `Disabled | `Jspi | `Native ->
       let p =
         Specialize.f
           ~shape:(fun f ->
@@ -715,9 +715,9 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
-         | `JavaScript, (`Cps | `Double_translation) | `Wasm, (`Disabled | `Jspi | `Cps)
-           -> Fun.id
-         | `JavaScript, `Jspi | `Wasm, `Double_translation -> assert false)
+         | `JavaScript, (`Cps | `Double_translation)
+         | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
+         | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
     +> map_fst5 deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

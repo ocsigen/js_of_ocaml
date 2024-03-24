@@ -205,13 +205,13 @@ module Fragment = struct
       ; ( "effects"
         , fun () ->
             match Config.effects () with
-            | `Disabled | `Jspi -> false
+            | `Disabled | `Jspi | `Native -> false
             | `Cps | `Double_translation -> true )
       ; ( "doubletranslate"
         , fun () ->
             match Config.effects () with
             | `Double_translation -> true
-            | `Jspi | `Cps | `Disabled -> false )
+            | `Jspi | `Cps | `Native | `Disabled -> false )
       ; ( "wasm"
         , fun () ->
             match Config.target () with

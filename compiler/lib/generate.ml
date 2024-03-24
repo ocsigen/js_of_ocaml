@@ -28,7 +28,7 @@ let cps_transform () =
   match Config.effects () with
   | `Cps | `Double_translation -> true
   | `Disabled -> false
-  | `Jspi -> assert false
+  | `Jspi | `Native -> assert false
 
 open Code
 module J = Javascript
@@ -1089,7 +1089,7 @@ let apply_fun_raw =
             (* Effects enabled, CPS version, not single-version *)
             J.EDot (f, J.ANormal, cps_field)
         | `Cps | `Double_translation | `Disabled -> f
-        | `Jspi -> assert false
+        | `Jspi | `Native -> assert false
       in
       (* We skip the arity check when we know that we have the right
          number of parameters, since this test is expensive. *)
@@ -1116,7 +1116,7 @@ let apply_fun_raw =
                  (match Config.effects () with
                  | `Double_translation when cps -> "caml_call_gen_cps"
                  | `Double_translation | `Cps | `Disabled -> "caml_call_gen"
-                 | `Jspi -> assert false))
+                 | `Jspi | `Native -> assert false))
               [ f; J.array params ]
               J.N )
     in
@@ -1132,7 +1132,7 @@ let apply_fun_raw =
                 [ apply ~cps:false f (fst (List.take (n - 1) params)) ]
                 J.N )
       | `Double_translation | `Cps | `Disabled -> apply ~cps f params
-      | `Jspi -> assert false
+      | `Jspi | `Native -> assert false
     in
     if trampolined
     then (
