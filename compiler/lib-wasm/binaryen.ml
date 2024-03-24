@@ -40,6 +40,11 @@ let common_options () =
     ; "--enable-strings"
     ]
   in
+  let l =
+    match Config.effects () with
+    | `Native -> "--enable-stack-switching" :: l
+    | `Disabled | `Jspi | `Cps | `Double_translation -> l
+  in
   let l = if Config.Flag.pretty () then "-g" :: l else l in
   let l = if times () then "--no-validation" :: l else l in
   l
