@@ -88,7 +88,7 @@
    (global $raise_unhandled (ref $closure)
       (struct.new $closure (ref.func $raise_unhandled)))
 
-   (global $effect_allowed (mut i32) (i32.const 1))
+   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 1))
 
    (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
       (param (ref eq)) (result (ref eq))
@@ -139,7 +139,7 @@
                (ref.i31 (global.get $cont_tag))))))
       (i32.const 0))
 
-(@if (= effects "jspi")
+(@if (and (not wasi) (= effects "jspi"))
 (@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
