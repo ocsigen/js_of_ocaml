@@ -11,13 +11,20 @@ In particular, the output code requires the following [Wasm extensions](https://
 - [the tail-call extension](https://github.com/WebAssembly/tail-call/blob/main/proposals/tail-call/Overview.md)
 - [the exception handling extension](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
-OCaml 5.x code using effect handlers can be compiled in two different ways:
-one can enable the CPS transformation from `js_of_ocaml` by passing the
-`--effects=cps` flag. Without the flag `wasm_of_ocaml` will instead default to
-`--effects=jspi` and emit code utilizing
-- [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
-
-Effects work by default (using JSPI) in Chrome 137, Node.js 25, and higher versions. For other browsers, use `--effects=cps`.
+OCaml 5.x code using effect handlers can be compiled in three different ways:
+- `--effects=jspi` (default) emits code utilizing
+  [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
+  It works by default in Chrome 137, Node.js 25, and higher versions. Performing
+  effects is slower than with `--effects=cps`.
+- `--effects=cps` enables the CPS transformation from `js_of_ocaml`. The
+  generated code is slower, larger, and less readable, but it runs on any
+  supported engine. Use this for other browsers.
+- `--effects=native` uses the
+  [WebAssembly Stack Switching proposal](https://github.com/WebAssembly/stack-switching)
+  (typed continuations). It provides the best performance but requires a runtime
+  with support for the WasmFX extension (currently available, behind the
+  `--experimental-wasm-wasmfx` flag, in Chrome 148 or higher, or in a recent
+  Node.js canary release with V8 version 14.7.100 or higher).
 
 ## Installation and usage
 
