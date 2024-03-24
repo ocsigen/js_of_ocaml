@@ -554,7 +554,7 @@ let build_runtime_arguments
   let props =
     match Config.effects () with
     | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
-    | `Jspi | `Cps -> props
+    | `Jspi | `Cps | `Native -> props
     | `Double_translation -> assert false
   in
   obj props
