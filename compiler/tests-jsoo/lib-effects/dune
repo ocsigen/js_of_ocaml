@@ -1,10 +1,10 @@
 (env
  (with-effects-double-translation)
  (with-effects)
- (wasi
-  (wasm_of_ocaml
-   (flags
-    (:standard --enable effects))))
+ ; (wasi
+ ;  (wasm_of_ocaml
+ ;   (flags
+ ;    (:standard --enable effects))))
  (_
   (js_of_ocaml
    (flags
