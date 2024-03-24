@@ -823,11 +823,7 @@ module Generate (Target : Target_sig.S) = struct
           { params = []; result = [] }
           (body ~result_typ:[] ~fall_through:(`Block pc) ~context:(`Block pc :: context))
       in
-      if List.is_empty result_typ
-      then handler
-      else
-        let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+      handler
     else body ~result_typ ~fall_through ~context
 
   let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
@@ -836,18 +832,20 @@ module Generate (Target : Target_sig.S) = struct
       need_bound_error_handler
       bound_error_pc
       (let* f =
-         register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
+         register_import
+           ~name:"caml_bound_error"
+           (Fun { params = []; result = [ Value.value ] })
        in
-       instr (CallInstr (f, [])))
+       instr (Return (Some (Call (f, [])))))
       (wrap_with_handler
          need_zero_divide_handler
          zero_divide_pc
          (let* f =
             register_import
               ~name:"caml_raise_zero_divide"
-              (Fun { params = []; result = [] })
+              (Fun { params = []; result = [ Value.value ] })
           in
-          instr (CallInstr (f, [])))
+          instr (Return (Some (Call (f, [])))))
          body)
       ~result_typ
       ~fall_through

@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "fail" "caml_bound_error" (func $caml_bound_error))
+   (import "fail" "caml_bound_error" (func $caml_bound_error (result (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
 
@@ -159,10 +159,10 @@
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (drop (call $caml_bound_error))))
       (ref.i31 (i32.or
                   (array.get_u $bytes (local.get $s) (local.get $p))
                   (i32.shl (array.get_u $bytes (local.get $s)
@@ -176,10 +176,10 @@
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (drop (call $caml_bound_error))))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (drop (call $caml_bound_error))))
       (i32.or
          (i32.or
             (array.get_u $bytes (local.get $s) (local.get $p))
@@ -201,10 +201,10 @@
       (local.set $s (ref.cast (ref $bytes) (local.get $v)))
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (drop (call $caml_bound_error))))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (drop (call $caml_bound_error))))
       (i64.or
          (i64.or
             (i64.or
@@ -250,10 +250,10 @@
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (local.set $v (i31.get_s (ref.cast (ref i31) (local.get 2))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (array.set $bytes (local.get $s)
          (i32.add (local.get $p) (i32.const 1))
@@ -266,10 +266,10 @@
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (array.set $bytes (local.get $s)
          (i32.add (local.get $p) (i32.const 1))
@@ -288,10 +288,10 @@
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (if (i32.lt_s (local.get $p) (i32.const 0))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
                     (array.len (local.get $s)))
-         (then (call $caml_bound_error)))
+         (then (return_call $caml_bound_error)))
       (array.set $bytes (local.get $s) (local.get $p)
          (i32.wrap_i64 (local.get $v)))
       (array.set $bytes (local.get $s)
