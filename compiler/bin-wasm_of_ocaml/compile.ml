@@ -83,6 +83,7 @@ let preprocessor_variables () =
         (match Config.effects () with
         | `Disabled | `Jspi -> "jspi"
         | `Cps -> "cps"
+        | `Native -> "native"
         | `Double_translation -> assert false) )
   ]
 
