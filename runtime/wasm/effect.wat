@@ -85,7 +85,7 @@
             (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
       (ref.i31 (i32.const 0)))
 
-   (global $effect_allowed (mut i32) (i32.const 1))
+   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 1))
 
 (@if (not wasi)
 (@then
@@ -375,7 +375,6 @@
          (struct.new $handlers (local.get $hv) (local.get $hx) (local.get $hf))
          (struct.new $cont (ref.func $initial_cont))
          (ref.null $fiber)))
-))
 
    ;; Other functions
 
@@ -406,6 +405,7 @@
                (local.get $hval) (local.get $hexn) (local.get $heff)))
          (ref.i31 (i32.const 0))))
       (local.get $stack))
+))
 
    (func (export "caml_get_continuation_callstack")
       (param (ref eq) (ref eq)) (result (ref eq))
