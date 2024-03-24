@@ -215,6 +215,11 @@
       (call $caml_main (ref.func $reraise_exception)))
 ))
 
+   (type $wrapper_func (func (param (ref $func))))
+   (global $caml_main_wrapper (export "caml_main_wrapper")
+      (mut (ref null $wrapper_func))
+      (ref.null $wrapper_func))
+
    (func $caml_main (export "caml_main") (param $start (ref func))
       (local $exn (ref eq))
       (local $msg (ref eq))
@@ -227,6 +232,11 @@
 ))
       (try
          (do
+            (block $fallback
+               (call_ref $wrapper_func
+                  (ref.cast (ref $func) (local.get $start))
+                  (br_on_null $fallback (global.get $caml_main_wrapper)))
+               (return))
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
          (catch $ocaml_exit
             (call $exit (pop i32)))
