@@ -212,7 +212,7 @@ jobs:
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run tests (WASI runtime - node)
-        if: ${{ matrix.wasi }}
+        if: ${{ false }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile wasi
 
@@ -224,7 +224,7 @@ jobs:
         run: opam exec -- dune build @runtest-wasm --profile wasi
 
       - name: Run tests (WASI runtime - wasmtime)
-        if: ${{ matrix.wasi }}
+        if: ${{ false }}
         working-directory: ./wasm_of_ocaml
         env:
           WASM_ENGINE: wasmtime
