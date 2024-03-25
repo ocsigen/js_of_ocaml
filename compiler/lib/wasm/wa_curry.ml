@@ -50,12 +50,12 @@ module Make (Target : Wa_target_sig.S) = struct
         (load_func (local.get closure_0)) (field 3 (local.get closure_1)) (field 3 (local.get closure_2)) ... (local.get closure_{n - m})) (local.get x1) ... (local.get xm) (local.get closure_0))
   *)
   let curry_app ~context ~arity m ~name =
+    let args =
+      List.init ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x_%d" i)) ~len:m
+    in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let args =
-        List.init ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x_%d" i)) ~len:m
-      in
       let* () = bind_parameters args in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       let* args' = expression_list load args in
       let* _f = load f in
@@ -82,8 +82,10 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       loop m [] f None
     in
-    let locals, body = function_body ~context ~param_count:2 ~body in
-    W.Function { name; exported_name = None; typ = func_type 1; locals; body }
+    let param_names = args @ [ f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type 1; param_names; locals; body }
 
   let curry_name n m = Printf.sprintf "curry_%d_%d" n m
 
@@ -100,10 +102,10 @@ module Make (Target : Wa_target_sig.S) = struct
         let functions = curry ~context ~arity (m - 1) ~name:nm in
         nm, functions
     in
+    let x = Code.Var.fresh_n "x" in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let x = Code.Var.fresh_n "x" in
       let* _ = add_var x in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       let res = Code.Var.fresh_n "res" in
       let stack_info, stack =
@@ -140,8 +142,10 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       Stack.perform_spilling stack_ctx (`Instr ret)
     in
-    let locals, body = function_body ~context ~param_count:2 ~body in
-    W.Function { name; exported_name = None; typ = func_type 1; locals; body }
+    let param_names = [ x; f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type 1; param_names; locals; body }
     :: functions
 
   let curry ~arity ~name = curry ~arity arity ~name
@@ -149,12 +153,12 @@ module Make (Target : Wa_target_sig.S) = struct
   let cps_curry_app_name n m = Printf.sprintf "cps_curry_app %d_%d" n m
 
   let cps_curry_app ~context ~arity m ~name =
+    let args =
+      List.init ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x_%d" i)) ~len:(m + 1)
+    in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let args =
-        List.init ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x_%d" i)) ~len:(m + 1)
-      in
       let* () = bind_parameters args in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       let* args' = expression_list load args in
       let* _f = load f in
@@ -181,8 +185,10 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       loop m [] f None
     in
-    let locals, body = function_body ~context ~param_count:3 ~body in
-    W.Function { name; exported_name = None; typ = func_type 2; locals; body }
+    let param_names = args @ [ f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type 2; param_names; locals; body }
 
   let cps_curry_name n m = Printf.sprintf "cps_curry_%d_%d" n m
 
@@ -199,12 +205,12 @@ module Make (Target : Wa_target_sig.S) = struct
         let functions = cps_curry ~context ~arity (m - 1) ~name:nm in
         nm, functions
     in
+    let x = Code.Var.fresh_n "x" in
+    let cont = Code.Var.fresh_n "cont" in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let x = Code.Var.fresh_n "x" in
       let* _ = add_var x in
-      let cont = Code.Var.fresh_n "cont" in
       let* _ = add_var cont in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       let res = Code.Var.fresh_n "res" in
       let stack_info, stack =
@@ -242,21 +248,23 @@ module Make (Target : Wa_target_sig.S) = struct
       let* c = call ~cps:false ~arity:1 (load cont) [ e ] in
       instr (W.Return (Some c))
     in
-    let locals, body = function_body ~context ~param_count:3 ~body in
-    W.Function { name; exported_name = None; typ = func_type 2; locals; body }
+    let param_names = [ x; cont; f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type 2; param_names; locals; body }
     :: functions
 
   let cps_curry ~arity ~name = cps_curry ~arity arity ~name
 
   let apply ~context ~arity ~name =
     assert (arity > 1);
+    let l =
+      List.rev
+        (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
+    in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let l =
-        List.rev
-          (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
-      in
       let* () = bind_parameters l in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       Memory.check_function_arity
         f
@@ -301,18 +309,20 @@ module Make (Target : Wa_target_sig.S) = struct
          in
          build_applies (load f) l)
     in
-    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
-    W.Function { name; exported_name = None; typ = func_type arity; locals; body }
+    let param_names = l @ [ f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
 
   let cps_apply ~context ~arity ~name =
     assert (arity > 2);
+    let l =
+      List.rev
+        (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
+    in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let l =
-        List.rev
-          (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
-      in
       let* () = bind_parameters l in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       Memory.check_function_arity
         f
@@ -362,18 +372,20 @@ module Make (Target : Wa_target_sig.S) = struct
          let* () = push (call ~cps:true ~arity:2 (load f) [ x; iterate ]) in
          Stack.perform_spilling stack_ctx (`Instr ret))
     in
-    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
-    W.Function { name; exported_name = None; typ = func_type arity; locals; body }
+    let param_names = l @ [ f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
 
   let dummy ~context ~cps ~arity ~name =
     let arity = if cps then arity + 1 else arity in
+    let l =
+      List.rev
+        (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
+    in
+    let f = Code.Var.fresh_n "f" in
     let body =
-      let l =
-        List.rev
-          (List.init ~len:arity ~f:(fun i -> Code.Var.fresh_n (Printf.sprintf "x%d" i)))
-      in
       let* () = bind_parameters l in
-      let f = Code.Var.fresh_n "f" in
       let* _ = add_var f in
       let* typ, closure = Memory.load_real_closure ~cps ~arity (load f) in
       let* l = expression_list load l in
@@ -387,8 +399,10 @@ module Make (Target : Wa_target_sig.S) = struct
       in
       instr (W.Return (Some e))
     in
-    let locals, body = function_body ~context ~param_count:(arity + 1) ~body in
-    W.Function { name; exported_name = None; typ = func_type arity; locals; body }
+    let param_names = l @ [ f ] in
+    let locals, body = function_body ~context ~param_names ~body in
+    W.Function
+      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
 
   let f ~context =
     IntMap.iter

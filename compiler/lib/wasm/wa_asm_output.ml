@@ -249,7 +249,7 @@ module Output () = struct
 
   let offs _ i = Int32.to_string i
 
-  let rec expression e =
+  let rec expression m e =
     match e with
     | Const op ->
         line
@@ -259,54 +259,55 @@ module Output () = struct
     | ConstSym (name, offset) ->
         line (type_prefix (I32 ()) ^^ string "const " ^^ symbol name offset)
     | UnOp (op, e') ->
-        expression e'
+        expression m e'
         ^^ line
              (type_prefix op
              ^^ string (select int_un_op int_un_op float_un_op float_un_op op))
     | BinOp (op, e1, e2) ->
-        expression e1
-        ^^ expression e2
+        expression m e1
+        ^^ expression m e2
         ^^ line
              (type_prefix op
              ^^ string (select int_bin_op int_bin_op float_bin_op float_bin_op op))
-    | I32WrapI64 e -> expression e ^^ line (string "i32.wrap_i64")
-    | I64ExtendI32 (s, e) -> expression e ^^ line (string (signage "i64.extend_i32" s))
-    | F32DemoteF64 e -> expression e ^^ line (string "f32.demote_f64")
-    | F64PromoteF32 e -> expression e ^^ line (string "f64.promote_f32")
+    | I32WrapI64 e -> expression m e ^^ line (string "i32.wrap_i64")
+    | I64ExtendI32 (s, e) -> expression m e ^^ line (string (signage "i64.extend_i32" s))
+    | F32DemoteF64 e -> expression m e ^^ line (string "f32.demote_f64")
+    | F64PromoteF32 e -> expression m e ^^ line (string "f64.promote_f32")
     | Load (offset, e') ->
-        expression e'
+        expression m e'
         ^^ line
              (type_prefix offset
              ^^ string "load "
              ^^ string (select offs offs offs offs offset))
     | Load8 (s, offset, e') ->
-        expression e'
+        expression m e'
         ^^ line
              (type_prefix offset
              ^^ string (signage "load8" s)
              ^^ string " "
              ^^ string (select offs offs offs offs offset))
-    | LocalGet i -> line (string "local.get " ^^ integer i)
-    | LocalTee (i, e') -> expression e' ^^ line (string "local.tee " ^^ integer i)
+    | LocalGet i -> line (string "local.get " ^^ integer (Hashtbl.find m i))
+    | LocalTee (i, e') ->
+        expression m e' ^^ line (string "local.tee " ^^ integer (Hashtbl.find m i))
     | GlobalGet nm -> line (string "global.get " ^^ symbol nm 0)
     | BlockExpr (ty, l) ->
         line (string "block" ^^ block_type ty)
-        ^^ indent (concat_map instruction l)
+        ^^ indent (concat_map (instruction m) l)
         ^^ line (string "end_block")
     | Call_indirect (typ, f, l) ->
-        concat_map expression l
-        ^^ expression f
+        concat_map (expression m) l
+        ^^ expression m f
         ^^ line (string "call_indirect " ^^ func_type typ)
-    | Call (x, l) -> concat_map expression l ^^ line (string "call " ^^ index x)
-    | MemoryGrow (mem, e) -> expression e ^^ line (string "memory.grow " ^^ integer mem)
-    | Seq (l, e') -> concat_map instruction l ^^ expression e'
+    | Call (x, l) -> concat_map (expression m) l ^^ line (string "call " ^^ index x)
+    | MemoryGrow (mem, e) -> expression m e ^^ line (string "memory.grow " ^^ integer mem)
+    | Seq (l, e') -> concat_map (instruction m) l ^^ expression m e'
     | Pop _ -> empty
     | IfExpr (ty, e, e1, e2) ->
-        expression e
+        expression m e
         ^^ line (string "if" ^^ block_type { params = []; result = [ ty ] })
-        ^^ indent (expression e1)
+        ^^ indent (expression m e1)
         ^^ line (string "else")
-        ^^ indent (expression e2)
+        ^^ indent (expression m e2)
         ^^ line (string "end_if")
     | RefFunc _
     | Call_ref _
@@ -328,83 +329,85 @@ module Output () = struct
     | ExternExternalize _
     | ExternInternalize _ -> assert false (* Not supported *)
 
-  and instruction i =
+  and instruction m i =
     match i with
-    | Drop e -> expression e ^^ line (string "drop")
+    | Drop e -> expression m e ^^ line (string "drop")
     | Store (offset, e, e') ->
-        expression e
-        ^^ expression e'
+        expression m e
+        ^^ expression m e'
         ^^ line
              (type_prefix offset
              ^^ string "store "
              ^^ string (select offs offs offs offs offset))
     | Store8 (offset, e, e') ->
-        expression e
-        ^^ expression e'
+        expression m e
+        ^^ expression m e'
         ^^ line
              (type_prefix offset
              ^^ string "store8 "
              ^^ string (select offs offs offs offs offset))
-    | LocalSet (i, e) -> expression e ^^ line (string "local.set " ^^ integer i)
-    | GlobalSet (nm, e) -> expression e ^^ line (string "global.set " ^^ symbol nm 0)
+    | LocalSet (i, e) ->
+        expression m e ^^ line (string "local.set " ^^ integer (Hashtbl.find m i))
+    | GlobalSet (nm, e) -> expression m e ^^ line (string "global.set " ^^ symbol nm 0)
     | Loop (ty, l) ->
         line (string "loop" ^^ block_type ty)
-        ^^ indent (concat_map instruction l)
+        ^^ indent (concat_map (instruction m) l)
         ^^ line (string "end_loop")
     | Block (ty, l) ->
         line (string "block" ^^ block_type ty)
-        ^^ indent (concat_map instruction l)
+        ^^ indent (concat_map (instruction m) l)
         ^^ line (string "end_block")
     | If (ty, e, l1, l2) ->
-        expression e
+        expression m e
         ^^ line (string "if" ^^ block_type ty)
-        ^^ indent (concat_map instruction l1)
+        ^^ indent (concat_map (instruction m) l1)
         ^^ line (string "else")
-        ^^ indent (concat_map instruction l2)
+        ^^ indent (concat_map (instruction m) l2)
         ^^ line (string "end_if")
     | Br_table (e, l, i) ->
-        expression e
+        expression m e
         ^^ line
              (string "br_table {"
              ^^ separate_map (string ", ") integer (l @ [ i ])
              ^^ string "}")
-    | Br (i, Some e) -> expression e ^^ instruction (Br (i, None))
+    | Br (i, Some e) -> expression m e ^^ instruction m (Br (i, None))
     | Br (i, None) -> line (string "br " ^^ integer i)
-    | Br_if (i, e) -> expression e ^^ line (string "br_if " ^^ integer i)
-    | Return (Some e) -> expression e ^^ instruction (Return None)
+    | Br_if (i, e) -> expression m e ^^ line (string "br_if " ^^ integer i)
+    | Return (Some e) -> expression m e ^^ instruction m (Return None)
     | Return None -> line (string "return")
-    | CallInstr (x, l) -> concat_map expression l ^^ line (string "call " ^^ index x)
+    | CallInstr (x, l) -> concat_map (expression m) l ^^ line (string "call " ^^ index x)
     | Nop -> empty
-    | Push e -> expression e
+    | Push e -> expression m e
     | Try (ty, body, catches, catch_all) ->
         Feature.require exception_handling;
         line (string "try" ^^ block_type ty)
-        ^^ indent (concat_map instruction body)
+        ^^ indent (concat_map (instruction m) body)
         ^^ concat_map
              (fun (tag, l) ->
-               line (string "catch " ^^ index tag) ^^ indent (concat_map instruction l))
+               line (string "catch " ^^ index tag)
+               ^^ indent (concat_map (instruction m) l))
              catches
         ^^ (match catch_all with
            | None -> empty
-           | Some l -> line (string "catch_all") ^^ indent (concat_map instruction l))
+           | Some l -> line (string "catch_all") ^^ indent (concat_map (instruction m) l))
         ^^ line (string "end_try")
     | Throw (i, e) ->
         Feature.require exception_handling;
-        expression e ^^ line (string "throw " ^^ index i)
+        expression m e ^^ line (string "throw " ^^ index i)
     | Rethrow i ->
         Feature.require exception_handling;
         line (string "rethrow " ^^ integer i)
     | Return_call_indirect (typ, f, l) ->
         Feature.require tail_call;
-        concat_map expression l
-        ^^ expression f
+        concat_map (expression m) l
+        ^^ expression m f
         ^^ line (string "return_call_indirect " ^^ func_type typ)
     | Return_call (x, l) ->
         Feature.require tail_call;
-        concat_map expression l ^^ line (string "return_call " ^^ index x)
+        concat_map (expression m) l ^^ line (string "return_call " ^^ index x)
     | Location (_, i) ->
         (* Source maps not supported for the non-GC target *)
-        instruction i
+        instruction m i
     | ArraySet _ | StructSet _ | Return_call_ref _ -> assert false (* Not supported *)
 
   let escape_string s =
@@ -595,7 +598,24 @@ module Output () = struct
       concat_map
         (fun f ->
           match f with
-          | Function { name; exported_name; typ; locals; body } ->
+          | Function { name; exported_name; typ; param_names; locals; body } ->
+              let local_names = Hashtbl.create 8 in
+              let idx =
+                List.fold_left
+                  ~f:(fun idx x ->
+                    Hashtbl.add local_names x idx;
+                    idx + 1)
+                  ~init:0
+                  param_names
+              in
+              let _ =
+                List.fold_left
+                  ~f:(fun idx (x, _) ->
+                    Hashtbl.add local_names x idx;
+                    idx + 1)
+                  ~init:idx
+                  locals
+              in
               indent
                 (section_header "text" (V name)
                 ^^ define_symbol (V name)
@@ -616,8 +636,11 @@ module Output () = struct
                        else
                          line
                            (string ".local "
-                           ^^ separate_map (string ", ") value_type locals))
-                   ^^ concat_map instruction body
+                           ^^ separate_map
+                                (string ", ")
+                                (fun (_, ty) -> value_type ty)
+                                locals))
+                   ^^ concat_map (instruction local_names) body
                    ^^ line (string "end_function"))
           | Import _ | Data _ | Global _ | Tag _ | Type _ -> empty)
         fields

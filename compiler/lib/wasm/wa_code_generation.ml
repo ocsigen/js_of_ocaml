@@ -68,7 +68,7 @@ let make_context ~value_type =
   }
 
 type var =
-  | Local of int * W.value_type option
+  | Local of int * Var.t * W.value_type option
   | Expr of W.expression t
 
 and state =
@@ -247,14 +247,14 @@ let var x st =
 
 let add_var ?typ x ({ var_count; vars; _ } as st) =
   match Var.Map.find_opt x vars with
-  | Some (Local (i, typ')) ->
+  | Some (Local (_, x', typ')) ->
       assert (Poly.equal typ typ');
-      i, st
+      x', st
   | Some (Expr _) -> assert false
   | None ->
       let i = var_count in
-      let vars = Var.Map.add x (Local (i, typ)) vars in
-      i, { st with var_count = var_count + 1; vars }
+      let vars = Var.Map.add x (Local (i, x, typ)) vars in
+      x, { st with var_count = var_count + 1; vars }
 
 let define_var x e st = (), { st with vars = Var.Map.add x (Expr e) st.vars }
 
@@ -442,7 +442,7 @@ let rec is_smi e =
 
 let get_i31_value x st =
   match st.instrs with
-  | LocalSet (x', RefI31 e) :: rem when x = x' && is_smi e ->
+  | LocalSet (x', RefI31 e) :: rem when Code.Var.equal x x' && is_smi e ->
       let x = Var.fresh () in
       let x, st = add_var ~typ:I32 x st in
       Some x, { st with instrs = LocalSet (x', RefI31 (LocalTee (x, e))) :: rem }
@@ -451,7 +451,7 @@ let get_i31_value x st =
 let load x =
   let* x = var x in
   match x with
-  | Local (x, _) -> return (W.LocalGet x)
+  | Local (_, x, _) -> return (W.LocalGet x)
   | Expr e -> e
 
 let tee ?typ x e =
@@ -509,7 +509,7 @@ let assign x e =
   let* x = var x in
   let* e = e in
   match x with
-  | Local (x, _) -> instr (W.LocalSet (x, e))
+  | Local (_, x, _) -> instr (W.LocalSet (x, e))
   | Expr _ -> assert false
 
 let seq l e =
@@ -613,21 +613,23 @@ let need_dummy_fun ~cps ~arity st =
 
 let init_code context = instrs context.init_code
 
-let function_body ~context ~param_count ~body =
+let function_body ~context ~param_names ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
-  let local_types = Array.make local_count None in
+  let local_types = Array.make local_count (Var.fresh (), None) in
+  List.iteri ~f:(fun i x -> local_types.(i) <- x, None) param_names;
   Var.Map.iter
     (fun _ v ->
       match v with
-      | Local (i, typ) -> local_types.(i) <- typ
+      | Local (i, x, typ) -> local_types.(i) <- x, typ
       | Expr _ -> ())
     st.vars;
   let body = Wa_tail_call.f body in
+  let param_count = List.length param_names in
   let locals =
     local_types
-    |> Array.map ~f:(fun v -> Option.value ~default:context.value_type v)
+    |> Array.map ~f:(fun (x, v) -> x, Option.value ~default:context.value_type v)
     |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
     |> Array.to_list
   in

@@ -11,10 +11,11 @@ let rec rewrite_tail_call ~y i =
   match i with
   | Wa_ast.Location (loc, i') ->
       Option.map ~f:(fun i -> Wa_ast.Location (loc, i)) (rewrite_tail_call ~y i')
-  | LocalSet (x, Call (symb, l)) when x = y -> Some (Return_call (symb, l))
-  | LocalSet (x, Call_indirect (ty, e, l)) when x = y ->
+  | LocalSet (x, Call (symb, l)) when Code.Var.equal x y -> Some (Return_call (symb, l))
+  | LocalSet (x, Call_indirect (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_indirect (ty, e, l))
-  | LocalSet (x, Call_ref (ty, e, l)) when x = y -> Some (Return_call_ref (ty, e, l))
+  | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
+      Some (Return_call_ref (ty, e, l))
   | _ -> None
 
 let rec instruction ~tail i =

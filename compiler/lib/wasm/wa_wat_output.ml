@@ -62,8 +62,15 @@ let list ?(always = false) name f l =
 
 let value_type_list name tl = list name (fun tl -> List.map ~f:value_type tl) tl
 
-let func_type { params; result } =
-  value_type_list "param" params @ value_type_list "result" result
+let func_type ?param_names { params; result } =
+  (match param_names with
+  | None -> value_type_list "param" params
+  | Some names ->
+      List.map2
+        ~f:(fun i typ -> List [ Atom "param"; index i; value_type typ ])
+        names
+        params)
+  @ value_type_list "result" result
 
 let storage_type typ =
   match typ with
@@ -254,9 +261,8 @@ let expression_or_instructions ctx in_function =
              :: select offs offs offs offs offset
             @ expression e')
         ]
-    | LocalGet i -> [ List [ Atom "local.get"; Atom (string_of_int i) ] ]
-    | LocalTee (i, e') ->
-        [ List (Atom "local.tee" :: Atom (string_of_int i) :: expression e') ]
+    | LocalGet i -> [ List [ Atom "local.get"; index i ] ]
+    | LocalTee (i, e') -> [ List (Atom "local.tee" :: index i :: expression e') ]
     | GlobalGet nm -> [ List [ Atom "global.get"; symbol nm ] ]
     | BlockExpr (ty, l) -> [ List (Atom "block" :: (block_type ty @ instructions l)) ]
     | Call_indirect (typ, e, l) ->
@@ -368,8 +374,7 @@ let expression_or_instructions ctx in_function =
             :: (select offs offs offs offs offset @ expression e1 @ expression e2))
         ]
     | LocalSet (i, Seq (l, e)) -> instructions (l @ [ LocalSet (i, e) ])
-    | LocalSet (i, e) ->
-        [ List (Atom "local.set" :: Atom (string_of_int i) :: expression e) ]
+    | LocalSet (i, e) -> [ List (Atom "local.set" :: index i :: expression e) ]
     | GlobalSet (nm, e) -> [ List (Atom "global.set" :: symbol nm :: expression e) ]
     | Loop (ty, l) -> [ List (Atom "loop" :: (block_type ty @ instructions l)) ]
     | Block (ty, l) -> [ List (Atom "block" :: (block_type ty @ instructions l)) ]
@@ -465,11 +470,11 @@ let expression ctx = fst (expression_or_instructions ctx false)
 
 let instructions ctx = snd (expression_or_instructions ctx true)
 
-let funct ctx name exported_name typ locals body =
+let funct ctx name exported_name typ param_names locals body =
   List
     ((Atom "func" :: index name :: export exported_name)
-    @ func_type typ
-    @ value_type_list "local" locals
+    @ func_type ~param_names typ
+    @ List.map ~f:(fun (i, t) -> List [ Atom "local"; index i; value_type t ]) locals
     @ instructions ctx body)
 
 let import f =
@@ -531,8 +536,8 @@ let type_field { name; typ; supertype; final } =
 
 let field ctx f =
   match f with
-  | Function { name; exported_name; typ; locals; body } ->
-      [ funct ctx name exported_name typ locals body ]
+  | Function { name; exported_name; typ; param_names; locals; body } ->
+      [ funct ctx name exported_name typ param_names locals body ]
   | Global { name; typ; init } ->
       [ List (Atom "global" :: symbol name :: global_type typ :: expression ctx init) ]
   | Tag { name; typ } ->
