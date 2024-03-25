@@ -879,8 +879,8 @@ end
 module Constant = struct
   let string_length_threshold = 100
 
-  let store_in_global c =
-    let name = Code.Var.fresh_n "const" in
+  let store_in_global ?(name = "const") c =
+    let name = Code.Var.fresh_n name in
     let* () = register_global (V name) { mut = false; typ = Type.value } c in
     return (W.GlobalGet (V name))
 
@@ -901,9 +901,14 @@ module Constant = struct
         | c -> Buffer.add_char b c);
     Buffer.contents b
 
+  type t =
+    | Const
+    | Const_named of string
+    | Mutated
+
   let rec translate_rec c =
     match c with
-    | Code.Int (Regular, i) -> return (true, W.RefI31 (Const (I32 i)))
+    | Code.Int (Regular, i) -> return (Const, W.RefI31 (Const (I32 i)))
     | Tuple (tag, a, _) ->
         let* ty = Type.block_type in
         let* l =
@@ -917,10 +922,20 @@ module Constant = struct
         in
         let l = List.rev l in
         let l' =
-          List.map ~f:(fun (const, v) -> if const then v else W.RefI31 (Const (I32 0l))) l
+          List.map
+            ~f:(fun (const, v) ->
+              match const with
+              | Const | Const_named _ -> v
+              | Mutated -> W.RefI31 (Const (I32 0l)))
+            l
         in
         let c = W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l') in
-        if List.exists ~f:(fun (const, _) -> not const) l
+        if List.exists
+             ~f:(fun (const, _) ->
+               match const with
+               | Const | Const_named _ -> false
+               | Mutated -> true)
+             l
         then
           let* c = store_in_global c in
           let* () =
@@ -930,18 +945,18 @@ module Constant = struct
                     ~f:(fun (i, before) (const, v) ->
                       ( i + 1
                       , let* () = before in
-                        if const
-                        then return ()
-                        else
-                          Memory.wasm_array_set
-                            (return c)
-                            (Arith.const (Int32.of_int i))
-                            (return v) ))
+                        match const with
+                        | Const | Const_named _ -> return ()
+                        | Mutated ->
+                            Memory.wasm_array_set
+                              (return c)
+                              (Arith.const (Int32.of_int i))
+                              (return v) ))
                     ~init:(1, return ())
                     l))
           in
-          return (true, c)
-        else return (true, c)
+          return (Const, c)
+        else return (Const, c)
     | NativeString s ->
         let s =
           match s with
@@ -956,7 +971,9 @@ module Constant = struct
             (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
         in
         let* ty = Type.js_type in
-        return (true, W.StructNew (ty, [ ExternInternalize (GlobalGet (V x)) ]))
+        return
+          ( Const_named ("str_" ^ s)
+          , W.StructNew (ty, [ ExternInternalize (GlobalGet (V x)) ]) )
     | String s ->
         let* ty = Type.string_type in
         if String.length s > string_length_threshold
@@ -964,7 +981,7 @@ module Constant = struct
           let name = Code.Var.fresh_n "string" in
           let* () = register_data_segment name ~active:false [ DataBytes s ] in
           return
-            ( false
+            ( Mutated
             , W.ArrayNewData
                 (ty, name, Const (I32 0l), Const (I32 (Int32.of_int (String.length s))))
             )
@@ -975,42 +992,43 @@ module Constant = struct
               s
               ~init:[]
           in
-          return (true, W.ArrayNewFixed (ty, l))
+          return (Const_named ("str_" ^ s), W.ArrayNewFixed (ty, l))
     | Float f ->
         let* ty = Type.float_type in
-        return (true, W.StructNew (ty, [ Const (F64 f) ]))
+        return (Const, W.StructNew (ty, [ Const (F64 f) ]))
     | Float_array l ->
         let l = Array.to_list l in
         let* ty = Type.float_array_type in
         (*ZZZ Boxed array? *)
-        return (true, W.ArrayNewFixed (ty, List.map ~f:(fun f -> W.Const (F64 f)) l))
+        return (Const, W.ArrayNewFixed (ty, List.map ~f:(fun f -> W.Const (F64 f)) l))
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
-        return (true, e)
+        return (Const, e)
     | Int (Int32, i) ->
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
-        return (true, e)
+        return (Const, e)
     | Int (Native, i) ->
         let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
-        return (true, e)
+        return (Const, e)
 
   let translate c =
     let* const, c = translate_rec c in
-    if const
-    then
-      let* b = is_small_constant c in
-      if b then return c else store_in_global c
-    else
-      let name = Code.Var.fresh_n "const" in
-      let* () =
-        register_global
-          ~constant:true
-          (V name)
-          { mut = true; typ = Type.value }
-          (W.RefI31 (Const (I32 0l)))
-      in
-      let* () = register_init_code (instr (W.GlobalSet (V name, c))) in
-      return (W.GlobalGet (V name))
+    match const with
+    | Const ->
+        let* b = is_small_constant c in
+        if b then return c else store_in_global c
+    | Const_named name -> store_in_global ~name c
+    | Mutated ->
+        let name = Code.Var.fresh_n "const" in
+        let* () =
+          register_global
+            ~constant:true
+            (V name)
+            { mut = true; typ = Type.value }
+            (W.RefI31 (Const (I32 0l)))
+        in
+        let* () = register_init_code (instr (W.GlobalSet (V name, c))) in
+        return (W.GlobalGet (V name))
 end
 
 module Closure = struct
@@ -1039,7 +1057,7 @@ module Closure = struct
     if List.is_empty free_variables
     then
       let* typ = Type.closure_type ~usage:`Alloc ~cps arity in
-      let name = Code.Var.fresh_n "closure" in
+      let name = Code.Var.fork f in
       let* () =
         register_global
           (V name)
