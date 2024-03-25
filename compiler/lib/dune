@@ -41,8 +41,6 @@
  (modules annot_parser)
  (flags --explain))
 
-(include_subdirs unqualified)
-
 (rule
  (targets compiler_version.ml)
  (deps

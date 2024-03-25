@@ -179,7 +179,7 @@ let run
   let output (one : Parse_bytecode.one) ~standalone ~source_map ~linkall output_file =
     check_debug one;
     let init_pseudo_fs = fs_external && standalone in
-    let sm, _ =
+    let sm =
       match output_file with
       | `Stdout, fmt ->
           let instr =
@@ -191,7 +191,7 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
-            ~target:(`JavaScript fmt)
+            ~target:(JavaScript fmt)
             ~standalone
             ?profile
             ~linkall
@@ -215,7 +215,7 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
-              ~target:(`JavaScript fmt)
+              ~target:(JavaScript fmt)
               ~standalone
               ?profile
               ~linkall

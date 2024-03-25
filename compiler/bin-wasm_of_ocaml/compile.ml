@@ -18,6 +18,7 @@
 
 open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
+open Wasm_of_ocaml_compiler
 
 let times = Debug.find "times"
 
@@ -315,9 +316,9 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
   let need_debug = Config.Flag.debuginfo () in
   let output (one : Parse_bytecode.one) ~standalone ch =
     let code = one.code in
-    let _, strings =
+    let live_vars, in_cps, p =
       Driver.f
-        ~target:(`Wasm ch)
+        ~target:Wasm
         ~standalone
         ?profile
         ~linkall:false
@@ -325,6 +326,7 @@ let run { Cmd_arg.common; profile; runtime_files; input_file; output_file; param
         one.debug
         code
     in
+    let strings = Wa_generate.f ch ~live_vars ~in_cps p in
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     strings
   in

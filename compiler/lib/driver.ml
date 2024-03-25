@@ -574,10 +574,14 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let target_flag t =
+type 'a target =
+  | JavaScript : Pretty_print.t -> Source_map.t option target
+  | Wasm : (Deadcode.variable_uses * Effects.in_cps * Code.program) target
+
+let target_flag (type a) (t : a target) =
   match t with
-  | `JavaScript _ -> `JavaScript
-  | `Wasm _ -> `Wasm
+  | JavaScript _ -> `JavaScript
+  | Wasm -> `Wasm
 
 let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(linkall = false) p =
   p
@@ -586,8 +590,16 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(linkall = fals
   |> coloring
   |> check_js
 
-let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
-  let exported_runtime = not standalone in
+let full
+    (type result)
+    ~(target : result target)
+    ~standalone
+    ~wrap_with_fun
+    ~profile
+    ~linkall
+    ~source_map
+    d
+    p : result =
   let opt =
     specialize_js_once
     +> (match profile with
@@ -599,30 +611,39 @@ let full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p =
     +> effects
     +> map_fst
          ((match target with
-          | `JavaScript _ -> Generate_closure.f
-          | `Wasm _ -> Fun.id)
+          | JavaScript _ -> Generate_closure.f
+          | Wasm -> Fun.id)
          +> deadcode')
-  in
-  let emit formatter =
-    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-    +> link_and_pack ~standalone ~wrap_with_fun ~linkall
-    +> output formatter ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
   let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   match target with
-  | `JavaScript formatter ->
+  | JavaScript formatter ->
+      let exported_runtime = not standalone in
+      let emit formatter =
+        generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+        +> link_and_pack ~standalone ~wrap_with_fun ~linkall
+        +> output formatter ~source_map ()
+      in
       let source_map = emit formatter r in
-      source_map, ([], [])
-  | `Wasm ch ->
+      source_map
+  | Wasm ->
       let (p, live_vars), _, in_cps = r in
-      None, Wa_generate.f ch ~live_vars ~in_cps p
+      live_vars, in_cps, p
 
-let full_no_source_map ~target ~standalone ~wrap_with_fun ~profile ~linkall d p =
-  let (_ : Source_map.t option * _) =
-    full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None d p
+let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~linkall d p =
+  let (_ : Source_map.t option) =
+    full
+      ~target:(JavaScript formatter)
+      ~standalone
+      ~wrap_with_fun
+      ~profile
+      ~linkall
+      ~source_map:None
+      d
+      p
   in
   ()
 
@@ -645,19 +666,12 @@ let f'
     formatter
     d
     p =
-  full_no_source_map
-    ~target:(`JavaScript formatter)
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~linkall
-    d
-    p
+  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~linkall d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
-    ~target:(`JavaScript formatter)
+    ~formatter
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1

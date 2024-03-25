@@ -20,8 +20,12 @@
 
 type profile
 
+type 'a target =
+  | JavaScript : Pretty_print.t -> Source_map.t option target
+  | Wasm : (Deadcode.variable_uses * Effects.in_cps * Code.program) target
+
 val f :
-     target:[ `JavaScript of Pretty_print.t | `Wasm of out_channel ]
+     target:'result target
   -> ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
@@ -29,7 +33,7 @@ val f :
   -> ?source_map:Source_map.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.t option * (string list * (string * Javascript.expression) list)
+  -> 'result
 
 val f' :
      ?standalone:bool

@@ -1,0 +1,7 @@
+(library
+ (name wasm_of_ocaml_compiler)
+ (public_name wasm_of_ocaml-compiler)
+ (synopsis "Wasm_of_ocaml compiler library")
+ (libraries js_of_ocaml_compiler)
+ (flags
+  (:standard -w -7-37 -safe-string -open Js_of_ocaml_compiler)))
