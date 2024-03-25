@@ -968,12 +968,10 @@ module Constant = struct
           register_import
             ~import_module:"strings"
             ~name:(string_of_int i)
-            (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
+            (Global { mut = false; typ = Ref { nullable = false; typ = Any } })
         in
         let* ty = Type.js_type in
-        return
-          ( Const_named ("str_" ^ s)
-          , W.StructNew (ty, [ ExternInternalize (GlobalGet (V x)) ]) )
+        return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet (V x) ]))
     | String s ->
         let* ty = Type.string_type in
         if String.length s > string_length_threshold

@@ -8,7 +8,7 @@ Wasm_of_ocaml relies on the Binaryen toolchain; currently, only [version 116](ht
 
 ## Supported engines
 
-The generated code works with Chrome 11.9, [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and [Firefox 121](https://www.mozilla.org/en-US/firefox/new/).
+The generated code works with Chrome 11.9, [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and [Firefox 122](https://www.mozilla.org/en-US/firefox/new/).
 
 In particular, the output code requires the following [Wasm extensions](https://webassembly.org/roadmap/) to run:
 - [the GC extension](https://github.com/WebAssembly/gc), including functional references and 31-bit integers
