@@ -1430,7 +1430,15 @@ let () =
                    str
                    pi.Parse_info.line
                    pi.Parse_info.col))
-        | [ Pv _ ] -> call_prim ~transl_prim_arg prim_name l
+        | [ Pv _ ] ->
+            let* () =
+              register_fragment "eval" (fun () ->
+                  let lex = Parse_js.Lexer.of_string {|(x)=>eval("("+x+")")|} in
+                  Parse_js.parse_expr lex)
+            in
+            JavaScript.invoke_fragment
+              "eval"
+              [ call_prim ~transl_prim_arg "caml_jsstring_of_string" l ]
         | [] | _ :: _ ->
             failwith (Printf.sprintf "Wrong number argument to primitive %s" prim_name))
   in
