@@ -10,6 +10,9 @@
 * Compiler: codegen: more specialization for %int_add, %int_sub
 * Compiler: recognize and optimize String.concat
 * Compiler: more inlining - duplicate small function.
+* Runtime: abort instead of exit when calling unimplemented
+  js primitives in bytecode/native. It should help if one tries
+  to understand the source of the call with gdb (see #677)
 
 ## Bug fixes
 

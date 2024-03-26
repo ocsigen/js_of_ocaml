@@ -20,10 +20,12 @@ module String_set = Set.Make (String)
 
 let print_stub s =
   Printf.printf
-    "void %s () {\n\
-    \  fprintf(stderr, \"Unimplemented Javascript primitive %s!\\n\");\n\
-    \  exit(1);\n\
-     }\n"
+    {|
+void %s () {
+  fprintf(stderr, "Unimplemented Javascript primitive %s!\n");
+  abort();
+}
+|}
     s
     s
 
