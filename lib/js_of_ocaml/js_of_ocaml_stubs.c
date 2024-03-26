@@ -1,32 +1,25 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <caml/misc.h>
 
 void caml_js_error_of_exception () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_error_of_exception!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_error_of_exception!");
 }
 
 void caml_js_get_console () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_get_console!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_get_console!");
 }
 
 void caml_js_html_entities () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_html_entities!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_html_entities!");
 }
 
 void caml_js_html_escape () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_html_escape!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_html_escape!");
 }
 
 void caml_js_on_ie () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_on_ie!");
 }
 
 void caml_xmlhttprequest_create () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_xmlhttprequest_create!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive caml_xmlhttprequest_create!");
 }

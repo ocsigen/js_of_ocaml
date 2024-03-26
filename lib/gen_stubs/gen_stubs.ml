@@ -22,8 +22,7 @@ let print_stub s =
   Printf.printf
     {|
 void %s () {
-  fprintf(stderr, "Unimplemented Javascript primitive %s!\n");
-  abort();
+  caml_fatal_error("Unimplemented Javascript primitive %s!");
 }
 |}
     s
@@ -64,6 +63,5 @@ let () =
   let except_mls = get_externals !except_mls in
   let externals = String_set.diff mls except_mls in
   set_binary_mode_out stdout true;
-  print_endline "#include <stdlib.h>";
-  print_endline "#include <stdio.h>";
+  print_endline "#include <caml/misc.h>";
   String_set.iter print_stub externals
