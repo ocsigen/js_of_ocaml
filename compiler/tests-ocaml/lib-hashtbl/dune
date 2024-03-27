@@ -22,14 +22,20 @@
 
 (rule
  (alias runtest)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (deps hfun.referencejs hfun.reference)
  (action
   (diff hfun.referencejs hfun.reference)))
 
 (rule
  (alias runtest)
- (enabled_if (or (= %{profile} wasm) (= %{profile} wasm-effects)))
+ (enabled_if
+  (or
+   (= %{profile} wasm)
+   (= %{profile} wasm-effects)))
  (deps hfun.referencejs hfun.reference-wasm)
  (action
   (diff hfun.referencejs hfun.reference-wasm)))

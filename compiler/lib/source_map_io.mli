@@ -23,6 +23,13 @@ val enabled : bool
 
 val to_string : t -> string
 
-val to_file : t -> string -> unit
-
 val of_string : string -> t
+
+val of_file_no_mappings : string -> t * string option
+(** Read source map from a file without parsing the mappings (which can be costly). The
+    [mappings] field is returned empty and the raw string is returned alongside the map.
+ *)
+
+val to_file : ?mappings:string -> t -> file:string -> unit
+(** Write to a file. If a string is supplied as [mappings], use it instead of the
+    sourcemap's [mappings]. *)

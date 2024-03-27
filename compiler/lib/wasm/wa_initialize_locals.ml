@@ -92,6 +92,7 @@ and scan_instruction ctx i =
   | Return_call_indirect (_, e', l) | Return_call_ref (_, e', l) ->
       scan_expressions ctx l;
       scan_expression ctx e'
+  | Location (_, i) -> scan_instruction ctx i
 
 and scan_instructions ctx l =
   let ctx = fork_context ctx in

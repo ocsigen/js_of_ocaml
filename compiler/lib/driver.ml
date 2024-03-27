@@ -576,7 +576,9 @@ let configure formatter =
 
 type 'a target =
   | JavaScript : Pretty_print.t -> Source_map.t option target
-  | Wasm : (Deadcode.variable_uses * Effects.in_cps * Code.program) target
+  | Wasm
+      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
+        target
 
 let target_flag (type a) (t : a target) =
   match t with
@@ -631,7 +633,7 @@ let full
       source_map
   | Wasm ->
       let (p, live_vars), _, in_cps = r in
-      live_vars, in_cps, p
+      live_vars, in_cps, p, d
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~linkall d p =
   let (_ : Source_map.t option) =

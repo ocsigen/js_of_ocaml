@@ -402,6 +402,9 @@ module Output () = struct
     | Return_call (x, l) ->
         Feature.require tail_call;
         concat_map expression l ^^ line (string "return_call " ^^ index x)
+    | Location (_, i) ->
+        (* Source maps not supported for the non-GC target *)
+        instruction i
     | ArraySet _ | StructSet _ | Return_call_ref _ -> assert false (* Not supported *)
 
   let escape_string s =

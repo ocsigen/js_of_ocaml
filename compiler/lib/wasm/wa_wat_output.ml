@@ -6,14 +6,23 @@ let target = `Binaryen (*`Reference*)
 type sexp =
   | Atom of string
   | List of sexp list
+  | Comment of string
+      (** Line comment. String [s] is rendered as [;;s], on its own line,
+                          without space after the double semicolon. *)
 
 let rec format_sexp f s =
   match s with
   | Atom s -> Format.fprintf f "%s" s
   | List l ->
-      Format.fprintf f "@[<2>(";
+      if List.exists l ~f:(function
+             | Comment _ -> true
+             | _ -> false)
+      then (* Ensure comments are on their own line *)
+        Format.fprintf f "@[<v 2>("
+      else Format.fprintf f "@[<2>(";
       Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f "@ ") format_sexp f l;
       Format.fprintf f ")@]"
+  | Comment s -> Format.fprintf f ";;%s" s
 
 let index x = Atom ("$" ^ Code.Var.to_string x)
 
@@ -169,6 +178,7 @@ type ctx =
   ; mutable functions : int Code.Var.Map.t
   ; mutable function_refs : Code.Var.Set.t
   ; mutable function_count : int
+  ; debug : Parse_bytecode.Debug.t
   }
 
 let reference_function ctx f = ctx.function_refs <- Code.Var.Set.add f ctx.function_refs
@@ -441,6 +451,13 @@ let expression_or_instructions ctx in_function =
             :: index typ
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
+    | Location (loc, i) -> (
+        let loc = Generate.source_location ctx.debug loc in
+        match loc with
+        | Javascript.N | U | Pi Parse_info.{ src = None; _ } -> instruction i
+        | Pi Parse_info.{ src = Some src; col; line; _ } ->
+            let loc = Format.sprintf "%s:%d:%d" src line col in
+            Comment ("@ " ^ loc) :: instruction i)
   and instructions l = List.concat (List.map ~f:instruction l) in
   expression, instructions
 
@@ -560,13 +577,14 @@ let data_offsets fields =
     ~init:(0, Code.Var.Map.empty)
     fields
 
-let f ch fields =
+let f ~debug ch fields =
   let heap_base, addresses = data_offsets fields in
   let ctx =
     { addresses
     ; functions = Code.Var.Map.empty
     ; function_refs = Code.Var.Set.empty
     ; function_count = 0
+    ; debug
     }
   in
   let other_fields = List.concat (List.map ~f:(fun f -> field ctx f) fields) in
