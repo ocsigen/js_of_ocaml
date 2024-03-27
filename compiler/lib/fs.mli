@@ -21,3 +21,9 @@ val find_in_path : string list -> string -> string option
 val absolute_path : string -> string
 
 val read_file : string -> string
+
+val write_file : name:string -> contents:string -> unit
+
+val gen_file : string -> (string -> 'a) -> 'a
+
+val with_intermediate_file : string -> (string -> 'a) -> 'a
