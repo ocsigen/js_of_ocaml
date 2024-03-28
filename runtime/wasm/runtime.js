@@ -129,9 +129,6 @@
              start += read;
            }
          },
-         compare_strings:(s1,s2)=>(s1<s2)?-1:+(s1>s2),
-         hash_string,
-         is_string:(v)=>+(typeof v==="string"),
          ta_create:(k,sz)=> new(typed_arrays[k])(sz),
          ta_normalize:(a)=>
            a instanceof Uint32Array?
@@ -218,7 +215,7 @@
              return caml_callback(f, args.length, args, 2);
          },
          wrap_fun_arguments:(f)=>function(){return f(arguments)},
-         format_float:(prec, conversion, x)=>{
+         format_float:(prec, conversion, pad, x)=>{
            function toFixed(x,dp) {
              if (Math.abs(x) < 1.0) {
                return x.toFixed(dp);
@@ -273,7 +270,7 @@
              }
              break;
            }
-           return s
+           return pad?" "+s:s
          },
          gettimeofday:()=>(new Date()).getTime() / 1000,
          gmtime:(t)=>{
@@ -346,10 +343,20 @@
          map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
         }
-    const imports = {Math:math,bindings,env:{},js,strings,fragments}
+    let string_ops =
+        {test:(v)=>+(typeof v==="string"),
+         compare:(s1,s2)=>(s1<s2)?-1:+(s1>s2),
+         hash:hash_string,
+         decodeStringFromUTF8Array:()=>"",
+         encodeStringToUTF8Array:()=>0}
+    const imports =
+        {Math:math,bindings,"wasm:js-string":string_ops,
+         "wasm:text-decoder":string_ops,"wasm:text-encoder":string_ops,
+         env:{},js,strings,fragments}
+    const options = { builtins: ['js-string', 'text-decoder', 'text-encoder'] }
     const wasmModule =
-          isNode?await WebAssembly.instantiate(await code, imports)
-                :await WebAssembly.instantiateStreaming(code,imports)
+          isNode?await WebAssembly.instantiate(await code, imports, options)
+                :await WebAssembly.instantiateStreaming(code,imports, options)
 
     var {caml_callback, caml_alloc_tm, caml_start_fiber,
          caml_handle_uncaught_exception, caml_buffer,
