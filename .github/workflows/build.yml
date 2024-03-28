@@ -38,7 +38,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: binaryen
-          key: ${{ runner.os }}-binaryen-version_116
+          key: ${{ runner.os }}-binaryen-version_117
 
       - name: Checkout binaryen
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
@@ -47,7 +47,7 @@ jobs:
           repository: WebAssembly/binaryen
           path: binaryen
           submodules: true
-          ref: version_116
+          ref: version_117
 
       - name: Install ninja
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: binaryen
-          key: ${{ runner.os }}-binaryen-version_116
+          key: ${{ runner.os }}-binaryen-version_117
 
       - name: Set binaryen's path
         run: |

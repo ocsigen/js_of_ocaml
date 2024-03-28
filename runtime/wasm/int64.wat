@@ -75,10 +75,10 @@
       (param $s (ref eq)) (param $v (ref eq)) (result i32) (result i32)
       (call $caml_serialize_int_8 (local.get $s)
          (struct.get $int64 1 (ref.cast (ref $int64) (local.get $v))))
-      (tuple.make (i32.const 8) (i32.const 8)))
+      (tuple.make 2 (i32.const 8) (i32.const 8)))
 
    (func $int64_deserialize (param $s (ref eq)) (result (ref eq)) (result i32)
-      (tuple.make
+      (tuple.make 2
          (struct.new $int64 (global.get $int64_ops)
             (call $caml_deserialize_int_8 (local.get $s)))
          (i32.const 8)))
@@ -185,13 +185,13 @@
    (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
       (local $s (ref $string))
       (local $i i32) (local $signedness i32) (local $sign i32) (local $base i32)
-      (local $t (i32 i32 i32 i32))
+      (local $t (tuple i32 i32 i32 i32))
       (local.set $s (ref.cast (ref $string) (local.get $v)))
       (local.set $t (call $parse_sign_and_base (local.get $s)))
-      (local.set $i (tuple.extract 0 (local.get $t)))
-      (local.set $signedness (tuple.extract 1 (local.get $t)))
-      (local.set $sign (tuple.extract 2 (local.get $t)))
-      (local.set $base (tuple.extract 3 (local.get $t)))
+      (local.set $i (tuple.extract 4 0 (local.get $t)))
+      (local.set $signedness (tuple.extract 4 1 (local.get $t)))
+      (local.set $sign (tuple.extract 4 2 (local.get $t)))
+      (local.set $base (tuple.extract 4 3 (local.get $t)))
       (return_call
         $caml_copy_int64
         (call $caml_i64_of_digits (local.get $base)
@@ -244,7 +244,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $d i64)
       (local $s (ref $string))
-      (local $format (i32 i32 i32 i32 i32))
+      (local $format (tuple i32 i32 i32 i32 i32))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
       (local $base i64) (local $uppercase i32)
       (local $negative i32)
@@ -259,11 +259,12 @@
                         (i32.const 100)) ;; 'd'
                (then (return_call $format_int64_default (local.get $d))))))
       (local.set $format (call $parse_int_format (local.get $s)))
-      (local.set $sign_style (tuple.extract 0 (local.get $format)))
-      (local.set $alternate (tuple.extract 1 (local.get $format)))
-      (local.set $signed (tuple.extract 2 (local.get $format)))
-      (local.set $base (i64.extend_i32_u (tuple.extract 3 (local.get $format))))
-      (local.set $uppercase (tuple.extract 4 (local.get $format)))
+      (local.set $sign_style (tuple.extract 5 0 (local.get $format)))
+      (local.set $alternate (tuple.extract 5 1 (local.get $format)))
+      (local.set $signed (tuple.extract 5 2 (local.get $format)))
+      (local.set $base
+         (i64.extend_i32_u (tuple.extract 5 3 (local.get $format))))
+      (local.set $uppercase (tuple.extract 5 4 (local.get $format)))
       (if (i32.and (local.get $signed) (i64.lt_s (local.get $d) (i64.const 0)))
          (then
             (local.set $negative (i32.const 1))

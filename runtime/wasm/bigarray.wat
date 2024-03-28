@@ -491,7 +491,7 @@
                       (call $ta_get_f64 (local.get $data) (local.get $i))))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make
+      (tuple.make 2
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8))))
 
@@ -637,7 +637,7 @@
                       (call $caml_deserialize_int_8 (local.get $s))))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
-      (tuple.make
+      (tuple.make 2
          (local.get $b)
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))))
 

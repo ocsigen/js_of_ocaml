@@ -230,7 +230,7 @@
          (call $caml_invalid_argument
             (array.new_data $string $format_error
                (i32.const 0) (i32.const 22))))
-      (tuple.make
+      (tuple.make 4
          (local.get $sign_style)
          (local.get $precision)
          (local.get $conversion)
@@ -242,7 +242,7 @@
 
    (func (export "caml_format_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (local $f f64) (local $b i64) (local $format (i32 i32 i32 i32))
+      (local $f f64) (local $b i64) (local $format (tuple i32 i32 i32 i32))
       (local $sign_style i32) (local $precision i32)
       (local $conversion i32) (local $uppercase i32)
       (local $negative i32)
@@ -254,10 +254,10 @@
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
       (local.set $format
          (call $parse_format (ref.cast (ref $string) (local.get 0))))
-      (local.set $sign_style (tuple.extract 0 (local.get $format)))
-      (local.set $precision (tuple.extract 1 (local.get $format)))
-      (local.set $conversion (tuple.extract 2 (local.get $format)))
-      (local.set $uppercase (tuple.extract 3 (local.get $format)))
+      (local.set $sign_style (tuple.extract 4 0 (local.get $format)))
+      (local.set $precision (tuple.extract 4 1 (local.get $format)))
+      (local.set $conversion (tuple.extract 4 2 (local.get $format)))
+      (local.set $uppercase (tuple.extract 4 3 (local.get $format)))
       (local.set $negative
          (i32.wrap_i64 (i64.shr_u (local.get $b) (i64.const 63))))
       (local.set $i
@@ -747,7 +747,7 @@
    (func $frexp (param $x f64) (result f64 i32)
       (local $y i64)
       (local $e i32)
-      (local $r (f64 i32))
+      (local $r (tuple f64 i32))
       (local.set $y (i64.reinterpret_f64 (local.get $x)))
       (local.set $e
          (i32.and (i32.const 0x7ff)
@@ -759,29 +759,30 @@
                   (local.set $r
                      (call $frexp (f64.mul (local.get $x) (f64.const 0x1p64))))
                   (return
-                     (tuple.make (tuple.extract 0 (local.get $r))
-                        (i32.sub (tuple.extract 1 (local.get $r))
+                     (tuple.make 2
+                        (tuple.extract 2 0 (local.get $r))
+                        (i32.sub (tuple.extract 2 1 (local.get $r))
                            (i32.const 64)))))
                (else
-                  (return (tuple.make (local.get $x) (i32.const 0))))))
+                  (return (tuple.make 2 (local.get $x) (i32.const 0))))))
          (else
             (if (i32.eq (local.get $e) (i32.const 0x7ff))
                (then
-                  (return (tuple.make (local.get $x) (i32.const 0)))))))
-      (tuple.make
+                  (return (tuple.make 2 (local.get $x) (i32.const 0)))))))
+      (tuple.make 2
          (f64.reinterpret_i64
             (i64.or (i64.and (local.get $y) (i64.const 0x800fffffffffffff))
                (i64.const 0x3fe0000000000000)))
          (i32.sub (local.get $e) (i32.const 0x3fe))))
 
    (func (export "caml_frexp_float") (param (ref eq)) (result (ref eq))
-      (local $r (f64 i32))
+      (local $r (tuple f64 i32))
       (local.set $r
          (call $frexp
             (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
-         (struct.new $float (tuple.extract 0 (local.get $r)))
-         (ref.i31 (tuple.extract 1 (local.get $r)))))
+         (struct.new $float (tuple.extract 2 0 (local.get $r)))
+         (ref.i31 (tuple.extract 2 1 (local.get $r)))))
 
    (func (export "caml_signbit_float") (param (ref eq)) (result (ref eq))
       (ref.i31
