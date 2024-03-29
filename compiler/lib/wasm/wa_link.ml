@@ -148,3 +148,133 @@ module Wasm_binary = struct
     close_in ch.ch;
     res
 end
+
+let output_js js =
+  Code.Var.reset ();
+  let b = Buffer.create 1024 in
+  let f = Pretty_print.to_buffer b in
+  Driver.configure f;
+  let traverse = new Js_traverse.free in
+  let js = traverse#program js in
+  let free = traverse#get_free in
+  Javascript.IdentSet.iter
+    (fun x ->
+      match x with
+      | V _ -> assert false
+      | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
+    free;
+  let js =
+    if Config.Flag.shortvar () then (new Js_traverse.rename_variable)#program js else js
+  in
+  let js = (new Js_traverse.simpl)#program js in
+  let js = (new Js_traverse.clean)#program js in
+  let js = Js_assign.program js in
+  ignore (Js_output.program f js);
+  Buffer.contents b
+
+let report_missing_primitives missing =
+  if not (List.is_empty missing)
+  then (
+    warn "There are some missing Wasm primitives@.";
+    warn "Dummy implementations (raising an exception) ";
+    warn "will be provided.@.";
+    warn "Missing primitives:@.";
+    List.iter ~f:(fun nm -> warn "  %s@." nm) missing)
+
+let build_runtime_arguments
+    ~missing_primitives
+    ~wasm_file
+    ~generated_js:(strings, fragments) =
+  let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
+  report_missing_primitives missing_primitives;
+  let obj l =
+    Javascript.EObj
+      (List.map
+         ~f:(fun (nm, v) ->
+           let id = Utf8_string.of_string_exn nm in
+           Javascript.Property (PNS id, v))
+         l)
+  in
+  let generated_js =
+    let strings =
+      if List.is_empty strings
+      then []
+      else
+        [ ( "strings"
+          , Javascript.EArr
+              (List.map
+                 ~f:(fun s -> Javascript.Element (EStr (Utf8_string.of_string_exn s)))
+                 strings) )
+        ]
+    in
+    let fragments =
+      if List.is_empty fragments then [] else [ "fragments", obj fragments ]
+    in
+    strings @ fragments
+  in
+  let generated_js =
+    if not (List.is_empty missing_primitives)
+    then
+      ( "env"
+      , obj
+          (List.map
+             ~f:(fun nm ->
+               ( nm
+               , Javascript.EArrow
+                   ( Javascript.fun_
+                       []
+                       [ ( Throw_statement
+                             (ENew
+                                ( EVar
+                                    (Javascript.ident (Utf8_string.of_string_exn "Error"))
+                                , Some
+                                    [ Arg
+                                        (EStr
+                                           (Utf8_string.of_string_exn
+                                              (nm ^ " not implemented")))
+                                    ] ))
+                         , N )
+                       ]
+                       N
+                   , AUnknown ) ))
+             missing_primitives) )
+      :: generated_js
+    else generated_js
+  in
+  let generated_js =
+    if List.is_empty generated_js
+    then obj generated_js
+    else
+      let var ident e =
+        Javascript.variable_declaration [ Javascript.ident ident, (e, N) ], Javascript.N
+      in
+      Javascript.call
+        (EArrow
+           ( Javascript.fun_
+               [ Javascript.ident Constant.global_object_ ]
+               [ var
+                   Constant.old_global_object_
+                   (EVar (Javascript.ident Constant.global_object_))
+               ; var
+                   Constant.exports_
+                   (EBin
+                      ( Or
+                      , EDot
+                          ( EDot
+                              ( EVar (Javascript.ident Constant.global_object_)
+                              , ANullish
+                              , Utf8_string.of_string_exn "module" )
+                          , ANullish
+                          , Utf8_string.of_string_exn "export" )
+                      , EVar (Javascript.ident Constant.global_object_) ))
+               ; Return_statement (Some (obj generated_js)), N
+               ]
+               N
+           , AUnknown ))
+        [ EVar (Javascript.ident Constant.global_object_) ]
+        N
+  in
+  obj
+    [ "generated", generated_js
+    ; "src", EStr (Utf8_string.of_string_exn (Filename.basename wasm_file))
+    ]

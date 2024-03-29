@@ -25,3 +25,11 @@ module Wasm_binary : sig
 
   val read_imports : file:string -> import list
 end
+
+val build_runtime_arguments :
+     missing_primitives:string list
+  -> wasm_file:string
+  -> generated_js:string list * (string * Javascript.expression) list
+  -> Javascript.expression
+
+val output_js : Javascript.program -> string
