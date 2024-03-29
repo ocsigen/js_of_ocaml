@@ -90,6 +90,17 @@ let parse s =
       in
       Some t
 
+let to_json info : Yojson.Basic.t =
+  `Assoc (info |> StringMap.bindings |> List.map ~f:(fun (k, v) -> k, `String v))
+
+let from_json (info : Yojson.Basic.t) =
+  let open Yojson.Basic.Util in
+  info
+  |> to_assoc
+  |> List.fold_left
+       ~f:(fun m (k, v) -> StringMap.add k (to_string v) m)
+       ~init:StringMap.empty
+
 exception
   Incompatible_build_info of
     { key : string
