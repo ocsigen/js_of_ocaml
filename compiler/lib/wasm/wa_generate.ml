@@ -795,7 +795,15 @@ module Generate (Target : Wa_target_sig.S) = struct
       ~fall_through
       ~context
 
-  let translate_function p ctx name_opt toplevel_name params ((pc, _) as cont) acc =
+  let translate_function
+      p
+      ctx
+      name_opt
+      ~toplevel_name
+      ~unit_name
+      params
+      ((pc, _) as cont)
+      acc =
     let stack_info =
       Stack.generate_spilling_information
         p
@@ -1022,7 +1030,10 @@ module Generate (Target : Wa_target_sig.S) = struct
           (match name_opt with
           | None -> toplevel_name
           | Some x -> x)
-      ; exported_name = None
+      ; exported_name =
+          (match name_opt with
+          | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
+          | Some _ -> None)
       ; param_names
       ; typ = func_type param_count
       ; locals
@@ -1030,9 +1041,32 @@ module Generate (Target : Wa_target_sig.S) = struct
       }
     :: acc
 
-  let entry_point ctx toplevel_fun entry_name =
-    let typ, param_names, body = entry_point ~context:ctx.global_context ~toplevel_fun in
-    let locals, body = function_body ~context:ctx.global_context ~param_names ~body in
+  let init_function ~context ~to_link =
+    let name = Code.Var.fresh_n "initialize" in
+    let typ = { W.params = []; result = [ Value.value ] } in
+    let locals, body =
+      function_body
+        ~context
+        ~param_names:[]
+        ~body:
+          (List.fold_right
+             ~f:(fun name cont ->
+               let* f =
+                 register_import ~import_module:"OCaml" ~name:(name ^ ".init") (Fun typ)
+               in
+               let* () = instr (Drop (Call (f, []))) in
+               cont)
+             ~init:(instr (Push (RefI31 (Const (I32 0l)))))
+             to_link)
+    in
+    context.other_fields <-
+      W.Function { name; exported_name = None; typ; param_names = []; locals; body }
+      :: context.other_fields;
+    name
+
+  let entry_point context toplevel_fun entry_name =
+    let typ, param_names, body = entry_point ~toplevel_fun in
+    let locals, body = function_body ~context ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
@@ -1044,35 +1078,58 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   module Curry = Wa_curry.Make (Target)
 
+  let add_start_function ~context toplevel_name =
+    context.other_fields <-
+      entry_point context toplevel_name "_initialize" :: context.other_fields
+
+  let add_init_function ~context ~to_link =
+    add_start_function ~context (init_function ~context ~to_link)
+
   let f
+      ~context:global_context
+      ~unit_name
       (p : Code.program)
       ~live_vars
       ~in_cps (*
     ~should_export
     ~warn_on_unhandled_effect
       _debug *) =
+    global_context.unit_name <- unit_name;
     let p, closures = Wa_closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
-    let ctx =
-      { live = live_vars
-      ; in_cps
-      ; blocks = p.blocks
-      ; closures
-      ; global_context = make_context ~value_type:Value.value
-      }
-    in
+    let ctx = { live = live_vars; in_cps; blocks = p.blocks; closures; global_context } in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
       Code.fold_closures_outermost_first
         p
         (fun name_opt params cont ->
-          translate_function p ctx name_opt toplevel_name params cont)
+          translate_function p ctx name_opt ~toplevel_name ~unit_name params cont)
         []
     in
-    Curry.f ~context:ctx.global_context;
-    let start_function = entry_point ctx toplevel_name "_initialize" in
+    let functions =
+      List.map
+        ~f:(fun f ->
+          match f with
+          | W.Function ({ name; _ } as f) when Code.Var.equal name toplevel_name ->
+              W.Function { f with body = global_context.init_code @ f.body }
+          | _ -> f)
+        functions
+    in
+    global_context.init_code <- [];
+    global_context.other_fields <- List.rev_append functions global_context.other_fields;
+    let js_code =
+      List.rev global_context.strings, StringMap.bindings global_context.fragments
+    in
+    global_context.string_count <- 0;
+    global_context.strings <- [];
+    global_context.string_index <- StringMap.empty;
+    global_context.fragments <- StringMap.empty;
+    toplevel_name, js_code
+
+  let output ~context =
+    Curry.f ~context;
     let imports =
       List.concat
         (List.map
@@ -1081,19 +1138,15 @@ module Generate (Target : Wa_target_sig.S) = struct
                ~f:(fun (import_name, (name, desc)) ->
                  W.Import { import_module; import_name; name; desc })
                (StringMap.bindings m))
-           (StringMap.bindings ctx.global_context.imports))
+           (StringMap.bindings context.imports))
     in
     let constant_data =
       List.map
         ~f:(fun (name, (active, contents)) ->
           W.Data { name; read_only = true; active; contents })
-        (Var.Map.bindings ctx.global_context.data_segments)
+        (Var.Map.bindings context.data_segments)
     in
-    ( List.rev_append
-        ctx.global_context.other_fields
-        (imports @ functions @ (start_function :: constant_data))
-    , ( List.rev ctx.global_context.strings
-      , StringMap.bindings ctx.global_context.fragments ) )
+    List.rev_append context.other_fields (imports @ constant_data)
 end
 
 let init () =
@@ -1149,16 +1202,48 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let f ch (p : Code.program) ~live_vars ~in_cps ~debug =
+let start () =
+  make_context
+    ~value_type:
+      (match target with
+      | `Core -> Wa_core_target.Value.value
+      | `GC -> Wa_gc_target.Value.value)
+
+let f ~context ~unit_name p ~live_vars ~in_cps =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
   match target with
   | `Core ->
       let module G = Generate (Wa_core_target) in
-      let fields, js_code = G.f ~live_vars ~in_cps p in
-      Wa_asm_output.f ch fields;
-      js_code
+      G.f ~context ~unit_name ~live_vars ~in_cps p
   | `GC ->
       let module G = Generate (Wa_gc_target) in
-      let fields, js_code = G.f ~live_vars ~in_cps p in
-      Wa_wat_output.f ~debug ch fields;
-      js_code
+      G.f ~context ~unit_name ~live_vars ~in_cps p
+
+let add_start_function =
+  match target with
+  | `Core ->
+      let module G = Generate (Wa_core_target) in
+      G.add_start_function
+  | `GC ->
+      let module G = Generate (Wa_gc_target) in
+      G.add_start_function
+
+let add_init_function =
+  match target with
+  | `Core ->
+      let module G = Generate (Wa_core_target) in
+      G.add_init_function
+  | `GC ->
+      let module G = Generate (Wa_gc_target) in
+      G.add_init_function
+
+let output ch ~context ~debug =
+  match target with
+  | `Core ->
+      let module G = Generate (Wa_core_target) in
+      let fields = G.output ~context in
+      Wa_asm_output.f ch fields
+  | `GC ->
+      let module G = Generate (Wa_gc_target) in
+      let fields = G.output ~context in
+      Wa_wat_output.f ~debug ch fields

@@ -25,6 +25,7 @@ type context =
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Code.Var.Set.t
   ; value_type : Wa_ast.value_type
+  ; mutable unit_name : string option
   }
 
 val make_context : value_type:Wa_ast.value_type -> context
@@ -163,6 +164,8 @@ val set_closure_env : Code.Var.t -> Code.Var.t -> unit t
 val get_closure_env : Code.Var.t -> Code.Var.t t
 
 val is_closure : Code.Var.t -> bool t
+
+val unit_name : string option t
 
 val need_apply_fun : cps:bool -> arity:int -> Code.Var.t t
 

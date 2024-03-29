@@ -222,7 +222,12 @@ let run
         one.debug
         code
     in
-    let generated_js = Wa_generate.f ch ~debug ~live_vars ~in_cps p in
+    let context = Wa_generate.start () in
+    let toplevel_name, generated_js =
+      Wa_generate.f ~context ~unit_name:None ~live_vars ~in_cps p
+    in
+    Wa_generate.add_start_function ~context toplevel_name;
+    Wa_generate.output ch ~context ~debug;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     generated_js
   in

@@ -978,8 +978,12 @@ module Constant = struct
         in
         let* i = register_string s in
         let* x =
+          let* name = unit_name in
           register_import
-            ~import_module:"strings"
+            ~import_module:
+              (match name with
+              | None -> "strings"
+              | Some name -> name ^ ".strings")
             ~name:(string_of_int i)
             (Global { mut = false; typ = Ref { nullable = false; typ = Any } })
         in
@@ -1379,8 +1383,12 @@ module JavaScript = struct
 
   let invoke_fragment name args =
     let* f =
+      let* unit = unit_name in
       register_import
-        ~import_module:"fragments"
+        ~import_module:
+          (match unit with
+          | None -> "fragments"
+          | Some unit -> unit ^ ".fragments")
         ~name
         (Fun { params = List.map ~f:(fun _ -> anyref) args; result = [ anyref ] })
     in
@@ -1689,7 +1697,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
 
 let post_process_function_body = Wa_initialize_locals.f
 
-let entry_point ~context ~toplevel_fun =
+let entry_point ~toplevel_fun =
   let suspender = Code.Var.fresh () in
   let code =
     let* f =
@@ -1703,7 +1711,6 @@ let entry_point ~context ~toplevel_fun =
     let* _ = add_var suspender in
     let* s = load suspender in
     let* () = instr (W.CallInstr (f, [ s ])) in
-    let* () = init_code context in
     let* main =
       register_import
         ~name:"caml_main"

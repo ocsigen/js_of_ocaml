@@ -41,6 +41,7 @@ type context =
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Var.Set.t
   ; value_type : W.value_type
+  ; mutable unit_name : string option
   }
 
 let make_context ~value_type =
@@ -65,6 +66,7 @@ let make_context ~value_type =
   ; fragments = StringMap.empty
   ; globalized_variables = Var.Set.empty
   ; value_type
+  ; unit_name = None
   }
 
 type var =
@@ -241,6 +243,8 @@ let set_closure_env f env st =
 let get_closure_env f st = Var.Map.find f st.context.closure_envs, st
 
 let is_closure f st = Var.Map.mem f st.context.closure_envs, st
+
+let unit_name st = st.context.unit_name, st
 
 let var x st =
   try Var.Map.find x st.vars, st
