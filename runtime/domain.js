@@ -7,6 +7,15 @@ function caml_domain_dls_set(a) {
   caml_domain_dls = a;
 }
 
+//Provides: caml_domain_dls_compare_and_set
+//Requires: caml_domain_dls
+//Version: >= 5.2
+function caml_domain_dls_compare_and_set(old,n) {
+  if(caml_domain_dls !== old) return 0
+  caml_domain_dls = n;
+  return 1;
+}
+
 //Provides: caml_domain_dls_get
 //Requires: caml_domain_dls
 function caml_domain_dls_get(unit) {
