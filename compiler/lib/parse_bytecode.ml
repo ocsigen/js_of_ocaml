@@ -2681,7 +2681,7 @@ let from_exe
     Array.fold_right_i globals.constants ~init:body ~f:(fun i _ l ->
         match globals.vars.(i) with
         | Some x when globals.is_const.(i) ->
-            let l = register_global globals ~target i noloc l in
+            let l = register_global ~target globals i noloc l in
             (Let (x, Constant globals.constants.(i)), noloc) :: l
         | _ -> l)
   in

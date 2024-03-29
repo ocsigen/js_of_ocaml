@@ -44,8 +44,9 @@ type t =
   ; (* compile option *)
     profile : Driver.profile option
   ; runtime_files : string list
+  ; runtime_only : bool
   ; output_file : string * bool
-  ; input_file : string
+  ; input_file : string option
   ; enable_source_maps : bool
   ; sourcemap_root : string option
   ; sourcemap_don't_inline_content : bool
@@ -113,9 +114,17 @@ let options =
       runtime_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
+      let ext =
+        try
+          snd
+            (List.find
+               ~f:(fun (ext, _) -> Filename.check_suffix input_file ext)
+               [ ".cmo", ".wasmo"; ".cma", ".wasma" ])
+        with Not_found -> ".js"
+      in
       match output_file with
       | Some s -> s, true
-      | None -> chop_extension input_file ^ ".js", false
+      | None -> chop_extension input_file ^ ext, false
     in
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
@@ -126,8 +135,9 @@ let options =
       ; include_dirs
       ; profile
       ; output_file
-      ; input_file
+      ; input_file = Some input_file
       ; runtime_files
+      ; runtime_only = false
       ; enable_source_maps
       ; sourcemap_root
       ; sourcemap_don't_inline_content
@@ -146,6 +156,85 @@ let options =
       $ sourcemap_root
       $ output_file
       $ input_file
+      $ runtime_files)
+  in
+  Term.ret t
+
+let options_runtime_only =
+  let runtime_files =
+    let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
+    Arg.(value & pos_all string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
+  in
+  let output_file =
+    let doc = "Set output file name to [$(docv)]." in
+    Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+  in
+  let no_sourcemap =
+    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
+  in
+  let sourcemap =
+    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    Arg.(value & flag & info [ "sourcemap"; "source-map"; "source-map-inline" ] ~doc)
+  in
+  let sourcemap_don't_inline_content =
+    let doc = "Do not inline sources in source map." in
+    Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
+  in
+  let sourcemap_root =
+    let doc = "root dir for source map." in
+    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+  in
+  let include_dirs =
+    let doc = "Add [$(docv)] to the list of include directories." in
+    Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+  in
+  let build_t
+      common
+      set_param
+      include_dirs
+      sourcemap
+      no_sourcemap
+      sourcemap_don't_inline_content
+      sourcemap_root
+      output_file
+      runtime_files =
+    let params : (string * string) list = List.flatten set_param in
+    let enable_source_maps = (not no_sourcemap) && sourcemap in
+    let include_dirs = normalize_include_dirs include_dirs in
+    `Ok
+      { common
+      ; params
+      ; include_dirs
+      ; profile = None
+      ; output_file = output_file, true
+      ; input_file = None
+      ; runtime_files
+      ; runtime_only = true
+      ; enable_source_maps
+      ; sourcemap_root
+      ; sourcemap_don't_inline_content
+      }
+  in
+  let t =
+    Term.(
+      const build_t
+      $ Jsoo_cmdline.Arg.t
+      $ set_param
+      $ include_dirs
+      $ sourcemap
+      $ no_sourcemap
+      $ sourcemap_don't_inline_content
+      $ sourcemap_root
+      $ output_file
       $ runtime_files)
   in
   Term.ret t

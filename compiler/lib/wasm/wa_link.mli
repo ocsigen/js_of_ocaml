@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+
 module Wasm_binary : sig
   type import =
     { module_ : string
@@ -26,10 +28,37 @@ module Wasm_binary : sig
   val read_imports : file:string -> import list
 end
 
+type unit_data =
+  { unit_info : Unit_info.t
+  ; strings : string list
+  ; fragments : (string * Javascript.expression) list
+  }
+
+val add_info :
+     Zip.output
+  -> ?predefined_exceptions:StringSet.t
+  -> build_info:Build_info.t
+  -> unit_data:unit_data list
+  -> unit
+  -> unit
+
 val build_runtime_arguments :
-     missing_primitives:string list
+     ?link_spec:(string * int list option) list
+  -> ?separate_compilation:bool
+  -> missing_primitives:string list
   -> wasm_file:string
-  -> generated_js:string list * (string * Javascript.expression) list
+  -> generated_js:
+       (string option * (string list * (string * Javascript.expression) list)) list
+  -> unit
   -> Javascript.expression
 
+val simplify_unit_info : unit_data list -> unit_data list
+
 val output_js : Javascript.program -> string
+
+val link :
+     output_file:string
+  -> linkall:bool
+  -> enable_source_maps:bool
+  -> files:string list
+  -> unit
