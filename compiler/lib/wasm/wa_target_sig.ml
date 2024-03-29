@@ -181,6 +181,12 @@ module type S = sig
     val int_lsr : expression -> expression -> expression
 
     val int_asr : expression -> expression -> expression
+
+    val block_type : Wa_ast.value_type Wa_code_generation.t
+
+    val dummy_block : expression
+
+    val as_block : expression -> expression
   end
 
   module Constant : sig

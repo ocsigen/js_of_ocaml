@@ -270,7 +270,13 @@ end
 module Value = struct
   let value : W.value_type = I32
 
+  let block_type = return value
+
   let unit = Arith.const 1l
+
+  let dummy_block = unit
+
+  let as_block e = e
 
   let val_int i = Arith.((i lsl const 1l) + const 1l)
 

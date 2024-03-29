@@ -407,6 +407,19 @@ end
 module Value = struct
   let value = Type.value
 
+  let block_type =
+    let* t = Type.block_type in
+    return (W.Ref { nullable = false; typ = Type t })
+
+  let dummy_block =
+    let* t = Type.block_type in
+    return (W.ArrayNewFixed (t, []))
+
+  let as_block e =
+    let* t = Type.block_type in
+    let* e = e in
+    return (W.RefCast ({ nullable = false; typ = Type t }, e))
+
   let unit = return (W.RefI31 (Const (I32 0l)))
 
   let val_int = Arith.to_int31

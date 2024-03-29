@@ -151,6 +151,36 @@ module Generate (Target : Wa_target_sig.S) = struct
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Int32.to_int arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:1
+    | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
+        let* x =
+          let* context = get_context in
+          match
+            List.find_map
+              ~f:(fun f ->
+                match f with
+                | W.Global { name = V name'; exported_name = Some exported_name; _ }
+                  when String.equal exported_name name -> Some name'
+                | _ -> None)
+              context.other_fields
+          with
+          | Some x -> return x
+          | _ ->
+              let* typ = Value.block_type in
+              register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
+        in
+        return (W.GlobalGet (V x))
+    | Prim (Extern "caml_set_global", [ Pc (String name); v ]) ->
+        let v = transl_prim_arg v in
+        let x = Var.fresh_n name in
+        let* () =
+          let* typ = Value.block_type in
+          let* dummy = Value.dummy_block in
+          register_global (V x) ~exported_name:name { mut = true; typ } dummy
+        in
+        seq
+          (let* v = Value.as_block v in
+           instr (W.GlobalSet (V x, v)))
+          Value.unit
     | Prim (p, l) -> (
         match p with
         | Extern name when Hashtbl.mem internal_primitives name ->
