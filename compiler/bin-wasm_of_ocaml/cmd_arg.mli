@@ -27,7 +27,10 @@ type t =
   ; output_file : string * bool
   ; input_file : string
   ; enable_source_maps : bool
+  ; sourcemap_root : string option
+  ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
+  ; include_dirs : string list
   }
 
 val options : t Cmdliner.Term.t

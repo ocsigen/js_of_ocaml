@@ -21,6 +21,24 @@ open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 open Cmdliner
 
+let is_dir_sep = function
+  | '/' -> true
+  | '\\' when String.equal Filename.dir_sep "\\" -> true
+  | _ -> false
+
+let trim_trailing_dir_sep s =
+  if String.equal s ""
+  then s
+  else
+    let len = String.length s in
+    let j = ref (len - 1) in
+    while !j >= 0 && is_dir_sep (String.unsafe_get s !j) do
+      decr j
+    done;
+    if !j >= 0 then String.sub s ~pos:0 ~len:(!j + 1) else String.sub s ~pos:0 ~len:1
+
+let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
+
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
@@ -29,7 +47,10 @@ type t =
   ; output_file : string * bool
   ; input_file : string
   ; enable_source_maps : bool
+  ; sourcemap_root : string option
+  ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
+  ; include_dirs : string list
   }
 
 let options =
@@ -55,12 +76,16 @@ let options =
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in
   let sourcemap =
-    let doc = "Output source locations in a separate sourcemap file." in
-    Arg.(value & flag & info [ "sourcemap"; "source-map" ] ~doc)
+    let doc = "Output source locations." in
+    Arg.(value & flag & info [ "sourcemap"; "source-map"; "source-map-inline" ] ~doc)
   in
-  let sourcemap_inline_in_js =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
-    Arg.(value & flag & info [ "source-map-inline" ] ~doc)
+  let sourcemap_don't_inline_content =
+    let doc = "Do not inline sources in source map." in
+    Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
+  in
+  let sourcemap_root =
+    let doc = "root dir for source map." in
+    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in
@@ -70,13 +95,19 @@ let options =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let include_dirs =
+    let doc = "Add [$(docv)] to the list of include directories." in
+    Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
+  in
   let build_t
       common
       set_param
+      include_dirs
       profile
       sourcemap
       no_sourcemap
-      _
+      sourcemap_don't_inline_content
+      sourcemap_root
       output_file
       input_file
       runtime_files =
@@ -88,14 +119,18 @@ let options =
     in
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
+    let include_dirs = normalize_include_dirs include_dirs in
     `Ok
       { common
       ; params
+      ; include_dirs
       ; profile
       ; output_file
       ; input_file
       ; runtime_files
       ; enable_source_maps
+      ; sourcemap_root
+      ; sourcemap_don't_inline_content
       }
   in
   let t =
@@ -103,10 +138,12 @@ let options =
       const build_t
       $ Jsoo_cmdline.Arg.t
       $ set_param
+      $ include_dirs
       $ profile
       $ sourcemap
       $ no_sourcemap
-      $ sourcemap_inline_in_js
+      $ sourcemap_don't_inline_content
+      $ sourcemap_root
       $ output_file
       $ input_file
       $ runtime_files)

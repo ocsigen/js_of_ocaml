@@ -48,6 +48,11 @@ let gen_file file f =
     (try Sys.remove f_tmp with Sys_error _ -> ());
     raise exc
 
+let opt_with action x f =
+  match x with
+  | None -> f None
+  | Some x -> action x (fun y -> f (Some y))
+
 let write_file name contents =
   let ch = open_out name in
   output_string ch contents;
@@ -56,10 +61,10 @@ let write_file name contents =
 let remove_file filename =
   try if Sys.file_exists filename then Sys.remove filename with Sys_error _msg -> ()
 
-let with_intermediate_file ?(keep = false) name f =
+let with_intermediate_file name f =
   match f name with
   | res ->
-      if not keep then remove_file name;
+      remove_file name;
       res
   | exception e ->
       remove_file name;
@@ -84,7 +89,12 @@ let common_binaryen_options () =
   in
   if Config.Flag.pretty () then "-g" :: l else l
 
-let link ~enable_source_maps runtime_files input_file output_file =
+let opt_flag flag v =
+  match v with
+  | None -> []
+  | Some v -> [ flag; Filename.quote v ]
+
+let link runtime_files input_file opt_output_sourcemap output_file =
   command
     ("wasm-merge"
     :: (common_binaryen_options ()
@@ -93,10 +103,7 @@ let link ~enable_source_maps runtime_files input_file output_file =
               ~f:(fun runtime_file -> [ Filename.quote runtime_file; "env" ])
               runtime_files)
        @ [ Filename.quote input_file; "exec"; "-o"; Filename.quote output_file ]
-       @
-       if enable_source_maps
-       then [ "--output-source-map"; Filename.quote (output_file ^ ".map") ]
-       else []))
+       @ opt_flag "--output-source-map" opt_output_sourcemap))
 
 let generate_dependencies primitives =
   Yojson.Basic.to_string
@@ -124,7 +131,7 @@ let filter_unused_primitives primitives usage_file =
    with End_of_file -> ());
   !s
 
-let dead_code_elimination ~enable_source_maps in_file out_file =
+let dead_code_elimination ~opt_input_sourcemap ~opt_output_sourcemap in_file out_file =
   with_intermediate_file (Filename.temp_file "deps" ".json")
   @@ fun deps_file ->
   with_intermediate_file (Filename.temp_file "usage" ".txt")
@@ -135,13 +142,9 @@ let dead_code_elimination ~enable_source_maps in_file out_file =
     ("wasm-metadce"
     :: (common_binaryen_options ()
        @ [ "--graph-file"; Filename.quote deps_file; Filename.quote in_file ]
-       @ (if enable_source_maps
-          then [ "--input-source-map"; Filename.quote (in_file ^ ".map") ]
-          else [])
+       @ opt_flag "--input-source-map" opt_input_sourcemap
        @ [ "-o"; Filename.quote out_file ]
-       @ (if enable_source_maps
-          then [ "--output-source-map"; Filename.quote (out_file ^ ".map") ]
-          else [])
+       @ opt_flag "--output-source-map" opt_output_sourcemap
        @ [ ">"; Filename.quote usage_file ]));
   filter_unused_primitives primitives usage_file
 
@@ -151,7 +154,13 @@ let optimization_options =
    ; [ "-O3"; "--traps-never-happen" ]
   |]
 
-let optimize ~profile ?sourcemap_file in_file out_file =
+let optimize
+    ~profile
+    ~opt_input_sourcemap
+    ~opt_output_sourcemap
+    ~opt_sourcemap_url
+    in_file
+    out_file =
   let level =
     match profile with
     | None -> 1
@@ -162,51 +171,88 @@ let optimize ~profile ?sourcemap_file in_file out_file =
      :: (common_binaryen_options ()
         @ optimization_options.(level - 1)
         @ [ Filename.quote in_file; "-o"; Filename.quote out_file ])
-    @
-    match sourcemap_file with
-    | Some sourcemap_file ->
-        [ "--input-source-map"
-        ; Filename.quote (in_file ^ ".map")
-        ; "--output-source-map"
-        ; Filename.quote sourcemap_file
-        ; "--output-source-map-url"
-        ; Filename.quote sourcemap_file
-        ]
-    | None -> [])
+    @ opt_flag "--input-source-map" opt_input_sourcemap
+    @ opt_flag "--output-source-map" opt_output_sourcemap
+    @ opt_flag "--output-source-map-url" opt_sourcemap_url)
 
-let link_and_optimize ~profile ?sourcemap_file runtime_wasm_files wat_file output_file =
-  let sourcemap_file =
-    (* Check that Binaryen supports the necessary sourcemaps options (requires
-       version >= 118) *)
-    match sourcemap_file with
-    | Some _ when Sys.command "wasm-merge -osm foo 2> /dev/null" <> 0 -> None
-    | Some _ | None -> sourcemap_file
-  in
-  let enable_source_maps = Option.is_some sourcemap_file in
-  with_intermediate_file (Filename.temp_file "runtime" ".wasm")
-  @@ fun runtime_file ->
-  write_file runtime_file Wa_runtime.wasm_runtime;
-  with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
-  @@ fun temp_file ->
-  link ~enable_source_maps (runtime_file :: runtime_wasm_files) wat_file temp_file;
-  with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
-  @@ fun temp_file' ->
-  let primitives = dead_code_elimination ~enable_source_maps temp_file temp_file' in
-  optimize ~profile ?sourcemap_file temp_file' output_file;
-  (* Add source file contents to source map *)
-  Option.iter sourcemap_file ~f:(fun sourcemap_file ->
-      let open Source_map in
-      let source_map, mappings = Source_map_io.of_file_no_mappings sourcemap_file in
-      assert (List.is_empty (Option.value source_map.sources_content ~default:[]));
-      let sources_content =
+let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_file =
+  if Option.is_some sourcemap_root || not sourcemap_don't_inline_content
+  then (
+    let open Source_map in
+    let source_map, mappings = Source_map_io.of_file_no_mappings sourcemap_file in
+    assert (List.is_empty (Option.value source_map.sources_content ~default:[]));
+    (* Add source file contents to source map *)
+    let sources_content =
+      if sourcemap_don't_inline_content
+      then None
+      else
         Some
           (List.map source_map.sources ~f:(fun file ->
                if Sys.file_exists file && not (Sys.is_directory file)
                then Some (Fs.read_file file)
                else None))
-      in
-      let source_map = { source_map with sources_content } in
-      Source_map_io.to_file ?mappings source_map ~file:sourcemap_file);
+    in
+    let source_map =
+      { source_map with
+        sources_content
+      ; sourceroot =
+          (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
+      }
+    in
+    Source_map_io.to_file ?mappings source_map ~file:sourcemap_file)
+
+let link_and_optimize
+    ~profile
+    ~sourcemap_root
+    ~sourcemap_don't_inline_content
+    ~opt_sourcemap
+    ~opt_sourcemap_url
+    runtime_wasm_files
+    wat_file
+    output_file =
+  let opt_sourcemap_file =
+    (* Check that Binaryen supports the necessary sourcemaps options (requires
+       version >= 118) *)
+    match opt_sourcemap with
+    | Some _ when Sys.command "wasm-merge -osm foo 2> /dev/null" <> 0 -> None
+    | Some _ | None -> opt_sourcemap
+  in
+  let enable_source_maps = Option.is_some opt_sourcemap_file in
+  with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+  @@ fun runtime_file ->
+  write_file runtime_file Wa_runtime.wasm_runtime;
+  with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
+  @@ fun temp_file ->
+  opt_with
+    with_intermediate_file
+    (if enable_source_maps
+     then Some (Filename.temp_file "wasm-merged" ".wasm.map")
+     else None)
+  @@ fun opt_temp_sourcemap ->
+  link (runtime_file :: runtime_wasm_files) wat_file opt_temp_sourcemap temp_file;
+  with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
+  @@ fun temp_file' ->
+  opt_with
+    with_intermediate_file
+    (if enable_source_maps then Some (Filename.temp_file "wasm-dce" ".wasm.map") else None)
+  @@ fun opt_temp_sourcemap' ->
+  let primitives =
+    dead_code_elimination
+      ~opt_input_sourcemap:opt_temp_sourcemap
+      ~opt_output_sourcemap:opt_temp_sourcemap'
+      temp_file
+      temp_file'
+  in
+  optimize
+    ~profile
+    ~opt_input_sourcemap:opt_temp_sourcemap'
+    ~opt_output_sourcemap:opt_sourcemap
+    ~opt_sourcemap_url
+    temp_file'
+    output_file;
+  Option.iter
+    ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
+    opt_sourcemap_file;
   primitives
 
 let escape_string s =
@@ -322,6 +368,9 @@ let run
     ; output_file
     ; enable_source_maps
     ; params
+    ; include_dirs
+    ; sourcemap_root
+    ; sourcemap_don't_inline_content
     } =
   Jsoo_cmdline.Arg.eval common;
   Wa_generate.init ();
@@ -329,7 +378,9 @@ let run
   if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   let t = Timer.make () in
-  let include_dirs = List.filter_map [ "+stdlib/" ] ~f:(fun d -> Findlib.find [] d) in
+  let include_dirs =
+    List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
+  in
   let runtime_wasm_files, runtime_js_files =
     List.partition runtime_files ~f:(fun name ->
         List.exists
@@ -359,7 +410,7 @@ let run
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
-  let need_debug = Config.Flag.debuginfo () in
+  let need_debug = enable_source_maps || Config.Flag.debuginfo () in
   let output (one : Parse_bytecode.one) ~standalone ch =
     let code = one.code in
     let live_vars, in_cps, p, debug =
@@ -411,12 +462,19 @@ let run
        in
        gen_file wasm_file
        @@ fun tmp_wasm_file ->
+       opt_with gen_file (if enable_source_maps then Some (wasm_file ^ ".map") else None)
+       @@ fun opt_tmp_sourcemap ->
        let strings = output_gen wat_file (output code ~standalone:true) in
        let primitives =
          link_and_optimize
            ~profile
-           ?sourcemap_file:
-             (if enable_source_maps then Some (wasm_file ^ ".map") else None)
+           ~sourcemap_root
+           ~sourcemap_don't_inline_content
+           ~opt_sourcemap:opt_tmp_sourcemap
+           ~opt_sourcemap_url:
+             (if enable_source_maps
+              then Some (Filename.basename wasm_file ^ ".map")
+              else None)
            runtime_wasm_files
            wat_file
            tmp_wasm_file
