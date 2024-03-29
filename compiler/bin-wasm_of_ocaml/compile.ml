@@ -121,7 +121,21 @@ let link_and_optimize
     opt_sourcemap_file;
   primitives
 
-let build_runtime_arguments ~wasm_file ~generated_js:(strings, fragments) =
+let report_missing_primitives missing =
+  if not (List.is_empty missing)
+  then (
+    warn "There are some missing Wasm primitives@.";
+    warn "Dummy implementations (raising an exception) ";
+    warn "will be provided.@.";
+    warn "Missing primitives:@.";
+    List.iter ~f:(fun nm -> warn "  %s@." nm) missing)
+
+let build_runtime_arguments
+    ~missing_primitives
+    ~wasm_file
+    ~generated_js:(strings, fragments) =
+  let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
+  report_missing_primitives missing_primitives;
   let obj l =
     Javascript.EObj
       (List.map
@@ -146,6 +160,35 @@ let build_runtime_arguments ~wasm_file ~generated_js:(strings, fragments) =
       if List.is_empty fragments then [] else [ "fragments", obj fragments ]
     in
     strings @ fragments
+  in
+  let generated_js =
+    if not (List.is_empty missing_primitives)
+    then
+      ( "env"
+      , obj
+          (List.map
+             ~f:(fun nm ->
+               ( nm
+               , Javascript.EArrow
+                   ( Javascript.fun_
+                       []
+                       [ ( Throw_statement
+                             (ENew
+                                ( EVar
+                                    (Javascript.ident (Utf8_string.of_string_exn "Error"))
+                                , Some
+                                    [ Arg
+                                        (EStr
+                                           (Utf8_string.of_string_exn
+                                              (nm ^ " not implemented")))
+                                    ] ))
+                         , N )
+                       ]
+                       N
+                   , AUnknown ) ))
+             missing_primitives) )
+      :: generated_js
+    else generated_js
   in
   let generated_js =
     if List.is_empty generated_js
@@ -368,9 +411,17 @@ let run
            tmp_wasm_file
        in
        let js_runtime =
+         let missing_primitives =
+           let l = Wa_link.Wasm_binary.read_imports ~file:tmp_wasm_file in
+           List.filter_map
+             ~f:(fun { Wa_link.Wasm_binary.module_; name; _ } ->
+               if String.equal module_ "env" then Some name else None)
+             l
+         in
          build_js_runtime
            ~primitives
-           ~runtime_arguments:(build_runtime_arguments ~wasm_file ~generated_js)
+           ~runtime_arguments:
+             (build_runtime_arguments ~missing_primitives ~wasm_file ~generated_js)
        in
        Fs.gen_file output_file
        @@ fun tmp_output_file -> Fs.write_file ~name:tmp_output_file ~contents:js_runtime
