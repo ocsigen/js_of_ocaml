@@ -40,6 +40,6 @@ val to_string : t -> string
 
 val parse : t -> string -> t option
 
-val to_json : t -> Yojson.Basic.t
+val to_sexp : t -> Sexp.t list
 
-val from_json : Yojson.Basic.t -> t
+val from_sexp : Sexp.t -> t

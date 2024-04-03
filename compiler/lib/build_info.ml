@@ -90,15 +90,18 @@ let parse s =
       in
       Some t
 
-let to_json info : Yojson.Basic.t =
-  `Assoc (info |> StringMap.bindings |> List.map ~f:(fun (k, v) -> k, `String v))
+let to_sexp info =
+  Sexp.List
+    (info
+    |> StringMap.bindings
+    |> List.map ~f:(fun (k, v) -> Sexp.List [ Atom k; Atom v ]))
 
-let from_json (info : Yojson.Basic.t) =
-  let open Yojson.Basic.Util in
+let from_sexp info =
+  let open Sexp.Util in
   info
-  |> to_assoc
+  |> assoc
   |> List.fold_left
-       ~f:(fun m (k, v) -> StringMap.add k (to_string v) m)
+       ~f:(fun m (k, v) -> StringMap.add k (single string v) m)
        ~init:StringMap.empty
 
 exception

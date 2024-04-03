@@ -205,64 +205,58 @@ type unit_data =
   ; fragments : (string * Javascript.expression) list
   }
 
-let info_to_json ~predefined_exceptions ~build_info ~unit_data =
-  let add nm skip v rem = if skip then rem else (nm, v) :: rem in
+let info_to_sexp ~predefined_exceptions ~build_info ~unit_data =
+  let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
   let units =
     List.map
       ~f:(fun { unit_info; strings; fragments } ->
-        `Assoc
-          (Unit_info.to_json unit_info
-          |> Yojson.Basic.Util.to_assoc
+        Sexp.List
+          (Unit_info.to_sexp unit_info
           |> add
                "strings"
                (List.is_empty strings)
-               (`List (List.map ~f:(fun s -> `String s) strings))
+               (List.map ~f:(fun s -> Sexp.Atom s) strings)
           |> add
                "fragments"
                (List.is_empty fragments)
-               (`String (Marshal.to_string fragments []))))
+               [ Sexp.Atom (Base64.encode_string (Marshal.to_string fragments [])) ]))
       unit_data
   in
-  `Assoc
+  Sexp.List
     ([]
     |> add
          "predefined_exceptions"
          (StringSet.is_empty predefined_exceptions)
-         (`List
-           (List.map ~f:(fun s -> `String s) (StringSet.elements predefined_exceptions)))
-    |> add "units" (List.is_empty unit_data) (`List units)
-    |> add "build_info" false (Build_info.to_json build_info))
+         (List.map ~f:(fun s -> Sexp.Atom s) (StringSet.elements predefined_exceptions))
+    |> add "units" (List.is_empty unit_data) units
+    |> add "build_info" false [ Build_info.to_sexp build_info ])
 
-let info_from_json info =
-  let open Yojson.Basic.Util in
-  let build_info = info |> member "build_info" |> Build_info.from_json in
+let info_from_sexp info =
+  let open Sexp.Util in
+  let build_info =
+    info |> member "build_info" |> mandatory (single Build_info.from_sexp)
+  in
   let predefined_exceptions =
     info
     |> member "predefined_exceptions"
-    |> to_option to_list
     |> Option.value ~default:[]
-    |> List.map ~f:to_string
+    |> List.map ~f:string
     |> StringSet.of_list
   in
   let unit_data =
     info
     |> member "units"
-    |> to_option to_list
     |> Option.value ~default:[]
     |> List.map ~f:(fun u ->
-           let unit_info = u |> Unit_info.from_json in
+           let unit_info = u |> Unit_info.from_sexp in
            let strings =
-             u
-             |> member "strings"
-             |> to_option to_list
-             |> Option.value ~default:[]
-             |> List.map ~f:to_string
+             u |> member "strings" |> Option.value ~default:[] |> List.map ~f:string
            in
            let fragments =
              u
              |> member "fragments"
-             |> to_option to_string
-             |> Option.map ~f:(fun s -> Marshal.from_string s 0)
+             |> Option.map ~f:(single string)
+             |> Option.map ~f:(fun s -> Marshal.from_string (Base64.decode_exn s) 0)
              |> Option.value ~default:[]
              (*
                            |> to_option to_assoc
@@ -279,13 +273,11 @@ let info_from_json info =
 let add_info z ?(predefined_exceptions = StringSet.empty) ~build_info ~unit_data () =
   Zip.add_entry
     z
-    ~name:"info.json"
+    ~name:"info.sexp"
     ~contents:
-      (Yojson.Basic.to_string
-         (info_to_json ~predefined_exceptions ~build_info ~unit_data))
+      (Sexp.to_string (info_to_sexp ~predefined_exceptions ~build_info ~unit_data))
 
-let read_info z =
-  info_from_json (Yojson.Basic.from_string (Zip.read_entry z ~name:"info.json"))
+let read_info z = info_from_sexp (Sexp.from_string (Zip.read_entry z ~name:"info.sexp"))
 
 let generate_start_function ~to_link ~out_file =
   let t1 = Timer.make () in
