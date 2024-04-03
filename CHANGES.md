@@ -1,3 +1,8 @@
+# 5.7.2 (2024-04-03) - Lille
+
+## Bug fixes
+* Runtime: add missing primitives for ocaml 5.2.0~beta1
+
 # 5.7.1 (2024-03-05) - Lille
 
 ## Features/Changes
