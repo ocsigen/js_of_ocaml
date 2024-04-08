@@ -13,6 +13,7 @@
 * Runtime: abort instead of exit when calling unimplemented
   js primitives in bytecode/native. It should help if one tries
   to understand the source of the call with gdb (see #677)
+* Runtime: re-enable marshalling of floats, disabled in jsoo 2.0
 
 ## Bug fixes
 
