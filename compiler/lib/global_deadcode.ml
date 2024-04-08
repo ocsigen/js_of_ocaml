@@ -126,7 +126,7 @@ let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.
         List.iter
           ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a)
           args
-    | Block (_, vars, _) -> Array.iter ~f:(add_use Compute x) vars
+    | Block (_, vars, _, _) -> Array.iter ~f:(add_use Compute x) vars
     | Field (z, _) -> add_use Compute x z
     | Constant _ -> ()
     | Special _ -> ()
@@ -172,7 +172,7 @@ let expr_vars e =
   | Apply { f; args; _ } ->
       let vars = Var.Set.add f vars in
       List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars args
-  | Block (_, params, _) ->
+  | Block (_, params, _, _) ->
       Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
   | Field (z, _) -> Var.Set.add z vars
   | Prim (_, args) ->
@@ -223,7 +223,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
               List.iter
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
-          | Block (_, _, _)
+          | Block (_, _, _, _)
           | Field (_, _)
           | Closure (_, _)
           | Constant _
@@ -286,7 +286,7 @@ let propagate uses defs live_vars live_table x =
         (* If y is a live block, then x is the join of liveness fields that are x *)
         | Live fields -> (
             match Var.Tbl.get defs y with
-            | Expr (Block (_, vars, _)) ->
+            | Expr (Block (_, vars, _, _)) ->
                 let found = ref false in
                 Array.iteri
                   ~f:(fun i v ->
@@ -341,7 +341,7 @@ let zero prog sentinal live_table =
     match instr with
     | Let (x, e) -> (
         match e with
-        | Block (start, vars, is_array) -> (
+        | Block (start, vars, is_array, mut) -> (
             match Var.Tbl.get live_table x with
             | Live fields ->
                 let vars =
@@ -350,7 +350,7 @@ let zero prog sentinal live_table =
                     vars
                   |> compact_vars
                 in
-                let e = Block (start, vars, is_array) in
+                let e = Block (start, vars, is_array, mut) in
                 Let (x, e)
             | _ -> instr)
         | Apply ap ->
