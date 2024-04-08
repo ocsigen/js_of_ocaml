@@ -37,31 +37,27 @@ val get_label : t -> Code.Var.t option
 
 *)
 
-type def =
-  | Phi of Code.Var.Set.t
-  | Expr of Code.expr
-  | Param
+module Info : sig
+  type t
 
-type info =
-  { info_defs : def array
-  ; info_known_origins : Code.Var.Set.t Code.Var.Tbl.t
-  ; info_maybe_unknown : bool Code.Var.Tbl.t
-  ; info_possibly_mutable : Code.Var.ISet.t
-  }
+  val def : t -> Code.Var.t -> Code.expr option
+
+  val update_def : t -> Code.Var.t -> Code.expr -> unit
+
+  val possibly_mutable : t -> Code.Var.t -> bool
+end
 
 val get_approx :
-  info -> (Code.Var.Set.elt -> 'b) -> 'b -> ('b -> 'b -> 'b) -> Code.Var.Tbl.key -> 'b
+  Info.t -> (Code.Var.Set.elt -> 'b) -> 'b -> ('b -> 'b -> 'b) -> Code.Var.Tbl.key -> 'b
 
-val the_def_of : info -> Code.prim_arg -> Code.expr option
+val the_def_of : Info.t -> Code.prim_arg -> Code.expr option
 
-val the_const_of : info -> Code.prim_arg -> Code.constant option
+val the_const_of : Info.t -> Code.prim_arg -> Code.constant option
 
-val the_string_of : info -> Code.prim_arg -> string option
+val the_string_of : Info.t -> Code.prim_arg -> string option
 
-val the_native_string_of : info -> Code.prim_arg -> Code.Native_string.t option
+val the_native_string_of : Info.t -> Code.prim_arg -> Code.Native_string.t option
 
-val the_int : info -> Code.prim_arg -> int32 option
+val the_int : Info.t -> Code.prim_arg -> int32 option
 
-val update_def : info -> Code.Var.t -> Code.expr -> unit
-
-val f : ?skip_param:bool -> Code.program -> Code.program * info
+val f : ?skip_param:bool -> Code.program -> Code.program * Info.t

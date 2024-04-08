@@ -34,16 +34,25 @@ type def =
   | Expr of Code.expr
   | Param
 
-type info =
-  { info_defs : def array
-  ; info_known_origins : Code.Var.Set.t Code.Var.Tbl.t
-  ; info_maybe_unknown : bool Code.Var.Tbl.t
-  ; info_possibly_mutable : Var.ISet.t
-  }
+module Info = struct
+  type t =
+    { info_defs : def array
+    ; info_known_origins : Code.Var.Set.t Code.Var.Tbl.t
+    ; info_maybe_unknown : bool Code.Var.Tbl.t
+    ; info_possibly_mutable : Var.ISet.t
+    }
 
-let update_def { info_defs; _ } x exp =
-  let idx = Code.Var.idx x in
-  info_defs.(idx) <- Expr exp
+  let def t x =
+    match t.info_defs.(Code.Var.idx x) with
+    | Phi _ | Param -> None
+    | Expr x -> Some x
+
+  let possibly_mutable t x = Code.Var.ISet.mem t.info_possibly_mutable x
+
+  let update_def { info_defs; _ } x exp =
+    let idx = Code.Var.idx x in
+    info_defs.(idx) <- Expr exp
+end
 
 let undefined = Phi Var.Set.empty
 
@@ -296,7 +305,12 @@ let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   in
   Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
-let get_approx { info_defs = _; info_known_origins; info_maybe_unknown; _ } f top join x =
+let get_approx
+    { Info.info_defs = _; info_known_origins; info_maybe_unknown; _ }
+    f
+    top
+    join
+    x =
   let s = Var.Tbl.get info_known_origins x in
   if Var.Tbl.get info_maybe_unknown x
   then top
@@ -358,7 +372,7 @@ let the_native_string_of info x =
   | _ -> None
 
 (*XXX Maybe we could iterate? *)
-let direct_approx info x =
+let direct_approx (info : Info.t) x =
   match info.info_defs.(Var.idx x) with
   | Expr (Field (y, n)) ->
       get_approx
@@ -378,7 +392,7 @@ let direct_approx info x =
         y
   | _ -> None
 
-let build_subst info vars =
+let build_subst (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
   Var.ISet.iter
@@ -432,7 +446,7 @@ let f ?skip_param p =
       vars;
   let t5 = Timer.make () in
   let info =
-    { info_defs = defs
+    { Info.info_defs = defs
     ; info_known_origins = known_origins
     ; info_maybe_unknown = maybe_unknown
     ; info_possibly_mutable = possibly_mutable
