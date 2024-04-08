@@ -736,6 +736,10 @@ var caml_output_val = function (){
           var type_of_v = typeof v;
           if(type_of_v != "number")
             caml_failwith("output_value: abstract value ("+type_of_v+")");
+          // If a float happens to be an integer it is serialized as an integer
+          // (Js_of_ocaml cannot tell whether the type of an integer number is
+          // float or integer.) This can result in unexpected crashes when
+          // unmarshalling using the standard runtime.
           if (memo(v)) return;
           var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
           writer.write (8, 0x0C /*cst.CODE_DOUBLE_LITTLE*/);
