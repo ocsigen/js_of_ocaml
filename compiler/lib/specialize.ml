@@ -26,11 +26,11 @@ let function_arity info x =
     get_approx
       info
       (fun x ->
-        match info.info_defs.(Var.idx x) with
-        | Expr (Closure (l, _)) -> Some (List.length l)
-        | Expr (Special (Alias_prim prim)) -> (
+        match Flow.Info.def info x with
+        | Some (Closure (l, _)) -> Some (List.length l)
+        | Some (Special (Alias_prim prim)) -> (
             try Some (Primitive.arity prim) with Not_found -> None)
-        | Expr (Apply { f; args; _ }) -> (
+        | Some (Apply { f; args; _ }) -> (
             if List.mem f ~set:acc
             then None
             else
