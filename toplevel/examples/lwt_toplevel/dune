@@ -49,7 +49,9 @@
     --file
     %{dep:test_dynlink.cmo}
     --file
-    %{dep:test_dynlink.js}))
+    %{dep:test_dynlink.js}
+    --file
+    %{dep:test_lib_jsoo.js}))
   (flags
    (:standard
     --toplevel
@@ -67,7 +69,12 @@
 (rule
  (targets test_dynlink.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --toplevel %{dep:test_dynlink.cmo})))
+  (run %{bin:js_of_ocaml} --pretty --toplevel %{read-strings:effects_flags.txt} %{dep:test_dynlink.cmo})))
+
+(rule
+ (target test_lib_jsoo.js)
+ (action
+  (run %{bin:js_of_ocaml} --pretty --toplevel %{read-strings:effects_flags.txt} %{dep:test_lib/stubs.js} %{dep:test_lib/test_lib_jsoo.cma} -o %{target})))
 
 (rule
  (targets export.txt)
@@ -136,6 +143,8 @@
    %{dep:test_dynlink.cmo}
    --file
    %{dep:test_dynlink.js}
+   --file
+   %{dep:test_lib_jsoo.js}
    --export
    %{dep:export.txt}
    --toplevel
