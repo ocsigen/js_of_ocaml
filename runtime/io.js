@@ -525,8 +525,7 @@ function caml_ml_flush (chanid) {
 //Requires: caml_raise_sys_error, caml_ml_channels
 function caml_ml_output_ta(chanid,buffer,offset,len) {
   var chan = caml_ml_channels[chanid];
-  if(! chan.opened)
-    caml_raise_sys_error("Cannot output to a closed channel");
+  if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
   buffer = buffer.subarray(offset, offset + len);
   if(chan.buffer_curr + buffer.length > chan.buffer.length) {
     var b = new Uint8Array(chan.buffer_curr + buffer.length);
