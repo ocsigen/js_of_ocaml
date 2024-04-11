@@ -78,10 +78,10 @@ let v =
   | 5 :: 01 :: _ -> 33
   | 5 :: 02 :: _ -> 34
   | _ ->
-      if Ocaml_version.compare current [ 4; 4 ] < 0
+      if Ocaml_version.compare current [ 4; 8 ] < 0
       then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
       else (
-        assert (Ocaml_version.compare current [ 5; 1 ] >= 0);
+        assert (Ocaml_version.compare current [ 5; 3 ] >= 0);
         failwith "OCaml version unsupported. Upgrade js_of_ocaml.")
 
 let current_exe = "Caml1999X", v
