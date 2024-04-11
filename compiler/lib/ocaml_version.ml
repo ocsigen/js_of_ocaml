@@ -63,22 +63,3 @@ let rec compare v v' =
       match compint x y with
       | 0 -> compare xs ys
       | n -> n)
-
-let v =
-  match current with
-  | 4 :: 8 :: _ -> `V4_08
-  | 4 :: 9 :: _ -> `V4_09
-  | 4 :: 10 :: _ -> `V4_10
-  | 4 :: 11 :: _ -> `V4_11
-  | 4 :: 12 :: _ -> `V4_12
-  | 4 :: 13 :: _ -> `V4_13
-  | 4 :: 14 :: _ -> `V4_14
-  | 5 :: 0 :: _ -> `V5_00
-  | 5 :: 1 :: _ -> `V5_01
-  | 5 :: 2 :: _ -> `V5_02
-  | _ ->
-      if compare current [ 4; 4 ] < 0
-      then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
-      else (
-        assert (compare current [ 5; 1 ] >= 0);
-        failwith "OCaml version unsupported. Upgrade js_of_ocaml.")

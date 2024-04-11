@@ -33,10 +33,7 @@ type bytecode = string
 let predefined_exceptions =
   Runtimedef.builtin_exceptions |> Array.to_list |> List.mapi ~f:(fun i name -> i, name)
 
-let new_closure_repr =
-  match Ocaml_version.v with
-  | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> true
+let new_closure_repr = Ocaml_version.compare Ocaml_version.current [ 4; 12 ] >= 0
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -2411,10 +2408,9 @@ and compile infos pc state instrs =
             Var.print
             arg;
         let state =
-          match Ocaml_version.v with
-          | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01
-            -> State.pop 2 state
-          | `V5_02 -> State.pop 3 state
+          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
+          | true -> State.pop 2 state
+          | false -> State.pop 3 state
         in
 
         compile
@@ -2510,9 +2506,9 @@ let parse_bytecode code globals debug_data =
 (* HACK - override module *)
 
 let override_global =
-  match Ocaml_version.v with
-  | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
-  | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
+  match Ocaml_version.compare Ocaml_version.current [ 4; 13 ] >= 0 with
+  | true -> []
+  | false ->
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
             let x = Var.fresh_n "internalMod" in
