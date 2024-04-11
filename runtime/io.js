@@ -97,13 +97,31 @@ function caml_sys_open (name, flags, _perms) {
 //Provides: caml_ml_set_channel_name
 //Requires: caml_ml_channels
 function caml_ml_set_channel_name(chanid, name) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   chan.name = name;
   return 0;
-}
+                             }
 
-//Provides: caml_ml_channels
-var caml_ml_channels = new globalThis.WeakMap ()
+  //Provides: caml_ml_channels
+var caml_ml_channels_weak = new globalThis.WeakMap ();
+var channels_handlers = {
+  get (target, prop, receiver) {
+    if(typeof prop == "symbol"){
+      return caml_ml_channels_weak.get(prop);
+    }
+    else {
+      console.log("cannot find", prop);
+      return
+    }
+  },
+  set (target, prop, new_val) {
+    if(typeof prop == "symbol"){
+      return caml_ml_channels_weak.set(prop, new_val);
+    }
+    return;
+  }
+}
+var caml_ml_channels = new globalThis.Proxy(caml_ml_channels_weak, channels_handlers);
 
 
 //Provides: caml_ml_channels_opened
@@ -117,7 +135,7 @@ function caml_ml_out_channels_list () {
   var l = 0;
   var keys = caml_ml_channels_opened.keys();
   for(var k of keys){
-    var chan = caml_ml_channels.get(k);
+    var chan = caml_ml_channels[k];
     if(chan.opened && chan.out){
       l=[0,caml_sys_fds[chan.fd].chanid,l];
     }
@@ -146,7 +164,7 @@ function caml_ml_open_descriptor_out (fd) {
     buffered:buffered
   };
   caml_ml_channels_opened.add(chanid);
-  caml_ml_channels.set(chanid,channel);
+  caml_ml_channels[chanid] = channel;
   return chanid;
 }
 
@@ -171,7 +189,7 @@ function caml_ml_open_descriptor_in (fd)  {
     refill:refill
   };
   caml_ml_channels_opened.add(chanid);
-  caml_ml_channels.set(chanid,channel);
+  caml_ml_channels[chanid] = channel;
   return chanid;
 }
 
@@ -194,14 +212,14 @@ function caml_ml_open_descriptor_out_with_flags(fd, flags){
 //Requires: caml_ml_channels
 //Alias: win_filedescr_of_channel
 function caml_channel_descriptor(chanid){
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return chan.fd;
 }
 
 //Provides: caml_ml_set_binary_mode
 //Requires: caml_ml_channels
 function caml_ml_set_binary_mode(chanid,mode){
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   chan.file.flags.text = !mode
   chan.file.flags.binary = mode
   return 0;
@@ -211,7 +229,7 @@ function caml_ml_set_binary_mode(chanid,mode){
 //Requires: caml_ml_channels
 //Version: >= 5.2
 function caml_ml_is_binary_mode(chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return chan.file.flags.binary
 }
 
@@ -222,7 +240,7 @@ function caml_ml_is_binary_mode(chanid) {
 //Requires: caml_sys_close
 //Requires: caml_ml_channels_opened
 function caml_ml_close_channel (chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   if(chan.opened) {
     chan.opened = false;
     delete caml_ml_channels_opened.delete(chanid);
@@ -238,21 +256,21 @@ function caml_ml_close_channel (chanid) {
 //Provides: caml_ml_channel_size
 //Requires: caml_ml_channels
 function caml_ml_channel_size(chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return chan.file.length();
 }
 
 //Provides: caml_ml_channel_size_64
 //Requires: caml_int64_of_float,caml_ml_channels
 function caml_ml_channel_size_64(chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return caml_int64_of_float(chan.file.length ());
 }
 
 //Provides: caml_ml_set_channel_output
 //Requires: caml_ml_channels
 function caml_ml_set_channel_output(chanid,f) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   chan.output = (function (s) {f(s)});
   return 0;
 }
@@ -260,7 +278,7 @@ function caml_ml_set_channel_output(chanid,f) {
 //Provides: caml_ml_set_channel_refill
 //Requires: caml_ml_channels
 function caml_ml_set_channel_refill(chanid,f) {
-  caml_ml_channels.get(chanid).refill = f;
+  caml_ml_channels[chanid].refill = f;
   return 0;
 }
 
@@ -309,7 +327,7 @@ function caml_ml_input_bigarray (chanid, b, i, l) {
 //Provides: caml_ml_input_block
 //Requires: caml_refill, caml_ml_channels
 function caml_ml_input_block (chanid, ba, i, l) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   var n = l;
   var avail = chan.buffer_max - chan.buffer_curr;
   if(l <= avail) {
@@ -337,7 +355,7 @@ function caml_ml_input_block (chanid, ba, i, l) {
 //Requires: caml_refill, caml_failwith, caml_raise_end_of_file
 //Requires: caml_marshal_header_size
 function caml_input_value (chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   var header = new Uint8Array(caml_marshal_header_size);
   function block(buffer, offset, n) {
     var r = 0;
@@ -382,7 +400,7 @@ function caml_input_value_to_outside_heap(c) {
 //Requires: caml_raise_end_of_file, caml_array_bound_error
 //Requires: caml_ml_channels, caml_refill
 function caml_ml_input_char (chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   if(chan.buffer_curr >= chan.buffer_max){
     chan.buffer_curr = 0;
     chan.buffer_max = 0;
@@ -399,7 +417,7 @@ function caml_ml_input_char (chanid) {
 //Requires: caml_raise_end_of_file
 //Requires: caml_ml_input_char, caml_ml_channels
 function caml_ml_input_int (chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   var res = 0;
   for(var i = 0; i < 4; i++){
     res = (res << 8) + caml_ml_input_char(chanid) | 0;
@@ -410,7 +428,7 @@ function caml_ml_input_int (chanid) {
 //Provides: caml_seek_in
 //Requires: caml_raise_sys_error, caml_ml_channels
 function caml_seek_in(chanid, pos) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   if (chan.refill != null) caml_raise_sys_error("Illegal seek");
   if(pos >= chan.offset - chan.buffer_max
      && pos <= chan.offset
@@ -440,7 +458,7 @@ function caml_ml_seek_in_64(chanid,pos){
 //Provides: caml_pos_in
 //Requires: caml_ml_channels
 function caml_pos_in(chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return chan.offset - (chan.buffer_max - chan.buffer_curr) | 0;
 }
 
@@ -460,7 +478,7 @@ function caml_ml_pos_in_64(chanid) {
 //Requires: caml_array_bound_error
 //Requires: caml_ml_channels, caml_refill
 function caml_ml_input_scan_line(chanid){
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   var p = chan.buffer_curr;
   do {
     if(p >= chan.buffer_max) {
@@ -487,7 +505,7 @@ function caml_ml_input_scan_line(chanid){
 //Requires: caml_raise_sys_error, caml_ml_channels
 //Requires: caml_subarray_to_jsbytes
 function caml_ml_flush (chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   if(! chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
   if(!chan.buffer || chan.buffer_curr == 0) return 0;
   if(chan.output) {
@@ -506,7 +524,7 @@ function caml_ml_flush (chanid) {
 //Requires: caml_ml_flush,caml_ml_bytes_length
 //Requires: caml_raise_sys_error, caml_ml_channels
 function caml_ml_output_ta(chanid,buffer,offset,len) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   if(! chan.opened)
     caml_raise_sys_error("Cannot output to a closed channel");
   buffer = buffer.subarray(offset, offset + len);
@@ -592,7 +610,7 @@ function caml_output_value (chanid,v,flags) {
 //Requires: caml_ml_channels, caml_ml_flush
 function caml_seek_out(chanid, pos){
   caml_ml_flush(chanid);
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   chan.offset = pos;
   return 0;
 }
@@ -612,7 +630,7 @@ function caml_ml_seek_out_64(chanid,pos){
 //Provides: caml_pos_out
 //Requires: caml_ml_channels, caml_ml_flush
 function caml_pos_out(chanid) {
-  var chan = caml_ml_channels.get(chanid);
+  var chan = caml_ml_channels[chanid];
   return chan.offset + chan.buffer_curr
 }
 
@@ -641,13 +659,13 @@ function caml_ml_output_int (chanid,i) {
 //Provides: caml_ml_is_buffered
 //Requires: caml_ml_channels
 function caml_ml_is_buffered(chanid) {
-  return caml_ml_channels.get(chanid).buffered ? 1 : 0
+  return caml_ml_channels[chanid].buffered ? 1 : 0
 }
 
 //Provides: caml_ml_set_buffered
 //Requires: caml_ml_channels, caml_ml_flush
 function caml_ml_set_buffered(chanid,v) {
-  caml_ml_channels.get(chanid).buffered = v;
+  caml_ml_channels[chanid].buffered = v;
   if(!v) caml_ml_flush(chanid);
   return 0
 }
