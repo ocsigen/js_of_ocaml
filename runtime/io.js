@@ -100,45 +100,52 @@ function caml_ml_set_channel_name(chanid, name) {
   var chan = caml_ml_channels[chanid];
   chan.name = name;
   return 0;
-                             }
+}
 
-  //Provides: caml_ml_channels
-var caml_ml_channels_weak = new globalThis.WeakMap ();
+//Provides: caml_ml_channels
+function caml_ml_channels_state() {
+  this.map = new globalThis.WeakMap ();
+  this.opened = new globalThis.Set();
+}
+caml_ml_channels_state.prototype.close = function (chanid) {
+  this.opened.delete(chanid);
+}
+caml_ml_channels_state.prototype.get = function (chanid) {
+  return this.map.get(chanid);
+}
+caml_ml_channels_state.prototype.set = function (chanid, val) {
+  if(val.opened) this.opened.add(chanid);
+  return this.map.set(chanid,val);
+}
+caml_ml_channels_state.prototype.all = function () {
+  return this.opened.values();
+}
+
 var channels_handlers = {
   get (target, prop, receiver) {
     if(typeof prop == "symbol"){
-      return caml_ml_channels_weak.get(prop);
+      return target.get(prop);
     }
-    else {
-      console.log("cannot find", prop);
-      return
-    }
+    return globalThis.Reflect.get(...arguments);
   },
-  set (target, prop, new_val) {
+  set (target, prop, new_val, receiver) {
     if(typeof prop == "symbol"){
-      return caml_ml_channels_weak.set(prop, new_val);
+      target.set(prop, new_val);
     }
-    return;
+    return true;
   }
 }
-var caml_ml_channels = new globalThis.Proxy(caml_ml_channels_weak, channels_handlers);
-
-
-//Provides: caml_ml_channels_opened
-var caml_ml_channels_opened = new globalThis.Set()
+var caml_ml_channels = new globalThis.Proxy(new caml_ml_channels_state, channels_handlers);
 
 //Provides: caml_ml_out_channels_list
 //Requires: caml_ml_channels
-//Requires: caml_ml_channels_opened
 //Requires: caml_sys_fds
 function caml_ml_out_channels_list () {
   var l = 0;
-  var keys = caml_ml_channels_opened.keys();
+  var keys = caml_ml_channels.all();
   for(var k of keys){
     var chan = caml_ml_channels[k];
-    if(chan.opened && chan.out){
-      l=[0,caml_sys_fds[chan.fd].chanid,l];
-    }
+    if(chan.opened && chan.out) l=[0,k,l];
   }
   return l;
 }
@@ -148,7 +155,6 @@ function caml_ml_out_channels_list () {
 //Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
-//Requires: caml_ml_channels_opened
 function caml_ml_open_descriptor_out (fd) {
   var s = caml_sys_fds[fd], file = s.file, chanid = s.chanid;
   if(file.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
@@ -163,7 +169,6 @@ function caml_ml_open_descriptor_out (fd) {
     buffer:new Uint8Array(65536),
     buffered:buffered
   };
-  caml_ml_channels_opened.add(chanid);
   caml_ml_channels[chanid] = channel;
   return chanid;
 }
@@ -172,7 +177,6 @@ function caml_ml_open_descriptor_out (fd) {
 //Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
-//Requires: caml_ml_channels_opened
 function caml_ml_open_descriptor_in (fd)  {
   var s = caml_sys_fds[fd], file = s.file, chanid = s.chanid;
   if(file.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
@@ -188,7 +192,6 @@ function caml_ml_open_descriptor_in (fd)  {
     buffer:new Uint8Array(65536),
     refill:refill
   };
-  caml_ml_channels_opened.add(chanid);
   caml_ml_channels[chanid] = channel;
   return chanid;
 }
@@ -238,12 +241,11 @@ function caml_ml_is_binary_mode(chanid) {
 //Provides: caml_ml_close_channel
 //Requires: caml_ml_flush, caml_ml_channels
 //Requires: caml_sys_close
-//Requires: caml_ml_channels_opened
 function caml_ml_close_channel (chanid) {
   var chan = caml_ml_channels[chanid];
   if(chan.opened) {
     chan.opened = false;
-    delete caml_ml_channels_opened.delete(chanid);
+    caml_ml_channels.close(chanid);
     caml_sys_close(chan.fd);
     chan.fd = -1;
     chan.buffer = new Uint8Array(0);
