@@ -808,12 +808,12 @@
     var str = param[2];
      /*<<stdlib.ml:538:44>>*/ return str;
    }
-   function symbol$0(param, _h_){
+   function symbol$0(_h_, param){
     var
-     str2 = _h_[2],
-     fmt2 = _h_[1],
-     str1 = param[2],
-     fmt1 = param[1],
+     str2 = param[2],
+     fmt2 = param[1],
+     str1 = _h_[2],
+     fmt1 = _h_[1],
      s2 = "%," + str2;
      /*<<stdlib.ml:545:2>>*/ return [0,
              /*<<stdlib.ml:545:10>>*/ caml_call2
@@ -1114,8 +1114,8 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    ocaml_version = "5.1.1",
-    ocaml_release = [0, 5, 1, 1, 0],
+    ocaml_version = "5.2.0",
+    ocaml_release = [0, 5, 2, 0, 0],
     Stdlib = global_data.Stdlib,
      /*<<sys.ml.in:36:22>>*/ executable_name =
        /*<<sys.ml.in:36:22>>*/ runtime.caml_sys_executable_name(0),
@@ -1216,7 +1216,6 @@
    var
     runtime = globalThis.jsoo_runtime,
     cst_Obj_extension_constructor$1 = "Obj.extension_constructor",
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_obj_tag = runtime.caml_obj_tag;
     /*<<?>>*/ function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) == 1
@@ -1226,7 +1225,6 @@
    var
     global_data = runtime.caml_get_global_data(),
     Stdlib = global_data.Stdlib,
-    Assert_failure = global_data.Assert_failure,
     Stdlib_Sys = global_data.Stdlib__Sys;
    function is_block(a){
      /*<<obj.ml:26:34>>*/ return 1 - (typeof a === "number" ? 1 : 0);
@@ -1234,49 +1232,37 @@
    var
     double_field = runtime.caml_array_get,
     set_double_field = runtime.caml_array_set,
-    _a_ = [0, "obj.ml", 94, 4],
     cst_Obj_extension_constructor = cst_Obj_extension_constructor$1,
     cst_Obj_extension_constructor$0 = cst_Obj_extension_constructor$1;
-   function info(obj){
-     /*<<obj.ml:94:4>>*/ if( /*<<obj.ml:94:12>>*/ caml_obj_tag(obj) !== 247)
-      /*<<obj.ml:94:4>>*/ throw  /*<<obj.ml:94:4>>*/ caml_maybe_attach_backtrace
-            ([0, Assert_failure, _a_], 1);
-     /*<<obj.ml:95:16>>*/ var
-      /*<<obj.ml:95:16>>*/ info =
-        /*<<obj.ml:95:16>>*/ runtime.caml_obj_raw_field(obj, 1),
-     arity = 64 === Stdlib_Sys[9] ? info >> 56 : info >> 24,
-      /*<<obj.ml:89:13>>*/ start_env = info << 8 >>> 9 | 0;
-     /*<<obj.ml:90:4>>*/ return [0, arity, start_env];
-    /*<<obj.ml:95:33>>*/ }
    function of_val(x){
-     /*<<obj.ml:102:4>>*/ a:
+     /*<<obj.ml:75:4>>*/ a:
     {
      if
       (is_block(x)
-       &&  /*<<obj.ml:104:25>>*/ caml_obj_tag(x) !== 248 && 1 <= x.length - 1){var slot = x[1]; break a;}
+       &&  /*<<obj.ml:77:25>>*/ caml_obj_tag(x) !== 248 && 1 <= x.length - 1){var slot = x[1]; break a;}
      var slot = x;
     }
     a:
     {
-     if(is_block(slot) &&  /*<<obj.ml:108:28>>*/ caml_obj_tag(slot) === 248){var name = slot[1]; break a;}
+     if(is_block(slot) &&  /*<<obj.ml:81:28>>*/ caml_obj_tag(slot) === 248){var name = slot[1]; break a;}
      var
       name =
-         /*<<obj.ml:109:11>>*/ caml_call1
+         /*<<obj.ml:82:11>>*/ caml_call1
          (Stdlib[1], cst_Obj_extension_constructor$0);
     }
-    return  /*<<obj.ml:111:9>>*/ caml_obj_tag(name) === 252
+    return  /*<<obj.ml:84:9>>*/ caml_obj_tag(name) === 252
             ? slot
-            :  /*<<obj.ml:112:11>>*/ caml_call1
+            :  /*<<obj.ml:85:11>>*/ caml_call1
               (Stdlib[1], cst_Obj_extension_constructor);
-    /*<<obj.ml:112:50>>*/ }
+    /*<<obj.ml:85:50>>*/ }
    function name(slot){
-     /*<<obj.ml:115:5>>*/ return slot[1];
-    /*<<obj.ml:115:30>>*/ }
+     /*<<obj.ml:88:5>>*/ return slot[1];
+    /*<<obj.ml:88:30>>*/ }
    function id(slot){
-     /*<<obj.ml:118:5>>*/ return slot[2];
-    /*<<obj.ml:118:30>>*/ }
-    /*<<obj.ml:99:0>>*/ var
-     /*<<obj.ml:99:0>>*/ Extension_constructor = [0, of_val, name, id],
+     /*<<obj.ml:91:5>>*/ return slot[2];
+    /*<<obj.ml:91:30>>*/ }
+    /*<<obj.ml:72:0>>*/ var
+     /*<<obj.ml:72:0>>*/ Extension_constructor = [0, of_val, name, id],
     max_ephe_length = Stdlib_Sys[13] - 2 | 0,
     cst_Obj_Ephemeron_create = "Obj.Ephemeron.create",
     cst_Obj_Ephemeron_get_key = "Obj.Ephemeron.get_key",
@@ -1286,73 +1272,73 @@
     cst_Obj_Ephemeron_check_key = "Obj.Ephemeron.check_key",
     cst_Obj_Ephemeron_blit_key = "Obj.Ephemeron.blit_key";
    function create(l){
-     /*<<obj.ml:132:4>>*/ var
-     _g_ = 0 <= l ? 1 : 0,
-     _h_ = _g_ ? l <= max_ephe_length ? 1 : 0 : _g_;
-    if(1 - _h_)
-      /*<<obj.ml:133:6>>*/  /*<<obj.ml:133:6>>*/ caml_call1
+     /*<<obj.ml:105:4>>*/ var
+     _f_ = 0 <= l ? 1 : 0,
+     _g_ = _f_ ? l <= max_ephe_length ? 1 : 0 : _f_;
+    if(1 - _g_)
+      /*<<obj.ml:106:6>>*/  /*<<obj.ml:106:6>>*/ caml_call1
       (Stdlib[1], cst_Obj_Ephemeron_create);
-     /*<<obj.ml:134:4>>*/ return  /*<<obj.ml:134:4>>*/ runtime.caml_ephe_create
+     /*<<obj.ml:107:4>>*/ return  /*<<obj.ml:107:4>>*/ runtime.caml_ephe_create
             (l);
-    /*<<obj.ml:134:12>>*/ }
+    /*<<obj.ml:107:12>>*/ }
    function length(x){
-     /*<<obj.ml:136:17>>*/ return x.length - 3 | 0;
-    /*<<obj.ml:136:49>>*/ }
+     /*<<obj.ml:109:17>>*/ return x.length - 3 | 0;
+    /*<<obj.ml:109:49>>*/ }
    function raise_if_invalid_offset(e, o, msg){
-     /*<<obj.ml:139:4>>*/ var
-     _d_ = 0 <= o ? 1 : 0,
-     _e_ = _d_ ? o < length(e) ? 1 : 0 : _d_,
-     _f_ = 1 - _e_;
-    return _f_ ?  /*<<obj.ml:140:6>>*/ caml_call1(Stdlib[1], msg) : _f_;
-    /*<<obj.ml:140:21>>*/ }
+     /*<<obj.ml:112:4>>*/ var
+     _c_ = 0 <= o ? 1 : 0,
+     _d_ = _c_ ? o < length(e) ? 1 : 0 : _c_,
+     _e_ = 1 - _d_;
+    return _e_ ?  /*<<obj.ml:113:6>>*/ caml_call1(Stdlib[1], msg) : _e_;
+    /*<<obj.ml:113:21>>*/ }
    function get_key(e, o){
-     /*<<obj.ml:144:4>>*/ raise_if_invalid_offset
+     /*<<obj.ml:117:4>>*/ raise_if_invalid_offset
      (e, o, cst_Obj_Ephemeron_get_key);
-     /*<<obj.ml:145:4>>*/ return  /*<<obj.ml:145:4>>*/ runtime.caml_ephe_get_key
+     /*<<obj.ml:118:4>>*/ return  /*<<obj.ml:118:4>>*/ runtime.caml_ephe_get_key
             (e, o);
-    /*<<obj.ml:145:15>>*/ }
+    /*<<obj.ml:118:15>>*/ }
    function get_key_copy(e, o){
-     /*<<obj.ml:149:4>>*/ raise_if_invalid_offset
+     /*<<obj.ml:122:4>>*/ raise_if_invalid_offset
      (e, o, cst_Obj_Ephemeron_get_key_copy);
-     /*<<obj.ml:150:4>>*/ return  /*<<obj.ml:150:4>>*/ runtime.caml_ephe_get_key_copy
+     /*<<obj.ml:123:4>>*/ return  /*<<obj.ml:123:4>>*/ runtime.caml_ephe_get_key_copy
             (e, o);
-    /*<<obj.ml:150:20>>*/ }
+    /*<<obj.ml:123:20>>*/ }
    function set_key(e, o, x){
-     /*<<obj.ml:154:4>>*/ raise_if_invalid_offset
+     /*<<obj.ml:127:4>>*/ raise_if_invalid_offset
      (e, o, cst_Obj_Ephemeron_set_key);
-     /*<<obj.ml:155:4>>*/ return  /*<<obj.ml:155:4>>*/ runtime.caml_ephe_set_key
+     /*<<obj.ml:128:4>>*/ return  /*<<obj.ml:128:4>>*/ runtime.caml_ephe_set_key
             (e, o, x);
-    /*<<obj.ml:155:17>>*/ }
+    /*<<obj.ml:128:17>>*/ }
    function unset_key(e, o){
-     /*<<obj.ml:159:4>>*/ raise_if_invalid_offset
+     /*<<obj.ml:132:4>>*/ raise_if_invalid_offset
      (e, o, cst_Obj_Ephemeron_unset_key);
-     /*<<obj.ml:160:4>>*/ return  /*<<obj.ml:160:4>>*/ runtime.caml_ephe_unset_key
+     /*<<obj.ml:133:4>>*/ return  /*<<obj.ml:133:4>>*/ runtime.caml_ephe_unset_key
             (e, o);
-    /*<<obj.ml:160:17>>*/ }
+    /*<<obj.ml:133:17>>*/ }
    function check_key(e, o){
-     /*<<obj.ml:164:4>>*/ raise_if_invalid_offset
+     /*<<obj.ml:137:4>>*/ raise_if_invalid_offset
      (e, o, cst_Obj_Ephemeron_check_key);
-     /*<<obj.ml:165:4>>*/ return  /*<<obj.ml:165:4>>*/ runtime.caml_ephe_check_key
+     /*<<obj.ml:138:4>>*/ return  /*<<obj.ml:138:4>>*/ runtime.caml_ephe_check_key
             (e, o);
-    /*<<obj.ml:165:17>>*/ }
+    /*<<obj.ml:138:17>>*/ }
    function blit_key(e1, o1, e2, o2, l){
-     /*<<obj.ml:171:4>>*/ if
+     /*<<obj.ml:144:4>>*/ if
      (0 <= l
       &&
        0 <= o1
        && (length(e1) - l | 0) >= o1 && 0 <= o2 && (length(e2) - l | 0) >= o2){
      var
-      _b_ = 0 !== l ? 1 : 0,
-      _c_ =
-        _b_
-         ?  /*<<obj.ml:174:24>>*/ runtime.caml_ephe_blit_key
+      _a_ = 0 !== l ? 1 : 0,
+      _b_ =
+        _a_
+         ?  /*<<obj.ml:147:24>>*/ runtime.caml_ephe_blit_key
            (e1, o1, e2, o2, l)
-         : _b_;
-      /*<<obj.ml:174:24>>*/ return _c_;
+         : _a_;
+      /*<<obj.ml:147:24>>*/ return _b_;
     }
-     /*<<obj.ml:173:9>>*/ return  /*<<obj.ml:173:9>>*/ caml_call1
+     /*<<obj.ml:146:9>>*/ return  /*<<obj.ml:146:9>>*/ caml_call1
             (Stdlib[1], cst_Obj_Ephemeron_blit_key);
-    /*<<obj.ml:174:46>>*/ }
+    /*<<obj.ml:147:46>>*/ }
    var
     Stdlib_Obj =
       [0,
@@ -1377,7 +1363,6 @@
        1000,
        1001,
        1002,
-       [0, info],
        Extension_constructor,
        [0,
         create,
@@ -1395,7 +1380,7 @@
         runtime.caml_ephe_check_data,
         runtime.caml_ephe_blit_data,
         max_ephe_length]];
-   runtime.caml_register_global(13, Stdlib_Obj, "Stdlib__Obj");
+   runtime.caml_register_global(11, Stdlib_Obj, "Stdlib__Obj");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -1423,9 +1408,9 @@
     /*<<type.ml:32:57>>*/ }
    function uid(A){
      /*<<type.ml:35:4>>*/  /*<<type.ml:35:33>>*/ var
-     _b_ =  /*<<type.ml:35:33>>*/ caml_call1(Stdlib_Obj[23][1], A[1]);
+     _b_ =  /*<<type.ml:35:33>>*/ caml_call1(Stdlib_Obj[22][1], A[1]);
      /*<<type.ml:35:33>>*/ return  /*<<type.ml:35:33>>*/ caml_call1
-            (Stdlib_Obj[23][3], _b_);
+            (Stdlib_Obj[22][3], _b_);
     /*<<type.ml:35:72>>*/ }
    function provably_equal(A, B){
      /*<<type.ml:40:4>>*/ return A[1] === B[1] ? _a_ : 0;
@@ -1446,21 +1431,22 @@
     caml_atomic_exchange = runtime.caml_atomic_exchange,
     caml_atomic_fetch_add = runtime.caml_atomic_fetch_add;
    function set(r, x){
-     /*<<atomic.ml:24:14>>*/ caml_atomic_exchange(r, x);
+     /*<<atomic.ml:25:14>>*/ caml_atomic_exchange(r, x);
     return 0;
-    /*<<atomic.ml:24:35>>*/ }
+    /*<<atomic.ml:25:35>>*/ }
    function incr(r){
-     /*<<atomic.ml:25:13>>*/ caml_atomic_fetch_add(r, 1);
+     /*<<atomic.ml:26:13>>*/ caml_atomic_fetch_add(r, 1);
     return 0;
-    /*<<atomic.ml:25:39>>*/ }
+    /*<<atomic.ml:26:39>>*/ }
    function decr(r){
-     /*<<atomic.ml:26:13>>*/ caml_atomic_fetch_add(r, -1);
+     /*<<atomic.ml:27:13>>*/ caml_atomic_fetch_add(r, -1);
     return 0;
-    /*<<atomic.ml:26:42>>*/ }
+    /*<<atomic.ml:27:42>>*/ }
    var
     Stdlib_Atomic =
       [0,
        function(_a_){ /*<<atomic.ml:17:0>>*/ return [0, _a_];},
+       runtime.caml_atomic_make_contended,
        runtime.caml_atomic_load,
        set,
        caml_atomic_exchange,
@@ -1702,7 +1688,7 @@
     var next = match[2], x = match[1];
      /*<<seq.ml:33:22>>*/ return [0,
             x,
-            function(_av_){ /*<<?>>*/ return append(next, seq2, _av_);}];
+            function(_au_){ /*<<?>>*/ return append(next, seq2, _au_);}];
     /*<<seq.ml:33:48>>*/ }
    function map(f, seq, param){
      /*<<seq.ml:35:23>>*/  /*<<seq.ml:35:29>>*/ var
@@ -1711,7 +1697,7 @@
     var next = match[2], x = match[1];
      /*<<seq.ml:37:22>>*/ return [0,
              /*<<seq.ml:37:28>>*/ caml_call1(f, x),
-            function(_au_){ /*<<?>>*/ return map(f, next, _au_);}];
+            function(_at_){ /*<<?>>*/ return map(f, next, _at_);}];
     /*<<seq.ml:37:44>>*/ }
    function filter_map(f, seq, param){
      /*<<seq.ml:39:30>>*/ var seq$0 = seq;
@@ -1727,7 +1713,7 @@
       var y = match$0[1];
        /*<<seq.ml:44:20>>*/ return [0,
               y,
-              function(_at_){ /*<<?>>*/ return filter_map(f, next, _at_);}];
+              function(_as_){ /*<<?>>*/ return filter_map(f, next, _as_);}];
      }
      seq$0 = next;
     }
@@ -1742,7 +1728,7 @@
       /*<<seq.ml:49:9>>*/ if( /*<<seq.ml:49:9>>*/ caml_call1(f, x))
        /*<<seq.ml:50:11>>*/ return [0,
               x,
-              function(_as_){ /*<<?>>*/ return filter(f, next, _as_);}];
+              function(_ar_){ /*<<?>>*/ return filter(f, next, _ar_);}];
      seq$0 = next;
     }
     /*<<seq.ml:51:27>>*/ }
@@ -1752,7 +1738,7 @@
     if(! match)  /*<<seq.ml:54:11>>*/ return 0;
     var next = match[2], x = match[1];
      /*<<seq.ml:56:5>>*/ return append
-            (x, function(_ar_){ /*<<?>>*/ return concat(next, _ar_);}, 0);
+            (x, function(_aq_){ /*<<?>>*/ return concat(next, _aq_);}, 0);
     /*<<seq.ml:56:30>>*/ }
    function flat_map(f, seq, param){
      /*<<seq.ml:58:28>>*/  /*<<seq.ml:58:34>>*/ var
@@ -1761,7 +1747,7 @@
     var next = match[2], x = match[1];
      /*<<seq.ml:61:4>>*/ return append
             ( /*<<seq.ml:61:11>>*/ caml_call1(f, x),
-             function(_aq_){ /*<<?>>*/ return flat_map(f, next, _aq_);},
+             function(_ap_){ /*<<?>>*/ return flat_map(f, next, _ap_);},
              0);
     /*<<seq.ml:61:37>>*/ }
    function fold_left(f, acc, seq){
@@ -1797,7 +1783,7 @@
     var match$0 = match[1], u$0 = match$0[2], x = match$0[1];
      /*<<seq.ml:82:20>>*/ return [0,
             x,
-            function(_ap_){ /*<<?>>*/ return unfold(f, u$0, _ap_);}];
+            function(_ao_){ /*<<?>>*/ return unfold(f, u$0, _ao_);}];
     /*<<seq.ml:82:41>>*/ }
    function is_empty(xs){
      /*<<seq.ml:85:2>>*/ return  /*<<seq.ml:85:8>>*/ caml_call1(xs, 0) ? 0 : 1;
@@ -1861,8 +1847,8 @@
       /*<<seq.ml:137:6>>*/ var
       xs$1 = match[2],
       x = match[1],
-       /*<<seq.ml:137:6>>*/ _ao_ =  /*<<seq.ml:137:6>>*/ caml_call1(p, x);
-      /*<<seq.ml:137:6>>*/ if(! _ao_)  /*<<seq.ml:137:6>>*/ return _ao_;
+       /*<<seq.ml:137:6>>*/ _an_ =  /*<<seq.ml:137:6>>*/ caml_call1(p, x);
+      /*<<seq.ml:137:6>>*/ if(! _an_)  /*<<seq.ml:137:6>>*/ return _an_;
      xs$0 = xs$1;
     }
     /*<<seq.ml:137:25>>*/ }
@@ -1875,8 +1861,8 @@
       /*<<seq.ml:144:6>>*/ var
       xs$1 = match[2],
       x = match[1],
-       /*<<seq.ml:144:6>>*/ _an_ =  /*<<seq.ml:144:6>>*/ caml_call1(p, x);
-      /*<<seq.ml:144:6>>*/ if(_an_)  /*<<seq.ml:144:6>>*/ return _an_;
+       /*<<seq.ml:144:6>>*/ _am_ =  /*<<seq.ml:144:6>>*/ caml_call1(p, x);
+      /*<<seq.ml:144:6>>*/ if(_am_)  /*<<seq.ml:144:6>>*/ return _am_;
      xs$0 = xs$1;
     }
     /*<<seq.ml:144:24>>*/ }
@@ -1992,8 +1978,8 @@
       /*<<seq.ml:224:10>>*/ var
       ys$1 = match$0[2],
       y = match$0[1],
-       /*<<seq.ml:224:10>>*/ _am_ =  /*<<seq.ml:224:10>>*/ caml_call2(f, x, y);
-      /*<<seq.ml:224:10>>*/ if(! _am_)  /*<<seq.ml:224:10>>*/ return _am_;
+       /*<<seq.ml:224:10>>*/ _al_ =  /*<<seq.ml:224:10>>*/ caml_call2(f, x, y);
+      /*<<seq.ml:224:10>>*/ if(! _al_)  /*<<seq.ml:224:10>>*/ return _al_;
      xs$0 = xs$1;
      ys$0 = ys$1;
     }
@@ -2013,8 +1999,8 @@
       /*<<seq.ml:235:10>>*/ var
       ys$1 = match$0[2],
       y = match$0[1],
-       /*<<seq.ml:235:10>>*/ _al_ =  /*<<seq.ml:235:10>>*/ caml_call2(f, x, y);
-      /*<<seq.ml:235:10>>*/ if(_al_)  /*<<seq.ml:235:10>>*/ return _al_;
+       /*<<seq.ml:235:10>>*/ _ak_ =  /*<<seq.ml:235:10>>*/ caml_call2(f, x, y);
+      /*<<seq.ml:235:10>>*/ if(_ak_)  /*<<seq.ml:235:10>>*/ return _ak_;
      xs$0 = xs$1;
      ys$0 = ys$1;
     }
@@ -2033,9 +2019,9 @@
         y = match$0[1],
         xs$1 = match[2],
         x = match[1],
-         /*<<seq.ml:242:6>>*/ _ak_ =
+         /*<<seq.ml:242:6>>*/ _aj_ =
            /*<<seq.ml:242:6>>*/ caml_call2(eq, x, y);
-        /*<<seq.ml:242:6>>*/ if(! _ak_)  /*<<seq.ml:242:6>>*/ return _ak_;
+        /*<<seq.ml:242:6>>*/ if(! _aj_)  /*<<seq.ml:242:6>>*/ return _aj_;
        xs$0 = xs$1;
        ys$0 = ys$1;
        continue;
@@ -2066,33 +2052,33 @@
     /*<<seq.ml:257:8>>*/ }
    function init_aux(f, i, j, param){
      /*<<seq.ml:264:2>>*/ if(i >= j)  /*<<seq.ml:268:4>>*/ return 0;
-    var _ai_ = i + 1 | 0;
+    var _ah_ = i + 1 | 0;
      /*<<seq.ml:264:16>>*/ return [0,
              /*<<seq.ml:265:10>>*/ caml_call1(f, i),
-            function(_aj_){ /*<<?>>*/ return init_aux(f, _ai_, j, _aj_);}];
+            function(_ai_){ /*<<?>>*/ return init_aux(f, _ah_, j, _ai_);}];
     /*<<seq.ml:268:7>>*/ }
    function init(n, f){
      /*<<seq.ml:271:2>>*/ if(0 > n)
       /*<<seq.ml:272:4>>*/ return  /*<<seq.ml:272:4>>*/ caml_call1
              (Stdlib[1], cst_Seq_init);
-    var _ag_ = 0;
-     /*<<seq.ml:274:4>>*/ return function(_ah_){
-      /*<<?>>*/ return init_aux(f, _ag_, n, _ah_);};
+    var _af_ = 0;
+     /*<<seq.ml:274:4>>*/ return function(_ag_){
+      /*<<?>>*/ return init_aux(f, _af_, n, _ag_);};
     /*<<seq.ml:274:18>>*/ }
    function repeat(x, param){
      /*<<seq.ml:277:2>>*/ return [0,
             x,
-            function(_af_){ /*<<?>>*/ return repeat(x, _af_);}];
+            function(_ae_){ /*<<?>>*/ return repeat(x, _ae_);}];
     /*<<seq.ml:277:20>>*/ }
    function forever(f, param){
      /*<<seq.ml:280:2>>*/ return [0,
              /*<<seq.ml:280:8>>*/ caml_call1(f, 0),
-            function(_ae_){ /*<<?>>*/ return forever(f, _ae_);}];
+            function(_ad_){ /*<<?>>*/ return forever(f, _ad_);}];
     /*<<seq.ml:280:23>>*/ }
    function cycle_nonempty(xs, param){
      /*<<seq.ml:287:2>>*/ return append
             (xs,
-             function(_ad_){ /*<<?>>*/ return cycle_nonempty(xs, _ad_);},
+             function(_ac_){ /*<<?>>*/ return cycle_nonempty(xs, _ac_);},
              0);
     /*<<seq.ml:287:34>>*/ }
    function cycle(xs, param){
@@ -2100,40 +2086,40 @@
      match =  /*<<seq.ml:295:8>>*/ caml_call1(xs, 0);
     if(! match)  /*<<seq.ml:297:6>>*/ return 0;
     var xs$0 = match[2], x = match[1];
-     /*<<seq.ml:299:26>>*/ function _aa_(_ac_){
-      /*<<?>>*/ return cycle_nonempty(xs, _ac_);
+     /*<<seq.ml:299:26>>*/ function _$_(_ab_){
+      /*<<?>>*/ return cycle_nonempty(xs, _ab_);
     }
      /*<<seq.ml:299:6>>*/ return [0,
             x,
-            function(_ab_){ /*<<?>>*/ return append(xs$0, _aa_, _ab_);}];
+            function(_aa_){ /*<<?>>*/ return append(xs$0, _$_, _aa_);}];
     /*<<seq.ml:299:46>>*/ }
    function iterate1(f, x, param){
      /*<<seq.ml:306:2>>*/  /*<<seq.ml:306:10>>*/ var
      y =  /*<<seq.ml:306:10>>*/ caml_call1(f, x);
      /*<<seq.ml:307:2>>*/ return [0,
             y,
-            function(_$_){ /*<<?>>*/ return iterate1(f, y, _$_);}];
+            function(___){ /*<<?>>*/ return iterate1(f, y, ___);}];
     /*<<seq.ml:307:24>>*/ }
    function iterate(f, x){
-     /*<<seq.ml:319:9>>*/ function next(___){
-      /*<<?>>*/ return iterate1(f, x, ___);
+     /*<<seq.ml:319:9>>*/ function next(_Z_){
+      /*<<?>>*/ return iterate1(f, x, _Z_);
     }
-     /*<<seq.ml:319:9>>*/ return function(_Z_){
+     /*<<seq.ml:319:9>>*/ return function(_Y_){
       /*<<seq.ml:28:21>>*/ return [0, x, next];};
     /*<<seq.ml:319:23>>*/ }
    function mapi_aux(f, i, xs, param){
      /*<<seq.ml:324:2>>*/  /*<<seq.ml:324:8>>*/ var
      match =  /*<<seq.ml:324:8>>*/ caml_call1(xs, 0);
     if(! match)  /*<<seq.ml:326:6>>*/ return 0;
-    var xs$0 = match[2], x = match[1],  /*<<seq.ml:328:6>>*/ _X_ = i + 1 | 0;
+    var xs$0 = match[2], x = match[1],  /*<<seq.ml:328:6>>*/ _W_ = i + 1 | 0;
      /*<<seq.ml:328:6>>*/ return [0,
              /*<<seq.ml:328:12>>*/ caml_call2(f, i, x),
-            function(_Y_){ /*<<?>>*/ return mapi_aux(f, _X_, xs$0, _Y_);}];
+            function(_X_){ /*<<?>>*/ return mapi_aux(f, _W_, xs$0, _X_);}];
     /*<<seq.ml:328:39>>*/ }
    function mapi(f, xs){
-     /*<<seq.ml:331:2>>*/ var _V_ = 0;
-     /*<<seq.ml:331:2>>*/ return function(_W_){
-      /*<<?>>*/ return mapi_aux(f, _V_, xs, _W_);};
+     /*<<seq.ml:331:2>>*/ var _U_ = 0;
+     /*<<seq.ml:331:2>>*/ return function(_V_){
+      /*<<?>>*/ return mapi_aux(f, _U_, xs, _V_);};
     /*<<seq.ml:331:17>>*/ }
    function tail_scan(f, s, xs, param){
      /*<<seq.ml:340:2>>*/  /*<<seq.ml:340:8>>*/ var
@@ -2145,13 +2131,13 @@
       /*<<seq.ml:344:14>>*/ s$0 =  /*<<seq.ml:344:14>>*/ caml_call2(f, s, x);
      /*<<seq.ml:345:6>>*/ return [0,
             s$0,
-            function(_U_){ /*<<?>>*/ return tail_scan(f, s$0, xs$0, _U_);}];
+            function(_T_){ /*<<?>>*/ return tail_scan(f, s$0, xs$0, _T_);}];
     /*<<seq.ml:345:32>>*/ }
    function scan(f, s, xs){
-     /*<<seq.ml:348:9>>*/ function next(_T_){
-      /*<<?>>*/ return tail_scan(f, s, xs, _T_);
+     /*<<seq.ml:348:9>>*/ function next(_S_){
+      /*<<?>>*/ return tail_scan(f, s, xs, _S_);
     }
-     /*<<seq.ml:348:9>>*/ return function(_S_){
+     /*<<seq.ml:348:9>>*/ return function(_R_){
       /*<<seq.ml:28:21>>*/ return [0, s, next];};
     /*<<seq.ml:348:27>>*/ }
    function take_aux(n, xs){
@@ -2204,7 +2190,7 @@
      /*<<seq.ml:399:9>>*/ return  /*<<seq.ml:399:9>>*/ caml_call1(p, x)
             ? [0,
               x,
-              function(_R_){ /*<<?>>*/ return take_while(p, xs$0, _R_);}]
+              function(_Q_){ /*<<?>>*/ return take_while(p, xs$0, _Q_);}]
             : 0;
     /*<<seq.ml:399:52>>*/ }
    function drop_while(p, xs, param){
@@ -2226,17 +2212,17 @@
     var
      xs$0 = match[2],
      x = match[1],
-      /*<<seq.ml:413:64>>*/ _K_ =  /*<<seq.ml:413:64>>*/ caml_call1(eq, x);
-     /*<<seq.ml:413:52>>*/ function _L_(_Q_){
-      /*<<?>>*/ return drop_while(_K_, xs$0, _Q_);
+      /*<<seq.ml:413:64>>*/ _J_ =  /*<<seq.ml:413:64>>*/ caml_call1(eq, x);
+     /*<<seq.ml:413:52>>*/ function _K_(_P_){
+      /*<<?>>*/ return drop_while(_J_, xs$0, _P_);
     }
-     /*<<seq.ml:413:31>>*/ var _M_ =  /*<<seq.ml:413:31>>*/ caml_call1(eq, x);
-     /*<<seq.ml:413:19>>*/ function next(_P_){
-      /*<<?>>*/ return take_while(_M_, xs$0, _P_);
+     /*<<seq.ml:413:31>>*/ var _L_ =  /*<<seq.ml:413:31>>*/ caml_call1(eq, x);
+     /*<<seq.ml:413:19>>*/ function next(_O_){
+      /*<<?>>*/ return take_while(_L_, xs$0, _O_);
     }
      /*<<seq.ml:413:6>>*/ return [0,
-            function(_O_){ /*<<seq.ml:28:21>>*/ return [0, x, next];},
-            function(_N_){ /*<<?>>*/ return group(eq, _L_, _N_);}];
+            function(_N_){ /*<<seq.ml:28:21>>*/ return [0, x, next];},
+            function(_M_){ /*<<?>>*/ return group(eq, _K_, _M_);}];
     /*<<seq.ml:413:75>>*/ }
     /*<<seq.ml:415:0>>*/ var
      /*<<seq.ml:415:0>>*/ Forced_twice =
@@ -2257,12 +2243,12 @@
      /*<<seq.ml:464:28>>*/ }
      /*<<seq.ml:434:14>>*/  /*<<seq.ml:434:14>>*/ var
      s =  /*<<seq.ml:434:14>>*/ caml_call1(to_lazy, s$0);
-     /*<<seq.ml:434:14>>*/ return function(_J_){
-     var _I_ = runtime.caml_obj_tag(s);
+     /*<<seq.ml:429:4>>*/ return function(param){
+      /*<<seq.ml:429:14>>*/ var _I_ = runtime.caml_obj_tag(s);
      if(250 === _I_) return s[1];
-     if(246 !== _I_ && 244 !== _I_)  /*<<seq.ml:429:14>>*/ return s;
-      /*<<seq.ml:429:14>>*/ return  /*<<seq.ml:429:14>>*/ caml_call1
-             (CamlinternalLazy[2], s);};
+     if(246 !== _I_ && 244 !== _I_)  /*<<seq.ml:429:4>>*/ return s;
+      /*<<seq.ml:429:4>>*/ return  /*<<seq.ml:429:4>>*/ caml_call1
+             (CamlinternalLazy[2], s); /*<<seq.ml:429:26>>*/ };
     /*<<seq.ml:465:3>>*/ }
    function once(xs){
     function f(param){
@@ -2276,7 +2262,7 @@
      action =  /*<<seq.ml:448:17>>*/ caml_call1(Stdlib_Atomic[1], f);
      /*<<seq.ml:449:4>>*/ return function(param){
       /*<<seq.ml:453:6>>*/  /*<<seq.ml:453:14>>*/ var
-      f =  /*<<seq.ml:453:14>>*/ caml_call2(Stdlib_Atomic[4], action, failure);
+      f =  /*<<seq.ml:453:14>>*/ caml_call2(Stdlib_Atomic[5], action, failure);
       /*<<seq.ml:454:6>>*/ return  /*<<seq.ml:454:6>>*/ caml_call1(f, 0); /*<<seq.ml:454:9>>*/ };
     /*<<seq.ml:474:3>>*/ }
    function zip(xs, ys, param){
@@ -7042,10 +7028,10 @@
 (function(globalThis){
    "use strict";
    var runtime = globalThis.jsoo_runtime, cst = "()";
-   function equal(param, _b_){
+   function equal(_b_, param){
      /*<<unit.ml:18:18>>*/ return 1;
     /*<<unit.ml:18:22>>*/ }
-   function compare(param, _a_){
+   function compare(_a_, param){
      /*<<unit.ml:19:20>>*/ return 0;
     /*<<unit.ml:19:21>>*/ }
    function to_string(param){
@@ -7170,6 +7156,8 @@
     Stdlib = global_data.Stdlib,
      /*<<array.ml:37:20>>*/ Floatarray = [0],
     cst_Array_init = "Array.init",
+    cst_Array_make_matrix = "Array.make_matrix",
+    cst_Array_init_matrix = "Array.init_matrix",
     cst_Array_sub = "Array.sub",
     cst_Array_fill = "Array.fill",
     cst_Array_blit = "Array.blit",
@@ -7185,599 +7173,643 @@
     if(0 > l)
       /*<<array.ml:49:16>>*/ return  /*<<array.ml:49:16>>*/ caml_call1
              (Stdlib[1], cst_Array_init);
-     /*<<array.ml:53:13>>*/ var
-      /*<<array.ml:53:13>>*/ res =
-        /*<<array.ml:53:13>>*/ caml_make_vect
-        (l,  /*<<array.ml:53:22>>*/ caml_call1(f, 0)),
-      /*<<array.ml:54:3>>*/ _aw_ = l - 1 | 0,
-      /*<<array.ml:53:13>>*/ _av_ = 1;
-    if(_aw_ >= 1){
-     var i = _av_;
+     /*<<array.ml:54:13>>*/ var
+      /*<<array.ml:54:13>>*/ res =
+        /*<<array.ml:54:13>>*/ caml_make_vect
+        (l,  /*<<array.ml:54:22>>*/ caml_call1(f, 0)),
+      /*<<array.ml:55:3>>*/ _aE_ = l - 1 | 0,
+      /*<<array.ml:54:13>>*/ _aD_ = 1;
+    if(_aE_ >= 1){
+     var i = _aD_;
      for(;;){
-       /*<<array.ml:55:5>>*/ res[1 + i] =
-        /*<<array.ml:55:22>>*/ caml_call1(f, i);
-       /*<<array.ml:55:5>>*/  /*<<array.ml:55:5>>*/ var _ax_ = i + 1 | 0;
-      if(_aw_ === i) break;
-      i = _ax_;
+       /*<<array.ml:56:5>>*/ res[1 + i] =
+        /*<<array.ml:56:22>>*/ caml_call1(f, i);
+       /*<<array.ml:56:5>>*/  /*<<array.ml:56:5>>*/ var _aF_ = i + 1 | 0;
+      if(_aE_ === i) break;
+      i = _aF_;
      }
     }
-     /*<<array.ml:57:3>>*/ return res;
-    /*<<array.ml:57:6>>*/ }
+     /*<<array.ml:58:3>>*/ return res;
+    /*<<array.ml:58:6>>*/ }
    function make_matrix(sx, sy, init){
-     /*<<array.ml:60:2>>*/ var
-      /*<<array.ml:60:12>>*/ res =
-        /*<<array.ml:60:12>>*/ caml_make_vect(sx, [0]),
-      /*<<array.ml:61:2>>*/ _at_ = sx - 1 | 0,
-      /*<<array.ml:60:12>>*/ _as_ = 0;
-    if(_at_ >= 0){
-     var x = _as_;
-     for(;;){
-      res[1 + x] =  /*<<array.ml:62:21>>*/ caml_make_vect(sy, init);
-       /*<<array.ml:61:2>>*/  /*<<array.ml:61:2>>*/ var _au_ = x + 1 | 0;
-      if(_at_ === x) break;
-      x = _au_;
+     /*<<array.ml:62:2>>*/ if(sy < 0)
+      /*<<array.ml:62:17>>*/  /*<<array.ml:62:17>>*/ caml_call1
+      (Stdlib[1], cst_Array_make_matrix);
+     /*<<array.ml:63:12>>*/  /*<<array.ml:63:12>>*/ var
+     res =  /*<<array.ml:63:12>>*/ caml_make_vect(sx, [0]);
+    if(0 < sy){
+      /*<<array.ml:64:17>>*/ var
+      _aB_ = sx - 1 | 0,
+       /*<<array.ml:64:17>>*/ _aA_ = 0;
+     if(_aB_ >= 0){
+      var x = _aA_;
+      for(;;){
+       res[1 + x] =  /*<<array.ml:66:23>>*/ caml_make_vect(sy, init);
+        /*<<array.ml:64:17>>*/  /*<<array.ml:64:17>>*/ var _aC_ = x + 1 | 0;
+       if(_aB_ === x) break;
+       x = _aC_;
+      }
      }
     }
-     /*<<array.ml:64:2>>*/ return res;
-    /*<<array.ml:64:5>>*/ }
+     /*<<array.ml:69:2>>*/ return res;
+    /*<<array.ml:69:5>>*/ }
+   function init_matrix(sx, sy, f){
+     /*<<array.ml:73:2>>*/ if(sy < 0)
+      /*<<array.ml:73:17>>*/  /*<<array.ml:73:17>>*/ caml_call1
+      (Stdlib[1], cst_Array_init_matrix);
+     /*<<array.ml:74:12>>*/  /*<<array.ml:74:12>>*/ var
+     res =  /*<<array.ml:74:12>>*/ caml_make_vect(sx, [0]);
+    if(0 < sy){
+      /*<<array.ml:76:17>>*/ var
+      _av_ = sx - 1 | 0,
+       /*<<array.ml:76:17>>*/ _au_ = 0;
+     if(_av_ >= 0){
+      var x = _au_;
+      for(;;){
+        /*<<array.ml:78:16>>*/ var
+         /*<<array.ml:78:16>>*/ row =
+           /*<<array.ml:78:16>>*/ caml_make_vect
+           (sy,  /*<<array.ml:78:26>>*/ caml_call2(f, x, 0)),
+         /*<<array.ml:79:6>>*/ _ax_ = sy - 1 | 0,
+         /*<<array.ml:78:16>>*/ _aw_ = 1;
+       if(_ax_ >= 1){
+        var y = _aw_;
+        for(;;){
+          /*<<array.ml:80:8>>*/ row[1 + y] =
+           /*<<array.ml:80:25>>*/ caml_call2(f, x, y);
+          /*<<array.ml:80:8>>*/  /*<<array.ml:80:8>>*/ var _az_ = y + 1 | 0;
+         if(_ax_ === y) break;
+         y = _az_;
+        }
+       }
+       res[1 + x] = row;
+        /*<<array.ml:76:17>>*/  /*<<array.ml:76:17>>*/ var _ay_ = x + 1 | 0;
+       if(_av_ === x) break;
+       x = _ay_;
+      }
+     }
+    }
+     /*<<array.ml:85:2>>*/ return res;
+    /*<<array.ml:85:5>>*/ }
    function copy(a){
-     /*<<array.ml:67:2>>*/ var l = a.length - 1;
-     /*<<array.ml:67:22>>*/ return 0 === l
+     /*<<array.ml:88:2>>*/ var l = a.length - 1;
+     /*<<array.ml:88:22>>*/ return 0 === l
             ? [0]
-            :  /*<<array.ml:67:46>>*/ caml_array_sub(a, 0, l);
-    /*<<array.ml:67:62>>*/ }
+            :  /*<<array.ml:88:46>>*/ caml_array_sub(a, 0, l);
+    /*<<array.ml:88:62>>*/ }
    function append(a1, a2){
-     /*<<array.ml:70:2>>*/ var l1 = a1.length - 1;
-     /*<<array.ml:71:2>>*/ return 0 === l1
+     /*<<array.ml:91:2>>*/ var l1 = a1.length - 1;
+     /*<<array.ml:92:2>>*/ return 0 === l1
             ? copy(a2)
             : 0
               === a2.length - 1
-              ?  /*<<array.ml:72:29>>*/ caml_array_sub(a1, 0, l1)
-              :  /*<<array.ml:73:7>>*/ runtime.caml_array_append(a1, a2);
-    /*<<array.ml:73:24>>*/ }
+              ?  /*<<array.ml:93:29>>*/ caml_array_sub(a1, 0, l1)
+              :  /*<<array.ml:94:7>>*/ runtime.caml_array_append(a1, a2);
+    /*<<array.ml:94:24>>*/ }
    function sub(a, ofs, len){
-     /*<<array.ml:76:2>>*/ if
+     /*<<array.ml:97:2>>*/ if
      (0 <= ofs && 0 <= len && (a.length - 1 - len | 0) >= ofs)
-      /*<<array.ml:78:7>>*/ return  /*<<array.ml:78:7>>*/ caml_array_sub
+      /*<<array.ml:99:7>>*/ return  /*<<array.ml:99:7>>*/ caml_array_sub
              (a, ofs, len);
-     /*<<array.ml:77:7>>*/ return  /*<<array.ml:77:7>>*/ caml_call1
+     /*<<array.ml:98:7>>*/ return  /*<<array.ml:98:7>>*/ caml_call1
             (Stdlib[1], cst_Array_sub);
-    /*<<array.ml:78:27>>*/ }
+    /*<<array.ml:99:27>>*/ }
    function fill(a, ofs, len, v){
-     /*<<array.ml:81:2>>*/ if
+     /*<<array.ml:102:2>>*/ if
      (0 <= ofs && 0 <= len && (a.length - 1 - len | 0) >= ofs)
-      /*<<array.ml:83:7>>*/ return  /*<<array.ml:83:7>>*/ runtime.caml_array_fill
+      /*<<array.ml:104:7>>*/ return  /*<<array.ml:104:7>>*/ runtime.caml_array_fill
              (a, ofs, len, v);
-     /*<<array.ml:82:7>>*/ return  /*<<array.ml:82:7>>*/ caml_call1
+     /*<<array.ml:103:7>>*/ return  /*<<array.ml:103:7>>*/ caml_call1
             (Stdlib[1], cst_Array_fill);
-    /*<<array.ml:83:30>>*/ }
+    /*<<array.ml:104:30>>*/ }
    function blit(a1, ofs1, a2, ofs2, len){
-     /*<<array.ml:86:2>>*/ if
+     /*<<array.ml:107:2>>*/ if
      (0 <= len
       &&
        0 <= ofs1
        &&
         (a1.length - 1 - len | 0) >= ofs1
         && 0 <= ofs2 && (a2.length - 1 - len | 0) >= ofs2)
-      /*<<array.ml:89:7>>*/ return  /*<<array.ml:89:7>>*/ runtime.caml_array_blit
+      /*<<array.ml:110:7>>*/ return  /*<<array.ml:110:7>>*/ runtime.caml_array_blit
              (a1, ofs1, a2, ofs2, len);
-     /*<<array.ml:88:7>>*/ return  /*<<array.ml:88:7>>*/ caml_call1
+     /*<<array.ml:109:7>>*/ return  /*<<array.ml:109:7>>*/ caml_call1
             (Stdlib[1], cst_Array_blit);
-    /*<<array.ml:89:38>>*/ }
+    /*<<array.ml:110:38>>*/ }
    function iter(f, a){
-     /*<<array.ml:92:2>>*/ var
-     _aq_ = a.length - 2 | 0,
-      /*<<array.ml:92:2>>*/ _ap_ = 0;
-    if(_aq_ >= 0){
-     var i = _ap_;
+     /*<<array.ml:113:2>>*/ var
+     _as_ = a.length - 2 | 0,
+      /*<<array.ml:113:2>>*/ _ar_ = 0;
+    if(_as_ >= 0){
+     var i = _ar_;
      for(;;){
-       /*<<array.ml:92:31>>*/  /*<<array.ml:92:31>>*/ caml_call1(f, a[1 + i]);
-       /*<<array.ml:92:31>>*/  /*<<array.ml:92:31>>*/ var _ar_ = i + 1 | 0;
-      if(_aq_ === i) break;
-      i = _ar_;
+       /*<<array.ml:113:31>>*/  /*<<array.ml:113:31>>*/ caml_call1
+       (f, a[1 + i]);
+       /*<<array.ml:113:31>>*/  /*<<array.ml:113:31>>*/ var _at_ = i + 1 | 0;
+      if(_as_ === i) break;
+      i = _at_;
      }
     }
     return 0;
-    /*<<array.ml:92:53>>*/ }
+    /*<<array.ml:113:53>>*/ }
    function iter2(f, a, b){
-     /*<<array.ml:95:2>>*/ if(a.length - 1 !== b.length - 1)
-      /*<<array.ml:96:4>>*/ return  /*<<array.ml:96:4>>*/ caml_call1
+     /*<<array.ml:116:2>>*/ if(a.length - 1 !== b.length - 1)
+      /*<<array.ml:117:4>>*/ return  /*<<array.ml:117:4>>*/ caml_call1
              (Stdlib[1], cst_Array_iter2_arrays_must_ha);
-     /*<<array.ml:98:4>>*/ var
-     _an_ = a.length - 2 | 0,
-      /*<<array.ml:98:4>>*/ _am_ = 0;
-    if(_an_ >= 0){
-     var i = _am_;
+     /*<<array.ml:119:4>>*/ var
+     _ap_ = a.length - 2 | 0,
+      /*<<array.ml:119:4>>*/ _ao_ = 0;
+    if(_ap_ >= 0){
+     var i = _ao_;
      for(;;){
-       /*<<array.ml:98:33>>*/  /*<<array.ml:98:33>>*/ caml_call2
+       /*<<array.ml:119:33>>*/  /*<<array.ml:119:33>>*/ caml_call2
        (f, a[1 + i], b[1 + i]);
-       /*<<array.ml:98:33>>*/  /*<<array.ml:98:33>>*/ var _ao_ = i + 1 | 0;
-      if(_an_ === i) break;
-      i = _ao_;
+       /*<<array.ml:119:33>>*/  /*<<array.ml:119:33>>*/ var _aq_ = i + 1 | 0;
+      if(_ap_ === i) break;
+      i = _aq_;
      }
     }
     return 0;
-    /*<<array.ml:98:73>>*/ }
+    /*<<array.ml:119:73>>*/ }
    function map(f, a){
-     /*<<array.ml:101:2>>*/ var l = a.length - 1;
-     /*<<array.ml:102:2>>*/ if(0 === l)  /*<<array.ml:102:16>>*/ return [0];
-     /*<<array.ml:103:12>>*/ var
-      /*<<array.ml:103:12>>*/ r =
-        /*<<array.ml:103:12>>*/ caml_make_vect
-        (l,  /*<<array.ml:103:21>>*/ caml_call1(f, a[1])),
-      /*<<array.ml:104:4>>*/ _ak_ = l - 1 | 0,
-      /*<<array.ml:103:12>>*/ _aj_ = 1;
-    if(_ak_ >= 1){
-     var i = _aj_;
+     /*<<array.ml:122:2>>*/ var l = a.length - 1;
+     /*<<array.ml:123:2>>*/ if(0 === l)  /*<<array.ml:123:16>>*/ return [0];
+     /*<<array.ml:124:12>>*/ var
+      /*<<array.ml:124:12>>*/ r =
+        /*<<array.ml:124:12>>*/ caml_make_vect
+        (l,  /*<<array.ml:124:21>>*/ caml_call1(f, a[1])),
+      /*<<array.ml:125:4>>*/ _am_ = l - 1 | 0,
+      /*<<array.ml:124:12>>*/ _al_ = 1;
+    if(_am_ >= 1){
+     var i = _al_;
      for(;;){
-       /*<<array.ml:105:6>>*/ r[1 + i] =
-        /*<<array.ml:105:21>>*/ caml_call1(f, a[1 + i]);
-       /*<<array.ml:105:6>>*/  /*<<array.ml:105:6>>*/ var _al_ = i + 1 | 0;
-      if(_ak_ === i) break;
-      i = _al_;
+       /*<<array.ml:126:6>>*/ r[1 + i] =
+        /*<<array.ml:126:21>>*/ caml_call1(f, a[1 + i]);
+       /*<<array.ml:126:6>>*/  /*<<array.ml:126:6>>*/ var _an_ = i + 1 | 0;
+      if(_am_ === i) break;
+      i = _an_;
      }
     }
-     /*<<array.ml:107:4>>*/ return r;
-    /*<<array.ml:108:5>>*/ }
+     /*<<array.ml:128:4>>*/ return r;
+    /*<<array.ml:129:5>>*/ }
    function map_inplace(f, a){
-     /*<<array.ml:111:2>>*/ var
-     _ah_ = a.length - 2 | 0,
-      /*<<array.ml:111:2>>*/ _ag_ = 0;
-    if(_ah_ >= 0){
-     var i = _ag_;
+     /*<<array.ml:132:2>>*/ var
+     _aj_ = a.length - 2 | 0,
+      /*<<array.ml:132:2>>*/ _ai_ = 0;
+    if(_aj_ >= 0){
+     var i = _ai_;
      for(;;){
-       /*<<array.ml:112:4>>*/ a[1 + i] =
-        /*<<array.ml:112:19>>*/ caml_call1(f, a[1 + i]);
-       /*<<array.ml:112:4>>*/  /*<<array.ml:112:4>>*/ var _ai_ = i + 1 | 0;
-      if(_ah_ === i) break;
-      i = _ai_;
+       /*<<array.ml:133:4>>*/ a[1 + i] =
+        /*<<array.ml:133:19>>*/ caml_call1(f, a[1 + i]);
+       /*<<array.ml:133:4>>*/  /*<<array.ml:133:4>>*/ var _ak_ = i + 1 | 0;
+      if(_aj_ === i) break;
+      i = _ak_;
      }
     }
     return 0;
-    /*<<array.ml:113:6>>*/ }
+    /*<<array.ml:134:6>>*/ }
    function mapi_inplace(f, a){
-     /*<<array.ml:116:2>>*/ var
-     _ae_ = a.length - 2 | 0,
-      /*<<array.ml:116:2>>*/ _ad_ = 0;
-    if(_ae_ >= 0){
-     var i = _ad_;
+     /*<<array.ml:137:2>>*/ var
+     _ag_ = a.length - 2 | 0,
+      /*<<array.ml:137:2>>*/ _af_ = 0;
+    if(_ag_ >= 0){
+     var i = _af_;
      for(;;){
-       /*<<array.ml:117:4>>*/ a[1 + i] =
-        /*<<array.ml:117:19>>*/ caml_call2(f, i, a[1 + i]);
-       /*<<array.ml:117:4>>*/  /*<<array.ml:117:4>>*/ var _af_ = i + 1 | 0;
-      if(_ae_ === i) break;
-      i = _af_;
+       /*<<array.ml:138:4>>*/ a[1 + i] =
+        /*<<array.ml:138:19>>*/ caml_call2(f, i, a[1 + i]);
+       /*<<array.ml:138:4>>*/  /*<<array.ml:138:4>>*/ var _ah_ = i + 1 | 0;
+      if(_ag_ === i) break;
+      i = _ah_;
      }
     }
     return 0;
-    /*<<array.ml:118:6>>*/ }
+    /*<<array.ml:139:6>>*/ }
    function map2(f, a, b){
-     /*<<array.ml:121:2>>*/ var
+     /*<<array.ml:142:2>>*/ var
      la = a.length - 1,
-      /*<<array.ml:122:2>>*/ lb = b.length - 1;
+      /*<<array.ml:143:2>>*/ lb = b.length - 1;
     if(la !== lb)
-      /*<<array.ml:124:4>>*/ return  /*<<array.ml:124:4>>*/ caml_call1
+      /*<<array.ml:145:4>>*/ return  /*<<array.ml:145:4>>*/ caml_call1
              (Stdlib[1], cst_Array_map2_arrays_must_hav);
-    if(0 === la)  /*<<array.ml:126:19>>*/ return [0];
-     /*<<array.ml:127:14>>*/ var
-      /*<<array.ml:127:14>>*/ r =
-        /*<<array.ml:127:14>>*/ caml_make_vect
-        (la,  /*<<array.ml:127:24>>*/ caml_call2(f, a[1], b[1])),
-      /*<<array.ml:128:6>>*/ _ab_ = la - 1 | 0,
-      /*<<array.ml:127:14>>*/ _aa_ = 1;
-    if(_ab_ >= 1){
-     var i = _aa_;
+    if(0 === la)  /*<<array.ml:147:19>>*/ return [0];
+     /*<<array.ml:148:14>>*/ var
+      /*<<array.ml:148:14>>*/ r =
+        /*<<array.ml:148:14>>*/ caml_make_vect
+        (la,  /*<<array.ml:148:24>>*/ caml_call2(f, a[1], b[1])),
+      /*<<array.ml:149:6>>*/ _ad_ = la - 1 | 0,
+      /*<<array.ml:148:14>>*/ _ac_ = 1;
+    if(_ad_ >= 1){
+     var i = _ac_;
      for(;;){
-       /*<<array.ml:129:8>>*/ r[1 + i] =
-        /*<<array.ml:129:23>>*/ caml_call2(f, a[1 + i], b[1 + i]);
-       /*<<array.ml:129:8>>*/  /*<<array.ml:129:8>>*/ var _ac_ = i + 1 | 0;
-      if(_ab_ === i) break;
-      i = _ac_;
+       /*<<array.ml:150:8>>*/ r[1 + i] =
+        /*<<array.ml:150:23>>*/ caml_call2(f, a[1 + i], b[1 + i]);
+       /*<<array.ml:150:8>>*/  /*<<array.ml:150:8>>*/ var _ae_ = i + 1 | 0;
+      if(_ad_ === i) break;
+      i = _ae_;
      }
     }
-     /*<<array.ml:131:6>>*/ return r;
-    /*<<array.ml:133:5>>*/ }
+     /*<<array.ml:152:6>>*/ return r;
+    /*<<array.ml:154:5>>*/ }
    function iteri(f, a){
-     /*<<array.ml:136:2>>*/ var
-     ___ = a.length - 2 | 0,
-      /*<<array.ml:136:2>>*/ _Z_ = 0;
-    if(___ >= 0){
-     var i = _Z_;
+     /*<<array.ml:157:2>>*/ var
+     _aa_ = a.length - 2 | 0,
+      /*<<array.ml:157:2>>*/ _$_ = 0;
+    if(_aa_ >= 0){
+     var i = _$_;
      for(;;){
-       /*<<array.ml:136:31>>*/  /*<<array.ml:136:31>>*/ caml_call2
+       /*<<array.ml:157:31>>*/  /*<<array.ml:157:31>>*/ caml_call2
        (f, i, a[1 + i]);
-       /*<<array.ml:136:31>>*/  /*<<array.ml:136:31>>*/ var _$_ = i + 1 | 0;
-      if(___ === i) break;
-      i = _$_;
+       /*<<array.ml:157:31>>*/  /*<<array.ml:157:31>>*/ var _ab_ = i + 1 | 0;
+      if(_aa_ === i) break;
+      i = _ab_;
      }
     }
     return 0;
-    /*<<array.ml:136:56>>*/ }
+    /*<<array.ml:157:56>>*/ }
    function mapi(f, a){
-     /*<<array.ml:139:2>>*/ var l = a.length - 1;
-     /*<<array.ml:140:2>>*/ if(0 === l)  /*<<array.ml:140:16>>*/ return [0];
-     /*<<array.ml:141:12>>*/ var
-      /*<<array.ml:141:12>>*/ r =
-        /*<<array.ml:141:12>>*/ caml_make_vect
-        (l,  /*<<array.ml:141:21>>*/ caml_call2(f, 0, a[1])),
-      /*<<array.ml:142:4>>*/ _X_ = l - 1 | 0,
-      /*<<array.ml:141:12>>*/ _W_ = 1;
-    if(_X_ >= 1){
-     var i = _W_;
+     /*<<array.ml:160:2>>*/ var l = a.length - 1;
+     /*<<array.ml:161:2>>*/ if(0 === l)  /*<<array.ml:161:16>>*/ return [0];
+     /*<<array.ml:162:12>>*/ var
+      /*<<array.ml:162:12>>*/ r =
+        /*<<array.ml:162:12>>*/ caml_make_vect
+        (l,  /*<<array.ml:162:21>>*/ caml_call2(f, 0, a[1])),
+      /*<<array.ml:163:4>>*/ _Z_ = l - 1 | 0,
+      /*<<array.ml:162:12>>*/ _Y_ = 1;
+    if(_Z_ >= 1){
+     var i = _Y_;
      for(;;){
-       /*<<array.ml:143:6>>*/ r[1 + i] =
-        /*<<array.ml:143:21>>*/ caml_call2(f, i, a[1 + i]);
-       /*<<array.ml:143:6>>*/  /*<<array.ml:143:6>>*/ var _Y_ = i + 1 | 0;
-      if(_X_ === i) break;
-      i = _Y_;
+       /*<<array.ml:164:6>>*/ r[1 + i] =
+        /*<<array.ml:164:21>>*/ caml_call2(f, i, a[1 + i]);
+       /*<<array.ml:164:6>>*/  /*<<array.ml:164:6>>*/ var ___ = i + 1 | 0;
+      if(_Z_ === i) break;
+      i = ___;
      }
     }
-     /*<<array.ml:145:4>>*/ return r;
-    /*<<array.ml:146:5>>*/ }
+     /*<<array.ml:166:4>>*/ return r;
+    /*<<array.ml:167:5>>*/ }
    function to_list(a){
-     /*<<array.ml:149:2>>*/ var i$1 = a.length - 2 | 0, i = i$1, res = 0;
-     /*<<array.ml:150:4>>*/ for(;;){
-     if(0 > i)  /*<<array.ml:150:18>>*/ return res;
-      /*<<array.ml:150:42>>*/ var
-       /*<<array.ml:150:42>>*/ res$0 = [0, a[1 + i], res],
-       /*<<array.ml:150:42>>*/ i$0 = i - 1 | 0;
+     /*<<array.ml:170:2>>*/ var i$1 = a.length - 2 | 0, i = i$1, res = 0;
+     /*<<array.ml:171:4>>*/ for(;;){
+     if(0 > i)  /*<<array.ml:171:18>>*/ return res;
+      /*<<array.ml:171:42>>*/ var
+       /*<<array.ml:171:42>>*/ res$0 = [0, a[1 + i], res],
+       /*<<array.ml:171:42>>*/ i$0 = i - 1 | 0;
      i = i$0;
      res = res$0;
     }
-    /*<<array.ml:151:26>>*/ }
+    /*<<array.ml:172:26>>*/ }
    function list_length(accu, param){
     var accu$0 = accu, param$0 = param;
     for(;;){
-     if(! param$0)  /*<<array.ml:155:10>>*/ return accu$0;
-      /*<<array.ml:156:12>>*/ var
+     if(! param$0)  /*<<array.ml:176:10>>*/ return accu$0;
+      /*<<array.ml:177:12>>*/ var
       t = param$0[2],
-       /*<<array.ml:156:12>>*/ accu$1 = accu$0 + 1 | 0;
+       /*<<array.ml:177:12>>*/ accu$1 = accu$0 + 1 | 0;
      accu$0 = accu$1;
      param$0 = t;
     }
    }
    function of_list(l){
-     /*<<array.ml:158:14>>*/ if(! l)  /*<<array.ml:159:10>>*/ return [0];
-     /*<<array.ml:161:14>>*/ var
+     /*<<array.ml:179:14>>*/ if(! l)  /*<<array.ml:180:10>>*/ return [0];
+     /*<<array.ml:182:14>>*/ var
      tl = l[2],
      hd = l[1],
-      /*<<array.ml:161:14>>*/ a =
-        /*<<array.ml:161:14>>*/ caml_make_vect(list_length(0, l), hd),
+      /*<<array.ml:182:14>>*/ a =
+        /*<<array.ml:182:14>>*/ caml_make_vect(list_length(0, l), hd),
      i = 1,
      param = tl;
     for(;;){
-     if(! param)  /*<<array.ml:162:6>>*/ return a;
+     if(! param)  /*<<array.ml:183:6>>*/ return a;
      var tl$0 = param[2], hd$0 = param[1];
-      /*<<array.ml:164:20>>*/ a[1 + i] = hd$0;
-      /*<<array.ml:162:6>>*/  /*<<array.ml:162:6>>*/ var i$0 = i + 1 | 0;
+      /*<<array.ml:185:20>>*/ a[1 + i] = hd$0;
+      /*<<array.ml:183:6>>*/  /*<<array.ml:183:6>>*/ var i$0 = i + 1 | 0;
      i = i$0;
      param = tl$0;
     }
-    /*<<array.ml:165:15>>*/ }
+    /*<<array.ml:186:15>>*/ }
    function fold_left(f, x, a){
-     /*<<array.ml:168:2>>*/ var
-      /*<<array.ml:168:10>>*/ r = [0, x],
-     _U_ = a.length - 2 | 0,
-      /*<<array.ml:168:10>>*/ _T_ = 0;
-    if(_U_ >= 0){
-     var i = _T_;
-     for(;;){
-      r[1] =  /*<<array.ml:170:9>>*/ caml_call2(f, r[1], a[1 + i]);
-       /*<<array.ml:169:2>>*/  /*<<array.ml:169:2>>*/ var _V_ = i + 1 | 0;
-      if(_U_ === i) break;
-      i = _V_;
-     }
-    }
-    return r[1];
-    /*<<array.ml:172:4>>*/ }
-   function fold_left_map(f, acc, input_array){
-     /*<<array.ml:175:2>>*/ var len = input_array.length - 1;
-     /*<<array.ml:176:2>>*/ if(0 === len)
-      /*<<array.ml:176:18>>*/ return [0, acc, [0]];
-     /*<<array.ml:177:19>>*/ var
-      /*<<array.ml:177:19>>*/ match =
-        /*<<array.ml:177:19>>*/ caml_call2(f, acc, input_array[1]),
-     elt = match[2],
-     acc$0 = match[1],
-      /*<<array.ml:178:23>>*/ output_array =
-        /*<<array.ml:178:23>>*/ caml_make_vect(len, elt),
-      /*<<array.ml:179:14>>*/ acc$1 = [0, acc$0],
-      /*<<array.ml:180:4>>*/ _R_ = len - 1 | 0,
-      /*<<array.ml:179:14>>*/ _Q_ = 1;
-    if(_R_ >= 1){
-     var i = _Q_;
-     for(;;){
-       /*<<array.ml:181:22>>*/ var
-        /*<<array.ml:181:22>>*/ match$0 =
-          /*<<array.ml:181:22>>*/ caml_call2(f, acc$1[1], input_array[1 + i]),
-       elt$0 = match$0[2],
-       acc$2 = match$0[1];
-      acc$1[1] = acc$2;
-       /*<<array.ml:183:6>>*/ output_array[1 + i] = elt$0;
-       /*<<array.ml:180:4>>*/  /*<<array.ml:180:4>>*/ var _S_ = i + 1 | 0;
-      if(_R_ === i) break;
-      i = _S_;
-     }
-    }
-     /*<<array.ml:185:4>>*/ return [0, acc$1[1], output_array];
-    /*<<array.ml:186:5>>*/ }
-   function fold_right(f, a, x){
      /*<<array.ml:189:2>>*/ var
       /*<<array.ml:189:10>>*/ r = [0, x],
-      /*<<array.ml:190:2>>*/ _O_ = a.length - 2 | 0;
-    if(_O_ >= 0){
-     var i = _O_;
+     _W_ = a.length - 2 | 0,
+      /*<<array.ml:189:10>>*/ _V_ = 0;
+    if(_W_ >= 0){
+     var i = _V_;
      for(;;){
-      r[1] =  /*<<array.ml:191:9>>*/ caml_call2(f, a[1 + i], r[1]);
-       /*<<array.ml:190:2>>*/  /*<<array.ml:190:2>>*/ var _P_ = i - 1 | 0;
-      if(0 === i) break;
-      i = _P_;
+      r[1] =  /*<<array.ml:191:9>>*/ caml_call2(f, r[1], a[1 + i]);
+       /*<<array.ml:190:2>>*/  /*<<array.ml:190:2>>*/ var _X_ = i + 1 | 0;
+      if(_W_ === i) break;
+      i = _X_;
      }
     }
     return r[1];
     /*<<array.ml:193:4>>*/ }
+   function fold_left_map(f, acc, input_array){
+     /*<<array.ml:196:2>>*/ var len = input_array.length - 1;
+     /*<<array.ml:197:2>>*/ if(0 === len)
+      /*<<array.ml:197:18>>*/ return [0, acc, [0]];
+     /*<<array.ml:198:19>>*/ var
+      /*<<array.ml:198:19>>*/ match =
+        /*<<array.ml:198:19>>*/ caml_call2(f, acc, input_array[1]),
+     elt = match[2],
+     acc$0 = match[1],
+      /*<<array.ml:199:23>>*/ output_array =
+        /*<<array.ml:199:23>>*/ caml_make_vect(len, elt),
+      /*<<array.ml:200:14>>*/ acc$1 = [0, acc$0],
+      /*<<array.ml:201:4>>*/ _T_ = len - 1 | 0,
+      /*<<array.ml:200:14>>*/ _S_ = 1;
+    if(_T_ >= 1){
+     var i = _S_;
+     for(;;){
+       /*<<array.ml:202:22>>*/ var
+        /*<<array.ml:202:22>>*/ match$0 =
+          /*<<array.ml:202:22>>*/ caml_call2(f, acc$1[1], input_array[1 + i]),
+       elt$0 = match$0[2],
+       acc$2 = match$0[1];
+      acc$1[1] = acc$2;
+       /*<<array.ml:204:6>>*/ output_array[1 + i] = elt$0;
+       /*<<array.ml:201:4>>*/  /*<<array.ml:201:4>>*/ var _U_ = i + 1 | 0;
+      if(_T_ === i) break;
+      i = _U_;
+     }
+    }
+     /*<<array.ml:206:4>>*/ return [0, acc$1[1], output_array];
+    /*<<array.ml:207:5>>*/ }
+   function fold_right(f, a, x){
+     /*<<array.ml:210:2>>*/ var
+      /*<<array.ml:210:10>>*/ r = [0, x],
+      /*<<array.ml:211:2>>*/ _Q_ = a.length - 2 | 0;
+    if(_Q_ >= 0){
+     var i = _Q_;
+     for(;;){
+      r[1] =  /*<<array.ml:212:9>>*/ caml_call2(f, a[1 + i], r[1]);
+       /*<<array.ml:211:2>>*/  /*<<array.ml:211:2>>*/ var _R_ = i - 1 | 0;
+      if(0 === i) break;
+      i = _R_;
+     }
+    }
+    return r[1];
+    /*<<array.ml:214:4>>*/ }
    function exists(p, a){
-     /*<<array.ml:196:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:198:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:198:18>>*/ return 0;
-      /*<<array.ml:199:12>>*/ if
-      ( /*<<array.ml:199:12>>*/ caml_call1(p, a[1 + i]))
-       /*<<array.ml:199:36>>*/ return 1;
-      /*<<array.ml:200:9>>*/  /*<<array.ml:200:9>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:217:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:219:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:219:18>>*/ return 0;
+      /*<<array.ml:220:12>>*/ if
+      ( /*<<array.ml:220:12>>*/ caml_call1(p, a[1 + i]))
+       /*<<array.ml:220:36>>*/ return 1;
+      /*<<array.ml:221:9>>*/  /*<<array.ml:221:9>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:201:8>>*/ }
+    /*<<array.ml:222:8>>*/ }
    function for_all(p, a){
-     /*<<array.ml:204:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:206:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:206:18>>*/ return 1;
-      /*<<array.ml:207:12>>*/ if
-      (!  /*<<array.ml:207:12>>*/ caml_call1(p, a[1 + i]))
-       /*<<array.ml:208:9>>*/ return 0;
-      /*<<array.ml:207:36>>*/  /*<<array.ml:207:36>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:225:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:227:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:227:18>>*/ return 1;
+      /*<<array.ml:228:12>>*/ if
+      (!  /*<<array.ml:228:12>>*/ caml_call1(p, a[1 + i]))
+       /*<<array.ml:229:9>>*/ return 0;
+      /*<<array.ml:228:36>>*/  /*<<array.ml:228:36>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:209:8>>*/ }
+    /*<<array.ml:230:8>>*/ }
    function for_all2(p, l1, l2){
-     /*<<array.ml:212:2>>*/ var n1 = l1.length - 1, n2 = l2.length - 1;
+     /*<<array.ml:233:2>>*/ var n1 = l1.length - 1, n2 = l2.length - 1;
     if(n1 !== n2)
-      /*<<array.ml:214:19>>*/ return  /*<<array.ml:214:19>>*/ caml_call1
+      /*<<array.ml:235:19>>*/ return  /*<<array.ml:235:19>>*/ caml_call1
              (Stdlib[1], cst_Array_for_all2);
     var i = 0;
-     /*<<array.ml:216:4>>*/ for(;;){
-     if(i === n1)  /*<<array.ml:216:19>>*/ return 1;
-      /*<<array.ml:217:12>>*/ if
-      (!  /*<<array.ml:217:12>>*/ caml_call2(p, l1[1 + i], l2[1 + i]))
-       /*<<array.ml:218:9>>*/ return 0;
-      /*<<array.ml:217:55>>*/  /*<<array.ml:217:55>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:237:4>>*/ for(;;){
+     if(i === n1)  /*<<array.ml:237:19>>*/ return 1;
+      /*<<array.ml:238:12>>*/ if
+      (!  /*<<array.ml:238:12>>*/ caml_call2(p, l1[1 + i], l2[1 + i]))
+       /*<<array.ml:239:9>>*/ return 0;
+      /*<<array.ml:238:55>>*/  /*<<array.ml:238:55>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:219:8>>*/ }
+    /*<<array.ml:240:8>>*/ }
    function exists2(p, l1, l2){
-     /*<<array.ml:222:2>>*/ var n1 = l1.length - 1, n2 = l2.length - 1;
+     /*<<array.ml:243:2>>*/ var n1 = l1.length - 1, n2 = l2.length - 1;
     if(n1 !== n2)
-      /*<<array.ml:224:19>>*/ return  /*<<array.ml:224:19>>*/ caml_call1
+      /*<<array.ml:245:19>>*/ return  /*<<array.ml:245:19>>*/ caml_call1
              (Stdlib[1], cst_Array_exists2);
     var i = 0;
-     /*<<array.ml:226:4>>*/ for(;;){
-     if(i === n1)  /*<<array.ml:226:19>>*/ return 0;
-      /*<<array.ml:227:12>>*/ if
-      ( /*<<array.ml:227:12>>*/ caml_call2(p, l1[1 + i], l2[1 + i]))
-       /*<<array.ml:227:55>>*/ return 1;
-      /*<<array.ml:228:9>>*/  /*<<array.ml:228:9>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:247:4>>*/ for(;;){
+     if(i === n1)  /*<<array.ml:247:19>>*/ return 0;
+      /*<<array.ml:248:12>>*/ if
+      ( /*<<array.ml:248:12>>*/ caml_call2(p, l1[1 + i], l2[1 + i]))
+       /*<<array.ml:248:55>>*/ return 1;
+      /*<<array.ml:249:9>>*/  /*<<array.ml:249:9>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:229:8>>*/ }
+    /*<<array.ml:250:8>>*/ }
    function mem(x, a){
-     /*<<array.ml:232:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:234:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:234:18>>*/ return 0;
-      /*<<array.ml:235:12>>*/ if
-      (0 ===  /*<<array.ml:235:12>>*/ runtime.caml_compare(a[1 + i], x))
-       /*<<array.ml:235:48>>*/ return 1;
-      /*<<array.ml:236:9>>*/  /*<<array.ml:236:9>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:253:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:255:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:255:18>>*/ return 0;
+      /*<<array.ml:256:12>>*/ if
+      (0 ===  /*<<array.ml:256:12>>*/ runtime.caml_compare(a[1 + i], x))
+       /*<<array.ml:256:48>>*/ return 1;
+      /*<<array.ml:257:9>>*/  /*<<array.ml:257:9>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:237:8>>*/ }
+    /*<<array.ml:258:8>>*/ }
    function memq(x, a){
-     /*<<array.ml:240:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:242:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:242:18>>*/ return 0;
-     if(x === a[1 + i])  /*<<array.ml:243:39>>*/ return 1;
-      /*<<array.ml:244:9>>*/  /*<<array.ml:244:9>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:261:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:263:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:263:18>>*/ return 0;
+     if(x === a[1 + i])  /*<<array.ml:264:39>>*/ return 1;
+      /*<<array.ml:265:9>>*/  /*<<array.ml:265:9>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:245:8>>*/ }
+    /*<<array.ml:266:8>>*/ }
    function find_opt(p, a){
-     /*<<array.ml:248:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:250:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:250:18>>*/ return 0;
-      /*<<array.ml:252:14>>*/  /*<<array.ml:252:14>>*/ var x = a[1 + i];
-      /*<<array.ml:253:9>>*/ if( /*<<array.ml:253:9>>*/ caml_call1(p, x))
-       /*<<array.ml:253:18>>*/ return [0, x];
-      /*<<array.ml:254:11>>*/  /*<<array.ml:254:11>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:269:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:271:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:271:18>>*/ return 0;
+      /*<<array.ml:273:14>>*/  /*<<array.ml:273:14>>*/ var x = a[1 + i];
+      /*<<array.ml:274:9>>*/ if( /*<<array.ml:274:9>>*/ caml_call1(p, x))
+       /*<<array.ml:274:18>>*/ return [0, x];
+      /*<<array.ml:275:11>>*/  /*<<array.ml:275:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:256:8>>*/ }
+    /*<<array.ml:277:8>>*/ }
    function find_index(p, a){
-     /*<<array.ml:259:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:261:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:261:18>>*/ return 0;
-      /*<<array.ml:262:12>>*/ if
-      ( /*<<array.ml:262:12>>*/ caml_call1(p, a[1 + i]))
-       /*<<array.ml:262:36>>*/ return [0, i];
-      /*<<array.ml:263:9>>*/  /*<<array.ml:263:9>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:280:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:282:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:282:18>>*/ return 0;
+      /*<<array.ml:283:12>>*/ if
+      ( /*<<array.ml:283:12>>*/ caml_call1(p, a[1 + i]))
+       /*<<array.ml:283:36>>*/ return [0, i];
+      /*<<array.ml:284:9>>*/  /*<<array.ml:284:9>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:264:8>>*/ }
+    /*<<array.ml:285:8>>*/ }
    function find_map(f, a){
-     /*<<array.ml:267:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:269:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:269:18>>*/ return 0;
-      /*<<array.ml:271:12>>*/  /*<<array.ml:271:12>>*/ var
-      r =  /*<<array.ml:271:12>>*/ caml_call1(f, a[1 + i]);
-     if(r)  /*<<array.ml:273:23>>*/ return r;
-      /*<<array.ml:272:16>>*/  /*<<array.ml:272:16>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:288:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:290:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:290:18>>*/ return 0;
+      /*<<array.ml:292:12>>*/  /*<<array.ml:292:12>>*/ var
+      r =  /*<<array.ml:292:12>>*/ caml_call1(f, a[1 + i]);
+     if(r)  /*<<array.ml:294:23>>*/ return r;
+      /*<<array.ml:293:16>>*/  /*<<array.ml:293:16>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:275:8>>*/ }
+    /*<<array.ml:296:8>>*/ }
    function find_mapi(f, a){
-     /*<<array.ml:278:2>>*/ var n = a.length - 1, i = 0;
-     /*<<array.ml:280:4>>*/ for(;;){
-     if(i === n)  /*<<array.ml:280:18>>*/ return 0;
-      /*<<array.ml:282:12>>*/  /*<<array.ml:282:12>>*/ var
-      r =  /*<<array.ml:282:12>>*/ caml_call2(f, i, a[1 + i]);
-     if(r)  /*<<array.ml:284:23>>*/ return r;
-      /*<<array.ml:283:16>>*/  /*<<array.ml:283:16>>*/ var i$0 = i + 1 | 0;
+     /*<<array.ml:299:2>>*/ var n = a.length - 1, i = 0;
+     /*<<array.ml:301:4>>*/ for(;;){
+     if(i === n)  /*<<array.ml:301:18>>*/ return 0;
+      /*<<array.ml:303:12>>*/  /*<<array.ml:303:12>>*/ var
+      r =  /*<<array.ml:303:12>>*/ caml_call2(f, i, a[1 + i]);
+     if(r)  /*<<array.ml:305:23>>*/ return r;
+      /*<<array.ml:304:16>>*/  /*<<array.ml:304:16>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<array.ml:286:8>>*/ }
+    /*<<array.ml:307:8>>*/ }
    function split(x){
-     /*<<array.ml:289:2>>*/ if
-     ( /*<<array.ml:289:5>>*/ runtime.caml_equal(x, [0]))
-      /*<<array.ml:289:19>>*/ return [0, [0], [0]];
-     /*<<array.ml:292:4>>*/ var
+     /*<<array.ml:310:2>>*/ if
+     ( /*<<array.ml:310:5>>*/ runtime.caml_equal(x, [0]))
+      /*<<array.ml:310:19>>*/ return [0, [0], [0]];
+     /*<<array.ml:313:4>>*/ var
      match = x[1],
      b0 = match[2],
      a0 = match[1],
-      /*<<array.ml:292:4>>*/ n = x.length - 1,
-      /*<<array.ml:293:12>>*/ a =
-        /*<<array.ml:293:12>>*/ caml_make_vect(n, a0),
-      /*<<array.ml:294:12>>*/ b =
-        /*<<array.ml:294:12>>*/ caml_make_vect(n, b0),
-      /*<<array.ml:295:4>>*/ _M_ = n - 1 | 0,
-      /*<<array.ml:294:12>>*/ _L_ = 1;
-    if(_M_ >= 1){
-     var i = _L_;
+      /*<<array.ml:313:4>>*/ n = x.length - 1,
+      /*<<array.ml:314:12>>*/ a =
+        /*<<array.ml:314:12>>*/ caml_make_vect(n, a0),
+      /*<<array.ml:315:12>>*/ b =
+        /*<<array.ml:315:12>>*/ caml_make_vect(n, b0),
+      /*<<array.ml:316:4>>*/ _O_ = n - 1 | 0,
+      /*<<array.ml:315:12>>*/ _N_ = 1;
+    if(_O_ >= 1){
+     var i = _N_;
      for(;;){
       var match$0 = x[1 + i], bi = match$0[2], ai = match$0[1];
-       /*<<array.ml:297:6>>*/ a[1 + i] = ai;
-       /*<<array.ml:298:6>>*/ b[1 + i] = bi;
-       /*<<array.ml:295:4>>*/  /*<<array.ml:295:4>>*/ var _N_ = i + 1 | 0;
-      if(_M_ === i) break;
-      i = _N_;
+       /*<<array.ml:318:6>>*/ a[1 + i] = ai;
+       /*<<array.ml:319:6>>*/ b[1 + i] = bi;
+       /*<<array.ml:316:4>>*/  /*<<array.ml:316:4>>*/ var _P_ = i + 1 | 0;
+      if(_O_ === i) break;
+      i = _P_;
      }
     }
-     /*<<array.ml:300:4>>*/ return [0, a, b];
-    /*<<array.ml:301:5>>*/ }
+     /*<<array.ml:321:4>>*/ return [0, a, b];
+    /*<<array.ml:322:5>>*/ }
    function combine(a, b){
-     /*<<array.ml:304:2>>*/ var
+     /*<<array.ml:325:2>>*/ var
      na = a.length - 1,
-      /*<<array.ml:305:2>>*/ nb = b.length - 1;
+      /*<<array.ml:326:2>>*/ nb = b.length - 1;
     if(na !== nb)
-      /*<<array.ml:306:19>>*/  /*<<array.ml:306:19>>*/ caml_call1
+      /*<<array.ml:327:19>>*/  /*<<array.ml:327:19>>*/ caml_call1
       (Stdlib[1], cst_Array_combine);
-    if(0 === na)  /*<<array.ml:307:17>>*/ return [0];
-     /*<<array.ml:309:12>>*/ var
-      /*<<array.ml:309:12>>*/ x =
-        /*<<array.ml:309:12>>*/ caml_make_vect(na, [0, a[1], b[1]]),
-      /*<<array.ml:310:4>>*/ _J_ = na - 1 | 0,
-      /*<<array.ml:309:12>>*/ _I_ = 1;
-    if(_J_ >= 1){
-     var i = _I_;
+    if(0 === na)  /*<<array.ml:328:17>>*/ return [0];
+     /*<<array.ml:330:12>>*/ var
+      /*<<array.ml:330:12>>*/ x =
+        /*<<array.ml:330:12>>*/ caml_make_vect(na, [0, a[1], b[1]]),
+      /*<<array.ml:331:4>>*/ _L_ = na - 1 | 0,
+      /*<<array.ml:330:12>>*/ _K_ = 1;
+    if(_L_ >= 1){
+     var i = _K_;
      for(;;){
       x[1 + i] = [0, a[1 + i], b[1 + i]];
-       /*<<array.ml:310:4>>*/  /*<<array.ml:310:4>>*/ var _K_ = i + 1 | 0;
-      if(_J_ === i) break;
-      i = _K_;
+       /*<<array.ml:331:4>>*/  /*<<array.ml:331:4>>*/ var _M_ = i + 1 | 0;
+      if(_L_ === i) break;
+      i = _M_;
      }
     }
-     /*<<array.ml:313:4>>*/ return x;
-    /*<<array.ml:314:5>>*/ }
-    /*<<array.ml:316:0>>*/ var
-     /*<<array.ml:316:0>>*/ Bottom =
+     /*<<array.ml:334:4>>*/ return x;
+    /*<<array.ml:335:5>>*/ }
+    /*<<array.ml:337:0>>*/ var
+     /*<<array.ml:337:0>>*/ Bottom =
       [248, "Stdlib.Array.Bottom", runtime.caml_fresh_oo_id(0)],
-    _a_ = [0, "array.ml", 348, 4];
+    _a_ = [0, "array.ml", 369, 4];
    function sort(cmp, a){
     function maxson(l, i){
-      /*<<array.ml:319:4>>*/ var
+      /*<<array.ml:340:4>>*/ var
       i31 = ((i + i | 0) + i | 0) + 1 | 0,
-       /*<<array.ml:320:12>>*/ x = [0, i31];
+       /*<<array.ml:341:12>>*/ x = [0, i31];
      if((i31 + 2 | 0) < l){
-       /*<<array.ml:321:22>>*/ var
-        /*<<array.ml:321:22>>*/ _B_ = i31 + 1 | 0,
-        /*<<array.ml:322:25>>*/ _C_ = caml_check_bound(a, _B_)[1 + _B_];
+       /*<<array.ml:342:22>>*/ var
+        /*<<array.ml:342:22>>*/ _D_ = i31 + 1 | 0,
+        /*<<array.ml:343:25>>*/ _E_ = caml_check_bound(a, _D_)[1 + _D_];
       if
-       ( /*<<array.ml:322:9>>*/ caml_call2
-         (cmp, caml_check_bound(a, i31)[1 + i31], _C_)
+       ( /*<<array.ml:343:9>>*/ caml_call2
+         (cmp, caml_check_bound(a, i31)[1 + i31], _E_)
         < 0)
        x[1] = i31 + 1 | 0;
-       /*<<array.ml:323:6>>*/ var
-        /*<<array.ml:323:6>>*/ _D_ = i31 + 2 | 0,
-        /*<<array.ml:323:24>>*/ _E_ = caml_check_bound(a, _D_)[1 + _D_],
-       _F_ = x[1];
+       /*<<array.ml:344:6>>*/ var
+        /*<<array.ml:344:6>>*/ _F_ = i31 + 2 | 0,
+        /*<<array.ml:344:24>>*/ _G_ = caml_check_bound(a, _F_)[1 + _F_],
+       _H_ = x[1];
       if
-       ( /*<<array.ml:323:9>>*/ caml_call2
-         (cmp, caml_check_bound(a, _F_)[1 + _F_], _E_)
+       ( /*<<array.ml:344:9>>*/ caml_call2
+         (cmp, caml_check_bound(a, _H_)[1 + _H_], _G_)
         < 0)
        x[1] = i31 + 2 | 0;
       return x[1];
      }
      if((i31 + 1 | 0) < l){
-       /*<<array.ml:326:38>>*/ var
-       _G_ = i31 + 1 | 0,
-        /*<<array.ml:326:38>>*/ _H_ = caml_check_bound(a, _G_)[1 + _G_];
-       /*<<array.ml:326:22>>*/ if
+       /*<<array.ml:347:38>>*/ var
+       _I_ = i31 + 1 | 0,
+        /*<<array.ml:347:38>>*/ _J_ = caml_check_bound(a, _I_)[1 + _I_];
+       /*<<array.ml:347:22>>*/ if
        (0
         >
-          /*<<array.ml:326:22>>*/ caml_call2
-          (cmp, caml_check_bound(a, i31)[1 + i31], _H_))
-        /*<<array.ml:327:11>>*/ return i31 + 1 | 0;
+          /*<<array.ml:347:22>>*/ caml_call2
+          (cmp, caml_check_bound(a, i31)[1 + i31], _J_))
+        /*<<array.ml:348:11>>*/ return i31 + 1 | 0;
      }
-     if(i31 < l)  /*<<array.ml:328:27>>*/ return i31;
-      /*<<array.ml:328:36>>*/ throw  /*<<array.ml:328:36>>*/ caml_maybe_attach_backtrace
+     if(i31 < l)  /*<<array.ml:349:27>>*/ return i31;
+      /*<<array.ml:349:36>>*/ throw  /*<<array.ml:349:36>>*/ caml_maybe_attach_backtrace
             ([0, Bottom, i], 1);
-     /*<<array.ml:328:52>>*/ }
-    var l = a.length - 1, _v_ = ((l + 1 | 0) / 3 | 0) - 1 | 0;
-    if(_v_ >= 0){
-     var i$6 = _v_;
+     /*<<array.ml:349:52>>*/ }
+    var l = a.length - 1, _x_ = ((l + 1 | 0) / 3 | 0) - 1 | 0;
+    if(_x_ >= 0){
+     var i$6 = _x_;
      for(;;){
-       /*<<array.ml:357:50>>*/  /*<<array.ml:357:50>>*/ var
+       /*<<array.ml:378:50>>*/  /*<<array.ml:378:50>>*/ var
        e$1 = caml_check_bound(a, i$6)[1 + i$6];
-       /*<<array.ml:339:22>>*/ try{
+       /*<<array.ml:360:22>>*/ try{
        var i = i$6;
-        /*<<array.ml:331:4>>*/ for(;;){
-         /*<<array.ml:331:12>>*/  /*<<array.ml:331:12>>*/ var
+        /*<<array.ml:352:4>>*/ for(;;){
+         /*<<array.ml:352:12>>*/  /*<<array.ml:352:12>>*/ var
          j = maxson(l, i);
-         /*<<array.ml:332:7>>*/ if
+         /*<<array.ml:353:7>>*/ if
          (0
           >=
-            /*<<array.ml:332:7>>*/ caml_call2
+            /*<<array.ml:353:7>>*/ caml_call2
             (cmp, caml_check_bound(a, j)[1 + j], e$1))
          break;
-         /*<<array.ml:333:14>>*/  /*<<array.ml:333:14>>*/ var
-         _s_ = caml_check_bound(a, j)[1 + j];
-         /*<<array.ml:333:6>>*/ caml_check_bound(a, i)[1 + i] = _s_;
+         /*<<array.ml:354:14>>*/  /*<<array.ml:354:14>>*/ var
+         _u_ = caml_check_bound(a, j)[1 + j];
+         /*<<array.ml:354:6>>*/ caml_check_bound(a, i)[1 + i] = _u_;
         i = j;
        }
-        /*<<array.ml:335:13>>*/ caml_check_bound(a, i)[1 + i] = e$1;
+        /*<<array.ml:356:13>>*/ caml_check_bound(a, i)[1 + i] = e$1;
       }
       catch(exn$0){
        var exn = caml_wrap_exception(exn$0);
        if(exn[1] !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
        var i$0 = exn[2];
-        /*<<array.ml:339:61>>*/ caml_check_bound(a, i$0)[1 + i$0] = e$1;
+        /*<<array.ml:360:61>>*/ caml_check_bound(a, i$0)[1 + i$0] = e$1;
       }
-       /*<<array.ml:357:38>>*/  /*<<array.ml:357:38>>*/ var _A_ = i$6 - 1 | 0;
+       /*<<array.ml:378:38>>*/  /*<<array.ml:378:38>>*/ var _C_ = i$6 - 1 | 0;
       if(0 === i$6) break;
-      i$6 = _A_;
+      i$6 = _C_;
      }
     }
-     /*<<array.ml:358:2>>*/  /*<<array.ml:358:2>>*/ var _w_ = l - 1 | 0;
-    if(_w_ >= 2){
-     var i$4 = _w_;
+     /*<<array.ml:379:2>>*/  /*<<array.ml:379:2>>*/ var _y_ = l - 1 | 0;
+    if(_y_ >= 2){
+     var i$4 = _y_;
      for(;;){
-       /*<<array.ml:359:12>>*/  /*<<array.ml:359:12>>*/ var
+       /*<<array.ml:380:12>>*/  /*<<array.ml:380:12>>*/ var
        e$0 = caml_check_bound(a, i$4)[1 + i$4];
-       /*<<array.ml:360:4>>*/ a[1 + i$4] = caml_check_bound(a, 0)[1];
+       /*<<array.ml:381:4>>*/ a[1 + i$4] = caml_check_bound(a, 0)[1];
       var i$5 = 0;
-       /*<<array.ml:345:19>>*/ try{
+       /*<<array.ml:366:19>>*/ try{
        var i$1 = i$5;
-        /*<<array.ml:341:4>>*/ for(;;){
-         /*<<array.ml:341:12>>*/ var
-          /*<<array.ml:341:12>>*/ j$0 = maxson(i$4, i$1),
-          /*<<array.ml:342:12>>*/ _t_ = caml_check_bound(a, j$0)[1 + j$0];
-         /*<<array.ml:342:4>>*/ caml_check_bound(a, i$1)[1 + i$1] = _t_;
+        /*<<array.ml:362:4>>*/ for(;;){
+         /*<<array.ml:362:12>>*/ var
+          /*<<array.ml:362:12>>*/ j$0 = maxson(i$4, i$1),
+          /*<<array.ml:363:12>>*/ _v_ = caml_check_bound(a, j$0)[1 + j$0];
+         /*<<array.ml:363:4>>*/ caml_check_bound(a, i$1)[1 + i$1] = _v_;
         i$1 = j$0;
        }
       }
@@ -7790,206 +7822,225 @@
         b:
         {
          var i$3 = i$2;
-          /*<<array.ml:347:4>>*/ for(;;){
+          /*<<array.ml:368:4>>*/ for(;;){
           var father = (i$3 - 1 | 0) / 3 | 0;
           if(i$3 === father)
-            /*<<array.ml:348:4>>*/ throw  /*<<array.ml:348:4>>*/ caml_maybe_attach_backtrace
+            /*<<array.ml:369:4>>*/ throw  /*<<array.ml:369:4>>*/ caml_maybe_attach_backtrace
                   ([0, Assert_failure, _a_], 1);
-           /*<<array.ml:349:7>>*/ if
+           /*<<array.ml:370:7>>*/ if
            (0
             <=
-              /*<<array.ml:349:7>>*/ caml_call2
+              /*<<array.ml:370:7>>*/ caml_call2
               (cmp, caml_check_bound(a, father)[1 + father], e$0))
            break;
-           /*<<array.ml:350:14>>*/  /*<<array.ml:350:14>>*/ var
-           _u_ = caml_check_bound(a, father)[1 + father];
-           /*<<array.ml:350:6>>*/ caml_check_bound(a, i$3)[1 + i$3] = _u_;
+           /*<<array.ml:371:14>>*/  /*<<array.ml:371:14>>*/ var
+           _w_ = caml_check_bound(a, father)[1 + father];
+           /*<<array.ml:371:6>>*/ caml_check_bound(a, i$3)[1 + i$3] = _w_;
           if(0 >= father) break b;
           i$3 = father;
          }
-          /*<<array.ml:352:13>>*/ caml_check_bound(a, i$3)[1 + i$3] = e$0;
+          /*<<array.ml:373:13>>*/ caml_check_bound(a, i$3)[1 + i$3] = e$0;
          break a;
         }
-         /*<<array.ml:351:49>>*/ caml_check_bound(a, 0)[1] = e$0;
+         /*<<array.ml:372:49>>*/ caml_check_bound(a, 0)[1] = e$0;
        }
-        /*<<array.ml:358:2>>*/  /*<<array.ml:358:2>>*/ var _z_ = i$4 - 1 | 0;
+        /*<<array.ml:379:2>>*/  /*<<array.ml:379:2>>*/ var _B_ = i$4 - 1 | 0;
        if(2 === i$4) break;
-       i$4 = _z_;
+       i$4 = _B_;
       }
      }
     }
-    var _x_ = 1 < l ? 1 : 0;
-    if(_x_){
-      /*<<array.ml:363:25>>*/  /*<<array.ml:363:25>>*/ var
+    var _z_ = 1 < l ? 1 : 0;
+    if(_z_){
+      /*<<array.ml:384:25>>*/  /*<<array.ml:384:25>>*/ var
       e = caml_check_bound(a, 1)[2];
-      /*<<array.ml:363:38>>*/ a[2] = caml_check_bound(a, 0)[1];
-      /*<<array.ml:363:57>>*/ a[1] = e;
-     var _y_ = 0;
+      /*<<array.ml:384:38>>*/ a[2] = caml_check_bound(a, 0)[1];
+      /*<<array.ml:384:57>>*/ a[1] = e;
+     var _A_ = 0;
     }
     else
-     var _y_ = _x_;
-     /*<<array.ml:363:57>>*/ return _y_;
-    /*<<array.ml:363:67>>*/ }
+     var _A_ = _z_;
+     /*<<array.ml:384:57>>*/ return _A_;
+    /*<<array.ml:384:67>>*/ }
    function stable_sort(cmp, a){
     function merge(src1ofs, src1len, src2, src2ofs, src2len, dst, dstofs){
-      /*<<array.ml:369:4>>*/ var
+      /*<<array.ml:390:4>>*/ var
       src1r = src1ofs + src1len | 0,
       src2r = src2ofs + src2len | 0,
-       /*<<array.ml:386:44>>*/ s2$1 =
+       /*<<array.ml:407:44>>*/ s2$1 =
         caml_check_bound(src2, src2ofs)[1 + src2ofs],
-       /*<<array.ml:386:20>>*/ s1$1 =
+       /*<<array.ml:407:20>>*/ s1$1 =
         caml_check_bound(a, src1ofs)[1 + src1ofs],
       i1 = src1ofs,
       s1 = s1$1,
       i2 = src2ofs,
       s2 = s2$1,
       d = dstofs;
-      /*<<array.ml:371:6>>*/ for(;;)
-       /*<<array.ml:371:9>>*/ if
-       (0 <  /*<<array.ml:371:9>>*/ caml_call2(cmp, s1, s2)){
-        /*<<array.ml:379:8>>*/ caml_check_bound(dst, d)[1 + d] = s2;
-        /*<<array.ml:379:8>>*/  /*<<array.ml:379:8>>*/ var i2$0 = i2 + 1 | 0;
+      /*<<array.ml:392:6>>*/ for(;;)
+       /*<<array.ml:392:9>>*/ if
+       (0 <  /*<<array.ml:392:9>>*/ caml_call2(cmp, s1, s2)){
+        /*<<array.ml:400:8>>*/ caml_check_bound(dst, d)[1 + d] = s2;
+        /*<<array.ml:400:8>>*/  /*<<array.ml:400:8>>*/ var i2$0 = i2 + 1 | 0;
        if(i2$0 >= src2r) return blit(a, i1, dst, d + 1 | 0, src1r - i1 | 0);
-        /*<<array.ml:382:10>>*/ var
-         /*<<array.ml:382:10>>*/ d$0 = d + 1 | 0,
-         /*<<array.ml:382:24>>*/ s2$0 = caml_check_bound(src2, i2$0)[1 + i2$0];
+        /*<<array.ml:403:10>>*/ var
+         /*<<array.ml:403:10>>*/ d$0 = d + 1 | 0,
+         /*<<array.ml:403:24>>*/ s2$0 = caml_check_bound(src2, i2$0)[1 + i2$0];
        i2 = i2$0;
        s2 = s2$0;
        d = d$0;
       }
       else{
-        /*<<array.ml:372:8>>*/ caml_check_bound(dst, d)[1 + d] = s1;
-        /*<<array.ml:372:8>>*/  /*<<array.ml:372:8>>*/ var i1$0 = i1 + 1 | 0;
+        /*<<array.ml:393:8>>*/ caml_check_bound(dst, d)[1 + d] = s1;
+        /*<<array.ml:393:8>>*/  /*<<array.ml:393:8>>*/ var i1$0 = i1 + 1 | 0;
        if(i1$0 >= src1r)
         return blit(src2, i2, dst, d + 1 | 0, src2r - i2 | 0);
-        /*<<array.ml:375:10>>*/ var
-         /*<<array.ml:375:10>>*/ d$1 = d + 1 | 0,
-         /*<<array.ml:375:18>>*/ s1$0 = caml_check_bound(a, i1$0)[1 + i1$0];
+        /*<<array.ml:396:10>>*/ var
+         /*<<array.ml:396:10>>*/ d$1 = d + 1 | 0,
+         /*<<array.ml:396:18>>*/ s1$0 = caml_check_bound(a, i1$0)[1 + i1$0];
        i1 = i1$0;
        s1 = s1$0;
        d = d$1;
       }
-     /*<<array.ml:386:70>>*/ }
+     /*<<array.ml:407:70>>*/ }
     function isortto(srcofs, dst, dstofs, len){
-      /*<<array.ml:389:4>>*/ var
-      _k_ = len - 1 | 0,
-       /*<<array.ml:389:4>>*/ _j_ = 0;
-     if(_k_ >= 0){
-      var i = _j_;
+      /*<<array.ml:410:4>>*/ var
+      _m_ = len - 1 | 0,
+       /*<<array.ml:410:4>>*/ _l_ = 0;
+     if(_m_ >= 0){
+      var i = _l_;
       for(;;){
-        /*<<array.ml:390:14>>*/ var
-        _l_ = srcofs + i | 0,
-         /*<<array.ml:390:14>>*/ e = caml_check_bound(a, _l_)[1 + _l_],
-         /*<<array.ml:391:14>>*/ j = [0, (dstofs + i | 0) - 1 | 0];
+        /*<<array.ml:411:14>>*/ var
+        _n_ = srcofs + i | 0,
+         /*<<array.ml:411:14>>*/ e = caml_check_bound(a, _n_)[1 + _n_],
+         /*<<array.ml:412:14>>*/ j = [0, (dstofs + i | 0) - 1 | 0];
        for(;;){
         if(dstofs > j[1]) break;
-        var _m_ = j[1];
-         /*<<array.ml:392:29>>*/ if
+        var _o_ = j[1];
+         /*<<array.ml:413:29>>*/ if
          (0
           >=
-            /*<<array.ml:392:29>>*/ caml_call2
-            (cmp, caml_check_bound(dst, _m_)[1 + _m_], e))
+            /*<<array.ml:413:29>>*/ caml_call2
+            (cmp, caml_check_bound(dst, _o_)[1 + _o_], e))
          break;
-         /*<<array.ml:393:25>>*/ var
-         _n_ = j[1],
-          /*<<array.ml:393:25>>*/ _o_ = caml_check_bound(dst, _n_)[1 + _n_],
-         _p_ = j[1] + 1 | 0;
-         /*<<array.ml:393:8>>*/ caml_check_bound(dst, _p_)[1 + _p_] = _o_;
+         /*<<array.ml:414:25>>*/ var
+         _p_ = j[1],
+          /*<<array.ml:414:25>>*/ _q_ = caml_check_bound(dst, _p_)[1 + _p_],
+         _r_ = j[1] + 1 | 0;
+         /*<<array.ml:414:8>>*/ caml_check_bound(dst, _r_)[1 + _r_] = _q_;
         j[1]--;
        }
-       var _q_ = j[1] + 1 | 0;
-        /*<<array.ml:396:6>>*/ caml_check_bound(dst, _q_)[1 + _q_] = e;
-        /*<<array.ml:389:4>>*/  /*<<array.ml:389:4>>*/ var _r_ = i + 1 | 0;
-       if(_k_ === i) break;
-       i = _r_;
+       var _s_ = j[1] + 1 | 0;
+        /*<<array.ml:417:6>>*/ caml_check_bound(dst, _s_)[1 + _s_] = e;
+        /*<<array.ml:410:4>>*/  /*<<array.ml:410:4>>*/ var _t_ = i + 1 | 0;
+       if(_m_ === i) break;
+       i = _t_;
       }
      }
      return 0;
-     /*<<array.ml:397:8>>*/ }
+     /*<<array.ml:418:8>>*/ }
     function sortto(srcofs, dst, dstofs, len){
-      /*<<array.ml:400:4>>*/ if(len <= 5)
-       /*<<array.ml:400:26>>*/ return isortto(srcofs, dst, dstofs, len);
+      /*<<array.ml:421:4>>*/ if(len <= 5)
+       /*<<array.ml:421:26>>*/ return isortto(srcofs, dst, dstofs, len);
      var l1 = len / 2 | 0, l2 = len - l1 | 0;
-      /*<<array.ml:403:6>>*/ sortto(srcofs + l1 | 0, dst, dstofs + l1 | 0, l2);
-      /*<<array.ml:404:6>>*/ sortto(srcofs, a, srcofs + l2 | 0, l1);
-      /*<<array.ml:404:6>>*/ return merge
+      /*<<array.ml:424:6>>*/ sortto(srcofs + l1 | 0, dst, dstofs + l1 | 0, l2);
+      /*<<array.ml:425:6>>*/ sortto(srcofs, a, srcofs + l2 | 0, l1);
+      /*<<array.ml:425:6>>*/ return merge
              (srcofs + l2 | 0, l1, dst, dstofs + l1 | 0, l2, dst, dstofs);
-     /*<<array.ml:406:7>>*/ }
+     /*<<array.ml:427:7>>*/ }
     var l = a.length - 1;
-    if(l <= 5)  /*<<array.ml:409:22>>*/ return isortto(0, a, 0, l);
-     /*<<array.ml:412:12>>*/ var
+    if(l <= 5)  /*<<array.ml:430:22>>*/ return isortto(0, a, 0, l);
+     /*<<array.ml:433:12>>*/ var
      l1 = l / 2 | 0,
      l2 = l - l1 | 0,
-      /*<<array.ml:412:12>>*/ t =
-        /*<<array.ml:412:12>>*/ caml_make_vect(l2, caml_check_bound(a, 0)[1]);
-     /*<<array.ml:413:4>>*/ sortto(l1, t, 0, l2);
-     /*<<array.ml:414:4>>*/ sortto(0, a, l2, l1);
-     /*<<array.ml:414:4>>*/ return merge(l2, l1, t, 0, l2, a, 0);
-    /*<<array.ml:416:5>>*/ }
+      /*<<array.ml:433:12>>*/ t =
+        /*<<array.ml:433:12>>*/ caml_make_vect(l2, caml_check_bound(a, 0)[1]);
+     /*<<array.ml:434:4>>*/ sortto(l1, t, 0, l2);
+     /*<<array.ml:435:4>>*/ sortto(0, a, l2, l1);
+     /*<<array.ml:435:4>>*/ return merge(l2, l1, t, 0, l2, a, 0);
+    /*<<array.ml:437:5>>*/ }
+   function shuffle(rand, a){
+     /*<<array.ml:443:2>>*/ var _j_ = a.length - 2 | 0;
+    if(_j_ >= 1){
+     var i = _j_;
+     for(;;){
+       /*<<array.ml:444:12>>*/ var
+        /*<<array.ml:444:12>>*/ j =
+          /*<<array.ml:444:12>>*/ caml_call1(rand, i + 1 | 0),
+        /*<<array.ml:445:12>>*/ v = a[1 + i];
+       /*<<array.ml:446:4>>*/ a[1 + i] = caml_check_bound(a, j)[1 + j];
+       /*<<array.ml:447:4>>*/ a[1 + j] = v;
+      var _k_ = i - 1 | 0;
+      if(1 === i) break;
+      i = _k_;
+     }
+    }
+    return 0;
+    /*<<array.ml:448:6>>*/ }
    function to_seq(a){
     function aux(i, param){
-      /*<<array.ml:425:4>>*/ if(i >= a.length - 1)
-       /*<<array.ml:429:9>>*/ return 0;
-      /*<<array.ml:427:14>>*/ var
-       /*<<array.ml:427:14>>*/ x = a[1 + i],
-       /*<<array.ml:427:14>>*/ _h_ = i + 1 | 0;
-      /*<<array.ml:428:6>>*/ return [0,
+      /*<<array.ml:454:4>>*/ if(i >= a.length - 1)
+       /*<<array.ml:458:9>>*/ return 0;
+      /*<<array.ml:456:14>>*/ var
+       /*<<array.ml:456:14>>*/ x = a[1 + i],
+       /*<<array.ml:456:14>>*/ _h_ = i + 1 | 0;
+      /*<<array.ml:457:6>>*/ return [0,
              x,
              function(_i_){ /*<<?>>*/ return aux(_h_, _i_);}];
-     /*<<array.ml:429:16>>*/ }
-     /*<<array.ml:431:2>>*/ var _f_ = 0;
-     /*<<array.ml:431:2>>*/ return function(_g_){
+     /*<<array.ml:458:16>>*/ }
+     /*<<array.ml:460:2>>*/ var _f_ = 0;
+     /*<<array.ml:460:2>>*/ return function(_g_){
       /*<<?>>*/ return aux(_f_, _g_);};
-    /*<<array.ml:431:7>>*/ }
+    /*<<array.ml:460:7>>*/ }
    function to_seqi(a){
     function aux(i, param){
-      /*<<array.ml:435:4>>*/ if(i >= a.length - 1)
-       /*<<array.ml:439:9>>*/ return 0;
-      /*<<array.ml:437:14>>*/ var
-       /*<<array.ml:437:14>>*/ x = a[1 + i],
-       /*<<array.ml:437:14>>*/ _d_ = i + 1 | 0;
-      /*<<array.ml:438:6>>*/ return [0,
+      /*<<array.ml:464:4>>*/ if(i >= a.length - 1)
+       /*<<array.ml:468:9>>*/ return 0;
+      /*<<array.ml:466:14>>*/ var
+       /*<<array.ml:466:14>>*/ x = a[1 + i],
+       /*<<array.ml:466:14>>*/ _d_ = i + 1 | 0;
+      /*<<array.ml:467:6>>*/ return [0,
              [0, i, x],
              function(_e_){ /*<<?>>*/ return aux(_d_, _e_);}];
-     /*<<array.ml:439:16>>*/ }
-     /*<<array.ml:441:2>>*/ var _b_ = 0;
-     /*<<array.ml:441:2>>*/ return function(_c_){
+     /*<<array.ml:468:16>>*/ }
+     /*<<array.ml:470:2>>*/ var _b_ = 0;
+     /*<<array.ml:470:2>>*/ return function(_c_){
       /*<<?>>*/ return aux(_b_, _c_);};
-    /*<<array.ml:441:7>>*/ }
+    /*<<array.ml:470:7>>*/ }
    function of_seq(i$2){
-     /*<<array.ml:455:2>>*/  /*<<array.ml:455:10>>*/ var
+     /*<<array.ml:484:2>>*/  /*<<array.ml:484:10>>*/ var
      l =
-        /*<<array.ml:455:10>>*/ caml_call3
+        /*<<array.ml:484:10>>*/ caml_call3
         (Stdlib_Seq[5],
          function(acc, x){
-           /*<<array.ml:455:38>>*/ return [0, x, acc];
-          /*<<array.ml:455:44>>*/ },
+           /*<<array.ml:484:38>>*/ return [0, x, acc];
+          /*<<array.ml:484:44>>*/ },
          0,
          i$2);
-    if(! l)  /*<<array.ml:444:10>>*/ return [0];
-     /*<<array.ml:446:16>>*/ var
+    if(! l)  /*<<array.ml:473:10>>*/ return [0];
+     /*<<array.ml:475:16>>*/ var
      tl = l[2],
      hd = l[1],
-      /*<<array.ml:446:16>>*/ len = list_length(0, l),
-      /*<<array.ml:447:14>>*/ a =
-        /*<<array.ml:447:14>>*/ caml_make_vect(len, hd),
-      /*<<array.ml:446:16>>*/ i$1 = len - 2 | 0,
+      /*<<array.ml:475:16>>*/ len = list_length(0, l),
+      /*<<array.ml:476:14>>*/ a =
+        /*<<array.ml:476:14>>*/ caml_make_vect(len, hd),
+      /*<<array.ml:475:16>>*/ i$1 = len - 2 | 0,
      i = i$1,
      param = tl;
     for(;;){
-     if(! param)  /*<<array.ml:448:6>>*/ return a;
+     if(! param)  /*<<array.ml:477:6>>*/ return a;
      var tl$0 = param[2], hd$0 = param[1];
-      /*<<array.ml:450:20>>*/ a[1 + i] = hd$0;
-      /*<<array.ml:448:6>>*/  /*<<array.ml:448:6>>*/ var i$0 = i - 1 | 0;
+      /*<<array.ml:479:20>>*/ a[1 + i] = hd$0;
+      /*<<array.ml:477:6>>*/  /*<<array.ml:477:6>>*/ var i$0 = i - 1 | 0;
      i = i$0;
      param = tl$0;
     }
-    /*<<array.ml:456:15>>*/ }
+    /*<<array.ml:485:15>>*/ }
    var
     Stdlib_Array =
       [0,
        init,
        make_matrix,
+       init_matrix,
        append,
        runtime.caml_array_concat,
        sub,
@@ -8024,11 +8075,12 @@
        sort,
        stable_sort,
        stable_sort,
+       shuffle,
        to_seq,
        to_seqi,
        of_seq,
        Floatarray];
-   runtime.caml_register_global(14, Stdlib_Array, "Stdlib__Array");
+   runtime.caml_register_global(16, Stdlib_Array, "Stdlib__Array");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -8048,6 +8100,7 @@
     caml_floatarray_blit = runtime.caml_floatarray_blit,
     caml_floatarray_create = runtime.caml_floatarray_create,
     caml_hash = runtime.caml_hash,
+    caml_make_vect = runtime.caml_make_vect,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_nextafter_float = runtime.caml_nextafter_float,
     caml_signbit_float = runtime.caml_signbit_float,
@@ -8095,8 +8148,10 @@
     of_string_opt = Stdlib[36],
     to_string = Stdlib[35],
     cst_Float_Array_init = "Float.Array.init",
+    cst_Float_Array_make_matrix = "Float.Array.make_matrix",
+    cst_Float_Array_init_matrix = "Float.Array.init_matrix",
     cst_Float_Array_concat = "Float.Array.concat",
-    _a_ = [0, cst_float_ml, 228, 14],
+    _a_ = [0, cst_float_ml, 254, 14],
     cst_Float_Array_sub = "Float.Array.sub",
     cst_Float_Array_fill = "Float.Array.fill",
     cst_Float_array_blit = cst_Float_array_blit$1,
@@ -8107,8 +8162,8 @@
       "Float.Array.map2: arrays must have the same length";
    function is_integer(x){
      /*<<float.ml:116:19>>*/ var
-     _am_ = x ==  /*<<float.ml:116:23>>*/ runtime.caml_trunc_float(x) ? 1 : 0;
-    return _am_ ? is_finite(x) : _am_;
+     _ax_ = x ==  /*<<float.ml:116:23>>*/ runtime.caml_trunc_float(x) ? 1 : 0;
+    return _ax_ ? is_finite(x) : _ax_;
     /*<<float.ml:116:45>>*/ }
    function succ(x){
      /*<<float.ml:121:13>>*/ return  /*<<float.ml:121:13>>*/ caml_nextafter_float
@@ -8209,32 +8264,32 @@
             (10, 100, 0, x);
     /*<<float.ml:170:41>>*/ }
    function unsafe_fill(a, ofs, len, v){
-     /*<<float.ml:184:4>>*/ var _ak_ = (ofs + len | 0) - 1 | 0;
-    if(_ak_ >= ofs){
+     /*<<float.ml:184:4>>*/ var _av_ = (ofs + len | 0) - 1 | 0;
+    if(_av_ >= ofs){
      var i = ofs;
      for(;;){
        /*<<float.ml:184:36>>*/ a[1 + i] = v;
-       /*<<float.ml:184:36>>*/  /*<<float.ml:184:36>>*/ var _al_ = i + 1 | 0;
-      if(_ak_ === i) break;
-      i = _al_;
+       /*<<float.ml:184:36>>*/  /*<<float.ml:184:36>>*/ var _aw_ = i + 1 | 0;
+      if(_av_ === i) break;
+      i = _aw_;
      }
     }
     return 0;
     /*<<float.ml:184:57>>*/ }
    function check(a, ofs, len, msg){
-     /*<<float.ml:190:4>>*/ var _ag_ = ofs < 0 ? 1 : 0;
-    if(_ag_)
-     var _ah_ = _ag_;
+     /*<<float.ml:190:4>>*/ var _ar_ = ofs < 0 ? 1 : 0;
+    if(_ar_)
+     var _as_ = _ar_;
     else{
-     var _ai_ = len < 0 ? 1 : 0;
-     if(_ai_)
-      var _ah_ = _ai_;
+     var _at_ = len < 0 ? 1 : 0;
+     if(_at_)
+      var _as_ = _at_;
      else
       var
-       _aj_ = (ofs + len | 0) < 0 ? 1 : 0,
-       _ah_ = _aj_ || (a.length - 1 < (ofs + len | 0) ? 1 : 0);
+       _au_ = (ofs + len | 0) < 0 ? 1 : 0,
+       _as_ = _au_ || (a.length - 1 < (ofs + len | 0) ? 1 : 0);
     }
-    return _ah_ ?  /*<<float.ml:191:6>>*/ caml_call1(Stdlib[1], msg) : _ah_;
+    return _as_ ?  /*<<float.ml:191:6>>*/ caml_call1(Stdlib[1], msg) : _as_;
     /*<<float.ml:191:21>>*/ }
    function make(n, v){
      /*<<float.ml:194:4>>*/  /*<<float.ml:194:17>>*/ var
@@ -8249,34 +8304,98 @@
      /*<<float.ml:201:16>>*/ var
       /*<<float.ml:201:16>>*/ res =
         /*<<float.ml:201:16>>*/ caml_floatarray_create(l),
-      /*<<float.ml:202:6>>*/ _ae_ = l - 1 | 0,
-      /*<<float.ml:201:16>>*/ _ad_ = 0;
-    if(_ae_ >= 0){
-     var i = _ad_;
+      /*<<float.ml:202:6>>*/ _ap_ = l - 1 | 0,
+      /*<<float.ml:201:16>>*/ _ao_ = 0;
+    if(_ap_ >= 0){
+     var i = _ao_;
      for(;;){
        /*<<float.ml:203:8>>*/ res[1 + i] =
         /*<<float.ml:203:25>>*/ caml_call1(f, i);
-       /*<<float.ml:203:8>>*/  /*<<float.ml:203:8>>*/ var _af_ = i + 1 | 0;
-      if(_ae_ === i) break;
-      i = _af_;
+       /*<<float.ml:203:8>>*/  /*<<float.ml:203:8>>*/ var _aq_ = i + 1 | 0;
+      if(_ap_ === i) break;
+      i = _aq_;
      }
     }
      /*<<float.ml:205:6>>*/ return res;
     /*<<float.ml:205:9>>*/ }
+   function make_matrix(sx, sy, v){
+     /*<<float.ml:209:4>>*/ if(sy < 0)
+      /*<<float.ml:209:19>>*/  /*<<float.ml:209:19>>*/ caml_call1
+      (Stdlib[1], cst_Float_Array_make_matrix);
+     /*<<float.ml:210:14>>*/  /*<<float.ml:210:14>>*/ var
+     res =
+        /*<<float.ml:210:14>>*/ caml_make_vect
+        (sx,  /*<<float.ml:210:28>>*/ caml_floatarray_create(0));
+    if(0 < sy){
+      /*<<float.ml:211:19>>*/ var
+      _am_ = sx - 1 | 0,
+       /*<<float.ml:211:19>>*/ _al_ = 0;
+     if(_am_ >= 0){
+      var x = _al_;
+      for(;;){
+        /*<<float.ml:213:8>>*/ res[1 + x] = make(sy, v);
+        /*<<float.ml:213:8>>*/  /*<<float.ml:213:8>>*/ var _an_ = x + 1 | 0;
+       if(_am_ === x) break;
+       x = _an_;
+      }
+     }
+    }
+     /*<<float.ml:216:4>>*/ return res;
+    /*<<float.ml:216:7>>*/ }
+   function init_matrix(sx, sy, f){
+     /*<<float.ml:220:4>>*/ if(sy < 0)
+      /*<<float.ml:220:19>>*/  /*<<float.ml:220:19>>*/ caml_call1
+      (Stdlib[1], cst_Float_Array_init_matrix);
+     /*<<float.ml:221:14>>*/  /*<<float.ml:221:14>>*/ var
+     res =
+        /*<<float.ml:221:14>>*/ caml_make_vect
+        (sx,  /*<<float.ml:221:28>>*/ caml_floatarray_create(0));
+    if(0 < sy){
+      /*<<float.ml:222:19>>*/ var
+      _ag_ = sx - 1 | 0,
+       /*<<float.ml:222:19>>*/ _af_ = 0;
+     if(_ag_ >= 0){
+      var x = _af_;
+      for(;;){
+        /*<<float.ml:224:18>>*/ var
+         /*<<float.ml:224:18>>*/ row =
+           /*<<float.ml:224:18>>*/ caml_floatarray_create(sy),
+         /*<<float.ml:225:8>>*/ _ai_ = sy - 1 | 0,
+         /*<<float.ml:224:18>>*/ _ah_ = 0;
+       if(_ai_ >= 0){
+        var y = _ah_;
+        for(;;){
+          /*<<float.ml:226:10>>*/ row[1 + y] =
+           /*<<float.ml:226:27>>*/ caml_call2(f, x, y);
+          /*<<float.ml:226:10>>*/  /*<<float.ml:226:10>>*/ var
+          _ak_ = y + 1 | 0;
+         if(_ai_ === y) break;
+         y = _ak_;
+        }
+       }
+        /*<<float.ml:228:8>>*/ res[1 + x] = row;
+        /*<<float.ml:222:19>>*/  /*<<float.ml:222:19>>*/ var _aj_ = x + 1 | 0;
+       if(_ag_ === x) break;
+       x = _aj_;
+      }
+     }
+    }
+     /*<<float.ml:231:4>>*/ return res;
+    /*<<float.ml:231:7>>*/ }
    function append(a1, a2){
-     /*<<float.ml:208:4>>*/ var
+     /*<<float.ml:234:4>>*/ var
      l1 = a1.length - 1,
-      /*<<float.ml:209:4>>*/ l2 = a2.length - 1,
-      /*<<float.ml:210:17>>*/ result =
-        /*<<float.ml:210:17>>*/ caml_floatarray_create(l1 + l2 | 0);
-     /*<<float.ml:211:4>>*/  /*<<float.ml:211:4>>*/ caml_floatarray_blit
+      /*<<float.ml:235:4>>*/ l2 = a2.length - 1,
+      /*<<float.ml:236:17>>*/ result =
+        /*<<float.ml:236:17>>*/ caml_floatarray_create(l1 + l2 | 0);
+     /*<<float.ml:237:4>>*/  /*<<float.ml:237:4>>*/ caml_floatarray_blit
      (a1, 0, result, 0, l1);
-     /*<<float.ml:212:4>>*/  /*<<float.ml:212:4>>*/ caml_floatarray_blit
+     /*<<float.ml:238:4>>*/  /*<<float.ml:238:4>>*/ caml_floatarray_blit
      (a2, 0, result, l1, l2);
-     /*<<float.ml:212:4>>*/ return result;
-    /*<<float.ml:213:10>>*/ }
+     /*<<float.ml:238:4>>*/ return result;
+    /*<<float.ml:239:10>>*/ }
    function concat(l){
-     /*<<float.ml:224:4>>*/ var acc = 0, param = l;
+     /*<<float.ml:250:4>>*/ var acc = 0, param = l;
     for(;;){
      if(! param) break;
      var
@@ -8286,435 +8405,435 @@
       acc$0 =
         acc <= x
          ? x
-         :  /*<<float.ml:217:26>>*/ caml_call1
+         :  /*<<float.ml:243:26>>*/ caml_call1
            (Stdlib[1], cst_Float_Array_concat);
      acc = acc$0;
      param = tl;
     }
-     /*<<float.ml:225:17>>*/ var
-      /*<<float.ml:225:17>>*/ result =
-        /*<<float.ml:225:17>>*/ caml_floatarray_create(acc),
+     /*<<float.ml:251:17>>*/ var
+      /*<<float.ml:251:17>>*/ result =
+        /*<<float.ml:251:17>>*/ caml_floatarray_create(acc),
      l$0 = l,
      i = 0;
-     /*<<float.ml:227:6>>*/ for(;;){
+     /*<<float.ml:253:6>>*/ for(;;){
      if(! l$0){
-      if(i === acc)  /*<<float.ml:234:4>>*/ return result;
-       /*<<float.ml:228:14>>*/ throw  /*<<float.ml:228:14>>*/ caml_maybe_attach_backtrace
+      if(i === acc)  /*<<float.ml:260:4>>*/ return result;
+       /*<<float.ml:254:14>>*/ throw  /*<<float.ml:254:14>>*/ caml_maybe_attach_backtrace
              ([0, Assert_failure, _a_], 1);
      }
-      /*<<float.ml:230:8>>*/ var
+      /*<<float.ml:256:8>>*/ var
       tl$0 = l$0[2],
       hd$0 = l$0[1],
-       /*<<float.ml:230:8>>*/ hlen = hd$0.length - 1;
-      /*<<float.ml:231:8>>*/  /*<<float.ml:231:8>>*/ caml_floatarray_blit
+       /*<<float.ml:256:8>>*/ hlen = hd$0.length - 1;
+      /*<<float.ml:257:8>>*/  /*<<float.ml:257:8>>*/ caml_floatarray_blit
       (hd$0, 0, result, i, hlen);
      var i$0 = i + hlen | 0;
      l$0 = tl$0;
      i = i$0;
     }
-    /*<<float.ml:235:10>>*/ }
+    /*<<float.ml:261:10>>*/ }
    function sub(a, ofs, len){
-     /*<<float.ml:238:4>>*/ check(a, ofs, len, cst_Float_Array_sub);
-     /*<<float.ml:239:17>>*/  /*<<float.ml:239:17>>*/ var
-     result =  /*<<float.ml:239:17>>*/ caml_floatarray_create(len);
-     /*<<float.ml:240:4>>*/  /*<<float.ml:240:4>>*/ caml_floatarray_blit
+     /*<<float.ml:264:4>>*/ check(a, ofs, len, cst_Float_Array_sub);
+     /*<<float.ml:265:17>>*/  /*<<float.ml:265:17>>*/ var
+     result =  /*<<float.ml:265:17>>*/ caml_floatarray_create(len);
+     /*<<float.ml:266:4>>*/  /*<<float.ml:266:4>>*/ caml_floatarray_blit
      (a, ofs, result, 0, len);
-     /*<<float.ml:240:4>>*/ return result;
-    /*<<float.ml:241:10>>*/ }
+     /*<<float.ml:266:4>>*/ return result;
+    /*<<float.ml:267:10>>*/ }
    function copy(a){
-     /*<<float.ml:244:4>>*/ var
+     /*<<float.ml:270:4>>*/ var
      l = a.length - 1,
-      /*<<float.ml:245:17>>*/ result =
-        /*<<float.ml:245:17>>*/ caml_floatarray_create(l);
-     /*<<float.ml:246:4>>*/  /*<<float.ml:246:4>>*/ caml_floatarray_blit
+      /*<<float.ml:271:17>>*/ result =
+        /*<<float.ml:271:17>>*/ caml_floatarray_create(l);
+     /*<<float.ml:272:4>>*/  /*<<float.ml:272:4>>*/ caml_floatarray_blit
      (a, 0, result, 0, l);
-     /*<<float.ml:246:4>>*/ return result;
-    /*<<float.ml:247:10>>*/ }
+     /*<<float.ml:272:4>>*/ return result;
+    /*<<float.ml:273:10>>*/ }
    function fill(a, ofs, len, v){
-     /*<<float.ml:250:4>>*/ check(a, ofs, len, cst_Float_Array_fill);
-     /*<<float.ml:250:4>>*/ return unsafe_fill(a, ofs, len, v);
-    /*<<float.ml:251:27>>*/ }
+     /*<<float.ml:276:4>>*/ check(a, ofs, len, cst_Float_Array_fill);
+     /*<<float.ml:276:4>>*/ return unsafe_fill(a, ofs, len, v);
+    /*<<float.ml:277:27>>*/ }
    function blit(src, sofs, dst, dofs, len){
-     /*<<float.ml:254:4>>*/ check(src, sofs, len, cst_Float_array_blit);
-     /*<<float.ml:255:4>>*/ check(dst, dofs, len, cst_Float_array_blit$0);
-     /*<<float.ml:256:4>>*/ return  /*<<float.ml:256:4>>*/ caml_floatarray_blit
+     /*<<float.ml:280:4>>*/ check(src, sofs, len, cst_Float_array_blit);
+     /*<<float.ml:281:4>>*/ check(dst, dofs, len, cst_Float_array_blit$0);
+     /*<<float.ml:282:4>>*/ return  /*<<float.ml:282:4>>*/ caml_floatarray_blit
             (src, sofs, dst, dofs, len);
-    /*<<float.ml:256:37>>*/ }
+    /*<<float.ml:282:37>>*/ }
    function to_list(a){
-     /*<<float.ml:259:4>>*/ return  /*<<float.ml:259:25>>*/ caml_call2
+     /*<<float.ml:285:4>>*/ return  /*<<float.ml:285:25>>*/ caml_call2
             (Stdlib_List[11],
              a.length - 1,
-             function(_ac_){ /*<<?>>*/ return a[1 + _ac_];});
-    /*<<float.ml:259:39>>*/ }
+             function(_ae_){ /*<<?>>*/ return a[1 + _ae_];});
+    /*<<float.ml:285:39>>*/ }
    function of_list(l){
-     /*<<float.ml:262:4>>*/ var
-      /*<<float.ml:262:17>>*/ result =
-        /*<<float.ml:262:17>>*/ caml_floatarray_create
-        ( /*<<float.ml:262:24>>*/ caml_call1(Stdlib_List[1], l)),
+     /*<<float.ml:288:4>>*/ var
+      /*<<float.ml:288:17>>*/ result =
+        /*<<float.ml:288:17>>*/ caml_floatarray_create
+        ( /*<<float.ml:288:24>>*/ caml_call1(Stdlib_List[1], l)),
      i = 0,
      l$0 = l;
-     /*<<float.ml:264:6>>*/ for(;;){
-     if(! l$0)  /*<<float.ml:263:4>>*/ return result;
+     /*<<float.ml:290:6>>*/ for(;;){
+     if(! l$0)  /*<<float.ml:289:4>>*/ return result;
      var t = l$0[2], h = l$0[1];
-      /*<<float.ml:266:18>>*/ result[1 + i] = h;
-      /*<<float.ml:263:4>>*/  /*<<float.ml:263:4>>*/ var i$0 = i + 1 | 0;
+      /*<<float.ml:292:18>>*/ result[1 + i] = h;
+      /*<<float.ml:289:4>>*/  /*<<float.ml:289:4>>*/ var i$0 = i + 1 | 0;
      i = i$0;
      l$0 = t;
     }
-    /*<<float.ml:268:12>>*/ }
+    /*<<float.ml:294:12>>*/ }
    function iter(f, a){
-     /*<<float.ml:272:4>>*/ var
-     _aa_ = a.length - 2 | 0,
-      /*<<float.ml:272:4>>*/ _$_ = 0;
-    if(_aa_ >= 0){
-     var i = _$_;
+     /*<<float.ml:298:4>>*/ var
+     _ac_ = a.length - 2 | 0,
+      /*<<float.ml:298:4>>*/ _ab_ = 0;
+    if(_ac_ >= 0){
+     var i = _ab_;
      for(;;){
-       /*<<float.ml:272:33>>*/  /*<<float.ml:272:33>>*/ caml_call1
+       /*<<float.ml:298:33>>*/  /*<<float.ml:298:33>>*/ caml_call1
        (f, a[1 + i]);
-       /*<<float.ml:272:33>>*/  /*<<float.ml:272:33>>*/ var _ab_ = i + 1 | 0;
-      if(_aa_ === i) break;
-      i = _ab_;
+       /*<<float.ml:298:33>>*/  /*<<float.ml:298:33>>*/ var _ad_ = i + 1 | 0;
+      if(_ac_ === i) break;
+      i = _ad_;
      }
     }
     return 0;
-    /*<<float.ml:272:56>>*/ }
+    /*<<float.ml:298:56>>*/ }
    function iter2(f, a, b){
-     /*<<float.ml:276:4>>*/ if(a.length - 1 !== b.length - 1)
-      /*<<float.ml:277:6>>*/ return  /*<<float.ml:277:6>>*/ caml_call1
+     /*<<float.ml:302:4>>*/ if(a.length - 1 !== b.length - 1)
+      /*<<float.ml:303:6>>*/ return  /*<<float.ml:303:6>>*/ caml_call1
              (Stdlib[1], cst_Float_Array_iter2_arrays_m);
-     /*<<float.ml:279:6>>*/ var
-     _Z_ = a.length - 2 | 0,
-      /*<<float.ml:279:6>>*/ _Y_ = 0;
-    if(_Z_ >= 0){
-     var i = _Y_;
+     /*<<float.ml:305:6>>*/ var
+     _$_ = a.length - 2 | 0,
+      /*<<float.ml:305:6>>*/ ___ = 0;
+    if(_$_ >= 0){
+     var i = ___;
      for(;;){
-       /*<<float.ml:279:35>>*/  /*<<float.ml:279:35>>*/ caml_call2
+       /*<<float.ml:305:35>>*/  /*<<float.ml:305:35>>*/ caml_call2
        (f, a[1 + i], b[1 + i]);
-       /*<<float.ml:279:35>>*/  /*<<float.ml:279:35>>*/ var ___ = i + 1 | 0;
-      if(_Z_ === i) break;
-      i = ___;
+       /*<<float.ml:305:35>>*/  /*<<float.ml:305:35>>*/ var _aa_ = i + 1 | 0;
+      if(_$_ === i) break;
+      i = _aa_;
      }
     }
     return 0;
-    /*<<float.ml:279:75>>*/ }
+    /*<<float.ml:305:75>>*/ }
    function map(f, a){
-     /*<<float.ml:282:4>>*/ var
+     /*<<float.ml:308:4>>*/ var
      l = a.length - 1,
-      /*<<float.ml:283:12>>*/ r =
-        /*<<float.ml:283:12>>*/ caml_floatarray_create(l),
-      /*<<float.ml:284:4>>*/ _W_ = l - 1 | 0,
-      /*<<float.ml:283:12>>*/ _V_ = 0;
-    if(_W_ >= 0){
-     var i = _V_;
+      /*<<float.ml:309:12>>*/ r =
+        /*<<float.ml:309:12>>*/ caml_floatarray_create(l),
+      /*<<float.ml:310:4>>*/ _Y_ = l - 1 | 0,
+      /*<<float.ml:309:12>>*/ _X_ = 0;
+    if(_Y_ >= 0){
+     var i = _X_;
      for(;;){
-       /*<<float.ml:285:6>>*/ r[1 + i] =
-        /*<<float.ml:285:21>>*/ caml_call1(f, a[1 + i]);
-       /*<<float.ml:285:6>>*/  /*<<float.ml:285:6>>*/ var _X_ = i + 1 | 0;
-      if(_W_ === i) break;
-      i = _X_;
+       /*<<float.ml:311:6>>*/ r[1 + i] =
+        /*<<float.ml:311:21>>*/ caml_call1(f, a[1 + i]);
+       /*<<float.ml:311:6>>*/  /*<<float.ml:311:6>>*/ var _Z_ = i + 1 | 0;
+      if(_Y_ === i) break;
+      i = _Z_;
      }
     }
-     /*<<float.ml:287:4>>*/ return r;
-    /*<<float.ml:287:5>>*/ }
+     /*<<float.ml:313:4>>*/ return r;
+    /*<<float.ml:313:5>>*/ }
    function map_inplace(f, a){
-     /*<<float.ml:291:4>>*/ var
-     _T_ = a.length - 2 | 0,
-      /*<<float.ml:291:4>>*/ _S_ = 0;
-    if(_T_ >= 0){
-     var i = _S_;
+     /*<<float.ml:317:4>>*/ var
+     _V_ = a.length - 2 | 0,
+      /*<<float.ml:317:4>>*/ _U_ = 0;
+    if(_V_ >= 0){
+     var i = _U_;
      for(;;){
-       /*<<float.ml:292:6>>*/ a[1 + i] =
-        /*<<float.ml:292:21>>*/ caml_call1(f, a[1 + i]);
-       /*<<float.ml:292:6>>*/  /*<<float.ml:292:6>>*/ var _U_ = i + 1 | 0;
-      if(_T_ === i) break;
-      i = _U_;
+       /*<<float.ml:318:6>>*/ a[1 + i] =
+        /*<<float.ml:318:21>>*/ caml_call1(f, a[1 + i]);
+       /*<<float.ml:318:6>>*/  /*<<float.ml:318:6>>*/ var _W_ = i + 1 | 0;
+      if(_V_ === i) break;
+      i = _W_;
      }
     }
     return 0;
-    /*<<float.ml:293:8>>*/ }
+    /*<<float.ml:319:8>>*/ }
    function map2(f, a, b){
-     /*<<float.ml:296:4>>*/ var
-     la = a.length - 1,
-      /*<<float.ml:297:4>>*/ lb = b.length - 1;
-    if(la !== lb)
-      /*<<float.ml:299:6>>*/ return  /*<<float.ml:299:6>>*/ caml_call1
-             (Stdlib[1], cst_Float_Array_map2_arrays_mu);
-     /*<<float.ml:301:14>>*/ var
-      /*<<float.ml:301:14>>*/ r =
-        /*<<float.ml:301:14>>*/ caml_floatarray_create(la),
-      /*<<float.ml:302:6>>*/ _Q_ = la - 1 | 0,
-      /*<<float.ml:301:14>>*/ _P_ = 0;
-    if(_Q_ >= 0){
-     var i = _P_;
-     for(;;){
-       /*<<float.ml:303:8>>*/ r[1 + i] =
-        /*<<float.ml:303:23>>*/ caml_call2(f, a[1 + i], b[1 + i]);
-       /*<<float.ml:303:8>>*/  /*<<float.ml:303:8>>*/ var _R_ = i + 1 | 0;
-      if(_Q_ === i) break;
-      i = _R_;
-     }
-    }
-     /*<<float.ml:305:6>>*/ return r;
-    /*<<float.ml:306:7>>*/ }
-   function iteri(f, a){
-     /*<<float.ml:310:4>>*/ var
-     _N_ = a.length - 2 | 0,
-      /*<<float.ml:310:4>>*/ _M_ = 0;
-    if(_N_ >= 0){
-     var i = _M_;
-     for(;;){
-       /*<<float.ml:310:33>>*/  /*<<float.ml:310:33>>*/ caml_call2
-       (f, i, a[1 + i]);
-       /*<<float.ml:310:33>>*/  /*<<float.ml:310:33>>*/ var _O_ = i + 1 | 0;
-      if(_N_ === i) break;
-      i = _O_;
-     }
-    }
-    return 0;
-    /*<<float.ml:310:58>>*/ }
-   function mapi(f, a){
-     /*<<float.ml:313:4>>*/ var
-     l = a.length - 1,
-      /*<<float.ml:314:12>>*/ r =
-        /*<<float.ml:314:12>>*/ caml_floatarray_create(l),
-      /*<<float.ml:315:4>>*/ _K_ = l - 1 | 0,
-      /*<<float.ml:314:12>>*/ _J_ = 0;
-    if(_K_ >= 0){
-     var i = _J_;
-     for(;;){
-       /*<<float.ml:316:6>>*/ r[1 + i] =
-        /*<<float.ml:316:21>>*/ caml_call2(f, i, a[1 + i]);
-       /*<<float.ml:316:6>>*/  /*<<float.ml:316:6>>*/ var _L_ = i + 1 | 0;
-      if(_K_ === i) break;
-      i = _L_;
-     }
-    }
-     /*<<float.ml:318:4>>*/ return r;
-    /*<<float.ml:318:5>>*/ }
-   function mapi_inplace(f, a){
      /*<<float.ml:322:4>>*/ var
-     _H_ = a.length - 2 | 0,
-      /*<<float.ml:322:4>>*/ _G_ = 0;
-    if(_H_ >= 0){
-     var i = _G_;
+     la = a.length - 1,
+      /*<<float.ml:323:4>>*/ lb = b.length - 1;
+    if(la !== lb)
+      /*<<float.ml:325:6>>*/ return  /*<<float.ml:325:6>>*/ caml_call1
+             (Stdlib[1], cst_Float_Array_map2_arrays_mu);
+     /*<<float.ml:327:14>>*/ var
+      /*<<float.ml:327:14>>*/ r =
+        /*<<float.ml:327:14>>*/ caml_floatarray_create(la),
+      /*<<float.ml:328:6>>*/ _S_ = la - 1 | 0,
+      /*<<float.ml:327:14>>*/ _R_ = 0;
+    if(_S_ >= 0){
+     var i = _R_;
      for(;;){
-       /*<<float.ml:323:6>>*/ a[1 + i] =
-        /*<<float.ml:323:21>>*/ caml_call2(f, i, a[1 + i]);
-       /*<<float.ml:323:6>>*/  /*<<float.ml:323:6>>*/ var _I_ = i + 1 | 0;
-      if(_H_ === i) break;
-      i = _I_;
+       /*<<float.ml:329:8>>*/ r[1 + i] =
+        /*<<float.ml:329:23>>*/ caml_call2(f, a[1 + i], b[1 + i]);
+       /*<<float.ml:329:8>>*/  /*<<float.ml:329:8>>*/ var _T_ = i + 1 | 0;
+      if(_S_ === i) break;
+      i = _T_;
+     }
+    }
+     /*<<float.ml:331:6>>*/ return r;
+    /*<<float.ml:332:7>>*/ }
+   function iteri(f, a){
+     /*<<float.ml:336:4>>*/ var
+     _P_ = a.length - 2 | 0,
+      /*<<float.ml:336:4>>*/ _O_ = 0;
+    if(_P_ >= 0){
+     var i = _O_;
+     for(;;){
+       /*<<float.ml:336:33>>*/  /*<<float.ml:336:33>>*/ caml_call2
+       (f, i, a[1 + i]);
+       /*<<float.ml:336:33>>*/  /*<<float.ml:336:33>>*/ var _Q_ = i + 1 | 0;
+      if(_P_ === i) break;
+      i = _Q_;
      }
     }
     return 0;
-    /*<<float.ml:324:8>>*/ }
+    /*<<float.ml:336:58>>*/ }
+   function mapi(f, a){
+     /*<<float.ml:339:4>>*/ var
+     l = a.length - 1,
+      /*<<float.ml:340:12>>*/ r =
+        /*<<float.ml:340:12>>*/ caml_floatarray_create(l),
+      /*<<float.ml:341:4>>*/ _M_ = l - 1 | 0,
+      /*<<float.ml:340:12>>*/ _L_ = 0;
+    if(_M_ >= 0){
+     var i = _L_;
+     for(;;){
+       /*<<float.ml:342:6>>*/ r[1 + i] =
+        /*<<float.ml:342:21>>*/ caml_call2(f, i, a[1 + i]);
+       /*<<float.ml:342:6>>*/  /*<<float.ml:342:6>>*/ var _N_ = i + 1 | 0;
+      if(_M_ === i) break;
+      i = _N_;
+     }
+    }
+     /*<<float.ml:344:4>>*/ return r;
+    /*<<float.ml:344:5>>*/ }
+   function mapi_inplace(f, a){
+     /*<<float.ml:348:4>>*/ var
+     _J_ = a.length - 2 | 0,
+      /*<<float.ml:348:4>>*/ _I_ = 0;
+    if(_J_ >= 0){
+     var i = _I_;
+     for(;;){
+       /*<<float.ml:349:6>>*/ a[1 + i] =
+        /*<<float.ml:349:21>>*/ caml_call2(f, i, a[1 + i]);
+       /*<<float.ml:349:6>>*/  /*<<float.ml:349:6>>*/ var _K_ = i + 1 | 0;
+      if(_J_ === i) break;
+      i = _K_;
+     }
+    }
+    return 0;
+    /*<<float.ml:350:8>>*/ }
    function fold_left(f, x, a){
-     /*<<float.ml:328:4>>*/ var
-      /*<<float.ml:328:12>>*/ r = [0, x],
-     _E_ = a.length - 2 | 0,
-      /*<<float.ml:328:12>>*/ _D_ = 0;
-    if(_E_ >= 0){
+     /*<<float.ml:354:4>>*/ var
+      /*<<float.ml:354:12>>*/ r = [0, x],
+     _G_ = a.length - 2 | 0,
+      /*<<float.ml:354:12>>*/ _F_ = 0;
+    if(_G_ >= 0){
+     var i = _F_;
+     for(;;){
+      r[1] =  /*<<float.ml:356:11>>*/ caml_call2(f, r[1], a[1 + i]);
+       /*<<float.ml:355:4>>*/  /*<<float.ml:355:4>>*/ var _H_ = i + 1 | 0;
+      if(_G_ === i) break;
+      i = _H_;
+     }
+    }
+    return r[1];
+    /*<<float.ml:358:6>>*/ }
+   function fold_right(f, a, x){
+     /*<<float.ml:362:4>>*/ var
+      /*<<float.ml:362:12>>*/ r = [0, x],
+      /*<<float.ml:363:4>>*/ _D_ = a.length - 2 | 0;
+    if(_D_ >= 0){
      var i = _D_;
      for(;;){
-      r[1] =  /*<<float.ml:330:11>>*/ caml_call2(f, r[1], a[1 + i]);
-       /*<<float.ml:329:4>>*/  /*<<float.ml:329:4>>*/ var _F_ = i + 1 | 0;
-      if(_E_ === i) break;
-      i = _F_;
-     }
-    }
-    return r[1];
-    /*<<float.ml:332:6>>*/ }
-   function fold_right(f, a, x){
-     /*<<float.ml:336:4>>*/ var
-      /*<<float.ml:336:12>>*/ r = [0, x],
-      /*<<float.ml:337:4>>*/ _B_ = a.length - 2 | 0;
-    if(_B_ >= 0){
-     var i = _B_;
-     for(;;){
-      r[1] =  /*<<float.ml:338:11>>*/ caml_call2(f, a[1 + i], r[1]);
-       /*<<float.ml:337:4>>*/  /*<<float.ml:337:4>>*/ var _C_ = i - 1 | 0;
+      r[1] =  /*<<float.ml:364:11>>*/ caml_call2(f, a[1 + i], r[1]);
+       /*<<float.ml:363:4>>*/  /*<<float.ml:363:4>>*/ var _E_ = i - 1 | 0;
       if(0 === i) break;
-      i = _C_;
+      i = _E_;
      }
     }
     return r[1];
-    /*<<float.ml:340:6>>*/ }
+    /*<<float.ml:366:6>>*/ }
    function exists(p, a){
-     /*<<float.ml:344:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:346:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:346:20>>*/ return 0;
-      /*<<float.ml:347:14>>*/ if
-      ( /*<<float.ml:347:14>>*/ caml_call1(p, a[1 + i]))
-       /*<<float.ml:347:38>>*/ return 1;
-      /*<<float.ml:348:11>>*/  /*<<float.ml:348:11>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:370:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:372:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:372:20>>*/ return 0;
+      /*<<float.ml:373:14>>*/ if
+      ( /*<<float.ml:373:14>>*/ caml_call1(p, a[1 + i]))
+       /*<<float.ml:373:38>>*/ return 1;
+      /*<<float.ml:374:11>>*/  /*<<float.ml:374:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:349:10>>*/ }
+    /*<<float.ml:375:10>>*/ }
    function for_all(p, a){
-     /*<<float.ml:353:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:355:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:355:20>>*/ return 1;
-      /*<<float.ml:356:14>>*/ if
-      (!  /*<<float.ml:356:14>>*/ caml_call1(p, a[1 + i]))
-       /*<<float.ml:357:11>>*/ return 0;
-      /*<<float.ml:356:38>>*/  /*<<float.ml:356:38>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:379:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:381:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:381:20>>*/ return 1;
+      /*<<float.ml:382:14>>*/ if
+      (!  /*<<float.ml:382:14>>*/ caml_call1(p, a[1 + i]))
+       /*<<float.ml:383:11>>*/ return 0;
+      /*<<float.ml:382:38>>*/  /*<<float.ml:382:38>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:358:10>>*/ }
+    /*<<float.ml:384:10>>*/ }
    function mem(x, a){
-     /*<<float.ml:362:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:364:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:364:20>>*/ return 0;
-     if(0 ===  /*<<float.ml:365:22>>*/ caml_float_compare(a[1 + i], x))
-       /*<<float.ml:365:50>>*/ return 1;
-      /*<<float.ml:366:11>>*/  /*<<float.ml:366:11>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:388:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:390:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:390:20>>*/ return 0;
+     if(0 ===  /*<<float.ml:391:22>>*/ caml_float_compare(a[1 + i], x))
+       /*<<float.ml:391:50>>*/ return 1;
+      /*<<float.ml:392:11>>*/  /*<<float.ml:392:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:368:10>>*/ }
+    /*<<float.ml:394:10>>*/ }
    function mem_ieee(x, a){
-     /*<<float.ml:372:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:374:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:374:20>>*/ return 0;
-     if(x == a[1 + i])  /*<<float.ml:375:40>>*/ return 1;
-      /*<<float.ml:376:11>>*/  /*<<float.ml:376:11>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:398:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:400:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:400:20>>*/ return 0;
+     if(x == a[1 + i])  /*<<float.ml:401:40>>*/ return 1;
+      /*<<float.ml:402:11>>*/  /*<<float.ml:402:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:378:10>>*/ }
+    /*<<float.ml:404:10>>*/ }
    function find_opt(p, a){
-     /*<<float.ml:382:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:384:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:384:20>>*/ return 0;
-      /*<<float.ml:386:16>>*/  /*<<float.ml:386:16>>*/ var x = a[1 + i];
-      /*<<float.ml:387:11>>*/ if( /*<<float.ml:387:11>>*/ caml_call1(p, x))
-       /*<<float.ml:387:20>>*/ return [0, x];
-      /*<<float.ml:388:13>>*/  /*<<float.ml:388:13>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:408:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:410:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:410:20>>*/ return 0;
+      /*<<float.ml:412:16>>*/  /*<<float.ml:412:16>>*/ var x = a[1 + i];
+      /*<<float.ml:413:11>>*/ if( /*<<float.ml:413:11>>*/ caml_call1(p, x))
+       /*<<float.ml:413:20>>*/ return [0, x];
+      /*<<float.ml:414:13>>*/  /*<<float.ml:414:13>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:390:10>>*/ }
+    /*<<float.ml:416:10>>*/ }
    function find_index(p, a){
-     /*<<float.ml:394:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:396:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:396:20>>*/ return 0;
-      /*<<float.ml:397:14>>*/ if
-      ( /*<<float.ml:397:14>>*/ caml_call1(p, a[1 + i]))
-       /*<<float.ml:397:38>>*/ return [0, i];
-      /*<<float.ml:398:11>>*/  /*<<float.ml:398:11>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:420:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:422:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:422:20>>*/ return 0;
+      /*<<float.ml:423:14>>*/ if
+      ( /*<<float.ml:423:14>>*/ caml_call1(p, a[1 + i]))
+       /*<<float.ml:423:38>>*/ return [0, i];
+      /*<<float.ml:424:11>>*/  /*<<float.ml:424:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:399:10>>*/ }
+    /*<<float.ml:425:10>>*/ }
    function find_map(f, a){
-     /*<<float.ml:403:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:405:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:405:20>>*/ return 0;
-      /*<<float.ml:407:14>>*/  /*<<float.ml:407:14>>*/ var
-      r =  /*<<float.ml:407:14>>*/ caml_call1(f, a[1 + i]);
-     if(r)  /*<<float.ml:409:25>>*/ return r;
-      /*<<float.ml:408:18>>*/  /*<<float.ml:408:18>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:429:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:431:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:431:20>>*/ return 0;
+      /*<<float.ml:433:14>>*/  /*<<float.ml:433:14>>*/ var
+      r =  /*<<float.ml:433:14>>*/ caml_call1(f, a[1 + i]);
+     if(r)  /*<<float.ml:435:25>>*/ return r;
+      /*<<float.ml:434:18>>*/  /*<<float.ml:434:18>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:411:10>>*/ }
+    /*<<float.ml:437:10>>*/ }
    function find_mapi(f, a){
-     /*<<float.ml:415:4>>*/ var n = a.length - 1, i = 0;
-     /*<<float.ml:417:6>>*/ for(;;){
-     if(i === n)  /*<<float.ml:417:20>>*/ return 0;
-      /*<<float.ml:419:14>>*/  /*<<float.ml:419:14>>*/ var
-      r =  /*<<float.ml:419:14>>*/ caml_call2(f, i, a[1 + i]);
-     if(r)  /*<<float.ml:421:25>>*/ return r;
-      /*<<float.ml:420:18>>*/  /*<<float.ml:420:18>>*/ var i$0 = i + 1 | 0;
+     /*<<float.ml:441:4>>*/ var n = a.length - 1, i = 0;
+     /*<<float.ml:443:6>>*/ for(;;){
+     if(i === n)  /*<<float.ml:443:20>>*/ return 0;
+      /*<<float.ml:445:14>>*/  /*<<float.ml:445:14>>*/ var
+      r =  /*<<float.ml:445:14>>*/ caml_call2(f, i, a[1 + i]);
+     if(r)  /*<<float.ml:447:25>>*/ return r;
+      /*<<float.ml:446:18>>*/  /*<<float.ml:446:18>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
-    /*<<float.ml:423:10>>*/ }
-    /*<<float.ml:426:2>>*/ var
-     /*<<float.ml:426:2>>*/ Bottom =
+    /*<<float.ml:449:10>>*/ }
+    /*<<float.ml:452:2>>*/ var
+     /*<<float.ml:452:2>>*/ Bottom =
       [248, "Stdlib.Float.Array.Bottom", runtime.caml_fresh_oo_id(0)],
-    _b_ = [0, cst_float_ml, 458, 6];
+    _b_ = [0, cst_float_ml, 484, 6];
    function sort(cmp, a){
     function maxson(l, i){
-      /*<<float.ml:429:6>>*/ var
+      /*<<float.ml:455:6>>*/ var
       i31 = ((i + i | 0) + i | 0) + 1 | 0,
-       /*<<float.ml:430:14>>*/ x = [0, i31];
+       /*<<float.ml:456:14>>*/ x = [0, i31];
      if((i31 + 2 | 0) < l){
       if
-       ( /*<<float.ml:432:11>>*/ caml_call2
+       ( /*<<float.ml:458:11>>*/ caml_call2
          (cmp,
-           /*<<float.ml:432:15>>*/ caml_array_get(a, i31),
-           /*<<float.ml:432:27>>*/ caml_array_get(a, i31 + 1 | 0))
+           /*<<float.ml:458:15>>*/ caml_array_get(a, i31),
+           /*<<float.ml:458:27>>*/ caml_array_get(a, i31 + 1 | 0))
         < 0)
        x[1] = i31 + 1 | 0;
       if
-       ( /*<<float.ml:433:11>>*/ caml_call2
+       ( /*<<float.ml:459:11>>*/ caml_call2
          (cmp,
-           /*<<float.ml:433:15>>*/ caml_array_get(a, x[1]),
-           /*<<float.ml:433:26>>*/ caml_array_get(a, i31 + 2 | 0))
+           /*<<float.ml:459:15>>*/ caml_array_get(a, x[1]),
+           /*<<float.ml:459:26>>*/ caml_array_get(a, i31 + 2 | 0))
         < 0)
        x[1] = i31 + 2 | 0;
       return x[1];
      }
-      /*<<float.ml:436:24>>*/ if
+      /*<<float.ml:462:24>>*/ if
       ((i31 + 1 | 0) < l
        &&
         0
         >
-          /*<<float.ml:436:24>>*/ caml_call2
+          /*<<float.ml:462:24>>*/ caml_call2
           (cmp,
-            /*<<float.ml:436:28>>*/ caml_array_get(a, i31),
-            /*<<float.ml:436:40>>*/ caml_array_get(a, i31 + 1 | 0)))
-       /*<<float.ml:437:13>>*/ return i31 + 1 | 0;
-     if(i31 < l)  /*<<float.ml:438:29>>*/ return i31;
-      /*<<float.ml:438:38>>*/ throw  /*<<float.ml:438:38>>*/ caml_maybe_attach_backtrace
+            /*<<float.ml:462:28>>*/ caml_array_get(a, i31),
+            /*<<float.ml:462:40>>*/ caml_array_get(a, i31 + 1 | 0)))
+       /*<<float.ml:463:13>>*/ return i31 + 1 | 0;
+     if(i31 < l)  /*<<float.ml:464:29>>*/ return i31;
+      /*<<float.ml:464:38>>*/ throw  /*<<float.ml:464:38>>*/ caml_maybe_attach_backtrace
             ([0, Bottom, i], 1);
-     /*<<float.ml:438:54>>*/ }
-    var l = a.length - 1, _v_ = ((l + 1 | 0) / 3 | 0) - 1 | 0;
-    if(_v_ >= 0){
-     var i$6 = _v_;
+     /*<<float.ml:464:54>>*/ }
+    var l = a.length - 1, _x_ = ((l + 1 | 0) / 3 | 0) - 1 | 0;
+    if(_x_ >= 0){
+     var i$6 = _x_;
      for(;;){
-       /*<<float.ml:467:52>>*/  /*<<float.ml:467:52>>*/ var
-       e$1 =  /*<<float.ml:467:52>>*/ caml_array_get(a, i$6);
-       /*<<float.ml:449:24>>*/ try{
+       /*<<float.ml:493:52>>*/  /*<<float.ml:493:52>>*/ var
+       e$1 =  /*<<float.ml:493:52>>*/ caml_array_get(a, i$6);
+       /*<<float.ml:475:24>>*/ try{
        var i = i$6;
-        /*<<float.ml:441:6>>*/ for(;;){
-         /*<<float.ml:441:14>>*/  /*<<float.ml:441:14>>*/ var
+        /*<<float.ml:467:6>>*/ for(;;){
+         /*<<float.ml:467:14>>*/  /*<<float.ml:467:14>>*/ var
          j = maxson(l, i);
-         /*<<float.ml:442:9>>*/ if
+         /*<<float.ml:468:9>>*/ if
          (0
           >=
-            /*<<float.ml:442:9>>*/ caml_call2
-            (cmp,  /*<<float.ml:442:13>>*/ caml_array_get(a, j), e$1))
+            /*<<float.ml:468:9>>*/ caml_call2
+            (cmp,  /*<<float.ml:468:13>>*/ caml_array_get(a, j), e$1))
          break;
-         /*<<float.ml:443:8>>*/  /*<<float.ml:443:8>>*/ caml_array_set
-         (a, i,  /*<<float.ml:443:16>>*/ caml_array_get(a, j));
+         /*<<float.ml:469:8>>*/  /*<<float.ml:469:8>>*/ caml_array_set
+         (a, i,  /*<<float.ml:469:16>>*/ caml_array_get(a, j));
         i = j;
        }
-        /*<<float.ml:445:15>>*/  /*<<float.ml:445:15>>*/ caml_array_set
+        /*<<float.ml:471:15>>*/  /*<<float.ml:471:15>>*/ caml_array_set
         (a, i, e$1);
       }
       catch(exn$0){
        var exn = caml_wrap_exception(exn$0);
        if(exn[1] !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
        var i$0 = exn[2];
-        /*<<float.ml:449:63>>*/  /*<<float.ml:449:63>>*/ caml_array_set
+        /*<<float.ml:475:63>>*/  /*<<float.ml:475:63>>*/ caml_array_set
         (a, i$0, e$1);
       }
-       /*<<float.ml:467:40>>*/  /*<<float.ml:467:40>>*/ var _A_ = i$6 - 1 | 0;
+       /*<<float.ml:493:40>>*/  /*<<float.ml:493:40>>*/ var _C_ = i$6 - 1 | 0;
       if(0 === i$6) break;
-      i$6 = _A_;
+      i$6 = _C_;
      }
     }
-     /*<<float.ml:468:4>>*/  /*<<float.ml:468:4>>*/ var _w_ = l - 1 | 0;
-    if(_w_ >= 2){
-     var i$4 = _w_;
+     /*<<float.ml:494:4>>*/  /*<<float.ml:494:4>>*/ var _y_ = l - 1 | 0;
+    if(_y_ >= 2){
+     var i$4 = _y_;
      for(;;){
-       /*<<float.ml:469:14>>*/  /*<<float.ml:469:14>>*/ var
-       e$0 =  /*<<float.ml:469:14>>*/ caml_array_get(a, i$4);
-       /*<<float.ml:470:6>>*/  /*<<float.ml:470:6>>*/ caml_array_set
-       (a, i$4,  /*<<float.ml:470:14>>*/ caml_array_get(a, 0));
+       /*<<float.ml:495:14>>*/  /*<<float.ml:495:14>>*/ var
+       e$0 =  /*<<float.ml:495:14>>*/ caml_array_get(a, i$4);
+       /*<<float.ml:496:6>>*/  /*<<float.ml:496:6>>*/ caml_array_set
+       (a, i$4,  /*<<float.ml:496:14>>*/ caml_array_get(a, 0));
       var i$5 = 0;
-       /*<<float.ml:455:21>>*/ try{
+       /*<<float.ml:481:21>>*/ try{
        var i$1 = i$5;
-        /*<<float.ml:451:6>>*/ for(;;){
-         /*<<float.ml:451:14>>*/  /*<<float.ml:451:14>>*/ var
+        /*<<float.ml:477:6>>*/ for(;;){
+         /*<<float.ml:477:14>>*/  /*<<float.ml:477:14>>*/ var
          j$0 = maxson(i$4, i$1);
-         /*<<float.ml:452:6>>*/  /*<<float.ml:452:6>>*/ caml_array_set
-         (a, i$1,  /*<<float.ml:452:14>>*/ caml_array_get(a, j$0));
+         /*<<float.ml:478:6>>*/  /*<<float.ml:478:6>>*/ caml_array_set
+         (a, i$1,  /*<<float.ml:478:14>>*/ caml_array_get(a, j$0));
         i$1 = j$0;
        }
       }
@@ -8727,243 +8846,262 @@
         b:
         {
          var i$3 = i$2;
-          /*<<float.ml:457:6>>*/ for(;;){
+          /*<<float.ml:483:6>>*/ for(;;){
           var father = (i$3 - 1 | 0) / 3 | 0;
           if(i$3 === father)
-            /*<<float.ml:458:6>>*/ throw  /*<<float.ml:458:6>>*/ caml_maybe_attach_backtrace
+            /*<<float.ml:484:6>>*/ throw  /*<<float.ml:484:6>>*/ caml_maybe_attach_backtrace
                   ([0, Assert_failure, _b_], 1);
-           /*<<float.ml:459:9>>*/ if
+           /*<<float.ml:485:9>>*/ if
            (0
             <=
-              /*<<float.ml:459:9>>*/ caml_call2
-              (cmp,  /*<<float.ml:459:13>>*/ caml_array_get(a, father), e$0))
+              /*<<float.ml:485:9>>*/ caml_call2
+              (cmp,  /*<<float.ml:485:13>>*/ caml_array_get(a, father), e$0))
            break;
-           /*<<float.ml:460:8>>*/  /*<<float.ml:460:8>>*/ caml_array_set
-           (a, i$3,  /*<<float.ml:460:16>>*/ caml_array_get(a, father));
+           /*<<float.ml:486:8>>*/  /*<<float.ml:486:8>>*/ caml_array_set
+           (a, i$3,  /*<<float.ml:486:16>>*/ caml_array_get(a, father));
           if(0 >= father) break b;
           i$3 = father;
          }
-          /*<<float.ml:462:15>>*/  /*<<float.ml:462:15>>*/ caml_array_set
+          /*<<float.ml:488:15>>*/  /*<<float.ml:488:15>>*/ caml_array_set
           (a, i$3, e$0);
          break a;
         }
-         /*<<float.ml:461:51>>*/  /*<<float.ml:461:51>>*/ caml_array_set
+         /*<<float.ml:487:51>>*/  /*<<float.ml:487:51>>*/ caml_array_set
          (a, 0, e$0);
        }
-        /*<<float.ml:468:4>>*/  /*<<float.ml:468:4>>*/ var _z_ = i$4 - 1 | 0;
+        /*<<float.ml:494:4>>*/  /*<<float.ml:494:4>>*/ var _B_ = i$4 - 1 | 0;
        if(2 === i$4) break;
-       i$4 = _z_;
+       i$4 = _B_;
       }
      }
     }
-    var _x_ = 1 < l ? 1 : 0;
-    if(_x_){
-      /*<<float.ml:473:27>>*/  /*<<float.ml:473:27>>*/ var
-      e =  /*<<float.ml:473:27>>*/ caml_array_get(a, 1);
-      /*<<float.ml:473:40>>*/  /*<<float.ml:473:40>>*/ caml_array_set
-      (a, 1,  /*<<float.ml:473:48>>*/ caml_array_get(a, 0));
-     var _y_ =  /*<<float.ml:473:59>>*/ caml_array_set(a, 0, e);
+    var _z_ = 1 < l ? 1 : 0;
+    if(_z_){
+      /*<<float.ml:499:27>>*/  /*<<float.ml:499:27>>*/ var
+      e =  /*<<float.ml:499:27>>*/ caml_array_get(a, 1);
+      /*<<float.ml:499:40>>*/  /*<<float.ml:499:40>>*/ caml_array_set
+      (a, 1,  /*<<float.ml:499:48>>*/ caml_array_get(a, 0));
+     var _A_ =  /*<<float.ml:499:59>>*/ caml_array_set(a, 0, e);
     }
     else
-     var _y_ = _x_;
-     /*<<float.ml:473:59>>*/ return _y_;
-    /*<<float.ml:473:69>>*/ }
+     var _A_ = _z_;
+     /*<<float.ml:499:59>>*/ return _A_;
+    /*<<float.ml:499:69>>*/ }
    function stable_sort(cmp, a){
     function merge(src1ofs, src1len, src2, src2ofs, src2len, dst, dstofs){
-      /*<<float.ml:479:6>>*/ var
+      /*<<float.ml:505:6>>*/ var
       src1r = src1ofs + src1len | 0,
       src2r = src2ofs + src2len | 0,
-       /*<<float.ml:496:46>>*/ s2$1 =
-         /*<<float.ml:496:46>>*/ caml_array_get(src2, src2ofs),
-       /*<<float.ml:496:22>>*/ s1$1 =
-         /*<<float.ml:496:22>>*/ caml_array_get(a, src1ofs),
+       /*<<float.ml:522:46>>*/ s2$1 =
+         /*<<float.ml:522:46>>*/ caml_array_get(src2, src2ofs),
+       /*<<float.ml:522:22>>*/ s1$1 =
+         /*<<float.ml:522:22>>*/ caml_array_get(a, src1ofs),
       i1 = src1ofs,
       s1 = s1$1,
       i2 = src2ofs,
       s2 = s2$1,
       d = dstofs;
-      /*<<float.ml:481:8>>*/ for(;;)
-       /*<<float.ml:481:11>>*/ if
-       (0 <  /*<<float.ml:481:11>>*/ caml_call2(cmp, s1, s2)){
-        /*<<float.ml:489:10>>*/  /*<<float.ml:489:10>>*/ caml_array_set
+      /*<<float.ml:507:8>>*/ for(;;)
+       /*<<float.ml:507:11>>*/ if
+       (0 <  /*<<float.ml:507:11>>*/ caml_call2(cmp, s1, s2)){
+        /*<<float.ml:515:10>>*/  /*<<float.ml:515:10>>*/ caml_array_set
         (dst, d, s2);
-        /*<<float.ml:489:10>>*/  /*<<float.ml:489:10>>*/ var
+        /*<<float.ml:515:10>>*/  /*<<float.ml:515:10>>*/ var
         i2$0 = i2 + 1 | 0;
        if(i2$0 >= src2r) return blit(a, i1, dst, d + 1 | 0, src1r - i1 | 0);
-        /*<<float.ml:492:12>>*/ var
-         /*<<float.ml:492:12>>*/ d$0 = d + 1 | 0,
-         /*<<float.ml:492:26>>*/ s2$0 =
-           /*<<float.ml:492:26>>*/ caml_array_get(src2, i2$0);
+        /*<<float.ml:518:12>>*/ var
+         /*<<float.ml:518:12>>*/ d$0 = d + 1 | 0,
+         /*<<float.ml:518:26>>*/ s2$0 =
+           /*<<float.ml:518:26>>*/ caml_array_get(src2, i2$0);
        i2 = i2$0;
        s2 = s2$0;
        d = d$0;
       }
       else{
-        /*<<float.ml:482:10>>*/  /*<<float.ml:482:10>>*/ caml_array_set
+        /*<<float.ml:508:10>>*/  /*<<float.ml:508:10>>*/ caml_array_set
         (dst, d, s1);
-        /*<<float.ml:482:10>>*/  /*<<float.ml:482:10>>*/ var
+        /*<<float.ml:508:10>>*/  /*<<float.ml:508:10>>*/ var
         i1$0 = i1 + 1 | 0;
        if(i1$0 >= src1r)
         return blit(src2, i2, dst, d + 1 | 0, src2r - i2 | 0);
-        /*<<float.ml:485:12>>*/ var
-         /*<<float.ml:485:12>>*/ d$1 = d + 1 | 0,
-         /*<<float.ml:485:20>>*/ s1$0 =
-           /*<<float.ml:485:20>>*/ caml_array_get(a, i1$0);
+        /*<<float.ml:511:12>>*/ var
+         /*<<float.ml:511:12>>*/ d$1 = d + 1 | 0,
+         /*<<float.ml:511:20>>*/ s1$0 =
+           /*<<float.ml:511:20>>*/ caml_array_get(a, i1$0);
        i1 = i1$0;
        s1 = s1$0;
        d = d$1;
       }
-     /*<<float.ml:496:72>>*/ }
+     /*<<float.ml:522:72>>*/ }
     function isortto(srcofs, dst, dstofs, len){
-      /*<<float.ml:499:6>>*/ var
-      _t_ = len - 1 | 0,
-       /*<<float.ml:499:6>>*/ _s_ = 0;
-     if(_t_ >= 0){
-      var i = _s_;
+      /*<<float.ml:525:6>>*/ var
+      _v_ = len - 1 | 0,
+       /*<<float.ml:525:6>>*/ _u_ = 0;
+     if(_v_ >= 0){
+      var i = _u_;
       for(;;){
-        /*<<float.ml:500:16>>*/ var
-         /*<<float.ml:500:16>>*/ e =
-           /*<<float.ml:500:16>>*/ caml_array_get(a, srcofs + i | 0),
-         /*<<float.ml:501:16>>*/ j = [0, (dstofs + i | 0) - 1 | 0];
+        /*<<float.ml:526:16>>*/ var
+         /*<<float.ml:526:16>>*/ e =
+           /*<<float.ml:526:16>>*/ caml_array_get(a, srcofs + i | 0),
+         /*<<float.ml:527:16>>*/ j = [0, (dstofs + i | 0) - 1 | 0];
        for(;;){
         if(dstofs > j[1]) break;
-         /*<<float.ml:502:31>>*/ if
+         /*<<float.ml:528:31>>*/ if
          (0
           >=
-            /*<<float.ml:502:31>>*/ caml_call2
-            (cmp,  /*<<float.ml:502:35>>*/ caml_array_get(dst, j[1]), e))
+            /*<<float.ml:528:31>>*/ caml_call2
+            (cmp,  /*<<float.ml:528:35>>*/ caml_array_get(dst, j[1]), e))
          break;
-         /*<<float.ml:503:10>>*/  /*<<float.ml:503:10>>*/ caml_array_set
+         /*<<float.ml:529:10>>*/  /*<<float.ml:529:10>>*/ caml_array_set
          (dst,
           j[1] + 1 | 0,
-           /*<<float.ml:503:27>>*/ caml_array_get(dst, j[1]));
+           /*<<float.ml:529:27>>*/ caml_array_get(dst, j[1]));
         j[1]--;
        }
-        /*<<float.ml:506:8>>*/  /*<<float.ml:506:8>>*/ caml_array_set
+        /*<<float.ml:532:8>>*/  /*<<float.ml:532:8>>*/ caml_array_set
         (dst, j[1] + 1 | 0, e);
-        /*<<float.ml:499:6>>*/  /*<<float.ml:499:6>>*/ var _u_ = i + 1 | 0;
-       if(_t_ === i) break;
-       i = _u_;
+        /*<<float.ml:525:6>>*/  /*<<float.ml:525:6>>*/ var _w_ = i + 1 | 0;
+       if(_v_ === i) break;
+       i = _w_;
       }
      }
      return 0;
-     /*<<float.ml:507:10>>*/ }
+     /*<<float.ml:533:10>>*/ }
     function sortto(srcofs, dst, dstofs, len){
-      /*<<float.ml:510:6>>*/ if(len <= 5)
-       /*<<float.ml:510:28>>*/ return isortto(srcofs, dst, dstofs, len);
+      /*<<float.ml:536:6>>*/ if(len <= 5)
+       /*<<float.ml:536:28>>*/ return isortto(srcofs, dst, dstofs, len);
      var l1 = len / 2 | 0, l2 = len - l1 | 0;
-      /*<<float.ml:513:8>>*/ sortto(srcofs + l1 | 0, dst, dstofs + l1 | 0, l2);
-      /*<<float.ml:514:8>>*/ sortto(srcofs, a, srcofs + l2 | 0, l1);
-      /*<<float.ml:514:8>>*/ return merge
+      /*<<float.ml:539:8>>*/ sortto(srcofs + l1 | 0, dst, dstofs + l1 | 0, l2);
+      /*<<float.ml:540:8>>*/ sortto(srcofs, a, srcofs + l2 | 0, l1);
+      /*<<float.ml:540:8>>*/ return merge
              (srcofs + l2 | 0, l1, dst, dstofs + l1 | 0, l2, dst, dstofs);
-     /*<<float.ml:516:9>>*/ }
+     /*<<float.ml:542:9>>*/ }
     var l = a.length - 1;
-    if(l <= 5)  /*<<float.ml:519:24>>*/ return isortto(0, a, 0, l);
-     /*<<float.ml:522:14>>*/ var
+    if(l <= 5)  /*<<float.ml:545:24>>*/ return isortto(0, a, 0, l);
+     /*<<float.ml:548:14>>*/ var
      l1 = l / 2 | 0,
      l2 = l - l1 | 0,
-      /*<<float.ml:522:14>>*/ t =
-        /*<<float.ml:522:14>>*/ caml_floatarray_create(l2);
-     /*<<float.ml:523:6>>*/ sortto(l1, t, 0, l2);
-     /*<<float.ml:524:6>>*/ sortto(0, a, l2, l1);
-     /*<<float.ml:524:6>>*/ return merge(l2, l1, t, 0, l2, a, 0);
-    /*<<float.ml:526:7>>*/ }
+      /*<<float.ml:548:14>>*/ t =
+        /*<<float.ml:548:14>>*/ caml_floatarray_create(l2);
+     /*<<float.ml:549:6>>*/ sortto(l1, t, 0, l2);
+     /*<<float.ml:550:6>>*/ sortto(0, a, l2, l1);
+     /*<<float.ml:550:6>>*/ return merge(l2, l1, t, 0, l2, a, 0);
+    /*<<float.ml:552:7>>*/ }
+   function shuffle(rand, a){
+     /*<<float.ml:558:4>>*/ var _s_ = a.length - 2 | 0;
+    if(_s_ >= 1){
+     var i = _s_;
+     for(;;){
+       /*<<float.ml:559:14>>*/ var
+        /*<<float.ml:559:14>>*/ j =
+          /*<<float.ml:559:14>>*/ caml_call1(rand, i + 1 | 0),
+        /*<<float.ml:560:14>>*/ v = a[1 + i];
+       /*<<float.ml:561:6>>*/ a[1 + i] =
+        /*<<float.ml:561:21>>*/ caml_array_get(a, j);
+       /*<<float.ml:562:6>>*/ a[1 + j] = v;
+      var _t_ = i - 1 | 0;
+      if(1 === i) break;
+      i = _t_;
+     }
+    }
+    return 0;
+    /*<<float.ml:563:8>>*/ }
    function to_seq(a){
     function aux(i, param){
-      /*<<float.ml:533:6>>*/ if(i >= a.length - 1)
-       /*<<float.ml:537:11>>*/ return 0;
-      /*<<float.ml:535:16>>*/ var
-       /*<<float.ml:535:16>>*/ x = a[1 + i],
-       /*<<float.ml:535:16>>*/ _q_ = i + 1 | 0;
-      /*<<float.ml:536:8>>*/ return [0,
+      /*<<float.ml:568:6>>*/ if(i >= a.length - 1)
+       /*<<float.ml:572:11>>*/ return 0;
+      /*<<float.ml:570:16>>*/ var
+       /*<<float.ml:570:16>>*/ x = a[1 + i],
+       /*<<float.ml:570:16>>*/ _q_ = i + 1 | 0;
+      /*<<float.ml:571:8>>*/ return [0,
              x,
              function(_r_){ /*<<?>>*/ return aux(_q_, _r_);}];
-     /*<<float.ml:537:18>>*/ }
-     /*<<float.ml:539:4>>*/ var _o_ = 0;
-     /*<<float.ml:539:4>>*/ return function(_p_){
+     /*<<float.ml:572:18>>*/ }
+     /*<<float.ml:574:4>>*/ var _o_ = 0;
+     /*<<float.ml:574:4>>*/ return function(_p_){
       /*<<?>>*/ return aux(_o_, _p_);};
-    /*<<float.ml:539:9>>*/ }
+    /*<<float.ml:574:9>>*/ }
    function to_seqi(a){
     function aux(i, param){
-      /*<<float.ml:544:6>>*/ if(i >= a.length - 1)
-       /*<<float.ml:548:11>>*/ return 0;
-      /*<<float.ml:546:16>>*/ var
-       /*<<float.ml:546:16>>*/ x = a[1 + i],
-       /*<<float.ml:546:16>>*/ _m_ = i + 1 | 0;
-      /*<<float.ml:547:8>>*/ return [0,
+      /*<<float.ml:579:6>>*/ if(i >= a.length - 1)
+       /*<<float.ml:583:11>>*/ return 0;
+      /*<<float.ml:581:16>>*/ var
+       /*<<float.ml:581:16>>*/ x = a[1 + i],
+       /*<<float.ml:581:16>>*/ _m_ = i + 1 | 0;
+      /*<<float.ml:582:8>>*/ return [0,
              [0, i, x],
              function(_n_){ /*<<?>>*/ return aux(_m_, _n_);}];
-     /*<<float.ml:548:18>>*/ }
-     /*<<float.ml:550:4>>*/ var _k_ = 0;
-     /*<<float.ml:550:4>>*/ return function(_l_){
+     /*<<float.ml:583:18>>*/ }
+     /*<<float.ml:585:4>>*/ var _k_ = 0;
+     /*<<float.ml:585:4>>*/ return function(_l_){
       /*<<?>>*/ return aux(_k_, _l_);};
-    /*<<float.ml:550:9>>*/ }
+    /*<<float.ml:585:9>>*/ }
    function of_seq(i$2){
-     /*<<float.ml:564:4>>*/ var
-      /*<<float.ml:564:12>>*/ l =
-        /*<<float.ml:564:12>>*/ caml_call3
+     /*<<float.ml:599:4>>*/ var
+      /*<<float.ml:599:12>>*/ l =
+        /*<<float.ml:599:12>>*/ caml_call3
         (Stdlib_Seq[5],
          function(acc, x){
-           /*<<float.ml:564:40>>*/ return [0, x, acc];
-          /*<<float.ml:564:46>>*/ },
+           /*<<float.ml:599:40>>*/ return [0, x, acc];
+          /*<<float.ml:599:46>>*/ },
          0,
          i$2),
-      /*<<float.ml:554:14>>*/ len =
-        /*<<float.ml:554:14>>*/ caml_call1(Stdlib_List[1], l),
-      /*<<float.ml:555:12>>*/ a =
-        /*<<float.ml:555:12>>*/ caml_floatarray_create(len),
-      /*<<float.ml:554:14>>*/ i$1 = len - 1 | 0,
+      /*<<float.ml:589:14>>*/ len =
+        /*<<float.ml:589:14>>*/ caml_call1(Stdlib_List[1], l),
+      /*<<float.ml:590:12>>*/ a =
+        /*<<float.ml:590:12>>*/ caml_floatarray_create(len),
+      /*<<float.ml:589:14>>*/ i$1 = len - 1 | 0,
      i = i$1,
      param = l;
     for(;;){
-     if(! param)  /*<<float.ml:556:4>>*/ return a;
+     if(! param)  /*<<float.ml:591:4>>*/ return a;
      var tl = param[2], hd = param[1];
-      /*<<float.ml:558:18>>*/ a[1 + i] = hd;
-      /*<<float.ml:556:4>>*/  /*<<float.ml:556:4>>*/ var i$0 = i - 1 | 0;
+      /*<<float.ml:593:18>>*/ a[1 + i] = hd;
+      /*<<float.ml:591:4>>*/  /*<<float.ml:591:4>>*/ var i$0 = i - 1 | 0;
      i = i$0;
      param = tl;
     }
-    /*<<float.ml:565:17>>*/ }
+    /*<<float.ml:600:17>>*/ }
    function map_to_array(f, a){
-     /*<<float.ml:569:4>>*/ var l = a.length - 1;
-     /*<<float.ml:570:4>>*/ if(0 === l)  /*<<float.ml:570:18>>*/ return [0];
-     /*<<float.ml:571:14>>*/ var
-      /*<<float.ml:571:14>>*/ r =
-        /*<<float.ml:571:14>>*/ runtime.caml_make_vect
-        (l,  /*<<float.ml:571:27>>*/ caml_call1(f, a[1])),
-      /*<<float.ml:572:6>>*/ _i_ = l - 1 | 0,
-      /*<<float.ml:571:14>>*/ _h_ = 1;
+     /*<<float.ml:604:4>>*/ var l = a.length - 1;
+     /*<<float.ml:605:4>>*/ if(0 === l)  /*<<float.ml:605:18>>*/ return [0];
+     /*<<float.ml:606:14>>*/ var
+      /*<<float.ml:606:14>>*/ r =
+        /*<<float.ml:606:14>>*/ caml_make_vect
+        (l,  /*<<float.ml:606:27>>*/ caml_call1(f, a[1])),
+      /*<<float.ml:607:6>>*/ _i_ = l - 1 | 0,
+      /*<<float.ml:606:14>>*/ _h_ = 1;
     if(_i_ >= 1){
      var i = _h_;
      for(;;){
-       /*<<float.ml:573:8>>*/ r[1 + i] =
-        /*<<float.ml:573:29>>*/ caml_call1(f, a[1 + i]);
-       /*<<float.ml:573:8>>*/  /*<<float.ml:573:8>>*/ var _j_ = i + 1 | 0;
+       /*<<float.ml:608:8>>*/ r[1 + i] =
+        /*<<float.ml:608:29>>*/ caml_call1(f, a[1 + i]);
+       /*<<float.ml:608:8>>*/  /*<<float.ml:608:8>>*/ var _j_ = i + 1 | 0;
       if(_i_ === i) break;
       i = _j_;
      }
     }
-     /*<<float.ml:575:6>>*/ return r;
-    /*<<float.ml:576:7>>*/ }
+     /*<<float.ml:610:6>>*/ return r;
+    /*<<float.ml:611:7>>*/ }
    function map_from_array(f, a){
-     /*<<float.ml:579:4>>*/ var
+     /*<<float.ml:614:4>>*/ var
      l = a.length - 1,
-      /*<<float.ml:580:12>>*/ r =
-        /*<<float.ml:580:12>>*/ caml_floatarray_create(l),
-      /*<<float.ml:581:4>>*/ _f_ = l - 1 | 0,
-      /*<<float.ml:580:12>>*/ _e_ = 0;
+      /*<<float.ml:615:12>>*/ r =
+        /*<<float.ml:615:12>>*/ caml_floatarray_create(l),
+      /*<<float.ml:616:4>>*/ _f_ = l - 1 | 0,
+      /*<<float.ml:615:12>>*/ _e_ = 0;
     if(_f_ >= 0){
      var i = _e_;
      for(;;){
-       /*<<float.ml:582:6>>*/ r[1 + i] =
-        /*<<float.ml:582:21>>*/ caml_call1(f, a[1 + i]);
-       /*<<float.ml:582:6>>*/  /*<<float.ml:582:6>>*/ var _g_ = i + 1 | 0;
+       /*<<float.ml:617:6>>*/ r[1 + i] =
+        /*<<float.ml:617:21>>*/ caml_call1(f, a[1 + i]);
+       /*<<float.ml:617:6>>*/  /*<<float.ml:617:6>>*/ var _g_ = i + 1 | 0;
       if(_f_ === i) break;
       i = _g_;
      }
     }
-     /*<<float.ml:584:4>>*/ return r;
-    /*<<float.ml:584:5>>*/ }
+     /*<<float.ml:619:4>>*/ return r;
+    /*<<float.ml:619:5>>*/ }
    var
     Stdlib_Float =
       [0,
@@ -9004,6 +9142,8 @@
         make,
         caml_floatarray_create,
         init,
+        make_matrix,
+        init_matrix,
         append,
         concat,
         sub,
@@ -9033,6 +9173,7 @@
         sort,
         stable_sort,
         stable_sort,
+        shuffle,
         to_seq,
         to_seqi,
         of_seq,
@@ -9045,6 +9186,8 @@
         make,
         caml_floatarray_create,
         init,
+        make_matrix,
+        init_matrix,
         append,
         concat,
         sub,
@@ -9074,12 +9217,13 @@
         sort,
         stable_sort,
         stable_sort,
+        shuffle,
         to_seq,
         to_seqi,
         of_seq,
         map_to_array,
         map_from_array]];
-   runtime.caml_register_global(23, Stdlib_Float, "Stdlib__Float");
+   runtime.caml_register_global(25, Stdlib_Float, "Stdlib__Float");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -9094,6 +9238,8 @@
     caml_greaterequal = runtime.caml_greaterequal,
     caml_hash = runtime.caml_hash,
     caml_int_compare = runtime.caml_int_compare,
+    caml_lessequal = runtime.caml_lessequal,
+    caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
@@ -9130,8 +9276,8 @@
      unsigned_to_int =
        function(n){
          /*<<int32.ml:60:8>>*/ if
-         (0 >=  /*<<int32.ml:60:11>>*/ caml_int_compare(0, n)
-          && 0 >=  /*<<int32.ml:60:34>>*/ caml_int_compare(n, max_int$0))
+         ( /*<<int32.ml:60:11>>*/ caml_greaterequal(n, 0)
+          &&  /*<<int32.ml:60:22>>*/ caml_lessequal(n, max_int$0))
           /*<<int32.ml:61:10>>*/ return [0, n];
          /*<<int32.ml:63:10>>*/ return 0;
         /*<<int32.ml:63:14>>*/ };
@@ -9150,67 +9296,64 @@
             ("%d", n);
     /*<<int32.ml:72:31>>*/ }
    function of_string_opt(s){
-     /*<<int32.ml:78:2>>*/ try{
-      /*<<int32.ml:78:6>>*/  /*<<int32.ml:78:6>>*/ var
-      _d_ = [0,  /*<<int32.ml:78:11>>*/ runtime.caml_int_of_string(s)];
-      /*<<int32.ml:78:6>>*/ return _d_;
+     /*<<int32.ml:77:2>>*/ try{
+      /*<<int32.ml:77:6>>*/  /*<<int32.ml:77:6>>*/ var
+      _d_ = [0,  /*<<int32.ml:77:11>>*/ runtime.caml_int_of_string(s)];
+      /*<<int32.ml:77:6>>*/ return _d_;
     }
     catch(_e_){
      var _c_ = caml_wrap_exception(_e_);
-     if(_c_[1] === Stdlib[7])  /*<<int32.ml:79:20>>*/ return 0;
+     if(_c_[1] === Stdlib[7])  /*<<int32.ml:78:20>>*/ return 0;
      throw caml_maybe_attach_backtrace(_c_, 0);
     }
-    /*<<int32.ml:79:24>>*/ }
-   var compare = caml_int_compare;
-   function equal(x, y){
-     /*<<int32.ml:84:26>>*/ return 0
-            ===  /*<<int32.ml:83:28>>*/ caml_int_compare(x, y)
-            ? 1
-            : 0;
-    /*<<int32.ml:84:41>>*/ }
+    /*<<int32.ml:78:24>>*/ }
+   var compare = caml_int_compare, equal = runtime.caml_equal;
    function unsigned_compare(n, m){
-     /*<<int32.ml:87:2>>*/ var
-      /*<<int32.ml:87:26>>*/ y = m + 2147483648 | 0,
-      /*<<int32.ml:87:10>>*/ x = n + 2147483648 | 0;
-     /*<<int32.ml:83:28>>*/ return  /*<<int32.ml:83:28>>*/ caml_int_compare
+     /*<<int32.ml:86:2>>*/ var
+      /*<<int32.ml:86:26>>*/ y = m + 2147483648 | 0,
+      /*<<int32.ml:86:10>>*/ x = n + 2147483648 | 0;
+     /*<<int32.ml:82:28>>*/ return  /*<<int32.ml:82:28>>*/ caml_int_compare
             (x, y);
-    /*<<int32.ml:87:41>>*/ }
+    /*<<int32.ml:86:41>>*/ }
+   function unsigned_lt(n, m){
+     /*<<int32.ml:89:2>>*/ return  /*<<int32.ml:89:2>>*/ caml_lessthan
+            (n + 2147483648 | 0, m + 2147483648 | 0);
+    /*<<int32.ml:89:31>>*/ }
    function min(x, y){
-     /*<<int32.ml:89:18>>*/ return  /*<<int32.ml:89:21>>*/ runtime.caml_lessequal
+     /*<<int32.ml:91:18>>*/ return  /*<<int32.ml:91:21>>*/ caml_lessequal
              (x, y)
             ? x
             : y;
-    /*<<int32.ml:89:41>>*/ }
+    /*<<int32.ml:91:41>>*/ }
    function max(x, y){
-     /*<<int32.ml:90:18>>*/ return  /*<<int32.ml:90:21>>*/ caml_greaterequal
+     /*<<int32.ml:92:18>>*/ return  /*<<int32.ml:92:21>>*/ caml_greaterequal
              (x, y)
             ? x
             : y;
-    /*<<int32.ml:90:41>>*/ }
+    /*<<int32.ml:92:41>>*/ }
    function unsigned_div(n, d){
-     /*<<int32.ml:96:2>>*/ if
-     ( /*<<int32.ml:96:5>>*/ runtime.caml_lessthan(d, 0))
-      /*<<int32.ml:97:7>>*/ return 0 <= unsigned_compare(n, d) ? one : zero;
-     /*<<int32.ml:99:12>>*/ var
-      /*<<int32.ml:99:12>>*/ q =
-        /*<<int32.ml:99:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
-      /*<<int32.ml:100:12>>*/ r =
-       n -  /*<<int32.ml:100:18>>*/ caml_mul(q, d) | 0;
-     /*<<int32.ml:101:7>>*/ return 0 <= unsigned_compare(r, d) ? q + 1 | 0 : q;
-    /*<<int32.ml:101:51>>*/ }
+     /*<<int32.ml:98:2>>*/ if( /*<<int32.ml:98:5>>*/ caml_lessthan(d, 0))
+      /*<<int32.ml:99:7>>*/ return unsigned_lt(n, d) ? zero : one;
+     /*<<int32.ml:101:12>>*/ var
+      /*<<int32.ml:101:12>>*/ q =
+        /*<<int32.ml:101:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
+      /*<<int32.ml:102:12>>*/ r =
+       n -  /*<<int32.ml:102:18>>*/ caml_mul(q, d) | 0;
+     /*<<int32.ml:103:7>>*/ return unsigned_lt(r, d) ? q : q + 1 | 0;
+    /*<<int32.ml:103:41>>*/ }
    function unsigned_rem(n, d){
-     /*<<int32.ml:104:2>>*/ return n
-           -  /*<<int32.ml:104:8>>*/ caml_mul(unsigned_div(n, d), d)
+     /*<<int32.ml:106:2>>*/ return n
+           -  /*<<int32.ml:106:8>>*/ caml_mul(unsigned_div(n, d), d)
            | 0;
-    /*<<int32.ml:104:34>>*/ }
+    /*<<int32.ml:106:34>>*/ }
    function seeded_hash(seed, x){
-     /*<<int32.ml:108:25>>*/ return  /*<<int32.ml:108:25>>*/ caml_hash
+     /*<<int32.ml:110:25>>*/ return  /*<<int32.ml:110:25>>*/ caml_hash
             (10, 100, seed, x);
-    /*<<int32.ml:108:56>>*/ }
+    /*<<int32.ml:110:56>>*/ }
    function hash(x){
-     /*<<int32.ml:109:13>>*/ return  /*<<int32.ml:109:13>>*/ caml_hash
+     /*<<int32.ml:111:13>>*/ return  /*<<int32.ml:111:13>>*/ caml_hash
             (10, 100, 0, x);
-    /*<<int32.ml:109:41>>*/ }
+    /*<<int32.ml:111:41>>*/ }
    var
     Stdlib_Int32 =
       [0,
@@ -9235,7 +9378,7 @@
        max,
        seeded_hash,
        hash];
-   runtime.caml_register_global(14, Stdlib_Int32, "Stdlib__Int32");
+   runtime.caml_register_global(15, Stdlib_Int32, "Stdlib__Int32");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -9253,6 +9396,8 @@
     caml_int64_compare = runtime.caml_int64_compare,
     caml_int64_mul = runtime.caml_int64_mul,
     caml_int64_sub = runtime.caml_int64_sub,
+    caml_lessequal = runtime.caml_lessequal,
+    caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
@@ -9284,13 +9429,14 @@
      /*<<int64.ml:51:15>>*/ return  /*<<int64.ml:51:15>>*/ runtime.caml_int64_xor
             (n, _d_);
     /*<<int64.ml:51:29>>*/ }
-    /*<<int64.ml:54:16>>*/  /*<<int64.ml:54:16>>*/ var
-    max_int$0 =
-       /*<<int64.ml:54:16>>*/ runtime.caml_int64_of_int32(Stdlib[19]);
-   function unsigned_to_int(n){
+    /*<<int64.ml:54:16>>*/ var
+     /*<<int64.ml:54:16>>*/ max_int$0 =
+       /*<<int64.ml:54:16>>*/ runtime.caml_int64_of_int32(Stdlib[19]),
+    _e_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0);
+    /*<<int64.ml:55:2>>*/ function unsigned_to_int(n){
      /*<<int64.ml:56:4>>*/ if
-     (0 >=  /*<<int64.ml:56:7>>*/ caml_int64_compare(zero, n)
-      && 0 >=  /*<<int64.ml:56:30>>*/ caml_int64_compare(n, max_int$0))
+     ( /*<<int64.ml:56:7>>*/ caml_greaterequal(n, _e_)
+      &&  /*<<int64.ml:56:18>>*/ caml_lessequal(n, max_int$0))
       /*<<int64.ml:57:6>>*/ return [0, runtime.caml_int64_to_int32(n)];
      /*<<int64.ml:59:6>>*/ return 0;
     /*<<int64.ml:59:10>>*/ }
@@ -9299,38 +9445,38 @@
             ("%d", n);
     /*<<int64.ml:62:31>>*/ }
    function of_string_opt(s){
-     /*<<int64.ml:68:2>>*/ try{
-      /*<<int64.ml:68:6>>*/  /*<<int64.ml:68:6>>*/ var
-      _f_ = [0,  /*<<int64.ml:68:11>>*/ runtime.caml_int64_of_string(s)];
-      /*<<int64.ml:68:6>>*/ return _f_;
+     /*<<int64.ml:67:2>>*/ try{
+      /*<<int64.ml:67:6>>*/  /*<<int64.ml:67:6>>*/ var
+      _g_ = [0,  /*<<int64.ml:67:11>>*/ runtime.caml_int64_of_string(s)];
+      /*<<int64.ml:67:6>>*/ return _g_;
     }
-    catch(_g_){
-     var _e_ = caml_wrap_exception(_g_);
-     if(_e_[1] === Stdlib[7])  /*<<int64.ml:69:20>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_e_, 0);
+    catch(_h_){
+     var _f_ = caml_wrap_exception(_h_);
+     if(_f_[1] === Stdlib[7])  /*<<int64.ml:68:20>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_f_, 0);
     }
-    /*<<int64.ml:69:24>>*/ }
+    /*<<int64.ml:68:24>>*/ }
    function compare(x, y){
-     /*<<int64.ml:82:28>>*/ return  /*<<int64.ml:82:28>>*/ caml_int64_compare
+     /*<<int64.ml:79:28>>*/ return  /*<<int64.ml:79:28>>*/ caml_int64_compare
             (x, y);
-    /*<<int64.ml:82:46>>*/ }
-   function equal(x, y){
-     /*<<int64.ml:83:26>>*/ return 0
-            ===  /*<<int64.ml:82:28>>*/ caml_int64_compare(x, y)
-            ? 1
-            : 0;
-    /*<<int64.ml:83:41>>*/ }
+    /*<<int64.ml:79:46>>*/ }
+   var equal = runtime.caml_equal;
    function unsigned_compare(n, m){
-     /*<<int64.ml:86:2>>*/ var
-      /*<<int64.ml:86:26>>*/ y =
-        /*<<int64.ml:86:26>>*/ caml_int64_sub(m, min_int),
-      /*<<int64.ml:86:10>>*/ x =
-        /*<<int64.ml:86:10>>*/ caml_int64_sub(n, min_int);
-     /*<<int64.ml:82:28>>*/ return  /*<<int64.ml:82:28>>*/ caml_int64_compare
+     /*<<int64.ml:83:2>>*/ var
+      /*<<int64.ml:83:26>>*/ y =
+        /*<<int64.ml:83:26>>*/ caml_int64_sub(m, min_int),
+      /*<<int64.ml:83:10>>*/ x =
+        /*<<int64.ml:83:10>>*/ caml_int64_sub(n, min_int);
+     /*<<int64.ml:79:28>>*/ return  /*<<int64.ml:79:28>>*/ caml_int64_compare
             (x, y);
-    /*<<int64.ml:86:41>>*/ }
+    /*<<int64.ml:83:41>>*/ }
+   function unsigned_lt(n, m){
+     /*<<int64.ml:86:2>>*/ return  /*<<int64.ml:86:2>>*/ caml_lessthan
+            ( /*<<int64.ml:86:2>>*/ caml_int64_sub(n, min_int),
+              /*<<int64.ml:86:18>>*/ caml_int64_sub(m, min_int));
+    /*<<int64.ml:86:31>>*/ }
    function min(x, y){
-     /*<<int64.ml:88:18>>*/ return  /*<<int64.ml:88:21>>*/ runtime.caml_lessequal
+     /*<<int64.ml:88:18>>*/ return  /*<<int64.ml:88:21>>*/ caml_lessequal
              (x, y)
             ? x
             : y;
@@ -9342,9 +9488,8 @@
             : y;
     /*<<int64.ml:89:41>>*/ }
    function unsigned_div(n, d){
-     /*<<int64.ml:95:2>>*/ if
-     ( /*<<int64.ml:95:5>>*/ runtime.caml_lessthan(d, zero))
-      /*<<int64.ml:96:7>>*/ return 0 <= unsigned_compare(n, d) ? one : zero;
+     /*<<int64.ml:95:2>>*/ if( /*<<int64.ml:95:5>>*/ caml_lessthan(d, zero))
+      /*<<int64.ml:96:7>>*/ return unsigned_lt(n, d) ? zero : one;
      /*<<int64.ml:98:12>>*/ var
       /*<<int64.ml:98:12>>*/ q =
         /*<<int64.ml:98:12>>*/ runtime.caml_int64_shift_left
@@ -9356,10 +9501,10 @@
       /*<<int64.ml:99:12>>*/ r =
         /*<<int64.ml:99:12>>*/ caml_int64_sub
         (n,  /*<<int64.ml:99:18>>*/ caml_int64_mul(q, d));
-     /*<<int64.ml:100:7>>*/ return 0 <= unsigned_compare(r, d)
-            ?  /*<<int64.ml:46:13>>*/ caml_int64_add(q, _a_)
-            : q;
-    /*<<int64.ml:100:51>>*/ }
+     /*<<int64.ml:100:7>>*/ return unsigned_lt(r, d)
+            ? q
+            :  /*<<int64.ml:46:13>>*/ caml_int64_add(q, _a_);
+    /*<<int64.ml:100:41>>*/ }
    function unsigned_rem(n, d){
      /*<<int64.ml:103:2>>*/ return  /*<<int64.ml:103:2>>*/ caml_int64_sub
             (n,  /*<<int64.ml:103:8>>*/ caml_int64_mul(unsigned_div(n, d), d));
@@ -9396,7 +9541,7 @@
        max,
        seeded_hash,
        hash];
-   runtime.caml_register_global(11, Stdlib_Int64, "Stdlib__Int64");
+   runtime.caml_register_global(12, Stdlib_Int64, "Stdlib__Int64");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -9411,6 +9556,8 @@
     caml_greaterequal = runtime.caml_greaterequal,
     caml_hash = runtime.caml_hash,
     caml_int_compare = runtime.caml_int_compare,
+    caml_lessequal = runtime.caml_lessequal,
+    caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
@@ -9439,10 +9586,10 @@
      /*<<nativeint.ml:50:15>>*/ return n ^ -1;
     /*<<nativeint.ml:50:29>>*/ }
    var max_int$0 = Stdlib[19];
-   function unsigned_to_int(n){
+    /*<<nativeint.ml:54:2>>*/ function unsigned_to_int(n){
      /*<<nativeint.ml:55:4>>*/ if
-     (0 >=  /*<<nativeint.ml:55:7>>*/ caml_int_compare(0, n)
-      && 0 >=  /*<<nativeint.ml:55:30>>*/ caml_int_compare(n, max_int$0))
+     ( /*<<nativeint.ml:55:7>>*/ caml_greaterequal(n, 0)
+      &&  /*<<nativeint.ml:55:18>>*/ caml_lessequal(n, max_int$0))
       /*<<nativeint.ml:56:6>>*/ return [0, n];
      /*<<nativeint.ml:58:6>>*/ return 0;
     /*<<nativeint.ml:58:10>>*/ }
@@ -9451,71 +9598,71 @@
             ("%d", n);
     /*<<nativeint.ml:61:31>>*/ }
    function of_string_opt(s){
-     /*<<nativeint.ml:67:2>>*/ try{
-      /*<<nativeint.ml:67:6>>*/  /*<<nativeint.ml:67:6>>*/ var
-      _b_ = [0,  /*<<nativeint.ml:67:11>>*/ runtime.caml_int_of_string(s)];
-      /*<<nativeint.ml:67:6>>*/ return _b_;
+     /*<<nativeint.ml:66:2>>*/ try{
+      /*<<nativeint.ml:66:6>>*/  /*<<nativeint.ml:66:6>>*/ var
+      _b_ = [0,  /*<<nativeint.ml:66:11>>*/ runtime.caml_int_of_string(s)];
+      /*<<nativeint.ml:66:6>>*/ return _b_;
     }
     catch(_c_){
      var _a_ = caml_wrap_exception(_c_);
-     if(_a_[1] === Stdlib[7])  /*<<nativeint.ml:68:20>>*/ return 0;
+     if(_a_[1] === Stdlib[7])  /*<<nativeint.ml:67:20>>*/ return 0;
      throw caml_maybe_attach_backtrace(_a_, 0);
     }
-    /*<<nativeint.ml:68:24>>*/ }
+    /*<<nativeint.ml:67:24>>*/ }
    var compare = caml_int_compare;
    function equal(x, y){
-     /*<<nativeint.ml:73:26>>*/ return 0
-            ===  /*<<nativeint.ml:72:28>>*/ caml_int_compare(x, y)
+     /*<<nativeint.ml:72:26>>*/ return 0
+            ===  /*<<nativeint.ml:71:28>>*/ caml_int_compare(x, y)
             ? 1
             : 0;
-    /*<<nativeint.ml:73:41>>*/ }
+    /*<<nativeint.ml:72:41>>*/ }
    function unsigned_compare(n, m){
-     /*<<nativeint.ml:76:2>>*/ var
-      /*<<nativeint.ml:76:26>>*/ y = m - min_int | 0,
-      /*<<nativeint.ml:76:10>>*/ x = n - min_int | 0;
-     /*<<nativeint.ml:72:28>>*/ return  /*<<nativeint.ml:72:28>>*/ caml_int_compare
+     /*<<nativeint.ml:75:2>>*/ var
+      /*<<nativeint.ml:75:26>>*/ y = m - min_int | 0,
+      /*<<nativeint.ml:75:10>>*/ x = n - min_int | 0;
+     /*<<nativeint.ml:71:28>>*/ return  /*<<nativeint.ml:71:28>>*/ caml_int_compare
             (x, y);
-    /*<<nativeint.ml:76:41>>*/ }
+    /*<<nativeint.ml:75:41>>*/ }
+   function unsigned_lt(n, m){
+     /*<<nativeint.ml:78:2>>*/ return  /*<<nativeint.ml:78:2>>*/ caml_lessthan
+            (n - min_int | 0, m - min_int | 0);
+    /*<<nativeint.ml:78:31>>*/ }
    function min(x, y){
-     /*<<nativeint.ml:78:18>>*/ return  /*<<nativeint.ml:78:21>>*/ runtime.caml_lessequal
+     /*<<nativeint.ml:80:18>>*/ return  /*<<nativeint.ml:80:21>>*/ caml_lessequal
              (x, y)
             ? x
             : y;
-    /*<<nativeint.ml:78:41>>*/ }
+    /*<<nativeint.ml:80:41>>*/ }
    function max(x, y){
-     /*<<nativeint.ml:79:18>>*/ return  /*<<nativeint.ml:79:21>>*/ caml_greaterequal
+     /*<<nativeint.ml:81:18>>*/ return  /*<<nativeint.ml:81:21>>*/ caml_greaterequal
              (x, y)
             ? x
             : y;
-    /*<<nativeint.ml:79:41>>*/ }
+    /*<<nativeint.ml:81:41>>*/ }
    function unsigned_div(n, d){
-     /*<<nativeint.ml:85:2>>*/ if
-     ( /*<<nativeint.ml:85:5>>*/ runtime.caml_lessthan(d, 0))
-      /*<<nativeint.ml:86:7>>*/ return 0 <= unsigned_compare(n, d)
-             ? one
-             : zero;
-     /*<<nativeint.ml:88:12>>*/ var
-      /*<<nativeint.ml:88:12>>*/ q =
-        /*<<nativeint.ml:88:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
-      /*<<nativeint.ml:89:12>>*/ r =
-       n -  /*<<nativeint.ml:89:18>>*/ caml_mul(q, d) | 0;
-     /*<<nativeint.ml:90:7>>*/ return 0 <= unsigned_compare(r, d)
-            ? q + 1 | 0
-            : q;
-    /*<<nativeint.ml:90:51>>*/ }
+     /*<<nativeint.ml:87:2>>*/ if
+     ( /*<<nativeint.ml:87:5>>*/ caml_lessthan(d, 0))
+      /*<<nativeint.ml:88:7>>*/ return unsigned_lt(n, d) ? zero : one;
+     /*<<nativeint.ml:90:12>>*/ var
+      /*<<nativeint.ml:90:12>>*/ q =
+        /*<<nativeint.ml:90:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
+      /*<<nativeint.ml:91:12>>*/ r =
+       n -  /*<<nativeint.ml:91:18>>*/ caml_mul(q, d) | 0;
+     /*<<nativeint.ml:92:7>>*/ return unsigned_lt(r, d) ? q : q + 1 | 0;
+    /*<<nativeint.ml:92:41>>*/ }
    function unsigned_rem(n, d){
-     /*<<nativeint.ml:93:2>>*/ return n
-           -  /*<<nativeint.ml:93:8>>*/ caml_mul(unsigned_div(n, d), d)
+     /*<<nativeint.ml:95:2>>*/ return n
+           -  /*<<nativeint.ml:95:8>>*/ caml_mul(unsigned_div(n, d), d)
            | 0;
-    /*<<nativeint.ml:93:34>>*/ }
+    /*<<nativeint.ml:95:34>>*/ }
    function seeded_hash(seed, x){
-     /*<<nativeint.ml:97:25>>*/ return  /*<<nativeint.ml:97:25>>*/ caml_hash
+     /*<<nativeint.ml:99:25>>*/ return  /*<<nativeint.ml:99:25>>*/ caml_hash
             (10, 100, seed, x);
-    /*<<nativeint.ml:97:56>>*/ }
+    /*<<nativeint.ml:99:56>>*/ }
    function hash(x){
-     /*<<nativeint.ml:98:13>>*/ return  /*<<nativeint.ml:98:13>>*/ caml_hash
+     /*<<nativeint.ml:100:13>>*/ return  /*<<nativeint.ml:100:13>>*/ caml_hash
             (10, 100, 0, x);
-    /*<<nativeint.ml:98:41>>*/ }
+    /*<<nativeint.ml:100:41>>*/ }
    var
     Stdlib_Nativeint =
       [0,
@@ -9541,7 +9688,7 @@
        max,
        seeded_hash,
        hash];
-   runtime.caml_register_global(12, Stdlib_Nativeint, "Stdlib__Nativeint");
+   runtime.caml_register_global(13, Stdlib_Nativeint, "Stdlib__Nativeint");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -9619,11 +9766,8 @@
      /*<<lexing.ml:81:2>>*/ return result;
     /*<<lexing.ml:81:8>>*/ }
    function from_function(opt, read_fun){
-     /*<<lexing.ml:148:2>>*/ if(opt)
-     var sth = opt[1], with_positions = sth;
-    else
-     var with_positions = 1;
      /*<<lexing.ml:148:2>>*/ var
+     with_positions = opt ? opt[1] : 1,
       /*<<lexing.ml:148:2>>*/ _f_ = with_positions ? zero_pos : dummy_pos,
      _g_ = with_positions ? zero_pos : dummy_pos,
       /*<<lexing.ml:148:31>>*/ aux_buffer =
@@ -9704,7 +9848,7 @@
             [0],
             _g_,
             _f_];
-    /*<<lexing.ml:160:3>>*/ }
+   }
    function from_channel(with_positions, ic){
      /*<<lexing.ml:163:2>>*/ return from_function
             (with_positions,
@@ -9714,11 +9858,8 @@
               /*<<lexing.ml:163:62>>*/ });
     /*<<lexing.ml:163:63>>*/ }
    function from_string(opt, s){
-     /*<<lexing.ml:166:2>>*/ if(opt)
-     var sth = opt[1], with_positions = sth;
-    else
-     var with_positions = 1;
      /*<<lexing.ml:166:2>>*/ var
+     with_positions = opt ? opt[1] : 1,
       /*<<lexing.ml:166:2>>*/ _d_ = with_positions ? zero_pos : dummy_pos,
      _e_ = with_positions ? zero_pos : dummy_pos;
      /*<<lexing.ml:166:2>>*/ return [0,
@@ -9737,7 +9878,7 @@
             [0],
             _e_,
             _d_];
-    /*<<lexing.ml:179:3>>*/ }
+   }
    function set_position(lexbuf, position){
      /*<<lexing.ml:182:2>>*/ lexbuf[12] =
      [0, lexbuf[12][1], position[2], position[3], position[4]];
@@ -9910,23 +10051,23 @@
       /*<<parsing.ml:113:16>>*/ new_end =
         /*<<parsing.ml:113:16>>*/ caml_make_vect(newsize, Stdlib_Lexing[1]);
      /*<<parsing.ml:114:4>>*/  /*<<parsing.ml:114:4>>*/ caml_call5
-     (Stdlib_Array[8], env[1], 0, new_s, 0, oldsize);
+     (Stdlib_Array[9], env[1], 0, new_s, 0, oldsize);
     env[1] = new_s;
      /*<<parsing.ml:116:4>>*/  /*<<parsing.ml:116:4>>*/ caml_call5
-     (Stdlib_Array[8], env[2], 0, new_v, 0, oldsize);
+     (Stdlib_Array[9], env[2], 0, new_v, 0, oldsize);
     env[2] = new_v;
      /*<<parsing.ml:118:4>>*/  /*<<parsing.ml:118:4>>*/ caml_call5
-     (Stdlib_Array[8], env[3], 0, new_start, 0, oldsize);
+     (Stdlib_Array[9], env[3], 0, new_start, 0, oldsize);
     env[3] = new_start;
      /*<<parsing.ml:120:4>>*/  /*<<parsing.ml:120:4>>*/ caml_call5
-     (Stdlib_Array[8], env[4], 0, new_end, 0, oldsize);
+     (Stdlib_Array[9], env[4], 0, new_end, 0, oldsize);
     env[4] = new_end;
     env[5] = newsize;
     return;
     /*<<parsing.ml:122:28>>*/ }
    function clear_parser(param){
      /*<<parsing.ml:125:2>>*/  /*<<parsing.ml:125:2>>*/ caml_call4
-     (Stdlib_Array[7], env[2], 0, env[5], 0);
+     (Stdlib_Array[8], env[2], 0, env[5], 0);
     env[8] = 0;
     return 0;
     /*<<parsing.ml:126:25>>*/ }
@@ -12484,7 +12625,8 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length,
     caml_ml_string_length = runtime.caml_ml_string_length,
-    caml_string_get = runtime.caml_string_get;
+    caml_string_get = runtime.caml_string_get,
+    caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) == 1
             ? f(a0)
@@ -12670,14 +12812,14 @@
     }
     /*<<buffer.ml:147:30>>*/ }
    function add_substring(b, s, offset, len){
-     /*<<buffer.ml:150:2>>*/ var _q_ = offset < 0 ? 1 : 0;
-    if(_q_)
-     var _r_ = _q_;
+     /*<<buffer.ml:150:2>>*/ var _s_ = offset < 0 ? 1 : 0;
+    if(_s_)
+     var _t_ = _s_;
     else
      var
-      _s_ = len < 0 ? 1 : 0,
-      _r_ = _s_ || ((caml_ml_string_length(s) - len | 0) < offset ? 1 : 0);
-    if(_r_)
+      _u_ = len < 0 ? 1 : 0,
+      _t_ = _u_ || ((caml_ml_string_length(s) - len | 0) < offset ? 1 : 0);
+    if(_t_)
       /*<<buffer.ml:151:7>>*/  /*<<buffer.ml:151:7>>*/ caml_call1
       (Stdlib[1], cst_Buffer_add_substring_add_s);
      /*<<buffer.ml:153:2>>*/ var
@@ -12732,9 +12874,9 @@
     /*<<buffer.ml:180:46>>*/ }
    function add_channel(b, ic, to_read$1){
      /*<<buffer.ml:206:2>>*/ var
-     _o_ = to_read$1 < 0 ? 1 : 0,
-     _p_ = _o_ || (Stdlib_Sys[12] < to_read$1 ? 1 : 0);
-    if(_p_)
+     _q_ = to_read$1 < 0 ? 1 : 0,
+     _r_ = _q_ || (Stdlib_Sys[12] < to_read$1 ? 1 : 0);
+    if(_r_)
       /*<<buffer.ml:207:4>>*/  /*<<buffer.ml:207:4>>*/ caml_call1
       (Stdlib[1], cst_Buffer_add_channel);
     if(b[1][2] < (b[2] + to_read$1 | 0))
@@ -12774,284 +12916,285 @@
             (Stdlib[68], oc, b[1][1], 0, b[2]);
     /*<<buffer.ml:215:39>>*/ }
    function add_substitute(b, f, s){
-     /*<<buffer.ml:260:2>>*/ var
+     /*<<buffer.ml:261:2>>*/ var
      lim$1 = caml_ml_string_length(s),
      previous = 32,
      i$4 = 0;
-     /*<<buffer.ml:262:4>>*/ for(;;){
+     /*<<buffer.ml:263:4>>*/ for(;;){
      if(i$4 >= lim$1){
-      var _n_ = 92 === previous ? 1 : 0;
-      return _n_ ? add_char(b, previous) : _n_;
+      var _o_ = 92 === previous ? 1 : 0;
+      return _o_ ? add_char(b, previous) : _o_;
      }
-      /*<<buffer.ml:263:12>>*/  /*<<buffer.ml:263:12>>*/ var
-      previous$0 =  /*<<buffer.ml:263:12>>*/ caml_string_get(s, i$4);
+      /*<<buffer.ml:264:12>>*/  /*<<buffer.ml:264:12>>*/ var
+      previous$0 =  /*<<buffer.ml:264:12>>*/ caml_string_get(s, i$4);
      if(36 === previous$0)
       if(92 === previous){
-        /*<<buffer.ml:265:9>>*/ add_char(b, previous$0);
-        /*<<buffer.ml:265:9>>*/  /*<<buffer.ml:265:9>>*/ var
+        /*<<buffer.ml:266:9>>*/ add_char(b, previous$0);
+        /*<<buffer.ml:266:9>>*/  /*<<buffer.ml:266:9>>*/ var
         i$5 = i$4 + 1 | 0;
        previous = 32;
        i$4 = i$5;
       }
       else{
-        /*<<buffer.ml:268:9>>*/  /*<<buffer.ml:268:9>>*/ var
-        start$0 = i$4 + 1 | 0;
-       if(lim$1 <= start$0)
-         /*<<buffer.ml:245:23>>*/ throw  /*<<buffer.ml:245:23>>*/ caml_maybe_attach_backtrace
-               (Stdlib[8], 1);
-        /*<<buffer.ml:246:8>>*/  /*<<buffer.ml:246:8>>*/ var
-        opening =  /*<<buffer.ml:246:8>>*/ caml_string_get(s, start$0);
-       a:
-       {
-        if(40 !== opening && 123 !== opening){
-          /*<<buffer.ml:254:5>>*/ var
-           /*<<buffer.ml:254:5>>*/ start = start$0 + 1 | 0,
-          lim$0 = caml_ml_string_length(s);
-         b:
-         {
-          c:
+        /*<<buffer.ml:269:9>>*/  /*<<buffer.ml:269:9>>*/ var
+        start = i$4 + 1 | 0;
+        /*<<buffer.ml:270:9>>*/ try{
+        if(lim$1 <= start)
+          /*<<buffer.ml:245:23>>*/ throw  /*<<buffer.ml:245:23>>*/ caml_maybe_attach_backtrace
+                (Stdlib[8], 1);
+         /*<<buffer.ml:246:8>>*/  /*<<buffer.ml:246:8>>*/ var
+         opening =  /*<<buffer.ml:246:8>>*/ caml_string_get(s, start);
+        a:
+        {
+         if(40 !== opening && 123 !== opening){
+          var lim$0 = caml_ml_string_length(s);
+          b:
           {
-           d:
+           c:
            {
-            var i$2 = start;
-             /*<<buffer.ml:237:4>>*/ for(;;){
-             if(lim$0 <= i$2) break c;
-              /*<<buffer.ml:238:10>>*/  /*<<buffer.ml:238:10>>*/ var
-              match =  /*<<buffer.ml:238:10>>*/ caml_string_get(s, i$2);
-             if(91 <= match){
-              if(97 <= match){
-               if(123 <= match) break d;
+            d:
+            {
+             var i$2 = start;
+              /*<<buffer.ml:237:4>>*/ for(;;){
+              if(lim$0 <= i$2) break c;
+               /*<<buffer.ml:238:10>>*/  /*<<buffer.ml:238:10>>*/ var
+               match =  /*<<buffer.ml:238:10>>*/ caml_string_get(s, i$2);
+              if(91 <= match){
+               if(97 <= match){
+                if(123 <= match) break d;
+               }
+               else if(95 !== match) break d;
               }
-              else if(95 !== match) break d;
+              else
+               if(58 <= match){
+                if(65 > match) break;
+               }
+               else if(48 > match) break d;
+              var i$3 = i$2 + 1 | 0;
+              i$2 = i$3;
              }
-             else
-              if(58 <= match){
-               if(65 > match) break;
-              }
-              else if(48 > match) break d;
-             var i$3 = i$2 + 1 | 0;
-             i$2 = i$3;
             }
+            var stop$0 = i$2;
+            break b;
            }
-           var stop$0 = i$2;
-           break b;
+           var stop$0 = lim$0;
           }
-          var stop$0 = lim$0;
+          if(stop$0 === start)
+            /*<<buffer.ml:255:26>>*/ throw  /*<<buffer.ml:255:26>>*/ caml_maybe_attach_backtrace
+                  (Stdlib[8], 1);
+          var
+           val =
+             [0,
+               /*<<buffer.ml:256:5>>*/ caml_call3
+               (Stdlib_String[16], s, start, stop$0 - start | 0),
+              stop$0];
+          break a;
+         }
+          /*<<buffer.ml:249:5>>*/ var
+           /*<<buffer.ml:249:5>>*/ new_start = start + 1 | 0,
+          k$2 = 0;
+         if(40 === opening)
+          var closing = 41;
+         else{
+          if(123 !== opening)
+            /*<<buffer.ml:220:9>>*/ throw  /*<<buffer.ml:220:9>>*/ caml_maybe_attach_backtrace
+                  ([0, Assert_failure, _a_], 1);
+          var closing = 125;
+         }
+         var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
+          /*<<buffer.ml:228:4>>*/ for(;;){
+          if(lim <= stop)
+            /*<<buffer.ml:228:21>>*/ throw  /*<<buffer.ml:228:21>>*/ caml_maybe_attach_backtrace
+                  (Stdlib[8], 1);
+          if( /*<<buffer.ml:229:7>>*/ caml_string_get(s, stop) === opening){var i = stop + 1 | 0, k$0 = k + 1 | 0; k = k$0; stop = i;}
+          else if
+           ( /*<<buffer.ml:230:7>>*/ caml_string_get(s, stop) === closing){
+           if(0 === k) break;
+           var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
+           k = k$1;
+           stop = i$0;
+          }
+          else{var i$1 = stop + 1 | 0; stop = i$1;}
          }
          var
-          match$0 =
+          val =
             [0,
-              /*<<buffer.ml:255:5>>*/ caml_call3
-              (Stdlib_String[16], s, start$0, stop$0 - start$0 | 0),
-             stop$0];
-         break a;
+              /*<<buffer.ml:251:5>>*/ caml_call3
+              (Stdlib_String[16], s, new_start, (stop - start | 0) - 1 | 0),
+             stop + 1 | 0];
         }
-         /*<<buffer.ml:249:5>>*/ var
-          /*<<buffer.ml:249:5>>*/ new_start = start$0 + 1 | 0,
-         k$2 = 0;
-        if(40 === opening)
-         var closing = 41;
-        else{
-         if(123 !== opening)
-           /*<<buffer.ml:220:9>>*/ throw  /*<<buffer.ml:220:9>>*/ caml_maybe_attach_backtrace
-                 ([0, Assert_failure, _a_], 1);
-         var closing = 125;
-        }
-        var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
-         /*<<buffer.ml:228:4>>*/ for(;;){
-         if(lim <= stop)
-           /*<<buffer.ml:228:21>>*/ throw  /*<<buffer.ml:228:21>>*/ caml_maybe_attach_backtrace
-                 (Stdlib[8], 1);
-         if( /*<<buffer.ml:229:7>>*/ caml_string_get(s, stop) === opening){var i = stop + 1 | 0, k$0 = k + 1 | 0; k = k$0; stop = i;}
-         else if
-          ( /*<<buffer.ml:230:7>>*/ caml_string_get(s, stop) === closing){
-          if(0 === k) break;
-          var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
-          k = k$1;
-          stop = i$0;
-         }
-         else{var i$1 = stop + 1 | 0; stop = i$1;}
-        }
-        var
-         match$0 =
-           [0,
-             /*<<buffer.ml:251:5>>*/ caml_call3
-             (Stdlib_String[16], s, new_start, (stop - start$0 | 0) - 1 | 0),
-            stop + 1 | 0];
        }
-       var next_i = match$0[2], ident = match$0[1];
-        /*<<buffer.ml:270:9>>*/ add_string
-        (b,  /*<<buffer.ml:270:22>>*/ caml_call1(f, ident));
+       catch(_p_){
+        var _n_ = caml_wrap_exception(_p_);
+        if(_n_ !== Stdlib[8]) throw caml_maybe_attach_backtrace(_n_, 0);
+         /*<<buffer.ml:275:11>>*/ add_char(b, 36);
+        previous = 32;
+        i$4 = start;
+        continue;
+       }
+       var next_i = val[2], ident = val[1];
+        /*<<buffer.ml:272:11>>*/ add_string
+        (b,  /*<<buffer.ml:272:24>>*/ caml_call1(f, ident));
        previous = 32;
        i$4 = next_i;
       }
-     else if(92 === previous){
-       /*<<buffer.ml:273:9>>*/ add_char(b, 92);
-       /*<<buffer.ml:274:9>>*/ add_char(b, previous$0);
-       /*<<buffer.ml:274:9>>*/  /*<<buffer.ml:274:9>>*/ var i$6 = i$4 + 1 | 0;
-      previous = 32;
+     else{
+      if(92 === previous)  /*<<buffer.ml:279:33>>*/ add_char(b, previous);
+      if(92 !== previous$0)  /*<<buffer.ml:280:33>>*/ add_char(b, previous$0);
+       /*<<buffer.ml:280:33>>*/  /*<<buffer.ml:280:33>>*/ var
+       i$6 = i$4 + 1 | 0;
+      previous = previous$0;
       i$4 = i$6;
      }
-     else if(92 === previous$0){
-       /*<<buffer.ml:277:9>>*/  /*<<buffer.ml:277:9>>*/ var i$7 = i$4 + 1 | 0;
-      previous = previous$0;
-      i$4 = i$7;
-     }
-     else{
-       /*<<buffer.ml:279:9>>*/ add_char(b, previous$0);
-       /*<<buffer.ml:279:9>>*/  /*<<buffer.ml:279:9>>*/ var i$8 = i$4 + 1 | 0;
-      previous = previous$0;
-      i$4 = i$8;
-     }
     }
-    /*<<buffer.ml:283:13>>*/ }
+    /*<<buffer.ml:284:13>>*/ }
    function truncate(b, len){
-     /*<<buffer.ml:286:4>>*/ if(0 <= len && b[2] >= len){b[2] = len; return 0;}
-     /*<<buffer.ml:287:6>>*/ return  /*<<buffer.ml:287:6>>*/ caml_call1
+     /*<<buffer.ml:287:4>>*/ if(0 <= len && b[2] >= len){b[2] = len; return 0;}
+     /*<<buffer.ml:288:6>>*/ return  /*<<buffer.ml:288:6>>*/ caml_call1
             (Stdlib[1], cst_Buffer_truncate);
-    /*<<buffer.ml:289:23>>*/ }
+    /*<<buffer.ml:290:23>>*/ }
    function to_seq(b){
     function aux(i, param){
-      /*<<buffer.ml:296:4>>*/ if(b[2] <= i)
-       /*<<buffer.ml:296:28>>*/ return 0;
-      /*<<buffer.ml:298:14>>*/ var
-       /*<<buffer.ml:298:14>>*/ x =
-         /*<<buffer.ml:298:14>>*/ caml_bytes_get(b[1][1], i),
-       /*<<buffer.ml:298:14>>*/ _l_ = i + 1 | 0;
-      /*<<buffer.ml:299:6>>*/ return [0,
+      /*<<buffer.ml:297:4>>*/ if(b[2] <= i)
+       /*<<buffer.ml:297:28>>*/ return 0;
+      /*<<buffer.ml:299:14>>*/ var
+       /*<<buffer.ml:299:14>>*/ x =
+         /*<<buffer.ml:299:14>>*/ caml_bytes_get(b[1][1], i),
+       /*<<buffer.ml:299:14>>*/ _l_ = i + 1 | 0;
+      /*<<buffer.ml:300:6>>*/ return [0,
              x,
              function(_m_){ /*<<?>>*/ return aux(_l_, _m_);}];
-     /*<<buffer.ml:299:29>>*/ }
-     /*<<buffer.ml:301:2>>*/ var _j_ = 0;
-     /*<<buffer.ml:301:2>>*/ return function(_k_){
+     /*<<buffer.ml:300:29>>*/ }
+     /*<<buffer.ml:302:2>>*/ var _j_ = 0;
+     /*<<buffer.ml:302:2>>*/ return function(_k_){
       /*<<?>>*/ return aux(_j_, _k_);};
-    /*<<buffer.ml:301:7>>*/ }
+    /*<<buffer.ml:302:7>>*/ }
    function to_seqi(b){
     function aux(i, param){
-      /*<<buffer.ml:306:4>>*/ if(b[2] <= i)
-       /*<<buffer.ml:306:28>>*/ return 0;
-      /*<<buffer.ml:308:14>>*/ var
-       /*<<buffer.ml:308:14>>*/ x =
-         /*<<buffer.ml:308:14>>*/ caml_bytes_get(b[1][1], i),
-       /*<<buffer.ml:308:14>>*/ _h_ = i + 1 | 0;
-      /*<<buffer.ml:309:6>>*/ return [0,
+      /*<<buffer.ml:307:4>>*/ if(b[2] <= i)
+       /*<<buffer.ml:307:28>>*/ return 0;
+      /*<<buffer.ml:309:14>>*/ var
+       /*<<buffer.ml:309:14>>*/ x =
+         /*<<buffer.ml:309:14>>*/ caml_bytes_get(b[1][1], i),
+       /*<<buffer.ml:309:14>>*/ _h_ = i + 1 | 0;
+      /*<<buffer.ml:310:6>>*/ return [0,
              [0, i, x],
              function(_i_){ /*<<?>>*/ return aux(_h_, _i_);}];
-     /*<<buffer.ml:309:33>>*/ }
-     /*<<buffer.ml:311:2>>*/ var _f_ = 0;
-     /*<<buffer.ml:311:2>>*/ return function(_g_){
+     /*<<buffer.ml:310:33>>*/ }
+     /*<<buffer.ml:312:2>>*/ var _f_ = 0;
+     /*<<buffer.ml:312:2>>*/ return function(_g_){
       /*<<?>>*/ return aux(_f_, _g_);};
-    /*<<buffer.ml:311:7>>*/ }
+    /*<<buffer.ml:312:7>>*/ }
    function add_seq(b, seq){
-     /*<<buffer.ml:313:20>>*/ return  /*<<buffer.ml:313:20>>*/ caml_call2
+     /*<<buffer.ml:314:20>>*/ return  /*<<buffer.ml:314:20>>*/ caml_call2
             (Stdlib_Seq[4],
              function(_e_){ /*<<?>>*/ return add_char(b, _e_);},
              seq);
-    /*<<buffer.ml:313:45>>*/ }
+    /*<<buffer.ml:314:45>>*/ }
    function of_seq(i){
-     /*<<buffer.ml:316:2>>*/  /*<<buffer.ml:316:10>>*/ var b = create(32);
-     /*<<buffer.ml:317:2>>*/ add_seq(b, i);
-     /*<<buffer.ml:317:2>>*/ return b;
-    /*<<buffer.ml:318:3>>*/ }
+     /*<<buffer.ml:317:2>>*/  /*<<buffer.ml:317:10>>*/ var b = create(32);
+     /*<<buffer.ml:318:2>>*/ add_seq(b, i);
+     /*<<buffer.ml:318:2>>*/ return b;
+    /*<<buffer.ml:319:3>>*/ }
    function add_int8(b, x){
-     /*<<buffer.ml:337:2>>*/ var
+     /*<<buffer.ml:338:2>>*/ var
      position = b[2],
-      /*<<buffer.ml:338:2>>*/ match = b[1],
+      /*<<buffer.ml:339:2>>*/ match = b[1],
      length = match[2],
      buffer = match[1],
-      /*<<buffer.ml:339:2>>*/ new_position = position + 1 | 0;
+      /*<<buffer.ml:340:2>>*/ new_position = position + 1 | 0;
     if(length < new_position){
-      /*<<buffer.ml:341:4>>*/ resize(b, 1);
-      /*<<buffer.ml:342:4>>*/  /*<<buffer.ml:342:4>>*/ caml_bytes_set
+      /*<<buffer.ml:342:4>>*/ resize(b, 1);
+      /*<<buffer.ml:343:4>>*/  /*<<buffer.ml:343:4>>*/ caml_bytes_set
       (b[1][1], b[2], x);
     }
     else
      caml_bytes_unsafe_set(buffer, position, x);
     b[2] = new_position;
     return 0;
-    /*<<buffer.ml:345:28>>*/ }
+    /*<<buffer.ml:346:28>>*/ }
    function add_int16_ne(b, x){
-     /*<<buffer.ml:348:2>>*/ var
+     /*<<buffer.ml:349:2>>*/ var
      position = b[2],
-      /*<<buffer.ml:349:2>>*/ match = b[1],
+      /*<<buffer.ml:350:2>>*/ match = b[1],
      length = match[2],
      buffer = match[1],
-      /*<<buffer.ml:350:2>>*/ new_position = position + 2 | 0;
+      /*<<buffer.ml:351:2>>*/ new_position = position + 2 | 0;
     if(length < new_position){
-      /*<<buffer.ml:352:4>>*/ resize(b, 2);
-      /*<<buffer.ml:353:4>>*/  /*<<buffer.ml:353:4>>*/ caml_bytes_set16
+      /*<<buffer.ml:353:4>>*/ resize(b, 2);
+      /*<<buffer.ml:354:4>>*/  /*<<buffer.ml:354:4>>*/ caml_bytes_set16
       (b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:355:4>>*/  /*<<buffer.ml:355:4>>*/ caml_bytes_set16
+      /*<<buffer.ml:356:4>>*/  /*<<buffer.ml:356:4>>*/ caml_bytes_set16
       (buffer, position, x);
     b[2] = new_position;
     return 0;
-    /*<<buffer.ml:356:28>>*/ }
+    /*<<buffer.ml:357:28>>*/ }
    function add_int32_ne(b, x){
-     /*<<buffer.ml:359:2>>*/ var
+     /*<<buffer.ml:360:2>>*/ var
      position = b[2],
-      /*<<buffer.ml:360:2>>*/ match = b[1],
+      /*<<buffer.ml:361:2>>*/ match = b[1],
      length = match[2],
      buffer = match[1],
-      /*<<buffer.ml:361:2>>*/ new_position = position + 4 | 0;
+      /*<<buffer.ml:362:2>>*/ new_position = position + 4 | 0;
     if(length < new_position){
-      /*<<buffer.ml:363:4>>*/ resize(b, 4);
-      /*<<buffer.ml:364:4>>*/  /*<<buffer.ml:364:4>>*/ caml_bytes_set32
+      /*<<buffer.ml:364:4>>*/ resize(b, 4);
+      /*<<buffer.ml:365:4>>*/  /*<<buffer.ml:365:4>>*/ caml_bytes_set32
       (b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:366:4>>*/  /*<<buffer.ml:366:4>>*/ caml_bytes_set32
+      /*<<buffer.ml:367:4>>*/  /*<<buffer.ml:367:4>>*/ caml_bytes_set32
       (buffer, position, x);
     b[2] = new_position;
     return 0;
-    /*<<buffer.ml:367:28>>*/ }
+    /*<<buffer.ml:368:28>>*/ }
    function add_int64_ne(b, x){
-     /*<<buffer.ml:370:2>>*/ var
+     /*<<buffer.ml:371:2>>*/ var
      position = b[2],
-      /*<<buffer.ml:371:2>>*/ match = b[1],
+      /*<<buffer.ml:372:2>>*/ match = b[1],
      length = match[2],
      buffer = match[1],
-      /*<<buffer.ml:372:2>>*/ new_position = position + 8 | 0;
+      /*<<buffer.ml:373:2>>*/ new_position = position + 8 | 0;
     if(length < new_position){
-      /*<<buffer.ml:374:4>>*/ resize(b, 8);
-      /*<<buffer.ml:375:4>>*/  /*<<buffer.ml:375:4>>*/ caml_bytes_set64
+      /*<<buffer.ml:375:4>>*/ resize(b, 8);
+      /*<<buffer.ml:376:4>>*/  /*<<buffer.ml:376:4>>*/ caml_bytes_set64
       (b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:377:4>>*/  /*<<buffer.ml:377:4>>*/ caml_bytes_set64
+      /*<<buffer.ml:378:4>>*/  /*<<buffer.ml:378:4>>*/ caml_bytes_set64
       (buffer, position, x);
     b[2] = new_position;
     return 0;
-    /*<<buffer.ml:378:28>>*/ }
+    /*<<buffer.ml:379:28>>*/ }
    function add_int16_le(b, x){
-     /*<<buffer.ml:381:2>>*/ var _d_ = Stdlib_Sys[11] ? caml_bswap16(x) : x;
+     /*<<buffer.ml:382:2>>*/ var _d_ = Stdlib_Sys[11] ? caml_bswap16(x) : x;
     return add_int16_ne(b, _d_);
-    /*<<buffer.ml:381:57>>*/ }
+    /*<<buffer.ml:382:57>>*/ }
    function add_int16_be(b, x){
-     /*<<buffer.ml:384:2>>*/ var x$0 = Stdlib_Sys[11] ? x : caml_bswap16(x);
-     /*<<buffer.ml:384:41>>*/ return add_int16_ne(b, x$0);
-    /*<<buffer.ml:384:57>>*/ }
+     /*<<buffer.ml:385:2>>*/ var x$0 = Stdlib_Sys[11] ? x : caml_bswap16(x);
+     /*<<buffer.ml:385:41>>*/ return add_int16_ne(b, x$0);
+    /*<<buffer.ml:385:57>>*/ }
    function add_int32_le(b, x){
-     /*<<buffer.ml:387:2>>*/ var
-     _c_ = Stdlib_Sys[11] ?  /*<<buffer.ml:387:41>>*/ caml_int32_bswap(x) : x;
-     /*<<buffer.ml:387:41>>*/ return add_int32_ne(b, _c_);
-    /*<<buffer.ml:387:57>>*/ }
+     /*<<buffer.ml:388:2>>*/ var
+     _c_ = Stdlib_Sys[11] ?  /*<<buffer.ml:388:41>>*/ caml_int32_bswap(x) : x;
+     /*<<buffer.ml:388:41>>*/ return add_int32_ne(b, _c_);
+    /*<<buffer.ml:388:57>>*/ }
    function add_int32_be(b, x){
-     /*<<buffer.ml:390:2>>*/ var
-     x$0 = Stdlib_Sys[11] ? x :  /*<<buffer.ml:390:48>>*/ caml_int32_bswap(x);
-     /*<<buffer.ml:390:48>>*/ return add_int32_ne(b, x$0);
-    /*<<buffer.ml:390:57>>*/ }
+     /*<<buffer.ml:391:2>>*/ var
+     x$0 = Stdlib_Sys[11] ? x :  /*<<buffer.ml:391:48>>*/ caml_int32_bswap(x);
+     /*<<buffer.ml:391:48>>*/ return add_int32_ne(b, x$0);
+    /*<<buffer.ml:391:57>>*/ }
    function add_int64_le(b, x){
-     /*<<buffer.ml:393:2>>*/ var
-     _b_ = Stdlib_Sys[11] ?  /*<<buffer.ml:393:41>>*/ caml_int64_bswap(x) : x;
-     /*<<buffer.ml:393:41>>*/ return add_int64_ne(b, _b_);
-    /*<<buffer.ml:393:57>>*/ }
+     /*<<buffer.ml:394:2>>*/ var
+     _b_ = Stdlib_Sys[11] ?  /*<<buffer.ml:394:41>>*/ caml_int64_bswap(x) : x;
+     /*<<buffer.ml:394:41>>*/ return add_int64_ne(b, _b_);
+    /*<<buffer.ml:394:57>>*/ }
    function add_int64_be(b, x){
-     /*<<buffer.ml:396:2>>*/ var
-     x$0 = Stdlib_Sys[11] ? x :  /*<<buffer.ml:396:48>>*/ caml_int64_bswap(x);
-     /*<<buffer.ml:396:48>>*/ return add_int64_ne(b, x$0);
-    /*<<buffer.ml:396:57>>*/ }
+     /*<<buffer.ml:397:2>>*/ var
+     x$0 = Stdlib_Sys[11] ? x :  /*<<buffer.ml:397:48>>*/ caml_int64_bswap(x);
+     /*<<buffer.ml:397:48>>*/ return add_int64_ne(b, x$0);
+    /*<<buffer.ml:397:57>>*/ }
    var
     Stdlib_Buffer =
       [0,
@@ -13286,7 +13429,7 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_check_bound = runtime.caml_check_bound,
-    caml_domain_dls_set = runtime.caml_domain_dls_set,
+    caml_domain_dls_get = runtime.caml_domain_dls_get,
     caml_make_vect = runtime.caml_make_vect,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_domain_id = runtime.caml_ml_domain_id,
@@ -13314,265 +13457,247 @@
    var
     undef = undefined,
     global_data = runtime.caml_get_global_data(),
-    Stdlib_Mutex = global_data.Stdlib__Mutex,
     Stdlib_Condition = global_data.Stdlib__Condition,
-    Stdlib = global_data.Stdlib,
+    Stdlib_Mutex = global_data.Stdlib__Mutex,
     Stdlib_Atomic = global_data.Stdlib__Atomic,
+    Stdlib = global_data.Stdlib,
+    Stdlib_Array = global_data.Stdlib__Array,
     Stdlib_List = global_data.Stdlib__List,
-    Stdlib_Array = global_data.Stdlib__Array;
+    Assert_failure = global_data.Assert_failure;
    function cpu_relax(param){
-     /*<<domain.ml:32:19>>*/ return  /*<<domain.ml:32:19>>*/ runtime.caml_ml_domain_cpu_relax
+     /*<<domain.ml:47:19>>*/ return  /*<<domain.ml:47:19>>*/ runtime.caml_ml_domain_cpu_relax
             (0);
-    /*<<domain.ml:32:35>>*/ }
-    /*<<domain.ml:51:30>>*/  /*<<domain.ml:51:30>>*/ var
-    unique_value = [0, 0];
+    /*<<domain.ml:47:35>>*/ }
+    /*<<domain.ml:72:24>>*/  /*<<domain.ml:72:24>>*/ var none = [0, 0];
    function create_dls(param){
-     /*<<domain.ml:59:4>>*/  /*<<domain.ml:59:13>>*/ var
-     st =  /*<<domain.ml:59:13>>*/ caml_make_vect(8, unique_value);
-     /*<<domain.ml:60:4>>*/  /*<<domain.ml:60:4>>*/ caml_domain_dls_set(st);
-     /*<<domain.ml:60:4>>*/ return;
-    /*<<domain.ml:60:20>>*/ }
-    /*<<domain.ml:62:10>>*/ create_dls(0);
-    /*<<domain.ml:66:20>>*/ var
-     /*<<domain.ml:66:20>>*/ key_counter =
-       /*<<domain.ml:66:20>>*/ caml_call1(Stdlib_Atomic[1], 0),
-     /*<<domain.ml:71:20>>*/ parent_keys =
-       /*<<domain.ml:71:20>>*/ caml_call1(Stdlib_Atomic[1], 0);
+     /*<<domain.ml:89:4>>*/  /*<<domain.ml:89:13>>*/ var
+     st =  /*<<domain.ml:89:13>>*/ caml_make_vect(8, none);
+     /*<<domain.ml:90:4>>*/  /*<<domain.ml:90:4>>*/ runtime.caml_domain_dls_set
+     (st);
+     /*<<domain.ml:90:4>>*/ return;
+    /*<<domain.ml:90:20>>*/ }
+    /*<<domain.ml:92:10>>*/ create_dls(0);
+    /*<<domain.ml:96:20>>*/ var
+     /*<<domain.ml:96:20>>*/ key_counter =
+       /*<<domain.ml:96:20>>*/ caml_call1(Stdlib_Atomic[1], 0),
+     /*<<domain.ml:101:20>>*/ parent_keys =
+       /*<<domain.ml:101:20>>*/ caml_call1(Stdlib_Atomic[1], 0),
+    _a_ = [0, "domain.ml", 184, 13];
    function new_key(split_from_parent, init_orphan){
-     /*<<domain.ml:79:4>>*/ var
-      /*<<domain.ml:79:14>>*/ idx =
-        /*<<domain.ml:79:14>>*/ caml_call2(Stdlib_Atomic[6], key_counter, 1),
-      /*<<domain.ml:80:12>>*/ k = [0, idx, init_orphan];
-     /*<<domain.ml:81:4>>*/ if(split_from_parent){
-      /*<<domain.ml:83:35>>*/ var
+     /*<<domain.ml:109:4>>*/ var
+      /*<<domain.ml:109:14>>*/ idx =
+        /*<<domain.ml:109:14>>*/ caml_call2(Stdlib_Atomic[7], key_counter, 1),
+      /*<<domain.ml:110:12>>*/ k = [0, idx, init_orphan];
+     /*<<domain.ml:111:4>>*/ if(split_from_parent){
+      /*<<domain.ml:113:35>>*/ var
       split = split_from_parent[1],
-       /*<<domain.ml:83:35>>*/ ki = [0, k, split];
-      /*<<domain.ml:74:4>>*/ for(;;){
-       /*<<domain.ml:74:12>>*/  /*<<domain.ml:74:12>>*/ var
-       l =  /*<<domain.ml:74:12>>*/ caml_call1(Stdlib_Atomic[2], parent_keys);
+       /*<<domain.ml:113:35>>*/ ki = [0, k, split];
+      /*<<domain.ml:104:4>>*/ for(;;){
+       /*<<domain.ml:104:12>>*/  /*<<domain.ml:104:12>>*/ var
+       l =  /*<<domain.ml:104:12>>*/ caml_call1(Stdlib_Atomic[3], parent_keys);
       if
        (!
         (1
         -
-          /*<<domain.ml:75:11>>*/ caml_call3
-          (Stdlib_Atomic[5], parent_keys, l, [0, ki, l])))
+          /*<<domain.ml:105:11>>*/ caml_call3
+          (Stdlib_Atomic[6], parent_keys, l, [0, ki, l])))
        break;
      }
     }
-     /*<<domain.ml:85:4>>*/ return k;
-    /*<<domain.ml:85:5>>*/ }
+     /*<<domain.ml:115:4>>*/ return k;
+    /*<<domain.ml:115:5>>*/ }
    function maybe_grow(idx){
-     /*<<domain.ml:90:4>>*/ var
-     st = runtime.caml_domain_dls_get(0),
-      /*<<domain.ml:91:4>>*/ sz = st.length - 1;
-    if(idx < sz)  /*<<domain.ml:92:21>>*/ return st;
-    var new_sz = sz;
-     /*<<domain.ml:95:8>>*/ for(;;){
-     if(idx < new_sz){
-       /*<<domain.ml:98:19>>*/  /*<<domain.ml:98:19>>*/ var
-       new_st =  /*<<domain.ml:98:19>>*/ caml_make_vect(new_sz, unique_value);
-       /*<<domain.ml:99:6>>*/  /*<<domain.ml:99:6>>*/ caml_call5
-       (Stdlib_Array[8], st, 0, new_st, 0, sz);
-       /*<<domain.ml:100:6>>*/  /*<<domain.ml:100:6>>*/ caml_domain_dls_set
-       (new_st);
-       /*<<domain.ml:100:6>>*/ return new_st;
+     /*<<domain.ml:120:4>>*/ for(;;){
+      /*<<domain.ml:121:4>>*/ var
+      st = caml_domain_dls_get(0),
+       /*<<domain.ml:121:4>>*/ sz = st.length - 1;
+     if(idx < sz)  /*<<domain.ml:122:21>>*/ return st;
+     var new_sz = sz;
+      /*<<domain.ml:125:8>>*/ for(;;){
+      if(idx < new_sz) break;
+      var s = 2 * new_sz | 0;
+      new_sz = s;
      }
-     var s = 2 * new_sz | 0;
-     new_sz = s;
+      /*<<domain.ml:128:19>>*/  /*<<domain.ml:128:19>>*/ var
+      new_st =  /*<<domain.ml:128:19>>*/ caml_make_vect(new_sz, none);
+      /*<<domain.ml:129:6>>*/  /*<<domain.ml:129:6>>*/ caml_call5
+      (Stdlib_Array[9], st, 0, new_st, 0, sz);
+      /*<<domain.ml:136:9>>*/ if
+      ( /*<<domain.ml:136:9>>*/ runtime.caml_domain_dls_compare_and_set
+        (st, new_st))
+       /*<<domain.ml:137:11>>*/ return new_st;
     }
-    /*<<domain.ml:102:7>>*/ }
+    /*<<domain.ml:139:7>>*/ }
    function set(param, x){
-     /*<<domain.ml:105:13>>*/ var
+     /*<<domain.ml:142:13>>*/ var
      idx = param[1],
-      /*<<domain.ml:105:13>>*/ st = maybe_grow(idx);
-     /*<<domain.ml:109:4>>*/ caml_check_bound(st, idx)[1 + idx] = x;
-     /*<<domain.ml:109:4>>*/ return 0;
+      /*<<domain.ml:142:13>>*/ st = maybe_grow(idx);
+     /*<<domain.ml:146:4>>*/ caml_check_bound(st, idx)[1 + idx] = x;
+     /*<<domain.ml:146:4>>*/ return 0;
    }
    function get(param){
-     /*<<domain.ml:112:13>>*/ var
+     /*<<domain.ml:159:13>>*/ var
      init = param[2],
      idx = param[1],
-      /*<<domain.ml:112:13>>*/ st = maybe_grow(idx),
-      /*<<domain.ml:113:12>>*/ v = caml_check_bound(st, idx)[1 + idx];
-    if(v !== unique_value)  /*<<domain.ml:118:9>>*/ return v;
-     /*<<domain.ml:115:24>>*/  /*<<domain.ml:115:24>>*/ var
-     v$0 =  /*<<domain.ml:115:24>>*/ caml_call1(init, 0);
-     /*<<domain.ml:116:6>>*/ caml_check_bound(st, idx)[1 + idx] = v$0;
-     /*<<domain.ml:116:6>>*/ return v$0;
+      /*<<domain.ml:159:13>>*/ st = maybe_grow(idx),
+      /*<<domain.ml:160:14>>*/ oldval = caml_check_bound(st, idx)[1 + idx];
+     /*<<domain.ml:161:7>>*/ if(oldval !== none)
+      /*<<domain.ml:75:25>>*/ return oldval;
+     /*<<domain.ml:164:18>>*/ var
+      /*<<domain.ml:164:18>>*/ new_obj =
+        /*<<domain.ml:164:18>>*/ caml_call1(init, 0),
+      /*<<domain.ml:175:6>>*/ st$0 =
+        /*<<domain.ml:175:6>>*/ caml_domain_dls_get(0),
+      /*<<domain.ml:152:17>>*/ curval = caml_check_bound(st$0, idx)[1 + idx],
+     _e_ = curval === oldval ? (st$0[1 + idx] = new_obj, 1) : 0;
+     /*<<domain.ml:176:9>>*/ if(_e_)  /*<<domain.ml:177:11>>*/ return new_obj;
+     /*<<domain.ml:181:26>>*/  /*<<domain.ml:181:26>>*/ var
+     updated_obj = caml_check_bound(st$0, idx)[1 + idx];
+     /*<<domain.ml:182:11>>*/ if(updated_obj !== none)
+      /*<<domain.ml:75:25>>*/ return updated_obj;
+     /*<<domain.ml:184:13>>*/ throw  /*<<domain.ml:184:13>>*/ caml_maybe_attach_backtrace
+           ([0, Assert_failure, _a_], 1);
    }
    function get_id(param){
     var domain = param[1];
-     /*<<domain.ml:136:27>>*/ return domain;
+     /*<<domain.ml:201:27>>*/ return domain;
    }
    function self(param){
-     /*<<domain.ml:138:14>>*/ return  /*<<domain.ml:138:14>>*/ caml_ml_domain_id
+     /*<<domain.ml:203:14>>*/ return  /*<<domain.ml:203:14>>*/ caml_ml_domain_id
             (0);
-    /*<<domain.ml:138:25>>*/ }
+    /*<<domain.ml:203:25>>*/ }
    function is_main_domain(param){
-     /*<<domain.ml:140:24>>*/ return 0
-            ===  /*<<domain.ml:138:14>>*/ caml_ml_domain_id(0)
+     /*<<domain.ml:205:24>>*/ return 0
+            ===  /*<<domain.ml:203:14>>*/ caml_ml_domain_id(0)
             ? 1
             : 0;
-    /*<<domain.ml:140:44>>*/ }
-    /*<<domain.ml:145:27>>*/ var
-     /*<<domain.ml:145:27>>*/ first_domain_spawned =
-       /*<<domain.ml:145:27>>*/ caml_call1(Stdlib_Atomic[1], 0),
-     /*<<domain.ml:147:27>>*/ first_spawn_function =
+    /*<<domain.ml:205:44>>*/ }
+    /*<<domain.ml:210:27>>*/ var
+     /*<<domain.ml:210:27>>*/ first_domain_spawned =
+       /*<<domain.ml:210:27>>*/ caml_call1(Stdlib_Atomic[1], 0),
+     /*<<domain.ml:212:27>>*/ first_spawn_function =
       [0,
        function(param){
-         /*<<domain.ml:147:42>>*/ return;
-        /*<<domain.ml:147:44>>*/ }],
+         /*<<domain.ml:212:42>>*/ return;
+        /*<<domain.ml:212:44>>*/ }],
     cst_first_domain_already_spawn = "first domain already spawned";
    function before_first_spawn(f){
-     /*<<domain.ml:150:2>>*/ if
-     ( /*<<domain.ml:150:5>>*/ caml_call1
-       (Stdlib_Atomic[2], first_domain_spawned))
-      /*<<domain.ml:151:4>>*/ throw  /*<<domain.ml:151:4>>*/ caml_maybe_attach_backtrace
+     /*<<domain.ml:215:2>>*/ if
+     ( /*<<domain.ml:215:5>>*/ caml_call1
+       (Stdlib_Atomic[3], first_domain_spawned))
+      /*<<domain.ml:216:4>>*/ throw  /*<<domain.ml:216:4>>*/ caml_maybe_attach_backtrace
             ([0, Stdlib[6], cst_first_domain_already_spawn], 1);
     var old_f = first_spawn_function[1];
     function new_f(param){
-      /*<<domain.ml:154:19>>*/  /*<<domain.ml:154:19>>*/ caml_call1(old_f, 0);
-      /*<<domain.ml:154:19>>*/ return  /*<<domain.ml:154:19>>*/ caml_call1
+      /*<<domain.ml:219:19>>*/  /*<<domain.ml:219:19>>*/ caml_call1(old_f, 0);
+      /*<<domain.ml:219:19>>*/ return  /*<<domain.ml:219:19>>*/ caml_call1
              (f, 0);
-     /*<<domain.ml:154:33>>*/ }
+     /*<<domain.ml:219:33>>*/ }
     first_spawn_function[1] = new_f;
     return 0;
-    /*<<domain.ml:156:5>>*/ }
-    /*<<domain.ml:166:18>>*/  /*<<domain.ml:166:18>>*/ var
+    /*<<domain.ml:221:5>>*/ }
+    /*<<domain.ml:231:18>>*/  /*<<domain.ml:231:18>>*/ var
     at_exit_key =
       new_key
        (0,
-        function(param, _c_){
-          /*<<domain.ml:166:52>>*/ return 0;
-         /*<<domain.ml:166:54>>*/ });
+        function(param){
+          /*<<domain.ml:231:41>>*/ return function(param){
+           /*<<domain.ml:231:52>>*/ return 0; /*<<domain.ml:231:54>>*/ };
+         /*<<domain.ml:231:55>>*/ });
    function at_exit(f){
-     /*<<domain.ml:169:2>>*/  /*<<domain.ml:169:32>>*/ var
+     /*<<domain.ml:234:2>>*/  /*<<domain.ml:234:32>>*/ var
      old_exit = get(at_exit_key);
     function new_exit(param){
-      /*<<domain.ml:175:4>>*/  /*<<domain.ml:175:4>>*/ caml_call1(f, 0);
-      /*<<domain.ml:175:4>>*/ return  /*<<domain.ml:175:4>>*/ caml_call1
+      /*<<domain.ml:236:4>>*/  /*<<domain.ml:236:4>>*/ caml_call1(f, 0);
+      /*<<domain.ml:236:4>>*/ return  /*<<domain.ml:236:4>>*/ caml_call1
              (old_exit, 0);
-     /*<<domain.ml:175:21>>*/ }
-     /*<<domain.ml:177:2>>*/ return set(at_exit_key, new_exit);
-    /*<<domain.ml:177:30>>*/ }
+     /*<<domain.ml:236:21>>*/ }
+     /*<<domain.ml:238:2>>*/ return set(at_exit_key, new_exit);
+    /*<<domain.ml:238:30>>*/ }
    function do_at_exit(param){
-     /*<<domain.ml:180:2>>*/  /*<<domain.ml:180:25>>*/ var
+     /*<<domain.ml:241:2>>*/  /*<<domain.ml:241:25>>*/ var
      f = get(at_exit_key);
-     /*<<domain.ml:181:2>>*/ return  /*<<domain.ml:181:2>>*/ caml_call1(f, 0);
-    /*<<domain.ml:181:6>>*/ }
+     /*<<domain.ml:242:2>>*/ return  /*<<domain.ml:242:2>>*/ caml_call1(f, 0);
+    /*<<domain.ml:242:6>>*/ }
    Stdlib[104][1] = do_at_exit;
-   var
-    cst_internal_error_Am_I_alread = "internal error: Am I already finished?";
    function spawn(f){
-     /*<<domain.ml:188:2>>*/ if
+     /*<<domain.ml:249:2>>*/ if
      (1
       -
-        /*<<domain.ml:159:9>>*/ caml_call1
-        (Stdlib_Atomic[2], first_domain_spawned)){
-      /*<<domain.ml:160:4>>*/  /*<<domain.ml:160:4>>*/ caml_call2
-      (Stdlib_Atomic[3], first_domain_spawned, 1);
-      /*<<domain.ml:161:4>>*/  /*<<domain.ml:161:4>>*/ caml_call1
+        /*<<domain.ml:224:9>>*/ caml_call1
+        (Stdlib_Atomic[3], first_domain_spawned)){
+      /*<<domain.ml:225:4>>*/  /*<<domain.ml:225:4>>*/ caml_call2
+      (Stdlib_Atomic[4], first_domain_spawned, 1);
+      /*<<domain.ml:226:4>>*/  /*<<domain.ml:226:4>>*/ caml_call1
       (first_spawn_function[1], 0);
      first_spawn_function[1] =
       function(param){
-        /*<<domain.ml:163:39>>*/ return 0;
-       /*<<domain.ml:163:41>>*/ };
+        /*<<domain.ml:228:39>>*/ return 0;
+       /*<<domain.ml:228:41>>*/ };
     }
-     /*<<domain.ml:124:6>>*/ var
-      /*<<domain.ml:124:6>>*/ _a_ =
-        /*<<domain.ml:124:6>>*/ caml_call1(Stdlib_Atomic[2], parent_keys),
-      /*<<domain.ml:124:6>>*/ pk =
-        /*<<domain.ml:124:6>>*/ caml_call2
+     /*<<domain.ml:193:6>>*/ var
+      /*<<domain.ml:193:6>>*/ _b_ =
+        /*<<domain.ml:193:6>>*/ caml_call1(Stdlib_Atomic[3], parent_keys),
+      /*<<domain.ml:193:6>>*/ pk =
+        /*<<domain.ml:193:6>>*/ caml_call2
         (Stdlib_List[20],
          function(param){
-           /*<<domain.ml:122:6>>*/ var
-           split = param[2],
-           k = param[1],
-           idx = k[1];
-           /*<<domain.ml:123:11>>*/ return [0,
-                  idx,
-                   /*<<domain.ml:123:26>>*/ caml_call1(split, get(k))];
-          /*<<domain.ml:123:43>>*/ },
-         _a_),
-      /*<<domain.ml:193:19>>*/ term_mutex =
-        /*<<domain.ml:193:19>>*/ caml_call1(Stdlib_Mutex[1], 0),
-      /*<<domain.ml:194:23>>*/ term_condition =
-        /*<<domain.ml:194:23>>*/ caml_call1(Stdlib_Condition[1], 0),
-      /*<<domain.ml:195:19>>*/ term_state = [0, 0];
+           /*<<domain.ml:192:6>>*/ var split = param[2], k = param[1];
+           /*<<domain.ml:192:30>>*/ return [0,
+                  k,
+                   /*<<domain.ml:192:37>>*/ caml_call1(split, get(k))];
+          /*<<domain.ml:192:54>>*/ },
+         _b_),
+      /*<<domain.ml:256:17>>*/ _c_ =
+        /*<<domain.ml:256:17>>*/ caml_call1(Stdlib_Condition[1], 0),
+      /*<<domain.ml:254:8>>*/ term_sync =
+       [0, 0,  /*<<domain.ml:255:16>>*/ caml_call1(Stdlib_Mutex[1], 0), _c_];
     function body(param){
-      /*<<domain.ml:198:4>>*/ a:
-     {
-       /*<<domain.ml:198:4>>*/ try{
-        /*<<domain.ml:200:8>>*/ create_dls(0);
-        /*<<domain.ml:127:4>>*/  /*<<domain.ml:127:4>>*/ caml_call2
-        (Stdlib_List[18],
-         function(param){
-           /*<<domain.ml:128:6>>*/ var
-           v = param[2],
-           idx = param[1],
-            /*<<domain.ml:129:17>>*/ st = maybe_grow(idx);
-           /*<<domain.ml:129:35>>*/ caml_check_bound(st, idx)[1 + idx] = v;
-           /*<<domain.ml:129:35>>*/ return 0;
-          /*<<domain.ml:129:49>>*/ },
-         pk);
-        /*<<domain.ml:202:18>>*/  /*<<domain.ml:202:18>>*/ var
-        res =  /*<<domain.ml:202:18>>*/ caml_call1(f, 0);
-      }
-      catch(ex$0){
-       var ex = caml_wrap_exception(ex$0), result = [1, ex];
-       break a;
-      }
-      var result = [0, res];
+      /*<<domain.ml:260:4>>*/ try{
+       /*<<domain.ml:261:6>>*/ create_dls(0);
+       /*<<domain.ml:196:4>>*/  /*<<domain.ml:196:4>>*/ caml_call2
+       (Stdlib_List[18],
+        function(param){
+          /*<<domain.ml:196:14>>*/ var v = param[2], k = param[1];
+          /*<<domain.ml:196:34>>*/ return set(k, v);
+         /*<<domain.ml:196:42>>*/ },
+        pk);
+       /*<<domain.ml:263:16>>*/  /*<<domain.ml:263:16>>*/ var
+       res =  /*<<domain.ml:263:16>>*/ caml_call1(f, 0);
      }
-      /*<<domain.ml:209:4>>*/ try{
-       /*<<domain.ml:212:12>>*/ do_at_exit(0);
-      var result$0 = result;
+     catch(exn$0){
+      var exn = caml_wrap_exception(exn$0);
+       /*<<domain.ml:278:8>>*/ try{ /*<<domain.ml:278:13>>*/ do_at_exit(0);}
+      catch(_d_){}
+       /*<<domain.ml:279:8>>*/ throw  /*<<domain.ml:279:8>>*/ caml_maybe_attach_backtrace
+             (exn, 0);
      }
-     catch(ex){
-       /*<<domain.ml:215:10>>*/ var
-       ex$0 = caml_wrap_exception(ex),
-        /*<<domain.ml:215:10>>*/ _b_ = 0 === result[0] ? [1, ex$0] : result,
-       result$0 = _b_;
-     }
-      /*<<domain.ml:230:4>>*/  /*<<domain.ml:230:4>>*/ caml_call1
-      (Stdlib_Mutex[2], term_mutex);
-     return term_state[1]
-             ?  /*<<domain.ml:236:8>>*/ caml_call1
-               (Stdlib[2], cst_internal_error_Am_I_alread)
-             : (term_state
-                [1]
-               = [0, result$0],
-                /*<<domain.ml:197:2>>*/ caml_call1
-                (Stdlib_Condition[4], term_condition));
-     /*<<domain.ml:236:57>>*/ }
-     /*<<domain.ml:240:2>>*/ return [0,
-             /*<<domain.ml:240:13>>*/ runtime.caml_domain_spawn
-             (body, term_mutex),
-            term_mutex,
-            term_condition,
-            term_state];
-    /*<<domain.ml:243:16>>*/ }
+      /*<<domain.ml:272:8>>*/ do_at_exit(0);
+      /*<<domain.ml:272:8>>*/ return res;
+     /*<<domain.ml:279:17>>*/ }
+     /*<<domain.ml:281:15>>*/  /*<<domain.ml:281:15>>*/ var
+     domain =
+        /*<<domain.ml:281:15>>*/ runtime.caml_domain_spawn(body, term_sync);
+     /*<<domain.ml:282:2>>*/ return [0, domain, term_sync];
+    /*<<domain.ml:282:24>>*/ }
    function join(param){
-    var
-     term_state = param[4],
-     term_condition = param[3],
-     term_mutex = param[2];
-     /*<<domain.ml:246:2>>*/  /*<<domain.ml:246:2>>*/ caml_call1
-     (Stdlib_Mutex[2], term_mutex);
-     /*<<domain.ml:248:4>>*/ for(;;){
-     var match = term_state[1];
-     if(match){
-      var res = match[1];
-       /*<<domain.ml:253:8>>*/  /*<<domain.ml:253:8>>*/ caml_call1
-       (Stdlib_Mutex[4], term_mutex);
-      if(0 === res[0]){var x = res[1];  /*<<domain.ml:257:12>>*/ return x;}
-      var ex = res[1];
-       /*<<domain.ml:258:16>>*/ throw  /*<<domain.ml:258:16>>*/ caml_maybe_attach_backtrace
-             (ex, 1);
+    var term_sync = param[2];
+     /*<<domain.ml:285:2>>*/ function loop(param){
+      /*<<domain.ml:287:4>>*/ for(;;){
+      var match = term_sync[1];
+      if(match){var res = match[1];  /*<<domain.ml:292:8>>*/ return res;}
+       /*<<domain.ml:289:8>>*/  /*<<domain.ml:289:8>>*/ caml_call2
+       (Stdlib_Condition[2], term_sync[3], term_sync[2]);
      }
-      /*<<domain.ml:250:8>>*/  /*<<domain.ml:250:8>>*/ caml_call2
-      (Stdlib_Condition[2], term_condition, term_mutex);
-    }
+     /*<<domain.ml:292:11>>*/ }
+     /*<<domain.ml:294:8>>*/  /*<<domain.ml:294:8>>*/ var
+     match =
+        /*<<domain.ml:294:8>>*/ caml_call2
+        (Stdlib_Mutex[5], term_sync[2], loop);
+    if(0 === match[0]){var x = match[1];  /*<<domain.ml:295:12>>*/ return x;}
+    var ex = match[1];
+     /*<<domain.ml:296:16>>*/ throw  /*<<domain.ml:296:16>>*/ caml_maybe_attach_backtrace
+           (ex, 1);
    }
    var
     recommended_domain_count = runtime.caml_recommended_domain_count,
@@ -13588,7 +13713,7 @@
        is_main_domain,
        recommended_domain_count,
        [0, new_key, get, set]];
-   runtime.caml_register_global(8, Stdlib_Domain, "Stdlib__Domain");
+   runtime.caml_register_global(9, Stdlib_Domain, "Stdlib__Domain");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -13937,10 +14062,7 @@
     }
     /*<<camlinternalFormat.ml:292:41>>*/ }
    function char_of_fconv(opt, fconv){
-     /*<<camlinternalFormat.ml:296:36>>*/ if(opt)
-     var sth = opt[1], cF = sth;
-    else
-     var cF = 70;
+    var cF = opt ? opt[1] : 70;
     switch(fconv[2]){
       case 0:
         /*<<camlinternalFormat.ml:297:15>>*/ return 102;
@@ -13960,7 +14082,7 @@
         /*<<camlinternalFormat.ml:300:32>>*/ return 72;
       default:  /*<<camlinternalFormat.ml:301:16>>*/ return 70;
     }
-    /*<<camlinternalFormat.ml:301:19>>*/ }
+   }
    function bprint_padty(buf, padty){
      /*<<camlinternalFormat.ml:374:29>>*/ switch(padty){
       case 0:
@@ -17683,7 +17805,7 @@
                   fmt); /*<<camlinternalFormat.ml:1655:61>>*/ };
        case 10:
         var rest$9 = fmtty[1];
-         /*<<camlinternalFormat.ml:1646:31>>*/ return function(param, _cc_){
+         /*<<camlinternalFormat.ml:1646:31>>*/ return function(_cc_, param){
           /*<<camlinternalFormat.ml:1646:42>>*/ return make_from_fmtty
                  (k, acc, rest$9, fmt); /*<<camlinternalFormat.ml:1646:72>>*/ };
        case 11:
@@ -20476,6 +20598,904 @@
    /*<<?>>*/ }
   (globalThis));
 
+//# unitInfo: Provides: Stdlib__Dynarray
+//# unitInfo: Requires: Stdlib, Stdlib__Array, Stdlib__List, Stdlib__Printf, Stdlib__Seq, Stdlib__Sys
+(function
+  (globalThis){
+   "use strict";
+   var
+    runtime = globalThis.jsoo_runtime,
+    cst_requested = " requested",
+    cst_index = ": index ",
+    cst_Dynarray = "Dynarray.",
+    cst_append$1 = "append",
+    cst_dynarray_ml = "dynarray.ml",
+    cst_ensure_capacity$0 = "ensure_capacity",
+    caml_check_bound = runtime.caml_check_bound,
+    caml_make_vect = runtime.caml_make_vect,
+    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
+    caml_wrap_exception = runtime.caml_wrap_exception;
+    /*<<?>>*/ function caml_call1(f, a0){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+            ? f(a0)
+            : runtime.caml_call_gen(f, [a0]);
+   }
+    /*<<?>>*/ function caml_call2(f, a0, a1){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+            ? f(a0, a1)
+            : runtime.caml_call_gen(f, [a0, a1]);
+   }
+    /*<<?>>*/ function caml_call3(f, a0, a1, a2){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+            ? f(a0, a1, a2)
+            : runtime.caml_call_gen(f, [a0, a1, a2]);
+   }
+    /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+            ? f(a0, a1, a2, a3)
+            : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
+   }
+    /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+            ? f(a0, a1, a2, a3, a4)
+            : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
+   }
+   var
+    global_data = runtime.caml_get_global_data(),
+    f$0 = cst_ensure_capacity$0,
+    f = "get_last",
+    invalid_state_description =
+      "Invalid dynarray (unsynchronized concurrent length change)",
+    Stdlib_List = global_data.Stdlib__List,
+    Stdlib_Array = global_data.Stdlib__Array,
+    Stdlib_Seq = global_data.Stdlib__Seq,
+    Stdlib = global_data.Stdlib,
+    Stdlib_Sys = global_data.Stdlib__Sys,
+    Assert_failure = global_data.Assert_failure,
+    Stdlib_Printf = global_data.Stdlib__Printf,
+    _a_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11,
+          cst_index,
+          [4, 0, 0, 0, [11, " out of bounds (empty dynarray)", 0]]]]],
+       "Dynarray.%s: index %d out of bounds (empty dynarray)"],
+    _b_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11,
+          cst_index,
+          [4, 0, 0, 0, [11, " out of bounds (0..", [4, 0, 0, 0, [12, 41, 0]]]]]]],
+       "Dynarray.%s: index %d out of bounds (0..%d)"],
+    _c_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11, ": negative length ", [4, 0, 0, 0, [11, cst_requested, 0]]]]],
+       "Dynarray.%s: negative length %d requested"],
+    _d_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11, ": negative capacity ", [4, 0, 0, 0, [11, cst_requested, 0]]]]],
+       "Dynarray.%s: negative capacity %d requested"],
+    _e_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11,
+          ": cannot grow to requested length ",
+          [4,
+           0,
+           0,
+           0,
+           [11, " (max_array_length is ", [4, 0, 0, 0, [12, 41, 0]]]]]]],
+       "Dynarray.%s: cannot grow to requested length %d (max_array_length is %d)"],
+    _f_ =
+      [0,
+       [2,
+        0,
+        [11,
+         ": missing element at position ",
+         [4, 0, 0, 0, [11, " < length ", [4, 0, 0, 0, 0]]]]],
+       "%s: missing element at position %d < length %d"],
+    _g_ =
+      [0,
+       [2,
+        0,
+        [11, ": length ", [4, 0, 0, 0, [11, " > capacity ", [4, 0, 0, 0, 0]]]]],
+       "%s: length %d > capacity %d"],
+    _h_ =
+      [0,
+       [11,
+        cst_Dynarray,
+        [2,
+         0,
+         [11,
+          ": a length change from ",
+          [4,
+           0,
+           0,
+           0,
+           [11, " to ", [4, 0, 0, 0, [11, " occurred during iteration", 0]]]]]]],
+       "Dynarray.%s: a length change from %d to %d occurred during iteration"],
+    _i_ =
+      [0,
+       [11, cst_Dynarray, [2, 0, [11, ": empty array", 0]]],
+       "Dynarray.%s: empty array"],
+    cst_make = "make",
+    cst_init = "init",
+    cst_get = "get",
+    cst_set = "set",
+    cst_truncate = "truncate",
+    _j_ = [0, cst_dynarray_ml, 381, 4],
+    _k_ = [0, cst_dynarray_ml, 380, 4],
+    cst_ensure_capacity = cst_ensure_capacity$0,
+    cst_set_capacity = "set_capacity",
+    cst_append = cst_append$1,
+    cst_append$0 = cst_append$1,
+    cst_iter = "iter",
+    cst_iteri = "iteri",
+    cst_map = "map",
+    cst_mapi = "mapi",
+    cst_fold_left = "fold_left",
+    cst_fold_right = "fold_right",
+    cst_exists = "exists",
+    cst_for_all = "for_all",
+    cst_filter = "filter",
+    cst_filter_map = "filter_map",
+    cst_to_array = "to_array",
+    cst_to_list = "to_list",
+    cst_to_seq = "to_seq",
+    cst_to_seq_rev = "to_seq_rev";
+   function negative_length_requested(f, n){
+     /*<<dynarray.ml:128:4>>*/ return  /*<<dynarray.ml:128:4>>*/ caml_call4
+            (Stdlib_Printf[10], Stdlib[1], _c_, f, n);
+    /*<<dynarray.ml:130:9>>*/ }
+   function negative_capacity_requested(f, n){
+     /*<<dynarray.ml:133:4>>*/ return  /*<<dynarray.ml:133:4>>*/ caml_call4
+            (Stdlib_Printf[10], Stdlib[1], _d_, f, n);
+    /*<<dynarray.ml:135:9>>*/ }
+   function missing_element(i, length){
+     /*<<dynarray.ml:152:4>>*/ return  /*<<dynarray.ml:152:4>>*/ caml_call5
+            (Stdlib_Printf[10],
+             Stdlib[1],
+             _f_,
+             invalid_state_description,
+             i,
+             length);
+    /*<<dynarray.ml:155:14>>*/ }
+   function unexpected_empty_element(f, i, length){
+     /*<<dynarray.ml:172:4>>*/ return i < length
+            ? missing_element(i, length)
+            : 0
+              === length
+              ?  /*<<dynarray.ml:119:6>>*/ caml_call4
+                (Stdlib_Printf[10], Stdlib[1], _a_, f, i)
+              :  /*<<dynarray.ml:123:6>>*/ caml_call5
+                (Stdlib_Printf[10], Stdlib[1], _b_, f, i, length - 1 | 0);
+    /*<<dynarray.ml:175:38>>*/ }
+   function check_same_length(f, a, expected){
+     /*<<dynarray.ml:187:2>>*/ var
+     length_a = a[1],
+     _W_ = expected !== length_a ? 1 : 0;
+    return _W_
+            ?  /*<<dynarray.ml:164:4>>*/ caml_call5
+              (Stdlib_Printf[10], Stdlib[1], _h_, f, expected, length_a)
+            : _W_;
+    /*<<dynarray.ml:190:41>>*/ }
+   function check_valid_length(length, arr){
+     /*<<dynarray.ml:197:2>>*/ var
+     capacity = arr.length - 1,
+     _V_ = capacity < length ? 1 : 0;
+    return _V_
+            ?  /*<<dynarray.ml:158:4>>*/ caml_call5
+              (Stdlib_Printf[10],
+               Stdlib[1],
+               _g_,
+               invalid_state_description,
+               length,
+               capacity)
+            : _V_;
+    /*<<dynarray.ml:199:42>>*/ }
+   function unsafe_get(arr, i, length){
+     /*<<dynarray.ml:206:2>>*/ var match = arr[1 + i];
+    if(! match)  /*<<dynarray.ml:207:13>>*/ return missing_element(i, length);
+    var v = match[1];
+     /*<<dynarray.ml:208:16>>*/ return v;
+    /*<<dynarray.ml:208:17>>*/ }
+   function create(param){
+     /*<<dynarray.ml:213:16>>*/ return [0, 0, [0]];
+    /*<<dynarray.ml:216:1>>*/ }
+   function make(n, x){
+     /*<<dynarray.ml:219:2>>*/ if(n < 0)
+      /*<<dynarray.ml:219:16>>*/ negative_length_requested(cst_make, n);
+     /*<<dynarray.ml:220:2>>*/ return [0,
+            n,
+             /*<<dynarray.ml:222:10>>*/ caml_call2
+             (Stdlib_Array[1],
+              n,
+              function(param){
+                /*<<dynarray.ml:222:33>>*/ return [0, x];
+               /*<<dynarray.ml:222:45>>*/ })];
+    /*<<dynarray.ml:223:3>>*/ }
+   function init(n, f){
+     /*<<dynarray.ml:226:2>>*/ if(n < 0)
+      /*<<dynarray.ml:226:16>>*/ negative_length_requested(cst_init, n);
+     /*<<dynarray.ml:227:2>>*/ return [0,
+            n,
+             /*<<dynarray.ml:229:10>>*/ caml_call2
+             (Stdlib_Array[1],
+              n,
+              function(i){
+                /*<<dynarray.ml:229:33>>*/ return [0,
+                        /*<<dynarray.ml:229:43>>*/ caml_call1(f, i)];
+               /*<<dynarray.ml:229:47>>*/ })];
+    /*<<dynarray.ml:230:3>>*/ }
+   function get(a, i){
+     /*<<dynarray.ml:238:2>>*/  /*<<dynarray.ml:238:8>>*/ var
+     match = caml_check_bound(a[2], i)[1 + i];
+    return match ? match[1] : unexpected_empty_element(cst_get, i, a[1]);
+    /*<<dynarray.ml:241:62>>*/ }
+   function set(a, i, x){
+     /*<<dynarray.ml:246:2>>*/  /*<<dynarray.ml:246:8>>*/ var
+     match = caml_check_bound(a[2], i)[1 + i];
+    return match
+            ? (match[1] = x, 0)
+            : unexpected_empty_element(cst_set, i, a[1]);
+    /*<<dynarray.ml:249:62>>*/ }
+   function length(a){
+     /*<<dynarray.ml:251:15>>*/ return a[1];
+    /*<<dynarray.ml:251:23>>*/ }
+   function is_empty(a){
+     /*<<dynarray.ml:253:17>>*/ return 0 === a[1] ? 1 : 0;
+    /*<<dynarray.ml:253:31>>*/ }
+   function copy(param){
+    var length = param[1], arr = param[2];
+     /*<<dynarray.ml:256:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:259:2>>*/ return [0,
+            length,
+             /*<<dynarray.ml:261:10>>*/ caml_call2
+             (Stdlib_Array[1],
+              length,
+              function(i){
+                /*<<dynarray.ml:262:6>>*/  /*<<dynarray.ml:262:14>>*/ var
+                v = unsafe_get(arr, i, length);
+                /*<<dynarray.ml:263:11>>*/ return [0, v];
+               /*<<dynarray.ml:263:14>>*/ })];
+   }
+   function get_last(a){
+     /*<<dynarray.ml:268:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:269:2>>*/ check_valid_length(length, arr);
+    if(0 === length)
+      /*<<dynarray.ml:178:4>>*/  /*<<dynarray.ml:178:4>>*/ caml_call3
+      (Stdlib_Printf[10], Stdlib[1], _i_, f);
+     /*<<dynarray.ml:271:21>>*/ return unsafe_get(arr, length - 1 | 0, length);
+    /*<<dynarray.ml:273:40>>*/ }
+   function find_last(a){
+     /*<<dynarray.ml:276:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:277:2>>*/ check_valid_length(length, arr);
+    return 0 === length ? 0 : [0, unsafe_get(arr, length - 1 | 0, length)];
+    /*<<dynarray.ml:282:49>>*/ }
+   function pop_last(a){
+     /*<<dynarray.ml:287:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:288:2>>*/ check_valid_length(length, arr);
+    if(0 === length)
+      /*<<dynarray.ml:290:21>>*/ throw  /*<<dynarray.ml:290:21>>*/ caml_maybe_attach_backtrace
+            (Stdlib[8], 1);
+     /*<<dynarray.ml:291:2>>*/ var
+      /*<<dynarray.ml:291:2>>*/ last = length - 1 | 0,
+     match = arr[1 + last];
+    return match
+            ? (arr[1 + last] = 0, a[1] = last, match[1])
+            : missing_element(last, length);
+    /*<<dynarray.ml:299:9>>*/ }
+   function pop_last_opt(a){
+     /*<<dynarray.ml:302:2>>*/ try{
+      /*<<dynarray.ml:302:8>>*/  /*<<dynarray.ml:302:8>>*/ var
+      x = pop_last(a);
+    }
+    catch(_U_){
+     var _T_ = caml_wrap_exception(_U_);
+     if(_T_ === Stdlib[8])  /*<<dynarray.ml:303:27>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_T_, 0);
+    }
+     /*<<dynarray.ml:304:9>>*/ return [0, x];
+    /*<<dynarray.ml:304:15>>*/ }
+   function remove_last(a){
+     /*<<dynarray.ml:307:2>>*/ var
+      /*<<dynarray.ml:307:13>>*/ last = a[1] - 1 | 0,
+     _R_ = 0 <= last ? 1 : 0,
+     _S_ =
+       _R_
+        ? (a[1] = last, caml_check_bound(a[2], last)[1 + last] = 0, 0)
+        : _R_;
+     /*<<dynarray.ml:310:4>>*/ return _S_;
+    /*<<dynarray.ml:311:5>>*/ }
+   function truncate(a, n){
+     /*<<dynarray.ml:314:2>>*/ if(n < 0)
+      /*<<dynarray.ml:314:16>>*/ negative_length_requested(cst_truncate, n);
+    var length = a[1], arr = a[2];
+    return length <= n
+            ? 0
+            : (a
+               [1]
+              = n,
+               /*<<dynarray.ml:319:4>>*/ caml_call4
+               (Stdlib_Array[8], arr, n, length - n | 0, 0));
+    /*<<dynarray.ml:320:5>>*/ }
+   function clear(a){
+     /*<<dynarray.ml:322:14>>*/ return truncate(a, 0);
+    /*<<dynarray.ml:322:26>>*/ }
+   function capacity(a){
+     /*<<dynarray.ml:327:17>>*/ return a[2].length - 1;
+    /*<<dynarray.ml:327:35>>*/ }
+   function ensure_capacity(a, capacity_request){
+     /*<<dynarray.ml:348:2>>*/ var
+     arr = a[2],
+      /*<<dynarray.ml:349:2>>*/ cur_capacity = arr.length - 1;
+     /*<<dynarray.ml:350:2>>*/ if(0 > capacity_request)
+      /*<<dynarray.ml:351:4>>*/ return negative_capacity_requested
+             (cst_ensure_capacity, capacity_request);
+    if(capacity_request <= cur_capacity)  /*<<dynarray.ml:356:4>>*/ return 0;
+    if(Stdlib_Sys[13] < capacity_request)
+      /*<<dynarray.ml:138:4>>*/  /*<<dynarray.ml:138:4>>*/ caml_call5
+      (Stdlib_Printf[10],
+       Stdlib[1],
+       _e_,
+       f$0,
+       capacity_request,
+       Stdlib_Sys[13]);
+     /*<<dynarray.ml:345:6>>*/ var
+     n =
+       512 < cur_capacity
+        ? cur_capacity + (cur_capacity / 2 | 0) | 0
+        : cur_capacity * 2 | 0,
+     _O_ = Stdlib_Sys[13],
+      /*<<dynarray.ml:345:6>>*/ _P_ =
+        /*<<dynarray.ml:345:6>>*/ caml_call2(Stdlib[17], 8, n),
+      /*<<dynarray.ml:345:2>>*/ _Q_ =
+        /*<<dynarray.ml:345:2>>*/ caml_call2(Stdlib[16], _P_, _O_),
+      /*<<dynarray.ml:375:6>>*/ new_capacity =
+        /*<<dynarray.ml:375:6>>*/ caml_call2
+        (Stdlib[17], _Q_, capacity_request),
+      /*<<dynarray.ml:376:18>>*/ new_arr =
+        /*<<dynarray.ml:376:18>>*/ caml_make_vect(new_capacity, 0);
+     /*<<dynarray.ml:377:4>>*/  /*<<dynarray.ml:377:4>>*/ caml_call5
+     (Stdlib_Array[9], arr, 0, new_arr, 0, a[1]);
+    a[2] = new_arr;
+    if(0 > capacity_request)
+      /*<<dynarray.ml:380:4>>*/ throw  /*<<dynarray.ml:380:4>>*/ caml_maybe_attach_backtrace
+            ([0, Assert_failure, _k_], 1);
+    if(capacity_request <= new_arr.length - 1) return 0;
+     /*<<dynarray.ml:381:4>>*/ throw  /*<<dynarray.ml:381:4>>*/ caml_maybe_attach_backtrace
+           ([0, Assert_failure, _j_], 1);
+    /*<<dynarray.ml:382:5>>*/ }
+   function ensure_extra_capacity(a, extra_capacity_request){
+     /*<<dynarray.ml:385:2>>*/ return ensure_capacity
+            (a, a[1] + extra_capacity_request | 0);
+    /*<<dynarray.ml:385:55>>*/ }
+   function fit_capacity(a){
+     /*<<dynarray.ml:388:2>>*/ var _N_ = a[1];
+    return capacity(a) === _N_
+            ? 0
+            : (a
+               [2]
+              =
+                /*<<dynarray.ml:390:16>>*/ caml_call3
+                (Stdlib_Array[6], a[2], 0, a[1]),
+              0);
+    /*<<dynarray.ml:390:42>>*/ }
+   function set_capacity(a, n){
+     /*<<dynarray.ml:393:2>>*/ if(n < 0)
+      /*<<dynarray.ml:394:4>>*/ negative_capacity_requested
+      (cst_set_capacity, n);
+     /*<<dynarray.ml:396:2>>*/ var
+     arr = a[2],
+      /*<<dynarray.ml:396:2>>*/ cur_capacity = arr.length - 1;
+    if(n < cur_capacity){
+     a[1] =  /*<<dynarray.ml:398:16>>*/ caml_call2(Stdlib[16], a[1], n);
+     a[2] =  /*<<dynarray.ml:399:13>>*/ caml_call3(Stdlib_Array[6], arr, 0, n);
+     return 0;
+    }
+    var _L_ = cur_capacity < n ? 1 : 0;
+    if(_L_){
+      /*<<dynarray.ml:402:18>>*/  /*<<dynarray.ml:402:18>>*/ var
+      new_arr =  /*<<dynarray.ml:402:18>>*/ caml_make_vect(n, 0);
+      /*<<dynarray.ml:403:4>>*/  /*<<dynarray.ml:403:4>>*/ caml_call5
+      (Stdlib_Array[9], arr, 0, new_arr, 0, a[1]);
+     a[2] = new_arr;
+     var _M_ = 0;
+    }
+    else
+     var _M_ = _L_;
+    return _M_;
+    /*<<dynarray.ml:405:5>>*/ }
+   function reset(a){
+     /*<<dynarray.ml:408:2>>*/ a[1] = 0;
+    a[2] = [0];
+    return 0;
+    /*<<dynarray.ml:409:15>>*/ }
+   function add_last_if_room(a, elem){
+     /*<<dynarray.ml:427:2>>*/ var length = a[1], arr = a[2];
+    return arr.length - 1 <= length
+            ? 0
+            : (a[1] = length + 1 | 0, arr[1 + length] = elem, 1);
+    /*<<dynarray.ml:435:5>>*/ }
+   function add_last(a, x){
+     /*<<dynarray.ml:438:2>>*/  /*<<dynarray.ml:438:18>>*/ var elem = [0, x];
+     /*<<dynarray.ml:439:5>>*/ if(add_last_if_room(a, elem))
+      /*<<dynarray.ml:439:34>>*/ return 0;
+     /*<<dynarray.ml:443:6>>*/ for(;;){
+      /*<<dynarray.ml:443:6>>*/ ensure_extra_capacity(a, 1);
+      /*<<dynarray.ml:444:13>>*/  /*<<dynarray.ml:444:13>>*/ var
+      _K_ = 1 - add_last_if_room(a, elem);
+     if(! _K_)  /*<<dynarray.ml:444:13>>*/ return _K_;
+    }
+    /*<<dynarray.ml:447:5>>*/ }
+   function append_list(a, li){
+     /*<<dynarray.ml:450:2>>*/ var li$0 = li;
+     /*<<dynarray.ml:450:2>>*/ for(;;){
+     if(! li$0)  /*<<dynarray.ml:451:10>>*/ return 0;
+     var xs = li$0[2], x = li$0[1];
+      /*<<dynarray.ml:452:15>>*/ add_last(a, x);
+     li$0 = xs;
+    }
+    /*<<dynarray.ml:452:45>>*/ }
+   function append_iter(a, iter, b){
+     /*<<dynarray.ml:455:2>>*/ return  /*<<dynarray.ml:455:2>>*/ caml_call2
+            (iter,
+             function(x){
+               /*<<dynarray.ml:455:17>>*/ return add_last(a, x);
+              /*<<dynarray.ml:455:29>>*/ },
+             b);
+    /*<<dynarray.ml:455:32>>*/ }
+   function append_seq(a, seq){
+     /*<<dynarray.ml:458:2>>*/ return  /*<<dynarray.ml:458:2>>*/ caml_call2
+            (Stdlib_Seq[4],
+             function(x){
+               /*<<dynarray.ml:458:21>>*/ return add_last(a, x);
+              /*<<dynarray.ml:458:33>>*/ },
+             seq);
+    /*<<dynarray.ml:458:38>>*/ }
+   function append_array_if_room(a, b){
+     /*<<dynarray.ml:463:2>>*/ var
+     length_a = a[1],
+     arr = a[2],
+      /*<<dynarray.ml:464:2>>*/ length_b = b.length - 1;
+    if(arr.length - 1 < (length_a + length_b | 0))
+      /*<<dynarray.ml:465:49>>*/ return 0;
+    a[1] = length_a + length_b | 0;
+     /*<<dynarray.ml:464:2>>*/ var
+      /*<<dynarray.ml:464:2>>*/ _I_ = length_b - 1 | 0,
+      /*<<dynarray.ml:495:4>>*/ _H_ = 0;
+    if(_I_ >= 0){
+     var i = _H_;
+     for(;;){
+       /*<<dynarray.ml:496:14>>*/  /*<<dynarray.ml:496:14>>*/ var
+       x = b[1 + i];
+      arr[1 + (length_a + i | 0)] = [0, x];
+       /*<<dynarray.ml:495:4>>*/  /*<<dynarray.ml:495:4>>*/ var
+       _J_ = i + 1 | 0;
+      if(_I_ === i) break;
+      i = _J_;
+     }
+    }
+     /*<<dynarray.ml:499:4>>*/ return 1;
+    /*<<dynarray.ml:500:5>>*/ }
+   function append_array(a, b){
+     /*<<dynarray.ml:503:2>>*/ if(append_array_if_room(a, b))
+      /*<<dynarray.ml:503:35>>*/ return 0;
+     /*<<dynarray.ml:507:6>>*/ for(;;){
+      /*<<dynarray.ml:507:6>>*/ ensure_extra_capacity(a, b.length - 1);
+      /*<<dynarray.ml:508:13>>*/  /*<<dynarray.ml:508:13>>*/ var
+      _G_ = 1 - append_array_if_room(a, b);
+     if(! _G_)  /*<<dynarray.ml:508:13>>*/ return _G_;
+    }
+    /*<<dynarray.ml:510:31>>*/ }
+   function append_if_room(a, b, length_b){
+     /*<<dynarray.ml:521:2>>*/ var length_a = a[1], arr_a = a[2];
+    if(arr_a.length - 1 < (length_a + length_b | 0))
+      /*<<dynarray.ml:522:51>>*/ return 0;
+    a[1] = length_a + length_b | 0;
+    var arr_b = b[2];
+     /*<<dynarray.ml:526:4>>*/ check_valid_length(length_b, arr_b);
+     /*<<dynarray.ml:526:4>>*/ var
+     _E_ = length_b - 1 | 0,
+      /*<<dynarray.ml:526:4>>*/ _D_ = 0;
+    if(_E_ >= 0){
+     var i = _D_;
+     for(;;){
+       /*<<dynarray.ml:528:14>>*/  /*<<dynarray.ml:528:14>>*/ var
+       x = unsafe_get(arr_b, i, length_b);
+      arr_a[1 + (length_a + i | 0)] = [0, x];
+       /*<<dynarray.ml:526:4>>*/  /*<<dynarray.ml:526:4>>*/ var
+       _F_ = i + 1 | 0;
+      if(_E_ === i) break;
+      i = _F_;
+     }
+    }
+     /*<<dynarray.ml:531:4>>*/ check_same_length(cst_append, b, length_b);
+     /*<<dynarray.ml:531:4>>*/ return 1;
+    /*<<dynarray.ml:533:5>>*/ }
+   function append(a, b){
+     /*<<dynarray.ml:536:2>>*/ var length_b = b[1];
+     /*<<dynarray.ml:537:5>>*/ if(append_if_room(a, b, length_b))
+      /*<<dynarray.ml:537:39>>*/ return 0;
+     /*<<dynarray.ml:541:6>>*/ for(;;){
+      /*<<dynarray.ml:541:6>>*/ ensure_extra_capacity(a, length_b);
+      /*<<dynarray.ml:548:6>>*/ check_same_length(cst_append$0, b, length_b);
+      /*<<dynarray.ml:549:13>>*/  /*<<dynarray.ml:549:13>>*/ var
+      _C_ = 1 - append_if_room(a, b, length_b);
+     if(! _C_)  /*<<dynarray.ml:549:13>>*/ return _C_;
+    }
+    /*<<dynarray.ml:552:5>>*/ }
+   function iter(f, k, a){
+     /*<<dynarray.ml:572:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:596:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:596:2>>*/ var
+     _A_ = length - 1 | 0,
+      /*<<dynarray.ml:596:2>>*/ _z_ = 0;
+    if(_A_ >= 0){
+     var i = _z_;
+     for(;;){
+       /*<<dynarray.ml:598:4>>*/  /*<<dynarray.ml:598:4>>*/ caml_call1
+       (k, unsafe_get(arr, i, length));
+       /*<<dynarray.ml:598:4>>*/  /*<<dynarray.ml:598:4>>*/ var
+       _B_ = i + 1 | 0;
+      if(_A_ === i) break;
+      i = _B_;
+     }
+    }
+     /*<<dynarray.ml:600:2>>*/ return check_same_length(f, a, length);
+    /*<<dynarray.ml:600:31>>*/ }
+   function iter$0(k, a){
+     /*<<dynarray.ml:603:2>>*/ return iter(cst_iter, k, a);
+    /*<<dynarray.ml:603:18>>*/ }
+   function iteri(k, a){
+     /*<<dynarray.ml:606:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:607:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:607:2>>*/ var
+     _x_ = length - 1 | 0,
+      /*<<dynarray.ml:607:2>>*/ _w_ = 0;
+    if(_x_ >= 0){
+     var i = _w_;
+     for(;;){
+       /*<<dynarray.ml:609:4>>*/  /*<<dynarray.ml:609:4>>*/ caml_call2
+       (k, i, unsafe_get(arr, i, length));
+       /*<<dynarray.ml:609:4>>*/  /*<<dynarray.ml:609:4>>*/ var
+       _y_ = i + 1 | 0;
+      if(_x_ === i) break;
+      i = _y_;
+     }
+    }
+     /*<<dynarray.ml:611:2>>*/ return check_same_length(cst_iteri, a, length);
+    /*<<dynarray.ml:611:37>>*/ }
+   function map(f, a){
+     /*<<dynarray.ml:614:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:615:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:616:12>>*/  /*<<dynarray.ml:616:12>>*/ var
+     res =
+       [0,
+        length,
+         /*<<dynarray.ml:618:10>>*/ caml_call2
+         (Stdlib_Array[1],
+          length,
+          function(i){
+            /*<<dynarray.ml:619:6>>*/ return [0,
+                    /*<<dynarray.ml:619:16>>*/ caml_call1
+                    (f, unsafe_get(arr, i, length))];
+           /*<<dynarray.ml:619:46>>*/ })];
+     /*<<dynarray.ml:621:2>>*/ check_same_length(cst_map, a, length);
+     /*<<dynarray.ml:621:2>>*/ return res;
+    /*<<dynarray.ml:622:5>>*/ }
+   function mapi(f, a){
+     /*<<dynarray.ml:626:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:627:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:628:12>>*/  /*<<dynarray.ml:628:12>>*/ var
+     res =
+       [0,
+        length,
+         /*<<dynarray.ml:630:10>>*/ caml_call2
+         (Stdlib_Array[1],
+          length,
+          function(i){
+            /*<<dynarray.ml:631:6>>*/ return [0,
+                    /*<<dynarray.ml:631:16>>*/ caml_call2
+                    (f, i, unsafe_get(arr, i, length))];
+           /*<<dynarray.ml:631:48>>*/ })];
+     /*<<dynarray.ml:633:2>>*/ check_same_length(cst_mapi, a, length);
+     /*<<dynarray.ml:633:2>>*/ return res;
+    /*<<dynarray.ml:634:5>>*/ }
+   function fold_left(f, acc, a){
+     /*<<dynarray.ml:637:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:638:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:639:10>>*/ var
+      /*<<dynarray.ml:639:10>>*/ r = [0, acc],
+      /*<<dynarray.ml:640:2>>*/ _u_ = length - 1 | 0,
+      /*<<dynarray.ml:639:10>>*/ _t_ = 0;
+    if(_u_ >= 0){
+     var i = _t_;
+     for(;;){
+       /*<<dynarray.ml:641:12>>*/  /*<<dynarray.ml:641:12>>*/ var
+       v = unsafe_get(arr, i, length);
+      r[1] =  /*<<dynarray.ml:642:9>>*/ caml_call2(f, r[1], v);
+       /*<<dynarray.ml:640:2>>*/  /*<<dynarray.ml:640:2>>*/ var
+       _v_ = i + 1 | 0;
+      if(_u_ === i) break;
+      i = _v_;
+     }
+    }
+     /*<<dynarray.ml:644:2>>*/ check_same_length(cst_fold_left, a, length);
+    return r[1];
+    /*<<dynarray.ml:645:4>>*/ }
+   function fold_right(f, a, acc){
+     /*<<dynarray.ml:648:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:649:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:650:10>>*/ var
+      /*<<dynarray.ml:650:10>>*/ r = [0, acc],
+      /*<<dynarray.ml:650:10>>*/ _r_ = length - 1 | 0;
+    if(_r_ >= 0){
+     var i = _r_;
+     for(;;){
+       /*<<dynarray.ml:652:12>>*/  /*<<dynarray.ml:652:12>>*/ var
+       v = unsafe_get(arr, i, length);
+      r[1] =  /*<<dynarray.ml:653:9>>*/ caml_call2(f, v, r[1]);
+       /*<<dynarray.ml:650:10>>*/  /*<<dynarray.ml:650:10>>*/ var
+       _s_ = i - 1 | 0;
+      if(0 === i) break;
+      i = _s_;
+     }
+    }
+     /*<<dynarray.ml:655:2>>*/ check_same_length(cst_fold_right, a, length);
+    return r[1];
+    /*<<dynarray.ml:656:4>>*/ }
+   function exists(p, a){
+     /*<<dynarray.ml:659:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:660:2>>*/ check_valid_length(length, arr);
+    var i = 0;
+     /*<<dynarray.ml:662:4>>*/ for(;;){
+     if(i === length)
+      var res = 0;
+     else{
+       /*<<dynarray.ml:664:6>>*/  /*<<dynarray.ml:664:6>>*/ var
+       _q_ =
+          /*<<dynarray.ml:664:6>>*/ caml_call1(p, unsafe_get(arr, i, length));
+       /*<<dynarray.ml:664:6>>*/ if(! _q_){
+       var i$0 = i + 1 | 0;
+       i = i$0;
+       continue;
+      }
+      var res = _q_;
+     }
+      /*<<dynarray.ml:668:2>>*/ check_same_length(cst_exists, a, length);
+      /*<<dynarray.ml:668:2>>*/ return res;
+    }
+    /*<<dynarray.ml:669:5>>*/ }
+   function for_all(p, a){
+     /*<<dynarray.ml:672:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:673:2>>*/ check_valid_length(length, arr);
+    var i = 0;
+     /*<<dynarray.ml:675:4>>*/ for(;;){
+     if(i === length)
+      var res = 1;
+     else{
+       /*<<dynarray.ml:677:6>>*/  /*<<dynarray.ml:677:6>>*/ var
+       _p_ =
+          /*<<dynarray.ml:677:6>>*/ caml_call1(p, unsafe_get(arr, i, length));
+       /*<<dynarray.ml:677:6>>*/ if(_p_){
+       var i$0 = i + 1 | 0;
+       i = i$0;
+       continue;
+      }
+      var res = _p_;
+     }
+      /*<<dynarray.ml:681:2>>*/ check_same_length(cst_for_all, a, length);
+      /*<<dynarray.ml:681:2>>*/ return res;
+    }
+    /*<<dynarray.ml:682:5>>*/ }
+   function filter(f, a){
+     /*<<dynarray.ml:685:2>>*/  /*<<dynarray.ml:685:10>>*/ var b = create(0);
+     /*<<dynarray.ml:686:2>>*/ iter
+     (cst_filter,
+      function(x){
+        /*<<dynarray.ml:686:27>>*/  /*<<dynarray.ml:686:30>>*/ var
+        _o_ =  /*<<dynarray.ml:686:30>>*/ caml_call1(f, x);
+        /*<<dynarray.ml:686:30>>*/ return _o_ ? add_last(b, x) : _o_;
+       /*<<dynarray.ml:686:51>>*/ },
+      a);
+     /*<<dynarray.ml:686:2>>*/ return b;
+    /*<<dynarray.ml:687:3>>*/ }
+   function filter_map(f, a){
+     /*<<dynarray.ml:690:2>>*/  /*<<dynarray.ml:690:10>>*/ var b = create(0);
+     /*<<dynarray.ml:691:2>>*/ iter
+     (cst_filter_map,
+      function(x){
+        /*<<dynarray.ml:692:4>>*/  /*<<dynarray.ml:692:10>>*/ var
+        match =  /*<<dynarray.ml:692:10>>*/ caml_call1(f, x);
+       if(! match)  /*<<dynarray.ml:693:14>>*/ return 0;
+       var y = match[1];
+        /*<<dynarray.ml:694:16>>*/ return add_last(b, y);
+       /*<<dynarray.ml:694:28>>*/ },
+      a);
+     /*<<dynarray.ml:691:2>>*/ return b;
+    /*<<dynarray.ml:696:3>>*/ }
+   function of_array(a){
+     /*<<dynarray.ml:707:2>>*/ var length = a.length - 1;
+     /*<<dynarray.ml:708:2>>*/ return [0,
+            length,
+             /*<<dynarray.ml:710:10>>*/ caml_call2
+             (Stdlib_Array[1],
+              length,
+              function(i){
+                /*<<dynarray.ml:710:38>>*/ return [0, a[1 + i]];
+               /*<<dynarray.ml:710:69>>*/ })];
+    /*<<dynarray.ml:711:3>>*/ }
+   function to_array(a){
+     /*<<dynarray.ml:714:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:715:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:716:12>>*/  /*<<dynarray.ml:716:12>>*/ var
+     res =
+        /*<<dynarray.ml:716:12>>*/ caml_call2
+        (Stdlib_Array[1],
+         length,
+         function(i){
+           /*<<dynarray.ml:717:4>>*/ return unsafe_get(arr, i, length);
+          /*<<dynarray.ml:717:29>>*/ });
+     /*<<dynarray.ml:719:2>>*/ check_same_length(cst_to_array, a, length);
+     /*<<dynarray.ml:719:2>>*/ return res;
+    /*<<dynarray.ml:720:5>>*/ }
+   function of_list(li){
+     /*<<dynarray.ml:723:2>>*/  /*<<dynarray.ml:723:10>>*/ var a = create(0);
+     /*<<dynarray.ml:724:2>>*/  /*<<dynarray.ml:724:2>>*/ caml_call2
+     (Stdlib_List[18],
+      function(x){
+        /*<<dynarray.ml:724:22>>*/ return add_last(a, x);
+       /*<<dynarray.ml:724:34>>*/ },
+      li);
+     /*<<dynarray.ml:724:2>>*/ return a;
+    /*<<dynarray.ml:725:3>>*/ }
+   function to_list(a){
+     /*<<dynarray.ml:728:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:729:2>>*/ check_valid_length(length, arr);
+     /*<<dynarray.ml:730:10>>*/ var
+      /*<<dynarray.ml:730:10>>*/ l = [0, 0],
+      /*<<dynarray.ml:730:10>>*/ _l_ = length - 1 | 0;
+    if(_l_ >= 0){
+     var i = _l_;
+     for(;;){
+      var _m_ = l[1];
+      l[1] = [0, unsafe_get(arr, i, length), _m_];
+       /*<<dynarray.ml:730:10>>*/  /*<<dynarray.ml:730:10>>*/ var
+       _n_ = i - 1 | 0;
+      if(0 === i) break;
+      i = _n_;
+     }
+    }
+     /*<<dynarray.ml:734:2>>*/ check_same_length(cst_to_list, a, length);
+    return l[1];
+    /*<<dynarray.ml:735:4>>*/ }
+   function of_seq(seq){
+     /*<<dynarray.ml:738:2>>*/  /*<<dynarray.ml:738:13>>*/ var
+     init = create(0);
+     /*<<dynarray.ml:739:2>>*/ append_seq(init, seq);
+     /*<<dynarray.ml:739:2>>*/ return init;
+    /*<<dynarray.ml:740:6>>*/ }
+   function to_seq(a){
+     /*<<dynarray.ml:743:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:744:2>>*/ check_valid_length(length, arr);
+    function aux(i){
+      /*<<dynarray.ml:745:18>>*/ return function(param){
+       /*<<dynarray.ml:746:4>>*/ check_same_length(cst_to_seq, a, length);
+      if(length <= i)  /*<<dynarray.ml:747:24>>*/ return 0;
+       /*<<dynarray.ml:749:14>>*/  /*<<dynarray.ml:749:14>>*/ var
+       v = unsafe_get(arr, i, length);
+       /*<<dynarray.ml:750:6>>*/ return [0, v, aux(i + 1 | 0)]; /*<<dynarray.ml:751:7>>*/ };
+     /*<<dynarray.ml:751:7>>*/ }
+     /*<<dynarray.ml:753:2>>*/ return aux(0);
+    /*<<dynarray.ml:753:7>>*/ }
+   function to_seq_reentrant(a){
+    function aux(i){
+      /*<<dynarray.ml:756:18>>*/ return function(param){
+       /*<<dynarray.ml:757:4>>*/ if(a[1] <= i)
+        /*<<dynarray.ml:757:26>>*/ return 0;
+       /*<<dynarray.ml:759:14>>*/  /*<<dynarray.ml:759:14>>*/ var
+       v = get(a, i);
+       /*<<dynarray.ml:760:6>>*/ return [0, v, aux(i + 1 | 0)]; /*<<dynarray.ml:761:7>>*/ };
+     /*<<dynarray.ml:761:7>>*/ }
+     /*<<dynarray.ml:763:2>>*/ return aux(0);
+    /*<<dynarray.ml:763:7>>*/ }
+   function to_seq_rev(a){
+     /*<<dynarray.ml:766:2>>*/ var length = a[1], arr = a[2];
+     /*<<dynarray.ml:767:2>>*/ check_valid_length(length, arr);
+    function aux(i){
+      /*<<dynarray.ml:768:18>>*/ return function(param){
+       /*<<dynarray.ml:769:4>>*/ check_same_length(cst_to_seq_rev, a, length);
+      if(0 > i)  /*<<dynarray.ml:770:18>>*/ return 0;
+       /*<<dynarray.ml:772:14>>*/  /*<<dynarray.ml:772:14>>*/ var
+       v = unsafe_get(arr, i, length);
+       /*<<dynarray.ml:773:6>>*/ return [0, v, aux(i - 1 | 0)]; /*<<dynarray.ml:774:7>>*/ };
+     /*<<dynarray.ml:774:7>>*/ }
+     /*<<dynarray.ml:776:2>>*/ return aux(length - 1 | 0);
+    /*<<dynarray.ml:776:18>>*/ }
+   function to_seq_rev_reentrant(a){
+    function aux(i){
+      /*<<dynarray.ml:779:18>>*/ return function(param){
+       /*<<dynarray.ml:780:4>>*/ if(0 > i)
+        /*<<dynarray.ml:780:18>>*/ return 0;
+      if(a[1] <= i)  /*<<dynarray.ml:784:6>>*/ return aux(a[1] - 1 | 0)(0);
+       /*<<dynarray.ml:786:14>>*/  /*<<dynarray.ml:786:14>>*/ var
+       v = get(a, i);
+       /*<<dynarray.ml:787:6>>*/ return [0, v, aux(i - 1 | 0)]; /*<<dynarray.ml:788:7>>*/ };
+     /*<<dynarray.ml:788:7>>*/ }
+     /*<<dynarray.ml:790:7>>*/ return aux(a[1] - 1 | 0);
+    /*<<dynarray.ml:790:20>>*/ }
+   var
+    Stdlib_Dynarray =
+      [0,
+       create,
+       make,
+       init,
+       get,
+       set,
+       length,
+       is_empty,
+       get_last,
+       find_last,
+       copy,
+       add_last,
+       append_array,
+       append_list,
+       append,
+       append_seq,
+       append_iter,
+       pop_last_opt,
+       pop_last,
+       remove_last,
+       truncate,
+       clear,
+       iter$0,
+       iteri,
+       map,
+       mapi,
+       fold_left,
+       fold_right,
+       exists,
+       for_all,
+       filter,
+       filter_map,
+       of_array,
+       to_array,
+       of_list,
+       to_list,
+       of_seq,
+       to_seq,
+       to_seq_reentrant,
+       to_seq_rev,
+       to_seq_rev_reentrant,
+       capacity,
+       ensure_capacity,
+       ensure_extra_capacity,
+       fit_capacity,
+       set_capacity,
+       reset];
+   runtime.caml_register_global(44, Stdlib_Dynarray, "Stdlib__Dynarray");
+   return;
+   /*<<?>>*/ }
+  (globalThis));
+
 //# unitInfo: Provides: Stdlib__Arg
 //# unitInfo: Requires: Stdlib, Stdlib__Array, Stdlib__Buffer, Stdlib__Int, Stdlib__List, Stdlib__Printf, Stdlib__String, Stdlib__Sys
 (function
@@ -21018,16 +22038,16 @@
                /*<<arg.ml:272:25>>*/ var
                 /*<<arg.ml:272:25>>*/ before =
                   /*<<arg.ml:272:25>>*/ caml_call3
-                  (Stdlib_Array[5], argv[1], 0, current[1] + 1 | 0),
+                  (Stdlib_Array[6], argv[1], 0, current[1] + 1 | 0),
                 /*<<arg.ml:274:14>>*/ after =
                   /*<<arg.ml:274:14>>*/ caml_call3
-                  (Stdlib_Array[5],
+                  (Stdlib_Array[6],
                    argv[1],
                    current[1] + 1 | 0,
                    (argv[1].length - 1 - current[1] | 0) - 1 | 0);
               argv[1] =
                 /*<<arg.ml:276:19>>*/ caml_call1
-                (Stdlib_Array[4], [0, before, [0, newarg, [0, after, 0]]]);
+                (Stdlib_Array[5], [0, before, [0, newarg, [0, after, 0]]]);
               return 0;
            }
            /*<<arg.ml:276:54>>*/ };
@@ -21062,21 +22082,15 @@
             (1, current, argv, speclist, anonfun, errmsg);
     /*<<arg.ml:287:77>>*/ }
    function parse_argv_dynamic(opt, argv, speclist, anonfun, errmsg){
-     /*<<arg.ml:290:2>>*/ if(opt)
-     var sth = opt[1], current$0 = sth;
-    else
-     var current$0 = current;
+    var current$0 = opt ? opt[1] : current;
      /*<<arg.ml:290:2>>*/ return parse_and_expand_argv_dynamic_
             (0, current$0, [0, argv], speclist, anonfun, errmsg);
-    /*<<arg.ml:291:10>>*/ }
+   }
    function parse_argv(opt, argv, speclist, anonfun, errmsg){
-     /*<<arg.ml:295:2>>*/ if(opt)
-     var sth = opt[1], current$0 = sth;
-    else
-     var current$0 = current;
+    var current$0 = opt ? opt[1] : current;
      /*<<arg.ml:295:2>>*/ return parse_argv_dynamic
             ([0, current$0], argv, [0, speclist], anonfun, errmsg);
-    /*<<arg.ml:295:72>>*/ }
+   }
    function parse(l, f, msg){
      /*<<arg.ml:299:2>>*/ try{
       /*<<arg.ml:300:4>>*/  /*<<arg.ml:300:4>>*/ var
@@ -21204,11 +22218,8 @@
              s);
     /*<<arg.ml:348:75>>*/ }
    function align(opt, speclist){
-     /*<<arg.ml:374:2>>*/ if(opt)
-     var sth = opt[1], limit = sth;
-    else
-     var limit = Stdlib[19];
      /*<<arg.ml:374:18>>*/ var
+     limit = opt ? opt[1] : Stdlib[19],
       /*<<arg.ml:374:18>>*/ completed = add_help(speclist),
       /*<<arg.ml:375:12>>*/ len =
         /*<<arg.ml:375:12>>*/ caml_call3
@@ -21272,7 +22283,7 @@
                        /*<<arg.ml:370:20>>*/ caml_call2(Stdlib[28], prefix, _J_)];
              },
              completed);
-    /*<<arg.ml:377:38>>*/ }
+   }
    function read_aux(trim, sep, file){
      /*<<arg.ml:387:2>>*/ var
       /*<<arg.ml:387:11>>*/ ic =
@@ -21326,7 +22337,7 @@
       /*<<arg.ml:405:16>>*/  /*<<arg.ml:405:16>>*/ var
       _F_ =  /*<<arg.ml:405:16>>*/ caml_call1(Stdlib_List[10], words[1]);
       /*<<arg.ml:405:16>>*/ return  /*<<arg.ml:405:16>>*/ caml_call1
-             (Stdlib_Array[10], _F_);
+             (Stdlib_Array[11], _F_);
     }
     /*<<arg.ml:405:33>>*/ }
    var _r_ = 10, _s_ = 1;
@@ -21344,7 +22355,7 @@
      /*<<arg.ml:412:2>>*/  /*<<arg.ml:412:11>>*/ var
      oc =  /*<<arg.ml:412:11>>*/ caml_call1(Stdlib[61], file);
      /*<<arg.ml:413:2>>*/  /*<<arg.ml:413:2>>*/ caml_call2
-     (Stdlib_Array[11],
+     (Stdlib_Array[12],
       function(s){
         /*<<arg.ml:413:23>>*/ return caml_call4
                (Stdlib_Printf[1], oc, _v_, s, sep);
@@ -21484,8 +22495,9 @@
     cst_Re_raised_at = "Re-raised at",
     cst_Raised_by_primitive_operat = "Raised by primitive operation at",
     cst_Called_from = "Called from",
+    _h_ = [0, [12, 32, [4, 0, 0, 0, 0]], " %d"],
     cst_inlined = " (inlined)",
-    _h_ =
+    _i_ =
       [0,
        [2,
         0,
@@ -21499,17 +22511,16 @@
             0,
             [12,
              34,
-             [2,
-              0,
-              [11, ", line ", [4, 0, 0, 0, [11, cst_characters, partial]]]]]]]]]],
-       '%s %s in file "%s"%s, line %d, characters %d-%d'],
-    _i_ = [0, [2, 0, [11, " unknown location", 0]], "%s unknown location"],
-    _j_ = [0, [2, 0, [12, 10, 0]], cst_s],
-    _k_ =
+             [2, 0, [11, ", line", [2, 0, [11, cst_characters, partial]]]]]]]]]],
+       '%s %s in file "%s"%s, line%s, characters %d-%d'],
+    _j_ = [0, [11, "s ", [4, 0, 0, 0, [12, 45, [4, 0, 0, 0, 0]]]], "s %d-%d"],
+    _k_ = [0, [2, 0, [11, " unknown location", 0]], "%s unknown location"],
+    _l_ = [0, [2, 0, [12, 10, 0]], cst_s],
+    _m_ =
       [0,
        [11, cst_Program_not_linked_with_g_$0, 0],
        cst_Program_not_linked_with_g_$0],
-    _l_ = [0, [2, 0, [12, 10, 0]], cst_s],
+    _n_ = [0, [2, 0, [12, 10, 0]], cst_s],
     cst_Program_not_linked_with_g_ = cst_Program_not_linked_with_g_$0;
    function field(x, i){
      /*<<printexc.ml:25:2>>*/  /*<<printexc.ml:25:10>>*/ var f = x[1 + i];
@@ -21518,13 +22529,13 @@
       /*<<printexc.ml:27:4>>*/ return  /*<<printexc.ml:27:4>>*/ caml_call2
              (Stdlib_Printf[4], _b_, f);
      /*<<printexc.ml:28:7>>*/  /*<<printexc.ml:28:7>>*/ var
-     _ag_ = Stdlib_Obj[15];
-    if( /*<<printexc.ml:28:10>>*/ caml_obj_tag(f) === _ag_)
+     _ah_ = Stdlib_Obj[15];
+    if( /*<<printexc.ml:28:10>>*/ caml_obj_tag(f) === _ah_)
       /*<<printexc.ml:29:4>>*/ return  /*<<printexc.ml:29:4>>*/ caml_call2
              (Stdlib_Printf[4], _a_, f);
      /*<<printexc.ml:30:7>>*/  /*<<printexc.ml:30:7>>*/ var
-     _ah_ = Stdlib_Obj[16];
-    return  /*<<printexc.ml:30:10>>*/ caml_obj_tag(f) === _ah_
+     _ai_ = Stdlib_Obj[16];
+    return  /*<<printexc.ml:30:10>>*/ caml_obj_tag(f) === _ai_
             ?  /*<<printexc.ml:31:4>>*/ caml_call1(Stdlib[35], f)
             : cst;
     /*<<printexc.ml:33:7>>*/ }
@@ -21532,14 +22543,14 @@
      /*<<printexc.ml:36:2>>*/ if(x.length - 1 <= i)
       /*<<printexc.ml:36:26>>*/ return cst$0;
      /*<<printexc.ml:37:36>>*/ var
-      /*<<printexc.ml:37:36>>*/ _ae_ = other_fields(x, i + 1 | 0),
-      /*<<printexc.ml:37:24>>*/ _af_ = field(x, i);
+      /*<<printexc.ml:37:36>>*/ _af_ = other_fields(x, i + 1 | 0),
+      /*<<printexc.ml:37:24>>*/ _ag_ = field(x, i);
      /*<<printexc.ml:37:36>>*/ return  /*<<printexc.ml:37:36>>*/ caml_call3
-            (Stdlib_Printf[4], _c_, _af_, _ae_);
+            (Stdlib_Printf[4], _c_, _ag_, _af_);
     /*<<printexc.ml:37:58>>*/ }
    function use_printers(x){
      /*<<printexc.ml:47:2>>*/ var
-     param =  /*<<printexc.ml:53:7>>*/ caml_call1(Stdlib_Atomic[2], printers);
+     param =  /*<<printexc.ml:53:7>>*/ caml_call1(Stdlib_Atomic[3], printers);
      /*<<printexc.ml:47:17>>*/ for(;;){
      if(! param)  /*<<printexc.ml:52:12>>*/ return 0;
      var tl = param[2], hd = param[1];
@@ -21549,7 +22560,7 @@
         /*<<printexc.ml:49:15>>*/  /*<<printexc.ml:49:15>>*/ var
         val =  /*<<printexc.ml:49:15>>*/ caml_call1(hd, x);
       }
-      catch(_ad_){break a;}
+      catch(_ae_){break a;}
       if(val){var s = val[1];  /*<<printexc.ml:51:21>>*/ return [0, s];}
      }
      param = tl;
@@ -21563,24 +22574,24 @@
       match = t.length - 1;
      if(2 < match >>> 0)
        /*<<printexc.ml:44:38>>*/ var
-        /*<<printexc.ml:44:38>>*/ _$_ = other_fields(t, 2),
-        /*<<printexc.ml:44:26>>*/ _aa_ = field(t, 1),
-       _ac_ =
+        /*<<printexc.ml:44:38>>*/ _aa_ = other_fields(t, 2),
+        /*<<printexc.ml:44:26>>*/ _ab_ = field(t, 1),
+       _ad_ =
           /*<<printexc.ml:44:38>>*/ caml_call3
-          (Stdlib_Printf[4], _d_, _aa_, _$_);
+          (Stdlib_Printf[4], _d_, _ab_, _aa_);
      else
       switch(match){
         case 0:
-         var _ac_ = cst$1; break;
+         var _ad_ = cst$1; break;
         case 1:
-         var _ac_ = cst$2; break;
+         var _ad_ = cst$2; break;
         default:
           /*<<printexc.ml:43:24>>*/ var
-           /*<<printexc.ml:43:24>>*/ _ab_ = field(t, 1),
-          _ac_ =
-             /*<<printexc.ml:43:24>>*/ caml_call2(Stdlib_Printf[4], _e_, _ab_);
+           /*<<printexc.ml:43:24>>*/ _ac_ = field(t, 1),
+          _ad_ =
+             /*<<printexc.ml:43:24>>*/ caml_call2(Stdlib_Printf[4], _e_, _ac_);
       }
-     var match$0 = [0, constructor, [0, _ac_]];
+     var match$0 = [0, constructor, [0, _ad_]];
     }
     else
      var match$0 = [0, t[1], 0];
@@ -21647,15 +22658,15 @@
    function print(fct, arg){
      /*<<printexc.ml:87:2>>*/ try{
       /*<<printexc.ml:88:4>>*/  /*<<printexc.ml:88:4>>*/ var
-      ___ =  /*<<printexc.ml:88:4>>*/ caml_call1(fct, arg);
-      /*<<printexc.ml:88:4>>*/ return ___;
+      _$_ =  /*<<printexc.ml:88:4>>*/ caml_call1(fct, arg);
+      /*<<printexc.ml:88:4>>*/ return _$_;
     }
     catch(x$0){
       /*<<printexc.ml:90:39>>*/ var
       x = caml_wrap_exception(x$0),
-       /*<<printexc.ml:90:39>>*/ _Z_ = to_string(x);
+       /*<<printexc.ml:90:39>>*/ ___ = to_string(x);
       /*<<printexc.ml:90:4>>*/  /*<<printexc.ml:90:4>>*/ caml_call2
-      (Stdlib_Printf[3], _f_, _Z_);
+      (Stdlib_Printf[3], _f_, ___);
       /*<<printexc.ml:91:4>>*/  /*<<printexc.ml:91:4>>*/ caml_call1
       (Stdlib[63], Stdlib[40]);
       /*<<printexc.ml:92:4>>*/ throw  /*<<printexc.ml:92:4>>*/ caml_maybe_attach_backtrace
@@ -21665,17 +22676,17 @@
    function catch$0(fct, arg){
      /*<<printexc.ml:95:2>>*/ try{
       /*<<printexc.ml:96:4>>*/  /*<<printexc.ml:96:4>>*/ var
-      _Y_ =  /*<<printexc.ml:96:4>>*/ caml_call1(fct, arg);
-      /*<<printexc.ml:96:4>>*/ return _Y_;
+      _Z_ =  /*<<printexc.ml:96:4>>*/ caml_call1(fct, arg);
+      /*<<printexc.ml:96:4>>*/ return _Z_;
     }
     catch(x$0){
      var x = caml_wrap_exception(x$0);
       /*<<printexc.ml:98:4>>*/  /*<<printexc.ml:98:4>>*/ caml_call1
       (Stdlib[63], Stdlib[39]);
       /*<<printexc.ml:99:39>>*/  /*<<printexc.ml:99:39>>*/ var
-      _X_ = to_string(x);
+      _Y_ = to_string(x);
       /*<<printexc.ml:99:4>>*/  /*<<printexc.ml:99:4>>*/ caml_call2
-      (Stdlib_Printf[3], _g_, _X_);
+      (Stdlib_Printf[3], _g_, _Y_);
       /*<<printexc.ml:99:4>>*/ return  /*<<printexc.ml:99:4>>*/ caml_call1
              (Stdlib[99], 2);
     }
@@ -21684,168 +22695,174 @@
      /*<<printexc.ml:106:31>>*/ return bt;
     /*<<printexc.ml:106:33>>*/ }
    function convert_raw_backtrace(bt){
-     /*<<printexc.ml:141:2>>*/ return [0,
-             /*<<printexc.ml:141:11>>*/ runtime.caml_convert_raw_backtrace(bt)];
-    /*<<printexc.ml:142:24>>*/ }
+     /*<<printexc.ml:138:2>>*/ return [0,
+             /*<<printexc.ml:138:11>>*/ runtime.caml_convert_raw_backtrace(bt)];
+    /*<<printexc.ml:139:24>>*/ }
    function format_backtrace_slot(pos, slot){
     function info(is_raise){
-      /*<<printexc.ml:146:4>>*/ return is_raise
+      /*<<printexc.ml:143:4>>*/ return is_raise
              ? 0 === pos ? cst_Raised_at : cst_Re_raised_at
              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from;
-     /*<<printexc.ml:149:75>>*/ }
-     /*<<printexc.ml:151:2>>*/ if(0 === slot[0]){
-      /*<<printexc.ml:159:14>>*/ var
-      _P_ = slot[5],
-      _Q_ = slot[4],
-      _R_ = slot[3],
-      _S_ = slot[6] ? cst_inlined : cst$3,
-      _T_ = slot[2],
-      _U_ = slot[7],
-       /*<<printexc.ml:159:14>>*/ _V_ = info(slot[1]);
-      /*<<printexc.ml:158:6>>*/ return [0,
-              /*<<printexc.ml:158:11>>*/ caml_call8
-              (Stdlib_Printf[4], _h_, _V_, _U_, _T_, _S_, _R_, _Q_, _P_)];
+     /*<<printexc.ml:146:75>>*/ }
+     /*<<printexc.ml:148:2>>*/ if(0 === slot[0]){
+      /*<<printexc.ml:162:14>>*/ var
+      lines =
+        slot[3] === slot[6]
+         ?  /*<<printexc.ml:157:10>>*/ caml_call2
+           (Stdlib_Printf[4], _h_, slot[3])
+         :  /*<<printexc.ml:159:10>>*/ caml_call3
+           (Stdlib_Printf[4], _j_, slot[3], slot[6]),
+      _R_ = slot[7],
+      _S_ = slot[4],
+      _T_ = slot[8] ? cst_inlined : cst$3,
+      _U_ = slot[2],
+      _V_ = slot[9],
+       /*<<printexc.ml:162:14>>*/ _W_ = info(slot[1]);
+      /*<<printexc.ml:161:6>>*/ return [0,
+              /*<<printexc.ml:161:11>>*/ caml_call8
+              (Stdlib_Printf[4], _i_, _W_, _V_, _U_, _T_, lines, _S_, _R_)];
     }
-    if(slot[1])  /*<<printexc.ml:154:50>>*/ return 0;
-     /*<<printexc.ml:156:44>>*/  /*<<printexc.ml:156:44>>*/ var _W_ = info(0);
-     /*<<printexc.ml:156:8>>*/ return [0,
-             /*<<printexc.ml:156:13>>*/ caml_call2(Stdlib_Printf[4], _i_, _W_)];
-    /*<<printexc.ml:161:52>>*/ }
+    if(slot[1])  /*<<printexc.ml:151:50>>*/ return 0;
+     /*<<printexc.ml:153:44>>*/  /*<<printexc.ml:153:44>>*/ var _X_ = info(0);
+     /*<<printexc.ml:153:8>>*/ return [0,
+             /*<<printexc.ml:153:13>>*/ caml_call2(Stdlib_Printf[4], _k_, _X_)];
+    /*<<printexc.ml:164:44>>*/ }
    function print_raw_backtrace(outchan, raw_backtrace){
-     /*<<printexc.ml:176:2>>*/  /*<<printexc.ml:176:36>>*/ var
+     /*<<printexc.ml:179:2>>*/  /*<<printexc.ml:179:36>>*/ var
      backtrace = convert_raw_backtrace(raw_backtrace);
     if(! backtrace)
-      /*<<printexc.ml:166:6>>*/ return  /*<<printexc.ml:166:6>>*/ caml_call2
-             (Stdlib_Printf[1], outchan, _k_);
-    var a = backtrace[1], _N_ = a.length - 2 | 0, _M_ = 0;
-    if(_N_ >= 0){
-     var i = _M_;
+      /*<<printexc.ml:169:6>>*/ return  /*<<printexc.ml:169:6>>*/ caml_call2
+             (Stdlib_Printf[1], outchan, _m_);
+    var a = backtrace[1], _P_ = a.length - 2 | 0, _O_ = 0;
+    if(_P_ >= 0){
+     var i = _O_;
      for(;;){
-       /*<<printexc.ml:170:14>>*/  /*<<printexc.ml:170:14>>*/ var
+       /*<<printexc.ml:173:14>>*/  /*<<printexc.ml:173:14>>*/ var
        match = format_backtrace_slot(i, caml_check_bound(a, i)[1 + i]);
       if(match){
        var str = match[1];
-        /*<<printexc.ml:172:24>>*/  /*<<printexc.ml:172:24>>*/ caml_call3
-        (Stdlib_Printf[1], outchan, _j_, str);
+        /*<<printexc.ml:175:24>>*/  /*<<printexc.ml:175:24>>*/ caml_call3
+        (Stdlib_Printf[1], outchan, _l_, str);
       }
-       /*<<printexc.ml:169:6>>*/  /*<<printexc.ml:169:6>>*/ var
-       _O_ = i + 1 | 0;
-      if(_N_ === i) break;
-      i = _O_;
+       /*<<printexc.ml:172:6>>*/  /*<<printexc.ml:172:6>>*/ var
+       _Q_ = i + 1 | 0;
+      if(_P_ === i) break;
+      i = _Q_;
      }
     }
     return 0;
-    /*<<printexc.ml:176:73>>*/ }
+    /*<<printexc.ml:179:73>>*/ }
    function print_backtrace(outchan){
-     /*<<printexc.ml:180:2>>*/ return print_raw_backtrace
+     /*<<printexc.ml:183:2>>*/ return print_raw_backtrace
             (outchan,
-              /*<<printexc.ml:180:30>>*/ caml_get_exception_raw_backtra(0));
-    /*<<printexc.ml:180:52>>*/ }
+              /*<<printexc.ml:183:30>>*/ caml_get_exception_raw_backtra(0));
+    /*<<printexc.ml:183:52>>*/ }
    function raw_backtrace_to_string(raw_backtrace){
-     /*<<printexc.ml:196:2>>*/  /*<<printexc.ml:196:22>>*/ var
+     /*<<printexc.ml:199:2>>*/  /*<<printexc.ml:199:22>>*/ var
      backtrace = convert_raw_backtrace(raw_backtrace);
     if(! backtrace)
-      /*<<printexc.ml:185:5>>*/ return cst_Program_not_linked_with_g_;
-     /*<<printexc.ml:187:14>>*/ var
+      /*<<printexc.ml:188:5>>*/ return cst_Program_not_linked_with_g_;
+     /*<<printexc.ml:190:14>>*/ var
      a = backtrace[1],
-      /*<<printexc.ml:187:14>>*/ b =
-        /*<<printexc.ml:187:14>>*/ caml_call1(Stdlib_Buffer[1], 1024),
-     _K_ = a.length - 2 | 0,
-      /*<<printexc.ml:187:14>>*/ _J_ = 0;
-    if(_K_ >= 0){
-     var i = _J_;
+      /*<<printexc.ml:190:14>>*/ b =
+        /*<<printexc.ml:190:14>>*/ caml_call1(Stdlib_Buffer[1], 1024),
+     _M_ = a.length - 2 | 0,
+      /*<<printexc.ml:190:14>>*/ _L_ = 0;
+    if(_M_ >= 0){
+     var i = _L_;
      for(;;){
-       /*<<printexc.ml:189:14>>*/  /*<<printexc.ml:189:14>>*/ var
+       /*<<printexc.ml:192:14>>*/  /*<<printexc.ml:192:14>>*/ var
        match = format_backtrace_slot(i, caml_check_bound(a, i)[1 + i]);
       if(match){
        var str = match[1];
-        /*<<printexc.ml:191:24>>*/  /*<<printexc.ml:191:24>>*/ caml_call3
-        (Stdlib_Printf[5], b, _l_, str);
+        /*<<printexc.ml:194:24>>*/  /*<<printexc.ml:194:24>>*/ caml_call3
+        (Stdlib_Printf[5], b, _n_, str);
       }
-       /*<<printexc.ml:188:6>>*/  /*<<printexc.ml:188:6>>*/ var
-       _L_ = i + 1 | 0;
-      if(_K_ === i) break;
-      i = _L_;
+       /*<<printexc.ml:191:6>>*/  /*<<printexc.ml:191:6>>*/ var
+       _N_ = i + 1 | 0;
+      if(_M_ === i) break;
+      i = _N_;
      }
     }
-     /*<<printexc.ml:193:6>>*/ return  /*<<printexc.ml:193:6>>*/ caml_call1
+     /*<<printexc.ml:196:6>>*/ return  /*<<printexc.ml:196:6>>*/ caml_call1
             (Stdlib_Buffer[2], b);
-    /*<<printexc.ml:196:59>>*/ }
+    /*<<printexc.ml:199:59>>*/ }
    function backtrace_slot_is_raise(param){
-     /*<<printexc.ml:198:30>>*/ return 0 === param[0] ? param[1] : param[1];
-    /*<<printexc.ml:200:36>>*/ }
+     /*<<printexc.ml:201:30>>*/ return 0 === param[0] ? param[1] : param[1];
+    /*<<printexc.ml:203:36>>*/ }
    function backtrace_slot_is_inline(param){
-     /*<<printexc.ml:202:31>>*/ return 0 === param[0] ? param[6] : 0;
-    /*<<printexc.ml:204:31>>*/ }
+     /*<<printexc.ml:205:31>>*/ return 0 === param[0] ? param[8] : 0;
+    /*<<printexc.ml:207:31>>*/ }
    function backtrace_slot_location(param){
-     /*<<printexc.ml:213:30>>*/ return 0 === param[0]
-            ? [0, [0, param[2], param[3], param[4], param[5]]]
+     /*<<printexc.ml:218:30>>*/ return 0 === param[0]
+            ? [0,
+              [0, param[2], param[3], param[4], param[5], param[6], param[7]]]
             : 0;
-    /*<<printexc.ml:221:5>>*/ }
+    /*<<printexc.ml:228:5>>*/ }
    function backtrace_slot_defname(param){
-     /*<<printexc.ml:223:29>>*/ if(0 === param[0] && param[7] !== cst$4)
-      /*<<printexc.ml:226:24>>*/ return [0, param[7]];
-     /*<<printexc.ml:225:39>>*/ return 0;
-    /*<<printexc.ml:226:38>>*/ }
+     /*<<printexc.ml:230:29>>*/ if(0 === param[0] && param[9] !== cst$4)
+      /*<<printexc.ml:233:24>>*/ return [0, param[9]];
+     /*<<printexc.ml:232:39>>*/ return 0;
+    /*<<printexc.ml:233:38>>*/ }
    function backtrace_slots(raw_backtrace){
-     /*<<printexc.ml:235:2>>*/  /*<<printexc.ml:235:8>>*/ var
+     /*<<printexc.ml:242:2>>*/  /*<<printexc.ml:242:8>>*/ var
      match = convert_raw_backtrace(raw_backtrace);
-    if(! match)  /*<<printexc.ml:236:14>>*/ return 0;
+    if(! match)  /*<<printexc.ml:243:14>>*/ return 0;
     var backtrace = match[1], i$1 = backtrace.length - 2 | 0, i = i$1;
-     /*<<printexc.ml:241:30>>*/ for(;;){
+     /*<<printexc.ml:248:30>>*/ for(;;){
      if(-1 === i)
-      var _I_ = 0;
+      var _K_ = 0;
      else{
-      var _H_ = 0 === caml_check_bound(backtrace, i)[1 + i][0] ? 1 : 0;
-       /*<<printexc.ml:243:15>>*/ if(! _H_){
+      var _J_ = 0 === caml_check_bound(backtrace, i)[1 + i][0] ? 1 : 0;
+       /*<<printexc.ml:250:15>>*/ if(! _J_){
        var i$0 = i - 1 | 0;
        i = i$0;
        continue;
       }
-      var _I_ = _H_;
+      var _K_ = _J_;
      }
-      /*<<printexc.ml:244:9>>*/ return _I_ ? [0, backtrace] : 0;
+      /*<<printexc.ml:251:9>>*/ return _K_ ? [0, backtrace] : 0;
     }
-    /*<<printexc.ml:246:15>>*/ }
+    /*<<printexc.ml:253:15>>*/ }
    function backtrace_slots_of_raw_entry(entry){
-     /*<<printexc.ml:249:2>>*/ return backtrace_slots([0, entry]);
-    /*<<printexc.ml:249:29>>*/ }
+     /*<<printexc.ml:256:2>>*/ return backtrace_slots([0, entry]);
+    /*<<printexc.ml:256:29>>*/ }
    function raw_backtrace_length(bt){
-     /*<<printexc.ml:260:30>>*/ return bt.length - 1;
-    /*<<printexc.ml:260:45>>*/ }
+     /*<<printexc.ml:267:30>>*/ return bt.length - 1;
+    /*<<printexc.ml:267:45>>*/ }
    function get_backtrace(param){
-     /*<<printexc.ml:271:23>>*/ return raw_backtrace_to_string
-            ( /*<<printexc.ml:271:47>>*/ caml_get_exception_raw_backtra(0));
-    /*<<printexc.ml:271:69>>*/ }
+     /*<<printexc.ml:278:23>>*/ return raw_backtrace_to_string
+            ( /*<<printexc.ml:278:47>>*/ caml_get_exception_raw_backtra(0));
+    /*<<printexc.ml:278:69>>*/ }
    function register_printer(fn){
-     /*<<printexc.ml:277:2>>*/ for(;;){
-      /*<<printexc.ml:277:21>>*/ var
-       /*<<printexc.ml:277:21>>*/ old_printers =
-         /*<<printexc.ml:277:21>>*/ caml_call1(Stdlib_Atomic[2], printers),
-       /*<<printexc.ml:278:21>>*/ new_printers = [0, fn, old_printers],
-       /*<<printexc.ml:279:16>>*/ success =
-         /*<<printexc.ml:279:16>>*/ caml_call3
-         (Stdlib_Atomic[5], printers, old_printers, new_printers),
-       /*<<printexc.ml:280:2>>*/ _G_ = 1 - success;
-     if(! _G_)  /*<<printexc.ml:280:2>>*/ return _G_;
+     /*<<printexc.ml:284:2>>*/ for(;;){
+      /*<<printexc.ml:284:21>>*/ var
+       /*<<printexc.ml:284:21>>*/ old_printers =
+         /*<<printexc.ml:284:21>>*/ caml_call1(Stdlib_Atomic[3], printers),
+       /*<<printexc.ml:285:21>>*/ new_printers = [0, fn, old_printers],
+       /*<<printexc.ml:286:16>>*/ success =
+         /*<<printexc.ml:286:16>>*/ caml_call3
+         (Stdlib_Atomic[6], printers, old_printers, new_printers),
+       /*<<printexc.ml:287:2>>*/ _I_ = 1 - success;
+     if(! _I_)  /*<<printexc.ml:287:2>>*/ return _I_;
     }
-    /*<<printexc.ml:280:41>>*/ }
+    /*<<printexc.ml:287:41>>*/ }
    function exn_slot(x){
-     /*<<printexc.ml:285:2>>*/ return 0
-            ===  /*<<printexc.ml:286:5>>*/ caml_obj_tag(x)
+     /*<<printexc.ml:292:2>>*/ return 0
+            ===  /*<<printexc.ml:293:5>>*/ caml_obj_tag(x)
             ? x[1]
             : x;
-    /*<<printexc.ml:286:44>>*/ }
+    /*<<printexc.ml:293:44>>*/ }
    function exn_slot_id(x){
-     /*<<printexc.ml:289:2>>*/  /*<<printexc.ml:289:13>>*/ var
+     /*<<printexc.ml:296:2>>*/  /*<<printexc.ml:296:13>>*/ var
      slot = exn_slot(x);
-     /*<<printexc.ml:290:11>>*/ return slot[2];
-    /*<<printexc.ml:290:36>>*/ }
+     /*<<printexc.ml:297:11>>*/ return slot[2];
+    /*<<printexc.ml:297:36>>*/ }
    function exn_slot_name(x){
-     /*<<printexc.ml:293:2>>*/  /*<<printexc.ml:293:13>>*/ var
+     /*<<printexc.ml:300:2>>*/  /*<<printexc.ml:300:13>>*/ var
      slot = exn_slot(x);
-     /*<<printexc.ml:294:11>>*/ return slot[1];
-    /*<<printexc.ml:294:39>>*/ }
+     /*<<printexc.ml:301:11>>*/ return slot[1];
+    /*<<printexc.ml:301:39>>*/ }
    var
     errors =
       [0,
@@ -21855,103 +22872,103 @@
         "(Cannot print locations:\n bytecode executable program file has wrong magic number)",
         "(Cannot print locations:\n bytecode executable program file cannot be opened;\n -- too many open files. Try running with OCAMLRUNPARAM=b=2)"].slice
        (),
-    _m_ =
+    _o_ =
       [0,
        [11, cst_Fatal_error_exception, [2, 0, [12, 10, 0]]],
        cst_Fatal_error_exception_s];
    function default_uncaught_exception_han(exn, raw_backtrace){
-     /*<<printexc.ml:316:2>>*/  /*<<printexc.ml:316:40>>*/ var
-     _D_ = to_string(exn);
-     /*<<printexc.ml:316:2>>*/  /*<<printexc.ml:316:2>>*/ caml_call2
-     (Stdlib_Printf[3], _m_, _D_);
-     /*<<printexc.ml:317:2>>*/ print_raw_backtrace(Stdlib[40], raw_backtrace);
-     /*<<printexc.ml:318:15>>*/  /*<<printexc.ml:318:15>>*/ var
-     status =  /*<<printexc.ml:318:15>>*/ runtime.caml_ml_debug_info_status(0);
+     /*<<printexc.ml:323:2>>*/  /*<<printexc.ml:323:40>>*/ var
+     _F_ = to_string(exn);
+     /*<<printexc.ml:323:2>>*/  /*<<printexc.ml:323:2>>*/ caml_call2
+     (Stdlib_Printf[3], _o_, _F_);
+     /*<<printexc.ml:324:2>>*/ print_raw_backtrace(Stdlib[40], raw_backtrace);
+     /*<<printexc.ml:325:15>>*/  /*<<printexc.ml:325:15>>*/ var
+     status =  /*<<printexc.ml:325:15>>*/ runtime.caml_ml_debug_info_status(0);
     if(status < 0){
-      /*<<printexc.ml:320:26>>*/ var
-       /*<<printexc.ml:320:26>>*/ _E_ =
-         /*<<printexc.ml:320:26>>*/ caml_call1(Stdlib[18], status),
-       /*<<printexc.ml:320:18>>*/ _F_ = caml_check_bound(errors, _E_)[1 + _E_];
-      /*<<printexc.ml:320:4>>*/  /*<<printexc.ml:320:4>>*/ caml_call1
-      (Stdlib[53], _F_);
+      /*<<printexc.ml:327:26>>*/ var
+       /*<<printexc.ml:327:26>>*/ _G_ =
+         /*<<printexc.ml:327:26>>*/ caml_call1(Stdlib[18], status),
+       /*<<printexc.ml:327:18>>*/ _H_ = caml_check_bound(errors, _G_)[1 + _G_];
+      /*<<printexc.ml:327:4>>*/  /*<<printexc.ml:327:4>>*/ caml_call1
+      (Stdlib[53], _H_);
     }
-     /*<<printexc.ml:320:4>>*/ return  /*<<printexc.ml:320:4>>*/ caml_call1
+     /*<<printexc.ml:327:4>>*/ return  /*<<printexc.ml:327:4>>*/ caml_call1
             (Stdlib[63], Stdlib[40]);
-    /*<<printexc.ml:321:14>>*/ }
-    /*<<printexc.ml:323:33>>*/  /*<<printexc.ml:323:33>>*/ var
+    /*<<printexc.ml:328:14>>*/ }
+    /*<<printexc.ml:330:33>>*/  /*<<printexc.ml:330:33>>*/ var
     uncaught_exception_handler = [0, default_uncaught_exception_han];
    function set_uncaught_exception_handler(fn){
-     /*<<printexc.ml:325:40>>*/ uncaught_exception_handler[1] = fn;
+     /*<<printexc.ml:332:40>>*/ uncaught_exception_handler[1] = fn;
     return 0;
-    /*<<printexc.ml:325:72>>*/ }
+    /*<<printexc.ml:332:72>>*/ }
    var
     empty_backtrace = [0],
     cst_Fatal_error_out_of_memory_ =
       "Fatal error: out of memory in uncaught exception handler",
-    _n_ =
+    _p_ =
       [0,
        [11, cst_Fatal_error_exception, [2, 0, [12, 10, 0]]],
        cst_Fatal_error_exception_s],
-    _o_ =
+    _q_ =
       [0,
        [11,
         "Fatal error in uncaught exception handler: exception ",
         [2, 0, [12, 10, 0]]],
        "Fatal error in uncaught exception handler: exception %s\n"];
    function handle_uncaught_exception(exn$0, debugger_in_use){
-     /*<<printexc.ml:364:2>>*/ try{
-      /*<<printexc.ml:336:2>>*/ try{
+     /*<<printexc.ml:371:2>>*/ try{
+      /*<<printexc.ml:343:2>>*/ try{
       var
        raw_backtrace =
          debugger_in_use
           ? empty_backtrace
-          :  /*<<printexc.ml:331:4>>*/ caml_get_exception_raw_backtra(0);
-       /*<<printexc.ml:345:4>>*/ try{
-        /*<<printexc.ml:345:9>>*/  /*<<printexc.ml:345:9>>*/ caml_call1
+          :  /*<<printexc.ml:338:4>>*/ caml_get_exception_raw_backtra(0);
+       /*<<printexc.ml:352:4>>*/ try{
+        /*<<printexc.ml:352:9>>*/  /*<<printexc.ml:352:9>>*/ caml_call1
         (Stdlib[103], 0);
       }
-      catch(_C_){}
-       /*<<printexc.ml:346:4>>*/ try{
-        /*<<printexc.ml:347:6>>*/ var
-         /*<<printexc.ml:347:6>>*/ _y_ =
-           /*<<printexc.ml:347:6>>*/ caml_call2
+      catch(_E_){}
+       /*<<printexc.ml:353:4>>*/ try{
+        /*<<printexc.ml:354:6>>*/ var
+         /*<<printexc.ml:354:6>>*/ _A_ =
+           /*<<printexc.ml:354:6>>*/ caml_call2
            (uncaught_exception_handler[1], exn$0, raw_backtrace),
-        _x_ = _y_;
+        _z_ = _A_;
       }
       catch(exn$1){
-        /*<<printexc.ml:331:4>>*/ var
+        /*<<printexc.ml:338:4>>*/ var
         exn = caml_wrap_exception(exn$1),
-         /*<<printexc.ml:331:4>>*/ raw_backtrace$0 =
-           /*<<printexc.ml:331:4>>*/ caml_get_exception_raw_backtra(0),
-         /*<<printexc.ml:350:44>>*/ _v_ = to_string(exn$0);
-        /*<<printexc.ml:350:6>>*/  /*<<printexc.ml:350:6>>*/ caml_call2
-        (Stdlib_Printf[3], _n_, _v_);
-        /*<<printexc.ml:351:6>>*/ print_raw_backtrace
+         /*<<printexc.ml:338:4>>*/ raw_backtrace$0 =
+           /*<<printexc.ml:338:4>>*/ caml_get_exception_raw_backtra(0),
+         /*<<printexc.ml:357:44>>*/ _x_ = to_string(exn$0);
+        /*<<printexc.ml:357:6>>*/  /*<<printexc.ml:357:6>>*/ caml_call2
+        (Stdlib_Printf[3], _p_, _x_);
+        /*<<printexc.ml:358:6>>*/ print_raw_backtrace
         (Stdlib[40], raw_backtrace);
-        /*<<printexc.ml:353:8>>*/  /*<<printexc.ml:353:8>>*/ var
-        _w_ = to_string(exn);
-        /*<<printexc.ml:352:6>>*/  /*<<printexc.ml:352:6>>*/ caml_call2
-        (Stdlib_Printf[3], _o_, _w_);
-        /*<<printexc.ml:354:6>>*/ print_raw_backtrace
+        /*<<printexc.ml:360:8>>*/  /*<<printexc.ml:360:8>>*/ var
+        _y_ = to_string(exn);
+        /*<<printexc.ml:359:6>>*/  /*<<printexc.ml:359:6>>*/ caml_call2
+        (Stdlib_Printf[3], _q_, _y_);
+        /*<<printexc.ml:361:6>>*/ print_raw_backtrace
         (Stdlib[40], raw_backtrace$0);
        var
-        _x_ =  /*<<printexc.ml:355:6>>*/ caml_call1(Stdlib[63], Stdlib[40]);
+        _z_ =  /*<<printexc.ml:362:6>>*/ caml_call1(Stdlib[63], Stdlib[40]);
       }
-      var _z_ = _x_;
+      var _B_ = _z_;
      }
-     catch(_B_){
-      var _u_ = caml_wrap_exception(_B_);
-      if(_u_ !== Stdlib[9]) throw caml_maybe_attach_backtrace(_u_, 0);
+     catch(_D_){
+      var _w_ = caml_wrap_exception(_D_);
+      if(_w_ !== Stdlib[9]) throw caml_maybe_attach_backtrace(_w_, 0);
       var
-       _z_ =
-          /*<<printexc.ml:358:8>>*/ caml_call1
+       _B_ =
+          /*<<printexc.ml:365:8>>*/ caml_call1
           (Stdlib[53], cst_Fatal_error_out_of_memory_);
      }
-      /*<<printexc.ml:365:4>>*/ return _z_;
+      /*<<printexc.ml:372:4>>*/ return _B_;
     }
-    catch(_A_){ /*<<printexc.ml:368:4>>*/ return 0;}
-    /*<<printexc.ml:368:6>>*/ }
-    /*<<printexc.ml:374:2>>*/  /*<<printexc.ml:374:2>>*/ runtime.caml_register_named_value
+    catch(_C_){ /*<<printexc.ml:375:4>>*/ return 0;}
+    /*<<printexc.ml:375:6>>*/ }
+    /*<<printexc.ml:381:2>>*/  /*<<printexc.ml:381:2>>*/ runtime.caml_register_named_value
     ("Printexc.handle_uncaught_exception", handle_uncaught_exception);
    var
     Stdlib_Printexc =
@@ -21967,7 +22984,7 @@
        register_printer,
        use_printers,
        raw_backtrace_entries,
-       function(_t_){ /*<<?>>*/ return caml_get_exception_raw_backtra(_t_);},
+       function(_v_){ /*<<?>>*/ return caml_get_exception_raw_backtra(_v_);},
        print_raw_backtrace,
        raw_backtrace_to_string,
        default_uncaught_exception_han,
@@ -21981,19 +22998,19 @@
         backtrace_slot_defname,
         format_backtrace_slot],
        raw_backtrace_length,
-       function(_s_, _r_){
-         /*<<?>>*/ return runtime.caml_raw_backtrace_slot(_s_, _r_);
+       function(_u_, _t_){
+         /*<<?>>*/ return runtime.caml_raw_backtrace_slot(_u_, _t_);
        },
-       function(_q_){
-         /*<<?>>*/ return runtime.caml_convert_raw_backtrace_slot(_q_);
+       function(_s_){
+         /*<<?>>*/ return runtime.caml_convert_raw_backtrace_slot(_s_);
        },
-       function(_p_){
-         /*<<?>>*/ return runtime.caml_raw_backtrace_next_slot(_p_);
+       function(_r_){
+         /*<<?>>*/ return runtime.caml_raw_backtrace_next_slot(_r_);
        },
        exn_slot_id,
        exn_slot_name,
        string_of_extension_constructo];
-   runtime.caml_register_global(42, Stdlib_Printexc, "Stdlib__Printexc");
+   runtime.caml_register_global(43, Stdlib_Printexc, "Stdlib__Printexc");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -22026,71 +23043,76 @@
    function const$0(c, param){
      /*<<fun.ml:17:16>>*/ return c;
     /*<<fun.ml:17:17>>*/ }
+   function compose(f, g, x){
+     /*<<fun.ml:18:20>>*/ return  /*<<fun.ml:18:22>>*/ caml_call1
+            (f,  /*<<fun.ml:18:22>>*/ caml_call1(g, x));
+    /*<<fun.ml:18:27>>*/ }
    function flip(f, x, y){
-     /*<<fun.ml:18:17>>*/ return  /*<<fun.ml:18:17>>*/ caml_call2(f, y, x);
-    /*<<fun.ml:18:22>>*/ }
+     /*<<fun.ml:19:17>>*/ return  /*<<fun.ml:19:17>>*/ caml_call2(f, y, x);
+    /*<<fun.ml:19:22>>*/ }
    function negate(p, v){
-     /*<<fun.ml:19:17>>*/ return 1 -  /*<<fun.ml:19:21>>*/ caml_call1(p, v);
-    /*<<fun.ml:19:26>>*/ }
-    /*<<fun.ml:21:0>>*/ var
-     /*<<fun.ml:21:0>>*/ Finally_raised =
+     /*<<fun.ml:20:17>>*/ return 1 -  /*<<fun.ml:20:21>>*/ caml_call1(p, v);
+    /*<<fun.ml:20:26>>*/ }
+    /*<<fun.ml:22:0>>*/ var
+     /*<<fun.ml:22:0>>*/ Finally_raised =
       [248, "Stdlib.Fun.Finally_raised", runtime.caml_fresh_oo_id(0)],
     cst_Fun_Finally_raised = "Fun.Finally_raised: ";
-    /*<<fun.ml:23:9>>*/  /*<<fun.ml:23:9>>*/ caml_call1
+    /*<<fun.ml:24:9>>*/  /*<<fun.ml:24:9>>*/ caml_call1
     (Stdlib_Printexc[9],
      function(param){
-       /*<<fun.ml:23:38>>*/ if(param[1] !== Finally_raised)
-        /*<<fun.ml:25:7>>*/ return 0;
-       /*<<fun.ml:24:55>>*/ var
+       /*<<fun.ml:24:38>>*/ if(param[1] !== Finally_raised)
+        /*<<fun.ml:26:7>>*/ return 0;
+       /*<<fun.ml:25:55>>*/ var
        exn = param[2],
-        /*<<fun.ml:24:55>>*/ _a_ =
-          /*<<fun.ml:24:55>>*/ caml_call1(Stdlib_Printexc[1], exn);
-       /*<<fun.ml:24:24>>*/ return [0,
-               /*<<fun.ml:24:29>>*/ caml_call2
+        /*<<fun.ml:25:55>>*/ _a_ =
+          /*<<fun.ml:25:55>>*/ caml_call1(Stdlib_Printexc[1], exn);
+       /*<<fun.ml:25:24>>*/ return [0,
+               /*<<fun.ml:25:29>>*/ caml_call2
                (Stdlib[28], cst_Fun_Finally_raised, _a_)];
-      /*<<fun.ml:25:11>>*/ });
+      /*<<fun.ml:26:11>>*/ });
    function protect(finally$0, work){
     function finally_no_exn(param){
-      /*<<fun.ml:29:4>>*/ try{
-       /*<<fun.ml:29:8>>*/  /*<<fun.ml:29:8>>*/ caml_call1(finally$0, 0);
-       /*<<fun.ml:29:8>>*/ return;
+      /*<<fun.ml:30:4>>*/ try{
+       /*<<fun.ml:30:8>>*/  /*<<fun.ml:30:8>>*/ caml_call1(finally$0, 0);
+       /*<<fun.ml:30:8>>*/ return;
      }
      catch(e$0){
-       /*<<fun.ml:30:15>>*/ var
+       /*<<fun.ml:31:15>>*/ var
        e = caml_wrap_exception(e$0),
-        /*<<fun.ml:30:15>>*/ bt =
-          /*<<fun.ml:30:15>>*/ caml_call1(Stdlib_Printexc[12], 0),
-        /*<<fun.ml:31:36>>*/ exn = [0, Finally_raised, e];
+        /*<<fun.ml:31:15>>*/ bt =
+          /*<<fun.ml:31:15>>*/ caml_call1(Stdlib_Printexc[12], 0),
+        /*<<fun.ml:32:36>>*/ exn = [0, Finally_raised, e];
       caml_restore_raw_backtrace(exn, bt);
-       /*<<fun.ml:31:6>>*/ throw  /*<<fun.ml:31:6>>*/ caml_maybe_attach_backtrace
+       /*<<fun.ml:32:6>>*/ throw  /*<<fun.ml:32:6>>*/ caml_maybe_attach_backtrace
              (exn, 0);
      }
-     /*<<fun.ml:31:57>>*/ }
-     /*<<fun.ml:33:2>>*/ try{
-      /*<<fun.ml:33:8>>*/  /*<<fun.ml:33:8>>*/ var
-      result =  /*<<fun.ml:33:8>>*/ caml_call1(work, 0);
+     /*<<fun.ml:32:57>>*/ }
+     /*<<fun.ml:34:2>>*/ try{
+      /*<<fun.ml:34:8>>*/  /*<<fun.ml:34:8>>*/ var
+      result =  /*<<fun.ml:34:8>>*/ caml_call1(work, 0);
     }
     catch(work_exn$0){
-      /*<<fun.ml:36:20>>*/ var
+      /*<<fun.ml:37:20>>*/ var
       work_exn = caml_wrap_exception(work_exn$0),
-       /*<<fun.ml:36:20>>*/ work_bt =
-         /*<<fun.ml:36:20>>*/ caml_call1(Stdlib_Printexc[12], 0);
-      /*<<fun.ml:37:6>>*/ finally_no_exn(0);
+       /*<<fun.ml:37:20>>*/ work_bt =
+         /*<<fun.ml:37:20>>*/ caml_call1(Stdlib_Printexc[12], 0);
+      /*<<fun.ml:38:6>>*/ finally_no_exn(0);
      caml_restore_raw_backtrace(work_exn, work_bt);
-      /*<<fun.ml:38:6>>*/ throw  /*<<fun.ml:38:6>>*/ caml_maybe_attach_backtrace
+      /*<<fun.ml:39:6>>*/ throw  /*<<fun.ml:39:6>>*/ caml_maybe_attach_backtrace
             (work_exn, 0);
     }
-     /*<<fun.ml:34:14>>*/ finally_no_exn(0);
-     /*<<fun.ml:34:14>>*/ return result;
-    /*<<fun.ml:38:52>>*/ }
-   var Stdlib_Fun = [0, const$0, flip, negate, protect, Finally_raised];
+     /*<<fun.ml:35:14>>*/ finally_no_exn(0);
+     /*<<fun.ml:35:14>>*/ return result;
+    /*<<fun.ml:39:52>>*/ }
+   var
+    Stdlib_Fun = [0, const$0, compose, flip, negate, protect, Finally_raised];
    runtime.caml_register_global(4, Stdlib_Fun, "Stdlib__Fun");
    return;
    /*<<?>>*/ }
   (globalThis));
 
 //# unitInfo: Provides: Stdlib__Gc
-//# unitInfo: Requires: Stdlib, Stdlib__Atomic, Stdlib__Fun, Stdlib__Printf, Stdlib__Sys
+//# unitInfo: Requires: Stdlib, Stdlib__Atomic, Stdlib__Domain, Stdlib__Fun, Stdlib__Printf, Stdlib__Sys
 (function
   (globalThis){
    "use strict";
@@ -22124,6 +23146,7 @@
    global_data.Stdlib__Fun;
    var
     Stdlib = global_data.Stdlib,
+    Stdlib_Domain = global_data.Stdlib__Domain,
     Stdlib_Sys = global_data.Stdlib__Sys,
     Stdlib_Printf = global_data.Stdlib__Printf,
     _a_ =
@@ -22258,30 +23281,33 @@
      mi = match[1];
      /*<<gc.ml:97:2>>*/ return (mi + ma - pro) * (Stdlib_Sys[9] / 8 | 0);
     /*<<gc.ml:97:55>>*/ }
-   function create_alarm(f){
-     /*<<gc.ml:117:2>>*/ return  /*<<gc.ml:117:24>>*/ caml_call1
-            (Stdlib_Atomic[1], 1);
-    /*<<gc.ml:119:13>>*/ }
    function delete_alarm(a){
-     /*<<gc.ml:122:21>>*/ return  /*<<gc.ml:122:21>>*/ caml_call2
-            (Stdlib_Atomic[3], a, 0);
-    /*<<gc.ml:122:39>>*/ }
-    /*<<gc.ml:141:23>>*/  /*<<gc.ml:141:23>>*/ var
+     /*<<gc.ml:115:21>>*/ return  /*<<gc.ml:115:21>>*/ caml_call2
+            (Stdlib_Atomic[4], a, 0);
+    /*<<gc.ml:115:39>>*/ }
+   function create_alarm(f){
+     /*<<gc.ml:118:2>>*/  /*<<gc.ml:118:24>>*/ var
+     _y_ =  /*<<gc.ml:118:24>>*/ caml_call1(Stdlib_Atomic[1], 1);
+     /*<<gc.ml:119:2>>*/  /*<<gc.ml:119:2>>*/ caml_call1
+     (Stdlib_Domain[6],
+      function(param){
+        /*<<gc.ml:119:28>>*/ return delete_alarm(_y_);
+       /*<<gc.ml:119:52>>*/ });
+    return _y_;
+    /*<<gc.ml:121:13>>*/ }
+    /*<<gc.ml:142:23>>*/  /*<<gc.ml:142:23>>*/ var
     null_tracker =
       [0,
-       function(param){ /*<<gc.ml:142:30>>*/ return 0; /*<<gc.ml:142:34>>*/ },
        function(param){ /*<<gc.ml:143:30>>*/ return 0; /*<<gc.ml:143:34>>*/ },
-       function(param){ /*<<gc.ml:144:26>>*/ return 0; /*<<gc.ml:144:30>>*/ },
-       function(param){ /*<<gc.ml:145:32>>*/ return 0; /*<<gc.ml:145:34>>*/ },
-       function(param){ /*<<gc.ml:146:32>>*/ return 0; /*<<gc.ml:146:34>>*/ }];
+       function(param){ /*<<gc.ml:144:30>>*/ return 0; /*<<gc.ml:144:34>>*/ },
+       function(param){ /*<<gc.ml:145:26>>*/ return 0; /*<<gc.ml:145:30>>*/ },
+       function(param){ /*<<gc.ml:146:32>>*/ return 0; /*<<gc.ml:146:34>>*/ },
+       function(param){ /*<<gc.ml:147:32>>*/ return 0; /*<<gc.ml:147:34>>*/ }];
    function start(sampling_rate, opt, tracker){
-     /*<<gc.ml:157:6>>*/ if(opt)
-     var sth = opt[1], callstack_size = sth;
-    else
-     var callstack_size = Stdlib[19];
-     /*<<gc.ml:157:6>>*/ return  /*<<gc.ml:157:6>>*/ runtime.caml_memprof_start
+    var callstack_size = opt ? opt[1] : Stdlib[19];
+     /*<<gc.ml:158:6>>*/ return  /*<<gc.ml:158:6>>*/ runtime.caml_memprof_start
             (sampling_rate, callstack_size, tracker);
-    /*<<gc.ml:157:50>>*/ }
+   }
    var
     Stdlib_Gc =
       [0,
@@ -22296,27 +23322,392 @@
        delete_alarm,
        eventlog_pause,
        eventlog_resume,
-       [0, null_tracker, start, runtime.caml_memprof_stop]];
-   runtime.caml_register_global(26, Stdlib_Gc, "Stdlib__Gc");
+       [0,
+        null_tracker,
+        start,
+        runtime.caml_memprof_stop,
+        runtime.caml_memprof_discard]];
+   runtime.caml_register_global(27, Stdlib_Gc, "Stdlib__Gc");
    return;
    /*<<?>>*/ }
   (globalThis));
 
-//# unitInfo: Provides: Stdlib__Digest
-//# unitInfo: Requires: Stdlib, Stdlib__Bytes, Stdlib__Char, Stdlib__String
+//# unitInfo: Provides: Stdlib__In_channel
+//# unitInfo: Requires: Stdlib, Stdlib__Bytes, Stdlib__Fun, Stdlib__Sys
 (function
   (globalThis){
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    cst_Digest_from_hex$1 = "Digest.from_hex",
-    caml_bytes_unsafe_set = runtime.caml_bytes_unsafe_set,
+    caml_ba_dim_1 = runtime.caml_ba_dim_1,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
-    caml_md5_string = runtime.caml_md5_string,
-    caml_ml_string_length = runtime.caml_ml_string_length,
-    caml_string_get = runtime.caml_string_get,
+    caml_ml_bytes_length = runtime.caml_ml_bytes_length,
+    caml_ml_input_bigarray = runtime.caml_ml_input_bigarray,
     caml_wrap_exception = runtime.caml_wrap_exception;
+    /*<<?>>*/ function caml_call1(f, a0){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+            ? f(a0)
+            : runtime.caml_call_gen(f, [a0]);
+   }
+    /*<<?>>*/ function caml_call2(f, a0, a1){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+            ? f(a0, a1)
+            : runtime.caml_call_gen(f, [a0, a1]);
+   }
+    /*<<?>>*/ function caml_call3(f, a0, a1, a2){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+            ? f(a0, a1, a2)
+            : runtime.caml_call_gen(f, [a0, a1, a2]);
+   }
+    /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+            ? f(a0, a1, a2, a3)
+            : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
+   }
+    /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+            ? f(a0, a1, a2, a3, a4)
+            : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
+   }
+   var
+    global_data = runtime.caml_get_global_data(),
+    Stdlib = global_data.Stdlib,
+    Stdlib_Bytes = global_data.Stdlib__Bytes,
+    Stdlib_Sys = global_data.Stdlib__Sys,
+    Stdlib_Fun = global_data.Stdlib__Fun,
+    stdin = Stdlib[38],
+    open_bin = Stdlib[80],
+    open_text = Stdlib[79],
+    open_gen = Stdlib[81];
+   function with_open(openfun, s, f){
+     /*<<in_channel.ml:35:2>>*/  /*<<in_channel.ml:35:11>>*/ var
+     ic =  /*<<in_channel.ml:35:11>>*/ caml_call1(openfun, s);
+     /*<<in_channel.ml:37:4>>*/ return  /*<<in_channel.ml:37:4>>*/ caml_call2
+            (Stdlib_Fun[5],
+             function(param){
+               /*<<in_channel.ml:36:34>>*/ return  /*<<in_channel.ml:37:4>>*/ caml_call1
+                      (Stdlib[94], ic);
+              /*<<in_channel.ml:36:58>>*/ },
+             function(param){
+               /*<<in_channel.ml:37:15>>*/ return  /*<<in_channel.ml:36:2>>*/ caml_call1
+                      (f, ic);
+              /*<<in_channel.ml:37:19>>*/ });
+    /*<<in_channel.ml:37:20>>*/ }
+   function with_open_bin(s, f){
+     /*<<in_channel.ml:40:2>>*/ return with_open(Stdlib[80], s, f);
+    /*<<in_channel.ml:40:34>>*/ }
+   function with_open_text(s, f){
+     /*<<in_channel.ml:43:2>>*/ return with_open(Stdlib[79], s, f);
+    /*<<in_channel.ml:43:30>>*/ }
+   function with_open_gen(flags, perm, s, f){
+     /*<<in_channel.ml:46:2>>*/ return with_open
+            ( /*<<in_channel.ml:46:12>>*/ caml_call2(Stdlib[81], flags, perm),
+             s,
+             f);
+    /*<<in_channel.ml:46:47>>*/ }
+   var
+    seek = Stdlib[96][4],
+    pos = Stdlib[96][5],
+    length = Stdlib[96][6],
+    close = Stdlib[93],
+    close_noerr = Stdlib[94];
+   function input_char(ic){
+     /*<<in_channel.ml:55:2>>*/ try{
+      /*<<in_channel.ml:55:8>>*/  /*<<in_channel.ml:55:8>>*/ var
+      c =  /*<<in_channel.ml:55:8>>*/ caml_call1(Stdlib[82], ic);
+    }
+    catch(_x_){
+     var _w_ = caml_wrap_exception(_x_);
+     if(_w_ === Stdlib[12])  /*<<in_channel.ml:57:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_w_, 0);
+    }
+     /*<<in_channel.ml:56:9>>*/ return [0, c];
+    /*<<in_channel.ml:57:33>>*/ }
+   function input_byte(ic){
+     /*<<in_channel.ml:60:2>>*/ try{
+      /*<<in_channel.ml:60:8>>*/  /*<<in_channel.ml:60:8>>*/ var
+      n =  /*<<in_channel.ml:60:8>>*/ caml_call1(Stdlib[87], ic);
+    }
+    catch(_v_){
+     var _u_ = caml_wrap_exception(_v_);
+     if(_u_ === Stdlib[12])  /*<<in_channel.ml:62:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_u_, 0);
+    }
+     /*<<in_channel.ml:61:9>>*/ return [0, n];
+    /*<<in_channel.ml:62:33>>*/ }
+   function input_line(ic){
+     /*<<in_channel.ml:65:2>>*/ try{
+      /*<<in_channel.ml:65:8>>*/  /*<<in_channel.ml:65:8>>*/ var
+      s =  /*<<in_channel.ml:65:8>>*/ caml_call1(Stdlib[83], ic);
+    }
+    catch(_t_){
+     var _s_ = caml_wrap_exception(_t_);
+     if(_s_ === Stdlib[12])  /*<<in_channel.ml:67:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_s_, 0);
+    }
+     /*<<in_channel.ml:66:9>>*/ return [0, s];
+    /*<<in_channel.ml:67:33>>*/ }
+   var
+    input = Stdlib[84],
+    cst_input_bigarray = "input_bigarray",
+    _a_ = [0, 0],
+    _b_ = [0, 0],
+    cst_really_input_bigarray = "really_input_bigarray",
+    cst_In_channel_input_all_chann =
+      "In_channel.input_all: channel content is larger than maximum string length";
+   function input_bigarray(ic, buf, ofs, len){
+     /*<<in_channel.ml:76:2>>*/ if
+     (0 <= ofs
+      &&
+       0 <= len
+       && ( /*<<in_channel.ml:76:33>>*/ caml_ba_dim_1(buf) - len | 0) >= ofs)
+      /*<<in_channel.ml:78:7>>*/ return  /*<<in_channel.ml:78:7>>*/ caml_ml_input_bigarray
+             (ic, buf, ofs, len);
+     /*<<in_channel.ml:77:7>>*/ return  /*<<in_channel.ml:77:7>>*/ caml_call1
+            (Stdlib[1], cst_input_bigarray);
+    /*<<in_channel.ml:78:43>>*/ }
+   function really_input(ic, buf, pos, len){
+     /*<<in_channel.ml:81:2>>*/ try{
+      /*<<in_channel.ml:81:8>>*/  /*<<in_channel.ml:81:8>>*/ caml_call4
+      (Stdlib[85], ic, buf, pos, len);
+      /*<<in_channel.ml:82:10>>*/ return _a_;
+    }
+    catch(_r_){
+     var _q_ = caml_wrap_exception(_r_);
+     if(_q_ === Stdlib[12])  /*<<in_channel.ml:83:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_q_, 0);
+    }
+    /*<<in_channel.ml:83:33>>*/ }
+   function really_input_bigarray(ic, buf, ofs$1, len$1){
+     /*<<in_channel.ml:94:2>>*/ if
+     (0 <= ofs$1
+      &&
+       0 <= len$1
+       &&
+        ( /*<<in_channel.ml:94:33>>*/ caml_ba_dim_1(buf) - len$1 | 0) >= ofs$1){
+     var ofs = ofs$1, len = len$1;
+      /*<<in_channel.ml:86:2>>*/ for(;;){
+      if(0 >= len)  /*<<in_channel.ml:86:19>>*/ return _b_;
+       /*<<in_channel.ml:87:12>>*/  /*<<in_channel.ml:87:12>>*/ var
+       r =
+          /*<<in_channel.ml:87:12>>*/ caml_ml_input_bigarray
+          (ic, buf, ofs, len);
+       /*<<in_channel.ml:88:4>>*/ if(0 === r)
+        /*<<in_channel.ml:89:9>>*/ return 0;
+      var len$0 = len - r | 0, ofs$0 = ofs + r | 0;
+      ofs = ofs$0;
+      len = len$0;
+     }
+    }
+     /*<<in_channel.ml:95:7>>*/ return  /*<<in_channel.ml:95:7>>*/ caml_call1
+            (Stdlib[1], cst_really_input_bigarray);
+    /*<<in_channel.ml:96:50>>*/ }
+   function really_input_string(ic, len){
+     /*<<in_channel.ml:99:2>>*/ try{
+      /*<<in_channel.ml:99:8>>*/  /*<<in_channel.ml:99:8>>*/ var
+      s =  /*<<in_channel.ml:99:8>>*/ caml_call2(Stdlib[86], ic, len);
+    }
+    catch(_p_){
+     var _o_ = caml_wrap_exception(_p_);
+     if(_o_ === Stdlib[12])  /*<<in_channel.ml:101:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_o_, 0);
+    }
+     /*<<in_channel.ml:100:9>>*/ return [0, s];
+    /*<<in_channel.ml:101:33>>*/ }
+   function read_upto(ic, buf, ofs, len){
+     /*<<in_channel.ml:106:2>>*/ var ofs$0 = ofs, len$0 = len;
+     /*<<in_channel.ml:107:4>>*/ for(;;){
+     if(0 !== len$0){
+       /*<<in_channel.ml:109:14>>*/  /*<<in_channel.ml:109:14>>*/ var
+       r =
+          /*<<in_channel.ml:109:14>>*/ caml_call4
+          (Stdlib[84], ic, buf, ofs$0, len$0);
+       /*<<in_channel.ml:110:6>>*/ if(0 !== r){
+       var len$1 = len$0 - r | 0, ofs$1 = ofs$0 + r | 0;
+       ofs$0 = ofs$1;
+       len$0 = len$1;
+       continue;
+      }
+     }
+      /*<<in_channel.ml:116:2>>*/ return ofs$0 - ofs | 0;
+    }
+    /*<<in_channel.ml:116:20>>*/ }
+   function ensure(buf, ofs, n){
+     /*<<in_channel.ml:131:2>>*/ var len = caml_ml_bytes_length(buf);
+    if((ofs + n | 0) <= len)  /*<<in_channel.ml:132:25>>*/ return buf;
+     /*<<in_channel.ml:134:18>>*/  /*<<in_channel.ml:134:18>>*/ var
+     new_len = [0, len];
+    for(;;){
+     if(new_len[1] >= (ofs + n | 0)) break;
+     new_len[1] = (2 * new_len[1] | 0) + 1 | 0;
+    }
+     /*<<in_channel.ml:148:18>>*/ var
+     new_len$0 = new_len[1],
+     new_len$1 =
+       new_len$0 <= Stdlib_Sys[12]
+        ? new_len$0
+        : ofs
+          < Stdlib_Sys[12]
+          ? Stdlib_Sys[12]
+          :  /*<<in_channel.ml:145:8>>*/ caml_call1
+            (Stdlib[2], cst_In_channel_input_all_chann),
+      /*<<in_channel.ml:148:18>>*/ new_buf =
+        /*<<in_channel.ml:148:18>>*/ caml_create_bytes(new_len$1);
+     /*<<in_channel.ml:149:4>>*/  /*<<in_channel.ml:149:4>>*/ caml_call5
+     (Stdlib_Bytes[11], buf, 0, new_buf, 0, ofs);
+     /*<<in_channel.ml:149:4>>*/ return new_buf;
+    /*<<in_channel.ml:151:5>>*/ }
+   function input_all(ic){
+     /*<<in_channel.ml:154:2>>*/  /*<<in_channel.ml:154:2>>*/ var
+     chunk_size = 65536;
+     /*<<in_channel.ml:155:2>>*/ try{
+      /*<<in_channel.ml:157:36>>*/ var
+       /*<<in_channel.ml:157:36>>*/ _k_ =
+         /*<<in_channel.ml:157:36>>*/ caml_call1(Stdlib[91], ic),
+       /*<<in_channel.ml:157:6>>*/ _l_ =
+         /*<<in_channel.ml:157:6>>*/ caml_call1(Stdlib[92], ic) - _k_ | 0,
+      initial_size = _l_;
+    }
+    catch(_n_){
+     var _i_ = caml_wrap_exception(_n_);
+     if(_i_[1] !== Stdlib[11]) throw caml_maybe_attach_backtrace(_i_, 0);
+     var initial_size = -1;
+    }
+     /*<<in_channel.ml:161:2>>*/ var
+      /*<<in_channel.ml:161:2>>*/ initial_size$0 =
+       0 <= initial_size ? initial_size : chunk_size,
+     initial_size$1 =
+       initial_size$0 <= Stdlib_Sys[12] ? initial_size$0 : Stdlib_Sys[12],
+      /*<<in_channel.ml:168:12>>*/ buf =
+        /*<<in_channel.ml:168:12>>*/ caml_create_bytes(initial_size$1),
+      /*<<in_channel.ml:169:14>>*/ nread =
+       read_upto(ic, buf, 0, initial_size$1);
+    if(nread < initial_size$1)
+      /*<<in_channel.ml:171:4>>*/ return  /*<<in_channel.ml:171:4>>*/ caml_call3
+             (Stdlib_Bytes[8], buf, 0, nread);
+     /*<<in_channel.ml:172:7>>*/ try{
+      /*<<in_channel.ml:173:10>>*/  /*<<in_channel.ml:173:10>>*/ var
+      c =  /*<<in_channel.ml:173:10>>*/ caml_call1(Stdlib[82], ic);
+    }
+    catch(_m_){
+     var _j_ = caml_wrap_exception(_m_);
+     if(_j_ === Stdlib[12])
+       /*<<in_channel.ml:176:8>>*/ return  /*<<in_channel.ml:176:8>>*/ caml_call1
+              (Stdlib_Bytes[44], buf);
+     throw caml_maybe_attach_backtrace(_j_, 0);
+    }
+     /*<<in_channel.ml:190:18>>*/  /*<<in_channel.ml:190:18>>*/ var
+     buf$2 = ensure(buf, nread, 65537);
+     /*<<in_channel.ml:191:8>>*/  /*<<in_channel.ml:191:8>>*/ runtime.caml_bytes_set
+     (buf$2, nread, c);
+     /*<<in_channel.ml:191:8>>*/ var
+      /*<<in_channel.ml:191:8>>*/ ofs$1 = nread + 1 | 0,
+     buf$0 = buf$2,
+     ofs = ofs$1;
+     /*<<in_channel.ml:180:10>>*/ for(;;){
+      /*<<in_channel.ml:180:20>>*/ var
+       /*<<in_channel.ml:180:20>>*/ buf$1 = ensure(buf$0, ofs, chunk_size),
+      rem = caml_ml_bytes_length(buf$1) - ofs | 0,
+       /*<<in_channel.ml:184:18>>*/ r = read_upto(ic, buf$1, ofs, rem);
+     if(r < rem)
+       /*<<in_channel.ml:180:20>>*/ return  /*<<in_channel.ml:180:20>>*/ caml_call3
+              (Stdlib_Bytes[8], buf$1, 0, ofs + r | 0);
+     var ofs$0 = ofs + rem | 0;
+     buf$0 = buf$1;
+     ofs = ofs$0;
+    }
+    /*<<in_channel.ml:193:5>>*/ }
+   function input_lines(ic){
+     /*<<in_channel.ml:196:2>>*/ try{
+      /*<<in_channel.ml:196:8>>*/  /*<<in_channel.ml:196:8>>*/ var
+      line =  /*<<in_channel.ml:196:8>>*/ caml_call1(Stdlib[83], ic);
+    }
+    catch(_h_){
+     var _e_ = caml_wrap_exception(_h_);
+     if(_e_ === Stdlib[12])  /*<<in_channel.ml:198:29>>*/ return 0;
+     throw caml_maybe_attach_backtrace(_e_, 0);
+    }
+     /*<<in_channel.ml:197:12>>*/ var
+      /*<<in_channel.ml:197:12>>*/ block = [0, line, 24029],
+     dst = block,
+     offset = 1;
+     /*<<in_channel.ml:196:2>>*/ for(;;){
+      /*<<in_channel.ml:196:2>>*/ try{
+       /*<<in_channel.ml:196:8>>*/  /*<<in_channel.ml:196:8>>*/ var
+       line$0 =  /*<<in_channel.ml:196:8>>*/ caml_call1(Stdlib[83], ic);
+     }
+     catch(_g_){
+      var _f_ = caml_wrap_exception(_g_);
+      if(_f_ !== Stdlib[12]) throw caml_maybe_attach_backtrace(_f_, 0);
+      dst[1 + offset] = 0;
+       /*<<in_channel.ml:197:20>>*/ return block;
+     }
+      /*<<in_channel.ml:197:12>>*/  /*<<in_channel.ml:197:12>>*/ var
+      dst$0 = [0, line$0, 24029];
+     dst[1 + offset] = dst$0;
+     dst = dst$0;
+     offset = 1;
+    }
+    /*<<in_channel.ml:198:31>>*/ }
+   function fold_lines(f, accu, ic){
+     /*<<in_channel.ml:201:2>>*/ var accu$0 = accu;
+     /*<<in_channel.ml:201:2>>*/ for(;;){
+      /*<<in_channel.ml:201:2>>*/ try{
+       /*<<in_channel.ml:201:8>>*/  /*<<in_channel.ml:201:8>>*/ var
+       line =  /*<<in_channel.ml:201:8>>*/ caml_call1(Stdlib[83], ic);
+     }
+     catch(_d_){
+      var _c_ = caml_wrap_exception(_d_);
+      if(_c_ === Stdlib[12])  /*<<in_channel.ml:203:29>>*/ return accu$0;
+      throw caml_maybe_attach_backtrace(_c_, 0);
+     }
+      /*<<in_channel.ml:202:25>>*/  /*<<in_channel.ml:202:25>>*/ var
+      accu$1 =  /*<<in_channel.ml:202:25>>*/ caml_call2(f, accu$0, line);
+     accu$0 = accu$1;
+    }
+    /*<<in_channel.ml:203:33>>*/ }
+   var
+    set_binary_mode = Stdlib[95],
+    Stdlib_In_channel =
+      [0,
+       stdin,
+       open_bin,
+       open_text,
+       open_gen,
+       with_open_bin,
+       with_open_text,
+       with_open_gen,
+       close,
+       close_noerr,
+       input_char,
+       input_byte,
+       input_line,
+       really_input_string,
+       input_all,
+       input_lines,
+       input,
+       input_bigarray,
+       really_input,
+       really_input_bigarray,
+       fold_lines,
+       seek,
+       pos,
+       length,
+       set_binary_mode,
+       runtime.caml_ml_is_binary_mode,
+       runtime.caml_sys_isatty];
+   runtime.caml_register_global(9, Stdlib_In_channel, "Stdlib__In_channel");
+   return;
+   /*<<?>>*/ }
+  (globalThis));
+
+//# unitInfo: Provides: Stdlib__Out_channel
+//# unitInfo: Requires: Stdlib, Stdlib__Fun
+(function
+  (globalThis){
+   "use strict";
+   var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
     return (f.l >= 0 ? f.l : f.l = f.length) == 1
             ? f(a0)
@@ -22330,123 +23721,398 @@
    var
     global_data = runtime.caml_get_global_data(),
     Stdlib = global_data.Stdlib,
-    Stdlib_Char = global_data.Stdlib__Char,
+    Stdlib_Fun = global_data.Stdlib__Fun,
+    stdout = Stdlib[39],
+    stderr = Stdlib[40],
+    open_bin = Stdlib[61],
+    open_text = Stdlib[60],
+    open_gen = Stdlib[62];
+   function with_open(openfun, s, f){
+     /*<<out_channel.ml:36:2>>*/  /*<<out_channel.ml:36:11>>*/ var
+     oc =  /*<<out_channel.ml:36:11>>*/ caml_call1(openfun, s);
+     /*<<out_channel.ml:38:4>>*/ return  /*<<out_channel.ml:38:4>>*/ caml_call2
+            (Stdlib_Fun[5],
+             function(param){
+               /*<<out_channel.ml:37:34>>*/ return  /*<<out_channel.ml:38:4>>*/ caml_call1
+                      (Stdlib[77], oc);
+              /*<<out_channel.ml:37:59>>*/ },
+             function(param){
+               /*<<out_channel.ml:38:15>>*/ return  /*<<out_channel.ml:37:2>>*/ caml_call1
+                      (f, oc);
+              /*<<out_channel.ml:38:19>>*/ });
+    /*<<out_channel.ml:38:20>>*/ }
+   function with_open_bin(s, f){
+     /*<<out_channel.ml:41:2>>*/ return with_open(Stdlib[61], s, f);
+    /*<<out_channel.ml:41:35>>*/ }
+   function with_open_text(s, f){
+     /*<<out_channel.ml:44:2>>*/ return with_open(Stdlib[60], s, f);
+    /*<<out_channel.ml:44:31>>*/ }
+   function with_open_gen(flags, perm, s, f){
+     /*<<out_channel.ml:47:2>>*/ return with_open
+            ( /*<<out_channel.ml:47:12>>*/ caml_call2(Stdlib[62], flags, perm),
+             s,
+             f);
+    /*<<out_channel.ml:47:48>>*/ }
+   var
+    seek = Stdlib[96][1],
+    pos = Stdlib[96][2],
+    length = Stdlib[96][3],
+    close = Stdlib[76],
+    close_noerr = Stdlib[77],
+    flush = Stdlib[63],
+    flush_all = Stdlib[64],
+    output_char = Stdlib[65],
+    output_byte = Stdlib[70],
+    output_string = Stdlib[66],
+    output_bytes = Stdlib[67],
+    output = Stdlib[68],
+    output_substring = Stdlib[69],
+    cst_output_bigarray = "output_bigarray";
+   function output_bigarray(oc, buf, ofs, len){
+     /*<<out_channel.ml:67:2>>*/ if
+     (0 <= ofs
+      &&
+       0 <= len
+       &&
+        ( /*<<out_channel.ml:67:33>>*/ runtime.caml_ba_dim_1(buf) - len | 0)
+        >= ofs)
+      /*<<out_channel.ml:69:7>>*/ return  /*<<out_channel.ml:69:7>>*/ runtime.caml_ml_output_bigarray
+             (oc, buf, ofs, len);
+     /*<<out_channel.ml:68:7>>*/ return  /*<<out_channel.ml:68:7>>*/ caml_call1
+            (Stdlib[1], cst_output_bigarray);
+    /*<<out_channel.ml:69:44>>*/ }
+   var
+    set_binary_mode = Stdlib[78],
+    Stdlib_Out_channel =
+      [0,
+       stdout,
+       stderr,
+       open_bin,
+       open_text,
+       open_gen,
+       with_open_bin,
+       with_open_text,
+       with_open_gen,
+       close,
+       close_noerr,
+       output_char,
+       output_byte,
+       output_string,
+       output_bytes,
+       output,
+       output_substring,
+       output_bigarray,
+       flush,
+       flush_all,
+       seek,
+       pos,
+       length,
+       set_binary_mode,
+       runtime.caml_ml_is_binary_mode,
+       runtime.caml_ml_set_buffered,
+       runtime.caml_ml_is_buffered,
+       runtime.caml_sys_isatty];
+   runtime.caml_register_global(3, Stdlib_Out_channel, "Stdlib__Out_channel");
+   return;
+   /*<<?>>*/ }
+  (globalThis));
+
+//# unitInfo: Provides: Stdlib__Digest
+//# unitInfo: Requires: Stdlib, Stdlib__Bytes, Stdlib__Char, Stdlib__In_channel, Stdlib__Int, Stdlib__String
+(function
+  (globalThis){
+   "use strict";
+   var
+    runtime = globalThis.jsoo_runtime,
+    cst = "",
+    cst_Digest_of_hex$1 = "Digest.of_hex",
+    cst_Digest_substring$1 = "Digest.substring",
+    cst_Digest_to_hex$1 = "Digest.to_hex",
+    caml_blake2_final = runtime.caml_blake2_final,
+    caml_blake2_string = runtime.caml_blake2_string,
+    caml_blake2_update = runtime.caml_blake2_update,
+    caml_bytes_unsafe_set = runtime.caml_bytes_unsafe_set,
+    caml_create_bytes = runtime.caml_create_bytes,
+    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
+    caml_md5_chan = runtime.caml_md5_chan,
+    caml_md5_string = runtime.caml_md5_string,
+    caml_ml_string_length = runtime.caml_ml_string_length,
+    caml_string_get = runtime.caml_string_get;
+    /*<<?>>*/ function caml_call1(f, a0){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+            ? f(a0)
+            : runtime.caml_call_gen(f, [a0]);
+   }
+    /*<<?>>*/ function caml_call2(f, a0, a1){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+            ? f(a0, a1)
+            : runtime.caml_call_gen(f, [a0, a1]);
+   }
+    /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
+    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+            ? f(a0, a1, a2, a3)
+            : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
+   }
+   var
+    global_data = runtime.caml_get_global_data(),
+    Stdlib = global_data.Stdlib,
+    Stdlib_In_channel = global_data.Stdlib__In_channel,
     Stdlib_Bytes = global_data.Stdlib__Bytes,
+    Stdlib_Int = global_data.Stdlib__Int,
     Stdlib_String = global_data.Stdlib__String,
-    compare = Stdlib_String[10],
-    equal = Stdlib_String[9],
-    cst_Digest_substring = "Digest.substring",
-    cst_Digest_to_hex = "Digest.to_hex",
-    cst_Digest_from_hex = cst_Digest_from_hex$1,
-    cst_Digest_from_hex$0 = cst_Digest_from_hex$1;
-   function string(str){
-     /*<<digest.ml:27:2>>*/ return  /*<<digest.ml:27:2>>*/ caml_md5_string
-            (str, 0, caml_ml_string_length(str));
-    /*<<digest.ml:27:41>>*/ }
-   function bytes(b){
-     /*<<digest.ml:29:14>>*/ return string
-            ( /*<<digest.ml:29:21>>*/ caml_call1(Stdlib_Bytes[44], b));
-    /*<<digest.ml:29:47>>*/ }
-   function substring(str, ofs, len){
-     /*<<digest.ml:32:2>>*/ if
-     (0 <= ofs && 0 <= len && (caml_ml_string_length(str) - len | 0) >= ofs)
-      /*<<digest.ml:34:7>>*/ return  /*<<digest.ml:34:7>>*/ caml_md5_string
-             (str, ofs, len);
-     /*<<digest.ml:33:7>>*/ return  /*<<digest.ml:33:7>>*/ caml_call1
-            (Stdlib[1], cst_Digest_substring);
-    /*<<digest.ml:34:32>>*/ }
-   function subbytes(b, ofs, len){
-     /*<<digest.ml:36:25>>*/ return substring
-            ( /*<<digest.ml:36:35>>*/ caml_call1(Stdlib_Bytes[44], b),
-             ofs,
-             len);
-    /*<<digest.ml:36:69>>*/ }
-   function file(filename){
-     /*<<digest.ml:39:2>>*/  /*<<digest.ml:39:11>>*/ var
-     ic =  /*<<digest.ml:39:11>>*/ caml_call1(Stdlib[80], filename);
-     /*<<digest.ml:40:2>>*/ try{
-      /*<<digest.ml:40:8>>*/  /*<<digest.ml:40:8>>*/ var
-      d =  /*<<digest.ml:40:8>>*/ runtime.caml_md5_chan(ic, -1);
+    Stdlib_Char = global_data.Stdlib__Char,
+    cst_Digest_of_hex = cst_Digest_of_hex$1,
+    cst_Digest_BLAKE2_wrong_hash_s = "Digest.BLAKE2: wrong hash size",
+    cst_Digest_substring = cst_Digest_substring$1,
+    cst_Digest_to_hex = cst_Digest_to_hex$1,
+    cst_Digest_of_hex$0 = cst_Digest_of_hex$1;
+   function hex_of_string(d){
+     /*<<digest.ml:19:2>>*/ function char_hex(n){
+      /*<<digest.ml:20:4>>*/ var
+      _l_ = 10 <= n ? (97 + n | 0) - 10 | 0 : 48 + n | 0;
+     return caml_call1(Stdlib_Char[1], _l_);
+     /*<<digest.ml:21:52>>*/ }
+     /*<<digest.ml:22:2>>*/ var
+      /*<<digest.ml:22:2>>*/ len =
+        /*<<digest.ml:22:2>>*/ caml_ml_string_length(d),
+      /*<<digest.ml:23:15>>*/ result =
+        /*<<digest.ml:23:15>>*/ caml_create_bytes(len * 2 | 0),
+      /*<<digest.ml:24:2>>*/ _j_ = len - 1 | 0,
+      /*<<digest.ml:23:15>>*/ _i_ = 0;
+    if(_j_ >= 0){
+     var i = _i_;
+     for(;;){
+       /*<<digest.ml:25:22>>*/  /*<<digest.ml:25:22>>*/ var
+       x =  /*<<digest.ml:25:22>>*/ caml_string_get(d, i);
+      caml_bytes_unsafe_set(result, i * 2 | 0, char_hex(x >>> 4 | 0));
+      caml_bytes_unsafe_set(result, (i * 2 | 0) + 1 | 0, char_hex(x & 15));
+       /*<<digest.ml:24:2>>*/  /*<<digest.ml:24:2>>*/ var _k_ = i + 1 | 0;
+      if(_j_ === i) break;
+      i = _k_;
+     }
     }
-    catch(e$0){
-     var e = caml_wrap_exception(e$0);
-      /*<<digest.ml:42:21>>*/  /*<<digest.ml:42:21>>*/ caml_call1
-      (Stdlib[93], ic);
-      /*<<digest.ml:42:34>>*/ throw  /*<<digest.ml:42:34>>*/ caml_maybe_attach_backtrace
-            (e, 0);
-    }
-     /*<<digest.ml:41:11>>*/  /*<<digest.ml:41:11>>*/ caml_call1
-     (Stdlib[93], ic);
-     /*<<digest.ml:41:11>>*/ return d;
-    /*<<digest.ml:42:41>>*/ }
-   function output(chan, digest){
-     /*<<digest.ml:45:2>>*/ return  /*<<digest.ml:45:2>>*/ caml_call2
-            (Stdlib[66], chan, digest);
-    /*<<digest.ml:45:27>>*/ }
-   function input(chan){
-     /*<<digest.ml:47:17>>*/ return  /*<<digest.ml:47:17>>*/ caml_call2
-            (Stdlib[86], chan, 16);
-    /*<<digest.ml:47:44>>*/ }
-   function char_hex(n){
-     /*<<digest.ml:50:2>>*/ var _e_ = 10 <= n ? 87 : 48;
-    return n + _e_ | 0;
-    /*<<digest.ml:50:78>>*/ }
-   function to_hex(d){
-     /*<<digest.ml:53:2>>*/ if(16 !== caml_ml_string_length(d))
-      /*<<digest.ml:53:32>>*/  /*<<digest.ml:53:32>>*/ caml_call1
-      (Stdlib[1], cst_Digest_to_hex);
-     /*<<digest.ml:54:15>>*/ var
-      /*<<digest.ml:54:15>>*/ result =
-        /*<<digest.ml:54:15>>*/ caml_create_bytes(32),
-     i = 0;
-    for(;;){
-      /*<<digest.ml:56:22>>*/  /*<<digest.ml:56:22>>*/ var
-      x =  /*<<digest.ml:56:22>>*/ caml_string_get(d, i);
-     caml_bytes_unsafe_set(result, i * 2 | 0, char_hex(x >>> 4 | 0));
-     caml_bytes_unsafe_set(result, (i * 2 | 0) + 1 | 0, char_hex(x & 15));
-      /*<<digest.ml:55:2>>*/  /*<<digest.ml:55:2>>*/ var _d_ = i + 1 | 0;
-     if(15 === i)
-       /*<<digest.ml:60:2>>*/ return  /*<<digest.ml:60:2>>*/ caml_call1
-              (Stdlib_Bytes[44], result);
-     i = _d_;
-    }
-    /*<<digest.ml:60:31>>*/ }
-   function from_hex(s){
-     /*<<digest.ml:63:2>>*/ if(32 !== caml_ml_string_length(s))
-      /*<<digest.ml:63:32>>*/  /*<<digest.ml:63:32>>*/ caml_call1
-      (Stdlib[1], cst_Digest_from_hex);
-     /*<<digest.ml:63:32>>*/ function digit(c){
-      /*<<digest.ml:65:4>>*/ if(65 <= c){
+     /*<<digest.ml:29:2>>*/ return  /*<<digest.ml:29:2>>*/ caml_call1
+            (Stdlib_Bytes[44], result);
+    /*<<digest.ml:29:31>>*/ }
+   function string_of_hex(s){
+     /*<<digest.ml:32:2>>*/ function digit(c){
+      /*<<digest.ml:33:4>>*/ if(65 <= c){
       if(97 <= c){
        if(103 > c) return (c - 97 | 0) + 10 | 0;
       }
       else if(71 > c) return (c - 65 | 0) + 10 | 0;
      }
      else if(9 >= c - 48 >>> 0) return c - 48 | 0;
-      /*<<digest.ml:69:11>>*/ throw  /*<<digest.ml:69:11>>*/ caml_maybe_attach_backtrace
-            ([0, Stdlib[6], cst_Digest_from_hex$0], 1);
-     /*<<digest.ml:69:53>>*/ }
-     /*<<digest.ml:72:15>>*/ var
-      /*<<digest.ml:72:15>>*/ result =
-        /*<<digest.ml:72:15>>*/ caml_create_bytes(16),
-     i = 0;
-    for(;;){
-      /*<<digest.ml:71:35>>*/ var
-      i$0 = 2 * i | 0,
-       /*<<digest.ml:71:35>>*/ _a_ =
-        digit( /*<<digest.ml:71:41>>*/ caml_string_get(s, i$0 + 1 | 0)),
-      _b_ =
-        (digit( /*<<digest.ml:71:21>>*/ caml_string_get(s, i$0)) << 4) + _a_
-        | 0;
-      /*<<digest.ml:74:4>>*/  /*<<digest.ml:74:4>>*/ runtime.caml_bytes_set
-      (result, i,  /*<<digest.ml:74:23>>*/ caml_call1(Stdlib_Char[1], _b_));
-      /*<<digest.ml:74:4>>*/  /*<<digest.ml:74:4>>*/ var _c_ = i + 1 | 0;
-     if(15 === i)
-       /*<<digest.ml:76:2>>*/ return  /*<<digest.ml:76:2>>*/ caml_call1
-              (Stdlib_Bytes[44], result);
-     i = _c_;
-    }
-    /*<<digest.ml:76:31>>*/ }
+      /*<<digest.ml:37:11>>*/ return  /*<<digest.ml:37:11>>*/ caml_call1
+             (Stdlib[1], cst_Digest_of_hex);
+     /*<<digest.ml:37:38>>*/ }
+     /*<<digest.ml:39:36>>*/ return  /*<<digest.ml:39:36>>*/ caml_call2
+            (Stdlib_String[2],
+             caml_ml_string_length(s) / 2 | 0,
+             function(i){
+               /*<<digest.ml:39:46>>*/ var
+               i$0 = 2 * i | 0,
+                /*<<digest.ml:38:35>>*/ _g_ =
+                 digit
+                  ( /*<<digest.ml:38:41>>*/ caml_string_get(s, i$0 + 1 | 0)),
+               _h_ =
+                 (digit( /*<<digest.ml:38:21>>*/ caml_string_get(s, i$0))
+                 << 4)
+                 + _g_
+                 | 0;
+               /*<<digest.ml:39:55>>*/ return  /*<<digest.ml:39:55>>*/ caml_call1
+                      (Stdlib_Char[1], _h_);
+              /*<<digest.ml:39:69>>*/ });
+    /*<<digest.ml:39:70>>*/ }
+   function BLAKE2(X){
+    var _a_ = X[1] < 1 ? 1 : 0, _b_ = _a_ || (64 < X[1] ? 1 : 0);
+    if(_b_)
+      /*<<digest.ml:68:9>>*/  /*<<digest.ml:68:9>>*/ caml_call1
+      (Stdlib[1], cst_Digest_BLAKE2_wrong_hash_s);
+    var
+     hash_length = X[1],
+     compare = Stdlib_String[10],
+     equal = Stdlib_String[9];
+    function string(str){
+      /*<<digest.ml:85:4>>*/ return  /*<<digest.ml:85:4>>*/ caml_blake2_string
+             (hash_length, cst, str, 0, caml_ml_string_length(str));
+     /*<<digest.ml:85:58>>*/ }
+    function bytes(b){
+      /*<<digest.ml:88:4>>*/ return string
+             ( /*<<digest.ml:88:11>>*/ caml_call1(Stdlib_Bytes[44], b));
+     /*<<digest.ml:88:37>>*/ }
+    function substring(str, ofs, len){
+      /*<<digest.ml:91:4>>*/ var _d_ = ofs < 0 ? 1 : 0;
+     if(_d_)
+      var _e_ = _d_;
+     else
+      var
+       _f_ = len < 0 ? 1 : 0,
+       _e_ = _f_ || ((caml_ml_string_length(str) - len | 0) < ofs ? 1 : 0);
+     if(_e_)
+       /*<<digest.ml:92:9>>*/  /*<<digest.ml:92:9>>*/ caml_call1
+       (Stdlib[1], cst_Digest_substring);
+      /*<<digest.ml:93:4>>*/ return  /*<<digest.ml:93:4>>*/ caml_blake2_string
+             (hash_length, cst, str, ofs, len);
+     /*<<digest.ml:93:44>>*/ }
+    function subbytes(b, ofs, len){
+      /*<<digest.ml:96:4>>*/ return substring
+             ( /*<<digest.ml:96:14>>*/ caml_call1(Stdlib_Bytes[44], b),
+              ofs,
+              len);
+     /*<<digest.ml:96:48>>*/ }
+    function channel(ic, toread){
+      /*<<digest.ml:99:4>>*/ var
+       /*<<digest.ml:99:4>>*/ buf_size = 4096,
+       /*<<digest.ml:100:14>>*/ buf =
+         /*<<digest.ml:100:14>>*/ caml_create_bytes(4096),
+       /*<<digest.ml:82:18>>*/ ctx =
+         /*<<digest.ml:82:18>>*/ runtime.caml_blake2_create(hash_length, cst);
+      /*<<digest.ml:102:4>>*/ if(0 <= toread){
+      var toread$0 = toread;
+       /*<<digest.ml:111:8>>*/ for(;;){
+       if(0 === toread$0)
+         /*<<digest.ml:111:27>>*/ return  /*<<digest.ml:111:27>>*/ caml_blake2_final
+                (ctx, hash_length);
+        /*<<digest.ml:112:44>>*/ var
+         /*<<digest.ml:112:44>>*/ _c_ =
+           /*<<digest.ml:112:44>>*/ caml_call2
+           (Stdlib_Int[10], buf_size, toread$0),
+         /*<<digest.ml:112:18>>*/ n =
+           /*<<digest.ml:112:18>>*/ caml_call4
+           (Stdlib_In_channel[16], ic, buf, 0, _c_);
+        /*<<digest.ml:113:10>>*/ if(0 === n)
+         /*<<digest.ml:114:15>>*/ throw  /*<<digest.ml:114:15>>*/ caml_maybe_attach_backtrace
+               (Stdlib[12], 1);
+        /*<<digest.ml:116:12>>*/  /*<<digest.ml:116:12>>*/ caml_blake2_update
+        (ctx,
+          /*<<digest.ml:116:23>>*/ caml_call1(Stdlib_Bytes[44], buf),
+         0,
+         n);
+       var toread$1 = toread$0 - n | 0;
+       toread$0 = toread$1;
+      }
+     }
+     else
+       /*<<digest.ml:104:8>>*/ for(;;){
+        /*<<digest.ml:104:16>>*/  /*<<digest.ml:104:16>>*/ var
+        n$0 =
+           /*<<digest.ml:104:16>>*/ caml_call4
+           (Stdlib_In_channel[16], ic, buf, 0, buf_size);
+        /*<<digest.ml:105:8>>*/ if(0 === n$0)
+         /*<<digest.ml:106:13>>*/ return  /*<<digest.ml:106:13>>*/ caml_blake2_final
+                (ctx, hash_length);
+        /*<<digest.ml:107:14>>*/  /*<<digest.ml:107:14>>*/ caml_blake2_update
+        (ctx,
+          /*<<digest.ml:107:25>>*/ caml_call1(Stdlib_Bytes[44], buf),
+         0,
+         n$0);
+      }
+     /*<<digest.ml:121:7>>*/ }
+    function file(filename){
+      /*<<digest.ml:124:4>>*/ return  /*<<digest.ml:124:38>>*/ caml_call2
+             (Stdlib_In_channel[5],
+              filename,
+              function(ic){
+                /*<<digest.ml:124:49>>*/ return channel(ic, -1);
+               /*<<digest.ml:124:64>>*/ });
+     /*<<digest.ml:124:65>>*/ }
+    function output(chan, digest){
+      /*<<digest.ml:126:27>>*/ return  /*<<digest.ml:126:27>>*/ caml_call2
+             (Stdlib[66], chan, digest);
+     /*<<digest.ml:126:52>>*/ }
+    function input(chan){
+      /*<<digest.ml:128:19>>*/ return caml_call2
+             (Stdlib[86], chan, hash_length);
+     /*<<digest.ml:128:55>>*/ }
+    function to_hex(d){
+      /*<<digest.ml:131:4>>*/ if(caml_ml_string_length(d) !== hash_length)
+       /*<<digest.ml:131:43>>*/  /*<<digest.ml:131:43>>*/ caml_call1
+       (Stdlib[1], cst_Digest_to_hex);
+      /*<<digest.ml:131:43>>*/ return hex_of_string(d);
+     /*<<digest.ml:132:19>>*/ }
+    function of_hex(s){
+      /*<<digest.ml:135:4>>*/ if
+      (caml_ml_string_length(s) !== (hash_length * 2 | 0))
+       /*<<digest.ml:135:47>>*/  /*<<digest.ml:135:47>>*/ caml_call1
+       (Stdlib[1], cst_Digest_of_hex$0);
+      /*<<digest.ml:135:47>>*/ return string_of_hex(s);
+     /*<<digest.ml:136:19>>*/ }
+     /*<<digest.ml:62:55>>*/ return [0,
+            hash_length,
+            compare,
+            equal,
+            string,
+            bytes,
+            substring,
+            subbytes,
+            channel,
+            file,
+            output,
+            input,
+            to_hex,
+            of_hex];
+   }
+   var
+    BLAKE128 = BLAKE2([0, 16]),
+    BLAKE256 = BLAKE2([0, 32]),
+    BLAKE512 = BLAKE2([0, 64]),
+    compare = Stdlib_String[10],
+    equal = Stdlib_String[9],
+    cst_Digest_substring$0 = cst_Digest_substring$1,
+    cst_Digest_to_hex$0 = cst_Digest_to_hex$1,
+    cst_Digest_from_hex = "Digest.from_hex";
+   function string(str){
+     /*<<digest.ml:159:4>>*/ return  /*<<digest.ml:159:4>>*/ caml_md5_string
+            (str, 0, caml_ml_string_length(str));
+    /*<<digest.ml:159:43>>*/ }
+   function bytes(b){
+     /*<<digest.ml:161:16>>*/ return string
+            ( /*<<digest.ml:161:23>>*/ caml_call1(Stdlib_Bytes[44], b));
+    /*<<digest.ml:161:49>>*/ }
+   function substring(str, ofs, len){
+     /*<<digest.ml:164:4>>*/ if
+     (0 <= ofs && 0 <= len && (caml_ml_string_length(str) - len | 0) >= ofs)
+      /*<<digest.ml:166:9>>*/ return  /*<<digest.ml:166:9>>*/ caml_md5_string
+             (str, ofs, len);
+     /*<<digest.ml:165:9>>*/ return  /*<<digest.ml:165:9>>*/ caml_call1
+            (Stdlib[1], cst_Digest_substring$0);
+    /*<<digest.ml:166:34>>*/ }
+   function subbytes(b, ofs, len){
+     /*<<digest.ml:168:27>>*/ return substring
+            ( /*<<digest.ml:168:37>>*/ caml_call1(Stdlib_Bytes[44], b),
+             ofs,
+             len);
+    /*<<digest.ml:168:71>>*/ }
+   function file(filename){
+     /*<<digest.ml:171:4>>*/ return  /*<<digest.ml:171:38>>*/ caml_call2
+            (Stdlib_In_channel[5],
+             filename,
+             function(ic){
+               /*<<digest.ml:171:49>>*/ return  /*<<digest.ml:171:49>>*/ caml_md5_chan
+                      (ic, -1);
+              /*<<digest.ml:171:64>>*/ });
+    /*<<digest.ml:171:65>>*/ }
+   function output(chan, digest){
+     /*<<digest.ml:173:27>>*/ return  /*<<digest.ml:173:27>>*/ caml_call2
+            (Stdlib[66], chan, digest);
+    /*<<digest.ml:173:52>>*/ }
+   function input(chan){
+     /*<<digest.ml:175:19>>*/ return  /*<<digest.ml:175:19>>*/ caml_call2
+            (Stdlib[86], chan, 16);
+    /*<<digest.ml:175:46>>*/ }
+   function to_hex(d){
+     /*<<digest.ml:178:4>>*/ if(16 !== caml_ml_string_length(d))
+      /*<<digest.ml:178:34>>*/  /*<<digest.ml:178:34>>*/ caml_call1
+      (Stdlib[1], cst_Digest_to_hex$0);
+     /*<<digest.ml:178:34>>*/ return hex_of_string(d);
+    /*<<digest.ml:179:19>>*/ }
+   function of_hex(s){
+     /*<<digest.ml:182:4>>*/ if(32 !== caml_ml_string_length(s))
+      /*<<digest.ml:182:34>>*/  /*<<digest.ml:182:34>>*/ caml_call1
+      (Stdlib[1], cst_Digest_from_hex);
+     /*<<digest.ml:182:34>>*/ return string_of_hex(s);
+    /*<<digest.ml:183:19>>*/ }
    var
     Stdlib_Digest =
       [0,
@@ -22456,12 +24122,31 @@
        bytes,
        substring,
        subbytes,
+       caml_md5_chan,
        file,
        output,
        input,
        to_hex,
-       from_hex];
-   runtime.caml_register_global(8, Stdlib_Digest, "Stdlib__Digest");
+       of_hex,
+       of_hex,
+       BLAKE128,
+       BLAKE256,
+       BLAKE512,
+       [0,
+        16,
+        compare,
+        equal,
+        string,
+        bytes,
+        substring,
+        subbytes,
+        caml_md5_chan,
+        file,
+        output,
+        input,
+        to_hex,
+        of_hex]];
+   runtime.caml_register_global(17, Stdlib_Digest, "Stdlib__Digest");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -22514,30 +24199,32 @@
    function kind_size_in_bytes(param){
      /*<<?>>*/ switch(param){
       case 0:
-        /*<<bigarray.ml:74:15>>*/ return 4;
+        /*<<bigarray.ml:78:15>>*/ return 4;
       case 1:
-        /*<<bigarray.ml:75:15>>*/ return 8;
+        /*<<bigarray.ml:79:15>>*/ return 8;
       case 2:
-        /*<<bigarray.ml:76:19>>*/ return 1;
+        /*<<bigarray.ml:80:19>>*/ return 1;
       case 3:
-        /*<<bigarray.ml:77:21>>*/ return 1;
+        /*<<bigarray.ml:81:21>>*/ return 1;
       case 4:
-        /*<<bigarray.ml:78:20>>*/ return 2;
+        /*<<bigarray.ml:82:20>>*/ return 2;
       case 5:
-        /*<<bigarray.ml:79:22>>*/ return 2;
+        /*<<bigarray.ml:83:22>>*/ return 2;
       case 6:
-        /*<<bigarray.ml:80:13>>*/ return 4;
+        /*<<bigarray.ml:84:13>>*/ return 4;
       case 7:
-        /*<<bigarray.ml:81:13>>*/ return 8;
+        /*<<bigarray.ml:85:13>>*/ return 8;
       case 8:
        return Stdlib_Sys[9] / 8 | 0;
       case 9:
        return Stdlib_Sys[9] / 8 | 0;
       case 10:
-        /*<<bigarray.ml:84:17>>*/ return 8;
+        /*<<bigarray.ml:88:17>>*/ return 8;
       case 11:
-        /*<<bigarray.ml:85:17>>*/ return 16;
-      default:  /*<<bigarray.ml:86:12>>*/ return 1;
+        /*<<bigarray.ml:89:17>>*/ return 16;
+      case 12:
+        /*<<bigarray.ml:90:12>>*/ return 1;
+      default:  /*<<bigarray.ml:77:15>>*/ return 2;
     }
    }
    var
@@ -22550,546 +24237,547 @@
     cst_Bigarray_array2_of_genarra = "Bigarray.array2_of_genarray",
     cst_Bigarray_array3_of_genarra = "Bigarray.array3_of_genarray";
    function cloop(arr, idx, f, col, max){
-     /*<<bigarray.ml:104:4>>*/ if(col === idx.length - 1){
-      /*<<bigarray.ml:104:35>>*/  /*<<bigarray.ml:104:35>>*/ caml_ba_set_generic
-      (arr, idx,  /*<<bigarray.ml:104:47>>*/ caml_call1(f, idx));
-      /*<<bigarray.ml:104:35>>*/ return;
+     /*<<bigarray.ml:108:4>>*/ if(col === idx.length - 1){
+      /*<<bigarray.ml:108:35>>*/  /*<<bigarray.ml:108:35>>*/ caml_ba_set_generic
+      (arr, idx,  /*<<bigarray.ml:108:47>>*/ caml_call1(f, idx));
+      /*<<bigarray.ml:108:35>>*/ return;
     }
-     /*<<bigarray.ml:105:27>>*/ var
-      /*<<bigarray.ml:105:27>>*/ _am_ =
+     /*<<bigarray.ml:109:27>>*/ var
+      /*<<bigarray.ml:109:27>>*/ _am_ =
        caml_check_bound(max, col)[1 + col] - 1 | 0,
-      /*<<bigarray.ml:105:9>>*/ _al_ = 0;
+      /*<<bigarray.ml:109:9>>*/ _al_ = 0;
     if(_am_ >= 0){
      var j = _al_;
      for(;;){
-       /*<<bigarray.ml:106:11>>*/ caml_check_bound(idx, col)[1 + col] = j;
-       /*<<bigarray.ml:107:11>>*/ cloop(arr, idx, f, col + 1 | 0, max);
-       /*<<bigarray.ml:107:11>>*/  /*<<bigarray.ml:107:11>>*/ var
+       /*<<bigarray.ml:110:11>>*/ caml_check_bound(idx, col)[1 + col] = j;
+       /*<<bigarray.ml:111:11>>*/ cloop(arr, idx, f, col + 1 | 0, max);
+       /*<<bigarray.ml:111:11>>*/  /*<<bigarray.ml:111:11>>*/ var
        _an_ = j + 1 | 0;
       if(_am_ === j) break;
       j = _an_;
      }
     }
     return;
-    /*<<bigarray.ml:108:13>>*/ }
+    /*<<bigarray.ml:112:13>>*/ }
    function floop(arr, idx, f, col, max){
-     /*<<bigarray.ml:110:4>>*/ if(0 > col){
-      /*<<bigarray.ml:110:20>>*/  /*<<bigarray.ml:110:20>>*/ caml_ba_set_generic
-      (arr, idx,  /*<<bigarray.ml:110:32>>*/ caml_call1(f, idx));
-      /*<<bigarray.ml:110:20>>*/ return;
+     /*<<bigarray.ml:114:4>>*/ if(0 > col){
+      /*<<bigarray.ml:114:20>>*/  /*<<bigarray.ml:114:20>>*/ caml_ba_set_generic
+      (arr, idx,  /*<<bigarray.ml:114:32>>*/ caml_call1(f, idx));
+      /*<<bigarray.ml:114:20>>*/ return;
     }
-     /*<<bigarray.ml:111:22>>*/ var
-      /*<<bigarray.ml:111:22>>*/ _aj_ = caml_check_bound(max, col)[1 + col],
-      /*<<bigarray.ml:111:9>>*/ _ai_ = 1;
+     /*<<bigarray.ml:115:22>>*/ var
+      /*<<bigarray.ml:115:22>>*/ _aj_ = caml_check_bound(max, col)[1 + col],
+      /*<<bigarray.ml:115:9>>*/ _ai_ = 1;
     if(_aj_ >= 1){
      var j = _ai_;
      for(;;){
-       /*<<bigarray.ml:112:11>>*/ caml_check_bound(idx, col)[1 + col] = j;
-       /*<<bigarray.ml:113:11>>*/ floop(arr, idx, f, col - 1 | 0, max);
-       /*<<bigarray.ml:113:11>>*/  /*<<bigarray.ml:113:11>>*/ var
+       /*<<bigarray.ml:116:11>>*/ caml_check_bound(idx, col)[1 + col] = j;
+       /*<<bigarray.ml:117:11>>*/ floop(arr, idx, f, col - 1 | 0, max);
+       /*<<bigarray.ml:117:11>>*/  /*<<bigarray.ml:117:11>>*/ var
        _ak_ = j + 1 | 0;
       if(_aj_ === j) break;
       j = _ak_;
      }
     }
     return;
-    /*<<bigarray.ml:114:13>>*/ }
+    /*<<bigarray.ml:118:13>>*/ }
    function init(kind, layout, dims, f){
-     /*<<bigarray.ml:116:4>>*/ var
-      /*<<bigarray.ml:116:14>>*/ arr =
-        /*<<bigarray.ml:116:14>>*/ caml_ba_create(kind, layout, dims),
-      /*<<bigarray.ml:117:4>>*/ dlen = dims.length - 1;
-     /*<<bigarray.ml:118:4>>*/ return layout
+     /*<<bigarray.ml:120:4>>*/ var
+      /*<<bigarray.ml:120:14>>*/ arr =
+        /*<<bigarray.ml:120:14>>*/ caml_ba_create(kind, layout, dims),
+      /*<<bigarray.ml:121:4>>*/ dlen = dims.length - 1;
+     /*<<bigarray.ml:122:4>>*/ return layout
             ? (floop
                (arr,
-                 /*<<bigarray.ml:120:34>>*/ caml_make_vect(dlen, 1),
+                 /*<<bigarray.ml:124:34>>*/ caml_make_vect(dlen, 1),
                 f,
                 dlen - 1 | 0,
                 dims),
               arr)
             : (cloop
                (arr,
-                 /*<<bigarray.ml:119:28>>*/ caml_make_vect(dlen, 0),
+                 /*<<bigarray.ml:123:28>>*/ caml_make_vect(dlen, 0),
                 f,
                 0,
                 dims),
               arr);
-    /*<<bigarray.ml:120:77>>*/ }
+    /*<<bigarray.ml:124:77>>*/ }
    function dims(a){
-     /*<<bigarray.ml:125:4>>*/ var
-      /*<<bigarray.ml:125:12>>*/ n =
-        /*<<bigarray.ml:125:12>>*/ caml_ba_num_dims(a),
-      /*<<bigarray.ml:126:12>>*/ d =
-        /*<<bigarray.ml:126:12>>*/ caml_make_vect(n, 0),
-      /*<<bigarray.ml:127:4>>*/ _af_ = n - 1 | 0,
-      /*<<bigarray.ml:126:12>>*/ _ae_ = 0;
+     /*<<bigarray.ml:129:4>>*/ var
+      /*<<bigarray.ml:129:12>>*/ n =
+        /*<<bigarray.ml:129:12>>*/ caml_ba_num_dims(a),
+      /*<<bigarray.ml:130:12>>*/ d =
+        /*<<bigarray.ml:130:12>>*/ caml_make_vect(n, 0),
+      /*<<bigarray.ml:131:4>>*/ _af_ = n - 1 | 0,
+      /*<<bigarray.ml:130:12>>*/ _ae_ = 0;
     if(_af_ >= 0){
      var i = _ae_;
      for(;;){
-       /*<<bigarray.ml:127:33>>*/  /*<<bigarray.ml:127:33>>*/ var
-       _ag_ =  /*<<bigarray.ml:127:33>>*/ runtime.caml_ba_dim(a, i);
-       /*<<bigarray.ml:127:24>>*/ caml_check_bound(d, i)[1 + i] = _ag_;
-       /*<<bigarray.ml:127:24>>*/  /*<<bigarray.ml:127:24>>*/ var
+       /*<<bigarray.ml:131:33>>*/  /*<<bigarray.ml:131:33>>*/ var
+       _ag_ =  /*<<bigarray.ml:131:33>>*/ runtime.caml_ba_dim(a, i);
+       /*<<bigarray.ml:131:24>>*/ caml_check_bound(d, i)[1 + i] = _ag_;
+       /*<<bigarray.ml:131:24>>*/  /*<<bigarray.ml:131:24>>*/ var
        _ah_ = i + 1 | 0;
       if(_af_ === i) break;
       i = _ah_;
      }
     }
-     /*<<bigarray.ml:128:4>>*/ return d;
-    /*<<bigarray.ml:128:5>>*/ }
+     /*<<bigarray.ml:132:4>>*/ return d;
+    /*<<bigarray.ml:132:5>>*/ }
    function size_in_bytes(arr){
-     /*<<bigarray.ml:136:4>>*/ var
-      /*<<bigarray.ml:136:63>>*/ _ac_ = dims(arr),
-      /*<<bigarray.ml:136:38>>*/ _ad_ =
-        /*<<bigarray.ml:136:38>>*/ caml_call3
-        (Stdlib_Array[17], caml_mul, 1, _ac_);
-     /*<<bigarray.ml:136:4>>*/ return  /*<<bigarray.ml:136:4>>*/ caml_mul
-            (kind_size_in_bytes( /*<<bigarray.ml:136:24>>*/ caml_ba_kind(arr)),
+     /*<<bigarray.ml:140:4>>*/ var
+      /*<<bigarray.ml:140:63>>*/ _ac_ = dims(arr),
+      /*<<bigarray.ml:140:38>>*/ _ad_ =
+        /*<<bigarray.ml:140:38>>*/ caml_call3
+        (Stdlib_Array[18], caml_mul, 1, _ac_);
+     /*<<bigarray.ml:140:4>>*/ return  /*<<bigarray.ml:140:4>>*/ caml_mul
+            (kind_size_in_bytes( /*<<bigarray.ml:140:24>>*/ caml_ba_kind(arr)),
              _ad_);
-    /*<<bigarray.ml:136:74>>*/ }
+    /*<<bigarray.ml:140:74>>*/ }
    function create(kind, layout){
-     /*<<bigarray.ml:157:4>>*/ return  /*<<bigarray.ml:157:4>>*/ caml_ba_create
+     /*<<bigarray.ml:161:4>>*/ return  /*<<bigarray.ml:161:4>>*/ caml_ba_create
             (kind, layout, [0]);
-    /*<<bigarray.ml:157:36>>*/ }
+    /*<<bigarray.ml:161:36>>*/ }
    function get(arr){
-     /*<<bigarray.ml:158:16>>*/ return  /*<<bigarray.ml:158:16>>*/ runtime.caml_ba_get_generic
+     /*<<bigarray.ml:162:16>>*/ return  /*<<bigarray.ml:162:16>>*/ runtime.caml_ba_get_generic
             (arr, [0]);
-    /*<<bigarray.ml:158:37>>*/ }
+    /*<<bigarray.ml:162:37>>*/ }
    function set(arr){
-     /*<<bigarray.ml:159:16>>*/  /*<<bigarray.ml:159:16>>*/ var _aa_ = [0];
-     /*<<bigarray.ml:159:33>>*/ return function(_ab_){
+     /*<<bigarray.ml:163:16>>*/  /*<<bigarray.ml:163:16>>*/ var _aa_ = [0];
+     /*<<bigarray.ml:163:33>>*/ return function(_ab_){
       /*<<?>>*/ return caml_ba_set_generic(arr, _aa_, _ab_);};
-    /*<<bigarray.ml:159:37>>*/ }
+    /*<<bigarray.ml:163:37>>*/ }
    function size_in_bytes$0(arr){
-     /*<<bigarray.ml:166:26>>*/ return kind_size_in_bytes
-            ( /*<<bigarray.ml:166:45>>*/ caml_ba_kind(arr));
-    /*<<bigarray.ml:166:55>>*/ }
+     /*<<bigarray.ml:170:26>>*/ return kind_size_in_bytes
+            ( /*<<bigarray.ml:170:45>>*/ caml_ba_kind(arr));
+    /*<<bigarray.ml:170:55>>*/ }
    function of_value(kind, layout, v){
-     /*<<bigarray.ml:172:4>>*/  /*<<bigarray.ml:172:12>>*/ var
+     /*<<bigarray.ml:176:4>>*/  /*<<bigarray.ml:176:12>>*/ var
      a = create(kind, layout);
-     /*<<bigarray.ml:173:4>>*/ set(a)(v);
-     /*<<bigarray.ml:173:4>>*/ return a;
-    /*<<bigarray.ml:174:5>>*/ }
+     /*<<bigarray.ml:177:4>>*/ set(a)(v);
+     /*<<bigarray.ml:177:4>>*/ return a;
+    /*<<bigarray.ml:178:5>>*/ }
    function create$0(kind, layout, dim){
-     /*<<bigarray.ml:181:4>>*/ return  /*<<bigarray.ml:181:4>>*/ caml_ba_create
+     /*<<bigarray.ml:185:4>>*/ return  /*<<bigarray.ml:185:4>>*/ caml_ba_create
             (kind, layout, [0, dim]);
-    /*<<bigarray.ml:181:39>>*/ }
+    /*<<bigarray.ml:185:39>>*/ }
    function size_in_bytes$1(arr){
-     /*<<bigarray.ml:195:4>>*/  /*<<bigarray.ml:195:38>>*/ var
-     _$_ =  /*<<bigarray.ml:195:38>>*/ caml_ba_dim_1(arr);
-     /*<<bigarray.ml:195:4>>*/ return  /*<<bigarray.ml:195:4>>*/ caml_mul
-            (kind_size_in_bytes( /*<<bigarray.ml:195:24>>*/ caml_ba_kind(arr)),
+     /*<<bigarray.ml:199:4>>*/  /*<<bigarray.ml:199:38>>*/ var
+     _$_ =  /*<<bigarray.ml:199:38>>*/ caml_ba_dim_1(arr);
+     /*<<bigarray.ml:199:4>>*/ return  /*<<bigarray.ml:199:4>>*/ caml_mul
+            (kind_size_in_bytes( /*<<bigarray.ml:199:24>>*/ caml_ba_kind(arr)),
              _$_);
-    /*<<bigarray.ml:195:47>>*/ }
+    /*<<bigarray.ml:199:47>>*/ }
    function slice(a, n){
-     /*<<bigarray.ml:199:4>>*/ return  /*<<bigarray.ml:199:10>>*/ runtime.caml_ba_layout
+     /*<<bigarray.ml:203:4>>*/ return  /*<<bigarray.ml:203:10>>*/ runtime.caml_ba_layout
              (a)
-            ?  /*<<bigarray.ml:201:25>>*/ caml_ba_slice(a, [0, n])
-            :  /*<<bigarray.ml:200:19>>*/ caml_ba_slice(a, [0, n]);
-    /*<<bigarray.ml:201:76>>*/ }
+            ?  /*<<bigarray.ml:205:25>>*/ caml_ba_slice(a, [0, n])
+            :  /*<<bigarray.ml:204:19>>*/ caml_ba_slice(a, [0, n]);
+    /*<<bigarray.ml:205:76>>*/ }
    function init$0(kind, layout, dim, f){
-     /*<<bigarray.ml:209:4>>*/  /*<<bigarray.ml:209:14>>*/ var
+     /*<<bigarray.ml:213:4>>*/  /*<<bigarray.ml:213:14>>*/ var
      arr = create$0(kind, layout, dim);
-     /*<<bigarray.ml:210:4>>*/ if(layout){
-      /*<<bigarray.ml:207:4>>*/  /*<<bigarray.ml:207:4>>*/ var _Z_ = 1;
+     /*<<bigarray.ml:214:4>>*/ if(layout){
+      /*<<bigarray.ml:211:4>>*/  /*<<bigarray.ml:211:4>>*/ var _Z_ = 1;
      if(dim >= 1){
       var i$0 = _Z_;
       for(;;){
-        /*<<bigarray.ml:207:24>>*/  /*<<bigarray.ml:207:24>>*/ caml_ba_set_1
-        (arr, i$0,  /*<<bigarray.ml:207:41>>*/ caml_call1(f, i$0));
-        /*<<bigarray.ml:207:24>>*/  /*<<bigarray.ml:207:24>>*/ var
+        /*<<bigarray.ml:211:24>>*/  /*<<bigarray.ml:211:24>>*/ caml_ba_set_1
+        (arr, i$0,  /*<<bigarray.ml:211:41>>*/ caml_call1(f, i$0));
+        /*<<bigarray.ml:211:24>>*/  /*<<bigarray.ml:211:24>>*/ var
         ___ = i$0 + 1 | 0;
        if(dim === i$0) break;
        i$0 = ___;
       }
      }
-      /*<<bigarray.ml:212:24>>*/ return arr;
+      /*<<bigarray.ml:216:24>>*/ return arr;
     }
-     /*<<bigarray.ml:205:4>>*/ var
+     /*<<bigarray.ml:209:4>>*/ var
      _X_ = dim - 1 | 0,
-      /*<<bigarray.ml:205:4>>*/ _W_ = 0;
+      /*<<bigarray.ml:209:4>>*/ _W_ = 0;
     if(_X_ >= 0){
      var i = _W_;
      for(;;){
-       /*<<bigarray.ml:205:29>>*/  /*<<bigarray.ml:205:29>>*/ caml_ba_set_1
-       (arr, i,  /*<<bigarray.ml:205:46>>*/ caml_call1(f, i));
-       /*<<bigarray.ml:205:29>>*/  /*<<bigarray.ml:205:29>>*/ var
+       /*<<bigarray.ml:209:29>>*/  /*<<bigarray.ml:209:29>>*/ caml_ba_set_1
+       (arr, i,  /*<<bigarray.ml:209:46>>*/ caml_call1(f, i));
+       /*<<bigarray.ml:209:29>>*/  /*<<bigarray.ml:209:29>>*/ var
        _Y_ = i + 1 | 0;
       if(_X_ === i) break;
       i = _Y_;
      }
     }
-     /*<<bigarray.ml:211:18>>*/ return arr;
-    /*<<bigarray.ml:212:51>>*/ }
+     /*<<bigarray.ml:215:18>>*/ return arr;
+    /*<<bigarray.ml:216:51>>*/ }
    function of_array(kind, layout, data){
-     /*<<bigarray.ml:214:4>>*/ var
-      /*<<bigarray.ml:214:13>>*/ ba = create$0(kind, layout, data.length - 1),
-      /*<<bigarray.ml:215:4>>*/ ofs = layout ? 1 : 0,
+     /*<<bigarray.ml:218:4>>*/ var
+      /*<<bigarray.ml:218:13>>*/ ba = create$0(kind, layout, data.length - 1),
+      /*<<bigarray.ml:219:4>>*/ ofs = layout ? 1 : 0,
      _U_ = data.length - 2 | 0,
      _T_ = 0;
     if(_U_ >= 0){
      var i = _T_;
      for(;;){
-       /*<<bigarray.ml:220:42>>*/  /*<<bigarray.ml:220:42>>*/ caml_ba_set_1
+       /*<<bigarray.ml:224:42>>*/  /*<<bigarray.ml:224:42>>*/ caml_ba_set_1
        (ba, i + ofs | 0, caml_check_bound(data, i)[1 + i]);
-       /*<<bigarray.ml:220:42>>*/  /*<<bigarray.ml:220:42>>*/ var
+       /*<<bigarray.ml:224:42>>*/  /*<<bigarray.ml:224:42>>*/ var
        _V_ = i + 1 | 0;
       if(_U_ === i) break;
       i = _V_;
      }
     }
-     /*<<bigarray.ml:221:4>>*/ return ba;
-    /*<<bigarray.ml:221:6>>*/ }
+     /*<<bigarray.ml:225:4>>*/ return ba;
+    /*<<bigarray.ml:225:6>>*/ }
    function create$1(kind, layout, dim1, dim2){
-     /*<<bigarray.ml:227:4>>*/ return  /*<<bigarray.ml:227:4>>*/ caml_ba_create
+     /*<<bigarray.ml:231:4>>*/ return  /*<<bigarray.ml:231:4>>*/ caml_ba_create
             (kind, layout, [0, dim1, dim2]);
-    /*<<bigarray.ml:227:46>>*/ }
+    /*<<bigarray.ml:231:46>>*/ }
    function size_in_bytes$2(arr){
-     /*<<bigarray.ml:243:4>>*/ var
-      /*<<bigarray.ml:243:51>>*/ _R_ =
-        /*<<bigarray.ml:243:51>>*/ caml_ba_dim_2(arr),
-      /*<<bigarray.ml:243:38>>*/ _S_ =
-        /*<<bigarray.ml:243:38>>*/ caml_ba_dim_1(arr);
+     /*<<bigarray.ml:247:4>>*/ var
+      /*<<bigarray.ml:247:51>>*/ _R_ =
+        /*<<bigarray.ml:247:51>>*/ caml_ba_dim_2(arr),
+      /*<<bigarray.ml:247:38>>*/ _S_ =
+        /*<<bigarray.ml:247:38>>*/ caml_ba_dim_1(arr);
     return caml_mul
-            ( /*<<bigarray.ml:243:4>>*/ caml_mul
+            ( /*<<bigarray.ml:247:4>>*/ caml_mul
               (kind_size_in_bytes
-                ( /*<<bigarray.ml:243:24>>*/ caml_ba_kind(arr)),
+                ( /*<<bigarray.ml:247:24>>*/ caml_ba_kind(arr)),
                _S_),
              _R_);
-    /*<<bigarray.ml:243:61>>*/ }
+    /*<<bigarray.ml:247:61>>*/ }
    function slice_left(a, n){
-     /*<<bigarray.ml:250:23>>*/ return  /*<<bigarray.ml:250:23>>*/ caml_ba_slice
+     /*<<bigarray.ml:254:23>>*/ return  /*<<bigarray.ml:254:23>>*/ caml_ba_slice
             (a, [0, n]);
-    /*<<bigarray.ml:250:50>>*/ }
+    /*<<bigarray.ml:254:50>>*/ }
    function slice_right(a, n){
-     /*<<bigarray.ml:251:24>>*/ return  /*<<bigarray.ml:251:24>>*/ caml_ba_slice
+     /*<<bigarray.ml:255:24>>*/ return  /*<<bigarray.ml:255:24>>*/ caml_ba_slice
             (a, [0, n]);
-    /*<<bigarray.ml:251:52>>*/ }
+    /*<<bigarray.ml:255:52>>*/ }
    function init$1(kind, layout, dim1, dim2, f){
-     /*<<bigarray.ml:267:4>>*/  /*<<bigarray.ml:267:14>>*/ var
+     /*<<bigarray.ml:271:4>>*/  /*<<bigarray.ml:271:14>>*/ var
      arr = create$1(kind, layout, dim1, dim2);
-     /*<<bigarray.ml:268:4>>*/ if(layout){
-      /*<<bigarray.ml:261:4>>*/  /*<<bigarray.ml:261:4>>*/ var _N_ = 1;
+     /*<<bigarray.ml:272:4>>*/ if(layout){
+      /*<<bigarray.ml:265:4>>*/  /*<<bigarray.ml:265:4>>*/ var _N_ = 1;
      if(dim2 >= 1){
       var j$0 = _N_;
       for(;;){
-        /*<<bigarray.ml:262:6>>*/  /*<<bigarray.ml:262:6>>*/ var _O_ = 1;
+        /*<<bigarray.ml:266:6>>*/  /*<<bigarray.ml:266:6>>*/ var _O_ = 1;
        if(dim1 >= 1){
         var i$0 = _O_;
         for(;;){
-          /*<<bigarray.ml:263:8>>*/  /*<<bigarray.ml:263:8>>*/ caml_ba_set_2
-          (arr, i$0, j$0,  /*<<bigarray.ml:263:27>>*/ caml_call2(f, i$0, j$0));
-          /*<<bigarray.ml:263:8>>*/  /*<<bigarray.ml:263:8>>*/ var
+          /*<<bigarray.ml:267:8>>*/  /*<<bigarray.ml:267:8>>*/ caml_ba_set_2
+          (arr, i$0, j$0,  /*<<bigarray.ml:267:27>>*/ caml_call2(f, i$0, j$0));
+          /*<<bigarray.ml:267:8>>*/  /*<<bigarray.ml:267:8>>*/ var
           _Q_ = i$0 + 1 | 0;
          if(dim1 === i$0) break;
          i$0 = _Q_;
         }
        }
-        /*<<bigarray.ml:261:4>>*/  /*<<bigarray.ml:261:4>>*/ var
+        /*<<bigarray.ml:265:4>>*/  /*<<bigarray.ml:265:4>>*/ var
         _P_ = j$0 + 1 | 0;
        if(dim2 === j$0) break;
        j$0 = _P_;
       }
      }
-      /*<<bigarray.ml:270:24>>*/ return arr;
+      /*<<bigarray.ml:274:24>>*/ return arr;
     }
-     /*<<bigarray.ml:255:4>>*/ var
+     /*<<bigarray.ml:259:4>>*/ var
      _I_ = dim1 - 1 | 0,
-      /*<<bigarray.ml:255:4>>*/ _H_ = 0;
+      /*<<bigarray.ml:259:4>>*/ _H_ = 0;
     if(_I_ >= 0){
      var i = _H_;
      for(;;){
-       /*<<bigarray.ml:256:6>>*/ var
+       /*<<bigarray.ml:260:6>>*/ var
        _K_ = dim2 - 1 | 0,
-        /*<<bigarray.ml:256:6>>*/ _J_ = 0;
+        /*<<bigarray.ml:260:6>>*/ _J_ = 0;
       if(_K_ >= 0){
        var j = _J_;
        for(;;){
-         /*<<bigarray.ml:257:8>>*/  /*<<bigarray.ml:257:8>>*/ caml_ba_set_2
-         (arr, i, j,  /*<<bigarray.ml:257:27>>*/ caml_call2(f, i, j));
-         /*<<bigarray.ml:257:8>>*/  /*<<bigarray.ml:257:8>>*/ var
+         /*<<bigarray.ml:261:8>>*/  /*<<bigarray.ml:261:8>>*/ caml_ba_set_2
+         (arr, i, j,  /*<<bigarray.ml:261:27>>*/ caml_call2(f, i, j));
+         /*<<bigarray.ml:261:8>>*/  /*<<bigarray.ml:261:8>>*/ var
          _M_ = j + 1 | 0;
         if(_K_ === j) break;
         j = _M_;
        }
       }
-       /*<<bigarray.ml:255:4>>*/  /*<<bigarray.ml:255:4>>*/ var
+       /*<<bigarray.ml:259:4>>*/  /*<<bigarray.ml:259:4>>*/ var
        _L_ = i + 1 | 0;
       if(_I_ === i) break;
       i = _L_;
      }
     }
-     /*<<bigarray.ml:269:18>>*/ return arr;
-    /*<<bigarray.ml:270:57>>*/ }
+     /*<<bigarray.ml:273:18>>*/ return arr;
+    /*<<bigarray.ml:274:57>>*/ }
    function of_array$0(kind, layout, data){
-     /*<<bigarray.ml:272:4>>*/ var
+     /*<<bigarray.ml:276:4>>*/ var
      dim1 = data.length - 1,
-      /*<<bigarray.ml:273:4>>*/ dim2 =
+      /*<<bigarray.ml:277:4>>*/ dim2 =
        0 === dim1 ? 0 : caml_check_bound(data, 0)[1].length - 1,
-      /*<<bigarray.ml:274:13>>*/ ba = create$1(kind, layout, dim1, dim2),
-      /*<<bigarray.ml:275:4>>*/ ofs = layout ? 1 : 0,
-      /*<<bigarray.ml:280:4>>*/ _C_ = dim1 - 1 | 0,
+      /*<<bigarray.ml:278:13>>*/ ba = create$1(kind, layout, dim1, dim2),
+      /*<<bigarray.ml:279:4>>*/ ofs = layout ? 1 : 0,
+      /*<<bigarray.ml:284:4>>*/ _C_ = dim1 - 1 | 0,
      _B_ = 0;
     if(_C_ >= 0){
      var i = _B_;
      for(;;){
-       /*<<bigarray.ml:281:16>>*/  /*<<bigarray.ml:281:16>>*/ var
+       /*<<bigarray.ml:285:16>>*/  /*<<bigarray.ml:285:16>>*/ var
        row = caml_check_bound(data, i)[1 + i];
       if(row.length - 1 !== dim2)
-        /*<<bigarray.ml:283:8>>*/  /*<<bigarray.ml:283:8>>*/ caml_call1
+        /*<<bigarray.ml:287:8>>*/  /*<<bigarray.ml:287:8>>*/ caml_call1
         (Stdlib[1], cst_Bigarray_Array2_of_array_n);
-       /*<<bigarray.ml:273:32>>*/ var
-        /*<<bigarray.ml:273:32>>*/ _E_ = dim2 - 1 | 0,
-        /*<<bigarray.ml:283:8>>*/ _D_ = 0;
+       /*<<bigarray.ml:277:32>>*/ var
+        /*<<bigarray.ml:277:32>>*/ _E_ = dim2 - 1 | 0,
+        /*<<bigarray.ml:287:8>>*/ _D_ = 0;
       if(_E_ >= 0){
        var j = _D_;
        for(;;){
-         /*<<bigarray.ml:285:8>>*/  /*<<bigarray.ml:285:8>>*/ caml_ba_set_2
+         /*<<bigarray.ml:289:8>>*/  /*<<bigarray.ml:289:8>>*/ caml_ba_set_2
          (ba, i + ofs | 0, j + ofs | 0, caml_check_bound(row, j)[1 + j]);
-         /*<<bigarray.ml:285:8>>*/  /*<<bigarray.ml:285:8>>*/ var
+         /*<<bigarray.ml:289:8>>*/  /*<<bigarray.ml:289:8>>*/ var
          _G_ = j + 1 | 0;
         if(_E_ === j) break;
         j = _G_;
        }
       }
-       /*<<bigarray.ml:280:4>>*/  /*<<bigarray.ml:280:4>>*/ var
+       /*<<bigarray.ml:284:4>>*/  /*<<bigarray.ml:284:4>>*/ var
        _F_ = i + 1 | 0;
       if(_C_ === i) break;
       i = _F_;
      }
     }
-     /*<<bigarray.ml:288:4>>*/ return ba;
-    /*<<bigarray.ml:288:6>>*/ }
+     /*<<bigarray.ml:292:4>>*/ return ba;
+    /*<<bigarray.ml:292:6>>*/ }
    function create$2(kind, layout, dim1, dim2, dim3){
-     /*<<bigarray.ml:294:4>>*/ return  /*<<bigarray.ml:294:4>>*/ caml_ba_create
+     /*<<bigarray.ml:298:4>>*/ return  /*<<bigarray.ml:298:4>>*/ caml_ba_create
             (kind, layout, [0, dim1, dim2, dim3]);
-    /*<<bigarray.ml:294:52>>*/ }
+    /*<<bigarray.ml:298:52>>*/ }
    function size_in_bytes$3(arr){
-     /*<<bigarray.ml:312:4>>*/ var
-      /*<<bigarray.ml:312:64>>*/ _y_ =
-        /*<<bigarray.ml:312:64>>*/ runtime.caml_ba_dim_3(arr),
-      /*<<bigarray.ml:312:51>>*/ _z_ =
-        /*<<bigarray.ml:312:51>>*/ caml_ba_dim_2(arr),
-      /*<<bigarray.ml:312:38>>*/ _A_ =
-        /*<<bigarray.ml:312:38>>*/ caml_ba_dim_1(arr);
+     /*<<bigarray.ml:316:4>>*/ var
+      /*<<bigarray.ml:316:64>>*/ _y_ =
+        /*<<bigarray.ml:316:64>>*/ runtime.caml_ba_dim_3(arr),
+      /*<<bigarray.ml:316:51>>*/ _z_ =
+        /*<<bigarray.ml:316:51>>*/ caml_ba_dim_2(arr),
+      /*<<bigarray.ml:316:38>>*/ _A_ =
+        /*<<bigarray.ml:316:38>>*/ caml_ba_dim_1(arr);
     return caml_mul
             (caml_mul
-              ( /*<<bigarray.ml:312:4>>*/ caml_mul
+              ( /*<<bigarray.ml:316:4>>*/ caml_mul
                 (kind_size_in_bytes
-                  ( /*<<bigarray.ml:312:24>>*/ caml_ba_kind(arr)),
+                  ( /*<<bigarray.ml:316:24>>*/ caml_ba_kind(arr)),
                  _A_),
                _z_),
              _y_);
-    /*<<bigarray.ml:312:74>>*/ }
+    /*<<bigarray.ml:316:74>>*/ }
    function slice_left_1(a, n, m){
-     /*<<bigarray.ml:319:27>>*/ return  /*<<bigarray.ml:319:27>>*/ caml_ba_slice
+     /*<<bigarray.ml:323:27>>*/ return  /*<<bigarray.ml:323:27>>*/ caml_ba_slice
             (a, [0, n, m]);
-    /*<<bigarray.ml:319:57>>*/ }
+    /*<<bigarray.ml:323:57>>*/ }
    function slice_right_1(a, n, m){
-     /*<<bigarray.ml:320:28>>*/ return  /*<<bigarray.ml:320:28>>*/ caml_ba_slice
+     /*<<bigarray.ml:324:28>>*/ return  /*<<bigarray.ml:324:28>>*/ caml_ba_slice
             (a, [0, n, m]);
-    /*<<bigarray.ml:320:59>>*/ }
+    /*<<bigarray.ml:324:59>>*/ }
    function slice_left_2(a, n){
-     /*<<bigarray.ml:321:25>>*/ return  /*<<bigarray.ml:321:25>>*/ caml_ba_slice
+     /*<<bigarray.ml:325:25>>*/ return  /*<<bigarray.ml:325:25>>*/ caml_ba_slice
             (a, [0, n]);
-    /*<<bigarray.ml:321:52>>*/ }
+    /*<<bigarray.ml:325:52>>*/ }
    function slice_right_2(a, n){
-     /*<<bigarray.ml:322:26>>*/ return  /*<<bigarray.ml:322:26>>*/ caml_ba_slice
+     /*<<bigarray.ml:326:26>>*/ return  /*<<bigarray.ml:326:26>>*/ caml_ba_slice
             (a, [0, n]);
-    /*<<bigarray.ml:322:54>>*/ }
+    /*<<bigarray.ml:326:54>>*/ }
    function init$2(kind, layout, dim1, dim2, dim3, f){
-     /*<<bigarray.ml:342:4>>*/  /*<<bigarray.ml:342:14>>*/ var
+     /*<<bigarray.ml:346:4>>*/  /*<<bigarray.ml:346:14>>*/ var
      arr = create$2(kind, layout, dim1, dim2, dim3);
-     /*<<bigarray.ml:343:4>>*/ if(layout){
-      /*<<bigarray.ml:334:4>>*/  /*<<bigarray.ml:334:4>>*/ var _s_ = 1;
+     /*<<bigarray.ml:347:4>>*/ if(layout){
+      /*<<bigarray.ml:338:4>>*/  /*<<bigarray.ml:338:4>>*/ var _s_ = 1;
      if(dim3 >= 1){
       var k$0 = _s_;
       for(;;){
-        /*<<bigarray.ml:335:6>>*/  /*<<bigarray.ml:335:6>>*/ var _t_ = 1;
+        /*<<bigarray.ml:339:6>>*/  /*<<bigarray.ml:339:6>>*/ var _t_ = 1;
        if(dim2 >= 1){
         var j$0 = _t_;
         for(;;){
-          /*<<bigarray.ml:336:8>>*/  /*<<bigarray.ml:336:8>>*/ var _v_ = 1;
+          /*<<bigarray.ml:340:8>>*/  /*<<bigarray.ml:340:8>>*/ var _v_ = 1;
          if(dim1 >= 1){
           var i$0 = _v_;
           for(;;){
-            /*<<bigarray.ml:337:10>>*/  /*<<bigarray.ml:337:10>>*/ caml_ba_set_3
+            /*<<bigarray.ml:341:10>>*/  /*<<bigarray.ml:341:10>>*/ caml_ba_set_3
             (arr,
              i$0,
              j$0,
              k$0,
-              /*<<bigarray.ml:337:31>>*/ caml_call3(f, i$0, j$0, k$0));
-            /*<<bigarray.ml:337:10>>*/  /*<<bigarray.ml:337:10>>*/ var
+              /*<<bigarray.ml:341:31>>*/ caml_call3(f, i$0, j$0, k$0));
+            /*<<bigarray.ml:341:10>>*/  /*<<bigarray.ml:341:10>>*/ var
             _x_ = i$0 + 1 | 0;
            if(dim1 === i$0) break;
            i$0 = _x_;
           }
          }
-          /*<<bigarray.ml:335:6>>*/  /*<<bigarray.ml:335:6>>*/ var
+          /*<<bigarray.ml:339:6>>*/  /*<<bigarray.ml:339:6>>*/ var
           _w_ = j$0 + 1 | 0;
          if(dim2 === j$0) break;
          j$0 = _w_;
         }
        }
-        /*<<bigarray.ml:334:4>>*/  /*<<bigarray.ml:334:4>>*/ var
+        /*<<bigarray.ml:338:4>>*/  /*<<bigarray.ml:338:4>>*/ var
         _u_ = k$0 + 1 | 0;
        if(dim3 === k$0) break;
        k$0 = _u_;
       }
      }
-      /*<<bigarray.ml:345:24>>*/ return arr;
+      /*<<bigarray.ml:349:24>>*/ return arr;
     }
-     /*<<bigarray.ml:326:4>>*/ var
+     /*<<bigarray.ml:330:4>>*/ var
      _k_ = dim1 - 1 | 0,
-      /*<<bigarray.ml:326:4>>*/ _j_ = 0;
+      /*<<bigarray.ml:330:4>>*/ _j_ = 0;
     if(_k_ >= 0){
      var i = _j_;
      for(;;){
-       /*<<bigarray.ml:327:6>>*/ var
+       /*<<bigarray.ml:331:6>>*/ var
        _m_ = dim2 - 1 | 0,
-        /*<<bigarray.ml:327:6>>*/ _l_ = 0;
+        /*<<bigarray.ml:331:6>>*/ _l_ = 0;
       if(_m_ >= 0){
        var j = _l_;
        for(;;){
-         /*<<bigarray.ml:328:8>>*/ var
+         /*<<bigarray.ml:332:8>>*/ var
          _p_ = dim3 - 1 | 0,
-          /*<<bigarray.ml:328:8>>*/ _o_ = 0;
+          /*<<bigarray.ml:332:8>>*/ _o_ = 0;
         if(_p_ >= 0){
          var k = _o_;
          for(;;){
-           /*<<bigarray.ml:329:10>>*/  /*<<bigarray.ml:329:10>>*/ caml_ba_set_3
-           (arr, i, j, k,  /*<<bigarray.ml:329:31>>*/ caml_call3(f, i, j, k));
-           /*<<bigarray.ml:329:10>>*/  /*<<bigarray.ml:329:10>>*/ var
+           /*<<bigarray.ml:333:10>>*/  /*<<bigarray.ml:333:10>>*/ caml_ba_set_3
+           (arr, i, j, k,  /*<<bigarray.ml:333:31>>*/ caml_call3(f, i, j, k));
+           /*<<bigarray.ml:333:10>>*/  /*<<bigarray.ml:333:10>>*/ var
            _r_ = k + 1 | 0;
           if(_p_ === k) break;
           k = _r_;
          }
         }
-         /*<<bigarray.ml:327:6>>*/  /*<<bigarray.ml:327:6>>*/ var
+         /*<<bigarray.ml:331:6>>*/  /*<<bigarray.ml:331:6>>*/ var
          _q_ = j + 1 | 0;
         if(_m_ === j) break;
         j = _q_;
        }
       }
-       /*<<bigarray.ml:326:4>>*/  /*<<bigarray.ml:326:4>>*/ var
+       /*<<bigarray.ml:330:4>>*/  /*<<bigarray.ml:330:4>>*/ var
        _n_ = i + 1 | 0;
       if(_k_ === i) break;
       i = _n_;
      }
     }
-     /*<<bigarray.ml:344:18>>*/ return arr;
-    /*<<bigarray.ml:345:62>>*/ }
+     /*<<bigarray.ml:348:18>>*/ return arr;
+    /*<<bigarray.ml:349:62>>*/ }
    function of_array$1(kind, layout, data){
-     /*<<bigarray.ml:347:4>>*/ var
+     /*<<bigarray.ml:351:4>>*/ var
      dim1 = data.length - 1,
-      /*<<bigarray.ml:348:4>>*/ dim2 =
+      /*<<bigarray.ml:352:4>>*/ dim2 =
        0 === dim1 ? 0 : caml_check_bound(data, 0)[1].length - 1,
-      /*<<bigarray.ml:349:4>>*/ dim3 =
+      /*<<bigarray.ml:353:4>>*/ dim3 =
        0 === dim2
         ? 0
         : caml_check_bound(caml_check_bound(data, 0)[1], 0)[1].length - 1,
-      /*<<bigarray.ml:350:13>>*/ ba = create$2(kind, layout, dim1, dim2, dim3),
-      /*<<bigarray.ml:351:4>>*/ ofs = layout ? 1 : 0,
-      /*<<bigarray.ml:356:4>>*/ _b_ = dim1 - 1 | 0,
+      /*<<bigarray.ml:354:13>>*/ ba = create$2(kind, layout, dim1, dim2, dim3),
+      /*<<bigarray.ml:355:4>>*/ ofs = layout ? 1 : 0,
+      /*<<bigarray.ml:360:4>>*/ _b_ = dim1 - 1 | 0,
      _a_ = 0;
     if(_b_ >= 0){
      var i = _a_;
      for(;;){
-       /*<<bigarray.ml:357:16>>*/  /*<<bigarray.ml:357:16>>*/ var
+       /*<<bigarray.ml:361:16>>*/  /*<<bigarray.ml:361:16>>*/ var
        row = caml_check_bound(data, i)[1 + i];
       if(row.length - 1 !== dim2)
-        /*<<bigarray.ml:359:8>>*/  /*<<bigarray.ml:359:8>>*/ caml_call1
+        /*<<bigarray.ml:363:8>>*/  /*<<bigarray.ml:363:8>>*/ caml_call1
         (Stdlib[1], cst_Bigarray_Array3_of_array_n);
-       /*<<bigarray.ml:348:32>>*/ var
-        /*<<bigarray.ml:348:32>>*/ _d_ = dim2 - 1 | 0,
-        /*<<bigarray.ml:359:8>>*/ _c_ = 0;
+       /*<<bigarray.ml:352:32>>*/ var
+        /*<<bigarray.ml:352:32>>*/ _d_ = dim2 - 1 | 0,
+        /*<<bigarray.ml:363:8>>*/ _c_ = 0;
       if(_d_ >= 0){
        var j = _c_;
        for(;;){
-         /*<<bigarray.ml:361:18>>*/  /*<<bigarray.ml:361:18>>*/ var
+         /*<<bigarray.ml:365:18>>*/  /*<<bigarray.ml:365:18>>*/ var
          col = caml_check_bound(row, j)[1 + j];
         if(col.length - 1 !== dim3)
-          /*<<bigarray.ml:363:10>>*/  /*<<bigarray.ml:363:10>>*/ caml_call1
+          /*<<bigarray.ml:367:10>>*/  /*<<bigarray.ml:367:10>>*/ caml_call1
           (Stdlib[1], cst_Bigarray_Array3_of_array_n$0);
-         /*<<bigarray.ml:349:32>>*/ var
-          /*<<bigarray.ml:349:32>>*/ _g_ = dim3 - 1 | 0,
-          /*<<bigarray.ml:363:10>>*/ _f_ = 0;
+         /*<<bigarray.ml:353:32>>*/ var
+          /*<<bigarray.ml:353:32>>*/ _g_ = dim3 - 1 | 0,
+          /*<<bigarray.ml:367:10>>*/ _f_ = 0;
         if(_g_ >= 0){
          var k = _f_;
          for(;;){
-           /*<<bigarray.ml:365:10>>*/  /*<<bigarray.ml:365:10>>*/ caml_ba_set_3
+           /*<<bigarray.ml:369:10>>*/  /*<<bigarray.ml:369:10>>*/ caml_ba_set_3
            (ba,
             i + ofs | 0,
             j + ofs | 0,
             k + ofs | 0,
             caml_check_bound(col, k)[1 + k]);
-           /*<<bigarray.ml:365:10>>*/  /*<<bigarray.ml:365:10>>*/ var
+           /*<<bigarray.ml:369:10>>*/  /*<<bigarray.ml:369:10>>*/ var
            _i_ = k + 1 | 0;
           if(_g_ === k) break;
           k = _i_;
          }
         }
-         /*<<bigarray.ml:359:8>>*/  /*<<bigarray.ml:359:8>>*/ var
+         /*<<bigarray.ml:363:8>>*/  /*<<bigarray.ml:363:8>>*/ var
          _h_ = j + 1 | 0;
         if(_d_ === j) break;
         j = _h_;
        }
       }
-       /*<<bigarray.ml:356:4>>*/  /*<<bigarray.ml:356:4>>*/ var
+       /*<<bigarray.ml:360:4>>*/  /*<<bigarray.ml:360:4>>*/ var
        _e_ = i + 1 | 0;
       if(_b_ === i) break;
       i = _e_;
      }
     }
-     /*<<bigarray.ml:369:4>>*/ return ba;
-    /*<<bigarray.ml:369:6>>*/ }
+     /*<<bigarray.ml:373:4>>*/ return ba;
+    /*<<bigarray.ml:373:6>>*/ }
    function array0_of_genarray(a){
-     /*<<bigarray.ml:381:2>>*/ return 0
-            ===  /*<<bigarray.ml:381:5>>*/ caml_ba_num_dims(a)
+     /*<<bigarray.ml:385:2>>*/ return 0
+            ===  /*<<bigarray.ml:385:5>>*/ caml_ba_num_dims(a)
             ? a
-            :  /*<<bigarray.ml:382:7>>*/ caml_call1
+            :  /*<<bigarray.ml:386:7>>*/ caml_call1
               (Stdlib[1], cst_Bigarray_array0_of_genarra);
-    /*<<bigarray.ml:382:48>>*/ }
+    /*<<bigarray.ml:386:48>>*/ }
    function array1_of_genarray(a){
-     /*<<bigarray.ml:384:2>>*/ return 1
-            ===  /*<<bigarray.ml:384:5>>*/ caml_ba_num_dims(a)
+     /*<<bigarray.ml:388:2>>*/ return 1
+            ===  /*<<bigarray.ml:388:5>>*/ caml_ba_num_dims(a)
             ? a
-            :  /*<<bigarray.ml:385:7>>*/ caml_call1
+            :  /*<<bigarray.ml:389:7>>*/ caml_call1
               (Stdlib[1], cst_Bigarray_array1_of_genarra);
-    /*<<bigarray.ml:385:48>>*/ }
+    /*<<bigarray.ml:389:48>>*/ }
    function array2_of_genarray(a){
-     /*<<bigarray.ml:387:2>>*/ return 2
-            ===  /*<<bigarray.ml:387:5>>*/ caml_ba_num_dims(a)
+     /*<<bigarray.ml:391:2>>*/ return 2
+            ===  /*<<bigarray.ml:391:5>>*/ caml_ba_num_dims(a)
             ? a
-            :  /*<<bigarray.ml:388:7>>*/ caml_call1
+            :  /*<<bigarray.ml:392:7>>*/ caml_call1
               (Stdlib[1], cst_Bigarray_array2_of_genarra);
-    /*<<bigarray.ml:388:48>>*/ }
+    /*<<bigarray.ml:392:48>>*/ }
    function array3_of_genarray(a){
-     /*<<bigarray.ml:390:2>>*/ return 3
-            ===  /*<<bigarray.ml:390:5>>*/ caml_ba_num_dims(a)
+     /*<<bigarray.ml:394:2>>*/ return 3
+            ===  /*<<bigarray.ml:394:5>>*/ caml_ba_num_dims(a)
             ? a
-            :  /*<<bigarray.ml:391:7>>*/ caml_call1
+            :  /*<<bigarray.ml:395:7>>*/ caml_call1
               (Stdlib[1], cst_Bigarray_array3_of_genarra);
-    /*<<bigarray.ml:391:48>>*/ }
+    /*<<bigarray.ml:395:48>>*/ }
    function reshape_0(a){
-     /*<<bigarray.ml:396:18>>*/ return  /*<<bigarray.ml:396:18>>*/ caml_ba_reshape
+     /*<<bigarray.ml:400:18>>*/ return  /*<<bigarray.ml:400:18>>*/ caml_ba_reshape
             (a, [0]);
-    /*<<bigarray.ml:396:32>>*/ }
+    /*<<bigarray.ml:400:32>>*/ }
    function reshape_1(a, dim1){
-     /*<<bigarray.ml:397:23>>*/ return  /*<<bigarray.ml:397:23>>*/ caml_ba_reshape
+     /*<<bigarray.ml:401:23>>*/ return  /*<<bigarray.ml:401:23>>*/ caml_ba_reshape
             (a, [0, dim1]);
-    /*<<bigarray.ml:397:41>>*/ }
+    /*<<bigarray.ml:401:41>>*/ }
    function reshape_2(a, dim1, dim2){
-     /*<<bigarray.ml:398:28>>*/ return  /*<<bigarray.ml:398:28>>*/ caml_ba_reshape
+     /*<<bigarray.ml:402:28>>*/ return  /*<<bigarray.ml:402:28>>*/ caml_ba_reshape
             (a, [0, dim1, dim2]);
-    /*<<bigarray.ml:398:51>>*/ }
+    /*<<bigarray.ml:402:51>>*/ }
    function reshape_3(a, dim1, dim2, dim3){
-     /*<<bigarray.ml:399:33>>*/ return  /*<<bigarray.ml:399:33>>*/ caml_ba_reshape
+     /*<<bigarray.ml:403:33>>*/ return  /*<<bigarray.ml:403:33>>*/ caml_ba_reshape
             (a, [0, dim1, dim2, dim3]);
-    /*<<bigarray.ml:399:61>>*/ }
+    /*<<bigarray.ml:403:61>>*/ }
    var
     Stdlib_Bigarray =
       [0,
+       13,
        0,
        1,
        10,
@@ -23166,11 +24854,13 @@
     caml_bytes_set = runtime.caml_bytes_set,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_greaterthan = runtime.caml_greaterthan,
+    caml_int64_add = runtime.caml_int64_add,
     caml_int64_of_int32 = runtime.caml_int64_of_int32,
     caml_int64_shift_right_unsigne = runtime.caml_int64_shift_right_unsigned,
     caml_int64_sub = runtime.caml_int64_sub,
     caml_int64_to_int32 = runtime.caml_int64_to_int32,
     caml_lessequal = runtime.caml_lessequal,
+    caml_lessthan = runtime.caml_lessthan,
     caml_lxm_next = runtime.caml_lxm_next,
     caml_mod = runtime.caml_mod,
     caml_notequal = runtime.caml_notequal,
@@ -23199,13 +24889,13 @@
     global_data = runtime.caml_get_global_data(),
     serialization_prefix = "lxm1:",
     Stdlib_Domain = global_data.Stdlib__Domain,
-    Stdlib = global_data.Stdlib,
+    Stdlib_Sys = global_data.Stdlib__Sys,
     Stdlib_Int32 = global_data.Stdlib__Int32,
     Stdlib_Int64 = global_data.Stdlib__Int64,
+    Stdlib = global_data.Stdlib,
     Stdlib_Bytes = global_data.Stdlib__Bytes,
     Stdlib_Digest = global_data.Stdlib__Digest,
     Stdlib_String = global_data.Stdlib__String,
-    Stdlib_Sys = global_data.Stdlib__Sys,
     Stdlib_Bigarray = global_data.Stdlib__Bigarray,
     Stdlib_Nativeint = global_data.Stdlib__Nativeint,
     _a_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
@@ -23215,7 +24905,7 @@
     _e_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0);
    function create(param){
      /*<<random.ml:31:4>>*/ return  /*<<random.ml:31:4>>*/ caml_call3
-            (Stdlib_Bigarray[19][1], 7, 0, 4);
+            (Stdlib_Bigarray[20][1], 7, 0, 4);
     /*<<random.ml:31:34>>*/ }
    function set(s, i1, i2, i3, i4){
      /*<<random.ml:34:4>>*/  /*<<random.ml:34:4>>*/ caml_ba_set_1
@@ -23237,10 +24927,7 @@
    var
     serialization_prefix_len = 5,
     cst_Random_State_of_binary_str =
-      "Random.State.of_binary_string: expected a format compatible with OCaml ",
-    cst_Random_int = "Random.int",
-    cst_Random_full_int = "Random.full_int",
-    cst_Random_int32 = "Random.int32";
+      "Random.State.of_binary_string: expected a format compatible with OCaml ";
    function to_binary_string(s){
      /*<<random.ml:61:4>>*/  /*<<random.ml:63:14>>*/ var
      buf =  /*<<random.ml:63:14>>*/ caml_create_bytes(37);
@@ -23350,91 +25037,172 @@
      /*<<random.ml:115:4>>*/ return make
             ( /*<<random.ml:115:9>>*/ caml_sys_random_seed(0));
     /*<<random.ml:115:25>>*/ }
+   var
+    max_int31 = 1073741823,
+    max_int32 = 2147483647,
+    cst_Random_int = "Random.int",
+    cst_Random_full_int = "Random.full_int",
+    cst_Random_int_in_range = "Random.int_in_range",
+    cst_Random_int32 = "Random.int32",
+    cst_Random_int32_in_range = "Random.int32_in_range";
    function bits(s){
-     /*<<random.ml:119:4>>*/ return  /*<<random.ml:119:17>>*/ caml_int64_to_int32
-            ( /*<<random.ml:119:17>>*/ caml_lxm_next(s))
+     /*<<random.ml:129:4>>*/ return  /*<<random.ml:129:17>>*/ caml_int64_to_int32
+            ( /*<<random.ml:129:17>>*/ caml_lxm_next(s))
            & 1073741823;
-    /*<<random.ml:119:42>>*/ }
-   function intaux(s, n){
-     /*<<random.ml:123:4>>*/ for(;;){
-      /*<<random.ml:123:12>>*/ var
-       /*<<random.ml:123:12>>*/ r = bits(s),
-      v = caml_mod(r, n);
-     if(((1073741823 - n | 0) + 1 | 0) >= (r - v | 0))
-       /*<<random.ml:125:55>>*/ return v;
-    }
-    /*<<random.ml:125:56>>*/ }
-   function int$0(s, bound){
-     /*<<random.ml:128:4>>*/ if(1073741823 >= bound && 0 < bound)
-      /*<<random.ml:130:9>>*/ return intaux(s, bound);
-     /*<<random.ml:129:9>>*/ return  /*<<random.ml:129:9>>*/ caml_call1
-            (Stdlib[1], cst_Random_int);
-    /*<<random.ml:130:23>>*/ }
-   function full_int(s, bound){
-     /*<<random.ml:140:4>>*/ if(0 >= bound)
-      /*<<random.ml:141:6>>*/ return  /*<<random.ml:141:6>>*/ caml_call1
-             (Stdlib[1], cst_Random_full_int);
-    if(1073741823 >= bound)  /*<<random.ml:145:6>>*/ return intaux(s, bound);
-     /*<<random.ml:135:4>>*/ for(;;){
-      /*<<random.ml:135:4>>*/ var
-       /*<<random.ml:135:4>>*/ _n_ = Stdlib[19],
+    /*<<random.ml:129:40>>*/ }
+   function int_aux(s, n, mask){
+     /*<<random.ml:138:4>>*/ for(;;){
+     var
       r =
-         /*<<random.ml:135:25>>*/ caml_int64_to_int32
-         ( /*<<random.ml:135:25>>*/ caml_lxm_next(s))
-        & _n_,
-      v = caml_mod(r, bound);
-     if(((Stdlib[19] - bound | 0) + 1 | 0) >= (r - v | 0))
-       /*<<random.ml:137:54>>*/ return v;
+         /*<<random.ml:138:25>>*/ caml_int64_to_int32
+         ( /*<<random.ml:138:25>>*/ caml_lxm_next(s))
+        & mask,
+      v = caml_mod(r, n);
+     if(((mask - n | 0) + 1 | 0) >= (r - v | 0))
+       /*<<random.ml:148:55>>*/ return v;
     }
-    /*<<random.ml:145:20>>*/ }
+    /*<<random.ml:148:56>>*/ }
+   function int$0(s, bound){
+     /*<<random.ml:154:4>>*/ if(1073741823 >= bound && 0 < bound)
+     return int_aux(s, bound, max_int31);
+     /*<<random.ml:155:9>>*/ return  /*<<random.ml:155:9>>*/ caml_call1
+            (Stdlib[1], cst_Random_int);
+    /*<<random.ml:156:34>>*/ }
+   function full_int(s, bound){
+     /*<<random.ml:161:4>>*/ if(0 >= bound)
+      /*<<random.ml:162:6>>*/ return  /*<<random.ml:162:6>>*/ caml_call1
+             (Stdlib[1], cst_Random_full_int);
+    var
+     _n_ =
+       bound <= 1073741823
+        ? max_int31
+        : bound <= 2147483647 ? max_int32 : Stdlib[19];
+    return int_aux(s, bound, _n_);
+    /*<<random.ml:173:22>>*/ }
+   function int_in_range_aux(s, min, max, mask, nbits){
+     /*<<random.ml:193:4>>*/ var span = (max - min | 0) + 1 | 0;
+    if(span <= mask && 0 < span) return min + int_aux(s, span, mask) | 0;
+     /*<<random.ml:184:4>>*/ for(;;){
+     var
+      drop = Stdlib_Sys[10] - nbits | 0,
+      r =
+         /*<<random.ml:186:27>>*/ caml_int64_to_int32
+         ( /*<<random.ml:186:27>>*/ caml_lxm_next(s))
+        << drop
+        >> drop;
+     if(r >= min && max >= r)  /*<<random.ml:187:74>>*/ return r;
+    }
+    /*<<random.ml:201:43>>*/ }
+   function int_in_range(s, min, max){
+     /*<<random.ml:206:4>>*/ if(max < min)
+      /*<<random.ml:207:6>>*/  /*<<random.ml:207:6>>*/ caml_call1
+      (Stdlib[1], cst_Random_int_in_range);
+    if(-1073741824 <= min && max <= 1073741823)
+      /*<<random.ml:215:6>>*/ return int_in_range_aux
+             (s, min, max, max_int31, 31);
+    if(-2147483648 <= min && max <= 2147483647)
+      /*<<random.ml:217:6>>*/ return int_in_range_aux
+             (s, min, max, max_int32, 32);
+     /*<<random.ml:219:6>>*/ return int_in_range_aux
+            (s, min, max, Stdlib[19], Stdlib_Sys[10]);
+    /*<<random.ml:219:68>>*/ }
    function bits32(s){
-     /*<<random.ml:149:4>>*/ return  /*<<random.ml:149:4>>*/ caml_int64_to_int32
-            ( /*<<random.ml:149:19>>*/ caml_lxm_next(s));
-    /*<<random.ml:149:27>>*/ }
-   function int32(s, bound){
-     /*<<random.ml:160:4>>*/ if
-     ( /*<<random.ml:160:7>>*/ caml_lessequal(bound, 0))
-      /*<<random.ml:161:9>>*/ return  /*<<random.ml:161:9>>*/ caml_call1
-             (Stdlib[1], cst_Random_int32);
-     /*<<random.ml:153:4>>*/ for(;;){
-      /*<<random.ml:153:12>>*/ var
-       /*<<random.ml:153:12>>*/ r = bits32(s) >>> 1 | 0,
-       /*<<random.ml:154:12>>*/ v =
-         /*<<random.ml:154:12>>*/ caml_mod(r, bound);
-      /*<<random.ml:155:14>>*/ if
+     /*<<random.ml:223:4>>*/ return  /*<<random.ml:223:4>>*/ caml_int64_to_int32
+            ( /*<<random.ml:223:19>>*/ caml_lxm_next(s));
+    /*<<random.ml:223:27>>*/ }
+   function int32aux(s, n){
+     /*<<random.ml:227:4>>*/ for(;;){
+      /*<<random.ml:227:12>>*/ var
+       /*<<random.ml:227:12>>*/ r = bits32(s) >>> 1 | 0,
+       /*<<random.ml:228:12>>*/ v =  /*<<random.ml:228:12>>*/ caml_mod(r, n);
+      /*<<random.ml:230:14>>*/ if
       (!
-        /*<<random.ml:155:14>>*/ caml_greaterthan
-        (r - v | 0, (Stdlib_Int32[9] - bound | 0) + 1 | 0))
-       /*<<random.ml:157:9>>*/ return v;
+        /*<<random.ml:230:14>>*/ caml_greaterthan
+        (r - v | 0, (Stdlib_Int32[9] - n | 0) + 1 | 0))
+       /*<<random.ml:232:9>>*/ return v;
     }
-    /*<<random.ml:162:25>>*/ }
+    /*<<random.ml:232:10>>*/ }
+   function int32(s, bound){
+     /*<<random.ml:235:4>>*/ return  /*<<random.ml:235:7>>*/ caml_lessequal
+             (bound, 0)
+            ?  /*<<random.ml:236:9>>*/ caml_call1(Stdlib[1], cst_Random_int32)
+            : int32aux(s, bound);
+    /*<<random.ml:237:25>>*/ }
+   function int32_in_range(s, min, max){
+     /*<<random.ml:246:4>>*/ if
+     ( /*<<random.ml:246:7>>*/ caml_greaterthan(min, max))
+      /*<<random.ml:247:6>>*/ return  /*<<random.ml:247:6>>*/ caml_call1
+             (Stdlib[1], cst_Random_int32_in_range);
+     /*<<random.ml:249:17>>*/  /*<<random.ml:249:17>>*/ var
+     span =
+        /*<<random.ml:249:17>>*/ caml_call1(Stdlib_Int32[6], max - min | 0);
+     /*<<random.ml:251:9>>*/ if
+     (!  /*<<random.ml:251:9>>*/ caml_lessequal(span, Stdlib_Int32[1]))
+      /*<<random.ml:254:8>>*/ return min + int32aux(s, span) | 0;
+     /*<<random.ml:242:4>>*/ for(;;){
+      /*<<random.ml:242:12>>*/  /*<<random.ml:242:12>>*/ var
+      r =
+         /*<<random.ml:242:12>>*/ caml_int64_to_int32
+         ( /*<<random.ml:242:27>>*/ caml_lxm_next(s));
+      /*<<random.ml:243:18>>*/ if
+      (!
+        /*<<random.ml:243:7>>*/ caml_lessthan(r, min)
+       && !  /*<<random.ml:243:18>>*/ caml_greaterthan(r, max))
+       /*<<random.ml:243:67>>*/ return r;
+    }
+    /*<<random.ml:254:39>>*/ }
    var
     bits64 = caml_lxm_next,
     _f_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
     _g_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    cst_Random_int64 = "Random.int64";
-   function int64(s, bound){
-     /*<<random.ml:177:4>>*/ if
-     ( /*<<random.ml:177:7>>*/ caml_lessequal(bound, _g_))
-      /*<<random.ml:178:9>>*/ return  /*<<random.ml:178:9>>*/ caml_call1
-             (Stdlib[1], cst_Random_int64);
-     /*<<random.ml:170:4>>*/ for(;;){
-      /*<<random.ml:170:12>>*/ var
-       /*<<random.ml:170:12>>*/ r =
-         /*<<random.ml:170:12>>*/ caml_int64_shift_right_unsigne
-         ( /*<<random.ml:166:4>>*/ caml_lxm_next(s), 1),
-       /*<<random.ml:171:12>>*/ v =
-         /*<<random.ml:171:12>>*/ runtime.caml_int64_mod(r, bound);
-      /*<<random.ml:172:14>>*/ if
+    cst_Random_int64 = "Random.int64",
+    cst_Random_int64_in_range = "Random.int64_in_range";
+   function int64aux(s, n){
+     /*<<random.ml:262:4>>*/ for(;;){
+      /*<<random.ml:262:12>>*/ var
+       /*<<random.ml:262:12>>*/ r =
+         /*<<random.ml:262:12>>*/ caml_int64_shift_right_unsigne
+         ( /*<<random.ml:258:4>>*/ caml_lxm_next(s), 1),
+       /*<<random.ml:263:12>>*/ v =
+         /*<<random.ml:263:12>>*/ runtime.caml_int64_mod(r, n);
+      /*<<random.ml:265:14>>*/ if
       (!
-        /*<<random.ml:172:14>>*/ caml_greaterthan
-        ( /*<<random.ml:172:14>>*/ caml_int64_sub(r, v),
-          /*<<random.ml:172:24>>*/ runtime.caml_int64_add
-          ( /*<<random.ml:172:28>>*/ caml_int64_sub(Stdlib_Int64[9], bound),
-           _f_)))
-       /*<<random.ml:174:9>>*/ return v;
+        /*<<random.ml:265:14>>*/ caml_greaterthan
+        ( /*<<random.ml:265:14>>*/ caml_int64_sub(r, v),
+          /*<<random.ml:265:24>>*/ caml_int64_add
+          ( /*<<random.ml:265:28>>*/ caml_int64_sub(Stdlib_Int64[9], n), _f_)))
+       /*<<random.ml:267:9>>*/ return v;
     }
-    /*<<random.ml:179:25>>*/ }
+    /*<<random.ml:267:10>>*/ }
+   function int64(s, bound){
+     /*<<random.ml:270:4>>*/ return  /*<<random.ml:270:7>>*/ caml_lessequal
+             (bound, _g_)
+            ?  /*<<random.ml:271:9>>*/ caml_call1(Stdlib[1], cst_Random_int64)
+            : int64aux(s, bound);
+    /*<<random.ml:272:25>>*/ }
+   function int64_in_range(s, min, max){
+     /*<<random.ml:281:4>>*/ if
+     ( /*<<random.ml:281:7>>*/ caml_greaterthan(min, max))
+      /*<<random.ml:282:6>>*/ return  /*<<random.ml:282:6>>*/ caml_call1
+             (Stdlib[1], cst_Random_int64_in_range);
+     /*<<random.ml:284:17>>*/  /*<<random.ml:284:17>>*/ var
+     span =
+        /*<<random.ml:284:17>>*/ caml_call1
+        (Stdlib_Int64[6],  /*<<random.ml:284:28>>*/ caml_int64_sub(max, min));
+     /*<<random.ml:286:9>>*/ if
+     (!  /*<<random.ml:286:9>>*/ caml_lessequal(span, Stdlib_Int64[1]))
+      /*<<random.ml:289:8>>*/ return  /*<<random.ml:289:8>>*/ caml_int64_add
+             (min, int64aux(s, span));
+     /*<<random.ml:277:4>>*/ for(;;){
+      /*<<random.ml:277:12>>*/  /*<<random.ml:277:12>>*/ var
+      r =  /*<<random.ml:277:12>>*/ caml_lxm_next(s);
+      /*<<random.ml:278:18>>*/ if
+      (!
+        /*<<random.ml:278:7>>*/ caml_lessthan(r, min)
+       && !  /*<<random.ml:278:18>>*/ caml_greaterthan(r, max))
+       /*<<random.ml:278:67>>*/ return r;
+    }
+    /*<<random.ml:289:39>>*/ }
    var
     _j_ = runtime.caml_int64_create_lo_mi_hi(14371852, 15349651, 22696),
     _k_ = runtime.caml_int64_create_lo_mi_hi(12230193, 11438743, 35013),
@@ -23446,150 +25214,192 @@
       32 === Stdlib_Nativeint[9]
        ? function
         (s){
-          /*<<random.ml:184:18>>*/ return bits32(s);
-         /*<<random.ml:184:47>>*/ }
+          /*<<random.ml:294:18>>*/ return bits32(s);
+         /*<<random.ml:294:47>>*/ }
        : function
         (s){
-          /*<<random.ml:185:18>>*/ return  /*<<random.ml:185:18>>*/ caml_int64_to_int32
-                 ( /*<<random.ml:166:4>>*/ caml_lxm_next(s));
-         /*<<random.ml:185:47>>*/ },
+          /*<<random.ml:295:18>>*/ return  /*<<random.ml:295:18>>*/ caml_int64_to_int32
+                 ( /*<<random.ml:258:4>>*/ caml_lxm_next(s));
+         /*<<random.ml:295:47>>*/ },
     nativeint =
       32 === Stdlib_Nativeint[9]
        ? function
         (s, bound){
-          /*<<random.ml:190:24>>*/ return int32(s, bound);
-         /*<<random.ml:190:79>>*/ }
+          /*<<random.ml:300:24>>*/ return int32(s, bound);
+         /*<<random.ml:300:79>>*/ }
        : function
         (s, bound){
-          /*<<random.ml:191:24>>*/ return  /*<<random.ml:191:24>>*/ caml_int64_to_int32
+          /*<<random.ml:301:24>>*/ return  /*<<random.ml:301:24>>*/ caml_int64_to_int32
                  (int64
-                   (s,  /*<<random.ml:191:52>>*/ caml_int64_of_int32(bound)));
-         /*<<random.ml:191:79>>*/ };
+                   (s,  /*<<random.ml:301:52>>*/ caml_int64_of_int32(bound)));
+         /*<<random.ml:301:79>>*/ },
+    nativeint_in_range =
+      32 === Stdlib_Nativeint[9]
+       ? function
+        (s, min, max){
+          /*<<random.ml:307:6>>*/ return int32_in_range(s, min, max);
+         /*<<random.ml:308:68>>*/ }
+       : function
+        (s, min, max){
+          /*<<random.ml:310:6>>*/ return  /*<<random.ml:310:6>>*/ caml_int64_to_int32
+                 (int64_in_range
+                   (s,
+                     /*<<random.ml:311:13>>*/ caml_int64_of_int32(min),
+                     /*<<random.ml:311:43>>*/ caml_int64_of_int32(max)));
+         /*<<random.ml:311:68>>*/ };
    function float$0(s, bound){
-     /*<<random.ml:201:22>>*/ for(;;){
-      /*<<random.ml:196:12>>*/ var
-       /*<<random.ml:196:12>>*/ b =  /*<<random.ml:196:12>>*/ caml_lxm_next(s),
-       /*<<random.ml:197:12>>*/ n =
-         /*<<random.ml:197:12>>*/ caml_int64_shift_right_unsigne(b, 11);
-      /*<<random.ml:198:7>>*/ if
-      ( /*<<random.ml:198:7>>*/ caml_notequal(n, _h_))
-       /*<<random.ml:201:22>>*/ return  /*<<random.ml:198:20>>*/ runtime.caml_int64_to_float
+     /*<<random.ml:321:22>>*/ for(;;){
+      /*<<random.ml:316:12>>*/ var
+       /*<<random.ml:316:12>>*/ b =  /*<<random.ml:316:12>>*/ caml_lxm_next(s),
+       /*<<random.ml:317:12>>*/ n =
+         /*<<random.ml:317:12>>*/ caml_int64_shift_right_unsigne(b, 11);
+      /*<<random.ml:318:7>>*/ if
+      ( /*<<random.ml:318:7>>*/ caml_notequal(n, _h_))
+       /*<<random.ml:321:22>>*/ return  /*<<random.ml:318:20>>*/ runtime.caml_int64_to_float
               (n)
              * 1.1102230246251565e-16
              * bound;
     }
-    /*<<random.ml:201:41>>*/ }
+    /*<<random.ml:321:41>>*/ }
    function bool(s){
-     /*<<random.ml:204:15>>*/ return  /*<<random.ml:204:15>>*/ runtime.caml_lessthan
-            ( /*<<random.ml:204:15>>*/ caml_lxm_next(s), _i_);
-    /*<<random.ml:204:26>>*/ }
+     /*<<random.ml:324:15>>*/ return  /*<<random.ml:324:15>>*/ caml_lessthan
+            ( /*<<random.ml:324:15>>*/ caml_lxm_next(s), _i_);
+    /*<<random.ml:324:26>>*/ }
    function split(s){
-     /*<<random.ml:208:4>>*/ var
-      /*<<random.ml:166:4>>*/ i1 =  /*<<random.ml:166:4>>*/ caml_lxm_next(s),
-      /*<<random.ml:166:4>>*/ i2 =  /*<<random.ml:166:4>>*/ caml_lxm_next(s),
-      /*<<random.ml:166:4>>*/ i3 =  /*<<random.ml:166:4>>*/ caml_lxm_next(s),
-      /*<<random.ml:166:4>>*/ i4 =  /*<<random.ml:166:4>>*/ caml_lxm_next(s);
-     /*<<random.ml:210:4>>*/ return mk(i1, i2, i3, i4);
-    /*<<random.ml:210:18>>*/ }
+     /*<<random.ml:328:4>>*/ var
+      /*<<random.ml:258:4>>*/ i1 =  /*<<random.ml:258:4>>*/ caml_lxm_next(s),
+      /*<<random.ml:258:4>>*/ i2 =  /*<<random.ml:258:4>>*/ caml_lxm_next(s),
+      /*<<random.ml:258:4>>*/ i3 =  /*<<random.ml:258:4>>*/ caml_lxm_next(s),
+      /*<<random.ml:258:4>>*/ i4 =  /*<<random.ml:258:4>>*/ caml_lxm_next(s);
+     /*<<random.ml:330:4>>*/ return mk(i1, i2, i3, i4);
+    /*<<random.ml:330:18>>*/ }
    function mk_default(param){
-     /*<<random.ml:215:2>>*/ return mk(_m_, _l_, _k_, _j_);
-    /*<<random.ml:218:31>>*/ }
-    /*<<random.ml:221:2>>*/  /*<<random.ml:221:2>>*/ var
+     /*<<random.ml:335:2>>*/ return mk(_m_, _l_, _k_, _j_);
+    /*<<random.ml:338:31>>*/ }
+    /*<<random.ml:341:2>>*/  /*<<random.ml:341:2>>*/ var
     random_key =
-       /*<<random.ml:221:2>>*/ caml_call2
+       /*<<random.ml:341:2>>*/ caml_call2
        (Stdlib_Domain[10][1], [0, split], mk_default);
    function bits$0(param){
-     /*<<random.ml:223:14>>*/ return bits
-            ( /*<<random.ml:223:25>>*/ caml_call1
+     /*<<random.ml:343:14>>*/ return bits
+            ( /*<<random.ml:343:25>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:223:52>>*/ }
+    /*<<random.ml:343:52>>*/ }
    function int$1(bound){
-     /*<<random.ml:224:16>>*/ return int$0
-            ( /*<<random.ml:224:26>>*/ caml_call1
+     /*<<random.ml:344:16>>*/ return int$0
+            ( /*<<random.ml:344:26>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              bound);
-    /*<<random.ml:224:59>>*/ }
+    /*<<random.ml:344:59>>*/ }
    function full_int$0(bound){
-     /*<<random.ml:225:21>>*/ return full_int
-            ( /*<<random.ml:225:36>>*/ caml_call1
+     /*<<random.ml:345:21>>*/ return full_int
+            ( /*<<random.ml:345:36>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              bound);
-    /*<<random.ml:225:69>>*/ }
+    /*<<random.ml:345:69>>*/ }
+   function int_in_range$0(min, max){
+     /*<<random.ml:347:2>>*/ return int_in_range
+            ( /*<<random.ml:347:21>>*/ caml_call1
+              (Stdlib_Domain[10][2], random_key),
+             min,
+             max);
+    /*<<random.ml:347:58>>*/ }
    function int32$0(bound){
-     /*<<random.ml:226:18>>*/ return int32
-            ( /*<<random.ml:226:30>>*/ caml_call1
+     /*<<random.ml:348:18>>*/ return int32
+            ( /*<<random.ml:348:30>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              bound);
-    /*<<random.ml:226:63>>*/ }
+    /*<<random.ml:348:63>>*/ }
+   function int32_in_range$0(min, max){
+     /*<<random.ml:350:2>>*/ return int32_in_range
+            ( /*<<random.ml:350:23>>*/ caml_call1
+              (Stdlib_Domain[10][2], random_key),
+             min,
+             max);
+    /*<<random.ml:350:60>>*/ }
    function nativeint$0(bound){
-     /*<<random.ml:227:22>>*/ return nativeint
-            ( /*<<random.ml:227:38>>*/ caml_call1
+     /*<<random.ml:351:22>>*/ return nativeint
+            ( /*<<random.ml:351:38>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              bound);
-    /*<<random.ml:227:71>>*/ }
+    /*<<random.ml:351:71>>*/ }
+   function nativeint_in_range$0(min, max){
+     /*<<random.ml:353:2>>*/ return nativeint_in_range
+            ( /*<<random.ml:353:27>>*/ caml_call1
+              (Stdlib_Domain[10][2], random_key),
+             min,
+             max);
+    /*<<random.ml:353:64>>*/ }
    function int64$0(bound){
-     /*<<random.ml:228:18>>*/ return int64
-            ( /*<<random.ml:228:30>>*/ caml_call1
+     /*<<random.ml:354:18>>*/ return int64
+            ( /*<<random.ml:354:30>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              bound);
-    /*<<random.ml:228:63>>*/ }
+    /*<<random.ml:354:63>>*/ }
+   function int64_in_range$0(min, max){
+     /*<<random.ml:356:2>>*/ return int64_in_range
+            ( /*<<random.ml:356:23>>*/ caml_call1
+              (Stdlib_Domain[10][2], random_key),
+             min,
+             max);
+    /*<<random.ml:356:60>>*/ }
    function float$1(scale){
-     /*<<random.ml:229:18>>*/ return float$0
-            ( /*<<random.ml:229:30>>*/ caml_call1
+     /*<<random.ml:357:18>>*/ return float$0
+            ( /*<<random.ml:357:30>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              scale);
-    /*<<random.ml:229:63>>*/ }
+    /*<<random.ml:357:63>>*/ }
    function bool$0(param){
-     /*<<random.ml:230:14>>*/ return bool
-            ( /*<<random.ml:230:25>>*/ caml_call1
+     /*<<random.ml:358:14>>*/ return bool
+            ( /*<<random.ml:358:25>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:230:52>>*/ }
+    /*<<random.ml:358:52>>*/ }
    function bits32$0(param){
-     /*<<random.ml:231:16>>*/ return bits32
-            ( /*<<random.ml:231:29>>*/ caml_call1
+     /*<<random.ml:359:16>>*/ return bits32
+            ( /*<<random.ml:359:29>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:231:56>>*/ }
+    /*<<random.ml:359:56>>*/ }
    function bits64$0(param){
-     /*<<random.ml:232:16>>*/  /*<<random.ml:232:29>>*/ var
+     /*<<random.ml:360:16>>*/  /*<<random.ml:360:29>>*/ var
      s =
-        /*<<random.ml:232:29>>*/ caml_call1(Stdlib_Domain[10][2], random_key);
-     /*<<random.ml:166:4>>*/ return  /*<<random.ml:166:4>>*/ caml_lxm_next(s);
-    /*<<random.ml:232:56>>*/ }
+        /*<<random.ml:360:29>>*/ caml_call1(Stdlib_Domain[10][2], random_key);
+     /*<<random.ml:258:4>>*/ return  /*<<random.ml:258:4>>*/ caml_lxm_next(s);
+    /*<<random.ml:360:56>>*/ }
    function nativebits$0(param){
-     /*<<random.ml:233:20>>*/ return nativebits
-            ( /*<<random.ml:233:37>>*/ caml_call1
+     /*<<random.ml:361:20>>*/ return nativebits
+            ( /*<<random.ml:361:37>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:233:64>>*/ }
+    /*<<random.ml:361:64>>*/ }
    function full_init(seed){
-     /*<<random.ml:235:21>>*/ return reinit
-            ( /*<<random.ml:235:34>>*/ caml_call1
+     /*<<random.ml:363:21>>*/ return reinit
+            ( /*<<random.ml:363:34>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key),
              seed);
-    /*<<random.ml:235:66>>*/ }
+    /*<<random.ml:363:66>>*/ }
    function init(seed){
-     /*<<random.ml:236:16>>*/ return full_init([0, seed]);
-    /*<<random.ml:236:36>>*/ }
+     /*<<random.ml:364:16>>*/ return full_init([0, seed]);
+    /*<<random.ml:364:36>>*/ }
    function self_init(param){
-     /*<<random.ml:237:19>>*/ return full_init
-            ( /*<<random.ml:237:29>>*/ caml_sys_random_seed(0));
-    /*<<random.ml:237:44>>*/ }
+     /*<<random.ml:365:19>>*/ return full_init
+            ( /*<<random.ml:365:29>>*/ caml_sys_random_seed(0));
+    /*<<random.ml:365:44>>*/ }
    function split$0(param){
-     /*<<random.ml:241:15>>*/ return split
-            ( /*<<random.ml:241:27>>*/ caml_call1
+     /*<<random.ml:369:15>>*/ return split
+            ( /*<<random.ml:369:27>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:241:54>>*/ }
+    /*<<random.ml:369:54>>*/ }
    function get_state(param){
-     /*<<random.ml:245:19>>*/ return copy
-            ( /*<<random.ml:245:30>>*/ caml_call1
+     /*<<random.ml:373:19>>*/ return copy
+            ( /*<<random.ml:373:30>>*/ caml_call1
               (Stdlib_Domain[10][2], random_key));
-    /*<<random.ml:245:57>>*/ }
+    /*<<random.ml:373:57>>*/ }
    function set_state(src){
-     /*<<random.ml:246:18>>*/  /*<<random.ml:246:31>>*/ var
+     /*<<random.ml:374:18>>*/  /*<<random.ml:374:31>>*/ var
      dst =
-        /*<<random.ml:246:31>>*/ caml_call1(Stdlib_Domain[10][2], random_key);
+        /*<<random.ml:374:31>>*/ caml_call1(Stdlib_Domain[10][2], random_key);
      /*<<random.ml:86:4>>*/ return  /*<<random.ml:86:4>>*/ caml_ba_blit
             (src, dst);
-    /*<<random.ml:246:60>>*/ }
+    /*<<random.ml:374:60>>*/ }
    var
     Stdlib_Random =
       [0,
@@ -23599,9 +25409,13 @@
        bits$0,
        int$1,
        full_int$0,
+       int_in_range$0,
        int32$0,
+       int32_in_range$0,
        nativeint$0,
+       nativeint_in_range$0,
        int64$0,
+       int64_in_range$0,
        float$1,
        bool$0,
        bits32$0,
@@ -23614,9 +25428,13 @@
         bits,
         int$0,
         full_int,
+        int_in_range,
         int32,
+        int32_in_range,
         nativeint,
+        nativeint_in_range,
         int64,
+        int64_in_range,
         float$0,
         bool,
         bits32,
@@ -23628,7 +25446,7 @@
        get_state,
        set_state,
        split$0];
-   runtime.caml_register_global(32, Stdlib_Random, "Stdlib__Random");
+   runtime.caml_register_global(35, Stdlib_Random, "Stdlib__Random");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -23723,15 +25541,15 @@
        (Stdlib_Atomic[1], randomized_default);
    function randomize(param){
      /*<<hashtbl.ml:57:19>>*/ return  /*<<hashtbl.ml:57:19>>*/ caml_call2
-            (Stdlib_Atomic[3], randomized, 1);
+            (Stdlib_Atomic[4], randomized, 1);
     /*<<hashtbl.ml:57:45>>*/ }
    function is_randomized(param){
-     /*<<hashtbl.ml:58:23>>*/ return caml_call1(Stdlib_Atomic[2], randomized);
+     /*<<hashtbl.ml:58:23>>*/ return caml_call1(Stdlib_Atomic[3], randomized);
     /*<<hashtbl.ml:58:44>>*/ }
     /*<<hashtbl.ml:60:15>>*/  /*<<hashtbl.ml:60:15>>*/ var
     prng_key =
        /*<<hashtbl.ml:60:15>>*/ caml_call2
-       (Stdlib_Domain[10][1], 0, Stdlib_Random[15][2]);
+       (Stdlib_Domain[10][1], 0, Stdlib_Random[19][2]);
    function power_2_above(x, n){
      /*<<hashtbl.ml:69:2>>*/ var x$0 = x;
      /*<<hashtbl.ml:69:2>>*/ for(;;){
@@ -23742,19 +25560,17 @@
     }
     /*<<hashtbl.ml:71:30>>*/ }
    function create(opt, initial_size){
-     /*<<hashtbl.ml:74:2>>*/ if(opt)
-     var sth = opt[1], random = sth;
-    else
-     var
-      random =
-         /*<<hashtbl.ml:73:22>>*/ caml_call1(Stdlib_Atomic[2], randomized);
-     /*<<hashtbl.ml:74:10>>*/  /*<<hashtbl.ml:74:10>>*/ var
-     s = power_2_above(16, initial_size);
+     /*<<hashtbl.ml:74:10>>*/ var
+     random =
+       opt
+        ? opt[1]
+        :  /*<<hashtbl.ml:73:22>>*/ caml_call1(Stdlib_Atomic[3], randomized),
+      /*<<hashtbl.ml:74:10>>*/ s = power_2_above(16, initial_size);
      /*<<hashtbl.ml:75:2>>*/ if(random)
       /*<<hashtbl.ml:76:37>>*/ var
        /*<<hashtbl.ml:76:37>>*/ _ak_ =
          /*<<hashtbl.ml:76:37>>*/ caml_call1(Stdlib_Domain[10][2], prng_key),
-      seed =  /*<<hashtbl.ml:76:19>>*/ caml_call1(Stdlib_Random[15][4], _ak_);
+      seed =  /*<<hashtbl.ml:76:19>>*/ caml_call1(Stdlib_Random[19][4], _ak_);
     else
      var seed = 0;
      /*<<hashtbl.ml:78:2>>*/ return [0,
@@ -23762,7 +25578,7 @@
              /*<<hashtbl.ml:78:52>>*/ caml_make_vect(s, 0),
             seed,
             s];
-    /*<<hashtbl.ml:78:72>>*/ }
+   }
    function clear(h){
      /*<<hashtbl.ml:81:2>>*/ var _aj_ = 0 < h[1] ? 1 : 0;
     return _aj_
@@ -23770,7 +25586,7 @@
                [1]
               = 0,
                /*<<hashtbl.ml:83:4>>*/ caml_call4
-               (Stdlib_Array[7], h[2], 0, h[2].length - 1, 0))
+               (Stdlib_Array[8], h[2], 0, h[2].length - 1, 0))
             : _aj_;
     /*<<hashtbl.ml:84:5>>*/ }
    function reset(h){
@@ -23813,7 +25629,7 @@
      _ah_ = h[3],
       /*<<hashtbl.ml:113:29>>*/ _ai_ =
         /*<<hashtbl.ml:113:29>>*/ caml_call2
-        (Stdlib_Array[13], copy_bucketlist, h[2]);
+        (Stdlib_Array[14], copy_bucketlist, h[2]);
      /*<<hashtbl.ml:113:13>>*/ return [0, h[1], _ai_, _ah_, _ag_];
     /*<<hashtbl.ml:113:63>>*/ }
    function length(h){
@@ -24053,7 +25869,7 @@
      /*<<hashtbl.ml:240:2>>*/ var
       /*<<hashtbl.ml:241:4>>*/ mbl =
         /*<<hashtbl.ml:241:4>>*/ caml_call3
-        (Stdlib_Array[17],
+        (Stdlib_Array[18],
          function(m, b){
            /*<<hashtbl.ml:241:32>>*/  /*<<hashtbl.ml:241:42>>*/ var
            _L_ = bucket_length(0, b);
@@ -24065,7 +25881,7 @@
       /*<<hashtbl.ml:242:14>>*/ histo =
         /*<<hashtbl.ml:242:14>>*/ caml_make_vect(mbl + 1 | 0, 0);
      /*<<hashtbl.ml:243:2>>*/  /*<<hashtbl.ml:243:2>>*/ caml_call2
-     (Stdlib_Array[11],
+     (Stdlib_Array[12],
       function(b){
         /*<<hashtbl.ml:245:6>>*/  /*<<hashtbl.ml:245:14>>*/ var
         l = bucket_length(0, b);
@@ -24624,19 +26440,17 @@
      /*<<hashtbl.ml:618:2>>*/ return tbl;
     /*<<hashtbl.ml:619:5>>*/ }
    function rebuild(opt, h){
-     /*<<hashtbl.ml:622:2>>*/ if(opt)
-     var sth = opt[1], random = sth;
-    else
-     var
-      random =
-         /*<<hashtbl.ml:621:23>>*/ caml_call1(Stdlib_Atomic[2], randomized);
-     /*<<hashtbl.ml:622:10>>*/  /*<<hashtbl.ml:622:10>>*/ var
-     s = power_2_above(16, h[2].length - 1);
+     /*<<hashtbl.ml:622:10>>*/ var
+     random =
+       opt
+        ? opt[1]
+        :  /*<<hashtbl.ml:621:23>>*/ caml_call1(Stdlib_Atomic[3], randomized),
+      /*<<hashtbl.ml:622:10>>*/ s = power_2_above(16, h[2].length - 1);
      /*<<hashtbl.ml:623:2>>*/ if(random)
       /*<<hashtbl.ml:624:37>>*/ var
        /*<<hashtbl.ml:624:37>>*/ _g_ =
          /*<<hashtbl.ml:624:37>>*/ caml_call1(Stdlib_Domain[10][2], prng_key),
-      seed =  /*<<hashtbl.ml:624:19>>*/ caml_call1(Stdlib_Random[15][4], _g_);
+      seed =  /*<<hashtbl.ml:624:19>>*/ caml_call1(Stdlib_Random[19][4], _g_);
     else
      var seed = 4 <= h.length - 1 ? h[3] : 0;
      /*<<hashtbl.ml:627:11>>*/ var
@@ -24646,7 +26460,7 @@
      /*<<hashtbl.ml:633:2>>*/ insert_all_buckets
      (function(_i_){ /*<<?>>*/ return key_index(h$0, _i_);}, 0, h[2], h$0[2]);
      /*<<hashtbl.ml:633:2>>*/ return h$0;
-    /*<<hashtbl.ml:634:4>>*/ }
+   }
    var
     Stdlib_Hashtbl =
       [0,
@@ -24740,7 +26554,7 @@
    function create(l){
      /*<<weak.ml:28:2>>*/ var
      _J_ = 0 <= l ? 1 : 0,
-     _K_ = _J_ ? l <= Stdlib_Obj[24][15] ? 1 : 0 : _J_;
+     _K_ = _J_ ? l <= Stdlib_Obj[23][15] ? 1 : 0 : _J_;
     if(1 - _K_)
       /*<<weak.ml:29:4>>*/  /*<<weak.ml:29:4>>*/ caml_call1
       (Stdlib[1], cst_Weak_create);
@@ -24856,7 +26670,7 @@
     function fold(f, t, init){
       /*<<weak.ml:143:4>>*/ var i = 0;
       /*<<weak.ml:149:4>>*/ return  /*<<weak.ml:149:4>>*/ caml_call3
-             (Stdlib_Array[19],
+             (Stdlib_Array[20],
               function(b, accu$1){
                var i$0 = i, accu = accu$1;
                 /*<<weak.ml:144:6>>*/ for(;;){
@@ -24881,7 +26695,7 @@
     function iter(f, t){
       /*<<weak.ml:153:4>>*/ var i = 0;
       /*<<weak.ml:159:15>>*/ return  /*<<weak.ml:159:15>>*/ caml_call2
-             (Stdlib_Array[11],
+             (Stdlib_Array[12],
               function(b){
                var i$0 = i;
                 /*<<weak.ml:154:6>>*/ for(;;){
@@ -24915,7 +26729,7 @@
     function count(t){
       /*<<weak.ml:178:4>>*/ var _v_ = 0;
       /*<<weak.ml:178:4>>*/ return  /*<<weak.ml:178:4>>*/ caml_call3
-             (Stdlib_Array[19],
+             (Stdlib_Array[20],
               function(_w_, _x_){
                 /*<<?>>*/ return count_bucket(_v_, _w_, _x_);
               },
@@ -24956,7 +26770,7 @@
          /*<<weak.ml:248:24>>*/ caml_make_vect(newsz, 0);
       /*<<weak.ml:249:8>>*/ blit(bucket$0, 0, newbucket$0, 0, sz);
       /*<<weak.ml:250:8>>*/  /*<<weak.ml:250:8>>*/ caml_call5
-      (Stdlib_Array[8], hashes, 0, newhashes, 0, sz);
+      (Stdlib_Array[9], hashes, 0, newhashes, 0, sz);
       /*<<weak.ml:251:8>>*/  /*<<weak.ml:251:8>>*/ caml_call3
       (setter, newbucket$0, sz, d);
       /*<<weak.ml:252:8>>*/ caml_check_bound(newhashes, sz)[1 + sz] = h;
@@ -25017,7 +26831,7 @@
           /*<<weak.ml:209:30>>*/ var
            /*<<weak.ml:209:30>>*/ _p_ =
              /*<<weak.ml:209:30>>*/ caml_call3
-             (Stdlib_Array[5], hbucket, 0, prev_len),
+             (Stdlib_Array[6], hbucket, 0, prev_len),
           _q_ = t[5];
           /*<<weak.ml:209:8>>*/ caml_check_bound(t[2], _q_)[1 + _q_] = _p_;
         }
@@ -25044,7 +26858,7 @@
         /*<<weak.ml:220:17>>*/ newt = create$0(newlen),
        i = 0;
        /*<<weak.ml:169:16>>*/  /*<<weak.ml:169:16>>*/ caml_call2
-       (Stdlib_Array[12],
+       (Stdlib_Array[13],
         function(j, ob){
          var oi = i;
           /*<<weak.ml:164:6>>*/ for(;;){
@@ -25213,13 +27027,13 @@
       /*<<weak.ml:326:4>>*/ var
       len = t[1].length - 1,
        /*<<weak.ml:327:15>>*/ lens =
-         /*<<weak.ml:327:15>>*/ caml_call2(Stdlib_Array[13], length, t[1]);
+         /*<<weak.ml:327:15>>*/ caml_call2(Stdlib_Array[14], length, t[1]);
       /*<<weak.ml:328:4>>*/  /*<<weak.ml:328:4>>*/ caml_call2
-      (Stdlib_Array[34], runtime.caml_int_compare, lens);
+      (Stdlib_Array[35], runtime.caml_int_compare, lens);
       /*<<weak.ml:329:17>>*/ var
        /*<<weak.ml:329:17>>*/ totlen =
          /*<<weak.ml:329:17>>*/ caml_call3
-         (Stdlib_Array[17],
+         (Stdlib_Array[18],
           function(_g_, _f_){ /*<<?>>*/ return _g_ + _f_ | 0;},
           0,
           lens),
@@ -25330,8 +27144,9 @@
     pp_infinity = 1000000010,
     _b_ = [0, cst$16],
     _c_ = [1, "margin <= max_indent"],
-    _d_ = [0, 0],
-    _e_ = [1, "max_indent < 2"],
+    _d_ = [1, "margin >= pp_infinity"],
+    _e_ = [0, 0],
+    _f_ = [1, "max_indent < 2"],
     cst_Format_pp_set_geometry = "Format.pp_set_geometry: ";
    function pp_output_string(state, s){
      /*<<format.ml:251:31>>*/ return caml_call3
@@ -25349,10 +27164,10 @@
     /*<<format.ml:260:31>>*/ }
    function format_string(state, s){
      /*<<format.ml:264:2>>*/  /*<<format.ml:264:5>>*/ var
-     _a9_ = s !== cst$16 ? 1 : 0;
-     /*<<format.ml:264:5>>*/ return _a9_
+     _a__ = s !== cst$16 ? 1 : 0;
+     /*<<format.ml:264:5>>*/ return _a__
             ? format_pp_text(state, caml_ml_string_length(s), s)
-            : _a9_;
+            : _a__;
     /*<<format.ml:264:58>>*/ }
    function break_new_line(state, param, width){
     var after = param[3], offset = param[2], before = param[1];
@@ -25416,8 +27231,8 @@
         var width$0 = match$4[1][2];
          /*<<format.ml:281:29>>*/ return break_new_line(state, _a_, width$0);
        case 4:
-        var _a7_ = state[10] !== (state[6] - state[9] | 0) ? 1 : 0;
-        if(! _a7_) return _a7_;
+        var _a8_ = state[10] !== (state[6] - state[9] | 0) ? 1 : 0;
+        if(! _a8_) return _a8_;
          /*<<format.ml:306:8>>*/  /*<<format.ml:306:8>>*/ var
          match$1 =
             /*<<format.ml:306:8>>*/ caml_call1(Stdlib_Queue[6], state[28]);
@@ -25503,11 +27318,11 @@
          if(param$0){
           var tail = param$0[2], head = param$0[1];
           if(insertion_point > head){param$0 = tail; continue;}
-          var _a8_ = head;
+          var _a9_ = head;
          }
          else
-          var _a8_ = first;
-         var tab = _a8_;
+          var _a9_ = first;
+         var tab = _a9_;
          break;
         }
        }
@@ -25565,10 +27380,10 @@
       length = match$0[3],
       token = match$0[2],
       pending_count = state[13] - state[12] | 0,
-      _a5_ = 0 <= size ? 1 : 0,
-       /*<<format.ml:435:7>>*/ _a6_ =
-        _a5_ || (state[9] <= pending_count ? 1 : 0);
-     if(! _a6_)  /*<<format.ml:435:7>>*/ return _a6_;
+      _a6_ = 0 <= size ? 1 : 0,
+       /*<<format.ml:435:7>>*/ _a7_ =
+        _a6_ || (state[9] <= pending_count ? 1 : 0);
+     if(! _a7_)  /*<<format.ml:435:7>>*/ return _a7_;
       /*<<format.ml:436:6>>*/  /*<<format.ml:436:6>>*/ caml_call1
       (Stdlib_Queue[5], state[28]);
       /*<<format.ml:437:20>>*/  /*<<format.ml:437:20>>*/ var
@@ -25603,9 +27418,9 @@
      left_total = match$0[1],
       /*<<format.ml:479:4>>*/ size = queue_elem[1];
     if(left_total < state[12]) return initialize_scan_stack(state[1]);
-    var _a4_ = queue_elem[2];
-    if(typeof _a4_ !== "number")
-     switch(_a4_[0]){
+    var _a5_ = queue_elem[2];
+    if(typeof _a5_ !== "number")
+     switch(_a5_[0]){
        case 3:
         if(1 - ty){
          var x$0 = state[13] + size | 0;
@@ -25642,25 +27457,25 @@
        /*<<format.ml:516:15>>*/ elem = [0, size, [3, indent, br_ty], 0];
       /*<<format.ml:517:4>>*/ return scan_push(state, 0, elem);
     }
-    var _a3_ = state[14] === state[15] ? 1 : 0;
-    if(! _a3_) return _a3_;
+    var _a4_ = state[14] === state[15] ? 1 : 0;
+    if(! _a4_) return _a4_;
     var s = state[16], x = caml_ml_string_length(s);
      /*<<format.ml:454:2>>*/ return enqueue_string_as(state, x, s);
     /*<<format.ml:519:45>>*/ }
    function pp_close_box(state, param){
-     /*<<format.ml:527:2>>*/ var _a1_ = 1 < state[14] ? 1 : 0;
-    if(_a1_){
+     /*<<format.ml:527:2>>*/ var _a2_ = 1 < state[14] ? 1 : 0;
+    if(_a2_){
      if(state[14] < state[15]){
        /*<<format.ml:531:6>>*/ pp_enqueue(state, [0, zero, 1, 0]);
        /*<<format.ml:532:6>>*/ set_size(state, 1);
        /*<<format.ml:532:27>>*/ set_size(state, 0);
      }
      state[14] = state[14] - 1 | 0;
-     var _a2_ = 0;
+     var _a3_ = 0;
     }
     else
-     var _a2_ = _a1_;
-    return _a2_;
+     var _a3_ = _a2_;
+    return _a3_;
     /*<<format.ml:535:5>>*/ }
    function pp_open_stag(state, tag_name){
      /*<<format.ml:540:2>>*/ if(state[22]){
@@ -25669,8 +27484,8 @@
       /*<<format.ml:543:4>>*/  /*<<format.ml:543:4>>*/ caml_call1
       (state[26], tag_name);
     }
-    var _a0_ = state[23];
-    if(! _a0_) return _a0_;
+    var _a1_ = state[23];
+    if(! _a1_) return _a1_;
      /*<<format.ml:546:16>>*/  /*<<format.ml:546:16>>*/ var
      token = [5, tag_name];
      /*<<format.ml:547:21>>*/ return pp_enqueue(state, [0, zero, token, 0]);
@@ -25678,8 +27493,8 @@
    function pp_close_stag(state, param){
      /*<<format.ml:552:2>>*/ if(state[23])
       /*<<format.ml:553:4>>*/ pp_enqueue(state, [0, zero, 5, 0]);
-    var _aY_ = state[22];
-    if(_aY_){
+    var _aZ_ = state[22];
+    if(_aZ_){
       /*<<format.ml:555:10>>*/  /*<<format.ml:555:10>>*/ var
       match =  /*<<format.ml:555:10>>*/ caml_call1(Stdlib_Stack[5], state[4]);
      if(match){
@@ -25687,11 +27502,11 @@
        /*<<format.ml:558:6>>*/ return  /*<<format.ml:558:6>>*/ caml_call1
               (state[27], tag_name);
      }
-     var _aZ_ = 0;
+     var _a0_ = 0;
     }
     else
-     var _aZ_ = _aY_;
-     /*<<format.ml:556:14>>*/ return _aZ_;
+     var _a0_ = _aZ_;
+     /*<<format.ml:556:14>>*/ return _a0_;
     /*<<format.ml:558:39>>*/ }
    function pp_set_print_tags(state, b){
      /*<<format.ml:560:32>>*/ state[22] = b;
@@ -25762,8 +27577,8 @@
     }
     /*<<format.ml:615:16>>*/ }
    function pp_print_as_size(state, size, s){
-     /*<<format.ml:625:2>>*/ var _aX_ = state[14] < state[15] ? 1 : 0;
-    return _aX_ ? enqueue_string_as(state, size, s) : _aX_;
+     /*<<format.ml:625:2>>*/ var _aY_ = state[14] < state[15] ? 1 : 0;
+    return _aY_ ? enqueue_string_as(state, size, s) : _aY_;
     /*<<format.ml:626:37>>*/ }
    function pp_print_as(state, isize, s){
      /*<<format.ml:630:2>>*/ return pp_print_as_size(state, isize, s);
@@ -25796,211 +27611,213 @@
      s =  /*<<format.ml:650:22>>*/ caml_call2(Stdlib_String[1], 1, c);
      /*<<format.ml:630:2>>*/ return pp_print_as_size(state, 1, s);
     /*<<format.ml:650:39>>*/ }
+   function pp_print_nothing(state, param){ /*<<format.ml:652:33>>*/ return 0;
+    /*<<format.ml:652:35>>*/ }
    function pp_open_hbox(state, param){
-     /*<<format.ml:654:28>>*/ return pp_open_box_gen(state, 0, 0);
-    /*<<format.ml:654:59>>*/ }
+     /*<<format.ml:656:28>>*/ return pp_open_box_gen(state, 0, 0);
+    /*<<format.ml:656:59>>*/ }
    function pp_open_vbox(state, indent){
-     /*<<format.ml:655:32>>*/ return pp_open_box_gen(state, indent, 1);
-    /*<<format.ml:655:68>>*/ }
+     /*<<format.ml:657:32>>*/ return pp_open_box_gen(state, indent, 1);
+    /*<<format.ml:657:68>>*/ }
    function pp_open_hvbox(state, indent){
-     /*<<format.ml:657:33>>*/ return pp_open_box_gen(state, indent, 2);
-    /*<<format.ml:657:70>>*/ }
+     /*<<format.ml:659:33>>*/ return pp_open_box_gen(state, indent, 2);
+    /*<<format.ml:659:70>>*/ }
    function pp_open_hovbox(state, indent){
-     /*<<format.ml:658:34>>*/ return pp_open_box_gen(state, indent, 3);
-    /*<<format.ml:658:72>>*/ }
+     /*<<format.ml:660:34>>*/ return pp_open_box_gen(state, indent, 3);
+    /*<<format.ml:660:72>>*/ }
    function pp_open_box(state, indent){
-     /*<<format.ml:659:31>>*/ return pp_open_box_gen(state, indent, 4);
-    /*<<format.ml:659:66>>*/ }
+     /*<<format.ml:661:31>>*/ return pp_open_box_gen(state, indent, 4);
+    /*<<format.ml:661:66>>*/ }
    function pp_print_newline(state, param){
-     /*<<format.ml:671:2>>*/ pp_flush_queue(state, 1);
-     /*<<format.ml:671:2>>*/ return  /*<<format.ml:671:2>>*/ caml_call1
-            (state[18], 0);
-    /*<<format.ml:671:68>>*/ }
-   function pp_print_flush(state, param){
-     /*<<format.ml:673:2>>*/ pp_flush_queue(state, 0);
+     /*<<format.ml:673:2>>*/ pp_flush_queue(state, 1);
      /*<<format.ml:673:2>>*/ return  /*<<format.ml:673:2>>*/ caml_call1
             (state[18], 0);
-    /*<<format.ml:673:69>>*/ }
+    /*<<format.ml:673:68>>*/ }
+   function pp_print_flush(state, param){
+     /*<<format.ml:675:2>>*/ pp_flush_queue(state, 0);
+     /*<<format.ml:675:2>>*/ return  /*<<format.ml:675:2>>*/ caml_call1
+            (state[18], 0);
+    /*<<format.ml:675:69>>*/ }
    function pp_force_newline(state, param){
-     /*<<format.ml:678:2>>*/ var _aW_ = state[14] < state[15] ? 1 : 0;
-    return _aW_ ? enqueue_advance(state, [0, zero, 3, 0]) : _aW_;
-    /*<<format.ml:679:78>>*/ }
+     /*<<format.ml:680:2>>*/ var _aX_ = state[14] < state[15] ? 1 : 0;
+    return _aX_ ? enqueue_advance(state, [0, zero, 3, 0]) : _aX_;
+    /*<<format.ml:681:78>>*/ }
    function pp_print_if_newline(state, param){
-     /*<<format.ml:684:2>>*/ var _aV_ = state[14] < state[15] ? 1 : 0;
-    return _aV_ ? enqueue_advance(state, [0, zero, 4, 0]) : _aV_;
-    /*<<format.ml:686:61>>*/ }
+     /*<<format.ml:686:2>>*/ var _aW_ = state[14] < state[15] ? 1 : 0;
+    return _aW_ ? enqueue_advance(state, [0, zero, 4, 0]) : _aW_;
+    /*<<format.ml:688:61>>*/ }
    function pp_print_custom_break(state, fits, breaks){
-     /*<<format.ml:692:2>>*/ var
+     /*<<format.ml:694:2>>*/ var
      after = fits[3],
      width = fits[2],
      before = fits[1],
-     _aU_ = state[14] < state[15] ? 1 : 0;
-    if(! _aU_) return _aU_;
-     /*<<format.ml:695:25>>*/ var
+     _aV_ = state[14] < state[15] ? 1 : 0;
+    if(! _aV_) return _aV_;
+     /*<<format.ml:697:25>>*/ var
      size = - state[13] | 0,
-      /*<<format.ml:695:25>>*/ token = [1, fits, breaks],
+      /*<<format.ml:697:25>>*/ token = [1, fits, breaks],
      length =
        (caml_ml_string_length(before) + width | 0)
-       +  /*<<format.ml:696:4>>*/ caml_ml_string_length(after)
+       +  /*<<format.ml:698:4>>*/ caml_ml_string_length(after)
        | 0,
-      /*<<format.ml:697:15>>*/ elem = [0, size, token, length];
-     /*<<format.ml:698:4>>*/ return scan_push(state, 1, elem);
-    /*<<format.ml:698:29>>*/ }
+      /*<<format.ml:699:15>>*/ elem = [0, size, token, length];
+     /*<<format.ml:700:4>>*/ return scan_push(state, 1, elem);
+    /*<<format.ml:700:29>>*/ }
    function pp_print_break(state, width, offset){
-     /*<<format.ml:705:2>>*/ return pp_print_custom_break
+     /*<<format.ml:707:2>>*/ return pp_print_custom_break
             (state, [0, cst$6, width, cst$5], [0, cst$4, offset, cst$3]);
-    /*<<format.ml:706:50>>*/ }
+    /*<<format.ml:708:50>>*/ }
    function pp_print_space(state, param){
-     /*<<format.ml:714:30>>*/ return pp_print_break(state, 1, 0);
-    /*<<format.ml:714:54>>*/ }
+     /*<<format.ml:716:30>>*/ return pp_print_break(state, 1, 0);
+    /*<<format.ml:716:54>>*/ }
    function pp_print_cut(state, param){
-     /*<<format.ml:715:28>>*/ return pp_print_break(state, 0, 0);
-    /*<<format.ml:715:52>>*/ }
+     /*<<format.ml:717:28>>*/ return pp_print_break(state, 0, 0);
+    /*<<format.ml:717:52>>*/ }
    function pp_open_tbox(state, param){
-     /*<<format.ml:720:2>>*/ state[14] = state[14] + 1 | 0;
-    var _aT_ = state[14] < state[15] ? 1 : 0;
-    if(! _aT_) return _aT_;
-     /*<<format.ml:723:15>>*/  /*<<format.ml:723:15>>*/ var
+     /*<<format.ml:722:2>>*/ state[14] = state[14] + 1 | 0;
+    var _aU_ = state[14] < state[15] ? 1 : 0;
+    if(! _aU_) return _aU_;
+     /*<<format.ml:725:15>>*/  /*<<format.ml:725:15>>*/ var
      elem = [0, zero, [4, [0, [0, 0]]], 0];
-     /*<<format.ml:724:4>>*/ return enqueue_advance(state, elem);
-    /*<<format.ml:724:30>>*/ }
+     /*<<format.ml:726:4>>*/ return enqueue_advance(state, elem);
+    /*<<format.ml:726:30>>*/ }
    function pp_close_tbox(state, param){
-     /*<<format.ml:729:2>>*/ var _aQ_ = 1 < state[14] ? 1 : 0;
-    if(_aQ_){
-     var _aR_ = state[14] < state[15] ? 1 : 0;
-     if(_aR_){
-       /*<<format.ml:732:16>>*/  /*<<format.ml:732:16>>*/ var
+     /*<<format.ml:731:2>>*/ var _aR_ = 1 < state[14] ? 1 : 0;
+    if(_aR_){
+     var _aS_ = state[14] < state[15] ? 1 : 0;
+     if(_aS_){
+       /*<<format.ml:734:16>>*/  /*<<format.ml:734:16>>*/ var
        elem = [0, zero, 2, 0];
-       /*<<format.ml:733:5>>*/ enqueue_advance(state, elem);
+       /*<<format.ml:735:5>>*/ enqueue_advance(state, elem);
       state[14] = state[14] - 1 | 0;
-      var _aS_ = 0;
+      var _aT_ = 0;
      }
      else
-      var _aS_ = _aR_;
+      var _aT_ = _aS_;
     }
     else
-     var _aS_ = _aQ_;
-    return _aS_;
-    /*<<format.ml:735:5>>*/ }
+     var _aT_ = _aR_;
+    return _aT_;
+    /*<<format.ml:737:5>>*/ }
    function pp_print_tbreak(state, width, offset){
-     /*<<format.ml:740:2>>*/ var _aP_ = state[14] < state[15] ? 1 : 0;
-    if(! _aP_) return _aP_;
-     /*<<format.ml:742:15>>*/ var
+     /*<<format.ml:742:2>>*/ var _aQ_ = state[14] < state[15] ? 1 : 0;
+    if(! _aQ_) return _aQ_;
+     /*<<format.ml:744:15>>*/ var
      size = - state[13] | 0,
-      /*<<format.ml:742:15>>*/ elem = [0, size, [2, width, offset], width];
-     /*<<format.ml:743:4>>*/ return scan_push(state, 1, elem);
-    /*<<format.ml:743:29>>*/ }
+      /*<<format.ml:744:15>>*/ elem = [0, size, [2, width, offset], width];
+     /*<<format.ml:745:4>>*/ return scan_push(state, 1, elem);
+    /*<<format.ml:745:29>>*/ }
    function pp_print_tab(state, param){
-     /*<<format.ml:746:28>>*/ return pp_print_tbreak(state, 0, 0);
-    /*<<format.ml:746:53>>*/ }
+     /*<<format.ml:748:28>>*/ return pp_print_tbreak(state, 0, 0);
+    /*<<format.ml:748:53>>*/ }
    function pp_set_tab(state, param){
-     /*<<format.ml:749:2>>*/ var _aO_ = state[14] < state[15] ? 1 : 0;
-    if(! _aO_) return _aO_;
-     /*<<format.ml:750:15>>*/  /*<<format.ml:750:15>>*/ var
+     /*<<format.ml:751:2>>*/ var _aP_ = state[14] < state[15] ? 1 : 0;
+    if(! _aP_) return _aP_;
+     /*<<format.ml:752:15>>*/  /*<<format.ml:752:15>>*/ var
      elem = [0, zero, 0, 0];
-     /*<<format.ml:751:4>>*/ return enqueue_advance(state, elem);
-    /*<<format.ml:751:30>>*/ }
+     /*<<format.ml:753:4>>*/ return enqueue_advance(state, elem);
+    /*<<format.ml:753:30>>*/ }
    function pp_set_max_boxes(state, n){
-     /*<<format.ml:761:31>>*/ var
-     _aM_ = 1 < n ? 1 : 0,
-     _aN_ = _aM_ ? (state[15] = n, 0) : _aM_;
-    return _aN_;
-    /*<<format.ml:761:68>>*/ }
+     /*<<format.ml:763:31>>*/ var
+     _aN_ = 1 < n ? 1 : 0,
+     _aO_ = _aN_ ? (state[15] = n, 0) : _aN_;
+    return _aO_;
+    /*<<format.ml:763:68>>*/ }
    function pp_get_max_boxes(state, param){
-     /*<<format.ml:764:32>>*/ return state[15];
-    /*<<format.ml:764:50>>*/ }
+     /*<<format.ml:766:32>>*/ return state[15];
+    /*<<format.ml:766:50>>*/ }
    function pp_over_max_boxes(state, param){
-     /*<<format.ml:766:33>>*/ return state[14] === state[15] ? 1 : 0;
-    /*<<format.ml:766:73>>*/ }
+     /*<<format.ml:768:33>>*/ return state[14] === state[15] ? 1 : 0;
+    /*<<format.ml:768:73>>*/ }
    function pp_set_ellipsis_text(state, s){
-     /*<<format.ml:769:35>>*/ state[16] = s;
+     /*<<format.ml:771:35>>*/ state[16] = s;
     return 0;
-    /*<<format.ml:769:57>>*/ }
+    /*<<format.ml:771:57>>*/ }
    function pp_get_ellipsis_text(state, param){
-     /*<<format.ml:770:36>>*/ return state[16];
-    /*<<format.ml:770:53>>*/ }
+     /*<<format.ml:772:36>>*/ return state[16];
+    /*<<format.ml:772:53>>*/ }
    function pp_limit(n){
-     /*<<format.ml:775:2>>*/ return n < 1000000010 ? n : 1000000009;
-    /*<<format.ml:775:49>>*/ }
+     /*<<format.ml:777:2>>*/ return n < 1000000010 ? n : 1000000009;
+    /*<<format.ml:777:49>>*/ }
    function pp_set_max_indent(state, n$0){
-     /*<<format.ml:791:2>>*/ var _aL_ = 1 < n$0 ? 1 : 0;
+     /*<<format.ml:793:2>>*/ var _aM_ = 1 < n$0 ? 1 : 0;
+    if(! _aM_) return _aM_;
+    var n$1 = state[6] - n$0 | 0, _aL_ = 1 <= n$1 ? 1 : 0;
     if(! _aL_) return _aL_;
-    var n$1 = state[6] - n$0 | 0, _aK_ = 1 <= n$1 ? 1 : 0;
-    if(! _aK_) return _aK_;
-     /*<<format.ml:781:12>>*/  /*<<format.ml:781:12>>*/ var n = pp_limit(n$1);
+     /*<<format.ml:783:12>>*/  /*<<format.ml:783:12>>*/ var n = pp_limit(n$1);
     state[7] = n;
     state[8] = state[6] - state[7] | 0;
-     /*<<format.ml:784:4>>*/ return pp_rinit(state);
-    /*<<format.ml:792:53>>*/ }
+     /*<<format.ml:786:4>>*/ return pp_rinit(state);
+    /*<<format.ml:794:53>>*/ }
    function pp_get_max_indent(state, param){
-     /*<<format.ml:795:33>>*/ return state[8];
-    /*<<format.ml:795:52>>*/ }
+     /*<<format.ml:797:33>>*/ return state[8];
+    /*<<format.ml:797:52>>*/ }
    function pp_set_margin(state, n){
-     /*<<format.ml:798:2>>*/ var _aI_ = 1 <= n ? 1 : 0;
-    if(! _aI_) return _aI_;
-     /*<<format.ml:799:12>>*/  /*<<format.ml:799:12>>*/ var n$0 = pp_limit(n);
+     /*<<format.ml:800:2>>*/ var _aJ_ = 1 <= n ? 1 : 0;
+    if(! _aJ_) return _aJ_;
+     /*<<format.ml:801:12>>*/  /*<<format.ml:801:12>>*/ var n$0 = pp_limit(n);
     state[6] = n$0;
     if(state[8] <= state[6])
      var new_max_indent = state[8];
     else
-      /*<<format.ml:808:15>>*/ var
-       /*<<format.ml:808:15>>*/ _aJ_ =
-         /*<<format.ml:808:15>>*/ caml_call2
+      /*<<format.ml:810:15>>*/ var
+       /*<<format.ml:810:15>>*/ _aK_ =
+         /*<<format.ml:810:15>>*/ caml_call2
          (Stdlib_Int[11], state[6] - state[7] | 0, state[6] / 2 | 0),
       new_max_indent =
-         /*<<format.ml:808:7>>*/ caml_call2(Stdlib_Int[11], _aJ_, 1);
-     /*<<format.ml:811:4>>*/ return pp_set_max_indent(state, new_max_indent);
-    /*<<format.ml:811:42>>*/ }
+         /*<<format.ml:810:7>>*/ caml_call2(Stdlib_Int[11], _aK_, 1);
+     /*<<format.ml:813:4>>*/ return pp_set_max_indent(state, new_max_indent);
+    /*<<format.ml:813:42>>*/ }
    function validate_geometry(param){
     var margin = param[2], max_indent = param[1];
-     /*<<format.ml:818:2>>*/ return 2 <= max_indent
-            ? margin <= max_indent ? _c_ : _d_
-            : _e_;
+     /*<<format.ml:820:2>>*/ return 2 <= max_indent
+            ? margin <= max_indent ? _c_ : 1000000010 <= margin ? _d_ : _e_
+            : _f_;
    }
    function check_geometry(geometry){
-     /*<<format.ml:825:2>>*/ return 0 === validate_geometry(geometry)[0]
+     /*<<format.ml:829:2>>*/ return 0 === validate_geometry(geometry)[0]
             ? 1
             : 0;
-    /*<<format.ml:827:20>>*/ }
+    /*<<format.ml:831:20>>*/ }
    function pp_get_margin(state, param){
-     /*<<format.ml:829:29>>*/ return state[6];
-    /*<<format.ml:829:44>>*/ }
+     /*<<format.ml:833:29>>*/ return state[6];
+    /*<<format.ml:833:44>>*/ }
    function pp_set_full_geometry(state, param){
     var margin = param[2], max_indent = param[1];
-     /*<<format.ml:832:2>>*/ pp_set_margin(state, margin);
-     /*<<format.ml:833:2>>*/ pp_set_max_indent(state, max_indent);
-     /*<<format.ml:833:2>>*/ return 0;
+     /*<<format.ml:836:2>>*/ pp_set_margin(state, margin);
+     /*<<format.ml:837:2>>*/ pp_set_max_indent(state, max_indent);
+     /*<<format.ml:837:2>>*/ return 0;
    }
    function pp_set_geometry(state, max_indent, margin){
-     /*<<format.ml:837:2>>*/ var
-      /*<<format.ml:837:17>>*/ geometry = [0, max_indent, margin],
-      /*<<format.ml:838:8>>*/ match = validate_geometry(geometry);
+     /*<<format.ml:841:2>>*/ var
+      /*<<format.ml:841:17>>*/ geometry = [0, max_indent, margin],
+      /*<<format.ml:842:8>>*/ match = validate_geometry(geometry);
     if(0 === match[0])
-      /*<<format.ml:842:4>>*/ return pp_set_full_geometry(state, geometry);
-     /*<<format.ml:840:28>>*/ var
+      /*<<format.ml:846:4>>*/ return pp_set_full_geometry(state, geometry);
+     /*<<format.ml:844:28>>*/ var
      msg = match[1],
-      /*<<format.ml:840:28>>*/ _aH_ =
-        /*<<format.ml:840:28>>*/ caml_call2
+      /*<<format.ml:844:28>>*/ _aI_ =
+        /*<<format.ml:844:28>>*/ caml_call2
         (Stdlib[28], cst_Format_pp_set_geometry, msg);
-     /*<<format.ml:840:4>>*/ throw  /*<<format.ml:840:4>>*/ caml_maybe_attach_backtrace
-           ([0, Stdlib[6], _aH_], 1);
-    /*<<format.ml:842:39>>*/ }
+     /*<<format.ml:844:4>>*/ throw  /*<<format.ml:844:4>>*/ caml_maybe_attach_backtrace
+           ([0, Stdlib[6], _aI_], 1);
+    /*<<format.ml:846:39>>*/ }
    function pp_safe_set_geometry(state, max_indent, margin){
-     /*<<format.ml:845:2>>*/  /*<<format.ml:845:17>>*/ var
+     /*<<format.ml:849:2>>*/  /*<<format.ml:849:17>>*/ var
      geometry = [0, max_indent, margin];
     return 0 === validate_geometry(geometry)[0]
             ? pp_set_full_geometry(state, geometry)
             : 0;
-    /*<<format.ml:850:39>>*/ }
+    /*<<format.ml:854:39>>*/ }
    function pp_get_geometry(state, param){
-     /*<<format.ml:853:2>>*/ return [0, state[8], state[6]];
-    /*<<format.ml:853:78>>*/ }
+     /*<<format.ml:857:2>>*/ return [0, state[8], state[6]];
+    /*<<format.ml:857:78>>*/ }
    function pp_update_geometry(state, update){
-     /*<<format.ml:856:2>>*/  /*<<format.ml:856:17>>*/ var
+     /*<<format.ml:860:2>>*/  /*<<format.ml:860:17>>*/ var
      geometry = pp_get_geometry(state, 0);
-     /*<<format.ml:857:29>>*/ return pp_set_full_geometry
-            (state,  /*<<format.ml:857:29>>*/ caml_call1(update, geometry));
-    /*<<format.ml:857:46>>*/ }
+     /*<<format.ml:861:29>>*/ return pp_set_full_geometry
+            (state,  /*<<format.ml:861:29>>*/ caml_call1(update, geometry));
+    /*<<format.ml:861:46>>*/ }
    function pp_set_formatter_out_functions(state, param){
     var j = param[5], i = param[4], h = param[3], g = param[2], f = param[1];
     state[17] = f;
@@ -26011,106 +27828,106 @@
     return 0;
    }
    function pp_get_formatter_out_functions(state, param){
-     /*<<format.ml:873:46>>*/ return [0,
+     /*<<format.ml:877:46>>*/ return [0,
             state[17],
             state[18],
             state[19],
             state[20],
             state[21]];
-    /*<<format.ml:879:1>>*/ }
+    /*<<format.ml:883:1>>*/ }
    function pp_set_formatter_output_functi(state, f, g){
-     /*<<format.ml:884:2>>*/ state[17] = f;
+     /*<<format.ml:888:2>>*/ state[17] = f;
     state[18] = g;
     return 0;
-    /*<<format.ml:884:51>>*/ }
+    /*<<format.ml:888:51>>*/ }
    function pp_get_formatter_output_functi(state, param){
-     /*<<format.ml:887:2>>*/ return [0, state[17], state[18]];
-    /*<<format.ml:887:43>>*/ }
+     /*<<format.ml:891:2>>*/ return [0, state[17], state[18]];
+    /*<<format.ml:891:43>>*/ }
    function display_newline(state, param){
-     /*<<format.ml:891:31>>*/ return  /*<<format.ml:891:31>>*/ caml_call3
+     /*<<format.ml:895:31>>*/ return  /*<<format.ml:895:31>>*/ caml_call3
             (state[17], cst$7, 0, 1);
-    /*<<format.ml:891:60>>*/ }
-    /*<<format.ml:894:17>>*/ var
-     /*<<format.ml:894:17>>*/ blank_line =
-       /*<<format.ml:894:17>>*/ caml_call2(Stdlib_String[1], 80, 32),
-    _f_ = [3, 0, 3];
+    /*<<format.ml:895:60>>*/ }
+    /*<<format.ml:898:17>>*/ var
+     /*<<format.ml:898:17>>*/ blank_line =
+       /*<<format.ml:898:17>>*/ caml_call2(Stdlib_String[1], 80, 32),
+    _g_ = [3, 0, 3];
    function display_blanks(state, n){
-     /*<<format.ml:896:2>>*/ var n$0 = n;
-     /*<<format.ml:896:2>>*/ for(;;){
-     var _aG_ = 0 < n$0 ? 1 : 0;
-     if(! _aG_) return _aG_;
+     /*<<format.ml:900:2>>*/ var n$0 = n;
+     /*<<format.ml:900:2>>*/ for(;;){
+     var _aH_ = 0 < n$0 ? 1 : 0;
+     if(! _aH_) return _aH_;
      if(80 >= n$0)
-       /*<<format.ml:897:18>>*/ return  /*<<format.ml:897:18>>*/ caml_call3
+       /*<<format.ml:901:18>>*/ return  /*<<format.ml:901:18>>*/ caml_call3
               (state[17], blank_line, 0, n$0);
-      /*<<format.ml:899:4>>*/  /*<<format.ml:899:4>>*/ caml_call3
+      /*<<format.ml:903:4>>*/  /*<<format.ml:903:4>>*/ caml_call3
       (state[17], blank_line, 0, 80);
-      /*<<format.ml:899:4>>*/  /*<<format.ml:899:4>>*/ var n$1 = n$0 - 80 | 0;
+      /*<<format.ml:903:4>>*/  /*<<format.ml:903:4>>*/ var n$1 = n$0 - 80 | 0;
      n$0 = n$1;
     }
-    /*<<format.ml:901:5>>*/ }
+    /*<<format.ml:905:5>>*/ }
    function pp_set_formatter_out_channel(state, oc){
-     /*<<format.ml:910:2>>*/ state[17] =
-      /*<<format.ml:910:25>>*/ caml_call1(Stdlib[69], oc);
+     /*<<format.ml:914:2>>*/ state[17] =
+      /*<<format.ml:914:25>>*/ caml_call1(Stdlib[69], oc);
     state[18] =
      function(param){
-       /*<<format.ml:911:35>>*/ return  /*<<format.ml:911:2>>*/ caml_call1
+       /*<<format.ml:915:35>>*/ return  /*<<format.ml:915:2>>*/ caml_call1
               (Stdlib[63], oc);
-      /*<<format.ml:911:43>>*/ };
+      /*<<format.ml:915:43>>*/ };
     state[19] =
-     function(_aF_){ /*<<?>>*/ return display_newline(state, _aF_);};
-    state[20] = function(_aE_){ /*<<?>>*/ return display_blanks(state, _aE_);};
-    state[21] = function(_aD_){ /*<<?>>*/ return display_blanks(state, _aD_);};
+     function(_aG_){ /*<<?>>*/ return display_newline(state, _aG_);};
+    state[20] = function(_aF_){ /*<<?>>*/ return display_blanks(state, _aF_);};
+    state[21] = function(_aE_){ /*<<?>>*/ return display_blanks(state, _aE_);};
     return 0;
-    /*<<format.ml:914:45>>*/ }
+    /*<<format.ml:918:45>>*/ }
    function default_pp_mark_open_tag(param){
-     /*<<format.ml:922:31>>*/ if(param[1] !== String_tag)
-      /*<<format.ml:924:9>>*/ return cst$10;
-     /*<<format.ml:923:26>>*/ var
+     /*<<format.ml:926:31>>*/ if(param[1] !== String_tag)
+      /*<<format.ml:928:9>>*/ return cst$10;
+     /*<<format.ml:927:26>>*/ var
      s = param[2],
-      /*<<format.ml:923:26>>*/ _aC_ =
-        /*<<format.ml:923:26>>*/ caml_call2(Stdlib[28], s, cst$8);
-     /*<<format.ml:923:26>>*/ return  /*<<format.ml:923:26>>*/ caml_call2
-            (Stdlib[28], cst$9, _aC_);
-    /*<<format.ml:924:11>>*/ }
+      /*<<format.ml:927:26>>*/ _aD_ =
+        /*<<format.ml:927:26>>*/ caml_call2(Stdlib[28], s, cst$8);
+     /*<<format.ml:927:26>>*/ return  /*<<format.ml:927:26>>*/ caml_call2
+            (Stdlib[28], cst$9, _aD_);
+    /*<<format.ml:928:11>>*/ }
    function default_pp_mark_close_tag(param){
-     /*<<format.ml:925:32>>*/ if(param[1] !== String_tag)
-      /*<<format.ml:927:9>>*/ return cst$13;
-     /*<<format.ml:926:27>>*/ var
+     /*<<format.ml:929:32>>*/ if(param[1] !== String_tag)
+      /*<<format.ml:931:9>>*/ return cst$13;
+     /*<<format.ml:930:27>>*/ var
      s = param[2],
-      /*<<format.ml:926:27>>*/ _aB_ =
-        /*<<format.ml:926:27>>*/ caml_call2(Stdlib[28], s, cst$11);
-     /*<<format.ml:926:27>>*/ return  /*<<format.ml:926:27>>*/ caml_call2
-            (Stdlib[28], cst$12, _aB_);
-    /*<<format.ml:927:11>>*/ }
-   function default_pp_print_open_tag(_aA_){ /*<<?>>*/ return 0;}
-   function default_pp_print_close_tag(_az_){ /*<<?>>*/ return 0;}
+      /*<<format.ml:930:27>>*/ _aC_ =
+        /*<<format.ml:930:27>>*/ caml_call2(Stdlib[28], s, cst$11);
+     /*<<format.ml:930:27>>*/ return  /*<<format.ml:930:27>>*/ caml_call2
+            (Stdlib[28], cst$12, _aC_);
+    /*<<format.ml:931:11>>*/ }
+   function default_pp_print_open_tag(_aB_){ /*<<?>>*/ return 0;}
+   function default_pp_print_close_tag(_aA_){ /*<<?>>*/ return 0;}
    function pp_make_formatter(f, g, h, i, j){
-     /*<<format.ml:936:17>>*/ var
-      /*<<format.ml:936:17>>*/ pp_queue =
-        /*<<format.ml:936:17>>*/ caml_call1(Stdlib_Queue[2], 0),
-      /*<<format.ml:938:4>>*/ sys_tok = [0, unknown, _f_, 0];
-     /*<<format.ml:939:2>>*/  /*<<format.ml:939:2>>*/ caml_call2
+     /*<<format.ml:940:17>>*/ var
+      /*<<format.ml:940:17>>*/ pp_queue =
+        /*<<format.ml:940:17>>*/ caml_call1(Stdlib_Queue[2], 0),
+      /*<<format.ml:942:4>>*/ sys_tok = [0, unknown, _g_, 0];
+     /*<<format.ml:943:2>>*/  /*<<format.ml:943:2>>*/ caml_call2
      (Stdlib_Queue[3], sys_tok, pp_queue);
-     /*<<format.ml:940:19>>*/  /*<<format.ml:940:19>>*/ var
-     scan_stack =  /*<<format.ml:940:19>>*/ caml_call1(Stdlib_Stack[2], 0);
-     /*<<format.ml:941:2>>*/ initialize_scan_stack(scan_stack);
-     /*<<format.ml:942:2>>*/  /*<<format.ml:942:2>>*/ caml_call2
+     /*<<format.ml:944:19>>*/  /*<<format.ml:944:19>>*/ var
+     scan_stack =  /*<<format.ml:944:19>>*/ caml_call1(Stdlib_Stack[2], 0);
+     /*<<format.ml:945:2>>*/ initialize_scan_stack(scan_stack);
+     /*<<format.ml:946:2>>*/  /*<<format.ml:946:2>>*/ caml_call2
      (Stdlib_Stack[3], [0, 1, sys_tok], scan_stack);
-     /*<<format.ml:942:2>>*/ var
-      /*<<format.ml:942:2>>*/ pp_margin = 78,
-     _av_ = Stdlib[19],
-      /*<<format.ml:950:20>>*/ _aw_ =
-        /*<<format.ml:950:20>>*/ caml_call1(Stdlib_Stack[2], 0),
-      /*<<format.ml:949:19>>*/ _ax_ =
-        /*<<format.ml:949:19>>*/ caml_call1(Stdlib_Stack[2], 0),
-      /*<<format.ml:948:20>>*/ _ay_ =
-        /*<<format.ml:948:20>>*/ caml_call1(Stdlib_Stack[2], 0);
-     /*<<format.ml:945:2>>*/ return [0,
+     /*<<format.ml:946:2>>*/ var
+      /*<<format.ml:946:2>>*/ pp_margin = 78,
+     _aw_ = Stdlib[19],
+      /*<<format.ml:954:20>>*/ _ax_ =
+        /*<<format.ml:954:20>>*/ caml_call1(Stdlib_Stack[2], 0),
+      /*<<format.ml:953:19>>*/ _ay_ =
+        /*<<format.ml:953:19>>*/ caml_call1(Stdlib_Stack[2], 0),
+      /*<<format.ml:952:20>>*/ _az_ =
+        /*<<format.ml:952:20>>*/ caml_call1(Stdlib_Stack[2], 0);
+     /*<<format.ml:949:2>>*/ return [0,
             scan_stack,
-             /*<<format.ml:947:22>>*/ caml_call1(Stdlib_Stack[2], 0),
+             /*<<format.ml:951:22>>*/ caml_call1(Stdlib_Stack[2], 0),
+            _az_,
             _ay_,
             _ax_,
-            _aw_,
             pp_margin,
             10,
             68,
@@ -26120,7 +27937,7 @@
             1,
             1,
             1,
-            _av_,
+            _aw_,
             cst$14,
             f,
             g,
@@ -26136,760 +27953,748 @@
             pp_queue];
    }
    function formatter_of_out_functions(out_funs){
-     /*<<format.ml:979:2>>*/ return pp_make_formatter
+     /*<<format.ml:983:2>>*/ return pp_make_formatter
             (out_funs[1], out_funs[2], out_funs[3], out_funs[4], out_funs[5]);
-    /*<<format.ml:984:23>>*/ }
+    /*<<format.ml:988:23>>*/ }
    function make_formatter(output, flush){
-     /*<<format.ml:990:2>>*/  /*<<format.ml:990:12>>*/ var
+     /*<<format.ml:994:2>>*/  /*<<format.ml:994:12>>*/ var
      ppf =
        pp_make_formatter
         (output,
          flush,
+         function(_av_){ /*<<?>>*/ return 0;},
          function(_au_){ /*<<?>>*/ return 0;},
-         function(_at_){ /*<<?>>*/ return 0;},
-         function(_as_){ /*<<?>>*/ return 0;});
-    ppf[19] = function(_ar_){ /*<<?>>*/ return display_newline(ppf, _ar_);};
-    ppf[20] = function(_aq_){ /*<<?>>*/ return display_blanks(ppf, _aq_);};
-    ppf[21] = function(_ap_){ /*<<?>>*/ return display_blanks(ppf, _ap_);};
-     /*<<format.ml:994:2>>*/ return ppf;
-    /*<<format.ml:994:5>>*/ }
+         function(_at_){ /*<<?>>*/ return 0;});
+    ppf[19] = function(_as_){ /*<<?>>*/ return display_newline(ppf, _as_);};
+    ppf[20] = function(_ar_){ /*<<?>>*/ return display_blanks(ppf, _ar_);};
+    ppf[21] = function(_aq_){ /*<<?>>*/ return display_blanks(ppf, _aq_);};
+     /*<<format.ml:998:2>>*/ return ppf;
+    /*<<format.ml:998:5>>*/ }
    function formatter_of_out_channel(oc){
-     /*<<format.ml:999:2>>*/ return make_formatter
-            ( /*<<format.ml:999:17>>*/ caml_call1(Stdlib[69], oc),
+     /*<<format.ml:1003:2>>*/ return make_formatter
+            ( /*<<format.ml:1003:17>>*/ caml_call1(Stdlib[69], oc),
              function(param){
-               /*<<format.ml:999:50>>*/ return  /*<<format.ml:999:2>>*/ caml_call1
+               /*<<format.ml:1003:50>>*/ return  /*<<format.ml:1003:2>>*/ caml_call1
                       (Stdlib[63], oc);
-              /*<<format.ml:999:58>>*/ });
-    /*<<format.ml:999:59>>*/ }
+              /*<<format.ml:1003:58>>*/ });
+    /*<<format.ml:1003:59>>*/ }
    function formatter_of_buffer(b){
-     /*<<format.ml:1004:2>>*/ return make_formatter
-            ( /*<<format.ml:1004:17>>*/ caml_call1(Stdlib_Buffer[18], b),
-             function(_ao_){ /*<<?>>*/ return 0;});
-    /*<<format.ml:1004:48>>*/ }
+     /*<<format.ml:1008:2>>*/ return make_formatter
+            ( /*<<format.ml:1008:17>>*/ caml_call1(Stdlib_Buffer[18], b),
+             function(_ap_){ /*<<?>>*/ return 0;});
+    /*<<format.ml:1008:48>>*/ }
    var pp_buffer_size = 512;
    function pp_make_buffer(param){
-     /*<<format.ml:1011:24>>*/ return caml_call1
+     /*<<format.ml:1015:24>>*/ return caml_call1
             (Stdlib_Buffer[1], pp_buffer_size);
-    /*<<format.ml:1011:52>>*/ }
-    /*<<format.ml:1014:13>>*/ var
-     /*<<format.ml:1014:13>>*/ stdbuf = pp_make_buffer(0),
-     /*<<format.ml:1018:20>>*/ std_formatter =
+    /*<<format.ml:1015:52>>*/ }
+    /*<<format.ml:1018:13>>*/ var
+     /*<<format.ml:1018:13>>*/ stdbuf = pp_make_buffer(0),
+     /*<<format.ml:1022:20>>*/ std_formatter =
       formatter_of_out_channel(Stdlib[39]),
-     /*<<format.ml:1019:20>>*/ err_formatter =
+     /*<<format.ml:1023:20>>*/ err_formatter =
       formatter_of_out_channel(Stdlib[40]),
-     /*<<format.ml:1020:20>>*/ str_formatter = formatter_of_buffer(stdbuf),
-     /*<<format.ml:1025:17>>*/ stdbuf_key =
-       /*<<format.ml:1025:17>>*/ caml_call2
+     /*<<format.ml:1024:20>>*/ str_formatter = formatter_of_buffer(stdbuf),
+     /*<<format.ml:1029:17>>*/ stdbuf_key =
+       /*<<format.ml:1029:17>>*/ caml_call2
        (Stdlib_Domain[10][1], 0, pp_make_buffer);
-    /*<<format.ml:1026:8>>*/  /*<<format.ml:1026:8>>*/ caml_call2
-    (Stdlib_Domain[10][3], stdbuf_key, stdbuf);
-    /*<<format.ml:1028:24>>*/  /*<<format.ml:1028:24>>*/ var
-    str_formatter_key =
-       /*<<format.ml:1028:24>>*/ caml_call2
-       (Stdlib_Domain[10][1],
-        0,
-        function(param){
-          /*<<format.ml:1029:2>>*/ return formatter_of_buffer
-                 ( /*<<format.ml:1029:22>>*/ caml_call1
-                   (Stdlib_Domain[10][2], stdbuf_key));
-         /*<<format.ml:1029:42>>*/ });
     /*<<format.ml:1030:8>>*/  /*<<format.ml:1030:8>>*/ caml_call2
+    (Stdlib_Domain[10][3], stdbuf_key, stdbuf);
+    /*<<format.ml:1032:24>>*/  /*<<format.ml:1032:24>>*/ var
+    str_formatter_key =
+       /*<<format.ml:1032:24>>*/ caml_call2
+       (Stdlib_Domain[10][1],
+        0,
+        function(param){
+          /*<<format.ml:1033:2>>*/ return formatter_of_buffer
+                 ( /*<<format.ml:1033:22>>*/ caml_call1
+                   (Stdlib_Domain[10][2], stdbuf_key));
+         /*<<format.ml:1033:42>>*/ });
+    /*<<format.ml:1034:8>>*/  /*<<format.ml:1034:8>>*/ caml_call2
     (Stdlib_Domain[10][3], str_formatter_key, str_formatter);
-    /*<<format.ml:1030:8>>*/ function buffered_out_string(key, str, ofs, len){
-     /*<<format.ml:1033:2>>*/  /*<<format.ml:1033:23>>*/ var
-     _an_ =  /*<<format.ml:1033:23>>*/ caml_call1(Stdlib_Domain[10][2], key);
-     /*<<format.ml:1033:2>>*/ return  /*<<format.ml:1033:2>>*/ caml_call4
-            (Stdlib_Buffer[18], _an_, str, ofs, len);
-    /*<<format.ml:1033:55>>*/ }
+    /*<<format.ml:1034:8>>*/ function buffered_out_string(key, str, ofs, len){
+     /*<<format.ml:1037:2>>*/  /*<<format.ml:1037:23>>*/ var
+     _ao_ =  /*<<format.ml:1037:23>>*/ caml_call1(Stdlib_Domain[10][2], key);
+     /*<<format.ml:1037:2>>*/ return  /*<<format.ml:1037:2>>*/ caml_call4
+            (Stdlib_Buffer[18], _ao_, str, ofs, len);
+    /*<<format.ml:1037:55>>*/ }
    function buffered_out_flush(oc, key, param){
-     /*<<format.ml:1036:2>>*/ var
-      /*<<format.ml:1036:12>>*/ buf =
-        /*<<format.ml:1036:12>>*/ caml_call1(Stdlib_Domain[10][2], key),
-      /*<<format.ml:1037:12>>*/ len =
-        /*<<format.ml:1037:12>>*/ caml_call1(Stdlib_Buffer[7], buf),
-      /*<<format.ml:1038:12>>*/ str =
-        /*<<format.ml:1038:12>>*/ caml_call1(Stdlib_Buffer[2], buf);
-     /*<<format.ml:1039:2>>*/  /*<<format.ml:1039:2>>*/ caml_call4
+     /*<<format.ml:1040:2>>*/ var
+      /*<<format.ml:1040:12>>*/ buf =
+        /*<<format.ml:1040:12>>*/ caml_call1(Stdlib_Domain[10][2], key),
+      /*<<format.ml:1041:12>>*/ len =
+        /*<<format.ml:1041:12>>*/ caml_call1(Stdlib_Buffer[7], buf),
+      /*<<format.ml:1042:12>>*/ str =
+        /*<<format.ml:1042:12>>*/ caml_call1(Stdlib_Buffer[2], buf);
+     /*<<format.ml:1043:2>>*/  /*<<format.ml:1043:2>>*/ caml_call4
      (Stdlib[69], oc, str, 0, len);
-     /*<<format.ml:1040:2>>*/  /*<<format.ml:1040:2>>*/ caml_call1
+     /*<<format.ml:1044:2>>*/  /*<<format.ml:1044:2>>*/ caml_call1
      (Stdlib[63], oc);
-     /*<<format.ml:1040:2>>*/ return  /*<<format.ml:1040:2>>*/ caml_call1
+     /*<<format.ml:1044:2>>*/ return  /*<<format.ml:1044:2>>*/ caml_call1
             (Stdlib_Buffer[8], buf);
-    /*<<format.ml:1041:18>>*/ }
-    /*<<format.ml:1043:18>>*/ var
-     /*<<format.ml:1043:18>>*/ std_buf_key =
-       /*<<format.ml:1043:18>>*/ caml_call2
+    /*<<format.ml:1045:18>>*/ }
+    /*<<format.ml:1047:18>>*/ var
+     /*<<format.ml:1047:18>>*/ std_buf_key =
+       /*<<format.ml:1047:18>>*/ caml_call2
        (Stdlib_Domain[10][1],
         0,
         function(param){
-          /*<<format.ml:1043:48>>*/ return caml_call1
+          /*<<format.ml:1047:48>>*/ return caml_call1
                  (Stdlib_Buffer[1], pp_buffer_size);
-         /*<<format.ml:1043:76>>*/ }),
-     /*<<format.ml:1044:18>>*/ err_buf_key =
-       /*<<format.ml:1044:18>>*/ caml_call2
+         /*<<format.ml:1047:76>>*/ }),
+     /*<<format.ml:1048:18>>*/ err_buf_key =
+       /*<<format.ml:1048:18>>*/ caml_call2
        (Stdlib_Domain[10][1],
         0,
         function(param){
-          /*<<format.ml:1044:48>>*/ return  /*<<format.ml:1043:18>>*/ caml_call1
+          /*<<format.ml:1048:48>>*/ return  /*<<format.ml:1047:18>>*/ caml_call1
                  (Stdlib_Buffer[1], pp_buffer_size);
-         /*<<format.ml:1044:76>>*/ }),
-     /*<<format.ml:1046:24>>*/ std_formatter_key =
-       /*<<format.ml:1046:24>>*/ caml_call2
+         /*<<format.ml:1048:76>>*/ }),
+     /*<<format.ml:1050:24>>*/ std_formatter_key =
+       /*<<format.ml:1050:24>>*/ caml_call2
        (Stdlib_Domain[10][1],
         0,
         function(param){
-          /*<<format.ml:1047:2>>*/ var
-          _ab_ = Stdlib[39],
-           /*<<format.ml:1048:4>>*/ ppf =
+          /*<<format.ml:1051:2>>*/ var
+          _ac_ = Stdlib[39],
+           /*<<format.ml:1052:4>>*/ ppf =
             pp_make_formatter
-             (function(_ak_, _al_, _am_){
+             (function(_al_, _am_, _an_){
                 /*<<?>>*/ return buffered_out_string
-                       (std_buf_key, _ak_, _al_, _am_);
+                       (std_buf_key, _al_, _am_, _an_);
               },
-              function(_aj_){
-                /*<<?>>*/ return buffered_out_flush(_ab_, std_buf_key, _aj_);
+              function(_ak_){
+                /*<<?>>*/ return buffered_out_flush(_ac_, std_buf_key, _ak_);
               },
+              function(_aj_){ /*<<?>>*/ return 0;},
               function(_ai_){ /*<<?>>*/ return 0;},
-              function(_ah_){ /*<<?>>*/ return 0;},
-              function(_ag_){ /*<<?>>*/ return 0;});
+              function(_ah_){ /*<<?>>*/ return 0;});
          ppf[19] =
-          function(_af_){ /*<<?>>*/ return display_newline(ppf, _af_);};
+          function(_ag_){ /*<<?>>*/ return display_newline(ppf, _ag_);};
          ppf[20] =
-          function(_ae_){ /*<<?>>*/ return display_blanks(ppf, _ae_);};
+          function(_af_){ /*<<?>>*/ return display_blanks(ppf, _af_);};
          ppf[21] =
-          function(_ad_){ /*<<?>>*/ return display_blanks(ppf, _ad_);};
-          /*<<format.ml:1054:2>>*/  /*<<format.ml:1054:2>>*/ caml_call1
+          function(_ae_){ /*<<?>>*/ return display_blanks(ppf, _ae_);};
+          /*<<format.ml:1058:2>>*/  /*<<format.ml:1058:2>>*/ caml_call1
           (Stdlib_Domain[6],
-           function(_ac_){ /*<<?>>*/ return pp_print_flush(ppf, _ac_);});
-          /*<<format.ml:1054:2>>*/ return ppf;
-         /*<<format.ml:1055:5>>*/ });
-    /*<<format.ml:1056:8>>*/  /*<<format.ml:1056:8>>*/ caml_call2
+           function(_ad_){ /*<<?>>*/ return pp_print_flush(ppf, _ad_);});
+          /*<<format.ml:1058:2>>*/ return ppf;
+         /*<<format.ml:1059:5>>*/ });
+    /*<<format.ml:1060:8>>*/  /*<<format.ml:1060:8>>*/ caml_call2
     (Stdlib_Domain[10][3], std_formatter_key, std_formatter);
-    /*<<format.ml:1058:24>>*/  /*<<format.ml:1058:24>>*/ var
+    /*<<format.ml:1062:24>>*/  /*<<format.ml:1062:24>>*/ var
     err_formatter_key =
-       /*<<format.ml:1058:24>>*/ caml_call2
+       /*<<format.ml:1062:24>>*/ caml_call2
        (Stdlib_Domain[10][1],
         0,
         function(param){
-          /*<<format.ml:1059:2>>*/ var
-          _R_ = Stdlib[40],
-           /*<<format.ml:1060:4>>*/ ppf =
+          /*<<format.ml:1063:2>>*/ var
+          _S_ = Stdlib[40],
+           /*<<format.ml:1064:4>>*/ ppf =
             pp_make_formatter
-             (function(___, _$_, _aa_){
+             (function(_$_, _aa_, _ab_){
                 /*<<?>>*/ return buffered_out_string
-                       (err_buf_key, ___, _$_, _aa_);
+                       (err_buf_key, _$_, _aa_, _ab_);
               },
-              function(_Z_){
-                /*<<?>>*/ return buffered_out_flush(_R_, err_buf_key, _Z_);
+              function(___){
+                /*<<?>>*/ return buffered_out_flush(_S_, err_buf_key, ___);
               },
+              function(_Z_){ /*<<?>>*/ return 0;},
               function(_Y_){ /*<<?>>*/ return 0;},
-              function(_X_){ /*<<?>>*/ return 0;},
-              function(_W_){ /*<<?>>*/ return 0;});
-         ppf[19] = function(_V_){ /*<<?>>*/ return display_newline(ppf, _V_);};
-         ppf[20] = function(_U_){ /*<<?>>*/ return display_blanks(ppf, _U_);};
-         ppf[21] = function(_T_){ /*<<?>>*/ return display_blanks(ppf, _T_);};
-          /*<<format.ml:1066:2>>*/  /*<<format.ml:1066:2>>*/ caml_call1
+              function(_X_){ /*<<?>>*/ return 0;});
+         ppf[19] = function(_W_){ /*<<?>>*/ return display_newline(ppf, _W_);};
+         ppf[20] = function(_V_){ /*<<?>>*/ return display_blanks(ppf, _V_);};
+         ppf[21] = function(_U_){ /*<<?>>*/ return display_blanks(ppf, _U_);};
+          /*<<format.ml:1070:2>>*/  /*<<format.ml:1070:2>>*/ caml_call1
           (Stdlib_Domain[6],
-           function(_S_){ /*<<?>>*/ return pp_print_flush(ppf, _S_);});
-          /*<<format.ml:1066:2>>*/ return ppf;
-         /*<<format.ml:1067:5>>*/ });
-    /*<<format.ml:1068:8>>*/  /*<<format.ml:1068:8>>*/ caml_call2
+           function(_T_){ /*<<?>>*/ return pp_print_flush(ppf, _T_);});
+          /*<<format.ml:1070:2>>*/ return ppf;
+         /*<<format.ml:1071:5>>*/ });
+    /*<<format.ml:1072:8>>*/  /*<<format.ml:1072:8>>*/ caml_call2
     (Stdlib_Domain[10][3], err_formatter_key, err_formatter);
    function get_std_formatter(param){
-     /*<<format.ml:1070:27>>*/ return  /*<<format.ml:1068:8>>*/ caml_call1
+     /*<<format.ml:1074:27>>*/ return  /*<<format.ml:1072:8>>*/ caml_call1
             (Stdlib_Domain[10][2], std_formatter_key);
-    /*<<format.ml:1070:52>>*/ }
+    /*<<format.ml:1074:52>>*/ }
    function get_err_formatter(param){
-     /*<<format.ml:1071:27>>*/ return caml_call1
+     /*<<format.ml:1075:27>>*/ return caml_call1
             (Stdlib_Domain[10][2], err_formatter_key);
-    /*<<format.ml:1071:52>>*/ }
+    /*<<format.ml:1075:52>>*/ }
    function get_str_formatter(param){
-     /*<<format.ml:1072:27>>*/ return caml_call1
+     /*<<format.ml:1076:27>>*/ return caml_call1
             (Stdlib_Domain[10][2], str_formatter_key);
-    /*<<format.ml:1072:52>>*/ }
+    /*<<format.ml:1076:52>>*/ }
    function get_stdbuf(param){
-     /*<<format.ml:1073:20>>*/ return caml_call1
+     /*<<format.ml:1077:20>>*/ return caml_call1
             (Stdlib_Domain[10][2], stdbuf_key);
-    /*<<format.ml:1073:38>>*/ }
+    /*<<format.ml:1077:38>>*/ }
    function flush_buffer_formatter(buf, ppf){
-     /*<<format.ml:1080:2>>*/ pp_flush_queue(ppf, 0);
-     /*<<format.ml:1081:10>>*/  /*<<format.ml:1081:10>>*/ var
-     s =  /*<<format.ml:1081:10>>*/ caml_call1(Stdlib_Buffer[2], buf);
-     /*<<format.ml:1082:2>>*/  /*<<format.ml:1082:2>>*/ caml_call1
+     /*<<format.ml:1084:2>>*/ pp_flush_queue(ppf, 0);
+     /*<<format.ml:1085:10>>*/  /*<<format.ml:1085:10>>*/ var
+     s =  /*<<format.ml:1085:10>>*/ caml_call1(Stdlib_Buffer[2], buf);
+     /*<<format.ml:1086:2>>*/  /*<<format.ml:1086:2>>*/ caml_call1
      (Stdlib_Buffer[9], buf);
-     /*<<format.ml:1082:2>>*/ return s;
-    /*<<format.ml:1083:3>>*/ }
+     /*<<format.ml:1086:2>>*/ return s;
+    /*<<format.ml:1087:3>>*/ }
    function flush_str_formatter(param){
-     /*<<format.ml:1087:2>>*/ var
-      /*<<format.ml:1087:15>>*/ stdbuf =
-        /*<<format.ml:1087:15>>*/ caml_call1(Stdlib_Domain[10][2], stdbuf_key),
-      /*<<format.ml:1088:22>>*/ str_formatter =
-        /*<<format.ml:1088:22>>*/ caml_call1
+     /*<<format.ml:1091:2>>*/ var
+      /*<<format.ml:1091:15>>*/ stdbuf =
+        /*<<format.ml:1091:15>>*/ caml_call1(Stdlib_Domain[10][2], stdbuf_key),
+      /*<<format.ml:1092:22>>*/ str_formatter =
+        /*<<format.ml:1092:22>>*/ caml_call1
         (Stdlib_Domain[10][2], str_formatter_key);
-     /*<<format.ml:1089:2>>*/ return flush_buffer_formatter
+     /*<<format.ml:1093:2>>*/ return flush_buffer_formatter
             (stdbuf, str_formatter);
-    /*<<format.ml:1089:45>>*/ }
+    /*<<format.ml:1093:45>>*/ }
    function make_synchronized_formatter(output, flush){
-     /*<<format.ml:1092:2>>*/ return  /*<<format.ml:1092:14>>*/ caml_call2
+     /*<<format.ml:1096:2>>*/ return  /*<<format.ml:1096:14>>*/ caml_call2
             (Stdlib_Domain[10][1],
              0,
              function(param){
-               /*<<format.ml:1093:4>>*/ var
-                /*<<format.ml:1093:14>>*/ buf =
-                  /*<<format.ml:1093:14>>*/ caml_call1
+               /*<<format.ml:1097:4>>*/ var
+                /*<<format.ml:1097:14>>*/ buf =
+                  /*<<format.ml:1097:14>>*/ caml_call1
                   (Stdlib_Buffer[1], pp_buffer_size),
-                /*<<format.ml:1094:18>>*/ output$0 =
-                  /*<<format.ml:1094:18>>*/ caml_call1(Stdlib_Buffer[18], buf);
+                /*<<format.ml:1098:18>>*/ output$0 =
+                  /*<<format.ml:1098:18>>*/ caml_call1(Stdlib_Buffer[18], buf);
               function flush$0(param){
-                /*<<format.ml:1096:6>>*/  /*<<format.ml:1096:37>>*/ var
-                _Q_ =
-                   /*<<format.ml:1096:37>>*/ caml_call1(Stdlib_Buffer[7], buf);
-                /*<<format.ml:1096:6>>*/  /*<<format.ml:1096:6>>*/ caml_call3
+                /*<<format.ml:1100:6>>*/  /*<<format.ml:1100:37>>*/ var
+                _R_ =
+                   /*<<format.ml:1100:37>>*/ caml_call1(Stdlib_Buffer[7], buf);
+                /*<<format.ml:1100:6>>*/  /*<<format.ml:1100:6>>*/ caml_call3
                 (output,
-                  /*<<format.ml:1096:13>>*/ caml_call1(Stdlib_Buffer[2], buf),
+                  /*<<format.ml:1100:13>>*/ caml_call1(Stdlib_Buffer[2], buf),
                  0,
-                 _Q_);
-                /*<<format.ml:1097:6>>*/  /*<<format.ml:1097:6>>*/ caml_call1
+                 _R_);
+                /*<<format.ml:1101:6>>*/  /*<<format.ml:1101:6>>*/ caml_call1
                 (Stdlib_Buffer[8], buf);
-                /*<<format.ml:1097:6>>*/ return  /*<<format.ml:1097:6>>*/ caml_call1
+                /*<<format.ml:1101:6>>*/ return  /*<<format.ml:1101:6>>*/ caml_call1
                        (flush, 0);
-               /*<<format.ml:1098:14>>*/ }
-               /*<<format.ml:1100:4>>*/ return make_formatter
+               /*<<format.ml:1102:14>>*/ }
+               /*<<format.ml:1104:4>>*/ return make_formatter
                       (output$0, flush$0);
-              /*<<format.ml:1100:33>>*/ });
-    /*<<format.ml:1100:34>>*/ }
+              /*<<format.ml:1104:33>>*/ });
+    /*<<format.ml:1104:34>>*/ }
    function synchronized_formatter_of_out_(oc){
-     /*<<format.ml:1103:2>>*/ return make_synchronized_formatter
-            ( /*<<format.ml:1103:30>>*/ caml_call1(Stdlib[69], oc),
+     /*<<format.ml:1107:2>>*/ return make_synchronized_formatter
+            ( /*<<format.ml:1107:30>>*/ caml_call1(Stdlib[69], oc),
              function(param){
-               /*<<format.ml:1103:63>>*/ return  /*<<format.ml:1103:2>>*/ caml_call1
+               /*<<format.ml:1107:63>>*/ return  /*<<format.ml:1107:2>>*/ caml_call1
                       (Stdlib[63], oc);
-              /*<<format.ml:1103:71>>*/ });
-    /*<<format.ml:1103:72>>*/ }
-   function make_symbolic_output_buffer(param){ /*<<format.ml:1130:2>>*/ return [0, 0];
-    /*<<format.ml:1130:35>>*/ }
+              /*<<format.ml:1107:71>>*/ });
+    /*<<format.ml:1107:72>>*/ }
+   function make_symbolic_output_buffer(param){ /*<<format.ml:1134:2>>*/ return [0, 0];
+    /*<<format.ml:1134:35>>*/ }
    function clear_symbolic_output_buffer(sob){
-     /*<<format.ml:1133:2>>*/ sob[1] = 0;
+     /*<<format.ml:1137:2>>*/ sob[1] = 0;
     return 0;
-    /*<<format.ml:1133:36>>*/ }
+    /*<<format.ml:1137:36>>*/ }
    function get_symbolic_output_buffer(sob){
-     /*<<format.ml:1136:2>>*/ return caml_call1(Stdlib_List[10], sob[1]);
-    /*<<format.ml:1136:39>>*/ }
+     /*<<format.ml:1140:2>>*/ return caml_call1(Stdlib_List[10], sob[1]);
+    /*<<format.ml:1140:39>>*/ }
    function flush_symbolic_output_buffer(sob){
-     /*<<format.ml:1139:2>>*/  /*<<format.ml:1139:14>>*/ var
+     /*<<format.ml:1143:2>>*/  /*<<format.ml:1143:14>>*/ var
      items = get_symbolic_output_buffer(sob);
-     /*<<format.ml:1140:2>>*/ clear_symbolic_output_buffer(sob);
-     /*<<format.ml:1140:2>>*/ return items;
-    /*<<format.ml:1141:7>>*/ }
+     /*<<format.ml:1144:2>>*/ clear_symbolic_output_buffer(sob);
+     /*<<format.ml:1144:2>>*/ return items;
+    /*<<format.ml:1145:7>>*/ }
    function add_symbolic_output_item(sob, item){
-     /*<<format.ml:1144:2>>*/ sob[1] = [0, item, sob[1]];
+     /*<<format.ml:1148:2>>*/ sob[1] = [0, item, sob[1]];
     return 0;
-    /*<<format.ml:1144:70>>*/ }
+    /*<<format.ml:1148:70>>*/ }
    function formatter_of_symbolic_output_b(sob){
-     /*<<format.ml:1158:10>>*/ function f(s, i, n){
-      /*<<format.ml:1152:33>>*/ return add_symbolic_output_item
+     /*<<format.ml:1162:10>>*/ function f(s, i, n){
+      /*<<format.ml:1156:33>>*/ return add_symbolic_output_item
              (sob,
               [0,
-                /*<<format.ml:1152:48>>*/ caml_call3
+                /*<<format.ml:1156:48>>*/ caml_call3
                 (Stdlib_String[16], s, i, n)]);
     }
-     /*<<format.ml:1159:10>>*/ function g(_P_){
-      /*<<format.ml:1148:4>>*/ return add_symbolic_output_item(sob, 0);
+     /*<<format.ml:1163:10>>*/ function g(_Q_){
+      /*<<format.ml:1152:4>>*/ return add_symbolic_output_item(sob, 0);
     }
-     /*<<format.ml:1160:10>>*/ function h(_O_){
-      /*<<format.ml:1150:4>>*/ return add_symbolic_output_item(sob, 1);
+     /*<<format.ml:1164:10>>*/ function h(_P_){
+      /*<<format.ml:1154:4>>*/ return add_symbolic_output_item(sob, 1);
     }
-     /*<<format.ml:1161:10>>*/ function i(n){
-      /*<<format.ml:1154:33>>*/ return add_symbolic_output_item(sob, [1, n]);
+     /*<<format.ml:1165:10>>*/ function i(n){
+      /*<<format.ml:1158:33>>*/ return add_symbolic_output_item(sob, [1, n]);
     }
-     /*<<format.ml:1162:10>>*/ function j(n){
-      /*<<format.ml:1156:33>>*/ return add_symbolic_output_item(sob, [2, n]);
+     /*<<format.ml:1166:10>>*/ function j(n){
+      /*<<format.ml:1160:33>>*/ return add_symbolic_output_item(sob, [2, n]);
     }
-     /*<<format.ml:1163:2>>*/ return pp_make_formatter(f, g, h, i, j);
-    /*<<format.ml:1163:29>>*/ }
+     /*<<format.ml:1167:2>>*/ return pp_make_formatter(f, g, h, i, j);
+    /*<<format.ml:1167:29>>*/ }
    function open_hbox(v){
-     /*<<format.ml:1172:18>>*/ return pp_open_hbox
-            ( /*<<format.ml:1172:31>>*/ caml_call1
+     /*<<format.ml:1176:18>>*/ return pp_open_hbox
+            ( /*<<format.ml:1176:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1172:60>>*/ }
+    /*<<format.ml:1176:60>>*/ }
    function open_vbox(v){
-     /*<<format.ml:1173:18>>*/ return pp_open_vbox
-            ( /*<<format.ml:1173:31>>*/ caml_call1
-              (Stdlib_Domain[10][2], std_formatter_key),
-             v);
-    /*<<format.ml:1173:60>>*/ }
-   function open_hvbox(v){
-     /*<<format.ml:1174:19>>*/ return pp_open_hvbox
-            ( /*<<format.ml:1174:33>>*/ caml_call1
-              (Stdlib_Domain[10][2], std_formatter_key),
-             v);
-    /*<<format.ml:1174:62>>*/ }
-   function open_hovbox(v){
-     /*<<format.ml:1175:20>>*/ return pp_open_hovbox
-            ( /*<<format.ml:1175:35>>*/ caml_call1
-              (Stdlib_Domain[10][2], std_formatter_key),
-             v);
-    /*<<format.ml:1175:64>>*/ }
-   function open_box(v){
-     /*<<format.ml:1176:17>>*/ return pp_open_box
-            ( /*<<format.ml:1176:29>>*/ caml_call1
-              (Stdlib_Domain[10][2], std_formatter_key),
-             v);
-    /*<<format.ml:1176:58>>*/ }
-   function close_box(v){
-     /*<<format.ml:1177:18>>*/ return pp_close_box
+     /*<<format.ml:1177:18>>*/ return pp_open_vbox
             ( /*<<format.ml:1177:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
     /*<<format.ml:1177:60>>*/ }
+   function open_hvbox(v){
+     /*<<format.ml:1178:19>>*/ return pp_open_hvbox
+            ( /*<<format.ml:1178:33>>*/ caml_call1
+              (Stdlib_Domain[10][2], std_formatter_key),
+             v);
+    /*<<format.ml:1178:62>>*/ }
+   function open_hovbox(v){
+     /*<<format.ml:1179:20>>*/ return pp_open_hovbox
+            ( /*<<format.ml:1179:35>>*/ caml_call1
+              (Stdlib_Domain[10][2], std_formatter_key),
+             v);
+    /*<<format.ml:1179:64>>*/ }
+   function open_box(v){
+     /*<<format.ml:1180:17>>*/ return pp_open_box
+            ( /*<<format.ml:1180:29>>*/ caml_call1
+              (Stdlib_Domain[10][2], std_formatter_key),
+             v);
+    /*<<format.ml:1180:58>>*/ }
+   function close_box(v){
+     /*<<format.ml:1181:18>>*/ return pp_close_box
+            ( /*<<format.ml:1181:31>>*/ caml_call1
+              (Stdlib_Domain[10][2], std_formatter_key),
+             v);
+    /*<<format.ml:1181:60>>*/ }
    function open_stag(v){
-     /*<<format.ml:1178:18>>*/ return pp_open_stag
-            ( /*<<format.ml:1178:31>>*/ caml_call1
+     /*<<format.ml:1182:18>>*/ return pp_open_stag
+            ( /*<<format.ml:1182:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1178:60>>*/ }
+    /*<<format.ml:1182:60>>*/ }
    function close_stag(v){
-     /*<<format.ml:1179:19>>*/ return pp_close_stag
-            ( /*<<format.ml:1179:33>>*/ caml_call1
+     /*<<format.ml:1183:19>>*/ return pp_close_stag
+            ( /*<<format.ml:1183:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1179:62>>*/ }
+    /*<<format.ml:1183:62>>*/ }
    function print_as(isize, w){
-     /*<<format.ml:1180:19>>*/  /*<<format.ml:1180:31>>*/ var
+     /*<<format.ml:1184:19>>*/  /*<<format.ml:1184:31>>*/ var
      state =
-        /*<<format.ml:1180:31>>*/ caml_call1
+        /*<<format.ml:1184:31>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
      /*<<format.ml:630:2>>*/ return pp_print_as_size(state, isize, w);
-    /*<<format.ml:1180:62>>*/ }
+    /*<<format.ml:1184:62>>*/ }
    function print_string(v){
-     /*<<format.ml:1181:21>>*/ return pp_print_string
-            ( /*<<format.ml:1181:37>>*/ caml_call1
+     /*<<format.ml:1185:21>>*/ return pp_print_string
+            ( /*<<format.ml:1185:37>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1181:66>>*/ }
+    /*<<format.ml:1185:66>>*/ }
    function print_bytes(v){
-     /*<<format.ml:1182:20>>*/ return pp_print_bytes
-            ( /*<<format.ml:1182:35>>*/ caml_call1
+     /*<<format.ml:1186:20>>*/ return pp_print_bytes
+            ( /*<<format.ml:1186:35>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1182:64>>*/ }
+    /*<<format.ml:1186:64>>*/ }
    function print_int(v){
-     /*<<format.ml:1183:18>>*/ return pp_print_int
-            ( /*<<format.ml:1183:31>>*/ caml_call1
+     /*<<format.ml:1187:18>>*/ return pp_print_int
+            ( /*<<format.ml:1187:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1183:60>>*/ }
+    /*<<format.ml:1187:60>>*/ }
    function print_float(v){
-     /*<<format.ml:1184:20>>*/ return pp_print_float
-            ( /*<<format.ml:1184:35>>*/ caml_call1
+     /*<<format.ml:1188:20>>*/ return pp_print_float
+            ( /*<<format.ml:1188:35>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1184:64>>*/ }
+    /*<<format.ml:1188:64>>*/ }
    function print_char(v){
-     /*<<format.ml:1185:19>>*/ return pp_print_char
-            ( /*<<format.ml:1185:33>>*/ caml_call1
+     /*<<format.ml:1189:19>>*/ return pp_print_char
+            ( /*<<format.ml:1189:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1185:62>>*/ }
+    /*<<format.ml:1189:62>>*/ }
    function print_bool(v){
-     /*<<format.ml:1186:19>>*/ return pp_print_bool
-            ( /*<<format.ml:1186:33>>*/ caml_call1
+     /*<<format.ml:1190:19>>*/ return pp_print_bool
+            ( /*<<format.ml:1190:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1186:62>>*/ }
+    /*<<format.ml:1190:62>>*/ }
    function print_break(v, w){
-     /*<<format.ml:1187:22>>*/ return pp_print_break
-            ( /*<<format.ml:1187:37>>*/ caml_call1
+     /*<<format.ml:1191:22>>*/ return pp_print_break
+            ( /*<<format.ml:1191:37>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v,
              w);
-    /*<<format.ml:1187:68>>*/ }
+    /*<<format.ml:1191:68>>*/ }
    function print_cut(v){
-     /*<<format.ml:1188:18>>*/ return pp_print_cut
-            ( /*<<format.ml:1188:31>>*/ caml_call1
+     /*<<format.ml:1192:18>>*/ return pp_print_cut
+            ( /*<<format.ml:1192:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1188:60>>*/ }
+    /*<<format.ml:1192:60>>*/ }
    function print_space(v){
-     /*<<format.ml:1189:20>>*/ return pp_print_space
-            ( /*<<format.ml:1189:35>>*/ caml_call1
+     /*<<format.ml:1193:20>>*/ return pp_print_space
+            ( /*<<format.ml:1193:35>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1189:64>>*/ }
+    /*<<format.ml:1193:64>>*/ }
    function force_newline(v){
-     /*<<format.ml:1190:22>>*/ return pp_force_newline
-            ( /*<<format.ml:1190:39>>*/ caml_call1
+     /*<<format.ml:1194:22>>*/ return pp_force_newline
+            ( /*<<format.ml:1194:39>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1190:68>>*/ }
+    /*<<format.ml:1194:68>>*/ }
    function print_flush(v){
-     /*<<format.ml:1191:20>>*/ return pp_print_flush
-            ( /*<<format.ml:1191:35>>*/ caml_call1
+     /*<<format.ml:1195:20>>*/ return pp_print_flush
+            ( /*<<format.ml:1195:35>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1191:64>>*/ }
+    /*<<format.ml:1195:64>>*/ }
    function print_newline(v){
-     /*<<format.ml:1192:22>>*/ return pp_print_newline
-            ( /*<<format.ml:1192:39>>*/ caml_call1
+     /*<<format.ml:1196:22>>*/ return pp_print_newline
+            ( /*<<format.ml:1196:39>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1192:68>>*/ }
+    /*<<format.ml:1196:68>>*/ }
    function print_if_newline(v){
-     /*<<format.ml:1193:25>>*/ return pp_print_if_newline
-            ( /*<<format.ml:1193:45>>*/ caml_call1
+     /*<<format.ml:1197:25>>*/ return pp_print_if_newline
+            ( /*<<format.ml:1197:45>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1193:74>>*/ }
+    /*<<format.ml:1197:74>>*/ }
    function open_tbox(v){
-     /*<<format.ml:1195:18>>*/ return pp_open_tbox
-            ( /*<<format.ml:1195:31>>*/ caml_call1
+     /*<<format.ml:1199:18>>*/ return pp_open_tbox
+            ( /*<<format.ml:1199:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1195:60>>*/ }
+    /*<<format.ml:1199:60>>*/ }
    function close_tbox(v){
-     /*<<format.ml:1196:19>>*/ return pp_close_tbox
-            ( /*<<format.ml:1196:33>>*/ caml_call1
+     /*<<format.ml:1200:19>>*/ return pp_close_tbox
+            ( /*<<format.ml:1200:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1196:62>>*/ }
+    /*<<format.ml:1200:62>>*/ }
    function print_tbreak(v, w){
-     /*<<format.ml:1197:23>>*/ return pp_print_tbreak
-            ( /*<<format.ml:1197:39>>*/ caml_call1
+     /*<<format.ml:1201:23>>*/ return pp_print_tbreak
+            ( /*<<format.ml:1201:39>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v,
              w);
-    /*<<format.ml:1197:70>>*/ }
+    /*<<format.ml:1201:70>>*/ }
    function set_tab(v){
-     /*<<format.ml:1199:16>>*/ return pp_set_tab
-            ( /*<<format.ml:1199:27>>*/ caml_call1
+     /*<<format.ml:1203:16>>*/ return pp_set_tab
+            ( /*<<format.ml:1203:27>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1199:56>>*/ }
+    /*<<format.ml:1203:56>>*/ }
    function print_tab(v){
-     /*<<format.ml:1200:18>>*/ return pp_print_tab
-            ( /*<<format.ml:1200:31>>*/ caml_call1
+     /*<<format.ml:1204:18>>*/ return pp_print_tab
+            ( /*<<format.ml:1204:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1200:60>>*/ }
+    /*<<format.ml:1204:60>>*/ }
    function set_margin(v){
-     /*<<format.ml:1202:19>>*/ return pp_set_margin
-            ( /*<<format.ml:1202:33>>*/ caml_call1
+     /*<<format.ml:1206:19>>*/ return pp_set_margin
+            ( /*<<format.ml:1206:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1202:62>>*/ }
+    /*<<format.ml:1206:62>>*/ }
    function get_margin(v){
-     /*<<format.ml:1203:19>>*/  /*<<format.ml:1203:33>>*/ var
+     /*<<format.ml:1207:19>>*/  /*<<format.ml:1207:33>>*/ var
      state =
-        /*<<format.ml:1203:33>>*/ caml_call1
+        /*<<format.ml:1207:33>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[6];
-    /*<<format.ml:1203:62>>*/ }
+    /*<<format.ml:1207:62>>*/ }
    function set_max_indent(v){
-     /*<<format.ml:1205:23>>*/ return pp_set_max_indent
-            ( /*<<format.ml:1205:41>>*/ caml_call1
+     /*<<format.ml:1209:23>>*/ return pp_set_max_indent
+            ( /*<<format.ml:1209:41>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1205:70>>*/ }
+    /*<<format.ml:1209:70>>*/ }
    function get_max_indent(v){
-     /*<<format.ml:1206:23>>*/  /*<<format.ml:1206:41>>*/ var
+     /*<<format.ml:1210:23>>*/  /*<<format.ml:1210:41>>*/ var
      state =
-        /*<<format.ml:1206:41>>*/ caml_call1
+        /*<<format.ml:1210:41>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[8];
-    /*<<format.ml:1206:70>>*/ }
+    /*<<format.ml:1210:70>>*/ }
    function set_geometry(max_indent, margin){
-     /*<<format.ml:1209:2>>*/ return pp_set_geometry
-            ( /*<<format.ml:1209:18>>*/ caml_call1
+     /*<<format.ml:1213:2>>*/ return pp_set_geometry
+            ( /*<<format.ml:1213:18>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              max_indent,
              margin);
-    /*<<format.ml:1209:65>>*/ }
+    /*<<format.ml:1213:65>>*/ }
    function safe_set_geometry(max_indent, margin){
-     /*<<format.ml:1211:2>>*/ return pp_safe_set_geometry
-            ( /*<<format.ml:1211:23>>*/ caml_call1
+     /*<<format.ml:1215:2>>*/ return pp_safe_set_geometry
+            ( /*<<format.ml:1215:23>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              max_indent,
              margin);
-    /*<<format.ml:1211:70>>*/ }
+    /*<<format.ml:1215:70>>*/ }
    function get_geometry(v){
-     /*<<format.ml:1212:21>>*/ return pp_get_geometry
-            ( /*<<format.ml:1212:37>>*/ caml_call1
+     /*<<format.ml:1216:21>>*/ return pp_get_geometry
+            ( /*<<format.ml:1216:37>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1212:66>>*/ }
+    /*<<format.ml:1216:66>>*/ }
    function update_geometry(v){
-     /*<<format.ml:1213:24>>*/ return pp_update_geometry
-            ( /*<<format.ml:1213:43>>*/ caml_call1
+     /*<<format.ml:1217:24>>*/ return pp_update_geometry
+            ( /*<<format.ml:1217:43>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1213:72>>*/ }
+    /*<<format.ml:1217:72>>*/ }
    function set_max_boxes(v){
-     /*<<format.ml:1215:22>>*/ return pp_set_max_boxes
-            ( /*<<format.ml:1215:39>>*/ caml_call1
+     /*<<format.ml:1219:22>>*/ return pp_set_max_boxes
+            ( /*<<format.ml:1219:39>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1215:68>>*/ }
+    /*<<format.ml:1219:68>>*/ }
    function get_max_boxes(v){
-     /*<<format.ml:1216:22>>*/  /*<<format.ml:1216:39>>*/ var
+     /*<<format.ml:1220:22>>*/  /*<<format.ml:1220:39>>*/ var
      state =
-        /*<<format.ml:1216:39>>*/ caml_call1
+        /*<<format.ml:1220:39>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[15];
-    /*<<format.ml:1216:68>>*/ }
+    /*<<format.ml:1220:68>>*/ }
    function over_max_boxes(v){
-     /*<<format.ml:1217:23>>*/ return pp_over_max_boxes
-            ( /*<<format.ml:1217:41>>*/ caml_call1
+     /*<<format.ml:1221:23>>*/ return pp_over_max_boxes
+            ( /*<<format.ml:1221:41>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1217:70>>*/ }
+    /*<<format.ml:1221:70>>*/ }
    function set_ellipsis_text(v){
-     /*<<format.ml:1219:26>>*/ return pp_set_ellipsis_text
-            ( /*<<format.ml:1219:47>>*/ caml_call1
+     /*<<format.ml:1223:26>>*/ return pp_set_ellipsis_text
+            ( /*<<format.ml:1223:47>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1219:76>>*/ }
+    /*<<format.ml:1223:76>>*/ }
    function get_ellipsis_text(v){
-     /*<<format.ml:1220:26>>*/  /*<<format.ml:1220:47>>*/ var
+     /*<<format.ml:1224:26>>*/  /*<<format.ml:1224:47>>*/ var
      state =
-        /*<<format.ml:1220:47>>*/ caml_call1
+        /*<<format.ml:1224:47>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[16];
-    /*<<format.ml:1220:76>>*/ }
+    /*<<format.ml:1224:76>>*/ }
    function set_formatter_out_channel(v){
-     /*<<format.ml:1223:2>>*/ return pp_set_formatter_out_channel
-            ( /*<<format.ml:1223:31>>*/ caml_call1
+     /*<<format.ml:1227:2>>*/ return pp_set_formatter_out_channel
+            ( /*<<format.ml:1227:31>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1223:60>>*/ }
+    /*<<format.ml:1227:60>>*/ }
    function set_formatter_out_functions(v){
-     /*<<format.ml:1226:2>>*/ return pp_set_formatter_out_functions
-            ( /*<<format.ml:1226:33>>*/ caml_call1
+     /*<<format.ml:1230:2>>*/ return pp_set_formatter_out_functions
+            ( /*<<format.ml:1230:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1226:62>>*/ }
+    /*<<format.ml:1230:62>>*/ }
    function get_formatter_out_functions(v){
-     /*<<format.ml:1228:2>>*/ return pp_get_formatter_out_functions
-            ( /*<<format.ml:1228:33>>*/ caml_call1
+     /*<<format.ml:1232:2>>*/ return pp_get_formatter_out_functions
+            ( /*<<format.ml:1232:33>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1228:62>>*/ }
+    /*<<format.ml:1232:62>>*/ }
    function set_formatter_output_functions(v, w){
-     /*<<format.ml:1231:2>>*/ return pp_set_formatter_output_functi
-            ( /*<<format.ml:1231:36>>*/ caml_call1
+     /*<<format.ml:1235:2>>*/ return pp_set_formatter_output_functi
+            ( /*<<format.ml:1235:36>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v,
              w);
-    /*<<format.ml:1231:67>>*/ }
+    /*<<format.ml:1235:67>>*/ }
    function get_formatter_output_functions(v){
-     /*<<format.ml:1233:2>>*/ return pp_get_formatter_output_functi
-            ( /*<<format.ml:1233:36>>*/ caml_call1
+     /*<<format.ml:1237:2>>*/ return pp_get_formatter_output_functi
+            ( /*<<format.ml:1237:36>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1233:65>>*/ }
+    /*<<format.ml:1237:65>>*/ }
    function set_formatter_stag_functions(v){
-     /*<<format.ml:1236:2>>*/ return pp_set_formatter_stag_function
-            ( /*<<format.ml:1236:34>>*/ caml_call1
+     /*<<format.ml:1240:2>>*/ return pp_set_formatter_stag_function
+            ( /*<<format.ml:1240:34>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1236:63>>*/ }
+    /*<<format.ml:1240:63>>*/ }
    function get_formatter_stag_functions(v){
-     /*<<format.ml:1238:2>>*/ return pp_get_formatter_stag_function
-            ( /*<<format.ml:1238:34>>*/ caml_call1
+     /*<<format.ml:1242:2>>*/ return pp_get_formatter_stag_function
+            ( /*<<format.ml:1242:34>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1238:63>>*/ }
+    /*<<format.ml:1242:63>>*/ }
    function set_print_tags(v){
-     /*<<format.ml:1240:2>>*/ return pp_set_print_tags
-            ( /*<<format.ml:1240:20>>*/ caml_call1
+     /*<<format.ml:1244:2>>*/ return pp_set_print_tags
+            ( /*<<format.ml:1244:20>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1240:49>>*/ }
+    /*<<format.ml:1244:49>>*/ }
    function get_print_tags(v){
-     /*<<format.ml:1242:2>>*/  /*<<format.ml:1242:20>>*/ var
+     /*<<format.ml:1246:2>>*/  /*<<format.ml:1246:20>>*/ var
      state =
-        /*<<format.ml:1242:20>>*/ caml_call1
+        /*<<format.ml:1246:20>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[22];
-    /*<<format.ml:1242:49>>*/ }
+    /*<<format.ml:1246:49>>*/ }
    function set_mark_tags(v){
-     /*<<format.ml:1244:2>>*/ return pp_set_mark_tags
-            ( /*<<format.ml:1244:19>>*/ caml_call1
+     /*<<format.ml:1248:2>>*/ return pp_set_mark_tags
+            ( /*<<format.ml:1248:19>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1244:48>>*/ }
+    /*<<format.ml:1248:48>>*/ }
    function get_mark_tags(v){
-     /*<<format.ml:1246:2>>*/  /*<<format.ml:1246:19>>*/ var
+     /*<<format.ml:1250:2>>*/  /*<<format.ml:1250:19>>*/ var
      state =
-        /*<<format.ml:1246:19>>*/ caml_call1
+        /*<<format.ml:1250:19>>*/ caml_call1
         (Stdlib_Domain[10][2], std_formatter_key);
     return state[23];
-    /*<<format.ml:1246:48>>*/ }
+    /*<<format.ml:1250:48>>*/ }
    function set_tags(v){
-     /*<<format.ml:1248:2>>*/ return pp_set_tags
-            ( /*<<format.ml:1248:14>>*/ caml_call1
+     /*<<format.ml:1252:2>>*/ return pp_set_tags
+            ( /*<<format.ml:1252:14>>*/ caml_call1
               (Stdlib_Domain[10][2], std_formatter_key),
              v);
-    /*<<format.ml:1248:43>>*/ }
+    /*<<format.ml:1252:43>>*/ }
    function pp_print_iter(opt, iter, pp_v, ppf, v){
-     /*<<format.ml:1254:2>>*/ if(opt)
-     var sth = opt[1], pp_sep = sth;
-    else
-     var pp_sep = pp_print_cut;
-     /*<<format.ml:1254:17>>*/  /*<<format.ml:1254:17>>*/ var
-     is_first = [0, 1];
+     /*<<format.ml:1258:17>>*/ var
+     pp_sep = opt ? opt[1] : pp_print_cut,
+      /*<<format.ml:1258:17>>*/ is_first = [0, 1];
     function pp_v$0(v){
-      /*<<format.ml:1256:4>>*/ if(is_first[1])
+      /*<<format.ml:1260:4>>*/ if(is_first[1])
       is_first[1] = 0;
      else
-       /*<<format.ml:1256:45>>*/  /*<<format.ml:1256:45>>*/ caml_call2
+       /*<<format.ml:1260:45>>*/  /*<<format.ml:1260:45>>*/ caml_call2
        (pp_sep, ppf, 0);
-      /*<<format.ml:1256:45>>*/ return  /*<<format.ml:1256:45>>*/ caml_call2
+      /*<<format.ml:1260:45>>*/ return  /*<<format.ml:1260:45>>*/ caml_call2
              (pp_v, ppf, v);
-     /*<<format.ml:1257:14>>*/ }
-     /*<<format.ml:1259:2>>*/ return  /*<<format.ml:1259:2>>*/ caml_call2
+     /*<<format.ml:1261:14>>*/ }
+     /*<<format.ml:1263:2>>*/ return  /*<<format.ml:1263:2>>*/ caml_call2
             (iter, pp_v$0, v);
-    /*<<format.ml:1259:13>>*/ }
+   }
    function pp_print_list(opt, pp_v, ppf, v){
-     /*<<format.ml:1263:2>>*/ if(opt)
-     var sth = opt[1], pp_sep = sth;
-    else
-     var pp_sep = pp_print_cut;
-     /*<<format.ml:1263:2>>*/ return pp_print_iter
-            ([0, pp_sep], Stdlib_List[18], pp_v, ppf, v);
-    /*<<format.ml:1263:44>>*/ }
-   function pp_print_array(opt, pp_v, ppf, v){
-     /*<<format.ml:1267:2>>*/ if(opt)
-     var sth = opt[1], pp_sep = sth;
-    else
-     var pp_sep = pp_print_cut;
+    var pp_sep = opt ? opt[1] : pp_print_cut;
      /*<<format.ml:1267:2>>*/ return pp_print_iter
-            ([0, pp_sep], Stdlib_Array[11], pp_v, ppf, v);
-    /*<<format.ml:1267:45>>*/ }
-   function pp_print_seq(opt, pp_v, ppf, seq){
-     /*<<format.ml:1271:2>>*/ if(opt)
-     var sth = opt[1], pp_sep = sth;
-    else
-     var pp_sep = pp_print_cut;
+            ([0, pp_sep], Stdlib_List[18], pp_v, ppf, v);
+   }
+   function pp_print_array(opt, pp_v, ppf, v){
+    var pp_sep = opt ? opt[1] : pp_print_cut;
      /*<<format.ml:1271:2>>*/ return pp_print_iter
+            ([0, pp_sep], Stdlib_Array[12], pp_v, ppf, v);
+   }
+   function pp_print_seq(opt, pp_v, ppf, seq){
+    var pp_sep = opt ? opt[1] : pp_print_cut;
+     /*<<format.ml:1275:2>>*/ return pp_print_iter
             ([0, pp_sep], Stdlib_Seq[4], pp_v, ppf, seq);
-    /*<<format.ml:1271:45>>*/ }
+   }
    function pp_print_text(ppf, s){
-     /*<<format.ml:1275:2>>*/ var
+     /*<<format.ml:1279:2>>*/ var
      len = caml_ml_string_length(s),
-      /*<<format.ml:1276:13>>*/ left = [0, 0],
-      /*<<format.ml:1277:14>>*/ right = [0, 0];
+      /*<<format.ml:1280:13>>*/ left = [0, 0],
+      /*<<format.ml:1281:14>>*/ right = [0, 0];
     function flush(param){
-      /*<<format.ml:1279:4>>*/ pp_print_string
+      /*<<format.ml:1283:4>>*/ pp_print_string
       (ppf,
-        /*<<format.ml:1279:24>>*/ caml_call3
+        /*<<format.ml:1283:24>>*/ caml_call3
         (Stdlib_String[16], s, left[1], right[1] - left[1] | 0));
      right[1]++;
      left[1] = right[1];
      return 0;
-     /*<<format.ml:1280:31>>*/ }
+     /*<<format.ml:1284:31>>*/ }
     for(;;){
      if(right[1] === len){
-      var _N_ = left[1] !== len ? 1 : 0;
-      return _N_ ? flush(0) : _N_;
+      var _O_ = left[1] !== len ? 1 : 0;
+      return _O_ ? flush(0) : _O_;
      }
-      /*<<format.ml:1283:10>>*/  /*<<format.ml:1283:10>>*/ var
-      match =  /*<<format.ml:1283:10>>*/ runtime.caml_string_get(s, right[1]);
+      /*<<format.ml:1287:10>>*/  /*<<format.ml:1287:10>>*/ var
+      match =  /*<<format.ml:1287:10>>*/ runtime.caml_string_get(s, right[1]);
      if(10 === match){
-       /*<<format.ml:1285:8>>*/ flush(0);
-       /*<<format.ml:1286:8>>*/ pp_force_newline(ppf, 0);
+       /*<<format.ml:1289:8>>*/ flush(0);
+       /*<<format.ml:1290:8>>*/ pp_force_newline(ppf, 0);
      }
      else if(32 === match){
-       /*<<format.ml:1288:8>>*/ flush(0);
-       /*<<format.ml:1288:18>>*/ pp_print_space(ppf, 0);
+       /*<<format.ml:1292:8>>*/ flush(0);
+       /*<<format.ml:1292:18>>*/ pp_print_space(ppf, 0);
      }
      else
       right[1]++;
     }
-    /*<<format.ml:1293:31>>*/ }
+    /*<<format.ml:1297:31>>*/ }
    function pp_print_option(opt, pp_v, ppf, param){
-     /*<<format.ml:1295:56>>*/ if(opt)
-     var sth = opt[1], none = sth;
-    else
-     var
-      none =
-        function(param, _M_){
-          /*<<format.ml:1295:41>>*/ return 0;
-         /*<<format.ml:1295:43>>*/ };
-     /*<<format.ml:1295:56>>*/ if(! param)
-      /*<<format.ml:1296:10>>*/ return  /*<<format.ml:1296:10>>*/ caml_call2
+    var
+     none =
+       opt
+        ? opt[1]
+        : function
+         (_N_, param){
+           /*<<format.ml:1299:41>>*/ return 0;
+          /*<<format.ml:1299:43>>*/ };
+    if(! param)
+      /*<<format.ml:1300:10>>*/ return  /*<<format.ml:1300:10>>*/ caml_call2
              (none, ppf, 0);
     var v = param[1];
-     /*<<format.ml:1297:12>>*/ return  /*<<format.ml:1297:12>>*/ caml_call2
+     /*<<format.ml:1301:12>>*/ return  /*<<format.ml:1301:12>>*/ caml_call2
             (pp_v, ppf, v);
    }
    function pp_print_result(ok, error, ppf, param){
      /*<<?>>*/ if(0 === param[0]){
      var v = param[1];
-      /*<<format.ml:1300:10>>*/ return  /*<<format.ml:1300:10>>*/ caml_call2
+      /*<<format.ml:1304:10>>*/ return  /*<<format.ml:1304:10>>*/ caml_call2
              (ok, ppf, v);
     }
     var e = param[1];
-     /*<<format.ml:1301:13>>*/ return  /*<<format.ml:1301:13>>*/ caml_call2
+     /*<<format.ml:1305:13>>*/ return  /*<<format.ml:1305:13>>*/ caml_call2
             (error, ppf, e);
    }
    function pp_print_either(left, right, ppf, param){
      /*<<?>>*/ if(0 === param[0]){
      var l = param[1];
-      /*<<format.ml:1304:19>>*/ return  /*<<format.ml:1304:19>>*/ caml_call2
+      /*<<format.ml:1308:19>>*/ return  /*<<format.ml:1308:19>>*/ caml_call2
              (left, ppf, l);
     }
     var r = param[1];
-     /*<<format.ml:1305:20>>*/ return  /*<<format.ml:1305:20>>*/ caml_call2
+     /*<<format.ml:1309:20>>*/ return  /*<<format.ml:1309:20>>*/ caml_call2
             (right, ppf, r);
    }
    function compute_tag(output, tag_acc){
-     /*<<format.ml:1310:2>>*/ var
-      /*<<format.ml:1310:12>>*/ buf =
-        /*<<format.ml:1310:12>>*/ caml_call1(Stdlib_Buffer[1], 16),
-      /*<<format.ml:1311:12>>*/ ppf = formatter_of_buffer(buf);
-     /*<<format.ml:1312:2>>*/  /*<<format.ml:1312:2>>*/ caml_call2
+     /*<<format.ml:1314:2>>*/ var
+      /*<<format.ml:1314:12>>*/ buf =
+        /*<<format.ml:1314:12>>*/ caml_call1(Stdlib_Buffer[1], 16),
+      /*<<format.ml:1315:12>>*/ ppf = formatter_of_buffer(buf);
+     /*<<format.ml:1316:2>>*/  /*<<format.ml:1316:2>>*/ caml_call2
      (output, ppf, tag_acc);
-     /*<<format.ml:1313:2>>*/ pp_print_flush(ppf, 0);
-     /*<<format.ml:1314:12>>*/  /*<<format.ml:1314:12>>*/ var
-     len =  /*<<format.ml:1314:12>>*/ caml_call1(Stdlib_Buffer[7], buf);
-     /*<<format.ml:1315:2>>*/ return 2 <= len
-            ?  /*<<format.ml:1316:7>>*/ caml_call3
+     /*<<format.ml:1317:2>>*/ pp_print_flush(ppf, 0);
+     /*<<format.ml:1318:12>>*/  /*<<format.ml:1318:12>>*/ var
+     len =  /*<<format.ml:1318:12>>*/ caml_call1(Stdlib_Buffer[7], buf);
+     /*<<format.ml:1319:2>>*/ return 2 <= len
+            ?  /*<<format.ml:1320:7>>*/ caml_call3
               (Stdlib_Buffer[4], buf, 1, len - 2 | 0)
-            :  /*<<format.ml:1315:18>>*/ caml_call1(Stdlib_Buffer[2], buf);
-    /*<<format.ml:1316:33>>*/ }
+            :  /*<<format.ml:1319:18>>*/ caml_call1(Stdlib_Buffer[2], buf);
+    /*<<format.ml:1320:33>>*/ }
    function output_formatting_lit(ppf, fmting_lit){
-     /*<<format.ml:1329:43>>*/ if(typeof fmting_lit === "number")
+     /*<<format.ml:1333:43>>*/ if(typeof fmting_lit === "number")
      switch(fmting_lit){
        case 0:
-         /*<<format.ml:1330:33>>*/ return pp_close_box(ppf, 0);
+         /*<<format.ml:1334:33>>*/ return pp_close_box(ppf, 0);
        case 1:
-         /*<<format.ml:1331:33>>*/ return pp_close_stag(ppf, 0);
+         /*<<format.ml:1335:33>>*/ return pp_close_stag(ppf, 0);
        case 2:
-         /*<<format.ml:1333:33>>*/ return pp_print_flush(ppf, 0);
+         /*<<format.ml:1337:33>>*/ return pp_print_flush(ppf, 0);
        case 3:
-         /*<<format.ml:1334:33>>*/ return pp_force_newline(ppf, 0);
+         /*<<format.ml:1338:33>>*/ return pp_force_newline(ppf, 0);
        case 4:
-         /*<<format.ml:1335:33>>*/ return pp_print_newline(ppf, 0);
+         /*<<format.ml:1339:33>>*/ return pp_print_newline(ppf, 0);
        case 5:
-         /*<<format.ml:1337:33>>*/ return pp_print_char(ppf, 64);
-       default:  /*<<format.ml:1338:33>>*/ return pp_print_char(ppf, 37);
+         /*<<format.ml:1341:33>>*/ return pp_print_char(ppf, 64);
+       default:  /*<<format.ml:1342:33>>*/ return pp_print_char(ppf, 37);
      }
     switch(fmting_lit[0]){
       case 0:
        var offset = fmting_lit[3], width = fmting_lit[2];
-        /*<<format.ml:1332:33>>*/ return pp_print_break(ppf, width, offset);
+        /*<<format.ml:1336:33>>*/ return pp_print_break(ppf, width, offset);
       case 1:
-        /*<<format.ml:1336:33>>*/ return 0;
+        /*<<format.ml:1340:33>>*/ return 0;
       default:
        var c = fmting_lit[1];
-        /*<<format.ml:1339:33>>*/ pp_print_char(ppf, 64);
-        /*<<format.ml:1339:33>>*/ return pp_print_char(ppf, c);
+        /*<<format.ml:1343:33>>*/ pp_print_char(ppf, 64);
+        /*<<format.ml:1343:33>>*/ return pp_print_char(ppf, c);
     }
-    /*<<format.ml:1339:75>>*/ }
+    /*<<format.ml:1343:75>>*/ }
    function output_acc(ppf, acc){
-     /*<<format.ml:1345:29>>*/ if(typeof acc === "number")
-      /*<<format.ml:1371:32>>*/ return 0;
+     /*<<format.ml:1349:29>>*/ if(typeof acc === "number")
+      /*<<format.ml:1375:32>>*/ return 0;
     a:
     {
      b:
@@ -26899,104 +28704,104 @@
        switch(acc[0]){
          case 0:
           var f = acc[2], p = acc[1];
-           /*<<format.ml:1355:4>>*/ output_acc(ppf, p);
-           /*<<format.ml:1355:4>>*/ return output_formatting_lit(ppf, f);
+           /*<<format.ml:1359:4>>*/ output_acc(ppf, p);
+           /*<<format.ml:1359:4>>*/ return output_formatting_lit(ppf, f);
          case 1:
           var match = acc[2], p$0 = acc[1];
           if(0 === match[0]){
            var acc$0 = match[1];
-            /*<<format.ml:1358:4>>*/ output_acc(ppf, p$0);
-            /*<<format.ml:1359:21>>*/ return pp_open_stag
+            /*<<format.ml:1362:4>>*/ output_acc(ppf, p$0);
+            /*<<format.ml:1363:21>>*/ return pp_open_stag
                    (ppf, [0, String_tag, compute_tag(output_acc, acc$0)]);
           }
           var acc$1 = match[1];
-           /*<<format.ml:1361:4>>*/ output_acc(ppf, p$0);
-           /*<<format.ml:1362:43>>*/ var
-            /*<<format.ml:1362:43>>*/ _D_ = compute_tag(output_acc, acc$1),
-            /*<<format.ml:1362:24>>*/ match$0 =
-              /*<<format.ml:1362:24>>*/ caml_call1
-              (CamlinternalFormat[20], _D_),
+           /*<<format.ml:1365:4>>*/ output_acc(ppf, p$0);
+           /*<<format.ml:1366:43>>*/ var
+            /*<<format.ml:1366:43>>*/ _E_ = compute_tag(output_acc, acc$1),
+            /*<<format.ml:1366:24>>*/ match$0 =
+              /*<<format.ml:1366:24>>*/ caml_call1
+              (CamlinternalFormat[20], _E_),
            bty = match$0[2],
            indent = match$0[1];
-           /*<<format.ml:1363:4>>*/ return pp_open_box_gen(ppf, indent, bty);
+           /*<<format.ml:1367:4>>*/ return pp_open_box_gen(ppf, indent, bty);
          case 2:
-          var _E_ = acc[1];
-          if(typeof _E_ !== "number" && 0 === _E_[0]){
-           var _F_ = _E_[2];
-           if(typeof _F_ !== "number" && 1 === _F_[0]){
-            var s$0 = acc[2], size = _F_[2], p$2 = _E_[1];
+          var _F_ = acc[1];
+          if(typeof _F_ !== "number" && 0 === _F_[0]){
+           var _G_ = _F_[2];
+           if(typeof _G_ !== "number" && 1 === _G_[0]){
+            var s$0 = acc[2], size = _G_[2], p$2 = _F_[1];
             break b;
            }
           }
-          var s = acc[2], p$1 = _E_;
+          var s = acc[2], p$1 = _F_;
           break a;
          case 3:
-          var _G_ = acc[1];
-          if(typeof _G_ !== "number" && 0 === _G_[0]){
-           var _H_ = _G_[2];
-           if(typeof _H_ !== "number" && 1 === _H_[0]){
-            var c$0 = acc[2], size$0 = _H_[2], p$4 = _G_[1];
+          var _H_ = acc[1];
+          if(typeof _H_ !== "number" && 0 === _H_[0]){
+           var _I_ = _H_[2];
+           if(typeof _I_ !== "number" && 1 === _I_[0]){
+            var c$0 = acc[2], size$0 = _I_[2], p$4 = _H_[1];
             break;
            }
           }
-          var c = acc[2], p$3 = _G_;
+          var c = acc[2], p$3 = _H_;
           break c;
          case 4:
-          var _I_ = acc[1];
-          if(typeof _I_ !== "number" && 0 === _I_[0]){
-           var _J_ = _I_[2];
-           if(typeof _J_ !== "number" && 1 === _J_[0]){
-            var s$0 = acc[2], size = _J_[2], p$2 = _I_[1];
+          var _J_ = acc[1];
+          if(typeof _J_ !== "number" && 0 === _J_[0]){
+           var _K_ = _J_[2];
+           if(typeof _K_ !== "number" && 1 === _K_[0]){
+            var s$0 = acc[2], size = _K_[2], p$2 = _J_[1];
             break b;
            }
           }
-          var s = acc[2], p$1 = _I_;
+          var s = acc[2], p$1 = _J_;
           break a;
          case 5:
-          var _K_ = acc[1];
-          if(typeof _K_ !== "number" && 0 === _K_[0]){
-           var _L_ = _K_[2];
-           if(typeof _L_ !== "number" && 1 === _L_[0]){
-            var c$0 = acc[2], size$0 = _L_[2], p$4 = _K_[1];
+          var _L_ = acc[1];
+          if(typeof _L_ !== "number" && 0 === _L_[0]){
+           var _M_ = _L_[2];
+           if(typeof _M_ !== "number" && 1 === _M_[0]){
+            var c$0 = acc[2], size$0 = _M_[2], p$4 = _L_[1];
             break;
            }
           }
-          var c = acc[2], p$3 = _K_;
+          var c = acc[2], p$3 = _L_;
           break c;
          case 6:
           var f$0 = acc[2], p$5 = acc[1];
-           /*<<format.ml:1368:32>>*/ output_acc(ppf, p$5);
-           /*<<format.ml:1368:32>>*/ return  /*<<format.ml:1368:32>>*/ caml_call1
+           /*<<format.ml:1372:32>>*/ output_acc(ppf, p$5);
+           /*<<format.ml:1372:32>>*/ return  /*<<format.ml:1372:32>>*/ caml_call1
                   (f$0, ppf);
          case 7:
           var p$6 = acc[1];
-           /*<<format.ml:1369:32>>*/ output_acc(ppf, p$6);
-           /*<<format.ml:1369:32>>*/ return pp_print_flush(ppf, 0);
+           /*<<format.ml:1373:32>>*/ output_acc(ppf, p$6);
+           /*<<format.ml:1373:32>>*/ return pp_print_flush(ppf, 0);
          default:
           var msg = acc[2], p$7 = acc[1];
-           /*<<format.ml:1370:32>>*/ output_acc(ppf, p$7);
-           /*<<format.ml:1370:32>>*/ return  /*<<format.ml:1370:32>>*/ caml_call1
+           /*<<format.ml:1374:32>>*/ output_acc(ppf, p$7);
+           /*<<format.ml:1374:32>>*/ return  /*<<format.ml:1374:32>>*/ caml_call1
                   (Stdlib[1], msg);
        }
-        /*<<format.ml:1352:4>>*/ output_acc(ppf, p$4);
-        /*<<format.ml:1353:44>>*/ return pp_print_as_size
+        /*<<format.ml:1356:4>>*/ output_acc(ppf, p$4);
+        /*<<format.ml:1357:44>>*/ return pp_print_as_size
                (ppf,
                 size$0,
-                 /*<<format.ml:1353:44>>*/ caml_call2
+                 /*<<format.ml:1357:44>>*/ caml_call2
                  (Stdlib_String[1], 1, c$0));
       }
-       /*<<format.ml:1367:32>>*/ output_acc(ppf, p$3);
-       /*<<format.ml:1367:32>>*/ return pp_print_char(ppf, c);
+       /*<<format.ml:1371:32>>*/ output_acc(ppf, p$3);
+       /*<<format.ml:1371:32>>*/ return pp_print_char(ppf, c);
      }
-      /*<<format.ml:1348:4>>*/ output_acc(ppf, p$2);
-      /*<<format.ml:1348:4>>*/ return pp_print_as_size(ppf, size, s$0);
+      /*<<format.ml:1352:4>>*/ output_acc(ppf, p$2);
+      /*<<format.ml:1352:4>>*/ return pp_print_as_size(ppf, size, s$0);
     }
-     /*<<format.ml:1365:32>>*/ output_acc(ppf, p$1);
-     /*<<format.ml:1365:32>>*/ return pp_print_string(ppf, s);
-    /*<<format.ml:1371:34>>*/ }
+     /*<<format.ml:1369:32>>*/ output_acc(ppf, p$1);
+     /*<<format.ml:1369:32>>*/ return pp_print_string(ppf, s);
+    /*<<format.ml:1375:34>>*/ }
    function strput_acc(ppf, acc){
-     /*<<format.ml:1377:29>>*/ if(typeof acc === "number")
-      /*<<format.ml:1406:32>>*/ return 0;
+     /*<<format.ml:1381:29>>*/ if(typeof acc === "number")
+      /*<<format.ml:1410:32>>*/ return 0;
     a:
     {
      b:
@@ -27006,69 +28811,69 @@
        switch(acc[0]){
          case 0:
           var f = acc[2], p = acc[1];
-           /*<<format.ml:1390:4>>*/ strput_acc(ppf, p);
-           /*<<format.ml:1390:4>>*/ return output_formatting_lit(ppf, f);
+           /*<<format.ml:1394:4>>*/ strput_acc(ppf, p);
+           /*<<format.ml:1394:4>>*/ return output_formatting_lit(ppf, f);
          case 1:
           var match = acc[2], p$0 = acc[1];
           if(0 === match[0]){
            var acc$0 = match[1];
-            /*<<format.ml:1393:4>>*/ strput_acc(ppf, p$0);
-            /*<<format.ml:1394:21>>*/ return pp_open_stag
+            /*<<format.ml:1397:4>>*/ strput_acc(ppf, p$0);
+            /*<<format.ml:1398:21>>*/ return pp_open_stag
                    (ppf, [0, String_tag, compute_tag(strput_acc, acc$0)]);
           }
           var acc$1 = match[1];
-           /*<<format.ml:1396:4>>*/ strput_acc(ppf, p$0);
-           /*<<format.ml:1397:43>>*/ var
-            /*<<format.ml:1397:43>>*/ _u_ = compute_tag(strput_acc, acc$1),
-            /*<<format.ml:1397:24>>*/ match$0 =
-              /*<<format.ml:1397:24>>*/ caml_call1
-              (CamlinternalFormat[20], _u_),
+           /*<<format.ml:1400:4>>*/ strput_acc(ppf, p$0);
+           /*<<format.ml:1401:43>>*/ var
+            /*<<format.ml:1401:43>>*/ _v_ = compute_tag(strput_acc, acc$1),
+            /*<<format.ml:1401:24>>*/ match$0 =
+              /*<<format.ml:1401:24>>*/ caml_call1
+              (CamlinternalFormat[20], _v_),
            bty = match$0[2],
            indent = match$0[1];
-           /*<<format.ml:1398:4>>*/ return pp_open_box_gen(ppf, indent, bty);
+           /*<<format.ml:1402:4>>*/ return pp_open_box_gen(ppf, indent, bty);
          case 2:
-          var _v_ = acc[1];
-          if(typeof _v_ !== "number" && 0 === _v_[0]){
-           var _w_ = _v_[2];
-           if(typeof _w_ !== "number" && 1 === _w_[0]){
-            var s$0 = acc[2], size = _w_[2], p$2 = _v_[1];
+          var _w_ = acc[1];
+          if(typeof _w_ !== "number" && 0 === _w_[0]){
+           var _x_ = _w_[2];
+           if(typeof _x_ !== "number" && 1 === _x_[0]){
+            var s$0 = acc[2], size = _x_[2], p$2 = _w_[1];
             break b;
            }
           }
-          var s = acc[2], p$1 = _v_;
+          var s = acc[2], p$1 = _w_;
           break a;
          case 3:
-          var _x_ = acc[1];
-          if(typeof _x_ !== "number" && 0 === _x_[0]){
-           var _y_ = _x_[2];
-           if(typeof _y_ !== "number" && 1 === _y_[0]){
-            var c$0 = acc[2], size$0 = _y_[2], p$4 = _x_[1];
+          var _y_ = acc[1];
+          if(typeof _y_ !== "number" && 0 === _y_[0]){
+           var _z_ = _y_[2];
+           if(typeof _z_ !== "number" && 1 === _z_[0]){
+            var c$0 = acc[2], size$0 = _z_[2], p$4 = _y_[1];
             break;
            }
           }
-          var c = acc[2], p$3 = _x_;
+          var c = acc[2], p$3 = _y_;
           break c;
          case 4:
-          var _z_ = acc[1];
-          if(typeof _z_ !== "number" && 0 === _z_[0]){
-           var _A_ = _z_[2];
-           if(typeof _A_ !== "number" && 1 === _A_[0]){
-            var s$0 = acc[2], size = _A_[2], p$2 = _z_[1];
+          var _A_ = acc[1];
+          if(typeof _A_ !== "number" && 0 === _A_[0]){
+           var _B_ = _A_[2];
+           if(typeof _B_ !== "number" && 1 === _B_[0]){
+            var s$0 = acc[2], size = _B_[2], p$2 = _A_[1];
             break b;
            }
           }
-          var s = acc[2], p$1 = _z_;
+          var s = acc[2], p$1 = _A_;
           break a;
          case 5:
-          var _B_ = acc[1];
-          if(typeof _B_ !== "number" && 0 === _B_[0]){
-           var _C_ = _B_[2];
-           if(typeof _C_ !== "number" && 1 === _C_[0]){
-            var c$0 = acc[2], size$0 = _C_[2], p$4 = _B_[1];
+          var _C_ = acc[1];
+          if(typeof _C_ !== "number" && 0 === _C_[0]){
+           var _D_ = _C_[2];
+           if(typeof _D_ !== "number" && 1 === _D_[0]){
+            var c$0 = acc[2], size$0 = _D_[2], p$4 = _C_[1];
             break;
            }
           }
-          var c = acc[2], p$3 = _B_;
+          var c = acc[2], p$3 = _C_;
           break c;
          case 6:
           var p$5 = acc[1];
@@ -27076,199 +28881,199 @@
            var match$1 = p$5[2];
            if(typeof match$1 !== "number" && 1 === match$1[0]){
             var f$1 = acc[2], size$1 = match$1[2], p$6 = p$5[1];
-             /*<<format.ml:1387:4>>*/ strput_acc(ppf, p$6);
-             /*<<format.ml:1388:44>>*/ return pp_print_as_size
-                    (ppf, size$1,  /*<<format.ml:1388:44>>*/ caml_call1(f$1, 0));
+             /*<<format.ml:1391:4>>*/ strput_acc(ppf, p$6);
+             /*<<format.ml:1392:44>>*/ return pp_print_as_size
+                    (ppf, size$1,  /*<<format.ml:1392:44>>*/ caml_call1(f$1, 0));
            }
           }
           var f$0 = acc[2];
-           /*<<format.ml:1403:32>>*/ strput_acc(ppf, p$5);
-           /*<<format.ml:1403:70>>*/ return pp_print_string
-                  (ppf,  /*<<format.ml:1403:70>>*/ caml_call1(f$0, 0));
+           /*<<format.ml:1407:32>>*/ strput_acc(ppf, p$5);
+           /*<<format.ml:1407:70>>*/ return pp_print_string
+                  (ppf,  /*<<format.ml:1407:70>>*/ caml_call1(f$0, 0));
          case 7:
           var p$7 = acc[1];
-           /*<<format.ml:1404:32>>*/ strput_acc(ppf, p$7);
-           /*<<format.ml:1404:32>>*/ return pp_print_flush(ppf, 0);
+           /*<<format.ml:1408:32>>*/ strput_acc(ppf, p$7);
+           /*<<format.ml:1408:32>>*/ return pp_print_flush(ppf, 0);
          default:
           var msg = acc[2], p$8 = acc[1];
-           /*<<format.ml:1405:32>>*/ strput_acc(ppf, p$8);
-           /*<<format.ml:1405:32>>*/ return  /*<<format.ml:1405:32>>*/ caml_call1
+           /*<<format.ml:1409:32>>*/ strput_acc(ppf, p$8);
+           /*<<format.ml:1409:32>>*/ return  /*<<format.ml:1409:32>>*/ caml_call1
                   (Stdlib[1], msg);
        }
-        /*<<format.ml:1384:4>>*/ strput_acc(ppf, p$4);
-        /*<<format.ml:1385:44>>*/ return pp_print_as_size
+        /*<<format.ml:1388:4>>*/ strput_acc(ppf, p$4);
+        /*<<format.ml:1389:44>>*/ return pp_print_as_size
                (ppf,
                 size$0,
-                 /*<<format.ml:1385:44>>*/ caml_call2
+                 /*<<format.ml:1389:44>>*/ caml_call2
                  (Stdlib_String[1], 1, c$0));
       }
-       /*<<format.ml:1402:32>>*/ strput_acc(ppf, p$3);
-       /*<<format.ml:1402:32>>*/ return pp_print_char(ppf, c);
+       /*<<format.ml:1406:32>>*/ strput_acc(ppf, p$3);
+       /*<<format.ml:1406:32>>*/ return pp_print_char(ppf, c);
      }
-      /*<<format.ml:1380:4>>*/ strput_acc(ppf, p$2);
-      /*<<format.ml:1380:4>>*/ return pp_print_as_size(ppf, size, s$0);
+      /*<<format.ml:1384:4>>*/ strput_acc(ppf, p$2);
+      /*<<format.ml:1384:4>>*/ return pp_print_as_size(ppf, size, s$0);
     }
-     /*<<format.ml:1400:32>>*/ strput_acc(ppf, p$1);
-     /*<<format.ml:1400:32>>*/ return pp_print_string(ppf, s);
-    /*<<format.ml:1406:34>>*/ }
+     /*<<format.ml:1404:32>>*/ strput_acc(ppf, p$1);
+     /*<<format.ml:1404:32>>*/ return pp_print_string(ppf, s);
+    /*<<format.ml:1410:34>>*/ }
    function kfprintf(k, ppf, param){
     var fmt = param[1];
-     /*<<format.ml:1415:2>>*/ return  /*<<format.ml:1415:2>>*/ caml_call3
+     /*<<format.ml:1419:2>>*/ return  /*<<format.ml:1419:2>>*/ caml_call3
             (CamlinternalFormat[7],
              function(acc){
-               /*<<format.ml:1416:16>>*/ output_acc(ppf, acc);
+               /*<<format.ml:1420:16>>*/ output_acc(ppf, acc);
               return caml_call1(k, ppf);
-              /*<<format.ml:1416:41>>*/ },
+              /*<<format.ml:1420:41>>*/ },
              0,
              fmt);
    }
    function ikfprintf(k, ppf, param){
     var fmt = param[1];
-     /*<<format.ml:1420:2>>*/ return  /*<<format.ml:1420:2>>*/ caml_call3
+     /*<<format.ml:1424:2>>*/ return  /*<<format.ml:1424:2>>*/ caml_call3
             (CamlinternalFormat[8], k, ppf, fmt);
    }
    function ifprintf(ppf, param){
     var fmt = param[1];
-     /*<<format.ml:1423:2>>*/ return  /*<<format.ml:1423:2>>*/ caml_call3
+     /*<<format.ml:1427:2>>*/ return  /*<<format.ml:1427:2>>*/ caml_call3
             (CamlinternalFormat[8],
-             function(_t_){ /*<<?>>*/ return 0;},
+             function(_u_){ /*<<?>>*/ return 0;},
              0,
              fmt);
    }
    function fprintf(ppf){
-    function _q_(_s_){ /*<<?>>*/ return 0;}
-     /*<<format.ml:1425:18>>*/ return function(_r_){
-      /*<<?>>*/ return kfprintf(_q_, ppf, _r_);};
-    /*<<format.ml:1425:37>>*/ }
+    function _r_(_t_){ /*<<?>>*/ return 0;}
+     /*<<format.ml:1429:18>>*/ return function(_s_){
+      /*<<?>>*/ return kfprintf(_r_, ppf, _s_);};
+    /*<<format.ml:1429:37>>*/ }
    function printf(param){
     var fmt = param[1];
-     /*<<format.ml:1428:2>>*/ return  /*<<format.ml:1428:2>>*/ caml_call3
+     /*<<format.ml:1432:2>>*/ return  /*<<format.ml:1432:2>>*/ caml_call3
             (CamlinternalFormat[7],
              function(acc){
-               /*<<format.ml:1429:16>>*/ return output_acc
-                      ( /*<<format.ml:1429:27>>*/ caml_call1
+               /*<<format.ml:1433:16>>*/ return output_acc
+                      ( /*<<format.ml:1433:27>>*/ caml_call1
                         (Stdlib_Domain[10][2], std_formatter_key),
                        acc);
-              /*<<format.ml:1429:58>>*/ },
+              /*<<format.ml:1433:58>>*/ },
              0,
              fmt);
    }
    function eprintf(param){
     var fmt = param[1];
-     /*<<format.ml:1433:2>>*/ return  /*<<format.ml:1433:2>>*/ caml_call3
+     /*<<format.ml:1437:2>>*/ return  /*<<format.ml:1437:2>>*/ caml_call3
             (CamlinternalFormat[7],
              function(acc){
-               /*<<format.ml:1434:16>>*/ return output_acc
-                      ( /*<<format.ml:1434:27>>*/ caml_call1
+               /*<<format.ml:1438:16>>*/ return output_acc
+                      ( /*<<format.ml:1438:27>>*/ caml_call1
                         (Stdlib_Domain[10][2], err_formatter_key),
                        acc);
-              /*<<format.ml:1434:58>>*/ },
+              /*<<format.ml:1438:58>>*/ },
              0,
              fmt);
    }
    function kdprintf(k, param){
     var fmt = param[1];
-     /*<<format.ml:1438:2>>*/ return  /*<<format.ml:1438:2>>*/ caml_call3
+     /*<<format.ml:1442:2>>*/ return  /*<<format.ml:1442:2>>*/ caml_call3
             (CamlinternalFormat[7],
              function(acc){
-               /*<<format.ml:1439:16>>*/ return  /*<<format.ml:1439:18>>*/ caml_call1
+               /*<<format.ml:1443:16>>*/ return  /*<<format.ml:1443:18>>*/ caml_call1
                       (k,
                        function(ppf){
-                         /*<<format.ml:1439:30>>*/ return output_acc(ppf, acc);
-                        /*<<format.ml:1439:48>>*/ });
-              /*<<format.ml:1439:49>>*/ },
+                         /*<<format.ml:1443:30>>*/ return output_acc(ppf, acc);
+                        /*<<format.ml:1443:48>>*/ });
+              /*<<format.ml:1443:49>>*/ },
              0,
              fmt);
    }
    function dprintf(fmt){
-     /*<<format.ml:1442:18>>*/ return kdprintf
+     /*<<format.ml:1446:18>>*/ return kdprintf
             (function(i){
-               /*<<format.ml:1442:37>>*/ return i;
-              /*<<format.ml:1442:38>>*/ },
+               /*<<format.ml:1446:37>>*/ return i;
+              /*<<format.ml:1446:38>>*/ },
              fmt);
-    /*<<format.ml:1442:43>>*/ }
+    /*<<format.ml:1446:43>>*/ }
    function ksprintf(k, param){
-     /*<<format.ml:1445:10>>*/ var
+     /*<<format.ml:1449:10>>*/ var
      fmt = param[1],
-      /*<<format.ml:1445:10>>*/ b = pp_make_buffer(0),
-      /*<<format.ml:1446:12>>*/ ppf = formatter_of_buffer(b);
+      /*<<format.ml:1449:10>>*/ b = pp_make_buffer(0),
+      /*<<format.ml:1450:12>>*/ ppf = formatter_of_buffer(b);
     function k$0(acc){
-      /*<<format.ml:1448:4>>*/ strput_acc(ppf, acc);
-      /*<<format.ml:1449:6>>*/ return  /*<<format.ml:1449:6>>*/ caml_call1
+      /*<<format.ml:1452:4>>*/ strput_acc(ppf, acc);
+      /*<<format.ml:1453:6>>*/ return  /*<<format.ml:1453:6>>*/ caml_call1
              (k, flush_buffer_formatter(b, ppf));
-     /*<<format.ml:1449:36>>*/ }
-     /*<<format.ml:1450:2>>*/ return  /*<<format.ml:1450:2>>*/ caml_call3
+     /*<<format.ml:1453:36>>*/ }
+     /*<<format.ml:1454:2>>*/ return  /*<<format.ml:1454:2>>*/ caml_call3
             (CamlinternalFormat[7], k$0, 0, fmt);
    }
    function sprintf(fmt){
-     /*<<format.ml:1453:18>>*/ return ksprintf(id, fmt);
-    /*<<format.ml:1453:33>>*/ }
+     /*<<format.ml:1457:18>>*/ return ksprintf(id, fmt);
+    /*<<format.ml:1457:33>>*/ }
    function kasprintf(k, param){
-     /*<<format.ml:1456:10>>*/ var
+     /*<<format.ml:1460:10>>*/ var
      fmt = param[1],
-      /*<<format.ml:1456:10>>*/ b = pp_make_buffer(0),
-      /*<<format.ml:1457:12>>*/ ppf = formatter_of_buffer(b);
+      /*<<format.ml:1460:10>>*/ b = pp_make_buffer(0),
+      /*<<format.ml:1461:12>>*/ ppf = formatter_of_buffer(b);
     function k$0(acc){
-      /*<<format.ml:1459:4>>*/ output_acc(ppf, acc);
-      /*<<format.ml:1460:6>>*/ return  /*<<format.ml:1460:6>>*/ caml_call1
+      /*<<format.ml:1463:4>>*/ output_acc(ppf, acc);
+      /*<<format.ml:1464:6>>*/ return  /*<<format.ml:1464:6>>*/ caml_call1
              (k, flush_buffer_formatter(b, ppf));
-     /*<<format.ml:1460:36>>*/ }
-     /*<<format.ml:1461:2>>*/ return  /*<<format.ml:1461:2>>*/ caml_call3
+     /*<<format.ml:1464:36>>*/ }
+     /*<<format.ml:1465:2>>*/ return  /*<<format.ml:1465:2>>*/ caml_call3
             (CamlinternalFormat[7], k$0, 0, fmt);
    }
    function asprintf(fmt){
-     /*<<format.ml:1464:19>>*/ return kasprintf(id, fmt);
-    /*<<format.ml:1464:35>>*/ }
+     /*<<format.ml:1468:19>>*/ return kasprintf(id, fmt);
+    /*<<format.ml:1468:35>>*/ }
    function flush_standard_formatters(param){
-     /*<<format.ml:1469:2>>*/ pp_print_flush
-     ( /*<<format.ml:1469:17>>*/ caml_call1
+     /*<<format.ml:1473:2>>*/ pp_print_flush
+     ( /*<<format.ml:1473:17>>*/ caml_call1
        (Stdlib_Domain[10][2], std_formatter_key),
       0);
-     /*<<format.ml:1469:2>>*/ return pp_print_flush
-            ( /*<<format.ml:1470:17>>*/ caml_call1
+     /*<<format.ml:1473:2>>*/ return pp_print_flush
+            ( /*<<format.ml:1474:17>>*/ caml_call1
               (Stdlib_Domain[10][2], err_formatter_key),
              0);
-    /*<<format.ml:1470:47>>*/ }
-    /*<<format.ml:1472:9>>*/  /*<<format.ml:1472:9>>*/ caml_call1
+    /*<<format.ml:1474:47>>*/ }
+    /*<<format.ml:1476:9>>*/  /*<<format.ml:1476:9>>*/ caml_call1
     (Stdlib[100], flush_standard_formatters);
-    /*<<format.ml:1474:9>>*/  /*<<format.ml:1474:9>>*/ caml_call1
+    /*<<format.ml:1478:9>>*/  /*<<format.ml:1478:9>>*/ caml_call1
     (Stdlib_Domain[5],
      function(param){
-       /*<<format.ml:1475:2>>*/ flush_standard_formatters(0);
-       /*<<format.ml:1476:11>>*/ var
-        /*<<format.ml:1476:11>>*/ fs =
+       /*<<format.ml:1479:2>>*/ flush_standard_formatters(0);
+       /*<<format.ml:1480:11>>*/ var
+        /*<<format.ml:1480:11>>*/ fs =
          pp_get_formatter_out_functions(std_formatter, 0),
-       _g_ = Stdlib[39];
-       /*<<format.ml:1477:2>>*/ pp_set_formatter_out_functions
+       _h_ = Stdlib[39];
+       /*<<format.ml:1481:2>>*/ pp_set_formatter_out_functions
        (std_formatter,
         [0,
-         function(_n_, _o_, _p_){
-           /*<<?>>*/ return buffered_out_string(std_buf_key, _n_, _o_, _p_);
+         function(_o_, _p_, _q_){
+           /*<<?>>*/ return buffered_out_string(std_buf_key, _o_, _p_, _q_);
          },
-         function(_m_){
-           /*<<?>>*/ return buffered_out_flush(_g_, std_buf_key, _m_);
+         function(_n_){
+           /*<<?>>*/ return buffered_out_flush(_h_, std_buf_key, _n_);
          },
          fs[3],
          fs[4],
          fs[5]]);
-       /*<<format.ml:1481:11>>*/ var
-        /*<<format.ml:1481:11>>*/ fs$0 =
+       /*<<format.ml:1485:11>>*/ var
+        /*<<format.ml:1485:11>>*/ fs$0 =
          pp_get_formatter_out_functions(err_formatter, 0),
-       _h_ = Stdlib[40];
-       /*<<format.ml:1483:4>>*/ return pp_set_formatter_out_functions
+       _i_ = Stdlib[40];
+       /*<<format.ml:1487:4>>*/ return pp_set_formatter_out_functions
               (err_formatter,
                [0,
-                function(_j_, _k_, _l_){
+                function(_k_, _l_, _m_){
                   /*<<?>>*/ return buffered_out_string
-                         (err_buf_key, _j_, _k_, _l_);
+                         (err_buf_key, _k_, _l_, _m_);
                 },
-                function(_i_){
-                  /*<<?>>*/ return buffered_out_flush(_h_, err_buf_key, _i_);
+                function(_j_){
+                  /*<<?>>*/ return buffered_out_flush(_i_, err_buf_key, _j_);
                 },
                 fs$0[3],
                 fs$0[4],
                 fs$0[5]]);
-      /*<<format.ml:1484:71>>*/ });
+      /*<<format.ml:1488:71>>*/ });
    var
     Stdlib_Format =
       [0,
@@ -27298,6 +29103,7 @@
        print_char,
        pp_print_bool,
        print_bool,
+       pp_print_nothing,
        pp_print_space,
        print_space,
        pp_print_cut,
@@ -27313,6 +29119,7 @@
        print_flush,
        pp_print_newline,
        print_newline,
+       pp_infinity,
        pp_set_margin,
        set_margin,
        pp_get_margin,
@@ -27420,7 +29227,7 @@
        ikfprintf,
        ksprintf,
        kasprintf];
-   runtime.caml_register_global(37, Stdlib_Format, "Stdlib__Format");
+   runtime.caml_register_global(38, Stdlib_Format, "Stdlib__Format");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -29174,7 +30981,7 @@
          rest$13 = fmt$0[2],
          pad$8 = fmt$0[1],
           /*<<scanf.ml:1320:4>>*/ scan$8 =
-           function(param, _O_, ib){
+           function(_O_, param, ib){
              /*<<scanf.ml:1320:22>>*/ var
               /*<<scanf.ml:1089:10>>*/ c = checked_peek_char(ib),
               /*<<scanf.ml:1090:2>>*/ m =
@@ -29507,7 +31314,7 @@
    function kscanf_opt(ib, fmt){
      /*<<scanf.ml:1480:2>>*/ return kscanf_gen
             (ib,
-             function(param, _y_){
+             function(_y_, param){
                /*<<scanf.ml:1480:28>>*/ return 0;
               /*<<scanf.ml:1480:32>>*/ },
              function(x){
@@ -29793,7 +31600,7 @@
       new_buck =
          /*<<camlinternalOO.ml:146:19>>*/ caml_make_vect(new_size, dummy_met);
       /*<<camlinternalOO.ml:147:4>>*/  /*<<camlinternalOO.ml:147:4>>*/ caml_call5
-      (Stdlib_Array[8], array[2], 0, new_buck, 0, old_size);
+      (Stdlib_Array[9], array[2], 0, new_buck, 0, old_size);
      array[2] = new_buck;
      var _ac_ = 0;
     }
@@ -29839,7 +31646,7 @@
     /*<<camlinternalOO.ml:175:9>>*/ }
    function get_method_labels(table, names){
      /*<<camlinternalOO.ml:178:2>>*/ return  /*<<camlinternalOO.ml:178:2>>*/ caml_call2
-            (Stdlib_Array[13],
+            (Stdlib_Array[14],
              function(_Z_){ /*<<?>>*/ return get_method_label(table, _Z_);},
              names);
     /*<<camlinternalOO.ml:178:42>>*/ }
@@ -29874,7 +31681,7 @@
      /*<<camlinternalOO.ml:192:2>>*/ return 0 === arr
             ? 0
             :  /*<<camlinternalOO.ml:192:37>>*/ caml_call1
-              (Stdlib_Array[9], arr);
+              (Stdlib_Array[10], arr);
     /*<<camlinternalOO.ml:192:54>>*/ }
    function narrow(table, vars, virt_meths, concr_meths){
      /*<<camlinternalOO.ml:195:2>>*/ var
@@ -30086,7 +31893,7 @@
     /*<<camlinternalOO.ml:279:62>>*/ }
    function get_variables(table, names){
      /*<<camlinternalOO.ml:282:2>>*/ return  /*<<camlinternalOO.ml:282:2>>*/ caml_call2
-            (Stdlib_Array[13],
+            (Stdlib_Array[14],
              function(_y_){ /*<<?>>*/ return get_variable(table, _y_);},
              names);
     /*<<camlinternalOO.ml:282:38>>*/ }
@@ -30100,10 +31907,10 @@
      /*<<camlinternalOO.ml:301:13>>*/ var
       /*<<camlinternalOO.ml:301:13>>*/ tags =
         /*<<camlinternalOO.ml:301:13>>*/ caml_call2
-        (Stdlib_Array[13], public_method_label, public_methods),
+        (Stdlib_Array[14], public_method_label, public_methods),
       /*<<camlinternalOO.ml:302:14>>*/ table = new_table(tags);
      /*<<camlinternalOO.ml:303:2>>*/  /*<<camlinternalOO.ml:303:2>>*/ caml_call2
-     (Stdlib_Array[12],
+     (Stdlib_Array[13],
       function(i, met){
         /*<<camlinternalOO.ml:305:6>>*/ var lab = (i * 2 | 0) + 2 | 0;
        table[3] =
@@ -30143,7 +31950,7 @@
      _t_ =
        [0,
          /*<<camlinternalOO.ml:324:5>>*/ caml_call2
-         (Stdlib_Array[13],
+         (Stdlib_Array[14],
           function(nm){
             /*<<camlinternalOO.ml:325:18>>*/ return get_method
                    (cla, get_method_label(cla, nm));
@@ -30156,12 +31963,12 @@
         [0, init],
         [0,
           /*<<camlinternalOO.ml:323:16>>*/ caml_call2
-          (Stdlib_Array[13],
+          (Stdlib_Array[14],
            function(_w_){ /*<<?>>*/ return get_variable(cla, _w_);},
            _u_),
          _t_]];
      /*<<camlinternalOO.ml:322:4>>*/ return  /*<<camlinternalOO.ml:322:4>>*/ caml_call1
-            (Stdlib_Array[4], _v_);
+            (Stdlib_Array[5], _v_);
    }
    function make_class(pub_meths, class_init){
      /*<<camlinternalOO.ml:329:2>>*/ var
@@ -30959,13 +32766,13 @@
      /*<<ephemeron.ml:105:20>>*/  /*<<ephemeron.ml:105:20>>*/ var
      prng =
        [246,
-        function(_at_){ /*<<?>>*/ return caml_call1(Stdlib_Random[15][2], 0);}];
+        function(_at_){ /*<<?>>*/ return caml_call1(Stdlib_Random[19][2], 0);}];
     function create(opt, initial_size){
-      /*<<ephemeron.ml:108:6>>*/ if(opt)
-      var sth = opt[1], random = sth;
-     else
-      var
-       random =  /*<<ephemeron.ml:107:26>>*/ caml_call1(Stdlib_Hashtbl[17], 0);
+     var
+      random =
+        opt
+         ? opt[1]
+         :  /*<<ephemeron.ml:107:26>>*/ caml_call1(Stdlib_Hashtbl[17], 0);
      a:
      b:
      {
@@ -30989,7 +32796,7 @@
       }
       var
        seed =
-          /*<<ephemeron.ml:109:32>>*/ caml_call1(Stdlib_Random[15][4], _as_);
+          /*<<ephemeron.ml:109:32>>*/ caml_call1(Stdlib_Random[19][4], _as_);
      }
      else
       var seed = 0;
@@ -30998,7 +32805,7 @@
               /*<<ephemeron.ml:110:56>>*/ caml_make_vect(x, 0),
              seed,
              x];
-     /*<<ephemeron.ml:110:76>>*/ }
+    }
     function clear(h){
       /*<<ephemeron.ml:113:6>>*/ h[1] = 0;
       /*<<ephemeron.ml:115:6>>*/ var
@@ -31032,7 +32839,7 @@
       _al_ = h[4],
       _am_ = h[3],
        /*<<ephemeron.ml:128:33>>*/ _an_ =
-         /*<<ephemeron.ml:128:33>>*/ caml_call1(Stdlib_Array[6], h[2]);
+         /*<<ephemeron.ml:128:33>>*/ caml_call1(Stdlib_Array[7], h[2]);
       /*<<ephemeron.ml:128:17>>*/ return [0, h[1], _an_, _am_, _al_];
      /*<<ephemeron.ml:128:52>>*/ }
     function key_index(h, hkey){
@@ -31308,7 +33115,7 @@
       /*<<ephemeron.ml:329:6>>*/ var
        /*<<ephemeron.ml:330:8>>*/ mbl =
          /*<<ephemeron.ml:330:8>>*/ caml_call3
-         (Stdlib_Array[17],
+         (Stdlib_Array[18],
           function(m, b){
             /*<<ephemeron.ml:330:36>>*/  /*<<ephemeron.ml:330:46>>*/ var
             _T_ = bucket_length(0, b);
@@ -31320,7 +33127,7 @@
        /*<<ephemeron.ml:331:18>>*/ histo =
          /*<<ephemeron.ml:331:18>>*/ caml_make_vect(mbl + 1 | 0, 0);
       /*<<ephemeron.ml:332:6>>*/  /*<<ephemeron.ml:332:6>>*/ caml_call2
-      (Stdlib_Array[11],
+      (Stdlib_Array[12],
        function(b){
          /*<<ephemeron.ml:334:11>>*/  /*<<ephemeron.ml:334:19>>*/ var
          l = bucket_length(0, b);
@@ -31350,7 +33157,7 @@
        /*<<ephemeron.ml:349:17>>*/ size = [0, 0],
        /*<<ephemeron.ml:351:8>>*/ mbl =
          /*<<ephemeron.ml:351:8>>*/ caml_call3
-         (Stdlib_Array[17],
+         (Stdlib_Array[18],
           function(m, b){
             /*<<ephemeron.ml:352:22>>*/  /*<<ephemeron.ml:352:32>>*/ var
             _S_ = bucket_length_alive(0, b);
@@ -31362,7 +33169,7 @@
        /*<<ephemeron.ml:354:18>>*/ histo =
          /*<<ephemeron.ml:354:18>>*/ caml_make_vect(mbl + 1 | 0, 0);
       /*<<ephemeron.ml:355:6>>*/  /*<<ephemeron.ml:355:6>>*/ caml_call2
-      (Stdlib_Array[11],
+      (Stdlib_Array[12],
        function(b){
          /*<<ephemeron.ml:357:11>>*/  /*<<ephemeron.ml:357:19>>*/ var
          l = bucket_length_alive(0, b);
@@ -31424,29 +33231,29 @@
    }
    function create(param){
      /*<<ephemeron.ml:394:30>>*/ return  /*<<ephemeron.ml:394:30>>*/ caml_call1
-            (Stdlib_Obj[24][1], 1);
+            (Stdlib_Obj[23][1], 1);
     /*<<ephemeron.ml:394:45>>*/ }
    function get_key(t){
      /*<<ephemeron.ml:396:42>>*/  /*<<ephemeron.ml:396:50>>*/ var
-     x =  /*<<ephemeron.ml:396:50>>*/ caml_call2(Stdlib_Obj[24][3], t, 0);
+     x =  /*<<ephemeron.ml:396:50>>*/ caml_call2(Stdlib_Obj[23][3], t, 0);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:396:70>>*/ }
    function set_key(t, k){
      /*<<ephemeron.ml:397:44>>*/ return  /*<<ephemeron.ml:397:44>>*/ caml_call3
-            (Stdlib_Obj[24][5], t, 0, k);
+            (Stdlib_Obj[23][5], t, 0, k);
     /*<<ephemeron.ml:397:75>>*/ }
    function check_key(t){
      /*<<ephemeron.ml:398:39>>*/ return  /*<<ephemeron.ml:398:39>>*/ caml_call2
-            (Stdlib_Obj[24][7], t, 0);
+            (Stdlib_Obj[23][7], t, 0);
     /*<<ephemeron.ml:398:59>>*/ }
    function get_data(t){
      /*<<ephemeron.ml:400:43>>*/  /*<<ephemeron.ml:400:51>>*/ var
-     x =  /*<<ephemeron.ml:400:51>>*/ caml_call1(Stdlib_Obj[24][9], t);
+     x =  /*<<ephemeron.ml:400:51>>*/ caml_call1(Stdlib_Obj[23][9], t);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:400:70>>*/ }
    function set_data(t, d){
      /*<<ephemeron.ml:401:45>>*/ return  /*<<ephemeron.ml:401:45>>*/ caml_call2
-            (Stdlib_Obj[24][11], t, d);
+            (Stdlib_Obj[23][11], t, d);
     /*<<ephemeron.ml:401:75>>*/ }
    function make(key, data){
      /*<<ephemeron.ml:405:4>>*/  /*<<ephemeron.ml:405:14>>*/ var
@@ -31483,7 +33290,7 @@
      /*<<ephemeron.ml:432:76>>*/ }
     function set_key_data(c, k, d){
       /*<<ephemeron.ml:435:8>>*/  /*<<ephemeron.ml:402:40>>*/ caml_call1
-      (Stdlib_Obj[24][12], c);
+      (Stdlib_Obj[23][12], c);
       /*<<ephemeron.ml:436:8>>*/ set_key(c, k);
       /*<<ephemeron.ml:436:8>>*/ return set_data(c, d);
      /*<<ephemeron.ml:437:20>>*/ }
@@ -31605,34 +33412,34 @@
     /*<<ephemeron.ml:482:25>>*/ }
    function create$0(param){
      /*<<ephemeron.ml:491:35>>*/ return  /*<<ephemeron.ml:491:35>>*/ caml_call1
-            (Stdlib_Obj[24][1], 2);
+            (Stdlib_Obj[23][1], 2);
     /*<<ephemeron.ml:491:50>>*/ }
    function get_key1(t){
      /*<<ephemeron.ml:493:49>>*/  /*<<ephemeron.ml:493:57>>*/ var
-     x =  /*<<ephemeron.ml:493:57>>*/ caml_call2(Stdlib_Obj[24][3], t, 0);
+     x =  /*<<ephemeron.ml:493:57>>*/ caml_call2(Stdlib_Obj[23][3], t, 0);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:493:77>>*/ }
    function set_key1(t, k){
      /*<<ephemeron.ml:495:4>>*/ return  /*<<ephemeron.ml:495:4>>*/ caml_call3
-            (Stdlib_Obj[24][5], t, 0, k);
+            (Stdlib_Obj[23][5], t, 0, k);
     /*<<ephemeron.ml:495:35>>*/ }
    function get_key2(t){
      /*<<ephemeron.ml:498:49>>*/  /*<<ephemeron.ml:498:57>>*/ var
-     x =  /*<<ephemeron.ml:498:57>>*/ caml_call2(Stdlib_Obj[24][3], t, 1);
+     x =  /*<<ephemeron.ml:498:57>>*/ caml_call2(Stdlib_Obj[23][3], t, 1);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:498:77>>*/ }
    function set_key2(t, k){
      /*<<ephemeron.ml:500:4>>*/ return  /*<<ephemeron.ml:500:4>>*/ caml_call3
-            (Stdlib_Obj[24][5], t, 1, k);
+            (Stdlib_Obj[23][5], t, 1, k);
     /*<<ephemeron.ml:500:35>>*/ }
    function get_data$0(t){
      /*<<ephemeron.ml:503:48>>*/  /*<<ephemeron.ml:503:56>>*/ var
-     x =  /*<<ephemeron.ml:503:56>>*/ caml_call1(Stdlib_Obj[24][9], t);
+     x =  /*<<ephemeron.ml:503:56>>*/ caml_call1(Stdlib_Obj[23][9], t);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:503:75>>*/ }
    function set_data$0(t, d){
      /*<<ephemeron.ml:505:4>>*/ return  /*<<ephemeron.ml:505:4>>*/ caml_call2
-            (Stdlib_Obj[24][11], t, d);
+            (Stdlib_Obj[23][11], t, d);
     /*<<ephemeron.ml:505:34>>*/ }
    function make$1(key1, key2, data){
      /*<<ephemeron.ml:509:4>>*/  /*<<ephemeron.ml:509:14>>*/ var
@@ -31695,17 +33502,17 @@
     function set_key_data(c, param, d){
      var k2 = param[2], k1 = param[1];
       /*<<ephemeron.ml:506:45>>*/  /*<<ephemeron.ml:506:45>>*/ caml_call1
-      (Stdlib_Obj[24][12], c);
+      (Stdlib_Obj[23][12], c);
       /*<<ephemeron.ml:549:8>>*/ set_key1(c, k1);
       /*<<ephemeron.ml:549:23>>*/ set_key2(c, k2);
       /*<<ephemeron.ml:549:23>>*/ return set_data$0(c, d);
     }
     function check_key(c){
       /*<<ephemeron.ml:551:24>>*/  /*<<ephemeron.ml:496:45>>*/ var
-      _N_ =  /*<<ephemeron.ml:496:45>>*/ caml_call2(Stdlib_Obj[24][7], c, 0);
+      _N_ =  /*<<ephemeron.ml:496:45>>*/ caml_call2(Stdlib_Obj[23][7], c, 0);
       /*<<ephemeron.ml:551:24>>*/ return _N_
              ?  /*<<ephemeron.ml:501:45>>*/ caml_call2
-               (Stdlib_Obj[24][7], c, 1)
+               (Stdlib_Obj[23][7], c, 1)
              : _N_;
      /*<<ephemeron.ml:551:52>>*/ }
      /*<<ephemeron.ml:530:28>>*/ return MakeSeeded
@@ -31833,29 +33640,29 @@
     /*<<ephemeron.ml:602:25>>*/ }
    function create$1(n){
      /*<<ephemeron.ml:611:29>>*/ return  /*<<ephemeron.ml:611:29>>*/ caml_call1
-            (Stdlib_Obj[24][1], n);
+            (Stdlib_Obj[23][1], n);
     /*<<ephemeron.ml:611:44>>*/ }
    function length$1(k){
      /*<<ephemeron.ml:612:35>>*/ return  /*<<ephemeron.ml:612:35>>*/ caml_call1
-            (Stdlib_Obj[24][2], k);
+            (Stdlib_Obj[23][2], k);
     /*<<ephemeron.ml:612:50>>*/ }
    function get_key$0(t, n){
      /*<<ephemeron.ml:614:50>>*/  /*<<ephemeron.ml:614:58>>*/ var
-     x =  /*<<ephemeron.ml:614:58>>*/ caml_call2(Stdlib_Obj[24][3], t, n);
+     x =  /*<<ephemeron.ml:614:58>>*/ caml_call2(Stdlib_Obj[23][3], t, n);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:614:78>>*/ }
    function set_key$0(t, n, k){
      /*<<ephemeron.ml:616:4>>*/ return  /*<<ephemeron.ml:616:4>>*/ caml_call3
-            (Stdlib_Obj[24][5], t, n, k);
+            (Stdlib_Obj[23][5], t, n, k);
     /*<<ephemeron.ml:616:35>>*/ }
    function get_data$1(t){
      /*<<ephemeron.ml:619:43>>*/  /*<<ephemeron.ml:619:51>>*/ var
-     x =  /*<<ephemeron.ml:619:51>>*/ caml_call1(Stdlib_Obj[24][9], t);
+     x =  /*<<ephemeron.ml:619:51>>*/ caml_call1(Stdlib_Obj[23][9], t);
      /*<<ephemeron.ml:388:51>>*/ return x;
     /*<<ephemeron.ml:619:70>>*/ }
    function set_data$1(t, d){
      /*<<ephemeron.ml:620:45>>*/ return  /*<<ephemeron.ml:620:45>>*/ caml_call2
-            (Stdlib_Obj[24][11], t, d);
+            (Stdlib_Obj[23][11], t, d);
     /*<<ephemeron.ml:620:75>>*/ }
    function make$3(keys, data){
      /*<<ephemeron.ml:624:4>>*/ var
@@ -31986,7 +33793,7 @@
      /*<<ephemeron.ml:675:33>>*/ }
     function set_key_data(c, k, d){
       /*<<ephemeron.ml:678:8>>*/  /*<<ephemeron.ml:621:40>>*/ caml_call1
-      (Stdlib_Obj[24][12], c);
+      (Stdlib_Obj[23][12], c);
       /*<<ephemeron.ml:678:8>>*/ var
       _q_ = k.length - 2 | 0,
        /*<<ephemeron.ml:678:8>>*/ _p_ = 0;
@@ -32013,7 +33820,7 @@
        var _o_ = _n_;
       else{
         /*<<ephemeron.ml:617:47>>*/  /*<<ephemeron.ml:617:47>>*/ var
-        _m_ =  /*<<ephemeron.ml:617:47>>*/ caml_call2(Stdlib_Obj[24][7], c, i);
+        _m_ =  /*<<ephemeron.ml:617:47>>*/ caml_call2(Stdlib_Obj[23][7], c, i);
         /*<<ephemeron.ml:685:20>>*/ if(_m_){
         var i$0 = i - 1 | 0;
         i = i$0;
@@ -33083,14 +34890,14 @@
     /*<<filename.ml:330:2>>*/  /*<<filename.ml:330:2>>*/ var
     prng_key =
        /*<<filename.ml:330:2>>*/ caml_call2
-       (Stdlib_Domain[10][1], 0, Stdlib_Random[15][2]);
+       (Stdlib_Domain[10][1], 0, Stdlib_Random[19][2]);
    function temp_file_name(temp_dir, prefix, suffix){
      /*<<filename.ml:333:2>>*/ var
       /*<<filename.ml:333:21>>*/ random_state =
         /*<<filename.ml:333:21>>*/ caml_call1(Stdlib_Domain[10][2], prng_key),
       /*<<filename.ml:334:12>>*/ rnd =
         /*<<filename.ml:334:12>>*/ caml_call1
-        (Stdlib_Random[15][4], random_state)
+        (Stdlib_Random[19][4], random_state)
        & 16777215;
      /*<<filename.ml:335:18>>*/ return concat
             (temp_dir,
@@ -33114,14 +34921,13 @@
             (Stdlib_Domain[10][2], current_temp_dir_name);
     /*<<filename.ml:341:63>>*/ }
    function temp_file(opt, prefix, suffix){
-     /*<<filename.ml:344:2>>*/ if(opt)
-     var sth = opt[1], temp_dir = sth;
-    else
-     var
-      temp_dir =
-         /*<<filename.ml:343:27>>*/ caml_call1
-         (Stdlib_Domain[10][2], current_temp_dir_name);
-    var counter = 0;
+    var
+     temp_dir =
+       opt
+        ? opt[1]
+        :  /*<<filename.ml:343:27>>*/ caml_call1
+          (Stdlib_Domain[10][2], current_temp_dir_name),
+     counter = 0;
      /*<<filename.ml:345:4>>*/ for(;;){
       /*<<filename.ml:345:15>>*/  /*<<filename.ml:345:15>>*/ var
       name = temp_file_name(temp_dir, prefix, suffix);
@@ -33141,24 +34947,17 @@
       counter = counter$0;
      }
     }
-    /*<<filename.ml:351:15>>*/ }
-   function open_temp_file(opt, _m_, _l_, prefix, suffix){
-     /*<<filename.ml:356:2>>*/ if(opt)
-     var sth = opt[1], mode = sth;
-    else
-     var mode = _h_;
-     /*<<filename.ml:356:2>>*/ if(_m_)
-     var sth$0 = _m_[1], perms = sth$0;
-    else
-     var perms = 384;
-     /*<<filename.ml:356:2>>*/ if(_l_)
-     var sth$1 = _l_[1], temp_dir = sth$1;
-    else
-     var
-      temp_dir =
-         /*<<filename.ml:354:17>>*/ caml_call1
-         (Stdlib_Domain[10][2], current_temp_dir_name);
-    var counter = 0;
+   }
+   function open_temp_file(_m_, _l_, opt, prefix, suffix){
+    var
+     mode = _m_ ? _m_[1] : _h_,
+     perms = _l_ ? _l_[1] : 384,
+     temp_dir =
+       opt
+        ? opt[1]
+        :  /*<<filename.ml:354:17>>*/ caml_call1
+          (Stdlib_Domain[10][2], current_temp_dir_name),
+     counter = 0;
      /*<<filename.ml:357:4>>*/ for(;;){
       /*<<filename.ml:357:15>>*/  /*<<filename.ml:357:15>>*/ var
       name = temp_file_name(temp_dir, prefix, suffix);
@@ -33182,20 +34981,16 @@
       counter = counter$0;
      }
     }
-    /*<<filename.ml:363:15>>*/ }
-   function temp_dir(opt, _k_, prefix, suffix){
-     /*<<filename.ml:367:2>>*/ if(opt)
-     var sth = opt[1], temp_dir = sth;
-    else
-     var
-      temp_dir =
-         /*<<filename.ml:365:26>>*/ caml_call1
-         (Stdlib_Domain[10][2], current_temp_dir_name);
-     /*<<filename.ml:367:2>>*/ if(_k_)
-     var sth$0 = _k_[1], perms = sth$0;
-    else
-     var perms = 448;
-    var counter = 0;
+   }
+   function temp_dir(_k_, opt, prefix, suffix){
+    var
+     temp_dir =
+       _k_
+        ? _k_[1]
+        :  /*<<filename.ml:365:26>>*/ caml_call1
+          (Stdlib_Domain[10][2], current_temp_dir_name),
+     perms = opt ? opt[1] : 448,
+     counter = 0;
      /*<<filename.ml:368:4>>*/ for(;;){
       /*<<filename.ml:368:15>>*/  /*<<filename.ml:368:15>>*/ var
       name = temp_file_name(temp_dir, prefix, suffix);
@@ -33215,7 +35010,7 @@
       counter = counter$0;
      }
     }
-    /*<<filename.ml:374:15>>*/ }
+   }
    var
     Stdlib_Filename =
       [0,
@@ -33391,48 +35186,51 @@
     Stdlib_Array = global_data.Stdlib__Array,
     init = Stdlib_Array[1],
     make_matrix = Stdlib_Array[2],
-    append = Stdlib_Array[3],
-    concat = Stdlib_Array[4],
-    sub = Stdlib_Array[5],
-    copy = Stdlib_Array[6],
-    fill = Stdlib_Array[7],
-    blit = Stdlib_Array[8],
-    to_list = Stdlib_Array[9],
-    of_list = Stdlib_Array[10],
-    iter = Stdlib_Array[11],
-    iteri = Stdlib_Array[12],
-    map = Stdlib_Array[13],
-    map_inplace = Stdlib_Array[14],
-    mapi = Stdlib_Array[15],
-    mapi_inplace = Stdlib_Array[16],
-    fold_left = Stdlib_Array[17],
-    fold_left_map = Stdlib_Array[18],
-    fold_right = Stdlib_Array[19],
-    iter2 = Stdlib_Array[20],
-    map2 = Stdlib_Array[21],
-    for_all = Stdlib_Array[22],
-    exists = Stdlib_Array[23],
-    for_all2 = Stdlib_Array[24],
-    exists2 = Stdlib_Array[25],
-    mem = Stdlib_Array[26],
-    memq = Stdlib_Array[27],
-    find_opt = Stdlib_Array[28],
-    find_index = Stdlib_Array[29],
-    find_map = Stdlib_Array[30],
-    find_mapi = Stdlib_Array[31],
-    split = Stdlib_Array[32],
-    combine = Stdlib_Array[33],
-    sort = Stdlib_Array[34],
-    stable_sort = Stdlib_Array[35],
-    fast_sort = Stdlib_Array[36],
-    to_seq = Stdlib_Array[37],
-    to_seqi = Stdlib_Array[38],
-    of_seq = Stdlib_Array[39],
-    Floatarray = Stdlib_Array[40],
+    init_matrix = Stdlib_Array[3],
+    append = Stdlib_Array[4],
+    concat = Stdlib_Array[5],
+    sub = Stdlib_Array[6],
+    copy = Stdlib_Array[7],
+    fill = Stdlib_Array[8],
+    blit = Stdlib_Array[9],
+    to_list = Stdlib_Array[10],
+    of_list = Stdlib_Array[11],
+    iter = Stdlib_Array[12],
+    iteri = Stdlib_Array[13],
+    map = Stdlib_Array[14],
+    map_inplace = Stdlib_Array[15],
+    mapi = Stdlib_Array[16],
+    mapi_inplace = Stdlib_Array[17],
+    fold_left = Stdlib_Array[18],
+    fold_left_map = Stdlib_Array[19],
+    fold_right = Stdlib_Array[20],
+    iter2 = Stdlib_Array[21],
+    map2 = Stdlib_Array[22],
+    for_all = Stdlib_Array[23],
+    exists = Stdlib_Array[24],
+    for_all2 = Stdlib_Array[25],
+    exists2 = Stdlib_Array[26],
+    mem = Stdlib_Array[27],
+    memq = Stdlib_Array[28],
+    find_opt = Stdlib_Array[29],
+    find_index = Stdlib_Array[30],
+    find_map = Stdlib_Array[31],
+    find_mapi = Stdlib_Array[32],
+    split = Stdlib_Array[33],
+    combine = Stdlib_Array[34],
+    sort = Stdlib_Array[35],
+    stable_sort = Stdlib_Array[36],
+    fast_sort = Stdlib_Array[37],
+    shuffle = Stdlib_Array[38],
+    to_seq = Stdlib_Array[39],
+    to_seqi = Stdlib_Array[40],
+    of_seq = Stdlib_Array[41],
+    Floatarray = Stdlib_Array[42],
     Stdlib_ArrayLabels =
       [0,
        init,
        make_matrix,
+       init_matrix,
        append,
        concat,
        sub,
@@ -33467,6 +35265,7 @@
        sort,
        stable_sort,
        fast_sort,
+       shuffle,
        to_seq,
        to_seqi,
        of_seq,
@@ -33983,431 +35782,6 @@
    /*<<?>>*/ }
   (globalThis));
 
-//# unitInfo: Provides: Stdlib__In_channel
-//# unitInfo: Requires: Stdlib, Stdlib__Bytes, Stdlib__Fun, Stdlib__Sys
-(function
-  (globalThis){
-   "use strict";
-   var
-    runtime = globalThis.jsoo_runtime,
-    caml_create_bytes = runtime.caml_create_bytes,
-    caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
-    caml_ml_bytes_length = runtime.caml_ml_bytes_length,
-    caml_wrap_exception = runtime.caml_wrap_exception;
-    /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
-            ? f(a0)
-            : runtime.caml_call_gen(f, [a0]);
-   }
-    /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
-            ? f(a0, a1)
-            : runtime.caml_call_gen(f, [a0, a1]);
-   }
-    /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
-            ? f(a0, a1, a2)
-            : runtime.caml_call_gen(f, [a0, a1, a2]);
-   }
-    /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
-            ? f(a0, a1, a2, a3)
-            : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
-   }
-    /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
-            ? f(a0, a1, a2, a3, a4)
-            : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
-   }
-   var
-    global_data = runtime.caml_get_global_data(),
-    Stdlib = global_data.Stdlib,
-    Stdlib_Bytes = global_data.Stdlib__Bytes,
-    Stdlib_Sys = global_data.Stdlib__Sys,
-    Stdlib_Fun = global_data.Stdlib__Fun,
-    stdin = Stdlib[38],
-    open_bin = Stdlib[80],
-    open_text = Stdlib[79],
-    open_gen = Stdlib[81];
-   function with_open(openfun, s, f){
-     /*<<in_channel.ml:35:2>>*/  /*<<in_channel.ml:35:11>>*/ var
-     ic =  /*<<in_channel.ml:35:11>>*/ caml_call1(openfun, s);
-     /*<<in_channel.ml:37:4>>*/ return  /*<<in_channel.ml:37:4>>*/ caml_call2
-            (Stdlib_Fun[4],
-             function(param){
-               /*<<in_channel.ml:36:34>>*/ return  /*<<in_channel.ml:37:4>>*/ caml_call1
-                      (Stdlib[94], ic);
-              /*<<in_channel.ml:36:58>>*/ },
-             function(param){
-               /*<<in_channel.ml:37:15>>*/ return  /*<<in_channel.ml:36:2>>*/ caml_call1
-                      (f, ic);
-              /*<<in_channel.ml:37:19>>*/ });
-    /*<<in_channel.ml:37:20>>*/ }
-   function with_open_bin(s, f){
-     /*<<in_channel.ml:40:2>>*/ return with_open(Stdlib[80], s, f);
-    /*<<in_channel.ml:40:34>>*/ }
-   function with_open_text(s, f){
-     /*<<in_channel.ml:43:2>>*/ return with_open(Stdlib[79], s, f);
-    /*<<in_channel.ml:43:30>>*/ }
-   function with_open_gen(flags, perm, s, f){
-     /*<<in_channel.ml:46:2>>*/ return with_open
-            ( /*<<in_channel.ml:46:12>>*/ caml_call2(Stdlib[81], flags, perm),
-             s,
-             f);
-    /*<<in_channel.ml:46:47>>*/ }
-   var
-    seek = Stdlib[96][4],
-    pos = Stdlib[96][5],
-    length = Stdlib[96][6],
-    close = Stdlib[93],
-    close_noerr = Stdlib[94];
-   function input_char(ic){
-     /*<<in_channel.ml:55:2>>*/ try{
-      /*<<in_channel.ml:55:8>>*/  /*<<in_channel.ml:55:8>>*/ var
-      c =  /*<<in_channel.ml:55:8>>*/ caml_call1(Stdlib[82], ic);
-    }
-    catch(_w_){
-     var _v_ = caml_wrap_exception(_w_);
-     if(_v_ === Stdlib[12])  /*<<in_channel.ml:57:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_v_, 0);
-    }
-     /*<<in_channel.ml:56:9>>*/ return [0, c];
-    /*<<in_channel.ml:57:33>>*/ }
-   function input_byte(ic){
-     /*<<in_channel.ml:60:2>>*/ try{
-      /*<<in_channel.ml:60:8>>*/  /*<<in_channel.ml:60:8>>*/ var
-      n =  /*<<in_channel.ml:60:8>>*/ caml_call1(Stdlib[87], ic);
-    }
-    catch(_u_){
-     var _t_ = caml_wrap_exception(_u_);
-     if(_t_ === Stdlib[12])  /*<<in_channel.ml:62:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_t_, 0);
-    }
-     /*<<in_channel.ml:61:9>>*/ return [0, n];
-    /*<<in_channel.ml:62:33>>*/ }
-   function input_line(ic){
-     /*<<in_channel.ml:65:2>>*/ try{
-      /*<<in_channel.ml:65:8>>*/  /*<<in_channel.ml:65:8>>*/ var
-      s =  /*<<in_channel.ml:65:8>>*/ caml_call1(Stdlib[83], ic);
-    }
-    catch(_s_){
-     var _r_ = caml_wrap_exception(_s_);
-     if(_r_ === Stdlib[12])  /*<<in_channel.ml:67:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_r_, 0);
-    }
-     /*<<in_channel.ml:66:9>>*/ return [0, s];
-    /*<<in_channel.ml:67:33>>*/ }
-   var
-    input = Stdlib[84],
-    _a_ = [0, 0],
-    cst_In_channel_input_all_chann =
-      "In_channel.input_all: channel content is larger than maximum string length";
-   function really_input(ic, buf, pos, len){
-     /*<<in_channel.ml:72:2>>*/ try{
-      /*<<in_channel.ml:72:8>>*/  /*<<in_channel.ml:72:8>>*/ caml_call4
-      (Stdlib[85], ic, buf, pos, len);
-      /*<<in_channel.ml:73:10>>*/ return _a_;
-    }
-    catch(_q_){
-     var _p_ = caml_wrap_exception(_q_);
-     if(_p_ === Stdlib[12])  /*<<in_channel.ml:74:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_p_, 0);
-    }
-    /*<<in_channel.ml:74:33>>*/ }
-   function really_input_string(ic, len){
-     /*<<in_channel.ml:77:2>>*/ try{
-      /*<<in_channel.ml:77:8>>*/  /*<<in_channel.ml:77:8>>*/ var
-      s =  /*<<in_channel.ml:77:8>>*/ caml_call2(Stdlib[86], ic, len);
-    }
-    catch(_o_){
-     var _n_ = caml_wrap_exception(_o_);
-     if(_n_ === Stdlib[12])  /*<<in_channel.ml:79:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_n_, 0);
-    }
-     /*<<in_channel.ml:78:9>>*/ return [0, s];
-    /*<<in_channel.ml:79:33>>*/ }
-   function read_upto(ic, buf, ofs, len){
-     /*<<in_channel.ml:84:2>>*/ var ofs$0 = ofs, len$0 = len;
-     /*<<in_channel.ml:85:4>>*/ for(;;){
-     if(0 !== len$0){
-       /*<<in_channel.ml:87:14>>*/  /*<<in_channel.ml:87:14>>*/ var
-       r =
-          /*<<in_channel.ml:87:14>>*/ caml_call4
-          (Stdlib[84], ic, buf, ofs$0, len$0);
-       /*<<in_channel.ml:88:6>>*/ if(0 !== r){
-       var len$1 = len$0 - r | 0, ofs$1 = ofs$0 + r | 0;
-       ofs$0 = ofs$1;
-       len$0 = len$1;
-       continue;
-      }
-     }
-      /*<<in_channel.ml:94:2>>*/ return ofs$0 - ofs | 0;
-    }
-    /*<<in_channel.ml:94:20>>*/ }
-   function ensure(buf, ofs, n){
-     /*<<in_channel.ml:109:2>>*/ var len = caml_ml_bytes_length(buf);
-    if((ofs + n | 0) <= len)  /*<<in_channel.ml:110:25>>*/ return buf;
-     /*<<in_channel.ml:112:18>>*/  /*<<in_channel.ml:112:18>>*/ var
-     new_len = [0, len];
-    for(;;){
-     if(new_len[1] >= (ofs + n | 0)) break;
-     new_len[1] = (2 * new_len[1] | 0) + 1 | 0;
-    }
-     /*<<in_channel.ml:126:18>>*/ var
-     new_len$0 = new_len[1],
-     new_len$1 =
-       new_len$0 <= Stdlib_Sys[12]
-        ? new_len$0
-        : ofs
-          < Stdlib_Sys[12]
-          ? Stdlib_Sys[12]
-          :  /*<<in_channel.ml:123:8>>*/ caml_call1
-            (Stdlib[2], cst_In_channel_input_all_chann),
-      /*<<in_channel.ml:126:18>>*/ new_buf =
-        /*<<in_channel.ml:126:18>>*/ caml_create_bytes(new_len$1);
-     /*<<in_channel.ml:127:4>>*/  /*<<in_channel.ml:127:4>>*/ caml_call5
-     (Stdlib_Bytes[11], buf, 0, new_buf, 0, ofs);
-     /*<<in_channel.ml:127:4>>*/ return new_buf;
-    /*<<in_channel.ml:129:5>>*/ }
-   function input_all(ic){
-     /*<<in_channel.ml:132:2>>*/  /*<<in_channel.ml:132:2>>*/ var
-     chunk_size = 65536;
-     /*<<in_channel.ml:133:2>>*/ try{
-      /*<<in_channel.ml:135:36>>*/ var
-       /*<<in_channel.ml:135:36>>*/ _j_ =
-         /*<<in_channel.ml:135:36>>*/ caml_call1(Stdlib[91], ic),
-       /*<<in_channel.ml:135:6>>*/ _k_ =
-         /*<<in_channel.ml:135:6>>*/ caml_call1(Stdlib[92], ic) - _j_ | 0,
-      initial_size = _k_;
-    }
-    catch(_m_){
-     var _h_ = caml_wrap_exception(_m_);
-     if(_h_[1] !== Stdlib[11]) throw caml_maybe_attach_backtrace(_h_, 0);
-     var initial_size = -1;
-    }
-     /*<<in_channel.ml:139:2>>*/ var
-      /*<<in_channel.ml:139:2>>*/ initial_size$0 =
-       0 <= initial_size ? initial_size : chunk_size,
-     initial_size$1 =
-       initial_size$0 <= Stdlib_Sys[12] ? initial_size$0 : Stdlib_Sys[12],
-      /*<<in_channel.ml:146:12>>*/ buf =
-        /*<<in_channel.ml:146:12>>*/ caml_create_bytes(initial_size$1),
-      /*<<in_channel.ml:147:14>>*/ nread =
-       read_upto(ic, buf, 0, initial_size$1);
-    if(nread < initial_size$1)
-      /*<<in_channel.ml:149:4>>*/ return  /*<<in_channel.ml:149:4>>*/ caml_call3
-             (Stdlib_Bytes[8], buf, 0, nread);
-     /*<<in_channel.ml:150:7>>*/ try{
-      /*<<in_channel.ml:151:10>>*/  /*<<in_channel.ml:151:10>>*/ var
-      c =  /*<<in_channel.ml:151:10>>*/ caml_call1(Stdlib[82], ic);
-    }
-    catch(_l_){
-     var _i_ = caml_wrap_exception(_l_);
-     if(_i_ === Stdlib[12])
-       /*<<in_channel.ml:154:8>>*/ return  /*<<in_channel.ml:154:8>>*/ caml_call1
-              (Stdlib_Bytes[44], buf);
-     throw caml_maybe_attach_backtrace(_i_, 0);
-    }
-     /*<<in_channel.ml:168:18>>*/  /*<<in_channel.ml:168:18>>*/ var
-     buf$2 = ensure(buf, nread, 65537);
-     /*<<in_channel.ml:169:8>>*/  /*<<in_channel.ml:169:8>>*/ runtime.caml_bytes_set
-     (buf$2, nread, c);
-     /*<<in_channel.ml:169:8>>*/ var
-      /*<<in_channel.ml:169:8>>*/ ofs$1 = nread + 1 | 0,
-     buf$0 = buf$2,
-     ofs = ofs$1;
-     /*<<in_channel.ml:158:10>>*/ for(;;){
-      /*<<in_channel.ml:158:20>>*/ var
-       /*<<in_channel.ml:158:20>>*/ buf$1 = ensure(buf$0, ofs, chunk_size),
-      rem = caml_ml_bytes_length(buf$1) - ofs | 0,
-       /*<<in_channel.ml:162:18>>*/ r = read_upto(ic, buf$1, ofs, rem);
-     if(r < rem)
-       /*<<in_channel.ml:158:20>>*/ return  /*<<in_channel.ml:158:20>>*/ caml_call3
-              (Stdlib_Bytes[8], buf$1, 0, ofs + r | 0);
-     var ofs$0 = ofs + rem | 0;
-     buf$0 = buf$1;
-     ofs = ofs$0;
-    }
-    /*<<in_channel.ml:171:5>>*/ }
-   function input_lines(ic){
-     /*<<in_channel.ml:174:2>>*/ try{
-      /*<<in_channel.ml:174:8>>*/  /*<<in_channel.ml:174:8>>*/ var
-      line =  /*<<in_channel.ml:174:8>>*/ caml_call1(Stdlib[83], ic);
-    }
-    catch(_g_){
-     var _d_ = caml_wrap_exception(_g_);
-     if(_d_ === Stdlib[12])  /*<<in_channel.ml:176:29>>*/ return 0;
-     throw caml_maybe_attach_backtrace(_d_, 0);
-    }
-     /*<<in_channel.ml:175:12>>*/ var
-      /*<<in_channel.ml:175:12>>*/ block = [0, line, 24029],
-     dst = block,
-     offset = 1;
-     /*<<in_channel.ml:174:2>>*/ for(;;){
-      /*<<in_channel.ml:174:2>>*/ try{
-       /*<<in_channel.ml:174:8>>*/  /*<<in_channel.ml:174:8>>*/ var
-       line$0 =  /*<<in_channel.ml:174:8>>*/ caml_call1(Stdlib[83], ic);
-     }
-     catch(_f_){
-      var _e_ = caml_wrap_exception(_f_);
-      if(_e_ !== Stdlib[12]) throw caml_maybe_attach_backtrace(_e_, 0);
-      dst[1 + offset] = 0;
-       /*<<in_channel.ml:175:20>>*/ return block;
-     }
-      /*<<in_channel.ml:175:12>>*/  /*<<in_channel.ml:175:12>>*/ var
-      dst$0 = [0, line$0, 24029];
-     dst[1 + offset] = dst$0;
-     dst = dst$0;
-     offset = 1;
-    }
-    /*<<in_channel.ml:176:31>>*/ }
-   function fold_lines(f, accu, ic){
-     /*<<in_channel.ml:179:2>>*/ var accu$0 = accu;
-     /*<<in_channel.ml:179:2>>*/ for(;;){
-      /*<<in_channel.ml:179:2>>*/ try{
-       /*<<in_channel.ml:179:8>>*/  /*<<in_channel.ml:179:8>>*/ var
-       line =  /*<<in_channel.ml:179:8>>*/ caml_call1(Stdlib[83], ic);
-     }
-     catch(_c_){
-      var _b_ = caml_wrap_exception(_c_);
-      if(_b_ === Stdlib[12])  /*<<in_channel.ml:181:29>>*/ return accu$0;
-      throw caml_maybe_attach_backtrace(_b_, 0);
-     }
-      /*<<in_channel.ml:180:25>>*/  /*<<in_channel.ml:180:25>>*/ var
-      accu$1 =  /*<<in_channel.ml:180:25>>*/ caml_call2(f, accu$0, line);
-     accu$0 = accu$1;
-    }
-    /*<<in_channel.ml:181:33>>*/ }
-   var
-    set_binary_mode = Stdlib[95],
-    Stdlib_In_channel =
-      [0,
-       stdin,
-       open_bin,
-       open_text,
-       open_gen,
-       with_open_bin,
-       with_open_text,
-       with_open_gen,
-       close,
-       close_noerr,
-       input_char,
-       input_byte,
-       input_line,
-       really_input_string,
-       input_all,
-       input_lines,
-       input,
-       really_input,
-       fold_lines,
-       seek,
-       pos,
-       length,
-       set_binary_mode,
-       runtime.caml_sys_isatty];
-   runtime.caml_register_global(6, Stdlib_In_channel, "Stdlib__In_channel");
-   return;
-   /*<<?>>*/ }
-  (globalThis));
-
-//# unitInfo: Provides: Stdlib__Out_channel
-//# unitInfo: Requires: Stdlib, Stdlib__Fun
-(function
-  (globalThis){
-   "use strict";
-   var runtime = globalThis.jsoo_runtime;
-    /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
-            ? f(a0)
-            : runtime.caml_call_gen(f, [a0]);
-   }
-    /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
-            ? f(a0, a1)
-            : runtime.caml_call_gen(f, [a0, a1]);
-   }
-   var
-    global_data = runtime.caml_get_global_data(),
-    Stdlib = global_data.Stdlib,
-    Stdlib_Fun = global_data.Stdlib__Fun,
-    stdout = Stdlib[39],
-    stderr = Stdlib[40],
-    open_bin = Stdlib[61],
-    open_text = Stdlib[60],
-    open_gen = Stdlib[62];
-   function with_open(openfun, s, f){
-     /*<<out_channel.ml:36:2>>*/  /*<<out_channel.ml:36:11>>*/ var
-     oc =  /*<<out_channel.ml:36:11>>*/ caml_call1(openfun, s);
-     /*<<out_channel.ml:38:4>>*/ return  /*<<out_channel.ml:38:4>>*/ caml_call2
-            (Stdlib_Fun[4],
-             function(param){
-               /*<<out_channel.ml:37:34>>*/ return  /*<<out_channel.ml:38:4>>*/ caml_call1
-                      (Stdlib[77], oc);
-              /*<<out_channel.ml:37:59>>*/ },
-             function(param){
-               /*<<out_channel.ml:38:15>>*/ return  /*<<out_channel.ml:37:2>>*/ caml_call1
-                      (f, oc);
-              /*<<out_channel.ml:38:19>>*/ });
-    /*<<out_channel.ml:38:20>>*/ }
-   function with_open_bin(s, f){
-     /*<<out_channel.ml:41:2>>*/ return with_open(Stdlib[61], s, f);
-    /*<<out_channel.ml:41:35>>*/ }
-   function with_open_text(s, f){
-     /*<<out_channel.ml:44:2>>*/ return with_open(Stdlib[60], s, f);
-    /*<<out_channel.ml:44:31>>*/ }
-   function with_open_gen(flags, perm, s, f){
-     /*<<out_channel.ml:47:2>>*/ return with_open
-            ( /*<<out_channel.ml:47:12>>*/ caml_call2(Stdlib[62], flags, perm),
-             s,
-             f);
-    /*<<out_channel.ml:47:48>>*/ }
-   var
-    seek = Stdlib[96][1],
-    pos = Stdlib[96][2],
-    length = Stdlib[96][3],
-    close = Stdlib[76],
-    close_noerr = Stdlib[77],
-    flush = Stdlib[63],
-    flush_all = Stdlib[64],
-    output_char = Stdlib[65],
-    output_byte = Stdlib[70],
-    output_string = Stdlib[66],
-    output_bytes = Stdlib[67],
-    output = Stdlib[68],
-    output_substring = Stdlib[69],
-    set_binary_mode = Stdlib[78],
-    Stdlib_Out_channel =
-      [0,
-       stdout,
-       stderr,
-       open_bin,
-       open_text,
-       open_gen,
-       with_open_bin,
-       with_open_text,
-       with_open_gen,
-       close,
-       close_noerr,
-       output_char,
-       output_byte,
-       output_string,
-       output_bytes,
-       output,
-       output_substring,
-       flush,
-       flush_all,
-       seek,
-       pos,
-       length,
-       set_binary_mode,
-       runtime.caml_ml_set_buffered,
-       runtime.caml_ml_is_buffered,
-       runtime.caml_sys_isatty];
-   runtime.caml_register_global(2, Stdlib_Out_channel, "Stdlib__Out_channel");
-   return;
-   /*<<?>>*/ }
-  (globalThis));
-
 //# unitInfo: Provides: Stdlib__Effect
 //# unitInfo: Requires: Stdlib, Stdlib__Callback, Stdlib__Printexc, Stdlib__Printf
 //# unitInfo: Effects_without_cps: true
@@ -34472,77 +35846,79 @@
      "Effect.Continuation_already_resumed",
      Continuation_already_resumed);
     /*<<effect.ml:36:8>>*/ function continue$0(k, v){
-     /*<<effect.ml:57:21>>*/  /*<<effect.ml:57:28>>*/ var
-     _h_ =  /*<<effect.ml:57:28>>*/ caml_continuation_use_noexc(k);
+     /*<<effect.ml:62:4>>*/  /*<<effect.ml:62:11>>*/ var
+     _h_ =  /*<<effect.ml:62:11>>*/ caml_continuation_use_noexc(k);
     function _g_(x){
-      /*<<effect.ml:57:58>>*/ return x;
-     /*<<effect.ml:57:59>>*/ }
-     /*<<effect.ml:57:28>>*/ return  /*<<effect.ml:57:28>>*/ jsoo_effect_not_supported
+      /*<<effect.ml:62:41>>*/ return x;
+     /*<<effect.ml:62:42>>*/ }
+     /*<<effect.ml:62:11>>*/ return  /*<<effect.ml:62:11>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:57:62>>*/ }
+    /*<<effect.ml:62:65>>*/ }
    function discontinue(k, e){
-     /*<<effect.ml:59:24>>*/  /*<<effect.ml:59:31>>*/ var
-     _f_ =  /*<<effect.ml:59:31>>*/ caml_continuation_use_noexc(k);
+     /*<<effect.ml:65:4>>*/  /*<<effect.ml:65:11>>*/ var
+     _f_ =  /*<<effect.ml:65:11>>*/ caml_continuation_use_noexc(k);
     function _e_(e){
-      /*<<effect.ml:59:61>>*/ throw  /*<<effect.ml:59:61>>*/ caml_maybe_attach_backtrace
+      /*<<effect.ml:65:41>>*/ throw  /*<<effect.ml:65:41>>*/ caml_maybe_attach_backtrace
             (e, 1);
-     /*<<effect.ml:59:68>>*/ }
-     /*<<effect.ml:59:31>>*/ return  /*<<effect.ml:59:31>>*/ jsoo_effect_not_supported
+     /*<<effect.ml:65:48>>*/ }
+     /*<<effect.ml:65:11>>*/ return  /*<<effect.ml:65:11>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:59:71>>*/ }
+    /*<<effect.ml:65:71>>*/ }
    function discontinue_with_backtrace(k, e, bt){
-     /*<<effect.ml:61:42>>*/  /*<<effect.ml:61:49>>*/ var
-     _d_ =  /*<<effect.ml:61:49>>*/ caml_continuation_use_noexc(k);
+     /*<<effect.ml:68:4>>*/  /*<<effect.ml:68:11>>*/ var
+     _d_ =  /*<<effect.ml:68:11>>*/ caml_continuation_use_noexc(k);
     function _c_(e){
-      /*<<effect.ml:62:4>>*/ caml_restore_raw_backtrace(e, bt);
-      /*<<effect.ml:62:4>>*/ throw  /*<<effect.ml:62:4>>*/ caml_maybe_attach_backtrace
+      /*<<effect.ml:68:41>>*/ caml_restore_raw_backtrace(e, bt);
+      /*<<effect.ml:68:41>>*/ throw  /*<<effect.ml:68:41>>*/ caml_maybe_attach_backtrace
             (e, 0);
-     /*<<effect.ml:62:38>>*/ }
-     /*<<effect.ml:61:49>>*/ return  /*<<effect.ml:61:49>>*/ jsoo_effect_not_supported
+     /*<<effect.ml:68:75>>*/ }
+     /*<<effect.ml:68:11>>*/ return  /*<<effect.ml:68:11>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:62:41>>*/ }
+    /*<<effect.ml:69:27>>*/ }
    function match_with(comp, arg, handler){
     function effc(eff, k, last_fiber){
-      /*<<effect.ml:74:6>>*/  /*<<effect.ml:74:12>>*/ var
-      match =  /*<<effect.ml:74:12>>*/ caml_call1(handler[3], eff);
+      /*<<effect.ml:81:6>>*/  /*<<effect.ml:81:12>>*/ var
+      match =  /*<<effect.ml:81:12>>*/ caml_call1(handler[3], eff);
      if(! match)
-       /*<<effect.ml:76:16>>*/ return  /*<<effect.ml:76:16>>*/ jsoo_effect_not_supported
+       /*<<effect.ml:85:16>>*/ return  /*<<effect.ml:85:16>>*/ jsoo_effect_not_supported
               ();
      var f = match[1];
-      /*<<effect.ml:75:18>>*/ return  /*<<effect.ml:75:18>>*/ caml_call1(f, k);
-     /*<<effect.ml:76:42>>*/ }
-     /*<<effect.ml:78:12>>*/  /*<<effect.ml:78:12>>*/ var
+     k[2] = last_fiber;
+      /*<<effect.ml:84:10>>*/ return  /*<<effect.ml:84:10>>*/ caml_call1(f, k);
+     /*<<effect.ml:85:42>>*/ }
+     /*<<effect.ml:87:12>>*/  /*<<effect.ml:87:12>>*/ var
      s =
-        /*<<effect.ml:78:12>>*/ caml_alloc_stack(handler[1], handler[2], effc);
-     /*<<effect.ml:79:4>>*/ return  /*<<effect.ml:79:4>>*/ jsoo_effect_not_supported
+        /*<<effect.ml:87:12>>*/ caml_alloc_stack(handler[1], handler[2], effc);
+     /*<<effect.ml:88:4>>*/ return  /*<<effect.ml:88:4>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:79:23>>*/ }
+    /*<<effect.ml:88:23>>*/ }
    function try_with(comp, arg, handler){
     function effc(eff, k, last_fiber){
-      /*<<effect.ml:86:6>>*/  /*<<effect.ml:86:12>>*/ var
-      match =  /*<<effect.ml:86:12>>*/ caml_call1(handler[1], eff);
+      /*<<effect.ml:95:6>>*/  /*<<effect.ml:95:12>>*/ var
+      match =  /*<<effect.ml:95:12>>*/ caml_call1(handler[1], eff);
      if(! match)
-       /*<<effect.ml:88:16>>*/ return  /*<<effect.ml:88:16>>*/ jsoo_effect_not_supported
+       /*<<effect.ml:99:16>>*/ return  /*<<effect.ml:99:16>>*/ jsoo_effect_not_supported
               ();
      var f = match[1];
-      /*<<effect.ml:87:18>>*/ return  /*<<effect.ml:87:18>>*/ caml_call1(f, k);
-     /*<<effect.ml:88:42>>*/ }
-     /*<<effect.ml:90:12>>*/  /*<<effect.ml:90:12>>*/ var
+     k[2] = last_fiber;
+      /*<<effect.ml:98:10>>*/ return  /*<<effect.ml:98:10>>*/ caml_call1(f, k);
+     /*<<effect.ml:99:42>>*/ }
+     /*<<effect.ml:101:12>>*/  /*<<effect.ml:101:12>>*/ var
      s =
-        /*<<effect.ml:90:12>>*/ caml_alloc_stack
+        /*<<effect.ml:101:12>>*/ caml_alloc_stack
         (function(x){
-           /*<<effect.ml:90:34>>*/ return x;
-          /*<<effect.ml:90:35>>*/ },
+           /*<<effect.ml:101:34>>*/ return x;
+          /*<<effect.ml:101:35>>*/ },
          function(e){
-           /*<<effect.ml:90:47>>*/ throw  /*<<effect.ml:90:47>>*/ caml_maybe_attach_backtrace
+           /*<<effect.ml:101:47>>*/ throw  /*<<effect.ml:101:47>>*/ caml_maybe_attach_backtrace
                  (e, 1);
-          /*<<effect.ml:90:54>>*/ },
+          /*<<effect.ml:101:54>>*/ },
          effc);
-     /*<<effect.ml:91:4>>*/ return  /*<<effect.ml:91:4>>*/ jsoo_effect_not_supported
+     /*<<effect.ml:102:4>>*/ return  /*<<effect.ml:102:4>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:91:23>>*/ }
-    /*<<effect.ml:44:14>>*/ var
-     /*<<effect.ml:44:14>>*/ Deep =
+    /*<<effect.ml:102:23>>*/ }
+    /*<<effect.ml:46:14>>*/ var
+     /*<<effect.ml:46:14>>*/ Deep =
       [0,
        continue$0,
        discontinue,
@@ -34553,27 +35929,28 @@
     cst_E = "E",
     cst_impossible = "impossible";
    function fiber(f){
-     /*<<effect.ml:111:4>>*/ var
-      /*<<effect.ml:111:38>>*/ Initial_setup =
+     /*<<effect.ml:124:4>>*/ var
+      /*<<effect.ml:124:38>>*/ Initial_setup =
        [248, cst_Initial_setup, caml_fresh_oo_id(0)],
-      /*<<effect.ml:112:18>>*/ E = [248, cst_E, caml_fresh_oo_id(0)];
+      /*<<effect.ml:125:18>>*/ E = [248, cst_E, caml_fresh_oo_id(0)];
     function f$0(param){
-      /*<<effect.ml:113:16>>*/ return  /*<<effect.ml:113:18>>*/ caml_call1
-             (f,  /*<<effect.ml:113:18>>*/ jsoo_effect_not_supported());
-     /*<<effect.ml:113:45>>*/ }
-     /*<<effect.ml:114:4>>*/ function error(param){
-      /*<<effect.ml:114:18>>*/ return  /*<<effect.ml:114:18>>*/ caml_call1
+      /*<<effect.ml:126:16>>*/ return  /*<<effect.ml:126:18>>*/ caml_call1
+             (f,  /*<<effect.ml:126:18>>*/ jsoo_effect_not_supported());
+     /*<<effect.ml:126:45>>*/ }
+     /*<<effect.ml:127:4>>*/ function error(param){
+      /*<<effect.ml:127:18>>*/ return  /*<<effect.ml:127:18>>*/ caml_call1
              (Stdlib[2], cst_impossible);
-     /*<<effect.ml:114:39>>*/ }
+     /*<<effect.ml:127:39>>*/ }
     function effc(eff, k, last_fiber){
-      /*<<effect.ml:116:6>>*/ if(eff === Initial_setup)
-       /*<<effect.ml:117:29>>*/ throw [0, E, k];
-      /*<<effect.ml:118:13>>*/ return error(0);
-     /*<<effect.ml:118:21>>*/ }
-     /*<<effect.ml:120:12>>*/  /*<<effect.ml:120:12>>*/ var
-     s =  /*<<effect.ml:120:12>>*/ caml_alloc_stack(error, error, effc);
-     /*<<effect.ml:121:4>>*/ try{
-      /*<<effect.ml:121:10>>*/  /*<<effect.ml:121:10>>*/ jsoo_effect_not_supported
+      /*<<effect.ml:129:6>>*/ if(eff !== Initial_setup)
+       /*<<effect.ml:133:13>>*/ return error(0);
+     k[2] = last_fiber;
+      /*<<effect.ml:132:10>>*/ throw [0, E, k];
+     /*<<effect.ml:133:21>>*/ }
+     /*<<effect.ml:135:12>>*/  /*<<effect.ml:135:12>>*/ var
+     s =  /*<<effect.ml:135:12>>*/ caml_alloc_stack(error, error, effc);
+     /*<<effect.ml:136:4>>*/ try{
+      /*<<effect.ml:136:10>>*/  /*<<effect.ml:136:10>>*/ jsoo_effect_not_supported
       ();
      var _b_ = 0;
     }
@@ -34581,58 +35958,59 @@
      var exn = caml_wrap_exception(exn$0);
      if(exn[1] !== E) throw caml_maybe_attach_backtrace(exn, 0);
      var k = exn[2];
-      /*<<effect.ml:122:23>>*/ return k;
+      /*<<effect.ml:137:23>>*/ return k;
     }
-     /*<<effect.ml:123:11>>*/ return error(0);
-    /*<<effect.ml:123:19>>*/ }
+     /*<<effect.ml:138:11>>*/ return error(0);
+    /*<<effect.ml:138:19>>*/ }
    function continue_gen(k, resume_fun, v, handler){
     function effc(eff, k, last_fiber){
-      /*<<effect.ml:142:6>>*/  /*<<effect.ml:142:12>>*/ var
-      match =  /*<<effect.ml:142:12>>*/ caml_call1(handler[3], eff);
+      /*<<effect.ml:157:6>>*/  /*<<effect.ml:157:12>>*/ var
+      match =  /*<<effect.ml:157:12>>*/ caml_call1(handler[3], eff);
      if(! match)
-       /*<<effect.ml:144:16>>*/ return  /*<<effect.ml:144:16>>*/ jsoo_effect_not_supported
+       /*<<effect.ml:161:16>>*/ return  /*<<effect.ml:161:16>>*/ jsoo_effect_not_supported
               ();
      var f = match[1];
-      /*<<effect.ml:143:18>>*/ return  /*<<effect.ml:143:18>>*/ caml_call1
+     k[2] = last_fiber;
+      /*<<effect.ml:160:10>>*/ return  /*<<effect.ml:160:10>>*/ caml_call1
              (f, k);
-     /*<<effect.ml:144:42>>*/ }
-     /*<<effect.ml:146:16>>*/  /*<<effect.ml:146:16>>*/ var
+     /*<<effect.ml:161:42>>*/ }
+     /*<<effect.ml:164:16>>*/  /*<<effect.ml:164:16>>*/ var
      stack =
-        /*<<effect.ml:146:16>>*/ runtime.caml_continuation_use_and_update_handler_noexc
+        /*<<effect.ml:164:16>>*/ runtime.caml_continuation_use_and_update_handler_noexc
         (k, handler[1], handler[2], effc);
-     /*<<effect.ml:147:4>>*/ return  /*<<effect.ml:147:4>>*/ jsoo_effect_not_supported
+     /*<<effect.ml:165:4>>*/ return  /*<<effect.ml:165:4>>*/ jsoo_effect_not_supported
             ();
-    /*<<effect.ml:147:29>>*/ }
+    /*<<effect.ml:165:40>>*/ }
    function continue_with(k, v, handler){
-     /*<<effect.ml:150:4>>*/ return continue_gen
+     /*<<effect.ml:168:4>>*/ return continue_gen
             (k,
              function(x){
-               /*<<effect.ml:150:29>>*/ return x;
-              /*<<effect.ml:150:30>>*/ },
+               /*<<effect.ml:168:29>>*/ return x;
+              /*<<effect.ml:168:30>>*/ },
              v,
              handler);
-    /*<<effect.ml:150:41>>*/ }
+    /*<<effect.ml:168:41>>*/ }
    function discontinue_with(k, v, handler){
-     /*<<effect.ml:153:4>>*/ return continue_gen
+     /*<<effect.ml:171:4>>*/ return continue_gen
             (k,
              function(e){
-               /*<<effect.ml:153:29>>*/ throw  /*<<effect.ml:153:29>>*/ caml_maybe_attach_backtrace
+               /*<<effect.ml:171:29>>*/ throw  /*<<effect.ml:171:29>>*/ caml_maybe_attach_backtrace
                      (e, 1);
-              /*<<effect.ml:153:36>>*/ },
+              /*<<effect.ml:171:36>>*/ },
              v,
              handler);
-    /*<<effect.ml:153:47>>*/ }
+    /*<<effect.ml:171:47>>*/ }
    function discontinue_with_backtrace$0(k, v, bt, handler){
-     /*<<effect.ml:156:4>>*/ return continue_gen
+     /*<<effect.ml:174:4>>*/ return continue_gen
             (k,
              function(e){
-               /*<<effect.ml:156:29>>*/ caml_restore_raw_backtrace(e, bt);
-               /*<<effect.ml:156:29>>*/ throw  /*<<effect.ml:156:29>>*/ caml_maybe_attach_backtrace
+               /*<<effect.ml:174:29>>*/ caml_restore_raw_backtrace(e, bt);
+               /*<<effect.ml:174:29>>*/ throw  /*<<effect.ml:174:29>>*/ caml_maybe_attach_backtrace
                      (e, 0);
-              /*<<effect.ml:156:63>>*/ },
+              /*<<effect.ml:174:63>>*/ },
              v,
              handler);
-    /*<<effect.ml:156:74>>*/ }
+    /*<<effect.ml:174:74>>*/ }
    var
     Stdlib_Effect =
       [0,
