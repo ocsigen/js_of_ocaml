@@ -193,7 +193,9 @@ let generate
     ~wrap_with_fun
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
-    ((p, live_vars), cps_calls) =
+    ~live_vars
+    ~cps_calls
+    p =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -693,17 +695,22 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls ~deadcode_sentinal profile
-    +> effects ~deadcode_sentinal
+    +> (fun p -> p, collects_shapes p)
+    +> (fun (p, shapes) ->
+         let p, cps = effects ~deadcode_sentinal p in
+         p, (cps, shapes))
     +> map_fst (if Config.Flag.effects () then fun x -> x else Generate_closure.f)
     +> map_fst deadcode'
   in
-  let emit =
+  let emit ~live_vars ~cps_calls =
     generate
       d
       ~exported_runtime
       ~wrap_with_fun
       ~warn_on_unhandled_effect:standalone
       ~deadcode_sentinal
+      ~live_vars
+      ~cps_calls
     +> link' ~export_runtime ~standalone ~link
     +> pack ~wrap_with_fun ~standalone
     +> coloring
@@ -712,8 +719,7 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let (((prog, _), _) as r) = opt p in
-  let shapes = collects_shapes prog in
+  let (((prog, live_vars), (cps_calls, shapes)) as r) = opt p in
   StringMap.iter
     (fun name shape ->
       Shape.set_shape ~name shape;
@@ -722,7 +728,7 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
         (Printf.sprintf "//# shape: %s:%s\n" name (Shape.to_string shape)))
     shapes;
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  emit r
+  emit ~live_vars ~cps_calls prog
 
 let full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p =
   let (_ : Source_map.t option) =
