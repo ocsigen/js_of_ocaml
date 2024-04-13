@@ -30,7 +30,7 @@ type t =
 
 let rec to_string (shape : t) =
   match shape with
-  | Bot _s -> "N"
+  | Bot s -> if true then "N" else Printf.sprintf "N(%s)" s
   | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
   | Function { arity; _ } -> Printf.sprintf "F(%d)" arity
 
