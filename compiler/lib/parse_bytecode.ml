@@ -864,7 +864,8 @@ let rec compile_block blocks debug_data code pc state =
       | Unset, Unset -> ()
       | Var _, Dummy _ -> assert false
       | Dummy _, Var _ -> assert false
-      | Unset, _ | _, Unset -> assert false)
+      | Unset, _ -> assert false
+      | _, Unset -> assert false)
   | None -> (
       let limit = Blocks.next blocks pc in
       assert (limit > pc);
@@ -875,15 +876,15 @@ let rec compile_block blocks debug_data code pc state =
         compile { blocks; code; limit; debug = debug_data } pc state []
       in
       assert (not (Addr.Map.mem pc !compiled_blocks));
-      (* When jumping to a block that was already compiled and the
+      (* When jumping to a block that was already visited and the
          [accu] was [Unset] for that block, we make the current accu
          [Unset] *)
       let adjust_state pc =
-        match state', Addr.Map.find_opt pc !compiled_blocks with
+        match state', Addr.Map.find_opt pc !tagged_blocks with
         | _, None -> state'
-        | { State.accu = Var _; _ }, Some ({ State.accu = Unset; _ }, _, _) ->
+        | { State.accu = Var _; _ }, Some { State.accu = Unset; _ } ->
             State.clear_accu state'
-        | _ -> state'
+        | _, _ -> state'
       in
       let mk_cont pc =
         let state = adjust_state pc in

@@ -21,6 +21,7 @@
 
 * Compiler: fix variable renaming for property binding and assignment target
 * Compiler: fix separate compilation of toplevels (broken since 5.7.0)
+* Compiler: fix assertion while checking stack compatibility
 
 # 5.7.2 (2024-04-03) - Lille
 
