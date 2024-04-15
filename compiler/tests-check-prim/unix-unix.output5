@@ -229,6 +229,7 @@ caml_div
 caml_mod
 
 From +io.js:
+caml_ml_channel_get
 caml_ml_input_bigarray
 caml_ml_output_bigarray
 
