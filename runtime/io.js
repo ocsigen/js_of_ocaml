@@ -98,6 +98,28 @@ function caml_ml_set_channel_name(chanid, name) {
 //Provides: caml_ml_channels
 var caml_ml_channels = new Array();
 
+//Provides: caml_ml_channel_redirect
+//Requires: caml_ml_channels
+function caml_ml_channel_redirect (captured, into){
+  var to_restore = caml_ml_channels.get(captured);
+  var new_ = caml_ml_channels.get(into);
+  caml_ml_channels.set(captured, new_);
+  return to_restore;
+}
+
+//Provides: caml_ml_channel_restore
+//Requires: caml_ml_channels
+function caml_ml_channel_restore (captured, to_restore){
+  caml_ml_channels.set(captured, to_restore);
+  return 0;
+}
+
+//Provides: caml_ml_channel_get
+//Requires: caml_ml_channels
+function caml_ml_channel_get(id) {
+  return caml_ml_channels.get(id);
+}
+
 //Provides: caml_ml_out_channels_list
 //Requires: caml_ml_channels
 function caml_ml_out_channels_list () {
