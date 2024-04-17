@@ -616,13 +616,7 @@ end
 module Memory = struct
   let wasm_cast ty e =
     let* e = e in
-    match e with
-    | W.LocalGet x ->
-        return
-          (W.RefCast
-             ( { nullable = false; typ = Type ty }
-             , W.LocalTee (x, W.RefCast ({ nullable = false; typ = Type ty }, e)) ))
-    | _ -> return (W.RefCast ({ nullable = false; typ = Type ty }, e))
+    return (W.RefCast ({ nullable = false; typ = Type ty }, e))
 
   let wasm_struct_get ty e i =
     let* e = e in
