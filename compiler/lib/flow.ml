@@ -402,7 +402,7 @@ let rec the_shape_of info x =
     info
     (fun x ->
       if Var.ISet.mem info.info_possibly_mutable x
-      then Shape.Bot "possibly_mutable"
+      then Shape.Top "possibly_mutable"
       else
         match Shape.get x with
         | Some shape -> shape
@@ -411,16 +411,16 @@ let rec the_shape_of info x =
             | Expr (Block (_, a, _, Immutable)) ->
                 Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
             | Expr (Closure (l, _)) ->
-                Shape.Function { arity = List.length l; pure = false; res = Bot "unk" }
+                Shape.Function { arity = List.length l; pure = false; res = Top "unk" }
             | Expr (Special (Alias_prim name)) -> (
                 try
                   let arity = Primitive.arity name in
                   let pure = Primitive.is_pure name in
-                  Shape.Function { arity; pure; res = Bot "unk" }
-                with _ -> Bot "other")
-            | _ -> Shape.Bot "other"))
-    (Bot "init")
-    (fun _u _v -> Shape.Bot "merge")
+                  Shape.Function { arity; pure; res = Top "unk" }
+                with _ -> Top "other")
+            | _ -> Shape.Top "other"))
+    (Top "init")
+    (fun _u _v -> Shape.Top "merge")
     x
 
 let build_subst (info : Info.t) vars =

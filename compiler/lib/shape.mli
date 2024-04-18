@@ -18,7 +18,7 @@
  *)
 
 type t =
-  | Bot of string
+  | Top of string
   | Block of t list
   | Function of
       { arity : int

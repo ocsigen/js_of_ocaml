@@ -20,7 +20,7 @@
 open! Stdlib
 
 type t =
-  | Bot of string
+  | Top of string
   | Block of t list
   | Function of
       { arity : int
@@ -30,7 +30,7 @@ type t =
 
 let rec to_string (shape : t) =
   match shape with
-  | Bot s -> if true then "N" else Printf.sprintf "N(%s)" s
+  | Top s -> if true then "N" else Printf.sprintf "N(%s)" s
   | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
   | Function { arity; _ } -> Printf.sprintf "F(%d)" arity
 
@@ -59,7 +59,7 @@ let assign x shape = Hashtbl.add state (Var x) shape
 let propagate x offset target =
   match Hashtbl.find_opt state (Var x) with
   | None -> ()
-  | Some (Bot _ | Function _) -> ()
+  | Some (Top _ | Function _) -> ()
   | Some (Block l) -> Hashtbl.replace state (Var target) (List.nth l offset)
 
 let get x = Hashtbl.find_opt state (Var x)
