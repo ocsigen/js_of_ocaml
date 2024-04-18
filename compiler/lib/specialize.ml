@@ -27,7 +27,7 @@ let function_arity info x =
     | Some shape -> (
         match shape with
         | Function { arity; _ } -> Some arity
-        | Block _ | Bot _ -> None)
+        | Block _ | Top _ -> None)
     | None ->
         get_approx
           info
