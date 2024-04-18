@@ -177,7 +177,7 @@ let is_int info x =
         (fun x ->
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
-          | Some (Block (_, _, _) | Constant _) -> N
+          | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
         Unknown
         (fun u v ->
@@ -196,8 +196,12 @@ let the_tag_of info x get =
         info
         (fun x ->
           match Flow.Info.def info x with
-          | Some (Block (j, _, _)) ->
-              if Flow.Info.possibly_mutable info x then None else get j
+          | Some (Block (j, _, _, mut)) ->
+              if Flow.Info.possibly_mutable info x
+              then (
+                assert (Poly.(mut = Maybe_mutable));
+                None)
+              else get j
           | Some (Constant (Tuple (j, _, _))) -> get j
           | None | Some _ -> None)
         None
@@ -278,7 +282,7 @@ let eval_instr info ((x, loc) as i) =
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
       [ Let (jsoo, Constant (String "js_of_ocaml")), noloc
-      ; Let (x, Block (0, [| jsoo |], NotArray)), loc
+      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable)), loc
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
@@ -338,7 +342,7 @@ let the_cond_of info x =
             | NativeString _
             | Float_array _
             | Int64 _ )) -> Non_zero
-      | Some (Block (_, _, _)) -> Non_zero
+      | Some (Block (_, _, _, _)) -> Non_zero
       | Some (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | None -> Unknown)
     Unknown
@@ -381,7 +385,7 @@ let rec do_not_raise pc visited blocks =
         | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()
