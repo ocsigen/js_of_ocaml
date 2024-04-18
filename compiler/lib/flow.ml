@@ -149,15 +149,18 @@ let propagate1 deps defs st x =
       | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
           Var.Set.singleton x
       | Field (y, n) ->
-          var_set_lift
-            (fun z ->
-              match defs.(Var.idx z) with
-              | Expr (Block (_, a, _, _)) when n < Array.length a ->
-                  let t = a.(n) in
-                  add_dep deps x t;
-                  Var.Tbl.get st t
-              | Phi _ | Param | Expr _ -> Var.Set.empty)
-            (Var.Tbl.get st y))
+          if Option.is_some (Shape.get x)
+          then Var.Set.singleton x
+          else
+            var_set_lift
+              (fun z ->
+                match defs.(Var.idx z) with
+                | Expr (Block (_, a, _, _)) when n < Array.length a ->
+                    let t = a.(n) in
+                    add_dep deps x t;
+                    Var.Tbl.get st t
+                | Phi _ | Param | Expr _ -> Var.Set.empty)
+              (Var.Tbl.get st y))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -279,16 +282,17 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
       match e with
       | Constant _ | Closure _ | Apply _ | Prim _ | Block _ | Special _ -> false
       | Field (y, n) ->
-          Var.Tbl.get st y
-          || Var.Set.exists
-               (fun z ->
-                 match defs.(Var.idx z) with
-                 | Expr (Block (_, a, _, _)) ->
-                     n >= Array.length a
-                     || Var.ISet.mem possibly_mutable z
-                     || Var.Tbl.get st a.(n)
-                 | Phi _ | Param | Expr _ -> true)
-               (Var.Tbl.get known_origins y))
+          Option.is_none (Shape.get x)
+          && (Var.Tbl.get st y
+             || Var.Set.exists
+                  (fun z ->
+                    match defs.(Var.idx z) with
+                    | Expr (Block (_, a, _, _)) ->
+                        n >= Array.length a
+                        || Var.ISet.mem possibly_mutable z
+                        || Var.Tbl.get st a.(n)
+                    | Phi _ | Param | Expr _ -> true)
+                  (Var.Tbl.get known_origins y)))
 
 module Domain2 = struct
   type t = bool
