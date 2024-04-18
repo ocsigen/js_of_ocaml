@@ -398,27 +398,46 @@ let direct_approx (info : Info.t) x =
   | _ -> None
 
 let rec the_shape_of info x =
-  get_approx
-    info
-    (fun x ->
-      match Shape.get x with
-      | Some shape -> shape
-      | None -> (
-          match info.info_defs.(Var.idx x) with
-          | Expr (Block (_, a, _, Immutable)) ->
-              Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
-          | Expr (Closure (l, _)) ->
-              Shape.Function { arity = List.length l; pure = false; res = Top "unk" }
-          | Expr (Special (Alias_prim name)) -> (
-              try
-                let arity = Primitive.arity name in
-                let pure = Primitive.is_pure name in
-                Shape.Function { arity; pure; res = Top "unk" }
-              with _ -> Top "other")
-          | _ -> Shape.Top "other"))
-    (Top "init")
-    (fun _u _v -> Shape.Top "merge")
-    x
+  let rec loop info x acc : Shape.t =
+    match Shape.get x with
+    | Some shape -> shape
+    | None ->
+        get_approx
+          info
+          (fun x ->
+            match Shape.get x with
+            | Some shape -> shape
+            | None -> (
+                match info.info_defs.(Var.idx x) with
+                | Expr (Block (_, a, _, Immutable)) ->
+                    Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
+                | Expr (Closure (l, _)) ->
+                    Shape.Function
+                      { arity = List.length l; pure = false; res = Top "unk" }
+                | Expr (Special (Alias_prim name)) -> (
+                    try
+                      let arity = Primitive.arity name in
+                      let pure = Primitive.is_pure name in
+                      Shape.Function { arity; pure; res = Top "unk" }
+                    with _ -> Top "other")
+                | Expr (Apply { f; args; _ }) -> (
+                    if List.mem f ~set:acc
+                    then Top "loop"
+                    else
+                      match loop info f (f :: acc) with
+                      | Shape.Function { arity = n; _ } ->
+                          let diff = n - List.length args in
+                          if diff > 0
+                          then
+                            Shape.Function { arity = diff; pure = false; res = Top "unk" }
+                          else Shape.Top "apply"
+                      | Shape.Block _ | Shape.Top _ -> Shape.Top "apply2")
+                | _ -> Shape.Top "other"))
+          (Top "init")
+          (fun _u _v -> Shape.Top "merge")
+          x
+  in
+  loop info x []
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
