@@ -407,6 +407,8 @@ let rec the_shape_of info x =
           match info.info_defs.(Var.idx x) with
           | Expr (Block (_, a, _, Immutable)) ->
               Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
+          | Expr (Block (_, a, _, _)) when not (Var.ISet.mem info.info_possibly_mutable x)
+            -> Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
           | Expr (Closure (l, _)) ->
               Shape.Function { arity = List.length l; pure = false; res = Top "unk" }
           | Expr (Special (Alias_prim name)) -> (
