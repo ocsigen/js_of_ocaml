@@ -61,7 +61,7 @@ and mark_expr st e =
   | Apply { f; args; _ } ->
       mark_var st f;
       List.iter args ~f:(fun x -> mark_var st x)
-  | Block (_, a, _) -> Array.iter a ~f:(fun x -> mark_var st x)
+  | Block (_, a, _, _) -> Array.iter a ~f:(fun x -> mark_var st x)
   | Field (x, _) -> mark_var st x
   | Closure (_, (pc, _)) -> mark_reachable st pc
   | Special _ -> ()

@@ -200,7 +200,7 @@ let is_int ~target info x =
               match target with
               | `JavaScript -> Y
               | `Wasm -> N)
-          | Expr (Block (_, _, _)) | Expr (Constant _) -> N
+          | Expr (Block (_, _, _, _)) | Expr (Constant _) -> N
           | _ -> Unknown)
         Unknown
         (fun u v ->
@@ -275,7 +275,7 @@ let eval_instr ~target info ((x, loc) as i) =
                    | `JavaScript -> "js_of_ocaml"
                    | `Wasm -> "wasm_of_ocaml")) )
         , noloc )
-      ; Let (x, Block (0, [| jsoo |], NotArray)), loc
+      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable)), loc
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
@@ -331,7 +331,7 @@ let the_case_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Int (_, i))) -> CConst (Int32.to_int i)
-          | Expr (Block (j, _, _)) ->
+          | Expr (Block (j, _, _, _)) ->
               if Var.ISet.mem info.info_possibly_mutable x then Unknown else CTag j
           | Expr (Constant (Tuple (j, _, _))) -> CTag j
           | _ -> Unknown)
@@ -366,7 +366,7 @@ let the_cond_of info x =
             | NativeString _
             | Float_array _
             | Int64 _ )) -> Non_zero
-      | Expr (Block (_, _, _)) -> Non_zero
+      | Expr (Block (_, _, _, _)) -> Non_zero
       | Expr (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | Param | Phi _ -> Unknown)
     Unknown
@@ -414,7 +414,7 @@ let rec do_not_raise pc visited blocks =
         | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()

@@ -1346,26 +1346,42 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state ((Let (x, Block (0, [||], Unknown)), loc) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state ((Let (x, Block (i, [||], NotArray)), loc) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state loc in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state ((Let (x, Block (0, [||], Unknown)), loc) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | PUSHATOM ->
         let state = State.push state loc in
 
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state ((Let (x, Block (i, [||], NotArray)), loc) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1384,7 +1400,12 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ((Let (x, Block (tag, Array.of_list (List.map ~f:fst contents), Unknown)), loc)
+          (( Let
+               ( x
+               , Block
+                   (tag, Array.of_list (List.map ~f:fst contents), Unknown, Maybe_mutable)
+               )
+           , loc )
           :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
@@ -1396,7 +1417,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (tag, [| y |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y, _ = State.accu state in
@@ -1410,7 +1431,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, Block (tag, [| y; z |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y, _ = State.accu state in
@@ -1434,7 +1455,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 2 state)
-          ((Let (x, Block (tag, [| y; z; t |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state loc in
@@ -1452,7 +1473,12 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (254, Array.of_list (List.map ~f:fst contents), Unknown)), loc)
+          (( Let
+               ( x
+               , Block
+                   (254, Array.of_list (List.map ~f:fst contents), Unknown, Maybe_mutable)
+               )
+           , loc )
           :: instrs)
     | GETFIELD0 ->
         let y, _ = State.accu state in
@@ -2470,7 +2496,7 @@ let override_global =
             let init_mod = Var.fresh_n "init_mod" in
             let update_mod = Var.fresh_n "update_mod" in
             ( x
-            , (Let (x, Block (0, [| init_mod; update_mod |], NotArray)), noloc)
+            , (Let (x, Block (0, [| init_mod; update_mod |], NotArray, Immutable)), noloc)
               :: ( Let (init_mod, Special (Alias_prim "caml_CamlinternalMod_init_mod"))
                  , noloc )
               :: ( Let (update_mod, Special (Alias_prim "caml_CamlinternalMod_update_mod"))
@@ -3050,7 +3076,7 @@ let predefined_exceptions ~target =
                          Regular
                        , Int32.of_int (-index - 1) )) )
             , noloc )
-          ; Let (exn, Block (248, [| v_name; v_index |], NotArray)), noloc
+          ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
           ; ( Let
                 ( Var.fresh ()
                 , Prim

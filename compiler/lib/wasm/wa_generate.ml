@@ -154,7 +154,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         let* closure = load f in
         Stack.kill_variables stack_ctx;
         return (W.Call (apply, args @ [ closure ]))
-    | Block (tag, a, _) ->
+    | Block (tag, a, _, _) ->
         Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n) -> Memory.field (load x) n
     | Closure _ ->

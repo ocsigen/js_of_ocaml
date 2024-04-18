@@ -291,7 +291,7 @@ let spilled_variables
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded x reloaded)
                         (f :: args)
                         ~init:Var.Set.empty
-                  | Block (_, l, _) ->
+                  | Block (_, l, _, _) ->
                       Array.fold_left
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded' x reloaded)
                         l

@@ -107,7 +107,7 @@ let add_array ~ctx s a = Array.fold_left ~f:(fun s x -> add_var ~ctx s x) ~init:
 let expr_used ~context ~closures ~ctx x e s =
   match e with
   | Apply { f; args; _ } -> add_list ~ctx s (f :: args)
-  | Block (_, a, _) -> add_array ~ctx s a
+  | Block (_, a, _, _) -> add_array ~ctx s a
   | Prim (_, l) -> add_prim_args ~ctx s l
   | Closure _ -> add_list ~ctx s (function_free_variables ~context ~closures x)
   | Constant _ | Special _ -> s

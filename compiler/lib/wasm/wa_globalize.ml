@@ -73,7 +73,7 @@ let traverse_expression x e st =
   match e with
   | Code.Apply { f; args; _ } ->
       st |> use f |> fun st -> List.fold_left ~f:(fun st x -> use x st) ~init:st args
-  | Block (_, a, _) -> Array.fold_right ~f:use a ~init:st
+  | Block (_, a, _, _) -> Array.fold_right ~f:use a ~init:st
   | Field (x, _) -> st |> use x
   | Closure _ ->
       List.fold_left

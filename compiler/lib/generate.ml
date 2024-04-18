@@ -1222,7 +1222,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let prop = or_p prop prop' in
       let e = apply_fun ctx f args exact cps loc in
       (e, prop, queue), []
-  | Block (tag, a, array_or_not) ->
+  | Block (tag, a, array_or_not, _mut) ->
       let contents, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->

@@ -169,8 +169,8 @@ let simple blocks cont mapping =
           | Prim (prim, args) ->
               `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
           | Special _ -> `Exp exp
-          | Block (tag, args, aon) ->
-              `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
+          | Block (tag, args, aon, mut) ->
+              `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon, mut))
           | Field (x, i) -> `Exp (Field (map_var mapping x, i))
           | Closure _ -> `Fail
           | Constant _ -> `Fail

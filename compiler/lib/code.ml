@@ -338,13 +338,17 @@ type special =
   | Undefined
   | Alias_prim of string
 
+type mutability =
+  | Immutable
+  | Maybe_mutable
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
       ; exact : bool
       }
-  | Block of int * Var.t array * array_or_not
+  | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
@@ -492,8 +496,14 @@ module Print = struct
         if exact
         then Format.fprintf f "%a!(%a)" Var.print g var_list args
         else Format.fprintf f "%a(%a)" Var.print g var_list args
-    | Block (t, a, _) ->
-        Format.fprintf f "{tag=%d" t;
+    | Block (t, a, _, mut) ->
+        Format.fprintf
+          f
+          "%s{tag=%d"
+          (match mut with
+          | Immutable -> "imm"
+          | Maybe_mutable -> "")
+          t;
         for i = 0 to Array.length a - 1 do
           Format.fprintf f "; %d = %a" i Var.print a.(i)
         done;
@@ -790,7 +800,7 @@ let invariant { blocks; start; _ } =
     in
     let check_expr = function
       | Apply _ -> ()
-      | Block (_, _, _) -> ()
+      | Block (_, _, _, _) -> ()
       | Field (_, _) -> ()
       | Closure (l, cont) ->
           List.iter l ~f:define;

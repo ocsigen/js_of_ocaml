@@ -201,15 +201,15 @@ let expr_deps blocks st x e =
             | Pv v, `Const -> do_escape st Escape_constant v
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _)) ->
+                | Expr (Block (_, a, _, _)) ->
                     Array.iter a ~f:(fun x -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Object_literal -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _)) ->
+                | Expr (Block (_, a, _, _)) ->
                     Array.iter a ~f:(fun x ->
                         match st.defs.(Var.idx x) with
-                        | Expr (Block (_, [| _k; v |], _)) -> do_escape st Escape v
+                        | Expr (Block (_, [| _k; v |], _, _)) -> do_escape st Escape v
                         | _ -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Mutable -> do_escape st Escape v);
@@ -323,7 +323,7 @@ module Domain = struct
     then (
       st.may_escape.(idx) <- s;
       match st.defs.(idx) with
-      | Expr (Block (_, a, _)) ->
+      | Expr (Block (_, a, _, _)) ->
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
           if Poly.equal s Escape
           then (
@@ -407,7 +407,7 @@ let propagate st ~update approx x =
                 ~approx
                 (fun z ->
                   match st.defs.(Var.idx z) with
-                  | Expr (Block (t, a, _))
+                  | Expr (Block (t, a, _, _))
                     when n < Array.length a
                          &&
                          match tags with
@@ -441,7 +441,7 @@ let propagate st ~update approx x =
                   ~others
                   (fun z ->
                     match st.defs.(Var.idx z) with
-                    | Expr (Block (_, lst, _)) ->
+                    | Expr (Block (_, lst, _, _)) ->
                         Array.iter ~f:(fun t -> add_dep st x t) lst;
                         let a =
                           Array.fold_left

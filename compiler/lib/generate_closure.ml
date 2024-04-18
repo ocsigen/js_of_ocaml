@@ -377,7 +377,7 @@ let rewrite_mutable
           ; body =
               closures_intern
               @ proj
-              @ [ Let (b, Block (0, Array.of_list new_xs, NotArray)), noloc ]
+              @ [ Let (b, Block (0, Array.of_list new_xs, NotArray, Immutable)), noloc ]
           ; branch = Return b, noloc
           }
         in

@@ -185,13 +185,17 @@ type special =
   | Undefined
   | Alias_prim of string
 
+type mutability =
+  | Immutable
+  | Maybe_mutable
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
       ; exact : bool (* if true, then # of arguments = # of parameters *)
       }
-  | Block of int * Var.t array * array_or_not
+  | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
