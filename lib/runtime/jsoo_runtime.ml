@@ -116,6 +116,14 @@ module Sys = struct
 
   external unmount : string -> unit = "caml_unmount"
 
+  type redirection
+
+  external redirect_channel : out_channel -> into:out_channel -> redirection
+    = "caml_ml_channel_redirect"
+
+  external restore_channel : out_channel -> redirection -> unit
+    = "caml_ml_channel_restore"
+
   module Config = struct
     external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
 

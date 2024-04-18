@@ -16,12 +16,13 @@
   js primitives in bytecode/native. It should help if one tries
   to understand the source of the call with gdb (see #677)
 * Runtime: re-enable marshalling of floats, disabled in jsoo 2.0
+* Runtime: new runtime api for channels
 
 ## Bug fixes
 
 * Compiler: fix variable renaming for property binding and assignment target
 * Compiler: fix separate compilation of toplevels (broken since 5.7.0)
-* Compiler: fix assertion while checking stack compatibility
+* Compiler: fix assertion while checking stack compatibility (#1600)
 
 # 5.7.2 (2024-04-03) - Lille
 

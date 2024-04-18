@@ -220,6 +220,14 @@ void caml_list_to_js_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_list_to_js_array!");
 }
 
+void caml_ml_channel_redirect () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_ml_channel_redirect!");
+}
+
+void caml_ml_channel_restore () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_ml_channel_restore!");
+}
+
 void caml_ml_set_channel_output () {
   caml_fatal_error("Unimplemented Javascript primitive caml_ml_set_channel_output!");
 }
