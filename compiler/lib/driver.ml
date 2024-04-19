@@ -719,10 +719,10 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let (((prog, live_vars), (cps_calls, shapes))) = opt p in
+  let (prog, live_vars), (cps_calls, shapes) = opt p in
   StringMap.iter
     (fun name shape ->
-      Shape.set_shape ~name shape;
+      Shape.Store.set ~name shape;
       Pretty_print.string
         formatter
         (Printf.sprintf "//# shape: %s:%s\n" name (Shape.to_string shape)))

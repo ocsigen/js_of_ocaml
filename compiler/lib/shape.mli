@@ -28,14 +28,20 @@ type t =
 
 val to_string : t -> string
 
-val set_shape : name:string -> t -> unit
+module Store : sig
+  val set : name:string -> t -> unit
 
-val get_shape : name:string -> t option
+  val get : name:string -> t option
 
-val propagate : Code.Var.t -> int -> Code.Var.t -> unit
+  val load : name:string -> string list -> t option
+end
 
-val assign : Code.Var.t -> t -> unit
+module State : sig
+  val propagate : Code.Var.t -> int -> Code.Var.t -> unit
 
-val get : Code.Var.t -> t option
+  val assign : Code.Var.t -> t -> unit
 
-val reset : unit -> unit
+  val get : Code.Var.t -> t option
+
+  val reset : unit -> unit
+end

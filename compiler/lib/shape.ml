@@ -34,40 +34,46 @@ let rec to_string (shape : t) =
   | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
   | Function { arity; _ } -> Printf.sprintf "F(%d)" arity
 
-type key =
-  | Name of string
-  | Var of Code.Var.t
+module Store = struct
+  module T = Hashtbl.Make (struct
+    type t = string
 
-module Hashtbl = Hashtbl.Make (struct
-  type t = key
+    let equal (a : t) (b : t) = String.equal a b
 
-  let equal a b = Poly.(a = b)
+    let hash = Hashtbl.hash
+  end)
 
-  let hash = function
-    | Name s -> Hashtbl.hash s
-    | Var x -> Code.Var.idx x
-end)
+  let t = T.create 17
 
-let state : t Hashtbl.t = Hashtbl.create 17
+  let set ~name shape = T.replace t name shape
 
-let set_shape ~name shape = Hashtbl.add state (Name name) shape
+  let get ~name = T.find_opt t name
 
-let get_shape ~name = Hashtbl.find_opt state (Name name)
+  let load ~name:_ _dirs = None
+end
 
-let assign x shape = Hashtbl.add state (Var x) shape
+module State = struct
+  type key = Code.Var.t
 
-let propagate x offset target =
-  match Hashtbl.find_opt state (Var x) with
-  | None -> ()
-  | Some (Top _ | Function _) -> ()
-  | Some (Block l) -> Hashtbl.replace state (Var target) (List.nth l offset)
+  module T = Hashtbl.Make (struct
+    type t = key
 
-let get x = Hashtbl.find_opt state (Var x)
+    let equal a b = Poly.(a = b)
 
-let reset () =
-  Hashtbl.to_seq_keys state
-  |> Seq.filter (function
-         | Name _ -> false
-         | Var _ -> true)
-  |> List.of_seq
-  |> List.iter ~f:(Hashtbl.remove state)
+    let hash = Code.Var.idx
+  end)
+
+  let t = T.create 17
+
+  let assign x shape = T.add t x shape
+
+  let propagate x offset target =
+    match T.find_opt t x with
+    | None -> ()
+    | Some (Top _ | Function _) -> ()
+    | Some (Block l) -> T.replace t target (List.nth l offset)
+
+  let get x = T.find_opt t x
+
+  let reset () = T.clear t
+end
