@@ -818,9 +818,9 @@ let get_global state instrs i loc =
         (match g.named_value.(i) with
         | None -> ()
         | Some name -> (
-            match Shape.get_shape ~name with
+            match Shape.Store.get ~name with
             | None -> ()
-            | Some shape -> Shape.assign x shape));
+            | Some shape -> Shape.State.assign x shape));
 
         x, state, instrs)
 
@@ -1378,7 +1378,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        Shape.propagate x j y;
+        Shape.State.propagate x j y;
         compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state loc in
@@ -1388,7 +1388,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        Shape.propagate x j y;
+        Shape.State.propagate x j y;
         compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
@@ -1555,32 +1555,32 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
-        Shape.propagate y 0 x;
+        Shape.State.propagate y 0 x;
         compile infos (pc + 1) state ((Let (x, Field (y, 0)), loc) :: instrs)
     | GETFIELD1 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
-        Shape.propagate y 1 x;
+        Shape.State.propagate y 1 x;
         compile infos (pc + 1) state ((Let (x, Field (y, 1)), loc) :: instrs)
     | GETFIELD2 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
-        Shape.propagate y 2 x;
+        Shape.State.propagate y 2 x;
         compile infos (pc + 1) state ((Let (x, Field (y, 2)), loc) :: instrs)
     | GETFIELD3 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
-        Shape.propagate y 3 x;
+        Shape.State.propagate y 3 x;
         compile infos (pc + 1) state ((Let (x, Field (y, 3)), loc) :: instrs)
     | GETFIELD ->
         let y, _ = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        Shape.propagate y n x;
+        Shape.State.propagate y n x;
         compile infos (pc + 2) state ((Let (x, Field (y, n)), loc) :: instrs)
     | GETFLOATFIELD ->
         let y, _ = State.accu state in
@@ -2538,7 +2538,7 @@ let parse_bytecode code globals debug_data =
   let immutable = ref Code.Var.Set.empty in
   let state = State.initial globals immutable in
   Code.Var.reset ();
-  Shape.reset ();
+  Shape.State.reset ();
   let blocks = Blocks.analyse debug_data code in
   let blocks =
     (* Disabled. [pc] might not be an appropriate place to split blocks *)
