@@ -28,6 +28,20 @@ type t =
       ; res : t
       }
 
+type shape = t
+
+let rec equal a b =
+  match a, b with
+  | Top _, Top _ -> true
+  | ( Function { arity = a1; pure = p1; res = r1 }
+    , Function { arity = a2; pure = p2; res = r2 } ) ->
+      a1 = a2 && Bool.(p1 = p2) && equal r1 r2
+  | Block b1, Block b2 -> (
+      try List.for_all2 ~f:equal b1 b2 with Invalid_argument _ -> false)
+  | Top _, (Function _ | Block _)
+  | Function _, (Top _ | Block _)
+  | Block _, (Top _ | Function _) -> false
+
 let rec to_string (shape : t) =
   match shape with
   | Top s -> if true then "N" else Printf.sprintf "N(%s)" s
@@ -43,13 +57,77 @@ module Store = struct
     let hash = Hashtbl.hash
   end)
 
+  let ext = ".jsoo-shape"
+
+  let filename ~dir ~name = Filename.concat dir (name ^ ext)
+
   let t = T.create 17
+
+  let loaded = Hashtbl.create 17
 
   let set ~name shape = T.replace t name shape
 
   let get ~name = T.find_opt t name
 
-  let load ~name:_ _dirs = None
+  let magic = "JsooShape000"
+
+  let load' fn =
+    let ic = open_in_bin fn in
+    let m = really_input_string ic (String.length magic) in
+    if not (String.equal m magic)
+    then failwith (Printf.sprintf "Invalid magic number for shape file %s" fn);
+    let shapes : (string * shape) list = Marshal.from_channel ic in
+    close_in ic;
+    List.iter shapes ~f:(fun (name, shape) -> set ~name shape)
+
+  let load ~name dirs =
+    if T.mem t name
+    then get ~name
+    else
+      match Fs.find_in_path dirs (filename ~dir:"." ~name) with
+      | Some f ->
+          load' f;
+          get ~name
+      | None ->
+          let rec scan : _ -> shape option = function
+            | [] -> None
+            | dir :: xs -> (
+                let l =
+                  Sys.readdir dir
+                  |> Array.to_list
+                  |> List.sort ~cmp:String.compare
+                  |> List.map ~f:(fun n -> Filename.concat dir n)
+                in
+                match
+                  List.find_map l ~f:(fun s ->
+                      if Filename.check_suffix s ext && not (Hashtbl.mem loaded s)
+                      then (
+                        load' s;
+                        Hashtbl.add loaded s ();
+                        match get ~name with
+                        | None -> None
+                        | Some shape -> Some (s, shape))
+                      else None)
+                with
+                | None -> scan xs
+                | Some (fn, shape) ->
+                    Format.eprintf "Shape: %s loaded from %s\n" name fn;
+                    Some shape)
+          in
+          scan dirs
+
+  let save' fn (l : (string * shape) list) =
+    let oc = open_out_bin fn in
+    output_string oc magic;
+    Marshal.to_channel oc l [];
+    close_out oc
+
+  let save ~name ~dir =
+    match get ~name with
+    | None -> failwith (Printf.sprintf "Don't know any shape for %s" name)
+    | Some shape ->
+        let fn = filename ~dir ~name in
+        save' fn [ name, shape ]
 end
 
 module State = struct

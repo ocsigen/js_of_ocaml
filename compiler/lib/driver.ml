@@ -728,10 +728,10 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
         (Printf.sprintf "//# shape: %s:%s\n" name (Shape.to_string shape)))
     shapes;
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  emit ~live_vars ~cps_calls prog
+  emit ~live_vars ~cps_calls prog, shapes
 
 let full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p =
-  let (_ : Source_map.t option) =
+  let (_ : Source_map.t option * Shape.t StringMap.t) =
     full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None formatter d p
   in
   ()

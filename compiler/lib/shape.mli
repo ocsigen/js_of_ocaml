@@ -28,12 +28,22 @@ type t =
 
 val to_string : t -> string
 
+val equal : t -> t -> bool
+
 module Store : sig
+  val ext : string
+
   val set : name:string -> t -> unit
 
   val get : name:string -> t option
 
+  val load' : string -> unit
+
   val load : name:string -> string list -> t option
+
+  val save : name:string -> dir:string -> unit
+
+  val save' : string -> (string * t) list -> unit
 end
 
 module State : sig
