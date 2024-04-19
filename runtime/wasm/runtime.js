@@ -111,14 +111,11 @@
 
   var start_fiber;
 
-  function wrap_fun(t, f, a) {
-    // Don't wrap if js-promise-integration is not enabled
-    // There is no way to check this without calling WebAssembly.Function
-    try {
-      return new WebAssembly.Function(t, f, a);
-    } catch (e) {
-      return f;
-    }
+  function make_suspending(f) {
+    return WebAssembly?.Suspending ? new WebAssembly.Suspending(f) : f;
+  }
+  function make_promising(f) {
+    return WebAssembly?.promising && f ? WebAssembly.promising(f) : f;
   }
 
   const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
@@ -445,11 +442,7 @@
       throw e;
     },
     start_fiber: (x) => start_fiber(x),
-    suspend_fiber: wrap_fun(
-      { parameters: ["externref", "funcref", "eqref"], results: ["eqref"] },
-      (f, env) => new Promise((k) => f(k, env)),
-      { suspending: "first" },
-    ),
+    suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
     weak_new: (v) => new WeakRef(v),
     weak_deref: (w) => {
@@ -553,16 +546,8 @@
   var buffer = caml_buffer?.buffer;
   var out_buffer = buffer && new Uint8Array(buffer, 0, buffer.length);
 
-  start_fiber = wrap_fun(
-    { parameters: ["eqref"], results: ["externref"] },
-    caml_start_fiber,
-    { promising: "first" },
-  );
-  var _initialize = wrap_fun(
-    { parameters: [], results: ["externref"] },
-    _initialize,
-    { promising: "first" },
-  );
+  start_fiber = make_promising(caml_start_fiber);
+  var _initialize = make_promising(_initialize);
   var process = globalThis.process;
   if (process && process.on) {
     process.on("uncaughtException", (err, origin) =>

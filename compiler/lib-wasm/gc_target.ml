@@ -1703,19 +1703,18 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
 let post_process_function_body = Initialize_locals.f
 
 let entry_point ~toplevel_fun =
-  let suspender = Code.Var.fresh () in
   let code =
-    let* f =
-      register_import
-        ~name:
-          (if Config.Flag.effects ()
-           then "caml_cps_initialize_effects"
-           else "caml_initialize_effects")
-        (Fun { W.params = [ W.Ref { nullable = true; typ = Extern } ]; result = [] })
+    let* () =
+      if Config.Flag.effects ()
+      then
+        let* f =
+          register_import
+            ~name:"caml_cps_initialize_effects"
+            (Fun { W.params = []; result = [] })
+        in
+        instr (W.CallInstr (f, []))
+      else return ()
     in
-    let* _ = add_var suspender in
-    let* s = load suspender in
-    let* () = instr (W.CallInstr (f, [ s ])) in
     let* main =
       register_import
         ~name:"caml_main"
@@ -1723,6 +1722,4 @@ let entry_point ~toplevel_fun =
     in
     instr (W.CallInstr (main, [ RefFunc toplevel_fun ]))
   in
-  ( { W.params = [ W.Ref { nullable = true; typ = Extern } ]; result = [] }
-  , [ suspender ]
-  , code )
+  { W.params = []; result = [] }, [], code
