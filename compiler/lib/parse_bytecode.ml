@@ -590,6 +590,7 @@ module State = struct
     ; handlers : handler list
     ; globals : globals
     ; immutable : Code.Var.Set.t ref
+    ; includes : string list
     }
 
   let fresh_var state loc =
@@ -695,7 +696,7 @@ module State = struct
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
-  let initial g immutable =
+  let initial includes g immutable =
     { accu = Unset
     ; stack = []
     ; env = [||]
@@ -703,6 +704,7 @@ module State = struct
     ; handlers = []
     ; globals = g
     ; immutable
+    ; includes
     }
 
   let rec print_stack f l =
@@ -818,7 +820,7 @@ let get_global state instrs i loc =
         (match g.named_value.(i) with
         | None -> ()
         | Some name -> (
-            match Shape.Store.get ~name with
+            match Shape.Store.load ~name state.includes with
             | None -> ()
             | Some shape -> Shape.State.assign x shape));
 
@@ -2534,9 +2536,9 @@ type one =
   ; debug : Debug.t
   }
 
-let parse_bytecode code globals debug_data =
+let parse_bytecode ~includes code globals debug_data =
   let immutable = ref Code.Var.Set.empty in
-  let state = State.initial globals immutable in
+  let state = State.initial includes globals immutable in
   Code.Var.reset ();
   Shape.State.reset ();
   let blocks = Blocks.analyse debug_data code in
@@ -2748,7 +2750,7 @@ let from_exe
     Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
         globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
         globals.is_exported.(n) <- true);
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode ~includes code globals debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
@@ -2872,7 +2874,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode ~includes:[] code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let find_name i =
@@ -3011,7 +3013,7 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
+let from_compilation_units ~includes ~include_cmis ~debug_data l =
   let reloc = Reloc.create () in
   List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
@@ -3020,7 +3022,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     let l = List.map l ~f:(fun (_, c) -> Bytes.to_string c) in
     String.concat ~sep:"" l
   in
-  let prog = parse_bytecode code globals debug_data in
+  let prog = parse_bytecode ~includes code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let body =

@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+
 type profile
 
 val f :
@@ -29,7 +31,7 @@ val f :
   -> Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.t option
+  -> Source_map.t option * Shape.t StringMap.t
 
 val f' :
      ?standalone:bool
