@@ -53,5 +53,7 @@ module State : sig
 
   val get : Code.Var.t -> t option
 
+  val is_pure_fun : Code.Var.t -> bool
+
   val reset : unit -> unit
 end

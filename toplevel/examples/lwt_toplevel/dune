@@ -83,6 +83,7 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --no-runtime
    --pretty
    --toplevel
    %{read-strings:effects_flags.txt}
@@ -93,6 +94,7 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --no-runtime
    --pretty
    --toplevel
    --include-runtime

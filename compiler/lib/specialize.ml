@@ -21,7 +21,7 @@ open! Stdlib
 open Code
 
 let function_arity info x =
-  match Flow.the_shape_of info x with
+  match Flow.the_shape_of ~pure:Code.Var.Set.empty info x with
   | Top _ | Block _ -> None
   | Function { arity; _ } -> Some arity
 
