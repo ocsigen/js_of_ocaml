@@ -46,7 +46,8 @@ let rec to_string (shape : t) =
   match shape with
   | Top s -> if true then "N" else Printf.sprintf "N(%s)" s
   | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
-  | Function { arity; _ } -> Printf.sprintf "F(%d)" arity
+  | Function { arity; pure; _ } ->
+      Printf.sprintf "F(%d)%s" arity (if pure then "" else "")
 
 module Store = struct
   module T = Hashtbl.Make (struct
@@ -152,6 +153,12 @@ module State = struct
     | Some (Block l) -> T.replace t target (List.nth l offset)
 
   let get x = T.find_opt t x
+
+  let is_pure_fun x =
+    match T.find_opt t x with
+    | None -> false
+    | Some (Top _ | Block _) -> false
+    | Some (Function { pure; _ }) -> pure
 
   let reset () = T.clear t
 end

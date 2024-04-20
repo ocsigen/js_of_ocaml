@@ -650,6 +650,7 @@ if (typeof module === 'object' && module.exports) {
 
 let collects_shapes p =
   let _, info = Flow.f p in
+  let pure = Pure_fun.f p in
   let l = ref StringMap.empty in
   Code.Addr.Map.iter
     (fun _ block ->
@@ -660,7 +661,7 @@ let collects_shapes p =
               , Prim
                   ( Extern "caml_register_global"
                   , [ _code; Pv block; Pc (NativeString name) ] ) ) ->
-              let shape = Flow.the_shape_of info block in
+              let shape = Flow.the_shape_of ~pure info block in
               let name =
                 match name with
                 | Byte s -> s

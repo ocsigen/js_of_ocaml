@@ -397,7 +397,7 @@ let direct_approx (info : Info.t) x =
         y
   | _ -> None
 
-let rec the_shape_of info x =
+let rec the_shape_of ~pure info x =
   let rec loop info x acc : Shape.t =
     get_approx
       info
@@ -407,9 +407,10 @@ let rec the_shape_of info x =
         | None -> (
             match info.info_defs.(Var.idx x) with
             | Expr (Block (_, a, _, Immutable)) ->
-                Shape.Block (List.map ~f:(the_shape_of info) (Array.to_list a))
+                Shape.Block (List.map ~f:(the_shape_of ~pure info) (Array.to_list a))
             | Expr (Closure (l, _)) ->
-                Shape.Function { arity = List.length l; pure = false; res = Top "unk" }
+                let pure = Code.Var.Set.mem x pure in
+                Shape.Function { arity = List.length l; pure; res = Top "unk" }
             | Expr (Special (Alias_prim name)) -> (
                 try
                   let arity = Primitive.arity name in
@@ -429,7 +430,22 @@ let rec the_shape_of info x =
                   | Shape.Block _ | Shape.Top _ -> Shape.Top "apply2")
             | _ -> Shape.Top "other"))
       (Top "init")
-      (fun _u _v -> Shape.Top "merge")
+      (fun u v ->
+        let rec merge (u : Shape.t) (v : Shape.t) =
+          match u, v with
+          | ( Function { arity = a1; pure = p1; res = r1 }
+            , Function { arity = a2; pure = p2; res = r2 } ) ->
+              if a1 = a2
+              then Shape.Function { arity = a1; pure = p1 && p2; res = merge r1 r2 }
+              else Shape.Top "merge"
+          | Block b1, Block b2 ->
+              if List.length b1 = List.length b2
+              then Block (List.map2 b1 b2 ~f:merge)
+              else Top "merge block"
+          | (Top _ as a), _ | _, (Top _ as a) -> a
+          | Function _, Block _ | Block _, Function _ -> Shape.Top "merge block/fun"
+        in
+        merge u v)
       x
   in
   loop info x []
