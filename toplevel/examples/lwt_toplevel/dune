@@ -42,8 +42,6 @@
   (link_flags (:standard))
   (build_runtime_flags
    (:standard
-    +toplevel.js
-    +dynlink.js
     --file
     %{dep:examples.ml}
     --file
