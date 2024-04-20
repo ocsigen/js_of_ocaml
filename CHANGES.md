@@ -1,4 +1,4 @@
-# dev (2024-??) - ??
+# 5.8.0 (2024-04-20) - Lille
 
 ## Features/Changes
 * Compiler: es6 now generate consise body
