@@ -122,13 +122,6 @@ let options =
     let doc = "Do not include the standard runtime." in
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
-  let runtime_only =
-    let doc =
-      "[DEPRECATED: use js_of_ocaml build-runtime instead]. Generate a JavaScript file \
-       containing/exporting the runtime only."
-    in
-    Arg.(value & flag & info [ "runtime-only" ] ~doc)
-  in
   let no_sourcemap =
     let doc =
       "Don't generate source map. All other source map related flags will be be ignored."
@@ -270,7 +263,6 @@ let options =
       no_cmis
       profile
       no_runtime
-      runtime_only
       no_sourcemap
       sourcemap
       sourcemap_inline_in_js
@@ -283,16 +275,11 @@ let options =
       keep_unit_names =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
-    let runtime_files =
-      if runtime_only && Filename.check_suffix input_file ".js"
-      then runtime_files @ [ input_file ]
-      else runtime_files
-    in
-    let fs_external = fs_external || (toplevel && no_cmis) || runtime_only in
+    let fs_external = fs_external || (toplevel && no_cmis) in
     let input_file =
-      match input_file, runtime_only with
-      | "-", _ | _, true -> None
-      | x, false -> Some x
+      match input_file with
+      | "-" -> None
+      | x -> Some x
     in
     let output_file =
       match output_file with
@@ -351,7 +338,7 @@ let options =
       ; include_dirs
       ; runtime_files
       ; no_runtime
-      ; runtime_only
+      ; runtime_only = false
       ; fs_files
       ; fs_output
       ; fs_external
@@ -380,7 +367,6 @@ let options =
       $ no_cmis
       $ profile
       $ noruntime
-      $ runtime_only
       $ no_sourcemap
       $ sourcemap
       $ sourcemap_inline_in_js
