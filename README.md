@@ -109,7 +109,7 @@ comparison, and hashing functions can yield results different from usual:
   containing floats;
 - these functions may be more prone to stack overflow.
 
-| Ocaml | javascript |
+| OCaml | javascript |
 | ------------- | ------------- |
 | int   | number (32bit int)  |
 | int32 | number (32bit int)  |
