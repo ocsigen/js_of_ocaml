@@ -2,7 +2,7 @@
 
 We have compared the running time of OCaml programs executed natively, interpreted by the bytecode interpreter, and executed by a Javascript engine after compilation by Js_of_ocaml.
 With a state of the art Javascript engine (such as Google's V8 and Mozilla's SpiderMonkey), programs often run faster when compiled to JavaScript than with the OCaml bytecode interpreter.
-Benchmarks were run in novemver 2022 with engines available in Ubuntu 22.04 (V8 : 8.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0)
+Benchmarks were run in November 2022 with engines available in Ubuntu 22.04 (V8 : 8.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0)
 
 Exceptions are very expansive preventing some benchmarks to finish in resonable times.
 String operations are also slow (splay), as OCaml strings cannot be mapped directly to Javascript immutable UTF-16 strings.
