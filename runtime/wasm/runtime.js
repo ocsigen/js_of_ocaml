@@ -366,18 +366,28 @@
     async function instantiateFromDir() {
       imports.OCaml = {};
       const deps = []
-      for (const module of link) {
+      async function loadModule(module, isRuntime) {
         const sync = module[1].constructor !== Array
         async function instantiate () {
           const code = loadCode(src + "/" + module[0] + ".wasm")
           await Promise.all(sync?deps:module[1].map((i)=>deps[i]));
           const wasmModule = await instantiateModule(code)
-          Object.assign(deps.length?imports.OCaml:imports.env,
+          Object.assign(isRuntime?imports.env:imports.OCaml,
                         wasmModule.instance.exports);
         }
-        deps.push(sync?await instantiate():instantiate())
+        const promise = instantiate();
+        deps.push(promise);
+        return promise;
       }
-      await deps.pop();
+      async function loadModules(lst) {
+        for (const module of lst) {
+          await loadModule(module);
+        }
+      }
+      await loadModule(link[0], 1);
+      await loadModule(link[1]);
+      const workers = new Array(20).fill(link.slice(2).values()).map(loadModules);
+      await Promise.all(workers);
       return {instance:{exports: Object.assign(imports.env, imports.OCaml)}}
     }
     const wasmModule =
