@@ -290,8 +290,9 @@ let gen_missing js missing =
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
-let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
-  if not (linkall || standalone)
+let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
+    Linker.output =
+  if (not export_runtime) && not standalone
   then { runtime_code = js; always_required_codes = [] }
   else
     let t = Timer.make () in
@@ -328,21 +329,21 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
     let all_external = StringSet.union prim prov in
     let used = StringSet.inter free all_external in
     let linkinfos = Linker.init () in
-    let linkinfos, missing = Linker.resolve_deps ~standalone ~linkall linkinfos used in
-    (* gen_missing may use caml_failwith *)
-    let linkinfos, missing =
+    let linkinfos, js =
+      let linkinfos, missing = Linker.resolve_deps ~standalone ~linkall linkinfos used in
+      (* gen_missing may use caml_failwith *)
       if (not (StringSet.is_empty missing)) && Config.Flag.genprim ()
       then
         let linkinfos, missing2 =
           Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith")
         in
-        linkinfos, StringSet.union missing missing2
-      else linkinfos, missing
+        let missing = StringSet.union missing missing2 in
+        linkinfos, gen_missing js missing
+      else linkinfos, js
     in
-    let js = if Config.Flag.genprim () then gen_missing js missing else js in
     if times () then Format.eprintf "  linking: %a@." Timer.print t;
     let js =
-      if linkall
+      if export_runtime
       then
         let open Javascript in
         let all = Linker.all linkinfos in
@@ -633,6 +634,7 @@ let configure formatter =
 
 let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
   let exported_runtime = not standalone in
+  let export_runtime = linkall in
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "undef"
@@ -655,7 +657,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
       ~wrap_with_fun
       ~warn_on_unhandled_effect:standalone
       ~deadcode_sentinal
-    +> link ~standalone ~linkall
+    +> link ~export_runtime ~standalone ~linkall
     +> pack ~wrap_with_fun ~standalone
     +> coloring
     +> check_js
