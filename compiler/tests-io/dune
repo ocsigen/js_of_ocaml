@@ -10,7 +10,7 @@
   (with-stdout-to
    %{target}
    (pipe-stdout
-    (run printf "echo \226\152\160")
+    (run printf "echo ☠")
     (run %{dep:./cat.exe})))))
 
 (rule
@@ -19,7 +19,7 @@
   (with-stdout-to
    %{target}
    (pipe-stdout
-    (run printf "echo \226\152\160")
+    (run printf "echo ☠")
     (run node %{dep:./cat.bc.js})))))
 
 (rule
