@@ -17,13 +17,15 @@ jobs:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - 4.08.x
-          - 4.09.x
-          - 4.10.x
-          - 4.11.x
-          - 4.12.x
-          - 4.13.x
-          - 5.0.x
+          - "4.08"
+          - "4.09"
+          - "4.10"
+          - "4.11"
+          - "4.12"
+          - "4.13"
+          - "4.14"
+          - "5.0"
+          - "5.1"
         skip-test:
           - true
         skip-doc:
@@ -32,27 +34,27 @@ jobs:
           - true
         include:
           - os: ubuntu-latest
-            ocaml-compiler: 4.14.x
+            ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: macos-latest
-            ocaml-compiler: 4.14.x
+            ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: 4.14.x
+            ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: 5.1.x
+            ocaml-compiler: "5.1"
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: 5.1.x
+            ocaml-compiler: "5.1"
             skip-effects: true
             skip-test: false
             skip-doc: true
@@ -71,7 +73,7 @@ jobs:
           git config --global core.eol lf
           git config --global core.ignorecase false
 
-      - name: Checkout code
+      - name: Checkout tree
         uses: actions/checkout@v4
 
       - name: Set-up Node.js
@@ -135,18 +137,32 @@ jobs:
           clean: true
           target-folder: doc/dev/
 
-  lint-fmt:
+  lint-opam:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout tree
         uses: actions/checkout@v4
 
-      - name: Set-up OCaml 4.14.x
+      - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: 4.14.x
+          ocaml-compiler: "5.1"
           allow-prerelease-opam: true
           dune-cache: true
 
-      - name: Lint fmt
-        uses: ocaml/setup-ocaml/lint-fmt@v2
+      - uses: ocaml/setup-ocaml/lint-opam@v2
+
+  lint-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: "5.1"
+          allow-prerelease-opam: true
+          dune-cache: true
+
+      - uses: ocaml/setup-ocaml/lint-fmt@v2
