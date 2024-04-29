@@ -280,6 +280,7 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
   if (not export_runtime) && not standalone
   then { runtime_code = js; always_required_codes = [] }
   else
+    let check_missing = standalone in
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
     let traverse = new Js_traverse.free in
@@ -320,12 +321,15 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
     in
     let linkinfos = Linker.init () in
     let linkinfos, js =
-      let linkinfos, missing = Linker.resolve_deps ~standalone linkinfos used in
+      let linkinfos, missing = Linker.resolve_deps ~check_missing linkinfos used in
       (* gen_missing may use caml_failwith *)
       if (not (StringSet.is_empty missing)) && Config.Flag.genprim ()
       then
         let linkinfos, missing2 =
-          Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith")
+          Linker.resolve_deps
+            ~check_missing
+            linkinfos
+            (StringSet.singleton "caml_failwith")
         in
         let missing = StringSet.union missing missing2 in
         linkinfos, gen_missing js missing
@@ -369,7 +373,7 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
       else js
     in
     let missing = Linker.missing linkinfos in
-    let output = Linker.link ~standalone js linkinfos in
+    let output = Linker.link ~check_missing js linkinfos in
     if not (List.is_empty missing)
     then
       { output with

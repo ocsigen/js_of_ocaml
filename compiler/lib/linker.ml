@@ -633,11 +633,11 @@ let init () =
   ; missing = StringSet.empty
   }
 
-let check_missing state =
+let do_check_missing state =
   if not (StringSet.is_empty state.missing)
   then error "missing dependency '%s'@." (StringSet.choose state.missing)
 
-let resolve_deps ?(standalone = true) visited_rev used =
+let resolve_deps ?(check_missing = true) visited_rev used =
   (* link the special files *)
   let missing, visited_rev =
     StringSet.fold
@@ -648,10 +648,10 @@ let resolve_deps ?(standalone = true) visited_rev used =
       used
       (StringSet.empty, visited_rev)
   in
-  if standalone then check_missing visited_rev;
+  if check_missing then do_check_missing visited_rev;
   visited_rev, missing
 
-let link ?(standalone = true) program (state : state) =
+let link ?(check_missing = true) program (state : state) =
   let always, always_required =
     List.partition
       ~f:(function
@@ -668,7 +668,7 @@ let link ?(standalone = true) program (state : state) =
         in
         { state with codes = (Ok always.program, false) :: state.codes })
   in
-  if standalone then check_missing state;
+  if check_missing then do_check_missing state;
   let codes =
     List.map state.codes ~f:(fun (x, has_macro) ->
         let c = unpack x in
