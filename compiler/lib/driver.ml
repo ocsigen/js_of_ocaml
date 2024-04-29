@@ -355,36 +355,38 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
       if export_runtime
       then
         let open Javascript in
-        let all = Linker.all linkinfos in
-        let all =
-          List.map all ~f:(fun name ->
-              let name = Utf8_string.of_string_exn name in
-              Property (PNI name, EVar (ident name)))
-        in
-        (if standalone
-         then
-           ( Expression_statement
-               (EBin
-                  ( Eq
-                  , dot
-                      (EVar (ident Constant.global_object_))
-                      (Utf8_string.of_string_exn "jsoo_runtime")
-                  , EObj all ))
-           , N )
-         else
-           ( Expression_statement
-               (call
-                  (dot
-                     (EVar (ident (Utf8_string.of_string_exn "Object")))
-                     (Utf8_string.of_string_exn "assign"))
-                  [ dot
-                      (EVar (ident Constant.global_object_))
-                      (Utf8_string.of_string_exn "jsoo_runtime")
-                  ; EObj all
-                  ]
-                  N)
-           , N ))
-        :: js
+        match Linker.all linkinfos with
+        | [] -> js
+        | all ->
+            let all =
+              List.map all ~f:(fun name ->
+                  let name = Utf8_string.of_string_exn name in
+                  Property (PNI name, EVar (ident name)))
+            in
+            (if standalone
+             then
+               ( Expression_statement
+                   (EBin
+                      ( Eq
+                      , dot
+                          (EVar (ident Constant.global_object_))
+                          (Utf8_string.of_string_exn "jsoo_runtime")
+                      , EObj all ))
+               , N )
+             else
+               ( Expression_statement
+                   (call
+                      (dot
+                         (EVar (ident (Utf8_string.of_string_exn "Object")))
+                         (Utf8_string.of_string_exn "assign"))
+                      [ dot
+                          (EVar (ident Constant.global_object_))
+                          (Utf8_string.of_string_exn "jsoo_runtime")
+                      ; EObj all
+                      ]
+                      N)
+               , N ))
+            :: js
       else js
     in
     let missing = Linker.missing linkinfos in
