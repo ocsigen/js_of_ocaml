@@ -198,9 +198,15 @@ let lookup_symbol ctx (x : symbol) =
 
 let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
 
-let float64 _ f = Printf.sprintf "%h" f (*ZZZ*)
+let float64 _ f =
+  match classify_float f with
+  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
+  | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
-let float32 _ f = Printf.sprintf "%h" f (*ZZZ*)
+let float32 _ f =
+  match classify_float f with
+  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
+  | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
 let expression_or_instructions ctx in_function =
   let rec expression e =
@@ -212,8 +218,8 @@ let expression_or_instructions ctx in_function =
                 (select
                    (fun _ i -> Int32.to_string i)
                    (fun _ i -> Int64.to_string i)
-                   float64
                    float32
+                   float64
                    op)
             ]
         ]
