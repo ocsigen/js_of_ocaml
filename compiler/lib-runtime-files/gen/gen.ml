@@ -65,9 +65,9 @@ let () =
               List.iter fragments ~f:(fun (filename, frags) ->
                   Js_of_ocaml_compiler.Linker.load_fragments ~target_env ~filename frags);
               let linkinfos = Js_of_ocaml_compiler.Linker.init () in
-              let prov = Js_of_ocaml_compiler.Linker.get_provided () in
+              let prov = Js_of_ocaml_compiler.Linker.list_all () in
               let _linkinfos, missing =
-                Js_of_ocaml_compiler.Linker.resolve_deps ~linkall:true linkinfos prov
+                Js_of_ocaml_compiler.Linker.resolve_deps linkinfos prov
               in
               Js_of_ocaml_compiler.Linker.check_deps ();
               assert (StringSet.is_empty missing)));

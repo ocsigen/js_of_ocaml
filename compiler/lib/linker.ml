@@ -424,6 +424,9 @@ let reset () =
   Primitive.reset ();
   Generate.init ()
 
+let list_all () =
+  Hashtbl.fold (fun nm _ set -> StringSet.add nm set) provided StringSet.empty
+
 let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.t) =
   match f with
   | Always_include code ->
@@ -539,11 +542,8 @@ let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
               `Ok)
 
-let get_provided () =
-  Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
-
 let check_deps () =
-  let provided = get_provided () in
+  let provided = list_all () in
   Hashtbl.iter
     (fun id (code, _has_macro, requires) ->
       match code with
@@ -633,37 +633,20 @@ let init () =
   ; missing = StringSet.empty
   }
 
-let list_all () =
-  Hashtbl.fold (fun nm _ set -> StringSet.add nm set) provided StringSet.empty
-
 let check_missing state =
   if not (StringSet.is_empty state.missing)
   then error "missing dependency '%s'@." (StringSet.choose state.missing)
 
-let resolve_deps ?(standalone = true) ?(linkall = false) visited_rev used =
+let resolve_deps ?(standalone = true) visited_rev used =
   (* link the special files *)
   let missing, visited_rev =
-    if linkall
-    then
-      (* link all primitives *)
-      let prog, set =
-        Hashtbl.fold
-          (fun nm _ (visited, set) ->
-            resolve_dep_name_rev visited [] nm, StringSet.add nm set)
-          provided
-          (visited_rev, StringSet.empty)
-      in
-      let missing = StringSet.diff used set in
-      missing, prog
-    else
-      (* link used primitives *)
-      StringSet.fold
-        (fun nm (missing, visited) ->
-          if Hashtbl.mem provided nm
-          then missing, resolve_dep_name_rev visited [] nm
-          else StringSet.add nm missing, visited)
-        used
-        (StringSet.empty, visited_rev)
+    StringSet.fold
+      (fun nm (missing, visited) ->
+        if Hashtbl.mem provided nm
+        then missing, resolve_dep_name_rev visited [] nm
+        else StringSet.add nm missing, visited)
+      used
+      (StringSet.empty, visited_rev)
   in
   if standalone then check_missing visited_rev;
   visited_rev, missing

@@ -295,27 +295,32 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
         :: js
       else js
     in
-    let free = traverse#get_free in
-    let free : StringSet.t =
-      Javascript.IdentSet.fold
-        (fun x acc ->
-          match x with
-          | V _ ->
-              (* This is an error. We don't complain here as we want
-                 to be able to name other variable to make it
-                 easier to spot the problematic ones *)
-              acc
-          | S { name = Utf8 x; _ } -> StringSet.add x acc)
-        free
-        StringSet.empty
+    let used =
+      let all_provided = Linker.list_all () in
+      if linkall
+      then all_provided
+      else
+        let free = traverse#get_free in
+        let free : StringSet.t =
+          Javascript.IdentSet.fold
+            (fun x acc ->
+              match x with
+              | V _ ->
+                  (* This is an error. We don't complain here as we want
+                     to be able to name other variable to make it
+                     easier to spot the problematic ones *)
+                  acc
+              | S { name = Utf8 x; _ } -> StringSet.add x acc)
+            free
+            StringSet.empty
+        in
+        let prim = Primitive.get_external () in
+        let all_external = StringSet.union prim all_provided in
+        StringSet.inter free all_external
     in
-    let prim = Primitive.get_external () in
-    let prov = Linker.get_provided () in
-    let all_external = StringSet.union prim prov in
-    let used = StringSet.inter free all_external in
     let linkinfos = Linker.init () in
     let linkinfos, js =
-      let linkinfos, missing = Linker.resolve_deps ~standalone ~linkall linkinfos used in
+      let linkinfos, missing = Linker.resolve_deps ~standalone linkinfos used in
       (* gen_missing may use caml_failwith *)
       if (not (StringSet.is_empty missing)) && Config.Flag.genprim ()
       then
@@ -408,7 +413,7 @@ let check_js js =
       StringSet.empty
   in
   let prim = Primitive.get_external () in
-  let prov = Linker.get_provided () in
+  let prov = Linker.list_all () in
   let all_external = StringSet.union prim prov in
   let missing = StringSet.inter free all_external in
   let missing = StringSet.diff missing Reserved.provided in

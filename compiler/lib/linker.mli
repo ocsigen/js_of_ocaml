@@ -65,12 +65,9 @@ val list_all : unit -> StringSet.t
 
 val init : unit -> state
 
-val resolve_deps :
-  ?standalone:bool -> ?linkall:bool -> state -> StringSet.t -> state * StringSet.t
+val resolve_deps : ?standalone:bool -> state -> StringSet.t -> state * StringSet.t
 
 val link : ?standalone:bool -> Javascript.program -> state -> output
-
-val get_provided : unit -> StringSet.t
 
 val all : state -> string list
 
