@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+
+* Library: new Typed_array.Bytes module.
+
 # 5.8.0 (2024-04-20) - Lille
 
 ## Features/Changes

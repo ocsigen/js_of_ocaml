@@ -1,5 +1,9 @@
 #include <caml/misc.h>
 
+void caml_bytes_of_array () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_array!");
+}
+
 void caml_js_error_of_exception () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_error_of_exception!");
 }
@@ -18,6 +22,10 @@ void caml_js_html_escape () {
 
 void caml_js_on_ie () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_on_ie!");
+}
+
+void caml_uint8_array_of_bytes () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_uint8_array_of_bytes!");
 }
 
 void caml_xmlhttprequest_create () {

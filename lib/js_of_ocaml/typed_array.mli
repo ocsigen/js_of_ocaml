@@ -254,3 +254,11 @@ module String : sig
 
   val of_uint8Array : uint8Array Js.t -> string
 end
+
+module Bytes : sig
+  val of_arrayBuffer : arrayBuffer Js.t -> bytes
+
+  val of_uint8Array : uint8Array Js.t -> bytes
+
+  val to_uint8Array : bytes -> uint8Array Js.t
+end
