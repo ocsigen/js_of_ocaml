@@ -46,10 +46,9 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; no_runtime : bool
-  ; include_partial_runtime : bool
-  ; runtime_only : bool
+  ; include_runtime : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
-  ; input_file : string option
+  ; bytecode : [ `File of string | `Stdin | `None ]
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun : [ `Iife | `Named of string | `Anonymous ]
@@ -123,11 +122,11 @@ let options =
     let doc = "Do not include the standard runtime." in
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
   in
-  let include_partial_runtime =
+  let include_runtime =
     let doc =
       "Include (partial) runtime when compiling cmo and cma files to JavaScript."
     in
-    Arg.(value & flag & info [ "include-partial-runtime" ] ~doc)
+    Arg.(value & flag & info [ "include-runtime" ] ~doc)
   in
   let no_sourcemap =
     let doc =
@@ -270,7 +269,7 @@ let options =
       no_cmis
       profile
       no_runtime
-      include_partial_runtime
+      include_runtime
       no_sourcemap
       sourcemap
       sourcemap_inline_in_js
@@ -284,19 +283,19 @@ let options =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let fs_external = fs_external || (toplevel && no_cmis) in
-    let input_file =
+    let bytecode =
       match input_file with
-      | "-" -> None
-      | x -> Some x
+      | "-" -> `Stdin
+      | x -> `File x
     in
     let output_file =
       match output_file with
       | Some "-" -> `Stdout, true
       | Some s -> `Name s, true
       | None -> (
-          match input_file with
-          | Some s -> `Name (chop_extension s ^ ".js"), false
-          | None -> `Stdout, false)
+          match bytecode with
+          | `File s -> `Name (chop_extension s ^ ".js"), false
+          | `Stdin -> `Stdout, false)
     in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -346,14 +345,13 @@ let options =
       ; include_dirs
       ; runtime_files
       ; no_runtime
-      ; include_partial_runtime
-      ; runtime_only = false
+      ; include_runtime
       ; fs_files
       ; fs_output
       ; fs_external
       ; no_cmis
       ; output_file
-      ; input_file
+      ; bytecode
       ; source_map
       ; keep_unit_names
       }
@@ -376,7 +374,7 @@ let options =
       $ no_cmis
       $ profile
       $ noruntime
-      $ include_partial_runtime
+      $ include_runtime
       $ no_sourcemap
       $ sourcemap
       $ sourcemap_inline_in_js
@@ -586,14 +584,13 @@ let options_runtime_only =
       ; include_dirs
       ; runtime_files
       ; no_runtime
-      ; include_partial_runtime = false
-      ; runtime_only = true
+      ; include_runtime = false
       ; fs_files
       ; fs_output
       ; fs_external
       ; no_cmis
       ; output_file
-      ; input_file = None
+      ; bytecode = `None
       ; source_map
       ; keep_unit_names = false
       }
