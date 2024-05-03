@@ -1,5 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
+void caml_bytes_of_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_bytes_of_array!\n");
+  exit(1);
+}
 void caml_custom_identifier () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_custom_identifier!\n");
   exit(1);
@@ -22,6 +26,10 @@ void caml_js_html_escape () {
 }
 void caml_js_on_ie () {
   fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
+  exit(1);
+}
+void caml_uint8_array_of_bytes () {
+  fprintf(stderr, "Unimplemented Javascript primitive caml_uint8_array_of_bytes!\n");
   exit(1);
 }
 void caml_xmlhttprequest_create () {
