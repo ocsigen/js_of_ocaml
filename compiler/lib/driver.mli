@@ -31,7 +31,7 @@ val f :
   -> ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
-  -> ?linkall:bool
+  -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> ?source_map:Source_map.t
   -> Parse_bytecode.Debug.t
   -> Code.program
@@ -41,7 +41,7 @@ val f' :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
-  -> ?linkall:bool
+  -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
@@ -57,7 +57,7 @@ val from_string :
 val link_and_pack :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> ?linkall:bool
+  -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Javascript.statement_list
   -> Javascript.statement_list
 

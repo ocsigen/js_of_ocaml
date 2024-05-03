@@ -61,9 +61,9 @@ type output =
   ; always_required_codes : always_required list
   }
 
-val list_all : unit -> StringSet.t
+val list_all : ?from:string list -> unit -> StringSet.t
 
-val init : unit -> state
+val init : ?from:string list -> unit -> state
 
 val resolve_deps : ?check_missing:bool -> state -> StringSet.t -> state * StringSet.t
 

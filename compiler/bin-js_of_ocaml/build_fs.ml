@@ -78,6 +78,7 @@ function jsoo_create_file_extern(name,content){
           ~target:(JavaScript pfs_fmt)
           ~standalone:true
           ~wrap_with_fun:`Iife
+          ~link:`Needed
           (Parse_bytecode.Debug.create ~include_cmis:false false)
           code
       in

@@ -424,7 +424,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           Driver.configure fmt;
           Driver.f'
             ~standalone:false
-            ~linkall:false
+            ~link:`No
             ~wrap_with_fun:`Iife
             fmt
             (Parse_bytecode.Debug.create ~include_cmis:false false)

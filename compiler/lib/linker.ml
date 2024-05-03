@@ -394,6 +394,7 @@ type state =
   ; always_required_codes : always_required list
   ; codes : (Javascript.program pack * bool) list
   ; missing : StringSet.t
+  ; include_ : string -> bool
   }
 
 type output =
@@ -404,6 +405,7 @@ type output =
 type provided =
   { id : int
   ; pi : Parse_info.t
+  ; filename : string
   ; weakdef : bool
   ; target_env : Target_env.t
   }
@@ -424,8 +426,16 @@ let reset () =
   Primitive.reset ();
   Generate.init ()
 
-let list_all () =
-  Hashtbl.fold (fun nm _ set -> StringSet.add nm set) provided StringSet.empty
+let list_all ?from () =
+  let include_ =
+    match from with
+    | None -> fun _ _ -> true
+    | Some l -> fun fn _nm -> List.mem fn ~set:l
+  in
+  Hashtbl.fold
+    (fun nm p set -> if include_ p.filename nm then StringSet.add nm set else set)
+    provided
+    StringSet.empty
 
 let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.t) =
   match f with
@@ -536,7 +546,10 @@ let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.
               let id = Hashtbl.length provided in
               Primitive.register name kind ka arity;
               StringSet.iter Primitive.register_named_value named_values;
-              Hashtbl.add provided name { id; pi; weakdef; target_env = fragment_target };
+              Hashtbl.add
+                provided
+                name
+                { id; pi; filename; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, has_macro, requires);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
@@ -596,13 +609,16 @@ let load_files ?(ignore_always_annotation = false) ~target_env l =
   check_deps ()
 
 (* resolve *)
-let rec resolve_dep_name_rev visited path nm =
+let rec resolve_dep_name_rev state path nm =
   match Hashtbl.find provided nm with
-  | x -> resolve_dep_id_rev visited path x.id
-  | exception Not_found -> { visited with missing = StringSet.add nm visited.missing }
+  | x ->
+      if state.include_ x.filename
+      then resolve_dep_id_rev state path x.id
+      else { state with missing = StringSet.add nm state.missing }
+  | exception Not_found -> { state with missing = StringSet.add nm state.missing }
 
-and resolve_dep_id_rev visited path id =
-  if IntSet.mem id visited.ids
+and resolve_dep_id_rev state path id =
+  if IntSet.mem id state.ids
   then (
     if List.memq id ~set:path
     then
@@ -611,25 +627,34 @@ and resolve_dep_id_rev visited path id =
         (String.concat
            ~sep:", "
            (List.map path ~f:(fun id -> fst (Hashtbl.find provided_rev id))));
-    visited)
+    state)
   else
     let path = id :: path in
     let code, has_macro, req = Hashtbl.find code_pieces id in
-    let visited = { visited with ids = IntSet.add id visited.ids } in
-    let visited =
-      List.fold_left req ~init:visited ~f:(fun visited nm ->
-          resolve_dep_name_rev visited path nm)
+    let state = { state with ids = IntSet.add id state.ids } in
+    let state =
+      List.fold_left req ~init:state ~f:(fun state nm ->
+          resolve_dep_name_rev state path nm)
     in
-    let visited = { visited with codes = (code, has_macro) :: visited.codes } in
-    visited
+    let state = { state with codes = (code, has_macro) :: state.codes } in
+    state
 
 let proj_always_required { ar_filename; ar_requires; ar_program } =
   { filename = ar_filename; requires = ar_requires; program = unpack ar_program }
 
-let init () =
+let init ?from () =
+  let include_ =
+    match from with
+    | None -> fun _ -> true
+    | Some l -> fun fn -> List.mem fn ~set:l
+  in
   { ids = IntSet.empty
-  ; always_required_codes = List.rev_map !always_included ~f:proj_always_required
+  ; always_required_codes =
+      List.rev
+        (List.filter_map !always_included ~f:(fun x ->
+             if include_ x.ar_filename then Some (proj_always_required x) else None))
   ; codes = []
+  ; include_
   ; missing = StringSet.empty
   }
 
@@ -637,19 +662,19 @@ let do_check_missing state =
   if not (StringSet.is_empty state.missing)
   then error "missing dependency '%s'@." (StringSet.choose state.missing)
 
-let resolve_deps ?(check_missing = true) visited_rev used =
+let resolve_deps ?(check_missing = true) state used =
   (* link the special files *)
-  let missing, visited_rev =
+  let missing, state =
     StringSet.fold
       (fun nm (missing, visited) ->
         if Hashtbl.mem provided nm
         then missing, resolve_dep_name_rev visited [] nm
         else StringSet.add nm missing, visited)
       used
-      (StringSet.empty, visited_rev)
+      (StringSet.empty, state)
   in
-  if check_missing then do_check_missing visited_rev;
-  visited_rev, missing
+  if check_missing then do_check_missing state;
+  state, missing
 
 let link ?(check_missing = true) program (state : state) =
   let always, always_required =
