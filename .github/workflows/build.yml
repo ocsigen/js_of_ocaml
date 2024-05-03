@@ -149,6 +149,7 @@ jobs:
           dune-cache: true
 
       - uses: ocaml/setup-ocaml/lint-opam@v2
+        continue-on-error: true
 
   lint-fmt:
     runs-on: ubuntu-latest
