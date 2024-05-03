@@ -68,7 +68,7 @@ let run
     { Cmd_arg.common
     ; profile
     ; source_map
-    ; runtime_files
+    ; runtime_files = runtime_files_from_cmdline
     ; no_runtime
     ; input_file
     ; output_file
@@ -87,6 +87,7 @@ let run
     ; fs_external
     ; export_file
     ; keep_unit_names
+    ; include_partial_runtime
     } =
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
@@ -122,8 +123,10 @@ let run
     if (not no_runtime) && (toplevel || dynlink)
     then
       let add_if_absent x l = if List.mem x ~set:l then l else x :: l in
-      runtime_files |> add_if_absent "+toplevel.js" |> add_if_absent "+dynlink.js"
-    else runtime_files
+      runtime_files_from_cmdline
+      |> add_if_absent "+toplevel.js"
+      |> add_if_absent "+dynlink.js"
+    else runtime_files_from_cmdline
   in
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
@@ -175,7 +178,7 @@ let run
             , noloc )
           ])
   in
-  let output (one : Parse_bytecode.one) ~standalone ~source_map ~linkall output_file =
+  let output (one : Parse_bytecode.one) ~standalone ~source_map ~link output_file =
     check_debug one;
     let init_pseudo_fs = fs_external && standalone in
     let sm =
@@ -192,7 +195,7 @@ let run
           Driver.f
             ~standalone
             ?profile
-            ~linkall
+            ~link
             ~wrap_with_fun
             ?source_map
             fmt
@@ -216,7 +219,7 @@ let run
             Driver.f
               ~standalone
               ?profile
-              ~linkall
+              ~link
               ~wrap_with_fun
               ?source_map
               fmt
@@ -228,7 +231,14 @@ let run
                   let instr = fs_instr2 in
                   let code = Code.prepend Code.empty instr in
                   let pfs_fmt = Pretty_print.to_out_channel chan in
-                  Driver.f' ~standalone ?profile ~wrap_with_fun pfs_fmt one.debug code));
+                  Driver.f'
+                    ~standalone
+                    ~link:`Needed
+                    ?profile
+                    ~wrap_with_fun
+                    pfs_fmt
+                    one.debug
+                    code));
           res
     in
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
@@ -244,11 +254,14 @@ let run
     let uinfo = Unit_info.of_cmo cmo in
     Pretty_print.string fmt "\n";
     Pretty_print.string fmt (Unit_info.to_string uinfo);
-    output code ~source_map ~standalone ~linkall:false output_file
+    output code ~source_map ~standalone ~link:`No output_file
   in
-  let output_runtime ~standalone ~source_map ((_, fmt) as output_file) =
+  let output_partial_runtime ~standalone ~source_map ((_, fmt) as output_file) =
     assert (not standalone);
-    let uinfo = Unit_info.of_primitives (Linker.list_all () |> StringSet.elements) in
+    let uinfo =
+      Unit_info.of_primitives
+        (Linker.list_all ~from:runtime_files_from_cmdline () |> StringSet.elements)
+    in
     Pretty_print.string fmt "\n";
     Pretty_print.string fmt (Unit_info.to_string uinfo);
     let code =
@@ -257,7 +270,12 @@ let run
       ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
       }
     in
-    output code ~source_map ~standalone ~linkall:true output_file
+    output
+      code
+      ~source_map
+      ~standalone
+      ~link:(`All_from runtime_files_from_cmdline)
+      output_file
   in
   (if runtime_only
    then (
@@ -280,7 +298,7 @@ let run
        (fun ~standalone ~source_map ((_, fmt) as output_file) ->
          Pretty_print.string fmt "\n";
          Pretty_print.string fmt (Unit_info.to_string uinfo);
-         output code ~source_map ~standalone ~linkall:true output_file))
+         output code ~source_map ~standalone ~link:`All output_file))
    else
      let kind, ic, close_ic, include_dirs =
        match input_file with
@@ -318,7 +336,7 @@ let run
            ~build_info:(Build_info.create `Exe)
            ~source_map
            (fst output_file)
-           (output code ~linkall)
+           (output code ~link:(if linkall then `All else `Needed))
      | `Cmo cmo ->
          let output_file =
            match output_file, keep_unit_names with
@@ -341,7 +359,6 @@ let run
              cmo
              ic
          in
-         let linkall = linkall || toplevel || dynlink in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          output_gen
            ~standalone:false
@@ -351,12 +368,33 @@ let run
            output_file
            (fun ~standalone ~source_map output ->
              let source_map =
-               if linkall
-               then output_runtime ~standalone ~source_map output
-               else source_map
+               if not include_partial_runtime
+               then source_map
+               else output_partial_runtime ~standalone ~source_map output
              in
              output_partial cmo code ~standalone ~source_map output)
      | `Cma cma when keep_unit_names ->
+         (if include_partial_runtime
+          then
+            let output_file =
+              let gen dir = Filename.concat dir "runtime.js" in
+              match output_file with
+              | `Stdout, false -> gen "./"
+              | `Name x, false -> gen (Filename.dirname x)
+              | `Name x, true
+                when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
+                  gen x
+              | `Stdout, true | `Name _, true ->
+                  failwith "use [-o dirname/] or remove [--keep-unit-names]"
+            in
+            output_gen
+              ~standalone:false
+              ~custom_header
+              ~build_info:(Build_info.create `Runtime)
+              ~source_map
+              (`Name output_file)
+              (fun ~standalone ~source_map output ->
+                output_partial_runtime ~standalone ~source_map output));
          List.iter cma.lib_units ~f:(fun cmo ->
              let output_file =
                match output_file with
@@ -392,10 +430,11 @@ let run
                (`Name output_file)
                (output_partial cmo code))
      | `Cma cma ->
-         let linkall = linkall || toplevel || dynlink in
          let f ~standalone ~source_map output =
            let source_map =
-             if linkall then output_runtime ~standalone ~source_map output else source_map
+             if not include_partial_runtime
+             then source_map
+             else output_partial_runtime ~standalone ~source_map output
            in
            List.fold_left cma.lib_units ~init:source_map ~f:(fun source_map cmo ->
                let t1 = Timer.make () in

@@ -46,6 +46,7 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; no_runtime : bool
+  ; include_partial_runtime : bool
   ; runtime_only : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
   ; input_file : string option
@@ -121,6 +122,12 @@ let options =
   let noruntime =
     let doc = "Do not include the standard runtime." in
     Arg.(value & flag & info [ "noruntime"; "no-runtime" ] ~doc)
+  in
+  let include_partial_runtime =
+    let doc =
+      "Include (partial) runtime when compiling cmo and cma files to JavaScript."
+    in
+    Arg.(value & flag & info [ "include-partial-runtime" ] ~doc)
   in
   let no_sourcemap =
     let doc =
@@ -263,6 +270,7 @@ let options =
       no_cmis
       profile
       no_runtime
+      include_partial_runtime
       no_sourcemap
       sourcemap
       sourcemap_inline_in_js
@@ -338,6 +346,7 @@ let options =
       ; include_dirs
       ; runtime_files
       ; no_runtime
+      ; include_partial_runtime
       ; runtime_only = false
       ; fs_files
       ; fs_output
@@ -367,6 +376,7 @@ let options =
       $ no_cmis
       $ profile
       $ noruntime
+      $ include_partial_runtime
       $ no_sourcemap
       $ sourcemap
       $ sourcemap_inline_in_js
@@ -576,6 +586,7 @@ let options_runtime_only =
       ; include_dirs
       ; runtime_files
       ; no_runtime
+      ; include_partial_runtime = false
       ; runtime_only = true
       ; fs_files
       ; fs_output

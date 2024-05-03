@@ -96,5 +96,6 @@ let () =
   Js_of_ocaml_compiler.Config.Flag.enable "pretty";
   Js_of_ocaml_compiler.Driver.f'
     pfs_fmt
+    ~link:`Needed
     (Js_of_ocaml_compiler.Parse_bytecode.Debug.create ~include_cmis:false false)
     program
