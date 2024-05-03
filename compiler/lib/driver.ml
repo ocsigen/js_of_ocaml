@@ -290,7 +290,7 @@ let gen_missing js missing =
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
-let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
+let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     Linker.output =
   if (not export_runtime) && not standalone
   then { runtime_code = js; always_required_codes = [] }
@@ -313,28 +313,37 @@ let link ~export_runtime ~standalone ~linkall (js : Javascript.statement_list) :
     in
     let used =
       let all_provided = Linker.list_all () in
-      if linkall
-      then all_provided
-      else
-        let free = traverse#get_free in
-        let free : StringSet.t =
-          Javascript.IdentSet.fold
-            (fun x acc ->
-              match x with
-              | V _ ->
-                  (* This is an error. We don't complain here as we want
-                     to be able to name other variable to make it
-                     easier to spot the problematic ones *)
-                  acc
-              | S { name = Utf8 x; _ } -> StringSet.add x acc)
-            free
-            StringSet.empty
-        in
-        let prim = Primitive.get_external () in
-        let all_external = StringSet.union prim all_provided in
-        StringSet.inter free all_external
+      match link with
+      | `All -> all_provided
+      | `All_from from -> Linker.list_all ~from ()
+      | `No -> StringSet.empty
+      | `Needed ->
+          let free = traverse#get_free in
+          let free : StringSet.t =
+            Javascript.IdentSet.fold
+              (fun x acc ->
+                match x with
+                | V _ ->
+                    (* This is an error. We don't complain here as we want
+                       to be able to name other variable to make it
+                       easier to spot the problematic ones *)
+                    acc
+                | S { name = Utf8 x; _ } -> StringSet.add x acc)
+              free
+              StringSet.empty
+          in
+          let prim = Primitive.get_external () in
+          let all_external = StringSet.union prim all_provided in
+          StringSet.inter free all_external
     in
-    let linkinfos = Linker.init () in
+    let linkinfos =
+      let from =
+        match link with
+        | `All_from l -> Some l
+        | `All | `No | `Needed -> None
+      in
+      Linker.init ?from ()
+    in
     let linkinfos, js =
       let linkinfos, missing = Linker.resolve_deps ~check_missing linkinfos used in
       (* gen_missing may use caml_failwith *)
@@ -643,9 +652,13 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p =
+let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
   let exported_runtime = not standalone in
-  let export_runtime = linkall in
+  let export_runtime =
+    match link with
+    | `All | `All_from _ -> true
+    | `Needed | `No -> false
+  in
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "undef"
@@ -668,7 +681,7 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
       ~wrap_with_fun
       ~warn_on_unhandled_effect:standalone
       ~deadcode_sentinal
-    +> link ~export_runtime ~standalone ~linkall
+    +> link' ~export_runtime ~standalone ~link
     +> pack ~wrap_with_fun ~standalone
     +> coloring
     +> check_js
@@ -680,9 +693,9 @@ let full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p 
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   emit r
 
-let full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p =
+let full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p =
   let (_ : Source_map.t option) =
-    full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map:None formatter d p
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None formatter d p
   in
   ()
 
@@ -690,22 +703,15 @@ let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
-    ?(linkall = false)
+    ~link
     ?source_map
     formatter
     d
     p =
-  full ~standalone ~wrap_with_fun ~profile ~linkall ~source_map formatter d p
+  full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p
 
-let f'
-    ?(standalone = true)
-    ?(wrap_with_fun = `Iife)
-    ?(profile = O1)
-    ?(linkall = false)
-    formatter
-    d
-    p =
-  full_no_source_map ~standalone ~wrap_with_fun ~profile ~linkall formatter d p
+let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
+  full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
@@ -713,7 +719,7 @@ let from_string ~prims ~debug s formatter =
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
-    ~linkall:false
+    ~link:`No
     formatter
     d
     p

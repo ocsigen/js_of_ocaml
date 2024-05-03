@@ -77,6 +77,7 @@ function jsoo_create_file_extern(name,content){
         Driver.f
           ~standalone:true
           ~wrap_with_fun:`Iife
+          ~link:`Needed
           pfs_fmt
           (Parse_bytecode.Debug.create ~include_cmis:false false)
           code

@@ -80,8 +80,8 @@
   (run
    %{bin:js_of_ocaml}
    --pretty
-   --no-runtime
    --toplevel
+   --include-partial-runtime
    %{read-strings:effects_flags.txt}
    %{dep:test_lib/stubs.js}
    %{dep:test_lib/test_lib_jsoo.cma}
