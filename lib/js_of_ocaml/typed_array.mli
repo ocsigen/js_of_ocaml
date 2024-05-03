@@ -256,6 +256,13 @@ module String : sig
 end
 
 module Bytes : sig
+  (** These functions offer an efficient way to convert typed arrays to and from
+      [bytes] because they will not usually copy their input.
+
+      Modifying their input may also modify their corresponding output, and vice
+      versa when modifying their output. This is not a guarantee, however, since
+      certain [bytes] operations may require the runtime to make a copy. *)
+
   val of_arrayBuffer : arrayBuffer Js.t -> bytes
 
   val of_uint8Array : uint8Array Js.t -> bytes
