@@ -70,7 +70,7 @@ let run
     ; source_map
     ; runtime_files = runtime_files_from_cmdline
     ; no_runtime
-    ; input_file
+    ; bytecode
     ; output_file
     ; params
     ; static_env
@@ -80,14 +80,13 @@ let run
     ; target_env
     ; toplevel
     ; no_cmis
-    ; runtime_only
     ; include_dirs
     ; fs_files
     ; fs_output
     ; fs_external
     ; export_file
     ; keep_unit_names
-    ; include_partial_runtime
+    ; include_runtime
     } =
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
@@ -148,10 +147,7 @@ let run
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
   let check_debug (one : Parse_bytecode.one) =
-    if (not runtime_only)
-       && Option.is_some source_map
-       && Parse_bytecode.Debug.is_empty one.debug
-       && not (Code.is_empty one.code)
+    if Option.is_some source_map && Parse_bytecode.Debug.is_empty one.debug
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \
@@ -178,8 +174,14 @@ let run
             , noloc )
           ])
   in
-  let output (one : Parse_bytecode.one) ~standalone ~source_map ~link output_file =
-    check_debug one;
+  let output
+      (one : Parse_bytecode.one)
+      ~check_sourcemap
+      ~standalone
+      ~source_map
+      ~link
+      output_file =
+    if check_sourcemap then check_debug one;
     let init_pseudo_fs = fs_external && standalone in
     let sm =
       match output_file with
@@ -254,7 +256,7 @@ let run
     let uinfo = Unit_info.of_cmo cmo in
     Pretty_print.string fmt "\n";
     Pretty_print.string fmt (Unit_info.to_string uinfo);
-    output code ~source_map ~standalone ~link:`No output_file
+    output code ~check_sourcemap:true ~source_map ~standalone ~link:`No output_file
   in
   let output_partial_runtime ~standalone ~source_map ((_, fmt) as output_file) =
     assert (not standalone);
@@ -272,197 +274,204 @@ let run
     in
     output
       code
+      ~check_sourcemap:false
       ~source_map
       ~standalone
       ~link:(`All_from runtime_files_from_cmdline)
       output_file
   in
-  (if runtime_only
-   then (
-     let prims = Linker.list_all () |> StringSet.elements in
-     assert (List.length prims > 0);
-     let code, uinfo = Parse_bytecode.predefined_exceptions () in
-     let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
-     let code : Parse_bytecode.one =
-       { code
-       ; cmis = StringSet.empty
-       ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
-       }
-     in
-     output_gen
-       ~standalone:true
-       ~custom_header
-       ~build_info:(Build_info.create `Runtime)
-       ~source_map
-       (fst output_file)
-       (fun ~standalone ~source_map ((_, fmt) as output_file) ->
-         Pretty_print.string fmt "\n";
-         Pretty_print.string fmt (Unit_info.to_string uinfo);
-         output code ~source_map ~standalone ~link:`All output_file))
-   else
-     let kind, ic, close_ic, include_dirs =
-       match input_file with
-       | None -> Parse_bytecode.from_channel stdin, stdin, (fun () -> ()), include_dirs
-       | Some fn ->
-           let ch = open_in_bin fn in
-           let res = Parse_bytecode.from_channel ch in
-           let include_dirs = Filename.dirname fn :: include_dirs in
-           res, ch, (fun () -> close_in ch), include_dirs
-     in
-     (match kind with
-     | `Exe ->
-         let t1 = Timer.make () in
-         (* The OCaml compiler can generate code using the
-            "caml_string_greaterthan" primitive but does not use it
-            itself. This is (was at some point at least) the only primitive
-            in this case.  Ideally, Js_of_ocaml should parse the .mli files
-            for primitives as well as marking this primitive as potentially
-            used. But the -linkall option is probably good enough. *)
-         let linkall = linkall || toplevel || dynlink in
-         let code =
-           Parse_bytecode.from_exe
-             ~includes:include_dirs
-             ~include_cmis
-             ~link_info:(toplevel || dynlink)
-             ~linkall
-             ?exported_unit
-             ~debug:need_debug
-             ic
-         in
-         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-         output_gen
-           ~standalone:true
-           ~custom_header
-           ~build_info:(Build_info.create `Exe)
-           ~source_map
-           (fst output_file)
-           (output code ~link:(if linkall then `All else `Needed))
-     | `Cmo cmo ->
-         let output_file =
-           match output_file, keep_unit_names with
-           | (`Stdout, false), true -> `Name (gen_unit_filename "./" cmo)
-           | (`Name x, false), true -> `Name (gen_unit_filename (Filename.dirname x) cmo)
-           | (`Stdout, _), false -> `Stdout
-           | (`Name x, _), false -> `Name x
-           | (`Name x, true), true
-             when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
-               `Name (gen_unit_filename x cmo)
-           | (`Name _, true), true | (`Stdout, true), true ->
-               failwith "use [-o dirname/] or remove [--keep-unit-names]"
-         in
-         let t1 = Timer.make () in
-         let code =
-           Parse_bytecode.from_cmo
-             ~includes:include_dirs
-             ~include_cmis
-             ~debug:need_debug
-             cmo
-             ic
-         in
-         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-         output_gen
-           ~standalone:false
-           ~custom_header
-           ~build_info:(Build_info.create `Cmo)
-           ~source_map
-           output_file
-           (fun ~standalone ~source_map output ->
-             let source_map =
-               if not include_partial_runtime
-               then source_map
-               else output_partial_runtime ~standalone ~source_map output
-             in
-             output_partial cmo code ~standalone ~source_map output)
-     | `Cma cma when keep_unit_names ->
-         (if include_partial_runtime
-          then
-            let output_file =
-              let gen dir = Filename.concat dir "runtime.js" in
-              match output_file with
-              | `Stdout, false -> gen "./"
-              | `Name x, false -> gen (Filename.dirname x)
-              | `Name x, true
-                when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
-                  gen x
-              | `Stdout, true | `Name _, true ->
-                  failwith "use [-o dirname/] or remove [--keep-unit-names]"
-            in
-            output_gen
-              ~standalone:false
-              ~custom_header
-              ~build_info:(Build_info.create `Runtime)
-              ~source_map
-              (`Name output_file)
-              (fun ~standalone ~source_map output ->
-                output_partial_runtime ~standalone ~source_map output));
-         List.iter cma.lib_units ~f:(fun cmo ->
+  (match bytecode with
+  | `None ->
+      let prims = Linker.list_all () |> StringSet.elements in
+      assert (List.length prims > 0);
+      let code, uinfo = Parse_bytecode.predefined_exceptions () in
+      let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
+      let code : Parse_bytecode.one =
+        { code
+        ; cmis = StringSet.empty
+        ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
+        }
+      in
+      output_gen
+        ~standalone:true
+        ~custom_header
+        ~build_info:(Build_info.create `Runtime)
+        ~source_map
+        (fst output_file)
+        (fun ~standalone ~source_map ((_, fmt) as output_file) ->
+          Pretty_print.string fmt "\n";
+          Pretty_print.string fmt (Unit_info.to_string uinfo);
+          output
+            code
+            ~check_sourcemap:false
+            ~source_map
+            ~standalone
+            ~link:`All
+            output_file)
+  | (`Stdin | `File _) as bytecode ->
+      let kind, ic, close_ic, include_dirs =
+        match bytecode with
+        | `Stdin -> Parse_bytecode.from_channel stdin, stdin, (fun () -> ()), include_dirs
+        | `File fn ->
+            let ch = open_in_bin fn in
+            let res = Parse_bytecode.from_channel ch in
+            let include_dirs = Filename.dirname fn :: include_dirs in
+            res, ch, (fun () -> close_in ch), include_dirs
+      in
+      (match kind with
+      | `Exe ->
+          let t1 = Timer.make () in
+          (* The OCaml compiler can generate code using the
+             "caml_string_greaterthan" primitive but does not use it
+             itself. This is (was at some point at least) the only primitive
+             in this case.  Ideally, Js_of_ocaml should parse the .mli files
+             for primitives as well as marking this primitive as potentially
+             used. But the -linkall option is probably good enough. *)
+          let linkall = linkall || toplevel || dynlink in
+          let code =
+            Parse_bytecode.from_exe
+              ~includes:include_dirs
+              ~include_cmis
+              ~link_info:(toplevel || dynlink)
+              ~linkall
+              ?exported_unit
+              ~debug:need_debug
+              ic
+          in
+          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+          output_gen
+            ~standalone:true
+            ~custom_header
+            ~build_info:(Build_info.create `Exe)
+            ~source_map
+            (fst output_file)
+            (output code ~check_sourcemap:true ~link:(if linkall then `All else `Needed))
+      | `Cmo cmo ->
+          let output_file =
+            match output_file, keep_unit_names with
+            | (`Stdout, false), true -> `Name (gen_unit_filename "./" cmo)
+            | (`Name x, false), true -> `Name (gen_unit_filename (Filename.dirname x) cmo)
+            | (`Stdout, _), false -> `Stdout
+            | (`Name x, _), false -> `Name x
+            | (`Name x, true), true
+              when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
+                `Name (gen_unit_filename x cmo)
+            | (`Name _, true), true | (`Stdout, true), true ->
+                failwith "use [-o dirname/] or remove [--keep-unit-names]"
+          in
+          let t1 = Timer.make () in
+          let code =
+            Parse_bytecode.from_cmo
+              ~includes:include_dirs
+              ~include_cmis
+              ~debug:need_debug
+              cmo
+              ic
+          in
+          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+          output_gen
+            ~standalone:false
+            ~custom_header
+            ~build_info:(Build_info.create `Cmo)
+            ~source_map
+            output_file
+            (fun ~standalone ~source_map output ->
+              let source_map =
+                if not include_runtime
+                then source_map
+                else output_partial_runtime ~standalone ~source_map output
+              in
+              output_partial cmo code ~standalone ~source_map output)
+      | `Cma cma when keep_unit_names ->
+          (if include_runtime
+           then
              let output_file =
+               let gen dir = Filename.concat dir "runtime.js" in
                match output_file with
-               | `Stdout, false -> gen_unit_filename "./" cmo
-               | `Name x, false -> gen_unit_filename (Filename.dirname x) cmo
+               | `Stdout, false -> gen "./"
+               | `Name x, false -> gen (Filename.dirname x)
                | `Name x, true
                  when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
-                   gen_unit_filename x cmo
+                   gen x
                | `Stdout, true | `Name _, true ->
                    failwith "use [-o dirname/] or remove [--keep-unit-names]"
              in
-             let t1 = Timer.make () in
-             let code =
-               Parse_bytecode.from_cmo
-                 ~includes:include_dirs
-                 ~include_cmis
-                 ~debug:need_debug
-                 cmo
-                 ic
-             in
-             if times ()
-             then
-               Format.eprintf
-                 "  parsing: %a (%s)@."
-                 Timer.print
-                 t1
-                 (Ocaml_compiler.Cmo_format.name cmo);
              output_gen
                ~standalone:false
                ~custom_header
-               ~build_info:(Build_info.create `Cma)
+               ~build_info:(Build_info.create `Runtime)
                ~source_map
                (`Name output_file)
-               (output_partial cmo code))
-     | `Cma cma ->
-         let f ~standalone ~source_map output =
-           let source_map =
-             if not include_partial_runtime
-             then source_map
-             else output_partial_runtime ~standalone ~source_map output
-           in
-           List.fold_left cma.lib_units ~init:source_map ~f:(fun source_map cmo ->
-               let t1 = Timer.make () in
-               let code =
-                 Parse_bytecode.from_cmo
-                   ~includes:include_dirs
-                   ~include_cmis
-                   ~debug:need_debug
-                   cmo
-                   ic
-               in
-               if times ()
-               then
-                 Format.eprintf
-                   "  parsing: %a (%s)@."
-                   Timer.print
-                   t1
-                   (Ocaml_compiler.Cmo_format.name cmo);
-               output_partial cmo ~standalone ~source_map code output)
-         in
-         output_gen
-           ~standalone:false
-           ~custom_header
-           ~build_info:(Build_info.create `Cma)
-           ~source_map
-           (fst output_file)
-           f);
-     close_ic ());
+               (fun ~standalone ~source_map output ->
+                 output_partial_runtime ~standalone ~source_map output));
+          List.iter cma.lib_units ~f:(fun cmo ->
+              let output_file =
+                match output_file with
+                | `Stdout, false -> gen_unit_filename "./" cmo
+                | `Name x, false -> gen_unit_filename (Filename.dirname x) cmo
+                | `Name x, true
+                  when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
+                    gen_unit_filename x cmo
+                | `Stdout, true | `Name _, true ->
+                    failwith "use [-o dirname/] or remove [--keep-unit-names]"
+              in
+              let t1 = Timer.make () in
+              let code =
+                Parse_bytecode.from_cmo
+                  ~includes:include_dirs
+                  ~include_cmis
+                  ~debug:need_debug
+                  cmo
+                  ic
+              in
+              if times ()
+              then
+                Format.eprintf
+                  "  parsing: %a (%s)@."
+                  Timer.print
+                  t1
+                  (Ocaml_compiler.Cmo_format.name cmo);
+              output_gen
+                ~standalone:false
+                ~custom_header
+                ~build_info:(Build_info.create `Cma)
+                ~source_map
+                (`Name output_file)
+                (output_partial cmo code))
+      | `Cma cma ->
+          let f ~standalone ~source_map output =
+            let source_map =
+              if not include_runtime
+              then source_map
+              else output_partial_runtime ~standalone ~source_map output
+            in
+            List.fold_left cma.lib_units ~init:source_map ~f:(fun source_map cmo ->
+                let t1 = Timer.make () in
+                let code =
+                  Parse_bytecode.from_cmo
+                    ~includes:include_dirs
+                    ~include_cmis
+                    ~debug:need_debug
+                    cmo
+                    ic
+                in
+                if times ()
+                then
+                  Format.eprintf
+                    "  parsing: %a (%s)@."
+                    Timer.print
+                    t1
+                    (Ocaml_compiler.Cmo_format.name cmo);
+                output_partial cmo ~standalone ~source_map code output)
+          in
+          output_gen
+            ~standalone:false
+            ~custom_header
+            ~build_info:(Build_info.create `Cma)
+            ~source_map
+            (fst output_file)
+            f);
+      close_ic ());
   Debug.stop_profiling ()
 
 let info name =

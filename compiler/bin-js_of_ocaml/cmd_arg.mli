@@ -26,10 +26,9 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; no_runtime : bool
-  ; include_partial_runtime : bool
-  ; runtime_only : bool
+  ; include_runtime : bool
   ; output_file : [ `Name of string | `Stdout ] * bool
-  ; input_file : string option
+  ; bytecode : [ `File of string | `Stdin | `None ]
   ; params : (string * string) list
   ; static_env : (string * string) list
   ; wrap_with_fun :
