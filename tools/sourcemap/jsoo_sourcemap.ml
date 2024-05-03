@@ -44,5 +44,6 @@ let () =
         | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64)
     | _ -> failwith "unable to find sourcemap"
   in
-  let sm = Js_of_ocaml_compiler.Source_map_io.of_string content in
-  print_endline (Js_of_ocaml_compiler.Source_map_io.to_string sm)
+  match Js_of_ocaml_compiler.Source_map_io.of_string content with
+  | `Standard sm -> print_endline (Js_of_ocaml_compiler.Source_map_io.to_string sm)
+  | `Index im -> print_endline (Js_of_ocaml_compiler.Source_map_io.Index.to_string im)

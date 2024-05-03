@@ -390,6 +390,12 @@ module Option = struct
   let value ~default = function
     | None -> default
     | Some s -> s
+
+  let return v = Some v
+
+  module Syntax = struct
+    let ( let* ) x f = bind ~f x
+  end
 end
 
 module Int64 = struct
