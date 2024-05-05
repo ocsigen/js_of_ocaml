@@ -83,9 +83,9 @@
  (action
   (run
    %{bin:js_of_ocaml}
-   --no-runtime
    --pretty
    --toplevel
+   --include-runtime
    %{read-strings:effects_flags.txt}
    %{dep:test_dynlink.cmo})))
 
@@ -94,7 +94,6 @@
  (action
   (run
    %{bin:js_of_ocaml}
-   --no-runtime
    --pretty
    --toplevel
    --include-runtime
