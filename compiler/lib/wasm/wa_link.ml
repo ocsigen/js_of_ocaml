@@ -475,35 +475,45 @@ let build_runtime_arguments
     ]
 
 let link_to_directory ~set_to_link ~files ~enable_source_maps ~dir =
-  let read_interface z ~name =
-    Wasm_binary.read_interface
-      (let ch, pos, len = Zip.get_entry z ~name in
-       Wasm_binary.from_channel ~name ch pos len)
+  let process_file z ~name =
+    let ch, pos, len, crc = Zip.get_entry z ~name:(name ^ ".wasm") in
+    let intf = Wasm_binary.read_interface (Wasm_binary.from_channel ~name ch pos len) in
+    let name' = Printf.sprintf "%s-%08lx" name crc in
+    Zip.extract_file
+      z
+      ~name:(name ^ ".wasm")
+      ~file:(Filename.concat dir (name' ^ ".wasm"));
+    name', intf
   in
   let z = Zip.open_in (fst (List.hd files)) in
-  let runtime_intf = read_interface z ~name:"runtime.wasm" in
-  Zip.extract_file z ~name:"runtime.wasm" ~file:(Filename.concat dir "runtime.wasm");
-  Zip.extract_file z ~name:"prelude.wasm" ~file:(Filename.concat dir "prelude.wasm");
+  let runtime, runtime_intf = process_file z ~name:"runtime" in
+  let prelude, _ = process_file z ~name:"prelude" in
   Zip.close_in z;
-  let intfs = ref [] in
-  List.iter
-    ~f:(fun (file, (_, units)) ->
-      let z = Zip.open_in file in
-      List.iter
-        ~f:(fun { unit_info; _ } ->
-          let unit_name = StringSet.choose unit_info.provides in
-          if StringSet.mem unit_name set_to_link
-          then (
-            let name = unit_name ^ ".wasm" in
-            intfs := read_interface z ~name :: !intfs;
-            Zip.extract_file z ~name ~file:(Filename.concat dir name);
-            let map = name ^ ".map" in
-            if enable_source_maps && Zip.has_entry z ~name:map
-            then Zip.extract_file z ~name:map ~file:(Filename.concat dir map)))
-        units;
-      Zip.close_in z)
-    files;
-  runtime_intf, List.rev !intfs
+  let lst =
+    List.map
+      ~f:(fun (file, (_, units)) ->
+        let z = Zip.open_in file in
+        let res =
+          List.map
+            ~f:(fun { unit_info; _ } ->
+              let unit_name = StringSet.choose unit_info.provides in
+              if StringSet.mem unit_name set_to_link
+              then (
+                let name = unit_name ^ ".wasm" in
+                let res = process_file z ~name:unit_name in
+                let map = name ^ ".map" in
+                if enable_source_maps && Zip.has_entry z ~name:map
+                then Zip.extract_file z ~name:map ~file:(Filename.concat dir map);
+                Some res)
+              else None)
+            units
+        in
+        Zip.close_in z;
+        List.filter_map ~f:(fun x -> x) res)
+      files
+    |> List.flatten
+  in
+  runtime :: prelude :: List.map ~f:fst lst, (runtime_intf, List.map ~f:snd lst)
 
 (* Remove some unnecessary dependencies *)
 let simplify_unit_info l =
@@ -546,12 +556,11 @@ let compute_dependencies ~set_to_link ~files =
       then (
         Hashtbl.add h unit_name (Hashtbl.length h);
         Some
-          ( unit_name
-          , Some
-              (List.sort ~cmp:compare
-              @@ List.filter_map
-                   ~f:(fun req -> Option.map ~f:(fun i -> i + 2) (Hashtbl.find_opt h req))
-                   (StringSet.elements unit_info.requires)) ))
+          (Some
+             (List.sort ~cmp:compare
+             @@ List.filter_map
+                  ~f:(fun req -> Option.map ~f:(fun i -> i + 2) (Hashtbl.find_opt h req))
+                  (StringSet.elements unit_info.requires))))
       else None)
     l
 
@@ -668,11 +677,23 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
       Fs.gen_file dir
       @@ fun tmp_dir ->
       Sys.mkdir tmp_dir 0o777;
-      generate_start_function ~to_link ~out_file:(Filename.concat tmp_dir "start.wasm");
-      ( link_to_directory ~set_to_link ~files ~enable_source_maps ~dir:tmp_dir
+      let start_module =
+        "start-"
+        ^ String.sub
+            (Digest.to_hex (Digest.string (String.concat ~sep:"/" to_link)))
+            ~pos:0
+            ~len:8
+      in
+      generate_start_function
+        ~to_link
+        ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
+      let module_names, interfaces =
+        link_to_directory ~set_to_link ~files ~enable_source_maps ~dir:tmp_dir
+      in
+      ( interfaces
       , dir
       , let to_link = compute_dependencies ~set_to_link ~files in
-        ("runtime", None) :: ("prelude", None) :: (to_link @ [ "start", None ]) )
+        List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
     in
     let missing_primitives = compute_missing_primitives interfaces in
     if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;

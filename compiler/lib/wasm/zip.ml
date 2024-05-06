@@ -427,8 +427,8 @@ let read_entry z ~name =
 
 let get_entry z ~name =
   let pos = get_pos z ~name in
-  let { pos; len; _ } = read_local_file_header z.ch pos in
-  z.ch, pos, len
+  let { pos; len; crc } = read_local_file_header z.ch pos in
+  z.ch, pos, len, crc
 
 let extract_file z ~name ~file =
   let pos = get_pos z ~name in

@@ -18,7 +18,8 @@ val has_entry : input -> name:string -> bool
 
 val read_entry : input -> name:string -> string
 
-val get_entry : input -> name:string -> in_channel * int (* pos *) * int (* len *)
+val get_entry :
+  input -> name:string -> in_channel * int (* pos *) * int (* len *) * int32 (* crc *)
 
 val extract_file : input -> name:string -> file:string -> unit
 
