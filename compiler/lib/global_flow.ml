@@ -81,9 +81,19 @@ type escape_status =
   | Escape_constant (* Escapes but we know the value is not modified *)
   | No
 
+type 'a deps =
+  | Empty
+  | One of 'a
+  | Many of ('a, unit) Hashtbl.t
+
+let iter_deps f = function
+  | Empty -> ()
+  | One x -> f x
+  | Many t -> Hashtbl.iter (fun k () -> f k) t
+
 type state =
   { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : (Var.t, unit) Hashtbl.t array (* Dependency between variables *)
+  ; deps : Var.t deps array (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
         (* Any value bound to this variable may escape *)
@@ -108,7 +118,14 @@ let add_var st x = Var.ISet.add st.vars x
 (* x depends on y *)
 let add_dep st x y =
   let idx = Var.idx y in
-  Hashtbl.replace st.deps.(idx) x ()
+  match st.deps.(idx) with
+  | Empty -> st.deps.(idx) <- One x
+  | One x' ->
+      let tbl = Hashtbl.create 0 in
+      Hashtbl.replace tbl x' ();
+      Hashtbl.replace tbl x ();
+      st.deps.(idx) <- Many tbl
+  | Many tbl -> Hashtbl.replace tbl x ()
 
 let add_expr_def st x e =
   add_var st x;
@@ -547,7 +564,7 @@ module Solver = G.Solver (Domain)
 let solver st =
   let g =
     { G.domain = st.vars
-    ; G.iter_children = (fun f x -> Hashtbl.iter (fun k () -> f k) st.deps.(Var.idx x))
+    ; G.iter_children = (fun f x -> iter_deps (fun k -> f k) st.deps.(Var.idx x))
     }
   in
   Solver.f' () g (propagate st)
@@ -568,7 +585,7 @@ let f ~fast p =
   let rets = return_values p in
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
-  let deps = Array.init nv ~f:(fun _ -> Hashtbl.create 0) in
+  let deps = Array.make nv Empty in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv No in
   let variable_possibly_mutable = Array.make nv false in
