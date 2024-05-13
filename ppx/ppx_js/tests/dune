@@ -6,11 +6,15 @@
 
 (rule
  (targets ppx.mlt.corrected)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
  (action
   (run %{exe:main.bc} %{dep:ppx.mlt})))
 
 (rule
  (alias runtest)
  (package js_of_ocaml-ppx)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
