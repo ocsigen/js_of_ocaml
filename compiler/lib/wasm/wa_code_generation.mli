@@ -111,13 +111,13 @@ val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
 
 val try_ : Wa_ast.func_type -> unit t -> (Code.Var.t * unit t) list -> unit t
 
-val add_var : ?typ:Wa_ast.value_type -> Wa_ast.var -> int t
+val add_var : ?typ:Wa_ast.value_type -> Wa_ast.var -> Wa_ast.var t
 
 val define_var : Wa_ast.var -> expression -> unit t
 
 val is_small_constant : Wa_ast.expression -> bool t
 
-val get_i31_value : int -> int option t
+val get_i31_value : Wa_ast.var -> Wa_ast.var option t
 
 val with_location : Code.loc -> unit t -> unit t
 
@@ -167,6 +167,6 @@ val need_dummy_fun : cps:bool -> arity:int -> Code.Var.t t
 
 val function_body :
      context:context
-  -> param_count:int
+  -> param_names:Code.Var.t list
   -> body:unit t
-  -> Wa_ast.value_type list * Wa_ast.instruction list
+  -> (Wa_ast.var * Wa_ast.value_type) list * Wa_ast.instruction list

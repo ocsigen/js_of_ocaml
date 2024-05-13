@@ -1,17 +1,17 @@
 open Stdlib
 
 type ctx =
-  { mutable initialized : IntSet.t
-  ; uninitialized : IntSet.t ref
+  { mutable initialized : Code.Var.Set.t
+  ; uninitialized : Code.Var.Set.t ref
   }
 
-let mark_initialized ctx i = ctx.initialized <- IntSet.add i ctx.initialized
+let mark_initialized ctx i = ctx.initialized <- Code.Var.Set.add i ctx.initialized
 
 let fork_context { initialized; uninitialized } = { initialized; uninitialized }
 
 let check_initialized ctx i =
-  if not (IntSet.mem i ctx.initialized)
-  then ctx.uninitialized := IntSet.add i !(ctx.uninitialized)
+  if not (Code.Var.Set.mem i ctx.initialized)
+  then ctx.uninitialized := Code.Var.Set.add i !(ctx.uninitialized)
 
 let rec scan_expression ctx e =
   match e with
@@ -98,20 +98,19 @@ and scan_instructions ctx l =
   let ctx = fork_context ctx in
   List.iter ~f:(fun i -> scan_instruction ctx i) l
 
-let f ~param_count ~locals instrs =
-  let ctx = { initialized = IntSet.empty; uninitialized = ref IntSet.empty } in
-  for i = 0 to param_count - 1 do
-    mark_initialized ctx i
-  done;
-  List.iteri
-    ~f:(fun i typ ->
+let f ~param_names ~locals instrs =
+  let ctx =
+    { initialized = Code.Var.Set.empty; uninitialized = ref Code.Var.Set.empty }
+  in
+  List.iter ~f:(fun x -> mark_initialized ctx x) param_names;
+  List.iter
+    ~f:(fun (var, typ) ->
       match (typ : Wa_ast.value_type) with
-      | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } ->
-          mark_initialized ctx (i + param_count)
+      | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } -> mark_initialized ctx var
       | Ref { nullable = false; _ } -> ())
     locals;
   scan_instructions ctx instrs;
   List.map
     ~f:(fun i -> Wa_ast.LocalSet (i, RefI31 (Const (I32 0l))))
-    (IntSet.elements !(ctx.uninitialized))
+    (Code.Var.Set.elements !(ctx.uninitialized))
   @ instrs

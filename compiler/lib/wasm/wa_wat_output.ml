@@ -3,6 +3,89 @@ open Wa_ast
 
 let target = `Binaryen (*`Reference*)
 
+let assign_names ?(reversed = true) f names =
+  let used = ref StringSet.empty in
+  let rec find_available_name used name i =
+    let nm = Printf.sprintf "%s$%d" name i in
+    if StringSet.mem nm used then find_available_name used name (i + 1) else nm
+  in
+  let names = if reversed then List.rev names else names in
+  let names =
+    List.map
+      ~f:(fun x ->
+        match f x with
+        | None -> x, None
+        | Some nm ->
+            let nm =
+              if StringSet.mem nm !used then find_available_name !used nm 1 else nm
+            in
+            used := StringSet.add nm !used;
+            x, Some nm)
+      names
+  in
+  let printer = Var_printer.create Var_printer.Alphabet.javascript in
+  let i = ref 0 in
+  let rec first_available_name () =
+    let nm = Var_printer.to_string printer !i in
+    incr i;
+    if StringSet.mem nm !used then first_available_name () else nm
+  in
+  let tbl = Hashtbl.create 16 in
+  List.iter
+    ~f:(fun (x, nm) ->
+      Hashtbl.add
+        tbl
+        x
+        (match nm with
+        | Some nm -> nm
+        | None -> first_available_name ()))
+    names;
+  tbl
+
+type st =
+  { type_names : (var, string) Hashtbl.t
+  ; func_names : (var, string) Hashtbl.t
+  ; global_names : (symbol, string) Hashtbl.t
+  ; data_names : (var, string) Hashtbl.t
+  ; tag_names : (var, string) Hashtbl.t
+  ; local_names : (var, string) Hashtbl.t
+  }
+
+let build_name_tables fields =
+  let type_names = ref [] in
+  let func_names = ref [] in
+  let data_names = ref [] in
+  let global_names = ref [] in
+  let tag_names = ref [] in
+  let push l v = l := v :: !l in
+  List.iter
+    ~f:(fun field ->
+      match field with
+      | Function { name; _ } -> push func_names name
+      | Type l -> List.iter ~f:(fun { name; _ } -> push type_names name) l
+      | Data { name; _ } -> push data_names name
+      | Global { name; _ } -> push global_names name
+      | Tag { name; _ } -> push tag_names name
+      | Import { name; desc; _ } -> (
+          match desc with
+          | Fun _ -> push func_names name
+          | Global _ -> push global_names (V name)
+          | Tag _ -> push tag_names name))
+    fields;
+  let index = Code.Var.get_name in
+  let symbol name =
+    match name with
+    | V name -> Code.Var.get_name name
+    | S name -> Some name
+  in
+  { type_names = assign_names index !type_names
+  ; func_names = assign_names index !func_names
+  ; global_names = assign_names symbol !global_names
+  ; data_names = assign_names index !data_names
+  ; tag_names = assign_names index !tag_names
+  ; local_names = Hashtbl.create 1
+  }
+
 type sexp =
   | Atom of string
   | List of sexp list
@@ -24,33 +107,30 @@ let rec format_sexp f s =
       Format.fprintf f ")@]"
   | Comment s -> Format.fprintf f ";;%s" s
 
-let index x = Atom ("$" ^ Code.Var.to_string x)
+let index tbl x = Atom ("$" ^ Hashtbl.find tbl x)
 
-let symbol name =
-  match name with
-  | V name -> index name
-  | S name -> Atom ("$" ^ name)
+let symbol tbl name = index tbl.global_names name
 
-let heap_type (ty : heap_type) =
+let heap_type st (ty : heap_type) =
   match ty with
   | Func -> Atom "func"
   | Extern -> Atom "extern"
   | Any -> Atom "any"
   | Eq -> Atom "eq"
   | I31 -> Atom "i31"
-  | Type t -> index t
+  | Type t -> index st.type_names t
 
-let ref_type { nullable; typ } =
-  let r = [ heap_type typ ] in
+let ref_type st { nullable; typ } =
+  let r = [ heap_type st typ ] in
   List (Atom "ref" :: (if nullable then Atom "null" :: r else r))
 
-let value_type (t : value_type) =
+let value_type st (t : value_type) =
   match t with
   | I32 -> Atom "i32"
   | I64 -> Atom "i64"
   | F32 -> Atom "f32"
   | F64 -> Atom "f64"
-  | Ref ty -> ref_type ty
+  | Ref ty -> ref_type st ty
 
 let packed_type t =
   match t with
@@ -60,28 +140,37 @@ let packed_type t =
 let list ?(always = false) name f l =
   if (not always) && List.is_empty l then [] else [ List (Atom name :: f l) ]
 
-let value_type_list name tl = list name (fun tl -> List.map ~f:value_type tl) tl
+let value_type_list st name tl =
+  list name (fun tl -> List.map ~f:(fun t -> value_type st t) tl) tl
 
-let func_type { params; result } =
-  value_type_list "param" params @ value_type_list "result" result
+let func_type st ?param_names { params; result } =
+  (match param_names with
+  | None -> value_type_list st "param" params
+  | Some names ->
+      List.map2
+        ~f:(fun i typ -> List [ Atom "param"; index st.local_names i; value_type st typ ])
+        names
+        params)
+  @ value_type_list st "result" result
 
-let storage_type typ =
+let storage_type st typ =
   match typ with
-  | Value typ -> value_type typ
+  | Value typ -> value_type st typ
   | Packed typ -> packed_type typ
 
 let mut_type f { mut; typ } = if mut then List [ Atom "mut"; f typ ] else f typ
 
-let field_type typ = mut_type storage_type typ
+let field_type st typ = mut_type (fun t -> storage_type st t) typ
 
-let global_type typ = mut_type value_type typ
+let global_type st typ = mut_type (fun t -> value_type st t) typ
 
-let str_type typ =
+let str_type st typ =
   match typ with
-  | Func ty -> List (Atom "func" :: func_type ty)
+  | Func ty -> List (Atom "func" :: func_type st ty)
   | Struct l ->
-      List (Atom "struct" :: List.map ~f:(fun f -> List [ Atom "field"; field_type f ]) l)
-  | Array ty -> List [ Atom "array"; field_type ty ]
+      List
+        (Atom "struct" :: List.map ~f:(fun f -> List [ Atom "field"; field_type st f ]) l)
+  | Array ty -> List [ Atom "array"; field_type st ty ]
 
 let block_type = func_type
 
@@ -208,7 +297,7 @@ let float32 _ f =
   | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
   | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
-let expression_or_instructions ctx in_function =
+let expression_or_instructions ctx st in_function =
   let rec expression e =
     match e with
     | Const op ->
@@ -260,96 +349,113 @@ let expression_or_instructions ctx in_function =
              :: select offs offs offs offs offset
             @ expression e')
         ]
-    | LocalGet i -> [ List [ Atom "local.get"; Atom (string_of_int i) ] ]
+    | LocalGet i -> [ List [ Atom "local.get"; index st.local_names i ] ]
     | LocalTee (i, e') ->
-        [ List (Atom "local.tee" :: Atom (string_of_int i) :: expression e') ]
-    | GlobalGet nm -> [ List [ Atom "global.get"; symbol nm ] ]
-    | BlockExpr (ty, l) -> [ List (Atom "block" :: (block_type ty @ instructions l)) ]
+        [ List (Atom "local.tee" :: index st.local_names i :: expression e') ]
+    | GlobalGet nm -> [ List [ Atom "global.get"; symbol st nm ] ]
+    | BlockExpr (ty, l) -> [ List (Atom "block" :: (block_type st ty @ instructions l)) ]
     | Call_indirect (typ, e, l) ->
         [ List
-            ((Atom "call_indirect" :: func_type typ)
+            ((Atom "call_indirect" :: func_type st typ)
             @ List.concat (List.map ~f:expression (l @ [ e ])))
         ]
     | Call (f, l) ->
-        [ List (Atom "call" :: index f :: List.concat (List.map ~f:expression l)) ]
+        [ List
+            (Atom "call"
+            :: index st.func_names f
+            :: List.concat (List.map ~f:expression l))
+        ]
     | MemoryGrow (_, e) -> [ List (Atom "memory.grow" :: expression e) ]
     | Seq (l, e) -> instructions l @ expression e
     | Pop ty -> (
         match target with
-        | `Binaryen -> [ List [ Atom "pop"; value_type ty ] ]
+        | `Binaryen -> [ List [ Atom "pop"; value_type st ty ] ]
         | `Reference -> [])
     | RefFunc symb ->
         if in_function then reference_function ctx symb;
-        [ List [ Atom "ref.func"; index symb ] ]
+        [ List [ Atom "ref.func"; index st.func_names symb ] ]
     | Call_ref (f, e, l) ->
         [ List
             (Atom "call_ref"
-            :: index f
+            :: index st.type_names f
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
     | RefI31 e -> [ List (Atom "ref.i31" :: expression e) ]
     | I31Get (s, e) -> [ List (Atom (signage "i31.get" s) :: expression e) ]
     | ArrayNew (typ, e, e') ->
-        [ List (Atom "array.new" :: index typ :: (expression e @ expression e')) ]
+        [ List
+            (Atom "array.new" :: index st.type_names typ :: (expression e @ expression e'))
+        ]
     | ArrayNewFixed (typ, l) ->
         [ List
             (Atom "array.new_fixed"
-            :: index typ
+            :: index st.type_names typ
             :: Atom (string_of_int (List.length l))
             :: List.concat (List.map ~f:expression l))
         ]
     | ArrayNewData (typ, data, e, e') ->
         [ List
             (Atom "array.new_data"
-            :: index typ
-            :: index data
+            :: index st.type_names typ
+            :: index st.data_names data
             :: (expression e @ expression e'))
         ]
     | ArrayGet (None, typ, e, e') ->
-        [ List (Atom "array.get" :: index typ :: (expression e @ expression e')) ]
+        [ List
+            (Atom "array.get" :: index st.type_names typ :: (expression e @ expression e'))
+        ]
     | ArrayGet (Some s, typ, e, e') ->
         [ List
-            (Atom (signage "array.get" s) :: index typ :: (expression e @ expression e'))
+            (Atom (signage "array.get" s)
+            :: index st.type_names typ
+            :: (expression e @ expression e'))
         ]
     | ArrayLen e -> [ List (Atom "array.len" :: expression e) ]
     | StructNew (typ, l) ->
-        [ List (Atom "struct.new" :: index typ :: List.concat (List.map ~f:expression l))
+        [ List
+            (Atom "struct.new"
+            :: index st.type_names typ
+            :: List.concat (List.map ~f:expression l))
         ]
     | StructGet (None, typ, i, e) ->
-        [ List (Atom "struct.get" :: index typ :: Atom (string_of_int i) :: expression e)
+        [ List
+            (Atom "struct.get"
+            :: index st.type_names typ
+            :: Atom (string_of_int i)
+            :: expression e)
         ]
     | StructGet (Some s, typ, i, e) ->
         [ List
             (Atom (signage "struct.get" s)
-            :: index typ
+            :: index st.type_names typ
             :: Atom (string_of_int i)
             :: expression e)
         ]
-    | RefCast (ty, e) -> [ List (Atom "ref.cast" :: ref_type ty :: expression e) ]
-    | RefTest (ty, e) -> [ List (Atom "ref.test" :: ref_type ty :: expression e) ]
+    | RefCast (ty, e) -> [ List (Atom "ref.cast" :: ref_type st ty :: expression e) ]
+    | RefTest (ty, e) -> [ List (Atom "ref.test" :: ref_type st ty :: expression e) ]
     | RefEq (e, e') -> [ List (Atom "ref.eq" :: (expression e @ expression e')) ]
-    | RefNull ty -> [ List [ Atom "ref.null"; heap_type ty ] ]
+    | RefNull ty -> [ List [ Atom "ref.null"; heap_type st ty ] ]
     | Br_on_cast (i, ty, ty', e) ->
         [ List
             (Atom "br_on_cast"
             :: Atom (string_of_int i)
-            :: ref_type ty
-            :: ref_type ty'
+            :: ref_type st ty
+            :: ref_type st ty'
             :: expression e)
         ]
     | Br_on_cast_fail (i, ty, ty', e) ->
         [ List
             (Atom "br_on_cast_fail"
             :: Atom (string_of_int i)
-            :: ref_type ty
-            :: ref_type ty'
+            :: ref_type st ty
+            :: ref_type st ty'
             :: expression e)
         ]
     | ExternInternalize e -> [ List (Atom "extern.internalize" :: expression e) ]
     | ExternExternalize e -> [ List (Atom "extern.externalize" :: expression e) ]
     | IfExpr (ty, cond, ift, iff) ->
         [ List
-            ((Atom "if" :: block_type { params = []; result = [ ty ] })
+            ((Atom "if" :: block_type st { params = []; result = [ ty ] })
             @ expression cond
             @ [ List (Atom "then" :: expression ift) ]
             @ [ List (Atom "else" :: expression iff) ])
@@ -375,14 +481,14 @@ let expression_or_instructions ctx in_function =
         ]
     | LocalSet (i, Seq (l, e)) -> instructions (l @ [ LocalSet (i, e) ])
     | LocalSet (i, e) ->
-        [ List (Atom "local.set" :: Atom (string_of_int i) :: expression e) ]
-    | GlobalSet (nm, e) -> [ List (Atom "global.set" :: symbol nm :: expression e) ]
-    | Loop (ty, l) -> [ List (Atom "loop" :: (block_type ty @ instructions l)) ]
-    | Block (ty, l) -> [ List (Atom "block" :: (block_type ty @ instructions l)) ]
+        [ List (Atom "local.set" :: index st.local_names i :: expression e) ]
+    | GlobalSet (nm, e) -> [ List (Atom "global.set" :: symbol st nm :: expression e) ]
+    | Loop (ty, l) -> [ List (Atom "loop" :: (block_type st ty @ instructions l)) ]
+    | Block (ty, l) -> [ List (Atom "block" :: (block_type st ty @ instructions l)) ]
     | If (ty, e, l1, l2) ->
         [ List
             (Atom "if"
-            :: (block_type ty
+            :: (block_type st ty
                @ expression e
                @ list ~always:true "then" instructions (remove_nops l1)
                @ list "else" instructions (remove_nops l2)))
@@ -390,11 +496,11 @@ let expression_or_instructions ctx in_function =
     | Try (ty, body, catches, catch_all) ->
         [ List
             (Atom "try"
-            :: (block_type ty
+            :: (block_type st ty
                @ List (Atom "do" :: instructions body)
                  :: (List.map
                        ~f:(fun (tag, l) ->
-                         List (Atom "catch" :: index tag :: instructions l))
+                         List (Atom "catch" :: index st.tag_names tag :: instructions l))
                        catches
                     @
                     match catch_all with
@@ -425,36 +531,44 @@ let expression_or_instructions ctx in_function =
             | None -> []
             | Some e -> expression e))
         ]
-    | Throw (tag, e) -> [ List (Atom "throw" :: index tag :: expression e) ]
+    | Throw (tag, e) -> [ List (Atom "throw" :: index st.tag_names tag :: expression e) ]
     | Rethrow i -> [ List [ Atom "rethrow"; Atom (string_of_int i) ] ]
     | CallInstr (f, l) ->
-        [ List (Atom "call" :: index f :: List.concat (List.map ~f:expression l)) ]
+        [ List
+            (Atom "call"
+            :: index st.func_names f
+            :: List.concat (List.map ~f:expression l))
+        ]
     | Nop -> []
     | Push e -> expression e
     | ArraySet (typ, e, e', e'') ->
         [ List
             (Atom "array.set"
-            :: index typ
+            :: index st.type_names typ
             :: (expression e @ expression e' @ expression e''))
         ]
     | StructSet (typ, i, e, e') ->
         [ List
             (Atom "struct.set"
-            :: index typ
+            :: index st.type_names typ
             :: Atom (string_of_int i)
             :: (expression e @ expression e'))
         ]
     | Return_call_indirect (typ, e, l) ->
         [ List
-            ((Atom "return_call_indirect" :: func_type typ)
+            ((Atom "return_call_indirect" :: func_type st typ)
             @ List.concat (List.map ~f:expression (l @ [ e ])))
         ]
     | Return_call (f, l) ->
-        [ List (Atom "return_call" :: index f :: List.concat (List.map ~f:expression l)) ]
+        [ List
+            (Atom "return_call"
+            :: index st.func_names f
+            :: List.concat (List.map ~f:expression l))
+        ]
     | Return_call_ref (typ, e, l) ->
         [ List
             (Atom "return_call_ref"
-            :: index typ
+            :: index st.type_names typ
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
     | Location (loc, i) -> (
@@ -467,18 +581,29 @@ let expression_or_instructions ctx in_function =
   and instructions l = List.concat (List.map ~f:instruction l) in
   expression, instructions
 
-let expression ctx = fst (expression_or_instructions ctx false)
+let expression ctx st = fst (expression_or_instructions ctx st false)
 
-let instructions ctx = snd (expression_or_instructions ctx true)
+let instructions ctx st = snd (expression_or_instructions ctx st true)
 
-let funct ctx name exported_name typ locals body =
+let funct ctx st name exported_name typ param_names locals body =
+  let st =
+    { st with
+      local_names =
+        assign_names
+          ~reversed:false
+          Code.Var.get_name
+          (param_names @ List.map ~f:fst locals)
+    }
+  in
   List
-    ((Atom "func" :: index name :: export exported_name)
-    @ func_type typ
-    @ value_type_list "local" locals
-    @ instructions ctx body)
+    ((Atom "func" :: index st.func_names name :: export exported_name)
+    @ func_type st ~param_names typ
+    @ List.map
+        ~f:(fun (i, t) -> List [ Atom "local"; index st.local_names i; value_type st t ])
+        locals
+    @ instructions ctx st body)
 
-let import f =
+let import st f =
   match f with
   | Function _ | Global _ | Data _ | Tag _ | Type _ -> []
   | Import { import_module; import_name; name; desc } ->
@@ -488,9 +613,13 @@ let import f =
           ; quoted_name import_name
           ; List
               (match desc with
-              | Fun typ -> Atom "func" :: index name :: func_type typ
-              | Global ty -> [ Atom "global"; index name; global_type ty ]
-              | Tag ty -> [ Atom "tag"; index name; List [ Atom "param"; value_type ty ] ])
+              | Fun typ -> Atom "func" :: index st.func_names name :: func_type st typ
+              | Global ty -> [ Atom "global"; symbol st (V name); global_type st ty ]
+              | Tag ty ->
+                  [ Atom "tag"
+                  ; index st.tag_names name
+                  ; List [ Atom "param"; value_type st ty ]
+                  ])
           ]
       ]
 
@@ -519,43 +648,53 @@ let data_contents ctx contents =
     contents;
   escape_string (Buffer.contents b)
 
-let type_field { name; typ; supertype; final } =
+let type_field st { name; typ; supertype; final } =
   if final && Option.is_none supertype
-  then List [ Atom "type"; index name; str_type typ ]
+  then List [ Atom "type"; index st.type_names name; str_type st typ ]
   else
     List
       [ Atom "type"
-      ; index name
+      ; index st.type_names name
       ; List
           (Atom "sub"
           :: ((if final then [ Atom "final" ] else [])
              @ (match supertype with
-               | Some supertype -> [ index supertype ]
+               | Some supertype -> [ index st.type_names supertype ]
                | None -> [])
-             @ [ str_type typ ]))
+             @ [ str_type st typ ]))
       ]
 
-let field ctx f =
+let field ctx st f =
   match f with
-  | Function { name; exported_name; typ; locals; body } ->
-      [ funct ctx name exported_name typ locals body ]
+  | Function { name; exported_name; typ; param_names; locals; body } ->
+      [ funct ctx st name exported_name typ param_names locals body ]
   | Global { name; typ; init } ->
-      [ List (Atom "global" :: symbol name :: global_type typ :: expression ctx init) ]
+      [ List
+          (Atom "global" :: symbol st name :: global_type st typ :: expression ctx st init)
+      ]
   | Tag { name; typ } ->
-      [ List [ Atom "tag"; index name; List [ Atom "param"; value_type typ ] ] ]
+      [ List
+          [ Atom "tag"
+          ; index st.tag_names name
+          ; List [ Atom "param"; value_type st typ ]
+          ]
+      ]
   | Import _ -> []
   | Data { name; active; contents; _ } ->
       [ List
           (Atom "data"
-          :: index name
+          :: index st.data_names name
           :: ((if active
                then
-                 expression ctx (Const (I32 (Int32.of_int (lookup_symbol ctx (V name)))))
+                 expression
+                   ctx
+                   st
+                   (Const (I32 (Int32.of_int (lookup_symbol ctx (V name)))))
                else [])
              @ [ Atom ("\"" ^ data_contents ctx contents ^ "\"") ]))
       ]
-  | Type [ t ] -> [ type_field t ]
-  | Type l -> [ List (Atom "rec" :: List.map ~f:type_field l) ]
+  | Type [ t ] -> [ type_field st t ]
+  | Type l -> [ List (Atom "rec" :: List.map ~f:(type_field st) l) ]
 
 let data_size contents =
   List.fold_left
@@ -584,6 +723,7 @@ let data_offsets fields =
     fields
 
 let f ~debug ch fields =
+  let st = build_name_tables fields in
   let heap_base, addresses = data_offsets fields in
   let ctx =
     { addresses
@@ -593,7 +733,7 @@ let f ~debug ch fields =
     ; debug
     }
   in
-  let other_fields = List.concat (List.map ~f:(fun f -> field ctx f) fields) in
+  let other_fields = List.concat (List.map ~f:(fun f -> field ctx st f) fields) in
   let funct_table =
     let functions =
       List.map
@@ -608,7 +748,7 @@ let f ~debug ch fields =
       [ List
           [ Atom "table"
           ; Atom "funcref"
-          ; List (Atom "elem" :: List.map ~f:index functions)
+          ; List (Atom "elem" :: List.map ~f:(index st.func_names) functions)
           ]
       ]
   in
@@ -622,7 +762,11 @@ let f ~debug ch fields =
     if List.is_empty functions
     then []
     else
-      [ List (Atom "elem" :: Atom "declare" :: Atom "func" :: List.map ~f:index functions)
+      [ List
+          (Atom "elem"
+          :: Atom "declare"
+          :: Atom "func"
+          :: List.map ~f:(index st.func_names) functions)
       ]
   in
   Format.fprintf
@@ -631,7 +775,7 @@ let f ~debug ch fields =
     format_sexp
     (List
        (Atom "module"
-       :: (List.concat (List.map ~f:import fields)
+       :: (List.concat (List.map ~f:(fun i -> import st i) fields)
           @ (if Code.Var.Map.is_empty addresses
              then []
              else

@@ -295,13 +295,13 @@ module type S = sig
     -> unit Wa_code_generation.t
 
   val post_process_function_body :
-       param_count:int
-    -> locals:Wa_ast.value_type list
+       param_names:Wa_ast.var list
+    -> locals:(Wa_ast.var * Wa_ast.value_type) list
     -> Wa_ast.instruction list
     -> Wa_ast.instruction list
 
   val entry_point :
        context:Wa_code_generation.context
     -> toplevel_fun:Wa_ast.var
-    -> Wa_ast.func_type * unit Wa_code_generation.t
+    -> Wa_ast.func_type * Wa_ast.var list * unit Wa_code_generation.t
 end
