@@ -20,11 +20,12 @@
 
 (rule
  (target test_toplevel.referencejs)
+ (deps test_toplevel.js)
  (enabled_if
   (and
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
- (deps test_toplevel.js)
+   (<> %{profile} wasm-effects)
+   (>= %{ocaml_version} 5.2)))
  (action
   (with-stdout-to
    %{target}
@@ -35,7 +36,8 @@
  (enabled_if
   (and
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+   (<> %{profile} wasm-effects)
+   (>= %{ocaml_version} 5.2)))
  (deps test_toplevel.reference test_toplevel.referencejs)
  (action
   (diff test_toplevel.reference test_toplevel.referencejs)))
