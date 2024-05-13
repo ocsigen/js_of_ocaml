@@ -78,7 +78,7 @@ jobs:
           path: |
             ~/.opam
             _opam
-            /opt/hostedtoolcache/opam/2.1.5/x86_64/opam
+            /opt/hostedtoolcache/opam
           key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
       - name: Install OCaml ${{ matrix.ocaml-compiler }}
@@ -97,7 +97,7 @@ jobs:
       - name: Set opam path
         if: steps.cache-ocaml.outputs.cache-hit
         run: |
-          echo /opt/hostedtoolcache/opam/2.1.5/x86_64 >> $GITHUB_PATH
+          echo /opt/hostedtoolcache/opam/*/x86_64 >> $GITHUB_PATH
 
       - name: Cache OCaml
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
@@ -106,7 +106,7 @@ jobs:
           path: |
             ~/.opam
             _opam
-            /opt/hostedtoolcache/opam/2.1.5/x86_64/opam
+            /opt/hostedtoolcache/opam
           key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
       - name: Checkout code
