@@ -13,6 +13,8 @@
 (rule
  (target test_toplevel.referencejs)
  (deps test_toplevel.js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
  (action
   (with-stdout-to
    %{target}
@@ -20,6 +22,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
  (deps test_toplevel.reference test_toplevel.referencejs)
  (action
   (diff test_toplevel.reference test_toplevel.referencejs)))
