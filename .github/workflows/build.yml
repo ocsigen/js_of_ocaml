@@ -24,6 +24,7 @@ jobs:
           - "4.12"
           - "4.13"
           - "5.0"
+          - "5.1"
         skip-test:
           - true
         skip-doc:
@@ -47,17 +48,17 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.1"
+            ocaml-compiler: "5.2"
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: "5.1"
+            ocaml-compiler: "5.2"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: ocaml.5.1.1,ocaml-option-mingw
+            ocaml-compiler: ocaml.5.2.0,ocaml-option-mingw
             skip-effects: false
             skip-test: false
             skip-doc: true
@@ -145,7 +146,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: "5.1"
+          ocaml-compiler: "5.2"
           allow-prerelease-opam: true
           dune-cache: true
 
@@ -161,7 +162,7 @@ jobs:
       - name: Set-up OCaml
         uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: "5.1"
+          ocaml-compiler: "5.2"
           allow-prerelease-opam: true
           dune-cache: true
 
