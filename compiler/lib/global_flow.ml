@@ -83,7 +83,7 @@ type escape_status =
 
 type state =
   { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : Var.Set.t array (* Dependency between variables *)
+  ; deps : (Var.t, unit) Hashtbl.t array (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
         (* Any value bound to this variable may escape *)
@@ -108,7 +108,7 @@ let add_var st x = Var.ISet.add st.vars x
 (* x depends on y *)
 let add_dep st x y =
   let idx = Var.idx y in
-  st.deps.(idx) <- Var.Set.add x st.deps.(idx)
+  Hashtbl.replace st.deps.(idx) x ()
 
 let add_expr_def st x e =
   add_var st x;
@@ -547,7 +547,7 @@ module Solver = G.Solver (Domain)
 let solver st =
   let g =
     { G.domain = st.vars
-    ; G.iter_children = (fun f x -> Var.Set.iter f st.deps.(Var.idx x))
+    ; G.iter_children = (fun f x -> Hashtbl.iter (fun k () -> f k) st.deps.(Var.idx x))
     }
   in
   Solver.f' () g (propagate st)
@@ -568,7 +568,7 @@ let f ~fast p =
   let rets = return_values p in
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
-  let deps = Array.make nv Var.Set.empty in
+  let deps = Array.init nv ~f:(fun _ -> Hashtbl.create 0) in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv No in
   let variable_possibly_mutable = Array.make nv false in

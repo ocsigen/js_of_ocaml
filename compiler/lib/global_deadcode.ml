@@ -90,9 +90,10 @@ type usage_kind =
 
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
-let usages prog (global_info : Global_flow.info) : usage_kind Var.Map.t Var.Tbl.t =
-  let uses = Var.Tbl.make () Var.Map.empty in
-  let add_use kind x y = Var.Tbl.set uses y (Var.Map.add x kind (Var.Tbl.get uses y)) in
+let usages prog (global_info : Global_flow.info) : (Var.t, usage_kind) Hashtbl.t Var.Tbl.t
+    =
+  let uses = Var.Tbl.init () ~f:(fun (_i : int) -> Hashtbl.create 0) in
+  let add_use kind x y = Hashtbl.replace (Var.Tbl.get uses y) x kind in
   let add_arg_dep params args =
     List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
   in
@@ -303,7 +304,7 @@ let propagate uses defs live_vars live_table x =
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
   in
-  Var.Map.fold
+  Hashtbl.fold
     (fun y usage_kind live -> Domain.join (contribution y usage_kind) live)
     (Var.Tbl.get uses x)
     (Domain.join (Var.Tbl.get live_vars x) (Var.Tbl.get live_table x))
@@ -311,7 +312,7 @@ let propagate uses defs live_vars live_table x =
 let solver vars uses defs live_vars =
   let g =
     { G.domain = vars
-    ; G.iter_children = (fun f x -> Var.Map.iter (fun y _ -> f y) (Var.Tbl.get uses x))
+    ; G.iter_children = (fun f x -> Hashtbl.iter (fun y _ -> f y) (Var.Tbl.get uses x))
     }
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
@@ -400,7 +401,7 @@ module Print = struct
     Var.Tbl.iter
       (fun v ds ->
         Format.eprintf "%a: { " Var.print v;
-        Var.Map.iter
+        Hashtbl.iter
           (fun d k ->
             Format.eprintf
               "(%a, %s) "

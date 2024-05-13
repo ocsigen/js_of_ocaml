@@ -101,6 +101,8 @@ module Var : sig
 
     val make : size -> 'a -> 'a t
 
+    val init : size -> f:(int -> 'a) -> 'a t
+
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
 
