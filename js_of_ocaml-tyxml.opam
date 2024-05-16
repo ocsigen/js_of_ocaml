@@ -16,7 +16,7 @@ depends: [
   "ocaml" {>= "4.08"}
   "js_of_ocaml" {= version}
   "js_of_ocaml-ppx" {= version}
-  "react" {>= "1.2.1"}
+  "react" {>= "1.2.2"}
   "reactiveData" {>= "0.2"}
   "tyxml" {>= "4.6"}
   "num" {with-test}
