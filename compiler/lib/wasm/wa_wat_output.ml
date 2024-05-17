@@ -574,7 +574,8 @@ let expression_or_instructions ctx st in_function =
     | Location (loc, i) -> (
         let loc = Generate.source_location ctx.debug loc in
         match loc with
-        | Javascript.N | U | Pi Parse_info.{ src = None; _ } -> instruction i
+        | Javascript.N | U | Pi Parse_info.{ src = None; _ } ->
+            Comment "@" :: instruction i
         | Pi Parse_info.{ src = Some src; col; line; _ } ->
             let loc = Format.sprintf "%s:%d:%d" src line col in
             Comment ("@ " ^ loc) :: instruction i)

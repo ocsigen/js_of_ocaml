@@ -635,13 +635,8 @@ module Generate (Target : Wa_target_sig.S) = struct
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
-  and emit_location loc instrs =
-    match loc with
-    | No -> instrs
-    | Before _ | After _ -> with_location loc instrs
-
   and translate_instr ctx stack_ctx context (i, loc) =
-    emit_location
+    with_location
       loc
       (match i with
       | Assign (x, y) ->
@@ -877,7 +872,7 @@ module Generate (Target : Wa_target_sig.S) = struct
           let* () = Stack.perform_reloads stack_ctx (`Branch (fst block.branch)) in
           let* () = Stack.perform_spilling stack_ctx (`Block pc) in
           let branch, loc = block.branch in
-          emit_location
+          with_location
             loc
             (match branch with
             | Branch cont ->
