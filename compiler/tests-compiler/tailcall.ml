@@ -46,7 +46,7 @@ let%expect_test _ =
     {|
     function fun1(param){
      function odd$0(counter, x){
-      if(0 === x) return 0;
+      if(Object.is(0, x)) return 0;
       var _f_ = x - 1 | 0;
       if(counter >= 50) return caml_trampoline_return(even$0, [0, _f_]);
       var counter$0 = counter + 1 | 0;
@@ -54,7 +54,7 @@ let%expect_test _ =
      }
      function odd(x){return caml_trampoline(odd$0(0, x));}
      function even$0(counter, x){
-      if(0 === x) return 1;
+      if(Object.is(0, x)) return 1;
       var _e_ = x - 1 | 0;
       if(counter >= 50) return caml_trampoline_return(odd$0, [0, _e_]);
       var counter$0 = counter + 1 | 0;
@@ -62,7 +62,7 @@ let%expect_test _ =
      }
      function even(x){return caml_trampoline(even$0(0, x));}
      var _b_ = even(1);
-     if(odd(1) === _b_)
+     if(Object.is(odd(1), _b_))
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); var _c_ = log_success(0); return _c_;}
      catch(_d_){return caml_call1(log_failure, cst_too_much_recursion);}
@@ -95,15 +95,15 @@ let%expect_test _ =
     {|
     function fun1(param){
      function odd$0(x){
-      return 0 === x ? 0 : caml_trampoline_return(even$0, [0, x - 1 | 0]);
+      return Object.is(0, x) ? 0 : caml_trampoline_return(even$0, [0, x - 1 | 0]);
      }
      function odd(x){return caml_trampoline(odd$0(x));}
      function even$0(x){
-      return 0 === x ? 1 : caml_trampoline_return(odd$0, [0, x - 1 | 0]);
+      return Object.is(0, x) ? 1 : caml_trampoline_return(odd$0, [0, x - 1 | 0]);
      }
      function even(x){return caml_trampoline(even$0(x));}
      var _b_ = even(1);
-     if(odd(1) === _b_)
+     if(Object.is(odd(1), _b_))
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); var _c_ = log_success(0); return _c_;}
      catch(_d_){return caml_call1(log_failure, cst_too_much_recursion);}
