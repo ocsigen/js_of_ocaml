@@ -112,9 +112,10 @@ module Generate (Target : Wa_target_sig.S) = struct
                 match kind, funct with
                 | `Index, W.ConstSym (V g, 0) | `Ref _, W.RefFunc g ->
                     (* Functions with constant closures ignore their
-                       environment *)
-                    let* unit = Value.unit in
-                    return (W.Call (g, List.rev (unit :: acc)))
+                       environment. In case of partial application, we
+                       still need the closure. *)
+                    let* cl = if exact then Value.unit else return closure in
+                    return (W.Call (g, List.rev (cl :: acc)))
                 | `Index, _ ->
                     return
                       (W.Call_indirect
