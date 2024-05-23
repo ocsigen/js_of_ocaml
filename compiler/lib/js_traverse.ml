@@ -1351,7 +1351,7 @@ class rename_variable ~esm =
         when StringMap.mem name' subst ->
           let x = Prop_binding (PNI name, (BindingIdent ident, e)) in
           super#binding_property x
-      | x -> x
+      | x -> super#binding_property x
 
     method expression e =
       match e with

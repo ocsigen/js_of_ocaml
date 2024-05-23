@@ -1,3 +1,8 @@
+# 5.8.2 (2024-05-24) - Luc
+
+## Bug fixes
+* Compiler: fix variable renaming for property binding and assignment target (part 2)
+
 # 5.8.1 (2024-05-05) - Lille
 
 ## Features/Changes

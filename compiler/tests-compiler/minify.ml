@@ -471,4 +471,16 @@ function h(x) {
           1: function
           2: h(a){var
           3: b;for({toto:b}in
-          4: a)console.log(b)} |}])
+          4: a)console.log(b)} |}];
+      minify
+        {|
+function h(f) {
+  var { toto : c} =  f();
+  console.log({ toto : c });
+}
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: function
+          2: h(a){var{toto:b}=a();console.log({toto:b})} |}])
