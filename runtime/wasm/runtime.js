@@ -1,18 +1,8 @@
 ((js) => async (args) => {
     "use strict";
-    let {src, generated} = args;
-    function loadRelative(src) {
-      const path = require('path');
-      const f = path.join(path.dirname(require.main.filename),src);
-      return require('fs/promises').readFile(f)
-    }
-    function fetchRelative(src) {
-      const base = globalThis?.document?.currentScript?.src;
-      const url = base?new URL(src, base):src;
-      return fetch(url)
-    }
+    let {link, src, generated} = args;
+
     const isNode = globalThis?.process?.versions?.node;
-    const code = isNode?loadRelative(src):fetchRelative(src);
 
     let math =
         {cos:Math.cos, sin:Math.sin, tan:Math.tan,
@@ -357,9 +347,52 @@
                        env:{}},
                       generated)
     const options = { builtins: ['js-string', 'text-decoder', 'text-encoder'] }
+
+    function loadRelative(src) {
+      const path = require('path');
+      const f = path.join(path.dirname(require.main.filename),src);
+      return require('fs/promises').readFile(f)
+    }
+    function fetchRelative(src) {
+      const base = globalThis?.document?.currentScript?.src;
+      const url = base?new URL(src, base):src;
+      return fetch(url)
+    }
+    const loadCode= isNode?loadRelative:fetchRelative;
+    async function instantiateModule(code) {
+      return isNode?WebAssembly.instantiate(await code, imports, options)
+               :WebAssembly.instantiateStreaming(code,imports, options)
+    }
+    async function instantiateFromDir() {
+      imports.OCaml = {};
+      const deps = []
+      async function loadModule(module, isRuntime) {
+        const sync = module[1].constructor !== Array
+        async function instantiate () {
+          const code = loadCode(src + "/" + module[0] + ".wasm")
+          await Promise.all(sync?deps:module[1].map((i)=>deps[i]));
+          const wasmModule = await instantiateModule(code)
+          Object.assign(isRuntime?imports.env:imports.OCaml,
+                        wasmModule.instance.exports);
+        }
+        const promise = instantiate();
+        deps.push(promise);
+        return promise;
+      }
+      async function loadModules(lst) {
+        for (const module of lst) {
+          await loadModule(module);
+        }
+      }
+      await loadModule(link[0], 1);
+      await loadModule(link[1]);
+      const workers = new Array(20).fill(link.slice(2).values()).map(loadModules);
+      await Promise.all(workers);
+      return {instance:{exports: Object.assign(imports.env, imports.OCaml)}}
+    }
     const wasmModule =
-          isNode?await WebAssembly.instantiate(await code, imports, options)
-                :await WebAssembly.instantiateStreaming(code,imports, options)
+      await ((link)?instantiateFromDir()
+                   :instantiateModule(loadCode(src)))
 
     var {caml_callback, caml_alloc_tm, caml_start_fiber,
          caml_handle_uncaught_exception, caml_buffer,

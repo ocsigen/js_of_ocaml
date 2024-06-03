@@ -668,9 +668,11 @@ let field ctx st f =
   match f with
   | Function { name; exported_name; typ; param_names; locals; body } ->
       [ funct ctx st name exported_name typ param_names locals body ]
-  | Global { name; typ; init } ->
+  | Global { name; exported_name; typ; init } ->
       [ List
-          (Atom "global" :: symbol st name :: global_type st typ :: expression ctx st init)
+          (Atom "global"
+          :: symbol st name
+          :: (export exported_name @ (global_type st typ :: expression ctx st init)))
       ]
   | Tag { name; typ } ->
       [ List

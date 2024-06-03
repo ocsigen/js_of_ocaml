@@ -41,6 +41,7 @@ type context =
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Var.Set.t
   ; value_type : W.value_type
+  ; mutable unit_name : string option
   }
 
 let make_context ~value_type =
@@ -65,6 +66,7 @@ let make_context ~value_type =
   ; fragments = StringMap.empty
   ; globalized_variables = Var.Set.empty
   ; value_type
+  ; unit_name = None
   }
 
 type var =
@@ -157,8 +159,9 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   (* I31, struct and arrays have no subtype (of a different kind) *)
   | _, (I31 | Type _) -> false, st
 
-let register_global name ?(constant = false) typ init st =
-  st.context.other_fields <- W.Global { name; typ; init } :: st.context.other_fields;
+let register_global name ?exported_name ?(constant = false) typ init st =
+  st.context.other_fields <-
+    W.Global { name; exported_name; typ; init } :: st.context.other_fields;
   (match name with
   | S _ -> ()
   | V name ->
@@ -240,6 +243,8 @@ let set_closure_env f env st =
 let get_closure_env f st = Var.Map.find f st.context.closure_envs, st
 
 let is_closure f st = Var.Map.mem f st.context.closure_envs, st
+
+let unit_name st = st.context.unit_name, st
 
 let var x st =
   try Var.Map.find x st.vars, st

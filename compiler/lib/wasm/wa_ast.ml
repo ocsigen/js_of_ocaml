@@ -227,6 +227,7 @@ type module_field =
       }
   | Global of
       { name : symbol
+      ; exported_name : string option
       ; typ : global_type
       ; init : expression
       }

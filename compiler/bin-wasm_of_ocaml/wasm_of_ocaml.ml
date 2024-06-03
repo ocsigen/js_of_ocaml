@@ -50,7 +50,7 @@ let () =
         (Cmdliner.Cmd.group
            ~default:Compile.term
            (Compile.info "wasm_of_ocaml")
-           [ Compile.command ])
+           [ Link.command; Build_runtime.command; Compile.command ])
     with
     | Ok (`Ok () | `Help | `Version) ->
         if !warnings > 0 && !werror

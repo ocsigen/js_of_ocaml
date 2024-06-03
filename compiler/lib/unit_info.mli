@@ -39,3 +39,7 @@ val prefix : string
 val to_string : t -> string
 
 val parse : t -> string -> t option
+
+val to_json : t -> Yojson.Basic.t
+
+val from_json : Yojson.Basic.t -> t

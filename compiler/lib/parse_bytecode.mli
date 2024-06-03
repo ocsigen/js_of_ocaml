@@ -90,7 +90,7 @@ val from_string :
   -> string
   -> Code.program * Debug.t
 
-val predefined_exceptions : unit -> Code.program * Unit_info.t
+val predefined_exceptions : target:[ `JavaScript | `Wasm ] -> Code.program * Unit_info.t
 
 val link_info :
      target:[ `JavaScript | `Wasm ]

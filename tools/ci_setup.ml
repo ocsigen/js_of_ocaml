@@ -18,7 +18,7 @@ let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-s
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
-let do_not_pin = StringSet.of_list [ "wasocaml"; "wasm_of_ocaml" ]
+let do_not_pin = StringSet.of_list [ "wasocaml"; "wasm_of_ocaml"; "dune" ]
 
 let do_pin = StringSet.of_list [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now" ]
 
