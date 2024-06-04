@@ -62,3 +62,5 @@ val link :
   -> enable_source_maps:bool
   -> files:string list
   -> unit
+
+val source_name : int option -> int option -> string -> string

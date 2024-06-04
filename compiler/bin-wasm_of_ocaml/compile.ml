@@ -214,6 +214,23 @@ let build_js_runtime ~primitives ?runtime_arguments () =
   in
   prelude ^ launcher
 
+let add_source_map sourcemap_don't_inline_content z opt_source_map_file =
+  Option.iter
+    ~f:(fun file ->
+      Zip.add_file z ~name:"source_map.map" ~file;
+      if not sourcemap_don't_inline_content
+      then
+        let sm = Wa_source_map.load file in
+        Wa_source_map.iter_sources sm (fun i j file ->
+            if Sys.file_exists file && not (Sys.is_directory file)
+            then
+              let sm = Fs.read_file file in
+              Zip.add_entry
+                z
+                ~name:(Wa_link.source_name i j file)
+                ~contents:(Yojson.Basic.to_string (`String sm))))
+    opt_source_map_file
+
 let run
     { Cmd_arg.common
     ; profile
@@ -332,7 +349,7 @@ let run
        let include_dirs = Filename.dirname input_file :: include_dirs in
        res, ch, (fun () -> close_in ch), include_dirs
      in
-     let compile_cmo z cmo =
+     let compile_cmo cmo cont =
        let t1 = Timer.make () in
        let code =
          Parse_bytecode.from_cmo
@@ -345,31 +362,29 @@ let run
        let unit_info = Unit_info.of_cmo cmo in
        let unit_name = Ocaml_compiler.Cmo_format.name cmo in
        if times () then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 unit_name;
-       Fs.with_intermediate_file (Filename.temp_file unit_name ".wat")
-       @@ fun wat_file ->
        Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
        @@ fun tmp_wasm_file ->
-       Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm.map")
-       @@ fun tmp_map_file ->
-       let strings, fragments =
-         output_gen wat_file (output code ~unit_name:(Some unit_name))
+       opt_with
+         Fs.with_intermediate_file
+         (if enable_source_maps
+          then Some (Filename.temp_file unit_name ".wasm.map")
+          else None)
+       @@ fun opt_tmp_map_file ->
+       let unit_data =
+         Fs.with_intermediate_file (Filename.temp_file unit_name ".wat")
+         @@ fun wat_file ->
+         let strings, fragments =
+           output_gen wat_file (output code ~unit_name:(Some unit_name))
+         in
+         Wa_binaryen.optimize
+           ~profile
+           ~opt_input_sourcemap:None
+           ~opt_output_sourcemap:opt_tmp_map_file
+           ~input_file:wat_file
+           ~output_file:tmp_wasm_file;
+         { Wa_link.unit_name; unit_info; strings; fragments }
        in
-       let opt_output_sourcemap =
-         if enable_source_maps then Some tmp_map_file else None
-       in
-       Wa_binaryen.optimize
-         ~profile
-         ~opt_input_sourcemap:None
-         ~opt_output_sourcemap
-         ~input_file:wat_file
-         ~output_file:tmp_wasm_file;
-       Option.iter
-         ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
-         opt_output_sourcemap;
-       Zip.add_file z ~name:(unit_name ^ ".wasm") ~file:tmp_wasm_file;
-       if enable_source_maps
-       then Zip.add_file z ~name:(unit_name ^ ".wasm.map") ~file:tmp_map_file;
-       { Wa_link.unit_name; unit_info; strings; fragments }
+       cont unit_data unit_name tmp_wasm_file opt_tmp_map_file
      in
      (match kind with
      | `Exe ->
@@ -448,14 +463,52 @@ let run
          Fs.gen_file output_file
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
-         let unit_data = [ compile_cmo z cmo ] in
+         let compile_cmo' z cmo =
+           compile_cmo cmo (fun unit_data _ tmp_wasm_file opt_tmp_map_file ->
+               Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
+               add_source_map sourcemap_don't_inline_content z opt_tmp_map_file;
+               unit_data)
+         in
+         let unit_data = [ compile_cmo' z cmo ] in
          Wa_link.add_info z ~build_info:(Build_info.create `Cmo) ~unit_data ();
          Zip.close_out z
      | `Cma cma ->
          Fs.gen_file output_file
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
-         let unit_data = List.map ~f:(fun cmo -> compile_cmo z cmo) cma.lib_units in
+         let unit_data =
+           List.fold_right
+             ~f:(fun cmo cont l ->
+               compile_cmo cmo
+               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file ->
+               cont ((unit_data, unit_name, tmp_wasm_file, opt_tmp_map_file) :: l))
+             cma.lib_units
+             ~init:(fun l ->
+               Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
+               @@ fun tmp_wasm_file ->
+               opt_with
+                 Fs.with_intermediate_file
+                 (if enable_source_maps
+                  then Some (Filename.temp_file "wasm" ".map")
+                  else None)
+               @@ fun opt_output_sourcemap_file ->
+               let l = List.rev l in
+               Wa_wasm_link.f
+                 (List.map
+                    ~f:(fun (_, _, file, opt_source_map) ->
+                      { Wa_wasm_link.module_name = "OCaml"
+                      ; file
+                      ; code = None
+                      ; opt_source_map = Option.map ~f:(fun f -> `File f) opt_source_map
+                      })
+                    l)
+                 ~output_file:tmp_wasm_file
+                 ~opt_output_sourcemap_file;
+               Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
+               add_source_map sourcemap_don't_inline_content z opt_output_sourcemap_file;
+               List.map ~f:(fun (unit_data, _, _, _) -> unit_data) l)
+             []
+         in
          Wa_link.add_info z ~build_info:(Build_info.create `Cma) ~unit_data ();
          Zip.close_out z);
      close_ic ());
