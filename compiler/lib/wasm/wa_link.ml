@@ -385,23 +385,11 @@ let read_info z = info_from_sexp (Sexp.from_string (Zip.read_entry z ~name:"info
 
 let generate_start_function ~to_link ~out_file =
   let t1 = Timer.make () in
-  Fs.gen_file out_file
-  @@ fun wasm_file ->
-  let wat_file = Filename.chop_extension out_file ^ ".wat" in
-  (Filename.gen_file wat_file
+  Filename.gen_file out_file
   @@ fun ch ->
   let context = Wa_generate.start () in
   Wa_generate.add_init_function ~context ~to_link:("prelude" :: to_link);
-  Wa_generate.output
-    ch
-    ~context
-    ~debug:(Parse_bytecode.Debug.create ~include_cmis:false false));
-  Wa_binaryen.optimize
-    ~profile:(Driver.profile 1)
-    ~opt_input_sourcemap:None
-    ~opt_output_sourcemap:None
-    ~input_file:wat_file
-    ~output_file:wasm_file;
+  Wa_generate.wasm_output ch ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =
