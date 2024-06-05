@@ -822,8 +822,126 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "    build JS runtime: %a@." Timer.print t1;
   if times () then Format.eprintf "  emit: %a@." Timer.print t
 
-let link ~output_file ~linkall ~enable_source_maps ~files =
-  try link ~output_file ~linkall ~enable_source_maps ~files
+let opt_with action x f =
+  match x with
+  | None -> f None
+  | Some x -> action x (fun y -> f (Some y))
+
+let rec get_source_map_files files src_index =
+  let z = Zip.open_in files.(!src_index) in
+  incr src_index;
+  if Zip.has_entry z ~name:"source_map.map"
+  then
+    let data = Zip.read_entry z ~name:"source_map.map" in
+    let sm = Wa_source_map.parse data in
+    if not (Wa_source_map.is_empty sm)
+    then (
+      let l = ref [] in
+      Wa_source_map.iter_sources sm (fun i j file -> l := source_name i j file :: !l);
+      if not (List.is_empty !l)
+      then z, Array.of_list (List.rev !l)
+      else (
+        Zip.close_in z;
+        get_source_map_files files src_index))
+    else (
+      Zip.close_in z;
+      get_source_map_files files src_index)
+  else get_source_map_files files src_index
+
+let add_source_map files z opt_source_map_file =
+  Option.iter
+    ~f:(fun file ->
+      Zip.add_file z ~name:"source_map.map" ~file;
+      let sm = Wa_source_map.load file in
+      let files = Array.of_list files in
+      let src_index = ref 0 in
+      let st = ref None in
+      let finalize () =
+        match !st with
+        | Some (_, (z', _)) -> Zip.close_in z'
+        | None -> ()
+      in
+      Wa_source_map.iter_sources sm (fun i j file ->
+          let z', files =
+            match !st with
+            | Some (i', st) when Poly.equal i i' -> st
+            | _ ->
+                let st' = get_source_map_files files src_index in
+                finalize ();
+                st := Some (i, st');
+                st'
+          in
+          if Array.length files > 0 (* Source has source map *)
+          then
+            let name = files.(Option.value ~default:0 j) in
+            if Zip.has_entry z' ~name
+            then Zip.copy_file z' z ~src_name:name ~dst_name:(source_name i j file));
+      finalize ())
+    opt_source_map_file
+
+let make_library ~output_file ~enable_source_maps ~files =
+  let info =
+    List.map files ~f:(fun file ->
+        let build_info, _predefined_exceptions, unit_data =
+          Zip.with_open_in file read_info
+        in
+        (match Build_info.kind build_info with
+        | `Cmo -> ()
+        | `Runtime | `Cma | `Exe | `Unknown ->
+            failwith (Printf.sprintf "File '%s' is not a .wasmo file." file));
+        file, build_info, unit_data)
+  in
+  let build_info =
+    Build_info.with_kind
+      (match info with
+      | (file, bi, _) :: r ->
+          Build_info.configure bi;
+          List.fold_left
+            ~init:bi
+            ~f:(fun bi (file', bi', _) -> Build_info.merge file bi file' bi')
+            r
+      | [] -> Build_info.create `Cma)
+      `Cma
+  in
+  let unit_data = List.concat (List.map ~f:(fun (_, _, unit_data) -> unit_data) info) in
+  Fs.gen_file output_file
+  @@ fun tmp_output_file ->
+  let z = Zip.open_out tmp_output_file in
+  add_info z ~build_info ~unit_data ();
+  (*
+- Merge all code files into a single code file (gathering source maps)
+- Copy source files
+*)
+  Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
+  @@ fun tmp_wasm_file ->
+  opt_with
+    Fs.with_intermediate_file
+    (if enable_source_maps then Some (Filename.temp_file "wasm" ".map") else None)
+  @@ fun opt_output_sourcemap_file ->
+  Wa_wasm_link.f
+    (List.map
+       ~f:(fun file ->
+         let z' = Zip.open_in file in
+         { Wa_wasm_link.module_name = "OCaml"
+         ; file
+         ; code = Some (Zip.read_entry z' ~name:"code.wasm")
+         ; opt_source_map =
+             (if Zip.has_entry z' ~name:"source_map.map"
+              then Some (`Data (Zip.read_entry z' ~name:"source_map.map"))
+              else None)
+         })
+       files)
+    ~output_file:tmp_wasm_file
+    ~opt_output_sourcemap_file;
+  Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
+  add_source_map files z opt_output_sourcemap_file;
+  Zip.close_out z
+
+let link ~output_file ~linkall ~mklib ~enable_source_maps ~files =
+  try
+    if mklib
+    then make_library ~output_file ~enable_source_maps ~files
+    else link ~output_file ~linkall ~enable_source_maps ~files
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

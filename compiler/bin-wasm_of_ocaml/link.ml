@@ -25,6 +25,7 @@ type t =
   ; files : string list
   ; output_file : string
   ; linkall : bool
+  ; mklib : bool
   ; enable_source_maps : bool
   }
 
@@ -53,9 +54,16 @@ let options =
     let doc = "Link all compilation units." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
-  let build_t common no_sourcemap sourcemap output_file files linkall =
+  let mklib =
+    let doc =
+      "Build a library (.wasma file) with the .wasmo files given on the command line. \
+       Similar to ocamlc -a."
+    in
+    Arg.(value & flag & info [ "a" ] ~doc)
+  in
+  let build_t common no_sourcemap sourcemap output_file files linkall mklib =
     let enable_source_maps = (not no_sourcemap) && sourcemap in
-    `Ok { common; output_file; files; linkall; enable_source_maps }
+    `Ok { common; output_file; files; linkall; mklib; enable_source_maps }
   in
   let t =
     Term.(
@@ -65,13 +73,14 @@ let options =
       $ sourcemap
       $ output_file
       $ files
-      $ linkall)
+      $ linkall
+      $ mklib)
   in
   Term.ret t
 
-let f { common; output_file; files; linkall; enable_source_maps } =
+let f { common; output_file; files; linkall; enable_source_maps; mklib } =
   Jsoo_cmdline.Arg.eval common;
-  Wa_link.link ~output_file ~linkall ~enable_source_maps ~files
+  Wa_link.link ~output_file ~linkall ~mklib ~enable_source_maps ~files
 
 let info =
   Info.make
