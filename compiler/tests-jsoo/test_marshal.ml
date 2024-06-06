@@ -139,17 +139,19 @@ let%expect_test _ =
     "\132\149\166\189\r\022\206\021\001\147F\137d(\181/\253\000Xm\000\0000\n\
      \000\000'\016c\001\000\012\135\007E"
   in
-  let ocaml_5_1 =
+  let ocaml_5_1_0 =
     match String.split_on_char '.' Sys.ocaml_version with
-    | major :: minor :: _ ->
-        let major = int_of_string major and minor = int_of_string minor in
-        major > 5 || (major = 5 && minor >= 1)
+    | major :: minor1 :: minor2 :: _ ->
+        let major = int_of_string major
+        and minor1 = int_of_string minor1
+        and minor2 = int_of_string minor2 in
+        major > 5 || (major = 5 && minor1 = 1 && minor2 = 0)
     | _ -> assert false
   in
   let s =
     (* This would only work on OCaml 5.1.0 if we were not linking
        against compiler-libs *)
-    if ocaml_5_1 && not (Sys.win32 || Sys.cygwin)
+    if ocaml_5_1_0 && not (Sys.win32 || Sys.cygwin)
     then Marshal.from_string data 0
     else String.make 10000 'c'
   in
