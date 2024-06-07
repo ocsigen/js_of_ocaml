@@ -32,12 +32,11 @@ module type XML =
      and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
      and type elt = Dom.node Js.t
 
-class type ['a, 'b] weakMap =
-  object
-    method set : 'a -> 'b -> unit Js.meth
+class type ['a, 'b] weakMap = object
+  method set : 'a -> 'b -> unit Js.meth
 
-    method get : 'a -> 'b Js.Optdef.t Js.meth
-  end
+  method get : 'a -> 'b Js.Optdef.t Js.meth
+end
 
 let retain =
   let map : (Dom.node Js.t, Obj.t Js.js_array Js.t) weakMap Js.t =

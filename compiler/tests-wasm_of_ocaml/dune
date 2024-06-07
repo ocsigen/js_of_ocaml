@@ -1,11 +1,13 @@
 (executables
  (names gh38)
  (modes js)
- (js_of_ocaml (flags :standard --disable optcall)))
+ (js_of_ocaml
+  (flags :standard --disable optcall)))
 
 (rule
  (target gh38.actual)
- (enabled_if (= %{profile} wasm))
+ (enabled_if
+  (= %{profile} wasm))
  (alias runtest)
  (action
   (with-outputs-to

@@ -22,12 +22,11 @@ open Js
 open Dom_html
 open! Import
 
-class type formData =
-  object
-    method append : js_string t -> js_string t -> unit meth
+class type formData = object
+  method append : js_string t -> js_string t -> unit meth
 
-    method append_blob : js_string t -> File.blob t -> unit meth
-  end
+  method append_blob : js_string t -> File.blob t -> unit meth
+end
 
 let formData : formData t constr = Js.Unsafe.global##._FormData
 
@@ -50,14 +49,13 @@ let rec filter_map f = function
       | None -> filter_map f q
       | Some v' -> v' :: filter_map f q)
 
-class type submittableElement =
-  object
-    method disabled : bool t prop
+class type submittableElement = object
+  method disabled : bool t prop
 
-    method name : js_string t readonly_prop
+  method name : js_string t readonly_prop
 
-    method value : js_string t prop
-  end
+  method value : js_string t prop
+end
 
 let have_content (elt : submittableElement t) =
   elt##.name##.length > 0 && not (Js.to_bool elt##.disabled)
@@ -87,14 +85,13 @@ let get_select_val (elt : selectElement t) =
     else [ name, `String elt##.value ]
   else []
 
-class type file_input =
-  object
-    inherit inputElement
+class type file_input = object
+  inherit inputElement
 
-    method files : File.fileList t optdef readonly_prop
+  method files : File.fileList t optdef readonly_prop
 
-    method multiple : bool optdef readonly_prop
-  end
+  method multiple : bool optdef readonly_prop
+end
 
 let get_input_val ?(get = false) (elt : inputElement t) =
   if have_content (elt :> submittableElement t)

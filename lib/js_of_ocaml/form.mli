@@ -21,12 +21,11 @@
 open Js
 (** This module provides functions to manipulate forms. *)
 
-class type formData =
-  object
-    method append : js_string t -> js_string t -> unit meth
+class type formData = object
+  method append : js_string t -> js_string t -> unit meth
 
-    method append_blob : js_string t -> File.blob t -> unit meth
-  end
+  method append_blob : js_string t -> File.blob t -> unit meth
+end
 
 val formData : formData t constr
 

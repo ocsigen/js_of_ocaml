@@ -1,6 +1,9 @@
 (executables
  (names eval)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (libraries js_of_ocaml-compiler js_of_ocaml-toplevel)
  (link_flags
   (:standard -linkall))
@@ -10,14 +13,20 @@
 
 (rule
  (targets export.txt)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (deps eval.bc)
  (action
   (run jsoo_listunits -o %{targets} stdlib)))
 
 (rule
  (targets eval.js)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (action
   (run
    %{bin:js_of_ocaml}
@@ -31,5 +40,8 @@
 
 (alias
  (name default)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (deps eval.js index.html))

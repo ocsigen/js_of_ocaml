@@ -22,68 +22,63 @@ type positionErrorCode
 
 type watchId
 
-class type coordinates =
-  object
-    method latitude : Js.number Js.t Js.readonly_prop
+class type coordinates = object
+  method latitude : Js.number Js.t Js.readonly_prop
 
-    method longitude : Js.number Js.t Js.readonly_prop
+  method longitude : Js.number Js.t Js.readonly_prop
 
-    method altitude : Js.number Js.t Js.opt Js.readonly_prop
+  method altitude : Js.number Js.t Js.opt Js.readonly_prop
 
-    method accuracy : Js.number Js.t Js.readonly_prop
+  method accuracy : Js.number Js.t Js.readonly_prop
 
-    method altitudeAccuracy : Js.number Js.t Js.opt Js.readonly_prop
+  method altitudeAccuracy : Js.number Js.t Js.opt Js.readonly_prop
 
-    method heading : Js.number Js.t Js.opt Js.readonly_prop
+  method heading : Js.number Js.t Js.opt Js.readonly_prop
 
-    method speed : Js.number Js.t Js.opt Js.readonly_prop
-  end
+  method speed : Js.number Js.t Js.opt Js.readonly_prop
+end
 
-class type position =
-  object
-    method coords : coordinates Js.t Js.readonly_prop
+class type position = object
+  method coords : coordinates Js.t Js.readonly_prop
 
-    method timestamp : Js.date Js.readonly_prop
-  end
+  method timestamp : Js.date Js.readonly_prop
+end
 
-class type positionOptions =
-  object
-    method enableHighAccuracy : bool Js.writeonly_prop
+class type positionOptions = object
+  method enableHighAccuracy : bool Js.writeonly_prop
 
-    method timeout : int Js.writeonly_prop
+  method timeout : int Js.writeonly_prop
 
-    method maximumAge : int Js.writeonly_prop
-  end
+  method maximumAge : int Js.writeonly_prop
+end
 
-class type positionError =
-  object
-    method _PERMISSION_DENIED_ : positionErrorCode Js.readonly_prop
+class type positionError = object
+  method _PERMISSION_DENIED_ : positionErrorCode Js.readonly_prop
 
-    method _POSITION_UNAVAILABLE_ : positionErrorCode Js.readonly_prop
+  method _POSITION_UNAVAILABLE_ : positionErrorCode Js.readonly_prop
 
-    method _TIMEOUT : positionErrorCode Js.readonly_prop
+  method _TIMEOUT : positionErrorCode Js.readonly_prop
 
-    method code : positionErrorCode Js.readonly_prop
+  method code : positionErrorCode Js.readonly_prop
 
-    method message : Js.js_string Js.t Js.readonly_prop
-  end
+  method message : Js.js_string Js.t Js.readonly_prop
+end
 
-class type geolocation =
-  object
-    method getCurrentPosition :
-         (position Js.t -> unit) Js.callback
-      -> (positionError Js.t -> unit) Js.callback
-      -> positionOptions Js.t
-      -> unit Js.meth
+class type geolocation = object
+  method getCurrentPosition :
+       (position Js.t -> unit) Js.callback
+    -> (positionError Js.t -> unit) Js.callback
+    -> positionOptions Js.t
+    -> unit Js.meth
 
-    method watchPosition :
-         (position Js.t -> unit) Js.callback
-      -> (positionError Js.t -> unit) Js.callback
-      -> positionOptions Js.t
-      -> watchId Js.meth
+  method watchPosition :
+       (position Js.t -> unit) Js.callback
+    -> (positionError Js.t -> unit) Js.callback
+    -> positionOptions Js.t
+    -> watchId Js.meth
 
-    method clearWatch : watchId -> unit Js.meth
-  end
+  method clearWatch : watchId -> unit Js.meth
+end
 
 let empty_position_options () = Js.Unsafe.obj [||]
 

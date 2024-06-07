@@ -41,40 +41,36 @@
     @see <https://drafts.csswg.org/resize-observer> for W3C draft spec
 *)
 
-class type resizeObserverSize =
-  object
-    method inlineSize : Js.number Js.t Js.readonly_prop
+class type resizeObserverSize = object
+  method inlineSize : Js.number Js.t Js.readonly_prop
 
-    method blockSize : Js.number Js.t Js.readonly_prop
-  end
+  method blockSize : Js.number Js.t Js.readonly_prop
+end
 
-class type resizeObserverEntry =
-  object
-    method target : Dom.node Js.t Js.readonly_prop
+class type resizeObserverEntry = object
+  method target : Dom.node Js.t Js.readonly_prop
 
-    method contentRect : Dom_html.clientRect Js.t Js.readonly_prop
+  method contentRect : Dom_html.clientRect Js.t Js.readonly_prop
 
-    method borderBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
+  method borderBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
 
-    method contentBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
-  end
+  method contentBoxSize : resizeObserverSize Js.t Js.js_array Js.t Js.readonly_prop
+end
 
-class type resizeObserverOptions =
-  object
-    method box : Js.js_string Js.t Js.writeonly_prop
-  end
+class type resizeObserverOptions = object
+  method box : Js.js_string Js.t Js.writeonly_prop
+end
 
-class type resizeObserver =
-  object
-    method observe : #Dom.node Js.t -> unit Js.meth
+class type resizeObserver = object
+  method observe : #Dom.node Js.t -> unit Js.meth
 
-    method observe_withOptions :
-      #Dom.node Js.t -> resizeObserverOptions Js.t -> unit Js.meth
+  method observe_withOptions :
+    #Dom.node Js.t -> resizeObserverOptions Js.t -> unit Js.meth
 
-    method unobserve : #Dom.node Js.t -> unit Js.meth
+  method unobserve : #Dom.node Js.t -> unit Js.meth
 
-    method disconnect : unit Js.meth
-  end
+  method disconnect : unit Js.meth
+end
 
 val empty_resize_observer_options : unit -> resizeObserverOptions Js.t
 

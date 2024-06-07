@@ -10,12 +10,14 @@
    (build_runtime_flags
     (:standard --enable effects))))
  (wasm
-  (binaries (tools/node_wrapper.sh as node))
+  (binaries
+   (tools/node_wrapper.sh as node))
   (js_of_ocaml
    (compilation_mode separate)
    (targets wasm)))
  (wasm-effects
-  (binaries (tools/node_wrapper.sh as node))
+  (binaries
+   (tools/node_wrapper.sh as node))
   (js_of_ocaml
    (compilation_mode separate)
    (flags

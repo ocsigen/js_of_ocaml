@@ -19,35 +19,31 @@
 
 open! Import
 
-class type performanceObserverInit =
-  object
-    method entryTypes : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
-  end
+class type performanceObserverInit = object
+  method entryTypes : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
+end
 
-class type performanceEntry =
-  object
-    method name : Js.js_string Js.t Js.readonly_prop
+class type performanceEntry = object
+  method name : Js.js_string Js.t Js.readonly_prop
 
-    method entryType : Js.js_string Js.t Js.readonly_prop
+  method entryType : Js.js_string Js.t Js.readonly_prop
 
-    method startTime : Js.number Js.t Js.readonly_prop
+  method startTime : Js.number Js.t Js.readonly_prop
 
-    method duration : Js.number Js.t Js.readonly_prop
-  end
+  method duration : Js.number Js.t Js.readonly_prop
+end
 
-class type performanceObserverEntryList =
-  object
-    method getEntries : performanceEntry Js.t Js.js_array Js.t Js.meth
-  end
+class type performanceObserverEntryList = object
+  method getEntries : performanceEntry Js.t Js.js_array Js.t Js.meth
+end
 
-class type performanceObserver =
-  object
-    method observe : performanceObserverInit Js.t -> unit Js.meth
+class type performanceObserver = object
+  method observe : performanceObserverInit Js.t -> unit Js.meth
 
-    method disconnect : unit Js.meth
+  method disconnect : unit Js.meth
 
-    method takeRecords : performanceEntry Js.t Js.js_array Js.t Js.meth
-  end
+  method takeRecords : performanceEntry Js.t Js.js_array Js.t Js.meth
+end
 
 let performanceObserver = Js.Unsafe.global##._PerformanceObserver
 
