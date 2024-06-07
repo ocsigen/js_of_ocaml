@@ -23,47 +23,49 @@ open Code
 open Flow
 
 let specialize_instr info i =
-  match i with
-  | Let (x, Prim (Extern "caml_format_int", [ y; z ])) -> (
+  match i, Config.target () with
+  | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
       match the_string_of info y with
       | Some "%d" -> (
           match the_int info z with
           | Some i -> Let (x, Constant (String (Int32.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [ z ])))
       | _ -> i)
-  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])) -> (
+  | Let (x, Prim (Extern "%caml_format_int_special", [ z ])), `JavaScript -> (
       match the_int info z with
       | Some i -> Let (x, Constant (String (Int32.to_string i)))
       | None -> i)
   (* inline the String constant argument so that generate.ml can attempt to parse it *)
-  | Let
-      ( x
-      , Prim
-          ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
-          , [ (Pv _ as y) ] ) )
+  | ( Let
+        ( x
+        , Prim
+            ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
+            , [ (Pv _ as y) ] ) )
+    , _ )
     when Config.Flag.safe_string () -> (
       match the_string_of info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
-  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])) -> (
+  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])), `JavaScript
+    -> (
       match the_string_of info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
       | Some _ -> Let (x, Constant (Int 0l))
       | None -> i)
-  | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])) -> (
+  | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])), _ -> (
       match the_def_of info a with
       | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])) -> (
+  | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])), _ -> (
       match the_def_of info a with
       | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])) -> (
+  | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])), _ -> (
       match the_string_of info m with
       | Some m when Javascript.is_ident m -> (
           match the_def_of info a with
@@ -78,13 +80,13 @@ let specialize_instr info i =
                       :: Array.to_list a ) )
           | _ -> i)
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_new", [ c; a ])) -> (
+  | Let (x, Prim (Extern "caml_js_new", [ c; a ])), _ -> (
       match the_def_of info a with
       | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_object", [ a ])) -> (
+  | Let (x, Prim (Extern "caml_js_object", [ a ])), _ -> (
       try
         let a =
           match the_def_of info a with
@@ -109,43 +111,44 @@ let specialize_instr info i =
         in
         Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
       with Exit -> i)
-  | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])) -> (
+  | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])), _ -> (
       match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_get", [ o; Pc (NativeString s) ]))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])) -> (
+  | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])), _ -> (
       match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_set", [ o; Pc (NativeString s); v ]))
       | _ -> i)
-  | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])) -> (
+  | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])), _ -> (
       match the_native_string_of info f with
       | Some s -> Let (x, Prim (Extern "caml_js_delete", [ o; Pc (NativeString s) ]))
       | _ -> i)
-  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])) -> (
+  | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])), _
+    -> (
       match the_string_of info y with
       | Some s when String.is_valid_utf_8 s ->
           Let (x, Constant (NativeString (Native_string.of_string s)))
       | Some _ | None -> i)
-  | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])) -> (
+  | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])), _ -> (
       match the_string_of info y with
       | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
       | None -> i)
-  | Let (x, Prim (Extern "%int_mul", [ y; z ])) -> (
+  | Let (x, Prim (Extern "%int_mul", [ y; z ])), `JavaScript -> (
       match the_int info y, the_int info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _, Some j when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _ -> i)
-  | Let (x, Prim (Extern "%int_div", [ y; z ])) -> (
+  | Let (x, Prim (Extern "%int_div", [ y; z ])), _ -> (
       match the_int info z with
       | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_div", [ y; z ]))
       | _ -> i)
-  | Let (x, Prim (Extern "%int_mod", [ y; z ])) -> (
+  | Let (x, Prim (Extern "%int_mod", [ y; z ])), _ -> (
       match the_int info z with
       | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_mod", [ y; z ]))
       | _ -> i)
-  | _ -> i
+  | _, _ -> i
 
 let equal2 a b = Code.Var.equal a b
 

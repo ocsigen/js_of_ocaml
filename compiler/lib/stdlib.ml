@@ -341,7 +341,51 @@ module Int32 = struct
       n
 end
 
-module Int31 = struct
+module type Arith_ops = sig
+  type t
+
+  val neg : t -> t
+
+  val add : t -> t -> t
+
+  val sub : t -> t -> t
+
+  val mul : t -> t -> t
+
+  val div : t -> t -> t
+
+  val rem : t -> t -> t
+
+  val logand : t -> t -> t
+
+  val logor : t -> t -> t
+
+  val logxor : t -> t -> t
+
+  val shift_left : t -> int -> t
+
+  val shift_right : t -> int -> t
+
+  val shift_right_logical : t -> int -> t
+end
+
+module Int31 : sig
+  type t = private int32
+
+  include Arith_ops with type t := t
+
+  val of_int_warning_on_overflow : int -> t
+
+  val of_nativeint_warning_on_overflow : nativeint -> t
+
+  val to_int32 : t -> int32
+
+  val of_int32_warning_on_overflow : int32 -> t
+
+  val to_int : t -> int
+end = struct
+  type t = int32
+
   let wrap i = Int32.(shift_right (shift_left i 1) 1)
 
   let of_int_warning_on_overflow i =
@@ -361,6 +405,50 @@ module Int31 = struct
       ~to_dec:(Printf.sprintf "%nd")
       ~to_hex:(Printf.sprintf "%nx")
       n
+
+  let of_int32_warning_on_overflow n =
+    Int32.convert_warning_on_overflow
+      ~to_int32:(fun i -> wrap i)
+      ~of_int32:Fun.id
+      ~equal:Int32.equal
+      ~to_dec:(Printf.sprintf "%ld")
+      ~to_hex:(Printf.sprintf "%lx")
+      n
+
+  let neg = Int32.neg
+
+  let int_binop wrap f x y = wrap (f x y)
+
+  let add = int_binop wrap Int32.add
+
+  let sub = int_binop wrap Int32.sub
+
+  let mul = int_binop wrap Int32.mul
+
+  let div = int_binop wrap Int32.div
+
+  let rem = int_binop wrap Int32.rem
+
+  let logand = int_binop wrap Int32.logand
+
+  let logor = int_binop wrap Int32.logor
+
+  let logxor = int_binop wrap Int32.logxor
+
+  let shift_op wrap truncate f x y =
+    (* Limit the shift offset to [0, 31] *)
+    wrap (f (truncate x) (y land 0x1f))
+
+  let shift_left = shift_op wrap Fun.id Int32.shift_left
+
+  let shift_right = shift_op wrap Fun.id Int32.shift_right
+
+  let shift_right_logical =
+    shift_op wrap (fun i -> Int32.logand i 0x7fffffffl) Int32.shift_right_logical
+
+  let to_int32 (x : t) : int32 = x
+
+  let to_int (x : t) = Int32.to_int x
 end
 
 module Option = struct

@@ -20,16 +20,22 @@
 
 type profile
 
+type 'a target =
+  | JavaScript : Pretty_print.t -> Source_map.t option target
+  | Wasm
+      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
+        target
+
 val f :
-     ?standalone:bool
+     target:'result target
+  -> ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> ?source_map:Source_map.t
-  -> Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.t option
+  -> 'result
 
 val f' :
      ?standalone:bool
@@ -47,6 +53,13 @@ val from_string :
   -> string
   -> Pretty_print.t
   -> unit
+
+val link_and_pack :
+     ?standalone:bool
+  -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?link:[ `All | `All_from of string list | `Needed | `No ]
+  -> Javascript.statement_list
+  -> Javascript.statement_list
 
 val configure : Pretty_print.t -> unit
 

@@ -164,7 +164,7 @@ module Param = struct
     p
       ~name:"tc"
       ~desc:"Set tailcall optimisation"
-      (enum [ "trampoline", TcTrampoline; (* default *) "none", TcNone ])
+      (enum [ "trampoline", TcTrampoline (* default *); "none", TcNone ])
 
   let lambda_lifting_threshold =
     (* When we reach this depth, we start looking for functions to be lifted *)
