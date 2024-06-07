@@ -325,6 +325,8 @@ and regExp = object
   method lastIndex : int prop
 end
 
+type number_t = number t
+
 (** Specification of the string constructor, considered as an object. *)
 class type string_constr = object
   method fromCharCode : int -> js_string t meth
@@ -375,7 +377,7 @@ class type ['a] js_array = object
 
   method slice_end : int -> 'a js_array t meth
 
-  method sort : ('a -> 'a -> number t) callback -> 'a js_array t meth
+  method sort : ('a -> 'a -> number_t) callback -> 'a js_array t meth
 
   method sort_asStrings : 'a js_array t meth
 
@@ -478,9 +480,9 @@ class type date = object
 
   method toLocaleTimeString : js_string t meth
 
-  method valueOf : number t meth
+  method valueOf : number_t meth
 
-  method getTime : number t meth
+  method getTime : number_t meth
 
   method getFullYear : int meth
 
@@ -516,39 +518,39 @@ class type date = object
 
   method getTimezoneOffset : int meth
 
-  method setTime : number t -> number t meth
+  method setTime : number_t -> number_t meth
 
-  method setFullYear : int -> number t meth
+  method setFullYear : int -> number_t meth
 
-  method setUTCFullYear : int -> number t meth
+  method setUTCFullYear : int -> number_t meth
 
-  method setMonth : int -> number t meth
+  method setMonth : int -> number_t meth
 
-  method setUTCMonth : int -> number t meth
+  method setUTCMonth : int -> number_t meth
 
-  method setDate : int -> number t meth
+  method setDate : int -> number_t meth
 
-  method setUTCDate : int -> number t meth
+  method setUTCDate : int -> number_t meth
 
-  method setDay : int -> number t meth
+  method setDay : int -> number_t meth
 
-  method setUTCDay : int -> number t meth
+  method setUTCDay : int -> number_t meth
 
-  method setHours : int -> number t meth
+  method setHours : int -> number_t meth
 
-  method setUTCHours : int -> number t meth
+  method setUTCHours : int -> number_t meth
 
-  method setMinutes : int -> number t meth
+  method setMinutes : int -> number_t meth
 
-  method setUTCMinutes : int -> number t meth
+  method setUTCMinutes : int -> number_t meth
 
-  method setSeconds : int -> number t meth
+  method setSeconds : int -> number_t meth
 
-  method setUTCSeconds : int -> number t meth
+  method setUTCSeconds : int -> number_t meth
 
-  method setMilliseconds : int -> number t meth
+  method setMilliseconds : int -> number_t meth
 
-  method setUTCMilliseconds : int -> number t meth
+  method setUTCMilliseconds : int -> number_t meth
 
   method toUTCString : js_string t meth
 
@@ -561,7 +563,7 @@ val date_now : date t constr
 (** Constructor of [Date] objects: [new%js date_now] returns a
       [Date] object initialized with the current date. *)
 
-val date_fromTimeValue : (number t -> date t) constr
+val date_fromTimeValue : (number_t -> date t) constr
 (** Constructor of [Date] objects: [new%js date_fromTimeValue t] returns a
       [Date] object initialized with the time value [t]. *)
 
@@ -595,21 +597,21 @@ val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 
 (** Specification of the date constructor, considered as an object. *)
 class type date_constr = object
-  method parse : js_string t -> number t meth
+  method parse : js_string t -> number_t meth
 
-  method _UTC_month : int -> int -> number t meth
+  method _UTC_month : int -> int -> number_t meth
 
-  method _UTC_day : int -> int -> number t meth
+  method _UTC_day : int -> int -> number_t meth
 
-  method _UTC_hour : int -> int -> int -> int -> number t meth
+  method _UTC_hour : int -> int -> int -> int -> number_t meth
 
-  method _UTC_min : int -> int -> int -> int -> int -> number t meth
+  method _UTC_min : int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_sec : int -> int -> int -> int -> int -> int -> number t meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> number t meth
+  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> number_t meth
 
-  method now : number t meth
+  method now : number_t meth
 end
 
 val date : date_constr t
@@ -617,65 +619,65 @@ val date : date_constr t
 
 (** Specification of Javascript math object. *)
 class type math = object
-  method _E : number t readonly_prop
+  method _E : number_t readonly_prop
 
-  method _LN2 : number t readonly_prop
+  method _LN2 : number_t readonly_prop
 
-  method _LN10 : number t readonly_prop
+  method _LN10 : number_t readonly_prop
 
-  method _LOG2E : number t readonly_prop
+  method _LOG2E : number_t readonly_prop
 
-  method _LOG10E : number t readonly_prop
+  method _LOG10E : number_t readonly_prop
 
-  method _PI : number t readonly_prop
+  method _PI : number_t readonly_prop
 
-  method _SQRT1_2_ : number t readonly_prop
+  method _SQRT1_2_ : number_t readonly_prop
 
-  method _SQRT2 : number t readonly_prop
+  method _SQRT2 : number_t readonly_prop
 
-  method abs : number t -> number t meth
+  method abs : number_t -> number_t meth
 
-  method acos : number t -> number t meth
+  method acos : number_t -> number_t meth
 
-  method asin : number t -> number t meth
+  method asin : number_t -> number_t meth
 
-  method atan : number t -> number t meth
+  method atan : number_t -> number_t meth
 
-  method atan2 : number t -> number t -> number t meth
+  method atan2 : number_t -> number_t -> number_t meth
 
-  method ceil : number t -> number t meth
+  method ceil : number_t -> number_t meth
 
-  method cos : number t -> number t meth
+  method cos : number_t -> number_t meth
 
-  method exp : number t -> number t meth
+  method exp : number_t -> number_t meth
 
-  method floor : number t -> number t meth
+  method floor : number_t -> number_t meth
 
-  method log : number t -> number t meth
+  method log : number_t -> number_t meth
 
-  method max : number t -> number t -> number t meth
+  method max : number_t -> number_t -> number_t meth
 
-  method max_3 : number t -> number t -> number t -> number t meth
+  method max_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method max_4 : number t -> number t -> number t -> number t -> number t meth
+  method max_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method min : number t -> number t -> number t meth
+  method min : number_t -> number_t -> number_t meth
 
-  method min_3 : number t -> number t -> number t -> number t meth
+  method min_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method min_4 : number t -> number t -> number t -> number t -> number t meth
+  method min_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method pow : number t -> number t -> number t meth
+  method pow : number_t -> number_t -> number_t meth
 
-  method random : number t meth
+  method random : number_t meth
 
-  method round : number t -> number t meth
+  method round : number_t -> number_t meth
 
-  method sin : number t -> number t meth
+  method sin : number_t -> number_t meth
 
-  method sqrt : number t -> number t meth
+  method sqrt : number_t -> number_t meth
 
-  method tan : number t -> number t meth
+  method tan : number_t -> number_t meth
 end
 
 val math : math t
@@ -776,7 +778,7 @@ val isNaN : 'a -> bool
 
 val parseInt : js_string t -> int
 
-val parseFloat : js_string t -> number t
+val parseFloat : js_string t -> number_t
 
 (** {2 Conversion functions between Javascript and OCaml types} *)
 
@@ -809,10 +811,10 @@ external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
       Javascript string should only contain UTF-16 code points below
       255.) *)
 
-external float : float -> number t = "caml_js_from_float"
+external float : float -> number_t = "caml_js_from_float"
 (** Conversion of OCaml floats to Javascript numbers. *)
 
-external to_float : number t -> float = "caml_js_to_float"
+external to_float : number_t -> float = "caml_js_to_float"
 (** Conversion of Javascript numbers to OCaml floats. *)
 
 external number_of_float : float -> number t = "caml_js_from_float"
@@ -821,18 +823,19 @@ external number_of_float : float -> number t = "caml_js_from_float"
 external float_of_number : number t -> float = "caml_js_to_float"
 (** Conversion of Javascript number objects to OCaml floats. *)
 
-external int32 : int32 -> number t = "caml_js_from_int32"
+external int32 : int32 -> number_t = "caml_js_from_int32"
 (** Conversion of OCaml floats to Javascript numbers. *)
 
-external to_int32 : number t -> int32 = "caml_js_to_int32"
-(** Conversion of Javascript numbers to OCaml 32-bits. *)
+external to_int32 : number_t -> int32 = "caml_js_to_int32"
+(** Conversion of Javascript numbers to OCaml 32-bits. The given
+    floating-point number is truncated to an integer. *)
 
-external nativeint : nativeint -> number t = "caml_js_from_nativeint"
+external nativeint : nativeint -> number_t = "caml_js_from_nativeint"
 (** Conversion of OCaml 32-bits integers to Javascript numbers. *)
 
-external to_nativeint : number t -> nativeint = "caml_js_to_nativeint"
-
-(** Conversion of Javascript numbers to OCaml native integers. *)
+external to_nativeint : number_t -> nativeint = "caml_js_to_nativeint"
+(** Conversion of Javascript numbers to OCaml native integers. The
+    given floating-point number is truncated to an integer. *)
 
 (** {2 Convenience coercion functions} *)
 
@@ -1045,6 +1048,6 @@ exception Error of error t [@ocaml.deprecated "[since 4.0] Use [Js_error.Exn] in
     it will be serialized and wrapped into a [Failure] exception.
   *)
 
-type float_prop = number t prop [@@ocaml.deprecated "[since 2.0]."]
+type float_prop = number_t prop [@@ocaml.deprecated "[since 2.0]."]
 
 (** Type of float properties. *)

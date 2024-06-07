@@ -94,10 +94,6 @@ module Js = struct
 
   (****)
 
-  external equals : _ -> _ -> bool = "caml_js_equals"
-
-  external strict_equals : _ -> _ -> bool = "caml_js_strict_equals"
-
   type 'a opt = 'a
 
   type 'a optdef = 'a
@@ -147,6 +143,10 @@ module Js = struct
 
     let return = some
 
+    external equals : _ t -> _ t -> bool = "caml_js_equals"
+
+    external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
+
     let map x f = if equals x null then null else return (f x)
 
     let bind x f = if equals x null then null else f x
@@ -165,10 +165,6 @@ module Js = struct
       | Some x -> return x
 
     let to_option x = case x (fun () -> None) (fun x -> Some x)
-
-    external equals : 'a -> 'b -> bool = "caml_js_equals"
-
-    external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
   end
 
   module Optdef : OPT with type 'a t = 'a optdef = struct
@@ -177,6 +173,10 @@ module Js = struct
     let empty = undefined
 
     let return = def
+
+    external equals : _ t -> _ t -> bool = "caml_js_equals"
+
+    external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
 
     let map x f = if strict_equals x undefined then undefined else return (f x)
 
@@ -196,10 +196,6 @@ module Js = struct
       | Some x -> return x
 
     let to_option x = case x (fun () -> None) (fun x -> Some x)
-
-    external equals : 'a -> 'b -> bool = "caml_js_equals"
-
-    external strict_equals : 'a -> 'b -> bool = "caml_js_strict_equals"
   end
 
   (****)
@@ -233,6 +229,12 @@ module Js = struct
 
   external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
     = "caml_js_wrap_meth_callback"
+
+  (****)
+
+  external equals : _ t -> _ t -> bool = "caml_js_equals"
+
+  external strict_equals : _ t -> _ t -> bool = "caml_js_strict_equals"
 
   (****)
 
@@ -350,6 +352,8 @@ module Js = struct
 
   and normalization = js_string
 
+  type number_t = number t
+
   (* string is used by ppx_js, it needs to come before any use of the
      new syntax in this file *)
   external string : string -> js_string t = "caml_jsstring_of_string"
@@ -406,7 +410,7 @@ class type ['a] js_array = object
 
   method slice_end : int -> 'a js_array t meth
 
-  method sort : ('a -> 'a -> number t) callback -> 'a js_array t meth
+  method sort : ('a -> 'a -> number_t) callback -> 'a js_array t meth
 
   method sort_asStrings : 'a js_array t meth
 
@@ -484,10 +488,6 @@ let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
 
 let match_result : match_result_handle t -> match_result t = Unsafe.coerce
 
-external number_of_float : float -> number t = "caml_js_from_float"
-
-external float_of_number : number t -> float = "caml_js_to_float"
-
 class type date = object
   method toString : js_string t meth
 
@@ -501,9 +501,9 @@ class type date = object
 
   method toLocaleTimeString : js_string t meth
 
-  method valueOf : number t meth
+  method valueOf : number_t meth
 
-  method getTime : number t meth
+  method getTime : number_t meth
 
   method getFullYear : int meth
 
@@ -539,39 +539,39 @@ class type date = object
 
   method getTimezoneOffset : int meth
 
-  method setTime : number t -> number t meth
+  method setTime : number_t -> number_t meth
 
-  method setFullYear : int -> number t meth
+  method setFullYear : int -> number_t meth
 
-  method setUTCFullYear : int -> number t meth
+  method setUTCFullYear : int -> number_t meth
 
-  method setMonth : int -> number t meth
+  method setMonth : int -> number_t meth
 
-  method setUTCMonth : int -> number t meth
+  method setUTCMonth : int -> number_t meth
 
-  method setDate : int -> number t meth
+  method setDate : int -> number_t meth
 
-  method setUTCDate : int -> number t meth
+  method setUTCDate : int -> number_t meth
 
-  method setDay : int -> number t meth
+  method setDay : int -> number_t meth
 
-  method setUTCDay : int -> number t meth
+  method setUTCDay : int -> number_t meth
 
-  method setHours : int -> number t meth
+  method setHours : int -> number_t meth
 
-  method setUTCHours : int -> number t meth
+  method setUTCHours : int -> number_t meth
 
-  method setMinutes : int -> number t meth
+  method setMinutes : int -> number_t meth
 
-  method setUTCMinutes : int -> number t meth
+  method setUTCMinutes : int -> number_t meth
 
-  method setSeconds : int -> number t meth
+  method setSeconds : int -> number_t meth
 
-  method setUTCSeconds : int -> number t meth
+  method setUTCSeconds : int -> number_t meth
 
-  method setMilliseconds : int -> number t meth
+  method setMilliseconds : int -> number_t meth
 
-  method setUTCMilliseconds : int -> number t meth
+  method setUTCMilliseconds : int -> number_t meth
 
   method toUTCString : js_string t meth
 
@@ -581,21 +581,21 @@ class type date = object
 end
 
 class type date_constr = object
-  method parse : js_string t -> number t meth
+  method parse : js_string t -> number_t meth
 
-  method _UTC_month : int -> int -> number t meth
+  method _UTC_month : int -> int -> number_t meth
 
-  method _UTC_day : int -> int -> number t meth
+  method _UTC_day : int -> int -> number_t meth
 
-  method _UTC_hour : int -> int -> int -> int -> number t meth
+  method _UTC_hour : int -> int -> int -> int -> number_t meth
 
-  method _UTC_min : int -> int -> int -> int -> int -> number t meth
+  method _UTC_min : int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_sec : int -> int -> int -> int -> int -> int -> number t meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> number_t meth
 
-  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> number t meth
+  method _UTC_ms : int -> int -> int -> int -> int -> int -> int -> number_t meth
 
-  method now : number t meth
+  method now : number_t meth
 end
 
 let date_constr = Unsafe.global##._Date
@@ -604,7 +604,7 @@ let date : date_constr t = date_constr
 
 let date_now : date t constr = date_constr
 
-let date_fromTimeValue : (number t -> date t) constr = date_constr
+let date_fromTimeValue : (number_t -> date t) constr = date_constr
 
 let date_month : (int -> int -> date t) constr = date_constr
 
@@ -620,65 +620,65 @@ let date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr =
   date_constr
 
 class type math = object
-  method _E : number t readonly_prop
+  method _E : number_t readonly_prop
 
-  method _LN2 : number t readonly_prop
+  method _LN2 : number_t readonly_prop
 
-  method _LN10 : number t readonly_prop
+  method _LN10 : number_t readonly_prop
 
-  method _LOG2E : number t readonly_prop
+  method _LOG2E : number_t readonly_prop
 
-  method _LOG10E : number t readonly_prop
+  method _LOG10E : number_t readonly_prop
 
-  method _PI : number t readonly_prop
+  method _PI : number_t readonly_prop
 
-  method _SQRT1_2_ : number t readonly_prop
+  method _SQRT1_2_ : number_t readonly_prop
 
-  method _SQRT2 : number t readonly_prop
+  method _SQRT2 : number_t readonly_prop
 
-  method abs : number t -> number t meth
+  method abs : number_t -> number_t meth
 
-  method acos : number t -> number t meth
+  method acos : number_t -> number_t meth
 
-  method asin : number t -> number t meth
+  method asin : number_t -> number_t meth
 
-  method atan : number t -> number t meth
+  method atan : number_t -> number_t meth
 
-  method atan2 : number t -> number t -> number t meth
+  method atan2 : number_t -> number_t -> number_t meth
 
-  method ceil : number t -> number t meth
+  method ceil : number_t -> number_t meth
 
-  method cos : number t -> number t meth
+  method cos : number_t -> number_t meth
 
-  method exp : number t -> number t meth
+  method exp : number_t -> number_t meth
 
-  method floor : number t -> number t meth
+  method floor : number_t -> number_t meth
 
-  method log : number t -> number t meth
+  method log : number_t -> number_t meth
 
-  method max : number t -> number t -> number t meth
+  method max : number_t -> number_t -> number_t meth
 
-  method max_3 : number t -> number t -> number t -> number t meth
+  method max_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method max_4 : number t -> number t -> number t -> number t -> number t meth
+  method max_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method min : number t -> number t -> number t meth
+  method min : number_t -> number_t -> number_t meth
 
-  method min_3 : number t -> number t -> number t -> number t meth
+  method min_3 : number_t -> number_t -> number_t -> number_t meth
 
-  method min_4 : number t -> number t -> number t -> number t -> number t meth
+  method min_4 : number_t -> number_t -> number_t -> number_t -> number_t meth
 
-  method pow : number t -> number t -> number t meth
+  method pow : number_t -> number_t -> number_t meth
 
-  method random : number t meth
+  method random : number_t meth
 
-  method round : number t -> number t meth
+  method round : number_t -> number_t meth
 
-  method sin : number t -> number t meth
+  method sin : number_t -> number_t meth
 
-  method sqrt : number t -> number t meth
+  method sqrt : number_t -> number_t meth
 
-  method tan : number t -> number t meth
+  method tan : number_t -> number_t meth
 end
 
 let math = Unsafe.global##._Math
@@ -781,17 +781,21 @@ external bytestring : string -> js_string t = "caml_jsbytes_of_string"
 
 external to_bytestring : js_string t -> string = "caml_string_of_jsbytes"
 
-external float : float -> number t = "caml_js_from_float"
+external float : float -> number_t = "caml_js_from_float"
 
-external to_float : number t -> float = "caml_js_to_float"
+external to_float : number_t -> float = "caml_js_to_float"
 
-external int32 : int32 -> number t = "caml_js_from_int32"
+external number_of_float : float -> number t = "caml_js_from_float"
 
-external to_int32 : number t -> int32 = "caml_js_to_int32"
+external float_of_number : number t -> float = "caml_js_to_float"
 
-external nativeint : nativeint -> number t = "caml_js_from_nativeint"
+external int32 : int32 -> number_t = "caml_js_from_int32"
 
-external to_nativeint : number t -> nativeint = "caml_js_to_nativeint"
+external to_int32 : number_t -> int32 = "caml_js_to_int32"
+
+external nativeint : nativeint -> number_t = "caml_js_from_nativeint"
+
+external to_nativeint : number_t -> nativeint = "caml_js_to_nativeint"
 
 external typeof : _ t -> js_string t = "caml_js_typeof"
 
@@ -804,7 +808,7 @@ let parseInt (s : js_string t) : int =
   let s = Unsafe.fun_call Unsafe.global##.parseInt [| Unsafe.inject s |] in
   if isNaN s then failwith "parseInt" else s
 
-let parseFloat (s : js_string t) : number t =
+let parseFloat (s : js_string t) : number_t =
   let s = Unsafe.fun_call Unsafe.global##.parseFloat [| Unsafe.inject s |] in
   if isNaN s then failwith "parseFloat" else s
 
@@ -844,4 +848,4 @@ let export_all obj =
 
 (* DEPRECATED *)
 
-type float_prop = number t prop
+type float_prop = number_t prop

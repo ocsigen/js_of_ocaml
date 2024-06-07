@@ -23,19 +23,19 @@ type positionErrorCode
 type watchId
 
 class type coordinates = object
-  method latitude : Js.number Js.t Js.readonly_prop
+  method latitude : Js.number_t Js.readonly_prop
 
-  method longitude : Js.number Js.t Js.readonly_prop
+  method longitude : Js.number_t Js.readonly_prop
 
-  method altitude : Js.number Js.t Js.opt Js.readonly_prop
+  method altitude : Js.number_t Js.opt Js.readonly_prop
 
-  method accuracy : Js.number Js.t Js.readonly_prop
+  method accuracy : Js.number_t Js.readonly_prop
 
-  method altitudeAccuracy : Js.number Js.t Js.opt Js.readonly_prop
+  method altitudeAccuracy : Js.number_t Js.opt Js.readonly_prop
 
-  method heading : Js.number Js.t Js.opt Js.readonly_prop
+  method heading : Js.number_t Js.opt Js.readonly_prop
 
-  method speed : Js.number Js.t Js.opt Js.readonly_prop
+  method speed : Js.number_t Js.opt Js.readonly_prop
 end
 
 class type position = object

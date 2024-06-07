@@ -95,7 +95,8 @@ if (Intl.is_supported()) then (
       (def (jas [| "de-u-co-phonebk" |])) undefined
     in
     let a = a##sort (wrap_callback
-                       (fun v1 v2 -> Js.float (float_of_int(collator##.compare v1 v2))))
+                       (fun v1 v2 ->
+                          Js.float (float_of_int(collator##.compare v1 v2))))
     in
     fc (a##join (string ", ")) ;
 
