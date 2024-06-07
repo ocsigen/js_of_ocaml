@@ -590,13 +590,13 @@ let arc c (rx, ry, dx, dy) z0 z1 z2 =
   c##beginPath;
   let alpha = mod_float (fin -. start +. (2. *. pi)) (2. *. pi) in
   c##ellipse
-    ((z0.x *. rx) +. dx)
-    ((z0.y *. ry) +. dy)
-    (rd *. rx)
-    (rd *. ry)
-    0.
-    start
-    fin
+    (Js.float ((z0.x *. rx) +. dx))
+    (Js.float ((z0.y *. ry) +. dy))
+    (Js.float (rd *. rx))
+    (Js.float (rd *. ry))
+    (Js.float 0.)
+    (Js.float start)
+    (Js.float fin)
     (Js.bool (alpha > pi));
   c##stroke
 
@@ -645,7 +645,15 @@ let draw canvas vertices edges nodes boxes =
     (Js.float (float canvas##.height));
   let padding = Js.to_float (opt_style style##.padding (Js.float 0.)) in
   c##beginPath;
-  c##ellipse dx dy (rx +. padding) (ry +. padding) 0. 0. 7. Js._false;
+  c##ellipse
+    (Js.float dx)
+    (Js.float dy)
+    (Js.float (rx +. padding))
+    (Js.float (ry +. padding))
+    (Js.float 0.)
+    (Js.float 0.)
+    (Js.float 7.)
+    Js._false;
   Js.Optdef.iter style##.backgroundColor (fun color ->
       c##.fillStyle := color;
       c##fill);
