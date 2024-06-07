@@ -18,11 +18,16 @@
 
 open! Stdlib
 
-let rec constant_of_const : _ -> Code.constant =
+let rec constant_of_const ~target c : Code.constant =
   let open Lambda in
   let open Asttypes in
-  function
-  | Const_base (Const_int i) -> Int (Regular, Int32.of_int_warning_on_overflow i)
+  match c with
+  | Const_base (Const_int i) ->
+      Int
+        ( Regular
+        , match target with
+          | `JavaScript -> Int32.of_int_warning_on_overflow i
+          | `Wasm -> Int31.of_int_warning_on_overflow i )
   | Const_base (Const_char c) -> Int (Regular, Int32.of_int (Char.code c))
   | ((Const_base (Const_string (s, _))) [@if ocaml_version < (4, 11, 0)])
   | ((Const_base (Const_string (s, _, _))) [@if ocaml_version >= (4, 11, 0)]) -> String s
@@ -36,9 +41,13 @@ let rec constant_of_const : _ -> Code.constant =
       let l = List.map ~f:(fun f -> float_of_string f) sl in
       Float_array (Array.of_list l)
   | ((Const_pointer i) [@if ocaml_version < (4, 12, 0)]) ->
-      Int (Regular, Int32.of_int_warning_on_overflow i)
+      Int
+        ( Regular
+        , match target with
+          | `JavaScript -> Int32.of_int_warning_on_overflow i
+          | `Wasm -> Int31.of_int_warning_on_overflow i )
   | Const_block (tag, l) ->
-      let l = Array.of_list (List.map l ~f:constant_of_const) in
+      let l = Array.of_list (List.map l ~f:(fun c -> constant_of_const ~target c)) in
       Tuple (tag, l, Unknown)
 
 let rec find_loc_in_summary ident' = function

@@ -44,34 +44,35 @@ let deadcode p =
   let r, _ = deadcode' p in
   r
 
-let inline p =
+let inline ~target p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
     let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars)
+    Inline.f ~target p live_vars)
   else p
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
   Specialize.f ~function_arity:(fun f -> Specialize.function_arity info f) p
 
-let specialize_js (p, info) =
+let specialize_js ~target (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
-  Specialize_js.f info p
+  Specialize_js.f ~target info p
 
 let specialize_js_once p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once p
 
-let specialize' (p, info) =
+let specialize' ~target (p, info) =
   let p = specialize_1 (p, info) in
-  let p = specialize_js (p, info) in
+  let p = specialize_js ~target (p, info) in
   p, info
 
-let specialize p = fst (specialize' p)
+let specialize ~target p = fst (specialize' ~target p)
 
-let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
+let eval ~target (p, info) =
+  if Config.Flag.staticeval () then Eval.f ~target info p else p
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -141,51 +142,54 @@ let identity x = x
 
 (* o1 *)
 
-let o1 : 'a -> 'a =
+let o1 ~target : 'a -> 'a =
   print
   +> tailcall
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize'
-  +> eval
-  +> inline (* inlining may reveal new tailcall opt *)
+  +> specialize' ~target
+  +> eval ~target
+  +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
-  +> specialize'
-  +> eval
-  +> inline
+  +> specialize' ~target
+  +> eval ~target
+  +> inline ~target
   +> deadcode
   +> print
   +> flow
-  +> specialize'
-  +> eval
-  +> inline
+  +> specialize' ~target
+  +> eval ~target
+  +> inline ~target
   +> deadcode
   +> phi
   +> flow
-  +> specialize
+  +> specialize ~target
   +> identity
 
 (* o2 *)
 
-let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
+let o2 ~target : 'a -> 'a = loop 10 "o1" (o1 ~target) 1 +> print
 
 (* o3 *)
 
-let round1 : 'a -> 'a =
+let round1 ~target : 'a -> 'a =
   print
   +> tailcall
-  +> inline (* inlining may reveal new tailcall opt *)
+  +> inline ~target (* inlining may reveal new tailcall opt *)
   +> deadcode (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize'
-  +> eval
+  +> specialize' ~target
+  +> eval ~target
   +> identity
 
-let round2 = flow +> specialize' +> eval +> deadcode +> o1
+let round2 ~target = flow +> specialize' ~target +> eval ~target +> deadcode +> o1 ~target
 
-let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
+let o3 ~target =
+  loop 10 "tailcall+inline" (round1 ~target) 1
+  +> loop 10 "flow" (round2 ~target) 1
+  +> print
 
 let generate
     d
@@ -652,13 +656,39 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
-  let exported_runtime = not standalone in
+type 'a target =
+  | JavaScript : Pretty_print.t -> Source_map.t option target
+  | Wasm
+      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
+        target
+
+let target_flag (type a) (t : a target) =
+  match t with
+  | JavaScript _ -> `JavaScript
+  | Wasm -> `Wasm
+
+let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
     | `Needed | `No -> false
   in
+  p
+  |> link' ~export_runtime ~standalone ~link
+  |> pack ~wrap_with_fun ~standalone
+  |> coloring
+  |> check_js
+
+let full
+    (type result)
+    ~(target : result target)
+    ~standalone
+    ~wrap_with_fun
+    ~profile
+    ~link
+    ~source_map
+    d
+    p : result =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "undef"
@@ -669,58 +699,74 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
+         ~target:(target_flag target)
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
-    +> map_fst (if Config.Flag.effects () then fun x -> x else Generate_closure.f)
+    +> map_fst
+         (match target with
+         | JavaScript _ -> if Config.Flag.effects () then Fun.id else Generate_closure.f
+         | Wasm -> Fun.id)
     +> map_fst deadcode'
-  in
-  let emit =
-    generate
-      d
-      ~exported_runtime
-      ~wrap_with_fun
-      ~warn_on_unhandled_effect:standalone
-      ~deadcode_sentinal
-    +> link' ~export_runtime ~standalone ~link
-    +> pack ~wrap_with_fun ~standalone
-    +> coloring
-    +> check_js
-    +> output formatter ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
   let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  emit r
+  match target with
+  | JavaScript formatter ->
+      let exported_runtime = not standalone in
+      let emit formatter =
+        generate
+          d
+          ~exported_runtime
+          ~wrap_with_fun
+          ~warn_on_unhandled_effect:standalone
+          ~deadcode_sentinal
+        +> link_and_pack ~standalone ~wrap_with_fun ~link
+        +> output formatter ~source_map ()
+      in
+      let source_map = emit formatter r in
+      source_map
+  | Wasm ->
+      let (p, live_vars), _, in_cps = r in
+      live_vars, in_cps, p, d
 
-let full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p =
+let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
-    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None formatter d p
+    full
+      ~target:(JavaScript formatter)
+      ~standalone
+      ~wrap_with_fun
+      ~profile
+      ~link
+      ~source_map:None
+      d
+      p
   in
   ()
 
 let f
+    ~target
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ~link
     ?source_map
-    formatter
     d
     p =
-  full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p
+  full ~target ~standalone ~wrap_with_fun ~profile ~link ~source_map d p
 
 let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
-  full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p
+  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
+    ~formatter
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~link:`No
-    formatter
     d
     p
 

@@ -31,14 +31,15 @@ let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> No
 
 module Int = Int32
 
-let int_binop l f =
+let int_binop l w f =
   match l with
-  | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, f i j))
+  | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, w (f i j)))
   | _ -> None
 
-let shift l f =
+let shift l w t f =
   match l with
-  | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, f i (Int32.to_int j land 0x1f)))
+  | [ Int (_, i); Int (_, j) ] ->
+      Some (Int (Regular, w (f (t i) (Int32.to_int j land 0x1f))))
   | _ -> None
 
 let float_binop_aux l f =
@@ -73,7 +74,7 @@ let float_binop_bool l f =
 
 let bool b = Some (Int (Regular, if b then 1l else 0l))
 
-let eval_prim x =
+let eval_prim ~target x =
   match x with
   | Not, [ Int (_, i) ] -> bool Int32.(i = 0l)
   | Lt, [ Int (_, i); Int (_, j) ] -> bool Int32.(i < j)
@@ -83,21 +84,33 @@ let eval_prim x =
   | Ult, [ Int (_, i); Int (_, j) ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
+      let wrap =
+        match target with
+        | `JavaScript -> fun i -> i
+        | `Wasm -> Int31.wrap
+      in
       match name, l with
       (* int *)
-      | "%int_add", _ -> int_binop l Int.add
-      | "%int_sub", _ -> int_binop l Int.sub
-      | "%direct_int_mul", _ -> int_binop l Int.mul
-      | "%direct_int_div", [ _; Int (Regular, 0l) ] -> None
-      | "%direct_int_div", _ -> int_binop l Int.div
-      | "%direct_int_mod", _ -> int_binop l Int.rem
-      | "%int_and", _ -> int_binop l Int.logand
-      | "%int_or", _ -> int_binop l Int.logor
-      | "%int_xor", _ -> int_binop l Int.logxor
-      | "%int_lsl", _ -> shift l Int.shift_left
-      | "%int_lsr", _ -> shift l Int.shift_right_logical
-      | "%int_asr", _ -> shift l Int.shift_right
-      | "%int_neg", [ Int (Regular, i) ] -> Some (Int (Regular, Int.neg i))
+      | "%int_add", _ -> int_binop l wrap Int.add
+      | "%int_sub", _ -> int_binop l wrap Int.sub
+      | "%direct_int_mul", _ -> int_binop l wrap Int.mul
+      | "%direct_int_div", [ _; Int (_, 0l) ] -> None
+      | "%direct_int_div", _ -> int_binop l wrap Int.div
+      | "%direct_int_mod", _ -> int_binop l wrap Int.rem
+      | "%int_and", _ -> int_binop l wrap Int.logand
+      | "%int_or", _ -> int_binop l wrap Int.logor
+      | "%int_xor", _ -> int_binop l wrap Int.logxor
+      | "%int_lsl", _ -> shift l wrap Fun.id Int.shift_left
+      | "%int_lsr", _ ->
+          shift
+            l
+            wrap
+            (match target with
+            | `JavaScript -> Fun.id
+            | `Wasm -> fun i -> Int.logand i 0x7fffffffl)
+            Int.shift_right_logical
+      | "%int_asr", _ -> shift l wrap Fun.id Int.shift_right
+      | "%int_neg", [ Int (_, i) ] -> Some (Int (Regular, Int.neg i))
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
       | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
@@ -142,7 +155,13 @@ let eval_prim x =
           | Some env -> Some (String env)
           | None -> None)
       | "caml_sys_const_word_size", [ _ ] -> Some (Int (Regular, 32l))
-      | "caml_sys_const_int_size", [ _ ] -> Some (Int (Regular, 32l))
+      | "caml_sys_const_int_size", [ _ ] ->
+          Some
+            (Int
+               ( Regular
+               , match target with
+                 | `JavaScript -> 32l
+                 | `Wasm -> 31l ))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int (Regular, 0l))
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int (Regular, 0l))
       | _ -> None)
@@ -169,14 +188,18 @@ type is_int =
   | N
   | Unknown
 
-let is_int info x =
+let is_int ~target info x =
   match x with
   | Pv x ->
       get_approx
         info
         (fun x ->
           match Flow.Info.def info x with
-          | Some (Constant (Int _)) -> Y
+          | Some (Constant (Int (Regular, _))) -> Y
+          | Some (Constant (Int _)) -> (
+              match target with
+              | `JavaScript -> Y
+              | `Wasm -> N)
           | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
         Unknown
@@ -186,7 +209,11 @@ let is_int info x =
           | N, N -> N
           | _ -> Unknown)
         x
-  | Pc (Int _) -> Y
+  | Pc (Int (Regular, _)) -> Y
+  | Pc (Int _) -> (
+      match target with
+      | `JavaScript -> Y
+      | `Wasm -> N)
   | Pc _ -> N
 
 let the_tag_of info x get =
@@ -233,7 +260,7 @@ let the_cont_of info x (a : cont array) =
       | _ -> None)
     x
 
-let eval_instr info ((x, loc) as i) =
+let eval_instr ~target info ((x, loc) as i) =
   match x with
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_equal"), [ y; z ])) -> (
       match the_const_of info y, the_const_of info z with
@@ -275,7 +302,7 @@ let eval_instr info ((x, loc) as i) =
            below fail. *)
       [ i ]
   | Let (x, Prim (IsInt, [ y ])) -> (
-      match is_int info y with
+      match is_int ~target info y with
       | Unknown -> [ i ]
       | (Y | N) as b ->
           let b = if Poly.(b = N) then 0l else 1l in
@@ -291,7 +318,14 @@ let eval_instr info ((x, loc) as i) =
       | None -> [ i ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
-      [ Let (jsoo, Constant (String "js_of_ocaml")), noloc
+      [ ( Let
+            ( jsoo
+            , Constant
+                (String
+                   (match target with
+                   | `JavaScript -> "js_of_ocaml"
+                   | `Wasm -> "wasm_of_ocaml")) )
+        , noloc )
       ; Let (x, Block (0, [| jsoo |], NotArray, Immutable)), loc
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
@@ -304,6 +338,7 @@ let eval_instr info ((x, loc) as i) =
                | _ -> false)
         then
           eval_prim
+            ~target
             ( prim
             , List.map prim_args' ~f:(function
                   | Some c -> c
@@ -321,13 +356,15 @@ let eval_instr info ((x, loc) as i) =
                 , Prim
                     ( prim
                     , List.map2 prim_args prim_args' ~f:(fun arg c ->
-                          match c with
-                          | Some ((Int _ | Float _ | NativeString _) as c) -> Pc c
-                          | Some (String _ as c) when Config.Flag.use_js_string () -> Pc c
-                          | Some _
+                          match c, target with
+                          | Some ((Int _ | NativeString _) as c), _ -> Pc c
+                          | Some (Float _ as c), `JavaScript -> Pc c
+                          | Some (String _ as c), `JavaScript
+                            when Config.Flag.use_js_string () -> Pc c
+                          | Some _, _
                           (* do not be duplicated other constant as
                               they're not represented with constant in javascript. *)
-                          | None -> arg) ) )
+                          | None, _ -> arg) ) )
             , loc )
           ])
   | _ -> [ i ]
@@ -446,15 +483,15 @@ let drop_exception_handler blocks =
     blocks
     blocks
 
-let eval info blocks =
+let eval ~target info blocks =
   Addr.Map.map
     (fun block ->
-      let body = List.concat_map block.body ~f:(eval_instr info) in
+      let body = List.concat_map block.body ~f:(eval_instr ~target info) in
       let branch = eval_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
 
-let f info p =
-  let blocks = eval info p.blocks in
+let f ~target info p =
+  let blocks = eval ~target info p.blocks in
   let blocks = drop_exception_handler blocks in
   { p with blocks }

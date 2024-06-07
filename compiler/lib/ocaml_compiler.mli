@@ -16,7 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val constant_of_const : Lambda.structured_constant -> Code.constant
+val constant_of_const :
+  target:[ `JavaScript | `Wasm ] -> Lambda.structured_constant -> Code.constant
 
 val find_loc_in_summary : Ident.t -> Env.summary -> Location.t option
 
