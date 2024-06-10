@@ -34,7 +34,6 @@
  (conflicts
   (ocamlfind (< 1.5.1))
   (js_of_ocaml (< 3.0))
-  (ppx_base (= v0.17.0))
 ))
 
 (package
