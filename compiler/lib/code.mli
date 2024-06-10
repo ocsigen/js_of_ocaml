@@ -125,8 +125,6 @@ module Var : sig
 
     val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
-    val init : size -> f:(int -> 'a) -> 'a t
-
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
 

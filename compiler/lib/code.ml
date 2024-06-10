@@ -132,8 +132,6 @@ module Var : sig
 
     val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
-    val init : size -> f:(int -> 'a) -> 'a t
-
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
 
@@ -299,8 +297,6 @@ end = struct
           Hashtbl.replace tbl k ();
           t.(x) <- Many tbl
       | Many tbl -> Hashtbl.replace tbl k ()
-
-    let init () ~f = Array.init (count ()) ~f
 
     let iter f t =
       for i = 0 to Array.length t - 1 do
