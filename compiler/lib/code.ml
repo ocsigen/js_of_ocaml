@@ -100,6 +100,22 @@ module Var : sig
 
     type 'a t
 
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
+
+    module DataMap : sig
+      type ('a, 'b) t
+
+      val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
+
+      val fold : ('a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
+    end
+
     type size = unit
 
     val get : 'a t -> key -> 'a
@@ -107,6 +123,14 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val make_map : size -> ('a, 'b) DataMap.t t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_map : ('a, 'b) DataMap.t t -> key -> 'a -> 'b -> unit
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val init : size -> f:(int -> 'a) -> 'a t
 
@@ -206,6 +230,42 @@ end = struct
   module Tbl = struct
     type 'a t = 'a array
 
+    module DataSet = struct
+      type 'a t =
+        | Empty
+        | One of 'a
+        | Many of ('a, unit) Hashtbl.t
+
+      let iter f = function
+        | Empty -> ()
+        | One a -> f a
+        | Many t -> Hashtbl.iter (fun k () -> f k) t
+
+      let fold f t acc =
+        match t with
+        | Empty -> acc
+        | One a -> f a acc
+        | Many t -> Hashtbl.fold (fun k () acc -> f k acc) t acc
+    end
+
+    module DataMap = struct
+      type ('a, 'b) t =
+        | Empty
+        | One of 'a * 'b
+        | Many of ('a, 'b) Hashtbl.t
+
+      let iter f = function
+        | Empty -> ()
+        | One (a, b) -> f a b
+        | Many t -> Hashtbl.iter f t
+
+      let fold f t acc =
+        match t with
+        | Empty -> acc
+        | One (a, b) -> f a b acc
+        | Many t -> Hashtbl.fold f t acc
+    end
+
     type key = T.t
 
     type size = unit
@@ -215,6 +275,30 @@ end = struct
     let set t x v = t.(x) <- v
 
     let make () v = Array.make (count ()) v
+
+    let make_set () = Array.make (count ()) DataSet.Empty
+
+    let make_map () = Array.make (count ()) DataMap.Empty
+
+    let add_map t x k v =
+      match t.(x) with
+      | DataMap.Empty -> t.(x) <- One (k, v)
+      | One (k', v') ->
+          let tbl = Hashtbl.create 0 in
+          Hashtbl.replace tbl k' v';
+          Hashtbl.replace tbl k v;
+          t.(x) <- Many tbl
+      | Many tbl -> Hashtbl.replace tbl k v
+
+    let add_set t x k =
+      match t.(x) with
+      | DataSet.Empty -> t.(x) <- One k
+      | One k' ->
+          let tbl = Hashtbl.create 0 in
+          Hashtbl.replace tbl k' ();
+          Hashtbl.replace tbl k ();
+          t.(x) <- Many tbl
+      | Many tbl -> Hashtbl.replace tbl k ()
 
     let init () ~f = Array.init (count ()) ~f
 

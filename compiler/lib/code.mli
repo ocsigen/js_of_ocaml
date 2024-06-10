@@ -91,6 +91,22 @@ module Var : sig
   module Tbl : sig
     type key = t
 
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
+
+    module DataMap : sig
+      type ('a, 'b) t
+
+      val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
+
+      val fold : ('a -> 'b -> 'acc -> 'acc) -> ('a, 'b) t -> 'acc -> 'acc
+    end
+
     type 'a t
 
     type size = unit
@@ -100,6 +116,14 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val make_map : size -> ('a, 'b) DataMap.t t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_map : ('a, 'b) DataMap.t t -> key -> 'a -> 'b -> unit
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val init : size -> f:(int -> 'a) -> 'a t
 

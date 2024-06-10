@@ -84,40 +84,16 @@ type usage_kind =
   | Compute  (** variable y is used to compute x *)
   | Propagate  (** values of y propagate to x *)
 
-type ('a, 'b) map =
-  | Empty
-  | One of 'a * 'b
-  | Many of ('a, 'b) Hashtbl.t
-
-let iter_map f = function
-  | Empty -> ()
-  | One (a, b) -> f a b
-  | Many t -> Hashtbl.iter f t
-
-let fold_map f t acc =
-  match t with
-  | Empty -> acc
-  | One (a, b) -> f a b acc
-  | Many t -> Hashtbl.fold f t acc
-
 (** Compute the adjacency list for the dependency graph of given program. An edge between
     variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
     as [Propagate] if [x] is applied as a closure or block argument the parameter [y].
 
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
-let usages prog (global_info : Global_flow.info) : (Var.t, usage_kind) map Var.Tbl.t =
-  let uses = Var.Tbl.init () ~f:(fun (_i : int) -> Empty) in
-  let add_use kind x y =
-    match Var.Tbl.get uses y with
-    | Empty -> Var.Tbl.set uses y (One (x, kind))
-    | One (x', k') ->
-        let tbl = Hashtbl.create 0 in
-        Hashtbl.replace tbl x' k';
-        Hashtbl.replace tbl x kind;
-        Var.Tbl.set uses y (Many tbl)
-    | Many tbl -> Hashtbl.replace tbl x kind
-  in
+let usages prog (global_info : Global_flow.info) :
+    (Var.t, usage_kind) Var.Tbl.DataMap.t Var.Tbl.t =
+  let uses = Var.Tbl.make_map () in
+  let add_use kind x y = Var.Tbl.add_map uses y x kind in
   let add_arg_dep params args =
     List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
   in
@@ -328,7 +304,7 @@ let propagate uses defs live_vars live_table x =
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
   in
-  fold_map
+  Var.Tbl.DataMap.fold
     (fun y usage_kind live -> Domain.join (contribution y usage_kind) live)
     (Var.Tbl.get uses x)
     (Domain.join (Var.Tbl.get live_vars x) (Var.Tbl.get live_table x))
@@ -336,7 +312,8 @@ let propagate uses defs live_vars live_table x =
 let solver vars uses defs live_vars =
   let g =
     { G.domain = vars
-    ; G.iter_children = (fun f x -> iter_map (fun y _ -> f y) (Var.Tbl.get uses x))
+    ; G.iter_children =
+        (fun f x -> Var.Tbl.DataMap.iter (fun y _ -> f y) (Var.Tbl.get uses x))
     }
   in
   Solver.f () (G.invert () g) (propagate uses defs live_vars)
@@ -425,7 +402,7 @@ module Print = struct
     Var.Tbl.iter
       (fun v ds ->
         Format.eprintf "%a: { " Var.print v;
-        iter_map
+        Var.Tbl.DataMap.iter
           (fun d k ->
             Format.eprintf
               "(%a, %s) "
