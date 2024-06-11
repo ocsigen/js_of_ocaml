@@ -299,7 +299,17 @@ let eval_instr info ((x, loc) as i) =
           let c = Constant (Int c) in
           Flow.Info.update_def info x c;
           [ Let (x, c), loc ])
-  | Let (_, Prim (Extern ("caml_array_unsafe_get" | "caml_array_unsafe_set"), _)) ->
+  | Let
+      ( _
+      , Prim
+          ( ( Extern
+                ( "caml_array_unsafe_get"
+                | "caml_array_unsafe_set"
+                | "caml_floatarray_unsafe_get"
+                | "caml_floatarray_unsafe_set"
+                | "caml_array_unsafe_set_addr" )
+            | Array_get )
+          , _ ) ) ->
       (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
@@ -371,7 +381,7 @@ let the_cond_of info x =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Constant (Int 0l | Int32 0l | NativeInt 0n)) -> Zero
+      | Some (Constant (Int 0l)) -> Zero
       | Some
           (Constant
             ( Int _
