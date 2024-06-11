@@ -48,3 +48,29 @@ let read_file f =
     Bytes.unsafe_to_string s
   with e ->
     failwith (Printf.sprintf "Cannot read content of %s.\n%s" f (Printexc.to_string e))
+
+let write_file ~name ~contents =
+  let ch = open_out_bin name in
+  output_string ch contents;
+  close_out ch
+
+let remove_file file = try Sys.remove file with Sys_error _ -> ()
+
+let gen_file file f =
+  let f_tmp =
+    Filename.temp_file_name
+      ~temp_dir:(Filename.dirname file)
+      (Filename.basename file)
+      ".tmp"
+  in
+  try
+    let res = f f_tmp in
+    remove_file file;
+    Sys.rename f_tmp file;
+    res
+  with exc ->
+    remove_file f_tmp;
+    raise exc
+
+let with_intermediate_file name f =
+  Fun.protect ~finally:(fun () -> remove_file name) (fun () -> f name)
