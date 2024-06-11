@@ -32,8 +32,8 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_base (Const_nativeint i) -> Int (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
-      let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
-      Tuple (Obj.double_array_tag, Array.of_list l, Unknown)
+      let l = List.map ~f:(fun f -> float_of_string f) sl in
+      Float_array (Array.of_list l)
   | ((Const_pointer i) [@if ocaml_version < (4, 12, 0)]) ->
       Int (Int32.of_int_warning_on_overflow i)
   | Const_block (tag, l) ->
