@@ -91,6 +91,7 @@ let run
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Jsoo_cmdline.Arg.eval common;
+  Generate.init ();
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
