@@ -363,9 +363,11 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
-  | Int64 of int64
-  | Tuple of int * constant array * array_or_not
   | Int of int32
+  | Int32 of int32
+  | Int64 of int64
+  | NativeInt of nativeint
+  | Tuple of int * constant array * array_or_not
 
 module Constant = struct
   type t = constant
@@ -386,26 +388,59 @@ module Constant = struct
             | Some s, Some c -> same := Some (s && c)
           done;
           !same
+    | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
+    | NativeInt a, NativeInt b -> Some (Nativeint.equal a b)
     | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
-    | Int a, Int b -> Some (Int32.equal a b)
     | Float a, Float b -> Some (Float.ieee_equal a b)
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Tuple ((0 | 254), _, _), Float_array _ -> None
     | Float_array _, Tuple ((0 | 254), _, _) -> None
-    | Tuple _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
+    | ( Tuple _
+      , ( String _
+        | NativeString _
+        | Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Float_array _ ) ) -> Some false
+    | ( Float_array _
+      , ( String _
+        | NativeString _
+        | Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Tuple _ ) ) -> Some false
+    | ( String _
+      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
         Some false
-    | Float_array _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
+    | ( NativeString _
+      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
         Some false
-    | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-    | NativeString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-    | Int64 _, (String _ | NativeString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
-        Some false
+    | ( Int64 _
+      , ( String _
+        | NativeString _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Tuple _
+        | Float_array _ ) ) -> Some false
     | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
         Some false
-    | Int _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+    | ( (Int _ | Int32 _ | NativeInt _)
+      , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
         Some false
+    (* Note: the following cases should not occur when compiling to Javascript *)
+    | Int _, (Int32 _ | NativeInt _)
+    | Int32 _, (Int _ | NativeInt _)
+    | NativeInt _, (Int _ | Int32 _)
+    | (Int32 _ | NativeInt _), Float _
+    | Float _, (Int32 _ | NativeInt _) -> None
 end
 
 type loc =
@@ -496,7 +531,10 @@ module Print = struct
           Format.fprintf f "%.12g" a.(i)
         done;
         Format.fprintf f "|]"
+    | Int i -> Format.fprintf f "%ld" i
+    | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
+    | NativeInt i -> Format.fprintf f "%ndn" i
     | Tuple (tag, a, _) -> (
         Format.fprintf f "<%d>" tag;
         match Array.length a with
@@ -513,7 +551,6 @@ module Print = struct
               constant f a.(i)
             done;
             Format.fprintf f ")")
-    | Int i -> Format.fprintf f "%ld" i
 
   let arg f a =
     match a with
