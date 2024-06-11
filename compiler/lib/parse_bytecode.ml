@@ -515,7 +515,7 @@ end = struct
     | Float_array _ -> false
     | Int64 _ -> false
     | Tuple _ -> false
-    | Int _ -> true
+    | Int _ | Int32 _ | NativeInt _ -> true
 end
 
 let const i = Constant (Int i)
