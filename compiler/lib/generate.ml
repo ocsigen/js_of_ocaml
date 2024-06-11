@@ -2054,5 +2054,3 @@ let init () =
   Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
     internal_primitives
-
-let () = init ()
