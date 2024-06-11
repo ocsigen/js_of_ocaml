@@ -166,9 +166,9 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           x
     | Constant c -> Constant.translate c
-    | Special Undefined -> Constant.translate (Int (Regular, 0l))
+    | Special Undefined -> Constant.translate (Int 0l)
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int (_, arity)) ])
+    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ])
       when Poly.(target = `GC) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Int32.to_int arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->

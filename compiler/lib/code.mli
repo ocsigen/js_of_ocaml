@@ -162,9 +162,11 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
+  | Int of int32
+  | Int32 of int32  (** Only produced when compiling to WebAssembly. *)
   | Int64 of int64
+  | NativeInt of nativeint  (** Only produced when compiling to WebAssembly. *)
   | Tuple of int * constant array * array_or_not
-  | Int of int_kind * int32
 
 val constant_equal : constant -> constant -> bool option
 

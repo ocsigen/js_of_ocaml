@@ -451,7 +451,7 @@ let rec constant_rec ~ctx x level instrs =
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
         | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
-        | Int (_, 0l) -> if n > constant_max_depth then Some acc else None
+        | Int 0l -> if n > constant_max_depth then Some acc else None
         | _ -> None
       in
       match detect_list 0 [] x with
@@ -488,7 +488,9 @@ let rec constant_rec ~ctx x level instrs =
             else List.rev l, instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
-  | Int (_, i) -> int32 i, instrs
+  | Int i -> int32 i, instrs
+  | Int32 _ | NativeInt _ ->
+      assert false (* Should not be produced when compiling to Javascript *)
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in

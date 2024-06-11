@@ -933,7 +933,7 @@ module Constant = struct
 
   let rec translate_rec c =
     match c with
-    | Code.Int (Regular, i) -> return (Const, W.RefI31 (Const (I32 i)))
+    | Code.Int i -> return (Const, W.RefI31 (Const (I32 i)))
     | Tuple (tag, a, _) ->
         let* ty = Type.block_type in
         let* l =
@@ -1031,11 +1031,15 @@ module Constant = struct
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
         return (Const, e)
-    | Int (Int32, i) ->
+    | Int32 i ->
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
         return (Const, e)
-    | Int (Native, i) ->
-        let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
+    | NativeInt i ->
+        let* e =
+          Memory.make_int32
+            ~kind:`Nativeint
+            (return (W.Const (I32 (Int32.of_nativeint_warning_on_overflow i))))
+        in
         return (Const, e)
 
   let translate c =
