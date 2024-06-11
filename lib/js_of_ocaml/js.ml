@@ -843,6 +843,12 @@ let export_all obj =
 
 (****)
 
+module Effect = struct
+  external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
+end
+
+(****)
+
 (* DEPRECATED *)
 
 type float_prop = number_t prop

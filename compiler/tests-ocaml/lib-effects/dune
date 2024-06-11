@@ -47,3 +47,16 @@
     (run node %{test}))
    (run cat)))
  (modes js wasm))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names assume_no_perform)
+ (modules assume_no_perform)
+ (libraries js_of_ocaml)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js wasm))

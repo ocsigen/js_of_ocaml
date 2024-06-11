@@ -1,5 +1,9 @@
 #include <caml/misc.h>
 
+void caml_assume_no_perform () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_assume_no_perform!");
+}
+
 void caml_bytes_of_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_array!");
 }

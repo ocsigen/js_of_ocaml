@@ -461,3 +461,20 @@
  (deps marshal.reference marshal.referencejs)
  (action
   (diff marshal.reference marshal.referencejs)))
+
+(executable
+ (name assume_no_perform)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (modules assume_no_perform)
+ (modes js)
+ (libraries js_of_ocaml))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (deps assume_no_perform.bc.js)
+ (action
+  (ignore-stdout
+   (run node ./assume_no_perform.bc.js))))
