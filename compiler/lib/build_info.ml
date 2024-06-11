@@ -90,6 +90,10 @@ let parse s =
       in
       Some t
 
+let to_map : t -> string StringMap.t = Fun.id
+
+let of_map : string StringMap.t -> t = Fun.id
+
 exception
   Incompatible_build_info of
     { key : string
