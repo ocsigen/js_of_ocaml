@@ -151,24 +151,13 @@ let rewrite_block pc' pc blocks =
   in
   Addr.Map.add pc block blocks
 
-(* Skip try body *)
-let fold_children blocks pc f accu =
-  let block = Addr.Map.find pc blocks in
-  match fst block.branch with
-  | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap ((try_body, _), _, (pc1, _)) ->
-      f pc1 (Addr.Set.fold f (Code.poptraps blocks try_body) accu)
-  | Cond (_, (pc1, _), (pc2, _)) ->
-      let accu = f pc1 accu in
-      let accu = f pc2 accu in
-      accu
-  | Switch (_, a1) ->
-      let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
-      accu
-
 let rewrite_closure blocks cont_pc clos_pc =
-  Code.traverse { fold = fold_children } (rewrite_block cont_pc) clos_pc blocks blocks
+  Code.traverse
+    { fold = Code.fold_children_skip_try_body }
+    (rewrite_block cont_pc)
+    clos_pc
+    blocks
+    blocks
 
 (****)
 
