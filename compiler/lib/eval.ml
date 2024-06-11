@@ -110,8 +110,8 @@ let eval_prim x =
       | "caml_mul_float", _ -> float_binop l ( *. )
       | "caml_div_float", _ -> float_binop l ( /. )
       | "caml_fmod_float", _ -> float_binop l mod_float
-      | "caml_int_of_float", [ Float f ] -> Some (Int (Int32.of_float f))
-      | "to_int", [ Float f ] -> Some (Int (Int32.of_float f))
+      | "caml_int_of_float", [ Float f ] -> Some (Int (Int.of_float f))
+      | "to_int", [ Float f ] -> Some (Int (Int.of_float f))
       | "to_int", [ Int i ] -> Some (Int i)
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
@@ -130,9 +130,9 @@ let eval_prim x =
       | "caml_sqrt_float", _ -> float_unop l sqrt
       | "caml_tan_float", _ -> float_unop l tan
       | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
-          let pos = Int.to_int pos in
+          let pos = Int32.to_int pos in
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
-          then Some (Int (Int.of_int (Char.code s.[pos])))
+          then Some (Int (Int32.of_int (Char.code s.[pos])))
           else None
       | "caml_string_equal", [ String s1; String s2 ] -> bool (String.equal s1 s2)
       | "caml_string_notequal", [ String s1; String s2 ] ->
@@ -332,10 +332,12 @@ let the_cond_of info x =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Constant (Int 0l)) -> Zero
+      | Some (Constant (Int 0l | Int32 0l | NativeInt 0n)) -> Zero
       | Some
           (Constant
             ( Int _
+            | Int32 _
+            | NativeInt _
             | Float _
             | Tuple _
             | String _
