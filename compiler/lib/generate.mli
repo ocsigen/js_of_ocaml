@@ -30,3 +30,9 @@ val f :
   -> Javascript.program
 
 val init : unit -> unit
+
+val source_location :
+     Parse_bytecode.Debug.t
+  -> ?force:Parse_bytecode.Debug.force
+  -> Code.loc
+  -> Javascript.location
