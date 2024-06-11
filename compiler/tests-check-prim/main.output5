@@ -3,6 +3,7 @@ Missing
 
 From main.bc:
 caml_alloc_dummy_function
+caml_assume_no_perform
 caml_continuation_use
 caml_drop_continuation
 caml_int_as_pointer
