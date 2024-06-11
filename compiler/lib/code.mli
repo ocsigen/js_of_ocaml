@@ -293,7 +293,15 @@ val fold_closures_innermost_first :
     innermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
+val fold_closures_outermost_first :
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
+(** Similar to {!fold_closures}, but applies the fold function to the
+    outermost closures first. Unlike with {!fold_closures}, only the closures
+    reachable from [p.start] are considered. *)
+
 val fold_children : 'c fold_blocs
+
+val fold_children_skip_try_body : 'c fold_blocs
 
 val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
 
