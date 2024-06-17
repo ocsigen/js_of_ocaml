@@ -277,7 +277,7 @@ function caml_sys_const_backend_type () {
 //Provides: os_type
 var os_type = (globalThis.process &&
                globalThis.process.platform &&
-               globalThis.process.platform == "win32") ? "Cygwin" : "Unix";
+               globalThis.process.platform == "win32") ? "Win32" : "Unix";
 
 
 //Provides: caml_sys_get_config const

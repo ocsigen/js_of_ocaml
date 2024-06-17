@@ -85,7 +85,7 @@ function caml_make_path (name) {
   if( !path_is_absolute(name) )
     name = caml_current_dir + name;
   var comp0 = path_is_absolute(name);
-  var comp = comp0[1].split("/");
+  var comp = comp0[1].split(/[/\\]/);
   var ncomp = []
   for(var i = 0; i<comp.length; i++){
     switch(comp[i]){
