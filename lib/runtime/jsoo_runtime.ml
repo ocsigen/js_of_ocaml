@@ -45,8 +45,6 @@ module Js = struct
 
   external delete : t -> t -> unit = "caml_js_delete"
 
-  external get_global : unit -> t = "caml_js_global"
-
   external call : t -> t -> t array -> t = "caml_js_call"
 
   external fun_call : t -> t array -> t = "caml_js_fun_call"
