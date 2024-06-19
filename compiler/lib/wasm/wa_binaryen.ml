@@ -92,8 +92,8 @@ let dead_code_elimination
 
 let optimization_options =
   [| [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-   ; [ "-O2"; "--traps-never-happen" ]
-   ; [ "-O3"; "--traps-never-happen" ]
+   ; [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+   ; [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
   |]
 
 let optimize
