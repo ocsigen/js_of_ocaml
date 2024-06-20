@@ -23,10 +23,10 @@ jobs:
           - "4.11"
           - "4.12"
           - "4.13"
-	  - "4.14"
+          - "4.14"
           - "5.0"
           - "5.1"
-	  - "5.2"
+          - "5.2"
         skip-test:
           - true
         skip-doc:
@@ -35,7 +35,7 @@ jobs:
           - true
         include:
           - ocaml-compiler: "4.14"
-	    skip-effects: true
+            skip-effects: true
             skip-test: false
           - ocaml-compiler: "5.2"
             skip-effects: false
