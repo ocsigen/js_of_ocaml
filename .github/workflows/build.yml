@@ -23,8 +23,10 @@ jobs:
           - "4.11"
           - "4.12"
           - "4.13"
+	  - "4.14"
           - "5.0"
           - "5.1"
+	  - "5.2"
         skip-test:
           - true
         skip-doc:
@@ -32,36 +34,15 @@ jobs:
         skip-effects:
           - true
         include:
-          - os: ubuntu-latest
-            ocaml-compiler: "4.14"
-            skip-effects: true
+          - ocaml-compiler: "4.14"
+	    skip-effects: true
             skip-test: false
-            skip-doc: true
-          - os: macos-latest
-            ocaml-compiler: "4.14"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: "4.14"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: ubuntu-latest
-            ocaml-compiler: "5.2"
+          - ocaml-compiler: "5.2"
             skip-effects: false
             skip-test: false
+          - os: ubuntu-latest
+            ocaml-compiler: "5.2"
             skip-doc: false
-          - os: macos-latest
-            ocaml-compiler: "5.2"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: "5.2"
-            skip-effects: false
-            skip-test: false
-            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
