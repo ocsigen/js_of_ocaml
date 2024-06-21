@@ -94,11 +94,14 @@ jobs:
           dune-cache: true
           opam-pin: false
 
-
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
 
-      - run: opam pin add ppxlib git+https://github.com/hhugo/ppxlib.git#trunk-support-53 --no-action
+      - run: opam pin add ppxlib git+https://github.com/NathanReb/ppxlib.git#trunk-support-503 --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
+      - run: opam pin add base        git+https://github.com/hhugo/base.git#trunk-support-503 --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
+      - run: opam pin add ppxlib_jane git+https://github.com/hhugo/ppxlib_jane.git#trunk-support-503 --no-action
         if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0+trunk' }}
 
       - run: opam pin add ./ --no-action
