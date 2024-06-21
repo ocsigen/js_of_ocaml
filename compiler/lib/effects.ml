@@ -516,11 +516,11 @@ let cps_block ~st ~k pc block =
   in
 
   let rewrite_instr x e loc =
-    let perform_effect ~effect ~continuation loc =
+    let perform_effect ~effect_ ~continuation loc =
       Some
         (fun ~k ->
           let e =
-            Prim (Extern "caml_perform_effect", [ Pv effect; continuation; Pv k ])
+            Prim (Extern "caml_perform_effect", [ Pv effect_; continuation; Pv k ])
           in
           let x = Var.fresh () in
           [ Let (x, e), loc ], (Return x, loc))
@@ -546,10 +546,10 @@ let cps_block ~st ~k pc block =
               ~f
               [ arg; k' ]
               loc)
-    | Prim (Extern "%perform", [ Pv effect ]) ->
-        perform_effect ~effect ~continuation:(Pc (Int 0l)) loc
-    | Prim (Extern "%reperform", [ Pv effect; continuation ]) ->
-        perform_effect ~effect ~continuation loc
+    | Prim (Extern "%perform", [ Pv effect_ ]) ->
+        perform_effect ~effect_ ~continuation:(Pc (Int 0l)) loc
+    | Prim (Extern "%reperform", [ Pv effect_; continuation ]) ->
+        perform_effect ~effect_ ~continuation loc
     | _ -> None
   in
 
