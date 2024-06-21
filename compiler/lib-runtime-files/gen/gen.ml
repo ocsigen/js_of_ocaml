@@ -31,11 +31,15 @@ let read_file f =
     failwith (Printf.sprintf "Cannot read content of %s.\n%s" f (Printexc.to_string e))
 
 let to_ident s =
-  String.map (String.uncapitalize_ascii s) ~f:(function
-      | 'a' .. 'z' as c -> c
-      | 'A' .. 'Z' as c -> c
-      | '0' .. '9' as c -> c
-      | _ -> '_')
+  match
+    String.map (String.uncapitalize_ascii s) ~f:(function
+        | 'a' .. 'z' as c -> c
+        | 'A' .. 'Z' as c -> c
+        | '0' .. '9' as c -> c
+        | _ -> '_')
+  with
+  | "effect" -> "effect_"
+  | x -> x
 
 let rec list_product l =
   match l with
