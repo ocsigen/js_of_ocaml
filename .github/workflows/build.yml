@@ -86,6 +86,8 @@ jobs:
             hhugo: git+https://github.com/hhugo/opam-repository.git#gmp-mingw
             default: git+https://github.com/ocaml/opam-repository.git
 
+      - run: git config --system core.longpaths true
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
