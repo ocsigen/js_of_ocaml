@@ -68,8 +68,6 @@ jobs:
     steps:
       - name: Checkout tree
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Set-up Node.js
         uses: actions/setup-node@v4
@@ -87,6 +85,7 @@ jobs:
             default: git+https://github.com/ocaml/opam-repository.git
 
       - run: git config --system core.longpaths true
+        if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
