@@ -84,7 +84,9 @@ jobs:
             hhugo: git+https://github.com/hhugo/opam-repository.git#gmp-mingw
             default: git+https://github.com/ocaml/opam-repository.git
 
-      - run: git config --system core.longpaths true
+      - name: Win fix long path
+        run: |
+          bash -c "reg add 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled /t REG_DWORD /d 0x00000001 /f"
         if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
