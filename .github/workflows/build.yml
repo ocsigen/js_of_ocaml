@@ -87,6 +87,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           allow-prerelease-opam: true
           dune-cache: true
+          opam-pin : ''
           opam-repositories: |
             hhugo: git+https://github.com/hhugo/opam-repository.git#gmp-mingw
             default: git+https://github.com/ocaml/opam-repository.git
