@@ -12,6 +12,7 @@
 
 ;; git submodule add test262 https://github.com/tc39/test262.git
 ;; git checkout 6cbb6da9473c56d95358d8e679c5a6d2b4574efb
+
 (rule
  (alias runtest-parser)
  (deps

@@ -66,6 +66,13 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Set git to use LF
+        if: runner.ocaml-compiler < 5.2
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.ignorecase false
+
       - name: Checkout tree
         uses: actions/checkout@v4
 
@@ -83,11 +90,6 @@ jobs:
           opam-repositories: |
             hhugo: git+https://github.com/hhugo/opam-repository.git#gmp-mingw
             default: git+https://github.com/ocaml/opam-repository.git
-
-      - name: Win fix long path
-        run: |
-          bash -c "reg add 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled /t REG_DWORD /d 0x00000001 /f"
-        if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
