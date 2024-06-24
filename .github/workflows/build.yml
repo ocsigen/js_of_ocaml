@@ -25,6 +25,7 @@ jobs:
           - "4.13"
           - "5.0"
           - "5.1"
+          - "5.2"
         skip-test:
           - true
         skip-doc:
@@ -48,22 +49,17 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "ocaml-variants.5.3.0+trunk"
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: macos-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "ocaml-variants.5.3.0+trunk"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: "5.2"
-            skip-effects: false
-            skip-test: false
-            skip-doc: true
-          - os: ubuntu-latest
-            ocaml-compiler: ocaml-variants.5.3.0+trunk
+            ocaml-compiler: "ocaml-variants.5.3.0+trunk"
             skip-effects: false
             skip-test: false
             skip-doc: true
