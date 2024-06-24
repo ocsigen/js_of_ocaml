@@ -89,6 +89,9 @@ jobs:
           dune-cache: true
           opam-pin: false
 
+      - run: opam install conf-pkg-config
+        if: runner.os == 'Windows'
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
