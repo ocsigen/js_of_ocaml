@@ -1,3 +1,8 @@
+# dev (2024-??) - ??
+
+## Features/Changes
+* Compiler: optimize sourcemap processing, improving linking performance #1617
+
 # 5.8.2 (2024-05-26) - Luc
 
 ## Bug fixes

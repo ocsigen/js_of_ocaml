@@ -25,4 +25,10 @@ val to_string : t -> string
 
 val to_file : t -> string -> unit
 
-val of_string : string -> t
+module Index : sig
+  val to_string : Index.t -> string
+
+  val to_file : Index.t -> string -> unit
+end
+
+val of_string : string -> [ `Standard of Source_map.t | `Index of Source_map.Index.t ]

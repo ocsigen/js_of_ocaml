@@ -25,4 +25,10 @@ let of_string _ = fail ()
 
 let to_file _ _ = fail ()
 
+module Composite = struct
+  let to_string _ _ = fail ()
+
+  let to_file _ _ = fail ()
+end
+
 let enabled = false

@@ -312,9 +312,10 @@ let options =
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []
-            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
+            ; sources_contents =
+                (if sourcemap_don't_inline_content then None else Some [])
             ; names = []
-            ; mappings = []
+            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
@@ -551,9 +552,10 @@ let options_runtime_only =
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []
-            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
+            ; sources_contents =
+                (if sourcemap_don't_inline_content then None else Some [])
             ; names = []
-            ; mappings = []
+            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
