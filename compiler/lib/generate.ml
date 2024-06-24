@@ -2043,6 +2043,7 @@ let init () =
     ; "caml_floatarray_unsafe_set", "caml_array_unsafe_set"
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
+    ; "caml_array_of_uniform_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"
     ; "caml_js_from_float", "%identity"
     ; "caml_js_to_float", "%identity"

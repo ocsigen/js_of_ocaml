@@ -100,9 +100,9 @@ function caml_check_bound (array, index) {
   return array;
 }
 
-//Provides: caml_make_vect const (const, mutable)
+//Provides: caml_array_make const (const, mutable)
 //Requires: caml_array_bound_error
-function caml_make_vect (len, init) {
+function caml_array_make (len, init) {
   if (len < 0) caml_array_bound_error();
   var len = len + 1 | 0;
   var b = new Array(len);
@@ -111,9 +111,16 @@ function caml_make_vect (len, init) {
   return b;
 }
 
-//Provides: caml_make_float_vect const (const)
+//Provides: caml_make_vect
+//Requires: caml_array_make
+function caml_make_vect(len, init) {
+  return caml_array_make(len, init);
+}
+
+//Provides: caml_array_create_float const (const)
 //Requires: caml_array_bound_error
-function caml_make_float_vect(len){
+//Alias: caml_make_float_vect
+function caml_array_create_float(len){
   if (len < 0) caml_array_bound_error();
   var len = len + 1 | 0;
   var b = new Array(len);

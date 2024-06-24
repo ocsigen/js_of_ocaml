@@ -190,3 +190,9 @@ function caml_is_printable(c) { return +(c > 31 && c < 127); }
 
 //Provides: caml_maybe_print_stats
 function caml_maybe_print_stats(unit) { return 0 }
+
+//Provides: caml_process_pending_actions_with_root
+//Version: >= 5.3
+function caml_process_pending_actions_with_root(extra_root) {
+  return 0
+}

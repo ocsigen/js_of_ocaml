@@ -9,6 +9,7 @@
   toplevel_expect_test.ml-4.08
   toplevel_expect_test.ml-4.09
   toplevel_expect_test.ml-4.10
+  toplevel_expect_test.ml-5.3
   toplevel_expect_test.ml-default)
  (action
   (with-stdout-to
