@@ -88,9 +88,6 @@ jobs:
           allow-prerelease-opam: true
           dune-cache: true
           opam-pin: false
-          opam-repositories: |
-            hhugo: git+https://github.com/hhugo/opam-repository.git#gmp-mingw
-            default: git+https://github.com/ocaml/opam-repository.git
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
