@@ -183,6 +183,30 @@ module Wasm_binary = struct
             find_sections i)
     in
     find_sections { imports = []; exports = [] }
+
+  let append_source_map_section ~file ~url =
+    let ch = open_out_gen [ Open_wronly; Open_append; Open_binary ] 0o666 file in
+    let rec output_uint buf i =
+      if i < 128
+      then Buffer.add_char buf (Char.chr i)
+      else (
+        Buffer.add_char buf (Char.chr (128 + (i land 127)));
+        output_uint buf (i lsr 7))
+    in
+    let buf = Buffer.create 16 in
+    let output_name buf s =
+      output_uint buf (String.length s);
+      Buffer.add_string buf s
+    in
+    output_name buf "sourceMappingURL";
+    output_name buf url;
+    let section_contents = Buffer.contents buf in
+    Buffer.clear buf;
+    Buffer.add_char buf '\000';
+    output_uint buf (String.length section_contents);
+    output_string ch (Buffer.contents buf);
+    output_string ch section_contents;
+    close_out ch
 end
 
 let trim_semi s =
@@ -295,7 +319,6 @@ let generate_start_function ~to_link ~out_file =
     ~profile:(Driver.profile 1)
     ~opt_input_sourcemap:None
     ~opt_output_sourcemap:None
-    ~opt_sourcemap_url:None
     ~input_file:wat_file
     ~output_file:wasm_file;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
@@ -333,10 +356,10 @@ let report_missing_primitives missing =
     List.iter ~f:(fun nm -> warn "  %s@." nm) missing)
 
 let build_runtime_arguments
-    ?(link_spec = [])
-    ?(separate_compilation = false)
+    ~link_spec
+    ~separate_compilation
     ~missing_primitives
-    ~wasm_file
+    ~wasm_dir
     ~generated_js
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
@@ -440,29 +463,26 @@ let build_runtime_arguments
   in
   obj
     [ ( "link"
-      , if List.is_empty link_spec
-        then ENum (Javascript.Num.of_int32 (if separate_compilation then 1l else 0l))
-        else
-          EArr
-            (List.map
-               ~f:(fun (m, deps) ->
-                 Javascript.Element
-                   (EArr
-                      [ Element (EStr (Utf8_string.of_string_exn m))
-                      ; Element
-                          (match deps with
-                          | None -> ENum (Javascript.Num.of_int32 0l)
-                          | Some l ->
-                              EArr
-                                (List.map
-                                   ~f:(fun i ->
-                                     Javascript.Element
-                                       (ENum (Javascript.Num.of_int32 (Int32.of_int i))))
-                                   l))
-                      ]))
-               link_spec) )
+      , EArr
+          (List.map
+             ~f:(fun (m, deps) ->
+               Javascript.Element
+                 (EArr
+                    [ Element (EStr (Utf8_string.of_string_exn m))
+                    ; Element
+                        (match deps with
+                        | None -> ENum (Javascript.Num.of_int32 0l)
+                        | Some l ->
+                            EArr
+                              (List.map
+                                 ~f:(fun i ->
+                                   Javascript.Element
+                                     (ENum (Javascript.Num.of_int32 (Int32.of_int i))))
+                                 l))
+                    ]))
+             link_spec) )
     ; "generated", generated_js
-    ; "src", EStr (Utf8_string.of_string_exn (Filename.basename wasm_file))
+    ; "src", EStr (Utf8_string.of_string_exn (Filename.basename wasm_dir))
     ]
 
 let link_to_directory ~set_to_link ~files ~enable_source_maps ~dir =
@@ -662,7 +682,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "    finding what to link: %a@." Timer.print t1;
   if times () then Format.eprintf "  scan: %a@." Timer.print t;
   let t = Timer.make () in
-  let interfaces, wasm_file, link_spec =
+  let interfaces, wasm_dir, link_spec =
     let dir = Filename.chop_extension output_file ^ ".assets" in
     Fs.gen_file dir
     @@ fun tmp_dir ->
@@ -706,7 +726,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
         ~link_spec
         ~separate_compilation:true
         ~missing_primitives
-        ~wasm_file
+        ~wasm_dir
         ~generated_js
         ()
     in

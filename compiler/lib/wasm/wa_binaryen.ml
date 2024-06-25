@@ -114,13 +114,8 @@ let optimization_options =
    ; [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
   |]
 
-let optimize
-    ~profile
-    ~opt_input_sourcemap
-    ~input_file
-    ~opt_output_sourcemap
-    ~opt_sourcemap_url
-    ~output_file =
+let optimize ~profile ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~output_file
+    =
   let level =
     match profile with
     | None -> 1
@@ -132,5 +127,4 @@ let optimize
         @ optimization_options.(level - 1)
         @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
     @ opt_flag "--input-source-map" opt_input_sourcemap
-    @ opt_flag "--output-source-map" opt_output_sourcemap
-    @ opt_flag "--output-source-map-url" opt_sourcemap_url)
+    @ opt_flag "--output-source-map" opt_output_sourcemap)

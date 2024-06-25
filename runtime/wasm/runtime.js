@@ -402,14 +402,14 @@
         }
       }
       await loadModule(link[0], 1);
-      await loadModule(link[1]);
-      const workers = new Array(20).fill(link.slice(2).values()).map(loadModules);
-      await Promise.all(workers);
+      if (link.length > 1) {
+        await loadModule(link[1]);
+        const workers = new Array(20).fill(link.slice(2).values()).map(loadModules);
+        await Promise.all(workers);
+      }
       return {instance:{exports: Object.assign(imports.env, imports.OCaml)}}
     }
-    const wasmModule =
-      await ((link)?instantiateFromDir()
-                   :instantiateModule(loadCode(src)))
+    const wasmModule = await instantiateFromDir()
 
     var {caml_callback, caml_alloc_tm, caml_start_fiber,
          caml_handle_uncaught_exception, caml_buffer,
