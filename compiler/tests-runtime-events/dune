@@ -3,17 +3,9 @@
   (flags
    (:standard -w -32-69))))
 
-(executables
+(tests
  (names test_runtime_events)
- (enabled_if
+ (build_if
   (>= %{ocaml_version} 5.1.0))
  (libraries runtime_events)
  (modes js))
-
-(rule
- (alias runtest)
- (deps test_runtime_events.bc.js)
- (enabled_if
-  (>= %{ocaml_version} 5.1.0))
- (action
-  (run node ./test_runtime_events.bc.js)))

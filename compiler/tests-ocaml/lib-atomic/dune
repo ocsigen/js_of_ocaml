@@ -1,10 +1,3 @@
-(executables
- (names test_atomic)
- (libraries)
+(test
+ (name test_atomic)
  (modes js))
-
-(rule
- (alias runtest)
- (deps test_atomic.bc.js)
- (action
-  (run node test_atomic.bc.js)))

@@ -1,59 +1,31 @@
-(executables
+(tests
  (names hfun)
+ (deps ../../../LICENSE)
  (modules hfun)
  (libraries)
  (modes js))
 
-(executables
+(tests
  (names htbl)
+ (deps ../../../LICENSE)
  (modules htbl)
- (enabled_if
+ (build_if
   (>= %{ocaml_version} 5))
  (libraries)
  (modes js))
 
 (rule
- (target hfun.referencejs)
- (deps hfun.bc.js ../../../LICENSE)
  (action
-  (with-stdout-to
-   %{target}
-   (run node ./hfun.bc.js))))
-
-(rule
- (alias runtest)
+  (copy hfun.expected-js hfun.expected))
  (enabled_if
   (and
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
- (deps hfun.referencejs hfun.reference)
- (action
-  (diff hfun.referencejs hfun.reference)))
+   (<> %{profile} wasm-effects))))
 
 (rule
- (alias runtest)
+ (action
+  (copy hfun.expected-wasm hfun.expected))
  (enabled_if
   (or
    (= %{profile} wasm)
-   (= %{profile} wasm-effects)))
- (deps hfun.referencejs hfun.reference-wasm)
- (action
-  (diff hfun.referencejs hfun.reference-wasm)))
-
-(rule
- (target htbl.referencejs)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps htbl.bc.js ../../../LICENSE)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./htbl.bc.js))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps htbl.reference htbl.referencejs)
- (action
-  (diff htbl.reference htbl.referencejs)))
+   (= %{profile} wasm-effects))))

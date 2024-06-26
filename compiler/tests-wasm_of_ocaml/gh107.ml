@@ -8,4 +8,4 @@ type t =
 let () =
   let f x = { x; y = 2. } in
   let x = f 1. in
-  Format.eprintf "%f@." x.y
+  Format.printf "%f@." x.y

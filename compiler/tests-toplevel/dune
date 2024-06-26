@@ -21,40 +21,37 @@
   (run %{bin:js_of_ocaml} --toplevel %{dep:test_toplevel.bc} -o %{targets})))
 
 (rule
- (target test_toplevel.referencejs)
- (deps test_toplevel.js)
+ (target test_toplevel.bc.js.actual)
  (enabled_if
   (and
+   (>= %{ocaml_version} 5.2)
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)
-   (>= %{ocaml_version} 5.2)))
+   (<> %{profile} wasm-effects)))
  (action
   (with-stdout-to
    %{target}
-   (run node ./test_toplevel.js))))
+   (run node %{dep:test_toplevel.bc.js}))))
 
 (rule
- (target test_toplevel.referencebcjs)
- (deps test_toplevel.bc.js)
+ (target test_toplevel.js.actual)
  (enabled_if
   (and
+   (>= %{ocaml_version} 5.2)
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)
-   (>= %{ocaml_version} 5.2)))
+   (<> %{profile} wasm-effects)))
  (action
   (with-stdout-to
    %{target}
-   (run node ./test_toplevel.bc.js))))
+   (run node %{dep:test_toplevel.js}))))
 
 (rule
  (alias runtest)
  (enabled_if
   (and
+   (>= %{ocaml_version} 5.2)
    (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)
-   (>= %{ocaml_version} 5.2)))
- (deps test_toplevel.reference test_toplevel.referencejs)
+   (<> %{profile} wasm-effects)))
  (action
   (progn
-   (diff test_toplevel.reference test_toplevel.referencebcjs)
-   (diff test_toplevel.reference test_toplevel.referencejs))))
+   (diff test_toplevel.expected test_toplevel.bc.js.actual)
+   (diff test_toplevel.expected test_toplevel.js.actual))))

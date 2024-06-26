@@ -1,7 +1,11 @@
-(executable
+(test
  (name main)
  (modules main test_nats test test_big_ints test_ratios test_nums test_io)
  (libraries num)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (modes
   js
   (best exe))
@@ -9,32 +13,9 @@
   (:standard -linkall -w -3-7-33-35-37 -safe-string -no-strict-sequence)))
 
 (rule
- (target main.referencejs)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
- (deps main.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./main.bc.js))))
-
-(rule
- (target main.reference)
+ (target main.expected)
  (deps main.exe)
  (action
   (with-stdout-to
    %{target}
    (run ./main.exe))))
-
-(rule
- (alias runtest)
- ;; ZZZ Need to modify the num library
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
- (deps main.reference main.referencejs)
- (action
-  (diff main.reference main.referencejs)))

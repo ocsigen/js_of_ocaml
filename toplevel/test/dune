@@ -27,7 +27,7 @@
    %{targets})))
 
 (rule
- (target test_toplevel.referencejs)
+ (target test_toplevel.actual)
  (deps test_toplevel.js)
  (action
   (with-stdout-to
@@ -40,6 +40,5 @@
   (and
    (<> %{profile} wasm)
    (<> %{profile} wasm-effects)))
- (deps test_toplevel.reference test_toplevel.referencejs)
  (action
-  (diff test_toplevel.reference test_toplevel.referencejs)))
+  (diff test_toplevel.expected test_toplevel.actual)))

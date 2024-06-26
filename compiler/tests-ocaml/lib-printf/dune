@@ -1,4 +1,4 @@
-(executables
+(tests
  (names pr6534 pr6938 tprintf)
  (libraries)
  (flags
@@ -6,45 +6,3 @@
  (modes
   js
   (best exe)))
-
-(rule
- (target pr6534.referencejs)
- (deps pr6534.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./pr6534.bc.js))))
-
-(rule
- (alias runtest)
- (deps pr6534.reference pr6534.referencejs)
- (action
-  (diff pr6534.reference pr6534.referencejs)))
-
-(rule
- (target pr6938.referencejs)
- (deps pr6938.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./pr6938.bc.js))))
-
-(rule
- (alias runtest)
- (deps pr6938.reference pr6938.referencejs)
- (action
-  (diff pr6938.reference pr6938.referencejs)))
-
-(rule
- (target tprintf.referencejs)
- (deps tprintf.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./tprintf.bc.js))))
-
-(rule
- (alias runtest)
- (deps tprintf.reference tprintf.referencejs)
- (action
-  (diff tprintf.reference tprintf.referencejs)))
