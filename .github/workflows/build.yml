@@ -89,6 +89,11 @@ jobs:
           dune-cache: true
           opam-pin: false
 
+      - name: Pin dune
+        run: |
+          opam pin add -n dune https://github.com/vouillon/dune.git#expect-test-deps
+          opam reinstall dune
+
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
 
