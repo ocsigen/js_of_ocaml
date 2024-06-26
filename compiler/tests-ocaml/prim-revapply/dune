@@ -1,32 +1,4 @@
-(executables
+(tests
  (names apply revapply)
  (libraries)
  (modes js))
-
-(rule
- (target apply.referencejs)
- (deps apply.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./apply.bc.js))))
-
-(rule
- (alias runtest)
- (deps apply.reference apply.referencejs)
- (action
-  (diff apply.reference apply.referencejs)))
-
-(rule
- (target revapply.referencejs)
- (deps revapply.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./revapply.bc.js))))
-
-(rule
- (alias runtest)
- (deps revapply.reference revapply.referencejs)
- (action
-  (diff revapply.reference revapply.referencejs)))

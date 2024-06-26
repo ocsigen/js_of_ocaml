@@ -1,32 +1,6 @@
-(executables
+(tests
  (names test_string binary)
- (enabled_if
+ (build_if
   (>= %{ocaml_version} 5))
  (libraries)
  (modes js))
-
-(rule
- (target test_string.referencejs)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps test_string.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./test_string.bc.js))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps test_string.reference test_string.referencejs)
- (action
-  (diff test_string.reference test_string.referencejs)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps binary.bc.js)
- (action
-  (run node binary.bc.js)))

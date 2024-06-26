@@ -1,32 +1,4 @@
-(executables
+(tests
  (names test issue9460)
  (libraries)
  (modes js))
-
-(rule
- (target test.referencejs)
- (deps test.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./test.bc.js))))
-
-(rule
- (alias runtest)
- (deps test.reference test.referencejs)
- (action
-  (diff test.reference test.referencejs)))
-
-(rule
- (target issue9460.referencejs)
- (deps issue9460.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./issue9460.bc.js))))
-
-(rule
- (alias runtest)
- (deps issue9460.reference issue9460.referencejs)
- (action
-  (diff issue9460.reference issue9460.referencejs)))
