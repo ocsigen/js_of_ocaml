@@ -5,7 +5,7 @@
   (js_of_ocaml
    (compilation_mode separate))))
 
-(executable
+(test
  (name test)
  (modes byte js)
  (libraries dynlink)
@@ -15,15 +15,3 @@
  ;; Let's use it for the test
  (link_flags
   (:standard -linkall)))
-
-(rule
- (target test.output)
- (action
-  (with-stdout-to
-   %{target}
-   (run node %{dep:test.bc.js}))))
-
-(rule
- (alias runtest)
- (action
-  (diff test.reference test.output)))

@@ -1,18 +1,4 @@
-(executables
+(tests
  (names t01)
  (libraries str)
  (modes js))
-
-(rule
- (target t01.referencejs)
- (deps t01.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./t01.bc.js))))
-
-(rule
- (alias runtest)
- (deps t01.reference t01.referencejs)
- (action
-  (diff t01.reference t01.referencejs)))
