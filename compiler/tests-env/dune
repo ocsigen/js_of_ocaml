@@ -1,27 +1,11 @@
-(executable
+(test
  (modes js)
  (js_of_ocaml
+  (javascript_files setup.js)
   (flags :standard --setenv JSOO_C=from-jsoo-args))
+ (action
+  (setenv
+   JSOO_B
+   from-env
+   (run node %{test})))
  (name test))
-
-(rule
- (target test.js)
- (action
-  (with-outputs-to
-   %{target}
-   (cat %{dep:setup.js} %{dep:./test.bc.js}))))
-
-(rule
- (target test.output)
- (action
-  (with-outputs-to
-   %{target}
-   (setenv
-    JSOO_B
-    from-env
-    (run node %{dep:./test.js})))))
-
-(rule
- (alias runtest)
- (action
-  (diff test.reference test.output)))

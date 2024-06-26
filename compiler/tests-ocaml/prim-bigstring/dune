@@ -1,32 +1,4 @@
-(executables
+(tests
  (names bigstring_access string_access)
  (libraries)
  (modes js))
-
-(rule
- (target bigstring_access.referencejs)
- (deps bigstring_access.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./bigstring_access.bc.js))))
-
-(rule
- (alias runtest)
- (deps bigstring_access.reference bigstring_access.referencejs)
- (action
-  (diff bigstring_access.reference bigstring_access.referencejs)))
-
-(rule
- (target string_access.referencejs)
- (deps string_access.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./string_access.bc.js))))
-
-(rule
- (alias runtest)
- (deps string_access.reference string_access.referencejs)
- (action
-  (diff string_access.reference string_access.referencejs)))

@@ -1,18 +1,4 @@
-(executables
+(tests
  (names recursive_module_init)
  (libraries)
  (modes js))
-
-(rule
- (target recursive_module_init.referencejs)
- (deps recursive_module_init.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./recursive_module_init.bc.js))))
-
-(rule
- (alias runtest)
- (deps recursive_module_init.reference recursive_module_init.referencejs)
- (action
-  (diff recursive_module_init.reference recursive_module_init.referencejs)))

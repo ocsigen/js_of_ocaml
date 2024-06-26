@@ -1,52 +1,8 @@
-(executables
+(tests
  (names chi2 selfinit testvectors)
- (enabled_if
+ (build_if
   (>= %{ocaml_version} 5))
  (libraries)
  (modes
   js
   (best exe)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps chi2.bc.js)
- (action
-  (run node chi2.bc.js)))
-
-(rule
- (target selfinit.referencejs)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps selfinit.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./selfinit.bc.js))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps selfinit.reference selfinit.referencejs)
- (action
-  (diff selfinit.reference selfinit.referencejs)))
-
-(rule
- (target testvectors.referencejs)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps testvectors.bc.js)
- (action
-  (with-stdout-to
-   %{target}
-   (run node ./testvectors.bc.js))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 5))
- (deps testvectors.reference testvectors.referencejs)
- (action
-  (diff testvectors.reference testvectors.referencejs)))
