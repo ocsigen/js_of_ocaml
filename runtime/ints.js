@@ -34,7 +34,7 @@ function caml_format_int(fmt, i) {
 //Provides: caml_parse_sign_and_base
 //Requires: caml_string_unsafe_get, caml_ml_string_length
 function caml_parse_sign_and_base (s) {
-  var i = 0, len = caml_ml_string_length(s), base = 10, sign = 1;
+  var i = 0, len = caml_ml_string_length(s), base = 10, sign = 1, signedness = 1;
   if (len > 0) {
     switch (caml_string_unsafe_get(s,i)) {
     case 45: i++; sign = -1; break;
@@ -43,12 +43,12 @@ function caml_parse_sign_and_base (s) {
   }
   if (i + 1 < len && caml_string_unsafe_get(s, i) == 48)
     switch (caml_string_unsafe_get(s, i + 1)) {
-    case 120: case 88: base = 16; i += 2; break;
-    case 111: case 79: base =  8; i += 2; break;
-    case  98: case 66: base =  2; i += 2; break;
-    case 117: case 85: i += 2; break;
+    case 120: case 88: signedness = 0; base = 16; i += 2; break;
+    case 111: case 79: signedness = 0; base =  8; i += 2; break;
+    case  98: case 66: signedness = 0; base =  2; i += 2; break;
+    case 117: case 85: signedness = 0; i += 2; break;
     }
-  return [i, sign, base];
+  return [i, sign, base, signedness];
 }
 
 //Provides: caml_parse_digit
@@ -64,7 +64,7 @@ function caml_parse_digit(c) {
 //Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
 function caml_int_of_string (s) {
   var r = caml_parse_sign_and_base (s);
-  var i = r[0], sign = r[1], base = r[2];
+  var i = r[0], sign = r[1], base = r[2], signedness = r[3];
   var len = caml_ml_string_length(s);
   var threshold = -1 >>> 0;
   var c = (i < len)?caml_string_unsafe_get(s, i):0;
@@ -84,7 +84,7 @@ function caml_int_of_string (s) {
   // hence any value of 'res' (less than 'threshold') is acceptable.
   // But we have to convert the result back to a signed integer.
   res = sign * res;
-  if ((base == 10) && ((res | 0) != res))
+  if (signedness && ((res | 0) != res))
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     caml_failwith("int_of_string");
   return res | 0;

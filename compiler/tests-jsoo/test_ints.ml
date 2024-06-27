@@ -46,3 +46,13 @@ let%expect_test _ =
   [%expect {| -123 |}];
   Printf.printf "%d\n" (int_of_string "-0U123");
   [%expect {| -123 |}]
+
+let%expect_test _ =
+  Printf.printf "%ld\n" (Int32.of_string "-0u2147483648");
+  [%expect {| -2147483648 |}];
+  Printf.printf "%ld\n" (Int32.of_string "-0u2147483648");
+  [%expect {| -2147483648 |}];
+  Printf.printf "%ld\n" (Int32.of_string "0u2147483648");
+  [%expect {| -2147483648 |}];
+  Printf.printf "%ld\n" (Int32.of_string "0u2147483648");
+  [%expect {| -2147483648 |}]
