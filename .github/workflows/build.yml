@@ -62,6 +62,11 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: true
+          - os: windows-latest
+            ocaml-compiler: "ocaml-variants.5.2.0+msvc"
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
