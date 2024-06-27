@@ -97,7 +97,8 @@ let%expect_test "direct calls without --enable effects" =
      M1[1].call(null, 1);
      return M2[1].call(null, 2);
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "direct calls with --enable effects" =
   let code =
@@ -159,38 +160,39 @@ let%expect_test "direct calls with --enable effects" =
          return raise(e$0);
         });
       return caml_cps_exact_call2
-              (g, x, function(_f_){caml_pop_trap(); return cont(undef);});
+              (g, x, function(_t_){caml_pop_trap(); return cont(undef);});
      }
      return caml_cps_exact_call3
              (f,
               function(x, cont){return cont(undef);},
               7,
-              function(_d_){
+              function(_r_){
                return caml_cps_exact_call3
                        (f,
                         function(x, cont){
                          return caml_cps_call3(Stdlib[28], x, cst_a$0, cont);
                         },
                         cst_a,
-                        function(_e_){return cont(0);});
+                        function(_s_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(undef), M2 = F(undef), _c_ = M2[1].call(null, 2);
-     return cont([0, M1[1].call(null, 1), _c_]);
+     var M1 = F(undef), M2 = F(undef), _q_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _q_]);
     }
     //end
     function test4(x, cont){
      function F(symbol){
-      function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _a_, x, cont);}
+      function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _o_, x, cont);}
       return [0, f];
      }
      var M1 = F(undef), M2 = F(undef);
      return caml_cps_exact_call2
              (M1[1],
               1,
-              function(_b_){return caml_cps_exact_call2(M2[1], 2, cont);});
+              function(_p_){return caml_cps_exact_call2(M2[1], 2, cont);});
     }
-    //end |}]
+    //end
+    |}]

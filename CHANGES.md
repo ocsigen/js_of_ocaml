@@ -1,3 +1,8 @@
+# dev (2024-??) - ??
+
+## Features/Changes
+* Effects: add an optional feature of "dynamic switching" between CPS and direct style, resulting in better performance when no effect handler is installed
+
 # 5.8.2 (2024-05-26) - Luc
 
 ## Bug fixes

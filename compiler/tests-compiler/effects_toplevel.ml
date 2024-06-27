@@ -34,7 +34,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   print_program code;
   [%expect
     {|
-
     (function(globalThis){
        "use strict";
        var
@@ -68,30 +67,31 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   undef = undefined,
                   global_data = runtime.caml_get_global_data(),
                   Stdlib_Printf = global_data.Stdlib__Printf,
-                  _a_ =
+                  _b_ =
                     [0,
                      [11, caml_string_of_jsbytes("abc"), 0],
                      caml_string_of_jsbytes("abc")];
                  function g(param, cont){
-                  return caml_cps_call2(Stdlib_Printf[2], _a_, cont);
+                  return caml_cps_call2(Stdlib_Printf[2], _b_, cont);
                  }
                  caml_callback(g, [undef]);
-                 function _b_(i){
+                 function _c_(i){
                   return caml_cps_exact_call2
                           (g,
                            undef,
-                           function(_c_){
-                            var _d_ = i + 1 | 0;
-                            if(5 !== i) return caml_cps_exact_call1(_b_, _d_);
+                           function(_d_){
+                            var _e_ = i + 1 | 0;
+                            if(5 !== i) return caml_cps_exact_call1(_c_, _e_);
                             caml_callback(g, [undef]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
                             return;
                            });
                  }
-                 return _b_(1);
+                 return _c_(1);
                 },
                 []);
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

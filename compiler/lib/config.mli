@@ -41,6 +41,8 @@ module Flag : sig
 
   val effects : unit -> bool
 
+  val double_translation : unit -> bool
+
   val genprim : unit -> bool
 
   val strictmode : unit -> bool

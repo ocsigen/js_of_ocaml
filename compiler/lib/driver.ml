@@ -87,7 +87,7 @@ let phi p =
 
 let ( +> ) f g x = g (f x)
 
-let map_fst f (x, y) = f x, y
+let map_triple_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   if Config.Flag.effects ()
@@ -104,9 +104,14 @@ let effects ~deadcode_sentinal p =
         Deadcode.f p
       else p, live_vars
     in
-    let p, cps = p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f in
-    p, cps)
-  else p, (Code.Var.Set.empty : Effects.cps_calls)
+    p
+    |> Effects.f ~flow_info:info ~live_vars
+       +> map_triple_fst
+            (if Config.Flag.double_translation () then Fun.id else Lambda_lifting.f))
+  else
+    ( p
+    , (Code.Var.Set.empty : Effects.cps_calls)
+    , (Code.Var.Set.empty : Effects.single_version_closures) )
 
 let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
@@ -193,7 +198,7 @@ let generate
     ~wrap_with_fun
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
-    ((p, live_vars), cps_calls) =
+    ((p, live_vars), cps_calls, single_version_closures) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -201,6 +206,7 @@ let generate
     ~exported_runtime
     ~live_vars
     ~cps_calls
+    ~single_version_closures
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
@@ -671,8 +677,14 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
        | O3 -> o3)
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
-    +> map_fst (if Config.Flag.effects () then fun x -> x else Generate_closure.f)
-    +> map_fst deadcode'
+    +> fun (p, cps_calls, single_version_closures) ->
+    let p, single_version_closures =
+      if Config.Flag.effects ()
+      then p, single_version_closures
+      else Generate_closure.f p, single_version_closures
+    in
+    let p = deadcode' p in
+    p, cps_calls, single_version_closures
   in
   let emit =
     generate
