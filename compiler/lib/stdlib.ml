@@ -726,6 +726,12 @@ module String = struct
       Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
     with Not_found -> None
 
+  let rsplit2 line ~on:delim =
+    try
+      let pos = rindex line delim in
+      Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
+    with Not_found -> None
+
   let capitalize_ascii s = apply1 Char.uppercase_ascii s
 
   let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
