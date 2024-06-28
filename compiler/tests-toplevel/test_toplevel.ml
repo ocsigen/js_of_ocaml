@@ -1,10 +1,13 @@
 let () =
-  let content = {|
+  let content =
+    {|
 let () = print_endline "hello";;
 1+1;;
 1+;;
 Missing_module.f;;
-|} in
+let y = float 1 /. float 3;;
+|}
+  in
   Topdirs.dir_directory "/static/cmis";
   Toploop.initialize_toplevel_env ();
   Toploop.input_name := "//toplevel//";

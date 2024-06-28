@@ -3,7 +3,9 @@
  (libraries js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
  (flags
   (:standard -linkall))
- (modes byte))
+ (js_of_ocaml
+  (flags :standard --toplevel))
+ (modes byte js))
 
 (rule
  (targets test_toplevel.js)
@@ -21,9 +23,21 @@
    (run node ./test_toplevel.js))))
 
 (rule
+ (target test_toplevel.referencebcjs)
+ (deps test_toplevel.bc.js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test_toplevel.bc.js))))
+
+(rule
  (alias runtest)
  (enabled_if
   (>= %{ocaml_version} 5.2))
  (deps test_toplevel.reference test_toplevel.referencejs)
  (action
-  (diff test_toplevel.reference test_toplevel.referencejs)))
+  (progn
+   (diff test_toplevel.reference test_toplevel.referencebcjs)
+   (diff test_toplevel.reference test_toplevel.referencejs))))

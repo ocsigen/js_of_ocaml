@@ -91,6 +91,6 @@ val predefined_exceptions : unit -> Code.program * Unit_info.t
 
 val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t
-  -> primitives:string list
+  -> primitives:StringSet.t
   -> crcs:(string * Digest.t option) list
   -> Code.program
