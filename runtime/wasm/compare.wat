@@ -115,10 +115,10 @@
             (local.set $stack'
                (struct.new $compare_stack (local.get $i)
                   (array.new $block_array
-                     (global.get $dummy_block) (i32.const 8))
+                     (global.get $dummy_block) (local.get $len'))
                   (array.new $block_array
-                     (global.get $dummy_block) (i32.const 8))
-                  (array.new $int_array (i32.const 0) (i32.const 8))))
+                     (global.get $dummy_block) (local.get $len'))
+                  (array.new $int_array (i32.const 0) (local.get $len'))))
             (array.copy $block_array $block_array
                (struct.get $compare_stack 1 (local.get $stack')) (i32.const 0)
                (struct.get $compare_stack 1 (local.get $stack)) (i32.const 0)
