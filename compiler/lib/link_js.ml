@@ -409,8 +409,8 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
       | Some bi ->
           Build_info.configure bi;
           let primitives =
-            List.fold_left units ~init:[] ~f:(fun acc (u : Unit_info.t) ->
-                acc @ u.primitives)
+            List.fold_left units ~init:StringSet.empty ~f:(fun acc (u : Unit_info.t) ->
+                StringSet.union acc (StringSet.of_list u.primitives))
           in
           let code =
             Parse_bytecode.link_info

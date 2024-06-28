@@ -3161,6 +3161,10 @@ let link_info ~target ~symtable ~primitives ~crcs =
       []
     |> Array.of_list
   in
+  let primitives =
+    (* Add the externals translated by jsoo directly (in generate.ml) *)
+    StringSet.union (Primitive.get_external ()) primitives |> StringSet.elements
+  in
   let body = [] in
   let body =
     (* Include linking information *)
