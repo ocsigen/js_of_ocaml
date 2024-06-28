@@ -45,7 +45,7 @@ let expand_path exts real virt =
 
 let list_files name paths =
   let name, virtname =
-    match String.lsplit2 name ~on:':' with
+    match String.rsplit2 name ~on:':' with
     | Some (src, dest) ->
         if String.length dest > 0 && not (Char.equal dest.[0] '/')
         then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);

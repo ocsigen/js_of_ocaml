@@ -49,7 +49,9 @@
     --file
     %{dep:test_dynlink.js}
     --file
-    %{dep:test_lib_jsoo.js}))
+    %{dep:test_lib_jsoo.js}
+    --file
+    (:include html_types_path.txt)))
   (flags
    (:standard
     --toplevel
@@ -58,6 +60,18 @@
   (:standard \ test_dynlink examples effects_flags))
  (preprocess
   (pps js_of_ocaml-ppx)))
+
+(rule
+ (target html_types_path.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run
+    ocamlfind
+    query
+    tyxml.functor
+    -format
+    "%d/html_types.cmi:/static/cmis/"))))
 
 (rule
  (targets test_dynlink.cmo test_dynlink.cmi)
