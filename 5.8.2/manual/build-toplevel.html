@@ -1,0 +1,73 @@
+<html><head><title> How to build a toplevel </title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="text/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="build-toplevel js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsipersist/" class="ocsimore_phrasing_link">Ocsipersist</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><span><a href=".././api/js_of_ocaml/">API</a></span></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h2><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h2><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h2><h1>Misc</h1><h2><a href="runtime-files" class="ocsimore_phrasing_link">How to look up runtime files</a></h2><h2><a href="build-toplevel" class="ocsimore_phrasing_link">How to build a toplevel or use Dynlink</a></h2><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/build-toplevel">dev</option><option value=".././../5.8.2/manual/build-toplevel" selected="selected">5.8.2</option><option value=".././../5.7.2/manual/build-toplevel">5.7.2</option><option value=".././../5.6.0/manual/build-toplevel">5.6.0</option><option value=".././../5.5.2/manual/build-toplevel">5.5.2</option><option value=".././../5.4.0/manual/build-toplevel">5.4.0</option><option value=".././../5.3.0/manual/build-toplevel">5.3.0</option><option value=".././../5.2.0/manual/build-toplevel">5.2.0</option><option value=".././../5.1.0/manual/build-toplevel">5.1.0</option><option value=".././../5.0.1/manual/build-toplevel">5.0.1</option><option value=".././../4.1.0/manual/build-toplevel">4.1.0</option><option value=".././../4.0.0/manual/build-toplevel">4.0.0</option><option value=".././../3.11.0/manual/build-toplevel">3.11.0</option><option value=".././../3.10.0/manual/build-toplevel">3.10.0</option><option value=".././../3.9.0/manual/build-toplevel">3.9.0</option><option value=".././../3.8.0/manual/build-toplevel">3.8.0</option><option value=".././../3.7.0/manual/build-toplevel">3.7.0</option><option value=".././../3.6.0/manual/build-toplevel">3.6.0</option><option value=".././../3.5.1/manual/build-toplevel">3.5.1</option></select><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><span><a href=".././api/js_of_ocaml/">API</a></span></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h2><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h2><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h2><h1>Misc</h1><h2><a href="runtime-files" class="ocsimore_phrasing_link">How to look up runtime files</a></h2><h2><a href="build-toplevel" class="ocsimore_phrasing_link">How to build a toplevel or use Dynlink</a></h2><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav><article class="rightcol"><h1> How to build a toplevel </h1><p>First, initialize the toplevel using <span class="teletype">Js_of_ocaml_toplevel.JsooTop.initialize</span>.
+</p><p>Then, build your bytecode program with debug enabled (<strong>-g</strong>) and linkall (<strong>-linkall</strong>). You should obviously link in all the libraries you want accessible in the final toplevel.
+</p><p>Finaly, compile your toplevel to JavaScript passing the <span class="teletype">--toplevel</span> flags to the js_of_ocaml compiler.
+</p><p>If you want to limit the set of modules available in the toplevel, you can explicitly pass a list of compilation units that should be accessible using the <span class="teletype">--export FILE</span> flag.
+<strong>FILE</strong> must contain names of compilation unit to export - one per line. The <strong>jsoo_listunits</strong> tool, provided by the <strong>js_of_ocaml-toplevel</strong> opam package, can be used to generate this list
+from a set of findlib libraries.
+</p><p>For example, the following command will create a file <strong>FILE</strong> containing all compilation unit names provided by the findlib libraries <strong>stdlib</strong> and <strong>str</strong>.
+</p><pre>  jsoo_listunits -o FILE stdlib str
+</pre><p>Note that toplevels currently cannot be built using separate compilation.
+</p><h1> How to build a program using the <strong>Dynlink</strong> library </h1><p>OCaml supports dynlink of bytecode files using the <strong>dynlink</strong> library. In order to work when compiled to JavaScript, one need to follow the following steps:
+</p><p>First, make sure to link <strong>js_of_ocaml-compiler.dynlink</strong> to initialize the support for dynlink (the initialization is done automatically by side-effect).
+</p><p>Then, build your bytecode program with debug enabled (<strong>-g</strong>) and linkall (<strong>-linkall</strong>).
+</p><p>Finaly, compile your program to JavaScript passing the <span class="teletype">--dynlink</span> flags to the js_of_ocaml compiler.
+</p><p>Here is an example showing how to compile and use a program using Dynlink:
+</p><pre>  # cat main.ml
+  let () = Dynlink.loadfile &quot;./plugin.cmo&quot;
+
+  # Compiling main program
+  ocamlfind ocamlc -linkpkg -package dynlink -package js_of_ocaml-compiler.dynlink main.ml -o main.bc
+  js_of_ocaml main.bc --dynlink
+
+  # Compiling plugin
+  ocamlfind ocamlc -c plugin.ml
+
+  # Test
+  node ./main.js
+</pre></article></div></div></body></html>
