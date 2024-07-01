@@ -195,7 +195,7 @@
 ## Bug fixes
 * Effects: fix Js.export and Js.export_all to work with functions (#1417,#1377)
 * Sourcemap: fix incorrect sourcemap with separate compilation
-* Compiler: fix control flow analysis; some annotions were wrong in the runtime
+* Compiler: fix control flow analysis; some annotations were wrong in the runtime
 * Compiler: js backtrace recording respected in the js runtime and when using effects
 * Compiler: no longer fail on invalid source file (when the file is a directory)
 * Runtime: fix the compilation of some mutually recursive functions
