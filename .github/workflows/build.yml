@@ -82,7 +82,7 @@ jobs:
           node-version: lts/*
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3.0.0-beta
+        uses: ocaml/setup-ocaml@v3.0.0-beta1
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           allow-prerelease-opam: true
@@ -132,13 +132,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3.0.0-beta
+        uses: ocaml/setup-ocaml@v3.0.0-beta1
         with:
           ocaml-compiler: "5.2"
           allow-prerelease-opam: true
           dune-cache: true
 
-      - uses: ocaml/setup-ocaml/lint-opam@v3.0.0-beta
+      - uses: ocaml/setup-ocaml/lint-opam@v3.0.0-beta1
         continue-on-error: true
 
   lint-fmt:
@@ -148,10 +148,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3.0.0-beta
+        uses: ocaml/setup-ocaml@v3.0.0-beta1
         with:
           ocaml-compiler: "5.2"
           allow-prerelease-opam: true
           dune-cache: true
 
-      - uses: ocaml/setup-ocaml/lint-fmt@v3.0.0-beta
+      - uses: ocaml/setup-ocaml/lint-fmt@v3.0.0-beta1
