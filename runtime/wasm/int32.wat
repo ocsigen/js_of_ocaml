@@ -140,7 +140,7 @@
       (call $caml_serialize_int_1 (local.get $s) (i32.const 1))
       (call $caml_serialize_int_4 (local.get $s)
          (struct.get $int32 1 (ref.cast (ref $int32) (local.get $v))))
-      (tuple.make 2 (i32.const 4) (i32.const 4)))
+      (tuple.make 2 (i32.const 4) (i32.const 8)))
 
    (data $integer_too_large "input_value: native integer value too large")
 
