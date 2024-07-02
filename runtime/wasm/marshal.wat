@@ -4,8 +4,8 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "obj" "double_array_tag" (global $double_array_tag i32))
-   (import "string" "caml_string_cat"
-      (func $caml_string_cat
+   (import "string" "caml_string_concat"
+      (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "obj" "caml_is_closure"
       (func $caml_is_closure (param (ref eq)) (result i32)))
@@ -643,21 +643,21 @@
 
    (func $too_large (param $prim (ref $string))
       (call $caml_failwith
-         (call $caml_string_cat (local.get $prim)
+         (call $caml_string_concat (local.get $prim)
             (array.new_data $string $too_large (i32.const 0) (i32.const 55)))))
 
    (data $bad_object ": bad object")
 
    (func $bad_object (param $prim (ref $string))
       (call $caml_failwith
-         (call $caml_string_cat (local.get $prim)
+         (call $caml_string_concat (local.get $prim)
             (array.new_data $string $bad_object (i32.const 0) (i32.const 12)))))
 
    (data $bad_length ": bad length")
 
    (func $bad_length (param $prim (ref $string))
       (call $caml_failwith
-         (call $caml_string_cat (local.get $prim)
+         (call $caml_string_concat (local.get $prim)
             (array.new_data $string $bad_length (i32.const 0) (i32.const 12)))))
 
    (type $marshal_header
@@ -1073,7 +1073,7 @@
                         (local.get $fixed_length))))
                 (then
                    (call $caml_failwith
-                      (call $caml_string_cat
+                      (call $caml_string_concat
                          (array.new_data $string $incorrect_sizes
                             (i32.const 0) (i32.const 49))
                          (struct.get $custom_operations $id

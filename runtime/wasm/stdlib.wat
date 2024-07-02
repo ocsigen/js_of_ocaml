@@ -18,8 +18,8 @@
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bindings" "write" (func $write (param i32) (param anyref)))
-   (import "string" "caml_string_cat"
-      (func $caml_string_cat
+   (import "string" "caml_string_concat"
+      (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
@@ -202,10 +202,10 @@
                (call $write (i32.const 2)
                   (call $unwrap
                      (call $caml_jsstring_of_string
-                        (call $caml_string_cat
+                        (call $caml_string_concat
                            (array.new_data $string $fatal_error
                               (i32.const 0) (i32.const 23))
-                           (call $caml_string_cat
+                           (call $caml_string_concat
                               (call $caml_format_exception (local.get $exn))
                               (array.new_fixed $string 1
                                  (i32.const 10)))))))) ;; `\n`

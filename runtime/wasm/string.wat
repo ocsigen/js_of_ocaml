@@ -315,7 +315,7 @@
          (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 56))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_string_cat")
+   (func (export "caml_string_concat")
       (param $vs1 (ref eq)) (param $vs2 (ref eq)) (result (ref eq))
       (local $s1 (ref $string)) (local $s2 (ref $string))
       (local $s (ref $string))
