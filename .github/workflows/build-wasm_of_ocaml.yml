@@ -1,4 +1,4 @@
-name: build
+name: Build wasm_of_ocaml
 
 on:
   pull_request:
