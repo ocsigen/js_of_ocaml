@@ -32,8 +32,18 @@
 (library
  ;; lib/tests/test_fun_call.ml
  (name test_fun_call_75)
- (enabled_if (<> %{profile} using-effects))
+ (enabled_if (and (<> %{profile} using-effects) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_fun_call)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
+ ;; lib/tests/test_fun_call_2.ml
+ (name test_fun_call_2_75)
+ (enabled_if true)
+ (modules test_fun_call_2)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess
@@ -62,8 +72,18 @@
 (library
  ;; lib/tests/test_poly_compare.ml
  (name test_poly_compare_75)
- (enabled_if true)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_poly_compare)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
+ ;; lib/tests/test_poly_equal.ml
+ (name test_poly_equal_75)
+ (enabled_if true)
+ (modules test_poly_equal)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
  (preprocess

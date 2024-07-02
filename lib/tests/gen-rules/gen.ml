@@ -47,14 +47,14 @@ let prefix : string =
 
 type enabled_if =
   | GE5
-  | No_effects
   | Not_wasm
+  | No_effects_not_wasm
   | Any
 
 let enabled_if = function
   | "test_sys" -> GE5
-  | "test_fun_call" -> No_effects
-  | "test_json" -> Not_wasm
+  | "test_fun_call" -> No_effects_not_wasm
+  | "test_json" | "test_poly_compare" -> Not_wasm
   | _ -> Any
 
 let () =
@@ -85,6 +85,8 @@ let () =
                (* ZZZ /static not yet implemented *)
                "(and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} \
                 wasm-effects))"
-           | No_effects -> "(<> %{profile} using-effects)"
-           | Not_wasm -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))")
+           | Not_wasm -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
+           | No_effects_not_wasm ->
+               "(and (<> %{profile} using-effects) (<> %{profile} wasm) (<> %{profile} \
+                wasm-effects))")
            basename)
