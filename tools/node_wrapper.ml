@@ -1,6 +1,7 @@
 let extra_args_for_wasoo =
   [ "--experimental-wasm-imported-strings"
   ; "--experimental-wasm-stack-switching"
+  ; "--experimental-wasm-exnref"
   ; "--stack-size=10000"
   ]
 
