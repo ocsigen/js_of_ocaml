@@ -85,6 +85,7 @@ let preprocessor_variables () =
         | `Cps -> "cps"
         | `Native -> "native"
         | `Double_translation -> assert false) )
+  ; "exnref", Wat_preprocess.Bool (Config.Flag.exnref ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
