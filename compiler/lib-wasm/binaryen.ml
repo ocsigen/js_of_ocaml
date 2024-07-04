@@ -135,11 +135,11 @@ let optimize
     ~output_file
     () =
   command
-    ("wasm-opt"
-     :: (common_options ()
-        @ (match options with
-          | Some o -> o
-          | None -> optimization_options profile)
-        @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
+    (("wasm-opt" :: (if Config.Flag.exnref () then [ "--emit-exnref" ] else []))
+    @ common_options ()
+    @ (match options with
+      | Some o -> o
+      | None -> optimization_options profile)
+    @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
     @ opt_flag "--input-source-map" opt_input_sourcemap
     @ opt_flag "--output-source-map" opt_output_sourcemap)
