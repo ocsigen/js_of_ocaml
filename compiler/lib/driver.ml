@@ -95,7 +95,10 @@ let effects p =
   then (
     if debug () then Format.eprintf "Effects...@.";
     p |> Deadcode.f +> Effects.f +> map_fst Lambda_lifting.f)
-  else p, (Code.Var.Set.empty : Effects.cps_calls), (Code.Var.Set.empty : Effects.in_cps)
+  else
+    ( p
+    , (Code.Var.Set.empty : Effects.trampolined_calls)
+    , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile p =
   if not (Config.Flag.effects ())
@@ -179,14 +182,14 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), cps_calls, _) =
+    ((p, live_vars), trampolined_calls, _) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
     p
     ~exported_runtime
     ~live_vars
-    ~cps_calls
+    ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
     d
