@@ -82,6 +82,8 @@ module Flag : sig
 
   val toplevel : unit -> bool
 
+  val exnref : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

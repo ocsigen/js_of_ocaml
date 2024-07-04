@@ -112,6 +112,8 @@ module Flag = struct
   let load_shapes_auto = o ~name:"load-shapes-auto" ~default:false
 
   let toplevel = o ~name:"toplevel" ~default:false
+
+  let exnref = o ~name:"exnref" ~default:false
 end
 
 module Param = struct
