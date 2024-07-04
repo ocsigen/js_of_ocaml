@@ -67,6 +67,13 @@ module Mappings = struct
 
   let to_string : t -> string = fun (Uninterpreted s) -> s
 
+  type carries =
+    { carry_source : int
+    ; carry_line : int
+    ; carry_col : int
+    ; carry_name : int
+    }
+
   let update_carries_from_segment
       ~carry_source
       ~carry_line
@@ -78,12 +85,20 @@ module Mappings = struct
     (* Note: we don't care about the first field since we do linewise editing,
        and it is reset for every line. *)
     match Vlq64.decode_l str ~pos ~len with
-    | [ _gen_col ] -> carry_source, carry_line, carry_col, carry_name
+    | [ _gen_col ] -> { carry_source; carry_line; carry_col; carry_name }
     | [ _gen_col; source; line; col ] ->
-        carry_source + source, carry_line + line, carry_col + col, carry_name
+        { carry_source = carry_source + source
+        ; carry_line = carry_line + line
+        ; carry_col = carry_col + col
+        ; carry_name
+        }
     | [ _gen_col; source; line; col; name ] ->
-        carry_source + source, carry_line + line, carry_col + col, carry_name + name
-    | _ -> invalid_arg "Mapping.update_carries_from_segment"
+        { carry_source = carry_source + source
+        ; carry_line = carry_line + line
+        ; carry_col = carry_col + col
+        ; carry_name = carry_name + name
+        }
+    | _ -> invalid_arg "Mapping.update_carries_from_segment: invalid segment"
 
   let update_carries_and_write_segment
       ~carry_source
@@ -133,13 +148,6 @@ module Mappings = struct
     in
     loop init pos (pos + len)
 
-  type carries =
-    { carry_source : int
-    ; carry_line : int
-    ; carry_col : int
-    ; carry_name : int
-    }
-
   let update_carries_from_line
       ~carry_source
       ~carry_line
@@ -155,17 +163,14 @@ module Mappings = struct
       ~init:{ carry_source; carry_line; carry_col; carry_name }
       (fun acc str ~pos ~len ->
         let { carry_source; carry_line; carry_col; carry_name } = acc in
-        let carry_source, carry_line, carry_col, carry_name =
-          update_carries_from_segment
-            ~carry_source
-            ~carry_line
-            ~carry_col
-            ~carry_name
-            ~pos
-            ~len
-            str
-        in
-        { carry_source; carry_line; carry_col; carry_name })
+        update_carries_from_segment
+          ~carry_source
+          ~carry_line
+          ~carry_col
+          ~carry_name
+          ~pos
+          ~len
+          str)
 
   let update_carries_and_write_line
       ~carry_source
@@ -335,32 +340,6 @@ module Mappings = struct
     in
     loop 0 0
 
-  let sum_offsets_segment ~carry_source ~carry_line ~carry_col ~carry_name ~pos ~len str =
-    match Vlq64.decode_l str ~pos ~len with
-    | [ _gen_col ] -> { carry_source; carry_line; carry_col; carry_name }
-    | [ _gen_col; source; line; col ] ->
-        { carry_source = carry_source + source
-        ; carry_line = carry_line + line
-        ; carry_col = carry_col + col
-        ; carry_name
-        }
-    | [ _gen_col; source; line; col; name ] ->
-        { carry_source = carry_source + source
-        ; carry_line = carry_line + line
-        ; carry_col = carry_col + col
-        ; carry_name = carry_name + name
-        }
-    | _ -> invalid_arg "Mapping.sum_offsets_segment: invalid segment"
-
-  let sum_offsets_line ~carry_source ~carry_line ~carry_col ~carry_name ~pos ~len str =
-    fold_on_segments
-      ~str
-      ~pos
-      ~len
-      ~init:{ carry_source; carry_line; carry_col; carry_name }
-      (fun { carry_source; carry_line; carry_col; carry_name } str ~pos ~len ->
-        sum_offsets_segment ~carry_source ~carry_line ~carry_col ~carry_name ~pos ~len str)
-
   (* Fold [f] over the ';'-separated groups in string [str.(pos..len - 1)]. *)
   let fold_on_lines ~str f ~init =
     let rec loop acc pos =
@@ -381,7 +360,14 @@ module Mappings = struct
       ~str:mapping
       ~init:{ carry_source = 0; carry_line = 0; carry_col = 0; carry_name = 0 }
       (fun { carry_source; carry_line; carry_col; carry_name } str ~pos ~len ->
-        sum_offsets_line ~carry_source ~carry_line ~carry_col ~carry_name ~pos ~len str)
+        update_carries_from_line
+          ~carry_source
+          ~carry_line
+          ~carry_col
+          ~carry_name
+          ~pos
+          ~len
+          str)
 
   let concat ~source_count1 ~name_count1 (Uninterpreted m1) (Uninterpreted m2) =
     match m1, m2 with
