@@ -37,12 +37,6 @@ let rec instruction ~tail i =
   | Wa_ast.Loop (ty, l) -> Wa_ast.Loop (ty, instructions ~tail l)
   | Block (ty, l) -> Block (ty, instructions ~tail l)
   | If (ty, e, l1, l2) -> If (ty, e, instructions ~tail l1, instructions ~tail l2)
-  | Try (ty, l, catches, catch_all) ->
-      Try
-        ( ty
-        , l
-        , List.map ~f:(fun (tag, l) -> tag, instructions ~tail l) catches
-        , Option.map ~f:(fun l -> instructions ~tail l) catch_all )
   | Return (Some (Call (symb, l))) -> Return_call (symb, l)
   | Return (Some (Call_ref (ty, e, l))) -> Return_call_ref (ty, e, l)
   | Push (Call (symb, l)) when tail -> Return_call (symb, l)

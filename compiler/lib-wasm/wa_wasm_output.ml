@@ -628,6 +628,18 @@ end = struct
         output_byte ch 0x05;
         output_expression st ch e3;
         output_byte ch 0x0B
+    | Try (typ, l, catches) ->
+        Feature.require exception_handling;
+        output_byte ch 0x06;
+        output_blocktype st.type_names ch typ;
+        List.iter ~f:(fun i' -> output_instruction st ch i') l;
+        List.iter
+          ~f:(fun (tag, l, ty) ->
+            output_byte ch 0x07;
+            output_uint ch (Hashtbl.find st.tag_names tag);
+            output_instruction st ch (Br (l + 1, Some (Pop ty))))
+          catches;
+        output_byte ch 0X0B
 
   and output_instruction st ch i =
     match i with
@@ -688,23 +700,6 @@ end = struct
         output_uint ch (Hashtbl.find st.func_names f)
     | Nop -> ()
     | Push e -> output_expression st ch e
-    | Try (typ, l, catches, catchall) ->
-        Feature.require exception_handling;
-        output_byte ch 0x06;
-        output_blocktype st.type_names ch typ;
-        List.iter ~f:(fun i' -> output_instruction st ch i') l;
-        List.iter
-          ~f:(fun (tag, l) ->
-            output_byte ch 0x07;
-            output_uint ch (Hashtbl.find st.tag_names tag);
-            List.iter ~f:(fun i' -> output_instruction st ch i') l)
-          catches;
-        (match catchall with
-        | Some l ->
-            output_byte ch 0x05;
-            List.iter ~f:(fun i' -> output_instruction st ch i') l
-        | None -> ());
-        output_byte ch 0X0B
     | Throw (tag, e) ->
         Feature.require exception_handling;
         output_expression st ch e;
@@ -881,6 +876,8 @@ end = struct
           ~f:(fun set i -> expr_function_references i set)
           ~init:(expr_function_references e' set)
           l
+    | Try (_, l, _) ->
+        List.fold_left ~f:(fun set i -> instr_function_references i set) ~init:set l
 
   and instr_function_references i set =
     match i with
@@ -905,24 +902,6 @@ end = struct
     | Br (_, None) | Return None | Nop | Rethrow _ -> set
     | CallInstr (_, l) ->
         List.fold_left ~f:(fun set i -> expr_function_references i set) ~init:set l
-    | Try (_, l, catches, catchall) ->
-        List.fold_left ~f:(fun set i -> instr_function_references i set) ~init:set l
-        |> (fun init ->
-             List.fold_left
-               ~f:(fun set (_, l) ->
-                 List.fold_left
-                   ~f:(fun set i -> instr_function_references i set)
-                   ~init:set
-                   l)
-               ~init
-               catches)
-        |> fun init ->
-        List.fold_left
-          ~f:(fun set i -> instr_function_references i set)
-          ~init
-          (match catchall with
-          | Some l -> l
-          | None -> [])
     | ArraySet (_, e1, e2, e3) ->
         set
         |> expr_function_references e1

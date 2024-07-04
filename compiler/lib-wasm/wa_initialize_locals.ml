@@ -68,6 +68,7 @@ let rec scan_expression ctx e =
       scan_expression ctx cond;
       scan_expression (fork_context ctx) e1;
       scan_expression (fork_context ctx) e2
+  | Try (_, body, _) -> scan_instructions ctx body
 
 and scan_expressions ctx l = List.iter ~f:(fun e -> scan_expression ctx e) l
 
@@ -92,10 +93,6 @@ and scan_instruction ctx i =
       scan_expression ctx e;
       scan_instructions ctx l;
       scan_instructions ctx l'
-  | Try (_, body, catches, catch_all) ->
-      scan_instructions ctx body;
-      List.iter ~f:(fun (_, l) -> scan_instructions ctx l) catches;
-      Option.iter ~f:(fun l -> scan_instructions ctx l) catch_all
   | CallInstr (_, l) | Return_call (_, l) -> scan_expressions ctx l
   | Br (_, None) | Return None | Rethrow _ | Nop | Event _ -> ()
   | ArraySet (_, e, e', e'') ->

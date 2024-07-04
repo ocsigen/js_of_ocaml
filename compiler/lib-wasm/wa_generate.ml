@@ -160,7 +160,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     let rec index_rec context pc i =
       match context with
       | `Block pc' :: _ when pc = pc' -> i
-      | (`Block _ | `Skip | `Catch _) :: rem -> index_rec rem pc (i + 1)
+      | (`Block _ | `Skip | `Catch) :: rem -> index_rec rem pc (i + 1)
       | [] -> assert false
     in
     index_rec context pc 0
@@ -168,7 +168,7 @@ module Generate (Target : Wa_target_sig.S) = struct
   let catch_index context =
     let rec index_rec context i =
       match context with
-      | `Catch x :: _ -> Some (x, i)
+      | `Catch :: _ -> Some i
       | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
       | [] -> None
     in
@@ -759,7 +759,7 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   let extend_context fall_through context =
     match fall_through with
-    | (`Block _ | `Catch _) as b -> b :: context
+    | (`Block _ | `Catch | `Skip) as b -> b :: context
     | `Return -> `Skip :: context
 
   let needed_handlers (p : program) pc =
@@ -911,7 +911,7 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* e = load x in
               match fall_through with
               | `Return -> instr (Push e)
-              | `Block _ | `Catch _ -> instr (Return (Some e)))
+              | `Block _ | `Catch | `Skip -> instr (Return (Some e)))
           | Cond (x, cont1, cont2) ->
               let context' = extend_context fall_through context in
               if_
@@ -923,7 +923,7 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* e = Value.unit in
               match fall_through with
               | `Return -> instr (Push e)
-              | `Block _ | `Catch _ -> instr (Return (Some e)))
+              | `Block _ | `Catch | `Skip -> instr (Return (Some e)))
           | Switch (x, a) ->
               let len = Array.length a in
               let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
@@ -937,12 +937,10 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* e = load x in
               let* tag = register_import ~name:exception_name (Tag Value.value) in
               match fall_through with
-              | `Catch x -> store ~always:true x (return e)
-              | `Block _ | `Return -> (
+              | `Catch -> instr (Push e)
+              | `Block _ | `Return | `Skip -> (
                   match catch_index context with
-                  | Some (x, i) ->
-                      let* () = store ~always:true x (return e) in
-                      instr (Br (i, None))
+                  | Some i -> instr (Br (i, Some e))
                   | None -> instr (Throw (tag, e))))
           | Pushtrap (cont, x, cont') ->
               handle_exceptions

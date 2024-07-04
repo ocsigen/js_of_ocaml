@@ -165,6 +165,7 @@ type expression =
   | Br_on_cast of int * ref_type * ref_type * expression
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | IfExpr of value_type * expression * expression * expression
+  | Try of func_type * instruction list * (var * int * value_type) list
 
 and instruction =
   | Drop of expression
@@ -180,11 +181,6 @@ and instruction =
   | CallInstr of var * expression list
   | Nop
   | Push of expression
-  | Try of
-      func_type
-      * instruction list
-      * (var * instruction list) list
-      * instruction list option
   | Throw of var * expression
   | Rethrow of int
   | ArraySet of var * expression * expression * expression

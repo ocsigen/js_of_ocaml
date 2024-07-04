@@ -452,7 +452,8 @@ let rec is_smi e =
   | RefCast _
   | RefNull _
   | Br_on_cast _
-  | Br_on_cast_fail _ -> false
+  | Br_on_cast_fail _
+  | Try _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
   | IfExpr (_, _, ift, iff) -> is_smi ift && is_smi iff
 
@@ -575,11 +576,9 @@ let if_ ty e l1 l2 =
   | W.UnOp (I32 Eqz, e') -> instr (If (ty, e', instrs2, instrs1))
   | _ -> instr (If (ty, e, instrs1, instrs2))
 
-let try_ ty body handlers =
+let try_expr ty body handlers =
   let* body = blk body in
-  let tags = List.map ~f:fst handlers in
-  let* handler_bodies = expression_list blk (List.map ~f:snd handlers) in
-  instr (Try (ty, body, List.combine tags handler_bodies, None))
+  return (W.Try (ty, body, handlers))
 
 let need_apply_fun ~cps ~arity st =
   let ctx = st.context in
