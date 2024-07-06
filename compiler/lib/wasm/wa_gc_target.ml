@@ -890,7 +890,9 @@ module Memory = struct
 end
 
 module Constant = struct
-  let string_length_threshold = 100
+  (* dune-build-info use a 64-byte placeholder. This ensures that such
+     strings are encoded as a sequence of bytes in the wasm module. *)
+  let string_length_threshold = 64
 
   let store_in_global ?(name = "const") c =
     let name = Code.Var.fresh_n name in
@@ -991,7 +993,7 @@ module Constant = struct
         return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet (V x) ]))
     | String s ->
         let* ty = Type.string_type in
-        if String.length s > string_length_threshold
+        if String.length s >= string_length_threshold
         then
           let name = Code.Var.fresh_n "string" in
           let* () = register_data_segment name ~active:false [ DataBytes s ] in
