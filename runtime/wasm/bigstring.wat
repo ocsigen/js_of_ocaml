@@ -158,7 +158,7 @@
                   (call $ta_get_ui8 (local.get $d1)
                      (i32.add (local.get $pos1) (local.get $i))))
                (local.set $c2
-                  (array.get $string (local.get $s2)
+                  (array.get_u $string (local.get $s2)
                      (i32.add (local.get $pos2) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))

@@ -509,7 +509,7 @@
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (if (i32.eq (i32.const 32) ;; ' '
-                           (array.get $string (local.get $s) (local.get $i)))
+                           (array.get_u $string (local.get $s) (local.get $i)))
                   (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (br $skip_spaces))))))

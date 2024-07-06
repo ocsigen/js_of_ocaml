@@ -92,7 +92,7 @@
       (local $i i32)
       (local.set $i (local.get $p))
       (loop $loop
-         (if (i32.ne (array.get $string (local.get $s) (local.get $i))
+         (if (i32.ne (array.get_u $string (local.get $s) (local.get $i))
                (i32.const 0))
             (then
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -106,7 +106,7 @@
       (local $name (ref $string))
       (local.set $names (ref.cast (ref $string) (local.get $vnames)))
       (loop $loop
-         (if (i32.eqz (array.get $string (local.get $names) (local.get $i)))
+         (if (i32.eqz (array.get_u $string (local.get $names) (local.get $i)))
             (then
                (return
                   (array.new_data $string $unknown_token
