@@ -161,9 +161,10 @@ function caml_wrap_exception(e) {
 
 //Provides: caml_maybe_attach_backtrace
 //Requires: caml_exn_with_js_backtrace
-//Requires: caml_record_backtrace_flag
+//Requires: caml_record_backtrace_env_flag
+//Requires: caml_record_backtrace_runtime_flag
 function caml_maybe_attach_backtrace(exn, force) {
-  if(caml_record_backtrace_flag)
+  if(caml_record_backtrace_env_flag && caml_record_backtrace_runtime_flag)
     return caml_exn_with_js_backtrace(exn, force);
   else return exn
 }
