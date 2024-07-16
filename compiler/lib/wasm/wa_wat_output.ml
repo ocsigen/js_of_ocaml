@@ -469,8 +469,6 @@ let expression_or_instructions ctx st in_function =
             :: ref_type st ty'
             :: expression e)
         ]
-    | ExternInternalize e -> [ List (Atom "extern.internalize" :: expression e) ]
-    | ExternExternalize e -> [ List (Atom "extern.externalize" :: expression e) ]
     | IfExpr (ty, cond, ift, iff) ->
         [ List
             ((Atom "if" :: block_type st { params = []; result = [ ty ] })

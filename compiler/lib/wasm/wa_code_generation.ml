@@ -456,8 +456,6 @@ let rec is_smi e =
   | StructGet _
   | RefCast _
   | RefNull _
-  | ExternInternalize _
-  | ExternExternalize _
   | Br_on_cast _
   | Br_on_cast_fail _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true

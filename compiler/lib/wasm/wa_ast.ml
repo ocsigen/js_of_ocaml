@@ -171,8 +171,6 @@ type expression =
   | RefTest of ref_type * expression
   | RefEq of expression * expression
   | RefNull of heap_type
-  | ExternInternalize of expression
-  | ExternExternalize of expression
   | Br_on_cast of int * ref_type * ref_type * expression
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | IfExpr of value_type * expression * expression * expression
