@@ -1,4 +1,4 @@
-(* Js_of_ocaml compiler
+(* Wasm_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  *
  * This program is free software; you can redistribute it and/or modify
