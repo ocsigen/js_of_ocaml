@@ -4,11 +4,11 @@ Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssem
 
 ## Requirements
 
-Wasm_of_ocaml relies on the Binaryen toolchain; currently, only [version 117](https://github.com/WebAssembly/binaryen/releases/tag/version_117) is supported. Binaryen commands must be in the PATH for wasm_of_ocaml to function.
+Wasm_of_ocaml relies on the Binaryen toolchain; currently, only versions [118](https://github.com/WebAssembly/binaryen/releases/tag/version_118) or greater are supported. Binaryen commands must be in the PATH for wasm_of_ocaml to function.
 
 ## Supported engines
 
-The generated code works with Chrome 11.9, [node V8 canary](https://nodejs.org/download/v8-canary/v21.0.0-v8-canary20230927fa59f85d60/) and [Firefox 122](https://www.mozilla.org/en-US/firefox/new/).
+The generated code works with Chrome 11.9, Node.js 22 and Firefox 122 (or more recent versions of these applications).
 
 In particular, the output code requires the following [Wasm extensions](https://webassembly.org/roadmap/) to run:
 - [the GC extension](https://github.com/WebAssembly/gc), including functional references and 31-bit integers

@@ -31,14 +31,14 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: v22.0.0-v8-canary2024030314ed92e804
+          node-version: 22
 
       - name: Restore cached binaryen
         id: cache-binaryen
         uses: actions/cache/restore@v4
         with:
           path: binaryen
-          key: ${{ runner.os }}-binaryen-version_117
+          key: ${{ runner.os }}-binaryen-version_118
 
       - name: Checkout binaryen
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
@@ -47,7 +47,7 @@ jobs:
           repository: WebAssembly/binaryen
           path: binaryen
           submodules: true
-          ref: version_117
+          ref: version_118
 
       - name: Install ninja
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
@@ -65,7 +65,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: binaryen
-          key: ${{ runner.os }}-binaryen-version_117
+          key: ${{ runner.os }}-binaryen-version_118
 
       - name: Set binaryen's path
         run: |
