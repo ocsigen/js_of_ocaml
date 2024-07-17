@@ -382,7 +382,7 @@
          (local.set $len1 (i32.sub (local.get $len1) (i32.const 1)))
          (local.set $ofs1 (i32.add (local.get $ofs1) (i32.const 1)))
          (if (local.get $len1) (then (br $loop))))
-      (i31.new (i32.const 1)))
+      (ref.i31 (i32.const 1)))
 
    (data $mult_nat "mult_nat")
 

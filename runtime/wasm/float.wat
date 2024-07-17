@@ -658,7 +658,7 @@
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith
          (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
-      (return (i31.new (i32.const 0))))
+      (return (ref.i31 (i32.const 0))))
 
    (func (export "caml_nextafter_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
