@@ -124,6 +124,21 @@ let test : type a b c. (a, b, c) Setup.t -> b array -> unit =
   if not (kind_field_is_correct setup a3) then print_endline "corrupted `kind`";
   ()
 
+(* Byte-wise equality *)
+let typed_arrays_equal ta1 ta2 =
+  let byte_len1 = ta1##.byteLength and byte_len2 = ta2##.byteLength in
+  if not (Int.equal byte_len1 byte_len2)
+  then false
+  else
+    let view1 = new%js dataView ta1##.buffer in
+    let view2 = new%js dataView ta2##.buffer in
+    let rec cmp i =
+      if i >= byte_len1
+      then true
+      else Int.equal (view1##getUint8 i) (view2##getUint8 i) && cmp (i + 1)
+    in
+    cmp 0
+
 let%expect_test "float32" =
   test Setup.Float32 [| Float.neg_infinity; -1.; 0.; 1.; Float.infinity |];
   [%expect {||}]
@@ -137,7 +152,17 @@ let%expect_test "int8" =
   [%expect {||}]
 
 let%expect_test "uint8" =
-  test Setup.Uint8 [| 0; 255 |];
+  let a = [| 0; 255 |] in
+  test Setup.Uint8 a;
+  let ta = from_genarray (type_of_setup Setup.Uint8) (ba_of_array Setup.Uint8 a) in
+  let bytes = Typed_array.Bytes.of_uint8Array ta in
+  let ta' = Typed_array.Bytes.to_uint8Array bytes in
+  if not (typed_arrays_equal ta ta')
+  then print_endline "round-trip from uint8Array to bytes and back not equal";
+  let buffer = ta##.buffer in
+  let bytes'' = Typed_array.Bytes.of_arrayBuffer buffer in
+  if not (Stdlib.Bytes.equal bytes'' bytes)
+  then print_endline "bytes from arrayBuffer not equal to bytes from of_uint8Array";
   [%expect {||}]
 
 let%expect_test "int16" =
