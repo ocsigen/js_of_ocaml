@@ -586,143 +586,139 @@ let load_information files =
                file, (build_info, unit_data)) )
 
 let link ~output_file ~linkall ~enable_source_maps ~files =
-  let rec loop n =
-    if times () then Format.eprintf "linking@.";
-    let t = Timer.make () in
-    let predefined_exceptions, files = load_information files in
-    (match files with
-    | [] -> assert false
-    | (file, (bi, _)) :: r ->
-        (match Build_info.kind bi with
-        | `Runtime -> ()
-        | _ ->
-            failwith
-              "The first input file should be a runtime built using 'wasm_of_ocaml \
-               build-runtime'.");
-        Build_info.configure bi;
-        ignore
-          (List.fold_left
-             ~init:bi
-             ~f:(fun bi (file', (bi', _)) ->
-               (match Build_info.kind bi' with
-               | `Runtime ->
-                   failwith "The runtime file should be listed first on the command line."
-               | _ -> ());
-               Build_info.merge file bi file' bi')
-             r));
-    if times () then Format.eprintf "    reading information: %a@." Timer.print t;
-    let t1 = Timer.make () in
-    let missing, to_link =
-      List.fold_right
-        files
-        ~init:(StringSet.empty, [])
-        ~f:(fun (_file, (build_info, units)) acc ->
-          let cmo_file =
-            match Build_info.kind build_info with
-            | `Cmo -> true
-            | `Cma | `Exe | `Runtime | `Unknown -> false
-          in
-          List.fold_right units ~init:acc ~f:(fun { unit_info; _ } (requires, to_link) ->
-              if (not (Config.Flag.auto_link ()))
-                 || cmo_file
-                 || linkall
-                 || unit_info.force_link
-                 || not (StringSet.is_empty (StringSet.inter requires unit_info.provides))
-              then
-                ( StringSet.diff
-                    (StringSet.union unit_info.requires requires)
-                    unit_info.provides
-                , StringSet.elements unit_info.provides @ to_link )
-              else requires, to_link))
-    in
-    let set_to_link = StringSet.of_list to_link in
-    let files =
-      if linkall
-      then files
-      else
-        List.filter
-          ~f:(fun (_file, (build_info, units)) ->
-            (match Build_info.kind build_info with
-            | `Cma | `Exe | `Unknown -> false
-            | `Cmo | `Runtime -> true)
-            || List.exists
-                 ~f:(fun { unit_info; _ } ->
-                   StringSet.exists
-                     (fun nm -> StringSet.mem nm set_to_link)
-                     unit_info.provides)
-                 units)
-          files
-    in
-    let missing = StringSet.diff missing predefined_exceptions in
-    if not (StringSet.is_empty missing)
-    then
-      failwith
-        (Printf.sprintf
-           "Could not find compilation unit for %s"
-           (String.concat ~sep:", " (StringSet.elements missing)));
-    if times () then Format.eprintf "    finding what to link: %a@." Timer.print t1;
-    if times () then Format.eprintf "  scan: %a@." Timer.print t;
-    let t = Timer.make () in
-    let interfaces, wasm_file, link_spec =
-      let dir = Filename.chop_extension output_file ^ ".assets" in
-      Fs.gen_file dir
-      @@ fun tmp_dir ->
-      Sys.mkdir tmp_dir 0o777;
-      let start_module =
-        "start-"
-        ^ String.sub
-            (Digest.to_hex (Digest.string (String.concat ~sep:"/" to_link)))
-            ~pos:0
-            ~len:8
-      in
-      generate_start_function
-        ~to_link
-        ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
-      let module_names, interfaces =
-        link_to_directory ~set_to_link ~files ~enable_source_maps ~dir:tmp_dir
-      in
-      ( interfaces
-      , dir
-      , let to_link = compute_dependencies ~set_to_link ~files in
-        List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
-    in
-    let missing_primitives = compute_missing_primitives interfaces in
-    if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;
-    let t1 = Timer.make () in
-    let js_runtime =
-      match files with
-      | (file, _) :: _ ->
-          Zip.with_open_in file (fun z -> Zip.read_entry z ~name:"runtime.js")
-      | _ -> assert false
-    in
-    let generated_js =
-      List.concat
-      @@ List.map files ~f:(fun (_, (_, units)) ->
-             List.map units ~f:(fun { unit_info; strings; fragments } ->
-                 Some (StringSet.choose unit_info.provides), (strings, fragments)))
-    in
-    let runtime_args =
-      let js =
-        build_runtime_arguments
-          ~link_spec
-          ~separate_compilation:true
-          ~missing_primitives
-          ~wasm_file
-          ~generated_js
-          ()
-      in
-      output_js [ Javascript.Expression_statement js, Javascript.N ]
-    in
-    Fs.gen_file output_file
-    @@ fun tmp_output_file ->
-    Fs.write_file
-      ~name:tmp_output_file
-      ~contents:(trim_semi js_runtime ^ "\n" ^ runtime_args);
-    if times () then Format.eprintf "    build JS runtime: %a@." Timer.print t1;
-    if times () then Format.eprintf "  emit: %a@." Timer.print t;
-    if n > 0 then loop (n - 1)
+  if times () then Format.eprintf "linking@.";
+  let t = Timer.make () in
+  let predefined_exceptions, files = load_information files in
+  (match files with
+  | [] -> assert false
+  | (file, (bi, _)) :: r ->
+      (match Build_info.kind bi with
+      | `Runtime -> ()
+      | _ ->
+          failwith
+            "The first input file should be a runtime built using 'wasm_of_ocaml \
+             build-runtime'.");
+      Build_info.configure bi;
+      ignore
+        (List.fold_left
+           ~init:bi
+           ~f:(fun bi (file', (bi', _)) ->
+             (match Build_info.kind bi' with
+             | `Runtime ->
+                 failwith "The runtime file should be listed first on the command line."
+             | _ -> ());
+             Build_info.merge file bi file' bi')
+           r));
+  if times () then Format.eprintf "    reading information: %a@." Timer.print t;
+  let t1 = Timer.make () in
+  let missing, to_link =
+    List.fold_right
+      files
+      ~init:(StringSet.empty, [])
+      ~f:(fun (_file, (build_info, units)) acc ->
+        let cmo_file =
+          match Build_info.kind build_info with
+          | `Cmo -> true
+          | `Cma | `Exe | `Runtime | `Unknown -> false
+        in
+        List.fold_right units ~init:acc ~f:(fun { unit_info; _ } (requires, to_link) ->
+            if (not (Config.Flag.auto_link ()))
+               || cmo_file
+               || linkall
+               || unit_info.force_link
+               || not (StringSet.is_empty (StringSet.inter requires unit_info.provides))
+            then
+              ( StringSet.diff
+                  (StringSet.union unit_info.requires requires)
+                  unit_info.provides
+              , StringSet.elements unit_info.provides @ to_link )
+            else requires, to_link))
   in
-  loop 0
+  let set_to_link = StringSet.of_list to_link in
+  let files =
+    if linkall
+    then files
+    else
+      List.filter
+        ~f:(fun (_file, (build_info, units)) ->
+          (match Build_info.kind build_info with
+          | `Cma | `Exe | `Unknown -> false
+          | `Cmo | `Runtime -> true)
+          || List.exists
+               ~f:(fun { unit_info; _ } ->
+                 StringSet.exists
+                   (fun nm -> StringSet.mem nm set_to_link)
+                   unit_info.provides)
+               units)
+        files
+  in
+  let missing = StringSet.diff missing predefined_exceptions in
+  if not (StringSet.is_empty missing)
+  then
+    failwith
+      (Printf.sprintf
+         "Could not find compilation unit for %s"
+         (String.concat ~sep:", " (StringSet.elements missing)));
+  if times () then Format.eprintf "    finding what to link: %a@." Timer.print t1;
+  if times () then Format.eprintf "  scan: %a@." Timer.print t;
+  let t = Timer.make () in
+  let interfaces, wasm_file, link_spec =
+    let dir = Filename.chop_extension output_file ^ ".assets" in
+    Fs.gen_file dir
+    @@ fun tmp_dir ->
+    Sys.mkdir tmp_dir 0o777;
+    let start_module =
+      "start-"
+      ^ String.sub
+          (Digest.to_hex (Digest.string (String.concat ~sep:"/" to_link)))
+          ~pos:0
+          ~len:8
+    in
+    generate_start_function
+      ~to_link
+      ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
+    let module_names, interfaces =
+      link_to_directory ~set_to_link ~files ~enable_source_maps ~dir:tmp_dir
+    in
+    ( interfaces
+    , dir
+    , let to_link = compute_dependencies ~set_to_link ~files in
+      List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
+  in
+  let missing_primitives = compute_missing_primitives interfaces in
+  if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;
+  let t1 = Timer.make () in
+  let js_runtime =
+    match files with
+    | (file, _) :: _ ->
+        Zip.with_open_in file (fun z -> Zip.read_entry z ~name:"runtime.js")
+    | _ -> assert false
+  in
+  let generated_js =
+    List.concat
+    @@ List.map files ~f:(fun (_, (_, units)) ->
+           List.map units ~f:(fun { unit_info; strings; fragments } ->
+               Some (StringSet.choose unit_info.provides), (strings, fragments)))
+  in
+  let runtime_args =
+    let js =
+      build_runtime_arguments
+        ~link_spec
+        ~separate_compilation:true
+        ~missing_primitives
+        ~wasm_file
+        ~generated_js
+        ()
+    in
+    output_js [ Javascript.Expression_statement js, Javascript.N ]
+  in
+  Fs.gen_file output_file
+  @@ fun tmp_output_file ->
+  Fs.write_file
+    ~name:tmp_output_file
+    ~contents:(trim_semi js_runtime ^ "\n" ^ runtime_args);
+  if times () then Format.eprintf "    build JS runtime: %a@." Timer.print t1;
+  if times () then Format.eprintf "  emit: %a@." Timer.print t
 
 let link ~output_file ~linkall ~enable_source_maps ~files =
   try link ~output_file ~linkall ~enable_source_maps ~files
