@@ -284,7 +284,7 @@ let extract_sourcemap file =
         | None -> String.concat ~sep:"\n" (input_lines line)
         | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64
       in
-      Some (Js_of_ocaml_compiler.Source_map_io.of_string content)
+      Some (Js_of_ocaml_compiler.Source_map.of_string content)
   | _ -> None
 
 let compile_to_javascript

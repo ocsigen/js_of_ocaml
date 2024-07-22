@@ -59,3 +59,9 @@ val mapping_of_string : string -> mapping
 val string_of_mapping : mapping -> string
 
 val empty : filename:string -> t
+
+val to_string : t -> string
+
+val to_file : t -> string -> unit
+
+val of_string : string -> t

@@ -7,11 +7,7 @@
   compiler-libs.bytecomp
   menhirLib
   sedlex
-  (select
-   source_map_io.ml
-   from
-   (yojson -> source_map_io.yojson.ml)
-   (-> source_map_io.unsupported.ml)))
+  yojson)
  (flags
   (:standard -w -7-37 -safe-string))
  (preprocess
