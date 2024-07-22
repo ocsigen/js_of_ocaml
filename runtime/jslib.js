@@ -164,6 +164,10 @@ function caml_wrap_exception(e) {
 //Requires: caml_record_backtrace_env_flag
 //Requires: caml_record_backtrace_runtime_flag
 function caml_maybe_attach_backtrace(exn, force) {
+  // Backtraces are very expensive, we only enable them when explicitly requested
+  // at compile-time (--enable with-js-error) or at startup with OCAMLRUNPARAM=b=1.
+  // Libraries such as Base unconditionally enable backtraces (programmatically) but
+  // it's way to slow. Here, we force the end-user to opt-in to backtraces.
   if(caml_record_backtrace_env_flag && caml_record_backtrace_runtime_flag)
     return caml_exn_with_js_backtrace(exn, force);
   else return exn
