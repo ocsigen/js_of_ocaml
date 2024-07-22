@@ -19,6 +19,16 @@
 
 open! Stdlib
 
+module Source_content = struct
+  type t = Sc_as_Stringlit of string
+
+  let create s = Sc_as_Stringlit (Yojson.Safe.to_string (`String s))
+
+  let of_stringlit (`Stringlit s) = Sc_as_Stringlit s
+
+  let to_json (Sc_as_Stringlit s) = `Stringlit s
+end
+
 type map =
   | Gen of
       { gen_line : int
@@ -47,7 +57,7 @@ type t =
   ; file : string
   ; sourceroot : string option
   ; sources : string list
-  ; sources_content : string option list option
+  ; sources_content : Source_content.t option list option
   ; names : string list
   ; mappings : mapping
   }
@@ -310,17 +320,18 @@ let json t =
       | Some map -> Build_path_prefix_map.rewrite map path
       | None -> path
   in
+  let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
   `Assoc
-    [ "version", `Float (float_of_int t.version)
-    ; "file", `String (rewrite_path t.file)
+    [ "version", `Intlit (string_of_int t.version)
+    ; "file", stringlit (rewrite_path t.file)
     ; ( "sourceRoot"
-      , `String
+      , stringlit
           (match t.sourceroot with
           | None -> ""
           | Some s -> rewrite_path s) )
-    ; "names", `List (List.map t.names ~f:(fun s -> `String s))
-    ; "sources", `List (List.map t.sources ~f:(fun s -> `String (rewrite_path s)))
-    ; "mappings", `String (string_of_mapping t.mappings)
+    ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
+    ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
+    ; "mappings", stringlit (string_of_mapping t.mappings)
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with
@@ -328,68 +339,93 @@ let json t =
           | Some l ->
               List.map l ~f:(function
                   | None -> `Null
-                  | Some s -> `String s)) )
+                  | Some x -> Source_content.to_json x)) )
     ]
 
 let invalid () = invalid_arg "Source_map.of_json"
 
-let string name rest =
+let string_of_stringlit (`Stringlit s) =
+  match Yojson.Safe.from_string s with
+  | `String s -> s
+  | _ -> invalid ()
+
+let stringlit name rest : [ `Stringlit of string ] option =
   try
     match List.assoc name rest with
-    | `String s -> Some s
+    | `Stringlit _ as s -> Some s
     | `Null -> None
     | _ -> invalid ()
   with Not_found -> None
 
-let list_string name rest =
+let list_stringlit name rest =
   try
     match List.assoc name rest with
     | `List l ->
         Some
           (List.map l ~f:(function
-              | `String s -> s
+              | `Stringlit _ as s -> s
               | _ -> invalid ()))
     | _ -> invalid ()
   with Not_found -> None
 
-let list_string_opt name rest =
+let list_stringlit_opt name rest =
   try
     match List.assoc name rest with
     | `List l ->
         Some
           (List.map l ~f:(function
-              | `String s -> Some s
+              | `Stringlit _ as s -> Some s
               | `Null -> None
               | _ -> invalid ()))
     | _ -> invalid ()
   with Not_found -> None
 
-let of_json json =
+let of_json (json : Yojson.Raw.t) =
   match json with
-  | `Assoc (("version", `Float version) :: rest) when int_of_float version = 3 ->
-      let def v d =
-        match v with
-        | None -> d
-        | Some v -> v
+  | `Assoc (("version", `Intlit version) :: rest) when int_of_string version = 3 ->
+      let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
+      let file =
+        match string "file" rest with
+        | None -> ""
+        | Some s -> s
       in
-      let file = string "file" rest in
       let sourceroot = string "sourceRoot" rest in
-      let names = list_string "names" rest in
-      let sources = list_string "sources" rest in
-      let sources_content = list_string_opt "sourcesContent" rest in
-      let mappings = string "mappings" rest in
-      { version = int_of_float version
-      ; file = def file ""
+      let names =
+        match list_stringlit "names" rest with
+        | None -> []
+        | Some l -> List.map ~f:string_of_stringlit l
+      in
+      let sources =
+        match list_stringlit "sources" rest with
+        | None -> []
+        | Some l -> List.map ~f:string_of_stringlit l
+      in
+      let sources_content =
+        match list_stringlit_opt "sourcesContent" rest with
+        | None -> None
+        | Some l ->
+            Some
+              (List.map l ~f:(function
+                  | None -> None
+                  | Some s -> Some (Source_content.of_stringlit s)))
+      in
+      let mappings =
+        match string "mappings" rest with
+        | None -> mapping_of_string ""
+        | Some s -> mapping_of_string s
+      in
+      { version = int_of_float (float_of_string version)
+      ; file
       ; sourceroot
-      ; names = def names []
+      ; names
       ; sources_content
-      ; sources = def sources []
-      ; mappings = mapping_of_string (def mappings "")
+      ; sources
+      ; mappings
       }
   | _ -> invalid ()
 
-let of_string s = of_json (Yojson.Basic.from_string s)
+let of_string s = of_json (Yojson.Raw.from_string s)
 
-let to_string m = Yojson.Basic.to_string (json m)
+let to_string m = Yojson.Raw.to_string (json m)
 
-let to_file m file = Yojson.Basic.to_file file (json m)
+let to_file m file = Yojson.Raw.to_file file (json m)

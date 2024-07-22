@@ -1903,7 +1903,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
   let temp_mappings = ref [] in
   let files = Hashtbl.create 17 in
   let names = Hashtbl.create 17 in
-  let contents : string option list ref option =
+  let contents : Source_map.Source_content.t option list ref option =
     match source_map with
     | None | Some { Source_map.sources_content = None; _ } -> None
     | Some { Source_map.sources_content = Some _; _ } -> Some (ref [])
@@ -1946,7 +1946,13 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
         with Not_found ->
           let pos = Hashtbl.length files in
           Hashtbl.add files file pos;
-          Option.iter contents ~f:(fun r -> r := find_source file :: !r);
+          Option.iter contents ~f:(fun r ->
+              let source_contents =
+                match find_source file with
+                | None -> None
+                | Some s -> Some (Source_map.Source_content.create s)
+              in
+              r := source_contents :: !r);
           pos)
     , (fun name ->
         try Hashtbl.find names name
