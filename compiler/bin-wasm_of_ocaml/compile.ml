@@ -30,7 +30,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
   if Option.is_some sourcemap_root || not sourcemap_don't_inline_content
   then (
     let open Source_map in
-    let source_map, mappings = Source_map_io.of_file_no_mappings sourcemap_file in
+    let source_map, mappings = Source_map.of_file_no_mappings sourcemap_file in
     assert (List.is_empty (Option.value source_map.sources_content ~default:[]));
     (* Add source file contents to source map *)
     let sources_content =
@@ -50,7 +50,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
           (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
       }
     in
-    Source_map_io.to_file ?mappings source_map ~file:sourcemap_file)
+    Source_map.to_file ?mappings source_map ~file:sourcemap_file)
 
 let opt_with action x f =
   match x with

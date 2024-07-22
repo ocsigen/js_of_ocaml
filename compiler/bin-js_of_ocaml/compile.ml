@@ -50,10 +50,10 @@ let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f 
         let urlData =
           match output_file with
           | None ->
-              let data = Source_map_io.to_string sm in
+              let data = Source_map.to_string sm in
               "data:application/json;base64," ^ Base64.encode_exn data
           | Some output_file ->
-              Source_map_io.to_file sm ~file:output_file;
+              Source_map.to_file sm ~file:output_file;
               Filename.basename output_file
         in
         Pretty_print.newline fmt;
