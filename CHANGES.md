@@ -3,6 +3,7 @@
 ## Features/Changes
 * Misc: update testsuite to OCmaml 5.2
 * Misc: CI uses opam.2.2 and no longer use sunset repo
+* Misc: yojson is no longer optional
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly

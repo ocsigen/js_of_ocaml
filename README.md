@@ -37,7 +37,7 @@ file for version constraints.
 - [lwt](https://github.com/ocsigen/lwt)
 - [tyxml](https://github.com/ocsigen/tyxml)
 - [reactiveData](https://github.com/ocsigen/reactiveData)
-- [yojson](https://github.com/mjambon/yojson)
+- [yojson](https://github.com/ocaml-community/yojson)
 
 ### Toplevel requirements
 

@@ -318,16 +318,6 @@ let options =
             } )
       else None
     in
-    let source_map =
-      if Option.is_some source_map && not Source_map_io.enabled
-      then (
-        warn
-          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
-           sourcemap support (install yojson to enable support)\n\
-           %!";
-        None)
-      else source_map
-    in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
@@ -556,16 +546,6 @@ let options_runtime_only =
             ; mappings = []
             } )
       else None
-    in
-    let source_map =
-      if Option.is_some source_map && not Source_map_io.enabled
-      then (
-        warn
-          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
-           sourcemap support (install yojson to enable support)\n\
-           %!";
-        None)
-      else source_map
     in
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
