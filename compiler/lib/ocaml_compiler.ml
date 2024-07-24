@@ -247,6 +247,21 @@ module Cmo_format = struct
   let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
   [@@if ocaml_version >= (5, 2, 0)]
 
+  let provides (t : t) =
+    List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
+        match reloc with
+        | Reloc_setglobal i -> Some (Ident.name i)
+        | Reloc_getglobal _ | Reloc_literal _ | Reloc_primitive _ -> None)
+  [@@if ocaml_version < (5, 2, 0)]
+
+  let provides (t : t) =
+    List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
+        match reloc with
+        | Reloc_setcompunit (Compunit u) -> Some u
+        | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
+            None)
+  [@@if ocaml_version >= (5, 2, 0)]
+
   let primitives (t : t) = t.cu_primitives
 
   let imports (t : t) = t.cu_imports
