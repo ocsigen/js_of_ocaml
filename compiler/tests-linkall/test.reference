@@ -1,1 +1,1 @@
-Fatal error: exception Failure("caml_register_global: cannot locate Dynlink_compilerlibs.Binutils")
+hello world

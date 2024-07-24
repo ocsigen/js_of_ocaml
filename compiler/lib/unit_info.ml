@@ -48,7 +48,8 @@ let of_primitives l =
 
 let of_cmo (cmo : Cmo_format.compilation_unit) =
   let open Ocaml_compiler in
-  let provides = StringSet.singleton (Cmo_format.name cmo) in
+  (* A packed librariy register global for packed modules. *)
+  let provides = StringSet.of_list (Cmo_format.name cmo :: Cmo_format.provides cmo) in
   let requires = StringSet.of_list (Cmo_format.requires cmo) in
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
