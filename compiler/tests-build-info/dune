@@ -1,0 +1,23 @@
+(env
+ (_
+  (js_of_ocaml
+   (compilation_mode separate))))
+
+(executable
+ (name main)
+ (modes js wasm byte native)
+ (modules main mysites)
+ (libraries dune-build-info dune-site))
+
+(generate_sites_module
+ (module mysites)
+ (sites js_of_ocaml-tests))
+
+(install
+ (section libexec)
+ (package js_of_ocaml-tests)
+ (files
+  (main.bc.js as test-build-info.bc.js)
+  (main.exe as test-build-info.exe)
+  (main.bc.wasm.js as test-build-info.bc.wasm.js))
+ (dirs main.bc.wasm.assets))
