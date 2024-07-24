@@ -12,6 +12,7 @@
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648)
 * Toplevel: fix missing primitives with separate compilation
+* Compiler: fix link of packed modules with separate compilation
 
 # 5.8.2 (2024-05-26) - Luc
 
