@@ -66,6 +66,8 @@ module Cmo_format : sig
 
   val requires : t -> string list
 
+  val provides : t -> string list
+
   val primitives : t -> string list
 
   val force_link : t -> bool
