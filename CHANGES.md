@@ -16,6 +16,7 @@
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 * Runtime: delete BigStringReader, one should use UInt8ArrayReader instead
 * Runtime: less conversion during un-marshalling (#1889)
+* Runtime: use TextEncoder/TextDecoder for utf8-utf16 conversions
 * Runtime/wasm: implement BLAKE2b primitives for Wasm (#1873)
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime/wasm: support unmarshaling compressed data (#1898)
