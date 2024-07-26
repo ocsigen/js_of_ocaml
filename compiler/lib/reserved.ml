@@ -150,6 +150,7 @@ let provided =
     ; "Int32Array"
     ; "Int8Array"
     ; "TextDecoder"
+    ; "TextEncoder"
     ; "Uint16Array"
     ; "Uint32Array"
     ; "Uint8Array"
