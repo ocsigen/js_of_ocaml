@@ -5,9 +5,12 @@
 * Misc: CI uses opam.2.2 and no longer use sunset repo
 * Misc: yojson is no longer optional
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
+* Compiler: make indirect call using sequence instead of using the call method
+  [f.call(null, args)] becomes [(0,f)(args)]
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
+
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648)
