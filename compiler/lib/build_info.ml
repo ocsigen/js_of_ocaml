@@ -90,6 +90,20 @@ let parse s =
       in
       Some t
 
+let to_sexp info =
+  Sexp.List
+    (info
+    |> StringMap.bindings
+    |> List.map ~f:(fun (k, v) -> Sexp.List [ Atom k; Atom v ]))
+
+let from_sexp info =
+  let open Sexp.Util in
+  info
+  |> assoc
+  |> List.fold_left
+       ~f:(fun m (k, v) -> StringMap.add k (single string v) m)
+       ~init:StringMap.empty
+
 exception
   Incompatible_build_info of
     { key : string

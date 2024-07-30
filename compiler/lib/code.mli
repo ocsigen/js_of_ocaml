@@ -176,6 +176,11 @@ module Native_string : sig
   val of_bytestring : string -> t
 end
 
+type int_kind =
+  | Regular
+  | Int32
+  | Native
+
 type constant =
   | String of string
   | NativeString of Native_string.t
@@ -183,7 +188,7 @@ type constant =
   | Float_array of float array
   | Int64 of int64
   | Tuple of int * constant array * array_or_not
-  | Int of int32
+  | Int of int_kind * int32
 
 val constant_equal : constant -> constant -> bool option
 
@@ -293,7 +298,15 @@ val fold_closures_innermost_first :
     innermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
+val fold_closures_outermost_first :
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
+(** Similar to {!fold_closures}, but applies the fold function to the
+    outermost closures first. Unlike with {!fold_closures}, only the closures
+    reachable from [p.start] are considered. *)
+
 val fold_children : 'c fold_blocs
+
+val fold_children_skip_try_body : 'c fold_blocs
 
 val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
 

@@ -25,4 +25,10 @@ val iter_block_bound_vars : (Code.Var.t -> unit) -> Code.block -> unit
 
 val f_mutable : Code.program -> Code.Var.Set.t Code.Addr.Map.t
 
+val iter_instr_free_vars : (Code.Var.t -> unit) -> Code.instr -> unit
+
+val iter_last_free_var : (Code.Var.t -> unit) -> Code.last -> unit
+
+val find_loops_in_closure : Code.program -> Code.Addr.t -> Code.Addr.t Code.Addr.Map.t
+
 val f : Code.program -> Code.Var.Set.t Code.Addr.Map.t

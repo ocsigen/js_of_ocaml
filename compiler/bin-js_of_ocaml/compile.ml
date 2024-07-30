@@ -53,7 +53,7 @@ let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f 
               let data = Source_map.to_string sm in
               "data:application/json;base64," ^ Base64.encode_exn data
           | Some output_file ->
-              Source_map.to_file sm output_file;
+              Source_map.to_file sm ~file:output_file;
               Filename.basename output_file
         in
         Pretty_print.newline fmt;
@@ -91,6 +91,7 @@ let run
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Jsoo_cmdline.Arg.eval common;
+  Generate.init ();
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name
@@ -195,12 +196,12 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
+            ~target:(JavaScript fmt)
             ~standalone
             ?profile
             ~link
             ~wrap_with_fun
             ?source_map
-            fmt
             one.debug
             code
       | `File, fmt ->
@@ -219,12 +220,12 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
+              ~target:(JavaScript fmt)
               ~standalone
               ?profile
               ~link
               ~wrap_with_fun
               ?source_map
-              fmt
               one.debug
               code
           in
@@ -284,7 +285,7 @@ let run
   | `None ->
       let prims = Linker.list_all () |> StringSet.elements in
       assert (List.length prims > 0);
-      let code, uinfo = Parse_bytecode.predefined_exceptions () in
+      let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`JavaScript in
       let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
       let code : Parse_bytecode.one =
         { code
@@ -330,6 +331,7 @@ let run
           let linkall = linkall || toplevel || dynlink in
           let code =
             Parse_bytecode.from_exe
+              ~target:`JavaScript
               ~includes:include_dirs
               ~include_cmis
               ~link_info:(toplevel || dynlink)
@@ -362,6 +364,7 @@ let run
           let t1 = Timer.make () in
           let code =
             Parse_bytecode.from_cmo
+              ~target:`JavaScript
               ~includes:include_dirs
               ~include_cmis
               ~debug:need_debug
@@ -418,6 +421,7 @@ let run
               let t1 = Timer.make () in
               let code =
                 Parse_bytecode.from_cmo
+                  ~target:`JavaScript
                   ~includes:include_dirs
                   ~include_cmis
                   ~debug:need_debug
@@ -449,6 +453,7 @@ let run
                 let t1 = Timer.make () in
                 let code =
                   Parse_bytecode.from_cmo
+                    ~target:`JavaScript
                     ~includes:include_dirs
                     ~include_cmis
                     ~debug:need_debug

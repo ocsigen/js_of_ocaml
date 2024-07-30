@@ -178,7 +178,7 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
-let inline live_vars closures name pc (outer, p) =
+let inline ~first_class_primitives live_vars closures name pc (outer, p) =
   let block = Addr.Map.find pc p.blocks in
   let body, (outer, branch, p) =
     List.fold_right
@@ -311,7 +311,7 @@ let inline live_vars closures name pc (outer, p) =
                     , (outer, (Branch (fresh_addr, args), No), { p with blocks; free_pc })
                     )
               | _ -> i :: rem, state)
-        | Let (x, Closure (l, (pc, []))), loc when not (Config.Flag.effects ()) -> (
+        | Let (x, Closure (l, (pc, []))), loc when first_class_primitives -> (
             let block = Addr.Map.find pc p.blocks in
             match block with
             | { body = [ (Let (y, Prim (Extern prim, args)), _loc) ]
@@ -333,7 +333,12 @@ let inline live_vars closures name pc (outer, p) =
 
 let times = Debug.find "times"
 
-let f p live_vars =
+let f ~target p live_vars =
+  let first_class_primitives =
+    match target with
+    | `JavaScript -> not (Config.Flag.effects ())
+    | `Wasm -> false
+  in
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
@@ -344,7 +349,7 @@ let f p live_vars =
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
-            (inline live_vars closures name)
+            (inline ~first_class_primitives live_vars closures name)
             pc
             p.blocks
             (outer, p)

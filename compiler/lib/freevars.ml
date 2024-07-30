@@ -100,8 +100,8 @@ type st =
   ; mutable revisited : bool
   }
 
-let find_loops p =
-  let in_loop = ref Addr.Map.empty in
+let find_loops p in_loop pc =
+  let in_loop = ref in_loop in
   let index = ref 0 in
   let state = ref Addr.Map.empty in
   let stack = Stack.create () in
@@ -141,8 +141,16 @@ let find_loops p =
       if st.revisited
       then List.iter !l ~f:(fun pc' -> in_loop := Addr.Map.add pc' pc !in_loop))
   in
-  Code.fold_closures p (fun _ _ (pc, _) () -> traverse pc) ();
+  traverse pc;
   !in_loop
+
+let find_loops_in_closure p pc = find_loops p Addr.Map.empty pc
+
+let find_all_loops p =
+  Code.fold_closures
+    p
+    (fun _ _ (pc, _) (in_loop : _ Addr.Map.t) -> find_loops p in_loop pc)
+    Addr.Map.empty
 
 let mark_variables in_loop p =
   let vars = Var.Tbl.make () (-1) in
@@ -245,7 +253,7 @@ let f p =
 let f_mutable p =
   Code.invariant p;
   let t = Timer.make () in
-  let in_loop = find_loops p in
+  let in_loop = find_all_loops p in
   let vars = mark_variables in_loop p in
   let free_vars = free_variables vars in_loop p in
   if times () then Format.eprintf "  free vars 1: %a@." Timer.print t;

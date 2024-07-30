@@ -36,9 +36,15 @@ end
 
 val reset : unit -> unit
 
-val load_files : target_env:Target_env.t -> string list -> unit
+val load_files :
+  ?ignore_always_annotation:bool -> target_env:Target_env.t -> string list -> unit
 
-val load_fragments : target_env:Target_env.t -> filename:string -> Fragment.t list -> unit
+val load_fragments :
+     ?ignore_always_annotation:bool
+  -> target_env:Target_env.t
+  -> filename:string
+  -> Fragment.t list
+  -> unit
 
 val check_deps : unit -> unit
 
