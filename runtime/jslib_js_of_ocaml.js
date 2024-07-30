@@ -37,7 +37,6 @@ function caml_js_html_escape (s) {
 }
 
 //Provides: caml_js_html_entities
-//Requires: caml_failwith
 function caml_js_html_entities(s) {
   var entity = /^&#?[0-9a-zA-Z]+;$/
   if(s.match(entity))
@@ -49,7 +48,7 @@ function caml_js_html_entities(s) {
     return str;
   }
   else {
-    caml_failwith("Invalid entity " + s);
+    return null;
   }
 }
 
