@@ -10,9 +10,20 @@
   (pps ppx_expect)))
 
 (library
+ (name jsoo_testsuite_compression)
+ (modules test_marshal_compressed)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (enabled_if
+  (>= %{ocaml_version} 5.1.1))
+ (inline_tests
+  (modes js best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsoo_testsuite)
  (modules
-  (:standard \ test_io test_floats))
+  (:standard \ test_io test_floats test_marshal_compressed))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
