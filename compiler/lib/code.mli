@@ -185,6 +185,8 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
+(** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
+  Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
 val constant_equal : constant -> constant -> bool option
 
 type loc =
