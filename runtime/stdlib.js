@@ -131,8 +131,7 @@ var caml_named_values = {};
 //Provides: caml_register_named_value (const,mutable)
 //Requires: caml_named_values, caml_jsbytes_of_string
 function caml_register_named_value(nm,v) {
-  nm = caml_jsbytes_of_string(nm);
-  if (!caml_named_values.hasOwnProperty(nm)) caml_named_values[nm] = v;
+  caml_named_values[caml_jsbytes_of_string(nm)] = v;
   return 0;
 }
 
