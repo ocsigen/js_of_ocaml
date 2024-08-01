@@ -123,7 +123,7 @@ module CoerceTo = struct
     if instanceof e blob_constr then Js.some (Unsafe.coerce e : #blob t) else Js.null
 
   let string (e : file_any) =
-    if Js.equals (typeof e) (Js.string "string")
+    if Js.equals (typeof e) (string "string")
     then Js.some (Unsafe.coerce e : js_string t)
     else Js.null
 

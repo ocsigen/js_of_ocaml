@@ -32,7 +32,7 @@ type intptr = int
 
 type uint = int
 
-type clampf = number t
+type clampf = number_t
 
 type void
 
@@ -229,11 +229,11 @@ class type renderingContext = object
 
   method isEnabled : enableCap -> bool t meth
 
-  method lineWidth : number t -> unit meth
+  method lineWidth : number_t -> unit meth
 
   method pixelStorei : 'a. 'a pixelStoreParam -> 'a -> unit meth
 
-  method polygonOffset : number t -> number t -> unit meth
+  method polygonOffset : number_t -> number_t -> unit meth
 
   method sampleCoverage : clampf -> bool t -> unit meth
 
@@ -427,7 +427,7 @@ class type renderingContext = object
     -> unit meth
 
   (* {[
-       method texParameterf : texTarget -> texParam -> number t -> unit meth
+       method texParameterf : texTarget -> texParam -> number_t -> unit meth
      ]}
   *)
   method texParameteri : texTarget -> 'a texParam -> 'a -> unit meth
@@ -549,12 +549,12 @@ class type renderingContext = object
 
   method getVertexAttribOffset : uint -> vertexAttribPointerParam -> sizeiptr meth
 
-  method uniform1f : number t uniformLocation t -> number t -> unit meth
+  method uniform1f : number_t uniformLocation t -> number_t -> unit meth
 
   method uniform1fv_typed :
-    number t uniformLocation t -> Typed_array.float32Array t -> unit meth
+    number_t uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-  method uniform1fv : number t uniformLocation t -> number t js_array t -> unit meth
+  method uniform1fv : number_t uniformLocation t -> number_t js_array t -> unit meth
 
   method uniform1i : int uniformLocation t -> int -> unit meth
 
@@ -562,12 +562,12 @@ class type renderingContext = object
 
   method uniform1iv : int uniformLocation t -> int js_array t -> unit meth
 
-  method uniform2f : [ `vec2 ] uniformLocation t -> number t -> number t -> unit meth
+  method uniform2f : [ `vec2 ] uniformLocation t -> number_t -> number_t -> unit meth
 
   method uniform2fv_typed :
     [ `vec2 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-  method uniform2fv : [ `vec2 ] uniformLocation t -> number t js_array t -> unit meth
+  method uniform2fv : [ `vec2 ] uniformLocation t -> number_t js_array t -> unit meth
 
   method uniform2i : [ `ivec2 ] uniformLocation t -> int -> int -> unit meth
 
@@ -577,12 +577,12 @@ class type renderingContext = object
     [ `ivec2 ] uniformLocation t -> Typed_array.int32Array t -> unit meth
 
   method uniform3f :
-    [ `vec3 ] uniformLocation t -> number t -> number t -> number t -> unit meth
+    [ `vec3 ] uniformLocation t -> number_t -> number_t -> number_t -> unit meth
 
   method uniform3fv_typed :
     [ `vec3 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-  method uniform3fv : [ `vec3 ] uniformLocation t -> number t js_array t -> unit meth
+  method uniform3fv : [ `vec3 ] uniformLocation t -> number_t js_array t -> unit meth
 
   method uniform3i : [ `ivec3 ] uniformLocation t -> int -> int -> int -> unit meth
 
@@ -593,16 +593,16 @@ class type renderingContext = object
 
   method uniform4f :
        [ `vec4 ] uniformLocation t
-    -> number t
-    -> number t
-    -> number t
-    -> number t
+    -> number_t
+    -> number_t
+    -> number_t
+    -> number_t
     -> unit meth
 
   method uniform4fv_typed :
     [ `vec4 ] uniformLocation t -> Typed_array.float32Array t -> unit meth
 
-  method uniform4fv : [ `vec4 ] uniformLocation t -> number t js_array t -> unit meth
+  method uniform4fv : [ `vec4 ] uniformLocation t -> number_t js_array t -> unit meth
 
   method uniform4i : [ `ivec4 ] uniformLocation t -> int -> int -> int -> int -> unit meth
 
@@ -612,45 +612,45 @@ class type renderingContext = object
     [ `ivec4 ] uniformLocation t -> Typed_array.int32Array t -> unit meth
 
   method uniformMatrix2fv :
-    [ `mat2 ] uniformLocation t -> bool t -> number t js_array t -> unit meth
+    [ `mat2 ] uniformLocation t -> bool t -> number_t js_array t -> unit meth
 
   method uniformMatrix2fv_typed :
     [ `mat2 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
   method uniformMatrix3fv :
-    [ `mat3 ] uniformLocation t -> bool t -> number t js_array t -> unit meth
+    [ `mat3 ] uniformLocation t -> bool t -> number_t js_array t -> unit meth
 
   method uniformMatrix3fv_typed :
     [ `mat3 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
   method uniformMatrix4fv :
-    [ `mat4 ] uniformLocation t -> bool t -> number t js_array t -> unit meth
+    [ `mat4 ] uniformLocation t -> bool t -> number_t js_array t -> unit meth
 
   method uniformMatrix4fv_typed :
     [ `mat4 ] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
 
-  method vertexAttrib1f : uint -> number t -> unit meth
+  method vertexAttrib1f : uint -> number_t -> unit meth
 
-  method vertexAttrib1fv : uint -> number t js_array t -> unit meth
+  method vertexAttrib1fv : uint -> number_t js_array t -> unit meth
 
   method vertexAttrib1fv_typed : uint -> Typed_array.float32Array t -> unit meth
 
-  method vertexAttrib2f : uint -> number t -> number t -> unit meth
+  method vertexAttrib2f : uint -> number_t -> number_t -> unit meth
 
-  method vertexAttrib2fv : uint -> number t js_array t -> unit meth
+  method vertexAttrib2fv : uint -> number_t js_array t -> unit meth
 
   method vertexAttrib2fv_typed : uint -> Typed_array.float32Array t -> unit meth
 
-  method vertexAttrib3f : uint -> number t -> number t -> number t -> unit meth
+  method vertexAttrib3f : uint -> number_t -> number_t -> number_t -> unit meth
 
-  method vertexAttrib3fv : uint -> number t js_array t -> unit meth
+  method vertexAttrib3fv : uint -> number_t js_array t -> unit meth
 
   method vertexAttrib3fv_typed : uint -> Typed_array.float32Array t -> unit meth
 
   method vertexAttrib4f :
-    uint -> number t -> number t -> number t -> number t -> unit meth
+    uint -> number_t -> number_t -> number_t -> number_t -> unit meth
 
-  method vertexAttrib4fv : uint -> number t js_array t -> unit meth
+  method vertexAttrib4fv : uint -> number_t js_array t -> unit meth
 
   method vertexAttrib4fv_typed : uint -> Typed_array.float32Array t -> unit meth
 
@@ -844,7 +844,7 @@ class type renderingContext = object
 
   method _POLYGON_OFFSET_FILL_PARAM : bool t parameter readonly_prop
 
-  method _LINE_WIDTH_ : number t parameter readonly_prop
+  method _LINE_WIDTH_ : number_t parameter readonly_prop
 
   method _ALIASED_POINT_SIZE_RANGE_ : Typed_array.float32Array t parameter readonly_prop
 
@@ -858,7 +858,7 @@ class type renderingContext = object
 
   method _DEPTH_WRITEMASK_ : bool t parameter readonly_prop
 
-  method _DEPTH_CLEAR_VALUE_ : number t parameter readonly_prop
+  method _DEPTH_CLEAR_VALUE_ : number_t parameter readonly_prop
 
   method _DEPTH_FUNC_ : depthFunction parameter readonly_prop
 
@@ -922,9 +922,9 @@ class type renderingContext = object
 
   method _STENCIL_BITS_ : int parameter readonly_prop
 
-  method _POLYGON_OFFSET_UNITS_ : number t parameter readonly_prop
+  method _POLYGON_OFFSET_UNITS_ : number_t parameter readonly_prop
 
-  method _POLYGON_OFFSET_FACTOR_ : number t parameter readonly_prop
+  method _POLYGON_OFFSET_FACTOR_ : number_t parameter readonly_prop
 
   method _TEXTURE_BINDING_2D_ : texture t opt parameter readonly_prop
 
@@ -934,7 +934,7 @@ class type renderingContext = object
 
   method _SAMPLES_ : int parameter readonly_prop
 
-  method _SAMPLE_COVERAGE_VALUE_ : number t parameter readonly_prop
+  method _SAMPLE_COVERAGE_VALUE_ : number_t parameter readonly_prop
 
   method _SAMPLE_COVERAGE_INVERT_ : bool t parameter readonly_prop
 
