@@ -22,9 +22,9 @@
 
 open Js
 
-type int32 = Js.number Js.t
+type int32 = number_t
 
-type uint32 = Js.number Js.t
+type uint32 = number_t
 
 class type arrayBuffer = object
   method byteLength : int readonly_prop
@@ -45,7 +45,7 @@ class type arrayBufferView = object
 end
 
 class type ['a, 'b, 'c] typedArray = object
-  inherit arrayBufferView
+    inherit arrayBufferView
 
   method _BYTES_PER_ELEMENT : int readonly_prop
 
@@ -63,8 +63,8 @@ class type ['a, 'b, 'c] typedArray = object
 
   method slice_toEnd : int -> ('a, 'b, 'c) typedArray t meth
 
-  (* This fake method is needed for typing purposes.
-     Without it, ['b] would not be constrained. *)
+  (* This fake method is needed for typing purposes. Without it, ['b] would not
+     be constrained. *)
   method _content_type_ : ('b * 'c) optdef readonly_prop
 end
 
@@ -80,9 +80,9 @@ type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
 
 type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
 
-type float32Array = (Js.number Js.t, float, Bigarray.float32_elt) typedArray
+type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
-type float64Array = (Js.number Js.t, float, Bigarray.float64_elt) typedArray
+type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
 type ('bigarray, 'typed_array, 'elt) type' =
   | Char : (int, char, Bigarray.int8_unsigned_elt) type'
@@ -92,8 +92,8 @@ type ('bigarray, 'typed_array, 'elt) type' =
   | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
   | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
   | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
-  | Float32 : (Js.number Js.t, float, Bigarray.float32_elt) type'
-  | Float64 : (Js.number Js.t, float, Bigarray.float64_elt) type'
+  | Float32 : (number_t, float, Bigarray.float32_elt) type'
+  | Float64 : (number_t, float, Bigarray.float64_elt) type'
 
 val kind : ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
 
