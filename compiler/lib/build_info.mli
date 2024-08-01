@@ -34,9 +34,9 @@ val to_string : t -> string
 
 val parse : string -> t option
 
-val to_sexp : t -> Sexp.t
+val to_map : t -> string StringMap.t
 
-val from_sexp : Sexp.t -> t
+val of_map : string StringMap.t -> t
 
 val with_kind : t -> kind -> t
 

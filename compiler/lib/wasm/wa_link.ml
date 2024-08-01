@@ -20,6 +20,82 @@ open Stdlib
 
 let times = Debug.find "times"
 
+module Build_info : sig
+  include module type of Build_info
+
+  val to_sexp : t -> Sexp.t
+
+  val from_sexp : Sexp.t -> t
+end = struct
+  include Build_info
+
+  let to_sexp info =
+    Sexp.List
+      (info
+      |> to_map
+      |> StringMap.bindings
+      |> List.map ~f:(fun (k, v) -> Sexp.List [ Atom k; Atom v ]))
+
+  let from_sexp info =
+    let open Sexp.Util in
+    info
+    |> assoc
+    |> List.fold_left
+         ~f:(fun m (k, v) -> StringMap.add k (single string v) m)
+         ~init:StringMap.empty
+    |> of_map
+end
+
+module Unit_info : sig
+  include module type of Unit_info
+
+  val to_sexp : t -> Sexp.t list
+
+  val from_sexp : Sexp.t -> t
+end = struct
+  include Unit_info
+
+  let to_sexp t =
+    let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
+    let set nm f rem =
+      add
+        nm
+        (List.equal ~eq:String.equal (f empty) (f t))
+        (List.map ~f:(fun x -> Sexp.Atom x) (f t))
+        rem
+    in
+    let bool nm f rem =
+      add
+        nm
+        (Bool.equal (f empty) (f t))
+        (if f t then [ Atom "true" ] else [ Atom "false" ])
+        rem
+    in
+    []
+    |> bool "effects_without_cps" (fun t -> t.effects_without_cps)
+    |> set "primitives" (fun t -> t.primitives)
+    |> bool "force_link" (fun t -> t.force_link)
+    |> set "requires" (fun t -> StringSet.elements t.requires)
+    |> add "provides" false [ Atom (StringSet.choose t.provides) ]
+
+  let from_sexp t =
+    let open Sexp.Util in
+    let opt_list l = l |> Option.map ~f:(List.map ~f:string) in
+    let list default l = Option.value ~default (opt_list l) in
+    let set default l =
+      Option.value ~default (Option.map ~f:StringSet.of_list (opt_list l))
+    in
+    let bool default v = Option.value ~default (Option.map ~f:(single bool) v) in
+    { provides = t |> member "provides" |> mandatory (single string) |> StringSet.singleton
+    ; requires = t |> member "requires" |> set empty.requires
+    ; primitives = t |> member "primitives" |> list empty.primitives
+    ; force_link = t |> member "force_link" |> bool empty.force_link
+    ; effects_without_cps =
+        t |> member "effects_without_cps" |> bool empty.effects_without_cps
+    ; crcs = StringMap.empty
+    }
+end
+
 module Wasm_binary = struct
   let header = "\000asm\001\000\000\000"
 
