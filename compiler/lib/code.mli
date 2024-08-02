@@ -174,6 +174,8 @@ module Native_string : sig
   val of_string : string -> t
 
   val of_bytestring : string -> t
+
+  val equal : t -> t -> bool
 end
 
 type constant =
@@ -185,9 +187,13 @@ type constant =
   | Tuple of int * constant array * array_or_not
   | Int of int32
 
-(** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
-  Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
-val constant_equal : constant -> constant -> bool option
+module Constant : sig
+  type t = constant
+
+  val ocaml_equal : t -> t -> bool option
+  (** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
+    Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
+end
 
 type loc =
   | No

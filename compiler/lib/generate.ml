@@ -1737,7 +1737,7 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
         true, flush_all queue (throw_statement st.ctx cx k loc)
     | Stop ->
         let e_opt =
-          if st.ctx.Ctx.should_export then Some (s_var Constant.exports) else None
+          if st.ctx.Ctx.should_export then Some (s_var Global_constant.exports) else None
         in
         true, flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont scope_stack ~fall_through
@@ -1913,7 +1913,7 @@ let generate_shared_value ctx =
          | Some (v, _) ->
              [ ( J.V v
                , ( J.dot
-                     (s_var Constant.global_object)
+                     (s_var Global_constant.global_object)
                      (Utf8_string.of_string_exn "jsoo_runtime")
                  , J.N ) )
              ])

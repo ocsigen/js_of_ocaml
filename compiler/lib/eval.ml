@@ -233,12 +233,41 @@ let the_cont_of info x (a : cont array) =
       | _ -> None)
     x
 
+(* If [constant_js_equal a b = Some v], then [caml_js_equals a b = v]). *)
+let constant_js_equal a b =
+  match a, b with
+  | Int i, Int j -> Some (Int32.equal i j)
+  | Float a, Float b -> Some (Poly.equal a b)
+  | Int _, Float _ | Float _, Int _ -> None
+  (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
+  | String _, _
+  | _, String _
+  | NativeString _, _
+  | _, NativeString _
+  | Float_array _, _
+  | _, Float_array _
+  | Int64 _, _
+  | _, Int64 _
+  | Tuple _, _
+  | _, Tuple _ -> None
+
 let eval_instr info ((x, loc) as i) =
   match x with
-  | Let (x, Prim (Extern ("caml_js_equals" | "caml_equal"), [ y; z ])) -> (
+  | Let (x, Prim (Extern "caml_equal", [ y; z ])) -> (
       match the_const_of info y, the_const_of info z with
       | Some e1, Some e2 -> (
-          match constant_equal e1 e2 with
+          match Code.Constant.ocaml_equal e1 e2 with
+          | None -> [ i ]
+          | Some c ->
+              let c = if c then 1l else 0l in
+              let c = Constant (Int c) in
+              Flow.Info.update_def info x c;
+              [ Let (x, c), loc ])
+      | _ -> [ i ])
+  | Let (x, Prim (Extern "caml_js_equals", [ y; z ])) -> (
+      match the_const_of info y, the_const_of info z with
+      | Some e1, Some e2 -> (
+          match constant_js_equal e1 e2 with
           | None -> [ i ]
           | Some c ->
               let c = if c then 1l else 0l in
