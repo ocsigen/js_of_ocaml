@@ -215,13 +215,13 @@ class type dataView = object
 
   method getUint32_ : int -> bool t -> uint32 meth
 
-  method getFloat32 : int -> Js.number Js.t meth
+  method getFloat32 : int -> number_t meth
 
-  method getFloat32_ : int -> bool t -> Js.number Js.t meth
+  method getFloat32_ : int -> bool t -> number_t meth
 
-  method getFloat64 : int -> Js.number Js.t meth
+  method getFloat64 : int -> number_t meth
 
-  method getFloat64_ : int -> bool t -> Js.number Js.t meth
+  method getFloat64_ : int -> bool t -> number_t meth
 
   method setInt8 : int -> int -> unit meth
 
@@ -243,13 +243,13 @@ class type dataView = object
 
   method setUint32_ : int -> uint32 -> bool t -> unit meth
 
-  method setFloat32 : int -> Js.number Js.t -> unit meth
+  method setFloat32 : int -> number_t -> unit meth
 
-  method setFloat32_ : int -> Js.number Js.t -> bool t -> unit meth
+  method setFloat32_ : int -> number_t -> bool t -> unit meth
 
-  method setFloat64 : int -> Js.number Js.t -> unit meth
+  method setFloat64 : int -> number_t -> unit meth
 
-  method setFloat64_ : int -> Js.number Js.t -> bool t -> unit meth
+  method setFloat64_ : int -> number_t -> bool t -> unit meth
 end
 
 val dataView : (arrayBuffer t -> dataView t) constr
