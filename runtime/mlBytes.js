@@ -315,17 +315,23 @@ function caml_bytes_set (s, i, c) {
   return caml_bytes_unsafe_set (s, i, c);
 }
 
+//Provides: jsoo_text_encoder
+var jsoo_text_encoder = new TextEncoder ();
+
+//Provides: jsoo_text_decoder
+var jsoo_text_decoder = new TextDecoder ();
+
 //Provides: caml_bytes_of_utf16_jsstring
-//Requires: MlBytes
+//Requires: MlBytes, jsoo_text_encoder
 function caml_bytes_of_utf16_jsstring (s) {
-  var e = new TextEncoder();
-  var a = e.encode(s);
+  var a = jsoo_text_encoder.encode(s);
   return new MlBytes(4, a, a.length);
 }
 
 //Provides: MlBytes
 //Requires: caml_convert_string_to_bytes, jsoo_is_ascii
 //Requires: caml_uint8_array_of_bytes
+//Requires: jsoo_text_decoder
 function MlBytes (tag, contents, length) {
   this.t=tag; this.c=contents; this.l=length;
 }
@@ -348,8 +354,7 @@ MlBytes.prototype.toString = function(){
 MlBytes.prototype.toUtf16 = function (){
   if(this.t == 9) return this.c;
   var a = caml_uint8_array_of_bytes(this);
-  let d = new TextDecoder();
-  return d.decode(a);
+  return jsoo_text_decoder.decode(a);
 }
 MlBytes.prototype.slice = function (){
   var content = this.t == 4 ? this.c.slice() : this.c;
@@ -644,25 +649,32 @@ function caml_string_of_jsbytes(x) { return x }
 //If: js-string
 function caml_jsbytes_of_string(x) { return x }
 
+//Provides: jsoo_text_decoder_buff
+var jsoo_text_decoder_buff = new ArrayBuffer(1024);
+
 //Provides: caml_jsstring_of_string const
 //Requires: jsoo_is_ascii
+//Requires: jsoo_text_decoder
+//Requires: jsoo_text_decoder_buff
 //If: js-string
 function caml_jsstring_of_string(s) {
   if(jsoo_is_ascii(s)) return s;
-  var a = new Uint8Array(s.length);
+  var a =
+      (s.length <= jsoo_text_decoder_buff.length)
+      ? Uint8Array(jsoo_text_decoder_buff, 0, s.length)
+      : (new Uint8Array(s.length));
   for(var i = 0; i < s.length; i++){
     a[i] = s.charCodeAt(i);
   }
-  var d = new TextDecoder();
-  return d.decode(a);
+  return jsoo_text_decoder.decode(a);
 }
 
 //Provides: caml_string_of_jsstring const
 //Requires: caml_string_of_array
+//Requires: jsoo_text_encoder
 //If: js-string
 function caml_string_of_jsstring (s) {
-  var e = new TextEncoder();
-  var a = e.encode(s);
+  var a = jsoo_text_encoder.encode(s);
   return caml_string_of_array(a);
 }
 
