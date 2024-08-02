@@ -10,6 +10,7 @@
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
+* Compiler: optimize sourcemap processing, improving linking performance
 
 
 ## Bug fixes
