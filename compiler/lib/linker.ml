@@ -19,6 +19,7 @@
  *)
 
 open! Stdlib
+module Constant = Global_constant
 
 type 'a pack =
   | Ok of 'a
