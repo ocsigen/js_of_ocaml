@@ -5,6 +5,7 @@
 * Misc: CI uses opam.2.2 and no longer use sunset repo
 * Misc: yojson is no longer optional
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
+* Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
