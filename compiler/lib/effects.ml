@@ -247,7 +247,9 @@ let jump_closures blocks_to_transform idom : jump_closures =
     idom
     { closure_of_jump = Addr.Map.empty; closures_of_alloc_site = Addr.Map.empty }
 
-type cps_calls = Var.Set.t
+type trampolined_calls = Var.Set.t
+
+type in_cps = Var.Set.t
 
 type st =
   { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
@@ -263,7 +265,8 @@ type st =
   ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Global_flow.info
-  ; cps_calls : cps_calls ref
+  ; trampolined_calls : trampolined_calls ref
+  ; in_cps : in_cps ref
   }
 
 let add_block st block =
@@ -280,10 +283,11 @@ let allocate_closure ~st ~params ~body ~branch loc =
   let name = Var.fresh () in
   [ Let (name, Closure (params, (pc, []))), loc ], name
 
-let tail_call ~st ?(instrs = []) ~exact ~check ~f args loc =
+let tail_call ~st ?(instrs = []) ~exact ~in_cps ~check ~f args loc =
   assert (exact || check);
   let ret = Var.fresh () in
-  if check then st.cps_calls := Var.Set.add ret !(st.cps_calls);
+  if check then st.trampolined_calls := Var.Set.add ret !(st.trampolined_calls);
+  if in_cps then st.in_cps := Var.Set.add ret !(st.in_cps);
   instrs @ [ Let (ret, Apply { f; args; exact }), loc ], (Return ret, loc)
 
 let cps_branch ~st ~src (pc, args) loc =
@@ -302,7 +306,15 @@ let cps_branch ~st ~src (pc, args) loc =
       (* We check the stack depth only for backward edges (so, at
          least once per loop iteration) *)
       let check = Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc in
-      tail_call ~st ~instrs ~exact:true ~check ~f:(closure_of_pc ~st pc) args loc
+      tail_call
+        ~st
+        ~instrs
+        ~exact:true
+        ~in_cps:false
+        ~check
+        ~f:(closure_of_pc ~st pc)
+        args
+        loc
 
 let cps_jump_cont ~st ~src ((pc, _) as cont) loc =
   match Addr.Set.mem pc st.blocks_to_transform with
@@ -365,7 +377,7 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
       (* Is the number of successive 'returns' is unbounded is CPS, it
          means that we have an unbounded of calls in direct style
          (even with tail call optimization) *)
-      tail_call ~st ~exact:true ~check:false ~f:k [ x ] last_loc
+      tail_call ~st ~exact:true ~in_cps:false ~check:false ~f:k [ x ] last_loc
   | Raise (x, rmode) -> (
       assert (List.is_empty alloc_jump_closures);
       match Hashtbl.find_opt st.matching_exn_handler pc with
@@ -401,6 +413,7 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
             ~instrs:
               ((Let (exn_handler, Prim (Extern "caml_pop_trap", [])), noloc) :: instrs)
             ~exact:true
+            ~in_cps:false
             ~check:false
             ~f:exn_handler
             [ x ]
@@ -463,6 +476,7 @@ let cps_instr ~st (instr : instr) : instr =
       (* Add the continuation parameter, and change the initial block if
          needed *)
       let k, cont = Hashtbl.find st.closure_info pc in
+      st.in_cps := Var.Set.add x !(st.in_cps);
       Let (x, Closure (params @ [ k ], cont))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
@@ -532,7 +546,7 @@ let cps_block ~st ~k pc block =
             let exact =
               exact || Global_flow.exact_call st.flow_info f (List.length args)
             in
-            tail_call ~st ~exact ~check:true ~f (args @ [ k ]) loc)
+            tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]) loc)
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
@@ -542,6 +556,7 @@ let cps_block ~st ~k pc block =
               ~instrs:
                 [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])), noloc ]
               ~exact:(Global_flow.exact_call st.flow_info f 1)
+              ~in_cps:true
               ~check:true
               ~f
               [ arg; k' ]
@@ -599,7 +614,8 @@ let cps_block ~st ~k pc block =
 
 let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
-  let cps_calls = ref Var.Set.empty in
+  let trampolined_calls = ref Var.Set.empty in
+  let in_cps = ref Var.Set.empty in
   let p =
     Code.fold_closures_innermost_first
       p
@@ -658,7 +674,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           ; block_order = cfg.block_order
           ; flow_info
           ; live_vars
-          ; cps_calls
+          ; trampolined_calls
+          ; in_cps
           }
         in
         let function_needs_cps =
@@ -735,7 +752,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         in
         { start = new_start; blocks; free_pc = new_start + 1 }
   in
-  p, !cps_calls
+  p, !trampolined_calls, !in_cps
 
 (****)
 
@@ -927,7 +944,7 @@ let f ~flow_info ~live_vars p =
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in
   let p = split_blocks ~cps_needed p in
-  let p, cps_calls = cps_transform ~live_vars ~flow_info ~cps_needed p in
+  let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   Code.invariant p;
-  p, cps_calls
+  p, trampolined_calls, in_cps

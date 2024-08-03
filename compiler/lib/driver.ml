@@ -87,7 +87,7 @@ let phi p =
 
 let ( +> ) f g x = g (f x)
 
-let map_fst f (x, y) = f x, y
+let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   if Config.Flag.effects ()
@@ -104,9 +104,11 @@ let effects ~deadcode_sentinal p =
         Deadcode.f p
       else p, live_vars
     in
-    let p, cps = p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f in
-    p, cps)
-  else p, (Code.Var.Set.empty : Effects.cps_calls)
+    p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f)
+  else
+    ( p
+    , (Code.Var.Set.empty : Effects.trampolined_calls)
+    , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())
@@ -193,14 +195,14 @@ let generate
     ~wrap_with_fun
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
-    ((p, live_vars), cps_calls) =
+    ((p, live_vars), trampolined_calls, _) =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
     p
     ~exported_runtime
     ~live_vars
-    ~cps_calls
+    ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal

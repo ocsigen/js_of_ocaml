@@ -16,12 +16,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type cps_calls = Code.Var.Set.t
+type trampolined_calls = Code.Var.Set.t
 
 val remove_empty_blocks : live_vars:Deadcode.variable_uses -> Code.program -> Code.program
+
+type in_cps = Code.Var.Set.t
 
 val f :
      flow_info:Global_flow.info
   -> live_vars:Deadcode.variable_uses
   -> Code.program
-  -> Code.program * cps_calls
+  -> Code.program * trampolined_calls * in_cps
