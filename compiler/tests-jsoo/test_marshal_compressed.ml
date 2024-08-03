@@ -1,7 +1,6 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2019 Shachar Itzhaky
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,15 +17,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f :
-     Code.program
-  -> exported_runtime:bool
-  -> live_vars:Deadcode.variable_uses
-  -> trampolined_calls:Effects.trampolined_calls
-  -> should_export:bool
-  -> warn_on_unhandled_effect:bool
-  -> deadcode_sentinal:Code.Var.t
-  -> Parse_bytecode.Debug.t
-  -> Javascript.program
-
-val init : unit -> unit
+let%expect_test _ =
+  let data =
+    "\132\149\166\189\r\022\206\021\001\147F\137d(\181/\253\000Xm\000\0000\n\
+     \000\000'\016c\001\000\012\135\007E"
+  in
+  let s =
+    if Compression.compression_supported
+    then Marshal.from_string data 0
+    else String.make 10000 'c'
+  in
+  Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
+  [%expect {| cccccccccccccccccccc ... (10000) |}]
