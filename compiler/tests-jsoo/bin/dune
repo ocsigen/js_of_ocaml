@@ -1,9 +1,15 @@
 (executables
- (names error1 error2 error3)
- (modes byte js))
+ (names error1 error2)
+ (modes exe js)
+ (foreign_stubs
+  (language c)
+  (names named_value_stubs))
+ (js_of_ocaml
+  (javascript_files runtime.js))
+ (libraries))
 
 (rule
- (target error1.actual)
+ (target error1.js.actual)
  (deps error1.html)
  (alias runtest)
  (action
@@ -14,12 +20,27 @@
     (run node %{dep:error1.bc.js})))))
 
 (rule
+ (target error1.exe.actual)
  (alias runtest)
  (action
-  (diff %{dep:error1.expected} %{dep:error1.actual})))
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run %{dep:error1.exe})))))
 
 (rule
- (target error1-unregister.actual)
+ (alias runtest)
+ (action
+  (diff %{dep:error1.expected} %{dep:error1.js.actual})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff %{dep:error1.expected} %{dep:error1.exe.actual})))
+
+(rule
+ (target error1-unregister.js.actual)
  (deps error1-unregister.html)
  (alias runtest)
  (action
@@ -32,10 +53,10 @@
 (rule
  (alias runtest)
  (action
-  (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.actual})))
+  (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.js.actual})))
 
 (rule
- (target error2.actual)
+ (target error2.js.actual)
  (deps error2.html)
  (alias runtest)
  (action
@@ -46,14 +67,31 @@
     (run node %{dep:error2.bc.js})))))
 
 (rule
+ (target error2.exe.actual)
+ (alias runtest)
+ (action
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run %{dep:error2.exe})))))
+
+(rule
  (alias runtest)
  (enabled_if
   (= %{profile} dev))
  (action
-  (diff %{dep:error2.expected} %{dep:error2.actual})))
+  (diff %{dep:error2.expected} %{dep:error2.js.actual})))
 
 (rule
- (target error2-unregister.actual)
+ (alias runtest)
+ (enabled_if
+  (= %{profile} dev))
+ (action
+  (diff %{dep:error2.expected} %{dep:error2.exe.actual})))
+
+(rule
+ (target error2-unregister.js.actual)
  (deps error2-unregister.html)
  (alias runtest)
  (action
@@ -66,28 +104,4 @@
 (rule
  (alias runtest)
  (action
-  (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.actual})))
-
-;; We don't expect the output of error3 as it will be flacky
-
-(rule
- (target error3.actual)
- (deps error3.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   7
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error3.bc.js})))))
-
-(rule
- (target error3-unregister.actual)
- (deps error3-unregister.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   7
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error3.bc.js} unregister)))))
+  (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.js.actual})))
