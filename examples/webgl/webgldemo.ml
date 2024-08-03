@@ -89,7 +89,7 @@ let get_source src_id =
 
 let float32array a =
   let array = new%js Typed_array.float32Array (Array.length a) in
-  Array.iteri (fun i v -> Typed_array.set array i v) a;
+  Array.iteri (fun i v -> Typed_array.set array i (Js.float v)) a;
   array
 
 module Proj3D = struct

@@ -490,6 +490,8 @@ let rec constant_rec ~ctx x level instrs =
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> int32 i, instrs
+  | Int32 _ | NativeInt _ ->
+      assert false (* Should not be produced when compiling to Javascript *)
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -2040,7 +2042,10 @@ let init () =
     ; "caml_array_unsafe_get_float", "caml_array_unsafe_get"
     ; "caml_floatarray_unsafe_get", "caml_array_unsafe_get"
     ; "caml_array_unsafe_set_float", "caml_array_unsafe_set"
+    ; "caml_array_unsafe_set_addr", "caml_array_unsafe_set"
     ; "caml_floatarray_unsafe_set", "caml_array_unsafe_set"
+    ; "caml_check_bound_gen", "caml_check_bound"
+    ; "caml_check_bound_float", "caml_check_bound"
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"

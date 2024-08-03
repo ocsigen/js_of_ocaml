@@ -104,9 +104,9 @@ let outside_color = Js.string (*"#0c1a0d"*) "#070718"
 let option var = Js.Optdef.get var (fun () -> Js.Unsafe.coerce (new%js Js.array_empty))
 
 class type style = object
-  method border : float Js.optdef Js.readonly_prop
+  method border : Js.number Js.t Js.optdef Js.readonly_prop
 
-  method padding : float Js.optdef Js.readonly_prop
+  method padding : Js.number Js.t Js.optdef Js.readonly_prop
 
   method backgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 
@@ -553,7 +553,10 @@ let local_messages msgs : messages Js.t = option (Js.Unsafe.get msgs !language)
 (******)
 
 let screen_transform canvas =
-  let offset = opt_style style##.border 0.5 +. opt_style style##.padding 0. in
+  let offset =
+    Js.to_float (opt_style style##.border (Js.float 0.5))
+    +. Js.to_float (opt_style style##.padding (Js.float 0.))
+  in
   let w = canvas##.width in
   let h = canvas##.height in
   (*
@@ -587,13 +590,13 @@ let arc c (rx, ry, dx, dy) z0 z1 z2 =
   c##beginPath;
   let alpha = mod_float (fin -. start +. (2. *. pi)) (2. *. pi) in
   c##ellipse
-    ((z0.x *. rx) +. dx)
-    ((z0.y *. ry) +. dy)
-    (rd *. rx)
-    (rd *. ry)
-    0.
-    start
-    fin
+    (Js.float ((z0.x *. rx) +. dx))
+    (Js.float ((z0.y *. ry) +. dy))
+    (Js.float (rd *. rx))
+    (Js.float (rd *. ry))
+    (Js.float 0.)
+    (Js.float start)
+    (Js.float fin)
     (Js.bool (alpha > pi));
   c##stroke
 
@@ -640,9 +643,17 @@ let draw canvas vertices edges nodes boxes =
     (Js.float 0.)
     (Js.float (float canvas##.width))
     (Js.float (float canvas##.height));
-  let padding = opt_style style##.padding 0. in
+  let padding = Js.to_float (opt_style style##.padding (Js.float 0.)) in
   c##beginPath;
-  c##ellipse dx dy (rx +. padding) (ry +. padding) 0. 0. 7. Js._false;
+  c##ellipse
+    (Js.float dx)
+    (Js.float dy)
+    (Js.float (rx +. padding))
+    (Js.float (ry +. padding))
+    (Js.float 0.)
+    (Js.float 0.)
+    (Js.float 7.)
+    Js._false;
   Js.Optdef.iter style##.backgroundColor (fun color ->
       c##.fillStyle := color;
       c##fill);
@@ -1107,12 +1118,12 @@ let close_button over =
     c##.shadowBlur := Js.float offset;
     c##.shadowColor := color);
   c##beginPath;
-  let a = Js.float (offset +. (lw /. sqrt 2.)) in
-  let b = Js.float (float size -. offset -. (lw /. sqrt 2.)) in
-  c##moveTo a a;
-  c##lineTo b b;
-  c##moveTo a b;
-  c##lineTo b a;
+  let a = offset +. (lw /. sqrt 2.) in
+  let b = float size -. offset -. (lw /. sqrt 2.) in
+  c##moveTo (Js.float a) (Js.float a);
+  c##lineTo (Js.float b) (Js.float b);
+  c##moveTo (Js.float a) (Js.float b);
+  c##lineTo (Js.float b) (Js.float a);
   c##stroke;
   c##restore;
   canvas##.className := Js.string (if over then "on" else "off");
