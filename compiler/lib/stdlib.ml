@@ -341,6 +341,28 @@ module Int32 = struct
       n
 end
 
+module Int31 = struct
+  let wrap i = Int32.(shift_right (shift_left i 1) 1)
+
+  let of_int_warning_on_overflow i =
+    Int32.convert_warning_on_overflow
+      ~to_int32:(fun i -> wrap (Int32.of_int i))
+      ~of_int32:Int32.to_int
+      ~equal:Int_replace_polymorphic_compare.( = )
+      ~to_dec:(Printf.sprintf "%d")
+      ~to_hex:(Printf.sprintf "%x")
+      i
+
+  let of_nativeint_warning_on_overflow n =
+    Int32.convert_warning_on_overflow
+      ~to_int32:(fun i -> wrap (Nativeint.to_int32 i))
+      ~of_int32:Nativeint.of_int32
+      ~equal:Nativeint.equal
+      ~to_dec:(Printf.sprintf "%nd")
+      ~to_hex:(Printf.sprintf "%nx")
+      n
+end
+
 module Option = struct
   let map ~f x =
     match x with
@@ -571,6 +593,20 @@ module Bytes = struct
   include BytesLabels
 
   let sub_string b ~pos:ofs ~len = unsafe_to_string (Bytes.sub b ofs len)
+
+  let fold_left ~f ~init b =
+    let r = ref init in
+    for i = 0 to length b - 1 do
+      r := f !r (unsafe_get b i)
+    done;
+    !r
+
+  let fold_right ~f b ~init =
+    let r = ref init in
+    for i = length b - 1 downto 0 do
+      r := f (unsafe_get b i) !r
+    done;
+    !r
 end
 
 module String = struct
@@ -986,6 +1022,20 @@ module String = struct
         | _ -> false
     in
     loop (length b - 1) b 0
+
+  let fold_left ~f ~init s =
+    let r = ref init in
+    for i = 0 to length s - 1 do
+      r := f !r (unsafe_get s i)
+    done;
+    !r
+
+  let fold_right ~f s ~init =
+    let r = ref init in
+    for i = length s - 1 downto 0 do
+      r := f (unsafe_get s i) !r
+    done;
+    !r
 end
 
 module Utf8_string : sig
@@ -1166,13 +1216,16 @@ module Filename = struct
     in
     try
       let ch = open_out_bin f_tmp in
-      (try f ch
-       with e ->
-         close_out ch;
-         raise e);
+      let res =
+        try f ch
+        with e ->
+          close_out ch;
+          raise e
+      in
       close_out ch;
       (try Sys.remove file with Sys_error _ -> ());
-      Sys.rename f_tmp file
+      Sys.rename f_tmp file;
+      res
     with exc ->
       Sys.remove f_tmp;
       raise exc
