@@ -17,6 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Source_content : sig
+  type t
+
+  val create : string -> t
+end
+
 type map =
   | Gen of
       { gen_line : int
@@ -45,7 +51,7 @@ type t =
   ; file : string
   ; sourceroot : string option
   ; sources : string list
-  ; sources_content : string option list option
+  ; sources_content : Source_content.t option list option
   ; names : string list
   ; mappings : mapping
   }
