@@ -17,6 +17,7 @@
 * Runtime: fix parsing of unsigned integers (0u2147483648)
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
+* Fixed the static evaluation of some equalities (#1659)
 
 # 5.8.2 (2024-05-26) - Luc
 
