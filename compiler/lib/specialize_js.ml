@@ -49,7 +49,7 @@ let specialize_instr info i =
       match the_string_of info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
-      | Some _ -> Let (x, Constant (Int 0l))
+      | Some _ -> Let (x, Constant (Int (Regular, 0l)))
       | None -> i)
   | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])) -> (
       match the_def_of info a with
@@ -165,13 +165,19 @@ let specialize_instrs info l =
             ( u1
             , Prim
                 ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int 0l); Pv bytes'; Pc (Int 0l); Pv alen'' ] ) )
+                , [ Pv a'
+                  ; Pc (Int (Regular, 0l))
+                  ; Pv bytes'
+                  ; Pc (Int (Regular, 0l))
+                  ; Pv alen''
+                  ] ) )
         , _ )
       ; ( Let
             ( u2
             , Prim
                 ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int 0l); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+                , [ Pv b'; Pc (Int (Regular, 0l)); Pv bytes''; Pv alen'''; Pv blen'' ] )
+            )
         , _ )
       ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
       ]
@@ -184,8 +190,8 @@ let specialize_instrs info l =
         [ len1
         ; len2
         ; len3
-        ; Let (u1, Constant (Int 0l)), No
-        ; Let (u2, Constant (Int 0l)), No
+        ; Let (u1, Constant (Int (Regular, 0l))), No
+        ; Let (u2, Constant (Int (Regular, 0l))), No
         ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
         ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ])), No
         ]
@@ -195,48 +201,90 @@ let specialize_instrs info l =
            the array access. The bound checking function returns the array,
            which allows to produce more compact code. *)
         match i with
-        | Let (x, Prim (Extern "caml_array_get", [ y; z ]))
-        | Let (x, Prim (Extern "caml_array_get_float", [ y; z ]))
-        | Let (x, Prim (Extern "caml_array_get_addr", [ y; z ])) ->
+        | Let
+            ( x
+            , Prim
+                ( Extern
+                    (( "caml_array_get"
+                     | "caml_array_get_float"
+                     | "caml_floatarray_get"
+                     | "caml_array_get_addr" ) as prim)
+                , [ y; z ] ) ) ->
             let idx =
               match the_int info z with
               | Some idx -> `Cst idx
               | None -> `Var z
             in
+            let instr y =
+              let prim =
+                match prim with
+                | "caml_array_get" -> Extern "caml_array_unsafe_get"
+                | "caml_array_get_float" | "caml_floatarray_get" ->
+                    Extern "caml_floatarray_unsafe_get"
+                | "caml_array_get_addr" -> Array_get
+                | _ -> assert false
+              in
+              Let (x, Prim (prim, [ y; z ])), loc
+            in
             if List.mem (y, idx) ~set:checks
             then
-              let acc =
-                (Let (x, Prim (Extern "caml_array_unsafe_get", [ y; z ])), loc) :: acc
-              in
+              let acc = instr y :: acc in
               aux info checks r acc
             else
+              let check =
+                match prim with
+                | "caml_array_get" -> "caml_check_bound_gen"
+                | "caml_array_get_float" | "caml_floatarray_get" ->
+                    "caml_check_bound_float"
+                | "caml_array_get_addr" -> "caml_check_bound"
+                | _ -> assert false
+              in
               let y' = Code.Var.fresh () in
               let acc =
-                (Let (x, Prim (Extern "caml_array_unsafe_get", [ Pv y'; z ])), loc)
-                :: (Let (y', Prim (Extern "caml_check_bound", [ y; z ])), noloc)
-                :: acc
+                instr (Pv y') :: (Let (y', Prim (Extern check, [ y; z ])), noloc) :: acc
               in
               aux info ((y, idx) :: checks) r acc
-        | Let (x, Prim (Extern "caml_array_set", [ y; z; t ]))
-        | Let (x, Prim (Extern "caml_array_set_float", [ y; z; t ]))
-        | Let (x, Prim (Extern "caml_array_set_addr", [ y; z; t ])) ->
+        | Let
+            ( x
+            , Prim
+                ( Extern
+                    (( "caml_array_set"
+                     | "caml_array_set_float"
+                     | "caml_floatarray_set"
+                     | "caml_array_set_addr" ) as prim)
+                , [ y; z; t ] ) ) ->
             let idx =
               match the_int info z with
               | Some idx -> `Cst idx
               | None -> `Var z
             in
+            let instr y =
+              let prim =
+                match prim with
+                | "caml_array_set" -> "caml_array_unsafe_set"
+                | "caml_array_set_float" | "caml_floatarray_set" ->
+                    "caml_floatarray_unsafe_set"
+                | "caml_array_set_addr" -> "caml_array_unsafe_set_addr"
+                | _ -> assert false
+              in
+              Let (x, Prim (Extern prim, [ y; z; t ])), loc
+            in
             if List.mem (y, idx) ~set:checks
             then
-              let acc =
-                (Let (x, Prim (Extern "caml_array_unsafe_set", [ y; z; t ])), loc) :: acc
-              in
+              let acc = instr y :: acc in
               aux info checks r acc
             else
+              let check =
+                match prim with
+                | "caml_array_set" -> "caml_check_bound_gen"
+                | "caml_array_set_float" | "caml_floatarray_set" ->
+                    "caml_check_bound_float"
+                | "caml_array_set_addr" -> "caml_check_bound"
+                | _ -> assert false
+              in
               let y' = Code.Var.fresh () in
               let acc =
-                (Let (x, Prim (Extern "caml_array_unsafe_set", [ Pv y'; z; t ])), loc)
-                :: (Let (y', Prim (Extern "caml_check_bound", [ y; z ])), noloc)
-                :: acc
+                instr (Pv y') :: (Let (y', Prim (Extern check, [ y; z ])), noloc) :: acc
               in
               aux info ((y, idx) :: checks) r acc
         | _ ->
@@ -270,12 +318,15 @@ let f_once p =
                      ( "caml_array_set"
                      | "caml_array_unsafe_set"
                      | "caml_array_set_float"
+                     | "caml_floatarray_set"
                      | "caml_array_set_addr"
                      | "caml_array_unsafe_set_float"
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            let acc = (Let (x', p), loc) :: (Let (x, Constant (Int 0l)), loc) :: acc in
+            let acc =
+              (Let (x', p), loc) :: (Let (x, Constant (Int (Regular, 0l))), loc) :: acc
+            in
             loop acc r
         | _ -> loop ((i, loc) :: acc) r)
   in
