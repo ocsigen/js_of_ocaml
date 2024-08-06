@@ -2439,7 +2439,6 @@ and compile infos pc state instrs =
           | true -> State.pop 2 state
           | false -> State.pop 3 state
         in
-
         compile
           infos
           (pc + 1)

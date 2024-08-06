@@ -79,7 +79,7 @@ let v =
   | 5 :: 02 :: _ -> 34
   | 5 :: 03 :: _ -> 35
   | _ ->
-      if Ocaml_version.compare current [ 4; 8 ] < 0
+      if Ocaml_version.compare current [ 4; 08 ] < 0
       then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
       else (
         assert (Ocaml_version.compare current [ 5; 4 ] >= 0);

@@ -73,6 +73,11 @@ function caml_ml_domain_set_name(_name) {
 function caml_recommended_domain_count(unit) { return 1 }
 
 
+//Provides: caml_ml_domain_index
+//Requires: caml_domain_id
+//Version: >= 5.03
+function caml_ml_domain_index(unit) { return caml_domain_id }
+
 //Provides: caml_domain_id
 var caml_domain_id = 0;
 
