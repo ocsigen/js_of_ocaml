@@ -1113,7 +1113,7 @@
              (i32.or
                 (i32.ge_u (local.get $j)
                    (array.get $int_array (local.get $dim) (i32.const 1)))
-                (i32.ge_u (local.get $j)
+                (i32.ge_u (local.get $k)
                    (array.get $int_array (local.get $dim) (i32.const 2)))))
          (then
             (call $caml_bound_error)))
