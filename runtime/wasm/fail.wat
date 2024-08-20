@@ -73,9 +73,8 @@
 
    (@string $index_out_of_bounds "index out of bounds")
 
-   (func (export "caml_bound_error") (result (ref eq))
-      (call $caml_invalid_argument (global.get $index_out_of_bounds))
-      (ref.i31 (i32.const 0)))
+   (func (export "caml_bound_error")
+      (call $caml_invalid_argument (global.get $index_out_of_bounds)))
 
    (global $END_OF_FILE_EXN i32 (i32.const 4))
 
@@ -86,11 +85,10 @@
 
    (global $ZERO_DIVIDE_EXN i32 (i32.const 5))
 
-   (func (export "caml_raise_zero_divide") (result (ref eq))
-      (call $caml_raise_constant
+   (func (export "caml_raise_zero_divide")
+      (return_call $caml_raise_constant
          (array.get $block (global.get $caml_global_data)
-                    (global.get $ZERO_DIVIDE_EXN)))
-      (ref.i31 (i32.const 0)))
+                    (global.get $ZERO_DIVIDE_EXN))))
 
    (global $NOT_FOUND_EXN i32 (i32.const 6))
 
