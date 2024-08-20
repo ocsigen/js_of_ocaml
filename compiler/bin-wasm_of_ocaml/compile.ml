@@ -40,7 +40,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
         Some
           (List.map source_map.sources ~f:(fun file ->
                if Sys.file_exists file && not (Sys.is_directory file)
-               then Some (Fs.read_file file)
+               then Some (Source_map.Source_content.create (Fs.read_file file))
                else None))
     in
     let source_map =

@@ -331,7 +331,10 @@ let json ?replace_mappings t =
           | Some s -> rewrite_path s) )
     ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
     ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
-    ; "mappings", stringlit (Option.value ~default:(string_of_mapping t.mappings) replace_mappings)
+    ; ( "mappings"
+      , stringlit (match replace_mappings with
+        | None -> string_of_mapping t.mappings
+        | Some m -> m) )
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with
@@ -409,10 +412,12 @@ let of_json ~parse_mappings (json : Yojson.Raw.t) =
                   | None -> None
                   | Some s -> Some (Source_content.of_stringlit s)))
       in
+      let mappings_str = string "mappings" rest in
       let mappings =
-        match string "mappings" rest with
-        | None -> mapping_of_string ""
-        | Some s -> mapping_of_string s
+        match parse_mappings, mappings_str with
+        | false, _ -> mapping_of_string ""
+        | true, None -> mapping_of_string ""
+        | true, Some s -> mapping_of_string s
       in
       ( { version = int_of_float (float_of_string version)
         ; file
@@ -422,7 +427,7 @@ let of_json ~parse_mappings (json : Yojson.Raw.t) =
         ; sources
         ; mappings
         }
-      , if parse_mappings then None else Some mappings )
+      , if parse_mappings then None else mappings_str )
   | _ -> invalid ()
 
 let of_string s = of_json ~parse_mappings:true (Yojson.Raw.from_string s) |> fst
