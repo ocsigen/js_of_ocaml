@@ -648,15 +648,16 @@ end = struct
         output_byte ch 0x0B
     | Try (typ, l, catches) ->
         Feature.require exception_handling;
-        output_byte ch 0x06;
+        output_byte ch 0x1f;
         output_blocktype st.type_names ch typ;
-        List.iter ~f:(fun i' -> output_instruction st ch i') l;
+        output_uint ch (List.length catches);
         List.iter
-          ~f:(fun (tag, l, ty) ->
-            output_byte ch 0x07;
+          ~f:(fun (tag, l, _) ->
+            output_byte ch 0x00;
             output_uint ch (Hashtbl.find st.tag_names tag);
-            output_instruction st ch (Br (l + 1, Some (Pop ty))))
+            output_uint ch l)
           catches;
+        List.iter ~f:(fun i' -> output_instruction st ch i') l;
         output_byte ch 0X0B
 
   and output_instruction st ch i =
