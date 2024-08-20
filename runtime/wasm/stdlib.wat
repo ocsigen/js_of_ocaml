@@ -51,7 +51,7 @@
    (type $assoc
       (struct
          (field (ref $string))
-         (field (ref eq))
+         (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
    (type $assoc_array (array (field (mut (ref null $assoc)))))
@@ -62,9 +62,9 @@
      (array.new $assoc_array (ref.null $assoc) (global.get $Named_value_size)))
 
    (func $find_named_value
-      (param $s (ref eq)) (param $l (ref null $assoc)) (result (ref null eq))
+      (param $s (ref eq)) (param $l (ref null $assoc)) (result (ref null $assoc))
       (local $a (ref $assoc))
-      (block $tail (result (ref null eq))
+      (block $tail (result (ref null $assoc))
          (loop $loop
             (local.set $a
                (br_on_cast_fail $tail (ref null eq) (ref $assoc) (local.get $l)))
@@ -74,21 +74,26 @@
                           (local.get $s)
                           (struct.get $assoc 0 (local.get $a)))))
                (then
-                  (return (struct.get $assoc 1 (local.get $a)))))
+                  (return (local.get $a))))
             (local.set $l (struct.get $assoc 2 (local.get $a)))
             (br $loop))))
 
    (func $caml_named_value (export "caml_named_value")
       (param $s (ref $string)) (result (ref null eq))
-      (return_call $find_named_value
-         (local.get $s)
-         (array.get $assoc_array (global.get $named_value_table)
-            (i32.rem_u
-               (i31.get_s
-                  (ref.cast (ref i31)
-                     (call $caml_string_hash
-                        (ref.i31 (i32.const 0)) (local.get $s))))
-               (global.get $Named_value_size)))))
+      (block $not_found
+         (return
+            (struct.get $assoc 1
+               (br_on_null $not_found
+                  (call $find_named_value
+                     (local.get $s)
+                     (array.get $assoc_array (global.get $named_value_table)
+                        (i32.rem_u
+                           (i31.get_s
+                              (ref.cast (ref i31)
+                                 (call $caml_string_hash
+                                    (ref.i31 (i32.const 0)) (local.get $s))))
+                           (global.get $Named_value_size))))))))
+      (return (ref.null eq)))
 
    (func (export "caml_register_named_value")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
@@ -104,15 +109,20 @@
       (local.set $r
          (array.get $assoc_array
             (global.get $named_value_table) (local.get $h)))
-      (if (ref.is_null (call $find_named_value (local.get 0) (local.get $r)))
-         (then
-            (array.set $assoc_array
-               (global.get $named_value_table) (local.get $h)
-               (struct.new $assoc
-                  (ref.cast (ref $string) (local.get 0))
-                  (local.get 1) (local.get $r)))))
+      (block $not_found
+         (struct.set $assoc 1
+            (br_on_null $not_found
+               (call $find_named_value (local.get 0) (local.get $r)))
+            (local.get 1))
+         (return (ref.i31 (i32.const 0))))
+      (array.set $assoc_array
+         (global.get $named_value_table) (local.get $h)
+         (struct.new $assoc
+            (ref.cast (ref $string) (local.get 0))
+            (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
+   ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
    (func (export "caml_unregister_named_value")
       (param $name (ref eq)) (result (ref eq))
       (local $h i32)
