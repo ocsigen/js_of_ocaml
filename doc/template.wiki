@@ -21,12 +21,16 @@
 <<when-project when="ocsigen-start"  | @@class="logo-subproject"@@Start>>
 
 <<div class="mainmenu"|
-<<span class="mainmenu-home"|[[site:/|Home]]>>
-<<span class="mainmenu-doc" |[[wiki("tuto"):|Doc]]>>
+<<when-project   when="githubio"     | @@class="mainmenu-current mainmenu-home"@@[[site:/|Home]]>>
+<<when-project unless="githubio"     |                  @@class="mainmenu-home"@@[[site:/|Home]]>>
+<<when-project   when="tuto"         | @@class="mainmenu-current mainmenu-doc"@@[[wiki("tuto"):|Doc]]>>
+<<when-project unless="tuto"         |                  @@class="mainmenu-doc"@@[[wiki("tuto"):|Doc]]>>
 <<when-project   when="eliom"        | @@class="mainmenu-current"@@[[wiki("eliom"):|Eliom]]>>
 <<when-project unless="eliom"        |                             [[wiki("eliom"):|Eliom]]>>
 <<when-project   when="js_of_ocaml"  | @@class="mainmenu-current"@@[[wiki("js_of_ocaml"):|Js_of_ocaml]]>>
 <<when-project unless="js_of_ocaml"  |                             [[wiki("js_of_ocaml"):|Js_of_ocaml]]>>
+<<when-project   when="ocsigenserver"          | @@class="mainmenu-current"@@[[wiki("ocsigenserver"):|Server]]>>
+<<when-project unless="ocsigenserver"          |                             [[wiki("ocsigenserver"):|Server]]>>
 <<when-project   when="lwt"          | @@class="mainmenu-current"@@[[wiki("lwt"):|Lwt]]>>
 <<when-project unless="lwt"          |                             [[wiki("lwt"):|Lwt]]>>
 <<when-project   when="tyxml"        | @@class="mainmenu-current"@@[[wiki("tyxml"):|Tyxml]]>>
