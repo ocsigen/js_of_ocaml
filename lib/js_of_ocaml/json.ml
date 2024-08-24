@@ -164,10 +164,10 @@ let output_reviver _key (value : Unsafe.any) : Obj.t =
   else Obj.repr value
 
 let use_native_stringify_ =
-  ref (
-    match Sys.backend_type with
-      | Other "js_of_ocaml" -> true
-      | Native | Bytecode | Other _ -> false)
+  ref
+    (match Sys.backend_type with
+    | Other "js_of_ocaml" -> true
+    | Native | Bytecode | Other _ -> false)
 
 let use_native_stringify () = !use_native_stringify_
 
