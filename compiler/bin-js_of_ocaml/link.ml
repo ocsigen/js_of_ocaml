@@ -151,6 +151,7 @@ let f
     ; toplevel
     } =
   Jsoo_cmdline.Arg.eval common;
+  Linker.reset ();
   let with_output f =
     match output_file with
     | None -> f stdout
