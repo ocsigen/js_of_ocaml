@@ -173,8 +173,10 @@ let use_native_stringify () = !use_native_stringify_
 
 let set_use_native_stringify b = use_native_stringify_ := b
 
+let output_ x = to_json (Obj.repr x)
+
 let output obj =
   match Sys.backend_type with
   | Other "js_of_ocaml" when use_native_stringify () ->
       json##stringify_ obj (Js.wrap_callback output_reviver)
-  | _ -> Js.string (to_json (Obj.repr obj))
+  | _ -> Js.string (output_ obj)

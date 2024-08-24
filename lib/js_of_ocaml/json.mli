@@ -26,6 +26,10 @@ val unsafe_input : Js.js_string Js.t -> 'a
 (** Unmarshal a string in JSON format as an OCaml value (unsafe but
     fast !). *)
 
+(**/**)
+
+val output_ : 'a -> string
+
 val set_use_native_stringify : bool -> unit
 (** Only affects js_of_ocaml. Whether to use native Javascript [stringify] to
     turn a value into JSON in {!val:output}. Otherwise, fall back to the slower
