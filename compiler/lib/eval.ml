@@ -266,7 +266,7 @@ let eval_instr info ((x, loc) as i) =
               Flow.Info.update_def info x c;
               [ Let (x, c), loc ])
       | _ -> [ i ])
-  | Let (x, Prim (Extern "caml_js_equals", [ y; z ])) -> (
+  | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
       match the_const_of info y, the_const_of info z with
       | Some e1, Some e2 -> (
           match constant_js_equal e1 e2 with
