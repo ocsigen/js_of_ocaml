@@ -214,3 +214,9 @@ function caml_is_continuation_tag(t) {
 function caml_is_continuation_tag(t) {
   return (t == 245) ? 1 : 0;
 }
+
+//Provides: caml_custom_identifier
+//Requires: caml_string_of_jsstring
+function caml_custom_identifier (o) {
+  return caml_string_of_jsstring(o.caml_custom);
+}
