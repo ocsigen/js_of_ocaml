@@ -112,14 +112,14 @@ end = struct
     | FP_infinite -> if Float.(v < 0.) then "-Infinity" else "Infinity"
     | FP_normal | FP_subnormal -> (
         let vint = int_of_float v in
-        if Poly.equal (float_of_int vint) v
+        if Float.equal (float_of_int vint) v
         then Printf.sprintf "%d." vint
         else
           match
             find_smaller
               ~f:(fun prec ->
                 let s = float_to_string prec v in
-                if Poly.equal v (float_of_string s) then Some s else None)
+                if Float.equal v (float_of_string s) then Some s else None)
               ~bad:0
               ~good:18
               ~good_s:"max"

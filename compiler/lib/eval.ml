@@ -237,7 +237,7 @@ let the_cont_of info x (a : cont array) =
 let constant_js_equal a b =
   match a, b with
   | Int i, Int j -> Some (Int32.equal i j)
-  | Float a, Float b -> Some (Poly.equal a b)
+  | Float a, Float b -> Some (Float.equal a b)
   | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | String a, String b when Config.Flag.use_js_string () -> Some (String.equal a b)
   | Int _, Float _ | Float _, Int _ -> None
