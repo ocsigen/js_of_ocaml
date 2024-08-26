@@ -238,6 +238,8 @@ let constant_js_equal a b =
   match a, b with
   | Int i, Int j -> Some (Int32.equal i j)
   | Float a, Float b -> Some (Poly.equal a b)
+  | NativeString a, NativeString b -> Some (Native_string.equal a b)
+  | String a, String b when Config.Flag.use_js_string () -> Some (String.equal a b)
   | Int _, Float _ | Float _, Int _ -> None
   (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
   | String _, _
