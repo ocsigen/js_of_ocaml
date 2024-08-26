@@ -140,7 +140,10 @@ let input_reviver =
 
 let unsafe_input s =
   match Sys.backend_type with
-  | Other "wasm_of_ocaml" -> failwith "Json.unsafe_input: not implemented"
+  | Other "wasm_of_ocaml" ->
+      failwith
+        "Json.unsafe_input: not implemented (and not planned) in the Wasm backend as the \
+         inverse of `output` is not implementable"
   | _ -> json##parse_ s input_reviver
 
 class type obj = object
