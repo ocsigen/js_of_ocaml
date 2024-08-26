@@ -9,11 +9,13 @@ Printf.printf "%B\n" x;;
     true |}]
 
 let%expect_test _ =
-  let prog = {|
+  let prog =
+    {|
 external equals : 'a -> 'a -> bool = "caml_js_equals";;
 let x = equals (0, 0) (0, 0);;
 Printf.printf "%B\n" x;;
-  |} in
+  |}
+  in
   Util.compile_and_run prog;
   [%expect {|
     false |}]
