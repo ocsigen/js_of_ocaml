@@ -387,9 +387,9 @@ module Constant = struct
           done;
           !same
     | Int64 a, Int64 b -> Some (Int64.equal a b)
-    | Float_array a, Float_array b -> Some (Array.equal Float.equal a b)
+    | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
     | Int a, Int b -> Some (Int32.equal a b)
-    | Float a, Float b -> Some (Float.equal a b)
+    | Float a, Float b -> Some (Float.ieee_equal a b)
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Tuple ((0 | 254), _, _), Float_array _ -> None
