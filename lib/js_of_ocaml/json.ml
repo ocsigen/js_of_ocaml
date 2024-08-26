@@ -141,9 +141,10 @@ let input_reviver =
 let unsafe_input s =
   match Sys.backend_type with
   | Other "wasm_of_ocaml" ->
-      failwith
-        "Json.unsafe_input: not implemented (and not planned) in the Wasm backend as the \
-         inverse of `output` is not implementable"
+      (* https://github.com/ocsigen/js_of_ocaml/pull/1660#discussion_r1731099372
+         The encoding of OCaml values is ambiguous since both integers and floats
+         are mapped to numbers *)
+      failwith "Json.unsafe_input: not implemented in the Wasm backend"
   | _ -> json##parse_ s input_reviver
 
 class type obj = object
