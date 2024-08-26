@@ -423,6 +423,8 @@ end
 module Float = struct
   type t = float
 
+  let equal = Float.equal
+
   let bitwise_equal (a : float) (b : float) =
     Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
 
