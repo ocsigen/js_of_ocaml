@@ -423,9 +423,7 @@ end
 module Float = struct
   type t = float
 
-  let equal (_ : float) (_ : float) = `Use_ieee_equal_or_bitwise_equal
-
-  let ieee_equal (a : float) (b : float) = Poly.equal a b
+  let equal = Float.equal
 
   let bitwise_equal (a : float) (b : float) =
     Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
