@@ -65,13 +65,14 @@ let float_unop l f =
   | [ Int i ] -> Some (Float (f (Int32.to_float i)))
   | _ -> None
 
+let bool' b = Int (if b then 1l else 0l)
+
+let bool b = Some (bool' b)
+
 let float_binop_bool l f =
   match float_binop_aux l f with
-  | Some true -> Some (Int 1l)
-  | Some false -> Some (Int 0l)
+  | Some b -> bool b
   | None -> None
-
-let bool b = Some (Int (if b then 1l else 0l))
 
 let eval_prim x =
   match x with
@@ -255,14 +256,19 @@ let constant_js_equal a b =
 
 let eval_instr info ((x, loc) as i) =
   match x with
-  | Let (x, Prim (Extern "caml_equal", [ y; z ])) -> (
+  | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
       match the_const_of info y, the_const_of info z with
       | Some e1, Some e2 -> (
           match Code.Constant.ocaml_equal e1 e2 with
           | None -> [ i ]
           | Some c ->
-              let c = if c then 1l else 0l in
-              let c = Constant (Int c) in
+              let c =
+                match prim with
+                | "caml_equal" -> c
+                | "caml_notequal" -> not c
+                | _ -> assert false
+              in
+              let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
               [ Let (x, c), loc ])
       | _ -> [ i ])
@@ -272,8 +278,7 @@ let eval_instr info ((x, loc) as i) =
           match constant_js_equal e1 e2 with
           | None -> [ i ]
           | Some c ->
-              let c = if c then 1l else 0l in
-              let c = Constant (Int c) in
+              let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
               [ Let (x, c), loc ])
       | _ -> [ i ])
@@ -299,8 +304,7 @@ let eval_instr info ((x, loc) as i) =
       match is_int info y with
       | Unknown -> [ i ]
       | (Y | N) as b ->
-          let b = if Poly.(b = N) then 0l else 1l in
-          let c = Constant (Int b) in
+          let c = Constant (bool' Poly.(b = Y)) in
           Flow.Info.update_def info x c;
           [ Let (x, c), loc ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
