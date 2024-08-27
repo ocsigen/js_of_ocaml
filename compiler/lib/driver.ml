@@ -241,9 +241,9 @@ let gen_missing js missing =
         , ( ECond
               ( EBin
                   ( NotEqEq
-                  , dot (EVar (ident Constant.global_object_)) prim
+                  , dot (EVar (ident Global_constant.global_object_)) prim
                   , EVar (ident_s "undefined") )
-              , dot (EVar (ident Constant.global_object_)) prim
+              , dot (EVar (ident Global_constant.global_object_)) prim
               , EFun
                   ( None
                   , fun_
@@ -364,7 +364,7 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
                (EBin
                   ( Eq
                   , dot
-                      (EVar (ident Constant.global_object_))
+                      (EVar (ident Global_constant.global_object_))
                       (Utf8_string.of_string_exn "jsoo_runtime")
                   , EObj all ))
            , N )
@@ -375,7 +375,7 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
                      (EVar (ident (Utf8_string.of_string_exn "Object")))
                      (Utf8_string.of_string_exn "assign"))
                   [ dot
-                      (EVar (ident Constant.global_object_))
+                      (EVar (ident Global_constant.global_object_))
                       (Utf8_string.of_string_exn "jsoo_runtime")
                   ; EObj all
                   ]
@@ -404,7 +404,7 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
                          ; rest = None
                          }
                      , ( dot
-                           (EVar (ident Constant.global_object_))
+                           (EVar (ident Global_constant.global_object_))
                            (Utf8_string.of_string_exn "jsoo_runtime")
                        , N ) )
                  ] )
@@ -510,27 +510,30 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       o#get_free
     in
     let export_shim js =
-      if J.IdentSet.mem (J.ident Constant.exports_) freenames
+      if J.IdentSet.mem (J.ident Global_constant.exports_) freenames
       then
         if should_export wrap_with_fun
-        then var Constant.exports_ (J.EObj []) :: js
+        then var Global_constant.exports_ (J.EObj []) :: js
         else
           let export_node =
             let s =
               Printf.sprintf
                 {|((typeof module === 'object' && module.exports) || %s)|}
-                Constant.global_object
+                Global_constant.global_object
             in
             let lex = Parse_js.Lexer.of_string s in
             Parse_js.parse_expr lex
           in
-          var Constant.exports_ export_node :: js
+          var Global_constant.exports_ export_node :: js
       else js
     in
     let old_global_object_shim js =
-      if J.IdentSet.mem (J.ident Constant.old_global_object_) freenames
+      if J.IdentSet.mem (J.ident Global_constant.old_global_object_) freenames
       then
-        var Constant.old_global_object_ (J.EVar (J.ident Constant.global_object_)) :: js
+        var
+          Global_constant.old_global_object_
+          (J.EVar (J.ident Global_constant.global_object_))
+        :: js
       else js
     in
 
@@ -544,14 +547,15 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
         then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
         else js
       in
-      f [ J.ident Constant.global_object_ ] js
+      f [ J.ident Global_constant.global_object_ ] js
     in
     match wrap_with_fun with
     | `Anonymous -> expr (mk efun)
     | `Named name ->
         let name = Utf8_string.of_string_exn name in
         mk (sfun (J.ident name))
-    | `Iife -> expr (J.call (mk efun) [ J.EVar (J.ident Constant.global_object_) ] J.N)
+    | `Iife ->
+        expr (J.call (mk efun) [ J.EVar (J.ident Global_constant.global_object_) ] J.N)
   in
   let always_required_js =
     (* consider adding a comments in the generated file with original

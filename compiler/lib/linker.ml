@@ -134,9 +134,9 @@ module Check = struct
     in
     let freename = StringSet.diff freename Reserved.keyword in
     let freename = StringSet.diff freename Reserved.provided in
-    let freename = StringSet.remove Constant.global_object freename in
+    let freename = StringSet.remove Global_constant.global_object freename in
     let freename = if has_flags then StringSet.remove "FLAG" freename else freename in
-    if StringSet.mem Constant.old_global_object freename && false
+    if StringSet.mem Global_constant.old_global_object freename && false
        (* Don't warn yet, we want to give a transition period where both
           "globalThis" and "joo_global_object" are allowed without extra
           noise *)
@@ -145,7 +145,7 @@ module Check = struct
         "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
          instead@."
         (loc pi);
-    let freename = StringSet.remove Constant.old_global_object freename in
+    let freename = StringSet.remove Global_constant.old_global_object freename in
     let defname = to_stringset free#get_def in
     if not (StringSet.mem name defname)
     then
