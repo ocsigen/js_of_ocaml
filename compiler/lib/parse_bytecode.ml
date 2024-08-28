@@ -1348,7 +1348,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
+        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state loc in
 
@@ -1357,7 +1357,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
+        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
         State.size_globals state (i + 1);
@@ -1523,49 +1523,40 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 0)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 0, Non_float)), loc) :: instrs)
     | GETFIELD1 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 1)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 1, Non_float)), loc) :: instrs)
     | GETFIELD2 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 2)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 2, Non_float)), loc) :: instrs)
     | GETFIELD3 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 3)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 3, Non_float)), loc) :: instrs)
     | GETFIELD ->
         let y, _ = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile infos (pc + 2) state ((Let (x, Field (y, n)), loc) :: instrs)
+        compile infos (pc + 2) state ((Let (x, Field (y, n, Non_float)), loc) :: instrs)
     | GETFLOATFIELD ->
         let y, _ = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
-        if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile
-          infos
-          (pc + 2)
-          state
-          (( Let
-               ( x
-               , Prim
-                   ( Extern "caml_floatarray_unsafe_get"
-                   , [ Pv y; Pc (Int (Int32.of_int n)) ] ) )
-           , loc )
-          :: instrs)
+        if debug_parser ()
+        then Format.printf "%a = FLOAT{%a[%d]}@." Var.print x Var.print y n;
+        compile infos (pc + 2) state ((Let (x, Field (y, n, Float)), loc) :: instrs)
     | SETFIELD0 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1577,7 +1568,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 0, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 0, Non_float, z), loc) :: instrs)
     | SETFIELD1 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1589,7 +1580,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 1, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 1, Non_float, z), loc) :: instrs)
     | SETFIELD2 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1601,7 +1592,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 2, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 2, Non_float, z), loc) :: instrs)
     | SETFIELD3 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1613,7 +1604,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 3, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 3, Non_float, z), loc) :: instrs)
     | SETFIELD ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1626,26 +1617,21 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, n, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, n, Non_float, z), loc) :: instrs)
     | SETFLOATFIELD ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
         let n = getu code (pc + 1) in
 
-        if debug_parser () then Format.printf "%a[%d] = %a@." Var.print y n Var.print z;
+        if debug_parser ()
+        then Format.printf "FLOAT{%a[%d]} = %a@." Var.print y n Var.print z;
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (( Let
-               ( x
-               , Prim
-                   ( Extern "caml_floatarray_unsafe_set"
-                   , [ Pv y; Pc (Int (Int32.of_int n)); Pv z ] ) )
-           , loc )
-          :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, n, Float, z), loc) :: instrs)
     | VECTLENGTH ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
@@ -2430,7 +2416,7 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           ((Let (m, Prim (Array_get, [ Pv meths; Pv lab ])), loc)
-          :: (Let (meths, Field (obj, 0)), loc)
+          :: (Let (meths, Field (obj, 0, Non_float)), loc)
           :: instrs)
     | STOP -> instrs, (Stop, loc), state
     | RESUME ->
@@ -2867,7 +2853,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
                | None -> ()
                | Some name -> Code.Var.name x name);
             need_gdata := true;
-            (Let (x, Field (gdata, i)), noloc) :: l
+            (Let (x, Field (gdata, i, Non_float)), noloc) :: l
         | _ -> l)
   in
   let body =

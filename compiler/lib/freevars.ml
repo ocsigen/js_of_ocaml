@@ -34,7 +34,7 @@ let iter_expr_free_vars f e =
       f x;
       List.iter ~f args
   | Block (_, a, _, _) -> Array.iter ~f a
-  | Field (x, _) -> f x
+  | Field (x, _, _) -> f x
   | Closure _ -> ()
   | Special _ -> ()
   | Prim (_, l) ->
@@ -46,7 +46,7 @@ let iter_expr_free_vars f e =
 let iter_instr_free_vars f i =
   match i with
   | Let (_, e) -> iter_expr_free_vars f e
-  | Set_field (x, _, y) ->
+  | Set_field (x, _, _, y) ->
       f x;
       f y
   | Offset_ref (x, _) -> f x

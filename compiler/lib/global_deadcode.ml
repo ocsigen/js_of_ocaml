@@ -69,7 +69,7 @@ let definitions prog =
           match i with
           | Let (x, e) -> set_def x (Expr e)
           | Assign (x, _) -> set_def x Param
-          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
+          | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body)
     prog.blocks;
   defs
@@ -128,7 +128,7 @@ let usages prog (global_info : Global_flow.info) :
           ~f:(fun a -> if variable_may_escape a global_info then add_use Compute x a)
           args
     | Block (_, vars, _, _) -> Array.iter ~f:(add_use Compute x) vars
-    | Field (z, _) -> add_use Compute x z
+    | Field (z, _, _) -> add_use Compute x z
     | Constant _ -> ()
     | Special _ -> ()
     | Closure (_, cont) -> add_cont_deps cont
@@ -149,7 +149,7 @@ let usages prog (global_info : Global_flow.info) :
           | Let (x, e) -> add_expr_uses x e
           (* For assignment, propagate liveness from new to old variable like a block parameter *)
           | Assign (x, y) -> add_use Propagate x y
-          | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
+          | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
         block.body;
       (* Add uses from block branch *)
       match fst block.branch with
@@ -175,7 +175,7 @@ let expr_vars e =
       List.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars args
   | Block (_, params, _, _) ->
       Array.fold_left ~f:(fun acc x -> Var.Set.add x acc) ~init:vars params
-  | Field (z, _) -> Var.Set.add z vars
+  | Field (z, _, _) -> Var.Set.add z vars
   | Prim (_, args) ->
       List.fold_left
         ~f:(fun acc v ->
@@ -225,14 +225,14 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
                 ~f:(fun x -> if variable_may_escape x global_info then add_top x)
                 args
           | Block (_, _, _, _)
-          | Field (_, _)
+          | Field (_, _, _)
           | Closure (_, _)
           | Constant _
           | Prim (_, _)
           | Special _ ->
               let vars = expr_vars e in
               Var.Set.iter add_top vars)
-    | Set_field (x, i, y) ->
+    | Set_field (x, i, _, y) ->
         add_live_field x i;
         add_top y
     | Array_set (x, y, z) ->
@@ -294,12 +294,12 @@ let propagate uses defs live_vars live_table x =
                     if Var.equal v x && IntSet.mem i fields then found := true)
                   vars;
                 if !found then Top else Dead
-            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
+            | Expr (Field (_, i, _)) -> Live (IntSet.singleton i)
             | _ -> Top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
             match Var.Tbl.get defs y with
-            | Expr (Field (_, i)) -> Live (IntSet.singleton i)
+            | Expr (Field (_, i, _)) -> Live (IntSet.singleton i)
             | _ -> Top))
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
@@ -358,8 +358,9 @@ let zero prog sentinal live_table =
         | Apply ap ->
             let args = List.map ~f:zero_var ap.args in
             Let (x, Apply { ap with args })
-        | Field (_, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr)
-    | Assign (_, _) | Set_field (_, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
+        | Field (_, _, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr
+        )
+    | Assign (_, _) | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
         instr
   in
   let zero_block block =

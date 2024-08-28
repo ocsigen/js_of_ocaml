@@ -29,7 +29,7 @@ let expr s e =
   | Apply { f; args; exact } ->
       Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
   | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
-  | Field (x, n) -> Field (s x, n)
+  | Field (x, n, typ) -> Field (s x, n, typ)
   | Closure (l, pc) -> Closure (l, subst_cont s pc)
   | Special _ -> e
   | Prim (p, l) ->
@@ -44,7 +44,7 @@ let instr s i =
   match i with
   | Let (x, e) -> Let (x, expr s e)
   | Assign (x, y) -> Assign (x, s y) (* x is handled like a parameter *)
-  | Set_field (x, n, y) -> Set_field (s x, n, s y)
+  | Set_field (x, n, typ, y) -> Set_field (s x, n, typ, s y)
   | Offset_ref (x, n) -> Offset_ref (s x, n)
   | Array_set (x, y, z) -> Array_set (s x, s y, s z)
 
