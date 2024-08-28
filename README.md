@@ -32,13 +32,6 @@ See
 [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam)
 file for version constraints.
 
-### optional
-
-- [lwt](https://github.com/ocsigen/lwt)
-- [tyxml](https://github.com/ocsigen/tyxml)
-- [reactiveData](https://github.com/ocsigen/reactiveData)
-- [yojson](https://github.com/ocaml-community/yojson)
-
 ### Toplevel requirements
 
 - tyxml, reactiveData
