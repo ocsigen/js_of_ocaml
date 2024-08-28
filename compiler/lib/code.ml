@@ -460,6 +460,10 @@ type mutability =
   | Immutable
   | Maybe_mutable
 
+type field_type =
+  | Non_float
+  | Float
+
 type expr =
   | Apply of
       { f : Var.t
@@ -467,7 +471,7 @@ type expr =
       ; exact : bool
       }
   | Block of int * Var.t array * array_or_not * mutability
-  | Field of Var.t * int
+  | Field of Var.t * int * field_type
   | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
@@ -476,7 +480,7 @@ type expr =
 type instr =
   | Let of Var.t * expr
   | Assign of Var.t * Var.t
-  | Set_field of Var.t * int * Var.t
+  | Set_field of Var.t * int * field_type * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
@@ -620,7 +624,8 @@ module Print = struct
           Format.fprintf f "; %d = %a" i Var.print a.(i)
         done;
         Format.fprintf f "}"
-    | Field (x, i) -> Format.fprintf f "%a[%d]" Var.print x i
+    | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
+    | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
     | Closure (l, c) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
@@ -630,7 +635,10 @@ module Print = struct
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
-    | Set_field (x, i, y) -> Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    | Set_field (x, i, Non_float, y) ->
+        Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    | Set_field (x, i, Float, y) ->
+        Format.fprintf f "FLOAT{%a[%d]} = %a" Var.print x i Var.print y
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
@@ -904,7 +912,7 @@ let invariant { blocks; start; _ } =
     let check_expr = function
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
-      | Field (_, _) -> ()
+      | Field (_, _, _) -> ()
       | Closure (l, cont) ->
           List.iter l ~f:define;
           check_cont cont
@@ -918,7 +926,7 @@ let invariant { blocks; start; _ } =
           define x;
           check_expr e
       | Assign _ -> ()
-      | Set_field (_, _i, _) -> ()
+      | Set_field (_, _i, _, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
     in

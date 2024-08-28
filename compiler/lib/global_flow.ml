@@ -231,7 +231,7 @@ let expr_deps blocks st x e =
   | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def st x);
       cont_deps blocks st cont
-  | Field (y, _) -> add_dep st x y
+  | Field (y, _, _) -> add_dep st x y
 
 let program_deps st { blocks; _ } =
   Addr.Map.iter
@@ -242,7 +242,7 @@ let program_deps st { blocks; _ } =
               add_expr_def st x e;
               expr_deps blocks st x e
           | Assign (x, y) -> add_assign_def st x y
-          | Set_field (x, _, y) | Array_set (x, _, y) ->
+          | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               possibly_mutable st x;
               do_escape st Escape y
           | Offset_ref _ -> ());
@@ -275,7 +275,7 @@ let program_deps st { blocks; _ } =
                     List.iter
                       ~f:(fun (i, _) ->
                         match i with
-                        | Let (y, Field (x', _)) when Var.equal b x' ->
+                        | Let (y, Field (x', _, _)) when Var.equal b x' ->
                             Hashtbl.add st.known_cases y tags
                         | _ -> ())
                       block.body)
@@ -403,7 +403,7 @@ let propagate st ~update approx x =
           (* A constant cannot contain a function *)
           Domain.bot
       | Closure _ | Block _ -> Domain.singleton x
-      | Field (y, n) -> (
+      | Field (y, n, _) -> (
           match Var.Tbl.get approx y with
           | Values { known; others } ->
               let tags =

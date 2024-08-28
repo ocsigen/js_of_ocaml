@@ -71,7 +71,7 @@ and mark_expr st e =
       mark_var st f;
       List.iter args ~f:(fun x -> mark_var st x)
   | Block (_, a, _, _) -> Array.iter a ~f:(fun x -> mark_var st x)
-  | Field (x, _) -> mark_var st x
+  | Field (x, _, _) -> mark_var st x
   | Closure (_, (pc, _)) -> mark_reachable st pc
   | Special _ -> ()
   | Prim (_, l) ->
@@ -91,7 +91,7 @@ and mark_reachable st pc =
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Assign _ -> ()
-        | Set_field (x, _, y) -> (
+        | Set_field (x, _, _, y) -> (
             match st.defs.(Var.idx x) with
             | [ Expr (Block _) ] when st.live.(Var.idx x) = 0 ->
                 (* We will keep this instruction only if x is live *)
@@ -124,7 +124,7 @@ and mark_reachable st pc =
 let live_instr st i =
   match i with
   | Let (x, e) -> st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
-  | Assign (x, _) | Set_field (x, _, _) -> st.live.(Var.idx x) > 0
+  | Assign (x, _) | Set_field (x, _, _, _) -> st.live.(Var.idx x) > 0
   | Offset_ref _ | Array_set _ -> true
 
 let rec filter_args st pl al =
@@ -201,7 +201,7 @@ let f ({ blocks; _ } as p : Code.program) =
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
           | Assign (x, y) -> add_def defs x (Var y)
-          | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
+          | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
       match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
