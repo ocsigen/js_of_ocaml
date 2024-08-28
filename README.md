@@ -132,12 +132,8 @@ comparison, and hashing functions can yield results different from usual:
 
 ## Toplevel
 
-- [OCaml 4.04.2](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.04.2)
-  includes Base, Core_kernel, Async_kernel, Async_js
 - [OCaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.04.0+BER)
   see http://okmij.org/ftp/ML/MetaOCaml.html
-- [OCaml 4.05.0](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.05.0)
-  includes Base, Core_kernel, Async_kernel, Async_js
 - [OCaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.06.0)
   includes Base, Core_kernel, Async_kernel, Async_js
 
