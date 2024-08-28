@@ -1240,7 +1240,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | NotArray | Unknown -> Mlvalue.Block.make ~tag ~args:contents
       in
       (x, prop, queue), []
-  | Field (x, n) ->
+  | Field (x, n, _) ->
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
@@ -1532,7 +1532,7 @@ and translate_instr ctx expr_queue instr =
             expr_queue
             prop
             (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
-  | Set_field (x, n, y) ->
+  | Set_field (x, n, _, y) ->
       let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in

@@ -42,7 +42,7 @@ let shift l w t f =
       Some (Int (w (f (t i) (Int32.to_int j land 0x1f))))
   | _ -> None
 
-let float_binop_aux l f =
+let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
     | [ Float i; Float j ] -> Some (i, j)
@@ -55,12 +55,12 @@ let float_binop_aux l f =
   | None -> None
   | Some (i, j) -> Some (f i j)
 
-let float_binop l f =
+let float_binop (l : constant list) (f : float -> float -> float) : constant option =
   match float_binop_aux l f with
   | Some x -> Some (Float x)
   | None -> None
 
-let float_unop l f =
+let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
   | [ Float i ] -> Some (Float (f i))
   | [ Int i ] -> Some (Float (f (Int32.to_float i)))
@@ -426,10 +426,11 @@ let rec do_not_raise pc visited blocks =
     let b = Addr.Map.find pc blocks in
     List.iter b.body ~f:(fun (i, _loc) ->
         match i with
-        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
+        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _, _) | Assign _ ->
+            ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()

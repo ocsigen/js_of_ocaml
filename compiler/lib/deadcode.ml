@@ -62,7 +62,7 @@ and mark_expr st e =
       mark_var st f;
       List.iter args ~f:(fun x -> mark_var st x)
   | Block (_, a, _, _) -> Array.iter a ~f:(fun x -> mark_var st x)
-  | Field (x, _) -> mark_var st x
+  | Field (x, _, _) -> mark_var st x
   | Closure (_, (pc, _)) -> mark_reachable st pc
   | Special _ -> ()
   | Prim (_, l) ->
@@ -82,7 +82,7 @@ and mark_reachable st pc =
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Assign _ -> ()
-        | Set_field (x, _, y) ->
+        | Set_field (x, _, _, y) ->
             mark_var st x;
             mark_var st y
         | Array_set (x, y, z) ->
@@ -190,7 +190,7 @@ let f ({ blocks; _ } as p : Code.program) =
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
           | Assign (x, y) -> add_def defs x (Var y)
-          | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
+          | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
       match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
