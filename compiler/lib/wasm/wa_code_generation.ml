@@ -470,6 +470,13 @@ let get_i31_value x st =
       let x = Var.fresh () in
       let x, st = add_var ~typ:I32 x st in
       Some x, { st with instrs = LocalSet (x', RefI31 (LocalTee (x, e))) :: rem }
+  | Location (loc, LocalSet (x', RefI31 e)) :: rem when Code.Var.equal x x' && is_smi e ->
+      let x = Var.fresh () in
+      let x, st = add_var ~typ:I32 x st in
+      ( Some x
+      , { st with
+          instrs = Location (loc, LocalSet (x', RefI31 (LocalTee (x, e)))) :: rem
+        } )
   | _ -> None, st
 
 let load x =
