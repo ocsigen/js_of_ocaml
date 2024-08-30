@@ -148,7 +148,9 @@ let generate_prelude ~out_file =
     Driver.f ~target:Wasm (Parse_bytecode.Debug.create ~include_cmis:false false) code
   in
   let context = Wa_generate.start () in
-  let _ = Wa_generate.f ~context ~unit_name:(Some "prelude") ~live_vars ~in_cps p in
+  let _ =
+    Wa_generate.f ~context ~unit_name:(Some "prelude") ~live_vars ~in_cps ~debug p
+  in
   Wa_generate.output ch ~context ~debug;
   uinfo.provides
 
@@ -283,7 +285,7 @@ let run
     in
     let context = Wa_generate.start () in
     let toplevel_name, generated_js =
-      Wa_generate.f ~context ~unit_name ~live_vars ~in_cps p
+      Wa_generate.f ~context ~unit_name ~live_vars ~in_cps ~debug p
     in
     if standalone then Wa_generate.add_start_function ~context toplevel_name;
     Wa_generate.output ch ~context ~debug;

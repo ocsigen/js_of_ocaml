@@ -26,6 +26,7 @@ val f :
   -> Code.program
   -> live_vars:int array
   -> in_cps:Effects.in_cps
+  -> debug:Parse_bytecode.Debug.t
   -> Wa_ast.var * (string list * (string * Javascript.expression) list)
 
 val add_start_function : context:Wa_code_generation.context -> Wa_ast.var -> unit
