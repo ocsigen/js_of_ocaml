@@ -291,15 +291,16 @@ let blk l st =
   List.rev st.instrs, { st with instrs }
 
 let with_location loc instrs st =
-  let current_instrs = st.instrs in
-  let (), st = instrs { st with instrs = [] } in
-  let[@tail_mod_cons] rec add_loc loc = function
-    | [] -> current_instrs
-    | W.Nop :: rem -> W.Nop :: add_loc loc rem
-    | Location _ :: _ as l -> l @ current_instrs (* Stop on the first location *)
-    | i :: rem -> W.Location (loc, i) :: add_loc loc rem
-  in
-  (), { st with instrs = add_loc loc st.instrs }
+  let (), st = instrs st in
+  ( ()
+  , { st with
+      instrs =
+        (match st.instrs with
+        | [] -> []
+        | Location _ :: _ when Poly.equal loc No -> st.instrs
+        | Location (_, i) :: rem -> Location (loc, i) :: rem
+        | i :: rem -> Location (loc, i) :: rem)
+    } )
 
 let cast ?(nullable = false) typ e =
   let* e = e in
