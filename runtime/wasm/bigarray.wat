@@ -2097,7 +2097,9 @@
          (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 56)))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_string_of_array") (param (ref eq)) (result (ref eq))
+   (export "caml_bytes_of_array" (func $caml_string_of_array))
+   (func $caml_string_of_array (export "caml_string_of_array")
+      (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32) (local $i i32)
       (local $s (ref $string))
@@ -2113,6 +2115,29 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (local.get $s))
+
+   (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
+   (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
+      (param (ref eq)) (result (ref eq))
+      ;; Convert a string to a typed array
+      (local $ta (ref extern)) (local $len i32) (local $i i32)
+      (local $s (ref $string))
+      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local.set $len (array.len (local.get $s)))
+      (local.set $ta
+         (call $ta_create
+            (i32.const 3) ;; Uint8Array
+            (local.get $len)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (call $ta_set_ui8
+                  (local.get $ta)
+                  (local.get $i)
+                  (ref.i31 (array.get $string (local.get $s) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (call $wrap (extern.internalize (local.get $ta))))
 
    (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
       (struct.get $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get 0))))

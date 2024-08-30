@@ -69,6 +69,15 @@
       (global.set $caml_domain_dls (local.get $a))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_domain_dls_compare_and_set") (param $old (ref eq)) (param $new (ref eq)) (result (ref eq))
+      (if (result (ref eq))
+         (ref.eq (global.get $caml_domain_dls) (local.get $old))
+         (then
+            (global.set $caml_domain_dls (local.get $new))
+            (ref.i31 (i32.const 1)))
+         (else
+            (ref.i31 (i32.const 0)))))
+
    (func (export "caml_domain_dls_get") (param (ref eq)) (result (ref eq))
       (global.get $caml_domain_dls))
 
