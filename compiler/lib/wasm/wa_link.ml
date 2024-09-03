@@ -510,28 +510,28 @@ let build_runtime_arguments
       Javascript.call
         (EArrow
            ( Javascript.fun_
-               [ Javascript.ident Constant.global_object_ ]
+               [ Javascript.ident Global_constant.global_object_ ]
                [ var
-                   Constant.old_global_object_
-                   (EVar (Javascript.ident Constant.global_object_))
+                   Global_constant.old_global_object_
+                   (EVar (Javascript.ident Global_constant.global_object_))
                ; var
-                   Constant.exports_
+                   Global_constant.exports_
                    (EBin
                       ( Or
                       , EDot
                           ( EDot
-                              ( EVar (Javascript.ident Constant.global_object_)
+                              ( EVar (Javascript.ident Global_constant.global_object_)
                               , ANullish
                               , Utf8_string.of_string_exn "module" )
                           , ANullish
                           , Utf8_string.of_string_exn "export" )
-                      , EVar (Javascript.ident Constant.global_object_) ))
+                      , EVar (Javascript.ident Global_constant.global_object_) ))
                ; Return_statement (Some (obj generated_js)), N
                ]
                N
            , true
            , AUnknown ))
-        [ EVar (Javascript.ident Constant.global_object_) ]
+        [ EVar (Javascript.ident Global_constant.global_object_) ]
         N
   in
   obj
