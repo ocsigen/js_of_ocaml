@@ -74,7 +74,7 @@ let traverse_expression x e st =
   | Code.Apply { f; args; _ } ->
       st |> use f |> fun st -> List.fold_left ~f:(fun st x -> use x st) ~init:st args
   | Block (_, a, _, _) -> Array.fold_right ~f:use a ~init:st
-  | Field (x, _) -> st |> use x
+  | Field (x, _, _) -> st |> use x
   | Closure _ ->
       List.fold_left
         ~f:(fun st x -> use x st)
@@ -95,7 +95,7 @@ let traverse_instruction st i =
   match fst i with
   | Code.Let (x, e) -> st |> declare x |> traverse_expression x e
   | Assign (_, x) | Offset_ref (x, _) -> st |> use x
-  | Set_field (x, _, y) -> st |> use x |> use y
+  | Set_field (x, _, _, y) -> st |> use x |> use y
   | Array_set (x, y, z) -> st |> use x |> use y |> use z
 
 let traverse_block p st pc =
