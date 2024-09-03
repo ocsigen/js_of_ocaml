@@ -6,6 +6,7 @@
 * Misc: yojson is no longer optional
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
+* Compiler: Decode sourcemap mappings only when necessary (#1664)
 * Compiler: make indirect call using sequence instead of using the call method
   [f.call(null, args)] becomes [(0,f)(args)]
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
