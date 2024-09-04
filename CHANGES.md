@@ -11,6 +11,7 @@
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
+* Lib: Modify Typed_array API for compatibility with WebAssembly
 
 
 ## Bug fixes
