@@ -105,7 +105,7 @@ external to_genarray :
      ('typed_array, 'bigarray, 'elt) typedArray t
   -> ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t = "caml_ba_from_typed_array"
 
-let from_genarray _ a = from_genarray_impl a
+let from_genarray (_ : ('typed_array, 'bigarray, 'elt) kind) a = from_genarray_impl a
 
 let int8Array = Js.Unsafe.global##._Int8Array
 
