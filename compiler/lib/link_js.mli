@@ -24,5 +24,5 @@ val link :
   -> toplevel:bool
   -> files:string list
   -> resolve_sourcemap_url:bool
-  -> source_map:(string option * Source_map.t) option
+  -> source_map:(string option * Source_map.Standard.t) option
   -> unit

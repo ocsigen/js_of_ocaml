@@ -210,151 +210,13 @@ module Mappings = struct
     readline 1 0 []
 end
 
-type t =
-  { version : int
-  ; file : string
-  ; sourceroot : string option
-  ; sources : string list
-  ; sources_content : Source_content.t option list option
-  ; names : string list
-  ; mappings : Mappings.t
-  }
-
-let empty ~filename =
-  { version = 3
-  ; file = filename
-  ; sourceroot = None
-  ; sources = []
-  ; sources_content = None
-  ; names = []
-  ; mappings = Mappings.empty
-  }
-
-let maps ~sources_offset ~names_offset x =
-  match x with
-  | Gen _ -> x
-  | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
-      let ori_source = ori_source + sources_offset in
-      Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
-  | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
-      let ori_source = ori_source + sources_offset in
-      let ori_name = ori_name + names_offset in
-      Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
-
-let filter_map sm ~f =
-  let a = Array.of_list (Mappings.decode sm.mappings) in
-  Array.stable_sort
-    ~cmp:(fun t1 t2 ->
-      match compare (gen_line t1) (gen_line t2) with
-      | 0 -> compare (gen_col t1) (gen_col t2)
-      | n -> n)
-    a;
-  let l = Array.to_list a |> List.group ~f:(fun a b -> gen_line a = gen_line b) in
-
-  let rec loop acc mapping =
-    match mapping with
-    | [] -> List.rev acc
-    | x :: xs ->
-        let gen_line = gen_line (List.hd x) in
-        let acc =
-          match f gen_line with
-          | None -> acc
-          | Some gen_line ->
-              List.rev_append_map
-                x
-                ~f:(function
-                  | Gen { gen_line = _; gen_col } -> Gen { gen_line; gen_col }
-                  | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
-                      Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
-                  | Gen_Ori_Name
-                      { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name }
-                    ->
-                      Gen_Ori_Name
-                        { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
-                acc
-        in
-        loop acc xs
-  in
-  let mappings = loop [] l in
-  { sm with mappings = Mappings.encode mappings }
-
-let merge = function
-  | [] -> None
-  | _ :: _ as l ->
-      let rec loop acc_rev mappings_rev ~sources_offset ~names_offset l =
-        match l with
-        | [] -> acc_rev, mappings_rev
-        | sm :: rest ->
-            let acc_rev, mappings_rev =
-              ( { acc_rev with
-                  sources = List.rev_append sm.sources acc_rev.sources
-                ; names = List.rev_append sm.names acc_rev.names
-                ; sources_content =
-                    (match sm.sources_content, acc_rev.sources_content with
-                    | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
-                    | None, _ | _, None -> None)
-                ; mappings = Mappings.empty
-                }
-              , List.rev_append_map
-                  ~f:(maps ~sources_offset ~names_offset)
-                  (Mappings.decode sm.mappings)
-                  mappings_rev )
-            in
-            loop
-              acc_rev
-              mappings_rev
-              ~sources_offset:(sources_offset + List.length sm.sources)
-              ~names_offset:(names_offset + List.length sm.names)
-              rest
-      in
-      let acc_rev, mappings_rev =
-        loop
-          { (empty ~filename:"") with sources_content = Some [] }
-          []
-          ~sources_offset:0
-          ~names_offset:0
-          l
-      in
-      Some
-        { acc_rev with
-          mappings = Mappings.encode (List.rev mappings_rev)
-        ; sources = List.rev acc_rev.sources
-        ; names = List.rev acc_rev.names
-        ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
-        }
-
-(* IO *)
-
-let json t =
-  let rewrite_path path =
-    if Filename.is_relative path
-    then path
-    else
-      match Build_path_prefix_map.get_build_path_prefix_map () with
-      | Some map -> Build_path_prefix_map.rewrite map path
-      | None -> path
-  in
-  let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
-  `Assoc
-    [ "version", `Intlit (string_of_int t.version)
-    ; "file", stringlit (rewrite_path t.file)
-    ; ( "sourceRoot"
-      , stringlit
-          (match t.sourceroot with
-          | None -> ""
-          | Some s -> rewrite_path s) )
-    ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
-    ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
-    ; "mappings", stringlit (Mappings.to_string t.mappings)
-    ; ( "sourcesContent"
-      , `List
-          (match t.sources_content with
-          | None -> []
-          | Some l ->
-              List.map l ~f:(function
-                  | None -> `Null
-                  | Some x -> Source_content.to_json x)) )
-    ]
+let rewrite_path path =
+  if Filename.is_relative path
+  then path
+  else
+    match Build_path_prefix_map.get_build_path_prefix_map () with
+    | Some map -> Build_path_prefix_map.rewrite map path
+    | None -> path
 
 let invalid () = invalid_arg "Source_map.of_json"
 
@@ -394,52 +256,310 @@ let list_stringlit_opt name rest =
     | _ -> invalid ()
   with Not_found -> None
 
-let of_json (json : Yojson.Raw.t) =
-  match json with
-  | `Assoc (("version", `Intlit version) :: rest) when int_of_string version = 3 ->
-      let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
-      let file =
-        match string "file" rest with
-        | None -> ""
-        | Some s -> s
-      in
-      let sourceroot = string "sourceRoot" rest in
-      let names =
-        match list_stringlit "names" rest with
-        | None -> []
-        | Some l -> List.map ~f:string_of_stringlit l
-      in
-      let sources =
-        match list_stringlit "sources" rest with
-        | None -> []
-        | Some l -> List.map ~f:string_of_stringlit l
-      in
-      let sources_content =
-        match list_stringlit_opt "sourcesContent" rest with
-        | None -> None
-        | Some l ->
-            Some
-              (List.map l ~f:(function
-                  | None -> None
-                  | Some s -> Some (Source_content.of_stringlit s)))
-      in
-      let mappings =
-        match string "mappings" rest with
-        | None -> Mappings.empty
-        | Some s -> Mappings.of_string s
-      in
-      { version = int_of_float (float_of_string version)
-      ; file
-      ; sourceroot
-      ; names
-      ; sources_content
-      ; sources
-      ; mappings
-      }
-  | _ -> invalid ()
+module Standard = struct
+  type t =
+    { version : int
+    ; file : string
+    ; sourceroot : string option
+    ; sources : string list
+    ; sources_content : Source_content.t option list option
+    ; names : string list
+    ; mappings : Mappings.t
+    }
+
+  let empty ~filename =
+    { version = 3
+    ; file = filename
+    ; sourceroot = None
+    ; sources = []
+    ; sources_content = None
+    ; names = []
+    ; mappings = Mappings.empty
+    }
+
+  let maps ~sources_offset ~names_offset x =
+    match x with
+    | Gen _ -> x
+    | Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col } ->
+        let ori_source = ori_source + sources_offset in
+        Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+    | Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+        let ori_source = ori_source + sources_offset in
+        let ori_name = ori_name + names_offset in
+        Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
+
+  let filter_map sm ~f =
+    let a = Array.of_list (Mappings.decode sm.mappings) in
+    Array.stable_sort
+      ~cmp:(fun t1 t2 ->
+        match compare (gen_line t1) (gen_line t2) with
+        | 0 -> compare (gen_col t1) (gen_col t2)
+        | n -> n)
+      a;
+    let l = Array.to_list a |> List.group ~f:(fun a b -> gen_line a = gen_line b) in
+
+    let rec loop acc mapping =
+      match mapping with
+      | [] -> List.rev acc
+      | x :: xs ->
+          let gen_line = gen_line (List.hd x) in
+          let acc =
+            match f gen_line with
+            | None -> acc
+            | Some gen_line ->
+                List.rev_append_map
+                  x
+                  ~f:(function
+                    | Gen { gen_line = _; gen_col } -> Gen { gen_line; gen_col }
+                    | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
+                        Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
+                    | Gen_Ori_Name
+                        { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name }
+                      ->
+                        Gen_Ori_Name
+                          { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
+                  acc
+          in
+          loop acc xs
+    in
+    let mappings = loop [] l in
+    { sm with mappings = Mappings.encode mappings }
+
+  let merge = function
+    | [] -> None
+    | _ :: _ as l ->
+        let rec loop acc_rev mappings_rev ~sources_offset ~names_offset l =
+          match l with
+          | [] -> acc_rev, mappings_rev
+          | sm :: rest ->
+              let acc_rev, mappings_rev =
+                ( { acc_rev with
+                    sources = List.rev_append sm.sources acc_rev.sources
+                  ; names = List.rev_append sm.names acc_rev.names
+                  ; sources_content =
+                      (match sm.sources_content, acc_rev.sources_content with
+                      | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
+                      | None, _ | _, None -> None)
+                  ; mappings = Mappings.empty
+                  }
+                , List.rev_append_map
+                    ~f:(maps ~sources_offset ~names_offset)
+                    (Mappings.decode sm.mappings)
+                    mappings_rev )
+              in
+              loop
+                acc_rev
+                mappings_rev
+                ~sources_offset:(sources_offset + List.length sm.sources)
+                ~names_offset:(names_offset + List.length sm.names)
+                rest
+        in
+        let acc_rev, mappings_rev =
+          loop
+            { (empty ~filename:"") with sources_content = Some [] }
+            []
+            ~sources_offset:0
+            ~names_offset:0
+            l
+        in
+        Some
+          { acc_rev with
+            mappings = Mappings.encode (List.rev mappings_rev)
+          ; sources = List.rev acc_rev.sources
+          ; names = List.rev acc_rev.names
+          ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
+          }
+
+  let json t =
+    let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
+    `Assoc
+      [ "version", `Intlit (string_of_int t.version)
+      ; "file", stringlit (rewrite_path t.file)
+      ; ( "sourceRoot"
+        , stringlit
+            (match t.sourceroot with
+            | None -> ""
+            | Some s -> rewrite_path s) )
+      ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
+      ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
+      ; "mappings", stringlit (Mappings.to_string t.mappings)
+      ; ( "sourcesContent"
+        , `List
+            (match t.sources_content with
+            | None -> []
+            | Some l ->
+                List.map l ~f:(function
+                    | None -> `Null
+                    | Some x -> Source_content.to_json x)) )
+      ]
+
+  let of_json (json : Yojson.Raw.t) =
+    match json with
+    | `Assoc (("version", `Intlit version) :: rest) when int_of_string version = 3 ->
+        let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
+        let file =
+          match string "file" rest with
+          | None -> ""
+          | Some s -> s
+        in
+        let sourceroot = string "sourceRoot" rest in
+        let names =
+          match list_stringlit "names" rest with
+          | None -> []
+          | Some l -> List.map ~f:string_of_stringlit l
+        in
+        let sources =
+          match list_stringlit "sources" rest with
+          | None -> []
+          | Some l -> List.map ~f:string_of_stringlit l
+        in
+        let sources_content =
+          match list_stringlit_opt "sourcesContent" rest with
+          | None -> None
+          | Some l ->
+              Some
+                (List.map l ~f:(function
+                    | None -> None
+                    | Some s -> Some (Source_content.of_stringlit s)))
+        in
+        let mappings =
+          match string "mappings" rest with
+          | None -> Mappings.empty
+          | Some s -> Mappings.of_string s
+        in
+        { version = int_of_float (float_of_string version)
+        ; file
+        ; sourceroot
+        ; names
+        ; sources_content
+        ; sources
+        ; mappings
+        }
+    | _ -> invalid ()
+
+  let to_string m = Yojson.Raw.to_string (json m)
+
+  let to_file m file = Yojson.Raw.to_file file (json m)
+end
+(* IO *)
+
+module Index = struct
+  type offset =
+    { gen_line : int
+    ; gen_column : int
+    }
+
+  type t =
+    { version : int
+    ; file : string
+    ; sections : (offset * [ `Map of Standard.t ]) list
+    }
+
+  let json t =
+    let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
+    `Assoc
+      [ "version", `Intlit (string_of_int t.version)
+      ; "file", stringlit (rewrite_path t.file)
+      ; ( "sections"
+        , `List
+            (List.map
+               ~f:(fun ({ gen_line; gen_column }, `Map sm) ->
+                 `Assoc
+                   [ ( "offset"
+                     , `Assoc
+                         [ "line", `Intlit (string_of_int gen_line)
+                         ; "column", `Intlit (string_of_int gen_column)
+                         ] )
+                   ; "map", Standard.json sm
+                   ])
+               t.sections) )
+      ]
+
+  let intlit ~errmsg name json =
+    match List.assoc name json with
+    | `Intlit i -> int_of_string i
+    | _ -> invalid_arg errmsg
+    | exception Not_found -> invalid_arg errmsg
+
+  let section_of_json : Yojson.Raw.t -> offset * [ `Map of Standard.t ] = function
+    | `Assoc json ->
+        let offset =
+          match List.assoc "offset" json with
+          | `Assoc fields ->
+              let gen_line =
+                intlit
+                  "line"
+                  fields
+                  ~errmsg:
+                    "Source_map_io.Index.of_json: field 'line' absent or invalid from \
+                     section"
+              in
+              let gen_column =
+                intlit
+                  "column"
+                  fields
+                  ~errmsg:
+                    "Source_map_io.Index.of_json: field 'column' absent or invalid from \
+                     section"
+              in
+              { gen_line; gen_column }
+          | _ ->
+              invalid_arg "Source_map_io.Index.of_json: 'offset' field of unexpected type"
+        in
+        (match List.assoc "url" json with
+        | _ ->
+            invalid_arg
+              "Source_map_io.Index.of_json: URLs in index maps are not currently \
+               supported"
+        | exception Not_found -> ());
+        let map =
+          try Standard.of_json (List.assoc "map" json) with
+          | Not_found -> invalid_arg "Source_map_io.Index.of_json: field 'map' absent"
+          | Invalid_argument _ ->
+              invalid_arg "Source_map_io.Index.of_json: invalid sub-map object"
+        in
+        offset, `Map map
+    | _ -> invalid_arg "Source_map_io.Index.of_json: section of unexpected type"
+
+  let of_json = function
+    | `Assoc fields -> (
+        let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
+        let file = string "file" fields in
+        match List.assoc "sections" fields with
+        | `List sections ->
+            let sections = List.map ~f:section_of_json sections in
+            { version = 3; file = Option.value file ~default:""; sections }
+        | _ -> invalid_arg "Source_map_io.Index.of_json: `sections` is not an array"
+        | exception Not_found ->
+            invalid_arg "Source_map_io.Index.of_json: no `sections` field")
+    | _ -> invalid_arg "Source_map_io.of_json: map is not an object"
+
+  let to_string m = Yojson.Raw.to_string (json m)
+
+  let to_file m file = Yojson.Raw.to_file file (json m)
+end
+
+type t =
+  [ `Standard of Standard.t
+  | `Index of Index.t
+  ]
+
+let of_json = function
+  | `Assoc fields as json -> (
+      match List.assoc "sections" fields with
+      | _ -> `Index (Index.of_json json)
+      | exception Not_found -> `Standard (Standard.of_json json))
+  | _ -> invalid_arg "Source_map_io.of_json: map is not an object"
 
 let of_string s = of_json (Yojson.Raw.from_string s)
 
-let to_string m = Yojson.Raw.to_string (json m)
+let of_file f = of_json (Yojson.Raw.from_file f)
 
-let to_file m file = Yojson.Raw.to_file file (json m)
+let to_string = function
+  | `Standard m -> Standard.to_string m
+  | `Index i -> Index.to_string i
+
+let to_file x f =
+  match x with
+  | `Standard m -> Standard.to_file m f
+  | `Index i -> Index.to_file i f

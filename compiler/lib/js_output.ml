@@ -1905,8 +1905,8 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
   let names = Hashtbl.create 17 in
   let contents : Source_map.Source_content.t option list ref option =
     match source_map with
-    | None | Some { Source_map.sources_content = None; _ } -> None
-    | Some { Source_map.sources_content = Some _; _ } -> Some (ref [])
+    | None | Some { Source_map.Standard.sources_content = None; _ } -> None
+    | Some { Source_map.Standard.sources_content = Some _; _ } -> Some (ref [])
   in
   let push_mapping, get_file_index, get_name_index, source_map_enabled =
     let source_map_enabled =
@@ -1926,7 +1926,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
                 loop xs ys
           in
           loop sm.sources (Option.value ~default:[] sm.sources_content);
-          List.iter sm.Source_map.names ~f:(fun f ->
+          List.iter sm.Source_map.Standard.names ~f:(fun f ->
               Hashtbl.add names f (Hashtbl.length names));
           true
     in
@@ -2014,7 +2014,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
                     { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
         in
         let mappings = Source_map.Mappings.encode mappings in
-        Some { sm with Source_map.sources; names; sources_content; mappings }
+        Some { sm with Source_map.Standard.sources; names; sources_content; mappings }
   in
   PP.check f;
   (if stats ()

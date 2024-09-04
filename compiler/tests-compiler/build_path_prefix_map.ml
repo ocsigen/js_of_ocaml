@@ -20,6 +20,12 @@ open Js_of_ocaml_compiler.Stdlib
 open Util
 
 let%expect_test _ =
+  let print_section (sm : Js_of_ocaml_compiler.Source_map.Standard.t) =
+    Printf.printf "file: %s\n" sm.file;
+    Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
+    Printf.printf "sources:\n";
+    List.iter sm.sources ~f:(fun source -> Printf.printf "- %s\n" (normalize_path source))
+  in
   with_temp_dir ~f:(fun () ->
       let name = "test.ml" in
       Filetype.write_file name "let id x = x";
@@ -29,12 +35,9 @@ let%expect_test _ =
       |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
       |> extract_sourcemap
       |> function
-      | Some (sm : Js_of_ocaml_compiler.Source_map.t) ->
-          Printf.printf "file: %s\n" sm.file;
-          Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
-          Printf.printf "sources:\n";
-          List.iter sm.sources ~f:(fun source ->
-              Printf.printf "- %s\n" (normalize_path source))
+      | Some (`Standard (sm : Js_of_ocaml_compiler.Source_map.Standard.t)) ->
+          print_section sm
+      | Some (`Index i) -> List.iter i.sections ~f:(fun (_, `Map sm) -> print_section sm)
       | None -> failwith "no sourcemap generated!");
   [%expect
     {|

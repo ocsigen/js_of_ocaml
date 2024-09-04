@@ -23,7 +23,7 @@ open Cmdliner
 
 type t =
   { common : Jsoo_cmdline.Arg.t
-  ; source_map : (string option * Source_map.t) option
+  ; source_map : (string option * Source_map.Standard.t) option
   ; js_files : string list
   ; output_file : string option
   ; resolve_sourcemap_url : bool
@@ -102,7 +102,7 @@ let options =
         in
         Some
           ( sm_output_file
-          , { Source_map.version = 3
+          , { Source_map.Standard.version = 3
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []

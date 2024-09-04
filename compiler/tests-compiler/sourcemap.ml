@@ -20,7 +20,7 @@ open Js_of_ocaml_compiler
 open Stdlib
 open Util
 
-let print_mapping (sm : Source_map.t) =
+let print_mapping ~line_offset ~col_offset (sm : Source_map.Standard.t) =
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
   let mappings = Source_map.Mappings.decode sm.mappings in
@@ -34,9 +34,10 @@ let print_mapping (sm : Source_map.t) =
             (file ori_source)
             ori_line
             ori_col
-            gen_line
-            gen_col
-      | Gen { gen_line; gen_col } -> Printf.printf "null -> %d:%d\n" gen_line gen_col)
+            (gen_line + line_offset)
+            (gen_col + col_offset)
+      | Gen { gen_line; gen_col } ->
+          Printf.printf "null -> %d:%d\n" (gen_line + line_offset) (gen_col + col_offset))
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -55,7 +56,14 @@ let%expect_test _ =
       print_file (Filetype.path_of_js_file js_file);
       match extract_sourcemap js_file with
       | None -> Printf.printf "No sourcemap found\n"
-      | Some sm -> print_mapping sm);
+      | Some (`Standard sm) -> print_mapping ~line_offset:0 ~col_offset:0 sm
+      | Some (`Index i) ->
+          List.iter
+            i.sections
+            ~f:(fun
+                ( ({ gen_line; gen_column } : Js_of_ocaml_compiler.Source_map.Index.offset)
+                , `Map sm )
+              -> print_mapping ~line_offset:gen_line ~col_offset:gen_column sm));
   [%expect
     {|
       $ cat "test.ml"
@@ -125,31 +133,35 @@ let%expect_test _ =
     Source_map.Gen_Ori
       { gen_line; gen_col; ori_source = source; ori_line = line; ori_col = col }
   in
-  let s1 : Source_map.t =
-    { (Source_map.empty ~filename:"1.map") with
+  let s1 : Source_map.Standard.t =
+    { (Source_map.Standard.empty ~filename:"1.map") with
       names = [ "na"; "nb"; "nc" ]
     ; sources = [ "sa"; "sb" ]
     ; mappings =
         Source_map.Mappings.encode [ gen (1, 1) (10, 10) 0; gen (3, 3) (20, 20) 1 ]
     }
   in
-  let s2 : Source_map.t =
-    { (Source_map.empty ~filename:"2.map") with
+  let s2 : Source_map.Standard.t =
+    { (Source_map.Standard.empty ~filename:"2.map") with
       names = [ "na2"; "nb2" ]
     ; sources = [ "sa2" ]
     ; mappings = Source_map.Mappings.encode [ gen (3, 3) (5, 5) 0 ]
     }
   in
-  let m = Source_map.merge [ s1; Source_map.filter_map s2 ~f:(fun x -> Some (x + 20)) ] in
+  let m =
+    Source_map.Standard.merge
+      [ s1; Source_map.Standard.filter_map s2 ~f:(fun x -> Some (x + 20)) ]
+  in
   (match m with
   | None -> ()
   | Some sm ->
-      let encoded_mappings = sm.Source_map.mappings in
+      let encoded_mappings = sm.Source_map.Standard.mappings in
       print_endline (Source_map.Mappings.to_string encoded_mappings);
-      print_mapping sm);
+      print_mapping ~line_offset:0 ~col_offset:0 sm);
   [%expect
     {|
     CASU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff
     sa:10:10 -> 1:1
     sb:20:20 -> 3:3
-    sa2:5:5 -> 23:3 |}]
+    sa2:5:5 -> 23:3
+    |}]

@@ -47,6 +47,7 @@ let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f 
     match source_map, sm with
     | None, _ | _, None -> ()
     | Some (output_file, _), Some sm ->
+        let sm = `Standard sm in
         let urlData =
           match output_file with
           | None ->
