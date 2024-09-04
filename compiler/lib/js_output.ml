@@ -1996,8 +1996,9 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
               | None -> filename
               | Some _ -> Filename.concat "/builtin" filename)
         in
+        let sm_mappings = Source_map.Mappings.decode sm.mappings in
         let mappings =
-          List.rev_append_map !temp_mappings sm.mappings ~f:(fun (pos, m) ->
+          List.rev_append_map !temp_mappings sm_mappings ~f:(fun (pos, m) ->
               let gen_line = pos.PP.p_line + 1 in
               let gen_col = pos.PP.p_col in
               match m with
@@ -2012,6 +2013,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
                   Source_map.Gen_Ori_Name
                     { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
         in
+        let mappings = Source_map.Mappings.encode mappings in
         Some { sm with Source_map.sources; names; sources_content; mappings }
   in
   PP.check f;

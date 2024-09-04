@@ -108,7 +108,7 @@ let options =
             ; sources = []
             ; sources_content = Some []
             ; names = []
-            ; mappings = []
+            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
