@@ -316,7 +316,7 @@ function caml_int64_format (fmt, x) {
 //Requires: caml_ml_string_length,caml_string_unsafe_get, MlInt64
 function caml_int64_of_string(s) {
   var r = caml_parse_sign_and_base (s);
-  var i = r[0], sign = r[1], base = r[2];
+  var i = r[0], sign = r[1], base = r[2], signedness = r[3];
   var base64 = caml_int64_of_int32(base);
   var threshold =
       new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(base64).quotient;
@@ -338,7 +338,7 @@ function caml_int64_of_string(s) {
     if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
   }
   if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
-  if (base == 10 && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
+  if (signedness && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
     caml_failwith("int_of_string");
   if (sign < 0) res = caml_int64_neg(res);
   return res;
