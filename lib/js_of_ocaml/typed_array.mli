@@ -84,21 +84,21 @@ type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
-type ('bigarray, 'typed_array, 'elt) type' =
-  | Char : (int, char, Bigarray.int8_unsigned_elt) type'
-  | Int8_signed : (int, int, Bigarray.int8_signed_elt) type'
-  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) type'
-  | Int16_signed : (int, int, Bigarray.int16_signed_elt) type'
-  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
-  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
-  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
-  | Float32 : (number_t, float, Bigarray.float32_elt) type'
-  | Float64 : (number_t, float, Bigarray.float64_elt) type'
+type ('bigarray, 'typed_array, 'elt) kind =
+  | Char : (int, char, Bigarray.int8_unsigned_elt) kind
+  | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
+  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
+  | Int16_signed : (int, int, Bigarray.int16_signed_elt) kind
+  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) kind
+  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) kind
+  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) kind
+  | Float32 : (number_t, float, Bigarray.float32_elt) kind
+  | Float64 : (number_t, float, Bigarray.float64_elt) kind
 
 val kind : ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
 
 val from_genarray :
-     ('typed_array, 'bigarray, 'elt) type'
+     ('typed_array, 'bigarray, 'elt) kind
   -> ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t
   -> ('typed_array, 'bigarray, 'elt) typedArray t
 

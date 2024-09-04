@@ -53,7 +53,7 @@ let convert : type a b c. (a, b, c) Setup.t -> a -> b = function
   | Setup.Float32 -> Js.to_float
   | Setup.Float64 -> Js.to_float
 
-let type_of_setup : type a b c. (a, b, c) Setup.t -> (a, b, c) type' = function
+let type_of_setup : type a b c. (a, b, c) Setup.t -> (a, b, c) Typed_array.kind = function
   | Setup.Int8 -> Int8_signed
   | Setup.Uint8 -> Int8_unsigned
   | Setup.Int16 -> Int16_signed
