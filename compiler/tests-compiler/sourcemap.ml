@@ -153,7 +153,7 @@ let%expect_test _ =
   print_mapping m;
   [%expect
     {|
-    CASU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff;
+    CASU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff
     sa:10:10 -> 1:1
     sb:20:20 -> 3:3
     sa2:5:5 -> 23:3 |}]

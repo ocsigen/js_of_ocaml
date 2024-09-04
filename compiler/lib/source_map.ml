@@ -340,6 +340,9 @@ module Mappings = struct
         0
         edits
     in
+    (* Remove trailing ';' *)
+    if Buffer.length buf > 0 then
+      Buffer.truncate buf (Buffer.length buf - 1);
     Uninterpreted (Buffer.contents buf)
 
   let num_gen_lines m =
@@ -411,6 +414,9 @@ module Mappings = struct
             0
             (List.init ~len:(num_gen_lines m2) ~f:(Fun.const Line_edits.Keep))
         in
+        (* Remove trailing ';' *)
+        if Buffer.length buf > 0 then
+          Buffer.truncate buf (Buffer.length buf - 1);
         Uninterpreted (Buffer.contents buf)
 
   let encode mapping =
