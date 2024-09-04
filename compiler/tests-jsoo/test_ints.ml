@@ -50,9 +50,19 @@ let%expect_test _ =
 let%expect_test _ =
   Printf.printf "%ld\n" (Int32.of_string "-0u2147483648");
   [%expect {| -2147483648 |}];
-  Printf.printf "%ld\n" (Int32.of_string "-0u2147483648");
+  Printf.printf "%ld\n" (Int32.of_string "-0U2147483648");
   [%expect {| -2147483648 |}];
   Printf.printf "%ld\n" (Int32.of_string "0u2147483648");
   [%expect {| -2147483648 |}];
-  Printf.printf "%ld\n" (Int32.of_string "0u2147483648");
+  Printf.printf "%ld\n" (Int32.of_string "0U2147483648");
   [%expect {| -2147483648 |}]
+
+let%expect_test _ =
+  Printf.printf "%Ld\n" (Int64.of_string "-0u17965325103354776696");
+  [%expect {| 481418970354774920 |}];
+  Printf.printf "%Ld\n" (Int64.of_string "-0U17965325103354776696");
+  [%expect {| 481418970354774920 |}];
+  Printf.printf "%Ld\n" (Int64.of_string "0u17965325103354776696");
+  [%expect {| -481418970354774920 |}];
+  Printf.printf "%Ld\n" (Int64.of_string "0U17965325103354776696");
+  [%expect {| -481418970354774920 |}]
