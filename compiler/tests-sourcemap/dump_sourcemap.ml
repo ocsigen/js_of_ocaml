@@ -36,7 +36,7 @@ let extract_sourcemap lines =
       Some (Source_map.of_string content)
   | _ -> None
 
-let print_mapping lines (sm : Source_map.t) =
+let print_mapping lines ?(line_offset = 0) (sm : Source_map.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
@@ -68,8 +68,17 @@ let print_mapping lines (sm : Source_map.t) =
                 ori_line
                 ori_col
                 gen_col
-                (mark gen_col lines.(gen_line - 1))
+                (mark gen_col lines.(gen_line - 1 + line_offset))
           | _ -> ()))
+
+let print_sourcemap lines = function
+  | `Standard sm -> print_mapping lines sm
+  | `Index l ->
+      List.iter
+        l.Source_map.Index.sections
+        ~f:(fun (Source_map.Index.{ gen_line; gen_column }, `Map sm) ->
+          assert (gen_column = 0);
+          print_mapping lines ~line_offset:gen_line sm)
 
 let files = Sys.argv |> Array.to_list |> List.tl
 
@@ -80,4 +89,4 @@ let () =
       | None -> Printf.printf "not sourcemap for %s\n" f
       | Some sm ->
           Printf.printf "sourcemap for %s\n" f;
-          print_mapping lines sm)
+          print_sourcemap lines sm)

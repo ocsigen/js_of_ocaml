@@ -29,12 +29,13 @@ let%expect_test _ =
       |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
       |> extract_sourcemap
       |> function
-      | Some (sm : Js_of_ocaml_compiler.Source_map.t) ->
+      | Some (`Standard (sm : Js_of_ocaml_compiler.Source_map.t)) ->
           Printf.printf "file: %s\n" sm.file;
           Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
           Printf.printf "sources:\n";
           List.iter sm.sources ~f:(fun source ->
               Printf.printf "- %s\n" (normalize_path source))
+      | Some (`Index _) -> failwith "unexpected index map"
       | None -> failwith "no sourcemap generated!");
   [%expect
     {|

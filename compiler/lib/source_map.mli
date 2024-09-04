@@ -108,8 +108,16 @@ type t =
   }
 
 val filter_map : t -> f:(int -> int option) -> t
+(** If [f l] returns [Some l'], map line [l] to [l'] (in the generated file) in
+    the returned debug mappings. If [f l] returns [None], remove debug mappings
+    which concern line [l] of the generated file. The time cost of this
+    function is more than linear in the size of the input mappings. When
+    possible, prefer using {!val:Mappings.edit}. *)
 
 val merge : t list -> t option
+(** Merge two lists of debug mappings. The time cost of the merge is more than
+    linear in function of the size of the input mappings. When possible, prefer
+    using {!val:concat}. *)
 
 val empty : filename:string -> t
 
@@ -119,8 +127,31 @@ val concat : file:string -> sourceroot:string option -> t -> t -> t
     union of these mappings for the concatenation of [f1] and [f2], with name
     [file] and source root [sourceroot). *)
 
+module Index : sig
+  type offset =
+    { gen_line : int
+    ; gen_column : int
+    }
+
+  type nonrec t =
+    { version : int
+    ; file : string
+    ; sections : (offset * [ `Map of t ]) list
+          (** List of [(offset, map)] pairs. The sourcemap spec allows for [map] to be
+            either a sourcemap object or a URL, but we don't need to generate
+            composite sourcemaps with URLs for now, and it is therefore not
+            implemented. *)
+    }
+
+  val to_string : t -> string
+
+  val to_file : t -> string -> unit
+end
+
 val to_string : t -> string
 
 val to_file : t -> string -> unit
 
-val of_string : string -> t
+val of_string : string -> [ `Standard of t | `Index of Index.t ]
+
+val of_file : string -> [ `Standard of t | `Index of Index.t ]

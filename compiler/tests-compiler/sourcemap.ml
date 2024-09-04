@@ -55,7 +55,8 @@ let%expect_test _ =
       print_file (Filetype.path_of_js_file js_file);
       match extract_sourcemap js_file with
       | None -> Printf.printf "No sourcemap found\n"
-      | Some sm -> print_mapping sm);
+      | Some (`Standard sm) -> print_mapping sm
+      | Some (`Index _) -> failwith "unexpected index map");
   [%expect
     {|
       $ cat "test.ml"
@@ -140,16 +141,19 @@ let%expect_test _ =
     ; mappings = Source_map.Mappings.encode [ gen (3, 3) (5, 5) 0 ]
     }
   in
-  let m = Source_map.merge [ s1; Source_map.filter_map s2 ~f:(fun x -> Some (x + 20)) ] in
-  (match m with
-  | None -> ()
-  | Some sm ->
-      let encoded_mappings = sm.Source_map.mappings in
-      print_endline (Source_map.Mappings.to_string encoded_mappings);
-      print_mapping sm);
+  let edits =
+    Source_map.Line_edits.([ Add { count = 17 } ] @ List.init ~len:3 ~f:(Fun.const Keep))
+  in
+  let s2 =
+    { s2 with mappings = Source_map.Mappings.edit ~strict:true s2.mappings edits }
+  in
+  let m = Source_map.concat ~file:"" ~sourceroot:None s1 s2 in
+  let encoded_mappings = m.Source_map.mappings in
+  print_endline (Source_map.Mappings.to_string encoded_mappings);
+  print_mapping m;
   [%expect
     {|
-    CASU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff
+    CASU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff;
     sa:10:10 -> 1:1
     sb:20:20 -> 3:3
     sa2:5:5 -> 23:3 |}]
