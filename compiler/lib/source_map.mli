@@ -67,27 +67,54 @@ module Mappings : sig
       function is mostly a no-op and is very cheap. *)
 end
 
-type t =
-  { version : int
-  ; file : string
-  ; sourceroot : string option
-  ; sources : string list
-  ; sources_content : Source_content.t option list option
-  ; names : string list
-  ; mappings : Mappings.t
-        (** Left uninterpreted, since most useful operations can be performed efficiently
+module Standard : sig
+  type t =
+    { version : int
+    ; file : string
+    ; sourceroot : string option
+    ; sources : string list
+    ; sources_content : Source_content.t option list option
+    ; names : string list
+    ; mappings : Mappings.t
+          (** Left uninterpreted, since most useful operations can be performed efficiently
           directly on the encoded form, and a full decoding can be costly for big
           sourcemaps. *)
-  }
+    }
 
-val filter_map : t -> f:(int -> int option) -> t
+  val filter_map : t -> f:(int -> int option) -> t
+  (** If [f l] returns [Some l'], map line [l] to [l'] (in the generated file) in
+    the returned debug mappings. If [f l] returns [None], remove debug mappings
+    which concern line [l] of the generated file. *)
 
-val merge : t list -> t option
+  val merge : t list -> t option
+  (** Merge two lists of debug mappings. The time cost of the merge is more than
+    linear in function of the size of the input mappings. *)
 
-val empty : filename:string -> t
+  val empty : filename:string -> t
+end
+
+module Index : sig
+  type offset =
+    { gen_line : int
+    ; gen_column : int
+    }
+
+  type nonrec t =
+    { version : int
+    ; file : string
+    ; sections : (offset * [ `Map of Standard.t ]) list
+    }
+end
+
+type t =
+  [ `Standard of Standard.t
+  | `Index of Index.t
+  ]
 
 val to_string : t -> string
 
 val to_file : t -> string -> unit
 
 val of_string : string -> t
+
+val of_file : string -> t

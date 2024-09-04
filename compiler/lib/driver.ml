@@ -713,7 +713,7 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
   emit formatter optimized_code
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
-  let (_ : Source_map.t option) =
+  let (_ : Source_map.Standard.t option) =
     full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None ~formatter d p
   in
   ()

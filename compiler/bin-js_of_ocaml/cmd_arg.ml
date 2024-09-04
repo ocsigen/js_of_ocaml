@@ -43,7 +43,7 @@ type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
-  ; source_map : (string option * Source_map.t) option
+  ; source_map : (string option * Source_map.Standard.t) option
   ; runtime_files : string list
   ; no_runtime : bool
   ; include_runtime : bool
@@ -308,7 +308,7 @@ let options =
         in
         Some
           ( sm_output_file
-          , { Source_map.version = 3
+          , { Source_map.Standard.version = 3
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []
@@ -537,7 +537,7 @@ let options_runtime_only =
         in
         Some
           ( sm_output_file
-          , { Source_map.version = 3
+          , { Source_map.Standard.version = 3
             ; file
             ; sourceroot = sourcemap_root
             ; sources = []

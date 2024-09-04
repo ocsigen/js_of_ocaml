@@ -92,7 +92,7 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
           if t () then (m ())#program p else p)
     in
     let p = Js_assign.program p in
-    let (_ : Source_map.t option) = Js_output.program pp p in
+    let (_ : Source_map.Standard.t option) = Js_output.program pp p in
     ()
   in
   with_output (fun out_channel ->

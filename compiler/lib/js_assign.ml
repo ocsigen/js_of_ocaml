@@ -425,7 +425,7 @@ let program' (module Strategy : Strategy) p =
            "Some variables escaped (#%d). Use [--debug js_assign] for more info.@."
            (IdentSet.cardinal free)
        else
-         let (_ : Source_map.t option) =
+         let (_ : Source_map.Standard.t option) =
            Js_output.program
              ~accept_unnamed_var:true
              (Pretty_print.to_out_channel stderr)
