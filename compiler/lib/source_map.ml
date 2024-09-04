@@ -894,6 +894,17 @@ module Index = struct
     | `Assoc fields -> (
         let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
         let file = string "file" fields in
+        (match List.assoc "version" fields with
+        | `Intlit v ->
+            if not (Int.equal (int_of_string v) 3)
+            then
+              invalid_arg
+                (Printf.sprintf
+                   "Source_map.Index.of_json: sourcemap version %s not supported"
+                   v)
+        | _ -> invalid_arg "Source_map.Index.of_json: non-integer `version` value"
+        | exception Not_found ->
+            warn "warning: Missing `version` field in sourcemap");
         match List.assoc "sections" fields with
         | `List sections ->
             let sections = List.map ~f:section_of_json sections in
