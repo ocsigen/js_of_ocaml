@@ -36,7 +36,7 @@ let extract_sourcemap lines =
       Some (Source_map.of_string content)
   | _ -> None
 
-let print_mapping lines ?(line_offset = 0) (sm : Source_map.t) =
+let print_mapping lines ~line_offset (sm : Source_map.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
@@ -72,7 +72,7 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.t) =
           | _ -> ()))
 
 let print_sourcemap lines = function
-  | `Standard sm -> print_mapping lines sm
+  | `Standard sm -> print_mapping ~offset:0 lines sm
   | `Index l ->
       List.iter
         l.Source_map.Index.sections
