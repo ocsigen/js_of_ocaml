@@ -4,11 +4,13 @@
 * Misc: update testsuite to OCaml 5.2
 * Misc: CI uses opam.2.2 and no longer use sunset repo
 * Misc: yojson is no longer optional
+* Misc: reduce the diff with the wasm_of_ocaml fork
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Compiler: Decode sourcemap mappings only when necessary (#1664)
 * Compiler: make indirect call using sequence instead of using the call method
   [f.call(null, args)] becomes [(0,f)(args)]
+* Compiler: mark [TextEncoder] as reserved
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
@@ -18,7 +20,7 @@
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
-* Fixed the static evaluation of some equalities (#1659)
+* Compiler: Fixed the static evaluation of some equalities (#1659)
 
 # 5.8.2 (2024-05-26) - Luc
 
