@@ -81,7 +81,7 @@ type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
 type ('bigarray, 'typed_array, 'elt) kind =
-  | Char : (int, char, Bigarray.int8_unsigned_elt) kind
+  | Char : (char, char, Bigarray.int8_unsigned_elt) kind
   | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
   | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
   | Int16_signed : (int, int, Bigarray.int16_signed_elt) kind
