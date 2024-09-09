@@ -20,10 +20,6 @@
 open! Import
 open Js
 
-type int32 = number_t
-
-type uint32 = number_t
-
 class type arrayBuffer = object
   method byteLength : int readonly_prop
 
@@ -74,9 +70,9 @@ type int16Array = (int, int, Bigarray.int16_signed_elt) typedArray
 
 type uint16Array = (int, int, Bigarray.int16_unsigned_elt) typedArray
 
-type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
+type int32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
-type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
+type uint32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
 type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
@@ -88,8 +84,8 @@ type ('bigarray, 'typed_array, 'elt) kind =
   | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
   | Int16_signed : (int, int, Bigarray.int16_signed_elt) kind
   | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) kind
-  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) kind
-  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) kind
+  | Int32_signed : (number_t, Int32.t, Bigarray.int32_elt) kind
+  | Int32_unsigned : (number_t, Int32.t, Bigarray.int32_elt) kind
   | Float32 : (number_t, float, Bigarray.float32_elt) kind
   | Float64 : (number_t, float, Bigarray.float64_elt) kind
 
@@ -213,9 +209,9 @@ class type dataView = object
 
   method getInt32_ : int -> bool t -> int32 meth
 
-  method getUint32 : int -> uint32 meth
+  method getUint32 : int -> number_t meth
 
-  method getUint32_ : int -> bool t -> uint32 meth
+  method getUint32_ : int -> bool t -> number_t meth
 
   method getFloat32 : int -> number_t meth
 
@@ -241,9 +237,9 @@ class type dataView = object
 
   method setInt32_ : int -> int32 -> bool t -> unit meth
 
-  method setUint32 : int -> uint32 -> unit meth
+  method setUint32 : int -> number_t -> unit meth
 
-  method setUint32_ : int -> uint32 -> bool t -> unit meth
+  method setUint32_ : int -> number_t -> bool t -> unit meth
 
   method setFloat32 : int -> number_t -> unit meth
 
