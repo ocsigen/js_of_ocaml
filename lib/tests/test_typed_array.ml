@@ -94,11 +94,11 @@ let kind_field_is_correct : type a b c. (a, b, c) Setup.t -> (b, c) ba -> bool =
   | Int16_signed, Int16_signed -> true
   | Int16_unsigned, Int16_unsigned -> true
   | Int32, Int32 -> true
-  | Char, _ ->
+  | Char, (ba_kind : (char, int8_unsigned_elt) Bigarray.kind) -> (
       (* For chars the underlying typed array is an Uint8Array so the
          only well-typed pattern [Char, Char] is not what will appear at
          runtime, namely [Char, Int8_unsigned] *)
-      (match (Obj.magic Genarray.kind a : (int, int8_unsigned_elt) Bigarray.kind) with
+      match (Obj.magic ba_kind : (int, int8_unsigned_elt) Bigarray.kind) with
       | Int8_unsigned -> true)
   | _, _ -> false
 
