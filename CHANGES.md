@@ -18,6 +18,7 @@
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
+* Runtime: fix incorrect pos_in after unmarshalling
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
 * Compiler: Fixed the static evaluation of some equalities (#1659)

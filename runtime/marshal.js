@@ -500,7 +500,6 @@ function caml_input_value_from_reader(reader, ofs) {
     if (d < size) stack.push(v, size);
     v[d] = intern_rec (reader);
   }
-  if (typeof ofs!="number") ofs[0] = reader.i;
   return res;
 }
 

@@ -41,15 +41,34 @@ let%expect_test _ =
 
     let marshal_out_segment f ch v =
       let start = pos_out ch in
-      Format.printf "start=%d\n%!" start;
+      let start' = LargeFile.pos_out ch in
+      seek_out ch 0;
+      seek_out ch start;
+      Format.printf "start=%d %Ld\n%!" start start';
       output_binary_int ch 0;
       (* dummy value for stop *)
       marshal_out ch v;
       let stop = pos_out ch in
+      let stop' = LargeFile.pos_out ch in
+      Format.printf "stop=%d %Ld\n%!" stop stop';
       seek_out ch start;
       output_binary_int ch stop;
       seek_out ch stop;
       Digest.output ch (Digest.file f)
+
+    let read_segment _f ch =
+      let start = pos_in ch in
+      let start' = LargeFile.pos_in ch in
+      seek_in ch 0;
+      seek_in ch start;
+      Format.printf "start=%d %Ld\n%!" start start';
+      let stop = input_binary_int ch in
+      let _ = input_value ch in
+      let stop2 = pos_in ch in
+      let stop2' = LargeFile.pos_in ch in
+      Format.printf "stop=%d %d %Ld\n%!" stop stop2 stop2';
+      let _ = Digest.input ch in
+      ()
 
     let _ =
       let tmp = Filename.temp_file "out" "txt" in
@@ -57,9 +76,23 @@ let%expect_test _ =
       let chan = open_out_bin filename in
       output_binary_int chan 8900;
       marshal_out_segment filename chan [ "output"; "data" ];
-      marshal_out_segment filename chan [ "more"; "stuff" ]
+      marshal_out_segment filename chan [ "more"; "stuff" ];
+      close_out chan;
+      let chan = open_in_bin filename in
+      let _ = input_binary_int chan in
+      read_segment filename chan;
+      read_segment filename chan;
+      close_in chan
   end in
   let open! M in
-  [%expect {|
-    start=4
-    start=59 |}]
+  [%expect
+    {|
+    start=4 4
+    stop=43 43
+    start=59 59
+    stop=97 97
+    start=4 4
+    stop=43 43 43
+    start=59 59
+    stop=97 97 97
+    |}]
