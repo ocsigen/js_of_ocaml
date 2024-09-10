@@ -366,9 +366,7 @@ function caml_input_value (chanid) {
   var r = block(buf, caml_marshal_header_size, len)
   if(r < len)
     caml_failwith("input_value: truncated object " + r + "  " + len);
-  var offset = [0];
-  var res = caml_input_value_from_bytes(caml_bytes_of_array(buf), offset);
-  chan.offset = chan.offset + offset[0];
+  var res = caml_input_value_from_bytes(caml_bytes_of_array(buf), 0);
   return res;
 }
 
