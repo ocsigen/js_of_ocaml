@@ -153,6 +153,7 @@ let expr_deps blocks st x e =
   match e with
   | Constant _ | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) | Block _
     -> ()
+  | Special _ -> ()
   | Prim
       ( ( Extern
             ( "caml_check_bound"
@@ -200,15 +201,15 @@ let expr_deps blocks st x e =
             | Pv v, `Const -> do_escape st Escape_constant v
             | Pv v, `Shallow_const -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _)) ->
+                | Expr (Block (_, a, _, _)) ->
                     Array.iter a ~f:(fun x -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Object_literal -> (
                 match st.defs.(Var.idx v) with
-                | Expr (Block (_, a, _)) ->
+                | Expr (Block (_, a, _, _)) ->
                     Array.iter a ~f:(fun x ->
                         match st.defs.(Var.idx x) with
-                        | Expr (Block (_, [| _k; v |], _)) -> do_escape st Escape v
+                        | Expr (Block (_, [| _k; v |], _, _)) -> do_escape st Escape v
                         | _ -> do_escape st Escape x)
                 | _ -> do_escape st Escape v)
             | Pv v, `Mutable -> do_escape st Escape v);
@@ -251,28 +252,35 @@ let program_deps st { blocks; _ } =
       | Cond (x, cont1, cont2) ->
           cont_deps blocks st cont1;
           cont_deps blocks st ~ignore:x cont2
-      | Switch (x, a1, a2) ->
+      | Switch (x, a1) -> (
           Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks st cont);
-          let h = Hashtbl.create 16 in
-          Array.iteri
-            ~f:(fun i (pc, _) ->
-              Hashtbl.replace h pc (i :: (try Hashtbl.find h pc with Not_found -> [])))
-            a2;
           if not st.fast
           then
-            Hashtbl.iter
-              (fun pc tags ->
-                let block = Addr.Map.find pc blocks in
-                List.iter
-                  ~f:(fun (i, _) ->
-                    match i with
-                    | Let (y, Field (x', _)) when Var.equal x x' ->
-                        Hashtbl.add st.known_cases y tags
-                    | _ -> ())
-                  block.body)
-              h
-      | Pushtrap (cont, x, cont_h, _) ->
+            (* looking up the def of x is fine here, because the tag
+               we're looking for is at addr [pc - 2] (see
+               parse_bytecode.ml) and [Addr.Map.iter] iterate in
+               increasing order *)
+            match st.defs.(Code.Var.idx x) with
+            | Expr (Prim (Extern "%direct_obj_tag", [ Pv b ])) ->
+                let h = Hashtbl.create 16 in
+                Array.iteri a1 ~f:(fun i (pc, _) ->
+                    Hashtbl.replace
+                      h
+                      pc
+                      (i :: (try Hashtbl.find h pc with Not_found -> [])));
+                Hashtbl.iter
+                  (fun pc tags ->
+                    let block = Addr.Map.find pc blocks in
+                    List.iter
+                      ~f:(fun (i, _) ->
+                        match i with
+                        | Let (y, Field (x', _)) when Var.equal b x' ->
+                            Hashtbl.add st.known_cases y tags
+                        | _ -> ())
+                      block.body)
+                  h
+            | Expr _ | Phi _ -> ())
+      | Pushtrap (cont, x, cont_h) ->
           add_var st x;
           st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
           cont_deps blocks st cont_h;
@@ -322,7 +330,7 @@ module Domain = struct
     then (
       st.may_escape.(idx) <- s;
       match st.defs.(idx) with
-      | Expr (Block (_, a, _)) ->
+      | Expr (Block (_, a, _, _)) ->
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
           if Poly.equal s Escape
           then (
@@ -406,7 +414,7 @@ let propagate st ~update approx x =
                 ~approx
                 (fun z ->
                   match st.defs.(Var.idx z) with
-                  | Expr (Block (t, a, _))
+                  | Expr (Block (t, a, _, _))
                     when n < Array.length a
                          &&
                          match tags with
@@ -440,7 +448,7 @@ let propagate st ~update approx x =
                   ~others
                   (fun z ->
                     match st.defs.(Var.idx z) with
-                    | Expr (Block (_, lst, _)) ->
+                    | Expr (Block (_, lst, _, _)) ->
                         Array.iter ~f:(fun t -> add_dep st x t) lst;
                         let a =
                           Array.fold_left
@@ -462,6 +470,7 @@ let propagate st ~update approx x =
              block *)
           Domain.bot
       | Prim (Extern _, _) -> Domain.others
+      | Special _ -> Domain.others
       | Apply { f; args; _ } -> (
           match Var.Tbl.get approx f with
           | Values { known; others } ->

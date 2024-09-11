@@ -67,6 +67,10 @@ let vartok pos tok =
 
 let utf8_s = Stdlib.Utf8_string.of_string_exn
 
+let name_of_ident = function
+  | S { name; _} -> name
+  | V _ -> assert false
+
 %}
 
 (*************************************************************************)
@@ -120,6 +124,7 @@ T_PACKAGE
 T_DEBUGGER
 T_GET T_SET
 T_FROM
+T_AS
 T_TARGET
 T_META
 (*-----------------------------------------*)
@@ -217,19 +222,22 @@ T_BACKQUOTE
 (* Macros *)
 (*************************************************************************)
 
-listc(X):
+listc_rev(X):
  | X              { [$1] }
- | listc(X) "," X { $1 @ [$3] }
+ | listc_rev(X) "," X { $3 :: $1 }
 
-listc_with_empty_trail(X):
- | e=elision               { (List.map (fun () -> None) e) }
- | x=X e=elision           { Some x :: (List.map (fun () -> None) e) }
- | listc_with_empty_trail(X) x=X e=elision { $1 @ [Some x] @ (List.map (fun () -> None) e) }
+%inline listc(X):
+ | listc_rev(X) { List.rev $1 }
+
+listc_with_empty_trail_rev(X):
+ | e=elision               { (List.rev_map (fun () -> None) e) }
+ | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
+ | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
 
 listc_with_empty(X):
   | X                           { [ Some $1 ] }
-  | listc_with_empty_trail(X)   { $1 }
-  | listc_with_empty_trail(X) X { $1 @ [Some $2 ] }
+  | listc_with_empty_trail_rev(X)   { List.rev $1 }
+  | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
@@ -246,6 +254,9 @@ program:
 
 module_item:
   | item { $symbolstartpos, $1 }
+  | import_decl { $symbolstartpos, $1 }
+  | export_decl { $symbolstartpos, $1 }
+
 
 (*************************************************************************)
 (* statement                                                           *)
@@ -265,6 +276,131 @@ decl:
  | lexical_decl    { $1, p $symbolstartpos }
  | class_decl
    { let i,f = $1 in Class_declaration (i,f), p $symbolstartpos }
+
+(*************************************************************************)
+(* Namespace *)
+(*************************************************************************)
+(*----------------------------*)
+(* import *)
+(*----------------------------*)
+
+import_decl:
+ | T_IMPORT kind=import_clause from=from_clause sc
+    { let pos = $symbolstartpos in
+      Import ({ from; kind }, pi pos), p pos }
+ | T_IMPORT from=module_specifier sc
+    { let pos = $symbolstartpos in
+      Import ({ from; kind = SideEffect }, pi pos), p pos }
+
+import_clause:
+ | import_default                            { Default $1 }
+ | import_default "," "*" T_AS id=binding_id { Namespace (Some $1, id) }
+ | "*" T_AS id=binding_id                    { Namespace (None, id) }
+ | import_default "," x=named_imports { Named (Some $1, x) }
+ | x=named_imports                    { Named (None, x) }
+
+import_default: binding_id { $1 }
+
+named_imports:
+ | "{" "}"                             { [] }
+ | "{" listc(import_specifier) "}"     { $2 }
+ | "{" listc(import_specifier) "," "}" { $2 }
+
+(* also valid for export *)
+from_clause: T_FROM module_specifier {$2 }
+
+import_specifier:
+ | binding_id                 { (name_of_ident $1, $1) }
+ | string_or_ident T_AS binding_id         {
+   let (_,s,_) = $1 in
+   (s, $3) }
+
+%inline string_or_ident:
+ | T_STRING { `String, fst $1, $symbolstartpos }
+ | T_DEFAULT { `Ident, Stdlib.Utf8_string.of_string_exn "default", $symbolstartpos }
+ | id { `Ident, $1, $symbolstartpos }
+
+module_specifier:
+  | T_STRING { (fst $1) }
+
+(*----------------------------*)
+(* export *)
+(*----------------------------*)
+
+export_decl:
+  | T_EXPORT names=export_clause sc {
+    let exception Invalid of Lexing.position in
+    let k =
+      try
+        let names =
+          List.map (fun ((k, id,pos), (_,s,_)) ->
+                     match k with
+                     | `Ident -> (var (p pos) id, s)
+                     | `String -> raise (Invalid pos))
+          names
+        in
+        (ExportNames names)
+      with Invalid pos ->
+         CoverExportFrom (early_error (pi pos))
+    in
+    let pos = $symbolstartpos in
+    Export (k, pi pos), p pos }
+ | T_EXPORT v=variable_stmt
+    {
+      let pos = $symbolstartpos in
+      let k = match v with
+        | Variable_statement (k,l) -> ExportVar (k, l)
+        | _ -> assert false
+      in
+      Export (k, pi pos), p pos }
+ | T_EXPORT d=decl
+    { let k = match d with
+        | Variable_statement (k,l),_ -> ExportVar (k,l)
+        | Function_declaration (id, decl),_ -> ExportFun (id,decl)
+        | Class_declaration (id, decl),_ -> ExportClass (id,decl)
+        | _ -> assert false
+      in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ (* in theory just func/gen/class, no lexical_decl *)
+ | T_EXPORT T_DEFAULT e=assignment_expr sc
+    {
+      let k = match e with
+      | EFun (Some id, decl) ->
+         ExportDefaultFun (id,decl)
+      | EClass (Some id, decl) ->
+         ExportDefaultClass (id, decl)
+      | e -> ExportDefaultExpression e
+      in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+| T_EXPORT "*" T_FROM from=module_specifier sc {
+    let kind = Export_all None in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}),pi pos), p pos
+  }
+ | T_EXPORT "*" T_AS id=string_or_ident T_FROM from=module_specifier sc {
+    let (_,id,_) = id in
+    let kind = Export_all (Some id) in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}), pi pos), p pos
+  }
+| T_EXPORT names=export_clause T_FROM from=module_specifier sc {
+    let names = List.map (fun ((_,a,_), (_,b,_)) -> a, b) names in
+    let kind = Export_names names in
+    let pos = $symbolstartpos in
+    Export (ExportFrom ({from; kind}), pi pos), p pos
+  }
+
+export_specifier:
+ | string_or_ident                       { ($1, $1) }
+ | string_or_ident T_AS string_or_ident  { ($1, $3) }
+
+export_clause:
+ | "{" "}"                              { [] }
+ | "{" listc(export_specifier) "}"      { $2 }
+ | "{" listc(export_specifier) ","  "}" { $2 }
+
 
 (*************************************************************************)
 (* Variable decl *)
@@ -537,16 +673,14 @@ iteration_stmt:
    { For_statement (Right l, c, incr, st) }
 
  | T_FOR "(" left=left_hand_side_expr T_IN right=expr ")" body=stmt
-   { match assignment_pattern_of_expr None left with
-      | None -> ForIn_statement (Left left, right, body)
-      | Some b -> ForIn_statement (Left (EAssignTarget b), right, body) }
+   { let left = assignment_target_of_expr None left in
+     ForIn_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_IN right=expr ")" body=stmt
    { ForIn_statement (Right left, right, body) }
 
  | T_FOR "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
-    { match assignment_pattern_of_expr None left with
-      | None -> ForOf_statement (Left left, right, body)
-      | Some b -> ForOf_statement (Left (EAssignTarget b), right, body) }
+    { let left = assignment_target_of_expr None left in
+      ForOf_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
    { ForOf_statement (Right left, right, body) }
 
@@ -615,9 +749,8 @@ assignment_expr:
  | conditional_expr(d1) { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-        | None -> EBin (op, e1, e2)
-        | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  | arrow_function { $1 }
  | async_arrow_function { $1 }
@@ -898,20 +1031,25 @@ encaps:
 (* TODO conflict with as then in indent_keyword_bis *)
 arrow_function:
   | i=ident T_ARROW b=arrow_body
-    { EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
   | T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
 async_arrow_function:
-  | T_ASYNC i=ident T_ARROW b=arrow_body { EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), AUnknown) }
+  | T_ASYNC i=ident T_ARROW b=arrow_body {
+      let b,consise = b in
+      EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
   | T_ASYNC T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
-    { EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), AUnknown) }
+    { let b,consise = b in
+      EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
 
 (* was called consise body in spec *)
 arrow_body:
- | "{" b=function_body "}" { b }
- | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)] }
+ | "{" b=function_body "}" { b, false }
+ | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* no in                    *)
@@ -925,9 +1063,8 @@ assignment_expr_no_in:
  | conditional_expr_no_in { $1 }
  | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr_no_in
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-        | None -> EBin (op, e1, e2)
-        | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
 
 conditional_expr_no_in:
@@ -968,9 +1105,8 @@ assignment_expr_no_stmt:
  | conditional_expr(primary_no_stmt) { $1 }
  | e1=left_hand_side_expr_(primary_no_stmt) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-      | None -> EBin (op, e1, e2)
-      | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  (* es6: *)
  | arrow_function { $1 }
@@ -993,9 +1129,8 @@ assignment_expr_for_consise_body:
  | conditional_expr(primary_for_consise_body) { $1 }
  | e1=left_hand_side_expr_(primary_for_consise_body) op=assignment_operator e2=assignment_expr
     {
-      match assignment_pattern_of_expr (Some op) e1 with
-      | None -> EBin (op, e1, e2)
-      | Some pat -> EBin (op, EAssignTarget pat, e2)
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
     }
  (* es6: *)
  | arrow_function { $1 }

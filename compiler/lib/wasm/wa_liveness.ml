@@ -58,10 +58,8 @@ let block_deps deps block pc =
   | Cond (_, cont1, cont2) ->
       cont_deps deps pc cont1;
       cont_deps deps pc cont2
-  | Switch (_, a1, a2) ->
-      Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont);
-      Array.iter a2 ~f:(fun cont -> cont_deps deps pc cont)
-  | Pushtrap (cont, _, cont_h, _) ->
+  | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont)
+  | Pushtrap (cont, _, cont_h) ->
       cont_deps deps pc cont;
       cont_deps deps pc cont_h
 
@@ -107,10 +105,10 @@ let add_array ~ctx s a = Array.fold_left ~f:(fun s x -> add_var ~ctx s x) ~init:
 let expr_used ~context ~closures ~ctx x e s =
   match e with
   | Apply { f; args; _ } -> add_list ~ctx s (f :: args)
-  | Block (_, a, _) -> add_array ~ctx s a
+  | Block (_, a, _, _) -> add_array ~ctx s a
   | Prim (_, l) -> add_prim_args ~ctx s l
   | Closure _ -> add_list ~ctx s (function_free_variables ~context ~closures x)
-  | Constant _ -> s
+  | Constant _ | Special _ -> s
   | Field (x, _) -> add_var ~ctx s x
 
 let propagate_through_instr ~context ~closures ~ctx (i, _) s =
@@ -128,10 +126,8 @@ let propagate_through_branch ~ctx (b, _) s =
   | Stop -> s
   | Branch cont | Poptrap cont -> cont_used ~ctx cont s
   | Cond (_, cont1, cont2) -> s |> cont_used ~ctx cont1 |> cont_used ~ctx cont2
-  | Switch (_, a1, a2) ->
-      let s = Array.fold_right a1 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s in
-      Array.fold_right a2 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s
-  | Pushtrap (cont, x, cont_h, _) ->
+  | Switch (_, a1) -> Array.fold_right a1 ~f:(fun cont s -> cont_used ~ctx cont s) ~init:s
+  | Pushtrap (cont, x, cont_h) ->
       s |> cont_used ~ctx cont |> cont_used ~ctx cont_h |> Var.Set.remove x
 
 let propagate blocks ~context ~closures ~ctx rev_deps st pc =
@@ -185,7 +181,7 @@ let compute_instr_info ~blocks ~context ~closures ~domain ~ctx st =
                   | Apply _ | Prim _ ->
                       Var.Map.add x (Var.Set.remove x live_vars) live_info
                   | Block _ | Closure _ -> Var.Map.add x live_vars' live_info
-                  | Constant _ | Field _ -> live_info)
+                  | Constant _ | Field _ | Special _ -> live_info)
               | Assign _ | Offset_ref _ | Set_field _ | Array_set _ -> live_info
             in
             live_vars', live_info)

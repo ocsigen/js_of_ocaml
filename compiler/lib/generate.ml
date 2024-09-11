@@ -165,7 +165,7 @@ module Share = struct
                   if (not exact) || trampolined
                   then add_apply { arity = List.length args; exact; trampolined } share
                   else share
-              | Let (_, Prim (Extern "%closure", [ Pc (String name) ])) ->
+              | Let (_, Special (Alias_prim name)) ->
                   let name = Primitive.resolve name in
                   let share =
                     if Primitive.exists name then add_prim name share else share
@@ -758,15 +758,14 @@ let fold_children blocks pc f accu =
   match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+  | Pushtrap ((pc1, _), _, (pc2, _)) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
   | Cond (_, cont1, cont2) -> DTree.fold_cont f (DTree.build_if cont1 cont2) accu
-  | Switch (_, a1, a2) ->
-      let a1 = DTree.build_switch a1 and a2 = DTree.build_switch a2 in
+  | Switch (_, a1) ->
+      let a1 = DTree.build_switch a1 in
       let accu = DTree.fold_cont f a1 accu in
-      let accu = DTree.fold_cont f a2 accu in
       accu
 
 let build_graph ctx pc =
@@ -805,7 +804,7 @@ let build_graph ctx pc =
       List.iter pc_succs ~f:(fun pc' ->
           let pushtrap =
             match fst b.branch with
-            | Pushtrap ((pc1, _), _, (pc2, _), _remove) ->
+            | Pushtrap ((pc1, _), _, (pc2, _)) ->
                 if pc' = pc1
                 then (
                   Hashtbl.add poptrap pc Addr.Set.empty;
@@ -1103,6 +1102,7 @@ let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
       let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
       ocaml_string ~ctx ~loc s);
+  register_un_prim "%direct_obj_tag" `Mutator (fun cx _loc -> Mlvalue.Block.tag cx);
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
       Mlvalue.Array.field cx cy);
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
@@ -1223,7 +1223,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let prop = or_p prop prop' in
       let e = apply_fun ctx f args exact trampolined loc in
       (e, prop, queue), []
-  | Block (tag, a, array_or_not) ->
+  | Block (tag, a, array_or_not, _mut) ->
       let contents, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -1262,6 +1262,11 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, queue), instrs
+  | Special (Alias_prim name) ->
+      let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
+      (prim, const_p, queue), []
+  | Special Undefined ->
+      (J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue), []
   | Prim (Extern "debugger", _) ->
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement
@@ -1320,10 +1325,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
                 ~init:([], const_p, queue)
             in
             J.array args, prop, queue
-        | Extern "%closure", [ Pc (String name) ] ->
-            let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
-            prim, const_p, queue
-        | Extern "%closure", _ -> assert false
         | Extern "%caml_js_opt_call", f :: o :: l ->
             let (pf, cf), queue = access_queue' ~ctx queue f in
             let (po, co), queue = access_queue' ~ctx queue o in
@@ -1394,9 +1395,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
            | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
            ]}
         *)
-        | Extern "%overrideMod", [ Pc (String m); Pc (String f) ] ->
-            runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p, queue
-        | Extern "%overrideMod", _ -> assert false
         | Extern "%caml_js_opt_object", fields ->
             let rec build_fields queue l =
               match l with
@@ -1588,11 +1586,7 @@ and compile_block st queue (pc : Addr.t) loop_stack frontier interm =
     | true ->
         if debug () then Format.eprintf "@[<hv 2>for(;;) {@,";
         let never_body, body =
-          let lab =
-            match loop_stack with
-            | (_, (l, _)) :: _ -> J.Label.succ l
-            | [] -> J.Label.zero
-          in
+          let lab = J.Label.fresh () in
           let lab_used = ref false in
           let loop_stack = (pc, (lab, lab_used)) :: loop_stack in
           let never_body, body =
@@ -1772,7 +1766,7 @@ and colapse_frontier name st (new_frontier' : Addr.Set.t) interm =
     let branch =
       let cases = Array.of_list (List.map a ~f:(fun pc -> pc, [])) in
       if Array.length cases > 2
-      then Code.Switch (x, cases, [||]), Code.noloc
+      then Code.Switch (x, cases), Code.noloc
       else Code.Cond (x, cases.(1), cases.(0)), Code.noloc
     in
     ( [ J.variable_declaration [ J.V x, (int default, J.N) ], J.N ]
@@ -1853,7 +1847,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
      | Raise _ -> Format.eprintf "raise;@;"
      | Stop -> Format.eprintf "stop;@;"
      | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
-     | Switch (x, _, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
+     | Switch (x, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
   let loc = source_location_ctx st.ctx pc in
   let res =
     match last with
@@ -1869,7 +1863,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
         in
         true, flush_all queue [ J.Return_statement e_opt, loc ]
     | Branch cont -> compile_branch st queue cont loop_stack backs frontier interm
-    | Pushtrap (c1, x, e1, _) ->
+    | Pushtrap (c1, x, e1) ->
         let never_body, body = compile_branch st [] c1 loop_stack backs frontier interm in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
         let never_handler, handler =
@@ -1915,21 +1909,7 @@ and compile_conditional st queue last loop_stack backs frontier interm =
             (DTree.build_if c1 c2)
         in
         never, flush_all queue b
-    | Switch (x, [||], a2) ->
-        let (_px, cx), queue = access_queue queue x in
-        let never, code =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (Mlvalue.Block.tag cx)
-            (DTree.build_switch a2)
-        in
-        never, flush_all queue code
-    | Switch (x, a1, [||]) ->
+    | Switch (x, a1) ->
         let (_px, cx), queue = access_queue queue x in
         let never, code =
           compile_decision_tree
@@ -1943,41 +1923,6 @@ and compile_conditional st queue last loop_stack backs frontier interm =
             (DTree.build_switch a1)
         in
         never, flush_all queue code
-    | Switch (x, a1, a2) ->
-        (* The variable x is accessed several times, so we can directly
-           refer to it *)
-        let never1, b1 =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (var x)
-            (DTree.build_switch a1)
-        in
-        let never2, b2 =
-          compile_decision_tree
-            st
-            loop_stack
-            backs
-            frontier
-            interm
-            loc
-            (Mlvalue.Block.tag (var x))
-            (DTree.build_switch a2)
-        in
-        let code =
-          Js_simpl.if_statement
-            (Mlvalue.is_immediate (var x))
-            loc
-            (Js_simpl.block b1)
-            never1
-            (Js_simpl.block b2)
-            never2
-        in
-        never1 && never2, flush_all queue code
   in
   (if debug ()
    then

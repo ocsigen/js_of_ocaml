@@ -554,10 +554,7 @@ module State = struct
     | Var (x, _) -> Format.fprintf f "%a" Var.print x
     | Dummy -> Format.fprintf f "???"
 
-  type handler =
-    { block_pc : Addr.t
-    ; stack : elt list
-    }
+  type handler = { stack : elt list }
 
   type t =
     { accu : elt
@@ -566,7 +563,6 @@ module State = struct
     ; env_offset : int
     ; handlers : handler list
     ; globals : globals
-    ; current_pc : Addr.t
     }
 
   let fresh_var state loc =
@@ -647,7 +643,7 @@ module State = struct
   let start_function state env offset =
     { state with accu = Dummy; stack = []; env; env_offset = offset; handlers = [] }
 
-  let start_block current_pc state =
+  let start_block _current_pc state =
     let stack =
       List.fold_right state.stack ~init:[] ~f:(fun e stack ->
           match e with
@@ -656,7 +652,7 @@ module State = struct
               let y = Var.fork x in
               Var (y, l) :: stack)
     in
-    let state = { state with stack; current_pc } in
+    let state = { state with stack } in
     match state.accu with
     | Dummy -> state
     | Var (x, loc) ->
@@ -665,26 +661,12 @@ module State = struct
         state
 
   let push_handler state =
-    { state with
-      handlers = { block_pc = state.current_pc; stack = state.stack } :: state.handlers
-    }
+    { state with handlers = { stack = state.stack } :: state.handlers }
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
-  let addr_of_current_handler state =
-    match state.handlers with
-    | [] -> assert false
-    | x :: _ -> x.block_pc
-
   let initial g =
-    { accu = Dummy
-    ; stack = []
-    ; env = [||]
-    ; env_offset = 0
-    ; handlers = []
-    ; globals = g
-    ; current_pc = -1
-    }
+    { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
 
   let rec print_stack f l =
     match l with
@@ -832,8 +814,6 @@ let tagged_blocks = ref Addr.Set.empty
 
 let compiled_blocks = ref Addr.Map.empty
 
-let pushpop = ref Addr.Map.empty
-
 let method_cache_id = ref 1
 
 let clo_offset_3 = if new_closure_repr then 3 else 2
@@ -890,12 +870,9 @@ let rec compile_block blocks debug_data ~target code pc state =
     | Cond (_, (pc1, _), (pc2, _)) ->
         compile_block blocks debug_data ~target code pc1 state';
         compile_block blocks debug_data ~target code pc2 state'
-    | Switch (_, l1, l2) ->
-        Array.iter l1 ~f:(fun (pc', _) ->
-            compile_block blocks debug_data ~target code pc' state');
-        Array.iter l2 ~f:(fun (pc', _) ->
-            compile_block blocks debug_data ~target code pc' state')
-    | Pushtrap _ | Raise _ | Return _ | Stop -> ())
+    | Switch (_, _) -> ()
+    | Pushtrap _ -> ()
+    | Raise _ | Return _ | Stop -> ())
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
@@ -1366,26 +1343,42 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state ((Let (x, Block (0, [||], Unknown)), loc) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state ((Let (x, Block (i, [||], NotArray)), loc) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state loc in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state ((Let (x, Block (0, [||], Unknown)), loc) :: instrs)
+        compile
+          infos
+          (pc + 1)
+          state
+          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | PUSHATOM ->
         let state = State.push state loc in
 
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state ((Let (x, Block (i, [||], NotArray)), loc) :: instrs)
+        compile
+          infos
+          (pc + 2)
+          state
+          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1404,7 +1397,12 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ((Let (x, Block (tag, Array.of_list (List.map ~f:fst contents), Unknown)), loc)
+          (( Let
+               ( x
+               , Block
+                   (tag, Array.of_list (List.map ~f:fst contents), Unknown, Maybe_mutable)
+               )
+           , loc )
           :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
@@ -1416,7 +1414,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (tag, [| y |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y, _ = State.accu state in
@@ -1430,7 +1428,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, Block (tag, [| y; z |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y, _ = State.accu state in
@@ -1454,7 +1452,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 2 state)
-          ((Let (x, Block (tag, [| y; z; t |], NotArray)), loc) :: instrs)
+          ((Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)), loc) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state loc in
@@ -1472,7 +1470,12 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (254, Array.of_list (List.map ~f:fst contents), Unknown)), loc)
+          (( Let
+               ( x
+               , Block
+                   (254, Array.of_list (List.map ~f:fst contents), Unknown, Maybe_mutable)
+               )
+           , loc )
           :: instrs)
     | GETFIELD0 ->
         let y, _ = State.accu state in
@@ -1688,20 +1691,62 @@ and compile infos pc state instrs =
         let x, _ = State.accu state in
         let args = State.stack_vars state in
         instrs, (Cond (x, (pc + 2, args), (pc + offset + 1, args)), loc), state
-    | SWITCH ->
+    | SWITCH -> (
         if debug_parser () then Format.printf "switch ...@.";
-
         let sz = getu code (pc + 1) in
         let x, _ = State.accu state in
         let args = State.stack_vars state in
-        let l = sz land 0xFFFF in
-        let it =
-          Array.init (sz land 0XFFFF) ~f:(fun i -> pc + 2 + gets code (pc + 2 + i), args)
-        in
-        let bt =
-          Array.init (sz lsr 16) ~f:(fun i -> pc + 2 + gets code (pc + 2 + l + i), args)
-        in
-        instrs, (Switch (x, it, bt), loc), state
+        let isize = sz land 0XFFFF in
+        let bsize = sz lsr 16 in
+        let base = pc + 2 in
+        let it = Array.init isize ~f:(fun i -> base + gets code (base + i)) in
+        let bt = Array.init bsize ~f:(fun i -> base + gets code (base + isize + i)) in
+        Array.iter it ~f:(fun pc' ->
+            compile_block infos.blocks infos.debug ~target:infos.target code pc' state);
+        Array.iter bt ~f:(fun pc' ->
+            compile_block infos.blocks infos.debug ~target:infos.target code pc' state);
+        match isize, bsize with
+        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, args)), loc), state
+        | 0, _ ->
+            let x_tag = Var.fresh () in
+            let instrs =
+              (Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc) :: instrs
+            in
+            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, args)), loc), state
+        | _, _ ->
+            let isint_branch = pc + 1 in
+            let isblock_branch = pc + 2 in
+            let () =
+              tagged_blocks := Addr.Set.add isint_branch !tagged_blocks;
+              let i_state = State.start_block isint_branch state in
+              let i_args = State.stack_vars i_state in
+              compiled_blocks :=
+                Addr.Map.add
+                  isint_branch
+                  (i_state, [], (Switch (x, Array.map it ~f:(fun pc -> pc, i_args)), loc))
+                  !compiled_blocks
+            in
+            let () =
+              tagged_blocks := Addr.Set.add isblock_branch !tagged_blocks;
+              let x_tag = Var.fresh () in
+              let b_state = State.start_block isblock_branch state in
+              let b_args = State.stack_vars b_state in
+              let instrs =
+                [ Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc ]
+              in
+              compiled_blocks :=
+                Addr.Map.add
+                  isblock_branch
+                  ( b_state
+                  , instrs
+                  , (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, b_args)), loc) )
+                  !compiled_blocks
+            in
+            let isint_var = Var.fresh () in
+            let instrs = (Let (isint_var, Prim (IsInt, [ Pv x ])), loc) :: instrs in
+            ( instrs
+            , (Cond (isint_var, (isint_branch, args), (isblock_branch, args)), loc)
+            , state ))
     | BOOLNOT ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
@@ -1727,8 +1772,7 @@ and compile infos pc state instrs =
             , ( Pushtrap
                   ( (body_addr, State.stack_vars state)
                   , x
-                  , (handler_addr, State.stack_vars handler_state)
-                  , Addr.Set.empty )
+                  , (handler_addr, State.stack_vars handler_state) )
               , loc ) )
             !compiled_blocks;
         compile_block
@@ -1756,12 +1800,6 @@ and compile infos pc state instrs =
         instrs, (Branch (interm_addr, State.stack_vars state), loc), state
     | POPTRAP ->
         let addr = pc + 1 in
-        let handler_addr = State.addr_of_current_handler state in
-        let set =
-          try Addr.Set.add addr (Addr.Map.find handler_addr !pushpop)
-          with Not_found -> Addr.Set.singleton addr
-        in
-        pushpop := Addr.Map.add handler_addr set !pushpop;
         compile_block
           infos.blocks
           infos.debug
@@ -2449,20 +2487,6 @@ and compile infos pc state instrs =
 
 (****)
 
-let match_exn_traps (blocks : 'a Addr.Map.t) =
-  Addr.Map.fold
-    (fun pc conts' blocks ->
-      match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (cont1, x, cont2, conts), loc; _ } as block ->
-          assert (Addr.Set.is_empty conts);
-          let branch = Pushtrap (cont1, x, cont2, conts'), loc in
-          Addr.Map.add pc { block with branch } blocks
-      | _ -> assert false)
-    !pushpop
-    blocks
-
-(****)
-
 type one =
   { code : Code.program
   ; cmis : StringSet.t
@@ -2491,12 +2515,10 @@ let parse_bytecode code globals debug_data ~target =
             { params = State.stack_vars state; body = instr; branch = last })
           !compiled_blocks
       in
-      let blocks = match_exn_traps blocks in
       let free_pc = String.length code / 4 in
       { start; blocks; free_pc })
     else Code.empty
   in
-  pushpop := Addr.Map.empty;
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Set.empty;
   p
@@ -2507,18 +2529,17 @@ let override_global =
   match Ocaml_version.v with
   | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
   | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
-      let jsmodule name func =
-        Prim (Extern "%overrideMod", [ Pc (String name); Pc (String func) ])
-      in
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
             let x = Var.fresh_n "internalMod" in
             let init_mod = Var.fresh_n "init_mod" in
             let update_mod = Var.fresh_n "update_mod" in
             ( x
-            , (Let (x, Block (0, [| init_mod; update_mod |], NotArray)), noloc)
-              :: (Let (init_mod, jsmodule "CamlinternalMod" "init_mod"), noloc)
-              :: (Let (update_mod, jsmodule "CamlinternalMod" "update_mod"), noloc)
+            , (Let (x, Block (0, [| init_mod; update_mod |], NotArray, Immutable)), noloc)
+              :: ( Let (init_mod, Special (Alias_prim "caml_CamlinternalMod_init_mod"))
+                 , noloc )
+              :: ( Let (update_mod, Special (Alias_prim "caml_CamlinternalMod_update_mod"))
+                 , noloc )
               :: instrs ) )
       ]
 
@@ -3094,7 +3115,7 @@ let predefined_exceptions ~target =
                          Regular
                        , Int32.of_int (-index - 1) )) )
             , noloc )
-          ; Let (exn, Block (248, [| v_name; v_index |], NotArray)), noloc
+          ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
           ; ( Let
                 ( Var.fresh ()
                 , Prim
@@ -3139,6 +3160,10 @@ let link_info ~target ~symtable ~primitives ~crcs =
       symtable
       []
     |> Array.of_list
+  in
+  let primitives =
+    (* Add the externals translated by jsoo directly (in generate.ml) *)
+    StringSet.union (Primitive.get_external ()) primitives |> StringSet.elements
   in
   let body = [] in
   let body =

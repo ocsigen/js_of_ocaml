@@ -30,6 +30,8 @@ type t =
 
 val of_cmo : Cmo_format.compilation_unit -> t
 
+val of_primitives : string list -> t
+
 val union : t -> t -> t
 
 val empty : t
@@ -39,7 +41,3 @@ val prefix : string
 val to_string : t -> string
 
 val parse : t -> string -> t option
-
-val to_sexp : t -> Sexp.t list
-
-val from_sexp : Sexp.t -> t

@@ -63,14 +63,14 @@ let fold_children blocks pc f accu =
   match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap (_, _, (pc1, _), pcs) -> f pc1 (Addr.Set.fold f pcs accu)
+  | Pushtrap ((try_body, _), _, (pc1, _)) ->
+      f pc1 (Addr.Set.fold f (Code.poptraps blocks try_body) accu)
   | Cond (_, (pc1, _), (pc2, _)) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
-      let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
       accu
 
 let rec traverse f pc visited blocks =

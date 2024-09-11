@@ -277,3 +277,13 @@ module String = struct
     let uint8 = new%js uint8Array_fromBuffer ab in
     of_uint8Array uint8
 end
+
+module Bytes = struct
+  external of_uint8Array : uint8Array Js.t -> bytes = "caml_bytes_of_array"
+
+  external to_uint8Array : bytes -> uint8Array Js.t = "caml_uint8_array_of_bytes"
+
+  let of_arrayBuffer ab =
+    let uint8 = new%js uint8Array_fromBuffer ab in
+    of_uint8Array uint8
+end

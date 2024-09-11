@@ -1,5 +1,7 @@
 hello
-Line 3, characters 2-4:
+- : int = 2
+Line 4, characters 2-4:
 Error: Syntax error
-Line 4, characters 0-16:
-Error: Unbound module Missing_module
+Line 5, characters 0-16:
+Error: Unbound module "Missing_module"
+val y : float = 0.333333333333333315

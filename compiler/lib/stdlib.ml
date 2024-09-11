@@ -369,6 +369,10 @@ module Option = struct
     | None -> None
     | Some v -> Some (f v)
 
+  let to_list = function
+    | None -> []
+    | Some x -> [ x ]
+
   let bind ~f x =
     match x with
     | None -> None
@@ -1024,6 +1028,8 @@ module Utf8_string : sig
   val of_string_exn : string -> t
 
   val compare : t -> t -> int
+
+  val equal : t -> t -> bool
 end = struct
   type t = Utf8 of string [@@ocaml.unboxed]
 
@@ -1033,6 +1039,8 @@ end = struct
     else invalid_arg "Utf8_string.of_string: invalid utf8 string"
 
   let compare (Utf8 x) (Utf8 y) = String.compare x y
+
+  let equal (Utf8 x) (Utf8 y) = String.equal x y
 end
 
 module Int = struct

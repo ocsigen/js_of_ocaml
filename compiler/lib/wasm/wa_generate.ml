@@ -155,7 +155,7 @@ module Generate (Target : Wa_target_sig.S) = struct
         let* closure = load f in
         Stack.kill_variables stack_ctx;
         return (W.Call (apply, args @ [ closure ]))
-    | Block (tag, a, _) ->
+    | Block (tag, a, _, _) ->
         Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n) -> Memory.field (load x) n
     | Closure _ ->
@@ -166,6 +166,8 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           x
     | Constant c -> Constant.translate c
+    | Special Undefined -> Constant.translate (Int (Regular, 0l))
+    | Special (Alias_prim _) -> assert false
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int (_, arity)) ])
       when Poly.(target = `GC) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Int32.to_int arity)
@@ -255,6 +257,7 @@ module Generate (Target : Wa_target_sig.S) = struct
             | Extern "%int_lsl", [ x; y ] -> Value.int_lsl x y
             | Extern "%int_lsr", [ x; y ] -> Value.int_lsr x y
             | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
+            | Extern "%direct_obj_tag", [ x ] -> Memory.tag x
             | Extern "caml_check_bound", [ x; y ] ->
                 seq
                   (let* cond = Arith.uge (Value.int_val y) (Memory.array_length x) in
@@ -927,7 +930,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                 match fall_through with
                 | `Return -> instr (Push e)
                 | `Block _ -> instr (Return (Some e)))
-            | Switch (x, a1, a2) ->
+            | Switch (x, a1) ->
                 let l =
                   List.filter
                     ~f:(fun pc' ->
@@ -954,25 +957,14 @@ module Generate (Target : Wa_target_sig.S) = struct
                       in
                       let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
                       instr (Br (label_index context pc', None))
-                  | [] -> (
-                      match a1, a2 with
-                      | [||], _ -> br_table (Memory.tag (load x)) a2 context
-                      | _, [||] -> br_table (Value.int_val (load x)) a1 context
-                      | _ ->
-                          (*ZZZ Use Br_on_cast *)
-                          let context' = extend_context fall_through context in
-                          if_
-                            { params = []; result = result_typ }
-                            (Value.check_is_int (load x))
-                            (br_table (Value.int_val (load x)) a1 context')
-                            (br_table (Memory.tag (load x)) a2 context'))
+                  | [] -> br_table (Value.int_val (load x)) a1 context
                 in
                 nest l context
             | Raise (x, _) ->
                 let* e = load x in
                 let* tag = register_import ~name:exception_name (Tag Value.value) in
                 instr (Throw (tag, e))
-            | Pushtrap (cont, x, cont', _) ->
+            | Pushtrap (cont, x, cont') ->
                 handle_exceptions
                   ~result_typ
                   ~fall_through
@@ -1227,9 +1219,7 @@ let fix_switch_branches p =
   Addr.Map.iter
     (fun _ block ->
       match fst block.branch with
-      | Switch (_, l, l') ->
-          fix_branches l;
-          fix_branches l'
+      | Switch (_, l) -> fix_branches l
       | _ -> ())
     p.blocks;
   !p'

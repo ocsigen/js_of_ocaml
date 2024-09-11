@@ -143,10 +143,8 @@ let block_deps bound_vars deps block pc =
   | Cond (_, cont1, cont2) ->
       cont_deps deps pc cont1;
       cont_deps deps pc cont2
-  | Switch (_, a1, a2) ->
-      Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont);
-      Array.iter a2 ~f:(fun cont -> cont_deps deps pc cont)
-  | Pushtrap (cont, exn, cont_h, _) ->
+  | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> cont_deps deps pc cont)
+  | Pushtrap (cont, exn, cont_h) ->
       cont_deps deps pc cont;
       bound_vars := Var.Set.add exn !bound_vars;
       cont_deps deps pc ~exn cont_h
@@ -167,7 +165,7 @@ let function_deps blocks ~context ~closures pc params =
           match i with
           | Let (x, e) -> (
               match e with
-              | Constant _ -> mark_non_spillable x
+              | Constant _ | Special _ -> mark_non_spillable x
               | Prim (p, _) when no_pointer p -> mark_non_spillable x
               | Closure _
                 when List.is_empty (function_free_variables ~context ~closures x) ->
@@ -205,7 +203,7 @@ let propagate_through_expr ~context ~closures s x e =
       if List.is_empty (function_free_variables ~context ~closures x)
       then s
       else Var.Set.empty
-  | Constant _ | Field _ -> s
+  | Constant _ | Field _ | Special _ -> s
 
 let propagate_through_instr ~context ~closures s (i, _) =
   match i with
@@ -291,7 +289,7 @@ let spilled_variables
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded x reloaded)
                         (f :: args)
                         ~init:Var.Set.empty
-                  | Block (_, l, _) ->
+                  | Block (_, l, _, _) ->
                       Array.fold_left
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded' x reloaded)
                         l
@@ -310,7 +308,7 @@ let spilled_variables
                         ~f:(fun reloaded x -> check_spilled ~ctx loaded' x reloaded)
                         fv
                         ~init:Var.Set.empty
-                  | Constant _ -> Var.Set.empty
+                  | Constant _ | Special _ -> Var.Set.empty
                   | Field (x, _) -> check_spilled ~ctx loaded x Var.Set.empty)
               | Assign (_, x) | Offset_ref (x, _) ->
                   check_spilled ~ctx loaded x Var.Set.empty
@@ -339,10 +337,8 @@ let spilled_variables
       | Stop -> spilled
       | Branch cont | Poptrap cont -> handle_cont cont spilled
       | Cond (_, cont1, cont2) -> spilled |> handle_cont cont1 |> handle_cont cont2
-      | Switch (_, a1, a2) ->
-          let spilled = Array.fold_right a1 ~f:handle_cont ~init:spilled in
-          Array.fold_right a2 ~f:handle_cont ~init:spilled
-      | Pushtrap (cont, _, cont_h, _) -> spilled |> handle_cont cont |> handle_cont cont_h)
+      | Switch (_, a1) -> Array.fold_right a1 ~f:handle_cont ~init:spilled
+      | Pushtrap (cont, _, cont_h) -> spilled |> handle_cont cont |> handle_cont cont_h)
     domain
     spilled
 
@@ -490,7 +486,7 @@ let spilling blocks st env bound_vars spilled_vars live_info pc params =
                       in
                       instr_info := Var.Map.add x sp !instr_info;
                       stack, Var.Set.empty
-                  | Prim _ | Constant _ | Field _ -> stack, vars)
+                  | Prim _ | Constant _ | Field _ | Special _ -> stack, vars)
               | Assign _ | Offset_ref _ | Set_field _ | Array_set _ -> stack, vars
             in
             let vars =

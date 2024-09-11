@@ -179,6 +179,8 @@ let rec depth = function
   | Try_statement (b, _, None) -> depth_block b + 1
   | Try_statement (b, _, Some b2) -> max (depth_block b) (depth_block b2) + 1
   | Debugger_statement -> 1
+  | Import _ -> 1
+  | Export _ -> 1
 
 and depth_block b = List.fold_left b ~init:0 ~f:(fun acc (s, _) -> max acc (depth s))
 

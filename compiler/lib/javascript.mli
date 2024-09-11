@@ -51,13 +51,11 @@ module Num : sig
 end
 
 module Label : sig
-  type t
+  type t =
+    | L of Code.Var.t
+    | S of Utf8_string.t
 
-  val zero : t
-
-  val succ : t -> t
-
-  val to_string : t -> Utf8_string.t
+  val fresh : unit -> t
 
   val of_string : Utf8_string.t -> t
 end
@@ -187,7 +185,7 @@ and property_name =
 and expression =
   | ESeq of expression * expression
   | ECond of expression * expression * expression
-  | EAssignTarget of binding_pattern
+  | EAssignTarget of assignment_target
   (* EAssignTarget is used on the LHS of assignment and in for-loops.
      for({name} in o);
      for([fst] in o);
@@ -202,7 +200,7 @@ and expression =
   | EVar of ident
   | EFun of ident option * function_declaration
   | EClass of ident option * class_declaration
-  | EArrow of function_declaration * arrow_info
+  | EArrow of function_declaration * bool * arrow_info
   | EStr of Utf8_string.t
   (* A UTF-8 encoded string that may contain escape sequences. *)
   | ETemplate of template
@@ -268,6 +266,8 @@ and statement =
   | Throw_statement of expression
   | Try_statement of block * (formal_parameter option * block) option * block option
   | Debugger_statement
+  | Import of import * Parse_info.t
+  | Export of export * Parse_info.t
 
 and ('left, 'right) either =
   | Left of 'left
@@ -334,6 +334,22 @@ and binding_pattern =
   | ObjectBinding of (binding_property, binding_ident) list_with_rest
   | ArrayBinding of (binding_element option, binding) list_with_rest
 
+and object_target_elt =
+  | TargetPropertyId of ident * initialiser option
+  | TargetProperty of property_name * expression
+  | TargetPropertySpread of expression
+  | TargetPropertyMethod of property_name * method_
+
+and array_target_elt =
+  | TargetElementId of ident * initialiser option
+  | TargetElementHole
+  | TargetElement of expression
+  | TargetElementSpread of expression
+
+and assignment_target =
+  | ObjectTarget of object_target_elt list
+  | ArrayTarget of array_target_elt list
+
 and binding_ident = ident
 
 and binding_property =
@@ -343,6 +359,44 @@ and binding_property =
 and function_body = statement_list
 
 and program = statement_list
+
+and export =
+  | ExportVar of variable_declaration_kind * variable_declaration list
+  | ExportFun of ident * function_declaration
+  | ExportClass of ident * class_declaration
+  | ExportNames of (ident * Utf8_string.t) list
+  (* default *)
+  | ExportDefaultFun of ident * function_declaration
+  | ExportDefaultClass of ident * class_declaration
+  | ExportDefaultExpression of expression
+  (* from *)
+  | ExportFrom of
+      { kind : export_from_kind
+      ; from : Utf8_string.t
+      }
+  | CoverExportFrom of early_error
+
+and export_from_kind =
+  | Export_all of Utf8_string.t option
+  | Export_names of (Utf8_string.t * Utf8_string.t) list
+
+and import =
+  { from : Utf8_string.t
+  ; kind : import_kind
+  }
+
+and import_default = ident
+
+and import_kind =
+  | Namespace of import_default option * ident
+  (* import * as name from "fname" *)
+  (* import defaultname, * as name from "fname" *)
+  | Named of import_default option * (Utf8_string.t * ident) list
+  (* import { 'a' as a, ...} from "fname" *)
+  (* import defaultname, { 'a' as a, ...} from "fname" *)
+  | Default of import_default
+  (* import defaultname from "fname" *)
+  | SideEffect (* import "fname" *)
 
 and program_with_annots = (statement_list * (Js_token.Annot.t * Parse_info.t) list) list
 
@@ -386,4 +440,4 @@ val early_error : ?reason:string -> Parse_info.t -> early_error
 
 val fun_ : ident list -> statement_list -> location -> function_declaration
 
-val assignment_pattern_of_expr : binop option -> expression -> binding_pattern option
+val assignment_target_of_expr : binop option -> expression -> expression

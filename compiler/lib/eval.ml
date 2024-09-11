@@ -200,7 +200,7 @@ let is_int ~target info x =
               match target with
               | `JavaScript -> Y
               | `Wasm -> N)
-          | Expr (Block (_, _, _)) | Expr (Constant _) -> N
+          | Expr (Block (_, _, _, _)) | Expr (Constant _) -> N
           | _ -> Unknown)
         Unknown
         (fun u v ->
@@ -215,6 +215,46 @@ let is_int ~target info x =
       | `JavaScript -> Y
       | `Wasm -> N)
   | Pc _ -> N
+
+let the_tag_of info x get =
+  match x with
+  | Pv x ->
+      get_approx
+        info
+        (fun x ->
+          match info.info_defs.(Var.idx x) with
+          | Expr (Block (j, _, _, _)) ->
+              if Var.ISet.mem info.info_possibly_mutable x then None else get j
+          | Expr (Constant (Tuple (j, _, _))) -> get j
+          | _ -> None)
+        None
+        (fun u v ->
+          match u, v with
+          | Some i, Some j when Poly.(i = j) -> u
+          | _ -> None)
+        x
+  | Pc (Tuple (j, _, _)) -> get j
+  | _ -> None
+
+let the_cont_of info x (a : cont array) =
+  (* The value of [x] might be meaningless when we're inside a dead code.
+     The proper fix would be to remove the deadcode entirely.
+     Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
+     see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
+  let get i = if i >= 0 && i < Array.length a then Some a.(i) else None in
+  get_approx
+    info
+    (fun x ->
+      match info.info_defs.(Var.idx x) with
+      | Expr (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get
+      | Expr (Constant (Int (_, j))) -> get (Int32.to_int j)
+      | _ -> None)
+    None
+    (fun u v ->
+      match u, v with
+      | Some i, Some j when Poly.(i = j) -> u
+      | _ -> None)
+    x
 
 let eval_instr ~target info ((x, loc) as i) =
   match x with
@@ -265,6 +305,13 @@ let eval_instr ~target info ((x, loc) as i) =
           let c = Constant (Int (Regular, b)) in
           Flow.update_def info x c;
           [ Let (x, c), loc ])
+  | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
+      match the_tag_of info y (fun x -> Some x) with
+      | Some tag ->
+          let c = Constant (Int (Regular, Int32.of_int tag)) in
+          Flow.update_def info x c;
+          [ Let (x, c), loc ]
+      | None -> [ i ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
       [ ( Let
@@ -275,7 +322,7 @@ let eval_instr ~target info ((x, loc) as i) =
                    | `JavaScript -> "js_of_ocaml"
                    | `Wasm -> "wasm_of_ocaml")) )
         , noloc )
-      ; Let (x, Block (0, [| jsoo |], NotArray)), loc
+      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable)), loc
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
@@ -318,34 +365,6 @@ let eval_instr ~target info ((x, loc) as i) =
           ])
   | _ -> [ i ]
 
-type case_of =
-  | CConst of int
-  | CTag of int
-  | Unknown
-
-let the_case_of info x =
-  match x with
-  | Pv x ->
-      get_approx
-        info
-        (fun x ->
-          match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Int (_, i))) -> CConst (Int32.to_int i)
-          | Expr (Block (j, _, _)) ->
-              if Var.ISet.mem info.info_possibly_mutable x then Unknown else CTag j
-          | Expr (Constant (Tuple (j, _, _))) -> CTag j
-          | _ -> Unknown)
-        Unknown
-        (fun u v ->
-          match u, v with
-          | CTag i, CTag j when i = j -> u
-          | CConst i, CConst j when i = j -> u
-          | _ -> Unknown)
-        x
-  | Pc (Int (_, i)) -> CConst (Int32.to_int i)
-  | Pc (Tuple (j, _, _)) -> CTag j
-  | _ -> Unknown
-
 type cond_of =
   | Zero
   | Non_zero
@@ -366,8 +385,8 @@ let the_cond_of info x =
             | NativeString _
             | Float_array _
             | Int64 _ )) -> Non_zero
-      | Expr (Block (_, _, _)) -> Non_zero
-      | Expr (Field _ | Closure _ | Prim _ | Apply _) -> Unknown
+      | Expr (Block (_, _, _, _)) -> Non_zero
+      | Expr (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | Param | Phi _ -> Unknown)
     Unknown
     (fun u v ->
@@ -388,15 +407,10 @@ let eval_branch info (l, loc) =
           | Zero -> Branch ffalse
           | Non_zero -> Branch ftrue
           | Unknown -> b)
-    | Switch (x, const, tags) as b -> (
-        (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
-           The proper fix would be to remove the deadcode entirely.
-           Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
-           see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
-        match the_case_of info (Pv x) with
-        | CConst j when j >= 0 && j < Array.length const -> Branch const.(j)
-        | CTag j when j >= 0 && j < Array.length tags -> Branch tags.(j)
-        | CConst _ | CTag _ | Unknown -> b)
+    | Switch (x, a) as b -> (
+        match the_cont_of info x a with
+        | Some cont -> Branch cont
+        | None -> b)
     | _ as b -> b
   in
   l, loc
@@ -414,8 +428,9 @@ let rec do_not_raise pc visited blocks =
         | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
+            | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()
             | Prim (Extern _, _) -> raise May_raise
             | Prim (_, _) -> ()));
@@ -427,13 +442,9 @@ let rec do_not_raise pc visited blocks =
         let visited = do_not_raise pc1 visited blocks in
         let visited = do_not_raise pc2 visited blocks in
         visited
-    | Switch (_, a1, a2) ->
+    | Switch (_, a1) ->
         let visited =
           Array.fold_left a1 ~init:visited ~f:(fun visited (pc, _) ->
-              do_not_raise pc visited blocks)
-        in
-        let visited =
-          Array.fold_left a2 ~init:visited ~f:(fun visited (pc, _) ->
               do_not_raise pc visited blocks)
         in
         visited
@@ -443,8 +454,7 @@ let drop_exception_handler blocks =
   Addr.Map.fold
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2, addrset), loc; _ } as b
-        -> (
+      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2), loc; _ } as b -> (
           try
             let visited = do_not_raise addr Addr.Set.empty blocks in
             let b = { b with branch = Branch cont1, loc } in
@@ -455,9 +465,7 @@ let drop_exception_handler blocks =
                   let b = Addr.Map.find pc2 blocks in
                   let branch =
                     match b.branch with
-                    | Poptrap ((addr, _) as cont), loc ->
-                        assert (Addr.Set.mem addr addrset);
-                        Branch cont, loc
+                    | Poptrap cont, loc -> Branch cont, loc
                     | x -> x
                   in
                   let b = { b with branch } in

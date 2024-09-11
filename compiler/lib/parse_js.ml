@@ -511,10 +511,26 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
       raise (Parsing_error (Parse_info.t_of_pos p))
 
 let fail_early =
-  object
-    inherit Js_traverse.iter
+  object (m)
+    inherit Js_traverse.iter as super
 
     method early_error p = raise (Parsing_error p.loc)
+
+    method statement s =
+      match s with
+      | Import (_, loc) -> raise (Parsing_error loc)
+      | Export (_, loc) -> raise (Parsing_error loc)
+      | _ -> super#statement s
+
+    method program p =
+      List.iter p ~f:(fun ((p : Javascript.statement), _loc) ->
+          match p with
+          | Import _ -> super#statement p
+          | Export (e, _) -> (
+              match e with
+              | CoverExportFrom e -> m#early_error e
+              | _ -> super#statement p)
+          | _ -> super#statement p)
   end
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])

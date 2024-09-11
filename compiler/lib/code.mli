@@ -181,17 +181,26 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
+type special =
+  | Undefined
+  | Alias_prim of string
+
+type mutability =
+  | Immutable
+  | Maybe_mutable
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
       ; exact : bool (* if true, then # of arguments = # of parameters *)
       }
-  | Block of int * Var.t array * array_or_not
+  | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
+  | Special of special
 
 type instr =
   | Let of Var.t * expr
@@ -206,8 +215,8 @@ type last =
   | Stop
   | Branch of cont
   | Cond of Var.t * cont * cont
-  | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * Addr.Set.t
+  | Switch of Var.t * cont array
+  | Pushtrap of cont * Var.t * cont
   | Poptrap of cont
 
 type block =
@@ -270,6 +279,8 @@ val fold_closures_outermost_first :
 val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs
+
+val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
 
 val traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c

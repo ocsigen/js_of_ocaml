@@ -55,13 +55,13 @@ let specialize_instr ~target info i =
       | None -> i)
   | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])), _ -> (
       match the_def_of info a with
-      | Some (Block (_, a, _)) ->
+      | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])), _ -> (
       match the_def_of info a with
-      | Some (Block (_, a, _)) ->
+      | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
@@ -69,7 +69,7 @@ let specialize_instr ~target info i =
       match the_string_of info m with
       | Some m when Javascript.is_ident m -> (
           match the_def_of info a with
-          | Some (Block (_, a, _)) ->
+          | Some (Block (_, a, _, _)) ->
               let a = Array.map a ~f:(fun x -> Pv x) in
               Let
                 ( x
@@ -82,7 +82,7 @@ let specialize_instr ~target info i =
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_new", [ c; a ])), _ -> (
       match the_def_of info a with
-      | Some (Block (_, a, _)) ->
+      | Some (Block (_, a, _, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
@@ -90,13 +90,13 @@ let specialize_instr ~target info i =
       try
         let a =
           match the_def_of info a with
-          | Some (Block (_, a, _)) -> a
+          | Some (Block (_, a, _, _)) -> a
           | _ -> raise Exit
         in
         let a =
           Array.map a ~f:(fun x ->
               match the_def_of info (Pv x) with
-              | Some (Block (_, [| k; v |], _)) ->
+              | Some (Block (_, [| k; v |], _, _)) ->
                   let k =
                     match the_string_of info (Pv k) with
                     | Some s when String.is_valid_utf_8 s ->

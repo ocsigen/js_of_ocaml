@@ -60,6 +60,10 @@ end) =
 struct
   open D
 
+  let nane_of_label = function
+    | Javascript.Label.L _ -> assert false
+    | Javascript.Label.S n -> n
+
   let debug_enabled = Config.Flag.debuginfo ()
 
   let output_debug_info f loc =
@@ -285,7 +289,9 @@ struct
     | Try_statement _
     | Function_declaration _
     | Class_declaration _
-    | Debugger_statement -> false
+    | Debugger_statement
+    | Import _
+    | Export _ -> false
 
   let starts_with ~obj ~funct ~let_identifier ~async_identifier l e =
     let rec traverse l e =
@@ -297,8 +303,8 @@ struct
       | ESeq (e, _) -> Prec.(l <= Expression) && traverse Expression e
       | ECond (e, _, _) ->
           Prec.(l <= ConditionalExpression) && traverse ShortCircuitExpression e
-      | EAssignTarget (ObjectBinding _) -> obj
-      | EAssignTarget (ArrayBinding _) -> false
+      | EAssignTarget (ObjectTarget _) -> obj
+      | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e, _) ->
           let out, lft, _rght = op_prec op in
           Prec.(l <= out) && traverse lft e
@@ -364,6 +370,13 @@ struct
     Buffer.add_char b quote;
     PP.string f (Buffer.contents b)
 
+  let pp_string_lit f (Stdlib.Utf8_string.Utf8 s) =
+    let quote = best_string_quote s in
+    pp_string f ~quote s
+
+  let pp_ident_or_string_lit f (Stdlib.Utf8_string.Utf8 s_lit as s) =
+    if is_ident s_lit then PP.string f s_lit else pp_string_lit f s
+
   let rec comma_list f f_elt l =
     match l with
     | [] -> ()
@@ -422,15 +435,8 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident i l b pc
-    | EClass (i, cl_decl) ->
-        PP.string f "class";
-        (match i with
-        | None -> ()
-        | Some i ->
-            PP.space f;
-            ident f i);
-        class_declaration f cl_decl
-    | EArrow ((k, p, b, pc), _) ->
+    | EClass (i, cl_decl) -> class_declaration f i cl_decl
+    | EArrow ((k, p, b, pc), consise, _) ->
         if Prec.(l > AssignementExpression)
         then (
           PP.start_group f 1;
@@ -455,15 +461,15 @@ struct
             PP.string f ")=>";
             PP.end_group f);
         PP.end_group f;
-        (match b with
-        | [ (Return_statement (Some e), loc) ] ->
+        (match b, consise with
+        | [ (Return_statement (Some e), loc) ], true ->
             (* Should not starts with '{' *)
             PP.start_group f 1;
             PP.break1 f;
             output_debug_info f loc;
             parenthesized_expression ~obj:true AssignementExpression f e;
             PP.end_group f
-        | l ->
+        | l, _ ->
             let b =
               match l with
               | [ (Block l, _) ] -> l
@@ -519,9 +525,7 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EStr (Utf8 s) ->
-        let quote = best_string_quote s in
-        pp_string f ~quote s
+    | EStr x -> pp_string_lit f x
     | ETemplate l -> template f l
     | EBool b -> PP.string f (if b then "true" else "false")
     | ENum num ->
@@ -686,7 +690,56 @@ struct
         if Prec.(l > out) then PP.string f ")";
         PP.end_group f;
         PP.end_group f
-    | EAssignTarget p -> pattern f p
+    | EAssignTarget t -> (
+        let property f p =
+          match p with
+          | TargetPropertyId (id, None) -> ident f id
+          | TargetPropertyId (id, Some (e, _)) ->
+              ident f id;
+              PP.space f;
+              PP.string f "=";
+              PP.space f;
+              expression AssignementExpression f e
+          | TargetProperty (pn, e) ->
+              PP.start_group f 0;
+              property_name f pn;
+              PP.string f ":";
+              PP.space f;
+              expression AssignementExpression f e;
+              PP.end_group f
+          | TargetPropertySpread e ->
+              PP.string f "...";
+              expression AssignementExpression f e
+          | TargetPropertyMethod (n, m) -> method_ f property_name n m
+        in
+        let element f p =
+          match p with
+          | TargetElementHole -> ()
+          | TargetElementId (id, None) -> ident f id
+          | TargetElementId (id, Some (e, _)) ->
+              ident f id;
+              PP.space f;
+              PP.string f "=";
+              PP.space f;
+              expression AssignementExpression f e
+          | TargetElement e -> expression AssignementExpression f e
+          | TargetElementSpread e ->
+              PP.string f "...";
+              expression AssignementExpression f e
+        in
+        match t with
+        | ObjectTarget list ->
+            PP.start_group f 1;
+            PP.string f "{";
+            comma_list f property list;
+            PP.string f "}";
+            PP.end_group f
+        | ArrayTarget list ->
+            PP.start_group f 1;
+            PP.string f "[";
+            comma_list f element list;
+            PP.string f "]";
+            PP.end_group f)
     | EArr el ->
         PP.start_group f 1;
         PP.string f "[";
@@ -829,9 +882,7 @@ struct
   and property_name f n =
     match n with
     | PNI (Utf8 s) -> PP.string f s
-    | PNS (Utf8 s) ->
-        let quote = best_string_quote s in
-        pp_string f ~quote s
+    | PNS s -> pp_string_lit f s
     | PNN v -> expression Expression f (ENum v)
     | PComputed e ->
         PP.string f "[";
@@ -1094,11 +1145,7 @@ struct
           | { async = false; generator = true } -> "function*"
         in
         function_declaration f prefix ident (Some i) l b loc'
-    | Class_declaration (i, cl_decl) ->
-        PP.string f "class";
-        PP.space f;
-        ident f i;
-        class_declaration f cl_decl
+    | Class_declaration (i, cl_decl) -> class_declaration f (Some i) cl_decl
     | Empty_statement -> PP.string f ";"
     | Debugger_statement ->
         PP.string f "debugger";
@@ -1260,7 +1307,7 @@ struct
         last_semi ()
     | Continue_statement (Some s) ->
         PP.string f "continue ";
-        let (Utf8 l) = Javascript.Label.to_string s in
+        let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
     | Break_statement None ->
@@ -1268,7 +1315,7 @@ struct
         last_semi ()
     | Break_statement (Some s) ->
         PP.string f "break ";
-        let (Utf8 l) = Javascript.Label.to_string s in
+        let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
     | Return_statement e -> (
@@ -1309,7 +1356,7 @@ struct
             (* There MUST be a space between the return and its
                argument. A line return will not work *))
     | Labelled_statement (i, s) ->
-        let (Utf8 l) = Javascript.Label.to_string i in
+        let (Utf8 l) = nane_of_label i in
         PP.string f l;
         PP.string f ":";
         PP.space f;
@@ -1405,6 +1452,140 @@ struct
             PP.string f "finally";
             block f b);
         PP.end_group f
+    | Import ({ kind; from }, _loc) ->
+        PP.start_group f 0;
+        PP.string f "import";
+        (match kind with
+        | SideEffect -> ()
+        | Default i ->
+            PP.space f;
+            ident f i
+        | Namespace (def, i) ->
+            Option.iter def ~f:(fun def ->
+                PP.space f;
+                ident f def;
+                PP.string f ",");
+            PP.space f;
+            PP.string f "* as ";
+            ident f i
+        | Named (def, l) ->
+            Option.iter def ~f:(fun def ->
+                PP.space f;
+                ident f def;
+                PP.string f ",");
+            PP.space f;
+            PP.string f "{";
+            PP.space f;
+            comma_list
+              f
+              (fun f (s, i) ->
+                if match i with
+                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                   | _ -> false
+                then ident f i
+                else (
+                  pp_ident_or_string_lit f s;
+                  PP.string f " as ";
+                  ident f i))
+              l;
+            PP.space f;
+            PP.string f "}");
+        (match kind with
+        | SideEffect -> ()
+        | _ ->
+            PP.space f;
+            PP.string f "from");
+        PP.space f;
+        pp_string_lit f from;
+        PP.string f ";";
+        PP.end_group f
+    | Export (e, _loc) ->
+        PP.start_group f 0;
+        PP.string f "export";
+        (match e with
+        | ExportNames l ->
+            PP.space f;
+            PP.string f "{";
+            PP.space f;
+            comma_list
+              f
+              (fun f (i, s) ->
+                if match i with
+                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                   | _ -> false
+                then ident f i
+                else (
+                  ident f i;
+                  PP.string f " as ";
+                  pp_ident_or_string_lit f s))
+              l;
+            PP.space f;
+            PP.string f "};"
+        | ExportFrom { kind; from } ->
+            PP.space f;
+            (match kind with
+            | Export_all None -> PP.string f "*"
+            | Export_all (Some s) ->
+                PP.string f "* as ";
+                pp_ident_or_string_lit f s
+            | Export_names l ->
+                PP.string f "{";
+                PP.space f;
+                comma_list
+                  f
+                  (fun f (a, b) ->
+                    if Stdlib.Utf8_string.equal a b
+                    then pp_ident_or_string_lit f a
+                    else (
+                      pp_ident_or_string_lit f a;
+                      PP.string f " as ";
+                      pp_ident_or_string_lit f b))
+                  l;
+                PP.space f;
+                PP.string f "}");
+            PP.space f;
+            PP.string f "from";
+            PP.space f;
+            pp_string_lit f from;
+            PP.string f ";"
+        | ExportDefaultExpression ((EFun _ | EClass _) as e) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            expression Expression f e
+        | ExportDefaultExpression e ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            parenthesized_expression
+              ~last_semi
+              ~obj:true
+              ~funct:true
+              ~let_identifier:true
+              Expression
+              f
+              e
+        | ExportDefaultFun (id, decl) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            statement f (Function_declaration (id, decl), loc)
+        | ExportDefaultClass (id, decl) ->
+            PP.space f;
+            PP.string f "default";
+            PP.space f;
+            statement f (Class_declaration (id, decl), loc)
+        | ExportFun (id, decl) ->
+            PP.space f;
+            statement f (Function_declaration (id, decl), loc)
+        | ExportClass (id, decl) ->
+            PP.space f;
+            statement f (Class_declaration (id, decl), loc)
+        | ExportVar (k, l) ->
+            PP.space f;
+            variable_declaration_list k (not can_omit_semi) f l
+        | CoverExportFrom e -> early_error e);
+        PP.end_group f
 
   and statement_list f ?skip_last_semi b =
     match b with
@@ -1456,23 +1637,39 @@ struct
     PP.string f "}";
     PP.end_group f
 
-  and class_declaration f x =
+  and class_declaration f i x =
+    PP.start_group f 1;
+    PP.start_group f 0;
+    PP.start_group f 0;
+    PP.string f "class";
+    (match i with
+    | None -> ()
+    | Some i ->
+        PP.space f;
+        ident f i);
+    PP.end_group f;
     Option.iter x.extends ~f:(fun e ->
         PP.space f;
         PP.string f "extends";
         PP.space f;
-        expression Expression f e);
+        expression Expression f e;
+        PP.space f);
+    PP.end_group f;
+    PP.start_group f 2;
     PP.string f "{";
-    List.iter x.body ~f:(fun x ->
-        match x with
+    PP.break f;
+    List.iter_last x.body ~f:(fun last x ->
+        (match x with
         | CEMethod (static, n, m) ->
+            PP.start_group f 0;
             if static
             then (
               PP.string f "static";
               PP.space f);
             method_ f class_element_name n m;
-            PP.break f
+            PP.end_group f
         | CEField (static, n, i) ->
+            PP.start_group f 0;
             if static
             then (
               PP.string f "static";
@@ -1486,12 +1683,19 @@ struct
                 PP.space f;
                 output_debug_info f loc;
                 expression Expression f e);
-            PP.break f
+            PP.string f ";";
+            PP.end_group f
         | CEStaticBLock l ->
+            PP.start_group f 0;
             PP.string f "static";
+            PP.space f;
             block f l;
-            PP.break f);
-    PP.string f "}"
+            PP.end_group f);
+        if not last then PP.break f);
+    PP.end_group f;
+    PP.break f;
+    PP.string f "}";
+    PP.end_group f
 
   and class_element_name f x =
     match x with

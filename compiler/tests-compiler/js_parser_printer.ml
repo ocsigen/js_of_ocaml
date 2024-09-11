@@ -416,22 +416,20 @@ let%expect_test "assignment pattern" =
 
   [%expect
     {|
-     /*<<fake:2:4>>*/ var x, y, rest;
-     /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
-     /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
-     /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
-     /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
-     {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
-     /*<<fake:9:4>>*/ [x, y] = [1, 2];
-     /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
-     /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
-     /*<<fake:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
-     /*<<fake:15:4>>*/ for
-    ([a, b, {c, d =  /*<<fake:15:17>>*/ e, [f]: [g, h, a, i, j]}] in 3)
-      /*<<fake:15:43>>*/ ;
-     /*<<fake:17:4>>*/ for
-    ([a, b, {c, d =  /*<<fake:17:17>>*/ e, [f]: [g, h, a, i, j]}] of 3)
-      /*<<fake:17:43>>*/ ; |}]
+    /*<<fake:2:4>>*/ var x, y, rest;
+    /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
+    /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
+    /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
+    /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
+    {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+    /*<<fake:9:4>>*/ [x, y] = [1, 2];
+    /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
+    /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
+    /*<<fake:13:4>>*/ ({x, y, ...rest} = {x: 1, y: 2});
+    /*<<fake:15:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] in 3)
+     /*<<fake:15:43>>*/ ;
+    /*<<fake:17:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] of 3)
+     /*<<fake:17:43>>*/ ; |}]
 
 let%expect_test "string template" =
   (* GH#1017 *)
@@ -527,36 +525,24 @@ class x extends p {
 
   [%expect
     {|
-     /*<<fake:2:0>>*/ class
-    x
-    extends
-    p{constructor(){
-      /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super(a, b, c);
-     /*<<fake:3:4>>*/ }
-    foo(){
-      /*<<fake:8:6>>*/  /*<<fake:8:12>>*/ var s = super[d];
-      /*<<fake:9:6>>*/  /*<<fake:9:12>>*/ var s = super.d;
-     /*<<fake:6:4>>*/ }
-    static
-    bar(){
-      /*<<fake:14:6>>*/  /*<<fake:14:12>>*/ var s = super[d];
-      /*<<fake:15:6>>*/  /*<<fake:15:12>>*/ var s = super.d;
-     /*<<fake:12:11>>*/ }
-    x
-    =
-     /*<<fake:17:5>>*/ 3
-    static
-    y
-    =
-     /*<<fake:19:12>>*/ 5
-    #z
-    =
-     /*<<fake:21:6>>*/ 6
-    static
-    #t
-    =
-     /*<<fake:23:13>>*/ 2
-    static{ /*<<fake:25:12>>*/  /*<<fake:25:18>>*/ var x = 3;}
+    /*<<fake:2:0>>*/ class x extends p {
+      constructor(){
+        /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super(a, b, c);
+       /*<<fake:3:4>>*/ }
+      foo(){
+        /*<<fake:8:6>>*/  /*<<fake:8:12>>*/ var s = super[d];
+        /*<<fake:9:6>>*/  /*<<fake:9:12>>*/ var s = super.d;
+       /*<<fake:6:4>>*/ }
+      static
+      bar(){
+        /*<<fake:14:6>>*/  /*<<fake:14:12>>*/ var s = super[d];
+        /*<<fake:15:6>>*/  /*<<fake:15:12>>*/ var s = super.d;
+       /*<<fake:12:11>>*/ }
+      x =  /*<<fake:17:5>>*/ 3;
+      static y =  /*<<fake:19:12>>*/ 5;
+      #z =  /*<<fake:21:6>>*/ 6;
+      static #t =  /*<<fake:23:13>>*/ 2;
+      static { /*<<fake:25:12>>*/  /*<<fake:25:18>>*/ var x = 3;}
     } |}]
 
 let%expect_test "ite" =
@@ -641,6 +627,22 @@ var e = new (class f {})
   [%expect
     {|
     var e = new f; var e = new f(); var e = new class f{}; var e = new class f{}; |}]
+
+let%expect_test "assignment targets" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+ [a,b,c, {a,b}] = [];
+ [[[x = 5]], {a,b}, ...rest] = [];
+ ({a: [a,b] = f(), b = 3, ...rest} = {});
+|};
+  [%expect
+    {|
+    [a, b, c, {a, b}] = [];
+    [[[x = 5]], {a, b}, ...rest] = [];
+    ({a: [a, b] = f(), b = 3, ...rest} = {}); |}]
 
 let%expect_test "error reporting" =
   (try

@@ -96,7 +96,7 @@ let dead_code_elimination
   @@ fun deps_file ->
   Fs.with_intermediate_file (Filename.temp_file "usage" ".txt")
   @@ fun usage_file ->
-  let primitives = Linker.get_provided () in
+  let primitives = Linker.list_all () in
   Fs.write_file ~name:deps_file ~contents:(generate_dependencies ~dependencies primitives);
   command
     ("wasm-metadce"

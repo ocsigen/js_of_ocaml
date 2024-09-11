@@ -688,7 +688,7 @@ module Memory = struct
       let* ty = Type.block_type in
       return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
 
-  let tag e = Value.int_val (wasm_array_get e (Arith.const 0l))
+  let tag e = wasm_array_get e (Arith.const 0l)
 
   let array_length e =
     let* block = Type.block_type in
@@ -1453,7 +1453,7 @@ let () =
               let name = Printf.sprintf "js_expr_%x" (String.hash str) in
               let* () =
                 register_fragment name (fun () ->
-                    EArrow (J.fun_ [] [ Return_statement (Some e), N ] N, AUnknown))
+                    EArrow (J.fun_ [] [ Return_statement (Some e), N ] N, true, AUnknown))
               in
               let* js_val = JavaScript.invoke_fragment name [] in
               return (W.Call (wrap, [ js_val ]))
@@ -1505,6 +1505,7 @@ let () =
                     , N )
                   ]
                   N
+              , true
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg l in
@@ -1531,6 +1532,7 @@ let () =
                     , N )
                   ]
                   N
+              , true
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg l in
@@ -1562,6 +1564,7 @@ let () =
                         , N )
                       ]
                       N
+                  , true
                   , AUnknown ))
           in
           let o = transl_prim_arg o in
@@ -1591,6 +1594,7 @@ let () =
                     , N )
                   ]
                   N
+              , true
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg l in
@@ -1610,6 +1614,7 @@ let () =
                       [ J.ident o ]
                       [ Return_statement (Some (J.dot (EVar (J.ident o)) prop)), N ]
                       N
+                  , true
                   , AUnknown ))
           in
           JavaScript.invoke_fragment name [ transl_prim_arg x ]
@@ -1636,6 +1641,7 @@ let () =
                         , N )
                       ]
                       N
+                  , true
                   , AUnknown ))
           in
           let l = List.map ~f:transl_prim_arg [ x; y ] in
@@ -1678,6 +1684,7 @@ let () =
                     , N )
                   ]
                   N
+              , true
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg vl in

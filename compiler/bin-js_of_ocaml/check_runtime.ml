@@ -88,7 +88,7 @@ let f (runtime_files, bytecode, target_env) =
       needed
   in
   let needed = StringSet.of_list (List.map ~f:fst needed) in
-  let from_runtime1 = Linker.get_provided () in
+  let from_runtime1 = Linker.list_all () in
   let from_runtime2 = Primitive.get_external () in
   (* [from_runtime2] is a superset of [from_runtime1].
      Extra primitives are registered on the ocaml side (e.g. generate.ml) *)

@@ -28,9 +28,10 @@ let expr s e =
   | Constant _ -> e
   | Apply { f; args; exact } ->
       Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
-  | Block (n, a, k) -> Block (n, Array.map a ~f:(fun x -> s x), k)
+  | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
   | Field (x, n) -> Field (s x, n)
   | Closure (l, pc) -> Closure (l, subst_cont s pc)
+  | Special _ -> e
   | Prim (p, l) ->
       Prim
         ( p
@@ -54,16 +55,11 @@ let last s (l, loc) =
     match l with
     | Stop -> l
     | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2, pcs) ->
-        Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
+    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, x, subst_cont s cont2)
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
     | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, a1, a2) ->
-        Switch
-          ( s x
-          , Array.map a1 ~f:(fun cont -> subst_cont s cont)
-          , Array.map a2 ~f:(fun cont -> subst_cont s cont) )
+    | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont s cont))
     | Poptrap cont -> Poptrap (subst_cont s cont)
   in
   l, loc

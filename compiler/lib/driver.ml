@@ -278,10 +278,12 @@ let gen_missing js missing =
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
 
-let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
-  if not standalone
+let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
+    Linker.output =
+  if (not export_runtime) && not standalone
   then { runtime_code = js; always_required_codes = [] }
   else
+    let check_missing = standalone in
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
     let traverse = new Js_traverse.free in
@@ -297,40 +299,57 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
         :: js
       else js
     in
-    let free = traverse#get_free in
-    let free : StringSet.t =
-      Javascript.IdentSet.fold
-        (fun x acc ->
-          match x with
-          | V _ ->
-              (* This is an error. We don't complain here as we want
-                 to be able to name other variable to make it
-                 easier to spot the problematic ones *)
-              acc
-          | S { name = Utf8 x; _ } -> StringSet.add x acc)
-        free
-        StringSet.empty
+    let used =
+      let all_provided = Linker.list_all () in
+      match link with
+      | `All -> all_provided
+      | `All_from from -> Linker.list_all ~from ()
+      | `No -> StringSet.empty
+      | `Needed ->
+          let free = traverse#get_free in
+          let free : StringSet.t =
+            Javascript.IdentSet.fold
+              (fun x acc ->
+                match x with
+                | V _ ->
+                    (* This is an error. We don't complain here as we want
+                       to be able to name other variable to make it
+                       easier to spot the problematic ones *)
+                    acc
+                | S { name = Utf8 x; _ } -> StringSet.add x acc)
+              free
+              StringSet.empty
+          in
+          let prim = Primitive.get_external () in
+          let all_external = StringSet.union prim all_provided in
+          StringSet.inter free all_external
     in
-    let prim = Primitive.get_external () in
-    let prov = Linker.get_provided () in
-    let all_external = StringSet.union prim prov in
-    let used = StringSet.inter free all_external in
-    let linkinfos = Linker.init () in
-    let linkinfos, missing = Linker.resolve_deps ~linkall linkinfos used in
-    (* gen_missing may use caml_failwith *)
-    let linkinfos, missing =
+    let linkinfos =
+      let from =
+        match link with
+        | `All_from l -> Some l
+        | `All | `No | `Needed -> None
+      in
+      Linker.init ?from ()
+    in
+    let linkinfos, js =
+      let linkinfos, missing = Linker.resolve_deps ~check_missing linkinfos used in
+      (* gen_missing may use caml_failwith *)
       if (not (StringSet.is_empty missing)) && Config.Flag.genprim ()
       then
         let linkinfos, missing2 =
-          Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith")
+          Linker.resolve_deps
+            ~check_missing
+            linkinfos
+            (StringSet.singleton "caml_failwith")
         in
-        linkinfos, StringSet.union missing missing2
-      else linkinfos, missing
+        let missing = StringSet.union missing missing2 in
+        linkinfos, gen_missing js missing
+      else linkinfos, js
     in
-    let js = if Config.Flag.genprim () then gen_missing js missing else js in
     if times () then Format.eprintf "  linking: %a@." Timer.print t;
     let js =
-      if linkall
+      if export_runtime
       then
         let open Javascript in
         let all = Linker.all linkinfos in
@@ -339,18 +358,60 @@ let link ~standalone ~linkall (js : Javascript.statement_list) : Linker.output =
               let name = Utf8_string.of_string_exn name in
               Property (PNI name, EVar (ident name)))
         in
-        ( Expression_statement
-            (EBin
-               ( Eq
-               , dot
-                   (EVar (ident Constant.global_object_))
-                   (Utf8_string.of_string_exn "jsoo_runtime")
-               , EObj all ))
-        , N )
+        (if standalone
+         then
+           ( Expression_statement
+               (EBin
+                  ( Eq
+                  , dot
+                      (EVar (ident Constant.global_object_))
+                      (Utf8_string.of_string_exn "jsoo_runtime")
+                  , EObj all ))
+           , N )
+         else
+           ( Expression_statement
+               (call
+                  (dot
+                     (EVar (ident (Utf8_string.of_string_exn "Object")))
+                     (Utf8_string.of_string_exn "assign"))
+                  [ dot
+                      (EVar (ident Constant.global_object_))
+                      (Utf8_string.of_string_exn "jsoo_runtime")
+                  ; EObj all
+                  ]
+                  N)
+           , N ))
         :: js
       else js
     in
-    Linker.link js linkinfos
+    let missing = Linker.missing linkinfos in
+    let output = Linker.link ~check_missing js linkinfos in
+    if not (List.is_empty missing)
+    then
+      { output with
+        runtime_code =
+          (let open Javascript in
+           ( Variable_statement
+               ( Var
+               , [ DeclPattern
+                     ( ObjectBinding
+                         { list =
+                             List.map
+                               ~f:(fun name ->
+                                 let name = Utf8_string.of_string_exn name in
+                                 Prop_ident (ident name, None))
+                               missing
+                         ; rest = None
+                         }
+                     , ( dot
+                           (EVar (ident Constant.global_object_))
+                           (Utf8_string.of_string_exn "jsoo_runtime")
+                       , N ) )
+                 ] )
+           , N )
+           :: output.runtime_code)
+      }
+    else output
 
 let check_js js =
   let t = Timer.make () in
@@ -368,7 +429,7 @@ let check_js js =
       StringSet.empty
   in
   let prim = Primitive.get_external () in
-  let prov = Linker.get_provided () in
+  let prov = Linker.list_all () in
   let all_external = StringSet.union prim prov in
   let missing = StringSet.inter free all_external in
   let missing = StringSet.diff missing Reserved.provided in
@@ -563,7 +624,7 @@ if (typeof module === 'object' && module.exports) {
     if Config.Flag.shortvar ()
     then (
       let t5 = Timer.make () in
-      let js = (new Js_traverse.rename_variable)#program js in
+      let js = (new Js_traverse.rename_variable ~esm:false)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
       js)
     else js
@@ -588,9 +649,14 @@ let target_flag (type a) (t : a target) =
   | JavaScript _ -> `JavaScript
   | Wasm -> `Wasm
 
-let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(linkall = false) p =
+let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ~link p =
+  let export_runtime =
+    match link with
+    | `All | `All_from _ -> true
+    | `Needed | `No -> false
+  in
   p
-  |> link ~standalone ~linkall
+  |> link' ~export_runtime ~standalone ~link
   |> pack ~wrap_with_fun ~standalone
   |> coloring
   |> check_js
@@ -601,7 +667,7 @@ let full
     ~standalone
     ~wrap_with_fun
     ~profile
-    ~linkall
+    ~link
     ~source_map
     d
     p : result =
@@ -629,7 +695,7 @@ let full
       let exported_runtime = not standalone in
       let emit formatter =
         generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-        +> link_and_pack ~standalone ~wrap_with_fun ~linkall
+        +> link_and_pack ~standalone ~wrap_with_fun ~link
         +> output formatter ~source_map ()
       in
       let source_map = emit formatter r in
@@ -638,14 +704,14 @@ let full
       let (p, live_vars), _, in_cps = r in
       live_vars, in_cps, p, d
 
-let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~linkall d p =
+let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
     full
       ~target:(JavaScript formatter)
       ~standalone
       ~wrap_with_fun
       ~profile
-      ~linkall
+      ~link
       ~source_map:None
       d
       p
@@ -657,21 +723,14 @@ let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
-    ?(linkall = false)
+    ~link
     ?source_map
     d
     p =
-  full ~target ~standalone ~wrap_with_fun ~profile ~linkall ~source_map d p
+  full ~target ~standalone ~wrap_with_fun ~profile ~link ~source_map d p
 
-let f'
-    ?(standalone = true)
-    ?(wrap_with_fun = `Iife)
-    ?(profile = O1)
-    ?(linkall = false)
-    formatter
-    d
-    p =
-  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~linkall d p
+let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
+  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
@@ -680,7 +739,7 @@ let from_string ~prims ~debug s formatter =
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
-    ~linkall:false
+    ~link:`No
     d
     p
 

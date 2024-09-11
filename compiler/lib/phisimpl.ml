@@ -50,9 +50,9 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-  | Constant _ | Apply _ | Prim _ -> ()
+  | Constant _ | Apply _ | Prim _ | Special _ -> ()
   | Closure (_, cont) -> cont_deps blocks vars deps defs cont
-  | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
+  | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
 let program_deps { blocks; _ } =
@@ -77,10 +77,9 @@ let program_deps { blocks; _ } =
       | Cond (_, cont1, cont2) ->
           cont_deps blocks vars deps defs cont1;
           cont_deps blocks vars deps defs cont2
-      | Switch (_, a1, a2) ->
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
-          Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
-      | Pushtrap (cont, _, cont_h, _) ->
+      | Switch (_, a1) ->
+          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
+      | Pushtrap (cont, _, cont_h) ->
           cont_deps blocks vars deps defs cont_h;
           cont_deps blocks vars deps defs cont
       | Poptrap cont -> cont_deps blocks vars deps defs cont)

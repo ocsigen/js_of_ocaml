@@ -38,7 +38,7 @@ let optimizable blocks pc _ =
             +
             match fst branch with
             | Cond _ -> 2
-            | Switch (_, a1, a2) -> Array.length a1 + Array.length a2
+            | Switch (_, a1) -> Array.length a1
             | _ -> 0)
       in
       let optimizable =
@@ -107,14 +107,14 @@ let fold_children blocks pc f accu =
   match fst block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap (_, _, (pc1, _), pcs) -> f pc1 (Addr.Set.fold f pcs accu)
+  | Pushtrap ((try_body, _), _, (pc1, _)) ->
+      f pc1 (Addr.Set.fold f (Code.poptraps blocks try_body) accu)
   | Cond (_, (pc1, _), (pc2, _)) ->
       let accu = f pc1 accu in
       let accu = f pc2 accu in
       accu
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1) ->
       let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
-      let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
       accu
 
 let rewrite_closure blocks cont_pc clos_pc =
@@ -167,8 +167,9 @@ let simple blocks cont mapping =
                    })
           | Prim (prim, args) ->
               `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
-          | Block (tag, args, aon) ->
-              `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon))
+          | Special _ -> `Exp exp
+          | Block (tag, args, aon, mut) ->
+              `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon, mut))
           | Field (x, i) -> `Exp (Field (map_var mapping x, i))
           | Closure _ -> `Fail
           | Constant _ -> `Fail
@@ -252,9 +253,7 @@ let inline ~first_class_primitives live_vars closures pc (outer, blocks, free_pc
                 if Code.Var.compare y y' = 0
                    && Primitive.has_arity prim len
                    && args_equal l args
-                then
-                  ( (Let (x, Prim (Extern "%closure", [ Pc (String prim) ])), loc) :: rem
-                  , state )
+                then (Let (x, Special (Alias_prim prim)), loc) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)
