@@ -254,12 +254,10 @@ let run
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
       Linker.load_fragments
-        ~ignore_always_annotation:true
         ~target_env:Target_env.Isomorphic
         ~filename
         runtimes);
   Linker.load_files
-    ~ignore_always_annotation:true
     ~target_env:Target_env.Isomorphic
     runtime_js_files;
   Linker.check_deps ();
