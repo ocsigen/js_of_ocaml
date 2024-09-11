@@ -14,7 +14,7 @@
    (tools/node_wrapper.sh as node))
   (js_of_ocaml
    (compilation_mode separate)
-   (targets wasm)))
+   (submodes wasm)))
  (wasm-effects
   (binaries
    (tools/node_wrapper.sh as node))
@@ -22,7 +22,7 @@
    (compilation_mode separate)
    (flags
     (:standard --enable effects))
-   (targets wasm)))
+   (submodes wasm)))
  (bench_no_debug
   (flags
    (:standard \ -g))

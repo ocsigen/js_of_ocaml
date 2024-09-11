@@ -67,7 +67,6 @@ let link_and_optimize
     ~sourcemap_root
     ~sourcemap_don't_inline_content
     ~opt_sourcemap
-    ~opt_sourcemap_url
     runtime_wasm_files
     wat_files
     output_file =
@@ -113,7 +112,6 @@ let link_and_optimize
     ~profile
     ~opt_input_sourcemap:opt_temp_sourcemap'
     ~opt_output_sourcemap:opt_sourcemap
-    ~opt_sourcemap_url
     ~input_file:temp_file'
     ~output_file;
   Option.iter
@@ -136,7 +134,6 @@ let link_runtime ~profile runtime_wasm_files output_file =
     ~profile
     ~opt_input_sourcemap:None
     ~opt_output_sourcemap:None
-    ~opt_sourcemap_url:None
     ~input_file:temp_file
     ~output_file
 
@@ -169,8 +166,7 @@ let build_prelude z =
     ~input_file:prelude_file
     ~output_file:tmp_prelude_file
     ~opt_input_sourcemap:None
-    ~opt_output_sourcemap:None
-    ~opt_sourcemap_url:None;
+    ~opt_output_sourcemap:None;
   Zip.add_file z ~name:"prelude.wasm" ~file:tmp_prelude_file;
   predefined_exceptions
 
@@ -365,8 +361,6 @@ let run
          ~profile
          ~opt_input_sourcemap:None
          ~opt_output_sourcemap
-         ~opt_sourcemap_url:
-           (if enable_source_maps then Some (unit_name ^ ".wasm.map") else None)
          ~input_file:wat_file
          ~output_file:tmp_wasm_file;
        Option.iter
@@ -393,35 +387,43 @@ let run
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          Fs.gen_file (Filename.chop_extension output_file ^ ".wat")
          @@ fun wat_file ->
-         let wasm_file =
-           if Filename.check_suffix output_file ".wasm.js"
-           then Filename.chop_extension output_file
-           else Filename.chop_extension output_file ^ ".wasm"
+         let dir = Filename.chop_extension output_file ^ ".assets" in
+         Fs.gen_file dir
+         @@ fun tmp_dir ->
+         Sys.mkdir tmp_dir 0o777;
+         let opt_sourcemap =
+           if enable_source_maps
+           then Some (Filename.concat tmp_dir "code.wasm.map")
+           else None
          in
-         Fs.gen_file wasm_file
-         @@ fun tmp_wasm_file ->
-         opt_with
-           Fs.gen_file
-           (if enable_source_maps then Some (wasm_file ^ ".map") else None)
-         @@ fun opt_tmp_sourcemap ->
          let generated_js = output_gen wat_file (output code ~unit_name:None) in
+         let tmp_wasm_file = Filename.concat tmp_dir "code.wasm" in
          let primitives =
            link_and_optimize
              ~profile
              ~sourcemap_root
              ~sourcemap_don't_inline_content
-             ~opt_sourcemap:opt_tmp_sourcemap
-             ~opt_sourcemap_url:
-               (if enable_source_maps
-                then Some (Filename.basename wasm_file ^ ".map")
-                else None)
+             ~opt_sourcemap
              runtime_wasm_files
              [ wat_file ]
              tmp_wasm_file
          in
+         let wasm_name =
+           Printf.sprintf
+             "code-%s"
+             (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
+         in
+         let tmp_wasm_file' = Filename.concat tmp_dir (wasm_name ^ ".wasm") in
+         Sys.rename tmp_wasm_file tmp_wasm_file';
+         if enable_source_maps
+         then (
+           Sys.rename (Filename.concat tmp_dir "code.wasm.map") (tmp_wasm_file' ^ ".map");
+           Wa_link.Wasm_binary.append_source_map_section
+             ~file:tmp_wasm_file'
+             ~url:(wasm_name ^ ".wasm.map"));
          let js_runtime =
            let missing_primitives =
-             let l = Wa_link.Wasm_binary.read_imports ~file:tmp_wasm_file in
+             let l = Wa_link.Wasm_binary.read_imports ~file:tmp_wasm_file' in
              List.filter_map
                ~f:(fun { Wa_link.Wasm_binary.module_; name; _ } ->
                  if String.equal module_ "env" then Some name else None)
@@ -432,7 +434,9 @@ let run
              ~runtime_arguments:
                (Wa_link.build_runtime_arguments
                   ~missing_primitives
-                  ~wasm_file
+                  ~wasm_dir:dir
+                  ~link_spec:[ wasm_name, None ]
+                  ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
                   ())
              ()

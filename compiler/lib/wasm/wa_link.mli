@@ -25,6 +25,8 @@ module Wasm_binary : sig
     }
 
   val read_imports : file:string -> import list
+
+  val append_source_map_section : file:string -> url:string -> unit
 end
 
 type unit_data =
@@ -42,10 +44,10 @@ val add_info :
   -> unit
 
 val build_runtime_arguments :
-     ?link_spec:(string * int list option) list
-  -> ?separate_compilation:bool
+     link_spec:(string * int list option) list
+  -> separate_compilation:bool
   -> missing_primitives:string list
-  -> wasm_file:string
+  -> wasm_dir:string
   -> generated_js:
        (string option * (string list * (string * Javascript.expression) list)) list
   -> unit

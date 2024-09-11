@@ -36,6 +36,5 @@ val optimize :
   -> opt_input_sourcemap:string option
   -> input_file:string
   -> opt_output_sourcemap:string option
-  -> opt_sourcemap_url:string option
   -> output_file:string
   -> unit

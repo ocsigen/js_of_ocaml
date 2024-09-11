@@ -123,7 +123,7 @@ jobs:
 
       - name: Pin dune
         run: |
-          opam pin add -n dune.3.13 https://github.com/ocaml-wasm/dune.git#wasm-separate-compilation
+          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
@@ -137,7 +137,7 @@ jobs:
         run: opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
       - name: Update test dependencies
-        run: opam install num cohttp-lwt-unix ppx_expect
+        run: opam install num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Install wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
