@@ -66,7 +66,7 @@ let list_group f g l =
 type application_description =
   { arity : int
   ; exact : bool
-  ; cps : bool
+  ; trampolined : bool
   }
 
 module Share = struct
@@ -144,7 +144,7 @@ module Share = struct
         | _ -> t)
 
   let get
-      ~cps_calls
+      ~trampolined_calls
       ?alias_strings
       ?(alias_prims = false)
       ?(alias_apply = true)
@@ -161,9 +161,9 @@ module Share = struct
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
-                  let cps = Var.Set.mem x cps_calls in
-                  if (not exact) || cps
-                  then add_apply { arity = List.length args; exact; cps } share
+                  let trampolined = Var.Set.mem x trampolined_calls in
+                  if (not exact) || trampolined
+                  then add_apply { arity = List.length args; exact; trampolined } share
                   else share
               | Let (_, Prim (Extern "%closure", [ Pc (String name) ])) ->
                   let name = Primitive.resolve name in
@@ -255,11 +255,11 @@ module Share = struct
       try J.EVar (AppMap.find desc t.vars.applies)
       with Not_found ->
         let x =
-          let { arity; exact; cps } = desc in
+          let { arity; exact; trampolined } = desc in
           Var.fresh_n
             (Printf.sprintf
                "caml_%scall%d"
-               (match exact, cps with
+               (match exact, trampolined with
                | true, false -> assert false
                | true, true -> "cps_exact_"
                | false, false -> ""
@@ -280,7 +280,7 @@ module Ctx = struct
     ; exported_runtime : (Code.Var.t * bool ref) option
     ; should_export : bool
     ; effect_warning : bool ref
-    ; cps_calls : Effects.cps_calls
+    ; trampolined_calls : Effects.trampolined_calls
     }
 
   let initial
@@ -289,7 +289,7 @@ module Ctx = struct
       ~should_export
       blocks
       live
-      cps_calls
+      trampolined_calls
       share
       debug =
     { blocks
@@ -299,7 +299,7 @@ module Ctx = struct
     ; exported_runtime
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
-    ; cps_calls
+    ; trampolined_calls
     }
 end
 
@@ -951,7 +951,7 @@ let parallel_renaming params args continuation queue =
 
 (****)
 
-let apply_fun_raw ctx f params exact cps =
+let apply_fun_raw ctx f params exact trampolined =
   let n = List.length params in
   let apply_directly =
     (* Make sure we are performing a regular call, not a (slower)
@@ -980,7 +980,7 @@ let apply_fun_raw ctx f params exact cps =
         , apply_directly
         , J.call (runtime_fun ctx "caml_call_gen") [ f; J.array params ] J.N )
   in
-  if cps
+  if trampolined
   then (
     assert (Config.Flag.effects ());
     (* When supporting effect, we systematically perform tailcall
@@ -993,7 +993,7 @@ let apply_fun_raw ctx f params exact cps =
       , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] J.N ))
   else apply
 
-let generate_apply_fun ctx { arity; exact; cps } =
+let generate_apply_fun ctx { arity; exact; trampolined } =
   let f' = Var.fresh_n "f" in
   let f = J.V f' in
   let params =
@@ -1008,23 +1008,24 @@ let generate_apply_fun ctx { arity; exact; cps } =
     ( None
     , J.fun_
         (f :: params)
-        [ J.Return_statement (Some (apply_fun_raw ctx f' params' exact cps)), J.N ]
+        [ J.Return_statement (Some (apply_fun_raw ctx f' params' exact trampolined)), J.N
+        ]
         J.N )
 
-let apply_fun ctx f params exact cps loc =
+let apply_fun ctx f params exact trampolined loc =
   (* We always go through an intermediate function when doing CPS
      calls. This function first checks the stack depth to prevent
      a stack overflow. This makes the code smaller than inlining
      the test, and we expect the performance impact to be low
      since the function should get inlined by the JavaScript
      engines. *)
-  if Config.Flag.inline_callgen () || (exact && not cps)
-  then apply_fun_raw ctx f params exact cps
+  if Config.Flag.inline_callgen () || (exact && not trampolined)
+  then apply_fun_raw ctx f params exact trampolined
   else
     let y =
       Share.get_apply
         (generate_apply_fun ctx)
-        { arity = List.length params; exact; cps }
+        { arity = List.length params; exact; trampolined }
         ctx.Ctx.share
     in
     J.call y (f :: params) loc
@@ -1209,7 +1210,7 @@ let throw_statement ctx cx k loc =
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
-      let cps = Var.Set.mem x ctx.Ctx.cps_calls in
+      let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
       let args, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -1220,7 +1221,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       in
       let (prop', f), queue = access_queue queue f in
       let prop = or_p prop prop' in
-      let e = apply_fun ctx f args exact cps loc in
+      let e = apply_fun ctx f args exact trampolined loc in
       (e, prop, queue), []
   | Block (tag, a, array_or_not) ->
       let contents, prop, queue =
@@ -2176,12 +2177,12 @@ let f
     (p : Code.program)
     ~exported_runtime
     ~live_vars
-    ~cps_calls
+    ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
     debug =
   let t' = Timer.make () in
-  let share = Share.get ~cps_calls ~alias_prims:exported_runtime p in
+  let share = Share.get ~trampolined_calls ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
@@ -2192,7 +2193,7 @@ let f
       ~should_export
       p.blocks
       live_vars
-      cps_calls
+      trampolined_calls
       share
       debug
   in

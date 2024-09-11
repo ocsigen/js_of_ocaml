@@ -247,7 +247,7 @@ let jump_closures blocks_to_transform idom : jump_closures =
     idom
     { closure_of_jump = Addr.Map.empty; closures_of_alloc_site = Addr.Map.empty }
 
-type cps_calls = Var.Set.t
+type trampolined_calls = Var.Set.t
 
 type in_cps = Var.Set.t
 
@@ -265,7 +265,7 @@ type st =
   ; block_order : (Addr.t, int) Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Global_flow.info
-  ; cps_calls : cps_calls ref
+  ; trampolined_calls : trampolined_calls ref
   ; in_cps : in_cps ref
   }
 
@@ -286,7 +286,7 @@ let allocate_closure ~st ~params ~body ~branch loc =
 let tail_call ~st ?(instrs = []) ~exact ~in_cps ~check ~f args loc =
   assert (exact || check);
   let ret = Var.fresh () in
-  if check then st.cps_calls := Var.Set.add ret !(st.cps_calls);
+  if check then st.trampolined_calls := Var.Set.add ret !(st.trampolined_calls);
   if in_cps then st.in_cps := Var.Set.add ret !(st.in_cps);
   instrs @ [ Let (ret, Apply { f; args; exact }), loc ], (Return ret, loc)
 
@@ -617,7 +617,7 @@ let cps_block ~st ~k pc block =
 
 let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let closure_info = Hashtbl.create 16 in
-  let cps_calls = ref Var.Set.empty in
+  let trampolined_calls = ref Var.Set.empty in
   let in_cps = ref Var.Set.empty in
   let p =
     Code.fold_closures_innermost_first
@@ -677,7 +677,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           ; block_order = cfg.block_order
           ; flow_info
           ; live_vars
-          ; cps_calls
+          ; trampolined_calls
           ; in_cps
           }
         in
@@ -755,7 +755,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         in
         { start = new_start; blocks; free_pc = new_start + 1 }
   in
-  p, !cps_calls, !in_cps
+  p, !trampolined_calls, !in_cps
 
 (****)
 
@@ -951,6 +951,6 @@ let f (p, live_vars) =
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in
   let p = split_blocks ~cps_needed p in
-  let p, cps_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
+  let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
-  p, cps_calls, in_cps
+  p, trampolined_calls, in_cps
