@@ -752,7 +752,7 @@
       (local $len i32)
       (local.set $data
          (call $ta_normalize
-            (ref.as_non_null (extern.externalize (call $unwrap (local.get 0))))))
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))))
       (local.set $kind (call $ta_kind (local.get $data)))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then
@@ -777,7 +777,7 @@
 
    (func (export "caml_ba_to_typed_array") (param (ref eq)) (result (ref eq))
       (call $wrap
-         (extern.internalize
+         (any.convert_extern
             (struct.get $bigarray $ba_data
                (ref.cast (ref $bigarray) (local.get 0))))))
 
@@ -2104,7 +2104,7 @@
       (local $a (ref extern)) (local $len i32) (local $i i32)
       (local $s (ref $string))
       (local.set $a
-         (ref.as_non_null (extern.externalize (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $string (i32.const 0) (local.get $len)))
       (loop $loop

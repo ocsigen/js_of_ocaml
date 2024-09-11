@@ -199,7 +199,7 @@
             (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (return_call $wrap
          (call $get
-            (ref.as_non_null (extern.externalize (call $unwrap (local.get 0))))
+            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))
             (call $unwrap (local.get 1)))))
 
    (func (export "caml_js_set")
@@ -291,7 +291,7 @@
                                       (i32.add (local.get $i) (i32.const 1)))))
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                   (br $loop))))
-         (return (struct.new $js (extern.internalize (local.get $a'))))))
+         (return (struct.new $js (any.convert_extern (local.get $a'))))))
      (local.set $fa (ref.cast (ref $float_array) (local.get $va)))
      (local.set $l (array.len (local.get $fa)))
      (local.set $a' (call $new_array (local.get $l)))
@@ -304,7 +304,7 @@
                     (array.get $float_array (local.get $fa) (local.get $i))))
               (local.set $i (i32.add (local.get $i) (i32.const 1)))
               (br $loop))))
-     (struct.new $js (extern.internalize (local.get $a'))))
+     (struct.new $js (any.convert_extern (local.get $a'))))
 
    (func (export "caml_js_to_array")
       (param (ref eq)) (result (ref eq))
@@ -313,7 +313,7 @@
       (local $fa (ref $float_array))
       (local $i i32) (local $l i32)
       (local.set $a
-         (ref.as_non_null (extern.externalize (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $l (call $array_length (local.get $a)))
       (if (local.get $l)
          (then
@@ -591,7 +591,7 @@
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
             (br $loop))))
-      (struct.new $js (extern.internalize (local.get $a))))
+      (struct.new $js (any.convert_extern (local.get $a))))
 
    (func (export "caml_list_of_js_array")
       (param (ref eq)) (result (ref eq))
@@ -600,7 +600,7 @@
       (local $len i32)
       (local $a (ref extern))
       (local.set $a
-         (ref.as_non_null (extern.externalize (call $unwrap (local.get 0)))))
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $array_length (local.get $a)))
       (local.set $i (i32.const 0))
       (local.set $l (ref.i31 (i32.const 0)))
@@ -625,7 +625,7 @@
 
    (func (export "caml_wrap_exception") (param externref) (result (ref eq))
       (local $exn anyref)
-      (local.set $exn (extern.internalize (local.get 0)))
+      (local.set $exn (any.convert_extern (local.get 0)))
       ;; ZZZ special case for stack overflows?
       (block $undef
          (return
@@ -643,7 +643,7 @@
                      (call $caml_jsstring_of_string
                         (array.new_data $string $toString
                            (i32.const 0) (i32.const 8))))
-                  (extern.internalize (call $new_array (i32.const 0))))))))
+                  (any.convert_extern (call $new_array (i32.const 0))))))))
 
    (func (export "caml_js_error_option_of_exception")
       (param (ref eq)) (result (ref eq))

@@ -343,9 +343,7 @@ module Output () = struct
     | RefEq _
     | RefNull _
     | Br_on_cast _
-    | Br_on_cast_fail _
-    | ExternExternalize _
-    | ExternInternalize _ -> assert false (* Not supported *)
+    | Br_on_cast_fail _ -> assert false (* Not supported *)
 
   and instruction m i =
     match i with

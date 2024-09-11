@@ -13,7 +13,7 @@
    (system
     "which wasm-merge > /dev/null || (echo 'Error: Binaryen tools not found in the PATH'; false)")
    (system
-    "wasm-merge --version | grep -q 'version \\(11[789]\\|1[2-9][0-9]\\)' || (echo 'Error: Binaryen version 117 or greater is currently required'; false)")
+    "wasm-merge --version | grep -q 'version \\(11[89]\\|1[2-9][0-9]\\)' || (echo 'Error: Binaryen version 118 or greater is currently required'; false)")
    (pipe-stdout
     (run
      wasm-merge

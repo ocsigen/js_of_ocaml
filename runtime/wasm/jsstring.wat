@@ -63,11 +63,11 @@
    (func (export "jsstring_compare")
       (param $s anyref) (param $s' anyref) (result i32)
       (return_call $compare_strings
-         (extern.externalize (local.get $s))
-         (extern.externalize (local.get $s'))))
+         (extern.convert_any (local.get $s))
+         (extern.convert_any (local.get $s'))))
 
    (func (export "jsstring_test") (param $s anyref) (result i32)
-      (return_call $is_string (extern.externalize (local.get $s))))
+      (return_call $is_string (extern.convert_any (local.get $s))))
 
    (export "jsstring_hash" (func $hash_string))
 
@@ -78,7 +78,7 @@
       (if (global.get $builtins_available)
          (then
             (return
-               (extern.internalize
+               (any.convert_extern
                   (call $decodeStringFromUTF8Array (local.get $s)
                      (local.get $pos)
                      (i32.add (local.get $pos) (local.get $len)))))))
@@ -93,7 +93,7 @@
       (if (global.get $builtins_available)
          (then
             (return_call $encodeStringToUTF8Array
-               (extern.externalize (local.get $s)))))
+               (extern.convert_any (local.get $s)))))
       (return_call $string_of_jsstring_fallback (local.get $s)))
 
    ;; Fallback implementation of string conversion functions
