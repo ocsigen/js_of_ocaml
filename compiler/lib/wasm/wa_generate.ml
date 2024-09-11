@@ -37,6 +37,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; blocks : block Addr.Map.t
     ; closures : Wa_closure_conversion.closure Var.Map.t
     ; global_context : Wa_code_generation.context
+    ; debug : Parse_bytecode.Debug.t
     }
 
   let func_type n =
@@ -818,6 +819,20 @@ module Generate (Target : Wa_target_sig.S) = struct
       params
       ((pc, _) as cont)
       acc =
+    let ctx =
+      let loc = Before pc in
+      match Parse_bytecode.Debug.find_loc ctx.debug loc with
+      | Some _ ->
+          let block = Addr.Map.find pc ctx.blocks in
+          let block =
+            match block.body with
+            | (i, _) :: rem -> { block with body = (i, loc) :: rem }
+            | [] -> { block with branch = fst block.branch, loc }
+          in
+          let blocks = Addr.Map.add pc block ctx.blocks in
+          { ctx with blocks }
+      | None -> ctx
+    in
     let stack_info =
       Stack.generate_spilling_information
         p
@@ -1107,13 +1122,16 @@ module Generate (Target : Wa_target_sig.S) = struct
       ~in_cps (*
     ~should_export
     ~warn_on_unhandled_effect
-      _debug *) =
+*)
+      ~debug =
     global_context.unit_name <- unit_name;
     let p, closures = Wa_closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
-    let ctx = { live = live_vars; in_cps; blocks = p.blocks; closures; global_context } in
+    let ctx =
+      { live = live_vars; in_cps; blocks = p.blocks; closures; global_context; debug }
+    in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
       Code.fold_closures_outermost_first
@@ -1223,15 +1241,15 @@ let start () =
       | `Core -> Wa_core_target.Value.value
       | `GC -> Wa_gc_target.Value.value)
 
-let f ~context ~unit_name p ~live_vars ~in_cps =
+let f ~context ~unit_name p ~live_vars ~in_cps ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
   match target with
   | `Core ->
       let module G = Generate (Wa_core_target) in
-      G.f ~context ~unit_name ~live_vars ~in_cps p
+      G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
   | `GC ->
       let module G = Generate (Wa_gc_target) in
-      G.f ~context ~unit_name ~live_vars ~in_cps p
+      G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
 
 let add_start_function =
   match target with
