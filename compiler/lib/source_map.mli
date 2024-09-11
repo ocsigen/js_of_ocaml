@@ -17,6 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Source_content : sig
+  type t
+
+  val create : string -> t
+end
+
 type map =
   | Gen of
       { gen_line : int
@@ -45,7 +51,7 @@ type t =
   ; file : string
   ; sourceroot : string option
   ; sources : string list
-  ; sources_content : string option list option
+  ; sources_content : Source_content.t option list option
   ; names : string list
   ; mappings : mapping
   }
@@ -59,3 +65,16 @@ val mapping_of_string : string -> mapping
 val string_of_mapping : mapping -> string
 
 val empty : filename:string -> t
+
+val to_string : t -> string
+
+val of_string : string -> t
+
+val of_file_no_mappings : string -> t * string option
+(** Read source map from a file without parsing the mappings (which can be costly). The
+    [mappings] field is returned empty and the raw string is returned alongside the map.
+ *)
+
+val to_file : ?mappings:string -> t -> file:string -> unit
+(** Write to a file. If a string is supplied as [mappings], use it instead of the
+    sourcemap's [mappings]. *)

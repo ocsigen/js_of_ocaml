@@ -33,7 +33,7 @@ let extract_sourcemap lines =
         | None -> String.concat ~sep:"\n" (input_lines line)
         | Some base64 -> Base64.decode_exn base64
       in
-      Some (Source_map_io.of_string content)
+      Some (Source_map.of_string content)
   | _ -> None
 
 let print_mapping lines (sm : Source_map.t) =
