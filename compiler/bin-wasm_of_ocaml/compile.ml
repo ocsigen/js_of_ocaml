@@ -249,7 +249,7 @@ let run
         | None -> `Fst name)
   in
   let t1 = Timer.make () in
-  let builtin = Js_of_ocaml_compiler_runtime_files.runtime @ builtin in
+  let builtin = [Js_of_ocaml_compiler_runtime_files.jslib_js_of_ocaml] @ builtin in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
