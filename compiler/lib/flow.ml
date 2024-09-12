@@ -192,10 +192,13 @@ let rec block_escape st x =
       if not (Code.Var.ISet.mem st.may_escape y)
       then (
         Code.Var.ISet.add st.may_escape y;
-        Code.Var.ISet.add st.possibly_mutable y;
         match st.defs.(Var.idx y) with
-        | Expr (Block (_, l, _, _)) -> Array.iter l ~f:(fun z -> block_escape st z)
-        | _ -> ()))
+        | Expr (Block (_, l, _, mut)) ->
+            (match mut with
+            | Immutable -> ()
+            | Maybe_mutable -> Code.Var.ISet.add st.possibly_mutable y);
+            Array.iter l ~f:(fun z -> block_escape st z)
+        | _ -> Code.Var.ISet.add st.possibly_mutable y))
     (Var.Tbl.get st.known_origins x)
 
 let expr_escape st _x e =
