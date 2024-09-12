@@ -19,11 +19,6 @@
    (type $block (array (mut (ref eq))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
-   (import "sync" "caml_ml_mutex_unlock"
-      (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
-   (import "obj" "caml_callback_1"
-      (func $caml_callback_1
-         (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (func (export "caml_atomic_cas")
       (param $ref (ref eq)) (param $o (ref eq)) (param $n (ref eq))
@@ -96,20 +91,9 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
 
-   (global $caml_domain_id (mut i32) (i32.const 0))
-   (global $caml_domain_latest_id (mut i32) (i32.const 1))
-
-   (func (export "caml_domain_spawn")
-      (param $f (ref eq)) (param $mutex (ref eq)) (result (ref eq))
-      (local $id i32) (local $old i32)
-      (local.set $id (global.get $caml_domain_latest_id))
-      (global.set $caml_domain_latest_id
-         (i32.add (local.get $id) (i32.const 1)))
-      (local.set $old (global.get $caml_domain_id))
-      (drop (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
-      (global.set $caml_domain_id (local.get $old))
-      (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
-      (ref.i31 (local.get $id)))
+   (global $caml_domain_id (export "caml_domain_id") (mut i32) (i32.const 0))
+   (global $caml_domain_latest_id (export "caml_domain_latest_id") (mut i32)
+      (i32.const 1))
 
    (func (export "caml_ml_domain_id") (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_domain_id)))
