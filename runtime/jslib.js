@@ -131,7 +131,7 @@ function caml_jsoo_flags_effects(unit){
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 function caml_wrap_exception(e) {
   if (FLAG("excwrap")) {
-    if(e instanceof Array) return e;
+    if(Array.isArray(e)) return e;
     var exn;
     //Stack_overflow: chrome, safari
     if(globalThis.RangeError

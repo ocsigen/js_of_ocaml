@@ -29,7 +29,7 @@ function caml_hash_univ_param (count, limit, obj) {
   function hash_aux (obj) {
     limit --;
     if (count < 0 || limit < 0) return;
-    if (obj instanceof Array && obj[0] === (obj[0]|0)) {
+    if (Array.isArray(obj) && obj[0] === (obj[0]|0)) {
       switch (obj[0]) {
       case 248:
         // Object
@@ -206,7 +206,7 @@ function caml_hash (count, limit, seed, obj) {
         num --;
       }
     }
-    else if (v instanceof Array && v[0] === (v[0]|0)) {
+    else if (Array.isArray(v) && v[0] === (v[0]|0)) {
       switch (v[0]) {
       case 248:
         // Object

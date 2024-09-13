@@ -687,7 +687,7 @@ var caml_output_val = function (){
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
         writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
       }
-      else if (v instanceof Array && v[0] === (v[0]|0)) {
+      else if (Array.isArray(v) && v[0] === (v[0]|0)) {
         if (v[0] == 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }

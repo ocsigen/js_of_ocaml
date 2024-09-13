@@ -106,7 +106,7 @@ function caml_ephe_get_key_copy(x, i) {
   var y = caml_ephe_get_key(x, i);
   if (y === 0) return y;
   var z = y[1];
-  if (z instanceof Array) return [0, caml_obj_dup(z)];
+  if (Array.isArray(z)) return [0, caml_obj_dup(z)];
   return y;
 }
 

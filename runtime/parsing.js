@@ -98,7 +98,7 @@ function caml_parse_engine(tables, env, cmd, arg)
   function print_token(state, tok)
   {
     var token, kind;
-    if (tok instanceof Array) {
+    if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
       if (typeof tok[1] == "number")
         kind = "" + tok[1];
@@ -150,7 +150,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       /* The ML code calls the lexer and updates */
       /* symb_start and symb_end */
     case 1://TOKEN_READ:
-      if (arg instanceof Array) {
+      if (Array.isArray(arg)) {
         env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
         env[env_lval] = arg[1];
       } else {
