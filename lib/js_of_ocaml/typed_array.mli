@@ -202,9 +202,9 @@ class type dataView = object
 
   method getUint16_ : int -> bool t -> int meth
 
-  method getInt32 : int -> int32 meth
+  method getInt32 : int -> number_t meth
 
-  method getInt32_ : int -> bool t -> int32 meth
+  method getInt32_ : int -> bool t -> number_t meth
 
   method getUint32 : int -> number_t meth
 
@@ -230,9 +230,9 @@ class type dataView = object
 
   method setUint16_ : int -> int -> bool t -> unit meth
 
-  method setInt32 : int -> int32 -> unit meth
+  method setInt32 : int -> number_t -> unit meth
 
-  method setInt32_ : int -> int32 -> bool t -> unit meth
+  method setInt32_ : int -> number_t -> bool t -> unit meth
 
   method setUint32 : int -> number_t -> unit meth
 
