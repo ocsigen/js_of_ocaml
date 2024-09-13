@@ -21,7 +21,7 @@ function caml_compare_val_tag(a){
   if (typeof a === "number") return 1000; // int_tag (we use it for all numbers)
   else if (caml_is_ml_bytes(a)) return 252; // string_tag
   else if (caml_is_ml_string(a)) return 1252; // ocaml string (if different from bytes)
-  else if (a instanceof Array && a[0] === (a[0]>>>0) && a[0] <= 255) {
+  else if (Array.isArray(a) && a[0] === (a[0]>>>0) && a[0] <= 255) {
     // Look like an ocaml block
     var tag = a[0] | 0;
     // ignore double_array_tag because we cannot accurately set

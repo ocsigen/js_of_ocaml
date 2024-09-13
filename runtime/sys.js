@@ -83,7 +83,7 @@ function caml_format_exception(exn){
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception, caml_callback
 function caml_fatal_uncaught_exception(err){
-  if(err instanceof Array && (err[0] == 0 || err[0] == 248)) {
+  if(Array.isArray(err) && (err[0] == 0 || err[0] == 248)) {
     var handler = caml_named_value("Printexc.handle_uncaught_exception");
     if(handler) caml_callback(handler, [err,false]);
     else {

@@ -245,7 +245,7 @@ MlFakeDevice.prototype.register= function (name,content){
     file = new MlFakeFile(content);
   if(caml_is_ml_string(content))
     file = new MlFakeFile(caml_bytes_of_string(content));
-  else if(content instanceof Array)
+  else if(Array.isArray(content))
     file = new MlFakeFile(caml_bytes_of_array(content));
   else if(typeof content === "string")
     file = new MlFakeFile(caml_bytes_of_jsbytes(content));

@@ -29,13 +29,13 @@ function caml_alloc_dummy_infix () {
 }
 
 //Provides: caml_obj_is_block const (const)
-function caml_obj_is_block (x) { return +(x instanceof Array); }
+function caml_obj_is_block (x) { return +(Array.isArray(x)); }
 
 
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag (x) {
-  if ((x instanceof Array) && x[0] == (x[0] >>> 0))
+  if ((Array.isArray(x)) && x[0] == (x[0] >>> 0))
     return x[0]
   else if (caml_is_ml_bytes(x))
     return 252
@@ -173,7 +173,7 @@ function caml_obj_update_tag(b,o,n) {
 //Provides: caml_lazy_update_to_forcing
 //Requires: caml_obj_update_tag
 function caml_lazy_update_to_forcing(o) {
-  if ((o instanceof Array) && o[0] == (o[0] >>> 0) &&
+  if ((Array.isArray(o)) && o[0] == (o[0] >>> 0) &&
       caml_obj_update_tag(o, 246, 244)) {
     return 0;
   } else {

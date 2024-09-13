@@ -99,7 +99,7 @@ Ml_Bigarray.prototype.caml_custom = caml_ba_custom_name;
 Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
   if(typeof arg === "number") arg = [arg];
-  if (! (arg instanceof Array)) caml_invalid_argument("bigarray.js: invalid offset");
+  if (! (Array.isArray(arg))) caml_invalid_argument("bigarray.js: invalid offset");
   if (this.dims.length != arg.length)
     caml_invalid_argument("Bigarray.get/set: bad number of dimensions");
   if(this.layout == 0 /* c_layout */) {
@@ -269,7 +269,7 @@ function Ml_Bigarray_c_1_1(kind, layout, dims, buffer) {
 Ml_Bigarray_c_1_1.prototype = new Ml_Bigarray()
 Ml_Bigarray_c_1_1.prototype.offset = function (arg) {
   if(typeof arg !== "number"){
-    if((arg instanceof Array) && arg.length == 1)
+    if((Array.isArray(arg)) && arg.length == 1)
       arg = arg[0];
     else caml_invalid_argument("Ml_Bigarray_c_1_1.offset");
   }
