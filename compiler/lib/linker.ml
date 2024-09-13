@@ -482,9 +482,9 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                 filename;
             if always
             then (
-                always_included :=
-                  { ar_filename = filename; ar_program = code; ar_requires = requires }
-                  :: !always_included;
+              always_included :=
+                { ar_filename = filename; ar_program = code; ar_requires = requires }
+                :: !always_included;
               `Ok)
             else
               error
@@ -588,22 +588,17 @@ let check_deps () =
 
 let load_file ~target_env filename =
   List.iter (Fragment.parse_file filename) ~f:(fun frag ->
-      let (`Ok | `Ignored) =
-        load_fragment ~target_env ~filename frag
-      in
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
       ())
 
 let load_fragments ~target_env ~filename l =
   List.iter l ~f:(fun frag ->
-      let (`Ok | `Ignored) =
-        load_fragment ~target_env ~filename frag
-      in
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
       ());
   check_deps ()
 
 let load_files ~target_env l =
-  List.iter l ~f:(fun filename ->
-      load_file ~target_env filename);
+  List.iter l ~f:(fun filename -> load_file ~target_env filename);
   check_deps ()
 
 (* resolve *)

@@ -43,7 +43,7 @@ class type arrayBufferView = object
 end
 
 class type ['a, 'b, 'c] typedArray = object
-    inherit arrayBufferView
+  inherit arrayBufferView
 
   method _BYTES_PER_ELEMENT : int readonly_prop
 

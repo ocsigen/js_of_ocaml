@@ -332,9 +332,10 @@ let json ?replace_mappings t =
     ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
     ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
     ; ( "mappings"
-      , stringlit (match replace_mappings with
-        | None -> string_of_mapping t.mappings
-        | Some m -> m) )
+      , stringlit
+          (match replace_mappings with
+          | None -> string_of_mapping t.mappings
+          | Some m -> m) )
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with

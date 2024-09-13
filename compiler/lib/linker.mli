@@ -36,14 +36,9 @@ end
 
 val reset : unit -> unit
 
-val load_files :
-  target_env:Target_env.t -> string list -> unit
+val load_files : target_env:Target_env.t -> string list -> unit
 
-val load_fragments :
-  target_env:Target_env.t
-  -> filename:string
-  -> Fragment.t list
-  -> unit
+val load_fragments : target_env:Target_env.t -> filename:string -> Fragment.t list -> unit
 
 val check_deps : unit -> unit
 
