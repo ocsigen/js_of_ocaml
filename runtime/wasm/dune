@@ -4,18 +4,20 @@
  (files runtime.wasm runtime.js))
 
 (rule
-  (target version-dependent.wat)
-  (deps version-dependent/post-5.2.wat)
-  (enabled_if (>= %{ocaml_version} 5.2.0))
-  (action
-    (copy %{deps} %{target})))
+ (target version-dependent.wat)
+ (deps version-dependent/post-5.2.wat)
+ (enabled_if
+  (>= %{ocaml_version} 5.2.0))
+ (action
+  (copy %{deps} %{target})))
 
 (rule
-  (target version-dependent.wat)
-  (deps version-dependent/pre-5.2.wat)
-  (enabled_if (< %{ocaml_version} 5.2.0))
-  (action
-    (copy %{deps} %{target})))
+ (target version-dependent.wat)
+ (deps version-dependent/pre-5.2.wat)
+ (enabled_if
+  (< %{ocaml_version} 5.2.0))
+ (action
+  (copy %{deps} %{target})))
 
 (rule
  (target runtime.wasm)
