@@ -33,10 +33,6 @@
          (local.get $evtag)
          (local.get $evtype)))
 
-   (func (export "caml_runtime_events_user_write")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
-
    (func (export "caml_runtime_events_user_resolve")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
