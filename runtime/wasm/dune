@@ -5,14 +5,14 @@
 
 (rule
   (target version-dependent.wat)
-  (deps post-5.2.wat)
+  (deps version-dependent/post-5.2.wat)
   (enabled_if (>= %{ocaml_version} 5.2.0))
   (action
     (copy %{deps} %{target})))
 
 (rule
   (target version-dependent.wat)
-  (deps pre-5.2.wat)
+  (deps version-dependent/pre-5.2.wat)
   (enabled_if (< %{ocaml_version} 5.2.0))
   (action
     (copy %{deps} %{target})))
@@ -21,46 +21,7 @@
  (target runtime.wasm)
  (deps
   args
-  array.wat
-  backtrace.wat
-  bigarray.wat
-  bigstring.wat
-  compare.wat
-  custom.wat
-  domain.wat
-  dynlink.wat
-  effect.wat
-  fail.wat
-  float.wat
-  fs.wat
-  gc.wat
-  hash.wat
-  int32.wat
-  int64.wat
-  ints.wat
-  io.wat
-  jslib.wat
-  jslib_js_of_ocaml.wat
-  jsstring.wat
-  lexing.wat
-  marshal.wat
-  md5.wat
-  nat.wat
-  obj.wat
-  parsing.wat
-  printexc.wat
-  prng.wat
-  runtime_events.wat
-  stdlib.wat
-  str.wat
-  string.wat
-  sync.wat
-  sys.wat
-  toplevel.wat
-  unix.wat
-  version-dependent.wat
-  weak.wat
-  zstd.wat)
+  (glob_files *.wat))
  (action
   (progn
    (system
@@ -100,46 +61,7 @@
  (target args)
  (deps
   args.ml
-  array.wat
-  backtrace.wat
-  bigarray.wat
-  bigstring.wat
-  compare.wat
-  custom.wat
-  domain.wat
-  dynlink.wat
-  effect.wat
-  fail.wat
-  float.wat
-  fs.wat
-  gc.wat
-  hash.wat
-  int32.wat
-  int64.wat
-  ints.wat
-  io.wat
-  jslib.wat
-  jslib_js_of_ocaml.wat
-  jsstring.wat
-  lexing.wat
-  marshal.wat
-  md5.wat
-  nat.wat
-  obj.wat
-  parsing.wat
-  printexc.wat
-  prng.wat
-  runtime_events.wat
-  stdlib.wat
-  str.wat
-  string.wat
-  sync.wat
-  sys.wat
-  toplevel.wat
-  unix.wat
-  version-dependent.wat
-  weak.wat
-  zstd.wat)
+  (glob_files *.wat))
  (action
   (with-stdout-to
    %{target}
