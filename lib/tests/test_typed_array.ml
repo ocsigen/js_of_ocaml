@@ -28,7 +28,6 @@ module Setup = struct
   type (_, _, _) t =
     | Int8 : (int, int, Bigarray.int8_signed_elt) t
     | Uint8 : (int, int, Bigarray.int8_unsigned_elt) t
-    | Char : (char, char, Bigarray.int8_unsigned_elt) t
     | Int16 : (int, int, Bigarray.int16_signed_elt) t
     | Uint16 : (int, int, Bigarray.int16_unsigned_elt) t
     | Int32 : (Js.number_t, Int32.t, Bigarray.int32_elt) t
@@ -39,7 +38,6 @@ end
 let kind_of_setup : type a b c. (a, b, c) Setup.t -> (b, c) kind = function
   | Setup.Int8 -> Int8_signed
   | Setup.Uint8 -> Int8_unsigned
-  | Setup.Char -> Char
   | Setup.Int16 -> Int16_signed
   | Setup.Uint16 -> Int16_unsigned
   | Setup.Int32 -> Int32
@@ -49,7 +47,6 @@ let kind_of_setup : type a b c. (a, b, c) Setup.t -> (b, c) kind = function
 let convert : type a b c. (a, b, c) Setup.t -> a -> b = function
   | Setup.Int8 -> Fun.id
   | Setup.Uint8 -> Fun.id
-  | Setup.Char -> Fun.id
   | Setup.Int16 -> Fun.id
   | Setup.Uint16 -> Fun.id
   | Setup.Int32 -> fun f -> Int32.of_float (Js.to_float f)
@@ -59,7 +56,6 @@ let convert : type a b c. (a, b, c) Setup.t -> a -> b = function
 let type_of_setup : type a b c. (a, b, c) Setup.t -> (a, b, c) Typed_array.kind = function
   | Setup.Int8 -> Int8_signed
   | Setup.Uint8 -> Int8_unsigned
-  | Setup.Char -> Char
   | Setup.Int16 -> Int16_signed
   | Setup.Uint16 -> Int16_unsigned
   | Setup.Int32 -> Int32_signed
@@ -78,7 +74,6 @@ let ta_type_is_correct : type a b c. (a, b, c) Setup.t -> (a, b, c) ta Js.t -> b
   | Setup.Int16, "Int16Array" -> true
   | Setup.Uint16, "Uint16Array" -> true
   | Setup.Int32, "Int32Array" -> true
-  | Setup.Char, "Uint8Array" -> true
   | _, _ -> false
 
 let kind_field_is_correct : type a b c. (a, b, c) Setup.t -> (b, c) ba -> bool =
@@ -94,12 +89,6 @@ let kind_field_is_correct : type a b c. (a, b, c) Setup.t -> (b, c) ba -> bool =
   | Int16_signed, Int16_signed -> true
   | Int16_unsigned, Int16_unsigned -> true
   | Int32, Int32 -> true
-  | Char, (ba_kind : (char, int8_unsigned_elt) Bigarray.kind) -> (
-      (* For chars the underlying typed array is an Uint8Array so the
-         only well-typed pattern [Char, Char] is not what will appear at
-         runtime, namely [Char, Int8_unsigned] *)
-      match (Obj.magic ba_kind : (int, int8_unsigned_elt) Bigarray.kind) with
-      | Int8_unsigned -> true)
   | _, _ -> false
 
 let ba_of_array : type a b c. (a, b, c) Setup.t -> b array -> (b, c) ba =
@@ -174,10 +163,6 @@ let%expect_test "uint8" =
   let bytes'' = Typed_array.Bytes.of_arrayBuffer buffer in
   if not (Stdlib.Bytes.equal bytes'' bytes)
   then print_endline "bytes from arrayBuffer not equal to bytes from of_uint8Array";
-  [%expect {||}]
-
-let%expect_test "char" =
-  test Setup.Char [| Char.chr 0; Char.chr 64; Char.chr 104; Char.chr 255 |];
   [%expect {||}]
 
 let%expect_test "int16" =
