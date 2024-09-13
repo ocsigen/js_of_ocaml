@@ -23,6 +23,8 @@
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
    (import "domain" "caml_domain_latest_id"
      (global $caml_domain_latest_id (mut i32)))
+   (import "domain" "caml_domain_id"
+     (global $caml_domain_id (mut i32)))
 
    (func (export "caml_runtime_events_user_write")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
