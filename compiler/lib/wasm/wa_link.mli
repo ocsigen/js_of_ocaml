@@ -30,7 +30,8 @@ module Wasm_binary : sig
 end
 
 type unit_data =
-  { unit_info : Unit_info.t
+  { unit_name : string
+  ; unit_info : Unit_info.t
   ; strings : string list
   ; fragments : (string * Javascript.expression) list
   }
@@ -52,8 +53,6 @@ val build_runtime_arguments :
        (string option * (string list * (string * Javascript.expression) list)) list
   -> unit
   -> Javascript.expression
-
-val simplify_unit_info : unit_data list -> unit_data list
 
 val output_js : Javascript.program -> string
 

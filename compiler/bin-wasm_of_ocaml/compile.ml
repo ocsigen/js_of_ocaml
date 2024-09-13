@@ -343,7 +343,7 @@ let run
            ic
        in
        let unit_info = Unit_info.of_cmo cmo in
-       let unit_name = StringSet.choose unit_info.provides in
+       let unit_name = Ocaml_compiler.Cmo_format.name cmo in
        if times () then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 unit_name;
        Fs.with_intermediate_file (Filename.temp_file unit_name ".wat")
        @@ fun wat_file ->
@@ -369,7 +369,7 @@ let run
        Zip.add_file z ~name:(unit_name ^ ".wasm") ~file:tmp_wasm_file;
        if enable_source_maps
        then Zip.add_file z ~name:(unit_name ^ ".wasm.map") ~file:tmp_map_file;
-       { Wa_link.unit_info; strings; fragments }
+       { Wa_link.unit_name; unit_info; strings; fragments }
      in
      (match kind with
      | `Exe ->
@@ -456,7 +456,6 @@ let run
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
          let unit_data = List.map ~f:(fun cmo -> compile_cmo z cmo) cma.lib_units in
-         let unit_data = Wa_link.simplify_unit_info unit_data in
          Wa_link.add_info z ~build_info:(Build_info.create `Cma) ~unit_data ();
          Zip.close_out z);
      close_ic ());

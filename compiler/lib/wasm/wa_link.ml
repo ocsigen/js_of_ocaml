@@ -76,7 +76,7 @@ end = struct
     |> set "primitives" (fun t -> t.primitives)
     |> bool "force_link" (fun t -> t.force_link)
     |> set "requires" (fun t -> StringSet.elements t.requires)
-    |> add "provides" false [ Atom (StringSet.choose t.provides) ]
+    |> set "provides" (fun t -> StringSet.elements t.provides)
 
   let from_sexp t =
     let open Sexp.Util in
@@ -86,7 +86,7 @@ end = struct
       Option.value ~default (Option.map ~f:StringSet.of_list (opt_list l))
     in
     let bool default v = Option.value ~default (Option.map ~f:(single bool) v) in
-    { provides = t |> member "provides" |> mandatory (single string) |> StringSet.singleton
+    { provides = t |> member "provides" |> set empty.provides
     ; requires = t |> member "requires" |> set empty.requires
     ; primitives = t |> member "primitives" |> list empty.primitives
     ; force_link = t |> member "force_link" |> bool empty.force_link
@@ -299,7 +299,8 @@ let trim_semi s =
   String.sub s ~pos:0 ~len:!l
 
 type unit_data =
-  { unit_info : Unit_info.t
+  { unit_name : string
+  ; unit_info : Unit_info.t
   ; strings : string list
   ; fragments : (string * Javascript.expression) list
   }
@@ -308,9 +309,10 @@ let info_to_sexp ~predefined_exceptions ~build_info ~unit_data =
   let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
   let units =
     List.map
-      ~f:(fun { unit_info; strings; fragments } ->
+      ~f:(fun { unit_name; unit_info; strings; fragments } ->
         Sexp.List
           (Unit_info.to_sexp unit_info
+          |> add "name" false [ Atom unit_name ]
           |> add
                "strings"
                (List.is_empty strings)
@@ -348,6 +350,9 @@ let info_from_sexp info =
     |> Option.value ~default:[]
     |> List.map ~f:(fun u ->
            let unit_info = u |> Unit_info.from_sexp in
+           let unit_name =
+             u |> member "name" |> Option.value ~default:[] |> single string
+           in
            let strings =
              u |> member "strings" |> Option.value ~default:[] |> List.map ~f:string
            in
@@ -365,7 +370,7 @@ let info_from_sexp info =
                                   , let lex = Parse_js.Lexer.of_string (to_string e) in
                                     Parse_js.parse_expr lex ))*)
            in
-           { unit_info; strings; fragments })
+           { unit_name; unit_info; strings; fragments })
   in
   build_info, predefined_exceptions, unit_data
 
@@ -586,8 +591,7 @@ let link_to_directory ~set_to_link ~files ~enable_source_maps ~dir =
         let z = Zip.open_in file in
         let res =
           List.map
-            ~f:(fun { unit_info; _ } ->
-              let unit_name = StringSet.choose unit_info.provides in
+            ~f:(fun { unit_name; unit_info; _ } ->
               if StringSet.mem unit_name set_to_link
               then (
                 let name = unit_name ^ ".wasm" in
@@ -606,43 +610,11 @@ let link_to_directory ~set_to_link ~files ~enable_source_maps ~dir =
   in
   runtime :: prelude :: List.map ~f:fst lst, (runtime_intf, List.map ~f:snd lst)
 
-(* Remove some unnecessary dependencies *)
-let simplify_unit_info l =
-  let t = Timer.make () in
-  let prev_requires = Hashtbl.create 16 in
-  let res =
-    List.map
-      ~f:(fun (unit_data : unit_data) ->
-        let info = unit_data.unit_info in
-        assert (StringSet.cardinal info.provides = 1);
-        let name = StringSet.choose info.provides in
-        assert (not (StringSet.mem name info.requires));
-        let requires =
-          StringSet.fold
-            (fun dep (requires : StringSet.t) ->
-              match Hashtbl.find prev_requires dep with
-              | exception Not_found -> requires
-              | s -> StringSet.union s requires)
-            info.requires
-            StringSet.empty
-        in
-        let info = { info with requires = StringSet.diff info.requires requires } in
-        Hashtbl.add prev_requires name (StringSet.union info.requires requires);
-        { unit_data with unit_info = info })
-      l
-  in
-  if times () then Format.eprintf "unit info simplification: %a@." Timer.print t;
-  res
-
 let compute_dependencies ~set_to_link ~files =
   let h = Hashtbl.create 128 in
   let l = List.concat (List.map ~f:(fun (_, (_, units)) -> units) files) in
-  (*
-  let l = simplify_unit_info l in
-  *)
   List.filter_map
-    ~f:(fun { unit_info; _ } ->
-      let unit_name = StringSet.choose unit_info.provides in
+    ~f:(fun { unit_name; unit_info; _ } ->
       if StringSet.mem unit_name set_to_link
       then (
         Hashtbl.add h unit_name (Hashtbl.length h);
@@ -721,7 +693,10 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
           | `Cmo -> true
           | `Cma | `Exe | `Runtime | `Unknown -> false
         in
-        List.fold_right units ~init:acc ~f:(fun { unit_info; _ } (requires, to_link) ->
+        List.fold_right
+          units
+          ~init:acc
+          ~f:(fun { unit_name; unit_info; _ } (requires, to_link) ->
             if (not (Config.Flag.auto_link ()))
                || cmo_file
                || linkall
@@ -731,7 +706,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
               ( StringSet.diff
                   (StringSet.union unit_info.requires requires)
                   unit_info.provides
-              , StringSet.elements unit_info.provides @ to_link )
+              , unit_name :: to_link )
             else requires, to_link))
   in
   let set_to_link = StringSet.of_list to_link in
@@ -745,10 +720,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
           | `Cma | `Exe | `Unknown -> false
           | `Cmo | `Runtime -> true)
           || List.exists
-               ~f:(fun { unit_info; _ } ->
-                 StringSet.exists
-                   (fun nm -> StringSet.mem nm set_to_link)
-                   unit_info.provides)
+               ~f:(fun { unit_name; _ } -> StringSet.mem unit_name set_to_link)
                units)
         files
   in
@@ -797,8 +769,8 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let generated_js =
     List.concat
     @@ List.map files ~f:(fun (_, (_, units)) ->
-           List.map units ~f:(fun { unit_info; strings; fragments } ->
-               Some (StringSet.choose unit_info.provides), (strings, fragments)))
+           List.map units ~f:(fun { unit_name; unit_info; strings; fragments } ->
+               Some unit_name, (strings, fragments)))
   in
   let runtime_args =
     let js =
