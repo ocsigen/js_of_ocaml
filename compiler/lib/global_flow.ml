@@ -331,13 +331,13 @@ module Domain = struct
     then (
       st.may_escape.(idx) <- s;
       match st.defs.(idx) with
-      | Expr (Block (_, a, _, _)) -> (
+      | Expr (Block (_, a, _, mut)) -> (
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
-          match s with
-          | Escape ->
+          match s, mut with
+          | Escape, Maybe_mutable ->
               Var.ISet.add st.possibly_mutable x;
               update ~children:true x
-          | Escape_constant | No -> ())
+          | (Escape_constant | No), _ | Escape, Immutable -> ())
       | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
@@ -386,10 +386,14 @@ module Domain = struct
     | Values { known; _ } ->
         Var.Set.iter
           (fun x ->
-            if not (Var.ISet.mem st.possibly_mutable x)
-            then (
-              Var.ISet.add st.possibly_mutable x;
-              update ~children:true x))
+            match st.defs.(Var.idx x) with
+            | Expr (Block (_, _, _, Maybe_mutable)) ->
+                if not (Var.ISet.mem st.possibly_mutable x)
+                then (
+                  Var.ISet.add st.possibly_mutable x;
+                  update ~children:true x)
+            | Expr (Block (_, _, _, Immutable)) | Expr (Closure _) -> ()
+            | Phi _ | Expr _ -> assert false)
           known
 end
 
