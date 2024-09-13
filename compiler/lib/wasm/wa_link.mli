@@ -59,6 +59,9 @@ val output_js : Javascript.program -> string
 val link :
      output_file:string
   -> linkall:bool
+  -> mklib:bool
   -> enable_source_maps:bool
   -> files:string list
   -> unit
+
+val source_name : int option -> int option -> string -> string

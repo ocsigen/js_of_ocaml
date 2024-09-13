@@ -1269,3 +1269,8 @@ let output ch ~context ~debug =
       let module G = Generate (Wa_gc_target) in
       let fields = G.output ~context in
       Wa_wat_output.f ~debug ch fields
+
+let wasm_output ch ~context =
+  let module G = Generate (Wa_gc_target) in
+  let fields = G.output ~context in
+  Wa_wasm_output.f ch fields
