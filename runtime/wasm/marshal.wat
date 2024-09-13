@@ -48,8 +48,8 @@
       (func $caml_find_custom_operations
          (param (ref $string)) (result (ref null $custom_operations))))
 
-   (global $caml_marshal_header_size (export "caml_marshal_header_size")
-      (mut i32) (i32.const 20))
+   (import "version-dependent" "caml_marshal_header_size"
+      (global $caml_marshal_header_size i32))
 
    (global $input_val_from_string (ref $string)
       (array.new_fixed $string 21

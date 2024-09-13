@@ -41,4 +41,6 @@
       (global.set $caml_domain_id (local.get $old))
       (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
       (ref.i31 (local.get $id)))
+
+   (global (export "caml_marshal_header_size") i32 (i32.const 16))
 )

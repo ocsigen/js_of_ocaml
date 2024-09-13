@@ -13,9 +13,19 @@
 
 (rule
  (target version-dependent.wat)
- (deps version-dependent/pre-5.2.wat)
+ (deps version-dependent/post-5.2.wat)
  (enabled_if
-  (< %{ocaml_version} 5.2.0))
+  (and
+   (>= %{ocaml_version} 5.1.0)
+   (< %{ocaml_version} 5.2.0)))
+ (action
+  (copy %{deps} %{target})))
+
+(rule
+ (target version-dependent.wat)
+ (deps version-dependent/pre-5.1.wat)
+ (enabled_if
+  (< %{ocaml_version} 5.1.0))
  (action
   (copy %{deps} %{target})))
 

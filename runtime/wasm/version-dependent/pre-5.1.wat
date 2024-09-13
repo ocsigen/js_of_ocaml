@@ -16,7 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (type $block (array (mut (ref eq))))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -28,32 +27,20 @@
      (global $caml_domain_id (mut i32)))
 
    (func (export "caml_runtime_events_user_write")
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_domain_spawn")
-      (param $f (ref eq)) (param $term_sync_v (ref eq)) (result (ref eq))
-      (local $id i32) (local $old i32) (local $ts (ref $block)) (local $res (ref eq))
+      (param $f (ref eq)) (param $mutex (ref eq)) (result (ref eq))
+      (local $id i32) (local $old i32)
       (local.set $id (global.get $caml_domain_latest_id))
       (global.set $caml_domain_latest_id
          (i32.add (local.get $id) (i32.const 1)))
       (local.set $old (global.get $caml_domain_id))
-      (local.set $res
-         (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+      (drop (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
       (global.set $caml_domain_id (local.get $old))
-      (local.set $ts (ref.cast (ref $block) (local.get $term_sync_v)))
-      (drop (call $caml_ml_mutex_unlock (array.get $block (local.get $ts) (i32.const 2))))
-      ;; TODO: fix exn case
-      (array.set
-         $block
-         (local.get $ts)
-         (i32.const 1)
-         (array.new_fixed
-            $block
-            2
-            (ref.i31 (i32.const 0))
-            (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $res))))
+      (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
       (ref.i31 (local.get $id)))
 
-   (global (export "caml_marshal_header_size") i32 (i32.const 16))
+   (global (export "caml_marshal_header_size") i32 (i32.const 20))
 )
