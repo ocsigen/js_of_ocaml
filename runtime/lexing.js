@@ -21,7 +21,7 @@ function caml_lex_array(s) {
   s = caml_jsbytes_of_string(s);
   var l = s.length / 2;
   var a = new Array(l);
-  for (var i = 0; i < l; i++)
+  for (let i = 0; i < l; i++)
     a[i] = ((s.charCodeAt(2 * i) | (s.charCodeAt(2 * i + 1) << 8)) << 16) >> 16;
   return a;
 }

@@ -63,7 +63,7 @@ function caml_format_exception(exn) {
       var bucket = exn;
     }
     r += "(";
-    for (var i = start; i < bucket.length; i++) {
+    for (let i = start; i < bucket.length; i++) {
       if (i > start) r += ", ";
       var v = bucket[i];
       if (typeof v == "number") r += v.toString();
@@ -148,7 +148,7 @@ var caml_argv = (function () {
 
   var p = caml_string_of_jsstring(main);
   var args2 = [0, p];
-  for (var i = 0; i < args.length; i++)
+  for (let i = 0; i < args.length; i++)
     args2.push(caml_string_of_jsstring(args[i]));
   return args2;
 })();

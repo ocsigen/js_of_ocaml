@@ -50,7 +50,7 @@ function caml_ephe_unset_key(x, i) {
     var old = x[caml_ephe_key_offset + i].deref();
     if (old !== undefined) {
       var count = 0;
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
+      for (let j = caml_ephe_key_offset; j < x.length; j++) {
         var key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();
@@ -173,7 +173,7 @@ function caml_ephe_set_data(x, data) {
         caml_ephe_unset_data(x);
       });
       //register all keys
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
+      for (let j = caml_ephe_key_offset; j < x.length; j++) {
         var key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();
@@ -192,7 +192,7 @@ function caml_ephe_unset_data(x) {
   if (globalThis.FinalizationRegistry && globalThis.WeakRef) {
     if (x[1] instanceof globalThis.FinalizationRegistry) {
       //unregister all keys
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
+      for (let j = caml_ephe_key_offset; j < x.length; j++) {
         var key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();

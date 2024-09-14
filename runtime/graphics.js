@@ -281,7 +281,7 @@ function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
   var num = (((a2 - a1) * Math.PI * ((rx + ry) / 2)) / space) | 0;
   var delta = ((a2 - a1) * Math.PI) / num;
   var i = a1 * Math.PI;
-  for (var j = 0; j <= num; j++) {
+  for (let j = 0; j <= num; j++) {
     xPos =
       cx -
       rx * Math.sin(i) * Math.sin(rot * Math.PI) +
@@ -336,7 +336,7 @@ function caml_gr_fill_poly(ar) {
   var s = caml_gr_state_get();
   s.context.beginPath();
   s.context.moveTo(ar[1][1], s.height - ar[1][2]);
-  for (var i = 2; i < ar.length; i++)
+  for (let i = 2; i < ar.length; i++)
     s.context.lineTo(ar[i][1], s.height - ar[i][2]);
   s.context.lineTo(ar[1][1], s.height - ar[1][2]);
   s.context.fill();
@@ -415,8 +415,8 @@ function caml_gr_make_image(arr) {
   var h = arr.length - 1;
   var w = arr[1].length - 1;
   var im = s.context.createImageData(w, h);
-  for (var i = 0; i < h; i++) {
-    for (var j = 0; j < w; j++) {
+  for (let i = 0; i < h; i++) {
+    for (let j = 0; j < w; j++) {
       var c = arr[i + 1][j + 1];
       var o = i * (w * 4) + j * 4;
       if (c == -1) {
@@ -438,9 +438,9 @@ function caml_gr_make_image(arr) {
 //Requires: caml_gr_state_get
 function caml_gr_dump_image(im) {
   var data = [0];
-  for (var i = 0; i < im.height; i++) {
+  for (let i = 0; i < im.height; i++) {
     data[i + 1] = [0];
-    for (var j = 0; j < im.width; j++) {
+    for (let j = 0; j < im.width; j++) {
       var o = i * (im.width * 4) + j * 4,
         r = im.data[o + 0],
         g = im.data[o + 1],
@@ -486,7 +486,7 @@ function caml_gr_blit_image(im, x, y) {
     im.width,
     im.height,
   );
-  for (var i = 0; i < im2.data.length; i += 4) {
+  for (let i = 0; i < im2.data.length; i += 4) {
     im.data[i] = im2.data[i];
     im.data[i + 1] = im2.data[i + 1];
     im.data[i + 2] = im2.data[i + 2];

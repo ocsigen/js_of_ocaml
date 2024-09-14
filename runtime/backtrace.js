@@ -23,7 +23,7 @@ var caml_record_backtrace_env_flag = FLAG("with-js-error");
   var r = jsoo_sys_getenv("OCAMLRUNPARAM");
   if (r !== undefined) {
     var l = r.split(",");
-    for (var i = 0; i < l.length; i++) {
+    for (let i = 0; i < l.length; i++) {
       if (l[i] == "b") {
         caml_record_backtrace_env_flag = 1;
         break;

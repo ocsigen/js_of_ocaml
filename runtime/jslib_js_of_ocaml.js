@@ -73,7 +73,7 @@ function caml_js_get_console() {
     "timeEnd",
   ];
   function f() {}
-  for (var i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]] = f;
+  for (let i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]] = f;
   return c;
 }
 

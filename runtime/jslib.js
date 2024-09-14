@@ -249,14 +249,14 @@ function caml_js_to_array(a) {
   var len = a.length;
   var b = new Array(len + 1);
   b[0] = 0;
-  for (var i = 0; i < len; i++) b[i + 1] = a[i];
+  for (let i = 0; i < len; i++) b[i + 1] = a[i];
   return b;
 }
 
 //Provides: caml_list_of_js_array const (mutable)
 function caml_list_of_js_array(a) {
   var l = 0;
-  for (var i = a.length - 1; i >= 0; i--) {
+  for (let i = a.length - 1; i >= 0; i--) {
     var e = a[i];
     l = [0, e, l];
   }
@@ -382,7 +382,7 @@ function caml_js_wrap_callback(f) {
     var len = arguments.length;
     if (len > 0) {
       var args = new Array(len);
-      for (var i = 0; i < len; i++) args[i] = arguments[i];
+      for (let i = 0; i < len; i++) args[i] = arguments[i];
     } else {
       args = [undefined];
     }
@@ -397,7 +397,7 @@ function caml_js_wrap_callback_arguments(f) {
   return function () {
     var len = arguments.length;
     var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, [args]);
   };
 }
@@ -408,7 +408,7 @@ function caml_js_wrap_callback_strict(arity, f) {
     var n = arguments.length;
     var args = new Array(arity);
     var len = Math.min(arguments.length, arity);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, args);
   };
 }
@@ -418,7 +418,7 @@ function caml_js_wrap_callback_unsafe(f) {
   return function () {
     var len = caml_js_function_arity(f);
     var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, args);
   };
 }
@@ -429,7 +429,7 @@ function caml_js_wrap_meth_callback(f) {
     var len = arguments.length;
     var args = new Array(len + 1);
     args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
+    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
     var res = caml_callback(f, args);
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
@@ -440,7 +440,7 @@ function caml_js_wrap_meth_callback_arguments(f) {
   return function () {
     var len = arguments.length;
     var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, [this, args]);
   };
 }
@@ -451,7 +451,7 @@ function caml_js_wrap_meth_callback_strict(arity, f) {
     var args = new Array(arity + 1);
     var len = Math.min(arguments.length, arity);
     args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
+    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
     return caml_callback(f, args);
   };
 }
@@ -462,7 +462,7 @@ function caml_js_wrap_meth_callback_unsafe(f) {
     var len = caml_js_function_arity(f) - 1;
     var args = new Array(len + 1);
     args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
+    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
     return caml_callback(f, args);
   };
 }
@@ -515,7 +515,7 @@ function caml_pure_js_expr(s) {
 //Requires: caml_jsstring_of_string
 function caml_js_object(a) {
   var o = {};
-  for (var i = 1; i < a.length; i++) {
+  for (let i = 1; i < a.length; i++) {
     var p = a[i];
     o[caml_jsstring_of_string(p[1])] = p[2];
   }

@@ -37,7 +37,7 @@ function bigstring_of_typed_array(ba) {
 //Provides: caml_bigstring_memcmp
 //Requires: caml_ba_get_1
 function caml_bigstring_memcmp(s1, pos1, s2, pos2, len) {
-  for (var i = 0; i < len; i++) {
+  for (let i = 0; i < len; i++) {
     var a = caml_ba_get_1(s1, pos1 + i);
     var b = caml_ba_get_1(s2, pos2 + i);
     if (a < b) return -1;

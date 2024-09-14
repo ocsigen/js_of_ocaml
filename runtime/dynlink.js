@@ -68,7 +68,7 @@ function caml_dynlink_get_current_libs() {
   var current_libs = get_current_libs();
   var len = current_libs.length;
   var a = new Array(len);
-  for (var i = 0; i < len; i++) a[i] = i;
+  for (let i = 0; i < len; i++) a[i] = i;
   return a;
 }
 

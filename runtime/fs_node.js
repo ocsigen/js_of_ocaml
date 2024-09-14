@@ -97,7 +97,7 @@ MlNodeDevice.prototype.unlink = function (name, raise_unix) {
 MlNodeDevice.prototype.open = function (name, f, raise_unix) {
   var consts = require("constants");
   var res = 0;
-  for (var key in f) {
+  for (let key in f) {
     switch (key) {
       case "rdonly":
         res |= consts.O_RDONLY;

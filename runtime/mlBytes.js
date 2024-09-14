@@ -84,10 +84,13 @@ function caml_subarray_to_jsbytes(a, i, len) {
 
 //Provides: caml_utf8_of_utf16
 function caml_utf8_of_utf16(s) {
-  for (var b = "", t = b, c, d, i = 0, l = s.length; i < l; i++) {
+  let b = "";
+  let t = b;
+  for (let c, d, i = 0, l = s.length; i < l; i++) {
     c = s.charCodeAt(i);
     if (c < 0x80) {
-      for (var j = i + 1; j < l && (c = s.charCodeAt(j)) < 0x80; j++);
+      let j = i + 1;
+      for (; j < l && (c = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
         t.substr(0, 1);
         b += t;
@@ -135,10 +138,13 @@ function caml_utf8_of_utf16(s) {
 
 //Provides: caml_utf16_of_utf8
 function caml_utf16_of_utf8(s) {
-  for (var b = "", t = "", c, c1, c2, v, i = 0, l = s.length; i < l; i++) {
+  let b = "";
+  let t = "";
+  for (let c, c1, c2, v, i = 0, l = s.length; i < l; i++) {
     c1 = s.charCodeAt(i);
     if (c1 < 0x80) {
-      for (var j = i + 1; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++);
+      let j = i + 1;
+      for (; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
         t.substr(0, 1);
         b += t;
@@ -192,7 +198,7 @@ function jsoo_is_ascii(s) {
   // The regular expression gets better at around this point for all browsers
   if (s.length < 24) {
     // Spidermonkey gets much slower when s.length >= 24 (on 64 bit archs)
-    for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) return false;
+    for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) return false;
     return true;
   } else return !/[^\x00-\x7f]/.test(s);
 }
@@ -295,7 +301,7 @@ function caml_bytes_get32(s, i) {
 function caml_string_get64(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 7) caml_string_bound_error();
   var a = new Array(8);
-  for (var j = 0; j < 8; j++) {
+  for (let j = 0; j < 8; j++) {
     a[7 - j] = caml_string_unsafe_get(s, i + j);
   }
   return caml_int64_of_bytes(a);
@@ -307,7 +313,7 @@ function caml_string_get64(s, i) {
 function caml_bytes_get64(s, i) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
   var a = new Array(8);
-  for (var j = 0; j < 8; j++) {
+  for (let j = 0; j < 8; j++) {
     a[7 - j] = caml_bytes_unsafe_get(s, i + j);
   }
   return caml_int64_of_bytes(a);
@@ -395,7 +401,7 @@ function caml_string_set32(s, i, i32) {
 function caml_bytes_set64(s, i, i64) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
   var a = caml_int64_to_bytes(i64);
-  for (var j = 0; j < 8; j++) {
+  for (let j = 0; j < 8; j++) {
     caml_bytes_unsafe_set(s, i + 7 - j, a[j]);
   }
   return 0;
@@ -660,13 +666,14 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
       c2 = s2.c;
     if (s1.t == 4 /* ARRAY */) {
       if (i2 <= i1) {
-        for (var i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
+        for (let i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
       } else {
-        for (var i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
+        for (let i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
       }
     } else {
       var l = Math.min(len, c1.length - i1);
-      for (var i = 0; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
+      let i = 0;
+      for (; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
       for (; i < len; i++) c2[i2 + i] = 0;
     }
   }

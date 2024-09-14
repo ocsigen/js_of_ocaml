@@ -36,7 +36,7 @@ MlFakeDevice.prototype.nm = function (name) {
 MlFakeDevice.prototype.create_dir_if_needed = function (name) {
   var comp = name.split("/");
   var res = "";
-  for (var i = 0; i < comp.length - 1; i++) {
+  for (let i = 0; i < comp.length - 1; i++) {
     res += comp[i] + "/";
     if (this.content[res]) continue;
     this.content[res] = Symbol("directory");
@@ -134,7 +134,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
       caml_raise_sys_error(name + ": Not a directory");
     }
   }
-  for (var n in this.content) {
+  for (let n in this.content) {
     if (n.match(r)) {
       if (unix_error) {
         caml_raise_with_args(
@@ -159,7 +159,7 @@ MlFakeDevice.prototype.readdir = function (name) {
   var r = new RegExp("^" + name_slash + "([^/]+)");
   var seen = {};
   var a = [];
-  for (var n in this.content) {
+  for (let n in this.content) {
     var m = n.match(r);
     if (m && !seen[m[1]]) {
       seen[m[1]] = true;

@@ -152,7 +152,7 @@ MlStringReader.prototype = {
     var b = new Uint8Array(len);
     var s = this.s;
     var i = this.i;
-    for (var j = 0; j < len; j++) {
+    for (let j = 0; j < len; j++) {
       b[j] = s.charCodeAt(i + j);
     }
     this.i = i + len;
@@ -211,7 +211,7 @@ BigStringReader.prototype = {
   readstr: function (len) {
     var i = this.i;
     var arr = new Array(len);
-    for (var j = 0; j < len; j++) {
+    for (let j = 0; j < len; j++) {
       arr[j] = caml_ba_get_1(this.s, i + j);
     }
     this.i = i + len;
@@ -252,7 +252,7 @@ function caml_input_value_from_bytes(s, ofs) {
 //Requires: caml_int64_of_bytes
 function caml_int64_unmarshal(reader, size) {
   var t = new Array(8);
-  for (var j = 0; j < 8; j++) t[j] = reader.read8u();
+  for (let j = 0; j < 8; j++) t[j] = reader.read8u();
   size[0] = 8;
   return caml_int64_of_bytes(t);
 }
@@ -261,7 +261,7 @@ function caml_int64_unmarshal(reader, size) {
 //Requires: caml_int64_to_bytes
 function caml_int64_marshal(writer, v, sizes) {
   var b = caml_int64_to_bytes(v);
-  for (var i = 0; i < 8; i++) writer.write(8, b[i]);
+  for (let i = 0; i < 8; i++) writer.write(8, b[i]);
   sizes[0] = 8;
   sizes[1] = 8;
 }
@@ -459,7 +459,7 @@ function caml_input_value_from_reader(reader, ofs) {
           case 0x0c: {
             //cst.CODE_DOUBLE_LITTLE:
             var t = new Array(8);
-            for (var i = 0; i < 8; i++) t[7 - i] = reader.read8u();
+            for (let i = 0; i < 8; i++) t[7 - i] = reader.read8u();
             var v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
@@ -467,7 +467,7 @@ function caml_input_value_from_reader(reader, ofs) {
           case 0x0b: {
             //cst.CODE_DOUBLE_BIG:
             var t = new Array(8);
-            for (var i = 0; i < 8; i++) t[i] = reader.read8u();
+            for (let i = 0; i < 8; i++) t[i] = reader.read8u();
             var v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
@@ -479,8 +479,8 @@ function caml_input_value_from_reader(reader, ofs) {
             v[0] = 254;
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            for (var i = 1; i <= len; i++) {
-              for (var j = 0; j < 8; j++) t[7 - j] = reader.read8u();
+            for (let i = 1; i <= len; i++) {
+              for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
             }
             return v;
@@ -492,8 +492,8 @@ function caml_input_value_from_reader(reader, ofs) {
             v[0] = 254;
             var t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            for (var i = 1; i <= len; i++) {
-              for (var j = 0; j < 8; j++) t[j] = reader.read8u();
+            for (let i = 1; i <= len; i++) {
+              for (let j = 0; j < 8; j++) t[j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
             }
             return v;
@@ -505,8 +505,8 @@ function caml_input_value_from_reader(reader, ofs) {
             v[0] = 254;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             var t = new Array(8);
-            for (var i = 1; i <= len; i++) {
-              for (var j = 0; j < 8; j++) t[7 - j] = reader.read8u();
+            for (let i = 1; i <= len; i++) {
+              for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
             }
             return v;
@@ -517,8 +517,8 @@ function caml_input_value_from_reader(reader, ofs) {
             var v = new Array(len + 1);
             v[0] = 254;
             var t = new Array(8);
-            for (var i = 1; i <= len; i++) {
-              for (var j = 0; j < 8; j++) t[j] = reader.read8u();
+            for (let i = 1; i <= len; i++) {
+              for (let j = 0; j < 8; j++) t[j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
             }
             return v;
@@ -655,7 +655,7 @@ if (typeof globalThis.Map === "undefined") {
       this.objs = objs;
     }
     NaiveLookup.prototype.get = function (v) {
-      for (var i = 0; i < this.objs.length; i++) {
+      for (let i = 0; i < this.objs.length; i++) {
         if (this.objs[i] === v) return i;
       }
     };
@@ -705,17 +705,17 @@ var caml_output_val = (function () {
     size_32: 0,
     size_64: 0,
     write: function (size, value) {
-      for (var i = size - 8; i >= 0; i -= 8)
+      for (let i = size - 8; i >= 0; i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xff;
     },
     write_at: function (pos, size, value) {
       var pos = pos;
-      for (var i = size - 8; i >= 0; i -= 8)
+      for (let i = size - 8; i >= 0; i -= 8)
         this.chunk[pos++] = (value >> i) & 0xff;
     },
     write_code: function (size, code, value) {
       this.chunk[this.chunk_idx++] = code;
-      for (var i = size - 8; i >= 0; i -= 8)
+      for (let i = size - 8; i >= 0; i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xff;
     },
     write_shared: function (offset) {
@@ -777,11 +777,11 @@ var caml_output_val = (function () {
           caml_invalid_argument("output_value: abstract value (Custom)");
         if (ops.fixed_length == undefined) {
           writer.write(8, 0x18 /*cst.CODE_CUSTOM_LEN*/);
-          for (var i = 0; i < name.length; i++)
+          for (let i = 0; i < name.length; i++)
             writer.write(8, name.charCodeAt(i));
           writer.write(8, 0);
           var header_pos = writer.pos();
-          for (var i = 0; i < 12; i++) {
+          for (let i = 0; i < 12; i++) {
             writer.write(8, 0);
           }
           ops.serialize(writer, v, sz_32_64);
@@ -790,7 +790,7 @@ var caml_output_val = (function () {
           writer.write_at(header_pos + 8, 32, sz_32_64[1]);
         } else {
           writer.write(8, 0x19 /*cst.CODE_CUSTOM_FIXED*/);
-          for (var i = 0; i < name.length; i++)
+          for (let i = 0; i < name.length; i++)
             writer.write(8, name.charCodeAt(i));
           writer.write(8, 0);
           var old_pos = writer.pos();
@@ -835,7 +835,7 @@ var caml_output_val = (function () {
         else if (len < 0x100)
           writer.write_code(8, 0x09 /*cst.CODE_STRING8*/, len);
         else writer.write_code(32, 0x0a /*cst.CODE_STRING32*/, len);
-        for (var i = 0; i < len; i++)
+        for (let i = 0; i < len; i++)
           writer.write(8, caml_bytes_unsafe_get(v, i));
         writer.size_32 += 1 + (((len + 4) / 4) | 0);
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
@@ -846,7 +846,7 @@ var caml_output_val = (function () {
         else if (len < 0x100)
           writer.write_code(8, 0x09 /*cst.CODE_STRING8*/, len);
         else writer.write_code(32, 0x0a /*cst.CODE_STRING32*/, len);
-        for (var i = 0; i < len; i++)
+        for (let i = 0; i < len; i++)
           writer.write(8, caml_string_unsafe_get(v, i));
         writer.size_32 += 1 + (((len + 4) / 4) | 0);
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
@@ -862,7 +862,7 @@ var caml_output_val = (function () {
           if (memo(v)) return;
           var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
           writer.write(8, 0x0c /*cst.CODE_DOUBLE_LITTLE*/);
-          for (var i = 0; i < 8; i++) {
+          for (let i = 0; i < 8; i++) {
             writer.write(8, t[7 - i]);
           }
           writer.size_32 += 3;

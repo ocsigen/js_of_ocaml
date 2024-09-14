@@ -43,25 +43,25 @@ function caml_hash_univ_param(count, limit, obj) {
         default:
           count--;
           hash_accu = (hash_accu * 19 + obj[0]) | 0;
-          for (var i = obj.length - 1; i > 0; i--) hash_aux(obj[i]);
+          for (let i = obj.length - 1; i > 0; i--) hash_aux(obj[i]);
       }
     } else if (caml_is_ml_bytes(obj)) {
       count--;
       var content = caml_ml_bytes_content(obj);
       if (typeof content === "string") {
-        for (var b = content, l = b.length, i = 0; i < l; i++)
+        for (let b = content, l = b.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
       } else {
         /* ARRAY */
-        for (var a = content, l = a.length, i = 0; i < l; i++)
+        for (let a = content, l = a.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (caml_is_ml_string(obj)) {
       var jsbytes = caml_jsbytes_of_string(obj);
-      for (var b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
+      for (let b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
         hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (typeof obj === "string") {
-      for (var b = obj, l = obj.length, i = 0; i < l; i++)
+      for (let b = obj, l = obj.length, i = 0; i < l; i++)
         hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (obj === (obj | 0)) {
       // Integer
@@ -71,7 +71,7 @@ function caml_hash_univ_param(count, limit, obj) {
       // Float
       count--;
       var p = caml_int64_to_bytes(caml_int64_bits_of_float(obj));
-      for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
+      for (let i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
     } else if (obj && obj.caml_custom) {
       if (
         caml_custom_ops[obj.caml_custom] &&

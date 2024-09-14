@@ -91,7 +91,7 @@ function caml_make_path(name) {
   var comp0 = path_is_absolute(name);
   var comp = comp0[1].split(/[/\\]/);
   var ncomp = [];
-  for (var i = 0; i < comp.length; i++) {
+  for (let i = 0; i < comp.length; i++) {
     switch (comp[i]) {
       case "..":
         if (ncomp.length > 1) ncomp.pop();
@@ -133,7 +133,7 @@ jsoo_mount_point.push({
 //Requires: jsoo_mount_point, caml_string_of_jsbytes
 function caml_list_mount_point() {
   var prev = 0;
-  for (var i = 0; i < jsoo_mount_point.length; i++) {
+  for (let i = 0; i < jsoo_mount_point.length; i++) {
     var old = prev;
     prev = [0, caml_string_of_jsbytes(jsoo_mount_point[i].path), old];
   }
@@ -147,7 +147,7 @@ function resolve_fs_device(name) {
   var name = path.join("/");
   var name_slash = caml_trailing_slash(name);
   var res;
-  for (var i = 0; i < jsoo_mount_point.length; i++) {
+  for (let i = 0; i < jsoo_mount_point.length; i++) {
     var m = jsoo_mount_point[i];
     if (
       name_slash.search(m.path) == 0 &&
@@ -190,7 +190,7 @@ function caml_unmount(name) {
   var path = caml_make_path(name);
   var name = caml_trailing_slash(path.join("/"));
   var idx = -1;
-  for (var i = 0; i < jsoo_mount_point.length; i++)
+  for (let i = 0; i < jsoo_mount_point.length; i++)
     if (jsoo_mount_point[i].path == name) idx = i;
   if (idx > -1) jsoo_mount_point.splice(idx, 1);
   return 0;
@@ -243,7 +243,7 @@ function caml_sys_read_directory(name) {
   var a = root.device.readdir(root.rest);
   var l = new Array(a.length + 1);
   l[0] = 0;
-  for (var i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsbytes(a[i]);
+  for (let i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsbytes(a[i]);
   return l;
 }
 
@@ -319,7 +319,7 @@ function jsoo_create_file_extern(name, content) {
 function caml_fs_init() {
   var tmp = globalThis.caml_fs_tmp;
   if (tmp) {
-    for (var i = 0; i < tmp.length; i++) {
+    for (let i = 0; i < tmp.length; i++) {
       jsoo_create_file(tmp[i].name, tmp[i].content);
     }
   }

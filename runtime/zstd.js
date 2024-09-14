@@ -182,7 +182,7 @@ var zstd_decompress = (function () {
     var sstep = (sz >> 1) + (sz >> 3) + 3;
     // sym mask
     var smask = sz - 1;
-    for (var s = 0; s <= sym; ++s) {
+    for (let s = 0; s <= sym; ++s) {
       var sf = freq[s];
       if (sf < 1) {
         dstate[s] = -sf;
@@ -354,7 +354,7 @@ var zstd_decompress = (function () {
   var b2bl = function (b, s) {
     var len = b.length,
       bl = new i32(len);
-    for (var i = 0; i < len; ++i) {
+    for (let i = 0; i < len; ++i) {
       bl[i] = s;
       s += 1 << b[i];
     }
@@ -509,7 +509,7 @@ var zstd_decompress = (function () {
         var scm = dat[bt++];
         if (scm & 3) err(0);
         var dts = [dmlt, doct, dllt];
-        for (var i = 2; i > -1; --i) {
+        for (let i = 2; i > -1; --i) {
           var md = (scm >> ((i << 1) + 2)) & 3;
           if (md == 1) {
             // rle buf
@@ -602,7 +602,7 @@ var zstd_decompress = (function () {
               st.o[0] = off;
             } else off = st.o[0];
           }
-          for (var i = 0; i < ll; ++i) {
+          for (let i = 0; i < ll; ++i) {
             buf[oubt + i] = buf[spl + i];
           }
           (oubt += ll), (spl += ll);
@@ -611,12 +611,12 @@ var zstd_decompress = (function () {
             var len = -stin;
             var bs = st.e + stin;
             if (len > ml) len = ml;
-            for (var i = 0; i < len; ++i) {
+            for (let i = 0; i < len; ++i) {
               buf[oubt + i] = st.w[bs + i];
             }
             (oubt += len), (ml -= len), (stin = 0);
           }
-          for (var i = 0; i < ml; ++i) {
+          for (let i = 0; i < ml; ++i) {
             buf[oubt + i] = buf[stin + i];
           }
           oubt += ml;
@@ -632,7 +632,7 @@ var zstd_decompress = (function () {
         if (out) {
           st.y += lss;
           if (spl) {
-            for (var i = 0; i < lss; ++i) {
+            for (let i = 0; i < lss; ++i) {
               buf[i] = buf[spl + i];
             }
           }
@@ -647,7 +647,7 @@ var zstd_decompress = (function () {
   var cct = function (bufs, ol) {
     if (bufs.length == 1) return bufs[0];
     var buf = new u8(ol);
-    for (var i = 0, b = 0; i < bufs.length; ++i) {
+    for (let i = 0, b = 0; i < bufs.length; ++i) {
       var chk = bufs[i];
       buf.set(chk, b);
       b += chk.length;

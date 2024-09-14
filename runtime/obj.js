@@ -63,7 +63,7 @@ function caml_obj_set_tag(x, tag) {
 function caml_obj_block(tag, size) {
   var o = new Array(size + 1);
   o[0] = tag;
-  for (var i = 1; i <= size; i++) o[i] = 0;
+  for (let i = 1; i <= size; i++) o[i] = 0;
   return o;
 }
 
@@ -72,7 +72,7 @@ function caml_obj_with_tag(tag, x) {
   var l = x.length;
   var a = new Array(l);
   a[0] = tag;
-  for (var i = 1; i < l; i++) a[i] = x[i];
+  for (let i = 1; i < l; i++) a[i] = x[i];
   return a;
 }
 
@@ -80,7 +80,7 @@ function caml_obj_with_tag(tag, x) {
 function caml_obj_dup(x) {
   var l = x.length;
   var a = new Array(l);
-  for (var i = 0; i < l; i++) a[i] = x[i];
+  for (let i = 0; i < l; i++) a[i] = x[i];
   return a;
 }
 
@@ -126,7 +126,7 @@ function caml_get_public_method(obj, tag, cacheid) {
   var ofs = caml_method_cache[cacheid];
   if (ofs === undefined) {
     // Make sure the array is not sparse
-    for (var i = caml_method_cache.length; i < cacheid; i++)
+    for (let i = caml_method_cache.length; i < cacheid; i++)
       caml_method_cache[i] = 0;
   } else if (meths[ofs] === tag) {
     return meths[ofs - 1];

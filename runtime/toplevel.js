@@ -109,13 +109,13 @@ function caml_reify_bytecode(code, debug, _digest) {
   if (globalThis.toplevelCompile) {
     var len = 0;
     var all = [];
-    for (var i = 1; i < code.length; i++) {
+    for (let i = 1; i < code.length; i++) {
       var a = caml_uint8_array_of_bytes(code[i]);
       all.push(a);
       len += a.length;
     }
     code = new Uint8Array(len);
-    for (var i = 0, len = 0; i < all.length; i++) {
+    for (let i = 0, len = 0; i < all.length; i++) {
       code.set(all[i], len);
       len += all[i].length;
     }

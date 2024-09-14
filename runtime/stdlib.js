@@ -34,7 +34,7 @@ function caml_call_gen(f, args) {
       case 1: {
         var g = function (x) {
           var nargs = new Array(argsLen + 1);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
+          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           return f.apply(null, nargs);
         };
@@ -43,7 +43,7 @@ function caml_call_gen(f, args) {
       case 2: {
         var g = function (x, y) {
           var nargs = new Array(argsLen + 2);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
+          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
           return f.apply(null, nargs);
@@ -54,8 +54,8 @@ function caml_call_gen(f, args) {
         var g = function () {
           var extra_args = arguments.length == 0 ? 1 : arguments.length;
           var nargs = new Array(args.length + extra_args);
-          for (var i = 0; i < args.length; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
+          for (let i = 0; i < args.length; i++) nargs[i] = args[i];
+          for (let i = 0; i < arguments.length; i++)
             nargs[args.length + i] = arguments[i];
           return caml_call_gen(f, nargs);
         };
@@ -93,7 +93,7 @@ function caml_call_gen(f, args) {
       case 1: {
         var g = function (x, y) {
           var nargs = new Array(argsLen + 2);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
+          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
           return f.apply(null, nargs);
@@ -103,7 +103,7 @@ function caml_call_gen(f, args) {
       case 2: {
         var g = function (x, y, z) {
           var nargs = new Array(argsLen + 3);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
+          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
           nargs[argsLen + 2] = z;
@@ -115,8 +115,8 @@ function caml_call_gen(f, args) {
         var g = function () {
           var extra_args = arguments.length == 0 ? 1 : arguments.length;
           var nargs = new Array(argsLen + extra_args);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
+          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+          for (let i = 0; i < arguments.length; i++)
             nargs[argsLen + i] = arguments[i];
           return caml_call_gen(f, nargs);
         };
@@ -151,7 +151,7 @@ var caml_global_data = [0];
 function caml_build_symbols(symb) {
   var r = {};
   if (symb) {
-    for (var i = 1; i < symb.length; i++) {
+    for (let i = 1; i < symb.length; i++) {
       r[caml_jsstring_of_string(symb[i][1])] = symb[i][2];
     }
   }

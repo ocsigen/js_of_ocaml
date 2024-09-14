@@ -81,7 +81,7 @@ var re_match = (function () {
       groups = new Array(numgroups),
       re_register = new Array(numregisters);
 
-    for (var i = 0; i < groups.length; i++) {
+    for (let i = 0; i < groups.length; i++) {
       groups[i] = { start: -1, end: -1 };
     }
     groups[0].start = pos;
@@ -108,7 +108,7 @@ var re_match = (function () {
       groups[0].end = pos;
       var result = new Array(1 + groups.length * 2);
       result[0] = 0; // tag
-      for (var i = 0; i < groups.length; i++) {
+      for (let i = 0; i < groups.length; i++) {
         var g = groups[i];
         if (g.start < 0 || g.end < 0) {
           g.start = g.end = -1;
@@ -235,7 +235,7 @@ var re_match = (function () {
             backtrack();
             break;
           }
-          for (var i = group.start; i < group.end; i++) {
+          for (let i = group.start; i < group.end; i++) {
             if (pos === s.length) {
               prefix_match();
               break;

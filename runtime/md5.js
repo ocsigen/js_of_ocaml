@@ -202,15 +202,15 @@ function caml_MD5Final(ctx) {
   ctx.b8[in_buf] = 0x80;
   in_buf++;
   if (in_buf > 56) {
-    for (var j = in_buf; j < 64; j++) {
+    for (let j = in_buf; j < 64; j++) {
       ctx.b8[j] = 0;
     }
     caml_MD5Transform(ctx.w, ctx.b32);
-    for (var j = 0; j < 56; j++) {
+    for (let j = 0; j < 56; j++) {
       ctx.b8[j] = 0;
     }
   } else {
-    for (var j = in_buf; j < 56; j++) {
+    for (let j = in_buf; j < 56; j++) {
       ctx.b8[j] = 0;
     }
   }
@@ -218,8 +218,8 @@ function caml_MD5Final(ctx) {
   ctx.b32[15] = (ctx.len >> 29) & 0x1fffffff;
   caml_MD5Transform(ctx.w, ctx.b32);
   var t = new Uint8Array(16);
-  for (var i = 0; i < 4; i++)
-    for (var j = 0; j < 4; j++) t[i * 4 + j] = (ctx.w[i] >> (8 * j)) & 0xff;
+  for (let i = 0; i < 4; i++)
+    for (let j = 0; j < 4; j++) t[i * 4 + j] = (ctx.w[i] >> (8 * j)) & 0xff;
   return t;
 }
 

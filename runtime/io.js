@@ -153,7 +153,7 @@ function caml_ml_channel_get(id) {
 //Requires: caml_ml_channels
 function caml_ml_out_channels_list() {
   var l = 0;
-  for (var c = 0; c < caml_ml_channels.length; c++) {
+  for (let c = 0; c < caml_ml_channels.length; c++) {
     if (
       caml_ml_channels[c] &&
       caml_ml_channels[c].opened &&
@@ -431,7 +431,7 @@ function caml_ml_input_char(chanid) {
 function caml_ml_input_int(chanid) {
   var chan = caml_ml_channel_get(chanid);
   var res = 0;
-  for (var i = 0; i < 4; i++) {
+  for (let i = 0; i < 4; i++) {
     res = ((res << 8) + caml_ml_input_char(chanid)) | 0;
   }
   return res | 0;

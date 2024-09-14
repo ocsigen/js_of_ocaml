@@ -21,7 +21,7 @@
 function caml_array_sub(a, i, len) {
   var a2 = new Array(len + 1);
   a2[0] = 0;
-  for (var i2 = 1, i1 = i + 1; i2 <= len; i2++, i1++) {
+  for (let i2 = 1, i1 = i + 1; i2 <= len; i2++, i1++) {
     a2[i2] = a[i1];
   }
   return a2;
@@ -46,7 +46,7 @@ function caml_array_concat(l) {
   var a = [0];
   while (l !== 0) {
     var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
+    for (let i = 1; i < b.length; i++) a.push(b[i]);
     l = l[2];
   }
   return a;
@@ -55,9 +55,9 @@ function caml_array_concat(l) {
 //Provides: caml_array_blit
 function caml_array_blit(a1, i1, a2, i2, len) {
   if (i2 <= i1) {
-    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+    for (let j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
   } else {
-    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
+    for (let j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
   }
   return 0;
 }
@@ -65,9 +65,9 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 //Provides: caml_floatarray_blit
 function caml_floatarray_blit(a1, i1, a2, i2, len) {
   if (i2 <= i1) {
-    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+    for (let j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
   } else {
-    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
+    for (let j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
   }
   return 0;
 }
@@ -90,7 +90,7 @@ function caml_array_get(array, index) {
 
 //Provides: caml_array_fill
 function caml_array_fill(array, ofs, len, v) {
-  for (var i = 0; i < len; i++) {
+  for (let i = 0; i < len; i++) {
     array[ofs + i + 1] = v;
   }
   return 0;
@@ -110,7 +110,7 @@ function caml_make_vect(len, init) {
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 0;
-  for (var i = 1; i < len; i++) b[i] = init;
+  for (let i = 1; i < len; i++) b[i] = init;
   return b;
 }
 
@@ -121,7 +121,7 @@ function caml_make_float_vect(len) {
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 254;
-  for (var i = 1; i < len; i++) b[i] = 0;
+  for (let i = 1; i < len; i++) b[i] = 0;
   return b;
 }
 //Provides: caml_floatarray_create const (const)
@@ -131,6 +131,6 @@ function caml_floatarray_create(len) {
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 254;
-  for (var i = 1; i < len; i++) b[i] = 0;
+  for (let i = 1; i < len; i++) b[i] = 0;
   return b;
 }
