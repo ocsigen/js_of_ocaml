@@ -230,7 +230,7 @@ function caml_hash(count, limit, seed, obj) {
           // Forward
           queue[--rd] = v[1];
           break;
-        default:
+        default: {
           if (caml_is_continuation_tag(v[0])) {
             /* All continuations hash to the same value,
              since we have no idea how to distinguish them. */
@@ -243,6 +243,7 @@ function caml_hash(count, limit, seed, obj) {
             queue[wr++] = v[i];
           }
           break;
+        }
       }
     } else if (caml_is_ml_bytes(v)) {
       h = caml_hash_mix_bytes(h, v);

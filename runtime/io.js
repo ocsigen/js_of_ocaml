@@ -557,7 +557,8 @@ function caml_ml_output_ta(chanid, buffer, offset, len) {
       chan.buffer_curr += buffer.length;
       if (chan.buffer_curr >= chan.buffer.length) caml_ml_flush(chanid);
       break;
-    case 2: // Buffered (only for stdout and stderr)
+    case 2: {
+      // Buffered (only for stdout and stderr)
       var id = buffer.lastIndexOf(10);
       if (id < 0) {
         chan.buffer.set(buffer, chan.buffer_curr);
@@ -571,6 +572,7 @@ function caml_ml_output_ta(chanid, buffer, offset, len) {
         chan.buffer_curr += buffer.length - id - 1;
       }
       break;
+    }
   }
   return 0;
 }

@@ -28,11 +28,13 @@ function caml_CamlinternalMod_init_mod(loc, shape) {
   function loop(shape, struct, idx) {
     if (typeof shape === "number")
       switch (shape) {
-        case 0: //function
+        case 0: {
+          //function
           var dummy = caml_alloc_dummy_infix();
           dummy.fun = undef_module;
           struct[idx] = dummy;
           break;
+        }
         case 1: //lazy
           struct[idx] = [246, undef_module];
           break;
@@ -90,11 +92,13 @@ function caml_CamlinternalMod_init_mod(loc, shape, cont) {
   function loop(shape, struct, idx) {
     if (typeof shape === "number")
       switch (shape) {
-        case 0: //function
+        case 0: {
+          //function
           var dummy = caml_alloc_dummy_infix();
           dummy.fun = undef_module;
           struct[idx] = dummy;
           break;
+        }
         case 1: //lazy
           struct[idx] = [246, undef_module];
           break;

@@ -149,17 +149,19 @@ Ml_Bigarray.prototype.offset = function (arg) {
 
 Ml_Bigarray.prototype.get = function (ofs) {
   switch (this.kind) {
-    case 7:
+    case 7: {
       // Int64
       var l = this.data[ofs * 2 + 0];
       var h = this.data[ofs * 2 + 1];
       return caml_int64_create_lo_hi(l, h);
+    }
     case 10:
-    case 11:
+    case 11: {
       // Complex32, Complex64
       var r = this.data[ofs * 2 + 0];
       var i = this.data[ofs * 2 + 1];
       return [254, r, i];
+    }
     default:
       return this.data[ofs];
   }
@@ -187,7 +189,7 @@ Ml_Bigarray.prototype.set = function (ofs, v) {
 
 Ml_Bigarray.prototype.fill = function (v) {
   switch (this.kind) {
-    case 7:
+    case 7: {
       // Int64
       var a = caml_int64_lo32(v);
       var b = caml_int64_hi32(v);
@@ -199,8 +201,9 @@ Ml_Bigarray.prototype.fill = function (v) {
         }
       }
       break;
+    }
     case 10:
-    case 11:
+    case 11: {
       // Complex32, Complex64
       var im = v[1];
       var re = v[2];
@@ -212,6 +215,7 @@ Ml_Bigarray.prototype.fill = function (v) {
         }
       }
       break;
+    }
     default:
       this.data.fill(v);
       break;
@@ -233,7 +237,7 @@ Ml_Bigarray.prototype.compare = function (b, total) {
     case 0:
     case 1:
     case 10:
-    case 11:
+    case 11: {
       // Floats
       var x, y;
       for (var i = 0; i < this.data.length; i++) {
@@ -248,6 +252,7 @@ Ml_Bigarray.prototype.compare = function (b, total) {
         }
       }
       break;
+    }
     case 7:
       // Int64
       for (var i = 0; i < this.data.length; i += 2) {
@@ -749,7 +754,8 @@ function caml_ba_deserialize(reader, sz, name) {
       }
       break;
     case 8: // Int32Array (int)
-    case 9: // Int32Array (nativeint)
+    case 9: {
+      // Int32Array (nativeint)
       var sixty = reader.read8u();
       if (sixty)
         caml_failwith(
@@ -759,7 +765,9 @@ function caml_ba_deserialize(reader, sz, name) {
         data[i] = reader.read32s();
       }
       break;
-    case 7: // (int64)
+    }
+    case 7: {
+      // (int64)
       var t = new Array(8);
       for (var i = 0; i < size; i++) {
         for (var j = 0; j < 8; j++) t[j] = reader.read8u();
@@ -767,7 +775,9 @@ function caml_ba_deserialize(reader, sz, name) {
         ba.set(i, int64);
       }
       break;
-    case 1: // Float64Array
+    }
+    case 1: {
+      // Float64Array
       var t = new Array(8);
       for (var i = 0; i < size; i++) {
         for (var j = 0; j < 8; j++) t[j] = reader.read8u();
@@ -775,6 +785,7 @@ function caml_ba_deserialize(reader, sz, name) {
         ba.set(i, f);
       }
       break;
+    }
     case 0: // Float32Array
       for (var i = 0; i < size; i++) {
         var f = caml_int32_float_of_bits(reader.read32s());
@@ -788,7 +799,8 @@ function caml_ba_deserialize(reader, sz, name) {
         ba.set(i, [254, re, im]);
       }
       break;
-    case 11: // Float64Array (complex64)
+    case 11: {
+      // Float64Array (complex64)
       var t = new Array(8);
       for (var i = 0; i < size; i++) {
         for (var j = 0; j < 8; j++) t[j] = reader.read8u();
@@ -798,6 +810,7 @@ function caml_ba_deserialize(reader, sz, name) {
         ba.set(i, [254, re, im]);
       }
       break;
+    }
   }
   sz[0] = (4 + num_dims) * 4;
   return caml_ba_create_unsafe(kind, layout, dims, data);
@@ -823,7 +836,8 @@ function caml_ba_hash(ba) {
   switch (ba.kind) {
     case 2: //Int8Array
     case 3: //Uint8Array
-    case 12: //Uint8Array
+    case 12: {
+      //Uint8Array
       if (num_elts > 256) num_elts = 256;
       var w = 0,
         i = 0;
@@ -846,8 +860,10 @@ function caml_ba_hash(ba) {
           h = caml_hash_mix_int(h, w);
       }
       break;
+    }
     case 4: // Int16Array
-    case 5: // Uint16Array
+    case 5: {
+      // Uint16Array
       if (num_elts > 128) num_elts = 128;
       var w = 0,
         i = 0;
@@ -857,6 +873,7 @@ function caml_ba_hash(ba) {
       }
       if ((num_elts & 1) != 0) h = caml_hash_mix_int(h, ba.data[i]);
       break;
+    }
     case 6: // Int32Array (int32)
       if (num_elts > 64) num_elts = 64;
       for (var i = 0; i < num_elts; i++) h = caml_hash_mix_int(h, ba.data[i]);

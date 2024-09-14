@@ -115,10 +115,12 @@ function caml_compare_val(a, b, total) {
           // Cannot happen
           caml_invalid_argument("compare: functional value");
           break;
-        case 248: // Object
+        case 248: {
+          // Object
           var x = caml_int_compare(a[2], b[2]);
           if (x != 0) return x | 0;
           break;
+        }
         case 249: // Infix
           // Cannot happen
           caml_invalid_argument("compare: functional value");
@@ -152,7 +154,8 @@ function caml_compare_val(a, b, total) {
         case 1247: // Function
           caml_invalid_argument("compare: functional value");
           break;
-        case 1255: // Custom
+        case 1255: {
+          // Custom
           var comp = caml_compare_val_get_custom(a);
           if (comp != caml_compare_val_get_custom(b)) {
             return a.caml_custom < b.caml_custom ? -1 : 1;
@@ -169,7 +172,9 @@ function caml_compare_val(a, b, total) {
           }
           if (x != 0) return x | 0;
           break;
-        case 1256: // compare function
+        }
+        case 1256: {
+          // compare function
           var x = a.compare(b, total);
           if (x != x) {
             // Protect against invalid UNORDERED
@@ -181,6 +186,7 @@ function caml_compare_val(a, b, total) {
           }
           if (x != 0) return x | 0;
           break;
+        }
         case 1000: // Number
           a = +a;
           b = +b;
@@ -220,7 +226,8 @@ function caml_compare_val(a, b, total) {
             return 1;
           }
           break;
-        case 1252: // ocaml strings
+        case 1252: {
+          // ocaml strings
           var a = caml_jsbytes_of_string(a);
           var b = caml_jsbytes_of_string(b);
           if (a !== b) {
@@ -228,7 +235,9 @@ function caml_compare_val(a, b, total) {
             if (a > b) return 1;
           }
           break;
-        case 12520: // javascript strings
+        }
+        case 12520: {
+          // javascript strings
           var a = a.toString();
           var b = b.toString();
           if (a !== b) {
@@ -236,6 +245,7 @@ function caml_compare_val(a, b, total) {
             if (a > b) return 1;
           }
           break;
+        }
         case 246: // Lazy_tag
         case 254: // Double_array
         default: // Block with other tag

@@ -249,7 +249,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
         cmd = loop;
         break;
 
-      case 10: //reduce:
+      case 10: {
+        //reduce:
         if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
         var m = tables.len[n];
         env[env_asp] = sp;
@@ -272,13 +273,15 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = GROW_STACKS_2;
           break exit;
         }
+      }
       // Fall through
       /* The ML code resizes the stacks */
       case 3: //STACKS_GROWN_2:
         res = COMPUTE_SEMANTIC_ACTION;
         break exit;
       /* The ML code calls the semantic action */
-      case 4: //SEMANTIC_ACTION_COMPUTED:
+      case 4: {
+        //SEMANTIC_ACTION_COMPUTED:
         env[env_s_stack][sp + 1] = state;
         env[env_v_stack][sp + 1] = arg;
         var asp = env[env_asp];
@@ -289,6 +292,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         }
         cmd = loop;
         break;
+      }
       /* Should not happen */
       default:
         return RAISE_PARSE_ERROR;

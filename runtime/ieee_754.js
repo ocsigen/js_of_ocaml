@@ -517,17 +517,18 @@ function caml_format_float(fmt, x) {
     f.filler = " ";
   } else
     switch (f.conv) {
-      case "e":
+      case "e": {
         var s = x.toExponential(prec);
         // exponent should be at least two digits
         var i = s.length;
         if (s.charAt(i - 3) == "e")
           s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
         break;
+      }
       case "f":
         s = toFixed(x, prec);
         break;
-      case "g":
+      case "g": {
         prec = prec ? prec : 1;
         s = x.toExponential(prec - 1);
         var j = s.indexOf("e");
@@ -557,6 +558,7 @@ function caml_format_float(fmt, x) {
           }
         }
         break;
+      }
     }
   return caml_finish_formatting(f, s);
 }

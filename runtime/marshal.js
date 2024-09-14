@@ -343,7 +343,7 @@ function caml_input_value_from_reader(reader, ofs) {
   }
   var magic = reader.read32u();
   switch (magic) {
-    case 0x8495a6be /* Intext_magic_number_small */:
+    case 0x8495a6be /* Intext_magic_number_small */: {
       var header_len = 20;
       var compressed = 0;
       var data_len = reader.read32u();
@@ -352,7 +352,8 @@ function caml_input_value_from_reader(reader, ofs) {
       var _size_32 = reader.read32u();
       var _size_64 = reader.read32u();
       break;
-    case 0x8495a6bd /* Intext_magic_number_compressed */:
+    }
+    case 0x8495a6bd /* Intext_magic_number_compressed */: {
       var header_len = reader.read8u() & 0x3f;
       var compressed = 1;
       var overflow = [false];
@@ -367,6 +368,7 @@ function caml_input_value_from_reader(reader, ofs) {
         );
       }
       break;
+    }
     case 0x8495a6bf /* Intext_magic_number_big */:
       caml_failwith(
         "caml_input_value_from_reader: object too large to be read back on a 32-bit platform",
@@ -408,19 +410,26 @@ function caml_input_value_from_reader(reader, ofs) {
           case 0x03: //cst.CODE_INT64:
             caml_failwith("input_value: integer too large");
             break;
-          case 0x04: //cst.CODE_SHARED8:
+          case 0x04: {
+            //cst.CODE_SHARED8:
             var offset = reader.read8u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
-          case 0x05: //cst.CODE_SHARED16:
+          }
+          case 0x05: {
+            //cst.CODE_SHARED16:
             var offset = reader.read16u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
-          case 0x06: //cst.CODE_SHARED32:
+          }
+          case 0x06: {
+            //cst.CODE_SHARED32:
             var offset = reader.read32u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
-          case 0x08: //cst.CODE_BLOCK32:
+          }
+          case 0x08: {
+            //cst.CODE_BLOCK32:
             var header = reader.read32u();
             var tag = header & 0xff;
             var size = header >> 10;
@@ -429,32 +438,42 @@ function caml_input_value_from_reader(reader, ofs) {
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             stack.push(v, size);
             return v;
+          }
           case 0x13: //cst.CODE_BLOCK64:
             caml_failwith("input_value: data block too large");
             break;
-          case 0x09: //cst.CODE_STRING8:
+          case 0x09: {
+            //cst.CODE_STRING8:
             var len = reader.read8u();
             var v = reader.readstr(len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
-          case 0x0a: //cst.CODE_STRING32:
+          }
+          case 0x0a: {
+            //cst.CODE_STRING32:
             var len = reader.read32u();
             var v = reader.readstr(len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
-          case 0x0c: //cst.CODE_DOUBLE_LITTLE:
+          }
+          case 0x0c: {
+            //cst.CODE_DOUBLE_LITTLE:
             var t = new Array(8);
             for (var i = 0; i < 8; i++) t[7 - i] = reader.read8u();
             var v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
-          case 0x0b: //cst.CODE_DOUBLE_BIG:
+          }
+          case 0x0b: {
+            //cst.CODE_DOUBLE_BIG:
             var t = new Array(8);
             for (var i = 0; i < 8; i++) t[i] = reader.read8u();
             var v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
-          case 0x0e: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
+          }
+          case 0x0e: {
+            //cst.CODE_DOUBLE_ARRAY8_LITTLE:
             var len = reader.read8u();
             var v = new Array(len + 1);
             v[0] = 254;
@@ -465,7 +484,9 @@ function caml_input_value_from_reader(reader, ofs) {
               v[i] = caml_float_of_bytes(t);
             }
             return v;
-          case 0x0d: //cst.CODE_DOUBLE_ARRAY8_BIG:
+          }
+          case 0x0d: {
+            //cst.CODE_DOUBLE_ARRAY8_BIG:
             var len = reader.read8u();
             var v = new Array(len + 1);
             v[0] = 254;
@@ -476,7 +497,9 @@ function caml_input_value_from_reader(reader, ofs) {
               v[i] = caml_float_of_bytes(t);
             }
             return v;
-          case 0x07: //cst.CODE_DOUBLE_ARRAY32_LITTLE:
+          }
+          case 0x07: {
+            //cst.CODE_DOUBLE_ARRAY32_LITTLE:
             var len = reader.read32u();
             var v = new Array(len + 1);
             v[0] = 254;
@@ -487,7 +510,9 @@ function caml_input_value_from_reader(reader, ofs) {
               v[i] = caml_float_of_bytes(t);
             }
             return v;
-          case 0x0f: //cst.CODE_DOUBLE_ARRAY32_BIG:
+          }
+          case 0x0f: {
+            //cst.CODE_DOUBLE_ARRAY32_BIG:
             var len = reader.read32u();
             var v = new Array(len + 1);
             v[0] = 254;
@@ -497,13 +522,15 @@ function caml_input_value_from_reader(reader, ofs) {
               v[i] = caml_float_of_bytes(t);
             }
             return v;
+          }
           case 0x10: //cst.CODE_CODEPOINTER:
           case 0x11: //cst.CODE_INFIXPOINTER:
             caml_failwith("input_value: code pointer");
             break;
           case 0x12: //cst.CODE_CUSTOM:
           case 0x18: //cst.CODE_CUSTOM_LEN:
-          case 0x19: //cst.CODE_CUSTOM_FIXED:
+          case 0x19: {
+            //cst.CODE_CUSTOM_FIXED:
             var c,
               s = "";
             while ((c = reader.read8u()) != 0) s += String.fromCharCode(c);
@@ -539,6 +566,7 @@ function caml_input_value_from_reader(reader, ofs) {
             }
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
+          }
           default:
             caml_failwith("input_value: ill-formed message");
         }
@@ -594,11 +622,12 @@ function caml_marshal_data_size(s, ofs) {
   }
 
   switch (r.read32u()) {
-    case 0x8495a6be /* Intext_magic_number_small */:
+    case 0x8495a6be /* Intext_magic_number_small */: {
       var header_len = 20;
       var data_len = r.read32u();
       break;
-    case 0x8495a6bd /* Intext_magic_number_compressed */:
+    }
+    case 0x8495a6bd /* Intext_magic_number_compressed */: {
       var header_len = r.read8u() & 0x3f;
       var overflow = [false];
       var data_len = readvlq(overflow);
@@ -608,6 +637,7 @@ function caml_marshal_data_size(s, ofs) {
         );
       }
       break;
+    }
     case 0x8495a6bf: /* Intext_magic_number_big */
     default:
       caml_failwith("Marshal.data_size: bad object");
