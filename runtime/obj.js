@@ -25,7 +25,7 @@ function caml_update_dummy(x, y) {
     x.fun = y;
     return 0;
   }
-  var i = y.length;
+  let i = y.length;
   while (i--) x[i] = y[i];
   return 0;
 }
@@ -61,7 +61,7 @@ function caml_obj_set_tag(x, tag) {
 }
 //Provides: caml_obj_block const (const,const)
 function caml_obj_block(tag, size) {
-  var o = new Array(size + 1);
+  const o = new Array(size + 1);
   o[0] = tag;
   for (let i = 1; i <= size; i++) o[i] = 0;
   return o;
@@ -69,8 +69,8 @@ function caml_obj_block(tag, size) {
 
 //Provides: caml_obj_with_tag
 function caml_obj_with_tag(tag, x) {
-  var l = x.length;
-  var a = new Array(l);
+  const l = x.length;
+  const a = new Array(l);
   a[0] = tag;
   for (let i = 1; i < l; i++) a[i] = x[i];
   return a;
@@ -78,8 +78,8 @@ function caml_obj_with_tag(tag, x) {
 
 //Provides: caml_obj_dup mutable (mutable)
 function caml_obj_dup(x) {
-  var l = x.length;
-  var a = new Array(l);
+  const l = x.length;
+  const a = new Array(l);
   for (let i = 0; i < l; i++) a[i] = x[i];
   return a;
 }
@@ -120,10 +120,10 @@ function caml_lazy_make_forward(v) {
 
 ///////////// CamlinternalOO
 //Provides: caml_get_public_method const
-var caml_method_cache = [];
+const caml_method_cache = [];
 function caml_get_public_method(obj, tag, cacheid) {
-  var meths = obj[1];
-  var ofs = caml_method_cache[cacheid];
+  const meths = obj[1];
+  const ofs = caml_method_cache[cacheid];
   if (ofs === undefined) {
     // Make sure the array is not sparse
     for (let i = caml_method_cache.length; i < cacheid; i++)
@@ -131,9 +131,9 @@ function caml_get_public_method(obj, tag, cacheid) {
   } else if (meths[ofs] === tag) {
     return meths[ofs - 1];
   }
-  var li = 3,
-    hi = meths[1] * 2 + 1,
-    mi;
+  let li = 3;
+  let hi = meths[1] * 2 + 1;
+  let mi;
   while (li < hi) {
     mi = ((li + hi) >> 1) | 1;
     if (tag < meths[mi + 1]) hi = mi - 2;
@@ -145,7 +145,7 @@ function caml_get_public_method(obj, tag, cacheid) {
 }
 
 //Provides: caml_oo_last_id
-var caml_oo_last_id = 0;
+let caml_oo_last_id = 0;
 
 //Provides: caml_set_oo_id
 //Requires: caml_oo_last_id

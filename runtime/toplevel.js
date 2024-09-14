@@ -58,12 +58,12 @@ function caml_get_section_table() {
   if (!caml_global_data.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
-  var symb = caml_global_data.sections[1];
-  var crcs = caml_global_data.sections[2];
-  var prim = caml_global_data.sections[3];
-  var dlpt = caml_global_data.sections[4];
+  const symb = caml_global_data.sections[1];
+  const crcs = caml_global_data.sections[2];
+  const prim = caml_global_data.sections[3];
+  const dlpt = caml_global_data.sections[4];
   function sl(l) {
-    var x = "";
+    let x = "";
     while (l) {
       x += caml_jsbytes_of_string(l[1]);
       x += "\0";
@@ -71,7 +71,7 @@ function caml_get_section_table() {
     }
     return caml_string_of_jsbytes(x);
   }
-  var res = caml_list_of_js_array([
+  const res = caml_list_of_js_array([
     [0, caml_string_of_jsbytes("SYMB"), symb],
     [0, caml_string_of_jsbytes("CRCS"), crcs],
     [0, caml_string_of_jsbytes("PRIM"), sl(prim)],
@@ -107,10 +107,10 @@ function caml_reify_bytecode(code, debug, _digest) {
 //Version: < 5.2
 function caml_reify_bytecode(code, debug, _digest) {
   if (globalThis.toplevelCompile) {
-    var len = 0;
-    var all = [];
+    let len = 0;
+    const all = [];
     for (let i = 1; i < code.length; i++) {
-      var a = caml_uint8_array_of_bytes(code[i]);
+      const a = caml_uint8_array_of_bytes(code[i]);
       all.push(a);
       len += a.length;
     }

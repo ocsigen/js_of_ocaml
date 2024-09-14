@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_int64_offset
-var caml_int64_offset = Math.pow(2, -24);
+const caml_int64_offset = Math.pow(2, -24);
 
 //Provides: MlInt64
 //Requires: caml_int64_offset, caml_raise_zero_divide
@@ -42,8 +42,8 @@ MlInt64.prototype.ucompare = function (x) {
   return 0;
 };
 MlInt64.prototype.compare = function (x) {
-  var hi = this.hi << 16;
-  var xhi = x.hi << 16;
+  const hi = this.hi << 16;
+  const xhi = x.hi << 16;
   if (hi > xhi) return 1;
   if (hi < xhi) return -1;
   if (this.mi > x.mi) return 1;
@@ -53,27 +53,27 @@ MlInt64.prototype.compare = function (x) {
   return 0;
 };
 MlInt64.prototype.neg = function () {
-  var lo = -this.lo;
-  var mi = -this.mi + (lo >> 24);
-  var hi = -this.hi + (mi >> 24);
+  const lo = -this.lo;
+  const mi = -this.mi + (lo >> 24);
+  const hi = -this.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
 };
 MlInt64.prototype.add = function (x) {
-  var lo = this.lo + x.lo;
-  var mi = this.mi + x.mi + (lo >> 24);
-  var hi = this.hi + x.hi + (mi >> 24);
+  const lo = this.lo + x.lo;
+  const mi = this.mi + x.mi + (lo >> 24);
+  const hi = this.hi + x.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
 };
 MlInt64.prototype.sub = function (x) {
-  var lo = this.lo - x.lo;
-  var mi = this.mi - x.mi + (lo >> 24);
-  var hi = this.hi - x.hi + (mi >> 24);
+  const lo = this.lo - x.lo;
+  const mi = this.mi - x.mi + (lo >> 24);
+  const hi = this.hi - x.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
 };
 MlInt64.prototype.mul = function (x) {
-  var lo = this.lo * x.lo;
-  var mi = ((lo * caml_int64_offset) | 0) + this.mi * x.lo + this.lo * x.mi;
-  var hi =
+  const lo = this.lo * x.lo;
+  const mi = ((lo * caml_int64_offset) | 0) + this.mi * x.lo + this.lo * x.mi;
+  const hi =
     ((mi * caml_int64_offset) | 0) +
     this.hi * x.lo +
     this.mi * x.mi +
@@ -133,14 +133,14 @@ MlInt64.prototype.shift_right_unsigned = function (s) {
 MlInt64.prototype.shift_right = function (s) {
   s = s & 63;
   if (s == 0) return this;
-  var h = (this.hi << 16) >> 16;
+  const h = (this.hi << 16) >> 16;
   if (s < 24)
     return new MlInt64(
       (this.lo >> s) | (this.mi << (24 - s)),
       (this.mi >> s) | (h << (24 - s)),
       ((this.hi << 16) >> s) >>> 16,
     );
-  var sign = (this.hi << 16) >> 31;
+  const sign = (this.hi << 16) >> 31;
   if (s < 48)
     return new MlInt64(
       (this.mi >> (s - 24)) | (this.hi << (48 - s)),
@@ -160,10 +160,10 @@ MlInt64.prototype.lsr1 = function () {
   this.hi = this.hi >>> 1;
 };
 MlInt64.prototype.udivmod = function (x) {
-  var offset = 0;
-  var modulus = this.copy();
-  var divisor = x.copy();
-  var quotient = new MlInt64(0, 0, 0);
+  let offset = 0;
+  let modulus = this.copy();
+  const divisor = x.copy();
+  const quotient = new MlInt64(0, 0, 0);
   while (modulus.ucompare(divisor) > 0) {
     offset++;
     divisor.lsl1();
@@ -180,22 +180,22 @@ MlInt64.prototype.udivmod = function (x) {
   return { quotient: quotient, modulus: modulus };
 };
 MlInt64.prototype.div = function (y) {
-  var x = this;
+  let x = this;
   if (y.isZero()) caml_raise_zero_divide();
-  var sign = x.hi ^ y.hi;
+  const sign = x.hi ^ y.hi;
   if (x.hi & 0x8000) x = x.neg();
   if (y.hi & 0x8000) y = y.neg();
-  var q = x.udivmod(y).quotient;
+  let q = x.udivmod(y).quotient;
   if (sign & 0x8000) q = q.neg();
   return q;
 };
 MlInt64.prototype.mod = function (y) {
-  var x = this;
+  let x = this;
   if (y.isZero()) caml_raise_zero_divide();
-  var sign = x.hi;
+  const sign = x.hi;
   if (x.hi & 0x8000) x = x.neg();
   if (y.hi & 0x8000) y = y.neg();
-  var r = x.udivmod(y).modulus;
+  let r = x.udivmod(y).modulus;
   if (sign & 0x8000) r = r.neg();
   return r;
 };
@@ -340,22 +340,22 @@ function caml_int64_of_float(x) {
 //Requires: caml_int64_of_int32, caml_int64_to_int32
 //Requires: caml_int64_is_zero, caml_str_repeat
 function caml_int64_format(fmt, x) {
-  var f = caml_parse_format(fmt);
+  const f = caml_parse_format(fmt);
   if (f.signedconv && caml_int64_is_negative(x)) {
     f.sign = -1;
     x = caml_int64_neg(x);
   }
-  var buffer = "";
-  var wbase = caml_int64_of_int32(f.base);
-  var cvtbl = "0123456789abcdef";
+  let buffer = "";
+  const wbase = caml_int64_of_int32(f.base);
+  const cvtbl = "0123456789abcdef";
   do {
-    var p = x.udivmod(wbase);
+    const p = x.udivmod(wbase);
     x = p.quotient;
     buffer = cvtbl.charAt(caml_int64_to_int32(p.modulus)) + buffer;
   } while (!caml_int64_is_zero(x));
   if (f.prec >= 0) {
     f.filler = " ";
-    var n = f.prec - buffer.length;
+    const n = f.prec - buffer.length;
     if (n > 0) buffer = caml_str_repeat(n, "0") + buffer;
   }
   return caml_finish_formatting(f, buffer);
@@ -367,19 +367,19 @@ function caml_int64_format(fmt, x) {
 //Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
 //Requires: caml_ml_string_length,caml_string_unsafe_get, MlInt64
 function caml_int64_of_string(s) {
-  var r = caml_parse_sign_and_base(s);
-  var i = r[0],
-    sign = r[1],
-    base = r[2],
-    signedness = r[3];
-  var base64 = caml_int64_of_int32(base);
-  var threshold = new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(
+  const r = caml_parse_sign_and_base(s);
+  let i = r[0];
+  const sign = r[1];
+  const base = r[2];
+  const signedness = r[3];
+  const base64 = caml_int64_of_int32(base);
+  const threshold = new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(
     base64,
   ).quotient;
-  var c = caml_string_unsafe_get(s, i);
-  var d = caml_parse_digit(c);
+  let c = caml_string_unsafe_get(s, i);
+  let d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
-  var res = caml_int64_of_int32(d);
+  let res = caml_int64_of_int32(d);
   for (;;) {
     i++;
     c = caml_string_unsafe_get(s, i);

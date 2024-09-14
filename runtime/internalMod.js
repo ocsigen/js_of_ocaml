@@ -30,7 +30,7 @@ function caml_CamlinternalMod_init_mod(loc, shape) {
       switch (shape) {
         case 0: {
           //function
-          var dummy = caml_alloc_dummy_infix();
+          const dummy = caml_alloc_dummy_infix();
           dummy.fun = undef_module;
           struct[idx] = dummy;
           break;
@@ -52,7 +52,7 @@ function caml_CamlinternalMod_init_mod(loc, shape) {
           struct[idx] = shape[1];
       }
   }
-  var res = [];
+  const res = [];
   loop(shape, res, 0);
   return res[0];
 }
@@ -94,7 +94,7 @@ function caml_CamlinternalMod_init_mod(loc, shape, cont) {
       switch (shape) {
         case 0: {
           //function
-          var dummy = caml_alloc_dummy_infix();
+          const dummy = caml_alloc_dummy_infix();
           dummy.fun = undef_module;
           struct[idx] = dummy;
           break;
@@ -116,7 +116,7 @@ function caml_CamlinternalMod_init_mod(loc, shape, cont) {
           struct[idx] = shape[1];
       }
   }
-  var res = [];
+  const res = [];
   loop(shape, res, 0);
   return cont(res[0]);
 }

@@ -18,81 +18,82 @@
 /* The pushdown automata */
 
 //Provides: caml_parser_trace
-var caml_parser_trace = 0;
+let caml_parser_trace = 0;
 
 //Provides: caml_parse_engine
 //Requires: caml_lex_array, caml_parser_trace,caml_jsstring_of_string
 //Requires: caml_ml_output, caml_ml_string_length, caml_string_of_jsbytes
 //Requires: caml_jsbytes_of_string, MlBytes
 function caml_parse_engine(tables, env, cmd, arg) {
-  var ERRCODE = 256;
+  const ERRCODE = 256;
 
-  //var START = 0;
-  //var TOKEN_READ = 1;
-  //var STACKS_GROWN_1 = 2;
-  //var STACKS_GROWN_2 = 3;
-  //var SEMANTIC_ACTION_COMPUTED = 4;
-  //var ERROR_DETECTED = 5;
-  var loop = 6;
-  var testshift = 7;
-  var shift = 8;
-  var shift_recover = 9;
-  var reduce = 10;
+  //const START = 0;
+  //const TOKEN_READ = 1;
+  //const STACKS_GROWN_1 = 2;
+  //const STACKS_GROWN_2 = 3;
+  //const SEMANTIC_ACTION_COMPUTED = 4;
+  //const ERROR_DETECTED = 5;
+  const loop = 6;
+  const testshift = 7;
+  const shift = 8;
+  const shift_recover = 9;
+  const reduce = 10;
 
-  var READ_TOKEN = 0;
-  var RAISE_PARSE_ERROR = 1;
-  var GROW_STACKS_1 = 2;
-  var GROW_STACKS_2 = 3;
-  var COMPUTE_SEMANTIC_ACTION = 4;
-  var CALL_ERROR_FUNCTION = 5;
+  const READ_TOKEN = 0;
+  const RAISE_PARSE_ERROR = 1;
+  const GROW_STACKS_1 = 2;
+  const GROW_STACKS_2 = 3;
+  const COMPUTE_SEMANTIC_ACTION = 4;
+  const CALL_ERROR_FUNCTION = 5;
 
-  var env_s_stack = 1;
-  var env_v_stack = 2;
-  var env_symb_start_stack = 3;
-  var env_symb_end_stack = 4;
-  var env_stacksize = 5;
-  var env_stackbase = 6;
-  var env_curr_char = 7;
-  var env_lval = 8;
-  var env_symb_start = 9;
-  var env_symb_end = 10;
-  var env_asp = 11;
-  var env_rule_len = 12;
-  var env_rule_number = 13;
-  var env_sp = 14;
-  var env_state = 15;
-  var env_errflag = 16;
+  const env_s_stack = 1;
+  const env_v_stack = 2;
+  const env_symb_start_stack = 3;
+  const env_symb_end_stack = 4;
+  const env_stacksize = 5;
+  const env_stackbase = 6;
+  const env_curr_char = 7;
+  const env_lval = 8;
+  const env_symb_start = 9;
+  const env_symb_end = 10;
+  const env_asp = 11;
+  const env_rule_len = 12;
+  const env_rule_number = 13;
+  const env_sp = 14;
+  const env_state = 15;
+  const env_errflag = 16;
 
-  // var _tbl_actions = 1;
-  var tbl_transl_const = 2;
-  var tbl_transl_block = 3;
-  var tbl_lhs = 4;
-  var tbl_len = 5;
-  var tbl_defred = 6;
-  var tbl_dgoto = 7;
-  var tbl_sindex = 8;
-  var tbl_rindex = 9;
-  var tbl_gindex = 10;
-  var tbl_tablesize = 11;
-  var tbl_table = 12;
-  var tbl_check = 13;
-  // var _tbl_error_function = 14;
-  var tbl_names_const = 15;
-  var tbl_names_block = 16;
+  // const _tbl_actions = 1;
+  const tbl_transl_const = 2;
+  const tbl_transl_block = 3;
+  const tbl_lhs = 4;
+  const tbl_len = 5;
+  const tbl_defred = 6;
+  const tbl_dgoto = 7;
+  const tbl_sindex = 8;
+  const tbl_rindex = 9;
+  const tbl_gindex = 10;
+  const tbl_tablesize = 11;
+  const tbl_table = 12;
+  const tbl_check = 13;
+  // const _tbl_error_function = 14;
+  const tbl_names_const = 15;
+  const tbl_names_block = 16;
 
   function log(x) {
-    var s = caml_string_of_jsbytes(x + "\n");
+    const s = caml_string_of_jsbytes(x + "\n");
     caml_ml_output(2, s, 0, caml_ml_string_length(s));
   }
 
   function token_name(names, number) {
-    var str = caml_jsstring_of_string(names);
+    const str = caml_jsstring_of_string(names);
     if (str[0] == "\x00") return "<unknown token>";
     return str.split("\x00")[number];
   }
 
   function print_token(state, tok) {
-    var token, kind;
+    let token;
+    let kind;
     if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
       if (typeof tok[1] == "number") kind = "" + tok[1];
@@ -118,16 +119,16 @@ function caml_parse_engine(tables, env, cmd, arg) {
     tables.dgoto = caml_lex_array(tables[tbl_dgoto]);
   }
 
-  var res = 0,
-    n,
-    n1,
-    n2,
-    state1;
+  let res = 0;
+  let n;
+  let n1;
+  let n2;
+  let state1;
 
   // RESTORE
-  var sp = env[env_sp];
-  var state = env[env_state];
-  var errflag = env[env_errflag];
+  let sp = env[env_sp];
+  let state = env[env_state];
+  let errflag = env[env_errflag];
 
   exit: for (;;) {
     next: switch (cmd) {
@@ -252,7 +253,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
       case 10: {
         //reduce:
         if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
-        var m = tables.len[n];
+        let m = tables.len[n];
         env[env_asp] = sp;
         env[env_rule_number] = n;
         env[env_rule_len] = m;
@@ -284,7 +285,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         //SEMANTIC_ACTION_COMPUTED:
         env[env_s_stack][sp + 1] = state;
         env[env_v_stack][sp + 1] = arg;
-        var asp = env[env_asp];
+        const asp = env[env_asp];
         env[env_symb_end_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
         if (sp > asp) {
           /* This is an epsilon production. Take symb_start equal to symb_end. */
@@ -308,7 +309,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 //Provides: caml_set_parser_trace
 //Requires: caml_parser_trace
 function caml_set_parser_trace(bool) {
-  var oldflag = caml_parser_trace;
+  const oldflag = caml_parser_trace;
   caml_parser_trace = bool;
   return oldflag;
 }

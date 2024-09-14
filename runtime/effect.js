@@ -46,7 +46,7 @@ additional parameter which is the current low-level continuation.
 //Provides: caml_exn_stack
 //If: effects
 // This is an OCaml list of exception handlers
-var caml_exn_stack = 0;
+let caml_exn_stack = 0;
 
 //Provides: caml_push_trap
 //Requires: caml_exn_stack
@@ -60,10 +60,10 @@ function caml_push_trap(handler) {
 //If: effects
 function caml_pop_trap() {
   if (!caml_exn_stack)
-    return function (x) {
+    return (x) => {
       throw x;
     };
-  var h = caml_exn_stack[1];
+  const h = caml_exn_stack[1];
   caml_exn_stack = caml_exn_stack[2];
   return h;
 }
@@ -73,7 +73,7 @@ function caml_pop_trap() {
 // This has the shape {h, r:{k, x, e}} where h is a triple of handlers
 // (see effect.js) and k, x and e are the saved continuation,
 // exception stack and fiber stack of the parent fiber.
-var caml_fiber_stack;
+let caml_fiber_stack;
 
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
@@ -102,7 +102,7 @@ function caml_resume_stack(stack, k) {
 //If: effects
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
-  var rem = caml_fiber_stack.r;
+  const rem = caml_fiber_stack.r;
   caml_exn_stack = rem.x;
   caml_fiber_stack = rem.e;
   return rem.k;
@@ -115,13 +115,13 @@ function caml_perform_effect(eff, cont, k0) {
   // Allocate a continuation if we don't already have one
   if (!cont) cont = [245 /*continuation*/, 0];
   // Get current effect handler
-  var handler = caml_fiber_stack.h[3];
+  const handler = caml_fiber_stack.h[3];
   // Cons the current fiber onto the continuation:
   //   cont := Cons (k, exn_stack, handlers, !cont)
   cont[1] = [0, k0, caml_exn_stack, caml_fiber_stack.h, cont[1]];
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
-  var k1 = caml_pop_fiber();
+  const k1 = caml_pop_fiber();
   return caml_stack_check_depth()
     ? handler(eff, cont, k1, k1)
     : caml_trampoline_return(handler, [eff, cont, k1, k1]);
@@ -132,8 +132,8 @@ function caml_perform_effect(eff, cont, k0) {
 //If: effects
 function caml_alloc_stack(hv, hx, hf) {
   function call(i, x) {
-    var f = caml_fiber_stack.h[i];
-    var args = [x, caml_pop_fiber()];
+    const f = caml_fiber_stack.h[i];
+    const args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
       ? caml_call_gen(f, args)
       : caml_trampoline_return(f, args);
@@ -157,7 +157,7 @@ function caml_alloc_stack(hv, hx, hf) {
 
 //Provides: caml_continuation_use_noexc
 function caml_continuation_use_noexc(cont) {
-  var stack = cont[1];
+  const stack = cont[1];
   cont[1] = 0;
   return stack;
 }
@@ -170,7 +170,7 @@ function caml_continuation_use_and_update_handler_noexc(
   hexn,
   heff,
 ) {
-  var stack = caml_continuation_use_noexc(cont);
+  const stack = caml_continuation_use_noexc(cont);
   stack[3] = [0, hval, hexn, heff];
   return stack;
 }

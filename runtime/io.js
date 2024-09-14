@@ -20,12 +20,12 @@
 ///////////// Io
 
 //Provides: caml_sys_fds
-var caml_sys_fds = new Array(3);
+const caml_sys_fds = new Array(3);
 
 //Provides: caml_sys_close
 //Requires: caml_sys_fds
 function caml_sys_close(fd) {
-  var file = caml_sys_fds[fd];
+  const file = caml_sys_fds[fd];
   if (file) file.close();
   delete caml_sys_fds[fd];
   return 0;
@@ -47,7 +47,7 @@ function caml_sys_open_internal(file, idx) {
   return idx | 0;
 }
 function caml_sys_open(name, flags, _perms) {
-  var f = {};
+  const f = {};
   while (flags) {
     switch (flags[1]) {
       case 0:
@@ -90,11 +90,11 @@ function caml_sys_open(name, flags, _perms) {
       caml_jsbytes_of_string(name) +
         " : flags Open_text and Open_binary are not compatible",
     );
-  var root = resolve_fs_device(name);
-  var file = root.device.open(root.rest, f);
+  const root = resolve_fs_device(name);
+  const file = root.device.open(root.rest, f);
   return caml_sys_open_internal(file, undefined);
 }
-(function () {
+(() => {
   function file(fd, flags) {
     if (fs_node_supported()) {
       return caml_sys_open_for_node(fd, flags);
@@ -119,19 +119,19 @@ function caml_sys_open(name, flags, _perms) {
 //Provides: caml_ml_set_channel_name
 //Requires: caml_ml_channel_get
 function caml_ml_set_channel_name(chanid, name) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   chan.name = name;
   return 0;
 }
 
 //Provides: caml_ml_channels
-var caml_ml_channels = new Array();
+const caml_ml_channels = new Array();
 
 //Provides: caml_ml_channel_redirect
 //Requires: caml_ml_channel_get, caml_ml_channels
 function caml_ml_channel_redirect(captured, into) {
-  var to_restore = caml_ml_channel_get(captured);
-  var new_ = caml_ml_channel_get(into);
+  const to_restore = caml_ml_channel_get(captured);
+  const new_ = caml_ml_channel_get(into);
   caml_ml_channels[captured] = new_; // XXX
   return to_restore;
 }
@@ -152,7 +152,7 @@ function caml_ml_channel_get(id) {
 //Provides: caml_ml_out_channels_list
 //Requires: caml_ml_channels
 function caml_ml_out_channels_list() {
-  var l = 0;
+  let l = 0;
   for (let c = 0; c < caml_ml_channels.length; c++) {
     if (
       caml_ml_channels[c] &&
@@ -169,10 +169,10 @@ function caml_ml_out_channels_list() {
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_out(fd) {
-  var file = caml_sys_fds[fd];
+  const file = caml_sys_fds[fd];
   if (file.flags.rdonly) caml_raise_sys_error("fd " + fd + " is readonly");
-  var buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
-  var channel = {
+  const buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
+  const channel = {
     file: file,
     offset: file.flags.append ? file.length() : 0,
     fd: fd,
@@ -191,10 +191,10 @@ function caml_ml_open_descriptor_out(fd) {
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_in(fd) {
-  var file = caml_sys_fds[fd];
+  const file = caml_sys_fds[fd];
   if (file.flags.wronly) caml_raise_sys_error("fd " + fd + " is writeonly");
-  var refill = null;
-  var channel = {
+  const refill = null;
+  const channel = {
     file: file,
     offset: file.flags.append ? file.length() : 0,
     fd: fd,
@@ -227,14 +227,14 @@ function caml_ml_open_descriptor_out_with_flags(fd, flags) {
 //Requires: caml_ml_channel_get
 //Alias: win_filedescr_of_channel
 function caml_channel_descriptor(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return chan.fd;
 }
 
 //Provides: caml_ml_set_binary_mode
 //Requires: caml_ml_channel_get
 function caml_ml_set_binary_mode(chanid, mode) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   chan.file.flags.text = !mode;
   chan.file.flags.binary = mode;
   return 0;
@@ -244,7 +244,7 @@ function caml_ml_set_binary_mode(chanid, mode) {
 //Requires: caml_ml_channel_get
 //Version: >= 5.2
 function caml_ml_is_binary_mode(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return chan.file.flags.binary;
 }
 
@@ -254,7 +254,7 @@ function caml_ml_is_binary_mode(chanid) {
 //Requires: caml_ml_flush, caml_ml_channel_get
 //Requires: caml_sys_close
 function caml_ml_close_channel(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   if (chan.opened) {
     chan.opened = false;
     caml_sys_close(chan.fd);
@@ -269,22 +269,22 @@ function caml_ml_close_channel(chanid) {
 //Provides: caml_ml_channel_size
 //Requires: caml_ml_channel_get
 function caml_ml_channel_size(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return chan.file.length();
 }
 
 //Provides: caml_ml_channel_size_64
 //Requires: caml_int64_of_float,caml_ml_channel_get
 function caml_ml_channel_size_64(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return caml_int64_of_float(chan.file.length());
 }
 
 //Provides: caml_ml_set_channel_output
 //Requires: caml_ml_channel_get
 function caml_ml_set_channel_output(chanid, f) {
-  var chan = caml_ml_channel_get(chanid);
-  chan.output = function (s) {
+  const chan = caml_ml_channel_get(chanid);
+  chan.output = (s) => {
     f(s);
   };
   return 0;
@@ -301,13 +301,13 @@ function caml_ml_set_channel_refill(chanid, f) {
 //Requires: caml_ml_string_length, caml_uint8_array_of_string
 function caml_refill(chan) {
   if (chan.refill != null) {
-    var str = chan.refill();
-    var str_a = caml_uint8_array_of_string(str);
+    const str = chan.refill();
+    const str_a = caml_uint8_array_of_string(str);
     if (str_a.length == 0) {
       chan.refill = null;
     } else {
       if (chan.buffer.length < chan.buffer_max + str_a.length) {
-        var b = new Uint8Array(chan.buffer_max + str_a.length);
+        const b = new Uint8Array(chan.buffer_max + str_a.length);
         b.set(chan.buffer);
         chan.buffer = b;
       }
@@ -316,7 +316,7 @@ function caml_refill(chan) {
       chan.buffer_max += str_a.length;
     }
   } else {
-    var nread = chan.file.read(
+    const nread = chan.file.read(
       chan.offset,
       chan.buffer,
       chan.buffer_max,
@@ -331,7 +331,7 @@ function caml_refill(chan) {
 //Requires: caml_ml_input_block
 //Requires: caml_uint8_array_of_bytes
 function caml_ml_input(chanid, b, i, l) {
-  var ba = caml_uint8_array_of_bytes(b);
+  const ba = caml_uint8_array_of_bytes(b);
   return caml_ml_input_block(chanid, ba, i, l);
 }
 
@@ -339,16 +339,16 @@ function caml_ml_input(chanid, b, i, l) {
 //Requires: caml_ml_input_block
 //Requires: caml_ba_to_typed_array
 function caml_ml_input_bigarray(chanid, b, i, l) {
-  var ba = caml_ba_to_typed_array(b);
+  const ba = caml_ba_to_typed_array(b);
   return caml_ml_input_block(chanid, ba, i, l);
 }
 
 //Provides: caml_ml_input_block
 //Requires: caml_refill, caml_ml_channel_get
 function caml_ml_input_block(chanid, ba, i, l) {
-  var chan = caml_ml_channel_get(chanid);
-  var n = l;
-  var avail = chan.buffer_max - chan.buffer_curr;
+  const chan = caml_ml_channel_get(chanid);
+  let n = l;
+  const avail = chan.buffer_max - chan.buffer_curr;
   if (l <= avail) {
     ba.set(chan.buffer.subarray(chan.buffer_curr, chan.buffer_curr + l), i);
     chan.buffer_curr += l;
@@ -360,7 +360,7 @@ function caml_ml_input_block(chanid, ba, i, l) {
     chan.buffer_curr = 0;
     chan.buffer_max = 0;
     caml_refill(chan);
-    var avail = chan.buffer_max - chan.buffer_curr;
+    const avail = chan.buffer_max - chan.buffer_curr;
     if (n > avail) n = avail;
     ba.set(chan.buffer.subarray(chan.buffer_curr, chan.buffer_curr + n), i);
     chan.buffer_curr += n;
@@ -373,10 +373,10 @@ function caml_ml_input_block(chanid, ba, i, l) {
 //Requires: caml_refill, caml_failwith, caml_raise_end_of_file
 //Requires: caml_marshal_header_size
 function caml_input_value(chanid) {
-  var chan = caml_ml_channel_get(chanid);
-  var header = new Uint8Array(caml_marshal_header_size);
+  const chan = caml_ml_channel_get(chanid);
+  const header = new Uint8Array(caml_marshal_header_size);
   function block(buffer, offset, n) {
-    var r = 0;
+    let r = 0;
     while (r < n) {
       if (chan.buffer_curr >= chan.buffer_max) {
         chan.buffer_curr = 0;
@@ -390,16 +390,17 @@ function caml_input_value(chanid) {
     }
     return r;
   }
-  var r = block(header, 0, caml_marshal_header_size);
-  if (r == 0) caml_raise_end_of_file();
-  else if (r < caml_marshal_header_size)
+  const r1 = block(header, 0, caml_marshal_header_size);
+  if (r1 == 0) caml_raise_end_of_file();
+  else if (r1 < caml_marshal_header_size)
     caml_failwith("input_value: truncated object");
-  var len = caml_marshal_data_size(caml_bytes_of_array(header), 0);
-  var buf = new Uint8Array(len + caml_marshal_header_size);
+  const len = caml_marshal_data_size(caml_bytes_of_array(header), 0);
+  const buf = new Uint8Array(len + caml_marshal_header_size);
   buf.set(header, 0);
-  var r = block(buf, caml_marshal_header_size, len);
-  if (r < len) caml_failwith("input_value: truncated object " + r + "  " + len);
-  var res = caml_input_value_from_bytes(caml_bytes_of_array(buf), 0);
+  const r2 = block(buf, caml_marshal_header_size, len);
+  if (r2 < len)
+    caml_failwith("input_value: truncated object " + r2 + "  " + len);
+  const res = caml_input_value_from_bytes(caml_bytes_of_array(buf), 0);
   return res;
 }
 
@@ -413,14 +414,14 @@ function caml_input_value_to_outside_heap(c) {
 //Requires: caml_raise_end_of_file, caml_array_bound_error
 //Requires: caml_ml_channel_get, caml_refill
 function caml_ml_input_char(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   if (chan.buffer_curr >= chan.buffer_max) {
     chan.buffer_curr = 0;
     chan.buffer_max = 0;
     caml_refill(chan);
   }
   if (chan.buffer_curr >= chan.buffer_max) caml_raise_end_of_file();
-  var res = chan.buffer[chan.buffer_curr];
+  const res = chan.buffer[chan.buffer_curr];
   chan.buffer_curr++;
   return res;
 }
@@ -429,8 +430,8 @@ function caml_ml_input_char(chanid) {
 //Requires: caml_raise_end_of_file
 //Requires: caml_ml_input_char, caml_ml_channel_get
 function caml_ml_input_int(chanid) {
-  var chan = caml_ml_channel_get(chanid);
-  var res = 0;
+  const chan = caml_ml_channel_get(chanid);
+  let res = 0;
   for (let i = 0; i < 4; i++) {
     res = ((res << 8) + caml_ml_input_char(chanid)) | 0;
   }
@@ -440,7 +441,7 @@ function caml_ml_input_int(chanid) {
 //Provides: caml_seek_in
 //Requires: caml_raise_sys_error, caml_ml_channel_get
 function caml_seek_in(chanid, pos) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   if (chan.refill != null) caml_raise_sys_error("Illegal seek");
   if (
     pos >= chan.offset - chan.buffer_max &&
@@ -465,14 +466,14 @@ function caml_ml_seek_in(chanid, pos) {
 //Provides: caml_ml_seek_in_64
 //Requires: caml_int64_to_float, caml_seek_in
 function caml_ml_seek_in_64(chanid, pos) {
-  var pos = caml_int64_to_float(pos);
-  return caml_seek_in(chanid, pos);
+  const pos_ = caml_int64_to_float(pos);
+  return caml_seek_in(chanid, pos_);
 }
 
 //Provides: caml_pos_in
 //Requires: caml_ml_channel_get
 function caml_pos_in(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return (chan.offset - (chan.buffer_max - chan.buffer_curr)) | 0;
 }
 
@@ -492,8 +493,8 @@ function caml_ml_pos_in_64(chanid) {
 //Requires: caml_array_bound_error
 //Requires: caml_ml_channel_get, caml_refill
 function caml_ml_input_scan_line(chanid) {
-  var chan = caml_ml_channel_get(chanid);
-  var p = chan.buffer_curr;
+  const chan = caml_ml_channel_get(chanid);
+  let p = chan.buffer_curr;
   do {
     if (p >= chan.buffer_max) {
       if (chan.buffer_curr > 0) {
@@ -505,7 +506,7 @@ function caml_ml_input_scan_line(chanid) {
       if (chan.buffer_max >= chan.buffer.length) {
         return -chan.buffer_max | 0;
       }
-      var prev_max = chan.buffer_max;
+      const prev_max = chan.buffer_max;
       caml_refill(chan);
       if (prev_max == chan.buffer_max) {
         return -chan.buffer_max | 0;
@@ -519,7 +520,7 @@ function caml_ml_input_scan_line(chanid) {
 //Requires: caml_raise_sys_error, caml_ml_channel_get
 //Requires: caml_subarray_to_jsbytes
 function caml_ml_flush(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   if (!chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
   if (!chan.buffer || chan.buffer_curr == 0) return 0;
   if (chan.output) {
@@ -538,11 +539,11 @@ function caml_ml_flush(chanid) {
 //Requires: caml_ml_flush,caml_ml_bytes_length
 //Requires: caml_raise_sys_error, caml_ml_channel_get
 function caml_ml_output_ta(chanid, buffer, offset, len) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   if (!chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
   buffer = buffer.subarray(offset, offset + len);
   if (chan.buffer_curr + buffer.length > chan.buffer.length) {
-    var b = new Uint8Array(chan.buffer_curr + buffer.length);
+    const b = new Uint8Array(chan.buffer_curr + buffer.length);
     b.set(chan.buffer);
     chan.buffer = b;
   }
@@ -559,7 +560,7 @@ function caml_ml_output_ta(chanid, buffer, offset, len) {
       break;
     case 2: {
       // Buffered (only for stdout and stderr)
-      var id = buffer.lastIndexOf(10);
+      const id = buffer.lastIndexOf(10);
       if (id < 0) {
         chan.buffer.set(buffer, chan.buffer_curr);
         chan.buffer_curr += buffer.length;
@@ -580,15 +581,15 @@ function caml_ml_output_ta(chanid, buffer, offset, len) {
 //Provides: caml_ml_output_bytes
 //Requires: caml_uint8_array_of_bytes, caml_ml_output_ta
 function caml_ml_output_bytes(chanid, buffer, offset, len) {
-  var buffer = caml_uint8_array_of_bytes(buffer);
-  return caml_ml_output_ta(chanid, buffer, offset, len);
+  const buffer_ = caml_uint8_array_of_bytes(buffer);
+  return caml_ml_output_ta(chanid, buffer_, offset, len);
 }
 
 //Provides: caml_ml_output_bigarray
 //Requires: caml_ba_to_typed_array, caml_ml_output_ta
 function caml_ml_output_bigarray(chanid, buffer, offset, len) {
-  var buffer = caml_ba_to_typed_array(buffer);
-  return caml_ml_output_ta(chanid, buffer, offset, len);
+  const buffer_ = caml_ba_to_typed_array(buffer);
+  return caml_ml_output_ta(chanid, buffer_, offset, len);
 }
 
 //Provides: caml_ml_output
@@ -606,7 +607,7 @@ function caml_ml_output(chanid, buffer, offset, len) {
 //Requires: caml_ml_output
 //Requires: caml_string_of_jsbytes
 function caml_ml_output_char(chanid, c) {
-  var s = caml_string_of_jsbytes(String.fromCharCode(c));
+  const s = caml_string_of_jsbytes(String.fromCharCode(c));
   caml_ml_output(chanid, s, 0, 1);
   return 0;
 }
@@ -614,7 +615,7 @@ function caml_ml_output_char(chanid, c) {
 //Provides: caml_output_value
 //Requires: caml_output_value_to_string, caml_ml_output,caml_ml_string_length
 function caml_output_value(chanid, v, flags) {
-  var s = caml_output_value_to_string(v, flags);
+  const s = caml_output_value_to_string(v, flags);
   caml_ml_output(chanid, s, 0, caml_ml_string_length(s));
   return 0;
 }
@@ -623,7 +624,7 @@ function caml_output_value(chanid, v, flags) {
 //Requires: caml_ml_channel_get, caml_ml_flush
 function caml_seek_out(chanid, pos) {
   caml_ml_flush(chanid);
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   chan.offset = pos;
   return 0;
 }
@@ -636,14 +637,14 @@ function caml_ml_seek_out(chanid, pos) {
 //Provides: caml_ml_seek_out_64
 //Requires: caml_int64_to_float, caml_seek_out
 function caml_ml_seek_out_64(chanid, pos) {
-  var pos = caml_int64_to_float(pos);
-  return caml_seek_out(chanid, pos);
+  const pos_ = caml_int64_to_float(pos);
+  return caml_seek_out(chanid, pos_);
 }
 
 //Provides: caml_pos_out
 //Requires: caml_ml_channel_get, caml_ml_flush
 function caml_pos_out(chanid) {
-  var chan = caml_ml_channel_get(chanid);
+  const chan = caml_ml_channel_get(chanid);
   return chan.offset + chan.buffer_curr;
 }
 
@@ -663,8 +664,8 @@ function caml_ml_pos_out_64(chanid) {
 //Requires: caml_ml_output
 //Requires: caml_string_of_array
 function caml_ml_output_int(chanid, i) {
-  var arr = [(i >> 24) & 0xff, (i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff];
-  var s = caml_string_of_array(arr);
+  const arr = [(i >> 24) & 0xff, (i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff];
+  const s = caml_string_of_array(arr);
   caml_ml_output(chanid, s, 0, 4);
   return 0;
 }

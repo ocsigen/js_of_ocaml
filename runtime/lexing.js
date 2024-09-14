@@ -19,8 +19,8 @@
 //Requires: caml_jsbytes_of_string
 function caml_lex_array(s) {
   s = caml_jsbytes_of_string(s);
-  var l = s.length / 2;
-  var a = new Array(l);
+  const l = s.length / 2;
+  const a = new Array(l);
   for (let i = 0; i < l; i++)
     a[i] = ((s.charCodeAt(2 * i) | (s.charCodeAt(2 * i + 1) << 8)) << 16) >> 16;
   return a;
@@ -29,18 +29,18 @@ function caml_lex_array(s) {
 //Provides: caml_lex_engine
 //Requires: caml_failwith, caml_lex_array, caml_uint8_array_of_bytes
 function caml_lex_engine(tbl, start_state, lexbuf) {
-  var lex_buffer = 2;
-  var lex_buffer_len = 3;
-  var lex_start_pos = 5;
-  var lex_curr_pos = 6;
-  var lex_last_pos = 7;
-  var lex_last_action = 8;
-  var lex_eof_reached = 9;
-  var lex_base = 1;
-  var lex_backtrk = 2;
-  var lex_default = 3;
-  var lex_trans = 4;
-  var lex_check = 5;
+  const lex_buffer = 2;
+  const lex_buffer_len = 3;
+  const lex_start_pos = 5;
+  const lex_curr_pos = 6;
+  const lex_last_pos = 7;
+  const lex_last_action = 8;
+  const lex_eof_reached = 9;
+  const lex_base = 1;
+  const lex_backtrk = 2;
+  const lex_default = 3;
+  const lex_trans = 4;
+  const lex_check = 5;
 
   if (!tbl.lex_default) {
     tbl.lex_base = caml_lex_array(tbl[lex_base]);
@@ -50,10 +50,10 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
     tbl.lex_default = caml_lex_array(tbl[lex_default]);
   }
 
-  var c,
-    state = start_state;
+  let c;
+  let state = start_state;
 
-  var buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
+  const buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
 
   if (state >= 0) {
     /* First entry */
@@ -65,10 +65,10 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
   }
   for (;;) {
     /* Lookup base address or action number for current state */
-    var base = tbl.lex_base[state];
+    const base = tbl.lex_base[state];
     if (base < 0) return -base - 1;
     /* See if it's a backtrack point */
-    var backtrk = tbl.lex_backtrk[state];
+    const backtrk = tbl.lex_backtrk[state];
     if (backtrk >= 0) {
       lexbuf[lex_last_pos] = lexbuf[lex_curr_pos];
       lexbuf[lex_last_action] = backtrk;
@@ -108,10 +108,10 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
 //Requires: caml_jsbytes_of_string, caml_uint8_array_of_bytes
 function caml_lex_run_mem(s, i, mem, curr_pos) {
   for (;;) {
-    var dst = s.charCodeAt(i);
+    const dst = s.charCodeAt(i);
     i++;
     if (dst == 0xff) return;
-    var src = s.charCodeAt(i);
+    const src = s.charCodeAt(i);
     i++;
     if (src == 0xff) mem[dst + 1] = curr_pos;
     else mem[dst + 1] = mem[src + 1];
@@ -120,10 +120,10 @@ function caml_lex_run_mem(s, i, mem, curr_pos) {
 
 function caml_lex_run_tag(s, i, mem) {
   for (;;) {
-    var dst = s.charCodeAt(i);
+    const dst = s.charCodeAt(i);
     i++;
     if (dst == 0xff) return;
-    var src = s.charCodeAt(i);
+    const src = s.charCodeAt(i);
     i++;
     if (src == 0xff) mem[dst + 1] = -1;
     else mem[dst + 1] = mem[src + 1];
@@ -131,25 +131,25 @@ function caml_lex_run_tag(s, i, mem) {
 }
 
 function caml_new_lex_engine(tbl, start_state, lexbuf) {
-  var lex_buffer = 2;
-  var lex_buffer_len = 3;
-  var lex_start_pos = 5;
-  var lex_curr_pos = 6;
-  var lex_last_pos = 7;
-  var lex_last_action = 8;
-  var lex_eof_reached = 9;
-  var lex_mem = 10;
-  var lex_base = 1;
-  var lex_backtrk = 2;
-  var lex_default = 3;
-  var lex_trans = 4;
-  var lex_check = 5;
-  var lex_base_code = 6;
-  var lex_backtrk_code = 7;
-  var lex_default_code = 8;
-  var lex_trans_code = 9;
-  var lex_check_code = 10;
-  var lex_code = 11;
+  const lex_buffer = 2;
+  const lex_buffer_len = 3;
+  const lex_start_pos = 5;
+  const lex_curr_pos = 6;
+  const lex_last_pos = 7;
+  const lex_last_action = 8;
+  const lex_eof_reached = 9;
+  const lex_mem = 10;
+  const lex_base = 1;
+  const lex_backtrk = 2;
+  const lex_default = 3;
+  const lex_trans = 4;
+  const lex_check = 5;
+  const lex_base_code = 6;
+  const lex_backtrk_code = 7;
+  const lex_default_code = 8;
+  const lex_trans_code = 9;
+  const lex_check_code = 10;
+  const lex_code = 11;
 
   if (!tbl.lex_default) {
     tbl.lex_base = caml_lex_array(tbl[lex_base]);
@@ -168,10 +168,10 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
   if (tbl.lex_code == null)
     tbl.lex_code = caml_jsbytes_of_string(tbl[lex_code]);
 
-  var c,
-    state = start_state;
+  let c;
+  let state = start_state;
 
-  var buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
+  const buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
 
   if (state >= 0) {
     /* First entry */
@@ -183,16 +183,16 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
   }
   for (;;) {
     /* Lookup base address or action number for current state */
-    var base = tbl.lex_base[state];
+    const base = tbl.lex_base[state];
     if (base < 0) {
-      var pc_off = tbl.lex_base_code[state];
+      const pc_off = tbl.lex_base_code[state];
       caml_lex_run_tag(tbl.lex_code, pc_off, lexbuf[lex_mem]);
       return -base - 1;
     }
     /* See if it's a backtrack point */
-    var backtrk = tbl.lex_backtrk[state];
+    const backtrk = tbl.lex_backtrk[state];
     if (backtrk >= 0) {
-      var pc_off = tbl.lex_backtrk_code[state];
+      const pc_off = tbl.lex_backtrk_code[state];
       caml_lex_run_tag(tbl.lex_code, pc_off, lexbuf[lex_mem]);
       lexbuf[lex_last_pos] = lexbuf[lex_curr_pos];
       lexbuf[lex_last_action] = backtrk;
@@ -207,7 +207,7 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
       lexbuf[lex_curr_pos]++;
     }
     /* Determine next state */
-    var pstate = state;
+    const pstate = state;
     if (tbl.lex_check[base + c] == state) state = tbl.lex_trans[base + c];
     else state = tbl.lex_default[state];
     /* If no transition on this char, return to last backtrack point */
@@ -217,8 +217,8 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
       else return lexbuf[lex_last_action];
     } else {
       /* If some transition, get and perform memory moves */
-      var base_code = tbl.lex_base_code[pstate],
-        pc_off;
+      const base_code = tbl.lex_base_code[pstate];
+      let pc_off;
       if (tbl.lex_check_code[base_code + c] == pstate)
         pc_off = tbl.lex_trans_code[base_code + c];
       else pc_off = tbl.lex_default_code[pstate];

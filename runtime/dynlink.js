@@ -17,7 +17,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: get_current_libs
-var current_libs;
+let current_libs;
 function get_current_libs() {
   if (!current_libs) current_libs = [0, globalThis, globalThis.jsoo_runtime];
   return current_libs;
@@ -27,10 +27,10 @@ function get_current_libs() {
 //Requires: get_current_libs, caml_failwith
 //Requires: caml_jsstring_of_string
 function caml_dynlink_open_lib(_mode, file) {
-  var name = caml_jsstring_of_string(file);
+  const name = caml_jsstring_of_string(file);
   console.log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
-  var current_libs = get_current_libs();
+  const current_libs = get_current_libs();
   current_libs.push({});
   return current_libs.length;
 }
@@ -38,7 +38,7 @@ function caml_dynlink_open_lib(_mode, file) {
 //Provides: caml_dynlink_close_lib
 //Requires: get_current_libs
 function caml_dynlink_close_lib(idx) {
-  var current_libs = get_current_libs();
+  const current_libs = get_current_libs();
   current_libs[idx] = null;
   return 0;
 }
@@ -47,9 +47,9 @@ function caml_dynlink_close_lib(idx) {
 //Requires: get_current_libs
 //Requires: caml_jsstring_of_string
 function caml_dynlink_lookup_symbol(idx, fun_name) {
-  var name = caml_jsstring_of_string(fun_name);
+  const name = caml_jsstring_of_string(fun_name);
   console.log("Dynlink: looking for symbol", name);
-  var current_libs = get_current_libs();
+  const current_libs = get_current_libs();
   if (current_libs[idx] && current_libs[idx][name])
     return { name: name, symbol: current_libs[idx][name] };
   return 0;
@@ -65,9 +65,9 @@ function caml_dynlink_add_primitive(dll_addr) {
 //Provides: caml_dynlink_get_current_libs
 //Requires: get_current_libs
 function caml_dynlink_get_current_libs() {
-  var current_libs = get_current_libs();
-  var len = current_libs.length;
-  var a = new Array(len);
+  const current_libs = get_current_libs();
+  const len = current_libs.length;
+  const a = new Array(len);
   for (let i = 0; i < len; i++) a[i] = i;
   return a;
 }

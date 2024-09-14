@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_marshal_constants
-var caml_marshal_constants = {
+const caml_marshal_constants = {
   PREFIX_SMALL_BLOCK: 0x80,
   PREFIX_SMALL_INT: 0x40,
   PREFIX_SMALL_STRING: 0x20,
@@ -60,36 +60,36 @@ UInt8ArrayReader.prototype = {
     return (this.s[this.i++] << 24) >> 24;
   },
   read16u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return (s[i] << 8) | s[i + 1];
   },
   read16s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return ((s[i] << 24) >> 16) | s[i + 1];
   },
   read32u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return ((s[i] << 24) | (s[i + 1] << 16) | (s[i + 2] << 8) | s[i + 3]) >>> 0;
   },
   read32s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return (s[i] << 24) | (s[i + 1] << 16) | (s[i + 2] << 8) | s[i + 3];
   },
   readstr: function (len) {
-    var i = this.i;
+    const i = this.i;
     this.i = i + len;
     return caml_string_of_array(this.s.subarray(i, i + len));
   },
   readuint8array: function (len) {
-    var i = this.i;
+    const i = this.i;
     this.i = i + len;
     return this.s.subarray(i, i + len);
   },
@@ -109,20 +109,20 @@ MlStringReader.prototype = {
     return (this.s.charCodeAt(this.i++) << 24) >> 24;
   },
   read16u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return (s.charCodeAt(i) << 8) | s.charCodeAt(i + 1);
   },
   read16s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return ((s.charCodeAt(i) << 24) >> 16) | s.charCodeAt(i + 1);
   },
   read32u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return (
       ((s.charCodeAt(i) << 24) |
@@ -133,8 +133,8 @@ MlStringReader.prototype = {
     );
   },
   read32s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return (
       (s.charCodeAt(i) << 24) |
@@ -144,14 +144,14 @@ MlStringReader.prototype = {
     );
   },
   readstr: function (len) {
-    var i = this.i;
+    const i = this.i;
     this.i = i + len;
     return caml_string_of_jsbytes(this.s.substring(i, i + len));
   },
   readuint8array: function (len) {
-    var b = new Uint8Array(len);
-    var s = this.s;
-    var i = this.i;
+    const b = new Uint8Array(len);
+    const s = this.s;
+    const i = this.i;
     for (let j = 0; j < len; j++) {
       b[j] = s.charCodeAt(i + j);
     }
@@ -174,20 +174,20 @@ BigStringReader.prototype = {
     return (caml_ba_get_1(this.s, this.i++) << 24) >> 24;
   },
   read16u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return (caml_ba_get_1(s, i) << 8) | caml_ba_get_1(s, i + 1);
   },
   read16s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 2;
     return ((caml_ba_get_1(s, i) << 24) >> 16) | caml_ba_get_1(s, i + 1);
   },
   read32u: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return (
       ((caml_ba_get_1(s, i) << 24) |
@@ -198,8 +198,8 @@ BigStringReader.prototype = {
     );
   },
   read32s: function () {
-    var s = this.s,
-      i = this.i;
+    const s = this.s;
+    const i = this.i;
     this.i = i + 4;
     return (
       (caml_ba_get_1(s, i) << 24) |
@@ -209,8 +209,8 @@ BigStringReader.prototype = {
     );
   },
   readstr: function (len) {
-    var i = this.i;
-    var arr = new Array(len);
+    const i = this.i;
+    const arr = new Array(len);
     for (let j = 0; j < len; j++) {
       arr[j] = caml_ba_get_1(this.s, i + j);
     }
@@ -218,8 +218,8 @@ BigStringReader.prototype = {
     return caml_string_of_array(arr);
   },
   readuint8array: function (len) {
-    var i = this.i;
-    var offset = this.offset(i);
+    const i = this.i;
+    const offset = this.offset(i);
     this.i = i + len;
     return this.s.data.subarray(offset, offset + len);
   },
@@ -234,14 +234,14 @@ function caml_float_of_bytes(a) {
 //Provides: caml_input_value_from_string mutable
 //Requires: MlStringReader, caml_input_value_from_reader
 function caml_input_value_from_string(s, ofs) {
-  var reader = new MlStringReader(s, typeof ofs == "number" ? ofs : ofs[0]);
+  const reader = new MlStringReader(s, typeof ofs == "number" ? ofs : ofs[0]);
   return caml_input_value_from_reader(reader, ofs);
 }
 
 //Provides: caml_input_value_from_bytes mutable
 //Requires: MlStringReader, caml_input_value_from_reader, caml_string_of_bytes
 function caml_input_value_from_bytes(s, ofs) {
-  var reader = new MlStringReader(
+  const reader = new MlStringReader(
     caml_string_of_bytes(s),
     typeof ofs == "number" ? ofs : ofs[0],
   );
@@ -251,7 +251,7 @@ function caml_input_value_from_bytes(s, ofs) {
 //Provides: caml_int64_unmarshal
 //Requires: caml_int64_of_bytes
 function caml_int64_unmarshal(reader, size) {
-  var t = new Array(8);
+  const t = new Array(8);
   for (let j = 0; j < 8; j++) t[j] = reader.read8u();
   size[0] = 8;
   return caml_int64_of_bytes(t);
@@ -260,7 +260,7 @@ function caml_int64_unmarshal(reader, size) {
 //Provides: caml_int64_marshal
 //Requires: caml_int64_to_bytes
 function caml_int64_marshal(writer, v, sizes) {
-  var b = caml_int64_to_bytes(v);
+  const b = caml_int64_to_bytes(v);
   for (let i = 0; i < 8; i++) writer.write(8, b[i]);
   sizes[0] = 8;
   sizes[1] = 8;
@@ -290,7 +290,7 @@ function caml_nativeint_unmarshal(reader, size) {
 //Requires: caml_int64_unmarshal, caml_int64_marshal, caml_int64_compare, caml_int64_hash
 //Requires: caml_int32_unmarshal, caml_nativeint_unmarshal
 //Requires: caml_ba_serialize, caml_ba_deserialize, caml_ba_compare, caml_ba_hash
-var caml_custom_ops = {
+const caml_custom_ops = {
   _j: {
     deserialize: caml_int64_unmarshal,
     serialize: caml_int64_marshal,
@@ -307,17 +307,13 @@ var caml_custom_ops = {
     fixed_length: 4,
   },
   _bigarray: {
-    deserialize: function (reader, sz) {
-      return caml_ba_deserialize(reader, sz, "_bigarray");
-    },
+    deserialize: (reader, sz) => caml_ba_deserialize(reader, sz, "_bigarray"),
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
     hash: caml_ba_hash,
   },
   _bigarr02: {
-    deserialize: function (reader, sz) {
-      return caml_ba_deserialize(reader, sz, "_bigarr02");
-    },
+    deserialize: (reader, sz) => caml_ba_deserialize(reader, sz, "_bigarr02"),
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
     hash: caml_ba_hash,
@@ -331,37 +327,44 @@ var caml_custom_ops = {
 //Requires: caml_decompress_input
 function caml_input_value_from_reader(reader, ofs) {
   function readvlq(overflow) {
-    var c = reader.read8u();
-    var n = c & 0x7f;
+    let c = reader.read8u();
+    let n = c & 0x7f;
     while ((c & 0x80) != 0) {
       c = reader.read8u();
-      var n7 = n << 7;
+      const n7 = n << 7;
       if (n != n7 >> 7) overflow[0] = true;
       n = n7 | (c & 0x7f);
     }
     return n;
   }
-  var magic = reader.read32u();
+  const magic = reader.read32u();
+  let header_len;
+  let compressed;
+  let data_len;
+  let uncompressed_data_len;
+  let num_objects;
+  let _size_32;
+  let _size_64;
   switch (magic) {
     case 0x8495a6be /* Intext_magic_number_small */: {
-      var header_len = 20;
-      var compressed = 0;
-      var data_len = reader.read32u();
-      var uncompressed_data_len = data_len;
-      var num_objects = reader.read32u();
-      var _size_32 = reader.read32u();
-      var _size_64 = reader.read32u();
+      header_len = 20;
+      compressed = 0;
+      data_len = reader.read32u();
+      uncompressed_data_len = data_len;
+      num_objects = reader.read32u();
+      _size_32 = reader.read32u();
+      _size_64 = reader.read32u();
       break;
     }
     case 0x8495a6bd /* Intext_magic_number_compressed */: {
-      var header_len = reader.read8u() & 0x3f;
-      var compressed = 1;
-      var overflow = [false];
-      var data_len = readvlq(overflow);
-      var uncompressed_data_len = readvlq(overflow);
-      var num_objects = readvlq(overflow);
-      var _size_32 = readvlq(overflow);
-      var _size_64 = readvlq(overflow);
+      header_len = reader.read8u() & 0x3f;
+      compressed = 1;
+      const overflow = [false];
+      data_len = readvlq(overflow);
+      uncompressed_data_len = readvlq(overflow);
+      num_objects = readvlq(overflow);
+      _size_32 = readvlq(overflow);
+      _size_64 = readvlq(overflow);
       if (overflow[0]) {
         caml_failwith(
           "caml_input_value_from_reader: object too large to be read back on this platform",
@@ -378,16 +381,16 @@ function caml_input_value_from_reader(reader, ofs) {
       caml_failwith("caml_input_value_from_reader: bad object");
       break;
   }
-  var stack = [];
-  var intern_obj_table = num_objects > 0 ? [] : null;
-  var obj_counter = 0;
+  const stack = [];
+  const intern_obj_table = num_objects > 0 ? [] : null;
+  let obj_counter = 0;
   function intern_rec(reader) {
-    var code = reader.read8u();
+    const code = reader.read8u();
     if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
       if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
-        var tag = code & 0xf;
-        var size = (code >> 4) & 0x7;
-        var v = [tag];
+        const tag = code & 0xf;
+        const size = (code >> 4) & 0x7;
+        const v = [tag];
         if (size == 0) return v;
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         stack.push(v, size);
@@ -395,8 +398,8 @@ function caml_input_value_from_reader(reader, ofs) {
       } else return code & 0x3f;
     } else {
       if (code >= 0x20 /*cst.PREFIX_SMALL_STRING */) {
-        var len = code & 0x1f;
-        var v = reader.readstr(len);
+        const len = code & 0x1f;
+        const v = reader.readstr(len);
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         return v;
       } else {
@@ -412,28 +415,28 @@ function caml_input_value_from_reader(reader, ofs) {
             break;
           case 0x04: {
             //cst.CODE_SHARED8:
-            var offset = reader.read8u();
+            let offset = reader.read8u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x05: {
             //cst.CODE_SHARED16:
-            var offset = reader.read16u();
+            let offset = reader.read16u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x06: {
             //cst.CODE_SHARED32:
-            var offset = reader.read32u();
+            let offset = reader.read32u();
             if (compressed == 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x08: {
             //cst.CODE_BLOCK32:
-            var header = reader.read32u();
-            var tag = header & 0xff;
-            var size = header >> 10;
-            var v = [tag];
+            const header = reader.read32u();
+            const tag = header & 0xff;
+            const size = header >> 10;
+            const v = [tag];
             if (size == 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             stack.push(v, size);
@@ -444,40 +447,40 @@ function caml_input_value_from_reader(reader, ofs) {
             break;
           case 0x09: {
             //cst.CODE_STRING8:
-            var len = reader.read8u();
-            var v = reader.readstr(len);
+            const len = reader.read8u();
+            const v = reader.readstr(len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           }
           case 0x0a: {
             //cst.CODE_STRING32:
-            var len = reader.read32u();
-            var v = reader.readstr(len);
+            const len = reader.read32u();
+            const v = reader.readstr(len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           }
           case 0x0c: {
             //cst.CODE_DOUBLE_LITTLE:
-            var t = new Array(8);
+            const t = new Array(8);
             for (let i = 0; i < 8; i++) t[7 - i] = reader.read8u();
-            var v = caml_float_of_bytes(t);
+            const v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           }
           case 0x0b: {
             //cst.CODE_DOUBLE_BIG:
-            var t = new Array(8);
+            const t = new Array(8);
             for (let i = 0; i < 8; i++) t[i] = reader.read8u();
-            var v = caml_float_of_bytes(t);
+            const v = caml_float_of_bytes(t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           }
           case 0x0e: {
             //cst.CODE_DOUBLE_ARRAY8_LITTLE:
-            var len = reader.read8u();
-            var v = new Array(len + 1);
+            const len = reader.read8u();
+            const v = new Array(len + 1);
             v[0] = 254;
-            var t = new Array(8);
+            const t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (let i = 1; i <= len; i++) {
               for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
@@ -487,10 +490,10 @@ function caml_input_value_from_reader(reader, ofs) {
           }
           case 0x0d: {
             //cst.CODE_DOUBLE_ARRAY8_BIG:
-            var len = reader.read8u();
-            var v = new Array(len + 1);
+            const len = reader.read8u();
+            const v = new Array(len + 1);
             v[0] = 254;
-            var t = new Array(8);
+            const t = new Array(8);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (let i = 1; i <= len; i++) {
               for (let j = 0; j < 8; j++) t[j] = reader.read8u();
@@ -500,11 +503,11 @@ function caml_input_value_from_reader(reader, ofs) {
           }
           case 0x07: {
             //cst.CODE_DOUBLE_ARRAY32_LITTLE:
-            var len = reader.read32u();
-            var v = new Array(len + 1);
+            const len = reader.read32u();
+            const v = new Array(len + 1);
             v[0] = 254;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            var t = new Array(8);
+            const t = new Array(8);
             for (let i = 1; i <= len; i++) {
               for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
@@ -513,10 +516,10 @@ function caml_input_value_from_reader(reader, ofs) {
           }
           case 0x0f: {
             //cst.CODE_DOUBLE_ARRAY32_BIG:
-            var len = reader.read32u();
-            var v = new Array(len + 1);
+            const len = reader.read32u();
+            const v = new Array(len + 1);
             v[0] = 254;
-            var t = new Array(8);
+            const t = new Array(8);
             for (let i = 1; i <= len; i++) {
               for (let j = 0; j < 8; j++) t[j] = reader.read8u();
               v[i] = caml_float_of_bytes(t);
@@ -531,11 +534,11 @@ function caml_input_value_from_reader(reader, ofs) {
           case 0x18: //cst.CODE_CUSTOM_LEN:
           case 0x19: {
             //cst.CODE_CUSTOM_FIXED:
-            var c,
-              s = "";
+            let c;
+            let s = "";
             while ((c = reader.read8u()) != 0) s += String.fromCharCode(c);
-            var ops = caml_custom_ops[s];
-            var expected_size;
+            const ops = caml_custom_ops[s];
+            let expected_size;
             if (!ops)
               caml_failwith("input_value: unknown custom block identifier");
             switch (code) {
@@ -555,9 +558,9 @@ function caml_input_value_from_reader(reader, ofs) {
                 reader.read32s();
                 break;
             }
-            var old_pos = reader.i;
-            var size = [0];
-            var v = ops.deserialize(reader, size);
+            const old_pos = reader.i;
+            const size = [0];
+            const v = ops.deserialize(reader, size);
             if (expected_size != undefined) {
               if (expected_size != size[0])
                 caml_failwith(
@@ -575,19 +578,19 @@ function caml_input_value_from_reader(reader, ofs) {
   }
   if (compressed) {
     if (caml_decompress_input) {
-      var data = reader.readuint8array(data_len);
-      var res = new Uint8Array(uncompressed_data_len);
-      var res = caml_decompress_input(data, res);
-      var reader = new UInt8ArrayReader(res, 0);
+      const data = reader.readuint8array(data_len);
+      let res = new Uint8Array(uncompressed_data_len);
+      res = caml_decompress_input(data, res);
+      reader = new UInt8ArrayReader(res, 0);
     } else {
       caml_failwith("input_value: compressed object, cannot decompress");
     }
   }
-  var res = intern_rec(reader);
+  const res = intern_rec(reader);
   while (stack.length > 0) {
-    var size = stack.pop();
-    var v = stack.pop();
-    var d = v.length;
+    const size = stack.pop();
+    const v = stack.pop();
+    const d = v.length;
     if (d < size) stack.push(v, size);
     v[d] = intern_rec(reader);
   }
@@ -596,11 +599,11 @@ function caml_input_value_from_reader(reader, ofs) {
 
 //Provides: caml_marshal_header_size
 //Version: < 5.1.0
-var caml_marshal_header_size = 20;
+const caml_marshal_header_size = 20;
 
 //Provides: caml_marshal_header_size
 //Version: >= 5.1.0
-var caml_marshal_header_size = 16;
+const caml_marshal_header_size = 16;
 
 //Provides: caml_marshal_data_size mutable
 //Requires: caml_failwith, caml_bytes_unsafe_get
@@ -608,29 +611,31 @@ var caml_marshal_header_size = 16;
 //Requires: UInt8ArrayReader
 //Requires: caml_marshal_header_size
 function caml_marshal_data_size(s, ofs) {
-  var r = new UInt8ArrayReader(caml_uint8_array_of_bytes(s), ofs);
+  const r = new UInt8ArrayReader(caml_uint8_array_of_bytes(s), ofs);
   function readvlq(overflow) {
-    var c = r.read8u();
-    var n = c & 0x7f;
+    let c = r.read8u();
+    let n = c & 0x7f;
     while ((c & 0x80) != 0) {
       c = r.read8u();
-      var n7 = n << 7;
+      const n7 = n << 7;
       if (n != n7 >> 7) overflow[0] = true;
       n = n7 | (c & 0x7f);
     }
     return n;
   }
 
+  let header_len;
+  let data_len;
   switch (r.read32u()) {
     case 0x8495a6be /* Intext_magic_number_small */: {
-      var header_len = 20;
-      var data_len = r.read32u();
+      header_len = 20;
+      data_len = r.read32u();
       break;
     }
     case 0x8495a6bd /* Intext_magic_number_compressed */: {
-      var header_len = r.read8u() & 0x3f;
-      var overflow = [false];
-      var data_len = readvlq(overflow);
+      header_len = r.read8u() & 0x3f;
+      const overflow = [false];
+      data_len = readvlq(overflow);
       if (overflow[0]) {
         caml_failwith(
           "Marshal.data_size: object too large to be read back on this platform",
@@ -647,9 +652,9 @@ function caml_marshal_data_size(s, ofs) {
 }
 
 //Provides: MlObjectTable
-var MlObjectTable;
+let MlObjectTable;
 if (typeof globalThis.Map === "undefined") {
-  MlObjectTable = (function () {
+  MlObjectTable = (() => {
     /* polyfill (using linear search) */
     function NaiveLookup(objs) {
       this.objs = objs;
@@ -659,7 +664,7 @@ if (typeof globalThis.Map === "undefined") {
         if (this.objs[i] === v) return i;
       }
     };
-    NaiveLookup.prototype.set = function () {
+    NaiveLookup.prototype.set = () => {
       // Do nothing here. [MlObjectTable.store] will push to [this.objs] directly.
     };
 
@@ -681,7 +686,7 @@ MlObjectTable.prototype.store = function (v) {
 };
 
 MlObjectTable.prototype.recall = function (v) {
-  var i = this.lookup.get(v);
+  const i = this.lookup.get(v);
   return i === undefined
     ? undefined
     : this.objs.length - i; /* index is relative */
@@ -694,7 +699,7 @@ MlObjectTable.prototype.recall = function (v) {
 //Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
 //Requires: MlObjectTable, caml_list_to_js_array, caml_custom_ops
 //Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
-var caml_output_val = (function () {
+const caml_output_val = (() => {
   function Writer() {
     this.chunk = [];
   }
@@ -709,9 +714,9 @@ var caml_output_val = (function () {
         this.chunk[this.chunk_idx++] = (value >> i) & 0xff;
     },
     write_at: function (pos, size, value) {
-      var pos = pos;
+      let pos_ = pos;
       for (let i = size - 8; i >= 0; i -= 8)
-        this.chunk[pos++] = (value >> i) & 0xff;
+        this.chunk[pos_++] = (value >> i) & 0xff;
     },
     write_code: function (size, code, value) {
       this.chunk[this.chunk_idx++] = code;
@@ -739,11 +744,11 @@ var caml_output_val = (function () {
       return this.chunk;
     },
   };
-  return function (v, flags) {
+  return (v, flags) => {
     flags = caml_list_to_js_array(flags);
 
-    var no_sharing = flags.indexOf(0 /*Marshal.No_sharing*/) !== -1,
-      closures = flags.indexOf(1 /*Marshal.Closures*/) !== -1;
+    const no_sharing = flags.indexOf(0 /*Marshal.No_sharing*/) !== -1;
+    const closures = flags.indexOf(1 /*Marshal.Closures*/) !== -1;
     /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
 
     if (closures)
@@ -751,13 +756,13 @@ var caml_output_val = (function () {
         "in caml_output_val: flag Marshal.Closures is not supported.",
       );
 
-    var writer = new Writer();
-    var stack = [];
-    var intern_obj_table = no_sharing ? null : new MlObjectTable();
+    const writer = new Writer();
+    const stack = [];
+    const intern_obj_table = no_sharing ? null : new MlObjectTable();
 
     function memo(v) {
       if (no_sharing) return false;
-      var existing_offset = intern_obj_table.recall(v);
+      const existing_offset = intern_obj_table.recall(v);
       if (existing_offset) {
         writer.write_shared(existing_offset);
         return true;
@@ -770,9 +775,9 @@ var caml_output_val = (function () {
     function extern_rec(v) {
       if (v.caml_custom) {
         if (memo(v)) return;
-        var name = v.caml_custom;
-        var ops = caml_custom_ops[name];
-        var sz_32_64 = [0, 0];
+        const name = v.caml_custom;
+        const ops = caml_custom_ops[name];
+        const sz_32_64 = [0, 0];
         if (!ops.serialize)
           caml_invalid_argument("output_value: abstract value (Custom)");
         if (ops.fixed_length == undefined) {
@@ -780,7 +785,7 @@ var caml_output_val = (function () {
           for (let i = 0; i < name.length; i++)
             writer.write(8, name.charCodeAt(i));
           writer.write(8, 0);
-          var header_pos = writer.pos();
+          const header_pos = writer.pos();
           for (let i = 0; i < 12; i++) {
             writer.write(8, 0);
           }
@@ -793,7 +798,7 @@ var caml_output_val = (function () {
           for (let i = 0; i < name.length; i++)
             writer.write(8, name.charCodeAt(i));
           writer.write(8, 0);
-          var old_pos = writer.pos();
+          const old_pos = writer.pos();
           ops.serialize(writer, v, sz_32_64);
           if (ops.fixed_length != writer.pos() - old_pos)
             caml_failwith(
@@ -830,7 +835,7 @@ var caml_output_val = (function () {
           );
         }
         if (memo(v)) return;
-        var len = caml_ml_bytes_length(v);
+        const len = caml_ml_bytes_length(v);
         if (len < 0x20) writer.write(8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
         else if (len < 0x100)
           writer.write_code(8, 0x09 /*cst.CODE_STRING8*/, len);
@@ -841,7 +846,7 @@ var caml_output_val = (function () {
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
       } else if (caml_is_ml_string(v)) {
         if (memo(v)) return;
-        var len = caml_ml_string_length(v);
+        const len = caml_ml_string_length(v);
         if (len < 0x20) writer.write(8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
         else if (len < 0x100)
           writer.write_code(8, 0x09 /*cst.CODE_STRING8*/, len);
@@ -852,7 +857,7 @@ var caml_output_val = (function () {
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
       } else {
         if (v != (v | 0)) {
-          var type_of_v = typeof v;
+          const type_of_v = typeof v;
           if (type_of_v != "number")
             caml_failwith("output_value: abstract value (" + type_of_v + ")");
           // If a float happens to be an integer it is serialized as an integer
@@ -860,7 +865,7 @@ var caml_output_val = (function () {
           // float or integer.) This can result in unexpected crashes when
           // unmarshalling using the standard runtime.
           if (memo(v)) return;
-          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
+          const t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
           writer.write(8, 0x0c /*cst.CODE_DOUBLE_LITTLE*/);
           for (let i = 0; i < 8; i++) {
             writer.write(8, t[7 - i]);
@@ -880,8 +885,8 @@ var caml_output_val = (function () {
     }
     extern_rec(v);
     while (stack.length > 0) {
-      var i = stack.pop();
-      var v = stack.pop();
+      const i = stack.pop();
+      const v = stack.pop();
       if (i + 1 < v.length) stack.push(v, i + 1);
       extern_rec(v[i]);
     }
@@ -906,7 +911,7 @@ function caml_output_value_to_bytes(v, flags) {
 //Provides: caml_output_value_to_buffer
 //Requires: caml_output_val, caml_failwith, caml_blit_bytes
 function caml_output_value_to_buffer(s, ofs, len, v, flags) {
-  var t = caml_output_val(v, flags);
+  const t = caml_output_val(v, flags);
   if (t.length > len) caml_failwith("Marshal.to_buffer: buffer overflow");
   caml_blit_bytes(t, 0, s, ofs, t.length);
   return 0;

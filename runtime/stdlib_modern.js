@@ -19,19 +19,20 @@
 //Provides: caml_call_gen (const, shallow)
 //If: !effects
 function caml_call_gen(f, args) {
-  var n = f.l >= 0 ? f.l : (f.l = f.length);
-  var argsLen = args.length;
-  var d = n - argsLen;
+  const n = f.l >= 0 ? f.l : (f.l = f.length);
+  const argsLen = args.length;
+  const d = n - argsLen;
   if (d == 0) return f(...args);
   else if (d < 0) {
-    var g = f(...args.slice(0, n));
+    const g = f(...args.slice(0, n));
     if (typeof g !== "function") return g;
     return caml_call_gen(g, args.slice(n));
   } else {
+    let g;
     switch (d) {
       case 1: {
-        var g = function (x) {
-          var nargs = new Array(argsLen + 1);
+        g = function (x) {
+          const nargs = new Array(argsLen + 1);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           return f.apply(null, nargs);
@@ -39,8 +40,8 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y) {
-          var nargs = new Array(argsLen + 2);
+        g = function (x, y) {
+          const nargs = new Array(argsLen + 2);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -49,9 +50,9 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
-          var nargs = new Array(args.length + extra_args);
+        g = function () {
+          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const nargs = new Array(args.length + extra_args);
           for (let i = 0; i < args.length; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)
             nargs[args.length + i] = arguments[i];
@@ -67,28 +68,29 @@ function caml_call_gen(f, args) {
 //Provides: caml_call_gen (const, shallow)
 //If: effects
 function caml_call_gen(f, args) {
-  var n = f.l >= 0 ? f.l : (f.l = f.length);
-  var argsLen = args.length;
-  var d = n - argsLen;
+  const n = f.l >= 0 ? f.l : (f.l = f.length);
+  let argsLen = args.length;
+  const d = n - argsLen;
   if (d == 0) return f(...args);
   else if (d < 0) {
-    var rest = args.slice(n - 1);
-    var k = args[argsLen - 1];
+    const rest = args.slice(n - 1);
+    const k = args[argsLen - 1];
     args = args.slice(0, n);
     args[n - 1] = function (g) {
       if (typeof g !== "function") return k(g);
-      var args = rest.slice();
+      const args = rest.slice();
       args[args.length - 1] = k;
       return caml_call_gen(g, args);
     };
     return f(...args);
   } else {
     argsLen--;
-    var k = args[argsLen];
+    const k = args[argsLen];
+    let g;
     switch (d) {
       case 1: {
-        var g = function (x, y) {
-          var nargs = new Array(argsLen + 2);
+        g = function (x, y) {
+          const nargs = new Array(argsLen + 2);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -97,8 +99,8 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y, z) {
-          var nargs = new Array(argsLen + 3);
+        g = function (x, y, z) {
+          const nargs = new Array(argsLen + 3);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -108,9 +110,9 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
-          var nargs = new Array(argsLen + extra_args);
+        g = function () {
+          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const nargs = new Array(argsLen + extra_args);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)
             nargs[argsLen + i] = arguments[i];

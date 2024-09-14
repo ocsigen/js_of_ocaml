@@ -52,7 +52,7 @@ function caml_js_typeof(o) {
 
 //Provides:caml_trampoline
 function caml_trampoline(res) {
-  var c = 1;
+  let c = 1;
   while (res && res.joo_tramp) {
     res = res.joo_tramp.apply(null, res.joo_args);
     c++;
@@ -67,7 +67,7 @@ function caml_trampoline_return(f, args) {
 
 //Provides:caml_stack_depth
 //If: effects
-var caml_stack_depth = 0;
+let caml_stack_depth = 0;
 
 //Provides:caml_stack_check_depth
 //If: effects
@@ -79,7 +79,7 @@ function caml_stack_check_depth() {
 //Provides: caml_callback
 //If: !effects
 //Requires:caml_call_gen
-var caml_callback = caml_call_gen;
+const caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
@@ -89,7 +89,7 @@ function caml_callback(f, args) {
   function uncaught_effect_handler(eff, k, ms) {
     // Resumes the continuation k by raising exception Unhandled.
     caml_resume_stack(k[1], ms);
-    var exn = caml_named_value("Effect.Unhandled");
+    let exn = caml_named_value("Effect.Unhandled");
     if (exn) caml_raise_with_arg(exn, eff);
     else {
       exn = [
@@ -100,20 +100,20 @@ function caml_callback(f, args) {
       caml_raise_constant(exn);
     }
   }
-  var saved_stack_depth = caml_stack_depth;
-  var saved_exn_stack = caml_exn_stack;
-  var saved_fiber_stack = caml_fiber_stack;
+  const saved_stack_depth = caml_stack_depth;
+  const saved_exn_stack = caml_exn_stack;
+  const saved_fiber_stack = caml_fiber_stack;
+  let res = {
+    joo_tramp: f,
+    joo_args: args.concat((x) => {
+      return x;
+    }),
+  };
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = {
       h: [0, 0, 0, uncaught_effect_handler],
       r: { k: 0, x: 0, e: 0 },
-    };
-    var res = {
-      joo_tramp: f,
-      joo_args: args.concat(function (x) {
-        return x;
-      }),
     };
     do {
       caml_stack_depth = 40;
@@ -122,7 +122,7 @@ function caml_callback(f, args) {
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
         if (!caml_exn_stack) throw e;
-        var handler = caml_exn_stack[1];
+        const handler = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
         res = { joo_tramp: handler, joo_args: [caml_wrap_exception(e)] };
       }
@@ -155,7 +155,7 @@ function caml_jsoo_flags_effects(unit) {
 function caml_wrap_exception(e) {
   if (FLAG("excwrap")) {
     if (Array.isArray(e)) return e;
-    var exn;
+    let exn;
     //Stack_overflow: chrome, safari
     if (
       globalThis.RangeError &&
@@ -246,8 +246,8 @@ function caml_js_from_array(a) {
 }
 //Provides: caml_js_to_array mutable (shallow)
 function caml_js_to_array(a) {
-  var len = a.length;
-  var b = new Array(len + 1);
+  const len = a.length;
+  const b = new Array(len + 1);
   b[0] = 0;
   for (let i = 0; i < len; i++) b[i + 1] = a[i];
   return b;
@@ -255,9 +255,9 @@ function caml_js_to_array(a) {
 
 //Provides: caml_list_of_js_array const (mutable)
 function caml_list_of_js_array(a) {
-  var l = 0;
+  let l = 0;
   for (let i = a.length - 1; i >= 0; i--) {
-    var e = a[i];
+    const e = a[i];
     l = [0, e, l];
   }
   return l;
@@ -265,7 +265,7 @@ function caml_list_of_js_array(a) {
 
 //Provides: caml_list_to_js_array const (mutable)
 function caml_list_to_js_array(l) {
-  var a = [];
+  const a = [];
   for (; l !== 0; l = l[2]) {
     a.push(l[1]);
   }
@@ -275,17 +275,17 @@ function caml_list_to_js_array(l) {
 //Provides: caml_js_var mutable
 //Requires: caml_jsstring_of_string
 function caml_js_var(x) {
-  var x = caml_jsstring_of_string(x);
+  const x_ = caml_jsstring_of_string(x);
   //Checks that x has the form ident[.ident]*
-  if (!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)) {
+  if (!x_.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)) {
     console.error(
       'caml_js_var: "' +
-        x +
+        x_ +
         '" is not a valid JavaScript variable. continuing ..',
     );
     //console.error("Js.Unsafe.eval_string")
   }
-  return eval(x);
+  return eval(x_);
 }
 //Provides: caml_js_call (const, mutable, shallow)
 //Requires: caml_js_from_array
@@ -379,14 +379,15 @@ function caml_ojs_new_arr(c, a) {
 //Requires: caml_callback
 function caml_js_wrap_callback(f) {
   return function () {
-    var len = arguments.length;
+    const len = arguments.length;
+    let args;
     if (len > 0) {
-      var args = new Array(len);
+      args = new Array(len);
       for (let i = 0; i < len; i++) args[i] = arguments[i];
     } else {
       args = [undefined];
     }
-    var res = caml_callback(f, args);
+    const res = caml_callback(f, args);
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
@@ -395,8 +396,8 @@ function caml_js_wrap_callback(f) {
 //Requires: caml_callback
 function caml_js_wrap_callback_arguments(f) {
   return function () {
-    var len = arguments.length;
-    var args = new Array(len);
+    const len = arguments.length;
+    const args = new Array(len);
     for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, [args]);
   };
@@ -405,9 +406,9 @@ function caml_js_wrap_callback_arguments(f) {
 //Requires: caml_callback
 function caml_js_wrap_callback_strict(arity, f) {
   return function () {
-    var n = arguments.length;
-    var args = new Array(arity);
-    var len = Math.min(arguments.length, arity);
+    const n = arguments.length;
+    const args = new Array(arity);
+    const len = Math.min(arguments.length, arity);
     for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, args);
   };
@@ -416,8 +417,8 @@ function caml_js_wrap_callback_strict(arity, f) {
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_callback_unsafe(f) {
   return function () {
-    var len = caml_js_function_arity(f);
-    var args = new Array(len);
+    const len = caml_js_function_arity(f);
+    const args = new Array(len);
     for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, args);
   };
@@ -426,11 +427,11 @@ function caml_js_wrap_callback_unsafe(f) {
 //Requires: caml_callback, caml_js_wrap_callback
 function caml_js_wrap_meth_callback(f) {
   return function () {
-    var len = arguments.length;
-    var args = new Array(len + 1);
+    const len = arguments.length;
+    const args = new Array(len + 1);
     args[0] = this;
     for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
-    var res = caml_callback(f, args);
+    const res = caml_callback(f, args);
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
@@ -438,8 +439,8 @@ function caml_js_wrap_meth_callback(f) {
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_arguments(f) {
   return function () {
-    var len = arguments.length;
-    var args = new Array(len);
+    const len = arguments.length;
+    const args = new Array(len);
     for (let i = 0; i < len; i++) args[i] = arguments[i];
     return caml_callback(f, [this, args]);
   };
@@ -448,8 +449,8 @@ function caml_js_wrap_meth_callback_arguments(f) {
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function () {
-    var args = new Array(arity + 1);
-    var len = Math.min(arguments.length, arity);
+    const args = new Array(arity + 1);
+    const len = Math.min(arguments.length, arity);
     args[0] = this;
     for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
     return caml_callback(f, args);
@@ -459,8 +460,8 @@ function caml_js_wrap_meth_callback_strict(arity, f) {
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function () {
-    var len = caml_js_function_arity(f) - 1;
-    var args = new Array(len + 1);
+    const len = caml_js_function_arity(f) - 1;
+    const args = new Array(len + 1);
     args[0] = this;
     for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
     return caml_callback(f, args);
@@ -514,9 +515,9 @@ function caml_pure_js_expr(s) {
 //Provides: caml_js_object (object_literal)
 //Requires: caml_jsstring_of_string
 function caml_js_object(a) {
-  var o = {};
+  const o = {};
   for (let i = 1; i < a.length; i++) {
-    var p = a[i];
+    const p = a[i];
     o[caml_jsstring_of_string(p[1])] = p[2];
   }
   return o;

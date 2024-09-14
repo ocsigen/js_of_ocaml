@@ -1,5 +1,5 @@
 //Provides: caml_domain_dls
-var caml_domain_dls = [0];
+let caml_domain_dls = [0];
 
 //Provides: caml_domain_dls_set
 //Requires: caml_domain_dls
@@ -38,14 +38,14 @@ function caml_atomic_cas(ref, o, n) {
 
 //Provides: caml_atomic_fetch_add
 function caml_atomic_fetch_add(ref, i) {
-  var old = ref[1];
+  const old = ref[1];
   ref[1] += i;
   return old;
 }
 
 //Provides: caml_atomic_exchange
 function caml_atomic_exchange(ref, v) {
-  var r = ref[1];
+  const r = ref[1];
   ref[1] = v;
   return r;
 }
@@ -57,7 +57,7 @@ function caml_atomic_make_contended(a) {
 
 //Provides: caml_ml_domain_unique_token
 //Version: < 5.2
-var caml_ml_domain_unique_token_ = [0];
+const caml_ml_domain_unique_token_ = [0];
 function caml_ml_domain_unique_token(unit) {
   return caml_ml_domain_unique_token_;
 }
@@ -73,19 +73,19 @@ function caml_recommended_domain_count(unit) {
 }
 
 //Provides: caml_domain_id
-var caml_domain_id = 0;
+let caml_domain_id = 0;
 
 //Provides: caml_domain_spawn
 //Requires: caml_ml_mutex_unlock
 //Requires: caml_domain_id
 //Requires: caml_callback
 //Version: >= 5.2
-var caml_domain_latest_idx = 1;
+let caml_domain_latest_idx = 1;
 function caml_domain_spawn(f, term_sync) {
-  var id = caml_domain_latest_idx++;
-  var old = caml_domain_id;
+  const id = caml_domain_latest_idx++;
+  const old = caml_domain_id;
   caml_domain_id = id;
-  var res = caml_callback(f, [0]);
+  const res = caml_callback(f, [0]);
   caml_domain_id = old;
   caml_ml_mutex_unlock(term_sync[2]);
   //TODO: fix exn case
@@ -98,12 +98,12 @@ function caml_domain_spawn(f, term_sync) {
 //Requires: caml_domain_id
 //Requires: caml_callback
 //Version: < 5.2
-var caml_domain_latest_idx = 1;
+let caml_domain_latest_idx = 1;
 function caml_domain_spawn(f, mutex) {
-  var id = caml_domain_latest_idx++;
-  var old = caml_domain_id;
+  const id = caml_domain_latest_idx++;
+  const old = caml_domain_id;
   caml_domain_id = id;
-  var res = caml_callback(f, [0]);
+  const res = caml_callback(f, [0]);
   caml_domain_id = old;
   caml_ml_mutex_unlock(mutex);
   return id;

@@ -34,20 +34,18 @@ MlFakeDevice.prototype.nm = function (name) {
   return this.root + name;
 };
 MlFakeDevice.prototype.create_dir_if_needed = function (name) {
-  var comp = name.split("/");
-  var res = "";
+  const comp = name.split("/");
+  let res = "";
   for (let i = 0; i < comp.length - 1; i++) {
     res += comp[i] + "/";
     if (this.content[res]) continue;
     this.content[res] = Symbol("directory");
   }
 };
-MlFakeDevice.prototype.slash = function (name) {
-  return /\/$/.test(name) ? name : name + "/";
-};
+MlFakeDevice.prototype.slash = (name) => (/\/$/.test(name) ? name : name + "/");
 MlFakeDevice.prototype.lookup = function (name) {
   if (!this.content[name] && this.lookupFun) {
-    var res = this.lookupFun(
+    const res = this.lookupFun(
       caml_string_of_jsbytes(this.root),
       caml_string_of_jsbytes(name),
     );
@@ -61,7 +59,7 @@ MlFakeDevice.prototype.exists = function (name) {
   // The root of the device exists
   if (name == "") return 1;
   // Check if a directory exists
-  var name_slash = this.slash(name);
+  const name_slash = this.slash(name);
   if (this.content[name_slash]) return 1;
   // Check if a file exists
   this.lookup(name);
@@ -75,7 +73,7 @@ MlFakeDevice.prototype.isFile = function (name) {
   }
 };
 MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
+  const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
   if (this.exists(name)) {
     if (unix_error) {
       caml_raise_with_args(
@@ -86,7 +84,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
       caml_raise_sys_error(name + ": File exists");
     }
   }
-  var parent = /^(.*)\/[^/]+/.exec(name);
+  let parent = /^(.*)\/[^/]+/.exec(name);
   parent = (parent && parent[1]) || "";
   if (!this.exists(parent)) {
     if (unix_error) {
@@ -111,9 +109,9 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
   this.create_dir_if_needed(this.slash(name));
 };
 MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-  var name_slash = name == "" ? "" : this.slash(name);
-  var r = new RegExp("^" + name_slash + "([^/]+)");
+  const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
+  const name_slash = name == "" ? "" : this.slash(name);
+  const r = new RegExp("^" + name_slash + "([^/]+)");
   if (!this.exists(name)) {
     if (unix_error) {
       caml_raise_with_args(
@@ -134,7 +132,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
       caml_raise_sys_error(name + ": Not a directory");
     }
   }
-  for (let n in this.content) {
+  for (const n in this.content) {
     if (n.match(r)) {
       if (unix_error) {
         caml_raise_with_args(
@@ -149,18 +147,18 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
   delete this.content[name_slash];
 };
 MlFakeDevice.prototype.readdir = function (name) {
-  var name_slash = name == "" ? "" : this.slash(name);
+  const name_slash = name == "" ? "" : this.slash(name);
   if (!this.exists(name)) {
     caml_raise_sys_error(name + ": No such file or directory");
   }
   if (!this.is_dir(name)) {
     caml_raise_sys_error(name + ": Not a directory");
   }
-  var r = new RegExp("^" + name_slash + "([^/]+)");
-  var seen = {};
-  var a = [];
-  for (let n in this.content) {
-    var m = n.match(r);
+  const r = new RegExp("^" + name_slash + "([^/]+)");
+  const seen = {};
+  const a = [];
+  for (const n in this.content) {
+    const m = n.match(r);
     if (m && !seen[m[1]]) {
       seen[m[1]] = true;
       a.push(m[1]);
@@ -169,11 +167,11 @@ MlFakeDevice.prototype.readdir = function (name) {
   return a;
 };
 MlFakeDevice.prototype.opendir = function (name, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
+  const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
 
-  var a = this.readdir(name);
-  var c = false;
-  var i = 0;
+  let a = this.readdir(name);
+  let c = false;
+  let i = 0;
   return {
     readSync: function () {
       if (c) {
@@ -187,7 +185,7 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
         }
       }
       if (i == a.length) return null;
-      var entry = a[i];
+      const entry = a[i];
       i++;
       return { name: entry };
     },
@@ -209,16 +207,16 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
 };
 MlFakeDevice.prototype.is_dir = function (name) {
   if (name == "") return true;
-  var name_slash = this.slash(name);
+  const name_slash = this.slash(name);
   return this.content[name_slash] ? 1 : 0;
 };
 MlFakeDevice.prototype.unlink = function (name) {
-  var ok = this.content[name] ? true : false;
+  const ok = this.content[name] ? true : false;
   delete this.content[name];
   return ok;
 };
 MlFakeDevice.prototype.open = function (name, f) {
-  var file;
+  let file;
   if (f.rdonly && f.wronly)
     caml_raise_sys_error(
       this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
@@ -246,7 +244,7 @@ MlFakeDevice.prototype.open = function (name, f) {
 };
 
 MlFakeDevice.prototype.open = function (name, f) {
-  var file;
+  let file;
   if (f.rdonly && f.wronly)
     caml_raise_sys_error(
       this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
@@ -274,7 +272,7 @@ MlFakeDevice.prototype.open = function (name, f) {
 };
 
 MlFakeDevice.prototype.register = function (name, content) {
-  var file;
+  let file;
   if (this.content[name])
     caml_raise_sys_error(this.nm(name) + " : file already exists");
   if (caml_is_ml_bytes(content)) file = new MlFakeFile(content);
@@ -285,7 +283,7 @@ MlFakeDevice.prototype.register = function (name, content) {
   else if (typeof content === "string")
     file = new MlFakeFile(caml_bytes_of_jsbytes(content));
   else if (content.toString) {
-    var bytes = caml_bytes_of_string(
+    const bytes = caml_bytes_of_string(
       caml_string_of_jsstring(content.toString()),
     );
     file = new MlFakeFile(bytes);
@@ -311,7 +309,7 @@ function MlFakeFile(content) {
 MlFakeFile.prototype = new MlFile();
 MlFakeFile.prototype.constructor = MlFakeFile;
 MlFakeFile.prototype.truncate = function (len) {
-  var old = this.data;
+  const old = this.data;
   this.data = caml_create_bytes(len | 0);
   caml_blit_bytes(old, 0, this.data, 0, len);
 };
@@ -319,10 +317,10 @@ MlFakeFile.prototype.length = function () {
   return caml_ml_bytes_length(this.data);
 };
 MlFakeFile.prototype.write = function (offset, buf, pos, len) {
-  var clen = this.length();
+  const clen = this.length();
   if (offset + len >= clen) {
-    var new_str = caml_create_bytes(offset + len);
-    var old_data = this.data;
+    const new_str = caml_create_bytes(offset + len);
+    const old_data = this.data;
     this.data = new_str;
     caml_blit_bytes(old_data, 0, this.data, 0, clen);
   }
@@ -330,12 +328,12 @@ MlFakeFile.prototype.write = function (offset, buf, pos, len) {
   return 0;
 };
 MlFakeFile.prototype.read = function (offset, buf, pos, len) {
-  var clen = this.length();
+  const clen = this.length();
   if (offset + len >= clen) {
     len = clen - offset;
   }
   if (len) {
-    var data = caml_create_bytes(len | 0);
+    const data = caml_create_bytes(len | 0);
     caml_blit_bytes(this.data, offset, data, 0, len);
     buf.set(caml_uint8_array_of_bytes(data), pos);
   }
@@ -347,18 +345,14 @@ MlFakeFile.prototype.read = function (offset, buf, pos, len) {
 //Requires: caml_raise_sys_error
 function MlFakeFd_out(fd, flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
-  this.log = function (s) {
-    return 0;
-  };
+  this.log = (s) => 0;
   if (fd == 1 && typeof console.log == "function") this.log = console.log;
   else if (fd == 2 && typeof console.error == "function")
     this.log = console.error;
   else if (typeof console.log == "function") this.log = console.log;
   this.flags = flags;
 }
-MlFakeFd_out.prototype.length = function () {
-  return 0;
-};
+MlFakeFd_out.prototype.length = () => 0;
 MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
   if (this.log) {
     if (
@@ -370,7 +364,7 @@ MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
       len--;
     // Do not output the last \n if present
     // as console logging display a newline at the end
-    var src = caml_create_bytes(len);
+    const src = caml_create_bytes(len);
     caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len);
     this.log(src.toUtf16());
     return 0;

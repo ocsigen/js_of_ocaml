@@ -21,9 +21,9 @@
 //Requires: caml_jsbytes_of_string, caml_invalid_argument
 function caml_parse_format(fmt) {
   fmt = caml_jsbytes_of_string(fmt);
-  var len = fmt.length;
+  const len = fmt.length;
   if (len > 31) caml_invalid_argument("format_int: format too long");
-  var f = {
+  const f = {
     justify: "+",
     signstyle: "-",
     filler: " ",
@@ -37,7 +37,7 @@ function caml_parse_format(fmt) {
     conv: "f",
   };
   for (let i = 0; i < len; i++) {
-    var c = fmt.charAt(i);
+    let c = fmt.charAt(i);
     switch (c) {
       case "-":
         f.justify = "-";
@@ -114,7 +114,7 @@ function caml_parse_format(fmt) {
 //Requires: caml_string_of_jsbytes
 function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
-  var len = rawbuffer.length;
+  let len = rawbuffer.length;
   /* Adjust len to reflect additional chars (sign, etc) */
   if (f.signedconv && (f.sign < 0 || f.signstyle != "-")) len++;
   if (f.alternate) {
@@ -122,7 +122,7 @@ function caml_finish_formatting(f, rawbuffer) {
     if (f.base == 16) len += 2;
   }
   /* Do the formatting */
-  var buffer = "";
+  let buffer = "";
   if (f.justify == "+" && f.filler == " ")
     for (let i = len; i < f.width; i++) buffer += " ";
   if (f.signedconv) {

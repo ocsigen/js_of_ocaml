@@ -21,19 +21,20 @@
 //If: !effects
 //Weakdef
 function caml_call_gen(f, args) {
-  var n = f.l >= 0 ? f.l : (f.l = f.length);
-  var argsLen = args.length;
-  var d = n - argsLen;
+  const n = f.l >= 0 ? f.l : (f.l = f.length);
+  const argsLen = args.length;
+  const d = n - argsLen;
   if (d == 0) return f.apply(null, args);
   else if (d < 0) {
-    var g = f.apply(null, args.slice(0, n));
+    const g = f.apply(null, args.slice(0, n));
     if (typeof g !== "function") return g;
     return caml_call_gen(g, args.slice(n));
   } else {
+    let g;
     switch (d) {
       case 1: {
-        var g = function (x) {
-          var nargs = new Array(argsLen + 1);
+        g = function (x) {
+          const nargs = new Array(argsLen + 1);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           return f.apply(null, nargs);
@@ -41,8 +42,8 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y) {
-          var nargs = new Array(argsLen + 2);
+        g = function (x, y) {
+          const nargs = new Array(argsLen + 2);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -51,9 +52,9 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
-          var nargs = new Array(args.length + extra_args);
+        g = function () {
+          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const nargs = new Array(args.length + extra_args);
           for (let i = 0; i < args.length; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)
             nargs[args.length + i] = arguments[i];
@@ -70,29 +71,30 @@ function caml_call_gen(f, args) {
 //If: effects
 //Weakdef
 function caml_call_gen(f, args) {
-  var n = f.l >= 0 ? f.l : (f.l = f.length);
-  var argsLen = args.length;
-  var d = n - argsLen;
+  const n = f.l >= 0 ? f.l : (f.l = f.length);
+  let argsLen = args.length;
+  const d = n - argsLen;
   if (d == 0) {
     return f.apply(null, args);
   } else if (d < 0) {
-    var rest = args.slice(n - 1);
-    var k = args[argsLen - 1];
+    const rest = args.slice(n - 1);
+    const k = args[argsLen - 1];
     args = args.slice(0, n);
     args[n - 1] = function (g) {
       if (typeof g !== "function") return k(g);
-      var args = rest.slice();
+      const args = rest.slice();
       args[args.length - 1] = k;
       return caml_call_gen(g, args);
     };
     return f.apply(null, args);
   } else {
     argsLen--;
-    var k = args[argsLen];
+    const k = args[argsLen];
+    let g;
     switch (d) {
       case 1: {
-        var g = function (x, y) {
-          var nargs = new Array(argsLen + 2);
+        g = function (x, y) {
+          const nargs = new Array(argsLen + 2);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -101,8 +103,8 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y, z) {
-          var nargs = new Array(argsLen + 3);
+        g = function (x, y, z) {
+          const nargs = new Array(argsLen + 3);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
@@ -112,9 +114,9 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
-          var nargs = new Array(argsLen + extra_args);
+        g = function () {
+          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const nargs = new Array(argsLen + extra_args);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)
             nargs[argsLen + i] = arguments[i];
@@ -128,7 +130,7 @@ function caml_call_gen(f, args) {
 }
 
 //Provides: caml_named_values
-var caml_named_values = {};
+const caml_named_values = {};
 
 //Provides: caml_register_named_value (const,mutable)
 //Requires: caml_named_values, caml_jsbytes_of_string
@@ -144,12 +146,12 @@ function caml_named_value(nm) {
 }
 
 //Provides: caml_global_data
-var caml_global_data = [0];
+const caml_global_data = [0];
 
 //Provides: caml_build_symbols
 //Requires: caml_jsstring_of_string
 function caml_build_symbols(symb) {
-  var r = {};
+  const r = {};
   if (symb) {
     for (let i = 1; i < symb.length; i++) {
       r[caml_jsstring_of_string(symb[i][1])] = symb[i][2];
@@ -163,14 +165,14 @@ function caml_build_symbols(symb) {
 //Requires: caml_failwith
 function caml_register_global(n, v, name_opt) {
   if (name_opt) {
-    var name = name_opt;
+    const name = name_opt;
     if (globalThis.toplevelReloc) {
       n = caml_callback(globalThis.toplevelReloc, [name]);
     } else if (caml_global_data.symbols) {
       if (!caml_global_data.symidx) {
         caml_global_data.symidx = caml_build_symbols(caml_global_data.symbols);
       }
-      var nid = caml_global_data.symidx[name];
+      const nid = caml_global_data.symidx[name];
       if (nid >= 0) n = nid;
       else {
         caml_failwith("caml_register_global: cannot locate " + name);

@@ -1,5 +1,5 @@
 //Provides: caml_custom_event_index
-var caml_custom_event_index = 0;
+let caml_custom_event_index = 0;
 
 //Provides: caml_runtime_events_user_register
 //Requires: caml_custom_event_index

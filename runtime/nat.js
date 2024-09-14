@@ -26,8 +26,8 @@ MlNat.prototype.caml_custom = "_nat";
 //Provides: caml_hash_nat
 //Requires: caml_hash_mix_int, num_digits_nat
 function caml_hash_nat(x) {
-  var len = num_digits_nat(x, 0, x.data.length);
-  var h = 0;
+  const len = num_digits_nat(x, 0, x.data.length);
+  let h = 0;
   for (let i = 0; i < len; i++) {
     h = caml_hash_mix_int(h, x.data[i]);
   }
@@ -48,7 +48,7 @@ function nat_of_array(l) {
 //Provides: create_nat
 //Requires: MlNat
 function create_nat(size) {
-  var arr = new MlNat(size);
+  const arr = new MlNat(size);
   for (let i = 0; i < size; i++) {
     arr.data[i] = -1;
   }
@@ -103,8 +103,8 @@ function num_digits_nat(nat, ofs, len) {
 
 //Provides: num_leading_zero_bits_in_digit
 function num_leading_zero_bits_in_digit(nat, ofs) {
-  var a = nat.data[ofs];
-  var b = 0;
+  let a = nat.data[ofs];
+  let b = 0;
   if (a & 0xffff0000) {
     b += 16;
     a >>>= 16;
@@ -151,9 +151,9 @@ function is_digit_odd(nat, ofs) {
 
 //Provides: incr_nat
 function incr_nat(nat, ofs, len, carry_in) {
-  var carry = carry_in;
+  let carry = carry_in;
   for (let i = 0; i < len; i++) {
-    var x = (nat.data[ofs + i] >>> 0) + carry;
+    const x = (nat.data[ofs + i] >>> 0) + carry;
     nat.data[ofs + i] = x | 0;
     if (x == x >>> 0) {
       carry = 0;
@@ -169,9 +169,9 @@ function incr_nat(nat, ofs, len, carry_in) {
 //Provides: add_nat
 //Requires: incr_nat
 function add_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
-  var carry = carry_in;
+  let carry = carry_in;
   for (let i = 0; i < len2; i++) {
-    var x = (nat1.data[ofs1 + i] >>> 0) + (nat2.data[ofs2 + i] >>> 0) + carry;
+    const x = (nat1.data[ofs1 + i] >>> 0) + (nat2.data[ofs2 + i] >>> 0) + carry;
     nat1.data[ofs1 + i] = x;
     if (x == x >>> 0) {
       carry = 0;
@@ -192,9 +192,9 @@ function complement_nat(nat, ofs, len) {
 // ocaml flips carry_in
 //Provides: decr_nat
 function decr_nat(nat, ofs, len, carry_in) {
-  var borrow = carry_in == 1 ? 0 : 1;
+  let borrow = carry_in == 1 ? 0 : 1;
   for (let i = 0; i < len; i++) {
-    var x = (nat.data[ofs + i] >>> 0) - borrow;
+    const x = (nat.data[ofs + i] >>> 0) - borrow;
     nat.data[ofs + i] = x;
     if (x >= 0) {
       borrow = 0;
@@ -211,9 +211,10 @@ function decr_nat(nat, ofs, len, carry_in) {
 //Provides: sub_nat
 //Requires: decr_nat
 function sub_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
-  var borrow = carry_in == 1 ? 0 : 1;
+  let borrow = carry_in == 1 ? 0 : 1;
   for (let i = 0; i < len2; i++) {
-    var x = (nat1.data[ofs1 + i] >>> 0) - (nat2.data[ofs2 + i] >>> 0) - borrow;
+    const x =
+      (nat1.data[ofs1 + i] >>> 0) - (nat2.data[ofs2 + i] >>> 0) - borrow;
     nat1.data[ofs1 + i] = x;
     if (x >= 0) {
       borrow = 0;
@@ -229,16 +230,16 @@ function sub_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
 //Provides: mult_digit_nat
 //Requires: add_nat, nat_of_array
 function mult_digit_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3) {
-  var carry = 0;
-  var a = nat3.data[ofs3] >>> 0;
+  let carry = 0;
+  const a = nat3.data[ofs3] >>> 0;
   for (let i = 0; i < len2; i++) {
-    var x1 =
+    const x1 =
       (nat1.data[ofs1 + i] >>> 0) +
       (nat2.data[ofs2 + i] >>> 0) * (a & 0x0000ffff) +
       carry;
-    var x2 = (nat2.data[ofs2 + i] >>> 0) * (a >>> 16);
+    const x2 = (nat2.data[ofs2 + i] >>> 0) * (a >>> 16);
     carry = Math.floor(x2 / 65536);
-    var x3 = x1 + (x2 % 65536) * 65536;
+    const x3 = x1 + (x2 % 65536) * 65536;
     nat1.data[ofs1 + i] = x3;
     carry += Math.floor(x3 / 4294967296);
   }
@@ -263,7 +264,7 @@ function mult_digit_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3) {
 //Provides: mult_nat
 //Requires: mult_digit_nat
 function mult_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3, len3) {
-  var carry = 0;
+  let carry = 0;
   for (let i = 0; i < len3; i++) {
     carry += mult_digit_nat(
       nat1,
@@ -284,7 +285,7 @@ function mult_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3, len3) {
 //Provides: square_nat
 //Requires: mult_nat, add_nat
 function square_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
-  var carry = 0;
+  let carry = 0;
   carry += add_nat(nat1, ofs1, len1, nat1, ofs1, len1, 0);
   carry += mult_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat2, ofs2, len2);
   return carry;
@@ -297,9 +298,9 @@ function shift_left_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
     nat2.data[ofs2] = 0;
     return 0;
   }
-  var wrap = 0;
+  let wrap = 0;
   for (let i = 0; i < len1; i++) {
-    var a = nat1.data[ofs1 + i] >>> 0;
+    const a = nat1.data[ofs1 + i] >>> 0;
     nat1.data[ofs1 + i] = (a << nbits) | wrap;
     wrap = a >>> (32 - nbits);
   }
@@ -310,10 +311,10 @@ function shift_left_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 // Assuming c > a, returns [quotient, remainder] of (a<<32 + b)/c
 //Provides: div_helper
 function div_helper(a, b, c) {
-  var x = a * 65536 + (b >>> 16);
-  var y = Math.floor(x / c) * 65536;
-  var z = (x % c) * 65536;
-  var w = z + (b & 0x0000ffff);
+  const x = a * 65536 + (b >>> 16);
+  const y = Math.floor(x / c) * 65536;
+  const z = (x % c) * 65536;
+  const w = z + (b & 0x0000ffff);
   return [y + Math.floor(w / c), w % c];
 }
 
@@ -321,11 +322,11 @@ function div_helper(a, b, c) {
 //Provides: div_digit_nat
 //Requires: div_helper
 function div_digit_nat(natq, ofsq, natr, ofsr, nat1, ofs1, len, nat2, ofs2) {
-  var rem = nat1.data[ofs1 + len - 1] >>> 0;
+  let rem = nat1.data[ofs1 + len - 1] >>> 0;
   // natq[ofsq+len-1] is guaranteed to be zero (due to the MSD requirement),
   // and should not be written to.
   for (let i = len - 2; i >= 0; i--) {
-    var x = div_helper(rem, nat1.data[ofs1 + i] >>> 0, nat2.data[ofs2] >>> 0);
+    const x = div_helper(rem, nat1.data[ofs1 + i] >>> 0, nat2.data[ofs2] >>> 0);
     natq.data[ofsq + i] = x[0];
     rem = x[1];
   }
@@ -344,15 +345,15 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
     return 0;
   }
 
-  var s = num_leading_zero_bits_in_digit(nat2, ofs2 + len2 - 1);
+  const s = num_leading_zero_bits_in_digit(nat2, ofs2 + len2 - 1);
   shift_left_nat(nat2, ofs2, len2, nat_of_array([0]), 0, s);
   shift_left_nat(nat1, ofs1, len1, nat_of_array([0]), 0, s);
 
-  var d = (nat2.data[ofs2 + len2 - 1] >>> 0) + 1;
-  var a = create_nat(len2 + 1);
+  const d = (nat2.data[ofs2 + len2 - 1] >>> 0) + 1;
+  const a = create_nat(len2 + 1);
   for (let i = len1 - 1; i >= len2; i--) {
     // Decent lower bound on quo
-    var quo =
+    let quo =
       d == 4294967296
         ? nat1.data[ofs1 + i] >>> 0
         : div_helper(
@@ -387,9 +388,9 @@ function shift_right_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
     nat2.data[ofs2] = 0;
     return 0;
   }
-  var wrap = 0;
+  let wrap = 0;
   for (let i = len1 - 1; i >= 0; i--) {
-    var a = nat1.data[ofs1 + i] >>> 0;
+    const a = nat1.data[ofs1 + i] >>> 0;
     nat1.data[ofs1 + i] = (a >>> nbits) | wrap;
     wrap = a << (32 - nbits);
   }
@@ -407,8 +408,8 @@ function compare_digits_nat(nat1, ofs1, nat2, ofs2) {
 //Provides: compare_nat
 //Requires: num_digits_nat
 function compare_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
-  var a = num_digits_nat(nat1, ofs1, len1);
-  var b = num_digits_nat(nat2, ofs2, len2);
+  const a = num_digits_nat(nat1, ofs1, len1);
+  const b = num_digits_nat(nat2, ofs2, len2);
   if (a > b) return 1;
   if (a < b) return -1;
   for (let i = len1 - 1; i >= 0; i--) {
@@ -444,7 +445,7 @@ function lxor_digit_nat(nat1, ofs1, nat2, ofs2) {
 
 //Provides: serialize_nat
 function serialize_nat(writer, nat, sz) {
-  var len = nat.data.length;
+  const len = nat.data.length;
   writer.write(32, len);
   for (let i = 0; i < len; i++) {
     writer.write(32, nat.data[i]);
@@ -456,8 +457,8 @@ function serialize_nat(writer, nat, sz) {
 //Provides: deserialize_nat
 //Requires: MlNat
 function deserialize_nat(reader, sz) {
-  var len = reader.read32s();
-  var nat = new MlNat(len);
+  const len = reader.read32s();
+  const nat = new MlNat(len);
   for (let i = 0; i < len; i++) {
     nat.data[i] = reader.read32s();
   }

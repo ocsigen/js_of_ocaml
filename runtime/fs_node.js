@@ -87,7 +87,7 @@ MlNodeDevice.prototype.is_dir = function (name) {
 };
 MlNodeDevice.prototype.unlink = function (name, raise_unix) {
   try {
-    var b = this.fs.existsSync(this.nm(name)) ? 1 : 0;
+    const b = this.fs.existsSync(this.nm(name)) ? 1 : 0;
     this.fs.unlinkSync(this.nm(name));
     return b;
   } catch (err) {
@@ -95,9 +95,9 @@ MlNodeDevice.prototype.unlink = function (name, raise_unix) {
   }
 };
 MlNodeDevice.prototype.open = function (name, f, raise_unix) {
-  var consts = require("constants");
-  var res = 0;
-  for (let key in f) {
+  const consts = require("constants");
+  let res = 0;
+  for (const key in f) {
     switch (key) {
       case "rdonly":
         res |= consts.O_RDONLY;
@@ -129,8 +129,8 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
     }
   }
   try {
-    var fd = this.fs.openSync(this.nm(name), res);
-    var isCharacterDevice = this.fs
+    const fd = this.fs.openSync(this.nm(name), res);
+    const isCharacterDevice = this.fs
       .lstatSync(this.nm(name))
       .isCharacterDevice();
     f.isCharacterDevice = isCharacterDevice;
@@ -149,7 +149,7 @@ MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
 };
 MlNodeDevice.prototype.stat = function (name, raise_unix) {
   try {
-    var js_stats = this.fs.statSync(this.nm(name));
+    const js_stats = this.fs.statSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -157,7 +157,7 @@ MlNodeDevice.prototype.stat = function (name, raise_unix) {
 };
 MlNodeDevice.prototype.lstat = function (name, raise_unix) {
   try {
-    var js_stats = this.fs.lstatSync(this.nm(name));
+    const js_stats = this.fs.lstatSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -177,7 +177,7 @@ MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
 };
 MlNodeDevice.prototype.readlink = function (name, raise_unix) {
   try {
-    var link = this.fs.readlinkSync(this.nm(name), "utf8");
+    const link = this.fs.readlinkSync(this.nm(name), "utf8");
     return caml_string_of_jsstring(link);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -190,16 +190,16 @@ MlNodeDevice.prototype.opendir = function (name, raise_unix) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
-MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
-  var unix_error = caml_named_value("Unix.Unix_error");
+MlNodeDevice.prototype.raise_nodejs_error = (err, raise_unix) => {
+  const unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {
-    var args = make_unix_err_args(err.code, err.syscall, err.path, err.errno);
+    const args = make_unix_err_args(err.code, err.syscall, err.path, err.errno);
     caml_raise_with_args(unix_error, args);
   } else {
     caml_raise_sys_error(err.toString());
   }
 };
-MlNodeDevice.prototype.stats_from_js = function (js_stats) {
+MlNodeDevice.prototype.stats_from_js = (js_stats) => {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -210,7 +210,7 @@ MlNodeDevice.prototype.stats_from_js = function (js_stats) {
    *   | S_FIFO                      (** Named pipe *)
    *   | S_SOCK                      (** Socket *)
    */
-  var file_kind;
+  let file_kind;
   if (js_stats.isFile()) {
     file_kind = 0;
   } else if (js_stats.isDirectory()) {
@@ -302,9 +302,8 @@ MlNodeFd.prototype.write = function (offset, buf, buf_offset, len) {
 MlNodeFd.prototype.read = function (offset, a, buf_offset, len) {
   try {
     if (this.flags.isCharacterDevice)
-      var read = this.fs.readSync(this.fd, a, buf_offset, len);
-    else var read = this.fs.readSync(this.fd, a, buf_offset, len, offset);
-    return read;
+      return this.fs.readSync(this.fd, a, buf_offset, len);
+    else return this.fs.readSync(this.fd, a, buf_offset, len, offset);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
@@ -327,8 +326,8 @@ function MlNodeFd() {}
 function caml_sys_open_for_node(fd, flags) {
   if (flags.name) {
     try {
-      var fs = require("fs");
-      var fd2 = fs.openSync(flags.name, "rs");
+      const fs = require("fs");
+      const fd2 = fs.openSync(flags.name, "rs");
       return new MlNodeFd(fd2, flags);
     } catch (e) {}
   }

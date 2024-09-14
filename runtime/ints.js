@@ -21,17 +21,17 @@
 function caml_format_int(fmt, i) {
   if (caml_jsbytes_of_string(fmt) == "%d")
     return caml_string_of_jsbytes("" + i);
-  var f = caml_parse_format(fmt);
+  const f = caml_parse_format(fmt);
   if (i < 0) {
     if (f.signedconv) {
       f.sign = -1;
       i = -i;
     } else i >>>= 0;
   }
-  var s = i.toString(f.base);
+  let s = i.toString(f.base);
   if (f.prec >= 0) {
     f.filler = " ";
-    var n = f.prec - s.length;
+    const n = f.prec - s.length;
     if (n > 0) s = caml_str_repeat(n, "0") + s;
   }
   return caml_finish_formatting(f, s);
@@ -40,11 +40,11 @@ function caml_format_int(fmt, i) {
 //Provides: caml_parse_sign_and_base
 //Requires: caml_string_unsafe_get, caml_ml_string_length
 function caml_parse_sign_and_base(s) {
-  var i = 0,
-    len = caml_ml_string_length(s),
-    base = 10,
-    sign = 1,
-    signedness = 1;
+  let i = 0;
+  const len = caml_ml_string_length(s);
+  let base = 10;
+  let sign = 1;
+  let signedness = 1;
   if (len > 0) {
     switch (caml_string_unsafe_get(s, i)) {
       case 45:
@@ -98,17 +98,17 @@ function caml_parse_digit(c) {
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 //Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
 function caml_int_of_string(s) {
-  var r = caml_parse_sign_and_base(s);
-  var i = r[0],
-    sign = r[1],
-    base = r[2],
-    signedness = r[3];
-  var len = caml_ml_string_length(s);
-  var threshold = -1 >>> 0;
-  var c = i < len ? caml_string_unsafe_get(s, i) : 0;
-  var d = caml_parse_digit(c);
+  const r = caml_parse_sign_and_base(s);
+  let i = r[0];
+  const sign = r[1];
+  const base = r[2];
+  const signedness = r[3];
+  const len = caml_ml_string_length(s);
+  const threshold = -1 >>> 0;
+  let c = i < len ? caml_string_unsafe_get(s, i) : 0;
+  let d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
-  var res = d;
+  let res = d;
   for (i++; i < len; i++) {
     c = caml_string_unsafe_get(s, i);
     if (c == 95) continue;
@@ -163,6 +163,6 @@ function caml_int32_bswap(x) {
 //Provides: caml_int64_bswap
 //Requires: caml_int64_to_bytes, caml_int64_of_bytes
 function caml_int64_bswap(x) {
-  var y = caml_int64_to_bytes(x);
+  const y = caml_int64_to_bytes(x);
   return caml_int64_of_bytes([y[7], y[6], y[5], y[4], y[3], y[2], y[1], y[0]]);
 }

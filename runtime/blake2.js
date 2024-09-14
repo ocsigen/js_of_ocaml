@@ -1,6 +1,6 @@
 //Provides: blake2b
 //Version: >= 5.2
-var blake2b = (function () {
+const blake2b = (() => {
   // Blake2B in pure Javascript
   // Adapted from the reference implementation in RFC7693
   // Ported to Javascript by DC - https://github.com/dcposch
@@ -104,11 +104,7 @@ var blake2b = (function () {
   // These are offsets into a uint64 buffer.
   // Multiply them all by 2 to make them offsets into a uint32 buffer,
   // because this is Javascript and we don't have uint64s
-  const SIGMA82 = new Uint8Array(
-    SIGMA8.map(function (x) {
-      return x * 2;
-    }),
-  );
+  const SIGMA82 = new Uint8Array(SIGMA8.map((x) => x * 2));
 
   // Compression function. 'last' flag indicates last block.
   // Note we're representing 16 uint64s as 32 uint32s
@@ -319,7 +315,7 @@ function caml_blake2_create(hashlen, key) {
 //Requires: blake2b
 //Version: >= 5.2
 function caml_blake2_final(ctx, hashlen) {
-  var r = blake2b.Final(ctx);
+  const r = blake2b.Final(ctx);
   return caml_string_of_array(r);
 }
 
@@ -328,7 +324,7 @@ function caml_blake2_final(ctx, hashlen) {
 //Requires: caml_uint8_array_of_string
 //Version: >= 5.2
 function caml_blake2_update(ctx, buf, ofs, len) {
-  var input = caml_uint8_array_of_string(buf);
+  let input = caml_uint8_array_of_string(buf);
   input = input.subarray(ofs, ofs + len);
   blake2b.Update(ctx, input);
   return 0;
@@ -340,7 +336,7 @@ function caml_blake2_update(ctx, buf, ofs, len) {
 //Requires: caml_blake2_final
 //Version: >= 5.2
 function caml_blake2_string(hashlen, key, buf, ofs, len) {
-  var ctx = caml_blake2_create(hashlen, key);
+  const ctx = caml_blake2_create(hashlen, key);
   caml_blake2_update(ctx, buf, ofs, len);
   return caml_blake2_final(ctx, hashlen);
 }

@@ -24,8 +24,8 @@
 //Requires: caml_jsbytes_of_string, caml_js_from_array, caml_uint8_array_of_string
 //Requires: caml_string_get
 
-var re_match = (function () {
-  var re_word_letters = [
+const re_match = (() => {
+  const re_word_letters = [
     0x00, 0x00, 0x00, 0x00 /* 0x00-0x1F: none */, 0x00, 0x00, 0xff,
     0x03 /* 0x20-0x3F: digits 0-9 */, 0xfe, 0xff, 0xff,
     0x87 /* 0x40-0x5F: A to Z, _ */, 0xfe, 0xff, 0xff,
@@ -35,7 +35,7 @@ var re_match = (function () {
     0xff /* 0xE0-0xFF: Latin-1 accented lowercase */,
   ];
 
-  var opcodes = {
+  const opcodes = {
     CHAR: 0,
     CHARNORM: 1,
     STRING: 2,
@@ -66,29 +66,29 @@ var re_match = (function () {
   }
 
   function re_match_impl(re, s, pos, partial) {
-    var prog = caml_js_from_array(re[1]),
-      cpool = caml_js_from_array(re[2]),
-      normtable = caml_jsbytes_of_string(re[3]),
-      numgroups = re[4] | 0,
-      numregisters = re[5] | 0,
-      startchars = re[6] | 0;
+    const prog = caml_js_from_array(re[1]);
+    const cpool = caml_js_from_array(re[2]);
+    const normtable = caml_jsbytes_of_string(re[3]);
+    const numgroups = re[4] | 0;
+    const numregisters = re[5] | 0;
+    const startchars = re[6] | 0;
 
-    var s = caml_uint8_array_of_string(s);
+    const s_ = caml_uint8_array_of_string(s);
 
-    var pc = 0,
-      quit = false,
-      stack = [],
-      groups = new Array(numgroups),
-      re_register = new Array(numregisters);
+    let pc = 0;
+    let quit = false;
+    const stack = [];
+    const groups = new Array(numgroups);
+    const re_register = new Array(numregisters);
 
     for (let i = 0; i < groups.length; i++) {
       groups[i] = { start: -1, end: -1 };
     }
     groups[0].start = pos;
 
-    var backtrack = function () {
+    const backtrack = () => {
       while (stack.length) {
-        var item = stack.pop();
+        const item = stack.pop();
         if (item.undo) {
           item.undo.obj[item.undo.prop] = item.undo.value;
         } else if (item.pos) {
@@ -100,16 +100,16 @@ var re_match = (function () {
       quit = true;
     };
 
-    var push = function (item) {
+    const push = (item) => {
       stack.push(item);
     };
 
-    var accept = function () {
+    const accept = () => {
       groups[0].end = pos;
-      var result = new Array(1 + groups.length * 2);
+      const result = new Array(1 + groups.length * 2);
       result[0] = 0; // tag
       for (let i = 0; i < groups.length; i++) {
-        var g = groups[i];
+        const g = groups[i];
         if (g.start < 0 || g.end < 0) {
           g.start = g.end = -1;
         }
@@ -119,24 +119,24 @@ var re_match = (function () {
       return result;
     };
 
-    var prefix_match = function () {
+    const prefix_match = () => {
       if (partial) return accept();
       else backtrack();
     };
 
     /* Main DFA interpreter loop */
     while (!quit) {
-      var op = prog[pc] & 0xff,
-        sarg = prog[pc] >> 8,
-        uarg = sarg & 0xff,
-        c = s[pos],
-        group;
+      const op = prog[pc] & 0xff;
+      const sarg = prog[pc] >> 8;
+      const uarg = sarg & 0xff;
+      let c = s_[pos];
+      let group;
 
       pc++;
 
       switch (op) {
         case opcodes.CHAR:
-          if (pos === s.length) {
+          if (pos === s_.length) {
             prefix_match();
             break;
           }
@@ -144,7 +144,7 @@ var re_match = (function () {
           else backtrack();
           break;
         case opcodes.CHARNORM:
-          if (pos === s.length) {
+          if (pos === s_.length) {
             prefix_match();
             break;
           }
@@ -153,15 +153,15 @@ var re_match = (function () {
           break;
         case opcodes.STRING:
           for (
-            var arg = caml_jsbytes_of_string(cpool[uarg]), i = 0;
+            let arg = caml_jsbytes_of_string(cpool[uarg]), i = 0;
             i < arg.length;
             i++
           ) {
-            if (pos === s.length) {
+            if (pos === s_.length) {
               prefix_match();
               break;
             }
-            if (c === arg.charCodeAt(i)) c = s[++pos];
+            if (c === arg.charCodeAt(i)) c = s_[++pos];
             else {
               backtrack();
               break;
@@ -170,15 +170,15 @@ var re_match = (function () {
           break;
         case opcodes.STRINGNORM:
           for (
-            var arg = caml_jsbytes_of_string(cpool[uarg]), i = 0;
+            let arg = caml_jsbytes_of_string(cpool[uarg]), i = 0;
             i < arg.length;
             i++
           ) {
-            if (pos === s.length) {
+            if (pos === s_.length) {
               prefix_match();
               break;
             }
-            if (normtable.charCodeAt(c) === arg.charCodeAt(i)) c = s[++pos];
+            if (normtable.charCodeAt(c) === arg.charCodeAt(i)) c = s_[++pos];
             else {
               backtrack();
               break;
@@ -186,7 +186,7 @@ var re_match = (function () {
           }
           break;
         case opcodes.CHARCLASS:
-          if (pos === s.length) {
+          if (pos === s_.length) {
             prefix_match();
             break;
           }
@@ -194,28 +194,28 @@ var re_match = (function () {
           else backtrack();
           break;
         case opcodes.BOL:
-          if (pos > 0 && s[pos - 1] != 10 /* \n */) {
+          if (pos > 0 && s_[pos - 1] != 10 /* \n */) {
             backtrack();
           }
           break;
         case opcodes.EOL:
-          if (pos < s.length && s[pos] != 10 /* \n */) {
+          if (pos < s_.length && s_[pos] != 10 /* \n */) {
             backtrack();
           }
           break;
         case opcodes.WORDBOUNDARY:
           if (pos == 0) {
-            if (pos === s.length) {
+            if (pos === s_.length) {
               prefix_match();
               break;
             }
-            if (is_word_letter(s[0])) break;
+            if (is_word_letter(s_[0])) break;
             backtrack();
-          } else if (pos === s.length) {
-            if (is_word_letter(s[pos - 1])) break;
+          } else if (pos === s_.length) {
+            if (is_word_letter(s_[pos - 1])) break;
             backtrack();
           } else {
-            if (is_word_letter(s[pos - 1]) != is_word_letter(s[pos])) break;
+            if (is_word_letter(s_[pos - 1]) != is_word_letter(s_[pos])) break;
             backtrack();
           }
           break;
@@ -236,11 +236,11 @@ var re_match = (function () {
             break;
           }
           for (let i = group.start; i < group.end; i++) {
-            if (pos === s.length) {
+            if (pos === s_.length) {
               prefix_match();
               break;
             }
-            if (s[i] != s[pos]) {
+            if (s_[i] != s_[pos]) {
               backtrack();
               break;
             }
@@ -251,16 +251,16 @@ var re_match = (function () {
           if (in_bitset(cpool[uarg], c)) pos++;
           break;
         case opcodes.SIMPLESTAR:
-          while (in_bitset(cpool[uarg], c)) c = s[++pos];
+          while (in_bitset(cpool[uarg], c)) c = s_[++pos];
           break;
         case opcodes.SIMPLEPLUS:
-          if (pos === s.length) {
+          if (pos === s_.length) {
             prefix_match();
             break;
           }
           if (in_bitset(cpool[uarg], c)) {
             do {
-              c = s[++pos];
+              c = s_[++pos];
             } while (in_bitset(cpool[uarg], c));
           } else backtrack();
           break;
@@ -297,7 +297,7 @@ function re_search_forward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_forward");
   while (pos <= caml_ml_string_length(s)) {
-    var res = re_match(re, s, pos, 0);
+    const res = re_match(re, s, pos, 0);
     if (res) return res;
     pos++;
   }
@@ -311,7 +311,7 @@ function re_search_backward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_backward");
   while (pos >= 0) {
-    var res = re_match(re, s, pos, 0);
+    const res = re_match(re, s, pos, 0);
     if (res) return res;
     pos--;
   }
@@ -324,7 +324,7 @@ function re_search_backward(re, s, pos) {
 function re_string_match(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.string_match");
-  var res = re_match(re, s, pos, 0);
+  const res = re_match(re, s, pos, 0);
   if (res) return res;
   else return [0];
 }
@@ -334,7 +334,7 @@ function re_string_match(re, s, pos) {
 function re_partial_match(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.partial_match");
-  var res = re_match(re, s, pos, 1);
+  const res = re_match(re, s, pos, 1);
   if (res) return res;
   else return [0];
 }
@@ -345,20 +345,22 @@ function re_partial_match(re, s, pos) {
 //Requires: caml_failwith
 // external re_replacement_text: string -> int array -> string -> string
 function re_replacement_text(repl, groups, orig) {
-  var repl = caml_jsbytes_of_string(repl);
-  var len = repl.length;
-  var orig = caml_jsbytes_of_string(orig);
-  var res = ""; //result
-  var n = 0; // current position
-  var cur; //current char
-  var start, end, c;
+  const repl_ = caml_jsbytes_of_string(repl);
+  const len = repl_.length;
+  const orig_ = caml_jsbytes_of_string(orig);
+  let res = ""; //result
+  let n = 0; // current position
+  let cur; //current char
+  let start;
+  let end;
+  let c;
   while (n < len) {
-    cur = repl.charAt(n++);
+    cur = repl_.charAt(n++);
     if (cur != "\\") {
       res += cur;
     } else {
       if (n == len) caml_failwith("Str.replace: illegal backslash sequence");
-      cur = repl.charAt(n++);
+      cur = repl_.charAt(n++);
       switch (cur) {
         case "\\":
           res += cur;
@@ -380,7 +382,7 @@ function re_replacement_text(repl, groups, orig) {
           end = caml_array_get(groups, c * 2 + 1);
           if (start == -1)
             caml_failwith("Str.replace: reference to unmatched group");
-          res += orig.slice(start, end);
+          res += orig_.slice(start, end);
           break;
         default:
           res += "\\" + cur;

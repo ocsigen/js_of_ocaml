@@ -14,10 +14,10 @@ function caml_unix_time() {
 //Provides: caml_unix_gmtime
 //Alias: unix_gmtime
 function caml_unix_gmtime(t) {
-  var d = new Date(t * 1000);
-  var d_num = d.getTime();
-  var januaryfirst = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)).getTime();
-  var doy = Math.floor((d_num - januaryfirst) / 86400000);
+  const d = new Date(t * 1000);
+  const d_num = d.getTime();
+  const januaryfirst = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)).getTime();
+  const doy = Math.floor((d_num - januaryfirst) / 86400000);
   return BLOCK(
     0,
     d.getUTCSeconds(),
@@ -35,13 +35,13 @@ function caml_unix_gmtime(t) {
 //Provides: caml_unix_localtime
 //Alias: unix_localtime
 function caml_unix_localtime(t) {
-  var d = new Date(t * 1000);
-  var d_num = d.getTime();
-  var januaryfirst = new Date(d.getFullYear(), 0, 1).getTime();
-  var doy = Math.floor((d_num - januaryfirst) / 86400000);
-  var jan = new Date(d.getFullYear(), 0, 1);
-  var jul = new Date(d.getFullYear(), 6, 1);
-  var stdTimezoneOffset = Math.max(
+  const d = new Date(t * 1000);
+  const d_num = d.getTime();
+  const januaryfirst = new Date(d.getFullYear(), 0, 1).getTime();
+  const doy = Math.floor((d_num - januaryfirst) / 86400000);
+  const jan = new Date(d.getFullYear(), 0, 1);
+  const jul = new Date(d.getFullYear(), 6, 1);
+  const stdTimezoneOffset = Math.max(
     jan.getTimezoneOffset(),
     jul.getTimezoneOffset(),
   );
@@ -64,9 +64,9 @@ function caml_unix_localtime(t) {
 //Requires: caml_unix_localtime
 //Alias: unix_mktime
 function caml_unix_mktime(tm) {
-  var d = new Date(tm[6] + 1900, tm[5], tm[4], tm[3], tm[2], tm[1]).getTime();
-  var t = Math.floor(d / 1000);
-  var tm2 = caml_unix_localtime(t);
+  const d = new Date(tm[6] + 1900, tm[5], tm[4], tm[3], tm[2], tm[1]).getTime();
+  const t = Math.floor(d / 1000);
+  const tm2 = caml_unix_localtime(t);
   return BLOCK(0, t, tm2);
 }
 //Provides: caml_unix_startup const
@@ -88,7 +88,7 @@ function caml_unix_filedescr_of_fd(x) {
 //Alias: unix_isatty
 function caml_unix_isatty(fileDescriptor) {
   if (fs_node_supported()) {
-    var tty = require("tty");
+    const tty = require("tty");
     return tty.isatty(fileDescriptor) ? 1 : 0;
   } else {
     return 0;
@@ -104,7 +104,7 @@ function caml_unix_isatty(fileDescriptor) {
 
 //Provides: make_unix_err_args
 //Requires: caml_string_of_jsstring
-var unix_error = [
+const unix_error = [
   /* ===Unix.error===
    *
    * This array is in order of the variant in OCaml
@@ -179,7 +179,7 @@ var unix_error = [
   "EOVERFLOW",
 ];
 function make_unix_err_args(code, syscall, path, errno) {
-  var variant = unix_error.indexOf(code);
+  let variant = unix_error.indexOf(code);
   if (variant < 0) {
     // Default if undefined
     if (errno == null) {
@@ -188,7 +188,7 @@ function make_unix_err_args(code, syscall, path, errno) {
     // If none of the above variants, fallback to EUNKNOWNERR(int)
     variant = BLOCK(0, errno);
   }
-  var args = [
+  const args = [
     variant,
     caml_string_of_jsstring(syscall || ""),
     caml_string_of_jsstring(path || ""),
@@ -200,7 +200,7 @@ function make_unix_err_args(code, syscall, path, errno) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_stat
 function caml_unix_stat(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.stat) {
     caml_failwith("caml_unix_stat: not implemented");
   }
@@ -211,7 +211,7 @@ function caml_unix_stat(name) {
 //Requires: caml_unix_stat, caml_int64_of_int32
 //Alias: unix_stat_64
 function caml_unix_stat_64(name) {
-  var r = caml_unix_stat(name);
+  const r = caml_unix_stat(name);
   r[9] = caml_int64_of_int32(r[9]);
   return r;
 }
@@ -220,7 +220,7 @@ function caml_unix_stat_64(name) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_lstat
 function caml_unix_lstat(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.lstat) {
     caml_failwith("caml_unix_lstat: not implemented");
   }
@@ -231,7 +231,7 @@ function caml_unix_lstat(name) {
 //Requires: caml_unix_lstat, caml_int64_of_int32
 //Alias: unix_lstat_64
 function caml_unix_lstat_64(name) {
-  var r = caml_unix_lstat(name);
+  const r = caml_unix_lstat(name);
   r[9] = caml_int64_of_int32(r[9]);
   return r;
 }
@@ -240,7 +240,7 @@ function caml_unix_lstat_64(name) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_mkdir
 function caml_unix_mkdir(name, perm) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.mkdir) {
     caml_failwith("caml_unix_mkdir: not implemented");
   }
@@ -251,7 +251,7 @@ function caml_unix_mkdir(name, perm) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_rmdir
 function caml_unix_rmdir(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.rmdir) {
     caml_failwith("caml_unix_rmdir: not implemented");
   }
@@ -262,8 +262,8 @@ function caml_unix_rmdir(name) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_symlink
 function caml_unix_symlink(to_dir, src, dst) {
-  var src_root = resolve_fs_device(src);
-  var dst_root = resolve_fs_device(dst);
+  const src_root = resolve_fs_device(src);
+  const dst_root = resolve_fs_device(dst);
   if (src_root.device != dst_root.device)
     caml_failwith("caml_unix_symlink: cannot symlink between two filesystems");
   if (!src_root.device.symlink) {
@@ -281,7 +281,7 @@ function caml_unix_symlink(to_dir, src, dst) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_readlink
 function caml_unix_readlink(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.readlink) {
     caml_failwith("caml_unix_readlink: not implemented");
   }
@@ -292,7 +292,7 @@ function caml_unix_readlink(name) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_unlink
 function caml_unix_unlink(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.unlink) {
     caml_failwith("caml_unix_unlink: not implemented");
   }
@@ -327,11 +327,14 @@ function caml_unix_has_symlink(unit) {
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_opendir
 function caml_unix_opendir(path) {
-  var root = resolve_fs_device(path);
+  const root = resolve_fs_device(path);
   if (!root.device.opendir) {
     caml_failwith("caml_unix_opendir: not implemented");
   }
-  var dir_handle = root.device.opendir(root.rest, /* raise Unix_error */ true);
+  const dir_handle = root.device.opendir(
+    root.rest,
+    /* raise Unix_error */ true,
+  );
   return { pointer: dir_handle, path: path };
 }
 
@@ -341,11 +344,11 @@ function caml_unix_opendir(path) {
 //Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
 //Alias: unix_readdir
 function caml_unix_readdir(dir_handle) {
-  var entry;
+  let entry;
   try {
     entry = dir_handle.pointer.readSync();
   } catch (e) {
-    var unix_error = caml_named_value("Unix.Unix_error");
+    const unix_error = caml_named_value("Unix.Unix_error");
     caml_raise_with_args(
       unix_error,
       make_unix_err_args("EBADF", "readdir", dir_handle.path),
@@ -365,7 +368,7 @@ function caml_unix_closedir(dir_handle) {
   try {
     dir_handle.pointer.closeSync();
   } catch (e) {
-    var unix_error = caml_named_value("Unix.Unix_error");
+    const unix_error = caml_named_value("Unix.Unix_error");
     caml_raise_with_args(
       unix_error,
       make_unix_err_args("EBADF", "closedir", dir_handle.path),
@@ -378,7 +381,7 @@ function caml_unix_closedir(dir_handle) {
 //Alias: unix_rewinddir
 function caml_unix_rewinddir(dir_handle) {
   caml_unix_closedir(dir_handle);
-  var new_dir_handle = caml_unix_opendir(dir_handle.path);
+  const new_dir_handle = caml_unix_opendir(dir_handle.path);
   dir_handle.pointer = new_dir_handle.pointer;
   return 0;
 }
@@ -389,12 +392,12 @@ function caml_unix_rewinddir(dir_handle) {
 //Alias: win_findfirst
 function caml_unix_findfirst(path) {
   // The Windows code adds this glob to the path, so we need to remove it
-  var path_js = caml_jsstring_of_string(path);
+  let path_js = caml_jsstring_of_string(path);
   path_js = path_js.replace(/(^|[\\\/])\*\.\*$/, "");
   path = caml_string_of_jsstring(path_js);
   // *.* is now stripped
-  var dir_handle = caml_unix_opendir(path);
-  var first_entry = caml_unix_readdir(dir_handle);
+  const dir_handle = caml_unix_opendir(path);
+  const first_entry = caml_unix_readdir(dir_handle);
   // The Windows bindings type dir_handle as an `int` but it's not in JS
   return [0, first_entry, dir_handle];
 }

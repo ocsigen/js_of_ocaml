@@ -52,8 +52,8 @@ function caml_str_repeat(n, s) {
   if (s.repeat) {
     return s.repeat(n);
   } // ECMAscript 6 and Firefox 24+
-  var r = "",
-    l = 0;
+  let r = "";
+  let l = 0;
   for (;;) {
     if (n & 1) r += s;
     n >>= 1;
@@ -74,9 +74,9 @@ function caml_str_repeat(n, s) {
 // In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
 // fail here. Mark the primitive as Weakdef, so that people can override it easily.
 function caml_subarray_to_jsbytes(a, i, len) {
-  var f = String.fromCharCode;
+  const f = String.fromCharCode;
   if (i == 0 && len <= 4096 && len == a.length) return f.apply(null, a);
-  var s = "";
+  let s = "";
   for (; 0 < len; i += 1024, len -= 1024)
     s += f.apply(null, a.slice(i, i + Math.min(len, 1024)));
   return s;
@@ -257,8 +257,8 @@ function caml_string_get(s, i) {
 //Requires: caml_ml_string_length
 function caml_string_get16(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 1) caml_string_bound_error();
-  var b1 = caml_string_unsafe_get(s, i),
-    b2 = caml_string_unsafe_get(s, i + 1);
+  const b1 = caml_string_unsafe_get(s, i);
+  const b2 = caml_string_unsafe_get(s, i + 1);
   return (b2 << 8) | b1;
 }
 
@@ -266,8 +266,8 @@ function caml_string_get16(s, i) {
 //Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
 function caml_bytes_get16(s, i) {
   if (i >>> 0 >= s.l - 1) caml_bytes_bound_error();
-  var b1 = caml_bytes_unsafe_get(s, i),
-    b2 = caml_bytes_unsafe_get(s, i + 1);
+  const b1 = caml_bytes_unsafe_get(s, i);
+  const b2 = caml_bytes_unsafe_get(s, i + 1);
   return (b2 << 8) | b1;
 }
 
@@ -276,10 +276,10 @@ function caml_bytes_get16(s, i) {
 //Requires: caml_ml_string_length
 function caml_string_get32(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 3) caml_string_bound_error();
-  var b1 = caml_string_unsafe_get(s, i),
-    b2 = caml_string_unsafe_get(s, i + 1),
-    b3 = caml_string_unsafe_get(s, i + 2),
-    b4 = caml_string_unsafe_get(s, i + 3);
+  const b1 = caml_string_unsafe_get(s, i);
+  const b2 = caml_string_unsafe_get(s, i + 1);
+  const b3 = caml_string_unsafe_get(s, i + 2);
+  const b4 = caml_string_unsafe_get(s, i + 3);
   return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
 }
 
@@ -287,10 +287,10 @@ function caml_string_get32(s, i) {
 //Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
 function caml_bytes_get32(s, i) {
   if (i >>> 0 >= s.l - 3) caml_bytes_bound_error();
-  var b1 = caml_bytes_unsafe_get(s, i),
-    b2 = caml_bytes_unsafe_get(s, i + 1),
-    b3 = caml_bytes_unsafe_get(s, i + 2),
-    b4 = caml_bytes_unsafe_get(s, i + 3);
+  const b1 = caml_bytes_unsafe_get(s, i);
+  const b2 = caml_bytes_unsafe_get(s, i + 1);
+  const b3 = caml_bytes_unsafe_get(s, i + 2);
+  const b4 = caml_bytes_unsafe_get(s, i + 3);
   return (b4 << 24) | (b3 << 16) | (b2 << 8) | b1;
 }
 
@@ -300,7 +300,7 @@ function caml_bytes_get32(s, i) {
 //Requires: caml_ml_string_length
 function caml_string_get64(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 7) caml_string_bound_error();
-  var a = new Array(8);
+  const a = new Array(8);
   for (let j = 0; j < 8; j++) {
     a[7 - j] = caml_string_unsafe_get(s, i + j);
   }
@@ -312,7 +312,7 @@ function caml_string_get64(s, i) {
 //Requires: caml_int64_of_bytes
 function caml_bytes_get64(s, i) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
-  var a = new Array(8);
+  const a = new Array(8);
   for (let j = 0; j < 8; j++) {
     a[7 - j] = caml_bytes_unsafe_get(s, i + j);
   }
@@ -345,8 +345,8 @@ function caml_string_set(s, i, c) {
 //Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
 function caml_bytes_set16(s, i, i16) {
   if (i >>> 0 >= s.l - 1) caml_bytes_bound_error();
-  var b2 = 0xff & (i16 >> 8),
-    b1 = 0xff & i16;
+  const b2 = 0xff & (i16 >> 8);
+  const b1 = 0xff & i16;
   caml_bytes_unsafe_set(s, i + 0, b1);
   caml_bytes_unsafe_set(s, i + 1, b2);
   return 0;
@@ -370,10 +370,10 @@ function caml_string_set16(s, i, i16) {
 //Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
 function caml_bytes_set32(s, i, i32) {
   if (i >>> 0 >= s.l - 3) caml_bytes_bound_error();
-  var b4 = 0xff & (i32 >> 24),
-    b3 = 0xff & (i32 >> 16),
-    b2 = 0xff & (i32 >> 8),
-    b1 = 0xff & i32;
+  const b4 = 0xff & (i32 >> 24);
+  const b3 = 0xff & (i32 >> 16);
+  const b2 = 0xff & (i32 >> 8);
+  const b1 = 0xff & i32;
   caml_bytes_unsafe_set(s, i + 0, b1);
   caml_bytes_unsafe_set(s, i + 1, b2);
   caml_bytes_unsafe_set(s, i + 2, b3);
@@ -400,7 +400,7 @@ function caml_string_set32(s, i, i32) {
 //Requires: caml_int64_to_bytes
 function caml_bytes_set64(s, i, i64) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
-  var a = caml_int64_to_bytes(i64);
+  const a = caml_int64_to_bytes(i64);
   for (let j = 0; j < 8; j++) {
     caml_bytes_unsafe_set(s, i + 7 - j, a[j]);
   }
@@ -431,7 +431,7 @@ function caml_bytes_set(s, i, c) {
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: jsoo_is_ascii, caml_utf8_of_utf16, MlBytes
 function caml_bytes_of_utf16_jsstring(s) {
-  var tag = 9 /* BYTES | ASCII */;
+  let tag = 9 /* BYTES | ASCII */;
   if (!jsoo_is_ascii(s))
     (tag = 8) /* BYTES | NOT_ASCII */, (s = caml_utf8_of_utf16(s));
   return new MlBytes(tag, s, s.length);
@@ -461,12 +461,12 @@ MlBytes.prototype.toString = function () {
   }
 };
 MlBytes.prototype.toUtf16 = function () {
-  var r = this.toString();
+  const r = this.toString();
   if (this.t == 9) return r;
   return caml_utf16_of_utf8(r);
 };
 MlBytes.prototype.slice = function () {
-  var content = this.t == 4 ? this.c.slice() : this.c;
+  const content = this.t == 4 ? this.c.slice() : this.c;
   return new MlBytes(this.t, content, this.l);
 };
 
@@ -482,10 +482,10 @@ function caml_convert_string_to_bytes(s) {
 //Provides: caml_convert_bytes_to_array
 function caml_convert_bytes_to_array(s) {
   /* Assumes not ARRAY */
-  var a = new Uint8Array(s.l);
-  var b = s.c,
-    l = b.length,
-    i = 0;
+  const a = new Uint8Array(s.l);
+  const b = s.c;
+  let l = b.length;
+  let i = 0;
   for (; i < l; i++) a[i] = b.charCodeAt(i);
   for (l = s.l; i < l; i++) a[i] = 0;
   s.c = a;
@@ -504,9 +504,9 @@ function caml_uint8_array_of_bytes(s) {
 //Requires: caml_convert_bytes_to_array
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 function caml_uint8_array_of_string(s) {
-  var l = caml_ml_string_length(s);
-  var a = new Uint8Array(l);
-  var i = 0;
+  const l = caml_ml_string_length(s);
+  const a = new Uint8Array(l);
+  let i = 0;
   for (; i < l; i++) a[i] = caml_string_unsafe_get(s, i);
   return a;
 }
@@ -662,8 +662,8 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
     s2.t = s2.c.length == s2.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
   } else {
     if (s2.t != 4 /* ARRAY */) caml_convert_bytes_to_array(s2);
-    var c1 = s1.c,
-      c2 = s2.c;
+    const c1 = s1.c;
+    const c2 = s2.c;
     if (s1.t == 4 /* ARRAY */) {
       if (i2 <= i1) {
         for (let i = 0; i < len; i++) c2[i2 + i] = c1[i1 + i];
@@ -671,7 +671,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
         for (let i = len - 1; i >= 0; i--) c2[i2 + i] = c1[i1 + i];
       }
     } else {
-      var l = Math.min(len, c1.length - i1);
+      const l = Math.min(len, c1.length - i1);
       let i = 0;
       for (; i < l; i++) c2[i2 + i] = c1.charCodeAt(i1 + i);
       for (; i < len; i++) c2[i2 + i] = 0;

@@ -26,7 +26,7 @@ function caml_compare_val_tag(a) {
     return 1252; // ocaml string (if different from bytes)
   else if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] <= 255) {
     // Look like an ocaml block
-    var tag = a[0] | 0;
+    const tag = a[0] | 0;
     // ignore double_array_tag because we cannot accurately set
     // this tag when we create an array of float.
     return tag == 254 ? 0 : tag;
@@ -57,9 +57,9 @@ function caml_compare_val_get_custom(a) {
 //Provides: caml_compare_val_number_custom
 //Requires: caml_compare_val_get_custom
 function caml_compare_val_number_custom(num, custom, swap, total) {
-  var comp = caml_compare_val_get_custom(custom);
+  const comp = caml_compare_val_get_custom(custom);
   if (comp) {
-    var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
+    const x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
     if (total && x != x) return swap; // total && nan
     if (+x != +x) return +x; // nan
     if ((x | 0) != 0) return x | 0; // !nan
@@ -74,17 +74,17 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
 //Requires: caml_jsbytes_of_string
 //Requires: caml_is_continuation_tag
 function caml_compare_val(a, b, total) {
-  var stack = [];
+  const stack = [];
   for (;;) {
     if (!(total && a === b)) {
-      var tag_a = caml_compare_val_tag(a);
+      const tag_a = caml_compare_val_tag(a);
       // forward_tag ?
       if (tag_a == 250) {
         a = a[1];
         continue;
       }
 
-      var tag_b = caml_compare_val_tag(b);
+      const tag_b = caml_compare_val_tag(b);
       // forward_tag ?
       if (tag_b == 250) {
         b = b[1];
@@ -117,7 +117,7 @@ function caml_compare_val(a, b, total) {
           break;
         case 248: {
           // Object
-          var x = caml_int_compare(a[2], b[2]);
+          const x = caml_int_compare(a[2], b[2]);
           if (x != 0) return x | 0;
           break;
         }
@@ -134,7 +134,7 @@ function caml_compare_val(a, b, total) {
           break;
         case 252: // OCaml bytes
           if (a !== b) {
-            var x = caml_bytes_compare(a, b);
+            const x = caml_bytes_compare(a, b);
             if (x != 0) return x | 0;
           }
           break;
@@ -156,12 +156,12 @@ function caml_compare_val(a, b, total) {
           break;
         case 1255: {
           // Custom
-          var comp = caml_compare_val_get_custom(a);
+          const comp = caml_compare_val_get_custom(a);
           if (comp != caml_compare_val_get_custom(b)) {
             return a.caml_custom < b.caml_custom ? -1 : 1;
           }
           if (!comp) caml_invalid_argument("compare: abstract value");
-          var x = comp(a, b, total);
+          const x = comp(a, b, total);
           if (x != x) {
             // Protect against invalid UNORDERED
             return total ? -1 : x;
@@ -175,7 +175,7 @@ function caml_compare_val(a, b, total) {
         }
         case 1256: {
           // compare function
-          var x = a.compare(b, total);
+          const x = a.compare(b, total);
           if (x != x) {
             // Protect against invalid UNORDERED
             return total ? -1 : x;
@@ -193,7 +193,7 @@ function caml_compare_val(a, b, total) {
           if (a < b) return -1;
           if (a > b) return 1;
           if (a != b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             if (a == a) return 1;
             if (b == b) return -1;
           }
@@ -215,21 +215,21 @@ function caml_compare_val(a, b, total) {
           if (a < b) return -1;
           if (a > b) return 1;
           if (a != b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             if (a == a) return 1;
             if (b == b) return -1;
           }
           break;
         case 1251: // JavaScript Symbol, no ordering.
           if (a !== b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             return 1;
           }
           break;
         case 1252: {
           // ocaml strings
-          var a = caml_jsbytes_of_string(a);
-          var b = caml_jsbytes_of_string(b);
+          a = caml_jsbytes_of_string(a);
+          b = caml_jsbytes_of_string(b);
           if (a !== b) {
             if (a < b) return -1;
             if (a > b) return 1;
@@ -238,8 +238,8 @@ function caml_compare_val(a, b, total) {
         }
         case 12520: {
           // javascript strings
-          var a = a.toString();
-          var b = b.toString();
+          a = a.toString();
+          b = b.toString();
           if (a !== b) {
             if (a < b) return -1;
             if (a > b) return 1;
@@ -259,7 +259,7 @@ function caml_compare_val(a, b, total) {
       }
     }
     if (stack.length == 0) return 0;
-    var i = stack.pop();
+    const i = stack.pop();
     b = stack.pop();
     a = stack.pop();
     if (i + 1 < a.length) stack.push(a, b, i + 1);

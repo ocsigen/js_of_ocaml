@@ -24,7 +24,7 @@
 //Requires: caml_ml_bytes_length, caml_jsbytes_of_string
 //Version: < 4.12
 function caml_hash_univ_param(count, limit, obj) {
-  var hash_accu = 0;
+  let hash_accu = 0;
   function hash_aux(obj) {
     limit--;
     if (count < 0 || limit < 0) return;
@@ -47,7 +47,7 @@ function caml_hash_univ_param(count, limit, obj) {
       }
     } else if (caml_is_ml_bytes(obj)) {
       count--;
-      var content = caml_ml_bytes_content(obj);
+      const content = caml_ml_bytes_content(obj);
       if (typeof content === "string") {
         for (let b = content, l = b.length, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
@@ -57,7 +57,7 @@ function caml_hash_univ_param(count, limit, obj) {
           hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (caml_is_ml_string(obj)) {
-      var jsbytes = caml_jsbytes_of_string(obj);
+      const jsbytes = caml_jsbytes_of_string(obj);
       for (let b = jsbytes, l = jsbytes.length, i = 0; i < l; i++)
         hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
     } else if (typeof obj === "string") {
@@ -70,14 +70,14 @@ function caml_hash_univ_param(count, limit, obj) {
     } else if (obj === +obj) {
       // Float
       count--;
-      var p = caml_int64_to_bytes(caml_int64_bits_of_float(obj));
+      const p = caml_int64_to_bytes(caml_int64_bits_of_float(obj));
       for (let i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
     } else if (obj && obj.caml_custom) {
       if (
         caml_custom_ops[obj.caml_custom] &&
         caml_custom_ops[obj.caml_custom].hash
       ) {
-        var h = caml_custom_ops[obj.caml_custom].hash(obj) | 0;
+        const h = caml_custom_ops[obj.caml_custom].hash(obj) | 0;
         hash_accu = (hash_accu * 65599 + h) | 0;
       }
     }
@@ -126,9 +126,9 @@ function caml_hash_mix_int64(h, v) {
 //Provides: caml_hash_mix_jsbytes
 //Requires: caml_hash_mix_int
 function caml_hash_mix_jsbytes(h, s) {
-  var len = s.length,
-    i,
-    w;
+  const len = s.length;
+  let i;
+  let w;
   for (i = 0; i + 4 <= len; i += 4) {
     w =
       s.charCodeAt(i) |
@@ -155,9 +155,9 @@ function caml_hash_mix_jsbytes(h, s) {
 //Provides: caml_hash_mix_bytes_arr
 //Requires: caml_hash_mix_int
 function caml_hash_mix_bytes_arr(h, s) {
-  var len = s.length,
-    i,
-    w;
+  const len = s.length;
+  let i;
+  let w;
   for (i = 0; i + 4 <= len; i += 4) {
     w = s[i] | (s[i + 1] << 8) | (s[i + 2] << 16) | (s[i + 3] << 24);
     h = caml_hash_mix_int(h, w);
@@ -182,7 +182,7 @@ function caml_hash_mix_bytes_arr(h, s) {
 //Requires: caml_hash_mix_jsbytes
 //Requires: caml_hash_mix_bytes_arr
 function caml_hash_mix_bytes(h, v) {
-  var content = caml_ml_bytes_content(v);
+  const content = caml_ml_bytes_content(v);
   if (typeof content === "string") return caml_hash_mix_jsbytes(h, content);
   /* ARRAY */ else return caml_hash_mix_bytes_arr(h, content);
 }
@@ -200,7 +200,15 @@ function caml_hash_mix_string(h, v) {
 //Requires: caml_hash_mix_jsbytes
 //Requires: caml_is_continuation_tag
 function caml_hash(count, limit, seed, obj) {
-  var queue, rd, wr, sz, num, h, v, i, len;
+  let queue;
+  let rd;
+  let wr;
+  let sz;
+  let num;
+  let h;
+  let v;
+  let i;
+  let len;
   sz = limit;
   if (sz < 0 || sz > 256) sz = 256;
   num = count;
@@ -215,7 +223,7 @@ function caml_hash(count, limit, seed, obj) {
         caml_custom_ops[v.caml_custom] &&
         caml_custom_ops[v.caml_custom].hash
       ) {
-        var hh = caml_custom_ops[v.caml_custom].hash(v);
+        const hh = caml_custom_ops[v.caml_custom].hash(v);
         h = caml_hash_mix_int(h, hh);
         num--;
       }
@@ -236,7 +244,7 @@ function caml_hash(count, limit, seed, obj) {
              since we have no idea how to distinguish them. */
             break;
           }
-          var tag = ((v.length - 1) << 10) | v[0];
+          const tag = ((v.length - 1) << 10) | v[0];
           h = caml_hash_mix_int(h, tag);
           for (i = 1, len = v.length; i < len; i++) {
             if (wr >= sz) break;
@@ -271,7 +279,7 @@ function caml_hash(count, limit, seed, obj) {
 //Provides: caml_string_hash
 //Requires: caml_hash_mix_final, caml_hash_mix_string
 function caml_string_hash(h, v) {
-  var h = caml_hash_mix_string(h, v);
-  var h = caml_hash_mix_final(h);
-  return h & 0x3fffffff;
+  const h_ = caml_hash_mix_string(h, v);
+  const h__ = caml_hash_mix_final(h_);
+  return h__ & 0x3fffffff;
 }

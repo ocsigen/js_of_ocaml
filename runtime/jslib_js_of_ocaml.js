@@ -21,7 +21,7 @@
 
 //Provides: caml_js_on_ie const
 function caml_js_on_ie() {
-  var ua =
+  const ua =
     globalThis.navigator && globalThis.navigator.userAgent
       ? globalThis.navigator.userAgent
       : "";
@@ -29,7 +29,7 @@ function caml_js_on_ie() {
 }
 
 //Provides: caml_js_html_escape const (const)
-var caml_js_regexps = { amp: /&/g, lt: /</g, quot: /\"/g, all: /[&<\"]/ };
+const caml_js_regexps = { amp: /&/g, lt: /</g, quot: /\"/g, all: /[&<\"]/ };
 function caml_js_html_escape(s) {
   if (!caml_js_regexps.all.test(s)) return s;
   return s
@@ -40,12 +40,11 @@ function caml_js_html_escape(s) {
 
 //Provides: caml_js_html_entities
 function caml_js_html_entities(s) {
-  var entity = /^&#?[0-9a-zA-Z]+;$/;
+  const entity = /^&#?[0-9a-zA-Z]+;$/;
   if (s.match(entity)) {
-    var str,
-      temp = document.createElement("p");
+    let temp = document.createElement("p");
     temp.innerHTML = s;
-    str = temp.textContent || temp.innerText;
+    const str = temp.textContent || temp.innerText;
     temp = null;
     return str;
   } else {
@@ -55,8 +54,8 @@ function caml_js_html_entities(s) {
 
 //Provides: caml_js_get_console const
 function caml_js_get_console() {
-  var c = console;
-  var m = [
+  const c = console;
+  const m = [
     "log",
     "debug",
     "info",

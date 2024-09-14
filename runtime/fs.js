@@ -26,22 +26,23 @@ function caml_trailing_slash(name) {
 
 //Provides: caml_current_dir
 //Requires: caml_trailing_slash, fs_node_supported
+let caml_current_dir;
 if (fs_node_supported() && globalThis.process && globalThis.process.cwd)
-  var caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/");
-else var caml_current_dir = "/static";
+  caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/");
+else caml_current_dir = "/static";
 caml_current_dir = caml_trailing_slash(caml_current_dir);
 
 //Provides: caml_get_root
 //Requires: path_is_absolute
 function caml_get_root(path) {
-  var x = path_is_absolute(path);
+  const x = path_is_absolute(path);
   if (!x) return;
   return x[0] + "/";
 }
 
 //Provides: caml_root
 //Requires: caml_get_root, caml_current_dir, caml_failwith
-var caml_root =
+const caml_root =
   caml_get_root(caml_current_dir) ||
   caml_failwith("unable to compute caml_root");
 
@@ -58,16 +59,16 @@ function make_path_is_absolute() {
 
   function win32(path) {
     // https://github.com/nodejs/node/blob/b3fcc245fb25539909ef1d5eaa01dbf92e168633/lib/path.js#L56
-    var splitDeviceRe =
+    const splitDeviceRe =
       /^([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$/;
-    var result = splitDeviceRe.exec(path);
-    var device = result[1] || "";
-    var isUnc = Boolean(device && device.charAt(1) !== ":");
+    const result = splitDeviceRe.exec(path);
+    const device = result[1] || "";
+    const isUnc = Boolean(device && device.charAt(1) !== ":");
 
     // UNC paths are always absolute
     if (Boolean(result[2] || isUnc)) {
-      var root = result[1] || "";
-      var sep = result[2] || "";
+      const root = result[1] || "";
+      const sep = result[2] || "";
       return [root, path.substring(root.length + sep.length)];
     }
     return;
@@ -80,7 +81,7 @@ function make_path_is_absolute() {
     return globalThis.process.platform === "win32" ? win32 : posix;
   } else return posix;
 }
-var path_is_absolute = make_path_is_absolute();
+const path_is_absolute = make_path_is_absolute();
 
 //Provides: caml_make_path
 //Requires: caml_current_dir
@@ -88,9 +89,9 @@ var path_is_absolute = make_path_is_absolute();
 function caml_make_path(name) {
   name = caml_jsstring_of_string(name);
   if (!path_is_absolute(name)) name = caml_current_dir + name;
-  var comp0 = path_is_absolute(name);
-  var comp = comp0[1].split(/[/\\]/);
-  var ncomp = [];
+  const comp0 = path_is_absolute(name);
+  const comp = comp0[1].split(/[/\\]/);
+  const ncomp = [];
   for (let i = 0; i < comp.length; i++) {
     switch (comp[i]) {
       case "..":
@@ -112,7 +113,7 @@ function caml_make_path(name) {
 
 //Provides:jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice, caml_root, fs_node_supported
-var jsoo_mount_point = [];
+const jsoo_mount_point = [];
 if (fs_node_supported()) {
   jsoo_mount_point.push({
     path: caml_root,
@@ -132,9 +133,9 @@ jsoo_mount_point.push({
 //Provides:caml_list_mount_point
 //Requires: jsoo_mount_point, caml_string_of_jsbytes
 function caml_list_mount_point() {
-  var prev = 0;
+  let prev = 0;
   for (let i = 0; i < jsoo_mount_point.length; i++) {
-    var old = prev;
+    const old = prev;
     prev = [0, caml_string_of_jsbytes(jsoo_mount_point[i].path), old];
   }
   return prev;
@@ -143,12 +144,12 @@ function caml_list_mount_point() {
 //Provides: resolve_fs_device
 //Requires: caml_make_path, jsoo_mount_point, caml_raise_sys_error, caml_get_root, MlNodeDevice, caml_trailing_slash, fs_node_supported
 function resolve_fs_device(name) {
-  var path = caml_make_path(name);
-  var name = path.join("/");
-  var name_slash = caml_trailing_slash(name);
-  var res;
+  const path = caml_make_path(name);
+  const name_ = path.join("/");
+  const name_slash = caml_trailing_slash(name_);
+  let res;
   for (let i = 0; i < jsoo_mount_point.length; i++) {
-    var m = jsoo_mount_point[i];
+    const m = jsoo_mount_point[i];
     if (
       name_slash.search(m.path) == 0 &&
       (!res || res.path.length < m.path.length)
@@ -156,18 +157,18 @@ function resolve_fs_device(name) {
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name_.substring(m.path.length, name_.length),
       };
   }
   if (!res && fs_node_supported()) {
-    var root = caml_get_root(name);
+    const root = caml_get_root(name_);
     if (root && root.match(/^[a-zA-Z]:\/$/)) {
-      var m = { path: root, device: new MlNodeDevice(root) };
+      const m = { path: root, device: new MlNodeDevice(root) };
       jsoo_mount_point.push(m);
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name_.substring(m.path.length, name_.length),
       };
     }
   }
@@ -178,20 +179,20 @@ function resolve_fs_device(name) {
 //Provides: caml_mount_autoload
 //Requires: MlFakeDevice, caml_make_path, jsoo_mount_point, caml_trailing_slash
 function caml_mount_autoload(name, f) {
-  var path = caml_make_path(name);
-  var name = caml_trailing_slash(path.join("/"));
-  jsoo_mount_point.push({ path: name, device: new MlFakeDevice(name, f) });
+  const path = caml_make_path(name);
+  const name_ = caml_trailing_slash(path.join("/"));
+  jsoo_mount_point.push({ path: name_, device: new MlFakeDevice(name_, f) });
   return 0;
 }
 
 //Provides: caml_unmount
 //Requires: jsoo_mount_point, caml_make_path, caml_trailing_slash
 function caml_unmount(name) {
-  var path = caml_make_path(name);
-  var name = caml_trailing_slash(path.join("/"));
-  var idx = -1;
+  const path = caml_make_path(name);
+  const name_ = caml_trailing_slash(path.join("/"));
+  let idx = -1;
   for (let i = 0; i < jsoo_mount_point.length; i++)
-    if (jsoo_mount_point[i].path == name) idx = i;
+    if (jsoo_mount_point[i].path == name_) idx = i;
   if (idx > -1) jsoo_mount_point.splice(idx, 1);
   return 0;
 }
@@ -205,7 +206,7 @@ function caml_sys_getcwd() {
 //Provides: caml_sys_chdir
 //Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsbytes_of_string
 function caml_sys_chdir(dir) {
-  var root = resolve_fs_device(dir);
+  const root = resolve_fs_device(dir);
   if (root.device.exists(root.rest)) {
     if (root.rest)
       caml_current_dir = caml_trailing_slash(root.path + root.rest);
@@ -231,7 +232,7 @@ function caml_raise_not_a_dir(name) {
 //Provides: caml_sys_file_exists
 //Requires: resolve_fs_device
 function caml_sys_file_exists(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   return root.device.exists(root.rest);
 }
 
@@ -239,9 +240,9 @@ function caml_sys_file_exists(name) {
 //Requires: caml_string_of_jsbytes
 //Requires: caml_raise_not_a_dir, resolve_fs_device
 function caml_sys_read_directory(name) {
-  var root = resolve_fs_device(name);
-  var a = root.device.readdir(root.rest);
-  var l = new Array(a.length + 1);
+  const root = resolve_fs_device(name);
+  const a = root.device.readdir(root.rest);
+  const l = new Array(a.length + 1);
   l[0] = 0;
   for (let i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsbytes(a[i]);
   return l;
@@ -250,8 +251,8 @@ function caml_sys_read_directory(name) {
 //Provides: caml_sys_remove
 //Requires: caml_raise_no_such_file, resolve_fs_device, caml_jsbytes_of_string
 function caml_sys_remove(name) {
-  var root = resolve_fs_device(name);
-  var ok = root.device.unlink(root.rest);
+  const root = resolve_fs_device(name);
+  const ok = root.device.unlink(root.rest);
   if (ok == 0) caml_raise_no_such_file(caml_jsbytes_of_string(name));
   return 0;
 }
@@ -259,16 +260,16 @@ function caml_sys_remove(name) {
 //Provides: caml_sys_is_directory
 //Requires: resolve_fs_device
 function caml_sys_is_directory(name) {
-  var root = resolve_fs_device(name);
-  var a = root.device.is_dir(root.rest);
+  const root = resolve_fs_device(name);
+  const a = root.device.is_dir(root.rest);
   return a ? 1 : 0;
 }
 
 //Provides: caml_sys_rename
 //Requires: caml_failwith, resolve_fs_device
 function caml_sys_rename(o, n) {
-  var o_root = resolve_fs_device(o);
-  var n_root = resolve_fs_device(n);
+  const o_root = resolve_fs_device(o);
+  const n_root = resolve_fs_device(n);
   if (o_root.device != n_root.device)
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
   if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
@@ -278,7 +279,7 @@ function caml_sys_rename(o, n) {
 //Provides: caml_sys_mkdir
 //Requires: resolve_fs_device, caml_raise_sys_error
 function caml_sys_mkdir(name, perm) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   root.device.mkdir(root.rest, perm);
   return 0;
 }
@@ -286,7 +287,7 @@ function caml_sys_mkdir(name, perm) {
 //Provides: caml_sys_rmdir
 //Requires: resolve_fs_device, caml_raise_sys_error, caml_raise_not_a_dir
 function caml_sys_rmdir(name) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   root.device.rmdir(root.rest);
   return 0;
 }
@@ -317,7 +318,7 @@ function jsoo_create_file_extern(name, content) {
 //Provides: caml_fs_init
 //Requires: jsoo_create_file
 function caml_fs_init() {
-  var tmp = globalThis.caml_fs_tmp;
+  const tmp = globalThis.caml_fs_tmp;
   if (tmp) {
     for (let i = 0; i < tmp.length; i++) {
       jsoo_create_file(tmp[i].name, tmp[i].content);
@@ -331,7 +332,7 @@ function caml_fs_init() {
 //Provides: caml_create_file
 //Requires: caml_failwith, resolve_fs_device
 function caml_create_file(name, content) {
-  var root = resolve_fs_device(name);
+  const root = resolve_fs_device(name);
   if (!root.device.register) caml_failwith("cannot register file");
   root.device.register(root.rest, content);
   return 0;
@@ -340,23 +341,23 @@ function caml_create_file(name, content) {
 //Provides: jsoo_create_file
 //Requires: caml_create_file, caml_string_of_jsbytes
 function jsoo_create_file(name, content) {
-  var name = caml_string_of_jsbytes(name);
-  var content = caml_string_of_jsbytes(content);
-  return caml_create_file(name, content);
+  const name_ = caml_string_of_jsbytes(name);
+  const content_ = caml_string_of_jsbytes(content);
+  return caml_create_file(name_, content_);
 }
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_string_of_array
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_read_file_content(name) {
-  var name = typeof name == "string" ? caml_string_of_jsbytes(name) : name;
-  var root = resolve_fs_device(name);
+  const name_ = typeof name == "string" ? caml_string_of_jsbytes(name) : name;
+  const root = resolve_fs_device(name_);
   if (root.device.exists(root.rest)) {
-    var file = root.device.open(root.rest, { rdonly: 1 });
-    var len = file.length();
-    var buf = new Uint8Array(len);
+    const file = root.device.open(root.rest, { rdonly: 1 });
+    const len = file.length();
+    const buf = new Uint8Array(len);
     file.read(0, buf, 0, len);
     return caml_string_of_array(buf);
   }
-  caml_raise_no_such_file(caml_jsbytes_of_string(name));
+  caml_raise_no_such_file(caml_jsbytes_of_string(name_));
 }

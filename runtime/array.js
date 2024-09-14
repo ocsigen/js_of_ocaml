@@ -19,7 +19,7 @@
 
 //Provides: caml_array_sub mutable
 function caml_array_sub(a, i, len) {
-  var a2 = new Array(len + 1);
+  const a2 = new Array(len + 1);
   a2[0] = 0;
   for (let i2 = 1, i1 = i + 1; i2 <= len; i2++, i1++) {
     a2[i2] = a[i1];
@@ -29,13 +29,13 @@ function caml_array_sub(a, i, len) {
 
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
-  var l1 = a1.length,
-    l2 = a2.length;
-  var l = l1 + l2 - 1;
-  var a = new Array(l);
+  const l1 = a1.length;
+  const l2 = a2.length;
+  const l = l1 + l2 - 1;
+  const a = new Array(l);
   a[0] = 0;
-  var i = 1,
-    j = 1;
+  let i = 1;
+  let j = 1;
   for (; i < l1; i++) a[i] = a1[i];
   for (; i < l; i++, j++) a[i] = a2[j];
   return a;
@@ -43,9 +43,9 @@ function caml_array_append(a1, a2) {
 
 //Provides: caml_array_concat mutable
 function caml_array_concat(l) {
-  var a = [0];
+  const a = [0];
   while (l !== 0) {
-    var b = l[1];
+    const b = l[1];
     for (let i = 1; i < b.length; i++) a.push(b[i]);
     l = l[2];
   }
@@ -107,10 +107,10 @@ function caml_check_bound(array, index) {
 //Requires: caml_array_bound_error
 function caml_make_vect(len, init) {
   if (len < 0) caml_array_bound_error();
-  var len = (len + 1) | 0;
-  var b = new Array(len);
+  const len_ = (len + 1) | 0;
+  const b = new Array(len_);
   b[0] = 0;
-  for (let i = 1; i < len; i++) b[i] = init;
+  for (let i = 1; i < len_; i++) b[i] = init;
   return b;
 }
 
@@ -118,19 +118,19 @@ function caml_make_vect(len, init) {
 //Requires: caml_array_bound_error
 function caml_make_float_vect(len) {
   if (len < 0) caml_array_bound_error();
-  var len = (len + 1) | 0;
-  var b = new Array(len);
+  const len_ = (len + 1) | 0;
+  const b = new Array(len);
   b[0] = 254;
-  for (let i = 1; i < len; i++) b[i] = 0;
+  for (let i = 1; i < len_; i++) b[i] = 0;
   return b;
 }
 //Provides: caml_floatarray_create const (const)
 //Requires: caml_array_bound_error
 function caml_floatarray_create(len) {
   if (len < 0) caml_array_bound_error();
-  var len = (len + 1) | 0;
-  var b = new Array(len);
+  const len_ = (len + 1) | 0;
+  const b = new Array(len);
   b[0] = 254;
-  for (let i = 1; i < len; i++) b[i] = 0;
+  for (let i = 1; i < len_; i++) b[i] = 0;
   return b;
 }

@@ -20,10 +20,10 @@
 // Weak API
 
 //Provides: caml_ephe_key_offset
-var caml_ephe_key_offset = 3;
+const caml_ephe_key_offset = 3;
 
 //Provides: caml_ephe_data_offset
-var caml_ephe_data_offset = 2;
+const caml_ephe_data_offset = 2;
 
 //Provides: caml_ephe_set_key
 //Requires: caml_invalid_argument, caml_ephe_key_offset
@@ -47,11 +47,11 @@ function caml_ephe_unset_key(x, i) {
     x[caml_ephe_key_offset + i] instanceof globalThis.WeakRef &&
     x[1].unregister
   ) {
-    var old = x[caml_ephe_key_offset + i].deref();
+    const old = x[caml_ephe_key_offset + i].deref();
     if (old !== undefined) {
-      var count = 0;
+      let count = 0;
       for (let j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
+        let key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();
           if (key === old) count++;
@@ -67,7 +67,7 @@ function caml_ephe_unset_key(x, i) {
 //Provides: caml_ephe_create
 //Requires: caml_weak_create, caml_ephe_data_offset
 function caml_ephe_create(n) {
-  var x = caml_weak_create(n);
+  const x = caml_weak_create(n);
   return x;
 }
 
@@ -75,7 +75,7 @@ function caml_ephe_create(n) {
 //Requires: caml_ephe_key_offset, caml_invalid_argument,caml_ephe_data_offset
 function caml_weak_create(n) {
   if (n < 0) caml_invalid_argument("Weak.create");
-  var x = [251, "caml_ephe_list_head"];
+  const x = [251, "caml_ephe_list_head"];
   x.length = caml_ephe_key_offset + n;
   return x;
 }
@@ -94,7 +94,7 @@ function caml_weak_set(x, i, v) {
 function caml_ephe_get_key(x, i) {
   if (i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument("Weak.get_key");
-  var weak = x[caml_ephe_key_offset + i];
+  let weak = x[caml_ephe_key_offset + i];
   if (globalThis.WeakRef && weak instanceof globalThis.WeakRef)
     weak = weak.deref();
   return weak === undefined ? 0 : [0, weak];
@@ -106,9 +106,9 @@ function caml_ephe_get_key(x, i) {
 function caml_ephe_get_key_copy(x, i) {
   if (i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument("Weak.get_copy");
-  var y = caml_ephe_get_key(x, i);
+  const y = caml_ephe_get_key(x, i);
   if (y === 0) return y;
-  var z = y[1];
+  const z = y[1];
   if (Array.isArray(z)) return [0, caml_obj_dup(z)];
   return y;
 }
@@ -117,7 +117,7 @@ function caml_ephe_get_key_copy(x, i) {
 //Requires: caml_ephe_key_offset
 //Alias: caml_weak_check
 function caml_ephe_check_key(x, i) {
-  var weak = x[caml_ephe_key_offset + i];
+  let weak = x[caml_ephe_key_offset + i];
   if (globalThis.WeakRef && weak instanceof globalThis.WeakRef)
     weak = weak.deref();
   if (weak === undefined) return 0;
@@ -143,7 +143,7 @@ function caml_ephe_blit_key(a1, i1, a2, i2, len) {
 //Provides: caml_ephe_blit_data
 //Requires: caml_ephe_data_offset, caml_ephe_set_data, caml_ephe_unset_data
 function caml_ephe_blit_data(src, dst) {
-  var n = src[caml_ephe_data_offset];
+  const n = src[caml_ephe_data_offset];
   if (n === undefined) caml_ephe_unset_data(dst);
   else caml_ephe_set_data(dst, n);
   return 0;
@@ -169,12 +169,12 @@ function caml_ephe_get_data_copy(x) {
 function caml_ephe_set_data(x, data) {
   if (globalThis.FinalizationRegistry && globalThis.WeakRef) {
     if (!(x[1] instanceof globalThis.FinalizationRegistry)) {
-      x[1] = new globalThis.FinalizationRegistry(function () {
+      x[1] = new globalThis.FinalizationRegistry(() => {
         caml_ephe_unset_data(x);
       });
       //register all keys
       for (let j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
+        let key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();
           if (key) x[1].register(key, undefined, key);
@@ -193,7 +193,7 @@ function caml_ephe_unset_data(x) {
     if (x[1] instanceof globalThis.FinalizationRegistry) {
       //unregister all keys
       for (let j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
+        let key = x[j];
         if (key instanceof globalThis.WeakRef) {
           key = key.deref();
           if (key) x[1].unregister(key);

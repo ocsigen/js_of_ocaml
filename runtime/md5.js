@@ -22,17 +22,17 @@
 //Requires: caml_raise_end_of_file, caml_ml_input_block
 //Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
 function caml_md5_chan(chanid, toread) {
-  var ctx = caml_MD5Init();
-  var buffer = new Uint8Array(4096);
+  const ctx = caml_MD5Init();
+  const buffer = new Uint8Array(4096);
   if (toread < 0) {
     while (true) {
-      var read = caml_ml_input_block(chanid, buffer, 0, buffer.length);
+      const read = caml_ml_input_block(chanid, buffer, 0, buffer.length);
       if (read == 0) break;
       caml_MD5Update(ctx, buffer.subarray(0, read), read);
     }
   } else {
     while (toread > 0) {
-      var read = caml_ml_input_block(
+      const read = caml_ml_input_block(
         chanid,
         buffer,
         0,
@@ -53,7 +53,7 @@ function caml_md5_string(s, ofs, len) {
 }
 
 //Provides: caml_MD5Transform
-var caml_MD5Transform = (function () {
+const caml_MD5Transform = (() => {
   function add(x, y) {
     return (x + y) | 0;
   }
@@ -74,11 +74,11 @@ var caml_MD5Transform = (function () {
     return xx(c ^ (b | ~d), a, b, x, s, t);
   }
 
-  return function (w, buffer) {
-    var a = w[0],
-      b = w[1],
-      c = w[2],
-      d = w[3];
+  return (w, buffer) => {
+    let a = w[0];
+    let b = w[1];
+    let c = w[2];
+    let d = w[3];
 
     a = ff(a, b, c, d, buffer[0], 7, 0xd76aa478);
     d = ff(d, a, b, c, buffer[1], 12, 0xe8c7b756);
@@ -157,9 +157,9 @@ var caml_MD5Transform = (function () {
 
 //Provides: caml_MD5Init
 function caml_MD5Init() {
-  var buffer = new ArrayBuffer(64);
-  var b32 = new Uint32Array(buffer);
-  var b8 = new Uint8Array(buffer);
+  const buffer = new ArrayBuffer(64);
+  const b32 = new Uint32Array(buffer);
+  const b8 = new Uint8Array(buffer);
   return {
     len: 0,
     w: new Uint32Array([0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476]),
@@ -171,11 +171,11 @@ function caml_MD5Init() {
 //Provides: caml_MD5Update
 //Requires: caml_MD5Transform
 function caml_MD5Update(ctx, input, input_len) {
-  var in_buf = ctx.len & 0x3f;
-  var input_pos = 0;
+  const in_buf = ctx.len & 0x3f;
+  let input_pos = 0;
   ctx.len += input_len;
   if (in_buf) {
-    var missing = 64 - in_buf;
+    const missing = 64 - in_buf;
     if (input_len < missing) {
       ctx.b8.set(input.subarray(0, input_len), in_buf);
       return;
@@ -198,7 +198,7 @@ function caml_MD5Update(ctx, input, input_len) {
 //Provides: caml_MD5Final
 //Requires: caml_MD5Transform
 function caml_MD5Final(ctx) {
-  var in_buf = ctx.len & 0x3f;
+  let in_buf = ctx.len & 0x3f;
   ctx.b8[in_buf] = 0x80;
   in_buf++;
   if (in_buf > 56) {
@@ -217,7 +217,7 @@ function caml_MD5Final(ctx) {
   ctx.b32[14] = ctx.len << 3;
   ctx.b32[15] = (ctx.len >> 29) & 0x1fffffff;
   caml_MD5Transform(ctx.w, ctx.b32);
-  var t = new Uint8Array(16);
+  const t = new Uint8Array(16);
   for (let i = 0; i < 4; i++)
     for (let j = 0; j < 4; j++) t[i * 4 + j] = (ctx.w[i] >> (8 * j)) & 0xff;
   return t;
@@ -227,8 +227,8 @@ function caml_MD5Final(ctx) {
 //Requires: caml_uint8_array_of_bytes, caml_string_of_array
 //Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
 function caml_md5_bytes(s, ofs, len) {
-  var ctx = caml_MD5Init();
-  var a = caml_uint8_array_of_bytes(s);
+  const ctx = caml_MD5Init();
+  const a = caml_uint8_array_of_bytes(s);
   caml_MD5Update(ctx, a.subarray(ofs, ofs + len), len);
   return caml_string_of_array(caml_MD5Final(ctx));
 }
