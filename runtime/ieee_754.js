@@ -57,9 +57,9 @@ function caml_int64_bits_of_float(x) {
   let exp = jsoo_floor_log2(x) + 1023;
   if (exp <= 0) {
     exp = 0;
-    x /= Math.pow(2, -1026);
+    x /= 2 ** -1026;
   } else {
-    x /= Math.pow(2, exp - 1027);
+    x /= 2 ** (exp - 1027);
     if (x < 16) {
       x *= 2;
       exp -= 1;
@@ -68,7 +68,7 @@ function caml_int64_bits_of_float(x) {
       x /= 2;
     }
   }
-  const k = Math.pow(2, 24);
+  const k = 2 ** 24;
   let r3 = x | 0;
   x = (x - r3) * k;
   const r2 = x | 0;
@@ -130,7 +130,7 @@ function caml_hexstring_of_float(x, prec, style) {
   }
   if (prec >= 0 && prec < 13) {
     /* If a precision is given, and is small, round mantissa accordingly */
-    const cst = Math.pow(2, prec * 4);
+    const cst = 2 ** (prec * 4);
     x = Math.round(x * cst) / cst;
   }
   let x_str = x.toString(16);
@@ -161,12 +161,12 @@ function caml_int64_float_of_bits(x) {
       return hi & 0x8000 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
     else return Number.NaN;
   }
-  const k = Math.pow(2, -24);
+  const k = 2 ** -24;
   let res = (lo * k + mi) * k + (hi & 0xf);
   if (exp > 0) {
     res += 16;
-    res *= Math.pow(2, exp - 1027);
-  } else res *= Math.pow(2, -1026);
+    res *= 2 ** (exp - 1027);
+  } else res *= 2 ** -1026;
   if (hi & 0x8000) res = -res;
   return res;
 }
@@ -177,8 +177,8 @@ function caml_nextafter_float(x, y) {
   if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN;
   if (x === y) return y;
   if (x === 0) {
-    if (y < 0) return -Math.pow(2, -1074);
-    else return Math.pow(2, -1074);
+    if (y < 0) return -(2 ** -1074);
+    else return 2 ** -1074;
   }
   let bits = caml_int64_bits_of_float(x);
   const one = caml_int64_of_int32(1);
@@ -230,18 +230,18 @@ function caml_ldexp_float(x, exp) {
   exp |= 0;
   if (exp > 1023) {
     exp -= 1023;
-    x *= Math.pow(2, 1023);
+    x *= 2 ** 1023;
     if (exp > 1023) {
       // in case x is subnormal
       exp -= 1023;
-      x *= Math.pow(2, 1023);
+      x *= 2 ** 1023;
     }
   }
   if (exp < -1023) {
     exp += 1023;
-    x *= Math.pow(2, -1023);
+    x *= 2 ** -1023;
   }
-  x *= Math.pow(2, exp);
+  x *= 2 ** exp;
   return x;
 }
 //Provides: caml_frexp_float const
@@ -251,7 +251,7 @@ function caml_frexp_float(x) {
   const neg = x < 0;
   if (neg) x = -x;
   let exp = Math.max(-1023, jsoo_floor_log2(x) + 1);
-  x *= Math.pow(2, -exp);
+  x *= 2 ** -exp;
   while (x < 0.5) {
     x *= 2;
     exp--;
@@ -293,7 +293,7 @@ function caml_expm1_float(x) {
 }
 //Provides: caml_exp2_float const
 function caml_exp2_float(x) {
-  return Math.pow(2, x);
+  return 2 ** x;
 }
 //Provides: caml_log1p_float const
 function caml_log1p_float(x) {
@@ -379,12 +379,12 @@ function caml_erfc_float(x) {
 
 //Provides: caml_fma_float const
 function caml_fma_float(x, y, z) {
-  const SPLIT = Math.pow(2, 27) + 1;
-  const MIN_VALUE = Math.pow(2, -1022);
-  const EPSILON = Math.pow(2, -52);
+  const SPLIT = 2 ** 27 + 1;
+  const MIN_VALUE = 2 ** -1022;
+  const EPSILON = 2 ** -52;
   const C = 416;
-  const A = Math.pow(2, +C);
-  const B = Math.pow(2, -C);
+  const A = 2 ** +C;
+  const B = 2 ** -C;
 
   function multiply(a, b) {
     const at = SPLIT * a;
@@ -500,7 +500,7 @@ function caml_format_float(fmt, x) {
       let e = Number.parseInt(x.toString().split("+")[1]);
       if (e > 20) {
         e -= 20;
-        x /= Math.pow(10, e);
+        x /= 10 ** e;
         x += new Array(e + 1).join("0");
         if (dp > 0) {
           x = x + "." + new Array(dp + 1).join("0");
@@ -586,7 +586,7 @@ function caml_float_of_string(s) {
     const m3 = m[3].replace(/0+$/, "");
     const mantissa = Number.parseInt(m[1] + m[2] + m3, 16);
     const exponent = (m[5] | 0) - 4 * m3.length;
-    res = mantissa * Math.pow(2, exponent);
+    res = mantissa * 2 ** exponent;
     return res;
   }
   if (/^\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;

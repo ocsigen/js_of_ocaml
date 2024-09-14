@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_int64_offset
-const caml_int64_offset = Math.pow(2, -24);
+const caml_int64_offset = 2 ** -24;
 
 //Provides: MlInt64
 //Requires: caml_int64_offset, caml_raise_zero_divide
@@ -203,9 +203,7 @@ MlInt64.prototype.toInt = function () {
   return this.lo | (this.mi << 24);
 };
 MlInt64.prototype.toFloat = function () {
-  return (
-    (this.hi << 16) * Math.pow(2, 32) + this.mi * Math.pow(2, 24) + this.lo
-  );
+  return (this.hi << 16) * 2 ** 32 + this.mi * 2 ** 24 + this.lo;
 };
 MlInt64.prototype.toArray = function () {
   return [
