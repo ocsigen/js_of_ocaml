@@ -279,9 +279,7 @@ function caml_js_var(x) {
   //Checks that x has the form ident[.ident]*
   if (!x_.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)) {
     console.error(
-      'caml_js_var: "' +
-        x_ +
-        '" is not a valid JavaScript variable. continuing ..',
+      `caml_js_var: "${x_}" is not a valid JavaScript variable. continuing ..`,
     );
     //console.error("Js.Unsafe.eval_string")
   }

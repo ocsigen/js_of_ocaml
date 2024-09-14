@@ -70,9 +70,9 @@ function caml_format_exception(exn) {
       const v = bucket[i];
       if (typeof v === "number") r += v.toString();
       else if (v instanceof MlBytes) {
-        r += '"' + v.toString() + '"';
+        r += `"${v.toString()}"`;
       } else if (typeof v == "string") {
-        r += '"' + v.toString() + '"';
+        r += `"${v.toString()}"`;
       } else r += "_";
     }
     r += ")";
@@ -92,7 +92,7 @@ function caml_fatal_uncaught_exception(err) {
       const msg = caml_format_exception(err);
       const at_exit = caml_named_value("Pervasives.do_at_exit");
       if (at_exit) caml_callback(at_exit, [0]);
-      console.error("Fatal error: exception " + msg);
+      console.error(`Fatal error: exception ${msg}`);
       if (err.js_error) throw err.js_error;
     }
   } else {

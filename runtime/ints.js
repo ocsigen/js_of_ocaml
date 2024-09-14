@@ -20,7 +20,7 @@
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_format_int(fmt, i) {
   if (caml_jsbytes_of_string(fmt) === "%d")
-    return caml_string_of_jsbytes("" + i);
+    return caml_string_of_jsbytes(`${i}`);
   const f = caml_parse_format(fmt);
   if (i < 0) {
     if (f.signedconv) {

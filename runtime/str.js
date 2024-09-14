@@ -385,7 +385,7 @@ function re_replacement_text(repl, groups, orig) {
           res += orig_.slice(start, end);
           break;
         default:
-          res += "\\" + cur;
+          res += `\\${cur}`;
       }
     }
   }

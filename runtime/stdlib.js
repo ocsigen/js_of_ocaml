@@ -175,7 +175,7 @@ function caml_register_global(n, v, name_opt) {
       const nid = caml_global_data.symidx[name];
       if (nid >= 0) n = nid;
       else {
-        caml_failwith("caml_register_global: cannot locate " + name);
+        caml_failwith(`caml_register_global: cannot locate ${name}`);
       }
     }
   }

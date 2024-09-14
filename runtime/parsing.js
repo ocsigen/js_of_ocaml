@@ -81,7 +81,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
   const tbl_names_block = 16;
 
   function log(x) {
-    const s = caml_string_of_jsbytes(x + "\n");
+    const s = caml_string_of_jsbytes(`${x}\n`);
     caml_ml_output(2, s, 0, caml_ml_string_length(s));
   }
 
@@ -96,14 +96,14 @@ function caml_parse_engine(tables, env, cmd, arg) {
     let kind;
     if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
-      if (typeof tok[1] === "number") kind = "" + tok[1];
+      if (typeof tok[1] === "number") kind = `${tok[1]}`;
       else if (typeof tok[1] === "string") kind = tok[1];
       else if (tok[1] instanceof MlBytes) kind = caml_jsbytes_of_string(tok[1]);
       else kind = "_";
-      log("State " + state + ": read token " + token + "(" + kind + ")");
+      log(`State ${state}: read token ${token}(${kind})`);
     } else {
       token = token_name(tables[tbl_names_const], tok);
-      log("State " + state + ": read token " + token);
+      log(`State ${state}: read token ${token}`);
     }
   }
 
@@ -205,11 +205,11 @@ function caml_parse_engine(tables, env, cmd, arg) {
               n2 <= tables[tbl_tablesize] &&
               tables.check[n2] === ERRCODE
             ) {
-              if (caml_parser_trace) log("Recovering in state " + state1);
+              if (caml_parser_trace) log(`Recovering in state ${state1}`);
               cmd = shift_recover;
               break next;
             } else {
-              if (caml_parser_trace) log("Discarding state " + state1);
+              if (caml_parser_trace) log(`Discarding state ${state1}`);
               if (sp <= env[env_stackbase]) {
                 if (caml_parser_trace) log("No more states to discard");
                 return RAISE_PARSE_ERROR;
@@ -233,7 +233,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
       // Fall through
       case 9: //shift_recover:
         if (caml_parser_trace)
-          log("State " + state + ": shift to state " + tables.table[n2]);
+          log(`State ${state}: shift to state ${tables.table[n2]}`);
         state = tables.table[n2];
         sp++;
         if (sp >= env[env_stacksize]) {
@@ -252,7 +252,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
       case 10: {
         //reduce:
-        if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
+        if (caml_parser_trace) log(`State ${state}: reduce by rule ${n}`);
         let m = tables.len[n];
         env[env_asp] = sp;
         env[env_rule_number] = n;

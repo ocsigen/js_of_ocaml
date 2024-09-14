@@ -49,7 +49,7 @@ function caml_gr_state_set(ctx) {
 function caml_gr_open_graph(info) {
   const info_ = caml_jsstring_of_string(info);
   function get(name) {
-    const res = info.match("(^|,) *" + name + " *= *([a-zA-Z0-9_]+) *(,|$)");
+    const res = info.match(`(^|,) *${name} *= *([a-zA-Z0-9_]+) *(,|$)`);
     if (res) return res[2];
   }
   const specs = [];
@@ -61,11 +61,11 @@ function caml_gr_open_graph(info) {
 
   let w = get("width");
   w = w ? Number.parseInt(w) : 200;
-  specs.push("width=" + w);
+  specs.push(`width=${w}`);
 
   let h = get("height");
   h = h ? Number.parseInt(h) : 200;
-  specs.push("height=" + h);
+  specs.push(`height=${h}`);
 
   const win = globalThis.open("about:blank", target, specs.join(","));
   if (!win) {
@@ -186,15 +186,15 @@ function caml_gr_size_y() {
 function caml_gr_set_color(color) {
   const s = caml_gr_state_get();
   function convert(number) {
-    let str = "" + number.toString(16);
-    while (str.length < 2) str = "0" + str;
+    let str = `${number.toString(16)}`;
+    while (str.length < 2) str = `0${str}`;
     return str;
   }
   const r = (color >> 16) & 0xff;
   const g = (color >> 8) & 0xff;
   const b = (color >> 0) & 0xff;
   s.color = color;
-  const c_str = "#" + convert(r) + convert(g) + convert(b);
+  const c_str = `#${convert(r)}${convert(g)}${convert(b)}`;
   s.context.fillStyle = c_str;
   s.context.strokeStyle = c_str;
   return 0;
@@ -383,7 +383,7 @@ function caml_gr_draw_string(str) {
 function caml_gr_set_font(f) {
   const s = caml_gr_state_get();
   s.font = f;
-  s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
+  s.context.font = `${s.text_size}px ${caml_jsstring_of_string(s.font)}`;
   return 0;
 }
 
@@ -393,7 +393,7 @@ function caml_gr_set_font(f) {
 function caml_gr_set_text_size(size) {
   const s = caml_gr_state_get();
   s.text_size = size;
-  s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
+  s.context.font = `${s.text_size}px ${caml_jsstring_of_string(s.font)}`;
   return 0;
 }
 

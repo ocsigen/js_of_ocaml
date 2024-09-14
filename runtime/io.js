@@ -82,13 +82,11 @@ function caml_sys_open(name, flags, _perms) {
   }
   if (f.rdonly && f.wronly)
     caml_raise_sys_error(
-      caml_jsbytes_of_string(name) +
-        " : flags Open_rdonly and Open_wronly are not compatible",
+      `${caml_jsbytes_of_string(name)}: flags Open_rdonly and Open_wronly are not compatible`,
     );
   if (f.text && f.binary)
     caml_raise_sys_error(
-      caml_jsbytes_of_string(name) +
-        " : flags Open_text and Open_binary are not compatible",
+      `${caml_jsbytes_of_string(name)}: flags Open_text and Open_binary are not compatible`,
     );
   const root = resolve_fs_device(name);
   const file = root.device.open(root.rest, f);
@@ -170,7 +168,7 @@ function caml_ml_out_channels_list() {
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_out(fd) {
   const file = caml_sys_fds[fd];
-  if (file.flags.rdonly) caml_raise_sys_error("fd " + fd + " is readonly");
+  if (file.flags.rdonly) caml_raise_sys_error(`fd ${fd} is readonly`);
   const buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
   const channel = {
     file: file,
@@ -192,7 +190,7 @@ function caml_ml_open_descriptor_out(fd) {
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_in(fd) {
   const file = caml_sys_fds[fd];
-  if (file.flags.wronly) caml_raise_sys_error("fd " + fd + " is writeonly");
+  if (file.flags.wronly) caml_raise_sys_error(`fd ${fd} is writeonly`);
   const refill = null;
   const channel = {
     file: file,
@@ -398,8 +396,7 @@ function caml_input_value(chanid) {
   const buf = new Uint8Array(len + caml_marshal_header_size);
   buf.set(header, 0);
   const r2 = block(buf, caml_marshal_header_size, len);
-  if (r2 < len)
-    caml_failwith("input_value: truncated object " + r2 + "  " + len);
+  if (r2 < len) caml_failwith(`input_value: truncated object ${r2}  ${len}`);
   const res = caml_input_value_from_bytes(caml_bytes_of_array(buf), 0);
   return res;
 }

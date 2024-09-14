@@ -37,12 +37,12 @@ MlFakeDevice.prototype.create_dir_if_needed = function (name) {
   const comp = name.split("/");
   let res = "";
   for (let i = 0; i < comp.length - 1; i++) {
-    res += comp[i] + "/";
+    res += `${comp[i]}/`;
     if (this.content[res]) continue;
     this.content[res] = Symbol("directory");
   }
 };
-MlFakeDevice.prototype.slash = (name) => (/\/$/.test(name) ? name : name + "/");
+MlFakeDevice.prototype.slash = (name) => (/\/$/.test(name) ? name : `${name}/`);
 MlFakeDevice.prototype.lookup = function (name) {
   if (!this.content[name] && this.lookupFun) {
     const res = this.lookupFun(
@@ -81,7 +81,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
         make_unix_err_args("EEXIST", "mkdir", this.nm(name)),
       );
     } else {
-      caml_raise_sys_error(name + ": File exists");
+      caml_raise_sys_error(`${name}: File exists`);
     }
   }
   let parent = /^(.*)\/[^/]+/.exec(name);
@@ -93,7 +93,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
         make_unix_err_args("ENOENT", "mkdir", this.nm(parent)),
       );
     } else {
-      caml_raise_sys_error(parent + ": No such file or directory");
+      caml_raise_sys_error(`${parent}: No such file or directory`);
     }
   }
   if (!this.is_dir(parent)) {
@@ -103,7 +103,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
         make_unix_err_args("ENOTDIR", "mkdir", this.nm(parent)),
       );
     } else {
-      caml_raise_sys_error(parent + ": Not a directory");
+      caml_raise_sys_error(`${parent}: Not a directory`);
     }
   }
   this.create_dir_if_needed(this.slash(name));
@@ -111,7 +111,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
 MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
   const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
   const name_slash = name === "" ? "" : this.slash(name);
-  const r = new RegExp("^" + name_slash + "([^/]+)");
+  const r = new RegExp(`^${name_slash}([^/]+)`);
   if (!this.exists(name)) {
     if (unix_error) {
       caml_raise_with_args(
@@ -119,7 +119,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
         make_unix_err_args("ENOENT", "rmdir", this.nm(name)),
       );
     } else {
-      caml_raise_sys_error(name + ": No such file or directory");
+      caml_raise_sys_error(`${name}: No such file or directory`);
     }
   }
   if (!this.is_dir(name)) {
@@ -129,7 +129,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
         make_unix_err_args("ENOTDIR", "rmdir", this.nm(name)),
       );
     } else {
-      caml_raise_sys_error(name + ": Not a directory");
+      caml_raise_sys_error(`${name}: Not a directory`);
     }
   }
   for (const n in this.content) {
@@ -140,7 +140,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
           make_unix_err_args("ENOTEMPTY", "rmdir", this.nm(name)),
         );
       } else {
-        caml_raise_sys_error(this.nm(name) + ": Directory not empty");
+        caml_raise_sys_error(`${this.nm(name)}: Directory not empty`);
       }
     }
   }
@@ -149,12 +149,12 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
 MlFakeDevice.prototype.readdir = function (name) {
   const name_slash = name === "" ? "" : this.slash(name);
   if (!this.exists(name)) {
-    caml_raise_sys_error(name + ": No such file or directory");
+    caml_raise_sys_error(`${name}: No such file or directory`);
   }
   if (!this.is_dir(name)) {
-    caml_raise_sys_error(name + ": Not a directory");
+    caml_raise_sys_error(`${name}: Not a directory`);
   }
-  const r = new RegExp("^" + name_slash + "([^/]+)");
+  const r = new RegExp(`^${name_slash}([^/]+)`);
   const seen = {};
   const a = [];
   for (const n in this.content) {
@@ -181,7 +181,7 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
             make_unix_err_args("EBADF", "closedir", this.nm(name)),
           );
         } else {
-          caml_raise_sys_error(name + ": closedir failed");
+          caml_raise_sys_error(`${name}: closedir failed`);
         }
       }
       if (i === a.length) return null;
@@ -197,7 +197,7 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
             make_unix_err_args("EBADF", "closedir", this.nm(name)),
           );
         } else {
-          caml_raise_sys_error(name + ": closedir failed");
+          caml_raise_sys_error(`${name}: closedir failed`);
         }
       }
       c = true;
@@ -219,18 +219,18 @@ MlFakeDevice.prototype.open = function (name, f) {
   let file;
   if (f.rdonly && f.wronly)
     caml_raise_sys_error(
-      this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
+      `${this.nm(name)}: flags Open_rdonly and Open_wronly are not compatible`,
     );
   if (f.text && f.binary)
     caml_raise_sys_error(
-      this.nm(name) + " : flags Open_text and Open_binary are not compatible",
+      `${this.nm(name)}: flags Open_text and Open_binary are not compatible`,
     );
   this.lookup(name);
   if (this.content[name]) {
     if (this.is_dir(name))
-      caml_raise_sys_error(this.nm(name) + " : is a directory");
+      caml_raise_sys_error(`${this.nm(name)}: is a directory`);
     if (f.create && f.excl)
-      caml_raise_sys_error(this.nm(name) + " : file already exists");
+      caml_raise_sys_error(`${this.nm(name)}: file already exists`);
     file = this.content[name];
     if (f.truncate) file.truncate();
   } else if (f.create) {
@@ -247,18 +247,18 @@ MlFakeDevice.prototype.open = function (name, f) {
   let file;
   if (f.rdonly && f.wronly)
     caml_raise_sys_error(
-      this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
+      `${this.nm(name)}: flags Open_rdonly and Open_wronly are not compatible`,
     );
   if (f.text && f.binary)
     caml_raise_sys_error(
-      this.nm(name) + " : flags Open_text and Open_binary are not compatible",
+      `${this.nm(name)}: flags Open_text and Open_binary are not compatible`,
     );
   this.lookup(name);
   if (this.content[name]) {
     if (this.is_dir(name))
-      caml_raise_sys_error(this.nm(name) + " : is a directory");
+      caml_raise_sys_error(`${this.nm(name)}: is a directory`);
     if (f.create && f.excl)
-      caml_raise_sys_error(this.nm(name) + " : file already exists");
+      caml_raise_sys_error(`${this.nm(name)}: file already exists`);
     file = this.content[name];
     if (f.truncate) file.truncate();
   } else if (f.create) {
@@ -274,7 +274,7 @@ MlFakeDevice.prototype.open = function (name, f) {
 MlFakeDevice.prototype.register = function (name, content) {
   let file;
   if (this.content[name])
-    caml_raise_sys_error(this.nm(name) + " : file already exists");
+    caml_raise_sys_error(`${this.nm(name)}: file already exists`);
   if (caml_is_ml_bytes(content)) file = new MlFakeFile(content);
   if (caml_is_ml_string(content))
     file = new MlFakeFile(caml_bytes_of_string(content));
@@ -293,7 +293,7 @@ MlFakeDevice.prototype.register = function (name, content) {
     this.content[name] = file;
   } else
     caml_raise_sys_error(
-      this.nm(name) + " : registering file with invalid content type",
+      `${this.nm(name)}: registering file with invalid content type`,
     );
 };
 
@@ -369,10 +369,10 @@ MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
     this.log(src.toUtf16());
     return 0;
   }
-  caml_raise_sys_error(this.fd + ": file descriptor already closed");
+  caml_raise_sys_error(`${this.fd}: file descriptor already closed`);
 };
 MlFakeFd_out.prototype.read = function (offset, buf, pos, len) {
-  caml_raise_sys_error(this.fd + ": file descriptor is write only");
+  caml_raise_sys_error(`${this.fd}: file descriptor is write only`);
 };
 MlFakeFd_out.prototype.close = function () {
   this.log = undefined;
@@ -388,7 +388,7 @@ function MlFakeFd(name, file, flags) {
 }
 
 MlFakeFd.prototype.err_closed = function () {
-  caml_raise_sys_error(this.name + ": file descriptor already closed");
+  caml_raise_sys_error(`${this.name}: file descriptor already closed`);
 };
 MlFakeFd.prototype.length = function () {
   if (this.file) return this.file.length();

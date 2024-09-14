@@ -137,7 +137,7 @@ function caml_hexstring_of_float(x, prec, style) {
   if (prec >= 0) {
     const idx = x_str.indexOf(".");
     if (idx < 0) {
-      x_str += "." + caml_str_repeat(prec, "0");
+      x_str += `.${caml_str_repeat(prec, "0")}`;
     } else {
       const size = idx + 1 + prec;
       if (x_str.length < size)
@@ -146,7 +146,7 @@ function caml_hexstring_of_float(x, prec, style) {
     }
   }
   return caml_string_of_jsstring(
-    sign_str + "0x" + x_str + "p" + exp_sign + exp.toString(10),
+    `${sign_str}0x${x_str}p${exp_sign}${exp.toString(10)}`,
   );
 }
 
@@ -503,7 +503,7 @@ function caml_format_float(fmt, x) {
         x /= 10 ** e;
         x += new Array(e + 1).join("0");
         if (dp > 0) {
-          x = x + "." + new Array(dp + 1).join("0");
+          x = `${x}.${new Array(dp + 1).join("0")}`;
         }
         return x;
       } else return x.toFixed(dp);
@@ -529,7 +529,7 @@ function caml_format_float(fmt, x) {
         // exponent should be at least two digits
         const i = s.length;
         if (s.charAt(i - 3) === "e")
-          s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
+          s = `${s.slice(0, i - 1)}0${s.slice(i - 1)}`;
         break;
       }
       case "f":
@@ -548,7 +548,7 @@ function caml_format_float(fmt, x) {
           s = s.slice(0, i + 1) + s.slice(j);
           i = s.length;
           if (s.charAt(i - 3) === "e")
-            s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
+            s = `${s.slice(0, i - 1)}0${s.slice(i - 1)}`;
           break;
         } else {
           let p = prec;
