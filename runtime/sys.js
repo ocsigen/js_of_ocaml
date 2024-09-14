@@ -49,13 +49,13 @@ function caml_is_special_exception(exn) {
 //Requires: MlBytes, caml_is_special_exception
 function caml_format_exception(exn) {
   let r = "";
-  if (exn[0] == 0) {
+  if (exn[0] === 0) {
     let bucket;
     let start;
     r += exn[1][1];
     if (
-      exn.length == 3 &&
-      exn[2][0] == 0 &&
+      exn.length === 3 &&
+      exn[2][0] === 0 &&
       caml_is_special_exception(exn[1])
     ) {
       bucket = exn[2];
@@ -68,7 +68,7 @@ function caml_format_exception(exn) {
     for (let i = start; i < bucket.length; i++) {
       if (i > start) r += ", ";
       const v = bucket[i];
-      if (typeof v == "number") r += v.toString();
+      if (typeof v === "number") r += v.toString();
       else if (v instanceof MlBytes) {
         r += '"' + v.toString() + '"';
       } else if (typeof v == "string") {
@@ -111,7 +111,7 @@ function caml_set_static_env(k, v) {
 function jsoo_sys_getenv(n) {
   const process = globalThis.process;
   //nodejs env
-  if (process && process.env && process.env[n] != undefined)
+  if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
   if (globalThis.jsoo_static_env && globalThis.jsoo_static_env[n])
     return globalThis.jsoo_static_env[n];
@@ -188,7 +188,7 @@ function caml_sys_executable_name(a) {
 //Requires: caml_jsstring_of_string
 function caml_sys_system_command(cmd) {
   const cmd_ = caml_jsstring_of_string(cmd);
-  if (typeof require != "undefined") {
+  if (typeof require !== "undefined") {
     const child_process = require("child_process");
     if (child_process && child_process.execSync)
       try {
@@ -232,8 +232,8 @@ function caml_sys_random_seed() {
       return [0, a[0], a[1], a[2], a[3]];
     }
   }
-  var now = new Date().getTime();
-  var x = now ^ (0xffffffff * Math.random());
+  const now = new Date().getTime();
+  const x = now ^ (0xffffffff * Math.random());
   return [0, x];
 }
 
@@ -262,17 +262,17 @@ function caml_sys_const_max_wosize() {
 //Provides: caml_sys_const_ostype_unix const
 //Requires: os_type
 function caml_sys_const_ostype_unix() {
-  return os_type == "Unix" ? 1 : 0;
+  return os_type === "Unix" ? 1 : 0;
 }
 //Provides: caml_sys_const_ostype_win32 const
 //Requires: os_type
 function caml_sys_const_ostype_win32() {
-  return os_type == "Win32" ? 1 : 0;
+  return os_type === "Win32" ? 1 : 0;
 }
 //Provides: caml_sys_const_ostype_cygwin const
 //Requires: os_type
 function caml_sys_const_ostype_cygwin() {
-  return os_type == "Cygwin" ? 1 : 0;
+  return os_type === "Cygwin" ? 1 : 0;
 }
 
 //Provides: caml_sys_const_backend_type const
@@ -285,7 +285,7 @@ function caml_sys_const_backend_type() {
 const os_type =
   globalThis.process &&
   globalThis.process.platform &&
-  globalThis.process.platform == "win32"
+  globalThis.process.platform === "win32"
     ? "Win32"
     : "Unix";
 

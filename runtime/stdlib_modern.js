@@ -22,7 +22,7 @@ function caml_call_gen(f, args) {
   const n = f.l >= 0 ? f.l : (f.l = f.length);
   const argsLen = args.length;
   const d = n - argsLen;
-  if (d == 0) return f(...args);
+  if (d === 0) return f(...args);
   else if (d < 0) {
     const g = f(...args.slice(0, n));
     if (typeof g !== "function") return g;
@@ -51,7 +51,7 @@ function caml_call_gen(f, args) {
       }
       default: {
         g = function () {
-          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const extra_args = arguments.length === 0 ? 1 : arguments.length;
           const nargs = new Array(args.length + extra_args);
           for (let i = 0; i < args.length; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)
@@ -71,7 +71,7 @@ function caml_call_gen(f, args) {
   const n = f.l >= 0 ? f.l : (f.l = f.length);
   let argsLen = args.length;
   const d = n - argsLen;
-  if (d == 0) return f(...args);
+  if (d === 0) return f(...args);
   else if (d < 0) {
     const rest = args.slice(n - 1);
     const k = args[argsLen - 1];
@@ -111,7 +111,7 @@ function caml_call_gen(f, args) {
       }
       default: {
         g = function () {
-          const extra_args = arguments.length == 0 ? 1 : arguments.length;
+          const extra_args = arguments.length === 0 ? 1 : arguments.length;
           const nargs = new Array(argsLen + extra_args);
           for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
           for (let i = 0; i < arguments.length; i++)

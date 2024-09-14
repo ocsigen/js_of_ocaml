@@ -24,7 +24,7 @@ let caml_record_backtrace_env_flag = FLAG("with-js-error");
   if (r !== undefined) {
     const l = r.split(",");
     for (let i = 0; i < l.length; i++) {
-      if (l[i] == "b") {
+      if (l[i] === "b") {
         caml_record_backtrace_env_flag = 1;
         break;
       }

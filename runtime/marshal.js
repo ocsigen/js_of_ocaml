@@ -234,7 +234,7 @@ function caml_float_of_bytes(a) {
 //Provides: caml_input_value_from_string mutable
 //Requires: MlStringReader, caml_input_value_from_reader
 function caml_input_value_from_string(s, ofs) {
-  const reader = new MlStringReader(s, typeof ofs == "number" ? ofs : ofs[0]);
+  const reader = new MlStringReader(s, typeof ofs === "number" ? ofs : ofs[0]);
   return caml_input_value_from_reader(reader, ofs);
 }
 
@@ -243,7 +243,7 @@ function caml_input_value_from_string(s, ofs) {
 function caml_input_value_from_bytes(s, ofs) {
   const reader = new MlStringReader(
     caml_string_of_bytes(s),
-    typeof ofs == "number" ? ofs : ofs[0],
+    typeof ofs === "number" ? ofs : ofs[0],
   );
   return caml_input_value_from_reader(reader, ofs);
 }
@@ -329,10 +329,10 @@ function caml_input_value_from_reader(reader, ofs) {
   function readvlq(overflow) {
     let c = reader.read8u();
     let n = c & 0x7f;
-    while ((c & 0x80) != 0) {
+    while ((c & 0x80) !== 0) {
       c = reader.read8u();
       const n7 = n << 7;
-      if (n != n7 >> 7) overflow[0] = true;
+      if (n !== n7 >> 7) overflow[0] = true;
       n = n7 | (c & 0x7f);
     }
     return n;
@@ -391,7 +391,7 @@ function caml_input_value_from_reader(reader, ofs) {
         const tag = code & 0xf;
         const size = (code >> 4) & 0x7;
         const v = [tag];
-        if (size == 0) return v;
+        if (size === 0) return v;
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         stack.push(v, size);
         return v;
@@ -416,19 +416,19 @@ function caml_input_value_from_reader(reader, ofs) {
           case 0x04: {
             //cst.CODE_SHARED8:
             let offset = reader.read8u();
-            if (compressed == 0) offset = obj_counter - offset;
+            if (compressed === 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x05: {
             //cst.CODE_SHARED16:
             let offset = reader.read16u();
-            if (compressed == 0) offset = obj_counter - offset;
+            if (compressed === 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x06: {
             //cst.CODE_SHARED32:
             let offset = reader.read32u();
-            if (compressed == 0) offset = obj_counter - offset;
+            if (compressed === 0) offset = obj_counter - offset;
             return intern_obj_table[offset];
           }
           case 0x08: {
@@ -437,7 +437,7 @@ function caml_input_value_from_reader(reader, ofs) {
             const tag = header & 0xff;
             const size = header >> 10;
             const v = [tag];
-            if (size == 0) return v;
+            if (size === 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             stack.push(v, size);
             return v;
@@ -536,7 +536,7 @@ function caml_input_value_from_reader(reader, ofs) {
             //cst.CODE_CUSTOM_FIXED:
             let c;
             let s = "";
-            while ((c = reader.read8u()) != 0) s += String.fromCharCode(c);
+            while ((c = reader.read8u()) !== 0) s += String.fromCharCode(c);
             const ops = caml_custom_ops[s];
             let expected_size;
             if (!ops)
@@ -561,8 +561,8 @@ function caml_input_value_from_reader(reader, ofs) {
             const old_pos = reader.i;
             const size = [0];
             const v = ops.deserialize(reader, size);
-            if (expected_size != undefined) {
-              if (expected_size != size[0])
+            if (expected_size !== undefined) {
+              if (expected_size !== size[0])
                 caml_failwith(
                   "input_value: incorrect length of serialized custom block",
                 );
@@ -615,10 +615,10 @@ function caml_marshal_data_size(s, ofs) {
   function readvlq(overflow) {
     let c = r.read8u();
     let n = c & 0x7f;
-    while ((c & 0x80) != 0) {
+    while ((c & 0x80) !== 0) {
       c = r.read8u();
       const n7 = n << 7;
-      if (n != n7 >> 7) overflow[0] = true;
+      if (n !== n7 >> 7) overflow[0] = true;
       n = n7 | (c & 0x7f);
     }
     return n;
@@ -780,7 +780,7 @@ const caml_output_val = (() => {
         const sz_32_64 = [0, 0];
         if (!ops.serialize)
           caml_invalid_argument("output_value: abstract value (Custom)");
-        if (ops.fixed_length == undefined) {
+        if (ops.fixed_length === undefined) {
           writer.write(8, 0x18 /*cst.CODE_CUSTOM_LEN*/);
           for (let i = 0; i < name.length; i++)
             writer.write(8, name.charCodeAt(i));
@@ -800,7 +800,7 @@ const caml_output_val = (() => {
           writer.write(8, 0);
           const old_pos = writer.pos();
           ops.serialize(writer, v, sz_32_64);
-          if (ops.fixed_length != writer.pos() - old_pos)
+          if (ops.fixed_length !== writer.pos() - old_pos)
             caml_failwith(
               "output_value: incorrect fixed sizes specified by " + name,
             );
@@ -808,7 +808,7 @@ const caml_output_val = (() => {
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
         writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
       } else if (Array.isArray(v) && v[0] === (v[0] | 0)) {
-        if (v[0] == 251) {
+        if (v[0] === 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
         if (caml_is_continuation_tag(v[0]))
@@ -856,9 +856,9 @@ const caml_output_val = (() => {
         writer.size_32 += 1 + (((len + 4) / 4) | 0);
         writer.size_64 += 1 + (((len + 8) / 8) | 0);
       } else {
-        if (v != (v | 0)) {
+        if (v !== (v | 0)) {
           const type_of_v = typeof v;
-          if (type_of_v != "number")
+          if (type_of_v !== "number")
             caml_failwith("output_value: abstract value (" + type_of_v + ")");
           // If a float happens to be an integer it is serialized as an integer
           // (Js_of_ocaml cannot tell whether the type of an integer number is

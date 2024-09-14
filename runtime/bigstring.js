@@ -49,11 +49,11 @@ function caml_bigstring_memcmp(s1, pos1, s2, pos2, len) {
 //Provides: caml_bigstring_blit_ba_to_ba
 //Requires: caml_invalid_argument, caml_array_bound_error
 function caml_bigstring_blit_ba_to_ba(ba1, pos1, ba2, pos2, len) {
-  if (12 != ba1.kind)
+  if (12 !== ba1.kind)
     caml_invalid_argument("caml_bigstring_blit_ba_to_ba: kind mismatch");
-  if (12 != ba2.kind)
+  if (12 !== ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_ba_to_ba: kind mismatch");
-  if (len == 0) return 0;
+  if (len === 0) return 0;
   const ofs1 = ba1.offset(pos1);
   const ofs2 = ba2.offset(pos2);
   if (ofs1 + len > ba1.data.length) {
@@ -71,9 +71,9 @@ function caml_bigstring_blit_ba_to_ba(ba1, pos1, ba2, pos2, len) {
 //Requires: caml_invalid_argument, caml_array_bound_error, caml_uint8_array_of_string
 //Requires: caml_ml_string_length
 function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len) {
-  if (12 != ba2.kind)
+  if (12 !== ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
-  if (len == 0) return 0;
+  if (len === 0) return 0;
   const ofs2 = ba2.offset(pos2);
   if (pos1 + len > caml_ml_string_length(str1)) {
     caml_array_bound_error();
@@ -90,9 +90,9 @@ function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len) {
 //Requires: caml_invalid_argument, caml_array_bound_error, caml_uint8_array_of_bytes
 //Requires: caml_ml_bytes_length
 function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
-  if (12 != ba2.kind)
+  if (12 !== ba2.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
-  if (len == 0) return 0;
+  if (len === 0) return 0;
   const ofs2 = ba2.offset(pos2);
   if (pos1 + len > caml_ml_bytes_length(str1)) {
     caml_array_bound_error();
@@ -110,9 +110,9 @@ function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
 //Requires: caml_blit_bytes, caml_bytes_of_array
 //Requires: caml_ml_bytes_length
 function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len) {
-  if (12 != ba1.kind)
+  if (12 !== ba1.kind)
     caml_invalid_argument("caml_bigstring_blit_string_to_ba: kind mismatch");
-  if (len == 0) return 0;
+  if (len === 0) return 0;
   const ofs1 = ba1.offset(pos1);
   if (ofs1 + len > ba1.data.length) {
     caml_array_bound_error();

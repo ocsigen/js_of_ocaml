@@ -27,7 +27,7 @@ function caml_md5_chan(chanid, toread) {
   if (toread < 0) {
     while (true) {
       const read = caml_ml_input_block(chanid, buffer, 0, buffer.length);
-      if (read == 0) break;
+      if (read === 0) break;
       caml_MD5Update(ctx, buffer.subarray(0, read), read);
     }
   } else {
@@ -38,7 +38,7 @@ function caml_md5_chan(chanid, toread) {
         0,
         toread > buffer.length ? buffer.length : toread,
       );
-      if (read == 0) caml_raise_end_of_file();
+      if (read === 0) caml_raise_end_of_file();
       caml_MD5Update(ctx, buffer.subarray(0, read), read);
       toread -= read;
     }

@@ -46,10 +46,10 @@ function caml_obj_is_block(x) {
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
-  if (Array.isArray(x) && x[0] == x[0] >>> 0) return x[0];
+  if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
   else if (caml_is_ml_bytes(x)) return 252;
   else if (caml_is_ml_string(x)) return 252;
-  else if (x instanceof Function || typeof x == "function") return 247;
+  else if (x instanceof Function || typeof x === "function") return 247;
   else if (x && x.caml_custom) return 255;
   else return 1000;
 }
@@ -88,7 +88,7 @@ function caml_obj_dup(x) {
 //Requires: caml_invalid_argument
 function caml_obj_truncate(x, s) {
   if (s <= 0 || s + 1 > x.length) caml_invalid_argument("Obj.truncate");
-  if (x.length != s + 1) x.length = s + 1;
+  if (x.length !== s + 1) x.length = s + 1;
   return 0;
 }
 
@@ -101,7 +101,7 @@ function caml_obj_make_forward(b, v) {
 
 //Provides: caml_obj_compare_and_swap
 function caml_obj_compare_and_swap(x, i, old, n) {
-  if (x[i + 1] == old) {
+  if (x[i + 1] === old) {
     x[i + 1] = n;
     return 1;
   }
@@ -141,7 +141,7 @@ function caml_get_public_method(obj, tag, cacheid) {
   }
   caml_method_cache[cacheid] = li + 1;
   /* return 0 if tag is not there */
-  return tag == meths[li + 1] ? meths[li] : 0;
+  return tag === meths[li + 1] ? meths[li] : 0;
 }
 
 //Provides: caml_oo_last_id
@@ -183,7 +183,7 @@ function caml_obj_add_offset(v, offset) {
 
 //Provides: caml_obj_update_tag
 function caml_obj_update_tag(b, o, n) {
-  if (b[0] == o) {
+  if (b[0] === o) {
     b[0] = n;
     return 1;
   }
@@ -195,7 +195,7 @@ function caml_obj_update_tag(b, o, n) {
 function caml_lazy_update_to_forcing(o) {
   if (
     Array.isArray(o) &&
-    o[0] == o[0] >>> 0 &&
+    o[0] === o[0] >>> 0 &&
     caml_obj_update_tag(o, 246, 244)
   ) {
     return 0;
@@ -221,7 +221,7 @@ function caml_lazy_reset_to_lazy(o) {
 //Provides: caml_lazy_read_result
 //Requires: caml_obj_tag
 function caml_lazy_read_result(o) {
-  return caml_obj_tag(o) == 250 ? o[1] : o;
+  return caml_obj_tag(o) === 250 ? o[1] : o;
 }
 
 //Provides: caml_is_continuation_tag
@@ -233,7 +233,7 @@ function caml_is_continuation_tag(t) {
 //Provides: caml_is_continuation_tag
 //Version: >= 5
 function caml_is_continuation_tag(t) {
-  return t == 245 ? 1 : 0;
+  return t === 245 ? 1 : 0;
 }
 
 //Provides: caml_custom_identifier

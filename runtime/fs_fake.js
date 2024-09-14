@@ -57,7 +57,7 @@ MlFakeDevice.prototype.lookup = function (name) {
 };
 MlFakeDevice.prototype.exists = function (name) {
   // The root of the device exists
-  if (name == "") return 1;
+  if (name === "") return 1;
   // Check if a directory exists
   const name_slash = this.slash(name);
   if (this.content[name_slash]) return 1;
@@ -110,7 +110,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
 };
 MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
   const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-  const name_slash = name == "" ? "" : this.slash(name);
+  const name_slash = name === "" ? "" : this.slash(name);
   const r = new RegExp("^" + name_slash + "([^/]+)");
   if (!this.exists(name)) {
     if (unix_error) {
@@ -147,7 +147,7 @@ MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
   delete this.content[name_slash];
 };
 MlFakeDevice.prototype.readdir = function (name) {
-  const name_slash = name == "" ? "" : this.slash(name);
+  const name_slash = name === "" ? "" : this.slash(name);
   if (!this.exists(name)) {
     caml_raise_sys_error(name + ": No such file or directory");
   }
@@ -184,7 +184,7 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
           caml_raise_sys_error(name + ": closedir failed");
         }
       }
-      if (i == a.length) return null;
+      if (i === a.length) return null;
       const entry = a[i];
       i++;
       return { name: entry };
@@ -206,7 +206,7 @@ MlFakeDevice.prototype.opendir = function (name, raise_unix) {
   };
 };
 MlFakeDevice.prototype.is_dir = function (name) {
-  if (name == "") return true;
+  if (name === "") return true;
   const name_slash = this.slash(name);
   return this.content[name_slash] ? 1 : 0;
 };
@@ -346,10 +346,10 @@ MlFakeFile.prototype.read = function (offset, buf, pos, len) {
 function MlFakeFd_out(fd, flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
   this.log = (s) => 0;
-  if (fd == 1 && typeof console.log == "function") this.log = console.log;
-  else if (fd == 2 && typeof console.error == "function")
+  if (fd === 1 && typeof console.log === "function") this.log = console.log;
+  else if (fd === 2 && typeof console.error === "function")
     this.log = console.error;
-  else if (typeof console.log == "function") this.log = console.log;
+  else if (typeof console.log === "function") this.log = console.log;
   this.flags = flags;
 }
 MlFakeFd_out.prototype.length = () => 0;
@@ -359,7 +359,7 @@ MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
       len > 0 &&
       pos >= 0 &&
       pos + len <= buf.length &&
-      buf[pos + len - 1] == 10
+      buf[pos + len - 1] === 10
     )
       len--;
     // Do not output the last \n if present

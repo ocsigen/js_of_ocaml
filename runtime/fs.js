@@ -151,7 +151,7 @@ function resolve_fs_device(name) {
   for (let i = 0; i < jsoo_mount_point.length; i++) {
     const m = jsoo_mount_point[i];
     if (
-      name_slash.search(m.path) == 0 &&
+      name_slash.search(m.path) === 0 &&
       (!res || res.path.length < m.path.length)
     )
       res = {
@@ -192,7 +192,7 @@ function caml_unmount(name) {
   const name_ = caml_trailing_slash(path.join("/"));
   let idx = -1;
   for (let i = 0; i < jsoo_mount_point.length; i++)
-    if (jsoo_mount_point[i].path == name_) idx = i;
+    if (jsoo_mount_point[i].path === name_) idx = i;
   if (idx > -1) jsoo_mount_point.splice(idx, 1);
   return 0;
 }
@@ -253,7 +253,7 @@ function caml_sys_read_directory(name) {
 function caml_sys_remove(name) {
   const root = resolve_fs_device(name);
   const ok = root.device.unlink(root.rest);
-  if (ok == 0) caml_raise_no_such_file(caml_jsbytes_of_string(name));
+  if (ok === 0) caml_raise_no_such_file(caml_jsbytes_of_string(name));
   return 0;
 }
 
@@ -270,7 +270,7 @@ function caml_sys_is_directory(name) {
 function caml_sys_rename(o, n) {
   const o_root = resolve_fs_device(o);
   const n_root = resolve_fs_device(n);
-  if (o_root.device != n_root.device)
+  if (o_root.device !== n_root.device)
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
   if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
   o_root.device.rename(o_root.rest, n_root.rest);
@@ -350,7 +350,7 @@ function jsoo_create_file(name, content) {
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_string_of_array
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_read_file_content(name) {
-  const name_ = typeof name == "string" ? caml_string_of_jsbytes(name) : name;
+  const name_ = typeof name === "string" ? caml_string_of_jsbytes(name) : name;
   const root = resolve_fs_device(name_);
   if (root.device.exists(root.rest)) {
     const file = root.device.open(root.rest, { rdonly: 1 });

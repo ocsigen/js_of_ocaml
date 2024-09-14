@@ -24,7 +24,7 @@ function caml_call_gen(f, args) {
   const n = f.l >= 0 ? f.l : (f.l = f.length);
   const argsLen = args.length;
   const d = n - argsLen;
-  if (d == 0) return f.apply(null, args);
+  if (d === 0) return f.apply(null, args);
   else if (d < 0) {
     const g = f.apply(null, args.slice(0, n));
     if (typeof g !== "function") return g;
@@ -74,7 +74,7 @@ function caml_call_gen(f, args) {
   const n = f.l >= 0 ? f.l : (f.l = f.length);
   let argsLen = args.length;
   const d = n - argsLen;
-  if (d == 0) {
+  if (d === 0) {
     return f.apply(null, args);
   } else if (d < 0) {
     const rest = args.slice(n - 1);

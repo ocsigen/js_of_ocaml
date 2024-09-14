@@ -1,19 +1,19 @@
 //Provides: caml_gc_minor
 function caml_gc_minor(unit) {
   //available with [node --expose-gc]
-  if (typeof globalThis.gc == "function") globalThis.gc(true);
+  if (typeof globalThis.gc === "function") globalThis.gc(true);
   return 0;
 }
 //Provides: caml_gc_major
 function caml_gc_major(unit) {
   //available with [node --expose-gc]
-  if (typeof globalThis.gc == "function") globalThis.gc();
+  if (typeof globalThis.gc === "function") globalThis.gc();
   return 0;
 }
 //Provides: caml_gc_full_major
 function caml_gc_full_major(unit) {
   //available with [node --expose-gc]
-  if (typeof globalThis.gc == "function") globalThis.gc();
+  if (typeof globalThis.gc === "function") globalThis.gc();
   return 0;
 }
 //Provides: caml_gc_compaction
