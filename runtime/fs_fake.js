@@ -211,7 +211,7 @@ MlFakeDevice.prototype.is_dir = function (name) {
   return this.content[name_slash] ? 1 : 0;
 };
 MlFakeDevice.prototype.unlink = function (name) {
-  const ok = this.content[name] ? true : false;
+  const ok = !!this.content[name];
   delete this.content[name];
   return ok;
 };
