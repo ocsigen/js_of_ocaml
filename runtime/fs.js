@@ -66,7 +66,7 @@ function make_path_is_absolute() {
     const isUnc = Boolean(device && device.charAt(1) !== ":");
 
     // UNC paths are always absolute
-    if (Boolean(result[2] || isUnc)) {
+    if (result[2] || isUnc) {
       const root = result[1] || "";
       const sep = result[2] || "";
       return [root, path.substring(root.length + sep.length)];
