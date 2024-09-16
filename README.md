@@ -66,8 +66,6 @@ wasm_of_ocaml _build/default/bin/web/index.bc-for-jsoo
 
 A large part of the runtime is [implemented](https://github.com/ocaml-wasm/wasm_of_ocaml/issues/5). File-related functions and dynamic linking are not supported yet.
 
-Separate compilation is not implemented yet.
-
 ## Compatibility with Js_of_ocaml
 
 Since the value representation is different, some adaptations are necessary.
