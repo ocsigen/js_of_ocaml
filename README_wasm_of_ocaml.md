@@ -30,7 +30,7 @@ opam install dune.3.17.0 wasm_of_ocaml-compiler
 You may want to install additional packages. For instance:
 
 ```
-opam install js_of_ocaml-ppx js_of_ocaml-lwt
+opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 
 ## Usage
