@@ -799,7 +799,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let generated_js =
     List.concat
     @@ List.map files ~f:(fun (_, (_, units)) ->
-           List.map units ~f:(fun { unit_name; unit_info; strings; fragments } ->
+           List.map units ~f:(fun { unit_name; strings; fragments; _ } ->
                Some unit_name, (strings, fragments)))
   in
   let runtime_args =
