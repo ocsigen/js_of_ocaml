@@ -186,7 +186,14 @@ module Fragment = struct
     List.fold_left
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
-      [ "js-string", Config.Flag.use_js_string; "effects", Config.Flag.effects ]
+      [ "js-string", Config.Flag.use_js_string
+      ; "effects", Config.Flag.effects
+      ; ( "wasm"
+        , fun () ->
+            match Config.target () with
+            | `JavaScript -> false
+            | `Wasm -> true )
+      ]
 
   type t =
     | Always_include of Javascript.program pack
