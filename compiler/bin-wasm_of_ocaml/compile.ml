@@ -266,12 +266,19 @@ let run
         | None -> `Fst name)
   in
   let t1 = Timer.make () in
-  let builtin = [ Js_of_ocaml_compiler_runtime_files.jslib_js_of_ocaml ] @ builtin in
+  let builtin = Js_of_ocaml_compiler_runtime_files.runtime @ builtin in
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
-      Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
-  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
+      Linker.load_fragments
+        ~ignore_always_annotation:true
+        ~target_env:Target_env.Isomorphic
+        ~filename
+        runtimes);
+  Linker.load_files
+    ~ignore_always_annotation:true
+    ~target_env:Target_env.Isomorphic
+    runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
