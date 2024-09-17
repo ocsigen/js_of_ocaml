@@ -180,3 +180,11 @@ module Param = struct
       ~desc:"Set baseline for lifting deeply nested functions"
       (int 1)
 end
+
+(****)
+
+let target_ : [ `JavaScript | `Wasm ] ref = ref `JavaScript
+
+let target () = !target_
+
+let set_target t = target_ := t
