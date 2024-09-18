@@ -28,7 +28,7 @@ The following commands will perform a minimal installation:
 ```
 git clone https://github.com/ocaml-wasm/wasm_of_ocaml
 cd wasm_of_ocaml
-opam pin add dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+opam pin add https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
 opam pin add -n --with-version 5.3.0-wasm .
 opam install wasm_of_ocaml-compiler
 ```
