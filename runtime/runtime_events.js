@@ -1,4 +1,3 @@
-
 //Provides: caml_custom_event_index
 var caml_custom_event_index = 0;
 

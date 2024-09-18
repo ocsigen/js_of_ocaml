@@ -1,7 +1,6 @@
-
 //Provides: MlMutex
 function MlMutex() {
-  this.locked = false
+  this.locked = false;
 }
 
 //Provides: caml_ml_mutex_new
@@ -13,15 +12,14 @@ function caml_ml_mutex_new(unit) {
 //Provides: caml_ml_mutex_lock
 //Requires: caml_failwith
 function caml_ml_mutex_lock(t) {
-  if(t.locked)
-    caml_failwith("Mutex.lock: mutex already locked. Cannot wait.");
+  if (t.locked) caml_failwith("Mutex.lock: mutex already locked. Cannot wait.");
   else t.locked = true;
   return 0;
 }
 
 //Provides: caml_ml_mutex_try_lock
 function caml_ml_mutex_try_lock(t) {
-  if(!t.locked) {
+  if (!t.locked) {
     t.locked = true;
     return 1;
   }
