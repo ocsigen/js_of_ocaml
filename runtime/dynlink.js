@@ -18,16 +18,15 @@
 
 //Provides: get_current_libs
 var current_libs;
-function get_current_libs  () {
-  if(!current_libs)
-    current_libs = [0, globalThis, globalThis.jsoo_runtime]
-  return current_libs
+function get_current_libs() {
+  if (!current_libs) current_libs = [0, globalThis, globalThis.jsoo_runtime];
+  return current_libs;
 }
 
 //Provides: caml_dynlink_open_lib
 //Requires: get_current_libs, caml_failwith
 //Requires: caml_jsstring_of_string
-function caml_dynlink_open_lib (_mode,file) {
+function caml_dynlink_open_lib(_mode, file) {
   var name = caml_jsstring_of_string(file);
   console.log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
@@ -38,53 +37,52 @@ function caml_dynlink_open_lib (_mode,file) {
 
 //Provides: caml_dynlink_close_lib
 //Requires: get_current_libs
-function caml_dynlink_close_lib (idx) {
+function caml_dynlink_close_lib(idx) {
   var current_libs = get_current_libs();
-  current_libs[idx]=null;
+  current_libs[idx] = null;
   return 0;
 }
 
 //Provides: caml_dynlink_lookup_symbol
 //Requires: get_current_libs
 //Requires: caml_jsstring_of_string
-function caml_dynlink_lookup_symbol (idx, fun_name) {
+function caml_dynlink_lookup_symbol(idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
   console.log("Dynlink: looking for symbol", name);
   var current_libs = get_current_libs();
-  if(current_libs[idx] && current_libs[idx][name])
-    return {name: name, symbol: current_libs[idx][name]};
+  if (current_libs[idx] && current_libs[idx][name])
+    return { name: name, symbol: current_libs[idx][name] };
   return 0;
 }
 
 //Provides: caml_dynlink_add_primitive
 //Requires: caml_global_data
-function caml_dynlink_add_primitive (dll_addr) {
+function caml_dynlink_add_primitive(dll_addr) {
   globalThis.jsoo_runtime[dll_addr.name] = dll_addr.symbol;
   return caml_global_data.prim_count++;
 }
 
 //Provides: caml_dynlink_get_current_libs
 //Requires: get_current_libs
-function caml_dynlink_get_current_libs () {
+function caml_dynlink_get_current_libs() {
   var current_libs = get_current_libs();
   var len = current_libs.length;
   var a = new Array(len);
-  for(var i=0; i < len; i++)
-    a[i]=i;
+  for (var i = 0; i < len; i++) a[i] = i;
   return a;
 }
 
 //Provides: caml_register_code_fragment
-function caml_register_code_fragment(code, codesize, digest){
-  return 0
+function caml_register_code_fragment(code, codesize, digest) {
+  return 0;
 }
 
 //Provides: caml_add_debug_info
-function caml_add_debug_info(code, size, events){
-  return 0
+function caml_add_debug_info(code, size, events) {
+  return 0;
 }
 
 //Provides: caml_remove_debug_info
-function caml_remove_debug_info(code){
-  return 0
+function caml_remove_debug_info(code) {
+  return 0;
 }

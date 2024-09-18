@@ -1,0 +1,22 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
+  "files": {
+    "include": ["runtime"],
+    "ignore": ["runtime/zstd.ts"]
+  },
+  "formatter": {
+    "enabled": true,
+    "useEditorconfig": true
+  },
+  "linter": {
+    "enabled": false
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
+  }
+}
