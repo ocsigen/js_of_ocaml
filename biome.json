@@ -37,7 +37,6 @@
         "noVar": "off",
         "useExponentiationOperator": "off",
         "useNodejsImportProtocol": "off",
-        "useNumberNamespace": "off",
         "useSingleVarDeclarator": "off",
         "useTemplate": "off",
         "useWhile": "off"
