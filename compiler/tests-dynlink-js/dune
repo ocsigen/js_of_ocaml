@@ -6,11 +6,15 @@
   (:standard -linkall))
  ;; Until dune is fixed https://github.com/ocaml/dune/pull/10935
  (js_of_ocaml
-  (flags (:standard) --linkall (:include effects_flags.sexp))
-  (build_runtime_flags (:standard) (:include effects_flags.sexp))
+  (flags
+   (:standard)
+   --linkall
+   (:include effects_flags.sexp))
+  (build_runtime_flags
+   (:standard)
+   (:include effects_flags.sexp))
   (link_flags (:standard)))
  (modes js byte))
-
 
 (executable
  (name effects_flags)
@@ -21,7 +25,7 @@
  (action
   (with-stdout-to
    %{target}
-   (run ./effects_flags.exe sexp %{profile} ))))
+   (run ./effects_flags.exe sexp %{profile}))))
 
 (rule
  (target effects_flags.txt)
@@ -33,7 +37,13 @@
 (rule
  (target main.js)
  (action
-  (run %{bin:js_of_ocaml} --linkall %{read-strings:effects_flags.txt} -o %{target} %{dep:main.bc})))
+  (run
+   %{bin:js_of_ocaml}
+   --linkall
+   %{read-strings:effects_flags.txt}
+   -o
+   %{target}
+   %{dep:main.bc})))
 
 (rule
  (target plugin.cmo)
@@ -43,7 +53,10 @@
 (rule
  (target plugin.js)
  (action
-  (run %{bin:js_of_ocaml} %{read-strings:effects_flags.txt} %{dep:./plugin.cmo})))
+  (run
+   %{bin:js_of_ocaml}
+   %{read-strings:effects_flags.txt}
+   %{dep:./plugin.cmo})))
 
 (rule
  (target plugin2.cma)
@@ -59,7 +72,10 @@
 (rule
  (target plugin2.js)
  (action
-  (run %{bin:js_of_ocaml} %{read-strings:effects_flags.txt} %{dep:./plugin2.cma})))
+  (run
+   %{bin:js_of_ocaml}
+   %{read-strings:effects_flags.txt}
+   %{dep:./plugin2.cma})))
 
 (rule
  (target main.out)
