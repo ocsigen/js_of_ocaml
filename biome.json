@@ -38,8 +38,7 @@
         "useExponentiationOperator": "off",
         "useNodejsImportProtocol": "off",
         "useSingleVarDeclarator": "off",
-        "useTemplate": "off",
-        "useWhile": "off"
+        "useTemplate": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",

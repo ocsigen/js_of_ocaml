@@ -392,7 +392,7 @@ var zstd_decompress = (function () {
       btr = hu.b,
       pos = (len << 3) - 8 + msb(lb) - btr,
       i = -1;
-    for (; pos > eb && i < ss; ) {
+    while (pos > eb && i < ss) {
       var cbt = pos >> 3;
       var val =
         (dat[cbt] | (dat[cbt + 1] << 8) | (dat[cbt + 2] << 16)) >> (pos & 7);
@@ -667,7 +667,7 @@ var zstd_decompress = (function () {
       bufs = [],
       nb = +!buf,
       ol = 0;
-    for (; dat.length; ) {
+    while (dat.length) {
       var st = rzfh(dat, nb || buf);
       if (typeof st == "object") {
         if (nb) {
@@ -680,7 +680,7 @@ var zstd_decompress = (function () {
           bufs.push(buf);
           st.e = 0;
         }
-        for (; !st.l; ) {
+        while (!st.l) {
           var blk = rzb(dat, st, buf);
           if (!blk) err(5);
           if (buf) st.e = st.y;
