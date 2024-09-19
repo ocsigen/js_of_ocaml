@@ -2,7 +2,9 @@
  (name main)
  (modules main)
  (libraries js_of_ocaml)
- (modes byte))
+ (link_flags
+  (:standard -linkall))
+ (modes js byte))
 
 (rule
  (target main.js)
@@ -20,14 +22,43 @@
   (run %{bin:js_of_ocaml} %{dep:./plugin.cmo})))
 
 (rule
+ (target plugin2.cma)
+ (action
+  (run
+   %{bin:ocamlc}
+   -a
+   %{dep:./plugin2a.ml}
+   %{dep:./plugin2b.ml}
+   -o
+   plugin2.cma)))
+
+(rule
+ (target plugin2.js)
+ (action
+  (run %{bin:js_of_ocaml} %{dep:./plugin2.cma})))
+
+(rule
  (target main.out)
- (deps plugin.js)
+ (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
    %{target}
    (run %{bin:node} %{dep:./main.js}))))
 
 (rule
+ (target main.out2)
+ (deps plugin.js plugin2.js)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.js}))))
+
+(rule
  (alias runtest)
  (action
   (diff main.out.expected main.out)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff main.out.expected main.out2)))
