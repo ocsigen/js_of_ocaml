@@ -41,7 +41,7 @@ function jsoo_floor_log2(x) {
 //Requires: jsoo_floor_log2, caml_int64_create_lo_mi_hi
 function caml_int64_bits_of_float(x) {
   if (!Number.isFinite(x)) {
-    if (isNaN(x)) return caml_int64_create_lo_mi_hi(1, 0, 0x7ff0);
+    if (Number.isNaN(x)) return caml_int64_create_lo_mi_hi(1, 0, 0x7ff0);
     if (x > 0) return caml_int64_create_lo_mi_hi(0, 0, 0x7ff0);
     else return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
   }
@@ -89,7 +89,7 @@ function caml_int32_bits_of_float(x) {
 //Requires: caml_string_of_jsstring, caml_str_repeat
 function caml_hexstring_of_float(x, prec, style) {
   if (!Number.isFinite(x)) {
-    if (isNaN(x)) return caml_string_of_jsstring("nan");
+    if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
     return caml_string_of_jsstring(x > 0 ? "infinity" : "-infinity");
   }
   var sign = x == 0 && 1 / x == -Infinity ? 1 : x >= 0 ? 0 : 1;
@@ -167,7 +167,7 @@ function caml_int64_float_of_bits(x) {
 //Provides: caml_nextafter_float const
 //Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
 function caml_nextafter_float(x, y) {
-  if (isNaN(x) || isNaN(y)) return NaN;
+  if (Number.isNaN(x) || Number.isNaN(y)) return NaN;
   if (x == y) return y;
   if (x == 0) {
     if (y < 0) return -Math.pow(2, -1074);
@@ -200,7 +200,7 @@ function caml_classify_float(x) {
     if (x != 0) return 1;
     return 2;
   }
-  return isNaN(x) ? 4 : 3;
+  return Number.isNaN(x) ? 4 : 3;
 }
 //Provides: caml_modf_float const
 function caml_modf_float(x) {
@@ -215,7 +215,7 @@ function caml_modf_float(x) {
     }
     return [0, f, i];
   }
-  if (isNaN(x)) return [0, NaN, NaN];
+  if (Number.isNaN(x)) return [0, NaN, NaN];
   return [0, 1 / x, x];
 }
 //Provides: caml_ldexp_float const
@@ -509,7 +509,7 @@ function caml_format_float(fmt, x) {
     f.sign = -1;
     x = -x;
   }
-  if (isNaN(x)) {
+  if (Number.isNaN(x)) {
     s = "nan";
     f.filler = " ";
   } else if (!Number.isFinite(x)) {
