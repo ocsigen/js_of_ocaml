@@ -351,7 +351,7 @@ let eval_instr ~target info ((x, loc) as i) =
                 , Prim
                     ( prim
                     , List.map2 prim_args prim_args' ~f:(fun arg c ->
-                          match c, target with
+                          match (c : constant), target with
                           | Some ((Int _ | NativeString _) as c), _ -> Pc c
                           | Some (Float _ as c), `JavaScript -> Pc c
                           | Some (String _ as c), `JavaScript
