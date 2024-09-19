@@ -129,8 +129,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
   var state = env[env_state];
   var errflag = env[env_errflag];
 
-  exit: for (;;) {
-    next: switch (cmd) {
+  the_loop: for (;;) {
+    switch (cmd) {
       case 0: //START:
         state = 0;
         errflag = 0;
@@ -147,7 +147,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           break;
         }
         res = READ_TOKEN;
-        break exit;
+        break the_loop;
       /* The ML code calls the lexer and updates */
       /* symb_start and symb_end */
       case 1: //TOKEN_READ:
@@ -187,7 +187,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         }
         if (errflag <= 0) {
           res = CALL_ERROR_FUNCTION;
-          break exit;
+          break the_loop;
         }
       // Fall through
       /* The ML code calls the error function */
@@ -206,7 +206,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
             ) {
               if (caml_parser_trace) log("Recovering in state " + state1);
               cmd = shift_recover;
-              break next;
+              continue the_loop;
             } else {
               if (caml_parser_trace) log("Discarding state " + state1);
               if (sp <= env[env_stackbase]) {
@@ -237,7 +237,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         sp++;
         if (sp >= env[env_stacksize]) {
           res = GROW_STACKS_1;
-          break exit;
+          break the_loop;
         }
       // Fall through
       /* The ML code resizes the stacks */
@@ -270,13 +270,13 @@ function caml_parse_engine(tables, env, cmd, arg) {
         else state = tables.dgoto[m];
         if (sp >= env[env_stacksize]) {
           res = GROW_STACKS_2;
-          break exit;
+          break the_loop;
         }
       // Fall through
       /* The ML code resizes the stacks */
       case 3: //STACKS_GROWN_2:
         res = COMPUTE_SEMANTIC_ACTION;
-        break exit;
+        break the_loop;
       /* The ML code calls the semantic action */
       case 4: //SEMANTIC_ACTION_COMPUTED:
         env[env_s_stack][sp + 1] = state;
