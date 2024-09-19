@@ -22,7 +22,7 @@ var log2_ok = Math.log2 && Math.log2(1.1235582092889474e307) == 1020;
 function jsoo_floor_log2(x) {
   if (log2_ok) return Math.floor(Math.log2(x));
   var i = 0;
-  if (x == 0) return -Infinity;
+  if (x == 0) return Number.NEGATIVE_INFINITY;
   if (x >= 1) {
     while (x >= 2) {
       x /= 2;
@@ -45,7 +45,8 @@ function caml_int64_bits_of_float(x) {
     if (x > 0) return caml_int64_create_lo_mi_hi(0, 0, 0x7ff0);
     else return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
   }
-  var sign = x == 0 && 1 / x == -Infinity ? 0x8000 : x >= 0 ? 0 : 0x8000;
+  var sign =
+    x == 0 && 1 / x == Number.NEGATIVE_INFINITY ? 0x8000 : x >= 0 ? 0 : 0x8000;
   if (sign) x = -x;
   // Int64.bits_of_float 1.1235582092889474E+307 = 0x7fb0000000000000L
   // using Math.LOG2E*Math.log(x) in place of Math.log2 result in precision lost
@@ -92,7 +93,7 @@ function caml_hexstring_of_float(x, prec, style) {
     if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
     return caml_string_of_jsstring(x > 0 ? "infinity" : "-infinity");
   }
-  var sign = x == 0 && 1 / x == -Infinity ? 1 : x >= 0 ? 0 : 1;
+  var sign = x == 0 && 1 / x == Number.NEGATIVE_INFINITY ? 1 : x >= 0 ? 0 : 1;
   if (sign) x = -x;
   var exp = 0;
   if (x == 0) {
@@ -151,8 +152,9 @@ function caml_int64_float_of_bits(x) {
   var hi = x.hi;
   var exp = (hi & 0x7fff) >> 4;
   if (exp == 2047) {
-    if ((lo | mi | (hi & 0xf)) == 0) return hi & 0x8000 ? -Infinity : Infinity;
-    else return NaN;
+    if ((lo | mi | (hi & 0xf)) == 0)
+      return hi & 0x8000 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
+    else return Number.NaN;
   }
   var k = Math.pow(2, -24);
   var res = (lo * k + mi) * k + (hi & 0xf);
@@ -167,7 +169,7 @@ function caml_int64_float_of_bits(x) {
 //Provides: caml_nextafter_float const
 //Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
 function caml_nextafter_float(x, y) {
-  if (Number.isNaN(x) || Number.isNaN(y)) return NaN;
+  if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN;
   if (x == y) return y;
   if (x == 0) {
     if (y < 0) return -Math.pow(2, -1074);
@@ -215,7 +217,7 @@ function caml_modf_float(x) {
     }
     return [0, f, i];
   }
-  if (Number.isNaN(x)) return [0, NaN, NaN];
+  if (Number.isNaN(x)) return [0, Number.NaN, Number.NaN];
   return [0, 1 / x, x];
 }
 //Provides: caml_ldexp_float const
@@ -490,7 +492,7 @@ function caml_format_float(fmt, x) {
     if (Math.abs(x) < 1.0) {
       return x.toFixed(dp);
     } else {
-      var e = parseInt(x.toString().split("+")[1]);
+      var e = Number.parseInt(x.toString().split("+")[1]);
       if (e > 20) {
         e -= 20;
         x /= Math.pow(10, e);
@@ -505,7 +507,7 @@ function caml_format_float(fmt, x) {
   var s,
     f = caml_parse_format(fmt);
   var prec = f.prec < 0 ? 6 : f.prec;
-  if (x < 0 || (x == 0 && 1 / x == -Infinity)) {
+  if (x < 0 || (x == 0 && 1 / x == Number.NEGATIVE_INFINITY)) {
     f.sign = -1;
     x = -x;
   }
@@ -575,12 +577,12 @@ function caml_float_of_string(s) {
   //          1        2             3           5
   if (m) {
     var m3 = m[3].replace(/0+$/, "");
-    var mantissa = parseInt(m[1] + m[2] + m3, 16);
+    var mantissa = Number.parseInt(m[1] + m[2] + m3, 16);
     var exponent = (m[5] | 0) - 4 * m3.length;
     res = mantissa * Math.pow(2, exponent);
     return res;
   }
-  if (/^\+?inf(inity)?$/i.test(s)) return Infinity;
-  if (/^-inf(inity)?$/i.test(s)) return -Infinity;
+  if (/^\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
+  if (/^-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;
   caml_failwith("float_of_string");
 }

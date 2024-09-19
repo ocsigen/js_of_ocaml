@@ -242,7 +242,7 @@ Ml_Bigarray.prototype.compare = function (b, total) {
         if (x < y) return -1;
         if (x > y) return 1;
         if (x != y) {
-          if (!total) return NaN;
+          if (!total) return Number.NaN;
           if (x == x) return 1;
           if (y == y) return -1;
         }

@@ -187,7 +187,7 @@ function caml_compare_val(a, b, total) {
           if (a < b) return -1;
           if (a > b) return 1;
           if (a != b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             if (a == a) return 1;
             if (b == b) return -1;
           }
@@ -209,14 +209,14 @@ function caml_compare_val(a, b, total) {
           if (a < b) return -1;
           if (a > b) return 1;
           if (a != b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             if (a == a) return 1;
             if (b == b) return -1;
           }
           break;
         case 1251: // JavaScript Symbol, no ordering.
           if (a !== b) {
-            if (!total) return NaN;
+            if (!total) return Number.NaN;
             return 1;
           }
           break;

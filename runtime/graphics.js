@@ -60,11 +60,11 @@ function caml_gr_open_graph(info) {
   if (!status) specs.push("status=1");
 
   var w = get("width");
-  w = w ? parseInt(w) : 200;
+  w = w ? Number.parseInt(w) : 200;
   specs.push("width=" + w);
 
   var h = get("height");
-  h = h ? parseInt(h) : 200;
+  h = h ? Number.parseInt(h) : 200;
   specs.push("height=" + h);
 
   var win = globalThis.open("about:blank", target, specs.join(","));
