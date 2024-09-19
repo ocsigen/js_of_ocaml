@@ -46,7 +46,6 @@
         "noDoubleEquals": "off",
         "noDuplicateCase": "off",
         "noFallthroughSwitchClause": "off",
-        "noGlobalIsNan": "off",
         "noRedeclare": "off",
         "noRedundantUseStrict": "off",
         "noSelfCompare": "off",
