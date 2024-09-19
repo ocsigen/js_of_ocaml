@@ -5,3 +5,5 @@ let require s =
   Js.Unsafe.fun_call (Js.Unsafe.js_expr "require") [| Js.Unsafe.inject (Js.string s) |]
 
 let () = require "./plugin.js"
+
+let () = require "./plugin2.js"

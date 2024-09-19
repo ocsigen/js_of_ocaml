@@ -150,11 +150,15 @@ var caml_global_data = [0];
 //Requires: caml_jsstring_of_string
 function caml_build_symbols(symb) {
   var r = {};
+  var max = -1;
   if (symb) {
     for (var i = 1; i < symb.length; i++) {
-      r[caml_jsstring_of_string(symb[i][1])] = symb[i][2];
+      var idx = symb[i][2];
+      max = Math.max(max, idx);
+      r[caml_jsstring_of_string(symb[i][1])] = idx;
     }
   }
+  r.next_idx = max + 1;
   return r;
 }
 
@@ -173,7 +177,10 @@ function caml_register_global(n, v, name_opt) {
       var nid = caml_global_data.symidx[name];
       if (nid >= 0) n = nid;
       else {
-        caml_failwith("caml_register_global: cannot locate " + name);
+        // The unit is unknown, this can happen when dynlinking a precompiled js,
+        // let's allocate a fresh idx.
+        var n = caml_global_data.symidx.next_idx++;
+        caml_global_data.symidx[name] = n;
       }
     }
   }
