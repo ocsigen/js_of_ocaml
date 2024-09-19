@@ -11,6 +11,7 @@
   "linter": {
     "enabled": true,
     "rules": {
+      "recommended": true,
       "complexity": {
         "noUselessSwitchCase": "off",
         "noUselessTernary": "off",
@@ -22,7 +23,6 @@
         "noInvalidUseBeforeDeclaration": "off",
         "noSwitchDeclarations": "off"
       },
-      "recommended": true,
       "security": {
         "noGlobalEval": "off"
       },
@@ -46,7 +46,6 @@
         "noDoubleEquals": "off",
         "noDuplicateCase": "off",
         "noFallthroughSwitchClause": "off",
-        "noGlobalIsFinite": "off",
         "noGlobalIsNan": "off",
         "noRedeclare": "off",
         "noRedundantUseStrict": "off",
