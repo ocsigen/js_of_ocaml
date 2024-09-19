@@ -186,7 +186,7 @@ let run
     let init_pseudo_fs = fs_external && standalone in
     let sm =
       match output_file with
-      | `Stdout, fmt ->
+      | `Stdout, formatter ->
           let instr =
             List.concat
               [ pseudo_fs_instr `create_file one.debug one.cmis
@@ -196,15 +196,15 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
-            ~target:(JavaScript fmt)
             ~standalone
             ?profile
             ~link
             ~wrap_with_fun
             ?source_map
+            ~formatter
             one.debug
             code
-      | `File, fmt ->
+      | `File, formatter ->
           let fs_instr1, fs_instr2 =
             match fs_output with
             | None -> pseudo_fs_instr `create_file one.debug one.cmis, []
@@ -220,12 +220,12 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
-              ~target:(JavaScript fmt)
               ~standalone
               ?profile
               ~link
               ~wrap_with_fun
               ?source_map
+              ~formatter
               one.debug
               code
           in

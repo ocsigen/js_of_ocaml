@@ -658,12 +658,6 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-type 'a target =
-  | JavaScript : Pretty_print.t -> Source_map.t option target
-  | Wasm
-      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
-        target
-
 let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =
     match link with
@@ -676,20 +670,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
-let full
-    (type result)
-    ~(target : result target)
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~link
-    ~source_map
-    d
-    p : result =
-  let deadcode_sentinal =
-    (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh_n "dummy"
-  in
+let optimize ~profile ~deadcode_sentinal p =
   let opt =
     specialize_js_once
     +> (match profile with
@@ -699,58 +680,53 @@ let full
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
     +> map_fst
-         (match target with
-         | JavaScript _ -> if Config.Flag.effects () then Fun.id else Generate_closure.f
-         | Wasm -> Fun.id)
+         (match Config.target () with
+         | `JavaScript -> if Config.Flag.effects () then Fun.id else Generate_closure.f
+         | `Wasm -> Fun.id)
     +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
   let r = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  match target with
-  | JavaScript formatter ->
-      let exported_runtime = not standalone in
-      let emit formatter =
-        generate
-          d
-          ~exported_runtime
-          ~wrap_with_fun
-          ~warn_on_unhandled_effect:standalone
-          ~deadcode_sentinal
-        +> link_and_pack ~standalone ~wrap_with_fun ~link
-        +> output formatter ~source_map ()
-      in
-      let source_map = emit formatter r in
-      source_map
-  | Wasm ->
-      let (p, live_vars), _, in_cps = r in
-      live_vars, in_cps, p, d
+  r
+
+let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh_n "dummy"
+  in
+  let r = optimize ~profile ~deadcode_sentinal p in
+  let exported_runtime = not standalone in
+  let emit formatter =
+    generate
+      d
+      ~exported_runtime
+      ~wrap_with_fun
+      ~warn_on_unhandled_effect:standalone
+      ~deadcode_sentinal
+    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> output formatter ~source_map ()
+  in
+  let source_map = emit formatter r in
+  source_map
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
-    full
-      ~target:(JavaScript formatter)
-      ~standalone
-      ~wrap_with_fun
-      ~profile
-      ~link
-      ~source_map:None
-      d
-      p
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None ~formatter d p
   in
   ()
 
 let f
-    ~target
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ~link
     ?source_map
+    ~formatter
     d
     p =
-  full ~target ~standalone ~wrap_with_fun ~profile ~link ~source_map d p
+  full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p
 
 let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
   full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
