@@ -390,7 +390,7 @@ function caml_unix_rewinddir(dir_handle) {
 function caml_unix_findfirst(path) {
   // The Windows code adds this glob to the path, so we need to remove it
   var path_js = caml_jsstring_of_string(path);
-  path_js = path_js.replace(/(^|[\\\/])\*\.\*$/, "");
+  path_js = path_js.replace(/(^|[\\/])\*\.\*$/, "");
   path = caml_string_of_jsstring(path_js);
   // *.* is now stripped
   var dir_handle = caml_unix_opendir(path);
