@@ -12,7 +12,6 @@
     "enabled": true,
     "rules": {
       "complexity": {
-        "noExtraBooleanCast": "off",
         "noUselessSwitchCase": "off",
         "noUselessTernary": "off",
         "useArrowFunction": "off",
