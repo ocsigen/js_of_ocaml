@@ -72,7 +72,7 @@ function caml_hash_univ_param(count, limit, obj) {
       count--;
       const p = caml_int64_to_bytes(caml_int64_bits_of_float(obj));
       for (let i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
-    } else if (obj && obj.caml_custom) {
+    } else if (obj?.caml_custom) {
       if (
         caml_custom_ops[obj.caml_custom] &&
         caml_custom_ops[obj.caml_custom].hash
@@ -184,7 +184,7 @@ function caml_hash_mix_bytes_arr(h, s) {
 function caml_hash_mix_bytes(h, v) {
   const content = caml_ml_bytes_content(v);
   if (typeof content === "string") return caml_hash_mix_jsbytes(h, content);
-  /* ARRAY */ else return caml_hash_mix_bytes_arr(h, content);
+  /* ARRAY */ return caml_hash_mix_bytes_arr(h, content);
 }
 
 //Provides: caml_hash_mix_string
@@ -218,7 +218,7 @@ function caml_hash(count, limit, seed, obj) {
   wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
-    if (v && v.caml_custom) {
+    if (v?.caml_custom) {
       if (
         caml_custom_ops[v.caml_custom] &&
         caml_custom_ops[v.caml_custom].hash

@@ -158,9 +158,8 @@ function incr_nat(nat, ofs, len, carry_in) {
     if (x === x >>> 0) {
       carry = 0;
       break;
-    } else {
-      carry = 1;
     }
+    carry = 1;
   }
   return carry;
 }
@@ -199,9 +198,8 @@ function decr_nat(nat, ofs, len, carry_in) {
     if (x >= 0) {
       borrow = 0;
       break;
-    } else {
-      borrow = 1;
     }
+    borrow = 1;
   }
   return borrow === 1 ? 0 : 1;
 }
@@ -254,9 +252,8 @@ function mult_digit_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3) {
       1,
       0,
     );
-  } else {
-    return carry;
   }
+  return carry;
 }
 
 // nat1 += nat2 * nat3

@@ -18,31 +18,23 @@
 //Provides: caml_compare_val_tag
 //Requires: caml_is_ml_string, caml_is_ml_bytes
 function caml_compare_val_tag(a) {
-  if (typeof a === "number")
-    return 1000; // int_tag (we use it for all numbers)
-  else if (caml_is_ml_bytes(a))
-    return 252; // string_tag
-  else if (caml_is_ml_string(a))
-    return 1252; // ocaml string (if different from bytes)
-  else if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] <= 255) {
+  if (typeof a === "number") return 1000;
+  if (caml_is_ml_bytes(a)) return 252;
+  if (caml_is_ml_string(a)) return 1252;
+  if (Array.isArray(a) && a[0] === a[0] >>> 0 && a[0] <= 255) {
     // Look like an ocaml block
     const tag = a[0] | 0;
     // ignore double_array_tag because we cannot accurately set
     // this tag when we create an array of float.
     return tag === 254 ? 0 : tag;
-  } else if (a instanceof String)
-    return 12520; // javascript string, like string_tag (252)
-  else if (typeof a === "string")
-    return 12520; // javascript string, like string_tag (252)
-  else if (a instanceof Number)
-    return 1000; // int_tag (we use it for all numbers)
-  else if (a && a.caml_custom)
-    return 1255; // like custom_tag (255)
-  else if (a && a.compare)
-    return 1256; // like custom_tag (255)
-  else if (typeof a === "function")
-    return 1247; // like closure_tag (247)
-  else if (typeof a === "symbol") return 1251;
+  }
+  if (a instanceof String) return 12520;
+  if (typeof a === "string") return 12520;
+  if (a instanceof Number) return 1000;
+  if (a?.caml_custom) return 1255;
+  if (a?.compare) return 1256;
+  if (typeof a === "function") return 1247;
+  if (typeof a === "symbol") return 1251;
   return 1001; //out_of_heap_tag
 }
 
@@ -214,6 +206,7 @@ function caml_compare_val(a, b, total) {
           // Exception: `!=` will not coerce/convert if both a and b are objects
           if (a < b) return -1;
           if (a > b) return 1;
+          // biome-ignore lint/suspicious/noDoubleEquals: type-coercive comparison
           if (a != b) {
             if (!total) return Number.NaN;
             if (a === a) return 1;
@@ -246,8 +239,6 @@ function caml_compare_val(a, b, total) {
           }
           break;
         }
-        case 246: // Lazy_tag
-        case 254: // Double_array
         default: // Block with other tag
           if (caml_is_continuation_tag(tag_a)) {
             caml_invalid_argument("compare: continuation value");

@@ -121,7 +121,7 @@ const re_match = (() => {
 
     const prefix_match = () => {
       if (partial) return accept();
-      else backtrack();
+      backtrack();
     };
 
     /* Main DFA interpreter loop */
@@ -326,7 +326,7 @@ function re_string_match(re, s, pos) {
     caml_invalid_argument("Str.string_match");
   const res = re_match(re, s, pos, 0);
   if (res) return res;
-  else return [0];
+  return [0];
 }
 
 //Provides: re_partial_match
@@ -336,7 +336,7 @@ function re_partial_match(re, s, pos) {
     caml_invalid_argument("Str.partial_match");
   const res = re_match(re, s, pos, 1);
   if (res) return res;
-  else return [0];
+  return [0];
 }
 
 //Provides: re_replacement_text

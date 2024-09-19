@@ -76,7 +76,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
     /* See if we need a refill */
     if (lexbuf[lex_curr_pos] >= lexbuf[lex_buffer_len]) {
       if (lexbuf[lex_eof_reached] === 0) return -state - 1;
-      else c = 256;
+      c = 256;
     } else {
       /* Read next input char */
       c = buffer[lexbuf[lex_curr_pos]];
@@ -200,7 +200,7 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
     /* See if we need a refill */
     if (lexbuf[lex_curr_pos] >= lexbuf[lex_buffer_len]) {
       if (lexbuf[lex_eof_reached] === 0) return -state - 1;
-      else c = 256;
+      c = 256;
     } else {
       /* Read next input char */
       c = buffer[lexbuf[lex_curr_pos]];

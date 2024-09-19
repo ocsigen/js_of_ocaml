@@ -60,18 +60,19 @@ function caml_parse_format(fmt) {
       case "6":
       case "7":
       case "8":
-      case "9":
+      case "9": {
         f.width = 0;
-        while (((c = fmt.charCodeAt(i) - 48), c >= 0 && c <= 9)) {
+        while ((c = fmt.charCodeAt(i) - 48) && c >= 0 && c <= 9) {
           f.width = f.width * 10 + c;
           i++;
         }
         i--;
         break;
+      }
       case ".":
         f.prec = 0;
         i++;
-        while (((c = fmt.charCodeAt(i) - 48), c >= 0 && c <= 9)) {
+        while ((c = fmt.charCodeAt(i) - 48) && c >= 0 && c <= 9) {
           f.prec = f.prec * 10 + c;
           i++;
         }

@@ -90,9 +90,8 @@ function caml_unix_isatty(fileDescriptor) {
   if (fs_node_supported()) {
     const tty = require("node:tty");
     return tty.isatty(fileDescriptor) ? 1 : 0;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 //Provides: caml_unix_isatty
@@ -303,7 +302,7 @@ function caml_unix_unlink(name) {
 //Requires: caml_raise_not_found
 //Alias: unix_getuid
 function caml_unix_getuid(unit) {
-  if (globalThis.process && globalThis.process.getuid) {
+  if (globalThis.process?.getuid) {
     return globalThis.process.getuid();
   }
   caml_raise_not_found();

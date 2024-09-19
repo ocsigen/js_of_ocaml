@@ -204,7 +204,9 @@ function jsoo_is_ascii(s) {
     // Spidermonkey gets much slower when s.length >= 24 (on 64 bit archs)
     for (let i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) return false;
     return true;
-  } else return !/[^\x00-\x7f]/.test(s);
+  }
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: expected behaviour
+  return !/[^\x00-\x7f]/.test(s);
 }
 
 //Provides: caml_bytes_unsafe_get mutable
@@ -435,9 +437,11 @@ function caml_bytes_set(s, i, c) {
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: jsoo_is_ascii, caml_utf8_of_utf16, MlBytes
 function caml_bytes_of_utf16_jsstring(s) {
-  let tag = 9 /* BYTES | ASCII */;
-  if (!jsoo_is_ascii(s))
-    (tag = 8) /* BYTES | NOT_ASCII */, (s = caml_utf8_of_utf16(s));
+  let tag = 9; /* BYTES | ASCII */
+  if (!jsoo_is_ascii(s)) {
+    tag = 8; /* BYTES | NOT_ASCII */
+    s = caml_utf8_of_utf16(s);
+  }
   return new MlBytes(tag, s, s.length);
 }
 
@@ -795,7 +799,7 @@ function caml_jsstring_of_string(s) {
 //If: js-string
 function caml_string_of_jsstring(s) {
   if (jsoo_is_ascii(s)) return caml_string_of_jsbytes(s);
-  else return caml_string_of_jsbytes(caml_utf8_of_utf16(s));
+  return caml_string_of_jsbytes(caml_utf8_of_utf16(s));
 }
 
 //Provides: caml_bytes_of_jsbytes const
@@ -918,6 +922,7 @@ function caml_ml_bytes_content(s) {
 //Requires: jsoo_is_ascii
 //If: js-string
 function caml_is_ml_string(s) {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: expected behaviour
   return typeof s === "string" && !/[^\x00-\xff]/.test(s);
 }
 

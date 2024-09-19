@@ -21,10 +21,9 @@
 
 //Provides: caml_js_on_ie const
 function caml_js_on_ie() {
-  const ua =
-    globalThis.navigator && globalThis.navigator.userAgent
-      ? globalThis.navigator.userAgent
-      : "";
+  const ua = globalThis.navigator?.userAgent
+    ? globalThis.navigator.userAgent
+    : "";
   return ua.indexOf("MSIE") !== -1 && ua.indexOf("Opera") !== 0;
 }
 
@@ -47,9 +46,8 @@ function caml_js_html_entities(s) {
     const str = temp.textContent || temp.innerText;
     temp = null;
     return str;
-  } else {
-    return null;
   }
+  return null;
 }
 
 //Provides: caml_js_get_console const

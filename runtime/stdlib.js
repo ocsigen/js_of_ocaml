@@ -25,46 +25,44 @@ function caml_call_gen(f, args) {
   const argsLen = args.length;
   const d = n - argsLen;
   if (d === 0) return f.apply(null, args);
-  else if (d < 0) {
+  if (d < 0) {
     const g = f.apply(null, args.slice(0, n));
     if (typeof g !== "function") return g;
     return caml_call_gen(g, args.slice(n));
-  } else {
-    let g;
-    switch (d) {
-      case 1: {
-        g = function (x) {
-          const nargs = new Array(argsLen + 1);
-          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
-          nargs[argsLen] = x;
-          return f.apply(null, nargs);
-        };
-        break;
-      }
-      case 2: {
-        g = function (x, y) {
-          const nargs = new Array(argsLen + 2);
-          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
-          nargs[argsLen] = x;
-          nargs[argsLen + 1] = y;
-          return f.apply(null, nargs);
-        };
-        break;
-      }
-      default: {
-        g = function () {
-          const extra_args = arguments.length == 0 ? 1 : arguments.length;
-          const nargs = new Array(args.length + extra_args);
-          for (let i = 0; i < args.length; i++) nargs[i] = args[i];
-          for (let i = 0; i < arguments.length; i++)
-            nargs[args.length + i] = arguments[i];
-          return caml_call_gen(f, nargs);
-        };
-      }
-    }
-    g.l = d;
-    return g;
   }
+  let g;
+  switch (d) {
+    case 1: {
+      g = (x) => {
+        const nargs = new Array(argsLen + 1);
+        for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+        nargs[argsLen] = x;
+        return f.apply(null, nargs);
+      };
+      break;
+    }
+    case 2: {
+      g = (x, y) => {
+        const nargs = new Array(argsLen + 2);
+        for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+        nargs[argsLen] = x;
+        nargs[argsLen + 1] = y;
+        return f.apply(null, nargs);
+      };
+      break;
+    }
+    default: {
+      g = (...extra_args) => {
+        const nargs = new Array(args.length + extra_args.length);
+        for (let i = 0; i < args.length; i++) nargs[i] = args[i];
+        for (let i = 0; i < extra_args.length; i++)
+          nargs[args.length + i] = extra_args[i];
+        return caml_call_gen(f, nargs);
+      };
+    }
+  }
+  g.l = d;
+  return g;
 }
 
 //Provides: caml_call_gen (const, shallow)
@@ -76,57 +74,56 @@ function caml_call_gen(f, args) {
   const d = n - argsLen;
   if (d === 0) {
     return f.apply(null, args);
-  } else if (d < 0) {
+  }
+  if (d < 0) {
     const rest = args.slice(n - 1);
     const k = args[argsLen - 1];
     args = args.slice(0, n);
-    args[n - 1] = function (g) {
+    args[n - 1] = (g) => {
       if (typeof g !== "function") return k(g);
       const args = rest.slice();
       args[args.length - 1] = k;
       return caml_call_gen(g, args);
     };
     return f.apply(null, args);
-  } else {
-    argsLen--;
-    const k = args[argsLen];
-    let g;
-    switch (d) {
-      case 1: {
-        g = function (x, y) {
-          const nargs = new Array(argsLen + 2);
-          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
-          nargs[argsLen] = x;
-          nargs[argsLen + 1] = y;
-          return f.apply(null, nargs);
-        };
-        break;
-      }
-      case 2: {
-        g = function (x, y, z) {
-          const nargs = new Array(argsLen + 3);
-          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
-          nargs[argsLen] = x;
-          nargs[argsLen + 1] = y;
-          nargs[argsLen + 2] = z;
-          return f.apply(null, nargs);
-        };
-        break;
-      }
-      default: {
-        g = function () {
-          const extra_args = arguments.length == 0 ? 1 : arguments.length;
-          const nargs = new Array(argsLen + extra_args);
-          for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
-          for (let i = 0; i < arguments.length; i++)
-            nargs[argsLen + i] = arguments[i];
-          return caml_call_gen(f, nargs);
-        };
-      }
-    }
-    g.l = d + 1;
-    return k(g);
   }
+  argsLen--;
+  const k = args[argsLen];
+  let g;
+  switch (d) {
+    case 1: {
+      g = (x, y) => {
+        const nargs = new Array(argsLen + 2);
+        for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+        nargs[argsLen] = x;
+        nargs[argsLen + 1] = y;
+        return f.apply(null, nargs);
+      };
+      break;
+    }
+    case 2: {
+      g = (x, y, z) => {
+        const nargs = new Array(argsLen + 3);
+        for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+        nargs[argsLen] = x;
+        nargs[argsLen + 1] = y;
+        nargs[argsLen + 2] = z;
+        return f.apply(null, nargs);
+      };
+      break;
+    }
+    default: {
+      g = (...extra_args) => {
+        const nargs = new Array(argsLen + extra_args.length);
+        for (let i = 0; i < argsLen; i++) nargs[i] = args[i];
+        for (let i = 0; i < extra_args.length; i++)
+          nargs[argsLen + i] = extra_args[i];
+        return caml_call_gen(f, nargs);
+      };
+    }
+  }
+  g.l = d + 1;
+  return k(g);
 }
 
 //Provides: caml_named_values

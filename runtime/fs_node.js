@@ -303,7 +303,7 @@ MlNodeFd.prototype.read = function (offset, a, buf_offset, len) {
   try {
     if (this.flags.isCharacterDevice)
       return this.fs.readSync(this.fd, a, buf_offset, len);
-    else return this.fs.readSync(this.fd, a, buf_offset, len, offset);
+    return this.fs.readSync(this.fd, a, buf_offset, len, offset);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }

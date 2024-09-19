@@ -79,7 +79,8 @@ function make_path_is_absolute() {
     globalThis.process.platform
   ) {
     return globalThis.process.platform === "win32" ? win32 : posix;
-  } else return posix;
+  }
+  return posix;
 }
 const path_is_absolute = make_path_is_absolute();
 
@@ -162,7 +163,7 @@ function resolve_fs_device(name) {
   }
   if (!res && fs_node_supported()) {
     const root = caml_get_root(name_);
-    if (root && root.match(/^[a-zA-Z]:\/$/)) {
+    if (root?.match(/^[a-zA-Z]:\/$/)) {
       const m = { path: root, device: new MlNodeDevice(root) };
       jsoo_mount_point.push(m);
       res = {
@@ -212,9 +213,8 @@ function caml_sys_chdir(dir) {
       caml_current_dir = caml_trailing_slash(root.path + root.rest);
     else caml_current_dir = root.path;
     return 0;
-  } else {
-    caml_raise_no_such_file(caml_jsbytes_of_string(dir));
   }
+  caml_raise_no_such_file(caml_jsbytes_of_string(dir));
 }
 
 //Provides: caml_raise_no_such_file

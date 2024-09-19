@@ -47,11 +47,11 @@ function caml_obj_is_block(x) {
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
   if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
-  else if (caml_is_ml_bytes(x)) return 252;
-  else if (caml_is_ml_string(x)) return 252;
-  else if (x instanceof Function || typeof x === "function") return 247;
-  else if (x && x.caml_custom) return 255;
-  else return 1000;
+  if (caml_is_ml_bytes(x)) return 252;
+  if (caml_is_ml_string(x)) return 252;
+  if (x instanceof Function || typeof x === "function") return 247;
+  if (x?.caml_custom) return 255;
+  return 1000;
 }
 
 //Provides: caml_obj_set_tag (mutable, const)
@@ -199,9 +199,8 @@ function caml_lazy_update_to_forcing(o) {
     caml_obj_update_tag(o, 246, 244)
   ) {
     return 0;
-  } else {
-    return 1;
   }
+  return 1;
 }
 
 //Provides: caml_lazy_update_to_forward

@@ -28,8 +28,7 @@ function caml_raise_sys_error(msg) {
 function caml_sys_exit(code) {
   if (globalThis.quit) globalThis.quit(code);
   //nodejs
-  if (globalThis.process && globalThis.process.exit)
-    globalThis.process.exit(code);
+  if (globalThis.process?.exit) globalThis.process.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
@@ -71,12 +70,12 @@ function caml_format_exception(exn) {
       if (typeof v === "number") r += v.toString();
       else if (v instanceof MlBytes) {
         r += `"${v.toString()}"`;
-      } else if (typeof v == "string") {
+      } else if (typeof v === "string") {
         r += `"${v.toString()}"`;
       } else r += "_";
     }
     r += ")";
-  } else if (exn[0] == 248) {
+  } else if (exn[0] === 248) {
     r += exn[1];
   }
   return r;
@@ -85,7 +84,7 @@ function caml_format_exception(exn) {
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception, caml_callback
 function caml_fatal_uncaught_exception(err) {
-  if (Array.isArray(err) && (err[0] == 0 || err[0] == 248)) {
+  if (Array.isArray(err) && (err[0] === 0 || err[0] === 248)) {
     const handler = caml_named_value("Printexc.handle_uncaught_exception");
     if (handler) caml_callback(handler, [err, false]);
     else {
@@ -113,8 +112,7 @@ function jsoo_sys_getenv(n) {
   //nodejs env
   if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
-  if (globalThis.jsoo_static_env && globalThis.jsoo_static_env[n])
-    return globalThis.jsoo_static_env[n];
+  if (globalThis.jsoo_static_env?.[n]) return globalThis.jsoo_static_env[n];
 }
 
 //Provides: caml_sys_getenv (const)
@@ -141,7 +139,7 @@ let caml_argv = (() => {
   let main = "a.out";
   let args = [];
 
-  if (process && process.argv && process.argv.length > 1) {
+  if (process?.argv && process.argv.length > 1) {
     const argv = process.argv;
     //nodejs
     main = argv[1];
@@ -190,7 +188,7 @@ function caml_sys_system_command(cmd) {
   const cmd_ = caml_jsstring_of_string(cmd);
   if (typeof require !== "undefined") {
     const child_process = require("node:child_process");
-    if (child_process && child_process.execSync)
+    if (child_process?.execSync)
       try {
         child_process.execSync(cmd_, { stdio: "inherit" });
         return 0;
@@ -227,7 +225,8 @@ function caml_sys_random_seed() {
     if (globalThis.crypto.getRandomValues) {
       const a = globalThis.crypto.getRandomValues(new Int32Array(4));
       return [0, a[0], a[1], a[2], a[3]];
-    } else if (globalThis.crypto.randomBytes) {
+    }
+    if (globalThis.crypto.randomBytes) {
       const a = new Int32Array(globalThis.crypto.randomBytes(16).buffer);
       return [0, a[0], a[1], a[2], a[3]];
     }
@@ -283,9 +282,7 @@ function caml_sys_const_backend_type() {
 
 //Provides: os_type
 const os_type =
-  globalThis.process &&
-  globalThis.process.platform &&
-  globalThis.process.platform === "win32"
+  globalThis.process?.platform && globalThis.process.platform === "win32"
     ? "Win32"
     : "Unix";
 
@@ -370,7 +367,7 @@ function caml_sys_is_regular_file(name) {
 //If: !wasm
 function caml_setup_uncaught_exception_handler() {
   const process = globalThis.process;
-  if (process && process.on) {
+  if (process?.on) {
     process.on("uncaughtException", (err, origin) => {
       caml_fatal_uncaught_exception(err);
       process.exit(2);

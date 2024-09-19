@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.9.2/schema.json",
   "files": {
     "include": ["runtime"],
     "ignore": ["runtime/zstd.ts"]
@@ -9,7 +9,20 @@
     "useEditorconfig": true
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noParameterAssign": "off"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "off",
+        "noFallthroughSwitchClause": "off",
+        "noRedeclare": "off",
+        "noSelfCompare": "off",
+        "useDefaultSwitchClauseLast": "off"
+      }
+    }
   },
   "organizeImports": {
     "enabled": true

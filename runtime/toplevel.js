@@ -98,7 +98,8 @@ function caml_reify_bytecode(code, debug, _digest) {
   if (globalThis.toplevelCompile) {
     code = caml_string_of_array(caml_ba_to_typed_array(code));
     return [0, 0, caml_callback(globalThis.toplevelCompile, [code, debug])];
-  } else caml_failwith("Toplevel not initialized (toplevelCompile)");
+  }
+  caml_failwith("Toplevel not initialized (toplevelCompile)");
 }
 
 //Provides: caml_reify_bytecode
@@ -121,7 +122,8 @@ function caml_reify_bytecode(code, debug, _digest) {
     }
     code = caml_string_of_array(code);
     return [0, 0, caml_callback(globalThis.toplevelCompile, [code, debug])];
-  } else caml_failwith("Toplevel not initialized (toplevelCompile)");
+  }
+  caml_failwith("Toplevel not initialized (toplevelCompile)");
 }
 
 //Provides: caml_static_release_bytecode

@@ -131,6 +131,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
   let errflag = env[env_errflag];
 
   exit: for (;;) {
+    // biome-ignore lint/suspicious/noConfusingLabels: expected behaviour
     next: switch (cmd) {
       case 0: //START:
         state = 0;
@@ -208,15 +209,14 @@ function caml_parse_engine(tables, env, cmd, arg) {
               if (caml_parser_trace) log(`Recovering in state ${state1}`);
               cmd = shift_recover;
               break next;
-            } else {
-              if (caml_parser_trace) log(`Discarding state ${state1}`);
-              if (sp <= env[env_stackbase]) {
-                if (caml_parser_trace) log("No more states to discard");
-                return RAISE_PARSE_ERROR;
-              }
-              /* The ML code raises Parse_error */
-              sp--;
             }
+            if (caml_parser_trace) log(`Discarding state ${state1}`);
+            if (sp <= env[env_stackbase]) {
+              if (caml_parser_trace) log("No more states to discard");
+              return RAISE_PARSE_ERROR;
+            }
+            /* The ML code raises Parse_error */
+            sp--;
           }
         } else {
           if (env[env_curr_char] === 0)

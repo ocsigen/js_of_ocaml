@@ -121,7 +121,7 @@ function caml_ephe_check_key(x, i) {
   if (globalThis.WeakRef && weak instanceof globalThis.WeakRef)
     weak = weak.deref();
   if (weak === undefined) return 0;
-  else return 1;
+  return 1;
 }
 
 //Provides: caml_ephe_blit_key
@@ -153,7 +153,7 @@ function caml_ephe_blit_data(src, dst) {
 //Requires: caml_ephe_data_offset
 function caml_ephe_get_data(x) {
   if (x[caml_ephe_data_offset] === undefined) return 0;
-  else return [0, x[caml_ephe_data_offset]];
+  return [0, x[caml_ephe_data_offset]];
 }
 
 //Provides: caml_ephe_get_data_copy
@@ -161,7 +161,7 @@ function caml_ephe_get_data(x) {
 //Requires: caml_obj_dup
 function caml_ephe_get_data_copy(x) {
   if (x[caml_ephe_data_offset] === undefined) return 0;
-  else return [0, caml_obj_dup(x[caml_ephe_data_offset])];
+  return [0, caml_obj_dup(x[caml_ephe_data_offset])];
 }
 
 //Provides: caml_ephe_set_data
@@ -209,5 +209,5 @@ function caml_ephe_unset_data(x) {
 //Requires: caml_ephe_data_offset
 function caml_ephe_check_data(x) {
   if (x[caml_ephe_data_offset] === undefined) return 0;
-  else return 1;
+  return 1;
 }

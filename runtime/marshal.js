@@ -395,185 +395,181 @@ function caml_input_value_from_reader(reader, ofs) {
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         stack.push(v, size);
         return v;
-      } else return code & 0x3f;
-    } else {
-      if (code >= 0x20 /*cst.PREFIX_SMALL_STRING */) {
-        const len = code & 0x1f;
+      }
+      return code & 0x3f;
+    }
+    if (code >= 0x20 /*cst.PREFIX_SMALL_STRING */) {
+      const len = code & 0x1f;
+      const v = reader.readstr(len);
+      if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+      return v;
+    }
+    switch (code) {
+      case 0x00: //cst.CODE_INT8:
+        return reader.read8s();
+      case 0x01: //cst.CODE_INT16:
+        return reader.read16s();
+      case 0x02: //cst.CODE_INT32:
+        return reader.read32s();
+      case 0x03: //cst.CODE_INT64:
+        caml_failwith("input_value: integer too large");
+        break;
+      case 0x04: {
+        //cst.CODE_SHARED8:
+        let offset = reader.read8u();
+        if (compressed === 0) offset = obj_counter - offset;
+        return intern_obj_table[offset];
+      }
+      case 0x05: {
+        //cst.CODE_SHARED16:
+        let offset = reader.read16u();
+        if (compressed === 0) offset = obj_counter - offset;
+        return intern_obj_table[offset];
+      }
+      case 0x06: {
+        //cst.CODE_SHARED32:
+        let offset = reader.read32u();
+        if (compressed === 0) offset = obj_counter - offset;
+        return intern_obj_table[offset];
+      }
+      case 0x08: {
+        //cst.CODE_BLOCK32:
+        const header = reader.read32u();
+        const tag = header & 0xff;
+        const size = header >> 10;
+        const v = [tag];
+        if (size === 0) return v;
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        stack.push(v, size);
+        return v;
+      }
+      case 0x13: //cst.CODE_BLOCK64:
+        caml_failwith("input_value: data block too large");
+        break;
+      case 0x09: {
+        //cst.CODE_STRING8:
+        const len = reader.read8u();
         const v = reader.readstr(len);
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         return v;
-      } else {
-        switch (code) {
-          case 0x00: //cst.CODE_INT8:
-            return reader.read8s();
-          case 0x01: //cst.CODE_INT16:
-            return reader.read16s();
-          case 0x02: //cst.CODE_INT32:
-            return reader.read32s();
-          case 0x03: //cst.CODE_INT64:
-            caml_failwith("input_value: integer too large");
-            break;
-          case 0x04: {
-            //cst.CODE_SHARED8:
-            let offset = reader.read8u();
-            if (compressed === 0) offset = obj_counter - offset;
-            return intern_obj_table[offset];
-          }
-          case 0x05: {
-            //cst.CODE_SHARED16:
-            let offset = reader.read16u();
-            if (compressed === 0) offset = obj_counter - offset;
-            return intern_obj_table[offset];
-          }
-          case 0x06: {
-            //cst.CODE_SHARED32:
-            let offset = reader.read32u();
-            if (compressed === 0) offset = obj_counter - offset;
-            return intern_obj_table[offset];
-          }
-          case 0x08: {
-            //cst.CODE_BLOCK32:
-            const header = reader.read32u();
-            const tag = header & 0xff;
-            const size = header >> 10;
-            const v = [tag];
-            if (size === 0) return v;
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            stack.push(v, size);
-            return v;
-          }
-          case 0x13: //cst.CODE_BLOCK64:
-            caml_failwith("input_value: data block too large");
-            break;
-          case 0x09: {
-            //cst.CODE_STRING8:
-            const len = reader.read8u();
-            const v = reader.readstr(len);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          }
-          case 0x0a: {
-            //cst.CODE_STRING32:
-            const len = reader.read32u();
-            const v = reader.readstr(len);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          }
-          case 0x0c: {
-            //cst.CODE_DOUBLE_LITTLE:
-            const t = new Array(8);
-            for (let i = 0; i < 8; i++) t[7 - i] = reader.read8u();
-            const v = caml_float_of_bytes(t);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          }
-          case 0x0b: {
-            //cst.CODE_DOUBLE_BIG:
-            const t = new Array(8);
-            for (let i = 0; i < 8; i++) t[i] = reader.read8u();
-            const v = caml_float_of_bytes(t);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          }
-          case 0x0e: {
-            //cst.CODE_DOUBLE_ARRAY8_LITTLE:
-            const len = reader.read8u();
-            const v = new Array(len + 1);
-            v[0] = 254;
-            const t = new Array(8);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            for (let i = 1; i <= len; i++) {
-              for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
-              v[i] = caml_float_of_bytes(t);
-            }
-            return v;
-          }
-          case 0x0d: {
-            //cst.CODE_DOUBLE_ARRAY8_BIG:
-            const len = reader.read8u();
-            const v = new Array(len + 1);
-            v[0] = 254;
-            const t = new Array(8);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            for (let i = 1; i <= len; i++) {
-              for (let j = 0; j < 8; j++) t[j] = reader.read8u();
-              v[i] = caml_float_of_bytes(t);
-            }
-            return v;
-          }
-          case 0x07: {
-            //cst.CODE_DOUBLE_ARRAY32_LITTLE:
-            const len = reader.read32u();
-            const v = new Array(len + 1);
-            v[0] = 254;
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            const t = new Array(8);
-            for (let i = 1; i <= len; i++) {
-              for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
-              v[i] = caml_float_of_bytes(t);
-            }
-            return v;
-          }
-          case 0x0f: {
-            //cst.CODE_DOUBLE_ARRAY32_BIG:
-            const len = reader.read32u();
-            const v = new Array(len + 1);
-            v[0] = 254;
-            const t = new Array(8);
-            for (let i = 1; i <= len; i++) {
-              for (let j = 0; j < 8; j++) t[j] = reader.read8u();
-              v[i] = caml_float_of_bytes(t);
-            }
-            return v;
-          }
-          case 0x10: //cst.CODE_CODEPOINTER:
-          case 0x11: //cst.CODE_INFIXPOINTER:
-            caml_failwith("input_value: code pointer");
-            break;
-          case 0x12: //cst.CODE_CUSTOM:
-          case 0x18: //cst.CODE_CUSTOM_LEN:
-          case 0x19: {
-            //cst.CODE_CUSTOM_FIXED:
-            let c;
-            let s = "";
-            while ((c = reader.read8u()) !== 0) s += String.fromCharCode(c);
-            const ops = caml_custom_ops[s];
-            let expected_size;
-            if (!ops)
-              caml_failwith("input_value: unknown custom block identifier");
-            switch (code) {
-              case 0x12: // cst.CODE_CUSTOM (deprecated)
-                break;
-              case 0x19: // cst.CODE_CUSTOM_FIXED
-                if (!ops.fixed_length)
-                  caml_failwith(
-                    "input_value: expected a fixed-size custom block",
-                  );
-                expected_size = ops.fixed_length;
-                break;
-              case 0x18: // cst.CODE_CUSTOM_LEN
-                expected_size = reader.read32u();
-                // Skip size64
-                reader.read32s();
-                reader.read32s();
-                break;
-            }
-            const old_pos = reader.i;
-            const size = [0];
-            const v = ops.deserialize(reader, size);
-            if (expected_size !== undefined) {
-              if (expected_size !== size[0])
-                caml_failwith(
-                  "input_value: incorrect length of serialized custom block",
-                );
-            }
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          }
-          default:
-            caml_failwith("input_value: ill-formed message");
-        }
       }
+      case 0x0a: {
+        //cst.CODE_STRING32:
+        const len = reader.read32u();
+        const v = reader.readstr(len);
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        return v;
+      }
+      case 0x0c: {
+        //cst.CODE_DOUBLE_LITTLE:
+        const t = new Array(8);
+        for (let i = 0; i < 8; i++) t[7 - i] = reader.read8u();
+        const v = caml_float_of_bytes(t);
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        return v;
+      }
+      case 0x0b: {
+        //cst.CODE_DOUBLE_BIG:
+        const t = new Array(8);
+        for (let i = 0; i < 8; i++) t[i] = reader.read8u();
+        const v = caml_float_of_bytes(t);
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        return v;
+      }
+      case 0x0e: {
+        //cst.CODE_DOUBLE_ARRAY8_LITTLE:
+        const len = reader.read8u();
+        const v = new Array(len + 1);
+        v[0] = 254;
+        const t = new Array(8);
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        for (let i = 1; i <= len; i++) {
+          for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
+          v[i] = caml_float_of_bytes(t);
+        }
+        return v;
+      }
+      case 0x0d: {
+        //cst.CODE_DOUBLE_ARRAY8_BIG:
+        const len = reader.read8u();
+        const v = new Array(len + 1);
+        v[0] = 254;
+        const t = new Array(8);
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        for (let i = 1; i <= len; i++) {
+          for (let j = 0; j < 8; j++) t[j] = reader.read8u();
+          v[i] = caml_float_of_bytes(t);
+        }
+        return v;
+      }
+      case 0x07: {
+        //cst.CODE_DOUBLE_ARRAY32_LITTLE:
+        const len = reader.read32u();
+        const v = new Array(len + 1);
+        v[0] = 254;
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        const t = new Array(8);
+        for (let i = 1; i <= len; i++) {
+          for (let j = 0; j < 8; j++) t[7 - j] = reader.read8u();
+          v[i] = caml_float_of_bytes(t);
+        }
+        return v;
+      }
+      case 0x0f: {
+        //cst.CODE_DOUBLE_ARRAY32_BIG:
+        const len = reader.read32u();
+        const v = new Array(len + 1);
+        v[0] = 254;
+        const t = new Array(8);
+        for (let i = 1; i <= len; i++) {
+          for (let j = 0; j < 8; j++) t[j] = reader.read8u();
+          v[i] = caml_float_of_bytes(t);
+        }
+        return v;
+      }
+      case 0x10: //cst.CODE_CODEPOINTER:
+      case 0x11: //cst.CODE_INFIXPOINTER:
+        caml_failwith("input_value: code pointer");
+        break;
+      case 0x12: //cst.CODE_CUSTOM:
+      case 0x18: //cst.CODE_CUSTOM_LEN:
+      case 0x19: {
+        //cst.CODE_CUSTOM_FIXED:
+        let c;
+        let s = "";
+        while ((c = reader.read8u()) !== 0) s += String.fromCharCode(c);
+        const ops = caml_custom_ops[s];
+        let expected_size;
+        if (!ops) caml_failwith("input_value: unknown custom block identifier");
+        switch (code) {
+          case 0x12: // cst.CODE_CUSTOM (deprecated)
+            break;
+          case 0x19: // cst.CODE_CUSTOM_FIXED
+            if (!ops.fixed_length)
+              caml_failwith("input_value: expected a fixed-size custom block");
+            expected_size = ops.fixed_length;
+            break;
+          case 0x18: // cst.CODE_CUSTOM_LEN
+            expected_size = reader.read32u();
+            // Skip size64
+            reader.read32s();
+            reader.read32s();
+            break;
+        }
+        const old_pos = reader.i;
+        const size = [0];
+        const v = ops.deserialize(reader, size);
+        if (expected_size !== undefined) {
+          if (expected_size !== size[0])
+            caml_failwith(
+              "input_value: incorrect length of serialized custom block",
+            );
+        }
+        if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        return v;
+      }
+      default:
+        caml_failwith("input_value: ill-formed message");
     }
   }
   if (compressed) {
@@ -643,7 +639,6 @@ function caml_marshal_data_size(s, ofs) {
       }
       break;
     }
-    case 0x8495a6bf: /* Intext_magic_number_big */
     default:
       caml_failwith("Marshal.data_size: bad object");
       break;
@@ -766,10 +761,9 @@ const caml_output_val = (() => {
       if (existing_offset) {
         writer.write_shared(existing_offset);
         return true;
-      } else {
-        intern_obj_table.store(v);
-        return false;
       }
+      intern_obj_table.store(v);
+      return false;
     }
 
     function extern_rec(v) {

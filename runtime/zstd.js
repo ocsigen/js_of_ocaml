@@ -1,6 +1,6 @@
 //Provides: zstd_decompress
 //Version: >= 5.1
-const zstd_decompress = (function () {
+const zstd_decompress = (() => {
   // aliases for shorter compressed code (most minifers don't do this)
   const ab = ArrayBuffer;
   const u8 = Uint8Array;
@@ -8,7 +8,7 @@ const zstd_decompress = (function () {
   const i16 = Int16Array;
   const u32 = Uint32Array;
   const i32 = Int32Array;
-  const slc = function (v, s, e) {
+  const slc = (v, s, e) => {
     if (u8.prototype.slice) return u8.prototype.slice.call(v, s, e);
     if (s == null || s < 0) s = 0;
     if (e == null || e > v.length) e = v.length;
@@ -16,14 +16,14 @@ const zstd_decompress = (function () {
     n.set(v.subarray(s, e));
     return n;
   };
-  const fill = function (v, n, s, e) {
+  const fill = (v, n, s, e) => {
     if (u8.prototype.fill) return u8.prototype.fill.call(v, n, s, e);
     if (s == null || s < 0) s = 0;
     if (e == null || e > v.length) e = v.length;
     for (; s < e; ++s) v[s] = n;
     return v;
   };
-  const cpw = function (v, t, s, e) {
+  const cpw = (v, t, s, e) => {
     if (u8.prototype.copyWithin)
       return u8.prototype.copyWithin.call(v, t, s, e);
     if (s == null || s < 0) s = 0;
@@ -44,23 +44,23 @@ const zstd_decompress = (function () {
     "match distance too far back",
     "unexpected EOF",
   ];
-  const err = function (ind, msg, nt) {
+  const err = (ind, msg, nt) => {
     const e = new Error(msg || ec[ind]);
     e.code = ind;
     if (!nt) throw e;
     return e;
   };
-  const rb = function (d, b, n) {
+  const rb = (d, b, n) => {
     let i = 0;
     let o = 0;
     for (; i < n; ++i) o |= d[b++] << (i << 3);
     return o;
   };
-  const b4 = function (d, b) {
+  const b4 = (d, b) => {
     return (d[b] | (d[b + 1] << 8) | (d[b + 2] << 16) | (d[b + 3] << 24)) >>> 0;
   };
   // read Zstandard frame header
-  const rzfh = function (dat, w) {
+  const rzfh = (dat, w) => {
     const n3 = dat[0] | (dat[1] << 8) | (dat[2] << 16);
     if (n3 === 0x2fb528 && dat[3] === 253) {
       // Zstandard
@@ -106,20 +106,21 @@ const zstd_decompress = (function () {
         c: cc,
         m: Math.min(131072, ws),
       };
-    } else if (((n3 >> 4) | (dat[3] << 20)) === 0x184d2a5) {
+    }
+    if (((n3 >> 4) | (dat[3] << 20)) === 0x184d2a5) {
       // skippable
       return b4(dat, 4) + 8;
     }
     err(0);
   };
   // most significant bit for nonzero
-  const msb = function (val) {
+  const msb = (val) => {
     let bits = 0;
     for (; 1 << bits <= val; ++bits);
     return bits - 1;
   };
   // read finite state entropy
-  const rfse = function (dat, bt, mal) {
+  const rfse = (dat, bt, mal) => {
     // table pos
     let tpos = (bt << 3) + 4;
     // accuracy log
@@ -219,7 +220,7 @@ const zstd_decompress = (function () {
     ];
   };
   // read huffman
-  const rhu = function (dat, bt) {
+  const rhu = (dat, bt) => {
     //  index  weight count
     let i = 0;
     let wc = -1;
@@ -354,7 +355,7 @@ const zstd_decompress = (function () {
     5,
   )[1];
   // bits to baseline
-  const b2bl = function (b, s) {
+  const b2bl = (b, s) => {
     const len = b.length;
     const bl = new i32(len);
     for (let i = 0; i < len; ++i) {
@@ -385,7 +386,7 @@ const zstd_decompress = (function () {
   // match length baseline
   const mlbl = /*#__PURE__ */ b2bl(mlb, 3);
   // decode huffman stream
-  const dhu = function (dat, out, hu) {
+  const dhu = (dat, out, hu) => {
     const len = dat.length;
     const ss = out.length;
     const lb = dat[len - 1];
@@ -408,7 +409,7 @@ const zstd_decompress = (function () {
   };
   // decode huffman stream 4x
   // TODO: use workers to parallelize
-  const dhu4 = function (dat, out, hu) {
+  const dhu4 = (dat, out, hu) => {
     let bt = 6;
     const ss = out.length;
     const sz1 = (ss + 3) >> 2;
@@ -432,7 +433,7 @@ const zstd_decompress = (function () {
     dhu(dat.subarray(bt), out.subarray(sz3), hu);
   };
   // read Zstandard block
-  const rzb = function (dat, st, out) {
+  const rzb = (dat, st, out) => {
     let _a;
     let bt = st.b;
     //    byte 0        block type
@@ -526,7 +527,9 @@ const zstd_decompress = (function () {
             };
           } else if (md === 2) {
             // accuracy log 8 for offsets, 9 for others
-            (_a = rfse(dat, bt, 9 - (i & 1))), (bt = _a[0]), (dts[i] = _a[1]);
+            _a = rfse(dat, bt, 9 - (i & 1));
+            bt = _a[0];
+            dts[i] = _a[1];
           } else if (md === 3) {
             if (!st.t) err(0);
             dts[i] = st.t[i];
@@ -598,9 +601,9 @@ const zstd_decompress = (function () {
             st.o[1] = st.o[0];
             st.o[0] = off -= 3;
           } else {
-            const idx = off - (ll != 0);
+            const idx = off - (ll !== 0);
             if (idx) {
-              off = idx == 3 ? st.o[0] - 1 : st.o[idx];
+              off = idx === 3 ? st.o[0] - 1 : st.o[idx];
               if (idx > 1) st.o[2] = st.o[1];
               st.o[1] = st.o[0];
               st.o[0] = off;
@@ -651,7 +654,7 @@ const zstd_decompress = (function () {
     err(2);
   };
   // concat
-  const cct = function (bufs, ol) {
+  const cct = (bufs, ol) => {
     if (bufs.length === 1) return bufs[0];
     const buf = new u8(ol);
     for (let i = 0, b = 0; i < bufs.length; ++i) {

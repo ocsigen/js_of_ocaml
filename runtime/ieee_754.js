@@ -43,7 +43,7 @@ function caml_int64_bits_of_float(x) {
   if (!Number.isFinite(x)) {
     if (Number.isNaN(x)) return caml_int64_create_lo_mi_hi(1, 0, 0x7ff0);
     if (x > 0) return caml_int64_create_lo_mi_hi(0, 0, 0x7ff0);
-    else return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
+    return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
   }
   const sign =
     x === 0 && 1 / x === Number.NEGATIVE_INFINITY
@@ -159,7 +159,7 @@ function caml_int64_float_of_bits(x) {
   if (exp === 2047) {
     if ((lo | mi | (hi & 0xf)) === 0)
       return hi & 0x8000 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
-    else return Number.NaN;
+    return Number.NaN;
   }
   const k = 2 ** -24;
   let res = (lo * k + mi) * k + (hi & 0xf);
@@ -178,7 +178,7 @@ function caml_nextafter_float(x, y) {
   if (x === y) return y;
   if (x === 0) {
     if (y < 0) return -(2 ** -1074);
-    else return 2 ** -1074;
+    return 2 ** -1074;
   }
   let bits = caml_int64_bits_of_float(x);
   const one = caml_int64_of_int32(1);
@@ -340,10 +340,9 @@ function caml_round_float(x) {
   if (x >= 0) {
     const y = Math.floor(x);
     return x - y >= 0.5 ? y + 1 : y;
-  } else {
-    const y = Math.ceil(x);
-    return y - x >= 0.5 ? y - 1 : y;
   }
+  const y = Math.ceil(x);
+  return y - x >= 0.5 ? y - 1 : y;
 }
 //Provides: caml_cbrt_float const
 function caml_cbrt_float(x) {
@@ -496,18 +495,18 @@ function caml_format_float(fmt, x) {
   function toFixed(x, dp) {
     if (Math.abs(x) < 1.0) {
       return x.toFixed(dp);
-    } else {
-      let e = Number.parseInt(x.toString().split("+")[1]);
-      if (e > 20) {
-        e -= 20;
-        x /= 10 ** e;
-        x += new Array(e + 1).join("0");
-        if (dp > 0) {
-          x = `${x}.${new Array(dp + 1).join("0")}`;
-        }
-        return x;
-      } else return x.toFixed(dp);
     }
+    let e = Number.parseInt(x.toString().split("+")[1]);
+    if (e > 20) {
+      e -= 20;
+      x /= 10 ** e;
+      x += new Array(e + 1).join("0");
+      if (dp > 0) {
+        x = `${x}.${new Array(dp + 1).join("0")}`;
+      }
+      return x;
+    }
+    return x.toFixed(dp);
   }
   let s;
   const f = caml_parse_format(fmt);
@@ -550,19 +549,18 @@ function caml_format_float(fmt, x) {
           if (s.charAt(i - 3) === "e")
             s = `${s.slice(0, i - 1)}0${s.slice(i - 1)}`;
           break;
-        } else {
-          let p = prec;
-          if (exp < 0) {
-            p -= exp + 1;
-            s = x.toFixed(p);
-          } else while (((s = x.toFixed(p)), s.length > prec + 1)) p--;
-          if (p) {
-            // remove trailing zeroes
-            let i = s.length - 1;
-            while (s.charAt(i) === "0") i--;
-            if (s.charAt(i) === ".") i--;
-            s = s.slice(0, i + 1);
-          }
+        }
+        let p = prec;
+        if (exp < 0) {
+          p -= exp + 1;
+          s = x.toFixed(p);
+        } else while ((s = x.toFixed(p)) && s.length > prec + 1) p--;
+        if (p) {
+          // remove trailing zeroes
+          let i = s.length - 1;
+          while (s.charAt(i) === "0") i--;
+          if (s.charAt(i) === ".") i--;
+          s = s.slice(0, i + 1);
         }
         break;
       }

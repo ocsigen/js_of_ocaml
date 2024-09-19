@@ -53,7 +53,7 @@ function caml_js_typeof(o) {
 //Provides:caml_trampoline
 function caml_trampoline(res) {
   let c = 1;
-  while (res && res.joo_tramp) {
+  while (res?.joo_tramp) {
     res = res.joo_tramp.apply(null, res.joo_args);
     c++;
   }
@@ -126,7 +126,7 @@ function caml_callback(f, args) {
         caml_exn_stack = caml_exn_stack[2];
         res = { joo_tramp: handler, joo_args: [caml_wrap_exception(e)] };
       }
-    } while (res && res.joo_args);
+    } while (res?.joo_args);
   } finally {
     caml_stack_depth = saved_stack_depth;
     caml_exn_stack = saved_exn_stack;
@@ -181,7 +181,8 @@ function caml_wrap_exception(e) {
     // We already have an error at hand, let's use it.
     if (e instanceof globalThis.Error) exn.js_error = e;
     return exn;
-  } else return e;
+  }
+  return e;
 }
 
 //Provides: caml_maybe_attach_backtrace
@@ -195,7 +196,7 @@ function caml_maybe_attach_backtrace(exn, force) {
   // it's way to slow. Here, we force the end-user to opt-in to backtraces.
   if (caml_record_backtrace_env_flag && caml_record_backtrace_runtime_flag)
     return caml_exn_with_js_backtrace(exn, force);
-  else return exn;
+  return exn;
 }
 
 // Experimental
@@ -281,8 +282,8 @@ function caml_js_var(x) {
     console.error(
       `caml_js_var: "${x_}" is not a valid JavaScript variable. continuing ..`,
     );
-    //console.error("Js.Unsafe.eval_string")
   }
+  // biome-ignore lint/security/noGlobalEval: expected behaviour
   return eval(x_);
 }
 //Provides: caml_js_call (const, mutable, shallow)
@@ -376,13 +377,8 @@ function caml_ojs_new_arr(c, a) {
 //Provides: caml_js_wrap_callback const (const)
 //Requires: caml_callback
 function caml_js_wrap_callback(f) {
-  return function () {
-    const len = arguments.length;
-    let args;
-    if (len > 0) {
-      args = new Array(len);
-      for (let i = 0; i < len; i++) args[i] = arguments[i];
-    } else {
+  return (...args) => {
+    if (args.length <= 0) {
       args = [undefined];
     }
     const res = caml_callback(f, args);
@@ -393,76 +389,57 @@ function caml_js_wrap_callback(f) {
 //Provides: caml_js_wrap_callback_arguments
 //Requires: caml_callback
 function caml_js_wrap_callback_arguments(f) {
-  return function () {
-    const len = arguments.length;
-    const args = new Array(len);
-    for (let i = 0; i < len; i++) args[i] = arguments[i];
+  return (...args) => {
     return caml_callback(f, [args]);
   };
 }
 //Provides: caml_js_wrap_callback_strict const
 //Requires: caml_callback
 function caml_js_wrap_callback_strict(arity, f) {
-  return function () {
-    const n = arguments.length;
-    const args = new Array(arity);
-    const len = Math.min(arguments.length, arity);
-    for (let i = 0; i < len; i++) args[i] = arguments[i];
+  return (...args) => {
+    args.length = arity;
     return caml_callback(f, args);
   };
 }
 //Provides: caml_js_wrap_callback_unsafe const (const)
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_callback_unsafe(f) {
-  return function () {
+  return (...args) => {
     const len = caml_js_function_arity(f);
-    const args = new Array(len);
-    for (let i = 0; i < len; i++) args[i] = arguments[i];
+    args.length = len;
     return caml_callback(f, args);
   };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
 //Requires: caml_callback, caml_js_wrap_callback
 function caml_js_wrap_meth_callback(f) {
-  return function () {
-    const len = arguments.length;
-    const args = new Array(len + 1);
-    args[0] = this;
-    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
-    const res = caml_callback(f, args);
+  return function (...args) {
+    const res = caml_callback(f, [this, ...args]);
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_arguments(f) {
-  return function () {
-    const len = arguments.length;
-    const args = new Array(len);
-    for (let i = 0; i < len; i++) args[i] = arguments[i];
+  return function (...args) {
     return caml_callback(f, [this, args]);
   };
 }
 //Provides: caml_js_wrap_meth_callback_strict const
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_strict(arity, f) {
-  return function () {
-    const args = new Array(arity + 1);
-    const len = Math.min(arguments.length, arity);
-    args[0] = this;
-    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
-    return caml_callback(f, args);
+  return function (...args) {
+    args.length = arity;
+    return caml_callback(f, [this, ...args]);
   };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_meth_callback_unsafe(f) {
-  return function () {
+  return function (...args) {
     const len = caml_js_function_arity(f) - 1;
-    const args = new Array(len + 1);
-    args[0] = this;
-    for (let i = 0; i < len; i++) args[i + 1] = arguments[i];
-    return caml_callback(f, args);
+    args.length = len;
+    return caml_callback(f, [this, ...args]);
   };
 }
 
@@ -493,6 +470,7 @@ function caml_js_strict_equals(x, y) {
 //Provides: caml_js_eval_string (const)
 //Requires: caml_jsstring_of_string
 function caml_js_eval_string(s) {
+  // biome-ignore lint/security/noGlobalEval: expected behaviour
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -500,6 +478,7 @@ function caml_js_eval_string(s) {
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
   console.error("caml_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval: expected behaviour
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -507,6 +486,7 @@ function caml_js_expr(s) {
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr(s) {
   console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval: expected behaviour
   return eval(caml_jsstring_of_string(s));
 }
 

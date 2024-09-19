@@ -68,9 +68,8 @@ MlFakeDevice.prototype.exists = function (name) {
 MlFakeDevice.prototype.isFile = function (name) {
   if (this.exists(name) && !this.is_dir(name)) {
     return 1;
-  } else {
-    return 0;
   }
+  return 0;
 };
 MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
   const unix_error = raise_unix && caml_named_value("Unix.Unix_error");
@@ -85,7 +84,7 @@ MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
     }
   }
   let parent = /^(.*)\/[^/]+/.exec(name);
-  parent = (parent && parent[1]) || "";
+  parent = parent?.[1] || "";
   if (!this.exists(parent)) {
     if (unix_error) {
       caml_raise_with_args(

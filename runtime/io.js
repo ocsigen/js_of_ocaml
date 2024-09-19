@@ -96,7 +96,8 @@ function caml_sys_open(name, flags, _perms) {
   function file(fd, flags) {
     if (fs_node_supported()) {
       return caml_sys_open_for_node(fd, flags);
-    } else return new MlFakeFd_out(fd, flags);
+    }
+    return new MlFakeFd_out(fd, flags);
   }
   caml_sys_open_internal(
     file(0, { rdonly: 1, altname: "/dev/stdin", isCharacterDevice: true }),
@@ -152,11 +153,7 @@ function caml_ml_channel_get(id) {
 function caml_ml_out_channels_list() {
   let l = 0;
   for (let c = 0; c < caml_ml_channels.length; c++) {
-    if (
-      caml_ml_channels[c] &&
-      caml_ml_channels[c].opened &&
-      caml_ml_channels[c].out
-    )
+    if (caml_ml_channels[c]?.opened && caml_ml_channels[c].out)
       l = [0, caml_ml_channels[c].fd, l];
   }
   return l;
