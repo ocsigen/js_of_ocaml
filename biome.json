@@ -23,6 +23,9 @@
         "noInvalidUseBeforeDeclaration": "off",
         "noSwitchDeclarations": "off"
       },
+      "nursery": {
+        "noUselessEscapeInRegex": "error"
+      },
       "security": {
         "noGlobalEval": "off"
       },
