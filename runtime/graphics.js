@@ -452,7 +452,9 @@ function caml_gr_dump_image(im) {
 //Requires: caml_gr_state_get
 function caml_gr_draw_image(im, x, y) {
   const s = caml_gr_state_get();
-  if (!im.image) {
+  if (im.image) {
+    s.context.drawImage(im.image, x, s.height - im.height - y);
+  } else {
     const canvas = document.createElement("canvas");
     canvas.width = s.width;
     canvas.height = s.height;
@@ -463,8 +465,6 @@ function caml_gr_draw_image(im, x, y) {
       im.image = image;
     };
     image.src = canvas.toDataURL("image/png");
-  } else {
-    s.context.drawImage(im.image, x, s.height - im.height - y);
   }
   return 0;
 }

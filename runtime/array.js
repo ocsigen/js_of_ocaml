@@ -19,26 +19,12 @@
 
 //Provides: caml_array_sub mutable
 function caml_array_sub(a, i, len) {
-  const a2 = new Array(len + 1);
-  a2[0] = 0;
-  for (let i2 = 1, i1 = i + 1; i2 <= len; i2++, i1++) {
-    a2[i2] = a[i1];
-  }
-  return a2;
+  return [0, ...a.slice(i + 1, i + len + 1)];
 }
 
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
-  const l1 = a1.length;
-  const l2 = a2.length;
-  const l = l1 + l2 - 1;
-  const a = new Array(l);
-  a[0] = 0;
-  let i = 1;
-  let j = 1;
-  for (; i < l1; i++) a[i] = a1[i];
-  for (; i < l; i++, j++) a[i] = a2[j];
-  return a;
+  return [0, ...a1.slice(1), ...a2.slice(1)];
 }
 
 //Provides: caml_array_concat mutable
@@ -107,30 +93,19 @@ function caml_check_bound(array, index) {
 //Requires: caml_array_bound_error
 function caml_make_vect(len, init) {
   if (len < 0) caml_array_bound_error();
-  const len_ = (len + 1) | 0;
-  const b = new Array(len_);
-  b[0] = 0;
-  for (let i = 1; i < len_; i++) b[i] = init;
-  return b;
+  return [0, ...new Array(len | 0).fill(init)];
 }
 
 //Provides: caml_make_float_vect const (const)
 //Requires: caml_array_bound_error
 function caml_make_float_vect(len) {
   if (len < 0) caml_array_bound_error();
-  const len_ = (len + 1) | 0;
-  const b = new Array(len);
-  b[0] = 254;
-  for (let i = 1; i < len_; i++) b[i] = 0;
-  return b;
+  return [254, ...new Array(len).fill(0)];
 }
+
 //Provides: caml_floatarray_create const (const)
 //Requires: caml_array_bound_error
 function caml_floatarray_create(len) {
   if (len < 0) caml_array_bound_error();
-  const len_ = (len + 1) | 0;
-  const b = new Array(len);
-  b[0] = 254;
-  for (let i = 1; i < len_; i++) b[i] = 0;
-  return b;
+  return [254, ...new Array(len).fill(0)];
 }

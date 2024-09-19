@@ -96,7 +96,7 @@ MlInt64.prototype.xor = function (x) {
   return new MlInt64(this.lo ^ x.lo, this.mi ^ x.mi, this.hi ^ x.hi);
 };
 MlInt64.prototype.shift_left = function (s) {
-  s = s & 63;
+  s &= 63;
   if (s === 0) return this;
   if (s < 24) {
     return new MlInt64(
@@ -114,7 +114,7 @@ MlInt64.prototype.shift_left = function (s) {
   return new MlInt64(0, 0, this.lo << (s - 48));
 };
 MlInt64.prototype.shift_right_unsigned = function (s) {
-  s = s & 63;
+  s &= 63;
   if (s === 0) return this;
   if (s < 24)
     return new MlInt64(
@@ -131,7 +131,7 @@ MlInt64.prototype.shift_right_unsigned = function (s) {
   return new MlInt64(this.hi >> (s - 48), 0, 0);
 };
 MlInt64.prototype.shift_right = function (s) {
-  s = s & 63;
+  s &= 63;
   if (s === 0) return this;
   const h = (this.hi << 16) >> 16;
   if (s < 24)
@@ -157,7 +157,7 @@ MlInt64.prototype.lsl1 = function () {
 MlInt64.prototype.lsr1 = function () {
   this.lo = ((this.lo >>> 1) | (this.mi << 23)) & 0xffffff;
   this.mi = ((this.mi >>> 1) | (this.hi << 23)) & 0xffffff;
-  this.hi = this.hi >>> 1;
+  this.hi >>>= 1;
 };
 MlInt64.prototype.udivmod = function (x) {
   let offset = 0;

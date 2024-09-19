@@ -105,9 +105,7 @@ function caml_callback(f, args) {
   const saved_fiber_stack = caml_fiber_stack;
   let res = {
     joo_tramp: f,
-    joo_args: args.concat((x) => {
-      return x;
-    }),
+    joo_args: [...args, (x) => x],
   };
   try {
     caml_exn_stack = 0;

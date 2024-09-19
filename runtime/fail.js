@@ -31,7 +31,7 @@ function caml_raise_with_arg(tag, arg) {
 //Provides: caml_raise_with_args (const, mutable)
 //Requires: caml_maybe_attach_backtrace
 function caml_raise_with_args(tag, args) {
-  throw caml_maybe_attach_backtrace([0, tag].concat(args));
+  throw caml_maybe_attach_backtrace([0, tag, ...args]);
 }
 
 //Provides: caml_raise_with_string (const, const)

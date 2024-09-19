@@ -366,7 +366,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
       nat1.data[ofs1 + i] !== 0 ||
       compare_nat(nat1, ofs1 + i - len2, len2, nat2, ofs2, len2) >= 0
     ) {
-      quo = quo + 1;
+      quo += 1;
       sub_nat(nat1, ofs1 + i - len2, len2 + 1, nat2, ofs2, len2, 1);
     }
 

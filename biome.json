@@ -13,7 +13,8 @@
     "rules": {
       "recommended": true,
       "style": {
-        "noParameterAssign": "off"
+        "noParameterAssign": "off",
+        "useNamingConvention": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",

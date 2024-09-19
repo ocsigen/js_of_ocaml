@@ -678,7 +678,7 @@ const zstd_decompress = (() => {
     const bufs = [];
     const nb = +!buf;
     let ol = 0;
-    while (dat.length) {
+    while (dat.length > 0) {
       const st = rzfh(dat, nb || buf);
       if (typeof st === "object") {
         if (nb) {

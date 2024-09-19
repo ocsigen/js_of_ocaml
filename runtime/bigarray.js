@@ -37,7 +37,7 @@ function caml_ba_get_size(dims) {
   for (let i = 0; i < n_dims; i++) {
     if (dims[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
-    size = size * dims[i];
+    size *= dims[i];
   }
   return size;
 }
@@ -539,12 +539,12 @@ function caml_ba_sub(ba, ofs, len) {
   let changed_dim;
   let mul = 1;
   if (ba.layout === 0) {
-    for (let i = 1; i < ba.dims.length; i++) mul = mul * ba.dims[i];
+    for (let i = 1; i < ba.dims.length; i++) mul *= ba.dims[i];
     changed_dim = 0;
   } else {
-    for (let i = 0; i < ba.dims.length - 1; i++) mul = mul * ba.dims[i];
+    for (let i = 0; i < ba.dims.length - 1; i++) mul *= ba.dims[i];
     changed_dim = ba.dims.length - 1;
-    ofs = ofs - 1;
+    ofs -= 1;
   }
   if (ofs < 0 || len < 0 || ofs + len > ba.dims[changed_dim]) {
     caml_invalid_argument("Bigarray.sub: bad sub-array");
@@ -606,7 +606,7 @@ function caml_ba_reshape(ba, vind) {
     new_dim[i] = vind[i];
     if (new_dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
-    num_elts = num_elts * new_dim[i];
+    num_elts *= new_dim[i];
   }
 
   const size = caml_ba_get_size(ba.dims);

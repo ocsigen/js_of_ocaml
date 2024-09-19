@@ -87,7 +87,7 @@ const re_match = (() => {
     groups[0].start = pos;
 
     const backtrack = () => {
-      while (stack.length) {
+      while (stack.length > 0) {
         const item = stack.pop();
         if (item.undo) {
           item.undo.obj[item.undo.prop] = item.undo.value;
@@ -267,7 +267,7 @@ const re_match = (() => {
         case opcodes.ACCEPT:
           return accept();
         case opcodes.GOTO:
-          pc = pc + sarg;
+          pc += sarg;
           break;
         case opcodes.PUSHBACK:
           push({ pos: { pc: pc + sarg, txt: pos } });

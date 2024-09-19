@@ -121,7 +121,7 @@ function caml_int_of_string(s) {
   // For base different from 10, we expect an unsigned representation,
   // hence any value of 'res' (less than 'threshold') is acceptable.
   // But we have to convert the result back to a signed integer.
-  res = sign * res;
+  res *= sign;
   if (signedness && (res | 0) !== res)
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     caml_failwith("int_of_string");

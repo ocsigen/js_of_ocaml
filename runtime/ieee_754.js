@@ -518,10 +518,7 @@ function caml_format_float(fmt, x) {
   if (Number.isNaN(x)) {
     s = "nan";
     f.filler = " ";
-  } else if (!Number.isFinite(x)) {
-    s = "inf";
-    f.filler = " ";
-  } else
+  } else if (Number.isFinite(x))
     switch (f.conv) {
       case "e": {
         s = x.toExponential(prec);
@@ -565,6 +562,10 @@ function caml_format_float(fmt, x) {
         break;
       }
     }
+  else {
+    s = "inf";
+    f.filler = " ";
+  }
   return caml_finish_formatting(f, s);
 }
 

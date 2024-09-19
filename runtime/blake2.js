@@ -120,8 +120,8 @@ const blake2b = (() => {
     }
 
     // low 64 bits of offset
-    v[24] = v[24] ^ ctx.t;
-    v[25] = v[25] ^ (ctx.t / 0x100000000);
+    v[24] ^= ctx.t;
+    v[25] ^= ctx.t / 0x100000000;
     // high 64 bits not supported, offset may not be higher than 2**53-1
 
     // last block flag set ?

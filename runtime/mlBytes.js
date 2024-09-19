@@ -77,7 +77,7 @@ function caml_subarray_to_jsbytes(a, i, len) {
   const f = String.fromCharCode;
   if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
   let s = "";
-  for (; 0 < len; i += 1024, len -= 1024)
+  for (; len > 0; i += 1024, len -= 1024)
     s += f.apply(null, a.slice(i, i + Math.min(len, 1024)));
   return s;
 }
@@ -92,8 +92,7 @@ function caml_utf8_of_utf16(s) {
       let j = i + 1;
       for (; j < l && (c = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
-        t.substr(0, 1);
-        b += t;
+        b += t.slice(0, 1);
         t = "";
         b += s.slice(i, j);
       } else t += s.slice(i, j);
@@ -128,8 +127,7 @@ function caml_utf8_of_utf16(s) {
       );
     }
     if (t.length > 1024) {
-      t.substr(0, 1);
-      b += t;
+      b += t.slice(0, 1);
       t = "";
     }
   }
@@ -146,8 +144,7 @@ function caml_utf16_of_utf8(s) {
       let j = i + 1;
       for (; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
-        t.substr(0, 1);
-        b += t;
+        b += t.slice(0, 1);
         t = "";
         b += s.slice(i, j);
       } else t += s.slice(i, j);
@@ -189,8 +186,7 @@ function caml_utf16_of_utf8(s) {
       t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3ff));
     else t += String.fromCharCode(v);
     if (t.length > 1024) {
-      t.substr(0, 1);
-      b += t;
+      b += t.slice(0, 1);
       t = "";
     }
   }
