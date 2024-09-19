@@ -4,6 +4,9 @@
  (libraries js_of_ocaml)
  (link_flags
   (:standard -linkall))
+ ;; Until dune is fixed https://github.com/ocaml/dune/pull/10935
+ (js_of_ocaml
+  (flags --linkall))
  (modes js byte))
 
 (rule
