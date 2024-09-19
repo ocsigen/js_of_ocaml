@@ -1,7 +1,6 @@
 //Provides: zstd_decompress
 //Version: >= 5.1
 var zstd_decompress = (function () {
-  "use strict";
   // aliases for shorter compressed code (most minifers don't do this)
   var ab = ArrayBuffer,
     u8 = Uint8Array,

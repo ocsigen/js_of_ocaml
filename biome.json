@@ -47,7 +47,6 @@
         "noDuplicateCase": "off",
         "noFallthroughSwitchClause": "off",
         "noRedeclare": "off",
-        "noRedundantUseStrict": "off",
         "noSelfCompare": "off",
         "useDefaultSwitchClauseLast": "off"
       }
