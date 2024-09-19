@@ -62,10 +62,10 @@ function make_path_is_absolute() {
       /^([a-zA-Z]:|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)?([\\/])?([\s\S]*?)$/;
     var result = splitDeviceRe.exec(path);
     var device = result[1] || "";
-    var isUnc = Boolean(device && device.charAt(1) !== ":");
+    var isUnc = device.length > 0 && device.charAt(1) !== ":";
 
     // UNC paths are always absolute
-    if (Boolean(result[2] || isUnc)) {
+    if (result[2] || isUnc) {
       var root = result[1] || "";
       var sep = result[2] || "";
       return [root, path.substring(root.length + sep.length)];
