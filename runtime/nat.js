@@ -2,7 +2,7 @@
 //Requires: caml_custom_ops
 //Requires: serialize_nat, deserialize_nat, caml_hash_nat
 function initialize_nat() {
-  caml_custom_ops["_nat"] = {
+  caml_custom_ops._nat = {
     deserialize: deserialize_nat,
     serialize: serialize_nat,
     hash: caml_hash_nat,

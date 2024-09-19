@@ -15,7 +15,6 @@
         "noUselessSwitchCase": "off",
         "noUselessTernary": "off",
         "useArrowFunction": "off",
-        "useLiteralKeys": "off",
         "useOptionalChain": "off"
       },
       "correctness": {
