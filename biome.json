@@ -9,7 +9,53 @@
     "useEditorconfig": true
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "complexity": {
+        "noExtraBooleanCast": "off",
+        "noUselessSwitchCase": "off",
+        "noUselessTernary": "off",
+        "useArrowFunction": "off",
+        "useLiteralKeys": "off",
+        "useOptionalChain": "off"
+      },
+      "correctness": {
+        "noInnerDeclarations": "off",
+        "noInvalidUseBeforeDeclaration": "off",
+        "noSwitchDeclarations": "off"
+      },
+      "recommended": true,
+      "security": {
+        "noGlobalEval": "off"
+      },
+      "style": {
+        "noArguments": "off",
+        "noCommaOperator": "off",
+        "noParameterAssign": "off",
+        "noUselessElse": "off",
+        "noVar": "off",
+        "useExponentiationOperator": "off",
+        "useNodejsImportProtocol": "off",
+        "useNumberNamespace": "off",
+        "useSingleVarDeclarator": "off",
+        "useTemplate": "off",
+        "useWhile": "off"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "off",
+        "noConfusingLabels": "off",
+        "noControlCharactersInRegex": "off",
+        "noDoubleEquals": "off",
+        "noDuplicateCase": "off",
+        "noFallthroughSwitchClause": "off",
+        "noGlobalIsFinite": "off",
+        "noGlobalIsNan": "off",
+        "noRedeclare": "off",
+        "noRedundantUseStrict": "off",
+        "noSelfCompare": "off",
+        "useDefaultSwitchClauseLast": "off"
+      }
+    }
   },
   "organizeImports": {
     "enabled": true
