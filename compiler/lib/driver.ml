@@ -670,7 +670,19 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
-let optimize ~profile ~deadcode_sentinal p =
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
+let optimize ~profile p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh_n "dummy"
+  in
   let opt =
     specialize_js_once
     +> (match profile with
@@ -687,16 +699,14 @@ let optimize ~profile ~deadcode_sentinal p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r = opt p in
+  let (program, variable_uses), trampolined_calls, in_cps = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  r
+  { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
 
 let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
-  let deadcode_sentinal =
-    (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh_n "dummy"
+  let { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal } =
+    optimize ~profile p
   in
-  let r = optimize ~profile ~deadcode_sentinal p in
   let exported_runtime = not standalone in
   let emit formatter =
     generate
@@ -708,7 +718,7 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
     +> link_and_pack ~standalone ~wrap_with_fun ~link
     +> output formatter ~source_map ()
   in
-  let source_map = emit formatter r in
+  let source_map = emit formatter ((program, variable_uses), trampolined_calls, in_cps) in
   source_map
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =

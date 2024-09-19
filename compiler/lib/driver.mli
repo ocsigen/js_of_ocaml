@@ -20,13 +20,15 @@
 
 type profile
 
-val optimize :
-     profile:profile
-  -> deadcode_sentinal:Code.Var.t
-  -> Code.program
-  -> (Code.program * Deadcode.variable_uses)
-     * Effects.trampolined_calls
-     * Effects.trampolined_calls
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
+val optimize : profile:profile -> Code.program -> optimized_result
 
 val f :
      ?standalone:bool

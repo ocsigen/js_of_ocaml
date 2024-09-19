@@ -412,13 +412,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             List.fold_left units ~init:StringSet.empty ~f:(fun acc (u : Unit_info.t) ->
                 StringSet.union acc (StringSet.of_list u.primitives))
           in
-          let code =
-            Parse_bytecode.link_info
-              ~target:`JavaScript
-              ~symbols:!sym
-              ~primitives
-              ~crcs:[]
-          in
+          let code = Parse_bytecode.link_info ~symbols:!sym ~primitives ~crcs:[] in
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;

@@ -443,7 +443,7 @@ end
 
 (* Parse constants *)
 module Constants : sig
-  val parse : target:[ `JavaScript | `Wasm ] -> Obj.t -> Code.constant
+  val parse : Obj.t -> Code.constant
 
   val inlined : Code.constant -> bool
 end = struct
@@ -477,7 +477,7 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
-  let rec parse ~target x =
+  let rec parse x =
     if Obj.is_block x
     then
       let tag = Obj.tag x in
@@ -503,15 +503,12 @@ end = struct
         | None -> assert false
       else if tag < Obj.no_scan_tag
       then
-        Tuple
-          ( tag
-          , Array.init (Obj.size x) ~f:(fun i -> parse ~target (Obj.field x i))
-          , Unknown )
+        Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
       else assert false
     else
       let i : int = Obj.magic x in
       Int
-        (match target with
+        (match Config.target () with
         | `JavaScript -> Int32.of_int_warning_on_overflow i
         | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
 
@@ -769,10 +766,10 @@ let access_global g i =
       g.vars.(i) <- Some x;
       x
 
-let register_global ~target ?(force = false) g i loc rem =
+let register_global ?(force = false) g i loc rem =
   if g.is_exported.(i)
      &&
-     match target with
+     match Config.target () with
      | `Wasm -> true
      | `JavaScript -> false
   then (
@@ -805,7 +802,7 @@ let register_global ~target ?(force = false) g i loc rem =
     :: rem
   else rem
 
-let get_global ~target state instrs i loc =
+let get_global state instrs i loc =
   State.size_globals state (i + 1);
   let g = State.globals state in
   match g.vars.(i) with
@@ -820,7 +817,7 @@ let get_global ~target state instrs i loc =
         x, state, (Let (x, Constant cst), loc) :: instrs
       else if i < Array.length g.constants
               ||
-              match target with
+              match Config.target () with
               | `Wasm -> false
               | `JavaScript -> true
       then (
@@ -853,7 +850,6 @@ type compile_info =
   ; code : string
   ; limit : int
   ; debug : Debug.t
-  ; target : [ `JavaScript | `Wasm ]
   }
 
 let string_of_addr debug_data addr =
@@ -881,7 +877,7 @@ let ( ||| ) x y =
   | No -> y
   | _ -> x
 
-let rec compile_block blocks debug_data ~target code pc state =
+let rec compile_block blocks debug_data code pc state =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
       (* Check that the shape of the stack is compatible with the one used to compile the block *)
@@ -913,7 +909,7 @@ let rec compile_block blocks debug_data ~target code pc state =
       let state = State.start_block pc state in
       tagged_blocks := Addr.Map.add pc state !tagged_blocks;
       let instr, last, state' =
-        compile { blocks; code; limit; debug = debug_data; target } pc state []
+        compile { blocks; code; limit; debug = debug_data } pc state []
       in
       assert (not (Addr.Map.mem pc !compiled_blocks));
       (* When jumping to a block that was already visited and the
@@ -942,11 +938,10 @@ let rec compile_block blocks debug_data ~target code pc state =
       in
       compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
       match fst last with
-      | Branch (pc', _) ->
-          compile_block blocks debug_data ~target code pc' (adjust_state pc')
+      | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
       | Cond (_, (pc1, _), (pc2, _)) ->
-          compile_block blocks debug_data ~target code pc1 (adjust_state pc1);
-          compile_block blocks debug_data ~target code pc2 (adjust_state pc2)
+          compile_block blocks debug_data code pc1 (adjust_state pc1);
+          compile_block blocks debug_data code pc2 (adjust_state pc2)
       | Poptrap (_, _) -> ()
       | Switch (_, _) -> ()
       | Raise _ | Return _ | Stop -> ()
@@ -1288,7 +1283,7 @@ and compile infos pc state instrs =
         let params, state' = State.make_stack nparams state' loc in
         if debug_parser () then Format.printf ") {@.";
         let state' = State.clear_accu state' in
-        compile_block infos.blocks infos.debug ~target:infos.target code addr state';
+        compile_block infos.blocks infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
         let args = State.stack_vars state' in
         let state'', _, _ = Addr.Map.find addr !compiled_blocks in
@@ -1345,7 +1340,7 @@ and compile infos pc state instrs =
               let params, state' = State.make_stack nparams state' loc in
               if debug_parser () then Format.printf ") {@.";
               let state' = State.clear_accu state' in
-              compile_block infos.blocks infos.debug ~target:infos.target code addr state';
+              compile_block infos.blocks infos.debug code addr state';
               if debug_parser () then Format.printf "}@.";
               let args = State.stack_vars state' in
               let state'', _, _ = Addr.Map.find addr !compiled_blocks in
@@ -1375,16 +1370,16 @@ and compile infos pc state instrs =
         compile infos (pc + 2) (State.env_acc n state) instrs
     | GETGLOBAL ->
         let i = getu code (pc + 1) in
-        let _, state, instrs = get_global ~target:infos.target state instrs i loc in
+        let _, state, instrs = get_global state instrs i loc in
         compile infos (pc + 2) state instrs
     | PUSHGETGLOBAL ->
         let state = State.push state loc in
         let i = getu code (pc + 1) in
-        let _, state, instrs = get_global ~target:infos.target state instrs i loc in
+        let _, state, instrs = get_global state instrs i loc in
         compile infos (pc + 2) state instrs
     | GETGLOBALFIELD ->
         let i = getu code (pc + 1) in
-        let x, state, instrs = get_global ~target:infos.target state instrs i loc in
+        let x, state, instrs = get_global state instrs i loc in
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
@@ -1393,7 +1388,7 @@ and compile infos pc state instrs =
         let state = State.push state loc in
 
         let i = getu code (pc + 1) in
-        let x, state, instrs = get_global ~target:infos.target state instrs i loc in
+        let x, state, instrs = get_global state instrs i loc in
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
@@ -1418,7 +1413,7 @@ and compile infos pc state instrs =
         in
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
-        let instrs = register_global ~target:infos.target g i loc instrs in
+        let instrs = register_global g i loc instrs in
         compile infos (pc + 2) state ((Let (x, const 0l), loc) :: instrs)
     | ATOM0 ->
         let x, state = State.fresh_var state loc in
@@ -1766,9 +1761,9 @@ and compile infos pc state instrs =
         let it = Array.init isize ~f:(fun i -> base + gets code (base + i)) in
         let bt = Array.init bsize ~f:(fun i -> base + gets code (base + isize + i)) in
         Array.iter it ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug ~target:infos.target code pc' state);
+            compile_block infos.blocks infos.debug code pc' state);
         Array.iter bt ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug ~target:infos.target code pc' state);
+            compile_block infos.blocks infos.debug code pc' state);
         match isize, bsize with
         | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, [])), loc), state
         | 0, _ ->
@@ -1839,17 +1834,10 @@ and compile infos pc state instrs =
                   , (handler_addr, State.stack_vars handler_state) )
               , loc ) )
             !compiled_blocks;
+        compile_block infos.blocks infos.debug code handler_addr handler_state;
         compile_block
           infos.blocks
           infos.debug
-          ~target:infos.target
-          code
-          handler_addr
-          handler_state;
-        compile_block
-          infos.blocks
-          infos.debug
-          ~target:infos.target
           code
           body_addr
           { (State.push_handler handler_ctx_state) with
@@ -1867,7 +1855,6 @@ and compile infos pc state instrs =
         compile_block
           infos.blocks
           infos.debug
-          ~target:infos.target
           code
           addr
           (State.pop 4 (State.pop_handler state));
@@ -2551,7 +2538,7 @@ type one =
   ; debug : Debug.t
   }
 
-let parse_bytecode code globals debug_data ~target =
+let parse_bytecode code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
   let blocks = Blocks.analyse debug_data code in
@@ -2566,7 +2553,7 @@ let parse_bytecode code globals debug_data ~target =
     if not (Blocks.is_empty blocks')
     then (
       let start = 0 in
-      compile_block blocks' debug_data ~target code start state;
+      compile_block blocks' debug_data code start state;
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
@@ -2686,7 +2673,6 @@ type bytesections =
 [@@ocaml.warning "-unused-field"]
 
 let from_exe
-    ~target
     ?(includes = [])
     ~linkall
     ~link_info
@@ -2700,7 +2686,7 @@ let from_exe
   let primitive_table = Array.of_list primitives in
   let code = Toc.read_code toc ic in
   let init_data = Toc.read_data toc ic in
-  let init_data = Array.map ~f:(Constants.parse ~target) init_data in
+  let init_data = Array.map ~f:Constants.parse init_data in
   let orig_symbols = Toc.read_symb toc ic in
   let orig_crcs = Toc.read_crcs toc ic in
   let keeps =
@@ -2755,12 +2741,12 @@ let from_exe
     Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
         globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
         globals.is_exported.(n) <- true);
-  let p = parse_bytecode code globals debug_data ~target in
+  let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
         globals.named_value.(i) <- Some name;
-        let body = register_global ~target ~force:true globals i noloc body in
+        let body = register_global ~force:true globals i noloc body in
         globals.is_exported.(i) <- false;
         body)
   in
@@ -2768,7 +2754,7 @@ let from_exe
     Array.fold_right_i globals.constants ~init:body ~f:(fun i _ l ->
         match globals.vars.(i) with
         | Some x when globals.is_const.(i) ->
-            let l = register_global ~target globals i noloc l in
+            let l = register_global globals i noloc l in
             (Let (x, Constant globals.constants.(i)), noloc) :: l
         | _ -> l)
   in
@@ -2787,8 +2773,8 @@ let from_exe
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let infos =
-        [ "sections", Constants.parse ~target (Obj.repr sections)
-        ; "symbols", Constants.parse ~target (Obj.repr symbols_array)
+        [ "sections", Constants.parse (Obj.repr sections)
+        ; "symbols", Constants.parse (Obj.repr symbols_array)
         ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
         ]
       in
@@ -2879,7 +2865,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
-  let p = parse_bytecode code globals debug_data ~target:`JavaScript in
+  let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let find_name i =
@@ -2944,13 +2930,13 @@ module Reloc = struct
   let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
-  let step1 ~target t compunit code =
+  let step1 t compunit code =
     if t.step2_started then assert false;
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
     let slot_for_literal sc =
-      t.constants <- constant_of_const ~target sc :: t.constants;
+      t.constants <- constant_of_const sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos
@@ -3018,16 +3004,16 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~target ~includes:_ ~include_cmis ~debug_data l =
+let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
   let reloc = Reloc.create () in
-  List.iter l ~f:(fun (compunit, code) -> Reloc.step1 ~target reloc compunit code);
+  List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
   let globals = Reloc.make_globals reloc in
   let code =
     let l = List.map l ~f:(fun (_, c) -> Bytes.to_string c) in
     String.concat ~sep:"" l
   in
-  let prog = parse_bytecode code globals debug_data ~target in
+  let prog = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let body =
@@ -3036,7 +3022,7 @@ let from_compilation_units ~target ~includes:_ ~include_cmis ~debug_data l =
         | Some x when globals.is_const.(i) -> (
             match globals.named_value.(i) with
             | None ->
-                let l = register_global ~target globals i noloc l in
+                let l = register_global globals i noloc l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
                 | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
@@ -3069,8 +3055,7 @@ let from_compilation_units ~target ~includes:_ ~include_cmis ~debug_data l =
   in
   { code = prepend prog body; cmis; debug = debug_data }
 
-let from_cmo ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic
-    =
+let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic =
   let debug_data = Debug.create ~include_cmis debug in
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
@@ -3081,13 +3066,11 @@ let from_cmo ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) c
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
-  let p =
-    from_compilation_units ~target ~includes ~include_cmis ~debug_data [ compunit, code ]
-  in
+  let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
   Code.invariant p.code;
   p
 
-let from_cma ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
+let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   let debug_data = Debug.create ~include_cmis debug in
   let orig = ref 0 in
   let t = ref 0. in
@@ -3106,7 +3089,7 @@ let from_cma ~target ?(includes = []) ?(include_cmis = false) ?(debug = false) l
         compunit, code)
   in
   if times () then Format.eprintf "    read debug events: %.2f@." !t;
-  let p = from_compilation_units ~target ~includes ~include_cmis ~debug_data units in
+  let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
   Code.invariant p.code;
   p
 
@@ -3151,7 +3134,7 @@ let from_channel ic =
           `Exe
       | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
-let predefined_exceptions ~target =
+let predefined_exceptions =
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
@@ -3161,7 +3144,7 @@ let predefined_exceptions ~target =
         let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
         [ Let (v_name, Constant (String name)), noloc ]
-        @ (match target with
+        @ (match Config.target () with
           | `Wasm -> []
           | `JavaScript ->
               [ ( Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
@@ -3184,14 +3167,14 @@ let predefined_exceptions ~target =
                     , [ Pc (Int (Int32.of_int index))
                       ; Pv exn
                       ; Pv
-                          (match target with
+                          (match Config.target () with
                           | `JavaScript -> v_name_js
                           | `Wasm -> v_name)
                       ] ) )
             , noloc )
           ]
         @
-        match target with
+        match Config.target () with
         | `JavaScript -> []
         | `Wasm ->
             [ ( Let
@@ -3213,7 +3196,7 @@ let predefined_exceptions ~target =
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
-let link_info ~target ~symbols ~primitives ~crcs =
+let link_info ~symbols ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
   let symbols_array =
     Ocaml_compiler.Symtable.GlobalMap.fold
@@ -3231,8 +3214,8 @@ let link_info ~target ~symbols ~primitives ~crcs =
     (* Include linking information *)
     let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
     let infos =
-      [ "sections", Constants.parse ~target (Obj.repr sections)
-      ; "symbols", Constants.parse ~target (Obj.repr symbols_array)
+      [ "sections", Constants.parse (Obj.repr sections)
+      ; "symbols", Constants.parse (Obj.repr symbols_array)
       ; "prim_count", Int (Int32.of_int (List.length primitives))
       ]
     in

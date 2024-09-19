@@ -47,6 +47,8 @@ module Int32 = struct
     match l with
     | [ Int i; Int j ] -> Some (Int (f i (to_int j)))
     | _ -> None
+
+  let numbits = 32
 end
 
 module Int31 = struct
@@ -71,6 +73,8 @@ module Int31 = struct
     | [ Int i; Int j ] ->
         Some (Int (to_int32 (f (of_int32_warning_on_overflow i) (Int32.to_int j))))
     | _ -> None
+
+  let numbits = 31
 end
 
 let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
@@ -114,9 +118,15 @@ module type Int = sig
   val int_binop : constant list -> (t -> t -> t) -> constant option
 
   val shift_op : constant list -> (t -> int -> t) -> constant option
+
+  val of_int32_warning_on_overflow : int32 -> t
+
+  val to_int32 : t -> int32
+
+  val numbits : int
 end
 
-let eval_prim x =
+let eval_prim ~target x =
   match x with
   | Not, [ Int i ] -> bool Int32.(i = 0l)
   | Lt, [ Int i; Int j ] -> bool Int32.(i < j)
@@ -127,8 +137,15 @@ let eval_prim x =
   | Extern name, l -> (
       let name = Primitive.resolve name in
       let (module Int : Int) =
-        match Config.target () with
-        | `JavaScript -> (module Int32)
+        match target with
+        | `JavaScript ->
+            (module struct
+              include Int32
+
+              let of_int32_warning_on_overflow = Fun.id
+
+              let to_int32 = Fun.id
+            end)
         | `Wasm -> (module Int31)
       in
       match name, l with
@@ -158,7 +175,9 @@ let eval_prim x =
       | "caml_mul_float", _ -> float_binop l ( *. )
       | "caml_div_float", _ -> float_binop l ( /. )
       | "caml_fmod_float", _ -> float_binop l mod_float
-      | "caml_int_of_float", [ Float f ] -> Some (Int (Int32.of_float f))
+      | "caml_int_of_float", [ Float f ] ->
+          Some
+            (Int (Int32.of_float f |> Int.of_int32_warning_on_overflow |> Int.to_int32))
       | "to_int", [ Float f ] -> Some (Int (Int32.of_float f))
       | "to_int", [ Int i ] -> Some (Int i)
       (* Math *)
@@ -190,12 +209,7 @@ let eval_prim x =
           | Some env -> Some (String env)
           | None -> None)
       | "caml_sys_const_word_size", [ _ ] -> Some (Int 32l)
-      | "caml_sys_const_int_size", [ _ ] ->
-          Some
-            (Int
-               (match Config.target () with
-               | `JavaScript -> 32l
-               | `Wasm -> 31l))
+      | "caml_sys_const_int_size", [ _ ] -> Some (Int (Int32.of_int Int.numbits))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int 0l)
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int 0l)
       | _ -> None)
@@ -222,7 +236,7 @@ type is_int =
   | N
   | Unknown
 
-let is_int info x =
+let is_int ~target info x =
   match x with
   | Pv x ->
       get_approx
@@ -231,7 +245,7 @@ let is_int info x =
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
           | Some (Constant (NativeInt _ | Int32 _)) ->
-              assert (Poly.equal (Config.target ()) `Wasm);
+              assert (Poly.equal target `Wasm);
               N
           | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
@@ -244,7 +258,7 @@ let is_int info x =
         x
   | Pc (Int _) -> Y
   | Pc (NativeInt _ | Int32 _) ->
-      assert (Poly.equal (Config.target ()) `Wasm);
+      assert (Poly.equal target `Wasm);
       N
   | Pc _ -> N
 
@@ -316,7 +330,7 @@ let constant_js_equal a b =
   | Tuple _, _
   | _, Tuple _ -> None
 
-let eval_instr info ((x, loc) as i) =
+let eval_instr ~target info ((x, loc) as i) =
   match x with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
       match the_const_of info y, the_const_of info z with
@@ -373,7 +387,7 @@ let eval_instr info ((x, loc) as i) =
            below fail. *)
       [ i ]
   | Let (x, Prim (IsInt, [ y ])) -> (
-      match is_int info y with
+      match is_int ~target info y with
       | Unknown -> [ i ]
       | (Y | N) as b ->
           let c = Constant (bool' Poly.(b = Y)) in
@@ -389,7 +403,7 @@ let eval_instr info ((x, loc) as i) =
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
       let backend_name =
-        match Config.target () with
+        match target with
         | `JavaScript -> "js_of_ocaml"
         | `Wasm -> "wasm_of_ocaml"
       in
@@ -406,6 +420,7 @@ let eval_instr info ((x, loc) as i) =
                | _ -> false)
         then
           eval_prim
+            ~target
             ( prim
             , List.map prim_args' ~f:(function
                   | Some c -> c
@@ -423,9 +438,13 @@ let eval_instr info ((x, loc) as i) =
                 , Prim
                     ( prim
                     , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
-                          match c, Config.target () with
-                          | ( Some ((Int _ | Int32 _ | NativeInt _ | NativeString _) as c)
-                            , _ ) -> Pc c
+                          match c, target with
+                          | Some ((Int _ | NativeString _) as c), _ -> Pc c
+                          | Some ((Int32 _ | NativeInt _) as c), `Wasm -> Pc c
+                          | Some (Int32 _ | NativeInt _), `JavaScript ->
+                              invalid_arg
+                                "Constant of type Int32 or NativeInt unexpected in the \
+                                 JavaScript backend"
                           | Some (Float _ as c), `JavaScript -> Pc c
                           | Some (String _ as c), `JavaScript
                             when Config.Flag.use_js_string () -> Pc c
@@ -554,15 +573,15 @@ let drop_exception_handler blocks =
     blocks
     blocks
 
-let eval info blocks =
+let eval ~target info blocks =
   Addr.Map.map
     (fun block ->
-      let body = List.concat_map block.body ~f:(eval_instr info) in
+      let body = List.concat_map block.body ~f:(eval_instr ~target info) in
       let branch = eval_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
 
 let f info p =
-  let blocks = eval info p.blocks in
+  let blocks = eval ~target:(Config.target ()) info p.blocks in
   let blocks = drop_exception_handler blocks in
   { p with blocks }

@@ -22,8 +22,8 @@ open! Stdlib
 open Code
 open Flow
 
-let specialize_instr info i =
-  match i, Config.target () with
+let specialize_instr ~target info i =
+  match i, target with
   | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
       match the_string_of info y with
       | Some "%d" -> (
@@ -156,7 +156,7 @@ let equal3 a b c = Code.Var.equal a b && Code.Var.equal b c
 
 let equal4 a b c d = Code.Var.equal a b && Code.Var.equal b c && Code.Var.equal c d
 
-let specialize_instrs info l =
+let specialize_instrs ~target info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
@@ -285,22 +285,22 @@ let specialize_instrs info l =
               in
               aux info ((y, idx) :: checks) r acc
         | _ ->
-            let i = specialize_instr info i in
+            let i = specialize_instr ~target info i in
             aux info checks r ((i, loc) :: acc))
   in
   aux info [] l []
 
-let specialize_all_instrs info p =
+let specialize_all_instrs ~target info p =
   let blocks =
     Addr.Map.map
-      (fun block -> { block with Code.body = specialize_instrs info block.body })
+      (fun block -> { block with Code.body = specialize_instrs ~target info block.body })
       p.blocks
   in
   { p with blocks }
 
 (****)
 
-let f info p = specialize_all_instrs info p
+let f info p = specialize_all_instrs ~target:(Config.target ()) info p
 
 let f_once p =
   let rec loop acc l =
