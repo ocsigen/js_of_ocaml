@@ -183,7 +183,7 @@ end
 
 (****)
 
-let target_ : [ `JavaScript | `Wasm ] option ref = ref (Some `JavaScript)
+let target_ : [ `JavaScript | `Wasm ] option ref = ref None
 
 let target () =
   match !target_ with
