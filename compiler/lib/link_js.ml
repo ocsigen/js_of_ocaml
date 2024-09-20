@@ -469,7 +469,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
               let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
               Line_writer.write oc s
           | Some file ->
-              Source_map.to_file sm ~file;
+              Source_map.to_file sm file;
               let s = sourceMappingURL ^ Filename.basename file in
               Line_writer.write oc s));
       if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
