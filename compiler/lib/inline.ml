@@ -170,7 +170,7 @@ let simple blocks cont mapping =
           | Special _ -> `Exp exp
           | Block (tag, args, aon, mut) ->
               `Exp (Block (tag, Array.map args ~f:(map_var mapping), aon, mut))
-          | Field (x, i) -> `Exp (Field (map_var mapping x, i))
+          | Field (x, i, kind) -> `Exp (Field (map_var mapping x, i, kind))
           | Closure _ -> `Fail
           | Constant _ -> `Fail
           | Apply _ -> `Fail)

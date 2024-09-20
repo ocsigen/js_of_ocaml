@@ -109,12 +109,12 @@ let expr_used ~context ~closures ~ctx x e s =
   | Prim (_, l) -> add_prim_args ~ctx s l
   | Closure _ -> add_list ~ctx s (function_free_variables ~context ~closures x)
   | Constant _ | Special _ -> s
-  | Field (x, _) -> add_var ~ctx s x
+  | Field (x, _, _) -> add_var ~ctx s x
 
 let propagate_through_instr ~context ~closures ~ctx (i, _) s =
   match i with
   | Let (x, e) -> expr_used ~context ~closures ~ctx x e (Var.Set.remove x s)
-  | Set_field (x, _, y) -> add_var ~ctx (add_var ~ctx s x) y
+  | Set_field (x, _, _, y) -> add_var ~ctx (add_var ~ctx s x) y
   | Assign (_, x) | Offset_ref (x, _) -> add_var ~ctx s x
   | Array_set (x, y, z) -> add_var ~ctx (add_var ~ctx (add_var ~ctx s x) y) z
 

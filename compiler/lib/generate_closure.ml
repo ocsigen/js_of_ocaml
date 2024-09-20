@@ -105,9 +105,7 @@ module Trampoline = struct
         let counter_plus_1 = Code.Var.fork counter in
         { params = []
         ; body =
-            [ ( Let
-                  ( counter_plus_1
-                  , Prim (Extern "%int_add", [ Pv counter; Pc (Int (Regular, 1l)) ]) )
+            [ ( Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
               , noloc )
             ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true }), loc
             ]
@@ -121,9 +119,8 @@ module Trampoline = struct
     ; body =
         [ ( Let
               ( new_args
-              , Prim
-                  ( Extern "%js_array"
-                  , Pc (Int (Regular, 0l)) :: List.map args ~f:(fun x -> Pv x) ) )
+              , Prim (Extern "%js_array", Pc (Int 0l) :: List.map args ~f:(fun x -> Pv x))
+              )
           , noloc )
         ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ])), loc
         ]
@@ -142,7 +139,7 @@ module Trampoline = struct
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ]
           | Some counter ->
-              [ Let (counter, Constant (Int (Regular, 0l))), noloc
+              [ Let (counter, Constant (Int 0l)), noloc
               ; Let (result1, Apply { f; args = counter :: args; exact = true }), loc
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ])
@@ -246,9 +243,7 @@ module Trampoline = struct
                                     , Prim
                                         ( Lt
                                         , [ Pv counter
-                                          ; Pc
-                                              (Int
-                                                 (Regular, Int32.of_int tailcall_max_depth))
+                                          ; Pc (Int (Int32.of_int tailcall_max_depth))
                                           ] ) )
                                 , noloc )
                               in
@@ -388,7 +383,7 @@ let rewrite_mutable
           ]
           @ List.mapi closures_extern ~f:(fun i x ->
                 match x with
-                | Let (x, Closure _), loc -> Let (x, Field (closure', i)), loc
+                | Let (x, Closure _), loc -> Let (x, Field (closure', i, Non_float)), loc
                 | _ -> assert false)
         in
         free_pc, blocks, body

@@ -284,9 +284,11 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
+  | Int of int32
+  | Int32 of int32
   | Int64 of int64
+  | NativeInt of nativeint
   | Tuple of int * constant array * array_or_not
-  | Int of int_kind * int32
 
 let rec constant_equal a b =
   match a, b with
@@ -304,26 +306,59 @@ let rec constant_equal a b =
           | Some s, Some c -> same := Some (s && c)
         done;
         !same
+  | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
   | Int64 a, Int64 b -> Some (Int64.equal a b)
+  | NativeInt a, NativeInt b -> Some (Nativeint.equal a b)
   | Float_array a, Float_array b -> Some (Array.equal Float.equal a b)
-  | Int (k, a), Int (k', b) -> if Poly.(k = k') then Some (Int32.equal a b) else None
   | Float a, Float b -> Some (Float.equal a b)
   | String _, NativeString _ | NativeString _, String _ -> None
   | Int _, Float _ | Float _, Int _ -> None
   | Tuple ((0 | 254), _, _), Float_array _ -> None
   | Float_array _, Tuple ((0 | 254), _, _) -> None
-  | Tuple _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Float_array _) ->
+  | ( Tuple _
+    , ( String _
+      | NativeString _
+      | Int64 _
+      | Int _
+      | Int32 _
+      | NativeInt _
+      | Float _
+      | Float_array _ ) ) -> Some false
+  | ( Float_array _
+    , ( String _
+      | NativeString _
+      | Int64 _
+      | Int _
+      | Int32 _
+      | NativeInt _
+      | Float _
+      | Tuple _ ) ) -> Some false
+  | ( String _
+    , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
       Some false
-  | Float_array _, (String _ | NativeString _ | Int64 _ | Int _ | Float _ | Tuple _) ->
+  | ( NativeString _
+    , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
       Some false
-  | String _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | NativeString _, (Int64 _ | Int _ | Float _ | Tuple _ | Float_array _) -> Some false
-  | Int64 _, (String _ | NativeString _ | Int _ | Float _ | Tuple _ | Float_array _) ->
-      Some false
+  | ( Int64 _
+    , ( String _
+      | NativeString _
+      | Int _
+      | Int32 _
+      | NativeInt _
+      | Float _
+      | Tuple _
+      | Float_array _ ) ) -> Some false
   | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
       Some false
-  | Int _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+  | ( (Int _ | Int32 _ | NativeInt _)
+    , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
       Some false
+  (* Note: the following cases should not occur when compiling to Javascript *)
+  | Int _, (Int32 _ | NativeInt _)
+  | Int32 _, (Int _ | NativeInt _)
+  | NativeInt _, (Int _ | Int32 _)
+  | (Int32 _ | NativeInt _), Float _
+  | Float _, (Int32 _ | NativeInt _) -> None
 
 type loc =
   | No
@@ -342,6 +377,10 @@ type mutability =
   | Immutable
   | Maybe_mutable
 
+type field_type =
+  | Non_float
+  | Float
+
 type expr =
   | Apply of
       { f : Var.t
@@ -349,7 +388,7 @@ type expr =
       ; exact : bool
       }
   | Block of int * Var.t array * array_or_not * mutability
-  | Field of Var.t * int
+  | Field of Var.t * int * field_type
   | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
@@ -358,7 +397,7 @@ type expr =
 type instr =
   | Let of Var.t * expr
   | Assign of Var.t * Var.t
-  | Set_field of Var.t * int * Var.t
+  | Set_field of Var.t * int * field_type * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
@@ -413,7 +452,10 @@ module Print = struct
           Format.fprintf f "%.12g" a.(i)
         done;
         Format.fprintf f "|]"
+    | Int i -> Format.fprintf f "%ld" i
+    | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
+    | NativeInt i -> Format.fprintf f "%ndn" i
     | Tuple (tag, a, _) -> (
         Format.fprintf f "<%d>" tag;
         match Array.length a with
@@ -430,15 +472,6 @@ module Print = struct
               constant f a.(i)
             done;
             Format.fprintf f ")")
-    | Int (k, i) ->
-        Format.fprintf
-          f
-          "%ld%s"
-          i
-          (match k with
-          | Regular -> ""
-          | Int32 -> "l"
-          | Native -> "n")
 
   let arg f a =
     match a with
@@ -508,7 +541,8 @@ module Print = struct
           Format.fprintf f "; %d = %a" i Var.print a.(i)
         done;
         Format.fprintf f "}"
-    | Field (x, i) -> Format.fprintf f "%a[%d]" Var.print x i
+    | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
+    | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
     | Closure (l, c) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
@@ -518,7 +552,10 @@ module Print = struct
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
-    | Set_field (x, i, y) -> Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    | Set_field (x, i, Non_float, y) ->
+        Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    | Set_field (x, i, Float, y) ->
+        Format.fprintf f "FLOAT{%a[%d]} = %a" Var.print x i Var.print y
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
@@ -792,7 +829,7 @@ let invariant { blocks; start; _ } =
     let check_expr = function
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
-      | Field (_, _) -> ()
+      | Field (_, _, _) -> ()
       | Closure (l, cont) ->
           List.iter l ~f:define;
           check_cont cont
@@ -806,7 +843,7 @@ let invariant { blocks; start; _ } =
           define x;
           check_expr e
       | Assign _ -> ()
-      | Set_field (_, _i, _) -> ()
+      | Set_field (_, _i, _, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
     in

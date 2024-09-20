@@ -451,7 +451,7 @@ let rec constant_rec ~ctx x level instrs =
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
         | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
-        | Int (_, 0l) -> if n > constant_max_depth then Some acc else None
+        | Int 0l -> if n > constant_max_depth then Some acc else None
         | _ -> None
       in
       match detect_list 0 [] x with
@@ -488,7 +488,9 @@ let rec constant_rec ~ctx x level instrs =
             else List.rev l, instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
-  | Int (_, i) -> int32 i, instrs
+  | Int i -> int32 i, instrs
+  | Int32 _ | NativeInt _ ->
+      assert false (* Should not be produced when compiling to Javascript *)
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1238,7 +1240,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
         | NotArray | Unknown -> Mlvalue.Block.make ~tag ~args:contents
       in
       (x, prop, queue), []
-  | Field (x, n) ->
+  | Field (x, n, _) ->
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
@@ -1530,7 +1532,7 @@ and translate_instr ctx expr_queue instr =
             expr_queue
             prop
             (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
-  | Set_field (x, n, y) ->
+  | Set_field (x, n, _, y) ->
       let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in

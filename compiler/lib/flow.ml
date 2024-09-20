@@ -94,7 +94,7 @@ let expr_deps blocks vars deps defs x e =
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
-  | Field (y, _) -> add_dep deps x y
+  | Field (y, _, _) -> add_dep deps x y
 
 let program_deps { blocks; _ } =
   let nv = Var.count () in
@@ -138,7 +138,7 @@ let propagate1 deps defs st x =
       match e with
       | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
           Var.Set.singleton x
-      | Field (y, n) ->
+      | Field (y, n, _) ->
           var_set_lift
             (fun z ->
               match defs.(Var.idx z) with
@@ -244,7 +244,7 @@ let program_escape defs known_origins { blocks; _ } =
           match i with
           | Let (x, e) -> expr_escape st x e
           | Assign _ -> ()
-          | Set_field (x, _, y) | Array_set (x, _, y) ->
+          | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               Var.Set.iter
                 (fun y -> Var.ISet.add possibly_mutable y)
                 (Var.Tbl.get known_origins x);
@@ -268,7 +268,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
   | Expr e -> (
       match e with
       | Constant _ | Closure _ | Apply _ | Prim _ | Block _ | Special _ -> false
-      | Field (y, n) ->
+      | Field (y, n, _) ->
           Var.Tbl.get st y
           || Var.Set.exists
                (fun z ->
@@ -344,7 +344,7 @@ let the_const_of info x =
 
 let the_int info x =
   match the_const_of info x with
-  | Some (Int (_, i)) -> Some i
+  | Some (Int i) -> Some i
   | _ -> None
 
 let the_string_of info x =
@@ -360,7 +360,7 @@ let the_native_string_of info x =
 (*XXX Maybe we could iterate? *)
 let direct_approx info x =
   match info.info_defs.(Var.idx x) with
-  | Expr (Field (y, n)) ->
+  | Expr (Field (y, n, _)) ->
       get_approx
         info
         (fun z ->

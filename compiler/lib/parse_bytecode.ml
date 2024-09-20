@@ -465,10 +465,16 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 -> Int (Int32, (Obj.magic x : int32))
+        | Some name when same_ident name ident_32 ->
+            let i : int32 = Obj.magic x in
+            (match target with
+             | `JavaScript -> Int i
+             | `Wasm -> Int32 i)
         | Some name when same_ident name ident_native ->
             let i : nativeint = Obj.magic x in
-            Int (Native, Int32.of_nativeint_warning_on_overflow i)
+            (match target with
+             | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+             | `Wasm -> NativeInt i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -486,10 +492,9 @@ end = struct
     else
       let i : int = Obj.magic x in
       Int
-        ( Regular
-        , match target with
-          | `JavaScript -> Int32.of_int_warning_on_overflow i
-          | `Wasm -> Int31.of_int_warning_on_overflow i )
+        (match target with
+         | `JavaScript -> Int32.of_int_warning_on_overflow i
+         | `Wasm -> Int31.of_int_warning_on_overflow i)
 
   let inlined = function
     | String _ | NativeString _ -> false
@@ -498,9 +503,10 @@ end = struct
     | Int64 _ -> false
     | Tuple _ -> false
     | Int _ -> true
+    | Int32 _ | NativeInt _ -> false
 end
 
-let const i = Constant (Int (Regular, i))
+let const i = Constant (Int i)
 
 (* Globals *)
 type globals =
@@ -770,7 +776,7 @@ let register_global ~target ?(force = false) g i loc rem =
         ( Var.fresh ()
         , Prim
             ( Extern "caml_register_global"
-            , Pc (Int (Regular, Int32.of_int i)) :: Pv (access_global g i) :: args ) )
+            , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
     , loc )
     :: rem
   else rem
@@ -1307,7 +1313,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
+        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state loc in
 
@@ -1316,7 +1322,7 @@ and compile infos pc state instrs =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j)), loc) :: instrs)
+        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
         State.size_globals state (i + 1);
@@ -1482,49 +1488,40 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 0)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 0, Non_float)), loc) :: instrs)
     | GETFIELD1 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 1)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 1, Non_float)), loc) :: instrs)
     | GETFIELD2 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 2)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 2, Non_float)), loc) :: instrs)
     | GETFIELD3 ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 3)), loc) :: instrs)
+        compile infos (pc + 1) state ((Let (x, Field (y, 3, Non_float)), loc) :: instrs)
     | GETFIELD ->
         let y, _ = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile infos (pc + 2) state ((Let (x, Field (y, n)), loc) :: instrs)
+        compile infos (pc + 2) state ((Let (x, Field (y, n, Non_float)), loc) :: instrs)
     | GETFLOATFIELD ->
         let y, _ = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state loc in
 
-        if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile
-          infos
-          (pc + 2)
-          state
-          (( Let
-               ( x
-               , Prim
-                   ( Extern "caml_floatarray_unsafe_get"
-                   , [ Pv y; Pc (Int (Regular, Int32.of_int n)) ] ) )
-           , loc )
-          :: instrs)
+        if debug_parser ()
+        then Format.printf "%a = FLOAT{%a[%d]}@." Var.print x Var.print y n;
+        compile infos (pc + 2) state ((Let (x, Field (y, n, Float)), loc) :: instrs)
     | SETFIELD0 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1536,7 +1533,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 0, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 0, Non_float, z), loc) :: instrs)
     | SETFIELD1 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1548,7 +1545,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 1, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 1, Non_float, z), loc) :: instrs)
     | SETFIELD2 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1560,7 +1557,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 2, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 2, Non_float, z), loc) :: instrs)
     | SETFIELD3 ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1572,7 +1569,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, 3, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, 3, Non_float, z), loc) :: instrs)
     | SETFIELD ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -1585,26 +1582,21 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, const 0l), loc) :: (Set_field (y, n, z), loc) :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, n, Non_float, z), loc) :: instrs)
     | SETFLOATFIELD ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
         let n = getu code (pc + 1) in
 
-        if debug_parser () then Format.printf "%a[%d] = %a@." Var.print y n Var.print z;
+        if debug_parser ()
+        then Format.printf "FLOAT{%a[%d]} = %a@." Var.print y n Var.print z;
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (( Let
-               ( x
-               , Prim
-                   ( Extern "caml_floatarray_unsafe_set"
-                   , [ Pv y; Pc (Int (Regular, Int32.of_int n)); Pv z ] ) )
-           , loc )
-          :: instrs)
+          ((Let (x, const 0l), loc) :: (Set_field (y, n, Float, z), loc) :: instrs)
     | VECTLENGTH ->
         let y, _ = State.accu state in
         let x, state = State.fresh_var state loc in
@@ -2236,7 +2228,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BNEQ ->
@@ -2246,7 +2238,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BLTINT ->
@@ -2256,7 +2248,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BLEINT ->
@@ -2266,7 +2258,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BGTINT ->
@@ -2276,7 +2268,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BGEINT ->
@@ -2286,7 +2278,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | BULTINT ->
@@ -2296,7 +2288,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Ult, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
         , state )
     | BUGEINT ->
@@ -2306,7 +2298,7 @@ and compile infos pc state instrs =
         let args = State.stack_vars state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Ult, [ Pc (Int (Regular, n)); Pv x ])), loc) :: instrs
+        ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
         , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
         , state )
     | ULTINT ->
@@ -2369,7 +2361,7 @@ and compile infos pc state instrs =
                ( m
                , Prim
                    ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int (Regular, Int32.of_int cache)) ] ) )
+                   , [ Pv obj; Pv tag; Pc (Int (Int32.of_int cache)) ] ) )
            , loc )
           :: (Let (tag, const n), loc)
           :: instrs)
@@ -2396,7 +2388,7 @@ and compile infos pc state instrs =
                ( m
                , Prim
                    ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int (Regular, 0l)) ] ) )
+                   , [ Pv obj; Pv tag; Pc (Int 0l) ] ) )
            , loc )
           :: instrs)
     | GETMETHOD ->
@@ -2412,7 +2404,7 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           ((Let (m, Prim (Array_get, [ Pv meths; Pv lab ])), loc)
-          :: (Let (meths, Field (obj, 0)), loc)
+          :: (Let (meths, Field (obj, 0, Non_float)), loc)
           :: instrs)
     | STOP -> instrs, (Stop, loc), state
     | RESUME ->
@@ -2728,7 +2720,7 @@ let from_exe
       let need_gdata = ref false in
       let infos =
         [ "toc", Constants.parse ~target (Obj.repr toc)
-        ; "prim_count", Int (Regular, Int32.of_int (Array.length globals.primitives))
+        ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
         ]
       in
       let body =
@@ -2841,7 +2833,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
                | None -> ()
                | Some name -> Code.Var.name x name);
             need_gdata := true;
-            (Let (x, Field (gdata, i)), noloc) :: l
+            (Let (x, Field (gdata, i, Non_float)), noloc) :: l
         | _ -> l)
   in
   let body =
@@ -3110,17 +3102,16 @@ let predefined_exceptions ~target =
                 ( v_index
                 , Constant
                     (Int
-                       ( (* Predefined exceptions are registered in
-                            Symtable.init with [-index - 1] *)
-                         Regular
-                       , Int32.of_int (-index - 1) )) )
+                       ((* Predefined exceptions are registered in
+                           Symtable.init with [-index - 1] *)
+                        Int32.of_int (-index - 1) )))
             , noloc )
           ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
           ; ( Let
                 ( Var.fresh ()
                 , Prim
                     ( Extern "caml_register_global"
-                    , [ Pc (Int (Regular, Int32.of_int index))
+                    , [ Pc (Int (Int32.of_int index))
                       ; Pv exn
                       ; Pv
                           (match target with
@@ -3177,7 +3168,7 @@ let link_info ~target ~symtable ~primitives ~crcs =
     in
     let infos =
       [ "toc", Constants.parse ~target (Obj.repr toc)
-      ; "prim_count", Int (Regular, Int32.of_int (List.length primitives))
+      ; "prim_count", Int (Int32.of_int (List.length primitives))
       ]
     in
     let body =

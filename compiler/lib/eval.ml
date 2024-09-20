@@ -33,55 +33,54 @@ module Int = Int32
 
 let int_binop l w f =
   match l with
-  | [ Int (_, i); Int (_, j) ] -> Some (Int (Regular, w (f i j)))
+  | [ Int i; Int j ] -> Some (Int (w (f i j)))
   | _ -> None
 
 let shift l w t f =
   match l with
-  | [ Int (_, i); Int (_, j) ] ->
-      Some (Int (Regular, w (f (t i) (Int32.to_int j land 0x1f))))
+  | [ Int i; Int j ] -> Some (Int (w (f (t i) (Int32.to_int j land 0x1f))))
   | _ -> None
 
-let float_binop_aux l f =
+let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
     | [ Float i; Float j ] -> Some (i, j)
-    | [ Int (_, i); Int (_, j) ] -> Some (Int32.to_float i, Int32.to_float j)
-    | [ Int (_, i); Float j ] -> Some (Int32.to_float i, j)
-    | [ Float i; Int (_, j) ] -> Some (i, Int32.to_float j)
+    | [ Int i; Int j ] -> Some (Int32.to_float i, Int32.to_float j)
+    | [ Int i; Float j ] -> Some (Int32.to_float i, j)
+    | [ Float i; Int j ] -> Some (i, Int32.to_float j)
     | _ -> None
   in
   match args with
   | None -> None
   | Some (i, j) -> Some (f i j)
 
-let float_binop l f =
+let float_binop (l : constant list) (f : float -> float -> float) : constant option =
   match float_binop_aux l f with
   | Some x -> Some (Float x)
   | None -> None
 
-let float_unop l f =
+let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
   | [ Float i ] -> Some (Float (f i))
-  | [ Int (_, i) ] -> Some (Float (f (Int32.to_float i)))
+  | [ Int i ] -> Some (Float (f (Int32.to_float i)))
   | _ -> None
 
 let float_binop_bool l f =
   match float_binop_aux l f with
-  | Some true -> Some (Int (Regular, 1l))
-  | Some false -> Some (Int (Regular, 0l))
+  | Some true -> Some (Int 1l)
+  | Some false -> Some (Int 0l)
   | None -> None
 
-let bool b = Some (Int (Regular, if b then 1l else 0l))
+let bool b = Some (Int (if b then 1l else 0l))
 
 let eval_prim ~target x =
   match x with
-  | Not, [ Int (_, i) ] -> bool Int32.(i = 0l)
-  | Lt, [ Int (_, i); Int (_, j) ] -> bool Int32.(i < j)
-  | Le, [ Int (_, i); Int (_, j) ] -> bool Int32.(i <= j)
-  | Eq, [ Int (_, i); Int (_, j) ] -> bool Int32.(i = j)
-  | Neq, [ Int (_, i); Int (_, j) ] -> bool Int32.(i <> j)
-  | Ult, [ Int (_, i); Int (_, j) ] -> bool (Int32.(j < 0l) || Int32.(i < j))
+  | Not, [ Int i ] -> bool Int32.(i = 0l)
+  | Lt, [ Int i; Int j ] -> bool Int32.(i < j)
+  | Le, [ Int i; Int j ] -> bool Int32.(i <= j)
+  | Eq, [ Int i; Int j ] -> bool Int32.(i = j)
+  | Neq, [ Int i; Int j ] -> bool Int32.(i <> j)
+  | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
       let wrap =
@@ -94,7 +93,7 @@ let eval_prim ~target x =
       | "%int_add", _ -> int_binop l wrap Int.add
       | "%int_sub", _ -> int_binop l wrap Int.sub
       | "%direct_int_mul", _ -> int_binop l wrap Int.mul
-      | "%direct_int_div", [ _; Int (_, 0l) ] -> None
+      | "%direct_int_div", [ _; Int 0l ] -> None
       | "%direct_int_div", _ -> int_binop l wrap Int.div
       | "%direct_int_mod", _ -> int_binop l wrap Int.rem
       | "%int_and", _ -> int_binop l wrap Int.logand
@@ -110,7 +109,7 @@ let eval_prim ~target x =
             | `Wasm -> fun i -> Int.logand i 0x7fffffffl)
             Int.shift_right_logical
       | "%int_asr", _ -> shift l wrap Fun.id Int.shift_right
-      | "%int_neg", [ Int (_, i) ] -> Some (Int (Regular, Int.neg i))
+      | "%int_neg", [ Int i ] -> Some (Int (Int.neg i))
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
       | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
@@ -123,9 +122,9 @@ let eval_prim ~target x =
       | "caml_mul_float", _ -> float_binop l ( *. )
       | "caml_div_float", _ -> float_binop l ( /. )
       | "caml_fmod_float", _ -> float_binop l mod_float
-      | "caml_int_of_float", [ Float f ] -> Some (Int (Regular, Int.of_float f))
-      | "to_int", [ Float f ] -> Some (Int (Regular, Int.of_float f))
-      | "to_int", [ Int (_, i) ] -> Some (Int (Regular, i))
+      | "caml_int_of_float", [ Float f ] -> Some (Int (Int.of_float f))
+      | "to_int", [ Float f ] -> Some (Int (Int.of_float f))
+      | "to_int", [ Int i ] -> Some (Int i)
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
       | "caml_abs_float", _ -> float_unop l abs_float
@@ -142,10 +141,10 @@ let eval_prim ~target x =
       | "caml_sin_float", _ -> float_unop l sin
       | "caml_sqrt_float", _ -> float_unop l sqrt
       | "caml_tan_float", _ -> float_unop l tan
-      | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int (_, pos) ] ->
+      | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
           let pos = Int32.to_int pos in
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
-          then Some (Int (Regular, Int32.of_int (Char.code s.[pos])))
+          then Some (Int (Int32.of_int (Char.code s.[pos])))
           else None
       | "caml_string_equal", [ String s1; String s2 ] -> bool (String.equal s1 s2)
       | "caml_string_notequal", [ String s1; String s2 ] ->
@@ -154,16 +153,15 @@ let eval_prim ~target x =
           match get_static_env s with
           | Some env -> Some (String env)
           | None -> None)
-      | "caml_sys_const_word_size", [ _ ] -> Some (Int (Regular, 32l))
+      | "caml_sys_const_word_size", [ _ ] -> Some (Int 32l)
       | "caml_sys_const_int_size", [ _ ] ->
           Some
             (Int
-               ( Regular
-               , match target with
-                 | `JavaScript -> 32l
-                 | `Wasm -> 31l ))
-      | "caml_sys_const_big_endian", [ _ ] -> Some (Int (Regular, 0l))
-      | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int (Regular, 0l))
+               (match target with
+               | `JavaScript -> 32l
+               | `Wasm -> 31l))
+      | "caml_sys_const_big_endian", [ _ ] -> Some (Int 0l)
+      | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int 0l)
       | _ -> None)
   | _ -> None
 
@@ -195,8 +193,8 @@ let is_int ~target info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Int (Regular, _))) -> Y
-          | Expr (Constant (Int _)) -> (
+          | Expr (Constant (Int _)) -> Y
+          | Expr (Constant (Int32 _ | NativeInt _)) -> (
               match target with
               | `JavaScript -> Y
               | `Wasm -> N)
@@ -209,8 +207,8 @@ let is_int ~target info x =
           | N, N -> N
           | _ -> Unknown)
         x
-  | Pc (Int (Regular, _)) -> Y
-  | Pc (Int _) -> (
+  | Pc (Int _) -> Y
+  | Pc (Int32 _ | NativeInt _) -> (
       match target with
       | `JavaScript -> Y
       | `Wasm -> N)
@@ -247,7 +245,7 @@ let the_cont_of info x (a : cont array) =
     (fun x ->
       match info.info_defs.(Var.idx x) with
       | Expr (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get
-      | Expr (Constant (Int (_, j))) -> get (Int32.to_int j)
+      | Expr (Constant (Int j)) -> get (Int32.to_int j)
       | _ -> None)
     None
     (fun u v ->
@@ -265,7 +263,7 @@ let eval_instr ~target info ((x, loc) as i) =
           | None -> [ i ]
           | Some c ->
               let c = if c then 1l else 0l in
-              let c = Constant (Int (Regular, c)) in
+              let c = Constant (Int c) in
               Flow.update_def info x c;
               [ Let (x, c), loc ])
       | _ -> [ i ])
@@ -279,7 +277,7 @@ let eval_instr ~target info ((x, loc) as i) =
       match c with
       | None -> [ i ]
       | Some c ->
-          let c = Constant (Int (Regular, c)) in
+          let c = Constant (Int c) in
           Flow.update_def info x c;
           [ Let (x, c), loc ])
   | Let
@@ -302,13 +300,13 @@ let eval_instr ~target info ((x, loc) as i) =
       | Unknown -> [ i ]
       | (Y | N) as b ->
           let b = if Poly.(b = N) then 0l else 1l in
-          let c = Constant (Int (Regular, b)) in
+          let c = Constant (Int b) in
           Flow.update_def info x c;
           [ Let (x, c), loc ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) with
       | Some tag ->
-          let c = Constant (Int (Regular, Int32.of_int tag)) in
+          let c = Constant (Int (Int32.of_int tag)) in
           Flow.update_def info x c;
           [ Let (x, c), loc ]
       | None -> [ i ])
@@ -352,7 +350,7 @@ let eval_instr ~target info ((x, loc) as i) =
                 , Prim
                     ( prim
                     , List.map2 prim_args prim_args' ~f:(fun arg c ->
-                          match c, target with
+                          match (c : constant option), target with
                           | Some ((Int _ | NativeString _) as c), _ -> Pc c
                           | Some (Float _ as c), `JavaScript -> Pc c
                           | Some (String _ as c), `JavaScript
@@ -375,10 +373,12 @@ let the_cond_of info x =
     info
     (fun x ->
       match info.info_defs.(Var.idx x) with
-      | Expr (Constant (Int (_, 0l))) -> Zero
+      | Expr (Constant (Int 0l)) -> Zero
       | Expr
           (Constant
             ( Int _
+            | Int32 _
+            | NativeInt _
             | Float _
             | Tuple _
             | String _
@@ -425,10 +425,11 @@ let rec do_not_raise pc visited blocks =
     let b = Addr.Map.find pc blocks in
     List.iter b.body ~f:(fun (i, _loc) ->
         match i with
-        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) | Assign _ -> ()
+        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _, _) | Assign _ ->
+            ()
         | Let (_, e) -> (
             match e with
-            | Block (_, _, _, _) | Field (_, _) | Constant _ | Closure _ -> ()
+            | Block (_, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
             | Prim (Extern name, _) when Primitive.is_pure name -> ()

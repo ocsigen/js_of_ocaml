@@ -157,7 +157,11 @@ module Generate (Target : Wa_target_sig.S) = struct
         return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
         Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
-    | Field (x, n) -> Memory.field (load x) n
+    | Field (x, n, Non_float) -> Memory.field (load x) n
+    | Field (x, n, Float) ->
+        Memory.float_array_get
+          (load x)
+          (Constant.translate (Int (Int31.of_int_warning_on_overflow n)))
     | Closure _ ->
         Closure.translate
           ~context:ctx.global_context
@@ -166,9 +170,9 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           x
     | Constant c -> Constant.translate c
-    | Special Undefined -> Constant.translate (Int (Regular, 0l))
+    | Special Undefined -> Constant.translate (Int 0l)
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int (_, arity)) ])
+    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ])
       when Poly.(target = `GC) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Int32.to_int arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->
@@ -668,7 +672,16 @@ module Generate (Target : Wa_target_sig.S) = struct
           if ctx.live.(Var.idx x) = 0
           then drop (translate_expr ctx stack_ctx context x e)
           else store x (translate_expr ctx stack_ctx context x e)
-      | Set_field (x, n, y) -> Memory.set_field (load x) n (load y)
+      | Set_field (x, n, Non_float, y) ->
+          Memory.set_field
+            (load x)
+            n
+            (load y)
+      | Set_field (x, n, Float, y) ->
+          Memory.float_array_set
+            (load x)
+            (Constant.translate (Int (Int31.of_int_warning_on_overflow n)))
+            (load y)
       | Offset_ref (x, n) ->
           Memory.set_field
             (load x)

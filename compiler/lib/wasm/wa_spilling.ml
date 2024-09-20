@@ -309,10 +309,10 @@ let spilled_variables
                         fv
                         ~init:Var.Set.empty
                   | Constant _ | Special _ -> Var.Set.empty
-                  | Field (x, _) -> check_spilled ~ctx loaded x Var.Set.empty)
+                  | Field (x, _, _) -> check_spilled ~ctx loaded x Var.Set.empty)
               | Assign (_, x) | Offset_ref (x, _) ->
                   check_spilled ~ctx loaded x Var.Set.empty
-              | Set_field (x, _, y) ->
+              | Set_field (x, _, _, y) ->
                   Var.Set.empty
                   |> check_spilled ~ctx loaded x
                   |> check_spilled ~ctx loaded y
