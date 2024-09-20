@@ -290,75 +290,79 @@ type constant =
   | NativeInt of nativeint
   | Tuple of int * constant array * array_or_not
 
-let rec constant_equal a b =
-  match a, b with
-  | String a, String b -> Some (String.equal a b)
-  | NativeString a, NativeString b -> Some (Native_string.equal a b)
-  | Tuple (ta, a, _), Tuple (tb, b, _) ->
-      if ta <> tb || Array.length a <> Array.length b
-      then Some false
-      else
-        let same = ref (Some true) in
-        for i = 0 to Array.length a - 1 do
-          match !same, constant_equal a.(i) b.(i) with
-          | None, _ -> ()
-          | _, None -> same := None
-          | Some s, Some c -> same := Some (s && c)
-        done;
-        !same
-  | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
-  | Int64 a, Int64 b -> Some (Int64.equal a b)
-  | NativeInt a, NativeInt b -> Some (Nativeint.equal a b)
-  | Float_array a, Float_array b -> Some (Array.equal Float.equal a b)
-  | Float a, Float b -> Some (Float.equal a b)
-  | String _, NativeString _ | NativeString _, String _ -> None
-  | Int _, Float _ | Float _, Int _ -> None
-  | Tuple ((0 | 254), _, _), Float_array _ -> None
-  | Float_array _, Tuple ((0 | 254), _, _) -> None
-  | ( Tuple _
-    , ( String _
-      | NativeString _
-      | Int64 _
-      | Int _
-      | Int32 _
-      | NativeInt _
-      | Float _
-      | Float_array _ ) ) -> Some false
-  | ( Float_array _
-    , ( String _
-      | NativeString _
-      | Int64 _
-      | Int _
-      | Int32 _
-      | NativeInt _
-      | Float _
-      | Tuple _ ) ) -> Some false
-  | ( String _
-    , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
-      Some false
-  | ( NativeString _
-    , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
-      Some false
-  | ( Int64 _
-    , ( String _
-      | NativeString _
-      | Int _
-      | Int32 _
-      | NativeInt _
-      | Float _
-      | Tuple _
-      | Float_array _ ) ) -> Some false
-  | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
-      Some false
-  | ( (Int _ | Int32 _ | NativeInt _)
-    , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
-      Some false
-  (* Note: the following cases should not occur when compiling to Javascript *)
-  | Int _, (Int32 _ | NativeInt _)
-  | Int32 _, (Int _ | NativeInt _)
-  | NativeInt _, (Int _ | Int32 _)
-  | (Int32 _ | NativeInt _), Float _
-  | Float _, (Int32 _ | NativeInt _) -> None
+module Constant = struct
+  type t = constant
+
+  let rec ocaml_equal a b =
+    match a, b with
+    | String a, String b -> Some (String.equal a b)
+    | NativeString a, NativeString b -> Some (Native_string.equal a b)
+    | Tuple (ta, a, _), Tuple (tb, b, _) ->
+        if ta <> tb || Array.length a <> Array.length b
+        then Some false
+        else
+          let same = ref (Some true) in
+          for i = 0 to Array.length a - 1 do
+            match !same, ocaml_equal a.(i) b.(i) with
+            | None, _ -> ()
+            | _, None -> same := None
+            | Some s, Some c -> same := Some (s && c)
+          done;
+          !same
+    | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
+    | Int64 a, Int64 b -> Some (Int64.equal a b)
+    | NativeInt a, NativeInt b -> Some (Nativeint.equal a b)
+    | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
+    | Float a, Float b -> Some (Float.ieee_equal a b)
+    | String _, NativeString _ | NativeString _, String _ -> None
+    | Int _, Float _ | Float _, Int _ -> None
+    | Tuple ((0 | 254), _, _), Float_array _ -> None
+    | Float_array _, Tuple ((0 | 254), _, _) -> None
+    | ( Tuple _
+      , ( String _
+        | NativeString _
+        | Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Float_array _ ) ) -> Some false
+    | ( Float_array _
+      , ( String _
+        | NativeString _
+        | Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Tuple _ ) ) -> Some false
+    | ( String _
+      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
+        Some false
+    | ( NativeString _
+      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
+        Some false
+    | ( Int64 _
+      , ( String _
+        | NativeString _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Tuple _
+        | Float_array _ ) ) -> Some false
+    | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
+        Some false
+    | ( (Int _ | Int32 _ | NativeInt _)
+      , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
+        Some false
+    (* Note: the following cases should not occur when compiling to Javascript *)
+    | Int _, (Int32 _ | NativeInt _)
+    | Int32 _, (Int _ | NativeInt _)
+    | NativeInt _, (Int _ | Int32 _)
+    | (Int32 _ | NativeInt _), Float _
+    | Float _, (Int32 _ | NativeInt _) -> None
+end
 
 type loc =
   | No
