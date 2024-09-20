@@ -54,13 +54,13 @@ val get_approx :
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
 
-val the_const_of : info -> Code.prim_arg -> Code.constant option
+val the_const_of : target:[`JavaScript | `Wasm ] -> info -> Code.prim_arg -> Code.constant option
 
-val the_string_of : info -> Code.prim_arg -> string option
+val the_string_of : target:[`JavaScript | `Wasm ] -> info -> Code.prim_arg -> string option
 
-val the_native_string_of : info -> Code.prim_arg -> Code.Native_string.t option
+val the_native_string_of : target:[`JavaScript | `Wasm ] -> info -> Code.prim_arg -> Code.Native_string.t option
 
-val the_int : info -> Code.prim_arg -> int32 option
+val the_int : target:[`JavaScript | `Wasm ] -> info -> Code.prim_arg -> int32 option
 
 val update_def : info -> Code.Var.t -> Code.expr -> unit
 
