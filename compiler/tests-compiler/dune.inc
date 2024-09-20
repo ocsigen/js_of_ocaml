@@ -362,11 +362,11 @@
 (library
  ;; compiler/tests-compiler/gh1659.ml
  (name gh1659_15)
- (enabled_if true)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules gh1659)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if true)
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))

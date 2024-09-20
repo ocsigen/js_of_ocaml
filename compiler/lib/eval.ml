@@ -272,6 +272,10 @@ let constant_js_equal a b =
   | _, Float_array _
   | Int64 _, _
   | _, Int64 _
+  | Int32 _, _
+  | _, Int32 _
+  | NativeInt _, _
+  | _, NativeInt _
   | Tuple _, _
   | _, Tuple _ -> None
 
