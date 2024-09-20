@@ -38,8 +38,7 @@ let int_binop l w f =
 
 let shift l w t f =
   match l with
-  | [ Int i; Int j ] ->
-      Some (Int (w (f (t i) (Int32.to_int j land 0x1f))))
+  | [ Int i; Int j ] -> Some (Int (w (f (t i) (Int32.to_int j land 0x1f))))
   | _ -> None
 
 let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
@@ -159,8 +158,8 @@ let eval_prim ~target x =
           Some
             (Int
                (match target with
-                | `JavaScript -> 32l
-                | `Wasm -> 31l ))
+               | `JavaScript -> 32l
+               | `Wasm -> 31l))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int 0l)
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int 0l)
       | _ -> None)
@@ -351,7 +350,7 @@ let eval_instr ~target info ((x, loc) as i) =
                 , Prim
                     ( prim
                     , List.map2 prim_args prim_args' ~f:(fun arg c ->
-                          match (c : constant), target with
+                          match (c : constant option), target with
                           | Some ((Int _ | NativeString _) as c), _ -> Pc c
                           | Some (Float _ as c), `JavaScript -> Pc c
                           | Some (String _ as c), `JavaScript
@@ -373,9 +372,9 @@ let the_cond_of info x =
   get_approx
     info
     (fun x ->
-      match Flow.Info.def info x with
-      | Some (Constant (Int 0l)) -> Zero
-      | Some
+      match info.info_defs.(Var.idx x) with
+      | Expr (Constant (Int 0l)) -> Zero
+      | Expr
           (Constant
             ( Int _
             | Int32 _
