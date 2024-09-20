@@ -285,7 +285,7 @@ let run
   | `None ->
       let prims = Linker.list_all () |> StringSet.elements in
       assert (List.length prims > 0);
-      let code, uinfo = Parse_bytecode.predefined_exceptions in
+      let code, uinfo = Parse_bytecode.predefined_exceptions () in
       let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
       let code : Parse_bytecode.one =
         { code

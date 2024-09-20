@@ -29,6 +29,22 @@ let set_static_env s value = Hashtbl.add static_env s value
 
 let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> None
 
+module type Int = sig
+  include Arith_ops
+
+  val int_unop : constant list -> (t -> t) -> constant option
+
+  val int_binop : constant list -> (t -> t -> t) -> constant option
+
+  val shift_op : constant list -> (t -> int -> t) -> constant option
+
+  val of_int32_warning_on_overflow : int32 -> t
+
+  val to_int32 : t -> int32
+
+  val numbits : int
+end
+
 module Int32 = struct
   include Int32
 
@@ -49,9 +65,13 @@ module Int32 = struct
     | _ -> None
 
   let numbits = 32
+
+  let of_int32_warning_on_overflow = Fun.id
+
+  let to_int32 = Fun.id
 end
 
-module Int31 = struct
+module Int31 : Int = struct
   include Int31
 
   let int_unop l f =
@@ -110,23 +130,7 @@ let float_binop_bool l f =
   | Some b -> bool b
   | None -> None
 
-module type Int = sig
-  include Arith_ops
-
-  val int_unop : constant list -> (t -> t) -> constant option
-
-  val int_binop : constant list -> (t -> t -> t) -> constant option
-
-  val shift_op : constant list -> (t -> int -> t) -> constant option
-
-  val of_int32_warning_on_overflow : int32 -> t
-
-  val to_int32 : t -> int32
-
-  val numbits : int
-end
-
-let eval_prim ~target x =
+let eval_prim x =
   match x with
   | Not, [ Int i ] -> bool Int32.(i = 0l)
   | Lt, [ Int i; Int j ] -> bool Int32.(i < j)
@@ -135,19 +139,12 @@ let eval_prim ~target x =
   | Neq, [ Int i; Int j ] -> bool Int32.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
-      let name = Primitive.resolve name in
       let (module Int : Int) =
-        match target with
-        | `JavaScript ->
-            (module struct
-              include Int32
-
-              let of_int32_warning_on_overflow = Fun.id
-
-              let to_int32 = Fun.id
-            end)
+        match Config.target () with
+        | `JavaScript -> (module Int32)
         | `Wasm -> (module Int31)
       in
+      let name = Primitive.resolve name in
       match name, l with
       (* int *)
       | "%int_add", _ -> Int.int_binop l Int.add
@@ -420,7 +417,6 @@ let eval_instr ~target info ((x, loc) as i) =
                | _ -> false)
         then
           eval_prim
-            ~target
             ( prim
             , List.map prim_args' ~f:(function
                   | Some c -> c

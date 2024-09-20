@@ -3134,7 +3134,7 @@ let from_channel ic =
           `Exe
       | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
-let predefined_exceptions =
+let predefined_exceptions () =
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
