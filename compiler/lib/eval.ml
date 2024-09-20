@@ -212,14 +212,14 @@ let eval_prim x =
       | _ -> None)
   | _ -> None
 
-let the_length_of info x =
+let the_length_of ~target info x =
   get_approx
     info
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (String s)) -> Some (Int32.of_int (String.length s))
       | Some (Prim (Extern "caml_create_string", [ arg ]))
-      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int info arg
+      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int ~target info arg
       | None | Some _ -> None)
     None
     (fun u v ->
@@ -330,7 +330,7 @@ let constant_js_equal a b =
 let eval_instr ~target info ((x, loc) as i) =
   match x with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
-      match the_const_of info y, the_const_of info z with
+      match the_const_of ~target info y, the_const_of ~target info z with
       | Some e1, Some e2 -> (
           match Code.Constant.ocaml_equal e1 e2 with
           | None -> [ i ]
@@ -346,7 +346,7 @@ let eval_instr ~target info ((x, loc) as i) =
               [ Let (x, c), loc ])
       | _ -> [ i ])
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
-      match the_const_of info y, the_const_of info z with
+      match the_const_of ~target info y, the_const_of ~target info z with
       | Some e1, Some e2 -> (
           match constant_js_equal e1 e2 with
           | None -> [ i ]
@@ -359,7 +359,7 @@ let eval_instr ~target info ((x, loc) as i) =
       let c =
         match s with
         | Pc (String s) -> Some (Int32.of_int (String.length s))
-        | Pv v -> the_length_of info v
+        | Pv v -> the_length_of ~target info v
         | _ -> None
       in
       match c with
@@ -410,7 +410,7 @@ let eval_instr ~target info ((x, loc) as i) =
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
   | Let (x, Prim (prim, prim_args)) -> (
-      let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
+      let prim_args' = List.map prim_args ~f:(fun x -> the_const_of ~target info x) in
       let res =
         if List.for_all prim_args' ~f:(function
                | Some _ -> true

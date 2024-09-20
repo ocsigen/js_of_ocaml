@@ -52,12 +52,15 @@ val get_approx :
 
 val the_def_of : Info.t -> Code.prim_arg -> Code.expr option
 
-val the_const_of : Info.t -> Code.prim_arg -> Code.constant option
+val the_const_of :
+  target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Code.constant option
 
-val the_string_of : Info.t -> Code.prim_arg -> string option
+val the_string_of :
+  target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> string option
 
-val the_native_string_of : Info.t -> Code.prim_arg -> Code.Native_string.t option
+val the_native_string_of :
+  target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Code.Native_string.t option
 
-val the_int : Info.t -> Code.prim_arg -> int32 option
+val the_int : target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> int32 option
 
 val f : ?skip_param:bool -> Code.program -> Code.program * Info.t
