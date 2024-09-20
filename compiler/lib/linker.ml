@@ -177,11 +177,16 @@ module Fragment = struct
     ; weakdef : bool
     ; always : bool
     ; code : Javascript.program pack
-    ; js_string : bool option
-    ; effects : bool option
+    ; conditions : bool StringMap.t
     ; fragment_target : Target_env.t option
     ; aliases : StringSet.t
     }
+
+  let allowed_flags =
+    List.fold_left
+      ~f:(fun m (k, v) -> StringMap.add k v m)
+      ~init:StringMap.empty
+      [ "js-string", Config.Flag.use_js_string; "effects", Config.Flag.effects ]
 
   type t =
     | Always_include of Javascript.program pack
@@ -247,8 +252,7 @@ module Fragment = struct
                 ; always = false
                 ; has_macro = false
                 ; code = Ok code
-                ; js_string = None
-                ; effects = None
+                ; conditions = StringMap.empty
                 ; fragment_target = None
                 ; aliases = StringSet.empty
                 }
@@ -281,31 +285,24 @@ module Fragment = struct
                     | `Always -> { fragment with always = true }
                     | `Alias name ->
                         { fragment with aliases = StringSet.add name fragment.aliases }
-                    | (`Ifnot "js-string" | `If "js-string") as i ->
-                        let b =
-                          match i with
-                          | `If _ -> true
-                          | `Ifnot _ -> false
-                        in
-                        if Option.is_some fragment.js_string
-                        then Format.eprintf "Duplicated js-string in %s\n" (loc pi);
-                        { fragment with js_string = Some b }
-                    | (`Ifnot "effects" | `If "effects") as i ->
-                        let b =
-                          match i with
-                          | `If _ -> true
-                          | `Ifnot _ -> false
-                        in
-                        if Option.is_some fragment.effects
-                        then Format.eprintf "Duplicated effects in %s\n" (loc pi);
-                        { fragment with effects = Some b }
                     | `If name when Option.is_some (Target_env.of_string name) ->
                         if Option.is_some fragment.fragment_target
                         then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
                         { fragment with fragment_target = Target_env.of_string name }
-                    | `If name | `Ifnot name ->
-                        Format.eprintf "Unkown flag %S in %s\n" name (loc pi);
-                        fragment)
+                    | (`Ifnot v | `If v) when not (StringMap.mem v allowed_flags) ->
+                        Format.eprintf "Unkown flag %S in %s\n" v (loc pi);
+                        fragment
+                    | (`Ifnot v | `If v) as i ->
+                        if StringMap.mem v fragment.conditions
+                        then Format.eprintf "Duplicated %s in %s\n" v (loc pi);
+                        let b =
+                          match i with
+                          | `If _ -> true
+                          | `Ifnot _ -> false
+                        in
+                        { fragment with
+                          conditions = StringMap.add v b fragment.conditions
+                        })
               in
               Fragment fragment)
     in
@@ -451,25 +448,18 @@ let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.
       ; weakdef
       ; always
       ; code
-      ; js_string
-      ; effects
       ; fragment_target
       ; aliases
       ; has_macro
+      ; conditions
       } -> (
-      let ignore_because_of_js_string =
-        match js_string, Config.Flag.use_js_string () with
-        | Some true, false | Some false, true -> true
-        | None, _ | Some true, true | Some false, false -> false
+      let should_ignore =
+        StringMap.exists
+          (fun flag b ->
+            not (Bool.equal b (StringMap.find flag Fragment.allowed_flags ())))
+          conditions
       in
-      let ignore_because_of_effects =
-        match effects, Config.Flag.effects () with
-        | Some true, false | Some false, true -> true
-        | None, _ | Some true, true | Some false, false -> false
-      in
-      if (not version_constraint_ok)
-         || ignore_because_of_js_string
-         || ignore_because_of_effects
+      if (not version_constraint_ok) || should_ignore
       then `Ignored
       else
         match provides with
