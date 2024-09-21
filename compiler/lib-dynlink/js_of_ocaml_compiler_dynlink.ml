@@ -26,6 +26,7 @@ let normalize_bytecode code =
       Bytes.to_string b
 
 let () =
+  Config.set_target `JavaScript;
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
   Config.Flag.set "effects" (Jsoo_runtime.Sys.Config.effects ());

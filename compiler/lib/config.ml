@@ -183,11 +183,12 @@ end
 
 (****)
 
-let target_ : [ `JavaScript | `Wasm ] option ref = ref None
+let target_ : [ `JavaScript | `Wasm | `None ] ref = ref `None
 
 let target () =
   match !target_ with
-  | Some t -> t
-  | None -> failwith "target was not set"
+  | `None -> failwith "target was not set"
+  | (`JavaScript | `Wasm) as t -> t
 
-let set_target t = target_ := Some t
+let set_target (t : [ `JavaScript | `Wasm ]) =
+  target_ := (t :> [ `JavaScript | `Wasm | `None ])

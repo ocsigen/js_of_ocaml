@@ -90,6 +90,7 @@ let run
     } =
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
+  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Linker.reset ();
   (match output_file with

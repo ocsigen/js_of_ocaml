@@ -150,6 +150,7 @@ let f
     ; mklib
     ; toplevel
     } =
+  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Linker.reset ();
   let with_output f =
