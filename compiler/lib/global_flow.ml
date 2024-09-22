@@ -233,7 +233,16 @@ let expr_deps blocks st x e =
       cont_deps blocks st cont
   | Field (y, _, _) -> add_dep st x y
 
-let program_deps st { blocks; _ } =
+let program_deps st { start; blocks; _ } =
+  Code.traverse
+    { Code.fold = Code.fold_children }
+    (fun pc () ->
+      match Addr.Map.find pc blocks with
+      | { branch = Return x, _; _ } -> do_escape st Escape x
+      | _ -> ())
+    start
+    blocks
+    ();
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun (i, _) ->

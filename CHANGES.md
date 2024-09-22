@@ -24,6 +24,7 @@
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
 * Compiler: Fixed the static evaluation of some equalities (#1659)
+* Compiler: fix global analysis bug (subsumes #1556)
 
 # 5.8.2 (2024-05-26) - Luc
 
