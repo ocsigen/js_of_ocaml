@@ -206,7 +206,8 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
     let live_fields =
       match Var.Tbl.get live_vars v with
       | Live fields -> Live (IntSet.add i fields)
-      | Top | Dead -> Live (IntSet.singleton i)
+      | Top -> Top
+      | Dead -> Live (IntSet.singleton i)
     in
     Var.Tbl.set live_vars v live_fields
   in
