@@ -795,7 +795,11 @@ let register_global ?(force = false) g i loc rem =
       | None -> []
       | Some name ->
           Code.Var.name (access_global g i) name;
-          [ Pc (NativeString (Native_string.of_string name)) ]
+          [ Pc
+              (match Config.target () with
+              | `JavaScript -> NativeString (Native_string.of_string name)
+              | `Wasm -> String name)
+          ]
     in
     ( Let
         ( Var.fresh ()
