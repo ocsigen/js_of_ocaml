@@ -870,6 +870,14 @@ let invariant { blocks; start; _ } =
         assert (not (Var.ISet.mem defs x));
         Var.ISet.add defs x)
     in
+    let check_prim_arg = function
+      | Pc (NativeInt _ | Int32 _) ->
+          assert (
+            match Config.target () with
+            | `Wasm -> true
+            | _ -> false)
+      | Pc _ | Pv _ -> ()
+    in
     let check_expr = function
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
@@ -877,8 +885,13 @@ let invariant { blocks; start; _ } =
       | Closure (l, cont) ->
           List.iter l ~f:define;
           check_cont cont
+      | Constant (NativeInt _ | Int32 _) ->
+          assert (
+            match Config.target () with
+            | `Wasm -> true
+            | _ -> false)
       | Constant _ -> ()
-      | Prim (_, _) -> ()
+      | Prim (_, args) -> List.iter ~f:check_prim_arg args
       | Special _ -> ()
     in
     let check_instr (i, _loc) =

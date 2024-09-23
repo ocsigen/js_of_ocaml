@@ -44,7 +44,7 @@ let rec constant_of_const c : Code.constant =
         | `JavaScript -> Int32.of_int_warning_on_overflow i
         | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
   | Const_block (tag, l) ->
-      let l = Array.of_list (List.map l ~f:(fun c -> constant_of_const c)) in
+      let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
 let rec find_loc_in_summary ident' = function

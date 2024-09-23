@@ -370,7 +370,7 @@ module type Arith_ops = sig
 end
 
 module Int31 : sig
-  type t = private int32
+  type t
 
   include Arith_ops with type t := t
 
@@ -415,25 +415,31 @@ end = struct
       ~to_hex:(Printf.sprintf "%lx")
       n
 
-  let neg = Int32.neg
+  let two_pow n =
+    assert (0 <= n && n <= 31);
+    Int32.shift_left 1l n
 
-  let int_binop wrap f x y = wrap (f x y)
+  let min_int = Int32.neg (two_pow 30)
 
-  let add = int_binop wrap Int32.add
+  let neg x = if Int32.equal x min_int then x else Int32.neg x
 
-  let sub = int_binop wrap Int32.sub
+  let int_binop f x y = wrap (f x y)
 
-  let mul = int_binop wrap Int32.mul
+  let add = int_binop Int32.add
 
-  let div = int_binop wrap Int32.div
+  let sub = int_binop Int32.sub
 
-  let rem = int_binop wrap Int32.rem
+  let mul = int_binop Int32.mul
 
-  let logand = int_binop wrap Int32.logand
+  let div = int_binop Int32.div
 
-  let logor = int_binop wrap Int32.logor
+  let rem = int_binop Int32.rem
 
-  let logxor = int_binop wrap Int32.logxor
+  let logand = int_binop Int32.logand
+
+  let logor = int_binop Int32.logor
+
+  let logxor = int_binop Int32.logxor
 
   let shift_op wrap truncate f x y =
     (* Limit the shift offset to [0, 31] *)

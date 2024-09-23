@@ -233,7 +233,7 @@ type is_int =
   | N
   | Unknown
 
-let is_int ~target info x =
+let is_int info x =
   match x with
   | Pv x ->
       get_approx
@@ -242,7 +242,7 @@ let is_int ~target info x =
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
           | Some (Constant (NativeInt _ | Int32 _)) ->
-              assert (Poly.equal target `Wasm);
+              (* These Wasm-specific constants are boxed *)
               N
           | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
@@ -255,7 +255,7 @@ let is_int ~target info x =
         x
   | Pc (Int _) -> Y
   | Pc (NativeInt _ | Int32 _) ->
-      assert (Poly.equal target `Wasm);
+      (* These Wasm-specific constants are boxed *)
       N
   | Pc _ -> N
 
@@ -384,7 +384,7 @@ let eval_instr ~target info ((x, loc) as i) =
            below fail. *)
       [ i ]
   | Let (x, Prim (IsInt, [ y ])) -> (
-      match is_int ~target info y with
+      match is_int info y with
       | Unknown -> [ i ]
       | (Y | N) as b ->
           let c = Constant (bool' Poly.(b = Y)) in
