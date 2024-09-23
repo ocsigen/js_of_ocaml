@@ -175,8 +175,6 @@ let eval_prim ~target x =
       | "caml_int_of_float", [ Float f ] ->
           Some
             (Int (Int32.of_float f |> Int.of_int32_warning_on_overflow |> Int.to_int32))
-      | "to_int", [ Float f ] -> Some (Int (Int32.of_float f))
-      | "to_int", [ Int i ] -> Some (Int i)
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
       | "caml_abs_float", _ -> float_unop l abs_float
