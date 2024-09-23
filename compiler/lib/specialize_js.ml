@@ -25,6 +25,9 @@ open Flow
 let specialize_instr ~target info i =
   match i, target with
   | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
+      (* We can implement the special case where the format string is "%s" in JavaScript
+         in a concise and efficient way with [""+x]. It does not make as much sense in
+         Wasm to have a special case for this. *)
       match the_string_of ~target info y with
       | Some "%d" -> (
           match the_int ~target info z with
