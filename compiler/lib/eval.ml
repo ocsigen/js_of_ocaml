@@ -130,7 +130,7 @@ let float_binop_bool l f =
   | Some b -> bool b
   | None -> None
 
-let eval_prim x =
+let eval_prim ~target x =
   match x with
   | Not, [ Int i ] -> bool Int32.(i = 0l)
   | Lt, [ Int i; Int j ] -> bool Int32.(i < j)
@@ -140,7 +140,7 @@ let eval_prim x =
   | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let (module Int : Int) =
-        match Config.target () with
+        match target with
         | `JavaScript -> (module Int32)
         | `Wasm -> (module Int31)
       in
@@ -417,6 +417,7 @@ let eval_instr ~target info ((x, loc) as i) =
                | _ -> false)
         then
           eval_prim
+            ~target
             ( prim
             , List.map prim_args' ~f:(function
                   | Some c -> c
