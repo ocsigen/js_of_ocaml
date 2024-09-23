@@ -54,11 +54,13 @@
 * Compiler: more inlining - duplicate small function.
 * Compiler: Make it possible to link runtime JavaScript file
   together with OCaml libraries #1509
+* Compiler: initial support for OCaml 5.3
 * Runtime: abort instead of exit when calling unimplemented
   js primitives in bytecode/native. It should help if one tries
   to understand the source of the call with gdb (see #677)
 * Runtime: re-enable marshalling of floats, disabled in jsoo 2.0
 * Runtime: new runtime api for channels
+
 
 ## Bug fixes
 

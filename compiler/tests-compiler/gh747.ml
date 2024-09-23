@@ -141,8 +141,8 @@ let max_array_length = max_wosize ()
 let max_floatarray_length = max_array_length / (64 / word_size)
 let max_string_length = word_size / 8 * max_array_length - 1
 
-type 'a effect
-type exn += Unhandled: 'a effect -> exn
+type 'a effect_
+type exn += Unhandled: 'a effect_ -> exn
 
 type backtrace_slot =
   | Known_location of {
