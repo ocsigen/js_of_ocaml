@@ -274,3 +274,26 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         iftrue'
         falsestop
   | _ -> if_statement_2 e loc iftrue truestop iffalse falsestop
+
+let function_body b =
+  (* We only check for a return at the end since it is by far the most
+     common case in practice. *)
+  let has_useless_return =
+    let rec check l =
+      match l with
+      | [] -> false
+      | [ (J.Return_statement None, _) ] -> true
+      | _ :: r -> check r
+    in
+    check b
+  in
+  if has_useless_return
+  then
+    let rec remove acc l =
+      match l with
+      | [] -> acc
+      | [ (J.Return_statement None, _) ] -> acc
+      | i :: r -> remove (i :: acc) r
+    in
+    List.rev (remove [] b)
+  else b

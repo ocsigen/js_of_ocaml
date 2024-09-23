@@ -5713,7 +5713,6 @@
       /*<<bytes.ml:517:7>>*/ return;
     }
      /*<<bytes.ml:518:7>>*/  /*<<bytes.ml:518:7>>*/ caml_bytes_set16(b, i, x);
-     /*<<bytes.ml:518:7>>*/ return;
     /*<<bytes.ml:518:33>>*/ }
    function unsafe_set_uint16_be(b, i, x){
      /*<<bytes.ml:521:2>>*/ if(Stdlib_Sys[11]){
@@ -5722,7 +5721,6 @@
     }
      /*<<bytes.ml:523:2>>*/  /*<<bytes.ml:523:2>>*/ caml_bytes_set16
      (b, i, caml_bswap16(x));
-     /*<<bytes.ml:523:2>>*/ return;
     /*<<bytes.ml:523:37>>*/ }
    function set_int16_le(b, i, x){
      /*<<bytes.ml:526:2>>*/ return Stdlib_Sys[11]
@@ -5974,7 +5972,6 @@
    function set_utf_8_uchar(b, i, u){
      /*<<bytes.ml:651:2>>*/ function set(_i_, _h_, _g_){
       /*<<?>>*/ caml_bytes_unsafe_set(_i_, _h_, _g_);
-     return;
     }
      /*<<bytes.ml:652:2>>*/ var
       /*<<bytes.ml:652:2>>*/ max =
@@ -10076,7 +10073,6 @@
      (Stdlib_Array[9], env[4], 0, new_end, 0, oldsize);
     env[4] = new_end;
     env[5] = newsize;
-    return;
     /*<<parsing.ml:122:28>>*/ }
    function clear_parser(param){
      /*<<parsing.ml:125:2>>*/  /*<<parsing.ml:125:2>>*/ caml_call4
@@ -12760,7 +12756,6 @@
      /*<<buffer.ml:99:2>>*/  /*<<buffer.ml:99:2>>*/ caml_call5
      (Stdlib_Bytes[11], b[1][1], 0, new_buffer, 0, b[2]);
     b[1] = [0, new_buffer, new_len[1]];
-    return;
     /*<<buffer.ml:100:55>>*/ }
    function add_char(b, c){
      /*<<buffer.ml:113:2>>*/ var
@@ -13487,7 +13482,6 @@
      st =  /*<<domain.ml:89:13>>*/ caml_make_vect(8, none);
      /*<<domain.ml:90:4>>*/  /*<<domain.ml:90:4>>*/ runtime.caml_domain_dls_set
      (st);
-     /*<<domain.ml:90:4>>*/ return;
     /*<<domain.ml:90:20>>*/ }
     /*<<domain.ml:92:10>>*/ create_dls(0);
     /*<<domain.ml:96:20>>*/ var
@@ -13589,10 +13583,7 @@
      /*<<domain.ml:210:27>>*/ first_domain_spawned =
        /*<<domain.ml:210:27>>*/ caml_call1(Stdlib_Atomic[1], 0),
      /*<<domain.ml:212:27>>*/ first_spawn_function =
-      [0,
-       function(param){
-         /*<<domain.ml:212:42>>*/ return;
-        /*<<domain.ml:212:44>>*/ }],
+      [0, function(param){ /*<<domain.ml:212:44>>*/ }],
     cst_first_domain_already_spawn = "first domain already spawned";
    function before_first_spawn(f){
      /*<<domain.ml:215:2>>*/ if
@@ -14030,14 +14021,12 @@
       (Stdlib_Bytes[11], buf[2], 0, new_str, 0, len);
      buf[2] = new_str;
     }
-    return;
     /*<<camlinternalFormat.ml:267:3>>*/ }
    function buffer_add_char(buf, c){
      /*<<camlinternalFormat.ml:271:2>>*/ buffer_check_size(buf, 1);
      /*<<camlinternalFormat.ml:272:2>>*/  /*<<camlinternalFormat.ml:272:2>>*/ caml_bytes_set
      (buf[2], buf[1], c);
     buf[1] = buf[1] + 1 | 0;
-    return;
     /*<<camlinternalFormat.ml:273:24>>*/ }
    function buffer_add_string(buf, s){
      /*<<camlinternalFormat.ml:277:2>>*/ var
@@ -14046,7 +14035,6 @@
      /*<<camlinternalFormat.ml:279:2>>*/  /*<<camlinternalFormat.ml:279:2>>*/ caml_call5
      (Stdlib_String[6], s, 0, buf[2], buf[1], str_len);
     buf[1] = buf[1] + str_len | 0;
-    return;
     /*<<camlinternalFormat.ml:280:30>>*/ }
    function buffer_contents(buf){
      /*<<camlinternalFormat.ml:284:2>>*/ return caml_call3
@@ -14146,7 +14134,6 @@
     }
     if(prec)
       /*<<camlinternalFormat.ml:410:4>>*/ return buffer_add_string(buf, cst);
-     /*<<camlinternalFormat.ml:405:20>>*/ return;
     /*<<camlinternalFormat.ml:410:30>>*/ }
    function bprint_iconv_flag(buf, iconv){
      /*<<camlinternalFormat.ml:415:34>>*/ switch(iconv){
@@ -14185,7 +14172,6 @@
     }
     if(8 <= fconv[2])
       /*<<camlinternalFormat.ml:450:16>>*/ return buffer_add_char(buf, 35);
-     /*<<camlinternalFormat.ml:452:35>>*/ return;
     /*<<camlinternalFormat.ml:452:37>>*/ }
    function string_of_formatting_lit(formatting_lit){
      /*<<camlinternalFormat.ml:465:46>>*/ if
@@ -14242,7 +14228,6 @@
       i = _cP_;
      }
     }
-    return;
     /*<<camlinternalFormat.ml:488:6>>*/ }
    function bprint_fmtty(buf, fmtty){
      /*<<camlinternalFormat.ml:496:17>>*/ var fmtty$0 = fmtty;
@@ -14848,18 +14833,10 @@
    function fmtty_rel_det(param){
      /*<<?>>*/ if(typeof param === "number")
       /*<<camlinternalFormat.ml:691:4>>*/ return [0,
-             function(param){
-               /*<<camlinternalFormat.ml:691:17>>*/ return;
-              /*<<camlinternalFormat.ml:691:21>>*/ },
-             function(param){
-               /*<<camlinternalFormat.ml:692:17>>*/ return;
-              /*<<camlinternalFormat.ml:692:21>>*/ },
-             function(param){
-               /*<<camlinternalFormat.ml:693:17>>*/ return;
-              /*<<camlinternalFormat.ml:693:21>>*/ },
-             function(param){
-               /*<<camlinternalFormat.ml:694:17>>*/ return;
-              /*<<camlinternalFormat.ml:694:21>>*/ }];
+             function(param){ /*<<camlinternalFormat.ml:691:21>>*/ },
+             function(param){ /*<<camlinternalFormat.ml:692:21>>*/ },
+             function(param){ /*<<camlinternalFormat.ml:693:21>>*/ },
+             function(param){ /*<<camlinternalFormat.ml:694:21>>*/ }];
     switch(param[0]){
       case 0:
         /*<<camlinternalFormat.ml:696:25>>*/ var
@@ -14872,11 +14849,9 @@
         /*<<camlinternalFormat.ml:697:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:697:17>>*/ fa(0);
-                 /*<<camlinternalFormat.ml:697:39>>*/ return;
                 /*<<camlinternalFormat.ml:697:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:698:17>>*/ af(0);
-                 /*<<camlinternalFormat.ml:698:39>>*/ return;
                 /*<<camlinternalFormat.ml:698:43>>*/ },
                ed,
                de];
@@ -14891,11 +14866,9 @@
         /*<<camlinternalFormat.ml:702:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:702:17>>*/ fa$0(0);
-                 /*<<camlinternalFormat.ml:702:39>>*/ return;
                 /*<<camlinternalFormat.ml:702:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:703:17>>*/ af$0(0);
-                 /*<<camlinternalFormat.ml:703:39>>*/ return;
                 /*<<camlinternalFormat.ml:703:43>>*/ },
                ed$0,
                de$0];
@@ -14910,11 +14883,9 @@
         /*<<camlinternalFormat.ml:707:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:707:17>>*/ fa$1(0);
-                 /*<<camlinternalFormat.ml:707:39>>*/ return;
                 /*<<camlinternalFormat.ml:707:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:708:17>>*/ af$1(0);
-                 /*<<camlinternalFormat.ml:708:39>>*/ return;
                 /*<<camlinternalFormat.ml:708:43>>*/ },
                ed$1,
                de$1];
@@ -14929,11 +14900,9 @@
         /*<<camlinternalFormat.ml:712:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:712:17>>*/ fa$2(0);
-                 /*<<camlinternalFormat.ml:712:39>>*/ return;
                 /*<<camlinternalFormat.ml:712:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:713:17>>*/ af$2(0);
-                 /*<<camlinternalFormat.ml:713:39>>*/ return;
                 /*<<camlinternalFormat.ml:713:43>>*/ },
                ed$2,
                de$2];
@@ -14948,11 +14917,9 @@
         /*<<camlinternalFormat.ml:722:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:722:17>>*/ fa$3(0);
-                 /*<<camlinternalFormat.ml:722:39>>*/ return;
                 /*<<camlinternalFormat.ml:722:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:723:17>>*/ af$3(0);
-                 /*<<camlinternalFormat.ml:723:39>>*/ return;
                 /*<<camlinternalFormat.ml:723:43>>*/ },
                ed$3,
                de$3];
@@ -14967,11 +14934,9 @@
         /*<<camlinternalFormat.ml:717:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:717:17>>*/ fa$4(0);
-                 /*<<camlinternalFormat.ml:717:39>>*/ return;
                 /*<<camlinternalFormat.ml:717:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:718:17>>*/ af$4(0);
-                 /*<<camlinternalFormat.ml:718:39>>*/ return;
                 /*<<camlinternalFormat.ml:718:43>>*/ },
                ed$4,
                de$4];
@@ -14986,11 +14951,9 @@
         /*<<camlinternalFormat.ml:727:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:727:17>>*/ fa$5(0);
-                 /*<<camlinternalFormat.ml:727:39>>*/ return;
                 /*<<camlinternalFormat.ml:727:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:728:17>>*/ af$5(0);
-                 /*<<camlinternalFormat.ml:728:39>>*/ return;
                 /*<<camlinternalFormat.ml:728:43>>*/ },
                ed$5,
                de$5];
@@ -15005,11 +14968,9 @@
         /*<<camlinternalFormat.ml:732:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:732:17>>*/ fa$6(0);
-                 /*<<camlinternalFormat.ml:732:39>>*/ return;
                 /*<<camlinternalFormat.ml:732:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:733:17>>*/ af$6(0);
-                 /*<<camlinternalFormat.ml:733:39>>*/ return;
                 /*<<camlinternalFormat.ml:733:43>>*/ },
                ed$6,
                de$6];
@@ -15024,11 +14985,9 @@
         /*<<camlinternalFormat.ml:765:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:765:17>>*/ fa$7(0);
-                 /*<<camlinternalFormat.ml:765:39>>*/ return;
                 /*<<camlinternalFormat.ml:765:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:766:17>>*/ af$7(0);
-                 /*<<camlinternalFormat.ml:766:39>>*/ return;
                 /*<<camlinternalFormat.ml:766:43>>*/ },
                ed$7,
                de$7];
@@ -15052,22 +15011,18 @@
                function(param){
                  /*<<camlinternalFormat.ml:772:17>>*/ fa$8(0);
                  /*<<camlinternalFormat.ml:772:50>>*/ ag(0);
-                 /*<<camlinternalFormat.ml:772:61>>*/ return;
                 /*<<camlinternalFormat.ml:772:65>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:773:17>>*/ ga(0);
                  /*<<camlinternalFormat.ml:773:50>>*/ af$8(0);
-                 /*<<camlinternalFormat.ml:773:61>>*/ return;
                 /*<<camlinternalFormat.ml:773:65>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:774:17>>*/ ed$8(0);
                  /*<<camlinternalFormat.ml:774:50>>*/ dj(0);
-                 /*<<camlinternalFormat.ml:774:61>>*/ return;
                 /*<<camlinternalFormat.ml:774:65>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:775:17>>*/ jd(0);
                  /*<<camlinternalFormat.ml:775:50>>*/ de$8(0);
-                 /*<<camlinternalFormat.ml:775:61>>*/ return;
                 /*<<camlinternalFormat.ml:775:65>>*/ }];
       case 10:
         /*<<camlinternalFormat.ml:742:25>>*/ var
@@ -15080,11 +15035,9 @@
         /*<<camlinternalFormat.ml:743:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:743:17>>*/ fa$9(0);
-                 /*<<camlinternalFormat.ml:743:39>>*/ return;
                 /*<<camlinternalFormat.ml:743:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:744:17>>*/ af$9(0);
-                 /*<<camlinternalFormat.ml:744:39>>*/ return;
                 /*<<camlinternalFormat.ml:744:43>>*/ },
                ed$9,
                de$9];
@@ -15100,11 +15053,9 @@
         /*<<camlinternalFormat.ml:738:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:738:17>>*/ fa$10(0);
-                 /*<<camlinternalFormat.ml:738:39>>*/ return;
                 /*<<camlinternalFormat.ml:738:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:739:17>>*/ af$10(0);
-                 /*<<camlinternalFormat.ml:739:39>>*/ return;
                 /*<<camlinternalFormat.ml:739:43>>*/ },
                ed$10,
                de$10];
@@ -15120,11 +15071,9 @@
         /*<<camlinternalFormat.ml:748:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:748:17>>*/ fa$11(0);
-                 /*<<camlinternalFormat.ml:748:39>>*/ return;
                 /*<<camlinternalFormat.ml:748:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:749:17>>*/ af$11(0);
-                 /*<<camlinternalFormat.ml:749:39>>*/ return;
                 /*<<camlinternalFormat.ml:749:43>>*/ },
                ed$11,
                de$11];
@@ -15140,19 +15089,15 @@
         /*<<camlinternalFormat.ml:753:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:753:17>>*/ fa$12(0);
-                 /*<<camlinternalFormat.ml:753:39>>*/ return;
                 /*<<camlinternalFormat.ml:753:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:754:17>>*/ af$12(0);
-                 /*<<camlinternalFormat.ml:754:39>>*/ return;
                 /*<<camlinternalFormat.ml:754:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:755:17>>*/ ed$12(0);
-                 /*<<camlinternalFormat.ml:755:39>>*/ return;
                 /*<<camlinternalFormat.ml:755:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:756:17>>*/ de$12(0);
-                 /*<<camlinternalFormat.ml:756:39>>*/ return;
                 /*<<camlinternalFormat.ml:756:43>>*/ }];
       default:
         /*<<camlinternalFormat.ml:758:25>>*/ var
@@ -15166,19 +15111,15 @@
         /*<<camlinternalFormat.ml:759:4>>*/ return [0,
                function(param){
                  /*<<camlinternalFormat.ml:759:17>>*/ fa$13(0);
-                 /*<<camlinternalFormat.ml:759:39>>*/ return;
                 /*<<camlinternalFormat.ml:759:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:760:17>>*/ af$13(0);
-                 /*<<camlinternalFormat.ml:760:39>>*/ return;
                 /*<<camlinternalFormat.ml:760:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:761:17>>*/ ed$13(0);
-                 /*<<camlinternalFormat.ml:761:39>>*/ return;
                 /*<<camlinternalFormat.ml:761:43>>*/ },
                function(param){
                  /*<<camlinternalFormat.ml:762:17>>*/ de$13(0);
-                 /*<<camlinternalFormat.ml:762:39>>*/ return;
                 /*<<camlinternalFormat.ml:762:43>>*/ }];
     }
    }
@@ -17057,7 +16998,6 @@
       /*<<camlinternalFormat.ml:1438:16>>*/  /*<<camlinternalFormat.ml:1438:16>>*/ caml_bytes_set
       (buf, pos[1], c);
      pos[1]++;
-     return;
      /*<<camlinternalFormat.ml:1438:46>>*/ }
      /*<<camlinternalFormat.ml:1439:15>>*/ var
       /*<<camlinternalFormat.ml:1439:15>>*/ left =
@@ -19010,7 +18950,6 @@
         (failwith_message(_C_), str, str_ind, _bd_);
       }
       flag[1] = 1;
-      return;
       /*<<camlinternalFormat.ml:2158:19>>*/ }
      a:
      b:
@@ -19476,7 +19415,6 @@
                 i = _a$_;
                }
               }
-              return;
               /*<<camlinternalFormat.ml:2726:10>>*/ },
            fail_single_percent =
              function(str_ind){
@@ -24270,7 +24208,6 @@
       j = _an_;
      }
     }
-    return;
     /*<<bigarray.ml:112:13>>*/ }
    function floop(arr, idx, f, col, max){
      /*<<bigarray.ml:114:4>>*/ if(0 > col){
@@ -24292,7 +24229,6 @@
       j = _ak_;
      }
     }
-    return;
     /*<<bigarray.ml:118:13>>*/ }
    function init(kind, layout, dims, f){
      /*<<bigarray.ml:120:4>>*/ var
@@ -27173,7 +27109,6 @@
      /*<<format.ml:258:2>>*/ state[9] = state[9] - size | 0;
      /*<<format.ml:259:2>>*/ pp_output_string(state, text);
     state[11] = 0;
-    return;
     /*<<format.ml:260:31>>*/ }
    function format_string(state, s){
      /*<<format.ml:264:2>>*/  /*<<format.ml:264:5>>*/ var
@@ -27452,7 +27387,6 @@
         }
          /*<<format.ml:488:10>>*/ return;
      }
-     /*<<format.ml:497:8>>*/ return;
     /*<<format.ml:497:10>>*/ }
    function scan_push(state, b, token){
      /*<<format.ml:503:2>>*/ pp_enqueue(state, token);
@@ -32911,7 +32845,6 @@
            nidx = key_index(h, hkey);
            /*<<ephemeron.ml:181:14>>*/ ndata[1 + nidx] =
            [0, hkey, data, caml_check_bound(ndata, nidx)[1 + nidx]];
-           /*<<ephemeron.ml:181:14>>*/ return;
           /*<<ephemeron.ml:181:60>>*/ },
         /*<<ephemeron.ml:170:6>>*/ _af_ = osize - 1 | 0,
         /*<<ephemeron.ml:182:8>>*/ _ae_ = 0;
@@ -34593,7 +34526,6 @@
        j = _L_;
       }
      }
-     return;
      /*<<filename.ml:186:66>>*/ }
      /*<<filename.ml:188:4>>*/ loop(0);
      /*<<filename.ml:188:4>>*/ return  /*<<filename.ml:188:4>>*/ caml_call1

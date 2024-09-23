@@ -1112,7 +1112,11 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             (st, loc) :: rem
         | _ -> clo
       in
-      let clo = J.EFun (None, J.fun_ (List.map args ~f:(fun v -> J.V v)) clo loc) in
+      let clo =
+        J.EFun
+          ( None
+          , J.fun_ (List.map args ~f:(fun v -> J.V v)) (Js_simpl.function_body clo) loc )
+      in
       (clo, (fst const_p, fv), queue), []
   | Constant c ->
       let js, instrs = constant ~ctx c level in
