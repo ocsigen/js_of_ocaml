@@ -23,9 +23,18 @@ let target = `Binaryen (*`Reference*)
 
 let assign_names ?(reversed = true) f names =
   let used = ref StringSet.empty in
-  let rec find_available_name used name i =
-    let nm = Printf.sprintf "%s$%d" name i in
-    if StringSet.mem nm used then find_available_name used name (i + 1) else nm
+  let counts = Hashtbl.create 101 in
+  let rec find_available_name used name =
+    let i =
+      try Hashtbl.find counts name
+      with Not_found ->
+        let i = ref 0 in
+        Hashtbl.replace counts name i;
+        i
+    in
+    incr i;
+    let nm = Printf.sprintf "%s$%d" name !i in
+    if StringSet.mem nm used then find_available_name used name else nm
   in
   let names = if reversed then List.rev names else names in
   let names =
@@ -35,7 +44,7 @@ let assign_names ?(reversed = true) f names =
         | None -> x, None
         | Some nm ->
             let nm =
-              if StringSet.mem nm !used then find_available_name !used nm 1 else nm
+              if StringSet.mem nm !used then find_available_name !used nm else nm
             in
             used := StringSet.add nm !used;
             x, Some nm)
