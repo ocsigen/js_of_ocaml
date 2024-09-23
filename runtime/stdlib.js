@@ -203,3 +203,9 @@ function caml_is_printable(c) {
 function caml_maybe_print_stats(unit) {
   return 0;
 }
+
+//Provides: caml_process_pending_actions_with_root
+//Version: >= 5.3
+function caml_process_pending_actions_with_root(extra_root) {
+  return 0;
+}
