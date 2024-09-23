@@ -2051,6 +2051,7 @@ let init () =
     ; "caml_check_bound_float", "caml_check_bound"
     ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
+    ; "caml_array_of_uniform_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"
     ; "caml_js_from_float", "%identity"
     ; "caml_js_to_float", "%identity"

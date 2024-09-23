@@ -27,6 +27,13 @@ function caml_array_sub(a, i, len) {
   return a2;
 }
 
+//Provides: caml_floatarray_sub mutable
+//Requires: caml_array_sub
+//Version: >= 5.3
+function caml_floatarray_sub(a, i, len) {
+  return caml_array_sub(a, i, len);
+}
+
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
   var l1 = a1.length,
@@ -39,6 +46,13 @@ function caml_array_append(a1, a2) {
   for (; i < l1; i++) a[i] = a1[i];
   for (; i < l; i++, j++) a[i] = a2[j];
   return a;
+}
+
+//Provides: caml_floatarray_append mutable
+//Requires: caml_array_append
+//Version: >= 5.3
+function caml_floatarray_append(a1, a2) {
+  return caml_array_append(a1, a2);
 }
 
 //Provides: caml_array_concat mutable
@@ -63,13 +77,9 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 }
 
 //Provides: caml_floatarray_blit
+//Requires: caml_array_blit
 function caml_floatarray_blit(a1, i1, a2, i2, len) {
-  if (i2 <= i1) {
-    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
-  } else {
-    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
-  }
-  return 0;
+  return caml_array_blit(a1, i1, a2, i2, len);
 }
 
 ///////////// Pervasive
@@ -96,6 +106,13 @@ function caml_array_fill(array, ofs, len, v) {
   return 0;
 }
 
+//Provides: caml_floatarray_fill
+//Requires: caml_array_fill
+//Version: >= 5.3
+function caml_floatarray_fill(array, ofs, len, v) {
+  return caml_array_fill(array, ofs, len, v);
+}
+
 //Provides: caml_check_bound (mutable, const)
 //Requires: caml_array_bound_error
 function caml_check_bound(array, index) {
@@ -103,9 +120,9 @@ function caml_check_bound(array, index) {
   return array;
 }
 
-//Provides: caml_make_vect const (const, mutable)
+//Provides: caml_array_make const (const, mutable)
 //Requires: caml_array_bound_error
-function caml_make_vect(len, init) {
+function caml_array_make(len, init) {
   if (len < 0) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
@@ -114,9 +131,27 @@ function caml_make_vect(len, init) {
   return b;
 }
 
+//Provides: caml_make_vect const (const, mutable)
+//Requires: caml_array_make
+function caml_make_vect(len, init) {
+  return caml_array_make(len, init);
+}
+
 //Provides: caml_make_float_vect const (const)
 //Requires: caml_array_bound_error
 function caml_make_float_vect(len) {
+  if (len < 0) caml_array_bound_error();
+  var len = (len + 1) | 0;
+  var b = new Array(len);
+  b[0] = 254;
+  for (var i = 1; i < len; i++) b[i] = 0;
+  return b;
+}
+
+//Provides: caml_array_create_float const (const)
+//Requires: caml_array_bound_error
+//Version: >= 5.3
+function caml_array_create_float(len) {
   if (len < 0) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
@@ -133,4 +168,11 @@ function caml_floatarray_create(len) {
   b[0] = 254;
   for (var i = 1; i < len; i++) b[i] = 0;
   return b;
+}
+
+//Provides: caml_floatarray_make const (const)
+//Requires: caml_array_make
+//Version: >= 5.3
+function caml_floatarray_make(len, init) {
+  return caml_array_make(len, init);
 }
