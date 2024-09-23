@@ -14833,9 +14833,9 @@
    function fmtty_rel_det(param){
      /*<<?>>*/ if(typeof param === "number")
       /*<<camlinternalFormat.ml:691:4>>*/ return [0,
-             function(param){ /*<<camlinternalFormat.ml:691:21>>*/ },
+             ,
              function(param){ /*<<camlinternalFormat.ml:692:21>>*/ },
-             function(param){ /*<<camlinternalFormat.ml:693:21>>*/ },
+             ,
              function(param){ /*<<camlinternalFormat.ml:694:21>>*/ }];
     switch(param[0]){
       case 0:
@@ -14843,153 +14843,117 @@
         rest = param[1],
          /*<<camlinternalFormat.ml:696:25>>*/ match = fmtty_rel_det(rest),
         de = match[4],
-        ed = match[3],
-        af = match[2],
-        fa = match[1];
+        af = match[2];
         /*<<camlinternalFormat.ml:697:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:697:17>>*/ fa(0);
-                /*<<camlinternalFormat.ml:697:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:698:17>>*/ af(0);
                 /*<<camlinternalFormat.ml:698:43>>*/ },
-               ed,
+               ,
                de];
       case 1:
         /*<<camlinternalFormat.ml:701:25>>*/ var
         rest$0 = param[1],
          /*<<camlinternalFormat.ml:701:25>>*/ match$0 = fmtty_rel_det(rest$0),
         de$0 = match$0[4],
-        ed$0 = match$0[3],
-        af$0 = match$0[2],
-        fa$0 = match$0[1];
+        af$0 = match$0[2];
         /*<<camlinternalFormat.ml:702:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:702:17>>*/ fa$0(0);
-                /*<<camlinternalFormat.ml:702:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:703:17>>*/ af$0(0);
                 /*<<camlinternalFormat.ml:703:43>>*/ },
-               ed$0,
+               ,
                de$0];
       case 2:
         /*<<camlinternalFormat.ml:706:25>>*/ var
         rest$1 = param[1],
          /*<<camlinternalFormat.ml:706:25>>*/ match$1 = fmtty_rel_det(rest$1),
         de$1 = match$1[4],
-        ed$1 = match$1[3],
-        af$1 = match$1[2],
-        fa$1 = match$1[1];
+        af$1 = match$1[2];
         /*<<camlinternalFormat.ml:707:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:707:17>>*/ fa$1(0);
-                /*<<camlinternalFormat.ml:707:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:708:17>>*/ af$1(0);
                 /*<<camlinternalFormat.ml:708:43>>*/ },
-               ed$1,
+               ,
                de$1];
       case 3:
         /*<<camlinternalFormat.ml:711:25>>*/ var
         rest$2 = param[1],
          /*<<camlinternalFormat.ml:711:25>>*/ match$2 = fmtty_rel_det(rest$2),
         de$2 = match$2[4],
-        ed$2 = match$2[3],
-        af$2 = match$2[2],
-        fa$2 = match$2[1];
+        af$2 = match$2[2];
         /*<<camlinternalFormat.ml:712:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:712:17>>*/ fa$2(0);
-                /*<<camlinternalFormat.ml:712:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:713:17>>*/ af$2(0);
                 /*<<camlinternalFormat.ml:713:43>>*/ },
-               ed$2,
+               ,
                de$2];
       case 4:
         /*<<camlinternalFormat.ml:721:25>>*/ var
         rest$3 = param[1],
          /*<<camlinternalFormat.ml:721:25>>*/ match$3 = fmtty_rel_det(rest$3),
         de$3 = match$3[4],
-        ed$3 = match$3[3],
-        af$3 = match$3[2],
-        fa$3 = match$3[1];
+        af$3 = match$3[2];
         /*<<camlinternalFormat.ml:722:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:722:17>>*/ fa$3(0);
-                /*<<camlinternalFormat.ml:722:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:723:17>>*/ af$3(0);
                 /*<<camlinternalFormat.ml:723:43>>*/ },
-               ed$3,
+               ,
                de$3];
       case 5:
         /*<<camlinternalFormat.ml:716:25>>*/ var
         rest$4 = param[1],
          /*<<camlinternalFormat.ml:716:25>>*/ match$4 = fmtty_rel_det(rest$4),
         de$4 = match$4[4],
-        ed$4 = match$4[3],
-        af$4 = match$4[2],
-        fa$4 = match$4[1];
+        af$4 = match$4[2];
         /*<<camlinternalFormat.ml:717:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:717:17>>*/ fa$4(0);
-                /*<<camlinternalFormat.ml:717:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:718:17>>*/ af$4(0);
                 /*<<camlinternalFormat.ml:718:43>>*/ },
-               ed$4,
+               ,
                de$4];
       case 6:
         /*<<camlinternalFormat.ml:726:25>>*/ var
         rest$5 = param[1],
          /*<<camlinternalFormat.ml:726:25>>*/ match$5 = fmtty_rel_det(rest$5),
         de$5 = match$5[4],
-        ed$5 = match$5[3],
-        af$5 = match$5[2],
-        fa$5 = match$5[1];
+        af$5 = match$5[2];
         /*<<camlinternalFormat.ml:727:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:727:17>>*/ fa$5(0);
-                /*<<camlinternalFormat.ml:727:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:728:17>>*/ af$5(0);
                 /*<<camlinternalFormat.ml:728:43>>*/ },
-               ed$5,
+               ,
                de$5];
       case 7:
         /*<<camlinternalFormat.ml:731:25>>*/ var
         rest$6 = param[1],
          /*<<camlinternalFormat.ml:731:25>>*/ match$6 = fmtty_rel_det(rest$6),
         de$6 = match$6[4],
-        ed$6 = match$6[3],
-        af$6 = match$6[2],
-        fa$6 = match$6[1];
+        af$6 = match$6[2];
         /*<<camlinternalFormat.ml:732:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:732:17>>*/ fa$6(0);
-                /*<<camlinternalFormat.ml:732:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:733:17>>*/ af$6(0);
                 /*<<camlinternalFormat.ml:733:43>>*/ },
-               ed$6,
+               ,
                de$6];
       case 8:
         /*<<camlinternalFormat.ml:764:25>>*/ var
         rest$7 = param[2],
          /*<<camlinternalFormat.ml:764:25>>*/ match$7 = fmtty_rel_det(rest$7),
         de$7 = match$7[4],
-        ed$7 = match$7[3],
-        af$7 = match$7[2],
-        fa$7 = match$7[1];
+        af$7 = match$7[2];
         /*<<camlinternalFormat.ml:765:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:765:17>>*/ fa$7(0);
-                /*<<camlinternalFormat.ml:765:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:766:17>>*/ af$7(0);
                 /*<<camlinternalFormat.ml:766:43>>*/ },
-               ed$7,
+               ,
                de$7];
       case 9:
         /*<<camlinternalFormat.ml:769:25>>*/ var
@@ -14998,28 +14962,18 @@
         ty1 = param[1],
          /*<<camlinternalFormat.ml:769:25>>*/ match$8 = fmtty_rel_det(rest$8),
         de$8 = match$8[4],
-        ed$8 = match$8[3],
         af$8 = match$8[2],
-        fa$8 = match$8[1],
          /*<<camlinternalFormat.ml:770:13>>*/ ty = trans(symm(ty1), ty2),
          /*<<camlinternalFormat.ml:771:25>>*/ match$9 = fmtty_rel_det(ty),
         jd = match$9[4],
-        dj = match$9[3],
-        ga = match$9[2],
-        ag = match$9[1];
+        ga = match$9[2];
         /*<<camlinternalFormat.ml:772:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:772:17>>*/ fa$8(0);
-                 /*<<camlinternalFormat.ml:772:50>>*/ ag(0);
-                /*<<camlinternalFormat.ml:772:65>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:773:17>>*/ ga(0);
                  /*<<camlinternalFormat.ml:773:50>>*/ af$8(0);
                 /*<<camlinternalFormat.ml:773:65>>*/ },
-               function(param){
-                 /*<<camlinternalFormat.ml:774:17>>*/ ed$8(0);
-                 /*<<camlinternalFormat.ml:774:50>>*/ dj(0);
-                /*<<camlinternalFormat.ml:774:65>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:775:17>>*/ jd(0);
                  /*<<camlinternalFormat.ml:775:50>>*/ de$8(0);
@@ -15029,17 +14983,13 @@
         rest$9 = param[1],
          /*<<camlinternalFormat.ml:742:25>>*/ match$10 = fmtty_rel_det(rest$9),
         de$9 = match$10[4],
-        ed$9 = match$10[3],
-        af$9 = match$10[2],
-        fa$9 = match$10[1];
+        af$9 = match$10[2];
         /*<<camlinternalFormat.ml:743:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:743:17>>*/ fa$9(0);
-                /*<<camlinternalFormat.ml:743:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:744:17>>*/ af$9(0);
                 /*<<camlinternalFormat.ml:744:43>>*/ },
-               ed$9,
+               ,
                de$9];
       case 11:
         /*<<camlinternalFormat.ml:737:25>>*/ var
@@ -15047,17 +14997,13 @@
          /*<<camlinternalFormat.ml:737:25>>*/ match$11 =
           fmtty_rel_det(rest$10),
         de$10 = match$11[4],
-        ed$10 = match$11[3],
-        af$10 = match$11[2],
-        fa$10 = match$11[1];
+        af$10 = match$11[2];
         /*<<camlinternalFormat.ml:738:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:738:17>>*/ fa$10(0);
-                /*<<camlinternalFormat.ml:738:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:739:17>>*/ af$10(0);
                 /*<<camlinternalFormat.ml:739:43>>*/ },
-               ed$10,
+               ,
                de$10];
       case 12:
         /*<<camlinternalFormat.ml:747:25>>*/ var
@@ -15065,17 +15011,13 @@
          /*<<camlinternalFormat.ml:747:25>>*/ match$12 =
           fmtty_rel_det(rest$11),
         de$11 = match$12[4],
-        ed$11 = match$12[3],
-        af$11 = match$12[2],
-        fa$11 = match$12[1];
+        af$11 = match$12[2];
         /*<<camlinternalFormat.ml:748:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:748:17>>*/ fa$11(0);
-                /*<<camlinternalFormat.ml:748:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:749:17>>*/ af$11(0);
                 /*<<camlinternalFormat.ml:749:43>>*/ },
-               ed$11,
+               ,
                de$11];
       case 13:
         /*<<camlinternalFormat.ml:752:25>>*/ var
@@ -15083,19 +15025,13 @@
          /*<<camlinternalFormat.ml:752:25>>*/ match$13 =
           fmtty_rel_det(rest$12),
         de$12 = match$13[4],
-        ed$12 = match$13[3],
-        af$12 = match$13[2],
-        fa$12 = match$13[1];
+        af$12 = match$13[2];
         /*<<camlinternalFormat.ml:753:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:753:17>>*/ fa$12(0);
-                /*<<camlinternalFormat.ml:753:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:754:17>>*/ af$12(0);
                 /*<<camlinternalFormat.ml:754:43>>*/ },
-               function(param){
-                 /*<<camlinternalFormat.ml:755:17>>*/ ed$12(0);
-                /*<<camlinternalFormat.ml:755:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:756:17>>*/ de$12(0);
                 /*<<camlinternalFormat.ml:756:43>>*/ }];
@@ -15105,19 +15041,13 @@
          /*<<camlinternalFormat.ml:758:25>>*/ match$14 =
           fmtty_rel_det(rest$13),
         de$13 = match$14[4],
-        ed$13 = match$14[3],
-        af$13 = match$14[2],
-        fa$13 = match$14[1];
+        af$13 = match$14[2];
         /*<<camlinternalFormat.ml:759:4>>*/ return [0,
-               function(param){
-                 /*<<camlinternalFormat.ml:759:17>>*/ fa$13(0);
-                /*<<camlinternalFormat.ml:759:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:760:17>>*/ af$13(0);
                 /*<<camlinternalFormat.ml:760:43>>*/ },
-               function(param){
-                 /*<<camlinternalFormat.ml:761:17>>*/ ed$13(0);
-                /*<<camlinternalFormat.ml:761:43>>*/ },
+               ,
                function(param){
                  /*<<camlinternalFormat.ml:762:17>>*/ de$13(0);
                 /*<<camlinternalFormat.ml:762:43>>*/ }];

@@ -88,6 +88,8 @@ module Var : sig
 
   module Map : Map.S with type key = t
 
+  module Hashtbl : Hashtbl.S with type key = t
+
   module Tbl : sig
     type key = t
 
