@@ -95,6 +95,8 @@ module Var : sig
 
   module Map : Map.S with type key = t
 
+  module Hashtbl : Hashtbl.S with type key = t
+
   module Tbl : sig
     type key = t
 
@@ -159,6 +161,8 @@ end = struct
     let compare : t -> t -> int = compare
 
     let equal (a : t) (b : t) = a = b
+
+    let hash x = x
   end
 
   include T
@@ -303,6 +307,8 @@ end = struct
         f i (Array.unsafe_get t i)
       done
   end
+
+  module Hashtbl = Hashtbl.Make (T)
 
   module ISet = struct
     type t = BitSet.t
