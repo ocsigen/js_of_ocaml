@@ -44,8 +44,7 @@ let specialize_instr ~target info i =
         , Prim
             ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
             , [ (Pv _ as y) ] ) )
-    , target )
-    when Poly.equal target `Wasm || Config.Flag.safe_string () -> (
+    , target ) -> (
       match the_string_of ~target info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
