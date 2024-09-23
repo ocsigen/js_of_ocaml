@@ -42,12 +42,11 @@ let specialize_instr ~target info i =
             ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
             , [ (Pv _ as y) ] ) )
     , target )
-    when (Poly.equal target `Wasm || Config.Flag.safe_string ()) -> (
+    when Poly.equal target `Wasm || Config.Flag.safe_string () -> (
       match the_string_of ~target info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
-  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])), _
-    -> (
+  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])), _ -> (
       match the_string_of ~target info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
