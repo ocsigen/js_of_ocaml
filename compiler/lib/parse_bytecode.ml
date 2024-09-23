@@ -465,16 +465,16 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 ->
+        | Some name when same_ident name ident_32 -> (
             let i : int32 = Obj.magic x in
-            (match target with
-             | `JavaScript -> Int i
-             | `Wasm -> Int32 i)
-        | Some name when same_ident name ident_native ->
+            match target with
+            | `JavaScript -> Int i
+            | `Wasm -> Int32 i)
+        | Some name when same_ident name ident_native -> (
             let i : nativeint = Obj.magic x in
-            (match target with
-             | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
-             | `Wasm -> NativeInt i)
+            match target with
+            | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+            | `Wasm -> NativeInt i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -493,8 +493,8 @@ end = struct
       let i : int = Obj.magic x in
       Int
         (match target with
-         | `JavaScript -> Int32.of_int_warning_on_overflow i
-         | `Wasm -> Int31.of_int_warning_on_overflow i)
+        | `JavaScript -> Int32.of_int_warning_on_overflow i
+        | `Wasm -> Int31.of_int_warning_on_overflow i)
 
   let inlined = function
     | String _ | NativeString _ -> false
@@ -2385,10 +2385,7 @@ and compile infos pc state instrs =
           (pc + 1)
           state
           (( Let
-               ( m
-               , Prim
-                   ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int 0l) ] ) )
+               (m, Prim (Extern "caml_get_public_method", [ Pv obj; Pv tag; Pc (Int 0l) ]))
            , loc )
           :: instrs)
     | GETMETHOD ->
@@ -3104,7 +3101,8 @@ let predefined_exceptions ~target =
                     (Int
                        ((* Predefined exceptions are registered in
                            Symtable.init with [-index - 1] *)
-                        Int32.of_int (-index - 1) )))
+                        Int32.of_int
+                          (-index - 1))) )
             , noloc )
           ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
           ; ( Let

@@ -25,21 +25,21 @@ let rec constant_of_const ~target c : Code.constant =
   | Const_base (Const_int i) ->
       Int
         (match target with
-         | `JavaScript -> Int32.of_int_warning_on_overflow i
-         | `Wasm -> Int31.of_int_warning_on_overflow i)
+        | `JavaScript -> Int32.of_int_warning_on_overflow i
+        | `Wasm -> Int31.of_int_warning_on_overflow i)
   | Const_base (Const_char c) -> Int (Int32.of_int (Char.code c))
   | ((Const_base (Const_string (s, _))) [@if ocaml_version < (4, 11, 0)])
   | ((Const_base (Const_string (s, _, _))) [@if ocaml_version >= (4, 11, 0)]) -> String s
   | Const_base (Const_float s) -> Float (float_of_string s)
-  | Const_base (Const_int32 i) ->
-      (match target with
-       | `JavaScript -> Int i
-       | `Wasm -> Int32 i)
+  | Const_base (Const_int32 i) -> (
+      match target with
+      | `JavaScript -> Int i
+      | `Wasm -> Int32 i)
   | Const_base (Const_int64 i) -> Int64 i
-  | Const_base (Const_nativeint i) ->
-      (match target with
-       | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
-       | `Wasm -> NativeInt i)
+  | Const_base (Const_nativeint i) -> (
+      match target with
+      | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+      | `Wasm -> NativeInt i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> float_of_string f) sl in

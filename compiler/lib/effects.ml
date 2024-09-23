@@ -483,9 +483,8 @@ let cps_instr ~st (instr : instr) : instr =
       | Pc (Int a) ->
           Let
             ( x
-            , Prim
-                ( Extern "caml_alloc_dummy_function"
-                , [ size; Pc (Int (Int32.succ a)) ] ) )
+            , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
+            )
       | _ -> assert false)
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with

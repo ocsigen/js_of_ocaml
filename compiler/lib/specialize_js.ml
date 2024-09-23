@@ -283,9 +283,7 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            let acc =
-              (Let (x', p), loc) :: (Let (x, Constant (Int 0l)), loc) :: acc
-            in
+            let acc = (Let (x', p), loc) :: (Let (x, Constant (Int 0l)), loc) :: acc in
             loop acc r
         | _ -> loop ((i, loc) :: acc) r)
   in

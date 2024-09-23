@@ -325,7 +325,7 @@ let the_def_of info x =
 (* If [constant_identical a b = true], then the two values cannot be
    distinguished, i.e., they are not different objects (and [caml_js_equals a b
    = true]) and if both are floats, they are bitwise equal. *)
-let constant_identical ~(target : [`JavaScript | `Wasm]) a b =
+let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
   match a, b, target with
   | Int i, Int j, _ -> Int32.equal i j
   | Float a, Float b, `JavaScript -> Float.bitwise_equal a b
@@ -347,7 +347,7 @@ let constant_identical ~(target : [`JavaScript | `Wasm]) a b =
   | NativeInt _, _, _
   | _, NativeInt _, _
   | Tuple _, _, _
-  | _, Tuple _, _-> false
+  | _, Tuple _, _ -> false
 
 let the_const_of ~target info x =
   match x with

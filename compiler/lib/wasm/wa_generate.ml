@@ -672,11 +672,7 @@ module Generate (Target : Wa_target_sig.S) = struct
           if ctx.live.(Var.idx x) = 0
           then drop (translate_expr ctx stack_ctx context x e)
           else store x (translate_expr ctx stack_ctx context x e)
-      | Set_field (x, n, Non_float, y) ->
-          Memory.set_field
-            (load x)
-            n
-            (load y)
+      | Set_field (x, n, Non_float, y) -> Memory.set_field (load x) n (load y)
       | Set_field (x, n, Float, y) ->
           Memory.float_array_set
             (load x)
