@@ -1124,8 +1124,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   | Special (Alias_prim name) ->
       let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
       (prim, const_p, queue), []
-  | Special Undefined ->
-      (J.(EVar (ident (Utf8_string.of_string_exn "undefined"))), const_p, queue), []
   | Prim (Extern "debugger", _) ->
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement

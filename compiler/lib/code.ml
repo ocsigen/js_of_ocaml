@@ -452,9 +452,7 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
-type special =
-  | Undefined
-  | Alias_prim of string
+type special = Alias_prim of string
 
 type mutability =
   | Immutable
@@ -603,7 +601,6 @@ module Print = struct
 
   let special f s =
     match s with
-    | Undefined -> Format.fprintf f "undefined"
     | Alias_prim s -> Format.fprintf f "alias %s" s
 
   let expr f e =

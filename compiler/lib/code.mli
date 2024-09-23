@@ -210,9 +210,7 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
-type special =
-  | Undefined
-  | Alias_prim of string
+type special = Alias_prim of string
 
 type mutability =
   | Immutable
