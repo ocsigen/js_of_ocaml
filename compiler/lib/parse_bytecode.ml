@@ -773,6 +773,8 @@ let register_global ?(force = false) g i loc rem =
      | `Wasm -> true
      | `JavaScript -> false
   then (
+    (* Register a compilation unit (Wasm) *)
+    assert (not force);
     let name =
       match g.named_value.(i) with
       | None -> assert false
@@ -786,6 +788,8 @@ let register_global ?(force = false) g i loc rem =
     :: rem)
   else if force || g.is_exported.(i)
   then
+    (* Register an exception (if force = true), or a compilation unit
+       (Javascript) *)
     let args =
       match g.named_value.(i) with
       | None -> []
@@ -807,11 +811,13 @@ let get_global state instrs i loc =
   let g = State.globals state in
   match g.vars.(i) with
   | Some x ->
+      (* Registered global *)
       if debug_parser () then Format.printf "(global access %a)@." Var.print x;
       x, State.set_accu state x loc, instrs
   | None -> (
       if i < Array.length g.constants && Constants.inlined g.constants.(i)
       then
+        (* Inlined constant *)
         let x, state = State.fresh_var state loc in
         let cst = g.constants.(i) in
         x, state, (Let (x, Constant cst), loc) :: instrs
@@ -821,12 +827,22 @@ let get_global state instrs i loc =
               | `Wasm -> false
               | `JavaScript -> true
       then (
+        (* Non-inlined constant, and reference to another compilation
+           units in case of separate compilation (JavaScript).
+           Some code is generated in a prelude to store the relevant
+           module in variable [x].
+        *)
         g.is_const.(i) <- true;
         let x, state = State.fresh_var state loc in
         if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
         g.vars.(i) <- Some x;
         x, state, instrs)
       else
+        (* Reference to another compilation units in case of separate
+           compilation (Wasm).
+           The toplevel module is available in an imported global
+           variables.
+        *)
         match g.named_value.(i) with
         | None -> assert false
         | Some name ->
@@ -3135,6 +3151,7 @@ let from_channel ic =
       | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =
+  (* Register predefined exceptions in case of separate compilation *)
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
@@ -3177,6 +3194,7 @@ let predefined_exceptions () =
         match Config.target () with
         | `JavaScript -> []
         | `Wasm ->
+            (* Also make the exception available to the generated code *)
             [ ( Let
                   ( Var.fresh ()
                   , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
