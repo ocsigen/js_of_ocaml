@@ -28,16 +28,27 @@ type def =
   | Expr of expr  (** [x] is defined by an expression. *)
   | Param  (** [x] is a block or closure parameter. *)
 
-(** Liveness of a variable [x], forming a lattice structure. *)
-type live =
-  | Top  (** [x] is live and not a block. *)
-  | Live of IntSet.t  (** [x] is a live block with a (non-empty) set of live fields. *)
-  | Dead  (** [x] is dead. *)
+module Domain : sig
+  (** Liveness of a variable [x], forming a lattice structure. *)
+  type t = private
+    | Top  (** [x] is live and not a block. *)
+    | Live of IntSet.t  (** [x] is a live block with a (non-empty) set of live fields. *)
+    | Dead  (** [x] is dead. *)
 
-module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
+  val equal : t -> t -> bool
 
-module Domain = struct
-  type t = live
+  val bot : t
+
+  val top : t
+
+  val live_field : int -> t
+
+  val join : t -> t -> t
+end = struct
+  type t =
+    | Top
+    | Live of IntSet.t
+    | Dead
 
   let equal l1 l2 =
     match l1, l2 with
@@ -46,6 +57,10 @@ module Domain = struct
     | Top, (Dead | Live _) | Live _, (Dead | Top) | Dead, (Live _ | Top) -> false
 
   let bot = Dead
+
+  let top = Top
+
+  let live_field i = Live (IntSet.singleton i)
 
   (** Join the liveness according to lattice structure. *)
   let join l1 l2 =
@@ -56,6 +71,7 @@ module Domain = struct
     | Dead, Dead -> Dead
 end
 
+module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
 
 let definitions prog =
@@ -200,14 +216,14 @@ let expr_vars e =
 
     A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
 let liveness prog pure_funs (global_info : Global_flow.info) =
-  let live_vars = Var.Tbl.make () Dead in
-  let add_top v = Var.Tbl.set live_vars v Top in
+  let live_vars = Var.Tbl.make () Domain.bot in
+  let add_top v = Var.Tbl.set live_vars v Domain.top in
   let add_live_field v i =
     let live_fields =
       match Var.Tbl.get live_vars v with
-      | Live fields -> Live (IntSet.add i fields)
-      | Top -> Top
-      | Dead -> Live (IntSet.singleton i)
+      | Live _ as l -> Domain.join l (Domain.live_field i)
+      | Top -> Domain.top
+      | Dead -> Domain.live_field i
     in
     Var.Tbl.set live_vars v live_fields
   in
@@ -275,7 +291,7 @@ let propagate uses defs live_vars live_table x =
     | Compute -> (
         match Var.Tbl.get live_table y with
         (* If y is dead, then x is dead. *)
-        | Dead -> Dead
+        | Domain.Dead -> Domain.bot
         (* If y is a live block, then x is the join of liveness fields that are x *)
         | Live fields -> (
             match Var.Tbl.get defs y with
@@ -285,14 +301,14 @@ let propagate uses defs live_vars live_table x =
                   ~f:(fun i v ->
                     if Var.equal v x && IntSet.mem i fields then found := true)
                   vars;
-                if !found then Top else Dead
-            | Expr (Field (_, i, _)) -> Live (IntSet.singleton i)
-            | _ -> Top)
+                if !found then Domain.top else Domain.bot
+            | Expr (Field (_, i, _)) -> Domain.live_field i
+            | _ -> Domain.top)
         (* If y is top and y is a field access, x depends only on that field *)
         | Top -> (
             match Var.Tbl.get defs y with
-            | Expr (Field (_, i, _)) -> Live (IntSet.singleton i)
-            | _ -> Top))
+            | Expr (Field (_, i, _)) -> Domain.live_field i
+            | _ -> Domain.top))
     (* If x is used as an argument for parameter y, then contribution is liveness of y *)
     | Propagate -> Var.Tbl.get live_table y
   in
@@ -327,7 +343,7 @@ let zero prog sentinal live_table =
   in
   let is_live v =
     match Var.Tbl.get live_table v with
-    | Dead -> false
+    | Domain.Dead -> false
     | Top | Live _ -> true
   in
   let zero_var x = if is_live x then x else sentinal in
@@ -385,7 +401,7 @@ let zero prog sentinal live_table =
 
 module Print = struct
   let live_to_string = function
-    | Live fields ->
+    | Domain.Live fields ->
         "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
     | Top -> "top"
     | Dead -> "dead"
