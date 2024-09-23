@@ -32,7 +32,8 @@ module Domain : sig
   (** Liveness of a variable [x], forming a lattice structure. *)
   type t = private
     | Top  (** [x] is live and not a block. *)
-    | Live of IntSet.t  (** [x] is a live block with a (non-empty) set of live fields. *)
+    | Live of t IntMap.t
+        (** [x] is a live block with a (non-empty) set of live fields. *)
     | Dead  (** [x] is dead. *)
 
   val equal : t -> t -> bool
@@ -41,32 +42,53 @@ module Domain : sig
 
   val top : t
 
-  val live_field : int -> t
+  val live_field : int -> t -> t
 
   val join : t -> t -> t
 end = struct
   type t =
     | Top
-    | Live of IntSet.t
+    | Live of t IntMap.t
     | Dead
 
-  let equal l1 l2 =
+  let rec equal l1 l2 =
     match l1, l2 with
     | Top, Top | Dead, Dead -> true
-    | Live f1, Live f2 -> IntSet.equal f1 f2
+    | Live f1, Live f2 -> IntMap.equal equal f1 f2
     | Top, (Dead | Live _) | Live _, (Dead | Top) | Dead, (Live _ | Top) -> false
 
   let bot = Dead
 
   let top = Top
 
-  let live_field i = Live (IntSet.singleton i)
+  let rec depth l =
+    match l with
+    | Top | Dead -> 0
+    | Live f -> 1 + IntMap.fold (fun _ l' acc -> max (depth l') acc) f 0
+
+  let rec truncate depth l =
+    match l with
+    | Top | Dead -> l
+    | Live f ->
+        if depth = 0 then Top else Live (IntMap.map (fun l' -> truncate (depth - 1) l') f)
+
+  let depth_treshold = 4
+
+  let live_field i l =
+    (* We need to limit the depth of the liveness information,
+       otherwise the information can get more and more precise without
+       ever converging. Modules are rarely very deeply nested, so this is
+       not an issue. *)
+    Live
+      (IntMap.singleton
+         i
+         (if depth l > depth_treshold then truncate depth_treshold l else l))
 
   (** Join the liveness according to lattice structure. *)
-  let join l1 l2 =
+  let rec join l1 l2 =
     match l1, l2 with
     | _, Top | Top, _ -> Top
-    | Live f1, Live f2 -> Live (IntSet.union f1 f2)
+    | Live f1, Live f2 -> Live (IntMap.union (fun _ l1 l2 -> Some (join l1 l2)) f1 f2)
     | Dead, Live f | Live f, Dead -> Live f
     | Dead, Dead -> Dead
 end
@@ -219,9 +241,9 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
   let add_live_field v i =
     let live_fields =
       match Var.Tbl.get live_vars v with
-      | Live _ as l -> Domain.join l (Domain.live_field i)
+      | Live _ as l -> Domain.join l (Domain.live_field i Domain.top)
       | Top -> Domain.top
-      | Dead -> Domain.live_field i
+      | Dead -> Domain.live_field i Domain.top
     in
     Var.Tbl.set live_vars v live_fields
   in
@@ -290,20 +312,25 @@ let propagate defs ~state ~dep:y ~target:x ~action:usage_kind =
       (* If y is dead, then x is dead. *)
       | Domain.Dead -> Domain.bot
       (* If y is a live block, then x is the join of liveness fields that are x *)
-      | Live fields -> (
+      | Live fields as l -> (
           match Var.Tbl.get defs y with
           | Expr (Block (_, vars, _, _)) ->
-              let found = ref false in
+              let live = ref Domain.bot in
               Array.iteri
-                ~f:(fun i v -> if Var.equal v x && IntSet.mem i fields then found := true)
+                ~f:(fun i v ->
+                  if Var.equal v x
+                  then
+                    match IntMap.find_opt i fields with
+                    | Some l -> live := Domain.join !live l
+                    | None -> ())
                 vars;
-              if !found then Domain.top else Domain.bot
-          | Expr (Field (_, i, _)) -> Domain.live_field i
+              !live
+          | Expr (Field (_, i, _)) -> Domain.live_field i l
           | _ -> Domain.top)
       (* If y is top and y is a field access, x depends only on that field *)
       | Top -> (
           match Var.Tbl.get defs y with
-          | Expr (Field (_, i, _)) -> Domain.live_field i
+          | Expr (Field (_, i, _)) -> Domain.live_field i Domain.top
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate -> Var.Tbl.get state y
@@ -357,7 +384,7 @@ let zero prog sentinal live_table =
             | Live fields ->
                 let vars =
                   Array.mapi
-                    ~f:(fun i v -> if IntSet.mem i fields then v else sentinal)
+                    ~f:(fun i v -> if IntMap.mem i fields then v else sentinal)
                     vars
                   |> compact_vars
                 in
@@ -401,9 +428,14 @@ let zero prog sentinal live_table =
   { prog with blocks }
 
 module Print = struct
-  let live_to_string = function
+  let rec live_to_string = function
     | Domain.Live fields ->
-        "live { " ^ IntSet.fold (fun i s -> s ^ Format.sprintf "%d " i) fields "" ^ "}"
+        "live { "
+        ^ IntMap.fold
+            (fun i l s -> s ^ Format.sprintf "%d: %s; " i (live_to_string l))
+            fields
+            ""
+        ^ "}"
     | Top -> "top"
     | Dead -> "dead"
 
