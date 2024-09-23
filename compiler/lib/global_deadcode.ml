@@ -445,7 +445,7 @@ let f p ~deadcode_sentinal global_info =
   (* Print debug info *)
   if debug ()
   then (
-    Format.eprintf "Before Zeroing:\n";
+    Format.eprintf "Before Zeroing:@.";
     Code.Print.program (fun _ _ -> "") p;
     Print.print_liveness live_vars;
     Print.print_uses uses;
@@ -454,7 +454,7 @@ let f p ~deadcode_sentinal global_info =
   let p = zero p deadcode_sentinal live_table in
   if debug ()
   then (
-    Format.printf "After Zeroing:\n";
+    Format.eprintf "After Zeroing:@.";
     Code.Print.program (fun _ _ -> "") p);
-  if times () then Format.eprintf "  deadcode dgraph.: %a@." Timer.print t;
+  if times () then Format.eprintf "  global dead code elim.: %a@." Timer.print t;
   p
