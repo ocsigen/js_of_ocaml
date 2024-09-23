@@ -1031,10 +1031,32 @@ let throw_statement ctx cx k loc =
         , loc )
       ]
 
+let remove_unused_tail_args ctx exact trampolined args =
+  if exact && not trampolined
+  then
+    let has_unused_tail_args =
+      List.fold_left
+        ~f:(fun _ x -> Var.equal x ctx.Ctx.deadcode_sentinal)
+        ~init:false
+        args
+    in
+    if has_unused_tail_args
+    then
+      List.fold_right
+        ~f:(fun x args ->
+          match args with
+          | [] when Var.equal x ctx.Ctx.deadcode_sentinal -> []
+          | _ -> x :: args)
+        ~init:[]
+        args
+    else args
+  else args
+
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
   | Apply { f; args; exact } ->
       let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
+      let args = remove_unused_tail_args ctx exact trampolined args in
       let args, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
