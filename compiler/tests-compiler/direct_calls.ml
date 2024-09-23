@@ -141,14 +141,14 @@ let%expect_test "direct calls with --enable effects" =
     {|
     function test1(param, cont){
      function f(g, x){
-      try{g(undef); return;}
+      try{g(); return;}
       catch(e$0){
        var e = caml_wrap_exception(e$0);
        throw caml_maybe_attach_backtrace(e, 0);
       }
      }
-     f(function(x){return;}, undef);
-     f(function(x){return;}, undef);
+     f(function(x){return;});
+     f(function(x){return;});
      return cont(0);
     }
     //end
@@ -160,11 +160,11 @@ let%expect_test "direct calls with --enable effects" =
          return raise(e$0);
         });
       return caml_cps_exact_call2
-              (g, x, function(_f_){caml_pop_trap(); return cont(undef);});
+              (g, x, function(_f_){caml_pop_trap(); return cont();});
      }
      return caml_cps_exact_call3
              (f,
-              function(x, cont){return cont(undef);},
+              function(x, cont){return cont();},
               7,
               function(_d_){
                return caml_cps_exact_call3
@@ -179,7 +179,7 @@ let%expect_test "direct calls with --enable effects" =
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(undef), M2 = F(undef), _c_ = (0, M2[1])(2);
+     var M1 = F(), M2 = F(), _c_ = (0, M2[1])(2);
      return cont([0, (0, M1[1])(1), _c_]);
     }
     //end
@@ -188,7 +188,7 @@ let%expect_test "direct calls with --enable effects" =
       function f(x, cont){return caml_cps_call3(Stdlib_Printf[2], _a_, x, cont);}
       return [0, f];
      }
-     var M1 = F(undef), M2 = F(undef);
+     var M1 = F(), M2 = F();
      return caml_cps_exact_call2
              (M1[1],
               1,
