@@ -30,12 +30,6 @@ let dump_file file =
   in
   loop ()
 
-let version_match = function
-  | "default" -> true
-  | version ->
-      let len = min (String.length Sys.ocaml_version) (String.length version) in
-      String.sub Sys.ocaml_version 0 len = version
-
 let split_on_char sep s =
   let r = ref [] in
   let j = ref (String.length s) in
@@ -48,14 +42,17 @@ let split_on_char sep s =
   String.sub s 0 !j :: !r
 
 let () =
-  let rec select_first i =
-    if i >= Array.length Sys.argv
-    then failwith "select.exe failed to select a file."
-    else
-      let file = Sys.argv.(i) in
-      match split_on_char '-' file with
-      | [ _; version ] ->
-          if version_match version then dump_file file else select_first (succ i)
-      | _ -> invalid_arg "select.exe"
+  let version = Sys.ocaml_version in
+  let maj, min =
+    match split_on_char '.' version with
+    | maj :: min :: _ -> int_of_string maj, int_of_string min
+    | _ -> assert false
   in
-  select_first 1
+  match maj, min with
+  | 4, 8 | 4, 9 | 4, 10 -> dump_file "toplevel_expect_test.ml-4.08"
+  | 4, min ->
+      assert (min >= 11);
+      dump_file "toplevel_expect_test.ml-4.11"
+  | 5, 0 | 5, 1 | 5, 2 -> dump_file "toplevel_expect_test.ml-4.11"
+  | 5, _ -> dump_file "toplevel_expect_test.ml-5.3"
+  | _ -> failwith ("unsupported version " ^ Sys.ocaml_version)

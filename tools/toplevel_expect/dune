@@ -1,15 +1,19 @@
 (library
  (name toplevel_expect_test)
+ (modules
+  (:standard \ gen))
  (libraries compiler-libs.common compiler-libs.toplevel))
+
+(executable
+ (name gen)
+ (modules gen)
+ (preprocess no_preprocessing))
 
 (rule
  (targets toplevel_expect_test.ml)
  (deps
-  ../select/select.exe
-  toplevel_expect_test.ml-4.08
-  toplevel_expect_test.ml-4.09
-  toplevel_expect_test.ml-4.10
-  toplevel_expect_test.ml-default)
+  ./gen.exe
+  (glob_files toplevel_expect_test.ml-*))
  (action
   (with-stdout-to
    %{targets}
