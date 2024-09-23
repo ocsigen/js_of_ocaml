@@ -147,8 +147,8 @@ let%expect_test "direct calls with --enable effects" =
        throw caml_maybe_attach_backtrace(e, 0);
       }
      }
-     f(function(x){return;});
-     f(function(x){return;});
+     f(function(x){});
+     f(function(x){});
      return cont(0);
     }
     //end

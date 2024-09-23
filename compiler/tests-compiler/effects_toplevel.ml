@@ -86,7 +86,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                             caml_callback(g, [undef]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
-                            return;
                            });
                  }
                  return _b_(1);
