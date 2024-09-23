@@ -4880,7 +4880,7 @@
             : runtime.caml_call_gen(f, [a0, a1]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     Stdlib = global_data.Stdlib,
     Stdlib_Uchar = global_data.Stdlib__Uchar,
@@ -10021,7 +10021,6 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
     /*<<parsing.ml:59:0>>*/ var
-    undef = undefined,
     global_data = runtime.caml_get_global_data(),
     Stdlib_Obj = global_data.Stdlib__Obj,
     Stdlib_Array = global_data.Stdlib__Array,
@@ -10047,7 +10046,8 @@
        0,
        0,
        0,
-       0];
+       0],
+    dummy = 0;
    function grow_stacks(param){
      /*<<parsing.ml:108:2>>*/ var
      oldsize = env[5],
@@ -12662,7 +12662,6 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
    var
-    undef = undefined,
     global_data = runtime.caml_get_global_data(),
     Stdlib_Bytes = global_data.Stdlib__Bytes,
     Stdlib_Sys = global_data.Stdlib__Sys,
@@ -12673,7 +12672,8 @@
     cst_Buffer_sub = "Buffer.sub",
     cst_Buffer_blit = "Buffer.blit",
     cst_Buffer_nth = "Buffer.nth",
-    cst_Buffer_add_cannot_grow_buf = "Buffer.add: cannot grow buffer";
+    cst_Buffer_add_cannot_grow_buf = "Buffer.add: cannot grow buffer",
+    dummy = 0;
    function create(n){
      /*<<buffer.ml:41:1>>*/ var
      n$0 = 1 <= n ? n : 1,
@@ -13463,7 +13463,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     Stdlib_Condition = global_data.Stdlib__Condition,
     Stdlib_Mutex = global_data.Stdlib__Mutex,
@@ -13791,7 +13791,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     cst$9 = "%{",
     cst$10 = "%}",
@@ -21502,7 +21502,6 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5]);
    }
     /*<<arg.ml:50:0>>*/ var
-    undef = undefined,
     global_data = runtime.caml_get_global_data(),
     cst$7 = "\n",
     cst$4 = cst$8,
@@ -21687,7 +21686,8 @@
     _n_ = [0, [2, 0, 0], cst_s],
     _o_ = [0, [2, 0, 0], cst_s],
     _p_ = [0, [2, 0, 0], cst_s],
-    _q_ = [0, [2, 0, 0], cst_s];
+    _q_ = [0, [2, 0, 0], cst_s],
+    dummy = 0;
    function int_of_string_opt(x){
      /*<<arg.ml:128:2>>*/ try{
       /*<<arg.ml:128:6>>*/  /*<<arg.ml:128:6>>*/ var
@@ -22987,7 +22987,6 @@
             : runtime.caml_call_gen(f, [a0, a1]);
    }
    var
-    undef = undefined,
     global_data = runtime.caml_get_global_data(),
     Stdlib_Printexc = global_data.Stdlib__Printexc,
     Stdlib = global_data.Stdlib;
@@ -23021,6 +23020,7 @@
                /*<<fun.ml:25:29>>*/ caml_call2
                (Stdlib[28], cst_Fun_Finally_raised, _a_)];
       /*<<fun.ml:26:11>>*/ });
+   var dummy = 0;
    function protect(finally$0, work){
     function finally_no_exn(param){
       /*<<fun.ml:30:4>>*/ try{
@@ -24142,7 +24142,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     Stdlib = global_data.Stdlib,
     Stdlib_Array = global_data.Stdlib__Array,
@@ -27048,7 +27048,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     cst$14 = ".",
     cst$11 = cst$15,
@@ -32694,7 +32694,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
    var
-    undef = undefined,
+    dummy = 0,
     global_data = runtime.caml_get_global_data(),
     _c_ = [0, 0],
     _b_ = [0, 0],
@@ -33995,7 +33995,6 @@
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
    var
-    undef = undefined,
     global_data = runtime.caml_get_global_data(),
     cst$18 = cst$19,
     cst$17 = cst$19,
@@ -34171,6 +34170,7 @@
             : 0;
     /*<<filename.ml:114:10>>*/ }
    var
+    dummy = 0,
     _h_ = [0, 7, 0],
     _g_ = [0, 1, [0, 3, [0, 5, 0]]],
     _f_ = [0, [2, 0, [4, 6, [0, 2, 6], 0, [2, 0, 0]]], "%s%06x%s"],

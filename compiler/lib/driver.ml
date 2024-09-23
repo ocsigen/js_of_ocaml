@@ -667,7 +667,7 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
   in
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
-    Code.Var.fresh_n "undef"
+    Code.Var.fresh_n "dummy"
   in
   let opt =
     specialize_js_once
