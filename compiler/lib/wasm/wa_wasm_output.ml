@@ -1043,14 +1043,23 @@ end = struct
     output_byte ch id;
     with_size f ch x
 
-  let rec find_available_name used name i =
-    let nm = Printf.sprintf "%s$%d" name i in
-    if StringSet.mem nm used then find_available_name used name (i + 1) else nm
-
   let assign_names f tbl =
     let names = Hashtbl.fold (fun name idx rem -> (idx, name) :: rem) tbl [] in
     let names = List.sort ~cmp:(fun (idx, _) (idx', _) -> compare idx idx') names in
     let used = ref StringSet.empty in
+    let counts = Hashtbl.create 101 in
+    let rec find_available_name used name =
+      let i =
+        try Hashtbl.find counts name
+        with Not_found ->
+          let i = ref 0 in
+          Hashtbl.replace counts name i;
+          i
+      in
+      incr i;
+      let nm = Printf.sprintf "%s$%d" name !i in
+      if StringSet.mem nm used then find_available_name used name else nm
+    in
     let names =
       List.map
         ~f:(fun (idx, x) ->
@@ -1058,7 +1067,7 @@ end = struct
           | None -> idx, None
           | Some nm ->
               let nm =
-                if StringSet.mem nm !used then find_available_name !used nm 1 else nm
+                if StringSet.mem nm !used then find_available_name !used nm else nm
               in
               used := StringSet.add nm !used;
               idx, Some nm)
