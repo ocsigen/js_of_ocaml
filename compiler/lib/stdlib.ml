@@ -381,7 +381,6 @@ module Int31 : sig
   val of_int32_warning_on_overflow : int32 -> t
 
   val to_int32 : t -> int32
-
 end = struct
   type t = int32
 
