@@ -16,6 +16,7 @@
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
+* Compiler: improved global dead code elimination (#2206)
 
 
 ## Bug fixes
