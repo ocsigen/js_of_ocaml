@@ -103,9 +103,11 @@ type usage_kind =
 
     We use information from global flow to try to add edges between function calls and their return values
     at known call sites. *)
-let usages prog (global_info : Global_flow.info) : (Var.t * usage_kind) list Var.Tbl.t =
+let usages prog (global_info : Global_flow.info) : (usage_kind * Var.Set.t) list Var.Tbl.t
+    =
   let uses = Var.Tbl.make () [] in
-  let add_use kind x y = Var.Tbl.set uses x ((y, kind) :: Var.Tbl.get uses x) in
+  let add_uses kind x vars = Var.Tbl.set uses x ((kind, vars) :: Var.Tbl.get uses x) in
+  let add_use kind x y = add_uses kind x (Var.Set.singleton y) in
 
   let add_arg_dep params args =
     List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
@@ -131,9 +133,8 @@ let usages prog (global_info : Global_flow.info) : (Var.t * usage_kind) list Var
                        So we only need to consider the case when there is an exact application. *)
                     if List.compare_lengths params args = 0
                     then (
-                      let return_values = Var.Map.find k global_info.info_return_vals in
-                      Var.Set.iter (add_use Propagate x) return_values;
-                      List.iter2 ~f:(add_use Propagate) params args)
+                      add_uses Propagate x (Var.Map.find k global_info.info_return_vals);
+                      List.iter2 ~f:(fun x y -> add_use Propagate x y) params args)
                 | _ -> ())
               known);
         add_use Compute x f;
@@ -319,7 +320,9 @@ let solver vars uses defs live_vars =
     { Solver.domain = vars
     ; iter_children =
         (fun f x ->
-          List.iter ~f:(fun (y, usage_kind) -> f y usage_kind) (Var.Tbl.get uses x))
+          List.iter
+            ~f:(fun (usage_kind, vars) -> Var.Set.iter (fun y -> f y usage_kind) vars)
+            (Var.Tbl.get uses x))
     }
   in
   Solver.f ~state:live_vars g (propagate defs)
@@ -410,14 +413,17 @@ module Print = struct
       (fun v ds ->
         Format.eprintf "%a: { " Var.print v;
         List.iter
-          ~f:(fun (d, k) ->
-            Format.eprintf
-              "(%a, %s) "
-              Var.print
-              d
-              (match k with
-              | Compute -> "C"
-              | Propagate -> "P"))
+          ~f:(fun (k, s) ->
+            Var.Set.iter
+              (fun d ->
+                Format.eprintf
+                  "(%a, %s) "
+                  Var.print
+                  d
+                  (match k with
+                  | Compute -> "C"
+                  | Propagate -> "P"))
+              s)
           ds;
         Format.eprintf "}\n")
       uses
