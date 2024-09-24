@@ -691,9 +691,9 @@ let optimize ~profile p =
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
     +> map_fst
-         (match Config.target () with
-         | `JavaScript -> if Config.Flag.effects () then Fun.id else Generate_closure.f
-         | `Wasm -> Fun.id)
+         (match Config.target (), Config.Flag.effects () with
+         | `JavaScript, false -> Generate_closure.f
+         | `JavaScript, true | `Wasm, _ -> Fun.id)
     +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
