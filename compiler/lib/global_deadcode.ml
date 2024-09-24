@@ -71,9 +71,6 @@ end = struct
     | Dead, Dead -> Dead
 end
 
-module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
-module Solver = G.Solver (Domain)
-
 let definitions prog =
   let defs = Var.Tbl.make () Param in
   let set_def x d = Var.Tbl.set defs x d in
@@ -108,7 +105,8 @@ type usage_kind =
     at known call sites. *)
 let usages prog (global_info : Global_flow.info) : (Var.t * usage_kind) list Var.Tbl.t =
   let uses = Var.Tbl.make () [] in
-  let add_use kind x y = Var.Tbl.set uses y ((x, kind) :: Var.Tbl.get uses y) in
+  let add_use kind x y = Var.Tbl.set uses x ((y, kind) :: Var.Tbl.get uses x) in
+
   let add_arg_dep params args =
     List.iter2 ~f:(fun x y -> add_use Propagate x y) params args
   in
@@ -280,49 +278,51 @@ let variables deps =
 (** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
     defined by joining its current liveness and the contribution of each vairable [y]
     that uses [x]. *)
-let propagate uses defs live_vars live_table x =
+let propagate defs ~state ~dep:y ~target:x ~action:usage_kind =
   (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
       ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
        the contribution depends on the liveness of [y] and its definition. *)
-  let contribution y usage_kind =
-    match usage_kind with
-    (* If x is used to compute y, we consider the liveness of y *)
-    | Compute -> (
-        match Var.Tbl.get live_table y with
-        (* If y is dead, then x is dead. *)
-        | Domain.Dead -> Domain.bot
-        (* If y is a live block, then x is the join of liveness fields that are x *)
-        | Live fields -> (
-            match Var.Tbl.get defs y with
-            | Expr (Block (_, vars, _, _)) ->
-                let found = ref false in
-                Array.iteri
-                  ~f:(fun i v ->
-                    if Var.equal v x && IntSet.mem i fields then found := true)
-                  vars;
-                if !found then Domain.top else Domain.bot
-            | Expr (Field (_, i, _)) -> Domain.live_field i
-            | _ -> Domain.top)
-        (* If y is top and y is a field access, x depends only on that field *)
-        | Top -> (
-            match Var.Tbl.get defs y with
-            | Expr (Field (_, i, _)) -> Domain.live_field i
-            | _ -> Domain.top))
-    (* If x is used as an argument for parameter y, then contribution is liveness of y *)
-    | Propagate -> Var.Tbl.get live_table y
-  in
-  List.fold_left
-    ~f:(fun live (y, usage_kind) -> Domain.join (contribution y usage_kind) live)
-    (Var.Tbl.get uses x)
-    ~init:(Domain.join (Var.Tbl.get live_vars x) (Var.Tbl.get live_table x))
+  match usage_kind with
+  (* If x is used to compute y, we consider the liveness of y *)
+  | Compute -> (
+      match Var.Tbl.get state y with
+      (* If y is dead, then x is dead. *)
+      | Domain.Dead -> Domain.bot
+      (* If y is a live block, then x is the join of liveness fields that are x *)
+      | Live fields -> (
+          match Var.Tbl.get defs y with
+          | Expr (Block (_, vars, _, _)) ->
+              let found = ref false in
+              Array.iteri
+                ~f:(fun i v -> if Var.equal v x && IntSet.mem i fields then found := true)
+                vars;
+              if !found then Domain.top else Domain.bot
+          | Expr (Field (_, i, _)) -> Domain.live_field i
+          | _ -> Domain.top)
+      (* If y is top and y is a field access, x depends only on that field *)
+      | Top -> (
+          match Var.Tbl.get defs y with
+          | Expr (Field (_, i, _)) -> Domain.live_field i
+          | _ -> Domain.top))
+  (* If x is used as an argument for parameter y, then contribution is liveness of y *)
+  | Propagate -> Var.Tbl.get state y
+
+module Solver =
+  Dgraph.Solver (Var) (Var.ISet) (Var.Tbl)
+    (struct
+      type t = usage_kind
+    end)
+    (Domain)
 
 let solver vars uses defs live_vars =
   let g =
-    { G.domain = vars
-    ; G.iter_children = (fun f x -> List.iter ~f:(fun (y, _) -> f y) (Var.Tbl.get uses x))
+    { Solver.domain = vars
+    ; iter_children =
+        (fun f x ->
+          List.iter ~f:(fun (y, usage_kind) -> f y usage_kind) (Var.Tbl.get uses x))
     }
   in
-  Solver.f () (G.invert () g) (propagate uses defs live_vars)
+  Solver.f ~state:live_vars g (propagate defs)
 
 (** Replace each instance of a dead variable with a sentinal value.
   Blocks that end in dead variables are compacted to the first live entry.
@@ -422,14 +422,8 @@ module Print = struct
         Format.eprintf "}\n")
       uses
 
-  let print_liveness live_vars =
-    Format.eprintf "Liveness:\n";
-    Var.Tbl.iter
-      (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
-      live_vars
-
   let print_live_tbl live_table =
-    Format.eprintf "Liveness with dependencies:\n";
+    Format.eprintf "Liveness:\n";
     Var.Tbl.iter
       (fun v l -> Format.eprintf "%a: %s\n" Var.print v (live_to_string l))
       live_table
@@ -452,16 +446,15 @@ let f p ~deadcode_sentinal global_info =
   let uses = usages p global_info in
   (* Compute initial liveness *)
   let pure_funs = Pure_fun.f p in
-  let live_vars = liveness p pure_funs global_info in
+  let live_table = liveness p pure_funs global_info in
   (* Propagate liveness to dependencies *)
   let vars = variables uses in
-  let live_table = solver vars uses defs live_vars in
+  solver vars uses defs live_table;
   (* Print debug info *)
   if debug ()
   then (
     Format.eprintf "Before Zeroing:@.";
     Code.Print.program (fun _ _ -> "") p;
-    Print.print_liveness live_vars;
     Print.print_uses uses;
     Print.print_live_tbl live_table);
   (* Zero out dead fields *)
