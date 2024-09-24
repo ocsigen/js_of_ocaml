@@ -767,48 +767,44 @@ let access_global g i =
       x
 
 let register_global ?(force = false) g i loc rem =
-  if g.is_exported.(i)
-     &&
-     match Config.target () with
-     | `Wasm -> true
-     | `JavaScript -> false
-  then (
-    (* Register a compilation unit (Wasm) *)
-    assert (not force);
-    let name =
-      match g.named_value.(i) with
-      | None -> assert false
-      | Some name -> name
-    in
-    Code.Var.name (access_global g i) name;
-    ( Let
-        ( Var.fresh ()
-        , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
-    , loc )
-    :: rem)
-  else if force || g.is_exported.(i)
-  then
-    (* Register an exception (if force = true), or a compilation unit
-       (Javascript) *)
-    let args =
-      match g.named_value.(i) with
-      | None -> []
-      | Some name ->
-          Code.Var.name (access_global g i) name;
-          [ Pc
-              (match Config.target () with
-              | `JavaScript -> NativeString (Native_string.of_string name)
-              | `Wasm -> String name)
-          ]
-    in
-    ( Let
-        ( Var.fresh ()
-        , Prim
-            ( Extern "caml_register_global"
-            , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
-    , loc )
-    :: rem
-  else rem
+  match g.is_exported.(i), force, Config.target () with
+  | true, _, `Wasm ->
+      (* Register a compilation unit (Wasm) *)
+      assert (not force);
+      let name =
+        match g.named_value.(i) with
+        | None -> assert false
+        | Some name -> name
+      in
+      Code.Var.name (access_global g i) name;
+      ( Let
+          ( Var.fresh ()
+          , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
+          )
+      , loc )
+      :: rem
+  | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
+      (* Register an exception (if force = true), or a compilation unit
+         (Javascript) *)
+      let args =
+        match g.named_value.(i) with
+        | None -> []
+        | Some name ->
+            Code.Var.name (access_global g i) name;
+            [ Pc
+                (match target with
+                | `JavaScript -> NativeString (Native_string.of_string name)
+                | `Wasm -> String name)
+            ]
+      in
+      ( Let
+          ( Var.fresh ()
+          , Prim
+              ( Extern "caml_register_global"
+              , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
+      , loc )
+      :: rem
+  | false, false, (`JavaScript | `Wasm) -> rem
 
 let get_global state instrs i loc =
   State.size_globals state (i + 1);
@@ -825,37 +821,33 @@ let get_global state instrs i loc =
         let x, state = State.fresh_var state loc in
         let cst = g.constants.(i) in
         x, state, (Let (x, Constant cst), loc) :: instrs
-      else if i < Array.length g.constants
-              ||
-              match Config.target () with
-              | `Wasm -> false
-              | `JavaScript -> true
-      then (
-        (* Non-inlined constant, and reference to another compilation
-           units in case of separate compilation (JavaScript).
-           Some code is generated in a prelude to store the relevant
-           module in variable [x].
-        *)
-        g.is_const.(i) <- true;
-        let x, state = State.fresh_var state loc in
-        if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
-        g.vars.(i) <- Some x;
-        x, state, instrs)
       else
-        (* Reference to another compilation units in case of separate
-           compilation (Wasm).
-           The toplevel module is available in an imported global
-           variables.
-        *)
-        match g.named_value.(i) with
-        | None -> assert false
-        | Some name ->
+        match i < Array.length g.constants, Config.target () with
+        | true, _ | false, `JavaScript ->
+            (* Non-inlined constant, and reference to another compilation
+               units in case of separate compilation (JavaScript).
+               Some code is generated in a prelude to store the relevant
+               module in variable [x]. *)
+            g.is_const.(i) <- true;
             let x, state = State.fresh_var state loc in
-            if debug_parser () then Format.printf "%a = get_global(%s)@." Var.print x name;
-            ( x
-            , state
-            , (Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])), loc)
-              :: instrs ))
+            if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
+            g.vars.(i) <- Some x;
+            x, state, instrs
+        | false, `Wasm -> (
+            (* Reference to another compilation units in case of separate
+               compilation (Wasm).
+               The toplevel module is available in an imported global
+               variables. *)
+            match g.named_value.(i) with
+            | None -> assert false
+            | Some name ->
+                let x, state = State.fresh_var state loc in
+                if debug_parser ()
+                then Format.printf "%a = get_global(%s)@." Var.print x name;
+                ( x
+                , state
+                , (Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])), loc)
+                  :: instrs )))
 
 let tagged_blocks = ref Addr.Map.empty
 
@@ -3162,44 +3154,41 @@ let predefined_exceptions () =
         assert (String.is_valid_utf_8 name);
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
-        let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
-        [ Let (v_name, Constant (String name)), noloc ]
-        @ (match Config.target () with
-          | `Wasm -> []
-          | `JavaScript ->
-              [ ( Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
-                , noloc )
-              ])
-        @ [ ( Let
-                ( v_index
-                , Constant
-                    (Int
-                       ((* Predefined exceptions are registered in
-                           Symtable.init with [-index - 1] *)
-                        Int32.of_int
-                          (-index - 1))) )
-            , noloc )
-          ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
-          ; ( Let
-                ( Var.fresh ()
-                , Prim
-                    ( Extern "caml_register_global"
-                    , [ Pc (Int (Int32.of_int index))
-                      ; Pv exn
-                      ; Pv
-                          (match Config.target () with
-                          | `JavaScript -> v_name_js
-                          | `Wasm -> v_name)
-                      ] ) )
-            , noloc )
-          ]
+        [ Let (v_name, Constant (String name)), noloc
+        ; ( Let
+              ( v_index
+              , Constant
+                  (Int
+                     ((* Predefined exceptions are registered in
+                         Symtable.init with [-index - 1] *)
+                      Int32.of_int
+                        (-index - 1))) )
+          , noloc )
+        ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
+        ]
         @
         match Config.target () with
-        | `JavaScript -> []
+        | `JavaScript ->
+            let v_name_js = Var.fresh () in
+            [ ( Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
+              , noloc )
+            ; ( Let
+                  ( Var.fresh ()
+                  , Prim
+                      ( Extern "caml_register_global"
+                      , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js ] ) )
+              , noloc )
+            ]
         | `Wasm ->
-            (* Also make the exception available to the generated code *)
             [ ( Let
+                  ( Var.fresh ()
+                  , Prim
+                      ( Extern "caml_register_global"
+                      , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name ] ) )
+              , noloc )
+              (* Also make the exception available to the generated code *)
+            ; ( Let
                   ( Var.fresh ()
                   , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
               , noloc )
