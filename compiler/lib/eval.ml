@@ -439,10 +439,7 @@ let eval_instr ~target info ((x, loc) as i) =
                               (* Avoid duplicating the constant here as it would cause an
                                  allocation *)
                               arg
-                          | Some (Int32 _ | NativeInt _), `JavaScript ->
-                              invalid_arg
-                                "Constant of type Int32 or NativeInt unexpected in the \
-                                 JavaScript backend"
+                          | Some (Int32 _ | NativeInt _), `JavaScript -> assert false
                           | Some (Float _ as c), `JavaScript -> Pc c
                           | Some (String _ as c), `JavaScript
                             when Config.Flag.use_js_string () -> Pc c
