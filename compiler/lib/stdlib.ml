@@ -378,11 +378,10 @@ module Int31 : sig
 
   val of_nativeint_warning_on_overflow : nativeint -> t
 
-  val to_int32 : t -> int32
-
   val of_int32_warning_on_overflow : int32 -> t
 
-  val to_int : t -> int
+  val to_int32 : t -> int32
+
 end = struct
   type t = int32
 
@@ -441,20 +440,18 @@ end = struct
 
   let logxor = int_binop Int32.logxor
 
-  let shift_op wrap truncate f x y =
+  let shift_op f x y =
     (* Limit the shift offset to [0, 31] *)
-    wrap (f (truncate x) (y land 0x1f))
+    wrap (f x (y land 0x1f))
 
-  let shift_left = shift_op wrap Fun.id Int32.shift_left
+  let shift_left = shift_op Int32.shift_left
 
-  let shift_right = shift_op wrap Fun.id Int32.shift_right
+  let shift_right = shift_op Int32.shift_right
 
-  let shift_right_logical =
-    shift_op wrap (fun i -> Int32.logand i 0x7fffffffl) Int32.shift_right_logical
+  let shift_right_logical a b =
+    shift_op Int32.shift_right_logical (Int32.logand a 0x7fffffffl) b
 
   let to_int32 (x : t) : int32 = x
-
-  let to_int (x : t) = Int32.to_int x
 end
 
 module Option = struct
