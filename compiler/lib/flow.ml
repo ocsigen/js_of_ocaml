@@ -349,8 +349,20 @@ let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
   | Float a, Float b, `JavaScript -> Float.bitwise_equal a b
   | Float _, Float _, `Wasm -> false
   | NativeString a, NativeString b, `JavaScript -> Native_string.equal a b
+  | NativeString _, NativeString _, `Wasm ->
+      false
+      (* Native strings are boxed (JavaScript objects) in Wasm and are
+         possibly different objects *)
   | String a, String b, `JavaScript -> Config.Flag.use_js_string () && String.equal a b
+  | String _, String _, `Wasm ->
+      false (* Strings are boxed in Wasm and are possibly different objects *)
   | Int _, Float _, _ | Float _, Int _, _ -> false
+  | Int32 _, Int32 _, `Wasm ->
+      false (* [Int32]s are boxed in Wasm and are possibly different objects *)
+  | Int32 _, Int32 _, `JavaScript -> assert false
+  | NativeInt _, NativeInt _, `Wasm ->
+      false (* [NativeInt]s are boxed in Wasm and are possibly different objects *)
+  | NativeInt _, NativeInt _, `JavaScript -> assert false
   (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
   | String _, _, _
   | _, String _, _

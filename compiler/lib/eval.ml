@@ -435,7 +435,10 @@ let eval_instr ~target info ((x, loc) as i) =
                     , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
                           match c, target with
                           | Some ((Int _ | NativeString _) as c), _ -> Pc c
-                          | Some ((Int32 _ | NativeInt _) as c), `Wasm -> Pc c
+                          | Some (Int32 _ | NativeInt _), `Wasm ->
+                              (* Avoid duplicating the constant here as it would cause an
+                                 allocation *)
+                              arg
                           | Some (Int32 _ | NativeInt _), `JavaScript ->
                               invalid_arg
                                 "Constant of type Int32 or NativeInt unexpected in the \

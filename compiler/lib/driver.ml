@@ -23,6 +23,14 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
 type profile =
   | O1
   | O2
@@ -194,14 +202,13 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ~deadcode_sentinal
-    ((p, live_vars), trampolined_calls, _) =
+    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps = _ } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
-    p
+    program
     ~exported_runtime
-    ~live_vars
+    ~live_vars:variable_uses
     ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
@@ -670,14 +677,6 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
-type optimized_result =
-  { program : Code.program
-  ; variable_uses : Deadcode.variable_uses
-  ; trampolined_calls : Effects.trampolined_calls
-  ; in_cps : Effects.in_cps
-  ; deadcode_sentinal : Code.Var.t
-  }
-
 let optimize ~profile p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
@@ -704,22 +703,14 @@ let optimize ~profile p =
   { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
 
 let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
-  let { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal } =
-    optimize ~profile p
-  in
+  let optimized_code = optimize ~profile p in
   let exported_runtime = not standalone in
   let emit formatter =
-    generate
-      d
-      ~exported_runtime
-      ~wrap_with_fun
-      ~warn_on_unhandled_effect:standalone
-      ~deadcode_sentinal
+    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
     +> link_and_pack ~standalone ~wrap_with_fun ~link
     +> output formatter ~source_map ()
   in
-  let source_map = emit formatter ((program, variable_uses), trampolined_calls, in_cps) in
-  source_map
+  emit formatter optimized_code
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
