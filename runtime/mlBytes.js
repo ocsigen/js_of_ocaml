@@ -692,12 +692,12 @@ function caml_string_concat(a, b) {
 }
 
 //Provides: caml_string_concat
-//Requires: caml_convert_string_to_bytes, MlBytes
+//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 //If: !js-string
 function caml_string_concat(s1, s2) {
-  s1.t & 6 && caml_convert_string_to_bytes(s1);
-  s2.t & 6 && caml_convert_string_to_bytes(s2);
-  return new MlBytes(s1.t, s1.c + s2.c, s1.l + s2.l);
+  return caml_string_of_jsbytes(
+    caml_jsbytes_of_string(s1) + caml_jsbytes_of_string(s2),
+  );
 }
 
 //Provides: caml_string_unsafe_get const
