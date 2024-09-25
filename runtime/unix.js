@@ -88,7 +88,7 @@ function caml_unix_filedescr_of_fd(x) {
 //Alias: unix_isatty
 function caml_unix_isatty(fileDescriptor) {
   if (fs_node_supported()) {
-    var tty = require("tty");
+    var tty = require("node:tty");
     return tty.isatty(fileDescriptor) ? 1 : 0;
   } else {
     return 0;
