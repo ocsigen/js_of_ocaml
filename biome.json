@@ -13,7 +13,6 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "useArrowFunction": "off",
         "useOptionalChain": "off"
       },
       "correctness": {
@@ -26,7 +25,6 @@
         "noSubstr": "error"
       },
       "style": {
-        "noArguments": "off",
         "noCommaOperator": "off",
         "noParameterAssign": "off",
         "noUselessElse": "off",

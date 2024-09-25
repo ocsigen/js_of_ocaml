@@ -32,7 +32,7 @@ function caml_call_gen(f, args) {
   } else {
     switch (d) {
       case 1: {
-        var g = function (x) {
+        var g = (x) => {
           var nargs = new Array(argsLen + 1);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
@@ -41,7 +41,7 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y) {
+        var g = (x, y) => {
           var nargs = new Array(argsLen + 2);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
@@ -51,12 +51,11 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length === 0 ? 1 : arguments.length;
-          var nargs = new Array(args.length + extra_args);
+        var g = (...extra_args) => {
+          var nargs = new Array(args.length + extra_args.length);
           for (var i = 0; i < args.length; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
-            nargs[args.length + i] = arguments[i];
+          for (var i = 0; i < extra_args.length; i++)
+            nargs[args.length + i] = extra_args[i];
           return caml_call_gen(f, nargs);
         };
       }
@@ -79,7 +78,7 @@ function caml_call_gen(f, args) {
     var rest = args.slice(n - 1);
     var k = args[argsLen - 1];
     args = args.slice(0, n);
-    args[n - 1] = function (g) {
+    args[n - 1] = (g) => {
       if (typeof g !== "function") return k(g);
       var args = rest.slice();
       args[args.length - 1] = k;
@@ -91,7 +90,7 @@ function caml_call_gen(f, args) {
     var k = args[argsLen];
     switch (d) {
       case 1: {
-        var g = function (x, y) {
+        var g = (x, y) => {
           var nargs = new Array(argsLen + 2);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
@@ -101,7 +100,7 @@ function caml_call_gen(f, args) {
         break;
       }
       case 2: {
-        var g = function (x, y, z) {
+        var g = (x, y, z) => {
           var nargs = new Array(argsLen + 3);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
@@ -112,12 +111,11 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length === 0 ? 1 : arguments.length;
-          var nargs = new Array(argsLen + extra_args);
+        var g = (...extra_args) => {
+          var nargs = new Array(argsLen + extra_args.length);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
-            nargs[argsLen + i] = arguments[i];
+          for (var i = 0; i < extra_args.length; i++)
+            nargs[argsLen + i] = extra_args[i];
           return caml_call_gen(f, nargs);
         };
       }

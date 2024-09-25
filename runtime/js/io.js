@@ -94,7 +94,7 @@ function caml_sys_open(name, flags, _perms) {
   var file = root.device.open(root.rest, f);
   return caml_sys_open_internal(file, undefined);
 }
-(function () {
+(() => {
   function file(fd, flags) {
     if (fs_node_supported()) {
       return caml_sys_open_for_node(fd, flags);
@@ -284,7 +284,7 @@ function caml_ml_channel_size_64(chanid) {
 //Requires: caml_ml_channel_get
 function caml_ml_set_channel_output(chanid, f) {
   var chan = caml_ml_channel_get(chanid);
-  chan.output = function (s) {
+  chan.output = (s) => {
     f(s);
   };
   return 0;

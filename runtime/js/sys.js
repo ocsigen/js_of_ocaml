@@ -140,7 +140,7 @@ function caml_sys_unsafe_getenv(name) {
 
 //Provides: caml_argv
 //Requires: caml_string_of_jsstring
-var caml_argv = (function () {
+var caml_argv = (() => {
   var process = globalThis.process;
   var main = "a.out";
   var args = [];
@@ -379,12 +379,12 @@ function caml_sys_is_regular_file(name) {
 function caml_setup_uncaught_exception_handler() {
   var process = globalThis.process;
   if (process && process.on) {
-    process.on("uncaughtException", function (err, origin) {
+    process.on("uncaughtException", (err, origin) => {
       caml_fatal_uncaught_exception(err);
       process.exit(2);
     });
   } else if (globalThis.addEventListener) {
-    globalThis.addEventListener("error", function (event) {
+    globalThis.addEventListener("error", (event) => {
       if (event.error) {
         caml_fatal_uncaught_exception(event.error);
       }

@@ -42,9 +42,7 @@ MlFakeDevice.prototype.create_dir_if_needed = function (name) {
     this.content[res] = Symbol("directory");
   }
 };
-MlFakeDevice.prototype.slash = function (name) {
-  return /\/$/.test(name) ? name : name + "/";
-};
+MlFakeDevice.prototype.slash = (name) => (/\/$/.test(name) ? name : name + "/");
 MlFakeDevice.prototype.lookup = function (name) {
   if (!this.content[name] && this.lookupFun) {
     var res = this.lookupFun(
@@ -350,18 +348,14 @@ MlFakeFile.prototype.read = function (offset, buf, pos, len) {
 //Requires: caml_raise_sys_error
 function MlFakeFd_out(fd, flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
-  this.log = function (s) {
-    return 0;
-  };
+  this.log = (s) => 0;
   if (fd === 1 && typeof console.log === "function") this.log = console.log;
   else if (fd === 2 && typeof console.error === "function")
     this.log = console.error;
   else if (typeof console.log === "function") this.log = console.log;
   this.flags = flags;
 }
-MlFakeFd_out.prototype.length = function () {
-  return 0;
-};
+MlFakeFd_out.prototype.length = () => 0;
 MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
   if (this.log) {
     if (

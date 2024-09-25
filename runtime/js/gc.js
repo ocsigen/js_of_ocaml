@@ -66,7 +66,7 @@ function caml_final_register() {
 var all_finalizers = new globalThis.Set();
 function caml_final_register_called_without_value(cb, a) {
   if (globalThis.FinalizationRegistry && a instanceof Object) {
-    var x = new globalThis.FinalizationRegistry(function (x) {
+    var x = new globalThis.FinalizationRegistry((x) => {
       all_finalizers.delete(x);
       cb(0);
       return;

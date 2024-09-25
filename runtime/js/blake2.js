@@ -1,6 +1,6 @@
 //Provides: blake2b
 //Version: >= 5.2
-var blake2b = (function () {
+var blake2b = (() => {
   // Blake2B in pure Javascript
   // Adapted from the reference implementation in RFC7693
   // Ported to Javascript by DC - https://github.com/dcposch
@@ -104,11 +104,7 @@ var blake2b = (function () {
   // These are offsets into a uint64 buffer.
   // Multiply them all by 2 to make them offsets into a uint32 buffer,
   // because this is Javascript and we don't have uint64s
-  const SIGMA82 = new Uint8Array(
-    SIGMA8.map(function (x) {
-      return x * 2;
-    }),
-  );
+  const SIGMA82 = new Uint8Array(SIGMA8.map((x) => x * 2));
 
   // Compression function. 'last' flag indicates last block.
   // Note we're representing 16 uint64s as 32 uint32s

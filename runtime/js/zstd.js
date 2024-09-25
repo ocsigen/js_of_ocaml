@@ -1,6 +1,6 @@
 //Provides: zstd_decompress
 //Version: >= 5.1
-var zstd_decompress = (function () {
+var zstd_decompress = (() => {
   // aliases for shorter compressed code (most minifers don't do this)
   var ab = ArrayBuffer,
     u8 = Uint8Array,
@@ -8,7 +8,7 @@ var zstd_decompress = (function () {
     i16 = Int16Array,
     u32 = Uint32Array,
     i32 = Int32Array;
-  var slc = function (v, s, e) {
+  var slc = (v, s, e) => {
     if (u8.prototype.slice) return u8.prototype.slice.call(v, s, e);
     if (s == null || s < 0) s = 0;
     if (e == null || e > v.length) e = v.length;
@@ -16,14 +16,14 @@ var zstd_decompress = (function () {
     n.set(v.subarray(s, e));
     return n;
   };
-  var fill = function (v, n, s, e) {
+  var fill = (v, n, s, e) => {
     if (u8.prototype.fill) return u8.prototype.fill.call(v, n, s, e);
     if (s == null || s < 0) s = 0;
     if (e == null || e > v.length) e = v.length;
     for (; s < e; ++s) v[s] = n;
     return v;
   };
-  var cpw = function (v, t, s, e) {
+  var cpw = (v, t, s, e) => {
     if (u8.prototype.copyWithin)
       return u8.prototype.copyWithin.call(v, t, s, e);
     if (s == null || s < 0) s = 0;
@@ -44,23 +44,22 @@ var zstd_decompress = (function () {
     "match distance too far back",
     "unexpected EOF",
   ];
-  var err = function (ind, msg, nt) {
+  var err = (ind, msg, nt) => {
     var e = new Error(msg || ec[ind]);
     e.code = ind;
     if (!nt) throw e;
     return e;
   };
-  var rb = function (d, b, n) {
+  var rb = (d, b, n) => {
     var i = 0,
       o = 0;
     for (; i < n; ++i) o |= d[b++] << (i << 3);
     return o;
   };
-  var b4 = function (d, b) {
-    return (d[b] | (d[b + 1] << 8) | (d[b + 2] << 16) | (d[b + 3] << 24)) >>> 0;
-  };
+  var b4 = (d, b) =>
+    (d[b] | (d[b + 1] << 8) | (d[b + 2] << 16) | (d[b + 3] << 24)) >>> 0;
   // read Zstandard frame header
-  var rzfh = function (dat, w) {
+  var rzfh = (dat, w) => {
     var n3 = dat[0] | (dat[1] << 8) | (dat[2] << 16);
     if (n3 === 0x2fb528 && dat[3] === 253) {
       // Zstandard
@@ -111,13 +110,13 @@ var zstd_decompress = (function () {
     err(0);
   };
   // most significant bit for nonzero
-  var msb = function (val) {
+  var msb = (val) => {
     var bits = 0;
     for (; 1 << bits <= val; ++bits);
     return bits - 1;
   };
   // read finite state entropy
-  var rfse = function (dat, bt, mal) {
+  var rfse = (dat, bt, mal) => {
     // table pos
     var tpos = (bt << 3) + 4;
     // accuracy log
@@ -215,7 +214,7 @@ var zstd_decompress = (function () {
     ];
   };
   // read huffman
-  var rhu = function (dat, bt) {
+  var rhu = (dat, bt) => {
     //  index  weight count
     var i = 0,
       wc = -1;
@@ -350,7 +349,7 @@ var zstd_decompress = (function () {
     5,
   )[1];
   // bits to baseline
-  var b2bl = function (b, s) {
+  var b2bl = (b, s) => {
     var len = b.length,
       bl = new i32(len);
     for (var i = 0; i < len; ++i) {
@@ -381,7 +380,7 @@ var zstd_decompress = (function () {
   // match length baseline
   var mlbl = /*#__PURE__ */ b2bl(mlb, 3);
   // decode huffman stream
-  var dhu = function (dat, out, hu) {
+  var dhu = (dat, out, hu) => {
     var len = dat.length,
       ss = out.length,
       lb = dat[len - 1],
@@ -404,7 +403,7 @@ var zstd_decompress = (function () {
   };
   // decode huffman stream 4x
   // TODO: use workers to parallelize
-  var dhu4 = function (dat, out, hu) {
+  var dhu4 = (dat, out, hu) => {
     var bt = 6;
     var ss = out.length,
       sz1 = (ss + 3) >> 2,
@@ -428,7 +427,7 @@ var zstd_decompress = (function () {
     dhu(dat.subarray(bt), out.subarray(sz3), hu);
   };
   // read Zstandard block
-  var rzb = function (dat, st, out) {
+  var rzb = (dat, st, out) => {
     var _a;
     var bt = st.b;
     //    byte 0        block type
@@ -643,7 +642,7 @@ var zstd_decompress = (function () {
     err(2);
   };
   // concat
-  var cct = function (bufs, ol) {
+  var cct = (bufs, ol) => {
     if (bufs.length === 1) return bufs[0];
     var buf = new u8(ol);
     for (var i = 0, b = 0; i < bufs.length; ++i) {

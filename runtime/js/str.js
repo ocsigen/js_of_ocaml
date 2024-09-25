@@ -24,7 +24,7 @@
 //Requires: caml_jsbytes_of_string, caml_js_from_array, caml_uint8_array_of_string
 //Requires: caml_string_get
 
-var re_match = (function () {
+var re_match = (() => {
   var re_word_letters = [
     0x00, 0x00, 0x00, 0x00 /* 0x00-0x1F: none */, 0x00, 0x00, 0xff,
     0x03 /* 0x20-0x3F: digits 0-9 */, 0xfe, 0xff, 0xff,
@@ -86,7 +86,7 @@ var re_match = (function () {
     }
     groups[0].start = pos;
 
-    var backtrack = function () {
+    var backtrack = () => {
       while (stack.length) {
         var item = stack.pop();
         if (item.undo) {
@@ -100,11 +100,11 @@ var re_match = (function () {
       quit = true;
     };
 
-    var push = function (item) {
+    var push = (item) => {
       stack.push(item);
     };
 
-    var accept = function () {
+    var accept = () => {
       groups[0].end = pos;
       var result = new Array(1 + groups.length * 2);
       result[0] = 0; // tag
@@ -119,7 +119,7 @@ var re_match = (function () {
       return result;
     };
 
-    var prefix_match = function () {
+    var prefix_match = () => {
       if (partial) return accept();
       else backtrack();
     };

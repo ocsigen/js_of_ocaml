@@ -189,7 +189,7 @@ MlNodeDevice.prototype.opendir = function (name, raise_unix) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
-MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
+MlNodeDevice.prototype.raise_nodejs_error = (err, raise_unix) => {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {
     var args = make_unix_err_args(err.code, err.syscall, err.path, err.errno);
@@ -198,7 +198,7 @@ MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
     caml_raise_sys_error(err.toString());
   }
 };
-MlNodeDevice.prototype.stats_from_js = function (js_stats) {
+MlNodeDevice.prototype.stats_from_js = (js_stats) => {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)

@@ -111,9 +111,7 @@ function caml_callback(f, args) {
     };
     var res = {
       joo_tramp: f,
-      joo_args: args.concat(function (x) {
-        return x;
-      }),
+      joo_args: args.concat((x) => x),
     };
     do {
       caml_stack_depth = 40;
@@ -379,12 +377,8 @@ function caml_ojs_new_arr(c, a) {
 //Provides: caml_js_wrap_callback const (const)
 //Requires: caml_callback
 function caml_js_wrap_callback(f) {
-  return function () {
-    var len = arguments.length;
-    if (len > 0) {
-      var args = new Array(len);
-      for (var i = 0; i < len; i++) args[i] = arguments[i];
-    } else {
+  return (...args) => {
+    if (args.length <= 0) {
       args = [undefined];
     }
     var res = caml_callback(f, args);
@@ -395,76 +389,55 @@ function caml_js_wrap_callback(f) {
 //Provides: caml_js_wrap_callback_arguments
 //Requires: caml_callback
 function caml_js_wrap_callback_arguments(f) {
-  return function () {
-    var len = arguments.length;
-    var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
-    return caml_callback(f, [args]);
-  };
+  return (...args) => caml_callback(f, [args]);
 }
 //Provides: caml_js_wrap_callback_strict const
 //Requires: caml_callback
 function caml_js_wrap_callback_strict(arity, f) {
-  return function () {
-    var n = arguments.length;
-    var args = new Array(arity);
-    var len = Math.min(arguments.length, arity);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+  return (...args) => {
+    args.length = arity;
     return caml_callback(f, args);
   };
 }
 //Provides: caml_js_wrap_callback_unsafe const (const)
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_callback_unsafe(f) {
-  return function () {
+  return (...args) => {
     var len = caml_js_function_arity(f);
-    var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+    args.length = len;
     return caml_callback(f, args);
   };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
 //Requires: caml_callback, caml_js_wrap_callback
 function caml_js_wrap_meth_callback(f) {
-  return function () {
-    var len = arguments.length;
-    var args = new Array(len + 1);
-    args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
-    var res = caml_callback(f, args);
+  return function (...args) {
+    const res = caml_callback(f, [this].concat(args));
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
 //Provides: caml_js_wrap_meth_callback_arguments const (const)
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_arguments(f) {
-  return function () {
-    var len = arguments.length;
-    var args = new Array(len);
-    for (var i = 0; i < len; i++) args[i] = arguments[i];
+  return function (...args) {
     return caml_callback(f, [this, args]);
   };
 }
 //Provides: caml_js_wrap_meth_callback_strict const
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_strict(arity, f) {
-  return function () {
-    var args = new Array(arity + 1);
-    var len = Math.min(arguments.length, arity);
-    args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
-    return caml_callback(f, args);
+  return function (...args) {
+    args.length = arity;
+    return caml_callback(f, [this].concat(args));
   };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
 //Requires: caml_callback, caml_js_function_arity
 function caml_js_wrap_meth_callback_unsafe(f) {
-  return function () {
-    var len = caml_js_function_arity(f) - 1;
-    var args = new Array(len + 1);
-    args[0] = this;
-    for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
-    return caml_callback(f, args);
+  return function (...args) {
+    const len = caml_js_function_arity(f) - 1;
+    args.length = len;
+    return caml_callback(f, [this].concat(args));
   };
 }
 

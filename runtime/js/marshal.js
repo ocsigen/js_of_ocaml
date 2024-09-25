@@ -309,17 +309,13 @@ var caml_custom_ops = {
     fixed_length: 4,
   },
   _bigarray: {
-    deserialize: function (reader, sz) {
-      return caml_ba_deserialize(reader, sz, "_bigarray");
-    },
+    deserialize: (reader, sz) => caml_ba_deserialize(reader, sz, "_bigarray"),
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
     hash: caml_ba_hash,
   },
   _bigarr02: {
-    deserialize: function (reader, sz) {
-      return caml_ba_deserialize(reader, sz, "_bigarr02");
-    },
+    deserialize: (reader, sz) => caml_ba_deserialize(reader, sz, "_bigarr02"),
     serialize: caml_ba_serialize,
     compare: caml_ba_compare,
     hash: caml_ba_hash,
@@ -625,7 +621,7 @@ function caml_marshal_data_size(s, ofs) {
 //Provides: MlObjectTable
 var MlObjectTable;
 if (typeof globalThis.Map === "undefined") {
-  MlObjectTable = (function () {
+  MlObjectTable = (() => {
     /* polyfill (using linear search) */
     function NaiveLookup(objs) {
       this.objs = objs;
@@ -635,7 +631,7 @@ if (typeof globalThis.Map === "undefined") {
         if (this.objs[i] === v) return i;
       }
     };
-    NaiveLookup.prototype.set = function () {
+    NaiveLookup.prototype.set = () => {
       // Do nothing here. [MlObjectTable.store] will push to [this.objs] directly.
     };
 
@@ -670,7 +666,7 @@ MlObjectTable.prototype.recall = function (v) {
 //Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
 //Requires: MlObjectTable, caml_list_to_js_array, caml_custom_ops
 //Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
-var caml_output_val = (function () {
+var caml_output_val = (() => {
   function Writer() {
     this.chunk = [];
   }
@@ -715,7 +711,7 @@ var caml_output_val = (function () {
       return this.chunk;
     },
   };
-  return function (v, flags) {
+  return (v, flags) => {
     flags = caml_list_to_js_array(flags);
 
     var no_sharing = flags.indexOf(0 /*Marshal.No_sharing*/) !== -1,

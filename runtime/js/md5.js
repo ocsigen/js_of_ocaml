@@ -53,7 +53,7 @@ function caml_md5_string(s, ofs, len) {
 }
 
 //Provides: caml_MD5Transform
-var caml_MD5Transform = (function () {
+var caml_MD5Transform = (() => {
   function add(x, y) {
     return (x + y) | 0;
   }
@@ -74,7 +74,7 @@ var caml_MD5Transform = (function () {
     return xx(c ^ (b | ~d), a, b, x, s, t);
   }
 
-  return function (w, buffer) {
+  return (w, buffer) => {
     var a = w[0],
       b = w[1],
       c = w[2],
