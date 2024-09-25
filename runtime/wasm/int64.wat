@@ -111,29 +111,21 @@
    (func (export "Int64_val") (param (ref eq)) (result i64)
       (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
 
-   (func (export "caml_int64_bswap") (param (ref eq)) (result (ref eq))
-      (local $i i64)
-      (local.set $i (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
-      (return_call $caml_copy_int64
+   (func (export "caml_int64_bswap") (param $i i64) (result i64)
+      (i64.or
          (i64.or
-            (i64.or
-               (i64.rotr (i64.and (local.get $i) (i64.const 0x000000FF000000FF))
-                         (i64.const 8))
-               (i64.rotr (i64.and (local.get $i) (i64.const 0x0000FF000000FF00))
-                         (i64.const 24)))
-            (i64.or
-               (i64.rotl (i64.and (local.get $i) (i64.const 0x00FF000000FF0000))
-                         (i64.const 24))
-               (i64.rotl (i64.and (local.get $i) (i64.const 0xFF000000FF000000))
-                         (i64.const 8))))))
+            (i64.rotr (i64.and (local.get $i) (i64.const 0x000000FF000000FF))
+                      (i64.const 8))
+            (i64.rotr (i64.and (local.get $i) (i64.const 0x0000FF000000FF00))
+                      (i64.const 24)))
+         (i64.or
+            (i64.rotl (i64.and (local.get $i) (i64.const 0x00FF000000FF0000))
+                      (i64.const 24))
+            (i64.rotl (i64.and (local.get $i) (i64.const 0xFF000000FF000000))
+                      (i64.const 8)))))
 
    (func (export "caml_int64_compare")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (local $i1 i64) (local $i2 i64)
-      (local.set $i1
-         (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
-      (local.set $i2
-         (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
+      (param $i1 i64) (param $i2 i64) (result (ref eq))
       (ref.i31 (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                         (i64.lt_s (local.get $i1) (local.get $i2)))))
 

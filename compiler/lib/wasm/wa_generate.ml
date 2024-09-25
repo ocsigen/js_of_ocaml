@@ -38,6 +38,71 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; debug : Parse_bytecode.Debug.t
     }
 
+  type repr =
+    | Value
+    | Float
+    | Int32
+    | Nativeint
+    | Int64
+
+  let repr_type r =
+    match r with
+    | Value -> Value.value
+    | Float -> F64
+    | Int32 -> I32
+    | Nativeint -> I32
+    | Int64 -> I64
+
+  let specialized_func_type (params, result) =
+    { W.params = List.map ~f:repr_type params; result = [ repr_type result ] }
+
+  let box_value r e =
+    match r with
+    | Value -> e
+    | Float -> Memory.box_float e
+    | Int32 -> Memory.box_int32 e
+    | Nativeint -> Memory.box_nativeint e
+    | Int64 -> Memory.box_int64 e
+
+  let unbox_value r e =
+    match r with
+    | Value -> e
+    | Float -> Memory.unbox_float e
+    | Int32 -> Memory.unbox_int32 e
+    | Nativeint -> Memory.unbox_nativeint e
+    | Int64 -> Memory.unbox_int64 e
+
+  let specialized_primitives =
+    let h = Hashtbl.create 18 in
+    List.iter
+      ~f:(fun (nm, typ) -> Hashtbl.add h nm typ)
+      [ "caml_int32_bswap", ([ Int32 ], Int32)
+      ; "caml_nativeint_bswap", ([ Nativeint ], Nativeint)
+      ; "caml_int64_bswap", ([ Int64 ], Int64)
+      ; "caml_int32_compare", ([ Int32; Int32 ], Value)
+      ; "caml_nativeint_compare", ([ Nativeint; Nativeint ], Value)
+      ; "caml_int64_compare", ([ Int64; Int64 ], Value)
+      ; "caml_string_get32", ([ Value; Value ], Int32)
+      ; "caml_string_get64", ([ Value; Value ], Int64)
+      ; "caml_bytes_get32", ([ Value; Value ], Int32)
+      ; "caml_bytes_get64", ([ Value; Value ], Int64)
+      ; "caml_bytes_set32", ([ Value; Value; Int32 ], Value)
+      ; "caml_bytes_set64", ([ Value; Value; Int64 ], Value)
+      ; "caml_lxm_next", ([ Value ], Int64)
+      ; "caml_ba_uint8_get32", ([ Value; Value ], Int32)
+      ; "caml_ba_uint8_get64", ([ Value; Value ], Int64)
+      ; "caml_ba_uint8_set32", ([ Value; Value; Int32 ], Value)
+      ; "caml_ba_uint8_set64", ([ Value; Value; Int64 ], Value)
+      ; "caml_nextafter_float", ([ Float; Float ], Float)
+      ; "caml_classify_float", ([ Float ], Value)
+      ; "caml_ldexp_float", ([ Float; Value ], Float)
+      ; "caml_signbit_float", ([ Float ], Value)
+      ; "caml_erf_float", ([ Float ], Float)
+      ; "caml_erfc_float", ([ Float ], Float)
+      ; "caml_float_compare", ([ Float; Float ], Value)
+      ];
+    h
+
   let func_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
@@ -386,6 +451,10 @@ module Generate (Target : Wa_target_sig.S) = struct
                 int32_shift_op (Shr U) i j
             | Extern "caml_int32_to_int", [ i ] -> Value.val_int (Memory.unbox_int32 i)
             | Extern "caml_int32_of_int", [ i ] -> Memory.box_int32 (Value.int_val i)
+            | Extern "caml_nativeint_of_int32", [ i ] ->
+                Memory.box_nativeint (Memory.unbox_int32 i)
+            | Extern "caml_nativeint_to_int32", [ i ] ->
+                Memory.box_int32 (Memory.unbox_nativeint i)
             | Extern "caml_int64_bits_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
                 Memory.box_int64 (return (W.UnOp (I64 ReinterpretF, f)))
@@ -565,18 +634,30 @@ module Generate (Target : Wa_target_sig.S) = struct
                     ~init:(return [])
                 in
                 Memory.allocate ~tag:0 l
-            | Extern name, l ->
+            | Extern name, l -> (
                 let name = Primitive.resolve name in
-                (*ZZZ Different calling convention when large number of parameters *)
-                let* f = register_import ~name (Fun (func_type (List.length l))) in
-                let rec loop acc l =
-                  match l with
-                  | [] -> return (W.Call (f, List.rev acc))
-                  | x :: r ->
-                      let* x = x in
-                      loop (x :: acc) r
-                in
-                loop [] l
+                try
+                  let typ = Hashtbl.find specialized_primitives name in
+                  let* f = register_import ~name (Fun (specialized_func_type typ)) in
+                  let rec loop acc arg_typ l =
+                    match arg_typ, l with
+                    | [], [] -> box_value (snd typ) (return (W.Call (f, List.rev acc)))
+                    | repr :: rem, x :: r ->
+                        let* x = unbox_value repr x in
+                        loop (x :: acc) rem r
+                    | [], _ :: _ | _ :: _, [] -> assert false
+                  in
+                  loop [] (fst typ) l
+                with Not_found ->
+                  let* f = register_import ~name (Fun (func_type (List.length l))) in
+                  let rec loop acc l =
+                    match l with
+                    | [] -> return (W.Call (f, List.rev acc))
+                    | x :: r ->
+                        let* x = x in
+                        loop (x :: acc) r
+                  in
+                  loop [] l)
             | Not, [ x ] -> Value.not x
             | Lt, [ x; y ] -> Value.lt x y
             | Le, [ x; y ] -> Value.le x y
