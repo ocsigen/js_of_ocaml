@@ -169,7 +169,7 @@ function caml_ephe_get_data_copy(x) {
 function caml_ephe_set_data(x, data) {
   if (globalThis.FinalizationRegistry && globalThis.WeakRef) {
     if (!(x[1] instanceof globalThis.FinalizationRegistry)) {
-      x[1] = new globalThis.FinalizationRegistry(function () {
+      x[1] = new globalThis.FinalizationRegistry(() => {
         caml_ephe_unset_data(x);
       });
       //register all keys

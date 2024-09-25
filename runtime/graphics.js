@@ -76,7 +76,7 @@ function caml_gr_open_graph(info) {
   canvas.width = w;
   canvas.height = h;
   var ctx = caml_gr_state_create(canvas, w, h);
-  ctx.set_title = function (title) {
+  ctx.set_title = (title) => {
     doc.title = title;
   };
   caml_gr_state_set(ctx);
@@ -460,7 +460,7 @@ function caml_gr_draw_image(im, x, y) {
     canvas.height = s.height;
     canvas.getContext("2d").putImageData(im, 0, 0);
     var image = new globalThis.Image();
-    image.onload = function () {
+    image.onload = () => {
       s.context.drawImage(image, x, s.height - im.height - y);
       im.image = image;
     };
