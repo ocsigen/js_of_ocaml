@@ -187,7 +187,7 @@ function caml_sys_executable_name(a) {
 function caml_sys_system_command(cmd) {
   var cmd = caml_jsstring_of_string(cmd);
   if (typeof require != "undefined") {
-    var child_process = require("child_process");
+    var child_process = require("node:child_process");
     if (child_process && child_process.execSync)
       try {
         child_process.execSync(cmd, { stdio: "inherit" });
