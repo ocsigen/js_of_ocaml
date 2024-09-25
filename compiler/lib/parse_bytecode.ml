@@ -490,10 +490,16 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 -> Int (Obj.magic x : int32)
-        | Some name when same_ident name ident_native ->
+        | Some name when same_ident name ident_32 -> (
+            let i : int32 = Obj.magic x in
+            match Config.target () with
+            | `JavaScript -> Int i
+            | `Wasm -> Int32 i)
+        | Some name when same_ident name ident_native -> (
             let i : nativeint = Obj.magic x in
-            Int (Int32.of_nativeint_warning_on_overflow i)
+            match Config.target () with
+            | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+            | `Wasm -> NativeInt i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
