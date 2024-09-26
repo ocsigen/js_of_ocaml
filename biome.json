@@ -41,7 +41,6 @@
       },
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noConfusingLabels": "off",
         "noControlCharactersInRegex": "off",
         "noDoubleEquals": "off",
         "noDuplicateCase": "off",
