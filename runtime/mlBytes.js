@@ -200,9 +200,10 @@ function jsoo_is_ascii(s) {
 //Provides: caml_bytes_unsafe_get mutable
 function caml_bytes_unsafe_get(s, i) {
   switch (s.t & 6) {
-    default: /* PARTIAL */
-      if (i >= s.c.length) return 0;
     case 0 /* BYTES */:
+      return s.c.charCodeAt(i);
+    case 2 /* PARTIAL */:
+      if (i >= s.c.length) return 0;
       return s.c.charCodeAt(i);
     case 4 /* ARRAY */:
       return s.c[i];
@@ -440,17 +441,16 @@ function MlBytes(tag, contents, length) {
 }
 MlBytes.prototype.toString = function () {
   switch (this.t) {
-    case 9 /*BYTES | ASCII*/:
-      return this.c;
-    default:
-      caml_convert_string_to_bytes(this);
-    case 0 /*BYTES | UNKOWN*/:
-      if (jsoo_is_ascii(this.c)) {
-        this.t = 9; /*BYTES | ASCII*/
-        return this.c;
-      }
-      this.t = 8; /*BYTES | NOT_ASCII*/
+    case 9: /*BYTES | ASCII*/
     case 8 /*BYTES | NOT_ASCII*/:
+      return this.c;
+    case 4: /* ARRAY */
+    case 2 /* PARTIAL */:
+      caml_convert_string_to_bytes(this);
+    //fallthrough
+    case 0 /*BYTES | UNKOWN*/:
+      if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
+      else this.t = 8; /*BYTES | NOT_ASCII*/
       return this.c;
   }
 };
@@ -892,13 +892,13 @@ function caml_is_ml_bytes(s) {
 
 //Provides: caml_ml_bytes_content
 //Requires: MlBytes, caml_convert_string_to_bytes
+//Returns a (full) string of bytes or an array
 function caml_ml_bytes_content(s) {
   switch (s.t & 6) {
-    default: /* PARTIAL */
+    case 2 /* PARTIAL */:
       caml_convert_string_to_bytes(s);
-    case 0 /* BYTES */:
-      return s.c;
-    case 4:
+    // fallthrough
+    default: /* BYTES or ARRAY */
       return s.c;
   }
 }
