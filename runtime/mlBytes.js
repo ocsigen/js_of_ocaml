@@ -448,8 +448,9 @@ MlBytes.prototype.toString = function () {
       return this.c;
     case 4: /* ARRAY */
     case 2 /* PARTIAL */:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
       caml_convert_string_to_bytes(this);
-    //fallthrough
+    // fallthrough
     case 0 /*BYTES | UNKOWN*/:
       if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
       else this.t = 8; /*BYTES | NOT_ASCII*/
@@ -899,7 +900,7 @@ function caml_ml_bytes_content(s) {
   switch (s.t & 6) {
     case 2 /* PARTIAL */:
       caml_convert_string_to_bytes(s);
-    // fallthrough
+      return s.c;
     default: /* BYTES or ARRAY */
       return s.c;
   }

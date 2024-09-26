@@ -838,9 +838,13 @@ function caml_ba_hash(ba) {
       w = 0;
       switch (num_elts & 3) {
         case 3:
-          w = ba.data[i + 2] << 16; /* fallthrough */
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+          w = ba.data[i + 2] << 16;
+        // fallthrough
         case 2:
-          w |= ba.data[i + 1] << 8; /* fallthrough */
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+          w |= ba.data[i + 1] << 8;
+        // fallthrough
         case 1:
           w |= ba.data[i + 0];
           h = caml_hash_mix_int(h, w);
@@ -874,13 +878,17 @@ function caml_ba_hash(ba) {
       }
       break;
     case 10: // Float32Array (complex32)
-      num_elts *= 2; /* fallthrough */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+      num_elts *= 2;
+    // fallthrough
     case 0: // Float32Array
       if (num_elts > 64) num_elts = 64;
       for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
       break;
     case 11: // Float64Array (complex64)
-      num_elts *= 2; /* fallthrough */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+      num_elts *= 2;
+    // fallthrough
     case 1: // Float64Array
       if (num_elts > 32) num_elts = 32;
       for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
