@@ -60,8 +60,8 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
   var comp = caml_compare_val_get_custom(custom);
   if (comp) {
     var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
-    if (total && x != x) return swap; // total && nan
-    if (+x != +x) return +x; // nan
+    if (total && Number.isNaN(x)) return swap; // total && nan
+    if (Number.isNan(+x)) return +x; // nan
     if ((x | 0) != 0) return x | 0; // !nan
   }
   return swap;
@@ -159,7 +159,7 @@ function caml_compare_val(a, b, total) {
           }
           if (!comp) caml_invalid_argument("compare: abstract value");
           var x = comp(a, b, total);
-          if (x != x) {
+          if (Number.isNaN(x)) {
             // Protect against invalid UNORDERED
             return total ? -1 : x;
           }
@@ -171,7 +171,7 @@ function caml_compare_val(a, b, total) {
           break;
         case 1256: // compare function
           var x = a.compare(b, total);
-          if (x != x) {
+          if (Number.isNaN(x)) {
             // Protect against invalid UNORDERED
             return total ? -1 : x;
           }
@@ -188,8 +188,8 @@ function caml_compare_val(a, b, total) {
           if (a > b) return 1;
           if (a != b) {
             if (!total) return Number.NaN;
-            if (a == a) return 1;
-            if (b == b) return -1;
+            if (!Number.isNaN(a)) return 1;
+            if (!Number.isNaN(b)) return -1;
           }
           break;
         case 1001: // The rest
@@ -210,8 +210,8 @@ function caml_compare_val(a, b, total) {
           if (a > b) return 1;
           if (a != b) {
             if (!total) return Number.NaN;
-            if (a == a) return 1;
-            if (b == b) return -1;
+            if (!Number.isNaN(a)) return 1;
+            if (!Number.isNaN(b)) return -1;
           }
           break;
         case 1251: // JavaScript Symbol, no ordering.

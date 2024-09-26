@@ -264,8 +264,8 @@ function caml_float_compare(x, y) {
   if (x === y) return 0;
   if (x < y) return -1;
   if (x > y) return 1;
-  if (x === x) return 1;
-  if (y === y) return -1;
+  if (!Number.isNaN(x)) return 1;
+  if (!Number.isNaN(y)) return -1;
   return 0;
 }
 
@@ -412,22 +412,13 @@ function caml_fma_float(x, y, z) {
       : x;
   }
 
-  if (
-    x === 0 ||
-    x !== x ||
-    x === +1 / 0 ||
-    x === -1 / 0 ||
-    y === 0 ||
-    y !== y ||
-    y === +1 / 0 ||
-    y === -1 / 0
-  ) {
+  if (x === 0 || y === 0 || !Number.isFinite(x) || !Number.isFinite(y)) {
     return x * y + z;
   }
   if (z === 0) {
     return x * y;
   }
-  if (z !== z || z === +1 / 0 || z === -1 / 0) {
+  if (!Number.isFinite(z)) {
     return z;
   }
 
@@ -569,10 +560,11 @@ function caml_float_of_string(s) {
   var res;
   s = caml_jsbytes_of_string(s);
   res = +s;
-  if (s.length > 0 && res === res) return res;
+  //Fast path
+  if (s.length > 0 && !Number.isNaN(res)) return res;
   s = s.replace(/_/g, "");
   res = +s;
-  if ((s.length > 0 && res === res) || /^[+-]?nan$/i.test(s)) return res;
+  if (s.length > 0 && (!Number.isNaN(res) || /^[+-]?nan$/i.test(s))) return res;
   var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)(p([+-]?[0-9]+))?/i.exec(s);
   //          1        2             3           5
   if (m) {

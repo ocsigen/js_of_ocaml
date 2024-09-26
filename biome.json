@@ -41,8 +41,7 @@
         "noAssignInExpressions": "off",
         "noDoubleEquals": "off",
         "noFallthroughSwitchClause": "off",
-        "noRedeclare": "off",
-        "noSelfCompare": "off"
+        "noRedeclare": "off"
       }
     }
   },
