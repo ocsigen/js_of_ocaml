@@ -281,6 +281,7 @@ function caml_nativeint_unmarshal(reader, size) {
       return reader.read32s();
     case 2:
       caml_failwith("input_value: native integer value too large");
+      break;
     default:
       caml_failwith("input_value: ill-formed native integer");
   }

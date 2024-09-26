@@ -76,9 +76,12 @@ function caml_parse_format(fmt) {
           i++;
         }
         i--;
+        break;
       case "d":
       case "i":
-        f.signedconv = true; /* fallthrough */
+        f.signedconv = true;
+        f.base = 10;
+        break;
       case "u":
         f.base = 10;
         break;

@@ -40,7 +40,6 @@
       "suspicious": {
         "noAssignInExpressions": "off",
         "noDoubleEquals": "off",
-        "noFallthroughSwitchClause": "off",
         "noRedeclare": "off"
       }
     }
