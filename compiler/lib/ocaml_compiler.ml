@@ -37,8 +37,9 @@ let rec constant_of_const c : Code.constant =
       | `Wasm -> Int32 i)
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> (
+      let i = Int32.of_nativeint_warning_on_overflow i in
       match Config.target () with
-      | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+      | `JavaScript -> Int i
       | `Wasm -> NativeInt i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
