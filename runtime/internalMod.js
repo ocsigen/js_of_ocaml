@@ -60,13 +60,10 @@ function caml_CamlinternalMod_init_mod(loc, shape) {
 //Version: < 4.13
 function caml_CamlinternalMod_update_mod(shape, real, x) {
   if (typeof shape === "number")
-    switch (shape) {
-      case 0: //function
-      case 1: //lazy
-      case 2: //class
-      default:
-        caml_update_dummy(real, x);
-    }
+    //function
+    //lazy
+    //class
+    caml_update_dummy(real, x);
   else
     switch (shape[0]) {
       case 0: //module
@@ -123,13 +120,10 @@ function caml_CamlinternalMod_init_mod(loc, shape, cont) {
 function caml_CamlinternalMod_update_mod(shape, real, x, cont) {
   function loop(shape, real, x) {
     if (typeof shape === "number")
-      switch (shape) {
-        case 0: //function
-        case 1: //lazy
-        case 2: //class
-        default:
-          caml_update_dummy(real, x);
-      }
+      //function
+      //lazy
+      //class
+      caml_update_dummy(real, x);
     else
       switch (shape[0]) {
         case 0: //module
