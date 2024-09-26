@@ -43,7 +43,6 @@
         "noAssignInExpressions": "off",
         "noControlCharactersInRegex": "off",
         "noDoubleEquals": "off",
-        "noDuplicateCase": "off",
         "noFallthroughSwitchClause": "off",
         "noRedeclare": "off",
         "noSelfCompare": "off",
