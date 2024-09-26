@@ -1,11 +1,20 @@
 (executable
  (name main)
+ (modules main test_nats test test_big_ints test_ratios test_nums test_io)
  (libraries num)
  (modes
   js
   (best exe))
  (flags
   (:standard -linkall -w -3-7-33-35-37 -safe-string -no-strict-sequence)))
+
+(library
+ (name test_int31)
+ (modules test_int31)
+ (inline_tests)
+ (preprocess
+  (pps ppx_expect))
+ (libraries js_of_ocaml-compiler qcheck))
 
 (rule
  (target main.referencejs)
