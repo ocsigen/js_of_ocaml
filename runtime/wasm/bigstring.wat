@@ -35,6 +35,8 @@
       (func $ta_create (param i32) (param anyref) (result anyref)))
    (import "bindings" "ta_get_ui8"
       (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
+   (import "bindings" "ta_get32_ui8"
+      (func $ta_get32_ui8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_ui8"
       (func $ta_set_ui8 (param (ref extern)) (param i32) (param (ref i31))))
    (import "bindings" "ta_subarray"
@@ -63,19 +65,7 @@
                (local.set $h
                   (call $caml_hash_mix_int
                      (local.get $h)
-                     (i32.or
-                        (i32.or
-                           (call $ta_get_ui8 (local.get $data) (local.get $i))
-                           (i32.shl (call $ta_get_ui8 (local.get $data)
-                                       (i32.add (local.get $i) (i32.const 1)))
-                                    (i32.const 8)))
-                        (i32.or
-                           (i32.shl (call $ta_get_ui8 (local.get $data)
-                                       (i32.add (local.get $i) (i32.const 2)))
-                                    (i32.const 16))
-                           (i32.shl (call $ta_get_ui8 (local.get $data)
-                                       (i32.add (local.get $i) (i32.const 3)))
-                                    (i32.const 24))))))
+                     (call $ta_get32_ui8 (local.get $data) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 4)))
                (br $loop))))
       (local.set $w (i32.const 0))

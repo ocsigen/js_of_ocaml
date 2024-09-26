@@ -38,6 +38,10 @@
       (func $ta_get_i8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get_ui8"
       (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
+   (import "bindings" "ta_get32_ui8"
+      (func $ta_get32_ui8 (param (ref extern)) (param i32) (result i32)))
+   (import "bindings" "ta_get16_ui8"
+      (func $ta_get16_ui8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_f64"
       (func $ta_set_f64 (param (ref extern)) (param i32) (param f64)))
    (import "bindings" "ta_set_f32"
@@ -52,6 +56,10 @@
       (func $ta_set_i8 (param (ref extern)) (param i32) (param (ref i31))))
    (import "bindings" "ta_set_ui8"
       (func $ta_set_ui8 (param (ref extern)) (param i32) (param (ref i31))))
+   (import "bindings" "ta_set16_ui8"
+      (func $ta_set16_ui8 (param (ref extern)) (param i32) (param (ref i31))))
+   (import "bindings" "ta_set32_ui8"
+      (func $ta_set32_ui8 (param (ref extern)) (param i32) (param i32)))
    (import "bindings" "ta_fill"
       (func $ta_fill_int (param (ref extern)) (param i32)))
    (import "bindings" "ta_fill"
@@ -268,19 +276,7 @@
                   (local.set $h
                      (call $caml_hash_mix_int
                         (local.get $h)
-                        (i32.or
-                           (i32.or
-                              (call $ta_get_ui8 (local.get $data) (local.get $i))
-                              (i32.shl (call $ta_get_ui8 (local.get $data)
-                                          (i32.add (local.get $i) (i32.const 1)))
-                                       (i32.const 8)))
-                           (i32.or
-                              (i32.shl (call $ta_get_ui8 (local.get $data)
-                                          (i32.add (local.get $i) (i32.const 2)))
-                                       (i32.const 16))
-                              (i32.shl (call $ta_get_ui8 (local.get $data)
-                                          (i32.add (local.get $i) (i32.const 3)))
-                                       (i32.const 24))))))
+                        (call $ta_get32_ui8 (local.get $data) (local.get $i))))
                   (local.set $i (i32.add (local.get $i) (i32.const 4)))
                   (br $loop))))
          (local.set $w (i32.const 0))
@@ -1912,11 +1908,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (ref.i31 (i32.or
-                  (call $ta_get_ui8 (local.get $data) (local.get $p))
-                  (i32.shl (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 1)))
-                           (i32.const 8)))))
+      (ref.i31 (call $ta_get16_ui8 (local.get $data) (local.get $p))))
 
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i (ref eq)) (result i32)
@@ -1933,19 +1925,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (i32.or
-         (i32.or
-            (call $ta_get_ui8 (local.get $data) (local.get $p))
-            (i32.shl (call $ta_get_ui8 (local.get $data)
-                        (i32.add (local.get $p) (i32.const 1)))
-                     (i32.const 8)))
-         (i32.or
-            (i32.shl (call $ta_get_ui8 (local.get $data)
-                        (i32.add (local.get $p) (i32.const 2)))
-                     (i32.const 16))
-            (i32.shl (call $ta_get_ui8 (local.get $data)
-                        (i32.add (local.get $p) (i32.const 3)))
-                     (i32.const 24)))))
+      (return_call $ta_get32_ui8 (local.get $data) (local.get $p)))
 
    (func (export "caml_ba_uint8_get64")
       (param $vba (ref eq)) (param $i (ref eq)) (result i64)
@@ -1963,42 +1943,12 @@
                 (i32.const 0)))
          (then (call $caml_bound_error)))
       (i64.or
-         (i64.or
-            (i64.or
-               (i64.extend_i32_u
-                  (call $ta_get_ui8 (local.get $data) (local.get $p)))
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 1))))
-                        (i64.const 8)))
-            (i64.or
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 2))))
-                        (i64.const 16))
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 3))))
-                        (i64.const 24))))
-         (i64.or
-            (i64.or
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 4))))
-                        (i64.const 32))
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 5))))
-                        (i64.const 40)))
-            (i64.or
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 6))))
-                        (i64.const 48))
-               (i64.shl (i64.extend_i32_u
-                           (call $ta_get_ui8 (local.get $data)
-                              (i32.add (local.get $p) (i32.const 7))))
-                        (i64.const 56))))))
+         (i64.extend_i32_u
+            (call $ta_get32_ui8 (local.get $data) (local.get $p)))
+         (i64.shl (i64.extend_i32_u
+                     (call $ta_get32_ui8 (local.get $data)
+                        (i32.add (local.get $p) (i32.const 4))))
+                  (i64.const 32))))
 
    (func (export "caml_ba_uint8_set16")
       (param $vba (ref eq)) (param $i (ref eq)) (param $v (ref eq))
@@ -2017,10 +1967,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $ta_set_ui8 (local.get $data) (local.get $p) (local.get $d))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 1))
-         (ref.i31 (i32.shr_u (i31.get_s (local.get $d)) (i32.const 8))))
+      (call $ta_set16_ui8 (local.get $data) (local.get $p) (local.get $d))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ba_uint8_set32")
@@ -2039,17 +1986,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $ta_set_ui8 (local.get $data) (local.get $p)
-         (ref.i31 (local.get $d)))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 1))
-         (ref.i31 (i32.shr_u (local.get $d) (i32.const 8))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 2))
-         (ref.i31 (i32.shr_u (local.get $d) (i32.const 16))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 3))
-         (ref.i31 (i32.shr_u (local.get $d) (i32.const 24))))
+      (call $ta_set32_ui8 (local.get $data) (local.get $p) (local.get $d))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ba_uint8_set64")
@@ -2068,29 +2005,11 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $ta_set_ui8 (local.get $data) (local.get $p)
-         (ref.i31 (i32.wrap_i64 (local.get $d))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 1))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 8)))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 2))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 16)))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 3))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 24)))))
-      (call $ta_set_ui8 (local.get $data)
+      (call $ta_set32_ui8 (local.get $data) (local.get $p)
+         (i32.wrap_i64 (local.get $d)))
+      (call $ta_set32_ui8 (local.get $data)
          (i32.add (local.get $p) (i32.const 4))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 32)))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 5))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 40)))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 6))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 48)))))
-      (call $ta_set_ui8 (local.get $data)
-         (i32.add (local.get $p) (i32.const 7))
-         (ref.i31 (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 56)))))
+         (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 32))))
       (ref.i31 (i32.const 0)))
 
    (export "caml_bytes_of_array" (func $caml_string_of_array))
