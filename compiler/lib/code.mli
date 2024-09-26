@@ -173,10 +173,10 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
-  | Int of int32
-  | Int32 of int32  (** Only produced when compiling to WebAssembly. *)
-  | Int64 of int64
-  | NativeInt of nativeint  (** Only produced when compiling to WebAssembly. *)
+  | Int of Int32.t
+  | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
+  | Int64 of Int64.t
+  | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Tuple of int * constant array * array_or_not
 
 module Constant : sig
