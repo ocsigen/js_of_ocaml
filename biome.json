@@ -13,7 +13,6 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noUselessSwitchCase": "off",
         "noUselessTernary": "off",
         "useArrowFunction": "off",
         "useOptionalChain": "off"

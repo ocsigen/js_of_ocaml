@@ -236,8 +236,7 @@ function caml_compare_val(a, b, total) {
             if (a > b) return 1;
           }
           break;
-        case 246: // Lazy_tag
-        default: // Block with other tag
+        default: // Lazy_tag or Block with other tag
           if (caml_is_continuation_tag(tag_a)) {
             caml_invalid_argument("compare: continuation value");
             break;
