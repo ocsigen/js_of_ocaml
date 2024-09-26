@@ -140,11 +140,11 @@ function caml_parse_engine(tables, env, cmd, arg) {
         n = tables.defred[state];
         if (n != 0) {
           cmd = reduce;
-          break;
+          continue the_loop;
         }
         if (env[env_curr_char] >= 0) {
           cmd = testshift;
-          break;
+          continue the_loop;
         }
         res = READ_TOKEN;
         break the_loop;
@@ -171,7 +171,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           tables.check[n2] == env[env_curr_char]
         ) {
           cmd = shift;
-          break;
+          continue the_loop;
         }
         n1 = tables.rindex[state];
         n2 = n1 + env[env_curr_char];
@@ -183,7 +183,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         ) {
           n = tables.table[n2];
           cmd = reduce;
-          break;
+          continue the_loop;
         }
         if (errflag <= 0) {
           res = CALL_ERROR_FUNCTION;
@@ -223,7 +223,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           if (caml_parser_trace) log("Discarding last token read");
           env[env_curr_char] = -1;
           cmd = loop;
-          break;
+          continue the_loop;
         }
       // Fall through
       case 8: //shift:
@@ -247,7 +247,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
         env[env_symb_start_stack][sp + 1] = env[env_symb_start];
         env[env_symb_end_stack][sp + 1] = env[env_symb_end];
         cmd = loop;
-        break;
+        continue the_loop;
 
       case 10: //reduce:
         if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
@@ -288,7 +288,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           env[env_symb_start_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
         }
         cmd = loop;
-        break;
+        continue the_loop;
       /* Should not happen */
       default:
         return RAISE_PARSE_ERROR;
