@@ -1,7 +1,7 @@
 [
   {
     "name": "root",
-    "reaches": ["init", "exn", "mem", "strings"],
+    "reaches": ["init", "exn", "mem", "strings", "string_get", "string_set"],
     "root": true
   },
   {
@@ -19,6 +19,14 @@
   {
     "name": "strings",
     "export": "caml_extract_string"
+  },
+  {
+    "name": "string_get",
+    "export": "string_get"
+  },
+  {
+    "name": "string_set",
+    "export": "string_set"
   },
   {
     "name": "callback",

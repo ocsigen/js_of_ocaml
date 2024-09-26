@@ -48,6 +48,14 @@
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_bytes"
       (func $ta_bytes (param anyref) (result anyref)))
+   (import "bindings" "ta_blit_from_string"
+      (func $ta_blit_from_string
+         (param (ref $string)) (param i32) (param (ref extern)) (param i32)
+         (param i32)))
+   (import "bindings" "ta_blit_to_string"
+      (func $ta_blit_to_string
+         (param (ref extern)) (param i32) (param (ref $string)) (param i32)
+         (param i32)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
 
@@ -202,7 +210,7 @@
       (param $str1 (ref eq)) (param $vpos1 (ref eq))
       (param $ba2 (ref eq)) (param $vpos2 (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $i i32) (local $pos1 i32) (local $pos2 i32) (local $len i32)
+      (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $s1 (ref $string))
       (local $d2 (ref extern))
       (local.set $s1 (ref.cast (ref $string) (local.get $str1)))
@@ -210,23 +218,17 @@
       (local.set $d2 (call $caml_ba_get_data (local.get $ba2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $len))
-            (then
-               (call $ta_set_ui8 (local.get $d2)
-                  (i32.add (local.get $pos2) (local.get $i))
-                  (ref.i31
-                     (array.get_u $string (local.get $s1)
-                        (i32.add (local.get $pos1) (local.get $i)))))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
+      (call $ta_blit_from_string
+         (local.get $s1) (local.get $pos1)
+         (local.get $d2) (local.get $pos2)
+         (local.get $len))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_blit_ba_to_bytes")
       (param $ba1 (ref eq)) (param $vpos1 (ref eq))
       (param $str2 (ref eq)) (param $vpos2 (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $i i32) (local $pos1 i32) (local $pos2 i32) (local $len i32)
+      (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $d1 (ref extern))
       (local $s2 (ref $string))
       (local.set $d1 (call $caml_ba_get_data (local.get $ba1)))
@@ -234,15 +236,10 @@
       (local.set $s2 (ref.cast (ref $string) (local.get $str2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $len))
-            (then
-               (array.set $string (local.get $s2)
-                  (i32.add (local.get $pos2) (local.get $i))
-                  (call $ta_get_ui8 (local.get $d1)
-                     (i32.add (local.get $pos1) (local.get $i))))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
+      (call $ta_blit_to_string
+         (local.get $d1) (local.get $pos1)
+         (local.get $s2) (local.get $pos2)
+         (local.get $len))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_bigstring_blit_ba_to_ba")

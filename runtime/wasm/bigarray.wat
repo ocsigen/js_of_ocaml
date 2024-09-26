@@ -69,6 +69,14 @@
    (import "bindings" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
+   (import "bindings" "ta_blit_from_string"
+      (func $ta_blit_from_string
+         (param (ref $string)) (param i32) (param (ref extern)) (param i32)
+         (param i32)))
+   (import "bindings" "ta_blit_to_string"
+      (func $ta_blit_to_string
+         (param (ref extern)) (param i32) (param (ref $string)) (param i32)
+         (param i32)))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
@@ -2016,26 +2024,22 @@
    (func $caml_string_of_array (export "caml_string_of_array")
       (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
-      (local $a (ref extern)) (local $len i32) (local $i i32)
+      (local $a (ref extern)) (local $len i32)
       (local $s (ref $string))
       (local.set $a
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $string (i32.const 0) (local.get $len)))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $len))
-            (then
-               (array.set $string (local.get $s) (local.get $i)
-                  (call $ta_get_ui8 (local.get $a) (local.get $i)))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
+      (call $ta_blit_to_string
+         (local.get $a) (i32.const 0) (local.get $s) (i32.const 0)
+         (local.get $len))
       (local.get $s))
 
    (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
    (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
       (param (ref eq)) (result (ref eq))
       ;; Convert a string to a typed array
-      (local $ta (ref extern)) (local $len i32) (local $i i32)
+      (local $ta (ref extern)) (local $len i32)
       (local $s (ref $string))
       (local.set $s (ref.cast (ref $string) (local.get 0)))
       (local.set $len (array.len (local.get $s)))
@@ -2043,15 +2047,9 @@
          (call $ta_create
             (i32.const 3) ;; Uint8Array
             (local.get $len)))
-      (loop $loop
-         (if (i32.lt_u (local.get $i) (local.get $len))
-            (then
-               (call $ta_set_ui8
-                  (local.get $ta)
-                  (local.get $i)
-                  (ref.i31 (array.get $string (local.get $s) (local.get $i))))
-               (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (br $loop))))
+      (call $ta_blit_from_string
+         (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
+         (local.get $len))
       (call $wrap (any.convert_extern (local.get $ta))))
 
    (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
@@ -2082,4 +2080,16 @@
          (local.get $num_dims)
          (local.get $kind)
          (local.get $layout)))
+
+   (func (export "string_set")
+      (param $s externref) (param $i i32) (param $v i32)
+      (array.set $string
+         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+         (local.get $i) (local.get $v)))
+
+   (func (export "string_get")
+      (param $s externref) (param $i i32) (result i32)
+      (array.get $string
+         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+         (local.get $i)))
 )
