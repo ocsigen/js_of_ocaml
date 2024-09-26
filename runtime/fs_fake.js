@@ -57,14 +57,14 @@ MlFakeDevice.prototype.lookup = function (name) {
     }
   }
 };
-MlFakeDevice.prototype.exists = function (name) {
+MlFakeDevice.prototype.exists = function (name, do_not_lookup) {
   // The root of the device exists
   if (name == "") return 1;
   // Check if a directory exists
   var name_slash = this.slash(name);
   if (this.content[name_slash]) return 1;
   // Check if a file exists
-  this.lookup(name);
+  if (!do_not_lookup) this.lookup(name);
   return this.content[name] ? 1 : 0;
 };
 MlFakeDevice.prototype.isFile = function (name) {
@@ -213,9 +213,12 @@ MlFakeDevice.prototype.is_dir = function (name) {
   return this.content[name_slash] ? 1 : 0;
 };
 MlFakeDevice.prototype.unlink = function (name) {
-  var ok = this.content[name] ? true : false;
+  if (!this.exists(name, true)) {
+    // [true] means no "lookup" if not found.
+    caml_raise_sys_error(name + ": No such file or directory");
+  }
   delete this.content[name];
-  return ok;
+  return 0;
 };
 MlFakeDevice.prototype.open = function (name, f) {
   var file;

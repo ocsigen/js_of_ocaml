@@ -87,9 +87,8 @@ MlNodeDevice.prototype.is_dir = function (name) {
 };
 MlNodeDevice.prototype.unlink = function (name, raise_unix) {
   try {
-    var b = this.fs.existsSync(this.nm(name)) ? 1 : 0;
     this.fs.unlinkSync(this.nm(name));
-    return b;
+    return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }

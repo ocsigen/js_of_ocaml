@@ -296,7 +296,8 @@ function caml_unix_unlink(name) {
   if (!root.device.unlink) {
     caml_failwith("caml_unix_unlink: not implemented");
   }
-  return root.device.unlink(root.rest, /* raise Unix_error */ true);
+  root.device.unlink(root.rest, /* raise Unix_error */ true);
+  return 0;
 }
 
 //Provides: caml_unix_getuid
