@@ -64,12 +64,8 @@ MlFakeDevice.prototype.exists = function (name, do_not_lookup) {
   var name_slash = this.slash(name);
   if (this.content[name_slash]) return 1;
   // Check if a file exists
-  if (do_not_lookup) {
-    return 0;
-  } else {
-    this.lookup(name);
-    return this.content[name] ? 1 : 0;
-  }
+  if (!do_not_lookup) this.lookup(name);
+  return this.content[name] ? 1 : 0;
 };
 MlFakeDevice.prototype.isFile = function (name) {
   if (this.exists(name) && !this.is_dir(name)) {
