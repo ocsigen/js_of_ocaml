@@ -194,7 +194,9 @@ function jsoo_is_ascii(s) {
     // Spidermonkey gets much slower when s.length >= 24 (on 64 bit archs)
     for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) return false;
     return true;
-  } else return !/[^\x00-\x7f]/.test(s);
+  }
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: expected
+  else return !/[^\x00-\x7f]/.test(s);
 }
 
 //Provides: caml_bytes_unsafe_get mutable
@@ -907,6 +909,7 @@ function caml_ml_bytes_content(s) {
 //Requires: jsoo_is_ascii
 //If: js-string
 function caml_is_ml_string(s) {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: expected
   return typeof s === "string" && !/[^\x00-\xff]/.test(s);
 }
 

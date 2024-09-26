@@ -41,7 +41,6 @@
       },
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noControlCharactersInRegex": "off",
         "noDoubleEquals": "off",
         "noFallthroughSwitchClause": "off",
         "noRedeclare": "off",
