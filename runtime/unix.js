@@ -88,7 +88,7 @@ function caml_unix_filedescr_of_fd(x) {
 //Alias: unix_isatty
 function caml_unix_isatty(fileDescriptor) {
   if (fs_node_supported()) {
-    var tty = require("tty");
+    var tty = require("node:tty");
     return tty.isatty(fileDescriptor) ? 1 : 0;
   } else {
     return 0;
@@ -296,7 +296,8 @@ function caml_unix_unlink(name) {
   if (!root.device.unlink) {
     caml_failwith("caml_unix_unlink: not implemented");
   }
-  return root.device.unlink(root.rest, /* raise Unix_error */ true);
+  root.device.unlink(root.rest, /* raise Unix_error */ true);
+  return 0;
 }
 
 //Provides: caml_unix_getuid

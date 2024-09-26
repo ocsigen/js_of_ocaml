@@ -327,10 +327,10 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
-  | Int of int32
-  | Int32 of int32
-  | Int64 of int64
-  | NativeInt of nativeint
+  | Int of Int32.t
+  | Int32 of Int32.t
+  | Int64 of Int64.t
+  | NativeInt of Int32.t (* Native int are 32bit on all known backend *)
   | Tuple of int * constant array * array_or_not
 
 module Constant = struct
@@ -354,7 +354,7 @@ module Constant = struct
           !same
     | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
-    | NativeInt a, NativeInt b -> Some (Nativeint.equal a b)
+    | NativeInt a, NativeInt b -> Some (Int32.equal a b)
     | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
     | Float a, Float b -> Some (Float.ieee_equal a b)
     | String _, NativeString _ | NativeString _, String _ -> None
@@ -500,7 +500,7 @@ module Print = struct
     | Int i -> Format.fprintf f "%ld" i
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
-    | NativeInt i -> Format.fprintf f "%ndn" i
+    | NativeInt i -> Format.fprintf f "%ldn" i
     | Tuple (tag, a, _) -> (
         Format.fprintf f "<%d>" tag;
         match Array.length a with

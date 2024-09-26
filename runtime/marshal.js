@@ -608,7 +608,11 @@ function caml_marshal_data_size(s, ofs) {
         );
       }
       break;
-    case 0x8495a6bf: /* Intext_magic_number_big */
+    case 0x8495a6bf /* Intext_magic_number_big */:
+      caml_failwith(
+        "Marshal.data_size: object too large to be read back on a 32-bit platform",
+      );
+      break;
     default:
       caml_failwith("Marshal.data_size: bad object");
       break;

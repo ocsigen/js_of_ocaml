@@ -222,12 +222,6 @@ function caml_raise_no_such_file(name) {
   caml_raise_sys_error(name + ": No such file or directory");
 }
 
-//Provides: caml_raise_not_a_dir
-//Requires: caml_raise_sys_error
-function caml_raise_not_a_dir(name) {
-  caml_raise_sys_error(name + ": Not a directory");
-}
-
 //Provides: caml_sys_file_exists
 //Requires: resolve_fs_device
 function caml_sys_file_exists(name) {
@@ -237,7 +231,7 @@ function caml_sys_file_exists(name) {
 
 //Provides: caml_sys_read_directory
 //Requires: caml_string_of_jsbytes
-//Requires: caml_raise_not_a_dir, resolve_fs_device
+//Requires: resolve_fs_device
 function caml_sys_read_directory(name) {
   var root = resolve_fs_device(name);
   var a = root.device.readdir(root.rest);
@@ -248,12 +242,10 @@ function caml_sys_read_directory(name) {
 }
 
 //Provides: caml_sys_remove
-//Requires: caml_raise_no_such_file, resolve_fs_device, caml_jsbytes_of_string
+//Requires: resolve_fs_device
 function caml_sys_remove(name) {
   var root = resolve_fs_device(name);
-  var ok = root.device.unlink(root.rest);
-  if (ok == 0) caml_raise_no_such_file(caml_jsbytes_of_string(name));
-  return 0;
+  return root.device.unlink(root.rest);
 }
 
 //Provides: caml_sys_is_directory
@@ -276,7 +268,7 @@ function caml_sys_rename(o, n) {
 }
 
 //Provides: caml_sys_mkdir
-//Requires: resolve_fs_device, caml_raise_sys_error
+//Requires: resolve_fs_device
 function caml_sys_mkdir(name, perm) {
   var root = resolve_fs_device(name);
   root.device.mkdir(root.rest, perm);
@@ -284,7 +276,7 @@ function caml_sys_mkdir(name, perm) {
 }
 
 //Provides: caml_sys_rmdir
-//Requires: resolve_fs_device, caml_raise_sys_error, caml_raise_not_a_dir
+//Requires: resolve_fs_device
 function caml_sys_rmdir(name) {
   var root = resolve_fs_device(name);
   root.device.rmdir(root.rest);

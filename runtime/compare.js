@@ -141,7 +141,7 @@ function caml_compare_val(a, b, total) {
           caml_invalid_argument("equal: got Double_tag, should not happen");
           break;
         case 254: // Double_array_tag
-          // Cannot happen, handled above
+          // Cannot happen, handled in caml_compare_val_tag
           caml_invalid_argument(
             "equal: got Double_array_tag, should not happen",
           );
@@ -236,9 +236,7 @@ function caml_compare_val(a, b, total) {
             if (a > b) return 1;
           }
           break;
-        case 246: // Lazy_tag
-        case 254: // Double_array
-        default: // Block with other tag
+        default: // Lazy_tag or Block with other tag
           if (caml_is_continuation_tag(tag_a)) {
             caml_invalid_argument("compare: continuation value");
             break;

@@ -35,7 +35,7 @@ function fs_node_supported() {
 //Requires: MlNodeFd, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
-  this.fs = require("fs");
+  this.fs = require("node:fs");
   this.root = root;
 }
 MlNodeDevice.prototype.nm = function (name) {
@@ -87,15 +87,14 @@ MlNodeDevice.prototype.is_dir = function (name) {
 };
 MlNodeDevice.prototype.unlink = function (name, raise_unix) {
   try {
-    var b = this.fs.existsSync(this.nm(name)) ? 1 : 0;
     this.fs.unlinkSync(this.nm(name));
-    return b;
+    return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
 MlNodeDevice.prototype.open = function (name, f, raise_unix) {
-  var consts = require("constants");
+  var consts = require("node:constants");
   var res = 0;
   for (var key in f) {
     switch (key) {
@@ -268,7 +267,7 @@ function MlNodeDevice() {}
 //Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
 function MlNodeFd(fd, flags) {
-  this.fs = require("fs");
+  this.fs = require("node:fs");
   this.fd = fd;
   this.flags = flags;
 }
@@ -327,7 +326,7 @@ function MlNodeFd() {}
 function caml_sys_open_for_node(fd, flags) {
   if (flags.name) {
     try {
-      var fs = require("fs");
+      var fs = require("node:fs");
       var fd2 = fs.openSync(flags.name, "rs");
       return new MlNodeFd(fd2, flags);
     } catch (e) {}
