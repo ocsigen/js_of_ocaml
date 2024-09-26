@@ -190,5 +190,5 @@ let%expect_test _ =
       (* The bits should be unchanged if the shift amount is zero, otherwise they should
          match the result of shifting the 31 lower bits of the canonical representation *)
       in_range r_int31 && Int32.equal r_int31 r_int32
-      && (Int.equal i 0 --> Int32.(r_int31 = r_int32)));
+      && (Int.equal i 0 --> Int32.(r_int31 = x_int32)));
   [%expect ""]
