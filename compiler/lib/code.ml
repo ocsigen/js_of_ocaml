@@ -856,6 +856,7 @@ let with_invariant = Debug.find "invariant"
 let check_defs = false
 
 let invariant { blocks; start; _ } =
+  let target = Config.target () in
   if with_invariant ()
   then (
     assert (Addr.Map.mem start blocks);
@@ -870,6 +871,19 @@ let invariant { blocks; start; _ } =
         assert (not (Var.ISet.mem defs x));
         Var.ISet.add defs x)
     in
+    let check_constant = function
+      | NativeInt _ | Int32 _ ->
+          assert (
+            match target with
+            | `Wasm -> true
+            | _ -> false)
+      | String _ | NativeString _ | Float _ | Float_array _ | Int _ | Int64 _
+      | Tuple (_, _, _) -> ()
+    in
+    let check_prim_arg = function
+      | Pc c -> check_constant c
+      | Pv _ -> ()
+    in
     let check_expr = function
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
@@ -877,8 +891,8 @@ let invariant { blocks; start; _ } =
       | Closure (l, cont) ->
           List.iter l ~f:define;
           check_cont cont
-      | Constant _ -> ()
-      | Prim (_, _) -> ()
+      | Constant c -> check_constant c
+      | Prim (_, args) -> List.iter ~f:check_prim_arg args
       | Special _ -> ()
     in
     let check_instr (i, _loc) =

@@ -23,6 +23,14 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
 type profile =
   | O1
   | O2
@@ -194,14 +202,13 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ~deadcode_sentinal
-    ((p, live_vars), trampolined_calls, _) =
+    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps = _ } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
-    p
+    program
     ~exported_runtime
-    ~live_vars
+    ~live_vars:variable_uses
     ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
@@ -658,13 +665,19 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
-  let exported_runtime = not standalone in
+let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
     | `Needed | `No -> false
   in
+  p
+  |> link' ~export_runtime ~standalone ~link
+  |> pack ~wrap_with_fun ~standalone
+  |> coloring
+  |> check_js
+
+let optimize ~profile p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"
@@ -677,31 +690,31 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p =
        | O3 -> o3)
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
-    +> map_fst (if Config.Flag.effects () then fun x -> x else Generate_closure.f)
+    +> map_fst
+         (match Config.target (), Config.Flag.effects () with
+         | `JavaScript, false -> Generate_closure.f
+         | `JavaScript, true | `Wasm, _ -> Fun.id)
     +> map_fst deadcode'
-  in
-  let emit =
-    generate
-      d
-      ~exported_runtime
-      ~wrap_with_fun
-      ~warn_on_unhandled_effect:standalone
-      ~deadcode_sentinal
-    +> link' ~export_runtime ~standalone ~link
-    +> pack ~wrap_with_fun ~standalone
-    +> coloring
-    +> check_js
-    +> output formatter ~source_map ()
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r = opt p in
+  let (program, variable_uses), trampolined_calls, in_cps = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  emit r
+  { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
 
-let full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p =
+let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
+  let optimized_code = optimize ~profile p in
+  let exported_runtime = not standalone in
+  let emit formatter =
+    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> output formatter ~source_map ()
+  in
+  emit formatter optimized_code
+
+let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
-    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None formatter d p
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None ~formatter d p
   in
   ()
 
@@ -711,22 +724,22 @@ let f
     ?(profile = O1)
     ~link
     ?source_map
-    formatter
+    ~formatter
     d
     p =
-  full ~standalone ~wrap_with_fun ~profile ~link ~source_map formatter d p
+  full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p
 
 let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
-  full_no_source_map ~standalone ~wrap_with_fun ~profile ~link formatter d p
+  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
 
 let from_string ~prims ~debug s formatter =
   let p, d = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
+    ~formatter
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~link:`No
-    formatter
     d
     p
 

@@ -1,4 +1,4 @@
-(lang dune 3.7)
+(lang dune 3.15)
 (using menhir 2.0)
 (name js_of_ocaml)
 
@@ -25,6 +25,7 @@
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (sedlex (>= 2.3))
+  (qcheck :with-test)
   menhir
   menhirLib
   menhirSdk

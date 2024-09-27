@@ -20,13 +20,23 @@
 
 type profile
 
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
+val optimize : profile:profile -> Code.program -> optimized_result
+
 val f :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> ?source_map:Source_map.t
-  -> Pretty_print.t
+  -> formatter:Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
   -> Source_map.t option
@@ -47,6 +57,13 @@ val from_string :
   -> string
   -> Pretty_print.t
   -> unit
+
+val link_and_pack :
+     ?standalone:bool
+  -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
+  -> ?link:[ `All | `All_from of string list | `Needed | `No ]
+  -> Javascript.statement_list
+  -> Javascript.statement_list
 
 val configure : Pretty_print.t -> unit
 

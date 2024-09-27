@@ -490,10 +490,17 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 -> Int (Obj.magic x : int32)
-        | Some name when same_ident name ident_native ->
+        | Some name when same_ident name ident_32 -> (
+            let i : int32 = Obj.magic x in
+            match Config.target () with
+            | `JavaScript -> Int i
+            | `Wasm -> Int32 i)
+        | Some name when same_ident name ident_native -> (
             let i : nativeint = Obj.magic x in
-            Int (Int32.of_nativeint_warning_on_overflow i)
+            let i = Int32.of_nativeint_warning_on_overflow i in
+            match Config.target () with
+            | `JavaScript -> Int i
+            | `Wasm -> NativeInt i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -507,7 +514,10 @@ end = struct
       else assert false
     else
       let i : int = Obj.magic x in
-      Int (Int32.of_int_warning_on_overflow i)
+      Int
+        (match Config.target () with
+        | `JavaScript -> Int32.of_int_warning_on_overflow i
+        | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
 
   let inlined = function
     | String _ | NativeString _ -> false
@@ -764,43 +774,87 @@ let access_global g i =
       x
 
 let register_global ?(force = false) g i loc rem =
-  if force || g.is_exported.(i)
-  then
-    let args =
-      match g.named_value.(i) with
-      | None -> []
-      | Some name ->
-          Code.Var.name (access_global g i) name;
-          [ Pc (NativeString (Native_string.of_string name)) ]
-    in
-    ( Let
-        ( Var.fresh ()
-        , Prim
-            ( Extern "caml_register_global"
-            , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
-    , loc )
-    :: rem
-  else rem
+  match g.is_exported.(i), force, Config.target () with
+  | true, _, `Wasm ->
+      (* Register a compilation unit (Wasm) *)
+      assert (not force);
+      let name =
+        match g.named_value.(i) with
+        | None -> assert false
+        | Some name -> name
+      in
+      Code.Var.name (access_global g i) name;
+      ( Let
+          ( Var.fresh ()
+          , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
+          )
+      , loc )
+      :: rem
+  | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
+      (* Register an exception (if force = true), or a compilation unit
+         (Javascript) *)
+      let args =
+        match g.named_value.(i) with
+        | None -> []
+        | Some name ->
+            Code.Var.name (access_global g i) name;
+            [ Pc
+                (match target with
+                | `JavaScript -> NativeString (Native_string.of_string name)
+                | `Wasm -> String name)
+            ]
+      in
+      ( Let
+          ( Var.fresh ()
+          , Prim
+              ( Extern "caml_register_global"
+              , Pc (Int (Int32.of_int i)) :: Pv (access_global g i) :: args ) )
+      , loc )
+      :: rem
+  | false, false, (`JavaScript | `Wasm) -> rem
 
 let get_global state instrs i loc =
   State.size_globals state (i + 1);
   let g = State.globals state in
   match g.vars.(i) with
   | Some x ->
+      (* Registered global *)
       if debug_parser () then Format.printf "(global access %a)@." Var.print x;
       x, State.set_accu state x loc, instrs
-  | None ->
+  | None -> (
       if i < Array.length g.constants && Constants.inlined g.constants.(i)
       then
+        (* Inlined constant *)
         let x, state = State.fresh_var state loc in
         let cst = g.constants.(i) in
         x, state, (Let (x, Constant cst), loc) :: instrs
-      else (
-        g.is_const.(i) <- true;
-        let x, state = State.fresh_var state loc in
-        if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
-        g.vars.(i) <- Some x;
-        x, state, instrs)
+      else
+        match i < Array.length g.constants, Config.target () with
+        | true, _ | false, `JavaScript ->
+            (* Non-inlined constant, and reference to another compilation
+               units in case of separate compilation (JavaScript).
+               Some code is generated in a prelude to store the relevant
+               module in variable [x]. *)
+            g.is_const.(i) <- true;
+            let x, state = State.fresh_var state loc in
+            if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
+            g.vars.(i) <- Some x;
+            x, state, instrs
+        | false, `Wasm -> (
+            (* Reference to another compilation units in case of separate
+               compilation (Wasm).
+               The toplevel module is available in an imported global
+               variables. *)
+            match g.named_value.(i) with
+            | None -> assert false
+            | Some name ->
+                let x, state = State.fresh_var state loc in
+                if debug_parser ()
+                then Format.printf "%a = get_global(%s)@." Var.print x name;
+                ( x
+                , state
+                , (Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])), loc)
+                  :: instrs )))
 
 let tagged_blocks = ref Addr.Map.empty
 
@@ -3100,16 +3154,15 @@ let from_channel ic =
       | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =
+  (* Register predefined exceptions in case of separate compilation *)
   let body =
     let open Code in
     List.map predefined_exceptions ~f:(fun (index, name) ->
         assert (String.is_valid_utf_8 name);
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
-        let v_name_js = Var.fresh () in
         let v_index = Var.fresh () in
         [ Let (v_name, Constant (String name)), noloc
-        ; Let (v_name_js, Constant (NativeString (Native_string.of_string name))), noloc
         ; ( Let
               ( v_index
               , Constant
@@ -3120,13 +3173,33 @@ let predefined_exceptions () =
                         (-index - 1))) )
           , noloc )
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
-        ; ( Let
-              ( Var.fresh ()
-              , Prim
-                  ( Extern "caml_register_global"
-                  , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js ] ) )
-          , noloc )
-        ])
+        ]
+        @
+        match Config.target () with
+        | `JavaScript ->
+            let v_name_js = Var.fresh () in
+            [ ( Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
+              , noloc )
+            ; ( Let
+                  ( Var.fresh ()
+                  , Prim
+                      ( Extern "caml_register_global"
+                      , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js ] ) )
+              , noloc )
+            ]
+        | `Wasm ->
+            [ ( Let
+                  ( Var.fresh ()
+                  , Prim
+                      ( Extern "caml_register_global"
+                      , [ Pc (Int (Int32.of_int index)); Pv exn; Pv v_name ] ) )
+              , noloc )
+              (* Also make the exception available to the generated code *)
+            ; ( Let
+                  ( Var.fresh ()
+                  , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
+              , noloc )
+            ])
     |> List.concat
   in
   let block = { params = []; body; branch = Stop, noloc } in

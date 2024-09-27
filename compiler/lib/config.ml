@@ -164,7 +164,7 @@ module Param = struct
     p
       ~name:"tc"
       ~desc:"Set tailcall optimisation"
-      (enum [ "trampoline", TcTrampoline; (* default *) "none", TcNone ])
+      (enum [ "trampoline", TcTrampoline (* default *); "none", TcNone ])
 
   let lambda_lifting_threshold =
     (* When we reach this depth, we start looking for functions to be lifted *)
@@ -183,8 +183,12 @@ end
 
 (****)
 
-let target_ : [ `JavaScript | `Wasm ] ref = ref `JavaScript
+let target_ : [ `JavaScript | `Wasm | `None ] ref = ref `None
 
-let target () = !target_
+let target () =
+  match !target_ with
+  | `None -> failwith "target was not set"
+  | (`JavaScript | `Wasm) as t -> t
 
-let set_target t = target_ := t
+let set_target (t : [ `JavaScript | `Wasm ]) =
+  target_ := (t :> [ `JavaScript | `Wasm | `None ])

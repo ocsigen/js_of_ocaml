@@ -26,6 +26,9 @@ let normalize_bytecode code =
       Bytes.to_string b
 
 let () =
+  (match Sys.backend_type with
+  | Sys.Other "js_of_ocaml" -> Config.set_target `JavaScript
+  | Sys.(Native | Bytecode | Other _) -> failwith "Expected backend `js_of_ocaml`");
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
   Config.Flag.set "effects" (Jsoo_runtime.Sys.Config.effects ());
