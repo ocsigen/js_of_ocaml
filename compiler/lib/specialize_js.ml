@@ -31,12 +31,12 @@ let specialize_instr ~target info i =
       match the_string_of ~target info y with
       | Some "%d" -> (
           match the_int ~target info z with
-          | Some i -> Let (x, Constant (String (Int32.to_string i)))
+          | Some i -> Let (x, Constant (String (Targetint.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [ z ])))
       | _ -> i)
   | Let (x, Prim (Extern "%caml_format_int_special", [ z ])), `JavaScript -> (
       match the_int ~target info z with
-      | Some i -> Let (x, Constant (String (Int32.to_string i)))
+      | Some i -> Let (x, Constant (String (Targetint.to_string i)))
       | None -> i)
   (* inline the String constant argument so that generate.ml can attempt to parse it *)
   | ( Let
@@ -52,7 +52,7 @@ let specialize_instr ~target info i =
       match the_string_of ~target info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
-      | Some _ -> Let (x, Constant (Int 0l))
+      | Some _ -> Let (x, Constant (Int Targetint.zero))
       | None -> i)
   | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])), _ -> (
       match the_def_of info a with
@@ -135,22 +135,25 @@ let specialize_instr ~target info i =
       | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
       | None -> i)
   | Let (x, Prim (Extern "%int_mul", [ y; z ])), `JavaScript -> (
+      let limit = Targetint.of_int_exn 0x200000 in
       (* Using * to multiply integers in JavaScript yields a float; and if the
-         float is large enough, some bits can be lost. So, in the general case,
-         we have to use Math.imul. There is no such issue in Wasm. *)
+           float is large enough, some bits can be lost. So, in the general case,
+           we have to use Math.imul. There is no such issue in Wasm. *)
       match the_int ~target info y, the_int ~target info z with
-      | Some j, _ when Int32.(abs j < 0x200000l) ->
+      | Some j, _ when Targetint.(abs j < limit) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
-      | _, Some j when Int32.(abs j < 0x200000l) ->
+      | _, Some j when Targetint.(abs j < limit) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _ -> i)
   | Let (x, Prim (Extern "%int_div", [ y; z ])), _ -> (
       match the_int ~target info z with
-      | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_div", [ y; z ]))
+      | Some j when not (Targetint.is_zero j) ->
+          Let (x, Prim (Extern "%direct_int_div", [ y; z ]))
       | _ -> i)
   | Let (x, Prim (Extern "%int_mod", [ y; z ])), _ -> (
       match the_int ~target info z with
-      | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_mod", [ y; z ]))
+      | Some j when not (Targetint.is_zero j) ->
+          Let (x, Prim (Extern "%direct_int_mod", [ y; z ]))
       | _ -> i)
   | _, _ -> i
 
@@ -172,17 +175,20 @@ let specialize_instrs ~target info l =
             ( u1
             , Prim
                 ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int 0l); Pv bytes'; Pc (Int 0l); Pv alen'' ] ) )
+                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
         , _ )
       ; ( Let
             ( u2
             , Prim
                 ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int 0l); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
         , _ )
       ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
       ]
-      when equal2 a a'
+      when Targetint.is_zero zero1
+           && Targetint.is_zero zero2
+           && Targetint.is_zero zero3
+           && equal2 a a'
            && equal2 b b'
            && equal2 len len'
            && equal4 alen alen' alen'' alen'''
@@ -191,8 +197,8 @@ let specialize_instrs ~target info l =
         [ len1
         ; len2
         ; len3
-        ; Let (u1, Constant (Int 0l)), No
-        ; Let (u2, Constant (Int 0l)), No
+        ; Let (u1, Constant (Int Targetint.zero)), No
+        ; Let (u2, Constant (Int Targetint.zero)), No
         ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
         ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ])), No
         ]
@@ -325,7 +331,9 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            let acc = (Let (x', p), loc) :: (Let (x, Constant (Int 0l)), loc) :: acc in
+            let acc =
+              (Let (x', p), loc) :: (Let (x, Constant (Int Targetint.zero)), loc) :: acc
+            in
             loop acc r
         | _ -> loop ((i, loc) :: acc) r)
   in

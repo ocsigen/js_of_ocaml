@@ -35,6 +35,7 @@ let print_macro_transformed source =
       print_endline (Buffer.contents buffer))
 
 let print_macro_transformed source =
+  Jsoo.Targetint.set_num_bits 32;
   try print_macro_transformed source with Failure s -> Format.printf "failure: %s%!" s
 
 let%expect_test "BLOCK()" =

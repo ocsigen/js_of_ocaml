@@ -61,6 +61,7 @@ val the_string_of :
 val the_native_string_of :
   target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Code.Native_string.t option
 
-val the_int : target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> int32 option
+val the_int :
+  target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Targetint.t option
 
 val f : ?skip_param:bool -> Code.program -> Code.program * Info.t

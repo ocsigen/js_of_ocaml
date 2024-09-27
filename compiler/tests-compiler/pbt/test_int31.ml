@@ -1,5 +1,8 @@
 open! Js_of_ocaml_compiler.Stdlib
 open QCheck2
+module Int31 = Js_of_ocaml_compiler.Targetint
+
+let () = Int31.set_num_bits 31
 
 let () = Printexc.record_backtrace false
 
@@ -121,11 +124,11 @@ module E = struct
 
   let one = Int31.of_int32_warning_on_overflow 1l
 
-  let min_int = Int31.of_int32_warning_on_overflow min_int31
+  let min_int = Int31.min_int ()
 
-  let max_int = Int31.of_int32_warning_on_overflow max_int31
+  let max_int = Int31.max_int ()
 
-  let numbits = 31
+  let numbits = Int31.num_bits ()
 
   let cases =
     [ "zero", zero; "one", one; "-one", Int31.neg one; "min", min_int; "max", max_int ]

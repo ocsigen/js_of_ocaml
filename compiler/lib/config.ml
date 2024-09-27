@@ -191,4 +191,7 @@ let target () =
   | (`JavaScript | `Wasm) as t -> t
 
 let set_target (t : [ `JavaScript | `Wasm ]) =
+  (match t with
+  | `JavaScript -> Targetint.set_num_bits 32
+  | `Wasm -> Targetint.set_num_bits 31);
   target_ := (t :> [ `JavaScript | `Wasm | `None ])

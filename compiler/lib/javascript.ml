@@ -26,13 +26,13 @@ module Num : sig
 
   val of_string_unsafe : string -> t
 
-  val of_int32 : int32 -> t
+  val of_targetint : Targetint.t -> t
 
   val of_float : float -> t
 
   val to_string : t -> string
 
-  val to_int32 : t -> int32
+  val to_targetint : t -> Targetint.t
 
   (** Predicates *)
 
@@ -54,17 +54,17 @@ end = struct
 
   let to_string s = s
 
-  let to_int32 s =
+  let to_targetint s =
     if String.is_prefix s ~prefix:"0"
        && String.length s > 1
        && String.for_all s ~f:(function
               | '0' .. '7' -> true
               | _ -> false)
     then (* legacy octal notation *)
-      Int32.of_string ("0o" ^ s)
-    else Int32.of_string s
+      Targetint.of_string_exn ("0o" ^ s)
+    else Targetint.of_string_exn s
 
-  let of_int32 = Int32.to_string
+  let of_targetint = Targetint.to_string
 
   external format_float : string -> float -> string = "caml_format_float"
 
@@ -138,7 +138,7 @@ end = struct
     | None -> "-" ^ s
     | Some s -> s
 
-  let add a b = of_int32 (Int32.add (to_int32 a) (to_int32 b))
+  let add a b = of_targetint (Targetint.add (to_targetint a) (to_targetint b))
 end
 
 module Label = struct
