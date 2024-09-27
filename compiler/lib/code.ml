@@ -327,7 +327,7 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
-  | Int of Int32.t
+  | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
   | NativeInt of Int32.t (* Native int are 32bit on all known backend *)
@@ -352,7 +352,8 @@ module Constant = struct
             | Some s, Some c -> same := Some (s && c)
           done;
           !same
-    | Int a, Int b | Int32 a, Int32 b -> Some (Int32.equal a b)
+    | Int a, Int b -> Some (Targetint.equal a b)
+    | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
     | NativeInt a, NativeInt b -> Some (Int32.equal a b)
     | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
@@ -497,7 +498,7 @@ module Print = struct
           Format.fprintf f "%.12g" a.(i)
         done;
         Format.fprintf f "|]"
-    | Int i -> Format.fprintf f "%ld" i
+    | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
     | Int32 i -> Format.fprintf f "%ldl" i
     | Int64 i -> Format.fprintf f "%LdL" i
     | NativeInt i -> Format.fprintf f "%ldn" i
