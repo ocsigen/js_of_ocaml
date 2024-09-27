@@ -25,6 +25,9 @@ open Flow
 let specialize_instr ~target info i =
   match i, target with
   | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
+      (* We can implement the special case where the format string is "%s" in JavaScript
+         in a concise and efficient way with [""+x]. It does not make as much sense in
+         Wasm to have a special case for this. *)
       match the_string_of ~target info y with
       | Some "%d" -> (
           match the_int ~target info z with
@@ -41,13 +44,11 @@ let specialize_instr ~target info i =
         , Prim
             ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
             , [ (Pv _ as y) ] ) )
-    , _ )
-    when Config.Flag.safe_string () -> (
+    , target ) -> (
       match the_string_of ~target info y with
       | Some s -> Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
-  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])), `JavaScript
-    -> (
+  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ y; z ])), _ -> (
       match the_string_of ~target info y with
       | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
@@ -134,6 +135,9 @@ let specialize_instr ~target info i =
       | Some s -> Let (x, Constant (NativeString (Native_string.of_bytestring s)))
       | None -> i)
   | Let (x, Prim (Extern "%int_mul", [ y; z ])), `JavaScript -> (
+      (* Using * to multiply integers in JavaScript yields a float; and if the
+         float is large enough, some bits can be lost. So, in the general case,
+         we have to use Math.imul. There is no such issue in Wasm. *)
       match the_int ~target info y, the_int ~target info z with
       | Some j, _ when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
@@ -262,7 +266,7 @@ let specialize_all_instrs ~target info p =
 
 (****)
 
-let f ~target info p = specialize_all_instrs ~target info p
+let f info p = specialize_all_instrs ~target:(Config.target ()) info p
 
 let f_once p =
   let rec loop acc l =

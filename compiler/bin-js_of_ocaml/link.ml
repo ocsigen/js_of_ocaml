@@ -150,6 +150,7 @@ let f
     ; mklib
     ; toplevel
     } =
+  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   let with_output f =
     match output_file with

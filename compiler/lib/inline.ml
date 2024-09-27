@@ -264,9 +264,9 @@ let inline ~first_class_primitives live_vars closures pc (outer, blocks, free_pc
 
 let times = Debug.find "times"
 
-let f ~target p live_vars =
+let f p live_vars =
   let first_class_primitives =
-    match target with
+    match Config.target () with
     | `JavaScript -> not (Config.Flag.effects ())
     | `Wasm -> false
   in

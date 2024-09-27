@@ -91,6 +91,7 @@ let run
     } =
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
+  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Generate.init ();
   (match output_file with
@@ -184,7 +185,7 @@ let run
     let init_pseudo_fs = fs_external && standalone in
     let sm =
       match output_file with
-      | `Stdout, fmt ->
+      | `Stdout, formatter ->
           let instr =
             List.concat
               [ pseudo_fs_instr `create_file one.debug one.cmis
@@ -200,9 +201,10 @@ let run
             ~link
             ~wrap_with_fun
             ?source_map
+            ~formatter
             one.debug
             code
-      | `File, fmt ->
+      | `File, formatter ->
           let fs_instr1, fs_instr2 =
             match fs_output with
             | None -> pseudo_fs_instr `create_file one.debug one.cmis, []
@@ -224,6 +226,7 @@ let run
               ~link
               ~wrap_with_fun
               ?source_map
+              ~formatter
               one.debug
               code
           in
