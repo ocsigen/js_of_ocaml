@@ -1,0 +1,8 @@
+(library
+ (name test_int31)
+ (modules test_int31)
+ (inline_tests)
+ (enabled_if %{lib-available:qcheck})
+ (preprocess
+  (pps ppx_expect))
+ (libraries js_of_ocaml-compiler qcheck))
