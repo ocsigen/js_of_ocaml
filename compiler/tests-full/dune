@@ -26,3 +26,20 @@
   (= %{ocaml_version} "5.2.0"))
  (action
   (diff stdlib.cma.expected.js stdlib.cma.output.js)))
+
+(rule
+ (targets fs.output.js)
+ (deps file1 file2)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   build-fs
+   -o
+   %{targets}
+   file1:/static/file1
+   file2:/static/dir/file2)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff fs.expected.js fs.output.js)))
