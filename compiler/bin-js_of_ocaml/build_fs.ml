@@ -54,8 +54,8 @@ function jsoo_create_file_extern(name,content){
   if(globalThis.jsoo_create_file)
     globalThis.jsoo_create_file(name,content);
   else {
-    if(!globalThis.caml_fs_tmp) globalThis.caml_fs_tmp = [];
-    globalThis.caml_fs_tmp.push({name:name,content:content});
+    if(!globalThis.jsoo_fs_tmp) globalThis.jsoo_fs_tmp = [];
+    globalThis.jsoo_fs_tmp.push({name:name,content:content});
   }
   return 0;
 }
