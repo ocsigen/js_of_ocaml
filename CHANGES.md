@@ -6,19 +6,21 @@
 * Misc: yojson is no longer optional
 * Misc: reduce the diff with the wasm_of_ocaml fork
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
+* Compiler: improved global dead code elimination (#2206)
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Compiler: Decode sourcemap mappings only when necessary (#1664)
 * Compiler: make indirect call using sequence instead of using the call method
   [f.call(null, args)] becomes [(0,f)(args)]
 * Compiler: mark [TextEncoder] as reserved
+* Compiler: add support for the Wasm backend in parts of the pipeline, in
+  prevision for the merge of wasm_of_ocaml
+* Compiler: introduce a Targetint module
+  that follows the semantic of the backend (js or wasm)
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
-* Compiler: improved global dead code elimination (#2206)
-* Compiler: add support for the Wasm backend in parts of the pipeline, in
-  prevision for the merge of wasm_of_ocaml
 
 
 ## Bug fixes
