@@ -16,6 +16,7 @@
   prevision for the merge of wasm_of_ocaml
 * Compiler: introduce a Targetint module
   that follows the semantic of the backend (js or wasm)
+* Compiler: warn on joo_global_object
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
