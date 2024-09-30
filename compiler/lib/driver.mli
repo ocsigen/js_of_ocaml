@@ -28,7 +28,7 @@ type optimized_result =
   ; deadcode_sentinal : Code.Var.t
   }
 
-val optimize : profile:profile -> Code.program -> optimized_result
+val optimize : ?profile:profile -> Code.program -> optimized_result
 
 val f :
      ?standalone:bool

@@ -79,8 +79,7 @@ let specialize' (p, info) =
 
 let specialize p = fst (specialize' p)
 
-let eval (p, info) =
-  if Config.Flag.staticeval () then Eval.f info p else p
+let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -180,10 +179,7 @@ let round1 : 'a -> 'a =
 
 let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
-let o3 =
-  loop 10 "tailcall+inline" round1 1
-  +> loop 10 "flow" round2 1
-  +> print
+let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
 let generate
     d
@@ -662,7 +658,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
-let optimize ~profile p =
+let optimize ?(profile = O1) p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"

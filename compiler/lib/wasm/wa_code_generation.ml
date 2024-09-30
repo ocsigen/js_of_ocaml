@@ -396,10 +396,12 @@ module Arith = struct
     | W.I31Get (S, n') -> return n'
     | _ -> return (W.RefI31 n)
 
+  let wrap31 n = Int31.(of_int32_truncate n |> to_int32)
+
   let of_int31 n =
     let* n = n in
     match n with
-    | W.RefI31 (Const (I32 n)) -> return (W.Const (I32 (Int31.wrap n)))
+    | W.RefI31 (Const (I32 n)) -> return (W.Const (I32 (wrap31 n)))
     | _ -> return (W.I31Get (S, n))
 end
 
@@ -422,7 +424,7 @@ let bin_op_is_smi (op : W.int_bin_op) =
 
 let rec is_smi e =
   match e with
-  | W.Const (I32 i) -> Int32.equal (Int31.wrap i) i
+  | W.Const (I32 i) -> Int32.equal (Arith.wrap31 i) i
   | UnOp ((I32 op | I64 op), _) -> un_op_is_smi op
   | BinOp ((I32 op | I64 op), _, _) -> bin_op_is_smi op
   | I31Get (S, _) -> true

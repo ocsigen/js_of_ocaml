@@ -195,7 +195,6 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
-            ~target:(JavaScript fmt)
             ~standalone
             ?profile
             ~link
@@ -220,7 +219,6 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
-              ~target:(JavaScript fmt)
               ~standalone
               ?profile
               ~link
@@ -285,7 +283,7 @@ let run
    then (
      let prims = Linker.list_all () |> StringSet.elements in
      assert (List.length prims > 0);
-     let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`JavaScript in
+     let code, uinfo = Parse_bytecode.predefined_exceptions () in
      let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
      let code : Parse_bytecode.one =
        { code
@@ -358,7 +356,6 @@ let run
          let t1 = Timer.make () in
          let code =
            Parse_bytecode.from_cmo
-             ~target:`JavaScript
              ~includes:include_dirs
              ~include_cmis
              ~debug:need_debug
@@ -415,7 +412,6 @@ let run
              let t1 = Timer.make () in
              let code =
                Parse_bytecode.from_cmo
-                 ~target:`JavaScript
                  ~includes:include_dirs
                  ~include_cmis
                  ~debug:need_debug
@@ -447,7 +443,6 @@ let run
                let t1 = Timer.make () in
                let code =
                  Parse_bytecode.from_cmo
-                   ~target:`JavaScript
                    ~includes:include_dirs
                    ~include_cmis
                    ~debug:need_debug

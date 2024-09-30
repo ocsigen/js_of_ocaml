@@ -140,17 +140,18 @@ let link_runtime ~profile runtime_wasm_files output_file =
 let generate_prelude ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
-  let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`Wasm in
-  let live_vars, in_cps, p, debug =
-    Driver.f
-      ~target:Wasm
-      ~link:`Needed
-      (Parse_bytecode.Debug.create ~include_cmis:false false)
-      code
-  in
+  let code, uinfo = Parse_bytecode.predefined_exceptions () in
+  let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize code in
   let context = Wa_generate.start () in
+  let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
-    Wa_generate.f ~context ~unit_name:(Some "prelude") ~live_vars ~in_cps ~debug p
+    Wa_generate.f
+      ~context
+      ~unit_name:(Some "prelude")
+      ~live_vars:variable_uses
+      ~in_cps
+      ~debug
+      program
   in
   Wa_generate.output ch ~context ~debug;
   uinfo.provides
@@ -244,6 +245,7 @@ let run
     ; sourcemap_root
     ; sourcemap_don't_inline_content
     } =
+  Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Wa_generate.init ();
   let output_file = fst output_file in
@@ -270,15 +272,8 @@ let run
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
-      Linker.load_fragments
-        ~ignore_always_annotation:true
-        ~target_env:Target_env.Isomorphic
-        ~filename
-        runtimes);
-  Linker.load_files
-    ~ignore_always_annotation:true
-    ~target_env:Target_env.Isomorphic
-    runtime_js_files;
+      Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
+  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
@@ -299,12 +294,11 @@ let run
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let live_vars, in_cps, p, debug =
-      Driver.f ~target:Wasm ~standalone ?profile ~link:`No one.debug code
-    in
+    let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ?profile code in
     let context = Wa_generate.start () in
+    let debug = one.debug in
     let toplevel_name, generated_js =
-      Wa_generate.f ~context ~unit_name ~live_vars ~in_cps ~debug p
+      Wa_generate.f ~context ~unit_name ~live_vars:variable_uses ~in_cps ~debug program
     in
     if standalone then Wa_generate.add_start_function ~context toplevel_name;
     Wa_generate.output ch ~context ~debug;
@@ -352,12 +346,7 @@ let run
      let compile_cmo cmo cont =
        let t1 = Timer.make () in
        let code =
-         Parse_bytecode.from_cmo
-           ~target:`Wasm
-           ~includes:include_dirs
-           ~debug:need_debug
-           cmo
-           ic
+         Parse_bytecode.from_cmo ~includes:include_dirs ~debug:need_debug cmo ic
        in
        let unit_info = Unit_info.of_cmo cmo in
        let unit_name = Ocaml_compiler.Cmo_format.name cmo in
