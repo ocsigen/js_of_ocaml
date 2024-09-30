@@ -276,11 +276,11 @@ let setup_share_button ~output =
 
 let setup_js_preview () =
   let ph = by_id "last-js" in
-  let runcode : string -> 'a = Js.Unsafe.global##.toplevelEval in
-  Js.Unsafe.global##.toplevelEval
-  := fun bc ->
-  ph##.innerHTML := Js.string bc;
-  runcode bc
+  let runcode : string -> 'a = !Js_of_ocaml_compiler_dynlink.eval_ref in
+  Js_of_ocaml_compiler_dynlink.eval_ref :=
+    fun bc ->
+      ph##.innerHTML := Js.string bc;
+      runcode bc
 
 let current_position = ref 0
 

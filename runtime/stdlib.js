@@ -162,14 +162,18 @@ function caml_build_symbols(symb) {
   return r;
 }
 
+//Provides: jsoo_toplevel_reloc
+var jsoo_toplevel_reloc = undefined;
+
 //Provides: caml_register_global (const, shallow, const)
 //Requires: caml_global_data, caml_callback, caml_build_symbols
 //Requires: caml_failwith
+//Requires: jsoo_toplevel_reloc
 function caml_register_global(n, v, name_opt) {
   if (name_opt) {
     var name = name_opt;
-    if (globalThis.toplevelReloc) {
-      n = caml_callback(globalThis.toplevelReloc, [name]);
+    if (jsoo_toplevel_reloc) {
+      n = caml_callback(jsoo_toplevel_reloc, [name]);
     } else if (caml_global_data.symbols) {
       if (!caml_global_data.symidx) {
         caml_global_data.symidx = caml_build_symbols(caml_global_data.symbols);

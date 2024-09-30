@@ -12,6 +12,14 @@ type bytecode_sections =
 
 external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_sections"
 
+external toplevel_init_compile :
+  (string -> Instruct.debug_event list array -> unit -> J.t) -> unit
+  = "jsoo_toplevel_init_compile"
+
+external toplevel_init_reloc : (J.t -> int) -> unit = "jsoo_toplevel_init_reloc"
+
+let eval_ref = ref (fun (_ : string) -> failwith "toplevel: eval not initialized")
+
 let normalize_bytecode code =
   match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
   | true -> code
@@ -47,10 +55,7 @@ let () =
     flush stdout;
     flush stderr;
     let js = Buffer.contents b in
-    let res : string -> unit -> J.t =
-      Obj.magic (J.get global (J.string "toplevelEval"))
-    in
-    res (js : string)
+    !eval_ref js
   in
   let toplevel_eval (x : string) : unit -> J.t =
     let f : J.t = J.eval_string x in
@@ -76,6 +81,6 @@ let () =
     | Some i -> i
     | None -> Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name
   in
-  J.set global (J.string "toplevelCompile") (Obj.magic toplevel_compile) (*XXX HACK!*);
-  J.set global (J.string "toplevelEval") (Obj.magic toplevel_eval);
-  J.set global (J.string "toplevelReloc") (Obj.magic toplevel_reloc)
+  eval_ref := toplevel_eval;
+  toplevel_init_compile toplevel_compile;
+  toplevel_init_reloc toplevel_reloc
