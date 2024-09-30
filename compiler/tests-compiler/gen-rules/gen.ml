@@ -47,14 +47,17 @@ let prefix : string =
 
 type enabled_if =
   | GE5
+  | B64
   | Any
 
 let lib_enabled_if = function
   | "obj" | "effects" -> GE5
+  | "gh1051" -> B64
   | _ -> Any
 
 let test_enabled_if = function
   | "obj" | "lazy" -> GE5
+  | "gh1051" -> B64
   | _ -> Any
 
 let () =
@@ -86,8 +89,10 @@ let () =
            (Hashtbl.hash prefix mod 100)
            (match lib_enabled_if basename with
            | Any -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)")
+           | GE5 -> "(>= %{ocaml_version} 5)"
+           | B64 -> "%{arch_sixtyfour}")
            basename
            (match test_enabled_if basename with
            | Any -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)"))
+           | GE5 -> "(>= %{ocaml_version} 5)"
+           | B64 -> "%{arch_sixtyfour}"))

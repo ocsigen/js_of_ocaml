@@ -59,6 +59,8 @@ let%expect_test _ =
            i);
   [%expect ""]
 
+let sixty_four = Sys.int_size > 32
+
 let%expect_test _ =
   let i = Gen.(generate1 (no_shrink out_of_range_i32)) in
   let i_trunc = Int32.(shift_right (shift_left i 1) 1) in
@@ -66,14 +68,14 @@ let%expect_test _ =
   let output = [%expect.output] in
   let expected =
     Format.sprintf
-      "Warning: integer overflow: integer 0x%lx (%ld) truncated to 0x%lx (%ld); the \
+      "Warning: integer overflow: int32 0x%lx (%ld) truncated to 0x%lx (%ld); the \
        generated code might be incorrect.@."
       i
       i
       i_trunc
       i_trunc
   in
-  if not (String.equal output expected)
+  if sixty_four && not (String.equal output expected)
   then Format.printf "Unexpected output string@.%s@.Expected:@.%s@." output expected;
   [%expect ""]
 
@@ -91,7 +93,7 @@ let%expect_test _ =
       i_trunc
       i_trunc
   in
-  if not (String.equal output expected)
+  if sixty_four && not (String.equal output expected)
   then Format.printf "Unexpected output string@.%s@.Expected:@.%s@." output expected;
   [%expect ""]
 
@@ -102,14 +104,14 @@ let%expect_test _ =
   let output = [%expect.output] in
   let expected =
     Format.sprintf
-      "Warning: integer overflow: integer 0x%nx (%nd) truncated to 0x%lx (%ld); the \
-       generated code might be incorrect.@."
+      "Warning: integer overflow: native integer 0x%nx (%nd) truncated to 0x%lx (%ld); \
+       the generated code might be incorrect.@."
       i
       i
       i_trunc
       i_trunc
   in
-  if not (String.equal output expected)
+  if sixty_four && not (String.equal output expected)
   then Format.printf "Unexpected output string@.%s@.Expected:@.%s@." output expected;
   [%expect ""]
 

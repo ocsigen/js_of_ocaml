@@ -122,6 +122,7 @@ let of_float_opt x =
 
 let of_int_warning_on_overflow i =
   Stdlib.Int32.convert_warning_on_overflow
+    "integer"
     ~to_int32:(fun i -> wrap_modulo (Int32.of_int i))
     ~of_int32:Int32.to_int
     ~equal:Int.equal
@@ -131,6 +132,7 @@ let of_int_warning_on_overflow i =
 
 let of_int32_warning_on_overflow n =
   Stdlib.Int32.convert_warning_on_overflow
+    "int32"
     ~to_int32:(fun i -> wrap_modulo i)
     ~of_int32:Fun.id
     ~equal:Int32.equal
@@ -140,6 +142,7 @@ let of_int32_warning_on_overflow n =
 
 let of_nativeint_warning_on_overflow n =
   Stdlib.Int32.convert_warning_on_overflow
+    "native integer"
     ~to_int32:(fun i -> wrap_modulo (Nativeint.to_int32 i))
     ~of_int32:Nativeint.of_int32
     ~equal:Nativeint.equal
