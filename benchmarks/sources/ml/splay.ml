@@ -186,15 +186,24 @@ let rec generatePayloadTree depth tag =
 
 let random =
   let seed = ref 49734321 in
+  let mask_32bit =
+    match Sys.int_size with
+    | 31 | 32 -> -1
+    | _ -> int_of_string "0xffffffff"
+  in
+  let l_0xc761c23c = int_of_string "0xc761c23c" in
+  let l_0xd3a2646c = int_of_string "0xd3a2646c" in
+  let l_0xfd7046c5 = int_of_string "0xfd7046c5" in
+  let l_0xb55a4f09 = int_of_string "0xb55a4f09" in
   fun () ->
     (*    // Robert Jenkins' 32 bit integer hash function. *)
     let s = !seed in
-    let s = (s + 0x7ed55d16 + (s lsl 12)) land 0xffffffff in
-    let s = s lxor 0xc761c23c lxor (s lsr 19) in
+    let s = (s + 0x7ed55d16 + (s lsl 12)) land mask_32bit in
+    let s = s lxor l_0xc761c23c lxor (s lsr 19) in
     let s = s + 0x165667b1 + (s lsl 5) in
-    let s = (s + 0xd3a2646c) lxor (s lsl 9) in
-    let s = (s + 0xfd7046c5 + (s lsl 3)) land 0xffffffff in
-    let s = s lxor 0xb55a4f09 lxor (s lsr 16) in
+    let s = (s + l_0xd3a2646c) lxor (s lsl 9) in
+    let s = (s + l_0xfd7046c5 + (s lsl 3)) land mask_32bit in
+    let s = s lxor l_0xb55a4f09 lxor (s lsr 16) in
     seed := s;
     float (s land 0xfffffff) /. float 0x10000000
 
