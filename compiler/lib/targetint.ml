@@ -31,10 +31,6 @@ let max_int_ (Offset offset) = Int32.shift_right Int32.max_int offset
 
 let min_int_ (Offset offset) = Int32.shift_right Int32.min_int offset
 
-let min_int_i offset = Int32.to_int (min_int_ offset)
-
-let max_int_i offset = Int32.to_int (max_int_ offset)
-
 let min_int () =
   let offset = offset () in
   min_int_ offset
@@ -50,7 +46,7 @@ let to_float x = Int32.to_float x
 let to_int32 x = x
 
 let to_int_exn x =
-  if Sys.int_size <= 32 || Int32.of_int Int.min_int <= x || x <= Int32.of_int Int.max_int
+  if Sys.int_size >= 32 || Int32.of_int Int.min_int <= x || x <= Int32.of_int Int.max_int
   then Int32.to_int x
   else failwith "to_int_exn"
 
@@ -102,9 +98,10 @@ let is_zero x = equal x 0l
 
 let of_int_exn (x : int) =
   let offset = offset () in
-  if min_int_i offset <= x && x <= max_int_i offset
+  if Sys.int_size <= 32
+     || (Int32.to_int (min_int_ offset) <= x && x <= Int32.to_int (max_int_ offset))
   then Int32.of_int x
-  else failwith "of_int_exn"
+  else failwith (Printf.sprintf "of_int_exn(%d)" x)
 
 let of_int32_exn (x : int32) =
   let offset = offset () in
