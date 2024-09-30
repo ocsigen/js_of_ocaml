@@ -197,6 +197,7 @@ caml_build_symbols
 caml_is_printable
 caml_maybe_print_stats
 caml_register_global
+jsoo_toplevel_reloc
 
 From +str.js:
 caml_str_initialize
@@ -232,6 +233,8 @@ caml_terminfo_backup
 caml_terminfo_resume
 caml_terminfo_setup
 caml_terminfo_standout
+jsoo_toplevel_init_compile
+jsoo_toplevel_init_reloc
 
 From +unix.js:
 caml_unix_cleanup
