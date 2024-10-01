@@ -57,6 +57,12 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: false
+            # Note this OCaml compiler is bytecode only
+          - os: ubuntu-latest
+            ocaml-compiler: "ocaml-variants.5.2.0+options,ocaml-option-32bit"
+            skip-effects: true # disabled for the same reason than `skip-test`
+            skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
+            skip-doc: true
           - os: macos-latest
             ocaml-compiler: "5.2"
             skip-effects: true
@@ -82,7 +88,7 @@ jobs:
         # getting much better, but no luck yet, c.f:
         # https://github.com/ocaml/opam-repository/pull/26626
       - name: Install apt 32-bit dependencies
-        if: matrix.ocaml-compiler == 'ocaml-variants.4.14.2+options,ocaml-option-32bit'
+        if: matrix.ocaml-compiler == 'ocaml-variants.4.14.2+options,ocaml-option-32bit' || matrix.ocaml-compiler == 'ocaml-variants.5.2.0+options,ocaml-option-32bit'
         run: |
           sudo apt-get install aptitude
           sudo dpkg --add-architecture i386
