@@ -658,7 +658,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
-let optimize ?(profile = O1) p =
+let optimize ~profile p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"

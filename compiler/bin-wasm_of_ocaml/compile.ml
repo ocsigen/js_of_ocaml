@@ -141,7 +141,12 @@ let generate_prelude ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
-  let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize code in
+  let profile =
+    match Driver.profile 1 with
+    | Some p -> p
+    | None -> assert false
+  in
+  let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
   let context = Wa_generate.start () in
   let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
@@ -294,7 +299,13 @@ let run
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ?profile code in
+    let profile =
+      match profile, Driver.profile 1 with
+      | Some p, _ -> p
+      | None, Some p -> p
+      | None, None -> assert false
+    in
+    let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
     let context = Wa_generate.start () in
     let debug = one.debug in
     let toplevel_name, generated_js =
