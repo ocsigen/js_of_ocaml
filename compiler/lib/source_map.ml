@@ -440,6 +440,8 @@ let of_json (json : Yojson.Raw.t) =
 
 let of_string s = of_json (Yojson.Raw.from_string s)
 
+let of_file filename = of_json (Yojson.Raw.from_file filename)
+
 let to_string m = Yojson.Raw.to_string (json m)
 
 let to_file m file = Yojson.Raw.to_file file (json m)

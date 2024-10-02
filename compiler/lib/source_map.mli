@@ -91,3 +91,5 @@ val to_string : t -> string
 val to_file : t -> string -> unit
 
 val of_string : string -> t
+
+val of_file : string -> t
