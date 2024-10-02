@@ -14,17 +14,6 @@ module Lex_mode = struct
     | REGEXP
 end
 
-module Loc = struct
-  (* line numbers are 1-indexed; column numbers are 0-indexed *)
-
-  type t =
-    { source : string option
-    ; start : Lexing.position
-    ; _end : Lexing.position
-    }
-  [@@ocaml.warning "-69"]
-end
-
 module Parse_error = struct
   type t =
     | Unexpected of string
@@ -45,28 +34,20 @@ module Lex_env = struct
   type lex_state = { lex_errors_acc : (Loc.t * Parse_error.t) list } [@@ocaml.unboxed]
 
   type t =
-    { lex_source : string option
-    ; lex_lb : Sedlexing.lexbuf
+    { lex_lb : Sedlexing.lexbuf
     ; lex_state : lex_state
     ; lex_mode_stack : Lex_mode.t list
+    ; lex_last_loc : Loc.t ref
     }
   [@@ocaml.warning "-69"]
-
-  let source env = env.lex_source
 
   let empty_lex_state = { lex_errors_acc = [] }
 
   let create lex_lb =
-    let s, _ = Sedlexing.lexing_positions lex_lb in
-    let lex_source =
-      match s.pos_fname with
-      | "" -> None
-      | s -> Some s
-    in
-    { lex_source
-    ; lex_lb
+    { lex_lb
     ; lex_state = empty_lex_state
     ; lex_mode_stack = [ Lex_mode.NORMAL ]
+    ; lex_last_loc = ref (Loc.create Lexing.dummy_pos Lexing.dummy_pos)
     }
 end
 
@@ -84,7 +65,7 @@ let pop_mode env =
 module Lex_result = struct
   type t =
     { lex_token : Js_token.t
-    ; lex_loc : Lexing.position * Lexing.position
+    ; lex_loc : Loc.t
     ; lex_errors : (Loc.t * Parse_error.t) list
     }
   [@@ocaml.warning "-69"]
@@ -161,7 +142,7 @@ let scinumber =
     , Opt ('-' | '+')
     , underscored_digit )]
 
-let wholenumber = [%sedlex.regexp? underscored_digit, Opt '.']
+let integer = [%sedlex.regexp? underscored_digit]
 
 let floatnumber = [%sedlex.regexp? Opt underscored_digit, '.', underscored_decimal]
 
@@ -171,11 +152,7 @@ let octbigint = [%sedlex.regexp? octnumber, 'n']
 
 let hexbigint = [%sedlex.regexp? hexnumber, 'n']
 
-let scibigint = [%sedlex.regexp? scinumber, 'n']
-
 let wholebigint = [%sedlex.regexp? underscored_digit, 'n']
-
-let floatbigint = [%sedlex.regexp? (floatnumber | underscored_digit, '.'), 'n']
 
 (* https://tc39.github.io/ecma262/#sec-white-space *)
 let whitespace =
@@ -239,16 +216,21 @@ let is_valid_identifier_name s =
   | js_id_start, Star js_id_continue, eof -> true
   | _ -> false
 
-let loc_of_lexbuf env (lexbuf : Sedlexing.lexbuf) =
+let loc_of_lexbuf _env (lexbuf : Sedlexing.lexbuf) =
   let start_offset, stop_offset = Sedlexing.lexing_positions lexbuf in
-  { Loc.source = Lex_env.source env; start = start_offset; _end = stop_offset }
+  Loc.create start_offset stop_offset
 
 let lex_error (env : Lex_env.t) loc err : Lex_env.t =
   let lex_errors_acc = (loc, err) :: env.lex_state.lex_errors_acc in
   { env with lex_state = { lex_errors_acc } }
 
-let illegal (env : Lex_env.t) (loc : Loc.t) =
-  lex_error env loc (Parse_error.Unexpected "token ILLEGAL")
+let illegal (env : Lex_env.t) (loc : Loc.t) reason =
+  let reason =
+    match reason with
+    | "" -> "token ILLEGAL"
+    | s -> s
+  in
+  lex_error env loc (Parse_error.Unexpected reason)
 
 let decode_identifier =
   let sub_lexeme lexbuf trim_start trim_end =
@@ -338,7 +320,7 @@ let decode_identifier =
     id_char env loc buf lexbuf
 
 let recover env lexbuf ~f =
-  let env = illegal env (loc_of_lexbuf env lexbuf) in
+  let env = illegal env (loc_of_lexbuf env lexbuf) "recovery" in
   Sedlexing.rollback lexbuf;
   f env lexbuf
 
@@ -347,9 +329,33 @@ type result =
   | Comment of Lex_env.t * string
   | Continue of Lex_env.t
 
+let newline lexbuf =
+  let start = Sedlexing.lexeme_start lexbuf in
+  let stop = Sedlexing.lexeme_end lexbuf in
+  let len = stop - start in
+  let pending = ref false in
+  for i = 0 to len - 1 do
+    match Uchar.to_int (Sedlexing.lexeme_char lexbuf i) with
+    | 0x000d -> pending := true
+    | 0x000a -> pending := false
+    | 0x2028 | 0x2029 ->
+        if !pending
+        then (
+          pending := false;
+          Sedlexing.new_line lexbuf);
+        Sedlexing.new_line lexbuf
+    | _ ->
+        if !pending
+        then (
+          pending := false;
+          Sedlexing.new_line lexbuf)
+  done;
+  if !pending then Sedlexing.new_line lexbuf
+
 let rec comment env buf lexbuf =
   match%sedlex lexbuf with
   | line_terminator_sequence ->
+      newline lexbuf;
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | "*/" ->
@@ -363,7 +369,7 @@ let rec comment env buf lexbuf =
       lexeme_to_buffer lexbuf buf;
       comment env buf lexbuf
   | _ ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
 
 let drop_line env =
@@ -384,7 +390,7 @@ let rec line_comment env buf lexbuf =
       line_comment env buf lexbuf
   | _ -> failwith "unreachable line_comment"
 
-let string_escape env lexbuf =
+let string_escape ~accept_invalid env lexbuf =
   match%sedlex lexbuf with
   | eof | '\\' ->
       let str = lexeme lexbuf in
@@ -419,13 +425,20 @@ let string_escape env lexbuf =
       let hex = String.sub str 2 (String.length str - 3) in
       let code = int_of_string ("0x" ^ hex) in
       (* 11.8.4.1 *)
-      let env = if code > 0x10FFFF then illegal env (loc_of_lexbuf env lexbuf) else env in
+      let env =
+        if code > 0x10FFFF && not accept_invalid
+        then illegal env (loc_of_lexbuf env lexbuf) "unicode escape out of range"
+        else env
+      in
       env, str
   | 'u' | 'x' | '0' .. '7' ->
       let str = lexeme lexbuf in
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env =
+        if accept_invalid then env else illegal env (loc_of_lexbuf env lexbuf) ""
+      in
       env, str
   | line_terminator_sequence ->
+      newline lexbuf;
       let str = lexeme lexbuf in
       env, str
   | any ->
@@ -444,23 +457,26 @@ let rec string_quote env q buf lexbuf =
       else (
         Buffer.add_string buf q';
         string_quote env q buf lexbuf)
-  | '\\', line_terminator_sequence -> string_quote env q buf lexbuf
+  | '\\', line_terminator_sequence ->
+      newline lexbuf;
+      string_quote env q buf lexbuf
   | '\\' ->
-      let env, str = string_escape env lexbuf in
-      if String.equal str "" || String.get q 0 <> String.get str 0
-      then Buffer.add_string buf "\\";
+      let env, str = string_escape ~accept_invalid:false env lexbuf in
+      (match str with
+      | "'" | "\"" -> ()
+      | _ -> Buffer.add_string buf "\\");
       Buffer.add_string buf str;
       string_quote env q buf lexbuf
   | '\n' ->
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       string_quote env q buf lexbuf
   (* env, end_pos_of_lexbuf env lexbuf *)
   | eof ->
       let x = lexeme lexbuf in
       Buffer.add_string buf x;
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       env
   (* match multi-char substrings that don't contain the start chars of the above patterns *)
   | Plus (Compl ("'" | '"' | '\\' | '\n' | eof)) | any ->
@@ -470,7 +486,9 @@ let rec string_quote env q buf lexbuf =
 
 let token (env : Lex_env.t) lexbuf : result =
   match%sedlex lexbuf with
-  | line_terminator_sequence -> Continue env
+  | line_terminator_sequence ->
+      newline lexbuf;
+      Continue env
   | Plus whitespace -> Continue env
   | "/*" ->
       let buf = Buffer.create 127 in
@@ -560,19 +578,6 @@ let token (env : Lex_env.t) lexbuf : result =
           | hexnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token hexnumber")
   | hexnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
-  | scibigint, word ->
-      (* Numbers cannot be immediately followed by words *)
-      recover env lexbuf ~f:(fun env lexbuf ->
-          match%sedlex lexbuf with
-          | scibigint ->
-              let loc = loc_of_lexbuf env lexbuf in
-              let env = lex_error env loc Parse_error.InvalidSciBigInt in
-              Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-          | _ -> failwith "unreachable token scibigint")
-  | scibigint ->
-      let loc = loc_of_lexbuf env lexbuf in
-      let env = lex_error env loc Parse_error.InvalidSciBigInt in
-      Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
   | scinumber, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
@@ -580,33 +585,31 @@ let token (env : Lex_env.t) lexbuf : result =
           | scinumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token scinumber")
   | scinumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
-  | floatbigint, word ->
-      (* Numbers cannot be immediately followed by words *)
-      recover env lexbuf ~f:(fun env lexbuf ->
-          match%sedlex lexbuf with
-          | floatbigint ->
-              let loc = loc_of_lexbuf env lexbuf in
-              let env = lex_error env loc Parse_error.InvalidFloatBigInt in
-              Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-          | _ -> failwith "unreachable token floatbigint")
   | wholebigint, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
           match%sedlex lexbuf with
           | wholebigint -> Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token wholebigint")
-  | floatbigint ->
-      let loc = loc_of_lexbuf env lexbuf in
-      let env = lex_error env loc Parse_error.InvalidFloatBigInt in
-      Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
   | wholebigint -> Token (env, T_BIGINT (BIG_NORMAL, lexeme lexbuf))
-  | (wholenumber | floatnumber), word ->
+  | integer, word ->
       (* Numbers cannot be immediately followed by words *)
       recover env lexbuf ~f:(fun env lexbuf ->
           match%sedlex lexbuf with
-          | wholenumber | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+          | integer -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
           | _ -> failwith "unreachable token wholenumber")
-  | wholenumber | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+  | integer, '.', word -> (
+      Sedlexing.rollback lexbuf;
+      match%sedlex lexbuf with
+      | integer -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+      | _ -> failwith "unreachable token wholenumber")
+  | floatnumber, word ->
+      (* Numbers cannot be immediately followed by words *)
+      recover env lexbuf ~f:(fun env lexbuf ->
+          match%sedlex lexbuf with
+          | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
+          | _ -> failwith "unreachable token wholenumber")
+  | integer, Opt '.' | floatnumber -> Token (env, T_NUMBER (NORMAL, lexeme lexbuf))
   (* Syntax *)
   | "{" ->
       let env = push_mode env NORMAL in
@@ -697,13 +700,19 @@ let token (env : Lex_env.t) lexbuf : result =
               | None -> (
                   match is_valid_identifier_name decoded with
                   | true -> env
-                  | false -> illegal env (loc_of_lexbuf env lexbuf))
-              | Some _ -> illegal env (loc_of_lexbuf env lexbuf)
+                  | false ->
+                      illegal
+                        env
+                        (loc_of_lexbuf env lexbuf)
+                        (Printf.sprintf "%S is not a valid identifier" decoded))
+              | Some _ ->
+                  (* accept keyword as ident if escaped *)
+                  env
             in
             Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw)))
   | eof -> Token (env, T_EOF)
   | any ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
   | _ -> failwith "unreachable token"
 
@@ -721,6 +730,7 @@ let rec regexp_class env buf lexbuf =
       Buffer.add_char buf ']';
       env
   | line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env
@@ -738,6 +748,7 @@ let rec regexp_body env buf lexbuf =
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
   | '\\', line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
@@ -757,6 +768,7 @@ let rec regexp_body env buf lexbuf =
       let env = regexp_class env buf lexbuf in
       regexp_body env buf lexbuf
   | line_terminator_sequence ->
+      newline lexbuf;
       let loc = loc_of_lexbuf env lexbuf in
       let env = lex_error env loc Parse_error.UnterminatedRegExp in
       env, ""
@@ -770,7 +782,9 @@ let rec regexp_body env buf lexbuf =
 let regexp env lexbuf =
   match%sedlex lexbuf with
   | eof -> Token (env, T_EOF)
-  | line_terminator_sequence -> Continue env
+  | line_terminator_sequence ->
+      newline lexbuf;
+      Continue env
   | Plus whitespace -> Continue env
   | "//" ->
       let buf = Buffer.create 127 in
@@ -787,7 +801,7 @@ let regexp env lexbuf =
       let env, flags = regexp_body env buf lexbuf in
       Token (env, T_REGEXP (Stdlib.Utf8_string.of_string_exn (Buffer.contents buf), flags))
   | any ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
   | _ -> failwith "unreachable regexp"
 
@@ -808,12 +822,12 @@ let backquote env lexbuf =
   | '\\' ->
       let buf = Buffer.create 127 in
       Buffer.add_char buf '\\';
-      let env, str = string_escape env lexbuf in
+      let env, str = string_escape ~accept_invalid:true env lexbuf in
       Buffer.add_string buf str;
       Token (env, T_ENCAPSED_STRING (Buffer.contents buf))
   | eof -> Token (env, T_EOF)
   | _ ->
-      let env = illegal env (loc_of_lexbuf env lexbuf) in
+      let env = illegal env (loc_of_lexbuf env lexbuf) "" in
       Token (env, T_ERROR (lexeme lexbuf))
 
 let wrap f =
@@ -821,12 +835,14 @@ let wrap f =
     let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
     let t = f env env.Lex_env.lex_lb in
     let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
-    t, (start, stop)
+    t, Loc.create ~last_line:(Loc.line_end' !(env.lex_last_loc)) start stop
   in
   let rec helper comments env =
     Sedlexing.start env.Lex_env.lex_lb;
-    match f env with
-    | Token (env, t), lex_loc ->
+    let res, lex_loc = f env in
+    match res with
+    | Token (env, t) ->
+        env.lex_last_loc := lex_loc;
         let lex_token = t in
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         if lex_errors_acc = []
@@ -834,14 +850,15 @@ let wrap f =
         else
           ( { env with lex_state = Lex_env.empty_lex_state }
           , { Lex_result.lex_token; lex_loc; lex_errors = List.rev lex_errors_acc } )
-    | Comment (env, comment), lex_loc ->
+    | Comment (env, comment) ->
+        env.lex_last_loc := lex_loc;
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         ( env
         , { Lex_result.lex_token = TComment comment
           ; lex_loc
           ; lex_errors = List.rev lex_errors_acc
           } )
-    | Continue env, _ -> helper comments env
+    | Continue env -> helper comments env
   in
   fun env -> helper [] env
 

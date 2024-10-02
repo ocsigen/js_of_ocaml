@@ -22,15 +22,15 @@ var caml_int64_offset = Math.pow(2, -24);
 
 //Provides: MlInt64
 //Requires: caml_int64_offset, caml_raise_zero_divide
-function MlInt64 (lo,mi,hi) {
+function MlInt64(lo, mi, hi) {
   this.lo = lo & 0xffffff;
   this.mi = mi & 0xffffff;
   this.hi = hi & 0xffff;
 }
-MlInt64.prototype.caml_custom = "_j"
+MlInt64.prototype.caml_custom = "_j";
 MlInt64.prototype.copy = function () {
-  return new MlInt64(this.lo,this.mi,this.hi);
-}
+  return new MlInt64(this.lo, this.mi, this.hi);
+};
 
 MlInt64.prototype.ucompare = function (x) {
   if (this.hi > x.hi) return 1;
@@ -40,7 +40,7 @@ MlInt64.prototype.ucompare = function (x) {
   if (this.lo > x.lo) return 1;
   if (this.lo < x.lo) return -1;
   return 0;
-}
+};
 MlInt64.prototype.compare = function (x) {
   var hi = this.hi << 16;
   var xhi = x.hi << 16;
@@ -51,236 +51,287 @@ MlInt64.prototype.compare = function (x) {
   if (this.lo > x.lo) return 1;
   if (this.lo < x.lo) return -1;
   return 0;
-}
+};
 MlInt64.prototype.neg = function () {
-  var lo = - this.lo;
-  var mi = - this.mi + (lo >> 24);
-  var hi = - this.hi + (mi >> 24);
+  var lo = -this.lo;
+  var mi = -this.mi + (lo >> 24);
+  var hi = -this.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
-}
+};
 MlInt64.prototype.add = function (x) {
   var lo = this.lo + x.lo;
   var mi = this.mi + x.mi + (lo >> 24);
   var hi = this.hi + x.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
-}
+};
 MlInt64.prototype.sub = function (x) {
   var lo = this.lo - x.lo;
   var mi = this.mi - x.mi + (lo >> 24);
   var hi = this.hi - x.hi + (mi >> 24);
   return new MlInt64(lo, mi, hi);
-}
+};
 MlInt64.prototype.mul = function (x) {
   var lo = this.lo * x.lo;
   var mi = ((lo * caml_int64_offset) | 0) + this.mi * x.lo + this.lo * x.mi;
-  var hi = ((mi * caml_int64_offset) | 0) + this.hi * x.lo + this.mi * x.mi + this.lo * x.hi;
+  var hi =
+    ((mi * caml_int64_offset) | 0) +
+    this.hi * x.lo +
+    this.mi * x.mi +
+    this.lo * x.hi;
   return new MlInt64(lo, mi, hi);
-}
+};
 MlInt64.prototype.isZero = function () {
-  return (this.lo|this.mi|this.hi) == 0;
-}
+  return (this.lo | this.mi | this.hi) == 0;
+};
 MlInt64.prototype.isNeg = function () {
-  return (this.hi << 16) < 0;
-}
+  return this.hi << 16 < 0;
+};
 MlInt64.prototype.and = function (x) {
   return new MlInt64(this.lo & x.lo, this.mi & x.mi, this.hi & x.hi);
-}
+};
 MlInt64.prototype.or = function (x) {
-  return new MlInt64(this.lo|x.lo, this.mi|x.mi, this.hi|x.hi);
-}
+  return new MlInt64(this.lo | x.lo, this.mi | x.mi, this.hi | x.hi);
+};
 MlInt64.prototype.xor = function (x) {
-  return new MlInt64(this.lo^x.lo, this.mi^x.mi, this.hi^x.hi);
-}
+  return new MlInt64(this.lo ^ x.lo, this.mi ^ x.mi, this.hi ^ x.hi);
+};
 MlInt64.prototype.shift_left = function (s) {
   s = s & 63;
   if (s == 0) return this;
   if (s < 24) {
-    return new MlInt64 (this.lo << s,
-                        (this.mi << s) | (this.lo >> (24 - s)),
-                        (this.hi << s) | (this.mi >> (24 - s)));
+    return new MlInt64(
+      this.lo << s,
+      (this.mi << s) | (this.lo >> (24 - s)),
+      (this.hi << s) | (this.mi >> (24 - s)),
+    );
   }
   if (s < 48)
-    return new MlInt64 (0,
-                        this.lo << (s - 24),
-                        (this.mi << (s - 24)) | (this.lo >> (48 - s)));
-  return new MlInt64(0, 0, this.lo << (s - 48))
-}
+    return new MlInt64(
+      0,
+      this.lo << (s - 24),
+      (this.mi << (s - 24)) | (this.lo >> (48 - s)),
+    );
+  return new MlInt64(0, 0, this.lo << (s - 48));
+};
 MlInt64.prototype.shift_right_unsigned = function (s) {
   s = s & 63;
   if (s == 0) return this;
   if (s < 24)
-    return new MlInt64 (
+    return new MlInt64(
       (this.lo >> s) | (this.mi << (24 - s)),
       (this.mi >> s) | (this.hi << (24 - s)),
-      (this.hi >> s));
+      this.hi >> s,
+    );
   if (s < 48)
-    return new MlInt64 (
+    return new MlInt64(
       (this.mi >> (s - 24)) | (this.hi << (48 - s)),
-      (this.hi >> (s - 24)),
-      0);
-  return new MlInt64 (this.hi >> (s - 48), 0, 0);
-}
+      this.hi >> (s - 24),
+      0,
+    );
+  return new MlInt64(this.hi >> (s - 48), 0, 0);
+};
 MlInt64.prototype.shift_right = function (s) {
   s = s & 63;
   if (s == 0) return this;
   var h = (this.hi << 16) >> 16;
   if (s < 24)
-    return new MlInt64 (
+    return new MlInt64(
       (this.lo >> s) | (this.mi << (24 - s)),
       (this.mi >> s) | (h << (24 - s)),
-      ((this.hi << 16) >> s) >>> 16);
+      ((this.hi << 16) >> s) >>> 16,
+    );
   var sign = (this.hi << 16) >> 31;
   if (s < 48)
-    return new MlInt64 (
+    return new MlInt64(
       (this.mi >> (s - 24)) | (this.hi << (48 - s)),
-      (this.hi << 16) >> (s - 24) >> 16,
-      sign & 0xffff);
-  return new MlInt64 ((this.hi << 16) >> (s - 32), sign, sign);
-}
+      ((this.hi << 16) >> (s - 24)) >> 16,
+      sign & 0xffff,
+    );
+  return new MlInt64((this.hi << 16) >> (s - 32), sign, sign);
+};
 MlInt64.prototype.lsl1 = function () {
   this.hi = (this.hi << 1) | (this.mi >> 23);
   this.mi = ((this.mi << 1) | (this.lo >> 23)) & 0xffffff;
   this.lo = (this.lo << 1) & 0xffffff;
-}
+};
 MlInt64.prototype.lsr1 = function () {
   this.lo = ((this.lo >>> 1) | (this.mi << 23)) & 0xffffff;
   this.mi = ((this.mi >>> 1) | (this.hi << 23)) & 0xffffff;
   this.hi = this.hi >>> 1;
-}
+};
 MlInt64.prototype.udivmod = function (x) {
   var offset = 0;
   var modulus = this.copy();
   var divisor = x.copy();
-  var quotient = new MlInt64(0,0,0);
+  var quotient = new MlInt64(0, 0, 0);
   while (modulus.ucompare(divisor) > 0) {
     offset++;
     divisor.lsl1();
   }
   while (offset >= 0) {
-    offset --;
+    offset--;
     quotient.lsl1();
     if (modulus.ucompare(divisor) >= 0) {
-      quotient.lo ++;
+      quotient.lo++;
       modulus = modulus.sub(divisor);
     }
     divisor.lsr1();
   }
-  return { quotient : quotient, modulus : modulus };
-}
-MlInt64.prototype.div = function (y)
-{
+  return { quotient: quotient, modulus: modulus };
+};
+MlInt64.prototype.div = function (y) {
   var x = this;
-  if (y.isZero()) caml_raise_zero_divide ();
+  if (y.isZero()) caml_raise_zero_divide();
   var sign = x.hi ^ y.hi;
   if (x.hi & 0x8000) x = x.neg();
   if (y.hi & 0x8000) y = y.neg();
   var q = x.udivmod(y).quotient;
   if (sign & 0x8000) q = q.neg();
   return q;
-}
-MlInt64.prototype.mod = function (y)
-{
+};
+MlInt64.prototype.mod = function (y) {
   var x = this;
-  if (y.isZero()) caml_raise_zero_divide ();
+  if (y.isZero()) caml_raise_zero_divide();
   var sign = x.hi;
   if (x.hi & 0x8000) x = x.neg();
   if (y.hi & 0x8000) y = y.neg();
   var r = x.udivmod(y).modulus;
   if (sign & 0x8000) r = r.neg();
   return r;
-}
+};
 MlInt64.prototype.toInt = function () {
   return this.lo | (this.mi << 24);
-}
+};
 MlInt64.prototype.toFloat = function () {
-  return ((this.hi << 16) * Math.pow(2, 32) + this.mi * Math.pow(2, 24)) + this.lo;
-}
+  return (
+    (this.hi << 16) * Math.pow(2, 32) + this.mi * Math.pow(2, 24) + this.lo
+  );
+};
 MlInt64.prototype.toArray = function () {
-  return [this.hi >> 8,
-          this.hi & 0xff,
-          this.mi >> 16,
-          (this.mi >> 8) & 0xff,
-          this.mi & 0xff,
-          this.lo >> 16,
-          (this.lo >> 8) & 0xff,
-          this.lo & 0xff];
-}
+  return [
+    this.hi >> 8,
+    this.hi & 0xff,
+    this.mi >> 16,
+    (this.mi >> 8) & 0xff,
+    this.mi & 0xff,
+    this.lo >> 16,
+    (this.lo >> 8) & 0xff,
+    this.lo & 0xff,
+  ];
+};
 MlInt64.prototype.lo32 = function () {
   return this.lo | ((this.mi & 0xff) << 24);
-}
+};
 MlInt64.prototype.hi32 = function () {
   return ((this.mi >>> 8) & 0xffff) | (this.hi << 16);
-}
+};
 
 //Provides: caml_int64_ult const
-function caml_int64_ult(x,y) { return x.ucompare(y) < 0; }
+function caml_int64_ult(x, y) {
+  return x.ucompare(y) < 0;
+}
 
 //Provides: caml_int64_compare const
-function caml_int64_compare(x,y, total) { return x.compare(y) }
+function caml_int64_compare(x, y, total) {
+  return x.compare(y);
+}
 
 //Provides: caml_int64_neg const
-function caml_int64_neg (x) { return x.neg() }
+function caml_int64_neg(x) {
+  return x.neg();
+}
 
 //Provides: caml_int64_add const
-function caml_int64_add (x, y) { return x.add(y) }
+function caml_int64_add(x, y) {
+  return x.add(y);
+}
 
 //Provides: caml_int64_sub const
-function caml_int64_sub (x, y) { return x.sub(y) }
+function caml_int64_sub(x, y) {
+  return x.sub(y);
+}
 
 //Provides: caml_int64_mul const
 //Requires: caml_int64_offset
-function caml_int64_mul(x,y) { return x.mul(y) }
+function caml_int64_mul(x, y) {
+  return x.mul(y);
+}
 
 //Provides: caml_int64_is_zero const
-function caml_int64_is_zero(x) { return +x.isZero(); }
+function caml_int64_is_zero(x) {
+  return +x.isZero();
+}
 
 //Provides: caml_int64_is_negative const
-function caml_int64_is_negative(x) { return +x.isNeg(); }
+function caml_int64_is_negative(x) {
+  return +x.isNeg();
+}
 
 //Provides: caml_int64_and const
-function caml_int64_and (x, y) { return x.and(y); }
+function caml_int64_and(x, y) {
+  return x.and(y);
+}
 
 //Provides: caml_int64_or const
-function caml_int64_or (x, y) { return x.or(y); }
+function caml_int64_or(x, y) {
+  return x.or(y);
+}
 
 //Provides: caml_int64_xor const
-function caml_int64_xor (x, y) { return x.xor(y) }
+function caml_int64_xor(x, y) {
+  return x.xor(y);
+}
 
 //Provides: caml_int64_shift_left const
-function caml_int64_shift_left (x, s) { return x.shift_left(s) }
+function caml_int64_shift_left(x, s) {
+  return x.shift_left(s);
+}
 
 //Provides: caml_int64_shift_right_unsigned const
-function caml_int64_shift_right_unsigned (x, s) { return x.shift_right_unsigned(s) }
+function caml_int64_shift_right_unsigned(x, s) {
+  return x.shift_right_unsigned(s);
+}
 
 //Provides: caml_int64_shift_right const
-function caml_int64_shift_right (x, s) { return x.shift_right(s) }
+function caml_int64_shift_right(x, s) {
+  return x.shift_right(s);
+}
 
 //Provides: caml_int64_div const
-function caml_int64_div (x, y) { return x.div(y) }
+function caml_int64_div(x, y) {
+  return x.div(y);
+}
 
 //Provides: caml_int64_mod const
-function caml_int64_mod (x, y) { return x.mod(y) }
+function caml_int64_mod(x, y) {
+  return x.mod(y);
+}
 
 //Provides: caml_int64_of_int32 const
 //Requires: MlInt64
-function caml_int64_of_int32 (x) {
-  return new MlInt64(x & 0xffffff, (x >> 24) & 0xffffff, (x >> 31) & 0xffff)
+function caml_int64_of_int32(x) {
+  return new MlInt64(x & 0xffffff, (x >> 24) & 0xffffff, (x >> 31) & 0xffff);
 }
 
 //Provides: caml_int64_to_int32 const
-function caml_int64_to_int32 (x) { return x.toInt() }
+function caml_int64_to_int32(x) {
+  return x.toInt();
+}
 
 //Provides: caml_int64_to_float const
-function caml_int64_to_float (x) { return x.toFloat () }
+function caml_int64_to_float(x) {
+  return x.toFloat();
+}
 
 //Provides: caml_int64_of_float const
 //Requires: caml_int64_offset, MlInt64
-function caml_int64_of_float (x) {
+function caml_int64_of_float(x) {
   if (x < 0) x = Math.ceil(x);
   return new MlInt64(
     x & 0xffffff,
     Math.floor(x * caml_int64_offset) & 0xffffff,
-    Math.floor(x * caml_int64_offset * caml_int64_offset) & 0xffff);
+    Math.floor(x * caml_int64_offset * caml_int64_offset) & 0xffff,
+  );
 }
 
 //Provides: caml_int64_format const
@@ -288,10 +339,11 @@ function caml_int64_of_float (x) {
 //Requires: caml_int64_is_negative, caml_int64_neg
 //Requires: caml_int64_of_int32, caml_int64_to_int32
 //Requires: caml_int64_is_zero, caml_str_repeat
-function caml_int64_format (fmt, x) {
+function caml_int64_format(fmt, x) {
   var f = caml_parse_format(fmt);
   if (f.signedconv && caml_int64_is_negative(x)) {
-    f.sign = -1; x = caml_int64_neg(x);
+    f.sign = -1;
+    x = caml_int64_neg(x);
   }
   var buffer = "";
   var wbase = caml_int64_of_int32(f.base);
@@ -300,11 +352,11 @@ function caml_int64_format (fmt, x) {
     var p = x.udivmod(wbase);
     x = p.quotient;
     buffer = cvtbl.charAt(caml_int64_to_int32(p.modulus)) + buffer;
-  } while (! caml_int64_is_zero(x));
+  } while (!caml_int64_is_zero(x));
   if (f.prec >= 0) {
-    f.filler = ' ';
+    f.filler = " ";
     var n = f.prec - buffer.length;
-    if (n > 0) buffer = caml_str_repeat (n, '0') + buffer;
+    if (n > 0) buffer = caml_str_repeat(n, "0") + buffer;
   }
   return caml_finish_formatting(f, buffer);
 }
@@ -315,11 +367,15 @@ function caml_int64_format (fmt, x) {
 //Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
 //Requires: caml_ml_string_length,caml_string_unsafe_get, MlInt64
 function caml_int64_of_string(s) {
-  var r = caml_parse_sign_and_base (s);
-  var i = r[0], sign = r[1], base = r[2];
+  var r = caml_parse_sign_and_base(s);
+  var i = r[0],
+    sign = r[1],
+    base = r[2],
+    signedness = r[3];
   var base64 = caml_int64_of_int32(base);
-  var threshold =
-      new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(base64).quotient;
+  var threshold = new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(
+    base64,
+  ).quotient;
   var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
@@ -338,7 +394,7 @@ function caml_int64_of_string(s) {
     if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
   }
   if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
-  if (base == 10 && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
+  if (signedness && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
     caml_failwith("int_of_string");
   if (sign < 0) res = caml_int64_neg(res);
   return res;
@@ -346,34 +402,43 @@ function caml_int64_of_string(s) {
 
 //Provides: caml_int64_create_lo_mi_hi const
 //Requires: MlInt64
-function caml_int64_create_lo_mi_hi(lo, mi, hi){
-  return new MlInt64(lo, mi, hi)
+function caml_int64_create_lo_mi_hi(lo, mi, hi) {
+  return new MlInt64(lo, mi, hi);
 }
 //Provides: caml_int64_create_lo_hi const
 //Requires: MlInt64
-function caml_int64_create_lo_hi(lo, hi){
-  return new MlInt64 (
+function caml_int64_create_lo_hi(lo, hi) {
+  return new MlInt64(
     lo & 0xffffff,
     ((lo >>> 24) & 0xff) | ((hi & 0xffff) << 8),
-    (hi >>> 16) & 0xffff);
+    (hi >>> 16) & 0xffff,
+  );
 }
 //Provides: caml_int64_lo32 const
-function caml_int64_lo32(v){ return v.lo32() }
+function caml_int64_lo32(v) {
+  return v.lo32();
+}
 
 //Provides: caml_int64_hi32 const
-function caml_int64_hi32(v){ return v.hi32() }
+function caml_int64_hi32(v) {
+  return v.hi32();
+}
 
 //Provides: caml_int64_of_bytes const
 //Requires: MlInt64
 function caml_int64_of_bytes(a) {
-  return new MlInt64(a[7] << 0 | (a[6] << 8) | (a[5] << 16),
-                     a[4] << 0 | (a[3] << 8) | (a[2] << 16),
-                     a[1] << 0 | (a[0] << 8));
+  return new MlInt64(
+    (a[7] << 0) | (a[6] << 8) | (a[5] << 16),
+    (a[4] << 0) | (a[3] << 8) | (a[2] << 16),
+    (a[1] << 0) | (a[0] << 8),
+  );
 }
 //Provides: caml_int64_to_bytes const
-function caml_int64_to_bytes(x) { return x.toArray() }
+function caml_int64_to_bytes(x) {
+  return x.toArray();
+}
 
 //Provides: caml_int64_hash const
-function caml_int64_hash(v){
-  return (v.lo32()) ^ (v.hi32())
+function caml_int64_hash(v) {
+  return v.lo32() ^ v.hi32();
 }

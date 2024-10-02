@@ -58,59 +58,38 @@ let kind (s, _) =
 let to_string (k, v) = Printf.sprintf "%s%03d" k v
 
 let compare (p1, n1) (p2, n2) =
-  match Poly.compare (p1 : string) p2 with
-  | 0 -> compare (n1 : int) n2
+  match String.compare p1 p2 with
+  | 0 -> compare n1 n2
   | n -> n
 
 let equal a b = compare a b = 0
 
-let current_exe =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 33
-    | `V5_02 -> 33
-  in
-  "Caml1999X", v
+let v =
+  let current = Ocaml_version.current in
+  match current with
+  | 4 :: 08 :: _ -> 25
+  | 4 :: 09 :: _ -> 26
+  | 4 :: 10 :: _ -> 27
+  | 4 :: 11 :: _ -> 28
+  | 4 :: 12 :: _ -> 29
+  | 4 :: 13 :: _ -> 30
+  | 4 :: 14 :: _ -> 31
+  | 5 :: 00 :: _ -> 32
+  | 5 :: 01 :: _ -> 33
+  | 5 :: 02 :: _ -> 34
+  | 5 :: 03 :: _ -> 35
+  | _ ->
+      if Ocaml_version.compare current [ 4; 8 ] < 0
+      then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
+      else (
+        assert (Ocaml_version.compare current [ 5; 4 ] >= 0);
+        failwith "OCaml version unsupported. Upgrade js_of_ocaml.")
 
-let current_cmo =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 33
-    | `V5_02 -> 33
-  in
-  "Caml1999O", v
+let current_exe = "Caml1999X", v
 
-let current_cma =
-  let v =
-    match Ocaml_version.v with
-    | `V4_08 -> 25
-    | `V4_09 -> 26
-    | `V4_10 -> 27
-    | `V4_11 -> 28
-    | `V4_12 -> 29
-    | `V4_13 -> 30
-    | `V4_14 -> 31
-    | `V5_00 -> 32
-    | `V5_01 -> 33
-    | `V5_02 -> 33
-  in
-  "Caml1999A", v
+let current_cmo = "Caml1999O", v
+
+let current_cma = "Caml1999A", v
 
 let current = function
   | `Exe -> current_exe

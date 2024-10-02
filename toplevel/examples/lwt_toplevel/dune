@@ -46,14 +46,16 @@
   (link_flags (:standard))
   (build_runtime_flags
    (:standard
-    +toplevel.js
-    +dynlink.js
     --file
     %{dep:examples.ml}
     --file
     %{dep:test_dynlink.cmo}
     --file
-    %{dep:test_dynlink.js}))
+    %{dep:test_dynlink.js}
+    --file
+    %{dep:test_lib_jsoo.js}
+    --file
+    (:include html_types_path.txt)))
   (flags
    (:standard
     --toplevel
@@ -62,6 +64,18 @@
   (:standard \ test_dynlink examples effects_flags))
  (preprocess
   (pps js_of_ocaml-ppx)))
+
+(rule
+ (target html_types_path.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run
+    ocamlfind
+    query
+    tyxml.functor
+    -format
+    "%d/html_types.cmi:/static/cmis/"))))
 
 (rule
  (targets test_dynlink.cmo test_dynlink.cmi)
@@ -77,6 +91,20 @@
    --toplevel
    %{read-strings:effects_flags.txt}
    %{dep:test_dynlink.cmo})))
+
+(rule
+ (target test_lib_jsoo.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --toplevel
+   --include-runtime
+   %{read-strings:effects_flags.txt}
+   %{dep:test_lib/stubs.js}
+   %{dep:test_lib/test_lib_jsoo.cma}
+   -o
+   %{target})))
 
 (rule
  (targets export.txt)
@@ -149,6 +177,8 @@
    %{dep:test_dynlink.cmo}
    --file
    %{dep:test_dynlink.js}
+   --file
+   %{dep:test_lib_jsoo.js}
    --export
    %{dep:export.txt}
    --toplevel

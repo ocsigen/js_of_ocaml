@@ -44,7 +44,28 @@ type map =
       ; ori_name : int
       }
 
-type mapping = map list
+module Mappings : sig
+  type t
+
+  val empty : t
+  (** Represents the empty mapping. *)
+
+  val of_string : string -> t
+  (** By default, mappings are left uninterpreted, since many operations can be
+      performed efficiently directly on the encoded form. Therefore this
+      function is mostly a no-op and very cheap. It does not perform any
+      validation of its argument, unlike {!val:decode}. It is guaranteed that
+      {!val:of_string} and {!val:to_string} are inverse functions. *)
+
+  val decode : t -> map list
+  (** Parse the mappings. *)
+
+  val encode : map list -> t
+
+  val to_string : t -> string
+  (** Returns the mappings as a string in the Source map v3 format. This
+      function is mostly a no-op and is very cheap. *)
+end
 
 type t =
   { version : int
@@ -53,23 +74,20 @@ type t =
   ; sources : string list
   ; sources_content : Source_content.t option list option
   ; names : string list
-  ; mappings : mapping
+  ; mappings : Mappings.t
+        (** Left uninterpreted, since most useful operations can be performed efficiently
+          directly on the encoded form, and a full decoding can be costly for big
+          sourcemaps. *)
   }
 
 val filter_map : t -> f:(int -> int option) -> t
 
 val merge : t list -> t option
 
-val mapping_of_string : string -> mapping
-
-val string_of_mapping : mapping -> string
-
 val empty : filename:string -> t
 
 val to_string : t -> string
 
-val of_string : string -> t
-
 val to_file : t -> string -> unit
 
-val of_file : string -> t
+val of_string : string -> t

@@ -54,9 +54,10 @@ let runtime =
     ; domain
     ; prng
     ; sync
-    ; effect
+    ; effect_
     ; zstd
     ; runtime_events
+    ; blake2
     ]
 
 include Files

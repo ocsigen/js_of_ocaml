@@ -32,3 +32,5 @@ val if_statement :
 val block : (Javascript.statement * location) list -> Javascript.statement * location
 
 val unblock : Javascript.statement * location -> (Javascript.statement * location) list
+
+val function_body : (statement * location) list -> (statement * location) list

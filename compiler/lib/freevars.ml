@@ -218,8 +218,43 @@ let free_variables vars in_loop p =
 let f p =
   Code.invariant p;
   let t = Timer.make () in
+  let bound = Code.Var.ISet.empty () in
+  let visited = BitSet.create' p.free_pc in
+  let free_vars =
+    Code.fold_closures_innermost_first
+      p
+      (fun _name_opt params (pc, args) acc ->
+        let free = ref Var.Set.empty in
+        let using x =
+          if Code.Var.ISet.mem bound x then () else free := Var.Set.add x !free
+        in
+        let rec traverse pc =
+          if not (BitSet.mem visited pc)
+          then (
+            BitSet.set visited pc;
+            let block = Addr.Map.find pc p.blocks in
+            iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
+            iter_block_free_vars using block;
+            List.iter block.body ~f:(function
+                | Let (_, Closure (_, (pc_clo, _))), _ ->
+                    Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
+                | _ -> ());
+            Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
+        in
+        List.iter params ~f:(fun x -> Code.Var.ISet.add bound x);
+        List.iter args ~f:using;
+        traverse pc;
+        Code.Addr.Map.add pc !free acc)
+      Code.Addr.Map.empty
+  in
+  if times () then Format.eprintf "  free vars 2: %a@." Timer.print t;
+  free_vars
+
+let f_mutable p =
+  Code.invariant p;
+  let t = Timer.make () in
   let in_loop = find_all_loops p in
   let vars = mark_variables in_loop p in
   let free_vars = free_variables vars in_loop p in
-  if times () then Format.eprintf "  free vars: %a@." Timer.print t;
+  if times () then Format.eprintf "  free vars 1: %a@." Timer.print t;
   free_vars

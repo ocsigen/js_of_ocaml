@@ -22,10 +22,6 @@
 
 open Js
 
-type int32 = number_t
-
-type uint32 = number_t
-
 class type arrayBuffer = object
   method byteLength : int readonly_prop
 
@@ -76,29 +72,32 @@ type int16Array = (int, int, Bigarray.int16_signed_elt) typedArray
 
 type uint16Array = (int, int, Bigarray.int16_unsigned_elt) typedArray
 
-type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
+type int32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
-type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
+type uint32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
 type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
-type ('bigarray, 'typed_array, 'elt) type' =
-  | Char : (int, char, Bigarray.int8_unsigned_elt) type'
-  | Int8_signed : (int, int, Bigarray.int8_signed_elt) type'
-  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) type'
-  | Int16_signed : (int, int, Bigarray.int16_signed_elt) type'
-  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
-  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
-  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
-  | Float32 : (number_t, float, Bigarray.float32_elt) type'
-  | Float64 : (number_t, float, Bigarray.float64_elt) type'
+(** The first type parameter is the type of values that can be read and written
+    in the {!classtype:typedArray}. The last two type parameters define the
+    kind of bigarrays that can be converted to and from the
+    {!classtype:typedArray}. See {!type:Bigarray.kind}. *)
+type (_, _, _) kind =
+  | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
+  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
+  | Int16_signed : (int, int, Bigarray.int16_signed_elt) kind
+  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) kind
+  | Int32_signed : (number_t, Int32.t, Bigarray.int32_elt) kind
+  | Int32_unsigned : (number_t, Int32.t, Bigarray.int32_elt) kind
+  | Float32 : (number_t, float, Bigarray.float32_elt) kind
+  | Float64 : (number_t, float, Bigarray.float64_elt) kind
 
 val kind : ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
 
 val from_genarray :
-     ('typed_array, 'bigarray, 'elt) type'
+     ('typed_array, 'bigarray, 'elt) kind
   -> ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t
   -> ('typed_array, 'bigarray, 'elt) typedArray t
 
@@ -158,7 +157,7 @@ val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
 
 val uint32Array : (int -> uint32Array t) constr
 
-val uint32Array_fromArray : (uint32 js_array t -> uint32Array t) constr
+val uint32Array_fromArray : (number_t js_array t -> uint32Array t) constr
 
 val uint32Array_fromTypedArray : (uint32Array t -> uint32Array t) constr
 
@@ -207,13 +206,13 @@ class type dataView = object
 
   method getUint16_ : int -> bool t -> int meth
 
-  method getInt32 : int -> int32 meth
+  method getInt32 : int -> number_t meth
 
-  method getInt32_ : int -> bool t -> int32 meth
+  method getInt32_ : int -> bool t -> number_t meth
 
-  method getUint32 : int -> uint32 meth
+  method getUint32 : int -> number_t meth
 
-  method getUint32_ : int -> bool t -> uint32 meth
+  method getUint32_ : int -> bool t -> number_t meth
 
   method getFloat32 : int -> number_t meth
 
@@ -235,13 +234,13 @@ class type dataView = object
 
   method setUint16_ : int -> int -> bool t -> unit meth
 
-  method setInt32 : int -> int32 -> unit meth
+  method setInt32 : int -> number_t -> unit meth
 
-  method setInt32_ : int -> int32 -> bool t -> unit meth
+  method setInt32_ : int -> number_t -> bool t -> unit meth
 
-  method setUint32 : int -> uint32 -> unit meth
+  method setUint32 : int -> number_t -> unit meth
 
-  method setUint32_ : int -> uint32 -> bool t -> unit meth
+  method setUint32_ : int -> number_t -> bool t -> unit meth
 
   method setFloat32 : int -> number_t -> unit meth
 

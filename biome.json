@@ -1,0 +1,57 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
+  "files": {
+    "include": ["runtime"],
+    "ignore": ["runtime/zstd.ts"]
+  },
+  "formatter": {
+    "enabled": true,
+    "useEditorconfig": true
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "useArrowFunction": "off",
+        "useOptionalChain": "off"
+      },
+      "correctness": {
+        "noInnerDeclarations": "off",
+        "noInvalidUseBeforeDeclaration": "off",
+        "noSwitchDeclarations": "off"
+      },
+      "nursery": {
+        "noUselessEscapeInRegex": "error"
+      },
+      "security": {
+        "noGlobalEval": "off"
+      },
+      "style": {
+        "noArguments": "off",
+        "noCommaOperator": "off",
+        "noParameterAssign": "off",
+        "noUselessElse": "off",
+        "noVar": "off",
+        "useExponentiationOperator": "off",
+        "useSingleVarDeclarator": "off",
+        "useTemplate": "off"
+      },
+      "suspicious": {
+        "noAssignInExpressions": "off",
+        "noDoubleEquals": "off",
+        "noFallthroughSwitchClause": "off",
+        "noRedeclare": "off",
+        "noSelfCompare": "off"
+      }
+    }
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": true
+  }
+}

@@ -324,7 +324,7 @@ let f () =
     Sys.remove "aaa/bbb";
     Sys.remove "aaa/ccc";
     Sys.rmdir "aaa"
-  with e -> print_endline  (Printexc.to_string (norm e))
+  with e -> print_endline  ("Error: " ^ Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
   [%expect
     {|
@@ -412,7 +412,7 @@ let f () =
     Sys.remove "ccc";
     Sys.chdir "..";
     Sys.rmdir "aaa"
-  with e -> print_endline  (Printexc.to_string (norm e))
+  with e -> print_endline  ("Error: " ^ Printexc.to_string (norm e))
 let () = f (); Sys.chdir "/static"; f () |};
   [%expect
     {|

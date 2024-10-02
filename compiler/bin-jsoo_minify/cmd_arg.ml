@@ -72,6 +72,6 @@ let info =
   let version =
     match Compiler_version.git_version with
     | "" -> Compiler_version.s
-    | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
+    | v -> Printf.sprintf "%s+%s" Compiler_version.s v
   in
   Cmd.info "jsoo_minify" ~version ~doc ~man

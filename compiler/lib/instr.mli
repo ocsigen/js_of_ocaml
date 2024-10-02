@@ -197,6 +197,8 @@ type desc =
   ; opcode : int
   }
 
+val find : t -> desc
+
 val get_instr_exn : string -> int -> desc
 
 val gets : string -> int -> int

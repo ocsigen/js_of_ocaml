@@ -59,10 +59,10 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        _b_ = 0,
+        _a_ = 0,
+        _b_ = _a_,
         _d_ =
-          [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
-        _a_ = 0;
+          [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")];
        try{0; _b_ = _a_ + 1 | 0; throw caml_maybe_attach_backtrace(Stdlib[3], 1);}
        catch(_e_){
         var _c_ = caml_wrap_exception(_e_);
@@ -123,7 +123,9 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        _c_ = 0,
+        _a_ = 0,
+        _b_ = 0,
+        _c_ = _a_,
         _h_ =
           [0,
            [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
@@ -131,9 +133,7 @@ with Exit ->
         _e_ =
           [0,
            [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
-           caml_string_of_jsbytes("%d %d\n")],
-        _a_ = 0,
-        _b_ = 0;
+           caml_string_of_jsbytes("%d %d\n")];
        try{
         var _f_ = _a_ + 1 | 0;
         0;
@@ -209,10 +209,10 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        _b_ = 0,
+        _a_ = 0,
+        _b_ = _a_,
         _f_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")],
-        _d_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")],
-        _a_ = 0;
+        _d_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")];
        try{
         var _e_ = _a_;
         try{

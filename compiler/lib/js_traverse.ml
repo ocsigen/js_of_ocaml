@@ -23,6 +23,8 @@ open Javascript
 class type mapper = object
   method loc : Javascript.location -> Javascript.location
 
+  method parse_info : Parse_info.t -> Parse_info.t
+
   method expression : Javascript.expression -> Javascript.expression
 
   method expression_o : Javascript.expression option -> Javascript.expression option
@@ -49,6 +51,8 @@ class type mapper = object
        Javascript.variable_declaration_kind
     -> Javascript.for_binding
     -> Javascript.for_binding
+
+  method binding_property : Javascript.binding_property -> Javascript.binding_property
 
   method variable_declaration :
        Javascript.variable_declaration_kind
@@ -80,14 +84,20 @@ end
 (* generic js ast walk/map *)
 class map : mapper =
   object (m)
-    method loc i = i
+    method loc =
+      function
+      | N -> N
+      | U -> U
+      | Pi x -> Pi (m#parse_info x)
+
+    method parse_info i = i
 
     method ident i =
       match i with
       | V v -> V v
       | S { name; var; loc } -> S { name; var; loc = m#loc loc }
 
-    method private early_error e = e
+    method private early_error { reason; loc } = { reason; loc = m#parse_info loc }
 
     method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, m#loc pc)
 
@@ -123,7 +133,7 @@ class map : mapper =
     method private class_element_name x =
       match x with
       | PropName n -> PropName (m#property_name n)
-      | PrivName x -> PrivName (m#ident x)
+      | PrivName x -> PrivName x
 
     method block l = m#statements l
 
@@ -168,6 +178,13 @@ class map : mapper =
             | Right (k, d) -> Right (k, m#for_binding k d)
           in
           ForOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+      | ForAwaitOf_statement (e1, e2, (s, loc)) ->
+          let e1 =
+            match e1 with
+            | Left e -> Left (m#expression e)
+            | Right (k, d) -> Right (k, m#for_binding k d)
+          in
+          ForAwaitOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
       | Return_statement e -> Return_statement (m#expression_o e)
@@ -191,8 +208,10 @@ class map : mapper =
             , match final with
               | None -> None
               | Some s -> Some (m#block s) )
-      | Import (import, loc) -> Import (m#import import, loc)
-      | Export (export, loc) -> Export (m#export export, loc)
+      | With_statement (e, (s, loc)) ->
+          With_statement (m#expression e, (m#statement s, m#loc loc))
+      | Import (import, loc) -> Import (m#import import, m#parse_info loc)
+      | Export (export, loc) -> Export (m#export export, m#parse_info loc)
 
     method import { from; kind } =
       let kind =
@@ -221,13 +240,21 @@ class map : mapper =
           | Class_declaration (id, f) -> ExportClass (id, f)
           | _ -> assert false)
       | ExportNames l -> ExportNames (List.map ~f:(fun (id, s) -> m#ident id, s) l)
-      | ExportDefaultFun (id, decl) -> (
+      | ExportDefaultFun (Some id, decl) -> (
           match m#statement (Function_declaration (id, decl)) with
-          | Function_declaration (id, decl) -> ExportDefaultFun (id, decl)
+          | Function_declaration (id, decl) -> ExportDefaultFun (Some id, decl)
           | _ -> assert false)
-      | ExportDefaultClass (id, decl) -> (
+      | ExportDefaultFun (None, decl) -> (
+          match m#expression (EFun (None, decl)) with
+          | EFun (None, decl) -> ExportDefaultFun (None, decl)
+          | _ -> assert false)
+      | ExportDefaultClass (Some id, decl) -> (
           match m#statement (Class_declaration (id, decl)) with
-          | Class_declaration (id, decl) -> ExportDefaultClass (id, decl)
+          | Class_declaration (id, decl) -> ExportDefaultClass (Some id, decl)
+          | _ -> assert false)
+      | ExportDefaultClass (None, decl) -> (
+          match m#expression (EClass (None, decl)) with
+          | EClass (None, decl) -> ExportDefaultClass (None, decl)
           | _ -> assert false)
       | ExportDefaultExpression e -> ExportDefaultExpression (m#expression e)
       | ExportFrom l -> ExportFrom l
@@ -270,10 +297,11 @@ class map : mapper =
               EAssignTarget
                 (ObjectTarget
                    (List.map l ~f:(function
-                       | TargetPropertyId (i, e) ->
-                           TargetPropertyId (m#ident i, m#initialiser_o e)
-                       | TargetProperty (i, e) ->
-                           TargetProperty (m#property_name i, m#expression e)
+                       | TargetPropertyId (Prop_and_ident i, e) ->
+                           TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
+                       | TargetProperty (n, e, i) ->
+                           TargetProperty
+                             (m#property_name n, m#expression e, m#initialiser_o i)
                        | TargetPropertyMethod (n, x) ->
                            TargetPropertyMethod (m#property_name n, m#method_ x)
                        | TargetPropertySpread e -> TargetPropertySpread (m#expression e))))
@@ -285,6 +313,7 @@ class map : mapper =
           ECall (m#expression e1, ak, List.map e2 ~f:m#argument, m#loc loc)
       | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
       | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
+      | EDotPrivate (e1, ak, id) -> EDotPrivate (m#expression e1, ak, id)
       | ENew (e1, args) ->
           ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args)
       | EVar v -> EVar (m#ident v)
@@ -310,7 +339,8 @@ class map : mapper =
                      CoverInitializedName (m#early_error e, a, b)))
       | (EStr _ as x) | (EBool _ as x) | (ENum _ as x) | (ERegexp _ as x) -> x
       | ETemplate t -> ETemplate (m#template t)
-      | EYield e -> EYield (m#expression_o e)
+      | EYield { delegate; expr } -> EYield { delegate; expr = m#expression_o expr }
+      | EPrivName i -> EPrivName i
       | CoverParenthesizedExpressionAndArrowParameterList e ->
           CoverParenthesizedExpressionAndArrowParameterList (m#early_error e)
       | CoverCallExpressionAndAsyncArrowHead e ->
@@ -349,10 +379,11 @@ class map : mapper =
       | None -> None
       | Some (b, e) -> Some (m#binding b, m#initialiser_o e)
 
-    method private binding_property x =
+    method binding_property x =
       match x with
       | Prop_binding (i, e) -> Prop_binding (m#property_name i, m#binding_element e)
-      | Prop_ident (i, e) -> Prop_ident (m#ident i, m#initialiser_o e)
+      | Prop_ident (Prop_and_ident i, e) ->
+          Prop_ident (Prop_and_ident (m#ident i), m#initialiser_o e)
 
     method expression_o x =
       match x with
@@ -465,7 +496,7 @@ class iter : iterator =
     method private class_element_name x =
       match x with
       | PropName n -> m#property_name n
-      | PrivName x -> m#ident x
+      | PrivName (Utf8 _) -> ()
 
     method statement s =
       match s with
@@ -508,7 +539,12 @@ class iter : iterator =
           (match e1 with
           | Left e -> m#expression e
           | Right (k, d) -> m#for_binding k d);
-
+          m#expression e2;
+          m#statement s
+      | ForAwaitOf_statement (e1, e2, (s, _)) ->
+          (match e1 with
+          | Left e -> m#expression e
+          | Right (k, d) -> m#for_binding k d);
           m#expression e2;
           m#statement s
       | Continue_statement _ -> ()
@@ -537,6 +573,9 @@ class iter : iterator =
           match final with
           | None -> ()
           | Some s -> m#block s)
+      | With_statement (e, (s, _)) ->
+          m#expression e;
+          m#statement s
       | Import (x, _loc) -> m#import x
       | Export (x, _loc) -> m#export x
 
@@ -557,8 +596,10 @@ class iter : iterator =
       | ExportFun (id, f) -> m#statement (Function_declaration (id, f))
       | ExportClass (id, f) -> m#statement (Class_declaration (id, f))
       | ExportNames l -> List.iter ~f:(fun (id, _) -> m#ident id) l
-      | ExportDefaultFun (id, decl) -> m#statement (Function_declaration (id, decl))
-      | ExportDefaultClass (id, decl) -> m#statement (Class_declaration (id, decl))
+      | ExportDefaultFun (Some id, decl) -> m#statement (Function_declaration (id, decl))
+      | ExportDefaultFun (None, decl) -> m#expression (EFun (None, decl))
+      | ExportDefaultClass (Some id, decl) -> m#statement (Class_declaration (id, decl))
+      | ExportDefaultClass (None, decl) -> m#expression (EClass (None, decl))
       | ExportDefaultExpression e -> m#expression e
       | ExportFrom { from = _; kind = _ } -> ()
       | CoverExportFrom e -> m#early_error e
@@ -604,12 +645,13 @@ class iter : iterator =
                   | TargetElementSpread e -> m#expression e)
           | ObjectTarget l ->
               List.iter l ~f:(function
-                  | TargetPropertyId (i, e) ->
+                  | TargetPropertyId (Prop_and_ident i, e) ->
                       m#ident i;
                       m#initialiser_o e
-                  | TargetProperty (i, e) ->
-                      m#property_name i;
-                      m#expression e
+                  | TargetProperty (n, e, i) ->
+                      m#property_name n;
+                      m#expression e;
+                      m#initialiser_o i
                   | TargetPropertyMethod (n, x) ->
                       m#property_name n;
                       m#method_ x
@@ -625,6 +667,7 @@ class iter : iterator =
           m#expression e1;
           m#expression e2
       | EDot (e1, _ak, _) -> m#expression e1
+      | EDotPrivate (e1, _, _) -> m#expression e1
       | ENew (e1, Some args) ->
           m#expression e1;
           List.iter args ~f:m#argument
@@ -657,7 +700,8 @@ class iter : iterator =
               | CoverInitializedName (e, _, _) -> m#early_error e)
       | EStr _ | EBool _ | ENum _ | ERegexp _ -> ()
       | ETemplate l -> m#template l
-      | EYield e -> m#expression_o e
+      | EYield { delegate = _; expr } -> m#expression_o expr
+      | EPrivName (Utf8 _) -> ()
       | CoverParenthesizedExpressionAndArrowParameterList e -> m#early_error e
       | CoverCallExpressionAndAsyncArrowHead e -> m#early_error e
 
@@ -697,7 +741,7 @@ class iter : iterator =
     method private binding_property x =
       match x with
       | Prop_binding ((_ : property_name), e) -> m#binding_element e
-      | Prop_ident (i, e) ->
+      | Prop_ident (Prop_and_ident i, e) ->
           m#ident i;
           m#initialiser_o e
 
@@ -900,18 +944,33 @@ class free =
         }
 
     method use_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with use = IdentSet.add x state_.use }
 
     method def_var x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
 
     method def_local x =
-      let n = try IdentMap.find x !count with Not_found -> 0 in
-      count := IdentMap.add x (succ n) !count;
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method fun_decl (k, params, body, nid) =
@@ -919,6 +978,7 @@ class free =
       let ids = bound_idents_of_params params in
       List.iter ids ~f:tbody#def_var;
       let body = tbody#function_body body in
+      let params = tbody#formal_parameter_list params in
       tbody#record_block (Params params);
       m#merge_info tbody;
       k, params, body, nid
@@ -933,6 +993,7 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           let ident =
             match ident with
             | Some i ->
@@ -996,8 +1057,9 @@ class free =
           let ids = bound_idents_of_params params in
           List.iter ids ~f:tbody#def_var;
           let body = tbody#function_body body in
+          let params = tbody#formal_parameter_list params in
           tbody#record_block (Params params);
-          m#def_var id;
+          m#def_local id;
           m#merge_info tbody;
           Function_declaration (id, (k, params, body, nid))
       | Class_declaration (id, cl_decl) ->
@@ -1006,7 +1068,7 @@ class free =
           let cl_decl = cbody#class_decl cl_decl in
           cbody#record_block Normal;
           m#merge_block_info cbody;
-          m#def_var id;
+          m#def_local id;
           Class_declaration (id, cl_decl)
       | Block b -> Block (m#block b)
       | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, loc)) ->
@@ -1037,6 +1099,15 @@ class free =
           m'#record_block Normal;
           m#merge_block_info m';
           ForOf_statement (Right (k, l), e2, (st, m#loc loc))
+      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let same_level = level in
+          let m' = {<state_ = empty; level = same_level>} in
+          let l = m'#for_binding k l in
+          let e2 = m'#expression e2 in
+          let st = m'#statement st in
+          m'#record_block Normal;
+          m#merge_block_info m';
+          ForAwaitOf_statement (Right (k, l), e2, (st, m#loc loc))
       | Switch_statement (e, l, def, l') ->
           let same_level = level in
           let m' = {<state_ = empty; level = same_level>} in
@@ -1160,6 +1231,10 @@ class rename_variable ~esm =
              let m = {<depth = depth + 1>} in
              m#for_binding k l;
              m#statement st
+         | _, ForAwaitOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
          | _, ForIn_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
              let m = {<depth = depth + 1>} in
              m#for_binding k l;
@@ -1187,8 +1262,12 @@ class rename_variable ~esm =
          | ExportFun (_id, _f) -> ()
          | ExportClass (_id, _f) -> ()
          | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
-         | ExportDefaultFun (id, decl) -> self#statement (Function_declaration (id, decl))
-         | ExportDefaultClass (id, decl) -> self#statement (Class_declaration (id, decl))
+         | ExportDefaultFun (Some id, decl) ->
+             self#statement (Function_declaration (id, decl))
+         | ExportDefaultClass (Some id, decl) ->
+             self#statement (Class_declaration (id, decl))
+         | ExportDefaultFun (None, decl) -> self#fun_decl decl
+         | ExportDefaultClass (None, decl) -> self#class_decl decl
          | ExportDefaultExpression e -> self#expression e
          | ExportFrom { from = _; kind = _ } -> ()
          | CoverExportFrom _ -> ()
@@ -1266,6 +1345,14 @@ class rename_variable ~esm =
         let m' = m#update_state Lexical_block [] p in
         m'#statements p
 
+    method binding_property x =
+      match x with
+      | Prop_ident (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), e)
+        when StringMap.mem name' subst ->
+          let x = Prop_binding (PNI name, (BindingIdent ident, e)) in
+          super#binding_property x
+      | x -> super#binding_property x
+
     method expression e =
       match e with
       | EFun (ident, (k, params, body, nid)) ->
@@ -1277,6 +1364,16 @@ class rename_variable ~esm =
       | EClass (Some id, cl_decl) ->
           let m' = m#update_state Lexical_block [ id ] [] in
           EClass (Some (m'#ident id), m'#class_decl cl_decl)
+      | EAssignTarget (ObjectTarget l) ->
+          let l =
+            List.map l ~f:(function
+                | TargetPropertyId
+                    (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), rhs)
+                  when StringMap.mem name' subst ->
+                    TargetProperty (PNI name, EVar ident, rhs)
+                | b -> b)
+          in
+          super#expression (EAssignTarget (ObjectTarget l))
       | _ -> super#expression e
 
     method statement s =
@@ -1326,10 +1423,17 @@ class rename_variable ~esm =
             ( Right (k, m'#for_binding k l)
             , m'#expression e2
             , (m'#statement st, m'#loc loc) )
+      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
+          let ids = bound_idents_of_binding l in
+          let m' = m#update_state Lexical_block ids [] in
+          ForAwaitOf_statement
+            ( Right (k, m'#for_binding k l)
+            , m'#expression e2
+            , (m'#statement st, m'#loc loc) )
       | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, loc)) ->
           let ids = bound_idents_of_binding l in
           let m' = m#update_state Lexical_block ids [] in
-          ForOf_statement
+          ForIn_statement
             ( Right (k, m'#for_binding k l)
             , m'#expression e2
             , (m'#statement st, m'#loc loc) )
@@ -1396,78 +1500,20 @@ class rename_variable ~esm =
   end
 
 class compact_vardecl =
+  let expr_eq id e = EBin (Eq, EVar id, e) in
   object (m)
-    inherit free as super
-
-    val mutable exc_ = IdentSet.empty
+    inherit map as super
 
     val mutable insert_ = IdentSet.empty
 
-    method exc = exc_
+    method private var x = insert_ <- IdentSet.add x insert_
 
-    method private translate l =
-      List.filter_map l ~f:(function
-          | DeclPattern _ -> None
-          | DeclIdent (id, eopt) -> (
-              match eopt with
-              | None -> None
-              | Some (e, _) -> Some (EBin (Eq, EVar id, e))))
-
-    method private translate_st l =
-      let l = m#translate l in
-      match l with
-      | [] -> Empty_statement
-      | x :: l ->
-          Expression_statement (List.fold_left l ~init:x ~f:(fun acc e -> ESeq (acc, e)))
-
-    method private translate_ex l =
-      let l = m#translate l in
-      match l with
-      | [] -> None
-      | x :: l -> Some (List.fold_left l ~init:x ~f:(fun acc e -> ESeq (acc, e)))
-
-    method private except_ids l =
-      exc_ <- List.fold_left l ~init:exc_ ~f:(fun acc s -> IdentSet.add s acc)
-
-    method private except_ident e = exc_ <- IdentSet.add e exc_
-
-    method statement s =
-      let s = super#statement s in
-      match s with
-      | Function_declaration (id, fun_decl) ->
-          let fun_decl = m#fun_decl fun_decl in
-          m#except_ident id;
-          Function_declaration (id, fun_decl)
-      | Variable_statement (_, l) -> m#translate_st l
-      | For_statement (Right (Var, l), e2, e3, s) ->
-          For_statement (Left (m#translate_ex l), e2, e3, s)
-      | Try_statement (b, w, f) ->
-          (match w with
-          | None -> ()
-          | Some (None, _) -> ()
-          | Some (Some (id, _), _) ->
-              let ids = bound_idents_of_binding id in
-              m#except_ids ids);
-          Try_statement (b, w, f)
-      | s -> s
-
-    method record_block block =
-      (match block with
-      | Catch (id, _) ->
-          let ids = bound_idents_of_binding id in
-          m#except_ids ids
-      | Params p ->
-          let s = bound_idents_of_params p in
-          m#except_ids s
-      | Normal -> ());
-      super#record_block block
-
-    method merge_info from =
-      super#merge_info from;
-      let all =
-        IdentSet.fold (fun e acc -> IdentSet.add e acc) from#state.def_var IdentSet.empty
-      in
-      insert_ <- IdentSet.diff all from#exc
+    method fun_decl (k, params, body, nid) =
+      let m' = {<insert_ = IdentSet.empty>} in
+      let params = m'#formal_parameter_list params in
+      let body = m'#function_body body in
+      let body = m'#pack body in
+      k, params, body, m#loc nid
 
     method private split x =
       let rec loop = function
@@ -1476,14 +1522,15 @@ class compact_vardecl =
       in
       loop x
 
-    method private pack (all : IdentSet.t) sources =
+    method pack rest =
+      let all = insert_ in
       let may_flush rem vars s instr =
         if List.is_empty vars
         then rem, [], s :: instr
         else rem, [], s :: (Variable_statement (Var, List.rev vars), N) :: instr
       in
       let rem, vars, instr =
-        List.fold_left sources ~init:(all, [], []) ~f:(fun (rem, vars, instr) (s, loc) ->
+        List.fold_left rest ~init:(all, [], []) ~f:(fun (rem, vars, instr) (s, loc) ->
             match s with
             | Expression_statement e ->
                 let l = m#split e in
@@ -1511,41 +1558,24 @@ class compact_vardecl =
           (Variable_statement (Var, List.rev_append l l'), loc) :: rest
       | l, _ -> (Variable_statement (Var, l), N) :: instr
 
-    method fun_decl (k, params, body, nid) =
-      let all = IdentSet.diff insert_ exc_ in
-      let body = m#pack all body in
-      k, params, body, nid
-
-    method expression x =
-      let x = super#expression x in
-      match x with
-      | EFun (ident, fun_decl) ->
-          let fun_decl = m#fun_decl fun_decl in
-          Option.iter ~f:m#except_ident ident;
-          EFun (ident, fun_decl)
-      | _ -> x
-
-    method statements l =
-      let l = super#statements l in
-      let l =
-        List.fold_left l ~init:[] ~f:(fun acc (x, loc) ->
-            match x with
-            | Expression_statement e ->
-                let l = m#split e in
-                let l =
-                  List.fold_left l ~init:acc ~f:(fun acc e ->
-                      (Expression_statement e, N) :: acc)
-                in
-                l
-            | _ -> (x, loc) :: acc)
-      in
-      List.rev l
+    method statements s =
+      let s = super#statements s in
+      List.concat_map s ~f:(fun (s, loc) ->
+          match s with
+          | Variable_statement (Var, l) ->
+              List.filter_map l ~f:(function
+                  | DeclIdent (x, Some (init, loc)) ->
+                      m#var x;
+                      Some (Expression_statement (expr_eq x init), loc)
+                  | DeclIdent (x, None) ->
+                      m#var x;
+                      None
+                  | DeclPattern _ as x -> Some (Variable_statement (Var, [ x ]), loc))
+          | s -> [ s, loc ])
 
     method program p =
       let p = super#program p in
-      m#merge_info m;
-      let all = IdentSet.diff insert_ exc_ in
-      let body = m#pack all p in
+      let body = m#pack p in
       body
   end
 
@@ -1606,6 +1636,7 @@ class clean =
       | For_statement (p1, p2, p3, st) -> For_statement (p1, p2, p3, b st)
       | ForIn_statement (param, e, st) -> ForIn_statement (param, e, b st)
       | ForOf_statement (param, e, st) -> ForOf_statement (param, e, b st)
+      | ForAwaitOf_statement (param, e, st) -> ForAwaitOf_statement (param, e, b st)
       | Switch_statement (e, l, Some [], []) -> Switch_statement (e, l, None, [])
       | s -> s
   end
@@ -1713,17 +1744,33 @@ class simpl =
       let s = super#statements s in
       List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
           match st with
+          (* if (1) e1 ... --> e1 *)
           | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
+          (* if (0) e1 else e2 --> e2 *)
           | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
+          (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
               (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
             -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
+          (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
           | If_statement
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
+          (* The following optimizations cause the generated JS to compress less.
+             (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)
+             | If_statement
+                 (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
+                 (Expression_statement (ECond (e1, e2, e3)), loc) :: rem
+             (* if (!e1) e2 --> e1 || e2 *)
+             | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
+                 (Expression_statement (EBin (Or, e1, e2)), loc) :: rem
+             (* if (e1) e2 --> e1 && e2 *)
+             | If_statement (e1, (Expression_statement e2, _), None) ->
+                 (Expression_statement (EBin (And, e1, e2)), loc) :: rem
+          *)
           | Variable_statement (((Var | Let | Const) as k), l1) ->
               let x = List.map l1 ~f:(fun d -> Variable_statement (k, [ d ]), loc) in
               x @ rem

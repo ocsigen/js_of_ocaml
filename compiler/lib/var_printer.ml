@@ -114,6 +114,7 @@ let name t v nm_orig =
       match str, nm_orig with
       | "", ">>=" -> "symbol_bind"
       | "", ">>|" -> "symbol_map"
+      | "", "^" -> "symbol_concat"
       | "", _ -> "symbol"
       | str, _ -> str
     in

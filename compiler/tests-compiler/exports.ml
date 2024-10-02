@@ -31,18 +31,21 @@ let%expect_test "static eval of string get" =
     || Javascript.IdentSet.mem jsoo_exports traverse#get_def
   in
   let clean program =
-    let clean_statement st =
+    let rec clean_statement st =
       let open Js_of_ocaml_compiler.Javascript in
       match st with
       | Function_declaration (name, (k, param, body, loc1)), loc2 -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
-          | body -> Some (Function_declaration (name, (k, param, body, loc1)), loc2))
+          | body ->
+              let body = List.filter_map clean_statement body in
+              Some (Function_declaration (name, (k, param, body, loc1)), loc2))
       | ( Expression_statement (ECall (EFun (name, (k, param, body, loc1)), ANormal, a, l))
         , loc ) -> (
           match List.filter use_jsoo_exports body with
           | [] -> None
           | body ->
+              let body = List.filter_map clean_statement body in
               Some
                 ( Expression_statement
                     (ECall (EFun (name, (k, param, body, loc1)), ANormal, a, l))

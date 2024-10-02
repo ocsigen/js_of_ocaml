@@ -35,10 +35,8 @@ let is_immediate e = type_of_is_number J.EqEqEq e
 
 module Block = struct
   let make ~tag ~args =
-    J.EArr
-      (List.map
-         ~f:(fun x -> J.Element x)
-         (J.ENum (J.Num.of_int32 (Int32.of_int tag)) :: args))
+    let tag_elt = J.Element (J.ENum (J.Num.of_int32 (Int32.of_int tag))) in
+    J.EArr (tag_elt :: args)
 
   let tag e = J.EAccess (e, ANormal, zero)
 

@@ -20,10 +20,11 @@ module String_set = Set.Make (String)
 
 let print_stub s =
   Printf.printf
-    "void %s () {\n\
-    \  fprintf(stderr, \"Unimplemented Javascript primitive %s!\\n\");\n\
-    \  exit(1);\n\
-     }\n"
+    {|
+void %s () {
+  caml_fatal_error("Unimplemented Javascript primitive %s!");
+}
+|}
     s
     s
 
@@ -62,6 +63,5 @@ let () =
   let except_mls = get_externals !except_mls in
   let externals = String_set.diff mls except_mls in
   set_binary_mode_out stdout true;
-  print_endline "#include <stdlib.h>";
-  print_endline "#include <stdio.h>";
+  print_endline "#include <caml/misc.h>";
   String_set.iter print_stub externals

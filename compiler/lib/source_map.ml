@@ -50,7 +50,165 @@ type map =
       ; ori_name : int
       }
 
-type mapping = map list
+let gen_line = function
+  | Gen { gen_line; _ } | Gen_Ori { gen_line; _ } | Gen_Ori_Name { gen_line; _ } ->
+      gen_line
+
+let gen_col = function
+  | Gen { gen_col; _ } | Gen_Ori { gen_col; _ } | Gen_Ori_Name { gen_col; _ } -> gen_col
+
+module Mappings = struct
+  type t = Uninterpreted of string [@@unboxed]
+
+  let empty = Uninterpreted ""
+
+  let of_string : string -> t = fun s -> Uninterpreted s
+
+  let to_string : t -> string = fun (Uninterpreted s) -> s
+
+  let encode mapping =
+    let a = Array.of_list mapping in
+    let len = Array.length a in
+    Array.stable_sort
+      ~cmp:(fun t1 t2 ->
+        match compare (gen_line t1) (gen_line t2) with
+        | 0 -> compare (gen_col t1) (gen_col t2)
+        | n -> n)
+      a;
+    let buf = Buffer.create 1024 in
+    (* The binary format encodes lines starting at zero, but
+       [ori_line] and [gen_line] are 1 based. *)
+    let gen_line_r = ref 1 in
+    let gen_col_r = ref 0 in
+    let ori_source_r = ref 0 in
+    let ori_line_r = ref 1 in
+    let ori_col_r = ref 0 in
+    let ori_name_r = ref 0 in
+    let rec loop prev i =
+      if i < len
+      then
+        let c = a.(i) in
+        if i + 1 < len && gen_line c = gen_line a.(i + 1) && gen_col c = gen_col a.(i + 1)
+        then (* Only keep one source location per generated location *)
+          loop prev (i + 1)
+        else (
+          if !gen_line_r <> gen_line c
+          then (
+            assert (!gen_line_r < gen_line c);
+            for _i = !gen_line_r to gen_line c - 1 do
+              Buffer.add_char buf ';'
+            done;
+            gen_col_r := 0;
+            gen_line_r := gen_line c)
+          else if i > 0
+          then Buffer.add_char buf ',';
+          let l =
+            match c with
+            | Gen { gen_line = _; gen_col } ->
+                let res = [ gen_col - !gen_col_r ] in
+                gen_col_r := gen_col;
+                res
+            | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
+                let res =
+                  [ gen_col - !gen_col_r
+                  ; ori_source - !ori_source_r
+                  ; ori_line - !ori_line_r
+                  ; ori_col - !ori_col_r
+                  ]
+                in
+                gen_col_r := gen_col;
+                ori_col_r := ori_col;
+                ori_line_r := ori_line;
+                ori_source_r := ori_source;
+                res
+            | Gen_Ori_Name
+                { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+                let res =
+                  [ gen_col - !gen_col_r
+                  ; ori_source - !ori_source_r
+                  ; ori_line - !ori_line_r
+                  ; ori_col - !ori_col_r
+                  ; ori_name - !ori_name_r
+                  ]
+                in
+                gen_col_r := gen_col;
+                ori_col_r := ori_col;
+                ori_line_r := ori_line;
+                ori_source_r := ori_source;
+                ori_name_r := ori_name;
+                res
+          in
+          Vlq64.encode_l buf l;
+          loop i (i + 1))
+    in
+    loop (-1) 0;
+    Uninterpreted (Buffer.contents buf)
+
+  let decode (Uninterpreted str) =
+    let total_len = String.length str in
+    let gen_col = ref 0 in
+    let ori_source = ref 0 in
+    let ori_line = ref 1 in
+    let ori_col = ref 0 in
+    let ori_name = ref 0 in
+    let rec readline line pos acc =
+      if pos >= total_len
+      then List.rev acc
+      else
+        let last = try String.index_from str pos ';' with Not_found -> total_len in
+        gen_col := 0;
+        let pos, acc =
+          if pos = last then pos + 1, acc else read_tokens line pos last acc
+        in
+        readline (succ line) pos acc
+    and read_tokens line start stop acc =
+      let last =
+        try min (String.index_from str start ',') stop with Not_found -> stop
+      in
+      let v = Vlq64.decode_l str ~pos:start ~len:(last - start) in
+      match v with
+      | [] -> last + 1, acc
+      | v ->
+          let v =
+            match v with
+            | [ g ] ->
+                gen_col := !gen_col + g;
+                Gen { gen_line = line; gen_col = !gen_col }
+            | [ g; os; ol; oc ] ->
+                gen_col := !gen_col + g;
+                ori_source := !ori_source + os;
+                ori_line := !ori_line + ol;
+                ori_col := !ori_col + oc;
+                Gen_Ori
+                  { gen_line = line
+                  ; gen_col = !gen_col
+                  ; ori_source = !ori_source
+                  ; ori_line = !ori_line
+                  ; ori_col = !ori_col
+                  }
+            | [ g; os; ol; oc; on ] ->
+                gen_col := !gen_col + g;
+                ori_source := !ori_source + os;
+                ori_line := !ori_line + ol;
+                ori_col := !ori_col + oc;
+                ori_name := !ori_name + on;
+                Gen_Ori_Name
+                  { gen_line = line
+                  ; gen_col = !gen_col
+                  ; ori_source = !ori_source
+                  ; ori_line = !ori_line
+                  ; ori_col = !ori_col
+                  ; ori_name = !ori_name
+                  }
+            | _ -> invalid_arg "Source_map.mapping_of_string"
+          in
+          let acc = v :: acc in
+          if last = stop then last + 1, acc else read_tokens line (last + 1) stop acc
+    in
+    (* The binary format encodes lines starting at zero, but
+       [ori_line] and [gen_line] are 1 based. *)
+    readline 1 0 []
+end
 
 type t =
   { version : int
@@ -59,7 +217,7 @@ type t =
   ; sources : string list
   ; sources_content : Source_content.t option list option
   ; names : string list
-  ; mappings : mapping
+  ; mappings : Mappings.t
   }
 
 let empty ~filename =
@@ -69,154 +227,8 @@ let empty ~filename =
   ; sources = []
   ; sources_content = None
   ; names = []
-  ; mappings = []
+  ; mappings = Mappings.empty
   }
-
-let gen_line = function
-  | Gen { gen_line; _ } | Gen_Ori { gen_line; _ } | Gen_Ori_Name { gen_line; _ } ->
-      gen_line
-
-let gen_col = function
-  | Gen { gen_col; _ } | Gen_Ori { gen_col; _ } | Gen_Ori_Name { gen_col; _ } -> gen_col
-
-let string_of_mapping mapping =
-  let a = Array.of_list mapping in
-  let len = Array.length a in
-  Array.stable_sort
-    ~cmp:(fun t1 t2 ->
-      match compare (gen_line t1) (gen_line t2) with
-      | 0 -> compare (gen_col t1) (gen_col t2)
-      | n -> n)
-    a;
-  let buf = Buffer.create 1024 in
-  (* The binary format encodes lines starting at zero, but
-     [ori_line] and [gen_line] are 1 based. *)
-  let gen_line_r = ref 1 in
-  let gen_col_r = ref 0 in
-  let ori_source_r = ref 0 in
-  let ori_line_r = ref 1 in
-  let ori_col_r = ref 0 in
-  let ori_name_r = ref 0 in
-  let rec loop prev i =
-    if i < len
-    then
-      let c = a.(i) in
-      if i + 1 < len && gen_line c = gen_line a.(i + 1) && gen_col c = gen_col a.(i + 1)
-      then (* Only keep one source location per generated location *)
-        loop prev (i + 1)
-      else (
-        if !gen_line_r <> gen_line c
-        then (
-          assert (!gen_line_r < gen_line c);
-          for _i = !gen_line_r to gen_line c - 1 do
-            Buffer.add_char buf ';'
-          done;
-          gen_col_r := 0;
-          gen_line_r := gen_line c)
-        else if i > 0
-        then Buffer.add_char buf ',';
-        let l =
-          match c with
-          | Gen { gen_line = _; gen_col } ->
-              let res = [ gen_col - !gen_col_r ] in
-              gen_col_r := gen_col;
-              res
-          | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
-              let res =
-                [ gen_col - !gen_col_r
-                ; ori_source - !ori_source_r
-                ; ori_line - !ori_line_r
-                ; ori_col - !ori_col_r
-                ]
-              in
-              gen_col_r := gen_col;
-              ori_col_r := ori_col;
-              ori_line_r := ori_line;
-              ori_source_r := ori_source;
-              res
-          | Gen_Ori_Name
-              { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name } ->
-              let res =
-                [ gen_col - !gen_col_r
-                ; ori_source - !ori_source_r
-                ; ori_line - !ori_line_r
-                ; ori_col - !ori_col_r
-                ; ori_name - !ori_name_r
-                ]
-              in
-              gen_col_r := gen_col;
-              ori_col_r := ori_col;
-              ori_line_r := ori_line;
-              ori_source_r := ori_source;
-              ori_name_r := ori_name;
-              res
-        in
-        Vlq64.encode_l buf l;
-        loop i (i + 1))
-  in
-  loop (-1) 0;
-  Buffer.contents buf
-
-let mapping_of_string str =
-  let total_len = String.length str in
-  let gen_col = ref 0 in
-  let ori_source = ref 0 in
-  let ori_line = ref 1 in
-  let ori_col = ref 0 in
-  let ori_name = ref 0 in
-  let rec readline line pos acc =
-    if pos >= total_len
-    then List.rev acc
-    else
-      let last = try String.index_from str pos ';' with Not_found -> total_len in
-      gen_col := 0;
-      let pos, acc = if pos = last then pos + 1, acc else read_tokens line pos last acc in
-      readline (succ line) pos acc
-  and read_tokens line start stop acc =
-    let last = try min (String.index_from str start ',') stop with Not_found -> stop in
-    let v = Vlq64.decode_l str ~pos:start ~len:(last - start) in
-    match v with
-    | [] -> last + 1, acc
-    | v ->
-        let v =
-          match v with
-          | [ g ] ->
-              gen_col := !gen_col + g;
-              Gen { gen_line = line; gen_col = !gen_col }
-          | [ g; os; ol; oc ] ->
-              gen_col := !gen_col + g;
-              ori_source := !ori_source + os;
-              ori_line := !ori_line + ol;
-              ori_col := !ori_col + oc;
-              Gen_Ori
-                { gen_line = line
-                ; gen_col = !gen_col
-                ; ori_source = !ori_source
-                ; ori_line = !ori_line
-                ; ori_col = !ori_col
-                }
-          | [ g; os; ol; oc; on ] ->
-              gen_col := !gen_col + g;
-              ori_source := !ori_source + os;
-              ori_line := !ori_line + ol;
-              ori_col := !ori_col + oc;
-              ori_name := !ori_name + on;
-              Gen_Ori_Name
-                { gen_line = line
-                ; gen_col = !gen_col
-                ; ori_source = !ori_source
-                ; ori_line = !ori_line
-                ; ori_col = !ori_col
-                ; ori_name = !ori_name
-                }
-          | _ -> invalid_arg "Source_map.mapping_of_string"
-        in
-        let acc = v :: acc in
-        if last = stop then last + 1, acc else read_tokens line (last + 1) stop acc
-  in
-  (* The binary format encodes lines starting at zero, but
-     [ori_line] and [gen_line] are 1 based. *)
-  readline 1 0 []
 
 let maps ~sources_offset ~names_offset x =
   match x with
@@ -230,7 +242,7 @@ let maps ~sources_offset ~names_offset x =
       Gen_Ori_Name { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name }
 
 let filter_map sm ~f =
-  let a = Array.of_list sm.mappings in
+  let a = Array.of_list (Mappings.decode sm.mappings) in
   Array.stable_sort
     ~cmp:(fun t1 t2 ->
       match compare (gen_line t1) (gen_line t2) with
@@ -264,46 +276,48 @@ let filter_map sm ~f =
         loop acc xs
   in
   let mappings = loop [] l in
-  { sm with mappings }
+  { sm with mappings = Mappings.encode mappings }
 
 let merge = function
   | [] -> None
   | _ :: _ as l ->
-      let rec loop acc_rev ~sources_offset ~names_offset l =
+      let rec loop acc_rev mappings_rev ~sources_offset ~names_offset l =
         match l with
-        | [] -> acc_rev
+        | [] -> acc_rev, mappings_rev
         | sm :: rest ->
-            let acc_rev =
-              { acc_rev with
-                sources = List.rev_append sm.sources acc_rev.sources
-              ; names = List.rev_append sm.names acc_rev.names
-              ; sources_content =
-                  (match sm.sources_content, acc_rev.sources_content with
-                  | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
-                  | None, _ | _, None -> None)
-              ; mappings =
-                  List.rev_append_map
-                    ~f:(maps ~sources_offset ~names_offset)
-                    sm.mappings
-                    acc_rev.mappings
-              }
+            let acc_rev, mappings_rev =
+              ( { acc_rev with
+                  sources = List.rev_append sm.sources acc_rev.sources
+                ; names = List.rev_append sm.names acc_rev.names
+                ; sources_content =
+                    (match sm.sources_content, acc_rev.sources_content with
+                    | Some x, Some acc_rev -> Some (List.rev_append x acc_rev)
+                    | None, _ | _, None -> None)
+                ; mappings = Mappings.empty
+                }
+              , List.rev_append_map
+                  ~f:(maps ~sources_offset ~names_offset)
+                  (Mappings.decode sm.mappings)
+                  mappings_rev )
             in
             loop
               acc_rev
+              mappings_rev
               ~sources_offset:(sources_offset + List.length sm.sources)
               ~names_offset:(names_offset + List.length sm.names)
               rest
       in
-      let acc_rev =
+      let acc_rev, mappings_rev =
         loop
           { (empty ~filename:"") with sources_content = Some [] }
+          []
           ~sources_offset:0
           ~names_offset:0
           l
       in
       Some
         { acc_rev with
-          mappings = List.rev acc_rev.mappings
+          mappings = Mappings.encode (List.rev mappings_rev)
         ; sources = List.rev acc_rev.sources
         ; names = List.rev acc_rev.names
         ; sources_content = Option.map ~f:List.rev acc_rev.sources_content
@@ -331,7 +345,7 @@ let json t =
           | Some s -> rewrite_path s) )
     ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
     ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
-    ; "mappings", stringlit (string_of_mapping t.mappings)
+    ; "mappings", stringlit (Mappings.to_string t.mappings)
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with
@@ -411,8 +425,8 @@ let of_json (json : Yojson.Raw.t) =
       in
       let mappings =
         match string "mappings" rest with
-        | None -> mapping_of_string ""
-        | Some s -> mapping_of_string s
+        | None -> Mappings.empty
+        | Some s -> Mappings.of_string s
       in
       { version = int_of_float (float_of_string version)
       ; file
@@ -425,8 +439,6 @@ let of_json (json : Yojson.Raw.t) =
   | _ -> invalid ()
 
 let of_string s = of_json (Yojson.Raw.from_string s)
-
-let of_file filename = of_json (Yojson.Raw.from_file filename)
 
 let to_string m = Yojson.Raw.to_string (json m)
 

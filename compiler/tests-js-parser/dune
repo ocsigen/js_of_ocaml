@@ -2,5 +2,21 @@
  (name run)
  (libraries js_of_ocaml_compiler unix str))
 
-;; $ git clone git@github.com:tc39/test262-parser-tests.git
-;; $ dune exe compiler/tests-js-parser/run.exe test262-parser-tests/pass/*
+(rule
+ (alias runtest-parser)
+ (deps
+  (glob_files_rec pass/*.js)
+  package.json)
+ (action
+  (run ./run.exe pass)))
+
+;; git submodule add test262 https://github.com/tc39/test262.git
+;; git checkout 6cbb6da9473c56d95358d8e679c5a6d2b4574efb
+
+(rule
+ (alias runtest-parser)
+ (deps
+  (glob_files_rec test262/test/language/*.js)
+  package.json)
+ (action
+  (run ./run.exe test262/test/language)))

@@ -6957,7 +6957,7 @@ let pseudoknot_domains =
     (*  L2 LOOP            |               *)
   ; p_o3' rUs 16 15   (*   |               *)
   ; p_o3' rCs 17 16   (*   |               *)
-  ; p_o3' rAs 18 17   (* <-'               *) 
+  ; p_o3' rAs 18 17   (* <-'               *)
     (*                                     *)
     (*  L1 LOOP                            *)
   ; helix3' rU 7 8    (* <-.               *)

@@ -18,124 +18,122 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_CamlinternalMod_init_mod
-//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_raise_with_arg, caml_global_data, caml_alloc_dummy_infix
 //If: !effects
 //Version: < 4.13
-function caml_CamlinternalMod_init_mod(loc,shape) {
-  function undef_module (_x) {
+function caml_CamlinternalMod_init_mod(loc, shape) {
+  function undef_module(_x) {
     caml_raise_with_arg(caml_global_data.Undefined_recursive_module, loc);
   }
-  function loop (shape,struct,idx){
-    if(typeof shape === "number")
-      switch(shape){
-      case 0://function
-        struct[idx]={fun:undef_module};
-        break;
-      case 1://lazy
-        struct[idx]=[246, undef_module];
-        break;
-      default://case 2://class
-        struct[idx]=[];
+  function loop(shape, struct, idx) {
+    if (typeof shape === "number")
+      switch (shape) {
+        case 0: //function
+          var dummy = caml_alloc_dummy_infix();
+          dummy.fun = undef_module;
+          struct[idx] = dummy;
+          break;
+        case 1: //lazy
+          struct[idx] = [246, undef_module];
+          break;
+        default: //case 2://class
+          struct[idx] = [];
       }
     else
-      switch(shape[0]){
-      case 0://module
-        struct[idx] = [0];
-        for(var i=1;i<shape[1].length;i++)
-          loop(shape[1][i],struct[idx],i);
-        break;
-      default://case 1://Value
-        struct[idx] = shape[1];
+      switch (shape[0]) {
+        case 0: //module
+          struct[idx] = [0];
+          for (var i = 1; i < shape[1].length; i++)
+            loop(shape[1][i], struct[idx], i);
+          break;
+        default: //case 1://Value
+          struct[idx] = shape[1];
       }
   }
   var res = [];
-  loop(shape,res,0);
-  return res[0]
+  loop(shape, res, 0);
+  return res[0];
 }
 //Provides: caml_CamlinternalMod_update_mod
 //Requires: caml_update_dummy
 //If: !effects
 //Version: < 4.13
-function caml_CamlinternalMod_update_mod(shape,real,x) {
-  if(typeof shape === "number")
-    switch(shape){
-    case 0://function
-    case 1://lazy
-    case 2://class
-    default:
-      caml_update_dummy(real,x);
-    }
+function caml_CamlinternalMod_update_mod(shape, real, x) {
+  if (typeof shape === "number")
+    //function
+    //lazy
+    //class
+    caml_update_dummy(real, x);
   else
-    switch(shape[0]){
-    case 0://module
-      for(var i=1;i<shape[1].length;i++)
-        caml_CamlinternalMod_update_mod(shape[1][i],real[i],x[i]);
-      break;
+    switch (shape[0]) {
+      case 0: //module
+        for (var i = 1; i < shape[1].length; i++)
+          caml_CamlinternalMod_update_mod(shape[1][i], real[i], x[i]);
+        break;
       //case 1://Value
-    default:
-    };
-  return 0
+      default:
+    }
+  return 0;
 }
 
 //Provides: caml_CamlinternalMod_init_mod
-//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_raise_with_arg, caml_global_data, caml_alloc_dummy_infix
 //If: effects
 //Version: < 4.13
-function caml_CamlinternalMod_init_mod(loc,shape,cont) {
-  function undef_module (_x,_cont) {
+function caml_CamlinternalMod_init_mod(loc, shape, cont) {
+  function undef_module(_x, _cont) {
     caml_raise_with_arg(caml_global_data.Undefined_recursive_module, loc);
   }
-  function loop (shape,struct,idx){
-    if(typeof shape === "number")
-      switch(shape){
-      case 0://function
-        struct[idx]={fun:undef_module};
-        break;
-      case 1://lazy
-        struct[idx]=[246, undef_module];
-        break;
-      default://case 2://class
-        struct[idx]=[];
+  function loop(shape, struct, idx) {
+    if (typeof shape === "number")
+      switch (shape) {
+        case 0: //function
+          var dummy = caml_alloc_dummy_infix();
+          dummy.fun = undef_module;
+          struct[idx] = dummy;
+          break;
+        case 1: //lazy
+          struct[idx] = [246, undef_module];
+          break;
+        default: //case 2://class
+          struct[idx] = [];
       }
     else
-      switch(shape[0]){
-      case 0://module
-        struct[idx] = [0];
-        for(var i=1;i<shape[1].length;i++)
-          loop(shape[1][i],struct[idx],i);
-        break;
-      default://case 1://Value
-        struct[idx] = shape[1];
+      switch (shape[0]) {
+        case 0: //module
+          struct[idx] = [0];
+          for (var i = 1; i < shape[1].length; i++)
+            loop(shape[1][i], struct[idx], i);
+          break;
+        default: //case 1://Value
+          struct[idx] = shape[1];
       }
   }
   var res = [];
-  loop(shape,res,0);
+  loop(shape, res, 0);
   return cont(res[0]);
 }
 //Provides: caml_CamlinternalMod_update_mod
 //Requires: caml_update_dummy
 //If: effects
 //Version: < 4.13
-function caml_CamlinternalMod_update_mod(shape,real,x,cont) {
-  function loop (shape,real,x){
-    if(typeof shape === "number")
-      switch(shape){
-      case 0://function
-      case 1://lazy
-      case 2://class
-      default:
-        caml_update_dummy(real,x);
-      }
+function caml_CamlinternalMod_update_mod(shape, real, x, cont) {
+  function loop(shape, real, x) {
+    if (typeof shape === "number")
+      //function
+      //lazy
+      //class
+      caml_update_dummy(real, x);
     else
-      switch(shape[0]){
-      case 0://module
-        for(var i=1;i<shape[1].length;i++)
-          loop(shape[1][i],real[i],x[i]);
-        break;
+      switch (shape[0]) {
+        case 0: //module
+          for (var i = 1; i < shape[1].length; i++)
+            loop(shape[1][i], real[i], x[i]);
+          break;
         //case 1://Value
-      default:
-      };
+        default:
+      }
   }
-  loop(shape,real,x);
+  loop(shape, real, x);
   return cont(0);
 }

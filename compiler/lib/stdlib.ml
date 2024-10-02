@@ -380,15 +380,11 @@ module Int31 : sig
 
   val of_int32_warning_on_overflow : int32 -> t
 
-  val of_int32_truncate : int32 -> t
-
   val to_int32 : t -> int32
 end = struct
   type t = int32
 
   let wrap i = Int32.(shift_right (shift_left i 1) 1)
-
-  let of_int32_truncate i = wrap i
 
   let of_int_warning_on_overflow i =
     Int32.convert_warning_on_overflow
@@ -511,7 +507,7 @@ end
 module Int64 = struct
   include Int64
 
-  let equal (a : int64) (b : int64) = Poly.( = ) a b
+  let equal (a : int64) (b : int64) = Poly.(a = b)
 end
 
 module Float = struct
@@ -860,6 +856,12 @@ module String = struct
       Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
     with Not_found -> None
 
+  let rsplit2 line ~on:delim =
+    try
+      let pos = rindex line delim in
+      Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
+    with Not_found -> None
+
   let capitalize_ascii s = apply1 Char.uppercase_ascii s
 
   let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
@@ -1115,9 +1117,19 @@ module String = struct
     in
     loop (length b - 1) b 0
 
-  let fold_left ~f ~init s = Bytes.fold_left ~f ~init (Bytes.unsafe_of_string s)
+  let fold_left ~f ~init s =
+    let r = ref init in
+    for i = 0 to length s - 1 do
+      r := f !r (unsafe_get s i)
+    done;
+    !r
 
-  let fold_right ~f s ~init = Bytes.fold_right ~f ~init (Bytes.unsafe_of_string s)
+  let fold_right ~f s ~init =
+    let r = ref init in
+    for i = length s - 1 downto 0 do
+      r := f (unsafe_get s i) !r
+    done;
+    !r
 end
 
 module Utf8_string : sig
@@ -1250,6 +1262,17 @@ end
 
 module Array = struct
   include ArrayLabels
+
+  let find_opt ~f:p a =
+    let n = length a in
+    let rec loop i =
+      if i = n
+      then None
+      else
+        let x = unsafe_get a i in
+        if p x then Some x else loop (succ i)
+    in
+    loop 0
 
   let fold_right_i a ~f ~init:x =
     let r = ref x in

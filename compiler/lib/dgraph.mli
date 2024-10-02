@@ -104,3 +104,39 @@ module Make_Imperative
       -> D.t NTbl.t
   end
 end
+
+module type ACTION = sig
+  type t
+end
+
+module type DOMAIN = sig
+  type t
+
+  val equal : t -> t -> bool
+
+  val bot : t
+
+  val top : t
+
+  val join : t -> t -> t
+end
+
+module Solver
+    (N : sig
+      type t
+    end)
+    (NSet : ISet with type elt = N.t)
+    (NTbl : Tbl with type key = N.t)
+    (A : ACTION)
+    (D : DOMAIN) : sig
+  type t =
+    { domain : NSet.t
+    ; iter_children : (N.t -> A.t -> unit) -> N.t -> unit
+    }
+
+  val f :
+       state:D.t NTbl.t
+    -> t
+    -> (state:D.t NTbl.t -> dep:N.t -> target:N.t -> action:A.t -> D.t)
+    -> unit
+end

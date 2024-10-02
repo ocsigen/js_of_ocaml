@@ -31,10 +31,17 @@ type approx =
       ; others : bool (* Whether other values are possible *)
       }
 
+type escape_status =
+  | Escape
+  | Escape_constant (* Escapes but we know the value is not modified *)
+  | No
+
 type info =
   { info_defs : def array
   ; info_approximation : approx Var.Tbl.t
   ; info_may_escape : Var.ISet.t
+  ; info_variable_may_escape : escape_status array
+  ; info_return_vals : Var.Set.t Var.Map.t
   }
 
 val f : fast:bool -> Code.program -> info

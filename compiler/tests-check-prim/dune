@@ -23,7 +23,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:main.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:main.bc}))))
 
 (rule
  (targets unix-unix.output)
@@ -36,7 +36,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
 
 (rule
  (targets unix-win32.output)
@@ -49,7 +49,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
 
 (rule
  (targets main.output5)
@@ -60,7 +60,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:main.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:main.bc}))))
 
 (rule
  (targets unix-unix.output5)
@@ -73,7 +73,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
 
 (rule
  (targets unix-win32.output5)
@@ -86,4 +86,4 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime %{dep:unix.bc}))))
+   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))

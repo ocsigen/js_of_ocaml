@@ -1,11 +1,162 @@
-# Dev (2023-??-??) - ??
+# dev
+
+## Features/Changes
+* Misc: update testsuite to OCaml 5.2
+* Misc: CI uses opam.2.2 and no longer use sunset repo
+* Misc: yojson is no longer optional
+* Misc: reduce the diff with the wasm_of_ocaml fork
+* Compiler: speedup global_flow/global_deadcode pass on large bytecode
+* Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
+* Compiler: Decode sourcemap mappings only when necessary (#1664)
+* Compiler: make indirect call using sequence instead of using the call method
+  [f.call(null, args)] becomes [(0,f)(args)]
+* Compiler: mark [TextEncoder] as reserved
+* Runtime: change Sys.os_type on windows (Cygwin -> Win32)
+* Runtime: backtraces are really expensive, they need to be be explicitly
+  requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
+* Runtime: allow dynlink of precompiled js with separate compilation (#1676)
+* Lib: Modify Typed_array API for compatibility with WebAssembly
+* Compiler: improved global dead code elimination (#2206)
+* Compiler: add support for the Wasm backend in parts of the pipeline, in
+  prevision for the merge of wasm_of_ocaml
+
 
 ## Bug fixes
+* Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
+* Runtime: fix incorrect pos_in after unmarshalling
+* Toplevel: fix missing primitives with separate compilation
+* Compiler: fix link of packed modules with separate compilation
+* Compiler: Fixed the static evaluation of some equalities (#1659)
+* Compiler: fix global analysis bug (subsumes #1556)
+
+# 5.8.2 (2024-05-26) - Luc
+
+## Bug fixes
+* Compiler: fix variable renaming for property binding and assignment target (part 2)
+
+# 5.8.1 (2024-05-05) - Lille
+
+## Features/Changes
+
+* Library: new Typed_array.Bytes module.
+
+## Bug fixes
+
+* Compiler: fix #1509
+
+# 5.8.0 (2024-04-20) - Lille
+
+## Features/Changes
+* Compiler: es6 now generate consise body
+* Compiler: codegen: optimize Offset_ref for negative offsets
+* Compiler: codegen: change argument passing of back edges.
+* Compiler: codegen: use Array destruction to assign args of back
+  edges with es6.
+* Compiler: codegen: specialize string equality
+* Compiler: codegen: more specialization for %int_add, %int_sub
+* Compiler: recognize and optimize String.concat
+* Compiler: more inlining - duplicate small function.
+* Compiler: Make it possible to link runtime JavaScript file
+  together with OCaml libraries #1509
+* Compiler: initial support for OCaml 5.3
+* Runtime: abort instead of exit when calling unimplemented
+  js primitives in bytecode/native. It should help if one tries
+  to understand the source of the call with gdb (see #677)
+* Runtime: re-enable marshalling of floats, disabled in jsoo 2.0
+* Runtime: new runtime api for channels
+
+
+## Bug fixes
+
+* Compiler: fix variable renaming for property binding and assignment target
+* Compiler: fix separate compilation of toplevels (broken since 5.7.0)
+* Compiler: fix assertion while checking stack compatibility (#1600)
+
+# 5.7.2 (2024-04-03) - Lille
+
+## Bug fixes
+* Runtime: add missing primitives for ocaml 5.2.0~beta1
+
+# 5.7.1 (2024-03-05) - Lille
+
+## Features/Changes
+* Compiler: only flush the necessary env for closures (#1568)
+* Library: dialog element support
+
+## Bug fixes
+* Compiler: fix --enable=vardecl
+* Compiler: fix parallel renaming (bug introduced in #1567)
+* Lib: fix paragraph construction and coercion
+* Runtime: reduce memory leak with channels (#1581)
+
+# 5.7.0 (2024-02-16) - Lille
+
+## Features/Changes
+* Mics: fix support for OCaml 5.2
+* Compiler: no longer rely on IIFE for scoping variable inside loops
+* Compiler: avoid parsing bytecode sections twice, jsoo counter part of ocaml#12599
+* Lib: add ellipse to canvasRenderingContext2D (@FayCarsons, #1555)
+
+## Bug fixes
+* Compiler: fix global dead code elimination in a toplevel context
+* Compiler: fix exit-loop-early optim in presence of closure (#1561)
+* Compiler: remove quadratic behavior in generate.ml (#1531, #1567)
+
+# 5.6.0 (2024-01-02) - Lille
+
+## Features/Changes
+* Compiler: try to preserve clorures ordering between ml and js
+* Compiler: js-parser accept for await
+
+## Bug fixes
+* Compiler: js-parser now accept all the line terminators defined in the spec
+* Compiler: js-parser: fix support for LHS assignment target
+* Compiler: js-parser: fix parser of default export
+* Compiler: js-parser: allow 'as' as ident
+* Compiler: js-parser: fix for-in rewriting
+* Compiler: js-parser: fix yield pretty print
+* Compiler: js-parser: fix async arrow function
+* Compiler: js-parser: fix class printing
+* Compiler: js-parser: fix #privateName
+
+# 5.5.2 (2023-12-01) - Lille
+
+## Features/Changes
+* Compiler: global dead code elimination (Micah Cantor, #1503)
+* Compiler: change control-flow compilation strategy (#1496)
+* Compiler: loop no longer absorb the whole continuation
+* Compiler: Dead code elimination of unused references (#2076)
+* Compiler: reduce memory consumption (#1516)
+* Compiler: support for import and export construct in the js parser/printer
+* Lib: add download attribute to anchor element
+* Misc: switch CI to OCaml 5.1
+* Misc: preliminary support for OCaml 5.2
+* Misc: support for OCaml 5.1.1
+
+## Bug fixes
+* Runtime: fix Dom_html.onIE (#1493)
+* Runtime: add conversion functions + strict equality for compatibility with Wasm_of_ocaml (#1492)
+* Runtime: Dynlink should be able to find symbols in jsoo_runtime #1517
+* Runtime: fix Unix.lstat, Unix.LargeFile.lstat (#1519)
+* Compiler: fix global flow analysis (#1494)
+* Compiler: fix js parser/printer wrt async functions (#1515)
+* Compiler: fix free variables pass wrt parameters' default value (#1521)
+* Compiler: fix free variables for classes
+* Compiler: fix internal invariant (continuation)
+* Compiler: fix variable renaming for let, const and classes
+* Lib: Url.Current.set_fragment need not any urlencode (#1497)
+
+# 5.4.0 (2023-07-06) - Lille
+
+## Bug fixes
+* Runtime: Fix recursive modules on ocaml < 4.13 (#1485)
 * Runtime: fix hashing of NaN (#1475)
 * Runtime: float rounding should resolve tie away from zero (#1475)
 * Runtime: fix Gc.stat, Gc.quick_stat, Gc.get (#1475)
+* Compiler: fix some miscompilation, probably introduced in jsoo 5.0.0,
+  revealed by OCaml 5.0
 
-# 5.3.0 (2023-??-??) - ??
+# 5.3.0 (2023-06-21) - Lille
 ## Features/Changes
 * Misc: Bump magic number for ocaml 5.1
 * Misc: changes to stay compatible with the next version of ppx_expect
@@ -65,7 +216,7 @@
 ## Bug fixes
 * Effects: fix Js.export and Js.export_all to work with functions (#1417,#1377)
 * Sourcemap: fix incorrect sourcemap with separate compilation
-* Compiler: fix control flow analysis; some annotions were wrong in the runtime
+* Compiler: fix control flow analysis; some annotations were wrong in the runtime
 * Compiler: js backtrace recording respected in the js runtime and when using effects
 * Compiler: no longer fail on invalid source file (when the file is a directory)
 * Runtime: fix the compilation of some mutually recursive functions

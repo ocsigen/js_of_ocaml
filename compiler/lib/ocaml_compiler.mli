@@ -50,12 +50,8 @@ module Symtable : sig
   val reloc_ident : string -> int
 
   val current_state : unit -> GlobalMap.t
-end
 
-module Ident : sig
-  type 'a tbl = 'a Ident.tbl
-
-  val table_contents : int Ident.tbl -> (int * Ident.t) list
+  val all_primitives : unit -> string list
 end
 
 module Cmo_format : sig

@@ -18,6 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val function_arity : Flow.info -> Code.Var.t -> int option
+val function_arity : Flow.Info.t -> Code.Var.t -> int option
 
 val f : function_arity:(Code.Var.t -> int option) -> Code.program -> Code.program

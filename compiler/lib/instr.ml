@@ -200,10 +200,9 @@ type desc =
 
 let ops =
   let if_v500 =
-    match Ocaml_version.v with
-    | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 | `V4_13 | `V4_14 ->
-        fun _ -> K_will_not_happen
-    | `V5_00 | `V5_01 | `V5_02 -> fun k -> k
+    match Ocaml_version.compare Ocaml_version.current [ 5; 0 ] < 0 with
+    | true -> fun _ -> K_will_not_happen
+    | false -> fun k -> k
   in
   let instrs =
     [| ACC0, KNullary, "ACC0"
@@ -366,6 +365,11 @@ let ops =
     Array.mapi ~f:(fun i (c, k, n) -> { code = c; kind = k; name = n; opcode = i }) instrs
   in
   ops
+
+let find i =
+  match Array.find_opt ~f:(fun { code; _ } -> Poly.(i = code)) ops with
+  | None -> assert false
+  | Some x -> x
 
 let get code i = Char.code code.[i]
 

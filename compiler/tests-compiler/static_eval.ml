@@ -29,7 +29,7 @@ let%expect_test "static eval of string get" =
 
     let constant = "abcdefghijklmnopqrstuvwxyz"
 
-    let call_with_char c = black_box c
+    let call_with_char c = try black_box c with _ -> assert false
 
     let ex = call_with_char constant.[-10] ;;
     black_box ex
@@ -61,7 +61,7 @@ let%expect_test "static eval of string get" =
 
     let constant = "abcdefghijklmnopqrstuvwxyz"
 
-    let call_with_char c = black_box c
+    let call_with_char c = try black_box c with _ -> assert false
 
     let ex = call_with_char constant.[-10] ;;
     black_box ex
@@ -88,7 +88,7 @@ let%expect_test "static eval of Sys.backend_type" =
     compile_and_parse_whole_program
       {|
     exception Myfun of (unit -> int)
-    let myfun () = 
+    let myfun () =
       let constant = match Sys.backend_type with
       | Other "js_of_ocaml" -> 42
       | Native -> 1
@@ -114,7 +114,7 @@ let%expect_test "static eval of string get" =
         | Cons of { mutable key: 'a;
                     mutable data: 'b;
                     mutable next: ('a, 'b) bucketlist }
-      
+
       let copy_bucketlist = function
         | Empty -> Empty
         | Cons {key; data; next} ->
@@ -153,7 +153,8 @@ let%expect_test "static eval of string get" =
        next$0 = param$0[3],
        prec$0 = [0, key$0, data$0, next$0];
       prec[3] = prec$0;
-      var prec = prec$0, param$0 = next$0;
+      prec = prec$0;
+      param$0 = next$0;
      }
     }
     //end |}]
@@ -195,7 +196,10 @@ let%expect_test "static eval of tags" =
         _b_ = [1, 0],
         x = 1 < caml_call1(Stdlib_Random[5], 3) ? _a_ : _b_;
        x[0];
-       var export$0 = [0, 3, 3], Test = [0, 3, export$0];
+       var
+        foobar = 3,
+        export$0 = [0, foobar, foobar],
+        Test = [0, foobar, export$0];
        runtime.caml_register_global(3, Test, "Test");
        return;
       }

@@ -33,10 +33,7 @@ type bytecode = string
 let predefined_exceptions =
   Runtimedef.builtin_exceptions |> Array.to_list |> List.mapi ~f:(fun i name -> i, name)
 
-let new_closure_repr =
-  match Ocaml_version.v with
-  | `V4_08 | `V4_09 | `V4_10 | `V4_11 -> false
-  | `V4_12 | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> true
+let new_closure_repr = Ocaml_version.compare Ocaml_version.current [ 4; 12 ] >= 0
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -256,8 +253,10 @@ end = struct
     try
       let { event; _ } = Int_table.find events_by_pc pc in
       let l =
-        Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_stack
-        |> List.map ~f:(fun (i, ident) -> event.ev_stacksize - i, ident)
+        Ident.fold_name
+          (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
+          event.ev_compenv.ce_stack
+          []
         |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
       in
 
@@ -267,11 +266,36 @@ end = struct
   let find_rec { events_by_pc; _ } pc =
     try
       let { event; _ } = Int_table.find events_by_pc pc in
-      Ocaml_compiler.Ident.table_contents event.ev_compenv.ce_rec
-      |> List.map ~f:(fun (i, ident) ->
-             (if new_closure_repr then i / 3 else i / 2), ident)
-      |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+      let env = event.ev_compenv in
+      let names =
+        Ident.fold_name
+          (fun ident i acc -> ((if new_closure_repr then i / 3 else i / 2), ident) :: acc)
+          env.ce_rec
+          []
+      in
+      List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
+  [@@if ocaml_version < (5, 2, 0)]
+
+  let find_rec { events_by_pc; _ } pc =
+    try
+      let { event; _ } = Int_table.find events_by_pc pc in
+      let env = event.ev_compenv in
+      let names =
+        match env.ce_closure with
+        | Not_in_closure -> raise Not_found
+        | In_closure { entries; _ } ->
+            Ident.fold_name
+              (fun ident ent acc ->
+                match ent with
+                | Function i -> (i / 3, ident) :: acc
+                | Free_variable _ -> acc)
+              entries
+              []
+      in
+      List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
+    with Not_found -> []
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let mem { events_by_pc; _ } pc = Int_table.mem events_by_pc pc
 
@@ -310,7 +334,8 @@ end = struct
     | v1 :: r1, v2 :: r2 ->
         Var.propagate_name v1 v2;
         propagate r1 r2
-    | _ -> ()
+    | [], [] -> ()
+    | _ -> assert false
 
   let fold t f acc =
     Int_table.fold (fun k { event; _ } acc -> f k event acc) t.events_by_pc acc
@@ -546,7 +571,8 @@ let resize_globals g size =
 module State = struct
   type elt =
     | Var of Var.t * loc
-    | Dummy
+    | Dummy of string
+    | Unset
 
   let elt_to_var e =
     match e with
@@ -556,7 +582,8 @@ module State = struct
   let print_elt f v =
     match v with
     | Var (x, _) -> Format.fprintf f "%a" Var.print x
-    | Dummy -> Format.fprintf f "???"
+    | Dummy _ -> Format.fprintf f "٭"
+    | Unset -> Format.fprintf f "∅"
 
   type handler = { stack : elt list }
 
@@ -601,7 +628,8 @@ module State = struct
         { st with
           stack =
             (match st.accu with
-            | Dummy -> Dummy
+            | Dummy x -> Dummy x
+            | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
             :: st.stack
         }
@@ -615,7 +643,8 @@ module State = struct
         { st with
           accu =
             (match List.nth st.stack n with
-            | Dummy -> Dummy
+            | Dummy x -> Dummy x
+            | Unset -> Unset
             | Var (x, _) -> Var (x, loc))
         }
 
@@ -627,11 +656,11 @@ module State = struct
     List.fold_left (st.accu :: st.stack) ~init:[] ~f:(fun l e ->
         match e with
         | Var (x, _) -> x :: l
-        | Dummy -> l)
+        | Dummy _ | Unset -> l)
 
   let set_accu st x loc = { st with accu = Var (x, loc) }
 
-  let clear_accu st = { st with accu = Dummy }
+  let clear_accu st = { st with accu = Unset }
 
   let peek n st = elt_to_var (List.nth st.stack n)
 
@@ -645,20 +674,21 @@ module State = struct
   let assign st n = { st with stack = st_assign st.stack n st.accu }
 
   let start_function state env offset =
-    { state with accu = Dummy; stack = []; env; env_offset = offset; handlers = [] }
+    { state with accu = Unset; stack = []; env; env_offset = offset; handlers = [] }
 
   let start_block _current_pc state =
     let stack =
       List.fold_right state.stack ~init:[] ~f:(fun e stack ->
           match e with
-          | Dummy -> Dummy :: stack
+          | Dummy x -> Dummy x :: stack
+          | Unset -> Unset :: stack
           | Var (x, l) ->
               let y = Var.fork x in
               Var (y, l) :: stack)
     in
     let state = { state with stack } in
     match state.accu with
-    | Dummy -> state
+    | Dummy _ | Unset -> state
     | Var (x, loc) ->
         let y, state = fresh_var state loc in
         Var.propagate_name x y;
@@ -670,7 +700,7 @@ module State = struct
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
   let initial g =
-    { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
+    { accu = Unset; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
 
   let rec print_stack f l =
     match l with
@@ -826,7 +856,7 @@ let get_global state instrs i loc =
                 , (Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])), loc)
                   :: instrs )))
 
-let tagged_blocks = ref Addr.Set.empty
+let tagged_blocks = ref Addr.Map.empty
 
 let compiled_blocks = ref Addr.Map.empty
 
@@ -867,27 +897,74 @@ let ( ||| ) x y =
   | _ -> x
 
 let rec compile_block blocks debug_data code pc state =
-  if not (Addr.Set.mem pc !tagged_blocks)
-  then (
-    let limit = Blocks.next blocks pc in
-    assert (limit > pc);
-    if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block pc state in
-    tagged_blocks := Addr.Set.add pc !tagged_blocks;
-    let instr, last, state' =
-      compile { blocks; code; limit; debug = debug_data } pc state []
-    in
-    assert (not (Addr.Map.mem pc !compiled_blocks));
-    compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
-    match fst last with
-    | Branch (pc', _) | Poptrap (pc', _) ->
-        compile_block blocks debug_data code pc' state'
-    | Cond (_, (pc1, _), (pc2, _)) ->
-        compile_block blocks debug_data code pc1 state';
-        compile_block blocks debug_data code pc2 state'
-    | Switch (_, _) -> ()
-    | Pushtrap _ -> ()
-    | Raise _ | Return _ | Stop -> ())
+  match Addr.Map.find_opt pc !tagged_blocks with
+  | Some old_state -> (
+      (* Check that the shape of the stack is compatible with the one used to compile the block *)
+      let rec check (xs : State.elt list) (ys : State.elt list) =
+        match xs, ys with
+        | Var _ :: xs, Var _ :: ys -> check xs ys
+        | Dummy _ :: xs, Dummy _ :: ys -> check xs ys
+        | Unset :: _, _ -> assert false
+        | _, Unset :: _ -> assert false
+        | [], [] -> ()
+        | Var _ :: _, Dummy _ :: _ -> assert false
+        | Dummy _ :: _, Var _ :: _ -> assert false
+        | _ :: _, [] -> assert false
+        | [], _ :: _ -> assert false
+      in
+      check old_state.State.stack state.State.stack;
+      match old_state.State.accu, state.State.accu with
+      | Dummy _, Dummy _ -> ()
+      | Var _, Var _ -> ()
+      | Unset, Unset -> ()
+      | Var _, Dummy _ -> assert false
+      | Dummy _, Var _ -> assert false
+      | Unset, _ -> assert false
+      | _, Unset -> assert false)
+  | None -> (
+      let limit = Blocks.next blocks pc in
+      assert (limit > pc);
+      if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
+      let state = State.start_block pc state in
+      tagged_blocks := Addr.Map.add pc state !tagged_blocks;
+      let instr, last, state' =
+        compile { blocks; code; limit; debug = debug_data } pc state []
+      in
+      assert (not (Addr.Map.mem pc !compiled_blocks));
+      (* When jumping to a block that was already visited and the
+         [accu] was [Unset] for that block, we make the current accu
+         [Unset] *)
+      let adjust_state pc =
+        match state', Addr.Map.find_opt pc !tagged_blocks with
+        | _, None -> state'
+        | { State.accu = Var _; _ }, Some { State.accu = Unset; _ } ->
+            State.clear_accu state'
+        | _, _ -> state'
+      in
+      let mk_cont pc =
+        let state = adjust_state pc in
+        pc, State.stack_vars state
+      in
+      let last =
+        match last with
+        | Branch (pc, _), loc -> Branch (mk_cont pc), loc
+        | Cond (x, (pc1, _), (pc2, _)), loc -> Cond (x, mk_cont pc1, mk_cont pc2), loc
+        | Poptrap (pc, _), loc -> Poptrap (mk_cont pc), loc
+        | Switch (x, a), loc ->
+            Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc)), loc
+        | (Raise _ | Return _ | Stop), _ -> last
+        | Pushtrap _, _ -> assert false
+      in
+      compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
+      match fst last with
+      | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
+      | Cond (_, (pc1, _), (pc2, _)) ->
+          compile_block blocks debug_data code pc1 (adjust_state pc1);
+          compile_block blocks debug_data code pc2 (adjust_state pc2)
+      | Poptrap (_, _) -> ()
+      | Switch (_, _) -> ()
+      | Raise _ | Return _ | Stop -> ()
+      | Pushtrap _ -> assert false)
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
@@ -906,9 +983,9 @@ and compile infos pc state instrs =
       instrs, (Stop, noloc), state)
     else (
       State.name_vars state infos.debug pc;
-      let stack = State.stack_vars state in
-      if debug_parser () then Format.eprintf "Branch %d (%a) @." pc Print.var_list stack;
-      instrs, (Branch (pc, stack), Code.noloc), state)
+      if debug_parser ()
+      then Format.eprintf "Branch %d (%a) @." pc Print.var_list (State.stack_vars state);
+      instrs, (Branch (pc, []), Code.noloc), state)
   else (
     if debug_parser () then Format.eprintf "%4d " pc;
     State.name_vars state infos.debug pc;
@@ -1047,7 +1124,10 @@ and compile infos pc state instrs =
           { state with
             State.stack =
               (* See interp.c *)
-              State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack
+              State.Dummy "push_retaddr(retaddr)"
+              :: State.Dummy "push_retaddr(env)"
+              :: State.Dummy "push_retaddr(extra_args)"
+              :: state.State.stack
           }
           instrs
     | APPLY ->
@@ -1207,8 +1287,8 @@ and compile infos pc state instrs =
         let x, state = State.fresh_var state loc in
         let env = List.map vals ~f:(fun (x, loc) -> State.Var (x, loc)) in
         let env =
-          let code = State.Dummy in
-          let closure_info = State.Dummy in
+          let code = State.Dummy "closure(code)" in
+          let closure_info = State.Dummy "closure(info)" in
           if new_closure_repr then code :: closure_info :: env else code :: env
         in
         let env = Array.of_list env in
@@ -1255,13 +1335,13 @@ and compile infos pc state instrs =
         let env = ref (List.map vals ~f:(fun (x, loc) -> State.Var (x, loc))) in
         List.iter !vars ~f:(fun (i, x) ->
             let code = State.Var (x, noloc) in
-            let closure_info = State.Dummy in
+            let closure_info = State.Dummy "closurerec(info)" in
             if new_closure_repr
             then env := code :: closure_info :: !env
             else env := code :: !env;
             if i > 0
             then
-              let infix_tag = State.Dummy in
+              let infix_tag = State.Dummy "closurerec(infix_tag)" in
               env := infix_tag :: !env);
         let env = Array.of_list !env in
         let state = !state in
@@ -1680,23 +1760,20 @@ and compile infos pc state instrs =
     | BRANCH ->
         let offset = gets code (pc + 1) in
         if debug_parser () then Format.printf "... (branch)@.";
-        instrs, (Branch (pc + offset + 1, State.stack_vars state), loc), state
+        instrs, (Branch (pc + offset + 1, []), loc), state
     | BRANCHIF ->
         let offset = gets code (pc + 1) in
         let x, loc_x = State.accu state in
         let loc = loc ||| loc_x in
-        let args = State.stack_vars state in
-        instrs, (Cond (x, (pc + offset + 1, args), (pc + 2, args)), loc), state
+        instrs, (Cond (x, (pc + offset + 1, []), (pc + 2, [])), loc), state
     | BRANCHIFNOT ->
         let offset = gets code (pc + 1) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
-        instrs, (Cond (x, (pc + 2, args), (pc + offset + 1, args)), loc), state
+        instrs, (Cond (x, (pc + 2, []), (pc + offset + 1, [])), loc), state
     | SWITCH -> (
         if debug_parser () then Format.printf "switch ...@.";
         let sz = getu code (pc + 1) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let isize = sz land 0XFFFF in
         let bsize = sz lsr 16 in
         let base = pc + 2 in
@@ -1707,18 +1784,18 @@ and compile infos pc state instrs =
         Array.iter bt ~f:(fun pc' ->
             compile_block infos.blocks infos.debug code pc' state);
         match isize, bsize with
-        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, args)), loc), state
+        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, [])), loc), state
         | 0, _ ->
             let x_tag = Var.fresh () in
             let instrs =
               (Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc) :: instrs
             in
-            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, args)), loc), state
+            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, [])), loc), state
         | _, _ ->
             let isint_branch = pc + 1 in
             let isblock_branch = pc + 2 in
             let () =
-              tagged_blocks := Addr.Set.add isint_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isint_branch state !tagged_blocks;
               let i_state = State.start_block isint_branch state in
               let i_args = State.stack_vars i_state in
               compiled_blocks :=
@@ -1728,7 +1805,7 @@ and compile infos pc state instrs =
                   !compiled_blocks
             in
             let () =
-              tagged_blocks := Addr.Set.add isblock_branch !tagged_blocks;
+              tagged_blocks := Addr.Map.add isblock_branch state !tagged_blocks;
               let x_tag = Var.fresh () in
               let b_state = State.start_block isblock_branch state in
               let b_args = State.stack_vars b_state in
@@ -1746,7 +1823,7 @@ and compile infos pc state instrs =
             let isint_var = Var.fresh () in
             let instrs = (Let (isint_var, Prim (IsInt, [ Pv x ])), loc) :: instrs in
             ( instrs
-            , (Cond (isint_var, (isint_branch, args), (isblock_branch, args)), loc)
+            , (Cond (isint_var, (isint_branch, []), (isblock_branch, [])), loc)
             , state ))
     | BOOLNOT ->
         let y, _ = State.accu state in
@@ -1764,7 +1841,7 @@ and compile infos pc state instrs =
         let handler_addr = pc + 1 + gets code (pc + 1) in
         let x, handler_state = State.fresh_var handler_ctx_state loc in
 
-        tagged_blocks := Addr.Set.add interm_addr !tagged_blocks;
+        tagged_blocks := Addr.Map.add interm_addr state !tagged_blocks;
         compiled_blocks :=
           Addr.Map.add
             interm_addr
@@ -1785,13 +1862,13 @@ and compile infos pc state instrs =
           { (State.push_handler handler_ctx_state) with
             State.stack =
               (* See interp.c *)
-              State.Dummy
-              :: State.Dummy
-              :: State.Dummy
-              :: State.Dummy
+              State.Dummy "pushtrap(pc)"
+              :: State.Dummy "pushtrap(sp_off)"
+              :: State.Dummy "pushtrap(env)"
+              :: State.Dummy "pushtrap(extra_args)"
               :: state.State.stack
           };
-        instrs, (Branch (interm_addr, State.stack_vars state), loc), state
+        instrs, (Branch (interm_addr, []), loc), state
     | POPTRAP ->
         let addr = pc + 1 in
         compile_block
@@ -1800,7 +1877,7 @@ and compile infos pc state instrs =
           code
           addr
           (State.pop 4 (State.pop_handler state));
-        instrs, (Poptrap (addr, State.stack_vars state), loc), state
+        instrs, (Poptrap (addr, []), loc), state
     | RERAISE | RAISE_NOTRACE | RAISE ->
         let x, _ = State.accu state in
         let kind =
@@ -2226,81 +2303,72 @@ and compile infos pc state instrs =
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BNEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Eq, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BLTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BLEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BGTINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Le, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BGEINT ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Lt, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | BULTINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
 
         ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + offset + 2, args), (pc + 3, args)), loc)
+        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
     | BUGEINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x, _ = State.accu state in
-        let args = State.stack_vars state in
         let y = Var.fresh () in
-
         ( (Let (y, Prim (Ult, [ Pc (Int n); Pv x ])), loc) :: instrs
-        , (Cond (y, (pc + 3, args), (pc + offset + 2, args)), loc)
+        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )
     | ULTINT ->
         let y, _ = State.accu state in
@@ -2423,10 +2491,16 @@ and compile infos pc state instrs =
             func
             Var.print
             arg;
+        let state =
+          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
+          | true -> State.pop 2 state
+          | false -> State.pop 3 state
+        in
+
         compile
           infos
           (pc + 1)
-          (State.pop 2 state)
+          state
           ((Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])), loc)
           :: instrs)
     | RESUMETERM ->
@@ -2510,15 +2584,15 @@ let parse_bytecode code globals debug_data =
     else Code.empty
   in
   compiled_blocks := Addr.Map.empty;
-  tagged_blocks := Addr.Set.empty;
+  tagged_blocks := Addr.Map.empty;
   p
 
 (* HACK - override module *)
 
 let override_global =
-  match Ocaml_version.v with
-  | `V4_13 | `V4_14 | `V5_00 | `V5_01 | `V5_02 -> []
-  | `V4_08 | `V4_09 | `V4_10 | `V4_11 | `V4_12 ->
+  match Ocaml_version.compare Ocaml_version.current [ 4; 13 ] >= 0 with
+  | true -> []
+  | false ->
       [ ( "CamlinternalMod"
         , fun _orig instrs ->
             let x = Var.fresh_n "internalMod" in
@@ -2609,6 +2683,14 @@ let read_primitives toc ic =
   assert (Char.equal (String.get prim (String.length prim - 1)) '\000');
   String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
+type bytesections =
+  { symb : Ocaml_compiler.Symtable.GlobalMap.t
+  ; crcs : (string * Digest.t option) list
+  ; prim : string list
+  ; dlpt : string list
+  }
+[@@ocaml.warning "-unused-field"]
+
 let from_exe
     ?(includes = [])
     ~linkall
@@ -2698,7 +2780,7 @@ let from_exe
   let body =
     if link_info
     then
-      let symtable_js =
+      let symbols_array =
         Ocaml_compiler.Symtable.GlobalMap.fold
           (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
           symbols
@@ -2706,17 +2788,12 @@ let from_exe
         |> Array.of_list
       in
       (* Include linking information *)
-      let toc =
-        [ "SYMB", Obj.repr symbols
-        ; "SYJS", Obj.repr symtable_js
-        ; "CRCS", Obj.repr crcs
-        ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
-        ]
-      in
+      let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let infos =
-        [ "toc", Constants.parse (Obj.repr toc)
+        [ "sections", Constants.parse (Obj.repr sections)
+        ; "symbols", Constants.parse (Obj.repr symbols_array)
         ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
         ]
       in
@@ -3137,12 +3214,12 @@ let predefined_exceptions () =
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
-let link_info ~symtable ~primitives ~crcs =
+let link_info ~symbols ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
-  let symtable_js =
+  let symbols_array =
     Ocaml_compiler.Symtable.GlobalMap.fold
       (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
-      symtable
+      symbols
       []
     |> Array.of_list
   in
@@ -3153,15 +3230,10 @@ let link_info ~symtable ~primitives ~crcs =
   let body = [] in
   let body =
     (* Include linking information *)
-    let toc =
-      [ "SYMB", Obj.repr symtable
-      ; "SYJS", Obj.repr symtable_js
-      ; "CRCS", Obj.repr crcs
-      ; "PRIM", Obj.repr (String.concat ~sep:"\000" primitives ^ "\000")
-      ]
-    in
+    let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
     let infos =
-      [ "toc", Constants.parse (Obj.repr toc)
+      [ "sections", Constants.parse (Obj.repr sections)
+      ; "symbols", Constants.parse (Obj.repr symbols_array)
       ; "prim_count", Int (Int32.of_int (List.length primitives))
       ]
     in

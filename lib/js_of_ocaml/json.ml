@@ -22,27 +22,29 @@ open! Import
 
 (****)
 
+(* The writing logic for basic types is copied from [lib/deriving_json]. *)
+
 let write_string buffer s =
-  Buffer.add_char buffer '\"';
+  Buffer.add_char buffer '"';
   for i = 0 to String.length s - 1 do
     match s.[i] with
-    | '\"' -> Buffer.add_string buffer "\\\""
-    | '\\' -> Buffer.add_string buffer "\\\\"
-    | '\b' -> Buffer.add_string buffer "\\b"
-    | '\x0C' -> Buffer.add_string buffer "\\f"
-    | '\n' -> Buffer.add_string buffer "\\n"
-    | '\r' -> Buffer.add_string buffer "\\r"
-    | '\t' -> Buffer.add_string buffer "\\t"
+    | '"' -> Buffer.add_string buffer {|\"|}
+    | '\\' -> Buffer.add_string buffer {|\\|}
+    | '\b' -> Buffer.add_string buffer {|\b|}
+    | '\x0C' -> Buffer.add_string buffer {|\f|}
+    | '\n' -> Buffer.add_string buffer {|\n|}
+    | '\r' -> Buffer.add_string buffer {|\r|}
+    | '\t' -> Buffer.add_string buffer {|\t|}
     | c when Poly.(c <= '\x1F') ->
         (* Other control characters are escaped. *)
-        Printf.bprintf buffer "\\u%04X" (int_of_char c)
+        Printf.bprintf buffer {|\u%04X|} (int_of_char c)
     | c when Poly.(c < '\x80') -> Buffer.add_char buffer s.[i]
     | _c (* >= '\x80' *) ->
         (* Bytes greater than 127 are embedded in a UTF-8 sequence. *)
         Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
         Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
   done;
-  Buffer.add_char buffer '\"'
+  Buffer.add_char buffer '"'
 
 let write_float buffer f =
   (* "%.15g" can be (much) shorter; "%.17g" is round-trippable *)
@@ -50,6 +52,16 @@ let write_float buffer f =
   if Poly.(float_of_string s = f)
   then Buffer.add_string buffer s
   else Printf.bprintf buffer "%.17g" f
+
+let write_int64 buffer i =
+  let mask16 = Int64.of_int 0xffff in
+  let mask24 = Int64.of_int 0xffffff in
+  Printf.bprintf
+    buffer
+    "[255,%Ld,%Ld,%Ld]"
+    (Int64.logand i mask24)
+    (Int64.logand (Int64.shift_right i 24) mask24)
+    (Int64.logand (Int64.shift_right i 48) mask16)
 
 external custom_identifier : Obj.t -> string = "caml_custom_identifier"
 
@@ -84,19 +96,8 @@ let rec write b v =
       | "_i" -> Printf.bprintf b "%ld" (Obj.obj v : int32)
       | "_j" ->
           let i : int64 = Obj.obj v in
-          let mask16 = Int64.of_int 0xffff in
-          let mask24 = Int64.of_int 0xffffff in
-          Printf.bprintf
-            b
-            "[255,%Ld,%Ld,%Ld]"
-            (Int64.logand i mask24)
-            (Int64.logand (Int64.shift_right i 24) mask24)
-            (Int64.logand (Int64.shift_right i 48) mask16)
+          write_int64 b i
       | id -> failwith (Printf.sprintf "Json.output: unsupported custom value %s " id)
-    else if t = Obj.abstract_tag
-    then
-      (* Presumably a JavaScript value *)
-      Buffer.add_string b (Js.to_string (Unsafe.global##_JSON##stringify v))
     else failwith (Printf.sprintf "Json.output: unsupported tag %d " t)
 
 let to_json v =
@@ -139,7 +140,11 @@ let input_reviver =
 
 let unsafe_input s =
   match Sys.backend_type with
-  | Other "wasm_of_ocaml" -> failwith "Json.unsafe_input: not implemented"
+  | Other "wasm_of_ocaml" ->
+      (* https://github.com/ocsigen/js_of_ocaml/pull/1660#discussion_r1731099372
+         The encoding of OCaml values is ambiguous since both integers and floats
+         are mapped to numbers *)
+      failwith "Json.unsafe_input: not implemented in the Wasm backend"
   | _ -> json##parse_ s input_reviver
 
 class type obj = object
@@ -162,7 +167,20 @@ let output_reviver _key (value : Unsafe.any) : Obj.t =
     Obj.repr (array [| 255; value##.lo; value##.mi; value##.hi |])
   else Obj.repr value
 
+let use_native_stringify_ =
+  ref
+    (match Sys.backend_type with
+    | Other "js_of_ocaml" -> true
+    | Native | Bytecode | Other _ -> false)
+
+let use_native_stringify () = !use_native_stringify_
+
+let set_use_native_stringify b = use_native_stringify_ := b
+
+let output_ x = to_json (Obj.repr x)
+
 let output obj =
   match Sys.backend_type with
-  | Other "wasm_of_ocaml" -> Js.string (to_json (Obj.repr obj))
-  | _ -> json##stringify_ obj (Js.wrap_callback output_reviver)
+  | Other "js_of_ocaml" when use_native_stringify () ->
+      json##stringify_ obj (Js.wrap_callback output_reviver)
+  | _ -> Js.string (output_ obj)

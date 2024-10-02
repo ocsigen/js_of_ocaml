@@ -10,25 +10,9 @@ caml_dynlink_close_lib
 caml_dynlink_get_current_libs
 caml_dynlink_lookup_symbol
 caml_dynlink_open_lib
-caml_get_current_environment
-caml_get_section_table
-caml_int64_add_native
-caml_int64_and_native
-caml_int64_div_native
-caml_int64_mod_native
-caml_int64_mul_native
-caml_int64_neg_native
-caml_int64_or_native
-caml_int64_sub_native
-caml_int64_xor_native
 caml_int_as_pointer
-caml_invoke_traced_function
-caml_realloc_global
-caml_reify_bytecode
 caml_reset_afl_instrumentation
 caml_signbit
-caml_static_release_bytecode
-caml_terminfo_rows
 debugger
 is_digit_normalized
 
@@ -139,6 +123,7 @@ From +mlBytes.js:
 caml_array_of_bytes
 caml_array_of_string
 caml_bytes_of_utf16_jsstring
+caml_string_concat
 caml_string_set16
 caml_string_set32
 caml_string_set64
@@ -155,13 +140,10 @@ caml_obj_set_tag
 caml_obj_truncate
 
 From +runtime_events.js:
-caml_custom_event_index
 caml_runtime_events_create_cursor
 caml_runtime_events_free_cursor
 caml_runtime_events_read_poll
-caml_runtime_events_user_register
 caml_runtime_events_user_resolve
-caml_runtime_events_user_write
 
 From +stdlib.js:
 caml_build_symbols
@@ -187,7 +169,15 @@ caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
-caml_sys_is_regular_file
+
+From +toplevel.js:
+caml_get_section_table
+caml_static_alloc
+caml_static_free
+caml_terminfo_backup
+caml_terminfo_resume
+caml_terminfo_setup
+caml_terminfo_standout
 
 From +unix.js:
 caml_unix_cleanup

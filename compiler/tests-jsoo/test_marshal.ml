@@ -134,27 +134,6 @@ let%expect_test _ =
   [%expect
     {| "\132\149\166\190\000\000\000'\000\000\000\001\000\000\000\007\000\000\000\007\024_bigarr02\000\000\000\000\020\000\000\000\000\000\000\000(\000\000\000\001\000\000\000\005\000\003\000\003\000\001\000\002" |}]
 
-let%expect_test _ =
-  let data =
-    "\132\149\166\189\r\022\206\021\001\147F\137d(\181/\253\000Xm\000\0000\n\
-     \000\000'\016c\001\000\012\135\007E"
-  in
-  let ocaml_5_1 =
-    match String.split_on_char '.' Sys.ocaml_version with
-    | major :: minor :: _ ->
-        let major = int_of_string major and minor = int_of_string minor in
-        major > 5 || (major = 5 && minor >= 1)
-    | _ -> assert false
-  in
-  let s =
-    match Sys.backend_type with
-    | Other "js_of_ocaml" -> Marshal.from_string data 0
-    | Other _ | Native | Bytecode ->
-        if ocaml_5_1 then Marshal.from_string data 0 else String.make 10000 'c'
-  in
-  Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
-  [%expect {| cccccccccccccccccccc ... (10000) |}]
-
 let%expect_test "test sharing of string" =
   let s = "AString" in
   let p = s, s in
@@ -165,3 +144,27 @@ let%expect_test "test sharing of string" =
   Printf.printf "%S" (Marshal.to_string obj []);
   [%expect
     {| "\132\149\166\190\000\000\000\016\000\000\000\004\000\000\000\012\000\000\000\011\160\160'AString\004\001\160\004\003@" |}]
+
+let%expect_test "test float" =
+  let s = 3.14 in
+  let p = s, s in
+  let obj = [ p; p ] in
+  let r1 = Marshal.to_string s [ No_sharing ] in
+  Printf.printf "%S\n" r1;
+  Printf.printf "%f" (Marshal.from_string r1 0);
+  [%expect
+    {|
+      "\132\149\166\190\000\000\000\t\000\000\000\000\000\000\000\003\000\000\000\002\012\031\133\235Q\184\030\t@"
+      3.140000 |}];
+  let r2 = Marshal.to_string obj [] in
+  Printf.printf "%S\n" r2;
+  let a, b, c, d =
+    match Marshal.from_string r2 0 with
+    | [ (a, b); (c, d) ] -> a, b, c, d
+    | _ -> assert false
+  in
+  Printf.printf "%f %f %f %f" a b c d;
+  [%expect
+    {|
+    "\132\149\166\190\000\000\000\017\000\000\000\004\000\000\000\012\000\000\000\011\160\160\012\031\133\235Q\184\030\t@\004\001\160\004\003@"
+    3.140000 3.140000 3.140000 3.140000 |}]

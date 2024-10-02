@@ -20,10 +20,6 @@
 open! Import
 open Js
 
-type int32 = number_t
-
-type uint32 = number_t
-
 class type arrayBuffer = object
   method byteLength : int readonly_prop
 
@@ -74,24 +70,23 @@ type int16Array = (int, int, Bigarray.int16_signed_elt) typedArray
 
 type uint16Array = (int, int, Bigarray.int16_unsigned_elt) typedArray
 
-type int32Array = (int32, Int32.t, Bigarray.int32_elt) typedArray
+type int32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
-type uint32Array = (uint32, Int32.t, Bigarray.int32_elt) typedArray
+type uint32Array = (number_t, Int32.t, Bigarray.int32_elt) typedArray
 
 type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
-type ('bigarray, 'typed_array, 'elt) type' =
-  | Char : (int, char, Bigarray.int8_unsigned_elt) type'
-  | Int8_signed : (int, int, Bigarray.int8_signed_elt) type'
-  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) type'
-  | Int16_signed : (int, int, Bigarray.int16_signed_elt) type'
-  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) type'
-  | Int32_signed : (int32, Int32.t, Bigarray.int32_elt) type'
-  | Int32_unsigned : (uint32, Int32.t, Bigarray.int32_elt) type'
-  | Float32 : (number_t, float, Bigarray.float32_elt) type'
-  | Float64 : (number_t, float, Bigarray.float64_elt) type'
+type (_, _, _) kind =
+  | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
+  | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
+  | Int16_signed : (int, int, Bigarray.int16_signed_elt) kind
+  | Int16_unsigned : (int, int, Bigarray.int16_unsigned_elt) kind
+  | Int32_signed : (number_t, Int32.t, Bigarray.int32_elt) kind
+  | Int32_unsigned : (number_t, Int32.t, Bigarray.int32_elt) kind
+  | Float32 : (number_t, float, Bigarray.float32_elt) kind
+  | Float64 : (number_t, float, Bigarray.float64_elt) kind
 
 external kind :
   ('typed_array, 'bigarray, 'elt) typedArray t -> ('bigarray, 'elt) Bigarray.kind
@@ -105,7 +100,7 @@ external to_genarray :
      ('typed_array, 'bigarray, 'elt) typedArray t
   -> ('bigarray, 'elt, Bigarray.c_layout) Bigarray.Genarray.t = "caml_ba_from_typed_array"
 
-let from_genarray _ a = from_genarray_impl a
+let from_genarray (_ : ('typed_array, 'bigarray, 'elt) kind) a = from_genarray_impl a
 
 let int8Array = Js.Unsafe.global##._Int8Array
 
@@ -209,13 +204,13 @@ class type dataView = object
 
   method getUint16_ : int -> bool t -> int meth
 
-  method getInt32 : int -> int32 meth
+  method getInt32 : int -> number_t meth
 
-  method getInt32_ : int -> bool t -> int32 meth
+  method getInt32_ : int -> bool t -> number_t meth
 
-  method getUint32 : int -> uint32 meth
+  method getUint32 : int -> number_t meth
 
-  method getUint32_ : int -> bool t -> uint32 meth
+  method getUint32_ : int -> bool t -> number_t meth
 
   method getFloat32 : int -> number_t meth
 
@@ -237,13 +232,13 @@ class type dataView = object
 
   method setUint16_ : int -> int -> bool t -> unit meth
 
-  method setInt32 : int -> int32 -> unit meth
+  method setInt32 : int -> number_t -> unit meth
 
-  method setInt32_ : int -> int32 -> bool t -> unit meth
+  method setInt32_ : int -> number_t -> bool t -> unit meth
 
-  method setUint32 : int -> uint32 -> unit meth
+  method setUint32 : int -> number_t -> unit meth
 
-  method setUint32_ : int -> uint32 -> bool t -> unit meth
+  method setUint32_ : int -> number_t -> bool t -> unit meth
 
   method setFloat32 : int -> number_t -> unit meth
 

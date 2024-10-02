@@ -32,18 +32,19 @@
    various optimizations until a fix-point is reached
 ==List of option to "--disable" or "--enable"
 
-|= Option name |= Default |= Description                           |
-| pretty       | false    | Pretty print the javascript output     |
-| effects      | false    | Enable support for effect handlers     |
-| debuginfo    | false    | Output debug information (location)    |
-| deadcode     | true     | Deadcode elimination                   |
-| inline       | true     | Code inlining                          |
-| shortvar     | true     | Shorten variable names                 |
-| staticeval   | true     | Static evaluation of constants         |
-| share        | true     | Share string and number constants      |
-| strict       | true     | Enable strict mode                     |
-| debugger     | true     | Keep debugger statements.
-                            Stripped otherwise                     |
-| genprim      | true     | Generate dummy primitives when missing |
-| excwrap      | true     | Wrap js exception into ocaml ones      |
-| optcall      | true     | Javascript optimizations               |
+|= Option name   |= Default |= Description                           |
+| pretty         | false    | Pretty print the javascript output     |
+| effects        | false    | Enable support for effect handlers     |
+| debuginfo      | false    | Output debug information (location)    |
+| deadcode       | true     | Deadcode elimination                   |
+| globaldeadcode | true     | Global deadcode elimination            |
+| inline         | true     | Code inlining                          |
+| shortvar       | true     | Shorten variable names                 |
+| staticeval     | true     | Static evaluation of constants         |
+| share          | true     | Share string and number constants      |
+| strict         | true     | Enable strict mode                     |
+| debugger       | true     | Keep debugger statements.
+                              Stripped otherwise                     |
+| genprim        | true     | Generate dummy primitives when missing |
+| excwrap        | true     | Wrap js exception into ocaml ones      |
+| optcall        | true     | Javascript optimizations               |

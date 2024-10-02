@@ -43,7 +43,10 @@ let rec f x y z =
            var f = a, e = b, d = c;
            for(;;){
             if(0 === f && 0 === e && 0 === d) return 1;
-            var g = (d + f | 0) + e | 0, f = f + d | 0, e = e - d | 0, d = g;
+            var g = (d + f | 0) + e | 0;
+            f = f + d | 0;
+            e = e - d | 0;
+            d = g;
            }
           }],
          "Test");

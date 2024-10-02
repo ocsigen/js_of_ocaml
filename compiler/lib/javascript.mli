@@ -196,6 +196,7 @@ and expression =
   | ECallTemplate of expression * template * location
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
+  | EDotPrivate of expression * access_kind * identifier
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of ident option * function_declaration
@@ -209,7 +210,11 @@ and expression =
   | ENum of Num.t
   | EObj of property_list
   | ERegexp of string * string option
-  | EYield of expression option
+  | EYield of
+      { delegate : bool
+      ; expr : expression option
+      }
+  | EPrivName of identifier
   | CoverParenthesizedExpressionAndArrowParameterList of early_error
   | CoverCallExpressionAndAsyncArrowHead of early_error
 
@@ -254,12 +259,14 @@ and statement =
       (expression, variable_declaration_kind * for_binding) either
       * expression
       * (statement * location)
+  | ForAwaitOf_statement of
+      (expression, variable_declaration_kind * for_binding) either
+      * expression
+      * (statement * location)
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
-  (*
-  | With_statement
-*)
+  | With_statement of expression * (statement * location)
   | Labelled_statement of Label.t * (statement * location)
   | Switch_statement of
       expression * case_clause list * statement_list option * case_clause list
@@ -278,7 +285,7 @@ and block = statement_list
 and statement_list = (statement * location) list
 
 and variable_declaration =
-  | DeclIdent of binding_ident * initialiser option
+  | DeclIdent of ident * initialiser option
   | DeclPattern of binding_pattern * initialiser
 
 and variable_declaration_kind =
@@ -311,7 +318,7 @@ and class_element =
 
 and class_element_name =
   | PropName of property_name
-  | PrivName of ident
+  | PrivName of identifier
 
 and ('a, 'b) list_with_rest =
   { list : 'a list
@@ -327,16 +334,16 @@ and for_binding = binding
 and binding_element = binding * initialiser option
 
 and binding =
-  | BindingIdent of binding_ident
+  | BindingIdent of ident
   | BindingPattern of binding_pattern
 
 and binding_pattern =
-  | ObjectBinding of (binding_property, binding_ident) list_with_rest
+  | ObjectBinding of (binding_property, ident) list_with_rest
   | ArrayBinding of (binding_element option, binding) list_with_rest
 
 and object_target_elt =
-  | TargetPropertyId of ident * initialiser option
-  | TargetProperty of property_name * expression
+  | TargetPropertyId of ident_prop * initialiser option
+  | TargetProperty of property_name * expression * initialiser option
   | TargetPropertySpread of expression
   | TargetPropertyMethod of property_name * method_
 
@@ -350,11 +357,11 @@ and assignment_target =
   | ObjectTarget of object_target_elt list
   | ArrayTarget of array_target_elt list
 
-and binding_ident = ident
+and ident_prop = Prop_and_ident of ident
 
 and binding_property =
   | Prop_binding of property_name * binding_element
-  | Prop_ident of binding_ident * initialiser option
+  | Prop_ident of ident_prop * initialiser option
 
 and function_body = statement_list
 
@@ -366,8 +373,8 @@ and export =
   | ExportClass of ident * class_declaration
   | ExportNames of (ident * Utf8_string.t) list
   (* default *)
-  | ExportDefaultFun of ident * function_declaration
-  | ExportDefaultClass of ident * class_declaration
+  | ExportDefaultFun of ident option * function_declaration
+  | ExportDefaultClass of ident option * class_declaration
   | ExportDefaultExpression of expression
   (* from *)
   | ExportFrom of
@@ -432,7 +439,8 @@ val array : expression list -> expression
 
 val call : expression -> expression list -> location -> expression
 
-val variable_declaration : (ident * initialiser) list -> statement
+val variable_declaration :
+  ?kind:variable_declaration_kind -> (ident * initialiser) list -> statement
 
 val list : 'a list -> ('a, _) list_with_rest
 
