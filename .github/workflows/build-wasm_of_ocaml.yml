@@ -114,6 +114,14 @@ jobs:
         with:
           path: wasm_of_ocaml
 
+      - name: Pin faked binaryen-bin package
+        # It's faster to use a cached version
+        working-directory: ./wasm_of_ocaml
+        run: |
+          echo opam-version: '"2.0"' > binaryen-bin.opam
+          opam pin -n .
+          rm binaryen-bin.opam
+
       - name: Checkout Jane Street opam repository
         uses: actions/checkout@v4
         with:

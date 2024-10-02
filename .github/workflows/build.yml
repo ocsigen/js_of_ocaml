@@ -88,13 +88,31 @@ jobs:
           dune-cache: true
           opam-pin: false
 
+      - name: Pin dune
+        run: |
+          opam pin add dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
-      - run: opam install . --with-test
+      - run: cat VERSION | xargs opam pin wasm_of_ocaml-compiler . -n --with-version 
+        if: ${{ !matrix.skip-test }}
+        shell: bash
+
+      - run: opam install conf-c++
+        # Otherwise, the next step fails reinstalling gcc while compiling
+        # other packages
+        if: ${{ !matrix.skip-test && runner.os == 'Windows' }}
+
+      - run: opam install . --with-test --deps-only
+        # Install the test dependencies
+        if: ${{ !matrix.skip-test }}
+
+      - run: opam install .
+        # Install the packages (without running the tests)
         if: ${{ !matrix.skip-test }}
 
       - run: opam exec -- make all
@@ -134,6 +152,9 @@ jobs:
         with:
           ocaml-compiler: "5.2"
           dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
       - uses: ocaml/setup-ocaml/lint-opam@v3
 
   lint-fmt:
@@ -146,6 +167,9 @@ jobs:
         with:
           ocaml-compiler: "5.2"
           dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
       - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:

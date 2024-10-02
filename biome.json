@@ -2,7 +2,11 @@
   "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
   "files": {
     "include": ["runtime"],
-    "ignore": ["runtime/zstd.ts"]
+    "ignore": [
+      "runtime/zstd.ts",
+      "runtime/wasm/runtime.js",
+      "runtime/wasm/deps.json"
+    ]
   },
   "formatter": {
     "enabled": true,
