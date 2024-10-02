@@ -391,7 +391,6 @@ let run
          let t1 = Timer.make () in
          let code =
            Parse_bytecode.from_exe
-             ~target:`Wasm
              ~includes:include_dirs
              ~include_cmis:false
              ~link_info:false

@@ -323,7 +323,6 @@ let run
          let linkall = linkall || toplevel || dynlink in
          let code =
            Parse_bytecode.from_exe
-             ~target:`JavaScript
              ~includes:include_dirs
              ~include_cmis
              ~link_info:(toplevel || dynlink)

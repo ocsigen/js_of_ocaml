@@ -418,7 +418,7 @@ end
 
 (* Parse constants *)
 module Constants : sig
-  val parse : target:[ `JavaScript | `Wasm ] -> Obj.t -> Code.constant
+  val parse : Obj.t -> Code.constant
 
   val inlined : Code.constant -> bool
 end = struct
@@ -452,7 +452,7 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
-  let rec parse ~target x =
+  let rec parse x =
     if Obj.is_block x
     then
       let tag = Obj.tag x in
@@ -485,10 +485,7 @@ end = struct
         | None -> assert false
       else if tag < Obj.no_scan_tag
       then
-        Tuple
-          ( tag
-          , Array.init (Obj.size x) ~f:(fun i -> parse ~target (Obj.field x i))
-          , Unknown )
+        Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
       else assert false
     else
       let i : int = Obj.magic x in
@@ -2613,7 +2610,6 @@ let read_primitives toc ic =
   String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
 let from_exe
-    ~target
     ?(includes = [])
     ~linkall
     ~link_info
@@ -2627,7 +2623,7 @@ let from_exe
   let primitive_table = Array.of_list primitives in
   let code = Toc.read_code toc ic in
   let init_data = Toc.read_data toc ic in
-  let init_data = Array.map ~f:(Constants.parse ~target) init_data in
+  let init_data = Array.map ~f:Constants.parse init_data in
   let orig_symbols = Toc.read_symb toc ic in
   let orig_crcs = Toc.read_crcs toc ic in
   let keeps =
@@ -2720,7 +2716,7 @@ let from_exe
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let infos =
-        [ "toc", Constants.parse ~target (Obj.repr toc)
+        [ "toc", Constants.parse (Obj.repr toc)
         ; "prim_count", Int (Int32.of_int (Array.length globals.primitives))
         ]
       in
@@ -3141,7 +3137,7 @@ let predefined_exceptions () =
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
-let link_info ~target ~symtable ~primitives ~crcs =
+let link_info ~symtable ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
   let symtable_js =
     Ocaml_compiler.Symtable.GlobalMap.fold
@@ -3165,7 +3161,7 @@ let link_info ~target ~symtable ~primitives ~crcs =
       ]
     in
     let infos =
-      [ "toc", Constants.parse ~target (Obj.repr toc)
+      [ "toc", Constants.parse (Obj.repr toc)
       ; "prim_count", Int (Int32.of_int (List.length primitives))
       ]
     in

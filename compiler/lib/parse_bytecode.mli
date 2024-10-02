@@ -52,8 +52,7 @@ end
 val read_primitives : Toc.t -> in_channel -> string list
 
 val from_exe :
-     target:[ `JavaScript | `Wasm ]
-  -> ?includes:string list
+     ?includes:string list
   -> linkall:bool
   -> link_info:bool
   -> include_cmis:bool
@@ -91,8 +90,7 @@ val from_string :
 val predefined_exceptions : unit -> Code.program * Unit_info.t
 
 val link_info :
-     target:[ `JavaScript | `Wasm ]
-  -> symtable:Ocaml_compiler.Symtable.GlobalMap.t
+     symtable:Ocaml_compiler.Symtable.GlobalMap.t
   -> primitives:StringSet.t
   -> crcs:(string * Digest.t option) list
   -> Code.program
