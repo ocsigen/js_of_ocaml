@@ -43,7 +43,8 @@ let print_groups output l =
               output_string output (Printf.sprintf "%s\n" name)))
 
 let f (runtime_files, bytecode, target_env) =
-  Generate.init ();
+  Config.set_target `JavaScript;
+  Linker.reset ();
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with

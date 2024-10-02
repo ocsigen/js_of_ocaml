@@ -47,6 +47,7 @@ let rec list_product l =
 let bool = [ true; false ]
 
 let () =
+  Js_of_ocaml_compiler.Config.set_target `JavaScript;
   let () = set_binary_mode_out stdout true in
   match Array.to_list Sys.argv with
   | [] -> assert false

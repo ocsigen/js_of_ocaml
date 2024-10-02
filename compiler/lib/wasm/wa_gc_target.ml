@@ -1035,11 +1035,7 @@ module Constant = struct
         let* e = Memory.make_int32 ~kind:`Int32 (return (W.Const (I32 i))) in
         return (Const, e)
     | NativeInt i ->
-        let* e =
-          Memory.make_int32
-            ~kind:`Nativeint
-            (return (W.Const (I32 (Int32.of_nativeint_warning_on_overflow i))))
-        in
+        let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
         return (Const, e)
 
   let translate c =

@@ -53,7 +53,7 @@ let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f 
               let data = Source_map.to_string sm in
               "data:application/json;base64," ^ Base64.encode_exn data
           | Some output_file ->
-              Source_map.to_file sm ~file:output_file;
+              Source_map.to_file sm output_file;
               Filename.basename output_file
         in
         Pretty_print.newline fmt;
@@ -91,6 +91,7 @@ let run
     } =
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
+  Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Generate.init ();
   (match output_file with
@@ -184,7 +185,7 @@ let run
     let init_pseudo_fs = fs_external && standalone in
     let sm =
       match output_file with
-      | `Stdout, fmt ->
+      | `Stdout, formatter ->
           let instr =
             List.concat
               [ pseudo_fs_instr `create_file one.debug one.cmis
@@ -194,15 +195,15 @@ let run
           in
           let code = Code.prepend one.code instr in
           Driver.f
-            ~target:(JavaScript fmt)
             ~standalone
             ?profile
             ~link
             ~wrap_with_fun
             ?source_map
+            ~formatter
             one.debug
             code
-      | `File, fmt ->
+      | `File, formatter ->
           let fs_instr1, fs_instr2 =
             match fs_output with
             | None -> pseudo_fs_instr `create_file one.debug one.cmis, []
@@ -218,12 +219,12 @@ let run
           let code = Code.prepend one.code instr in
           let res =
             Driver.f
-              ~target:(JavaScript fmt)
               ~standalone
               ?profile
               ~link
               ~wrap_with_fun
               ?source_map
+              ~formatter
               one.debug
               code
           in
@@ -282,7 +283,7 @@ let run
    then (
      let prims = Linker.list_all () |> StringSet.elements in
      assert (List.length prims > 0);
-     let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`JavaScript in
+     let code, uinfo = Parse_bytecode.predefined_exceptions () in
      let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
      let code : Parse_bytecode.one =
        { code
@@ -322,7 +323,6 @@ let run
          let linkall = linkall || toplevel || dynlink in
          let code =
            Parse_bytecode.from_exe
-             ~target:`JavaScript
              ~includes:include_dirs
              ~include_cmis
              ~link_info:(toplevel || dynlink)
@@ -355,7 +355,6 @@ let run
          let t1 = Timer.make () in
          let code =
            Parse_bytecode.from_cmo
-             ~target:`JavaScript
              ~includes:include_dirs
              ~include_cmis
              ~debug:need_debug
@@ -412,7 +411,6 @@ let run
              let t1 = Timer.make () in
              let code =
                Parse_bytecode.from_cmo
-                 ~target:`JavaScript
                  ~includes:include_dirs
                  ~include_cmis
                  ~debug:need_debug
@@ -444,7 +442,6 @@ let run
                let t1 = Timer.make () in
                let code =
                  Parse_bytecode.from_cmo
-                   ~target:`JavaScript
                    ~includes:include_dirs
                    ~include_cmis
                    ~debug:need_debug

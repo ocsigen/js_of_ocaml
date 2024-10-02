@@ -161,7 +161,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     | Field (x, n, Float) ->
         Memory.float_array_get
           (load x)
-          (Constant.translate (Int (Int31.of_int_warning_on_overflow n)))
+          (Constant.translate (Int Int31.(of_int_warning_on_overflow n |> to_int32)))
     | Closure _ ->
         Closure.translate
           ~context:ctx.global_context
@@ -676,7 +676,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       | Set_field (x, n, Float, y) ->
           Memory.float_array_set
             (load x)
-            (Constant.translate (Int (Int31.of_int_warning_on_overflow n)))
+            (Constant.translate (Int Int31.(of_int_warning_on_overflow n |> to_int32)))
             (load y)
       | Offset_ref (x, n) ->
           Memory.set_field

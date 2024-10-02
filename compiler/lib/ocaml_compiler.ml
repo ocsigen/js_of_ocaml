@@ -18,27 +18,28 @@
 
 open! Stdlib
 
-let rec constant_of_const ~target c : Code.constant =
+let rec constant_of_const c : Code.constant =
   let open Lambda in
   let open Asttypes in
   match c with
   | Const_base (Const_int i) ->
       Int
-        (match target with
+        (match Config.target () with
         | `JavaScript -> Int32.of_int_warning_on_overflow i
-        | `Wasm -> Int31.of_int_warning_on_overflow i)
+        | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
   | Const_base (Const_char c) -> Int (Int32.of_int (Char.code c))
   | ((Const_base (Const_string (s, _))) [@if ocaml_version < (4, 11, 0)])
   | ((Const_base (Const_string (s, _, _))) [@if ocaml_version >= (4, 11, 0)]) -> String s
   | Const_base (Const_float s) -> Float (float_of_string s)
   | Const_base (Const_int32 i) -> (
-      match target with
+      match Config.target () with
       | `JavaScript -> Int i
       | `Wasm -> Int32 i)
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> (
-      match target with
-      | `JavaScript -> Int (Int32.of_nativeint_warning_on_overflow i)
+      let i = Int32.of_nativeint_warning_on_overflow i in
+      match Config.target () with
+      | `JavaScript -> Int i
       | `Wasm -> NativeInt i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
@@ -46,11 +47,11 @@ let rec constant_of_const ~target c : Code.constant =
       Float_array (Array.of_list l)
   | ((Const_pointer i) [@if ocaml_version < (4, 12, 0)]) ->
       Int
-        (match target with
+        (match Config.target () with
         | `JavaScript -> Int32.of_int_warning_on_overflow i
-        | `Wasm -> Int31.of_int_warning_on_overflow i)
+        | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
   | Const_block (tag, l) ->
-      let l = Array.of_list (List.map l ~f:(fun c -> constant_of_const ~target c)) in
+      let l = Array.of_list (List.map l ~f:(fun c -> constant_of_const c)) in
       Tuple (tag, l, Unknown)
 
 let rec find_loc_in_summary ident' = function

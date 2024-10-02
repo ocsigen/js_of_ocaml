@@ -25,6 +25,7 @@
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (sedlex (>= 2.3))
+  (qcheck :with-test)
   menhir
   menhirLib
   menhirSdk

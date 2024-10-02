@@ -186,7 +186,14 @@ module Fragment = struct
     List.fold_left
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
-      [ "js-string", Config.Flag.use_js_string; "effects", Config.Flag.effects ]
+      [ "js-string", Config.Flag.use_js_string
+      ; "effects", Config.Flag.effects
+      ; ( "wasm"
+        , fun () ->
+            match Config.target () with
+            | `JavaScript -> false
+            | `Wasm -> true )
+      ]
 
   type t =
     | Always_include of Javascript.program pack
@@ -434,7 +441,7 @@ let list_all ?from () =
     provided
     StringSet.empty
 
-let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.t) =
+let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
   | Always_include code ->
       always_included :=
@@ -472,11 +479,9 @@ let load_fragment ~ignore_always_annotation ~target_env ~filename (f : Fragment.
                 filename;
             if always
             then (
-              if not ignore_always_annotation
-              then
-                always_included :=
-                  { ar_filename = filename; ar_program = code; ar_requires = requires }
-                  :: !always_included;
+              always_included :=
+                { ar_filename = filename; ar_program = code; ar_requires = requires }
+                :: !always_included;
               `Ok)
             else
               error
@@ -578,24 +583,19 @@ let check_deps () =
           ())
     code_pieces
 
-let load_file ~ignore_always_annotation ~target_env filename =
+let load_file ~target_env filename =
   List.iter (Fragment.parse_file filename) ~f:(fun frag ->
-      let (`Ok | `Ignored) =
-        load_fragment ~ignore_always_annotation ~target_env ~filename frag
-      in
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
       ())
 
-let load_fragments ?(ignore_always_annotation = false) ~target_env ~filename l =
+let load_fragments ~target_env ~filename l =
   List.iter l ~f:(fun frag ->
-      let (`Ok | `Ignored) =
-        load_fragment ~ignore_always_annotation ~target_env ~filename frag
-      in
+      let (`Ok | `Ignored) = load_fragment ~target_env ~filename frag in
       ());
   check_deps ()
 
-let load_files ?(ignore_always_annotation = false) ~target_env l =
-  List.iter l ~f:(fun filename ->
-      load_file ~ignore_always_annotation ~target_env filename);
+let load_files ~target_env l =
+  List.iter l ~f:(fun filename -> load_file ~target_env filename);
   check_deps ()
 
 (* resolve *)

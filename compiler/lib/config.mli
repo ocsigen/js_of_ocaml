@@ -78,6 +78,7 @@ module Flag : sig
   val disable : string -> unit
 end
 
+(** This module contains parameters that may be modified through command-line flags. *)
 module Param : sig
   val set : string -> string -> unit
 
@@ -102,3 +103,13 @@ module Param : sig
 
   val lambda_lifting_baseline : unit -> int
 end
+
+(****)
+
+(** {2 Parameters that are constant across a program run} *)
+
+(** These parameters should be set at most once at the beginning of the program. *)
+
+val target : unit -> [ `JavaScript | `Wasm ]
+
+val set_target : [ `JavaScript | `Wasm ] -> unit

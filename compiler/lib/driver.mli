@@ -20,22 +20,26 @@
 
 type profile
 
-type 'a target =
-  | JavaScript : Pretty_print.t -> Source_map.t option target
-  | Wasm
-      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
-        target
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
+val optimize : profile:profile -> Code.program -> optimized_result
 
 val f :
-     target:'result target
-  -> ?standalone:bool
+     ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> ?source_map:Source_map.t
+  -> formatter:Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> 'result
+  -> Source_map.t option
 
 val f' :
      ?standalone:bool
@@ -57,7 +61,7 @@ val from_string :
 val link_and_pack :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> link:[ `All | `All_from of string list | `Needed | `No ]
+  -> ?link:[ `All | `All_from of string list | `Needed | `No ]
   -> Javascript.statement_list
   -> Javascript.statement_list
 

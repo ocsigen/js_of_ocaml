@@ -412,13 +412,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             List.fold_left units ~init:StringSet.empty ~f:(fun acc (u : Unit_info.t) ->
                 StringSet.union acc (StringSet.of_list u.primitives))
           in
-          let code =
-            Parse_bytecode.link_info
-              ~target:`JavaScript
-              ~symtable:!sym
-              ~primitives
-              ~crcs:[]
-          in
+          let code = Parse_bytecode.link_info ~symtable:!sym ~primitives ~crcs:[] in
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;
@@ -469,7 +463,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
               let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
               Line_writer.write oc s
           | Some file ->
-              Source_map.to_file sm ~file;
+              Source_map.to_file sm file;
               let s = sourceMappingURL ^ Filename.basename file in
               Line_writer.write oc s));
       if times () then Format.eprintf "  sourcemap: %a@." Timer.print t

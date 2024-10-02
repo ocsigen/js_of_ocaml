@@ -30,7 +30,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
   if Option.is_some sourcemap_root || not sourcemap_don't_inline_content
   then (
     let open Source_map in
-    let source_map, mappings = Source_map.of_file_no_mappings sourcemap_file in
+    let source_map = Source_map.of_file sourcemap_file in
     assert (List.is_empty (Option.value source_map.sources_content ~default:[]));
     (* Add source file contents to source map *)
     let sources_content =
@@ -50,7 +50,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
           (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
       }
     in
-    Source_map.to_file ?mappings source_map ~file:sourcemap_file)
+    Source_map.to_file source_map sourcemap_file)
 
 let opt_with action x f =
   match x with
@@ -140,17 +140,23 @@ let link_runtime ~profile runtime_wasm_files output_file =
 let generate_prelude ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
-  let code, uinfo = Parse_bytecode.predefined_exceptions ~target:`Wasm in
-  let live_vars, in_cps, p, debug =
-    Driver.f
-      ~target:Wasm
-      ~link:`Needed
-      (Parse_bytecode.Debug.create ~include_cmis:false false)
-      code
+  let code, uinfo = Parse_bytecode.predefined_exceptions () in
+  let profile =
+    match Driver.profile 1 with
+    | Some p -> p
+    | None -> assert false
   in
+  let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
   let context = Wa_generate.start () in
+  let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
-    Wa_generate.f ~context ~unit_name:(Some "prelude") ~live_vars ~in_cps ~debug p
+    Wa_generate.f
+      ~context
+      ~unit_name:(Some "prelude")
+      ~live_vars:variable_uses
+      ~in_cps
+      ~debug
+      program
   in
   Wa_generate.output ch ~context ~debug;
   uinfo.provides
@@ -244,6 +250,7 @@ let run
     ; sourcemap_root
     ; sourcemap_don't_inline_content
     } =
+  Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Wa_generate.init ();
   let output_file = fst output_file in
@@ -270,15 +277,8 @@ let run
   List.iter builtin ~f:(fun t ->
       let filename = Builtins.File.name t in
       let runtimes = Linker.Fragment.parse_builtin t in
-      Linker.load_fragments
-        ~ignore_always_annotation:true
-        ~target_env:Target_env.Isomorphic
-        ~filename
-        runtimes);
-  Linker.load_files
-    ~ignore_always_annotation:true
-    ~target_env:Target_env.Isomorphic
-    runtime_js_files;
+      Linker.load_fragments ~target_env:Target_env.Isomorphic ~filename runtimes);
+  Linker.load_files ~target_env:Target_env.Isomorphic runtime_js_files;
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
@@ -299,12 +299,17 @@ let run
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let live_vars, in_cps, p, debug =
-      Driver.f ~target:Wasm ~standalone ?profile ~link:`No one.debug code
+    let profile =
+      match profile, Driver.profile 1 with
+      | Some p, _ -> p
+      | None, Some p -> p
+      | None, None -> assert false
     in
+    let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
     let context = Wa_generate.start () in
+    let debug = one.debug in
     let toplevel_name, generated_js =
-      Wa_generate.f ~context ~unit_name ~live_vars ~in_cps ~debug p
+      Wa_generate.f ~context ~unit_name ~live_vars:variable_uses ~in_cps ~debug program
     in
     if standalone then Wa_generate.add_start_function ~context toplevel_name;
     Wa_generate.output ch ~context ~debug;
@@ -352,12 +357,7 @@ let run
      let compile_cmo cmo cont =
        let t1 = Timer.make () in
        let code =
-         Parse_bytecode.from_cmo
-           ~target:`Wasm
-           ~includes:include_dirs
-           ~debug:need_debug
-           cmo
-           ic
+         Parse_bytecode.from_cmo ~includes:include_dirs ~debug:need_debug cmo ic
        in
        let unit_info = Unit_info.of_cmo cmo in
        let unit_name = Ocaml_compiler.Cmo_format.name cmo in
@@ -391,7 +391,6 @@ let run
          let t1 = Timer.make () in
          let code =
            Parse_bytecode.from_exe
-             ~target:`Wasm
              ~includes:include_dirs
              ~include_cmis:false
              ~link_info:false

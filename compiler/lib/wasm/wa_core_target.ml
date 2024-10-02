@@ -411,7 +411,7 @@ module Constant = struct
         let block =
           [ W.DataI32 h
           ; DataI32 0l (*ZZZ DataSym (S "caml_nativeint_ops", 0)*)
-          ; DataI32 (Int32.of_nativeint_warning_on_overflow i)
+          ; DataI32 i
           ]
         in
         context.data_segments <- Code.Var.Map.add name (true, block) context.data_segments;

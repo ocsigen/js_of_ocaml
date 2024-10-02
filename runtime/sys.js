@@ -352,6 +352,7 @@ function caml_sys_is_regular_file(name) {
 }
 //Always
 //Requires: caml_fatal_uncaught_exception
+//If: !wasm
 function caml_setup_uncaught_exception_handler() {
   var process = globalThis.process;
   if(process && process.on) {

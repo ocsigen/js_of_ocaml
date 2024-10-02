@@ -311,7 +311,7 @@ let merge = function
 
 (* IO *)
 
-let json ?replace_mappings t =
+let json t =
   let rewrite_path path =
     if Filename.is_relative path
     then path
@@ -331,11 +331,7 @@ let json ?replace_mappings t =
           | Some s -> rewrite_path s) )
     ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
     ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
-    ; ( "mappings"
-      , stringlit
-          (match replace_mappings with
-          | None -> string_of_mapping t.mappings
-          | Some m -> m) )
+    ; "mappings", stringlit (string_of_mapping t.mappings)
     ; ( "sourcesContent"
       , `List
           (match t.sources_content with
@@ -384,7 +380,7 @@ let list_stringlit_opt name rest =
     | _ -> invalid ()
   with Not_found -> None
 
-let of_json ~parse_mappings (json : Yojson.Raw.t) =
+let of_json (json : Yojson.Raw.t) =
   match json with
   | `Assoc (("version", `Intlit version) :: rest) when int_of_string version = 3 ->
       let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
@@ -413,31 +409,25 @@ let of_json ~parse_mappings (json : Yojson.Raw.t) =
                   | None -> None
                   | Some s -> Some (Source_content.of_stringlit s)))
       in
-      let mappings_str = string "mappings" rest in
       let mappings =
-        match parse_mappings, mappings_str with
-        | false, _ -> mapping_of_string ""
-        | true, None -> mapping_of_string ""
-        | true, Some s -> mapping_of_string s
+        match string "mappings" rest with
+        | None -> mapping_of_string ""
+        | Some s -> mapping_of_string s
       in
-      ( { version = int_of_float (float_of_string version)
-        ; file
-        ; sourceroot
-        ; names
-        ; sources_content
-        ; sources
-        ; mappings
-        }
-      , if parse_mappings then None else mappings_str )
+      { version = int_of_float (float_of_string version)
+      ; file
+      ; sourceroot
+      ; names
+      ; sources_content
+      ; sources
+      ; mappings
+      }
   | _ -> invalid ()
 
-let of_string s = of_json ~parse_mappings:true (Yojson.Raw.from_string s) |> fst
+let of_string s = of_json (Yojson.Raw.from_string s)
+
+let of_file filename = of_json (Yojson.Raw.from_file filename)
 
 let to_string m = Yojson.Raw.to_string (json m)
 
-let to_file ?mappings m ~file =
-  let replace_mappings = mappings in
-  Yojson.Raw.to_file file (json ?replace_mappings m)
-
-let of_file_no_mappings filename =
-  of_json ~parse_mappings:false (Yojson.Raw.from_file filename)
+let to_file m file = Yojson.Raw.to_file file (json m)

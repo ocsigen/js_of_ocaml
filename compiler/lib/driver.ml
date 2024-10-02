@@ -23,6 +23,14 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
+type optimized_result =
+  { program : Code.program
+  ; variable_uses : Deadcode.variable_uses
+  ; trampolined_calls : Effects.trampolined_calls
+  ; in_cps : Effects.in_cps
+  ; deadcode_sentinal : Code.Var.t
+  }
+
 type profile =
   | O1
   | O2
@@ -44,35 +52,34 @@ let deadcode p =
   let r, _ = deadcode' p in
   r
 
-let inline ~target p =
+let inline p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
     let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f ~target p live_vars)
+    Inline.f p live_vars)
   else p
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
   Specialize.f ~function_arity:(fun f -> Specialize.function_arity info f) p
 
-let specialize_js ~target (p, info) =
+let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
-  Specialize_js.f ~target info p
+  Specialize_js.f info p
 
 let specialize_js_once p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once p
 
-let specialize' ~target (p, info) =
+let specialize' (p, info) =
   let p = specialize_1 (p, info) in
-  let p = specialize_js ~target (p, info) in
+  let p = specialize_js (p, info) in
   p, info
 
-let specialize ~target p = fst (specialize' ~target p)
+let specialize p = fst (specialize' p)
 
-let eval ~target (p, info) =
-  if Config.Flag.staticeval () then Eval.f ~target info p else p
+let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -128,67 +135,64 @@ let identity x = x
 
 (* o1 *)
 
-let o1 ~target : 'a -> 'a =
+let o1 : 'a -> 'a =
   print
   +> tailcall
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize' ~target
-  +> eval ~target
-  +> inline ~target (* inlining may reveal new tailcall opt *)
+  +> specialize'
+  +> eval
+  +> inline (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
-  +> specialize' ~target
-  +> eval ~target
-  +> inline ~target
+  +> specialize'
+  +> eval
+  +> inline
   +> deadcode
   +> print
   +> flow
-  +> specialize' ~target
-  +> eval ~target
-  +> inline ~target
+  +> specialize'
+  +> eval
+  +> inline
   +> deadcode
   +> phi
   +> flow
-  +> specialize ~target
+  +> specialize
   +> identity
 
 (* o2 *)
 
-let o2 ~target : 'a -> 'a = loop 10 "o1" (o1 ~target) 1 +> print
+let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
 
 (* o3 *)
 
-let round1 ~target : 'a -> 'a =
+let round1 : 'a -> 'a =
   print
   +> tailcall
-  +> inline ~target (* inlining may reveal new tailcall opt *)
+  +> inline (* inlining may reveal new tailcall opt *)
   +> deadcode (* deadcode required before flow simple -> provided by constant *)
   +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize' ~target
-  +> eval ~target
+  +> specialize'
+  +> eval
   +> identity
 
-let round2 ~target = flow +> specialize' ~target +> eval ~target +> deadcode +> o1 ~target
+let round2 = flow +> specialize' +> eval +> deadcode +> o1
 
-let o3 ~target =
-  loop 10 "tailcall+inline" (round1 ~target) 1
-  +> loop 10 "flow" (round2 ~target) 1
-  +> print
+let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
 let generate
     d
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    ((p, live_vars), trampolined_calls, _) =
+    { program; variable_uses; trampolined_calls; deadcode_sentinal = _; in_cps = _ } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
-    p
+    program
     ~exported_runtime
-    ~live_vars
+    ~live_vars:variable_uses
     ~trampolined_calls
     ~should_export
     ~warn_on_unhandled_effect
@@ -642,18 +646,7 @@ let configure formatter =
   Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
   Code.Var.set_stable (Config.Flag.stable_var ())
 
-type 'a target =
-  | JavaScript : Pretty_print.t -> Source_map.t option target
-  | Wasm
-      : (Deadcode.variable_uses * Effects.in_cps * Code.program * Parse_bytecode.Debug.t)
-        target
-
-let target_flag (type a) (t : a target) =
-  match t with
-  | JavaScript _ -> `JavaScript
-  | Wasm -> `Wasm
-
-let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ~link p =
+let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =
     match link with
     | `All | `All_from _ -> true
@@ -665,73 +658,57 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ~link p =
   |> coloring
   |> check_js
 
-let full
-    (type result)
-    ~(target : result target)
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~link
-    ~source_map
-    d
-    p : result =
+let optimize ~profile p =
+  let deadcode_sentinal =
+    (* If deadcode is disabled, this field is just fresh variable *)
+    Code.Var.fresh_n "dummy"
+  in
   let opt =
     specialize_js_once
     +> (match profile with
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
-         ~target:(target_flag target)
     +> exact_calls profile
     +> effects
     +> map_fst
-         ((match target with
-          | JavaScript _ -> Generate_closure.f
-          | Wasm -> Fun.id)
-         +> deadcode')
+         (match Config.target (), Config.Flag.effects () with
+         | `JavaScript, false -> Generate_closure.f
+         | `JavaScript, true | `Wasm, _ -> Fun.id)
+    +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let r = opt p in
+  let (program, variable_uses), trampolined_calls, in_cps = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  match target with
-  | JavaScript formatter ->
-      let exported_runtime = not standalone in
-      let emit formatter =
-        generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
-        +> link_and_pack ~standalone ~wrap_with_fun ~link
-        +> output formatter ~source_map ()
-      in
-      let source_map = emit formatter r in
-      source_map
-  | Wasm ->
-      let (p, live_vars), _, in_cps = r in
-      live_vars, in_cps, p, d
+  { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
+
+let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
+  let optimized_code = optimize ~profile p in
+  let exported_runtime = not standalone in
+  let emit formatter =
+    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> output formatter ~source_map ()
+  in
+  emit formatter optimized_code
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
   let (_ : Source_map.t option) =
-    full
-      ~target:(JavaScript formatter)
-      ~standalone
-      ~wrap_with_fun
-      ~profile
-      ~link
-      ~source_map:None
-      d
-      p
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None ~formatter d p
   in
   ()
 
 let f
-    ~target
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ~link
     ?source_map
+    ~formatter
     d
     p =
-  full ~target ~standalone ~wrap_with_fun ~profile ~link ~source_map d p
+  full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p
 
 let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
   full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
