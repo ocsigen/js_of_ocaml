@@ -380,11 +380,15 @@ module Int31 : sig
 
   val of_int32_warning_on_overflow : int32 -> t
 
+  val of_int32_truncate : int32 -> t
+
   val to_int32 : t -> int32
 end = struct
   type t = int32
 
   let wrap i = Int32.(shift_right (shift_left i 1) 1)
+
+  let of_int32_truncate i = wrap i
 
   let of_int_warning_on_overflow i =
     Int32.convert_warning_on_overflow
