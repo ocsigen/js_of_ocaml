@@ -22,7 +22,10 @@
  (names digests)
  (libraries)
  (enabled_if
-  (>= %{ocaml_version} 5.2))
+  (and
+   (>= %{ocaml_version} 5.2)
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (modules digests)
  (modes js))
 
@@ -30,6 +33,9 @@
  (alias runtest)
  (deps digests.bc.js)
  (enabled_if
-  (>= %{ocaml_version} 5.2))
+  (and
+   (>= %{ocaml_version} 5.2)
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  (action
   (run node ./digests.bc.js)))
