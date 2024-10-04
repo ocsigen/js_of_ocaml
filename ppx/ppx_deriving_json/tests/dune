@@ -27,7 +27,10 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.1))
+  (and
+   (>= %{ocaml_version} 5.1)
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  ;; (package js_of_ocaml-ppx)
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
@@ -35,7 +38,10 @@
 (rule
  (alias runtest)
  (enabled_if
-  (>= %{ocaml_version} 5.1))
+  (and
+   (>= %{ocaml_version} 5.1)
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
  ;; (package js_of_ocaml-ppx)
  (action
   (diff gen.mlt gen.mlt.corrected)))
