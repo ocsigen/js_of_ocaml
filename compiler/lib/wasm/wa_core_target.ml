@@ -348,7 +348,9 @@ end
 module Constant = struct
   let rec translate_rec context c =
     match c with
-    | Code.Int i -> W.DataI32 Int32.(add (add i i) 1l)
+    | Code.Int i ->
+        let i = Targetint.to_int32 i in
+        W.DataI32 Int32.(add (add i i) 1l)
     | Tuple (tag, a, _) ->
         let h = Memory.header ~const:true ~tag ~len:(Array.length a) () in
         let name = Code.Var.fresh_n "block" in

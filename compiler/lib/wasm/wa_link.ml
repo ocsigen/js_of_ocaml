@@ -544,13 +544,16 @@ let build_runtime_arguments
                     [ Element (EStr (Utf8_string.of_string_exn m))
                     ; Element
                         (match deps with
-                        | None -> ENum (Javascript.Num.of_int32 0l)
+                        | None ->
+                            ENum (Javascript.Num.of_targetint (Targetint.of_int_exn 0))
                         | Some l ->
                             EArr
                               (List.map
                                  ~f:(fun i ->
                                    Javascript.Element
-                                     (ENum (Javascript.Num.of_int32 (Int32.of_int i))))
+                                     (ENum
+                                        (Javascript.Num.of_targetint
+                                           (Targetint.of_int_exn i))))
                                  l))
                     ]))
              link_spec) )

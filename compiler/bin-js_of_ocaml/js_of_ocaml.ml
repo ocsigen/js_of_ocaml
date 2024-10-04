@@ -109,7 +109,9 @@ let () =
         comp;
       exit 1
   | Failure s ->
+      let backtrace = Printexc.get_backtrace () in
       Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
+      prerr_string backtrace;
       exit 1
   | exc ->
       let backtrace = Printexc.get_backtrace () in

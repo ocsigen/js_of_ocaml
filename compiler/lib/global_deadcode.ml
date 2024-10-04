@@ -546,7 +546,7 @@ end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p sentinal =
-  let instr, loc = Let (sentinal, Constant (Int 0l)), noloc in
+  let instr, loc = Let (sentinal, Constant (Int Targetint.zero)), noloc in
   Code.prepend p [ instr, loc ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)

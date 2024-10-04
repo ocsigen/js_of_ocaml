@@ -47,15 +47,25 @@ let prefix : string =
 
 type enabled_if =
   | GE5
+  | B64
   | Any
 
 let lib_enabled_if = function
   | "obj" | "effects" -> GE5
+  | "gh1051" -> B64
   | _ -> Any
 
 let test_enabled_if = function
   | "obj" | "lazy" -> GE5
+  | "gh1051" -> B64
   | _ -> Any
+
+let enabled_if cond =
+  match cond with
+  | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
+  | GE5 ->
+      "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= %{ocaml_version} 5))"
+  | B64 -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) %{arch_sixtyfour})"
 
 let () =
   Array.to_list (Sys.readdir ".")
@@ -84,14 +94,6 @@ let () =
            basename
            basename
            (Hashtbl.hash prefix mod 100)
-           (match lib_enabled_if basename with
-           | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
-           | GE5 ->
-               "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= \
-                %{ocaml_version} 5))")
+           (enabled_if (lib_enabled_if basename))
            basename
-           (match test_enabled_if basename with
-           | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
-           | GE5 ->
-               "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= \
-                %{ocaml_version} 5))"))
+           (enabled_if (test_enabled_if basename)))

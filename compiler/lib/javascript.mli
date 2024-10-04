@@ -27,13 +27,13 @@ module Num : sig
 
   val of_string_unsafe : string -> t
 
-  val of_int32 : int32 -> t
+  val of_targetint : Targetint.t -> t
 
   val of_float : float -> t
 
   val to_string : t -> string
 
-  val to_int32 : t -> int32
+  val to_targetint : t -> Targetint.t
 
   (** Predicates *)
 

@@ -37,6 +37,11 @@ jobs:
             skip-effects: true
             skip-test: false
             skip-doc: true
+          - os: ubuntu-latest
+            ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
+            skip-effects: true
+            skip-test: false
+            skip-doc: true
           - os: macos-latest
             ocaml-compiler: "4.14"
             skip-effects: true
@@ -72,6 +77,19 @@ jobs:
           git config --global core.autocrlf false
           git config --global core.eol lf
           git config --global core.ignorecase false
+
+        # EJGA: Note that I tried to fix this upstream as depext is
+        # getting much better, but no luck yet, c.f:
+        # https://github.com/ocaml/opam-repository/pull/26626
+      - name: Install apt 32-bit dependencies
+        if: matrix.ocaml-compiler == 'ocaml-variants.4.14.2+options,ocaml-option-32bit'
+        run: |
+          sudo apt-get install aptitude
+          sudo dpkg --add-architecture i386
+          sudo aptitude -o Acquire::Retries=30 update -q
+          # Note we also install the 64-bit versions here as opam will
+          # try to install them anyways, so we save an apt-roundtrip.
+          sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev:i386 -y
 
       - name: Checkout tree
         uses: actions/checkout@v4

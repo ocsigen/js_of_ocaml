@@ -79,6 +79,7 @@ let options =
   Term.ret t
 
 let f { common; output_file; files; linkall; enable_source_maps; mklib } =
+  Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Wa_link.link ~output_file ~linkall ~mklib ~enable_source_maps ~files
 

@@ -173,7 +173,7 @@ type constant =
   | NativeString of Native_string.t
   | Float of float
   | Float_array of float array
-  | Int of Int32.t
+  | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
   | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)

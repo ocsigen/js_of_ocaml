@@ -309,9 +309,9 @@ type edge_kind =
 
 let var x = J.EVar (J.V x)
 
-let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
+let int n = J.ENum (J.Num.of_targetint (Targetint.of_int_exn n))
 
-let int32 n = J.ENum (J.Num.of_int32 n)
+let targetint n = J.ENum (J.Num.of_targetint n)
 
 let to_int cx = J.EBin (J.Bor, cx, int 0)
 
@@ -325,14 +325,14 @@ let unsigned x =
   in
   let pos_int32 =
     match x with
-    | J.ENum num -> ( try Int32.(J.Num.to_int32 num >= 0l) with _ -> false)
+    | J.ENum num -> ( try Targetint.(J.Num.to_targetint num >= zero) with _ -> false)
     | _ -> false
   in
   if pos_int32 then x else unsigned' x
 
-let one = int 1
+let one = J.ENum (J.Num.of_targetint Targetint.one)
 
-let zero = int 0
+let zero = J.ENum (J.Num.of_targetint Targetint.zero)
 
 let plus_int x y =
   match x, y with
@@ -455,7 +455,8 @@ let rec constant_rec ~ctx x level instrs =
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
         | Tuple (0, [| x; l |], _) -> detect_list (succ n) (x :: acc) l
-        | Int 0l -> if n > constant_max_depth then Some acc else None
+        | Int maybe_zero when Targetint.is_zero maybe_zero ->
+            if n > constant_max_depth then Some acc else None
         | _ -> None
       in
       match detect_list 0 [] x with
@@ -492,7 +493,7 @@ let rec constant_rec ~ctx x level instrs =
             else List.map ~f:(fun x -> J.Element x) (List.rev l), instrs
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
-  | Int i -> int32 i, instrs
+  | Int i -> targetint i, instrs
   | Int32 _ | NativeInt _ ->
       assert false (* Should not be produced when compiling to Javascript *)
 
@@ -568,9 +569,9 @@ module DTree = struct
 
   type cond =
     | IsTrue
-    | CEq of int32
-    | CLt of int32
-    | CLe of int32
+    | CEq of Targetint.t
+    | CLt of Targetint.t
+    | CLe of Targetint.t
 
   type 'a branch = int list * 'a
 
@@ -609,9 +610,9 @@ module DTree = struct
           (* try to optimize when there are only 2 branch *)
           match array_norm with
           | [| (b1, ([ i1 ] as l1)); (b2, l2) |] ->
-              If (CEq (Int32.of_int i1), Branch (l1, b1), Branch (l2, b2))
+              If (CEq (Targetint.of_int_exn i1), Branch (l1, b1), Branch (l2, b2))
           | [| (b1, l1); (b2, ([ i2 ] as l2)) |] ->
-              If (CEq (Int32.of_int i2), Branch (l2, b2), Branch (l1, b1))
+              If (CEq (Targetint.of_int_exn i2), Branch (l2, b2), Branch (l1, b1))
           | [| (b1, l1); (b2, l2) |] ->
               let bound l1 =
                 match l1, List.rev l1 with
@@ -621,9 +622,9 @@ module DTree = struct
               let min1, max1 = bound l1 in
               let min2, max2 = bound l2 in
               if max1 < min2
-              then If (CLt (Int32.of_int max1), Branch (l2, b2), Branch (l1, b1))
+              then If (CLt (Targetint.of_int_exn max1), Branch (l2, b2), Branch (l1, b1))
               else if max2 < min1
-              then If (CLt (Int32.of_int max2), Branch (l1, b1), Branch (l2, b2))
+              then If (CLt (Targetint.of_int_exn max2), Branch (l1, b1), Branch (l2, b2))
               else raise Not_found
           | _ -> raise Not_found
         with Not_found -> (
@@ -641,7 +642,7 @@ module DTree = struct
             let range1 = snd ai.(h) and range2 = snd ai.(succ h) in
             match range1, range2 with
             | [], _ | _, [] -> assert false
-            | _, lower_bound2 :: _ -> If (CLe (Int32.of_int lower_bound2), b2, b1))
+            | _, lower_bound2 :: _ -> If (CLe (Targetint.of_int_exn lower_bound2), b2, b1))
     in
     let len = Array.length ai in
     assert (len > 0);
@@ -1269,7 +1270,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let i, queue =
               let (_px, cx), queue = access_queue' ~ctx queue size in
               match cx with
-              | J.ENum i -> Int32.to_int (J.Num.to_int32 i), queue
+              | J.ENum i -> Targetint.to_int_exn (J.Num.to_targetint i), queue
               | _ -> assert false
             in
             let args = Array.to_list (Array.init i ~f:(fun _ -> J.V (Var.fresh ()))) in
@@ -1668,9 +1669,9 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
         let e' =
           match cond with
           | IsTrue -> cx
-          | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
-          | CLt n -> J.EBin (J.LtInt, int32 n, cx)
-          | CLe n -> J.EBin (J.LeInt, int32 n, cx)
+          | CEq n -> J.EBin (J.EqEqEq, targetint n, cx)
+          | CLt n -> J.EBin (J.LtInt, targetint n, cx)
+          | CLe n -> J.EBin (J.LeInt, targetint n, cx)
         in
         ( never1 && never2
         , Js_simpl.if_statement

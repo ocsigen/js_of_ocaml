@@ -29,81 +29,29 @@ let set_static_env s value = Hashtbl.add static_env s value
 
 let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> None
 
-module type Int = sig
-  include Arith_ops
+let int_unop l f =
+  match l with
+  | [ Int i ] -> Some (Int (f i))
+  | _ -> None
 
-  val int_unop : constant list -> (t -> t) -> constant option
+let int_binop l f =
+  match l with
+  | [ Int i; Int j ] -> Some (Int (f i j))
+  | _ -> None
 
-  val int_binop : constant list -> (t -> t -> t) -> constant option
-
-  val shift_op : constant list -> (t -> int -> t) -> constant option
-
-  val of_int32_warning_on_overflow : int32 -> t
-
-  val to_int32 : t -> int32
-
-  val numbits : int
-end
-
-module Int32 = struct
-  include Int32
-
-  let int_unop l f =
-    match l with
-    | [ Int i ] -> Some (Int (f i))
-    | _ -> None
-
-  let int_binop l f =
-    match l with
-    | [ Int i; Int j ] -> Some (Int (f i j))
-    | _ -> None
-
-  (* For when the underlying function takes an [int] (not [t]) as its second argument *)
-  let shift_op l f =
-    match l with
-    | [ Int i; Int j ] -> Some (Int (f i (to_int j)))
-    | _ -> None
-
-  let numbits = 32
-
-  let of_int32_warning_on_overflow = Fun.id
-
-  let to_int32 = Fun.id
-end
-
-module Int31 : Int = struct
-  include Int31
-
-  let int_unop l f =
-    match l with
-    | [ Int i ] -> Some (Int (to_int32 (f (of_int32_warning_on_overflow i))))
-    | _ -> None
-
-  let int_binop l f =
-    match l with
-    | [ Int i; Int j ] ->
-        Some
-          (Int
-             (to_int32
-                (f (of_int32_warning_on_overflow i) (of_int32_warning_on_overflow j))))
-    | _ -> None
-
-  let shift_op l f =
-    match l with
-    | [ Int i; Int j ] ->
-        Some (Int (to_int32 (f (of_int32_warning_on_overflow i) (Int32.to_int j))))
-    | _ -> None
-
-  let numbits = 31
-end
+(* For when the underlying function takes an [int] (not [t]) as its second argument *)
+let shift_op l f =
+  match l with
+  | [ Int i; Int j ] -> Some (Int (f i (Targetint.to_int_exn j)))
+  | _ -> None
 
 let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
     | [ Float i; Float j ] -> Some (i, j)
-    | [ Int i; Int j ] -> Some (Int32.to_float i, Int32.to_float j)
-    | [ Int i; Float j ] -> Some (Int32.to_float i, j)
-    | [ Float i; Int j ] -> Some (i, Int32.to_float j)
+    | [ Int i; Int j ] -> Some (Targetint.to_float i, Targetint.to_float j)
+    | [ Int i; Float j ] -> Some (Targetint.to_float i, j)
+    | [ Float i; Int j ] -> Some (i, Targetint.to_float j)
     | _ -> None
   in
   match args with
@@ -118,10 +66,10 @@ let float_binop (l : constant list) (f : float -> float -> float) : constant opt
 let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
   | [ Float i ] -> Some (Float (f i))
-  | [ Int i ] -> Some (Float (f (Int32.to_float i)))
+  | [ Int i ] -> Some (Float (f (Targetint.to_float i)))
   | _ -> None
 
-let bool' b = Int (if b then 1l else 0l)
+let bool' b = Int Targetint.(if b then one else zero)
 
 let bool b = Some (bool' b)
 
@@ -130,36 +78,31 @@ let float_binop_bool l f =
   | Some b -> bool b
   | None -> None
 
-let eval_prim ~target x =
+let eval_prim x =
   match x with
-  | Not, [ Int i ] -> bool Int32.(i = 0l)
-  | Lt, [ Int i; Int j ] -> bool Int32.(i < j)
-  | Le, [ Int i; Int j ] -> bool Int32.(i <= j)
-  | Eq, [ Int i; Int j ] -> bool Int32.(i = j)
-  | Neq, [ Int i; Int j ] -> bool Int32.(i <> j)
-  | Ult, [ Int i; Int j ] -> bool (Int32.(j < 0l) || Int32.(i < j))
+  | Not, [ Int i ] -> bool (Targetint.is_zero i)
+  | Lt, [ Int i; Int j ] -> bool Targetint.(i < j)
+  | Le, [ Int i; Int j ] -> bool Targetint.(i <= j)
+  | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
+  | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
+  | Ult, [ Int i; Int j ] -> bool (Targetint.(j < zero) || Targetint.(i < j))
   | Extern name, l -> (
-      let (module Int : Int) =
-        match target with
-        | `JavaScript -> (module Int32)
-        | `Wasm -> (module Int31)
-      in
       let name = Primitive.resolve name in
       match name, l with
       (* int *)
-      | "%int_add", _ -> Int.int_binop l Int.add
-      | "%int_sub", _ -> Int.int_binop l Int.sub
-      | "%direct_int_mul", _ -> Int.int_binop l Int.mul
-      | "%direct_int_div", [ _; Int 0l ] -> None
-      | "%direct_int_div", _ -> Int.int_binop l Int.div
-      | "%direct_int_mod", _ -> Int.int_binop l Int.rem
-      | "%int_and", _ -> Int.int_binop l Int.logand
-      | "%int_or", _ -> Int.int_binop l Int.logor
-      | "%int_xor", _ -> Int.int_binop l Int.logxor
-      | "%int_lsl", _ -> Int.shift_op l Int.shift_left
-      | "%int_lsr", _ -> Int.shift_op l Int.shift_right_logical
-      | "%int_asr", _ -> Int.shift_op l Int.shift_right
-      | "%int_neg", _ -> Int.int_unop l Int.neg
+      | "%int_add", _ -> int_binop l Targetint.add
+      | "%int_sub", _ -> int_binop l Targetint.sub
+      | "%direct_int_mul", _ -> int_binop l Targetint.mul
+      | "%direct_int_div", [ _; Int x ] when Targetint.is_zero x -> None
+      | "%direct_int_div", _ -> int_binop l Targetint.div
+      | "%direct_int_mod", _ -> int_binop l Targetint.rem
+      | "%int_and", _ -> int_binop l Targetint.logand
+      | "%int_or", _ -> int_binop l Targetint.logor
+      | "%int_xor", _ -> int_binop l Targetint.logxor
+      | "%int_lsl", _ -> shift_op l Targetint.shift_left
+      | "%int_lsr", _ -> shift_op l Targetint.shift_right_logical
+      | "%int_asr", _ -> shift_op l Targetint.shift_right
+      | "%int_neg", _ -> int_unop l Targetint.neg
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
       | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
@@ -172,9 +115,10 @@ let eval_prim ~target x =
       | "caml_mul_float", _ -> float_binop l ( *. )
       | "caml_div_float", _ -> float_binop l ( /. )
       | "caml_fmod_float", _ -> float_binop l mod_float
-      | "caml_int_of_float", [ Float f ] ->
-          Some
-            (Int (Int32.of_float f |> Int.of_int32_warning_on_overflow |> Int.to_int32))
+      | "caml_int_of_float", [ Float f ] -> (
+          match Targetint.of_float_opt f with
+          | None -> None
+          | Some f -> Some (Int f))
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
       | "caml_abs_float", _ -> float_unop l abs_float
@@ -192,9 +136,9 @@ let eval_prim ~target x =
       | "caml_sqrt_float", _ -> float_unop l sqrt
       | "caml_tan_float", _ -> float_unop l tan
       | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
-          let pos = Int32.to_int pos in
+          let pos = Targetint.to_int_exn pos in
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
-          then Some (Int (Int32.of_int (Char.code s.[pos])))
+          then Some (Int (Targetint.of_int_exn (Char.code s.[pos])))
           else None
       | "caml_string_equal", [ String s1; String s2 ] -> bool (String.equal s1 s2)
       | "caml_string_notequal", [ String s1; String s2 ] ->
@@ -203,10 +147,11 @@ let eval_prim ~target x =
           match get_static_env s with
           | Some env -> Some (String env)
           | None -> None)
-      | "caml_sys_const_word_size", [ _ ] -> Some (Int 32l)
-      | "caml_sys_const_int_size", [ _ ] -> Some (Int (Int32.of_int Int.numbits))
-      | "caml_sys_const_big_endian", [ _ ] -> Some (Int 0l)
-      | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int 0l)
+      | "caml_sys_const_word_size", [ _ ] -> Some (Int (Targetint.of_int_exn 32))
+      | "caml_sys_const_int_size", [ _ ] ->
+          Some (Int (Targetint.of_int_exn (Targetint.num_bits ())))
+      | "caml_sys_const_big_endian", [ _ ] -> Some (Int Targetint.zero)
+      | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int Targetint.zero)
       | _ -> None)
   | _ -> None
 
@@ -215,14 +160,14 @@ let the_length_of ~target info x =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Constant (String s)) -> Some (Int32.of_int (String.length s))
+      | Some (Constant (String s)) -> Some (Targetint.of_int_exn (String.length s))
       | Some (Prim (Extern "caml_create_string", [ arg ]))
       | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int ~target info arg
       | None | Some _ -> None)
     None
     (fun u v ->
       match u, v with
-      | Some l, Some l' when Int32.(l = l') -> Some l
+      | Some l, Some l' when Targetint.(l = l') -> Some l
       | _ -> None)
     x
 
@@ -292,7 +237,7 @@ let the_cont_of info x (a : cont array) =
     (fun x ->
       match Flow.Info.def info x with
       | Some (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get
-      | Some (Constant (Int j)) -> get (Int32.to_int j)
+      | Some (Constant (Int j)) -> get (Targetint.to_int_exn j)
       | None | Some _ -> None)
     None
     (fun u v ->
@@ -304,7 +249,7 @@ let the_cont_of info x (a : cont array) =
 (* If [constant_js_equal a b = Some v], then [caml_js_equals a b = v]). *)
 let constant_js_equal a b =
   match a, b with
-  | Int i, Int j -> Some (Int32.equal i j)
+  | Int i, Int j -> Some (Targetint.equal i j)
   | Float a, Float b -> Some (Float.ieee_equal a b)
   | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | String a, String b when Config.Flag.use_js_string () -> Some (String.equal a b)
@@ -356,7 +301,7 @@ let eval_instr ~target info ((x, loc) as i) =
   | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
       let c =
         match s with
-        | Pc (String s) -> Some (Int32.of_int (String.length s))
+        | Pc (String s) -> Some (Targetint.of_int_exn (String.length s))
         | Pv v -> the_length_of ~target info v
         | _ -> None
       in
@@ -391,7 +336,7 @@ let eval_instr ~target info ((x, loc) as i) =
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) with
       | Some tag ->
-          let c = Constant (Int (Int32.of_int tag)) in
+          let c = Constant (Int (Targetint.of_int_exn tag)) in
           Flow.Info.update_def info x c;
           [ Let (x, c), loc ]
       | None -> [ i ])
@@ -415,7 +360,6 @@ let eval_instr ~target info ((x, loc) as i) =
                | _ -> false)
         then
           eval_prim
-            ~target
             ( prim
             , List.map prim_args' ~f:(function
                   | Some c -> c
@@ -461,11 +405,10 @@ let the_cond_of info x =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Constant (Int 0l)) -> Zero
+      | Some (Constant (Int x)) -> if Targetint.is_zero x then Zero else Non_zero
       | Some
           (Constant
-            ( Int _
-            | Int32 _
+            ( Int32 _
             | NativeInt _
             | Float _
             | Tuple _

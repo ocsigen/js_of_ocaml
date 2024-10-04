@@ -35,8 +35,8 @@ class macro_mapper ~flags =
           | "FLAG", [ J.Arg (J.EStr (Utf8 s)) ] -> (
               match flags with
               | Replace ->
-                  let i = if Config.Flag.find s then 1l else 0l in
-                  J.ENum (J.Num.of_int32 i)
+                  let i = if Config.Flag.find s then Targetint.one else Targetint.zero in
+                  J.ENum (J.Num.of_targetint i)
               | Count count ->
                   incr count;
                   super#expression x)
@@ -44,7 +44,7 @@ class macro_mapper ~flags =
             when List.for_all args ~f:(function
                      | J.Arg _ -> true
                      | J.ArgSpread _ -> false) ->
-              let tag = Int32.to_int (J.Num.to_int32 tag) in
+              let tag = Targetint.to_int_exn (J.Num.to_targetint tag) in
               let args =
                 List.map args ~f:(function
                     | J.Arg e -> J.Element (m#expression e)
@@ -54,7 +54,7 @@ class macro_mapper ~flags =
           | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)
           | "LENGTH", [ J.Arg e ] -> Mlvalue.Array.length (m#expression e)
           | "FIELD", [ J.Arg e; J.Arg (J.ENum n) ] ->
-              let idx = Int32.to_int (J.Num.to_int32 n) in
+              let idx = Targetint.to_int_exn (J.Num.to_targetint n) in
               Mlvalue.Block.field (m#expression e) idx
           | "FIELD", [ _; J.Arg (J.EUn (J.Neg, _)) ] ->
               failwith "Negative field indexes are not allowed"

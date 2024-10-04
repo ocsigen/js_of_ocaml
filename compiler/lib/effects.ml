@@ -300,7 +300,7 @@ let cps_branch ~st ~src (pc, args) loc =
           (* We are jumping to a block that is also used as a continuation.
              We pass it a dummy argument. *)
           let x = Var.fresh () in
-          [ x ], [ Let (x, Constant (Int 0l)), noloc ]
+          [ x ], [ Let (x, Constant (Int Targetint.zero)), noloc ]
         else args, []
       in
       (* We check the stack depth only for backward edges (so, at
@@ -402,7 +402,9 @@ let cps_last ~st ~alloc_jump_closures pc ((last, last_loc) : last * loc) ~k :
                         ( x'
                         , Prim
                             ( Extern "caml_maybe_attach_backtrace"
-                            , [ Pv x; Pc (Int (if force then 1l else 0l)) ] ) )
+                            , [ Pv x
+                              ; Pc (Int (if force then Targetint.one else Targetint.zero))
+                              ] ) )
                     , noloc )
                   ]
                 in
@@ -483,7 +485,8 @@ let cps_instr ~st (instr : instr) : instr =
       | Pc (Int a) ->
           Let
             ( x
-            , Prim (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Int32.succ a)) ])
+            , Prim
+                (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Targetint.succ a)) ])
             )
       | _ -> assert false)
   | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
@@ -562,7 +565,7 @@ let cps_block ~st ~k pc block =
               [ arg; k' ]
               loc)
     | Prim (Extern "%perform", [ Pv effect_ ]) ->
-        perform_effect ~effect_ ~continuation:(Pc (Int 0l)) loc
+        perform_effect ~effect_ ~continuation:(Pc (Int Targetint.zero)) loc
     | Prim (Extern "%reperform", [ Pv effect_; continuation ]) ->
         perform_effect ~effect_ ~continuation loc
     | _ -> None
