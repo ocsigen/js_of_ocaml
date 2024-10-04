@@ -83,7 +83,7 @@ jobs:
 
       - name: Install OCaml ${{ matrix.ocaml-compiler }}
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           dune-cache: true
