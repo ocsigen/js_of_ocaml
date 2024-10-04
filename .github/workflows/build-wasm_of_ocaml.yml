@@ -19,6 +19,7 @@ jobs:
           - 4.14.x
           - 5.00.x
           - 5.01.x
+          - 5.02.x
 
     runs-on: ${{ matrix.os }}
 
